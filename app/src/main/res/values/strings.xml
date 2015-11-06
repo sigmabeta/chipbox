@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Chipbox</string>
+
+    <string name="navigation_drawer_open">Open Navigation Drawer</string>
+    <string name="navigation_drawer_close">Close Navigation Drawer</string>
+
+    <!-- Main Screen -->
+
+    <string name="drawer_add_folder">Add to Library</string>
+    <string name="drawer_refresh">Rescan Library</string>
+    <string name="drawer_settings">Settings</string>
+
+    <string name="tab_main_game">Game</string>
+    <string name="tab_main_system">System</string>
+    <string name="tab_main_artist">Artist</string>
+    <string name="tab_main_songs">Songs</string>
+
+    <string name="platform_name_genesis">Sega Genesis</string>
+    <string name="platform_name_snes">Super Nintendo</string>
+
+    <!-- File List Screen-->
+    <string name="file_list_up">Up One Level</string>
+
+    <string name="file_list_scanning">Scanning library…</string>
+
+    <string name="file_list_error_empty_folder">That folder is empty.</string>
+    <string name="file_list_error_invalid_track">That file is not a valid track.</string>
+    <string name="file_list_error_adding">There was an error adding that directory to your library.</string>
+    <string name="file_list_error_scanning">There was an error scanning your library.</string>
+
+    <!-- Notification -->
+    <string name="notification_label_pause">Pause</string>
+    <string name="notification_label_play">Play</string>
+    <string name="notification_label_prev">Previous Track</string>
+    <string name="notification_label_next">Next Track</string>
+    <string name="notification_label_stop">Stop Playback</string>
+</resources>

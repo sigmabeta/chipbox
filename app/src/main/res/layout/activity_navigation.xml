@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:app="http://schemas.android.com/apk/res-auto"
+             android:id="@+id/frame_content"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent">
+
+    <Toolbar
+        android:id="@+id/toolbar_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorPrimary"
+        android:minHeight="?android:attr/actionBarSize"
+        android:theme="@android:style/ThemeOverlay.Material.Dark.ActionBar"
+        android:elevation="6dp"
+        android:fitsSystemWindows="true"/>
+
+    <FrameLayout
+        android:id="@+id/frame_fragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/button_play"
+        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_margin="@dimen/spacing_large"
+        android:layout_gravity="bottom|right|end"
+        android:src="@drawable/ic_play_48dp"
+        app:borderWidth="0dp"
+        app:rippleColor="?android:colorPrimaryDark"
+        app:layout_anchor="@+id/list_files"
+        app:elevation="6dp"
+        app:pressedTranslationZ="12dp"/>
+
+</FrameLayout>
