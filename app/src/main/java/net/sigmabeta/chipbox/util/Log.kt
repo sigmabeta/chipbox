@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.util
 import android.util.Log
 import net.sigmabeta.chipbox.BuildConfig
 
-private val TAG = "ChipBox"
+private val TAG = "Chipbox"
 
 fun logVerbose(message: String) {
     if (BuildConfig.DEBUG) {

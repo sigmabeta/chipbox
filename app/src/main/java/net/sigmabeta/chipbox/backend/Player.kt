@@ -65,6 +65,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             if (isTrackOver()) {
                 logVerbose("[Player] Track has ended.")
 
+                // TODO Calling this here prevents the original loop from ending, and starts a new one, which breaks everything
                 if (!skipToNext()) {
                     logInfo("[Player] No more tracks to play.")
                     stop()
@@ -77,7 +78,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             val error = getLastError()
 
             if (error == null) {
-                logVerbose("[Player] First item in java buffer: ${nativeBuffer?.get(0)}")
                 audioTrack?.write(nativeBuffer, 0, audioConfig.minBufferSize)
             } else {
                 logError("[Player] GME Error: ${error}")
@@ -179,7 +179,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             playbackQueuePosition = position
 
             play()
-            logInfo("[Player] Laoding track ${position} of ${queue.size()}.")
+            logInfo("[Player] Loading track ${position} of ${queue.size()}.")
             return true
         }
 
