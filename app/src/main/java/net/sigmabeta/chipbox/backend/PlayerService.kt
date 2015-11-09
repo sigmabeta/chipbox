@@ -36,7 +36,7 @@ class PlayerService : Service(), BackendView {
         inject()
         initPhoneStateListener()
 
-        session = MediaSession(this, "ChipBox")
+        session = MediaSession(this, "Chipbox")
 
         session?.setCallback(SessionCallback(this))
         session?.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
