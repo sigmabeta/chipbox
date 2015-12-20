@@ -20,8 +20,13 @@ class SongListPresenter @Inject constructor(val view: SongListView,
     }
 
     fun onCreateView() {
-        database.getSongList(artist)
-                .subscribeOn(Schedulers.io())
+        val readOperation = if (artist == Track.PLATFORM_ALL.toLong()) {
+            database.getSongList()
+        } else {
+            database.getSongListForArtist(artist)
+        }
+
+        readOperation.subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {

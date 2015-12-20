@@ -273,21 +273,37 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         )
     }
 
-    fun getSongList(artist: Long): Observable<Cursor> {
+    fun getSongList(): Observable<Cursor> {
         return Observable.create(
                 {
                     logInfo("[SongDatabaseHelper] Reading song list...")
-                    val whereClause: String?
-                    val whereArgs: Array<String>?
 
-                    // If -1 passed in, return all games. Else, return games for one platform only.
-                    if (artist != Track.PLATFORM_ALL.toLong()) {
-                        whereClause = "${KEY_TRACK_ARTIST_ID} = ?"
-                        whereArgs = arrayOf(artist.toString())
-                    } else {
-                        whereClause = null
-                        whereArgs = null
-                    }
+                    val database = readableDatabase
+
+                    val resultCursor = database.query(
+                            TABLE_NAME_TRACKS,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            "${KEY_TRACK_TITLE} ASC"
+                    )
+
+                    logVerbose("[SongDatabaseHelper] Result size: ${resultCursor.count}")
+
+                    it.onNext(resultCursor)
+                    it.onCompleted()
+                }
+        )
+    }
+
+    fun getSongListForArtist(artist: Long): Observable<Cursor> {
+        return Observable.create(
+                {
+                    logInfo("[SongDatabaseHelper] Reading song list...")
+                    val whereClause = "${KEY_TRACK_ARTIST_ID} = ?"
+                    val whereArgs = arrayOf(artist.toString())
 
                     val database = readableDatabase
 
@@ -298,10 +314,37 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                             whereArgs,
                             null,
                             null,
-                            "${KEY_TRACK_TITLE} ASC"
+                            "${KEY_TRACK_GAME_ID} ASC"
                     )
 
-                    logVerbose("[SongDatabaseHelper] Cursor size: ${resultCursor.count}")
+                    logVerbose("[SongDatabaseHelper] Result size: ${resultCursor.count}")
+
+                    it.onNext(resultCursor)
+                    it.onCompleted()
+                }
+        )
+    }
+
+    fun getSongListForGame(game: Long): Observable<Cursor> {
+        return Observable.create(
+                {
+                    logInfo("[SongDatabaseHelper] Reading song list...")
+                    val whereClause = "${KEY_TRACK_GAME_ID} = ?"
+                    val whereArgs = arrayOf(game.toString())
+
+                    val database = readableDatabase
+
+                    val resultCursor = database.query(
+                            TABLE_NAME_TRACKS,
+                            null,
+                            whereClause,
+                            whereArgs,
+                            null,
+                            null,
+                            "${KEY_TRACK_NUMBER} ASC"
+                    )
+
+                    logVerbose("[SongDatabaseHelper] Result size: ${resultCursor.count}")
 
                     it.onNext(resultCursor)
                     it.onCompleted()
