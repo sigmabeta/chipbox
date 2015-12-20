@@ -4,6 +4,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.util.generateFileList
+import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.readTrackInfoFromPath
 import net.sigmabeta.chipbox.view.interfaces.FileListView
 import rx.Observable
@@ -66,7 +67,8 @@ class FileListPresenter @Inject constructor(val view: FileListView,
                             },
                             {
                                 // OnError. it: Throwable
-                                view.showErrorMessage(R.string.file_list_error_scanning)
+                                view.onAdditionFailed()
+                                logError("[FileListPresenter] File scanning error: ${it.message}")
                             },
                             {
                                 // OnCompleted.

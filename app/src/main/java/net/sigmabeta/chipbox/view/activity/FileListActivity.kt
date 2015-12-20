@@ -117,6 +117,11 @@ class FileListActivity : BaseActivity(), FileListView {
         finish()
     }
 
+    override fun onAdditionFailed() {
+        progressDialog?.dismiss()
+        showErrorMessage(R.string.file_list_error_scanning)
+    }
+
     override fun showErrorMessage(errorId: Int) {
         Toast.makeText(this, errorId, Toast.LENGTH_SHORT).show()
     }
