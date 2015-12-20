@@ -9,9 +9,7 @@ import android.support.v7.widget.LinearLayoutManager
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
-import kotlinx.android.synthetic.activity_file_list.button_add_directory
-import kotlinx.android.synthetic.activity_file_list.list_files
-import kotlinx.android.synthetic.activity_file_list.toolbar_folder_list
+import kotlinx.android.synthetic.activity_file_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
@@ -42,7 +40,7 @@ class FileListActivity : BaseActivity(), FileListView {
 
         setContentView(R.layout.activity_file_list)
 
-        setActionBar(toolbar_folder_list)
+        setSupportActionBar(toolbar_folder_list)
 
         // Specifying the LayoutManager determines how the RecyclerView arranges views.
         val layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)

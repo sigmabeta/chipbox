@@ -12,7 +12,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/ThemeSuperNES">
+        android:theme="@style/ThemeMain">
         <activity android:name=".view.activity.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -20,7 +20,8 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <activity android:name=".view.activity.FileListActivity"/>
+        <activity android:name=".view.activity.FileListActivity"
+            android:theme="@style/ThemeFileList"/>
         <activity android:name=".view.activity.NavigationActivity"/>
         <activity android:name=".view.activity.PlayerActivity"/>
 
