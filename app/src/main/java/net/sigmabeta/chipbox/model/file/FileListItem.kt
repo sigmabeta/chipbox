@@ -5,7 +5,7 @@ data class FileListItem(val type: Int, val filename: String, val path: String) :
         if (other.type == type) {
             return filename.toLowerCase().compareTo(other.filename.toLowerCase())
         } else {
-            if (type > other.type) {
+            if (type < other.type) {
                 return 1
             } else {
                 return -1

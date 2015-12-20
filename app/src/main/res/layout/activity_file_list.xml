@@ -1,41 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             xmlns:app="http://schemas.android.com/apk/res-auto"
-             xmlns:tools="http://schemas.android.com/tools"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <Toolbar
-        android:id="@+id/toolbar_folder_list"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="?attr/colorPrimary"
-        android:minHeight="?android:attr/actionBarSize"
-        android:theme="@android:style/ThemeOverlay.Material.Dark.ActionBar"
-        android:elevation="6dp"
-        android:fitsSystemWindows="true"/>
-
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/list_files"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginLeft="@dimen/activity_horizontal_margin"
-        android:layout_marginRight="@dimen/activity_horizontal_margin"
-        tools:listitem="@layout/list_item_file"
-        android:elevation="4dp"
-        android:background="@android:color/white"/>
+        android:orientation="vertical">
+
+        <Toolbar
+            android:id="@+id/toolbar_folder_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorPrimary"
+            android:elevation="6dp"
+            android:fitsSystemWindows="true"
+            android:minHeight="?android:attr/actionBarSize"
+            android:theme="@android:style/ThemeOverlay.Material.Dark.ActionBar" />
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/list_files"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginLeft="@dimen/activity_horizontal_margin"
+            android:layout_marginRight="@dimen/activity_horizontal_margin"
+            android:background="@android:color/white"
+            android:elevation="4dp"
+            tools:listitem="@layout/list_item_file" />
+    </LinearLayout>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/button_add_directory"
-        android:layout_height="wrap_content"
         android:layout_width="wrap_content"
-        android:layout_margin="@dimen/spacing_large"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom|right|end"
+        android:layout_margin="@dimen/spacing_large"
         android:src="@drawable/ic_add_white_24dp"
         app:borderWidth="0dp"
-        app:rippleColor="?android:colorPrimaryDark"
-        app:layout_anchor="@+id/list_files"
         app:elevation="6dp"
-        app:pressedTranslationZ="12dp"/>
+        app:layout_anchor="@+id/list_files"
+        app:pressedTranslationZ="12dp"
+        app:rippleColor="?android:colorPrimaryDark" />
 
 </FrameLayout>
