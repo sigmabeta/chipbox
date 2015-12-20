@@ -43,7 +43,6 @@
         android:layout_width="48dp"
         android:layout_height="0dp"
         android:layout_margin="@dimen/spacing_medium"
-        android:src="@drawable/placeholder_game_box_art"
         tools:src="@drawable/placeholder_game_box_art"
         android:scaleType="centerCrop"
         android:layout_centerVertical="true"

@@ -20,7 +20,6 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:scaleType="centerCrop"
-            android:src="@drawable/placeholder_game_box_art"
             tools:src="@drawable/placeholder_game_box_art"/>
 
         <RelativeLayout
