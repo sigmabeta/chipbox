@@ -105,8 +105,9 @@ fun createFileListItem(file: File): FileListItem {
 }
 
 fun generateFileList(folder: File): ArrayList<FileListItem> {
-    val children = folder.listFiles()
-    val fileList = ArrayList<FileListItem>(children.size())
+    val children = folder.listFiles() ?: return ArrayList<FileListItem>()
+
+    val fileList = ArrayList<FileListItem>(children.size)
 
     for (child in children) {
         if (!child.isHidden) {

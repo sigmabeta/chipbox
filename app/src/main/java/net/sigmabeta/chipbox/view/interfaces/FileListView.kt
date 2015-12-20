@@ -11,6 +11,8 @@ interface FileListView {
 
     fun onAdditionComplete()
 
+    fun onAdditionFailed()
+
     fun showToastMessage(message: String)
 
     fun showErrorMessage(errorId: Int)
