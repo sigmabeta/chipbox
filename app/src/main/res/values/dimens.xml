@@ -10,4 +10,6 @@
     <dimen name="spacing_large">16dp</dimen>
     <dimen name="spacing_xlarge">32dp</dimen>
 
+    <dimen name="hero_image_size">320dp</dimen>
+
 </resources>
