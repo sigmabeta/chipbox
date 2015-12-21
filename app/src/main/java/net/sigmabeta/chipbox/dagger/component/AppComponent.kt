@@ -34,6 +34,8 @@ interface AppComponent {
 
     fun plus(songListModule: SongListModule): SongListComponent
 
+    fun plus(gameModule: GameModule): GameComponent
+
     fun plus(platformListModule: PlatformListModule): PlatformListComponent
 
     fun plus(playerFragmentModule: PlayerFragmentModule): PlayerFragmentComponent

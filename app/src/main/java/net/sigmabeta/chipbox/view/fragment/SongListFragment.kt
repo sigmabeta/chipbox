@@ -7,8 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import kotlinx.android.synthetic.fragment_song_list.frame_content
-import kotlinx.android.synthetic.fragment_song_list.list_songs
+import kotlinx.android.synthetic.fragment_song_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
@@ -43,7 +42,7 @@ class SongListFragment : BaseFragment(), SongListView {
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         val layoutManager = LinearLayoutManager(activity)
 
-        val adapter = SongListAdapter(this, activity)
+        val adapter = SongListAdapter(this, activity, true)
         this.adapter = adapter
 
         list_songs.adapter = adapter

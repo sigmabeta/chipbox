@@ -10,12 +10,19 @@ import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.view.interfaces.SongListView
 import net.sigmabeta.chipbox.view.viewholder.SongViewHolder
 
-class SongListAdapter(val view: SongListView, val context: Context) : BaseCursorAdapter() {
+class SongListAdapter(val view: SongListView,
+                      val context: Context,
+                      val showArt: Boolean) : BaseCursorAdapter() {
     val imagesPath = "file://" + context.getExternalFilesDir(null).absolutePath + "/images/"
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): RecyclerView.ViewHolder? {
         val row = LayoutInflater.from(parent?.context)
-                ?.inflate(R.layout.list_item_song, parent, false)
+                ?.inflate(
+                        if (showArt)
+                            R.layout.list_item_song
+                        else
+                            R.layout.list_item_song_game,
+                        parent, false)
 
         if (row != null) {
             return SongViewHolder(row, this)
