@@ -7,8 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import kotlinx.android.synthetic.fragment_game_grid.frame_content
-import kotlinx.android.synthetic.fragment_game_grid.grid_games
+import kotlinx.android.synthetic.fragment_game_grid.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
@@ -16,6 +15,7 @@ import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.presenter.GameGridPresenter
 import net.sigmabeta.chipbox.util.convertDpToPx
 import net.sigmabeta.chipbox.view.GridSpaceDecoration
+import net.sigmabeta.chipbox.view.activity.GameActivity
 import net.sigmabeta.chipbox.view.adapter.GameGridAdapter
 import net.sigmabeta.chipbox.view.interfaces.GameListView
 import javax.inject.Inject
@@ -64,6 +64,7 @@ class GameGridFragment : BaseFragment(), GameListView {
     }
 
     override fun onItemClick(id: Long) {
+        GameActivity.launch(activity, id)
     }
 
     override fun getContentLayout(): FrameLayout {

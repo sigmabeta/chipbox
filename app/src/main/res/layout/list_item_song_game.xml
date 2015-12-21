@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="64dp"
+    android:background="?android:attr/selectableItemBackground"
+    android:focusable="true"
+    android:clickable="true"
+    tools:background="@android:color/white">
+
+    <TextView
+        android:id="@+id/text_song_title"
+        style="@style/TextAppearance.AppCompat.Subhead"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="The Island in the Void"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:layout_marginLeft="@dimen/spacing_medium"
+        android:layout_marginRight="@dimen/spacing_medium"
+        android:layout_marginTop="@dimen/spacing_medlarge"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_toEndOf="@+id/text_song_track_number"/>
+
+    <TextView
+        android:id="@+id/text_song_artist"
+        style="@style/TextAppearance.AppCompat.Caption"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="Yasunori Shiono"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:layout_marginLeft="@dimen/spacing_medium"
+        android:layout_marginRight="@dimen/spacing_medium"
+        android:layout_marginBottom="@dimen/spacing_medlarge"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_toEndOf="@+id/text_song_track_number"/>
+
+    <TextView
+        android:id="@+id/text_song_track_number"
+        android:layout_width="24dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/spacing_large"
+        android:gravity="center_vertical|right"
+        android:layout_centerVertical="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"
+        tools:text="17"/>
+
+</RelativeLayout>

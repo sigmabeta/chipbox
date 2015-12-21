@@ -1,5 +1,9 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-interface GameView {
+import android.database.Cursor
 
+interface GameView {
+    fun setCursor(cursor: Cursor)
+
+    fun getCursor(): Cursor?
 }
