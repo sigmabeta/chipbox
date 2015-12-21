@@ -7,7 +7,6 @@ import android.support.v4.app.Fragment
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.Toast
-import kotlinx.android.synthetic.clearFindViewByIdCache
 import net.sigmabeta.chipbox.view.interfaces.FragmentContainer
 
 abstract class BaseFragment : Fragment() {
@@ -15,7 +14,6 @@ abstract class BaseFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        retainInstance = true
     }
 
     override fun onAttach(activity: Activity?) {
@@ -41,11 +39,6 @@ abstract class BaseFragment : Fragment() {
         }
 
         snackbar.show()
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        clearFindViewByIdCache()
     }
 
     protected abstract fun inject()
