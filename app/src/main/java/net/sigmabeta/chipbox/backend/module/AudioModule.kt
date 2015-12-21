@@ -18,7 +18,7 @@ class AudioModule {
         val sampleRate = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC)
         val minBufferSize = AudioTrack.getMinBufferSize(sampleRate,
                 AudioFormat.CHANNEL_OUT_STEREO,
-                AudioFormat.ENCODING_PCM_16BIT)
+                AudioFormat.ENCODING_PCM_16BIT) * 4
 
         return AudioConfig(sampleRate, minBufferSize)
     }
