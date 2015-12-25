@@ -49,7 +49,7 @@ public class FileAdapter(var currentPath: String, var fileList: ArrayList<FileLi
      * @return Size of the dataset.
      */
     override fun getItemCount(): Int {
-        return fileList.size()
+        return fileList.size
     }
 
     public fun setPath(path: String) {

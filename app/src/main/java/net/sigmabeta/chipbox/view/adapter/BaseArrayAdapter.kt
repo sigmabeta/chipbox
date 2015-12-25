@@ -24,7 +24,7 @@ abstract class BaseArrayAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolder
 
     override fun getItemCount(): Int {
         if (datasetValid) {
-            return dataset?.size() ?: 0
+            return dataset?.size ?: 0
         }
 
         logError("[BaseArrayAdapter] Dataset is not valid.")

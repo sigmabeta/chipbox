@@ -12,7 +12,7 @@ public class ChipboxApplication : Application() {
      * Static methods and members go in a 'companion' object.
      */
     companion object {
-        var appComponent: AppComponent? = null
+        @JvmField var appComponent: AppComponent? = null
     }
 
 
