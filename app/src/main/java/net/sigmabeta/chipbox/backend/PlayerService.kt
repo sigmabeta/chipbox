@@ -164,7 +164,7 @@ class PlayerService : Service(), BackendView {
         }
 
         val playbackQueuePosition = player?.playbackQueuePosition
-        val playbackQueueSize = player?.playbackQueue?.size()
+        val playbackQueueSize = player?.playbackQueue?.size
 
         if (playbackQueuePosition != null) {
             if (playbackQueuePosition > 0) {

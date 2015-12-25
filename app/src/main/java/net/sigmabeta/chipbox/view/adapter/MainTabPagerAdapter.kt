@@ -20,7 +20,7 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
     )
 
     override fun getCount(): Int {
-        return TAB_TITLES.size()
+        return TAB_TITLES.size
     }
 
     override fun getItem(position: Int): Fragment? {

@@ -37,7 +37,7 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
                             view.setGameBoxart(it.gameId)
                         },
                         {
-                            logError("[PlayerFragmentPresenter] Database error: ${it.getMessage()}")
+                            logError("[PlayerFragmentPresenter] Database error: ${it.message}")
                         }
                 )
     }

@@ -130,12 +130,12 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     }
 
     fun play(playbackQueue: ArrayList<Track>, position: Int) {
-        if (position < playbackQueue.size()) {
+        if (position < playbackQueue.size) {
             if (state == PlaybackState.STATE_PLAYING) {
                 pause()
             }
 
-            logVerbose("[Player] Playing new playlist, starting from track ${position} of ${playbackQueue.size()}.")
+            logVerbose("[Player] Playing new playlist, starting from track ${position} of ${playbackQueue.size}.")
 
             this.playbackQueue = playbackQueue
             playbackQueuePosition = position
@@ -144,20 +144,20 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
             play()
         } else {
-            logError("[Player] Tried to play new playlist, but invalid track number: ${position} of ${playbackQueue.size()}")
+            logError("[Player] Tried to play new playlist, but invalid track number: ${position} of ${playbackQueue.size}")
         }
     }
 
     fun play(position: Int) {
         val queue = playbackQueue
         if (queue != null) {
-            if (position < queue.size()) {
+            if (position < queue.size) {
                 playbackQueuePosition = position
                 playingTrack = queue.get(position)
 
                 play()
             } else {
-                logError("[Player] Cannot play track #${position} of ${queue.size()}.")
+                logError("[Player] Cannot play track #${position} of ${queue.size}.")
             }
         } else {
             logError("[Player] Cannot play track #${position}: no playback queue exists.")
@@ -168,7 +168,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         val queue = playbackQueue
         var position = playbackQueuePosition
 
-        if (queue != null && position != null && position < queue.size() - 1) {
+        if (queue != null && position != null && position < queue.size - 1) {
             if (state == PlaybackState.STATE_PLAYING) {
                 pause()
             }
@@ -179,7 +179,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             playbackQueuePosition = position
 
             play()
-            logInfo("[Player] Loading track ${position} of ${queue.size()}.")
+            logInfo("[Player] Loading track ${position} of ${queue.size}.")
             return true
         }
 
@@ -200,7 +200,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             playingTrack = queue.get(position)
             playbackQueuePosition = position
 
-            logInfo("[Player] Loading track ${position} of ${queue.size()}.")
+            logInfo("[Player] Loading track ${position} of ${queue.size}.")
         }
     }
 
