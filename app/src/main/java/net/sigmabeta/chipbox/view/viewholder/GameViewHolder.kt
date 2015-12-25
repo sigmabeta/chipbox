@@ -8,6 +8,7 @@ import kotlinx.android.synthetic.grid_item_game.view.image_game_box_art
 import kotlinx.android.synthetic.grid_item_game.view.text_company
 import kotlinx.android.synthetic.grid_item_game.view.text_game_title
 import net.sigmabeta.chipbox.model.database.COLUMN_DB_ID
+import net.sigmabeta.chipbox.model.database.COLUMN_GAME_COMPANY
 import net.sigmabeta.chipbox.model.database.COLUMN_GAME_TITLE
 import net.sigmabeta.chipbox.view.adapter.GameGridAdapter
 
@@ -20,11 +21,12 @@ class GameViewHolder(val view: View, val adapter: GameGridAdapter) : RecyclerVie
 
     fun bind(toBind: Cursor) {
         val gameTitle = toBind.getString(COLUMN_GAME_TITLE)
+        val company = toBind.getString(COLUMN_GAME_COMPANY)
 
         gameId = toBind.getLong(COLUMN_DB_ID)
 
         view.text_game_title.text = gameTitle
-        view.text_company.text = "Natsume"
+        view.text_company.text = company
 
         val imagePath = adapter.imagesPath + gameId.toString() + "/local.png"
 
