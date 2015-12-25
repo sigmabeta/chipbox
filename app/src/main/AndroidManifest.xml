@@ -32,7 +32,7 @@
             android:theme="@style/ThemeFileList"/>
 
         <activity android:name=".view.activity.GameActivity"
-            android:theme="@style/ThemeFileList"/>
+            android:theme="@style/ThemeMain"/>
 
         <service
             android:name=".backend.PlayerService"
