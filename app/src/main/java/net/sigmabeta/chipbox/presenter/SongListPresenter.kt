@@ -35,7 +35,7 @@ class SongListPresenter @Inject constructor(val view: SongListView,
                 )
     }
 
-    fun onItemClick(id: Long) {
+    fun onItemClick(id: Long, position: Int) {
         if (artist == Track.PLATFORM_ALL.toLong()) {
             view.launchPlayerActivity(id)
         } else {
@@ -43,7 +43,7 @@ class SongListPresenter @Inject constructor(val view: SongListView,
 
             if (cursor != null) {
                 val queue = SongDatabaseHelper.getPlaybackQueueFromCursor(cursor)
-                player.play(queue, 0)
+                player.play(queue, position)
             }
         }
     }

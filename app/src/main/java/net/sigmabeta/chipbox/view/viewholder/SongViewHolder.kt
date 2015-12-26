@@ -46,6 +46,6 @@ class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerVie
 
 
     override fun onClick(v: View) {
-        adapter.onItemClick(trackId ?: return)
+        adapter.onItemClick(trackId ?: return, adapterPosition)
     }
 }

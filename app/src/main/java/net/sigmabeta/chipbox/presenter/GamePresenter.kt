@@ -30,12 +30,12 @@ class GamePresenter @Inject constructor(val view: GameView,
 
     }
 
-    fun onItemClick(id: Long) {
+    fun onItemClick(id: Long, position: Int) {
         val cursor = view.getCursor()
 
         if (cursor != null) {
             val queue = SongDatabaseHelper.getPlaybackQueueFromCursor(cursor)
-            player.play(queue, 0)
+            player.play(queue, position)
         }
     }
 }
