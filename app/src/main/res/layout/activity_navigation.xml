@@ -5,20 +5,26 @@
              android:layout_width="match_parent"
              android:layout_height="match_parent">
 
-    <Toolbar
-        android:id="@+id/toolbar_navigation"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="?attr/colorPrimary"
-        android:minHeight="?android:attr/actionBarSize"
-        android:theme="@android:style/ThemeOverlay.Material.Dark.ActionBar"
-        android:elevation="6dp"
-        android:fitsSystemWindows="true"/>
+        android:layout_height="match_parent"
+        android:orientation="vertical" >
 
-    <FrameLayout
-        android:id="@+id/frame_fragment"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/toolbar_navigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorPrimary"
+            android:minHeight="?android:attr/actionBarSize"
+            android:theme="@android:style/ThemeOverlay.Material.Dark.ActionBar"
+            android:elevation="6dp"
+            android:fitsSystemWindows="true"/>
+
+        <FrameLayout
+            android:id="@+id/frame_fragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </LinearLayout>
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/button_play"
