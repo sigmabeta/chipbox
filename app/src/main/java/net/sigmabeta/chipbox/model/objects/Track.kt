@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.model.objects
 import android.media.MediaMetadata
 
 data class Track(val id: Long,
-                 val trackNumber: Int,
+                 var trackNumber: Int,
                  val path: String,
                  val title: String,
                  val gameId: Long,

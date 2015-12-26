@@ -410,6 +410,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         val children = folder.listFiles()
 
         if (children != null) {
+            var trackCount = 1
+
             for (file in children) {
                 if (!file.isHidden) {
                     if (file.isDirectory) {
@@ -424,6 +426,9 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                             // Check that the file has an extension we care about before trying to read out of it.
                             if (EXTENSIONS_MUSIC.contains(fileExtension)) {
                                 val track = readTrackInfoFromPath(filePath, 0)
+
+                                track?.trackNumber = trackCount
+                                trackCount += 1
 
                                 if (track != null) {
                                     val values = getContentValuesFromTrack(track, database)
