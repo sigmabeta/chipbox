@@ -74,8 +74,8 @@ class GameActivity : BaseActivity(), GameView, SongListView {
      * SongListView
      */
 
-    override fun onItemClick(id: Long) {
-        presenter.onItemClick(id)
+    override fun onItemClick(id: Long, position: Int) {
+        presenter.onItemClick(id, position)
     }
 
     override fun launchPlayerActivity(id: Long) {

@@ -36,7 +36,7 @@ class SongListAdapter(val view: SongListView,
         (holder as SongViewHolder).bind(cursor)
     }
 
-    fun onItemClick(id: Long) {
-        view.onItemClick(id)
+    fun onItemClick(id: Long, position: Int) {
+        view.onItemClick(id, position)
     }
 }
