@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.view.activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import kotlinx.android.synthetic.main.activity_navigation.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
@@ -22,6 +23,8 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_navigation)
+
+        setSupportActionBar(toolbar_navigation)
 
         val launcher = intent
 
