@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.view.adapter.ArtistListAdapter
 
 class ArtistViewHolder(val view: View, val adapter: ArtistListAdapter) : RecyclerView.ViewHolder(view), View.OnClickListener {
     var artistId: Long? = null
+    var artistName: String? = null
 
     init {
         view.setOnClickListener(this)
@@ -17,6 +18,8 @@ class ArtistViewHolder(val view: View, val adapter: ArtistListAdapter) : Recycle
 
     fun bind(toBind: Cursor) {
         val artistName = toBind.getString(COLUMN_ARTIST_NAME)
+
+        this.artistName = artistName
         artistId = toBind.getLong(COLUMN_DB_ID)
 
         view.text_artist_name.text = artistName
@@ -24,6 +27,11 @@ class ArtistViewHolder(val view: View, val adapter: ArtistListAdapter) : Recycle
 
 
     override fun onClick(v: View) {
-        adapter.onItemClick(artistId ?: return)
+        val artistName = this.artistName
+        val artistId = this.artistId
+
+        if (artistName != null && artistId != null) {
+            adapter.onItemClick(artistId, artistName)
+        }
     }
 }

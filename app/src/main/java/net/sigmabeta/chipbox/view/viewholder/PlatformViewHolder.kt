@@ -21,6 +21,10 @@ class PlatformViewHolder(val view: View, val adapter: PlatformListAdapter) : Rec
 
 
     override fun onClick(v: View) {
-        adapter.onItemClick(platform?.id ?: return)
+        val localPlatform = platform
+
+        if (localPlatform != null) {
+            adapter.onItemClick(localPlatform.id, localPlatform.stringId)
+        }
     }
 }

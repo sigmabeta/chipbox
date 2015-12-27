@@ -4,7 +4,7 @@ import net.sigmabeta.chipbox.model.objects.Platform
 import java.util.*
 
 interface PlatformListView {
-    fun onItemClick(id: Long)
+    fun onItemClick(id: Long, stringId: Int)
 
     fun setList(list: ArrayList<Platform>)
 }

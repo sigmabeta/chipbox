@@ -26,7 +26,7 @@ class ArtistListAdapter(val view: ArtistListView) : BaseCursorAdapter() {
         (holder as ArtistViewHolder).bind(cursor)
     }
 
-    fun onItemClick(id: Long) {
-        view.onItemClick(id)
+    fun onItemClick(id: Long, artistName: String) {
+        view.onItemClick(id, artistName)
     }
 }
