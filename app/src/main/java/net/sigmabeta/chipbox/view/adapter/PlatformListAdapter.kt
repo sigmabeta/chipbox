@@ -28,7 +28,7 @@ class PlatformListAdapter(val view: PlatformListView) : BaseArrayAdapter() {
         (holder as PlatformViewHolder).bind(platform)
     }
 
-    fun onItemClick(id: Long) {
-        view.onItemClick(id)
+    fun onItemClick(id: Long, stringId: Int) {
+        view.onItemClick(id, stringId)
     }
 }

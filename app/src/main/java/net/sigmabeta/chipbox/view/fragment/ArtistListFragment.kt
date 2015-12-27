@@ -47,10 +47,11 @@ class ArtistListFragment : BaseFragment(), ArtistListView {
         adapter.changeCursor(cursor)
     }
 
-    override fun onItemClick(id: Long) {
+    override fun onItemClick(id: Long, artistName: String) {
         NavigationActivity.launch(activity,
                 SongListFragment.FRAGMENT_TAG,
-                id)
+                id,
+                artistName)
     }
 
     /**

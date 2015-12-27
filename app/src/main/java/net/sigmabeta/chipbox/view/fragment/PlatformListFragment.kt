@@ -44,10 +44,11 @@ class PlatformListFragment : BaseFragment(), PlatformListView {
      * PlatformListView
      */
 
-    override fun onItemClick(id: Long) {
+    override fun onItemClick(id: Long, stringId: Int) {
         NavigationActivity.launch(activity,
                 GameGridFragment.FRAGMENT_TAG,
-                id)
+                id,
+                getString(stringId))
     }
 
     override fun setList(list: ArrayList<Platform>) {
