@@ -410,6 +410,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         val children = folder.listFiles()
 
         if (children != null) {
+            Arrays.sort(children)
+
             var trackCount = 1
 
             for (file in children) {
