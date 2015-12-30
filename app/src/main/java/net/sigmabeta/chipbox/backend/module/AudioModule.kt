@@ -23,8 +23,8 @@ class AudioModule {
         return AudioConfig(sampleRate, minBufferSize)
     }
 
-    @Provides @Singleton fun providePlayer(audioConfig: AudioConfig, context: Context): Player {
+    @Provides @Singleton fun providePlayer(audioConfig: AudioConfig, audioManager: AudioManager, context: Context   ): Player {
         logVerbose("[AudioModule] Providing Player...")
-        return Player(audioConfig, context)
+        return Player(audioConfig, audioManager, context)
     }
 }
