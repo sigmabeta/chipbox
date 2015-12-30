@@ -17,7 +17,8 @@ import java.util.*
 import javax.inject.Inject
 
 class Player @Inject constructor(val audioConfig: AudioConfig,
-                                 val context: Context) {
+                                 val audioManager: AudioManager,
+                                 val context: Context): AudioManager.OnAudioFocusChangeListener {
     var backendView: BackendView? = null
 
     var state = PlaybackState.STATE_STOPPED
@@ -25,7 +26,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     var position = 0L
 
     var playbackQueue: ArrayList<Track>? = null
-
     var playbackQueuePosition: Int? = null
 
     var playingTrack: Track? = null
@@ -45,6 +45,9 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var audioTrack: AudioTrack? = null
 
+    var ducking = false
+    var focusLossPaused = false
+
     fun playbackLoop() {
         logDebug("[Player] Starting playback loop.")
 
@@ -57,6 +60,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         } else {
             logVerbose("[Player] AudioTrack already setup; resuming playback.")
         }
+
+        var duckVolume = 1.0f
 
         // Begin playback loop
         audioTrack?.play()
@@ -78,6 +83,25 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             val error = getLastError()
 
             if (error == null) {
+                // Check if necessary to make volume adjustments
+                if (ducking) {
+                    logDebug("[Player] Ducking behind other app...")
+
+                    if (duckVolume > 0.3f) {
+                        duckVolume -= 0.2f
+                        logVerbose("[Player] Lowering volume to $duckVolume...")
+                    }
+
+                    audioTrack?.setVolume(duckVolume)
+                } else {
+                    if (duckVolume < 1.0f) {
+                        duckVolume += 0.1f
+                        logVerbose("[Player] Raising volume to $duckVolume...")
+                    }
+
+                    audioTrack?.setVolume(duckVolume)
+                }
+
                 audioTrack?.write(nativeBuffer, 0, audioConfig.minBufferSize)
             } else {
                 logError("[Player] GME Error: ${error}")
@@ -95,22 +119,27 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             return
         }
 
-        val localTrack = playingTrack
+        val focusResult = requestAudioFocus()
+        if (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+            val localTrack = playingTrack
 
-        if (localTrack != null) {
-            logVerbose("[Player] Playing track: ${localTrack.title}")
-            state = PlaybackState.STATE_PLAYING
+            if (localTrack != null) {
+                logVerbose("[Player] Playing track: ${localTrack.title}")
+                state = PlaybackState.STATE_PLAYING
 
-            if (backendView == null) {
-                PlayerService.start(context)
+                if (backendView == null) {
+                    PlayerService.start(context)
+                } else {
+                    backendView?.play(localTrack)
+                }
+
+                // Start a thread for the playback loop.
+                Thread { playbackLoop() }.start()
             } else {
-                backendView?.play(localTrack)
+                logError("[Player] Received play command, but no Track selected.")
             }
-
-            // Start a thread for the playback loop.
-            Thread { playbackLoop() }.start()
         } else {
-            logError("[Player] Received play command, but no Track selected.")
+            logError("[Player] Unable to gain audio focus.")
         }
     }
 
@@ -238,7 +267,47 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
         teardown()
 
+        audioManager.abandonAudioFocus(this)
+
         backendView?.stop()
+    }
+
+    override fun onAudioFocusChange(focusChange: Int) {
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS -> {
+                logVerbose("[Player] Focus lost. Stopping...")
+                stop()
+            }
+
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                logVerbose("[Player] Focus lost temporarily. Pausing...")
+                pause()
+
+                focusLossPaused = true
+            }
+
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                logVerbose("[Player] Focus lost temporarily, but can duck. Lowering volume...")
+                ducking = true
+            }
+
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                logVerbose("[Player] Focus gained. Resuming...")
+
+                ducking = false
+
+                if (focusLossPaused) {
+                    play()
+                    focusLossPaused = false
+                }
+            }
+        }
+    }
+
+    private fun requestAudioFocus(): Int {
+        return audioManager.requestAudioFocus(this,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN)
     }
 
     private fun initializeAudioTrack(): Boolean {
