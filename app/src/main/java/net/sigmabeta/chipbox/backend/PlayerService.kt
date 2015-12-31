@@ -7,8 +7,6 @@ import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.IBinder
 import android.os.SystemClock
-import android.telephony.PhoneStateListener
-import android.telephony.TelephonyManager
 import net.sigmabeta.chipbox.dagger.injector.ServiceInjector
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.logDebug
@@ -34,7 +32,6 @@ class PlayerService : Service(), BackendView {
         logVerbose("[PlayerService] Creating...")
 
         inject()
-        initPhoneStateListener()
 
         session = MediaSession(this, "Chipbox")
 
@@ -178,20 +175,6 @@ class PlayerService : Service(), BackendView {
         }
 
         return actions
-    }
-
-    private fun initPhoneStateListener() {
-        val manager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-
-        val listener = object : PhoneStateListener() {
-            override fun onCallStateChanged(state: Int, incomingNumber: String?) {
-                if (state == TelephonyManager.CALL_STATE_OFFHOOK || state == TelephonyManager.CALL_STATE_RINGING) {
-                    player?.pause()
-                }
-            }
-        }
-
-        manager.listen(listener, PhoneStateListener.LISTEN_CALL_STATE)
     }
 
     /**
