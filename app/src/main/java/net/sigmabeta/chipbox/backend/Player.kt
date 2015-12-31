@@ -253,6 +253,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         state = PlaybackState.STATE_PAUSED
 
         audioTrack?.pause()
+        audioTrack?.flush()
 
         backendView?.pause()
     }
