@@ -4,17 +4,20 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.BitmapFactory
 import android.media.AudioManager
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.IBinder
 import android.os.SystemClock
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import net.sigmabeta.chipbox.dagger.injector.ServiceInjector
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.logDebug
+import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logVerbose
 import net.sigmabeta.chipbox.view.interfaces.BackendView
 import javax.inject.Inject
@@ -141,18 +144,35 @@ class PlayerService : Service(), BackendView {
 
         var position = player?.position ?: PlaybackState.PLAYBACK_POSITION_UNKNOWN
 
-        val stateBuilder = PlaybackStateCompat.Builder().setActions(getAvailableActions())
 
         var state = player?.state
 
+
         val track = player?.playingTrack
+
         val metadata = if (track != null) {
-            Track.toMetadata(track)
+            val imagesFolderPath = getExternalFilesDir(null).absolutePath + "/images/"
+            val imagePath = imagesFolderPath + track.gameId.toString() + "/local.png"
+
+            val metadataBuilder = Track.toMetadataBuilder(track)
+
+            // TODO May need to do this asynchronously.
+            val imageBitmap = BitmapFactory.decodeFile(imagePath)
+
+            if (imageBitmap != null) {
+                metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, imageBitmap)
+            } else {
+                logError("[PlayerService] Couldn't load game art.")
+            }
+
+            metadataBuilder.build()
         } else {
             null
         }
 
         session?.setMetadata(metadata)
+
+        val stateBuilder = PlaybackStateCompat.Builder().setActions(getAvailableActions())
 
         // If there is an error message, send it to the playback state:
         if (error != null) {
