@@ -3,6 +3,8 @@ package net.sigmabeta.chipbox.backend
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.media.AudioManager
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.IBinder
@@ -22,6 +24,8 @@ class PlayerService : Service(), BackendView {
 
     var session: MediaSession? = null
 
+    var noisyRegistered = false
+    var noisyReceiver: NoisyReceiver? = null
 
     /**
      * Service
@@ -32,6 +36,8 @@ class PlayerService : Service(), BackendView {
         logVerbose("[PlayerService] Creating...")
 
         inject()
+
+        noisyReceiver = NoisyReceiver(player!!)
 
         session = MediaSession(this, "Chipbox")
 
@@ -45,8 +51,6 @@ class PlayerService : Service(), BackendView {
         logVerbose("[PlayerService] Received StartCommand: ${intent?.action}")
 
         player?.backendView = this
-
-
 
         updatePlaybackState(null)
         return Service.START_STICKY
@@ -69,16 +73,25 @@ class PlayerService : Service(), BackendView {
 
     override fun play(track: Track) {
         logVerbose("[PlayerService] Processed PLAY command.")
+
+        registerNoisyReceiver()
+
         updatePlaybackState(null)
     }
 
     override fun pause() {
         logVerbose("[PlayerService] Processed PAUSE command.")
+
+        unregisterNoisyReceiver()
+
         updatePlaybackState(null)
     }
 
     override fun stop() {
         logVerbose("[PlayerService] Processed STOP command.")
+
+        unregisterNoisyReceiver()
+
         updatePlaybackState(null)
         stopSelf()
     }
@@ -175,6 +188,23 @@ class PlayerService : Service(), BackendView {
         }
 
         return actions
+    }
+
+    private fun registerNoisyReceiver() {
+        logVerbose("[Player] Registering NOISY BroadcastReceiver.")
+        val intentFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+        registerReceiver(noisyReceiver, intentFilter)
+
+        noisyRegistered = true
+    }
+
+    private fun unregisterNoisyReceiver() {
+        if (noisyRegistered) {
+            logVerbose("[Player] Unregistering NOISY BroadcastReceiver.")
+
+            unregisterReceiver(noisyReceiver)
+            noisyRegistered = false
+        }
     }
 
     /**

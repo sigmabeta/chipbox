@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.backend
 
 import android.content.Context
-import android.content.IntentFilter
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
@@ -48,9 +47,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var ducking = false
     var focusLossPaused = false
-
-    var noisyRegistered = false
-    val noisyReceiver = NoisyReceiver(this)
 
     fun playbackLoop() {
         logDebug("[Player] Starting playback loop.")
@@ -126,7 +122,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
         val focusResult = requestAudioFocus()
         if (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            registerNoisyReceiver()
 
             val localTrack = playingTrack
 
@@ -248,8 +243,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
         logVerbose("[Player] Pausing track: ${playingTrack?.title}")
 
-        unregisterNoisyReceiver()
-
         state = PlaybackState.STATE_PAUSED
 
         audioTrack?.pause()
@@ -265,8 +258,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         }
 
         logVerbose("[Player] Stopping track: ${playingTrack?.title}")
-
-        unregisterNoisyReceiver()
 
         state = PlaybackState.STATE_STOPPED
 
@@ -355,22 +346,5 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         })
 
         return true
-    }
-
-    private fun registerNoisyReceiver() {
-        logVerbose("[Player] Registering NOISY BroadcastReceiver.")
-        val intentFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-        context.registerReceiver(noisyReceiver, intentFilter)
-
-        noisyRegistered = true
-    }
-
-    private fun unregisterNoisyReceiver() {
-        if (noisyRegistered) {
-            logVerbose("[Player] Unregistering NOISY BroadcastReceiver.")
-
-            context.unregisterReceiver(noisyReceiver)
-            noisyRegistered = false
-        }
     }
 }
