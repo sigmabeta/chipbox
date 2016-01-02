@@ -154,10 +154,6 @@ class PlayerService : Service(), BackendView {
 
         session?.setMetadata(metadata)
 
-        logVerbose("[PlayerService] Playing. \n" +
-                "Track: ${track}\n" +
-                "Metadata: ${metadata?.description}\n")
-
         // If there is an error message, send it to the playback state:
         if (error != null) {
             // Error states are really only supposed to be used for errors that cause playback to
@@ -165,6 +161,10 @@ class PlayerService : Service(), BackendView {
             stateBuilder.setErrorMessage(error)
             state = PlaybackState.STATE_ERROR
         }
+
+        logVerbose("[PlayerService] Playback state: ${state} \n" +
+                "Track: ${track}\n" +
+                "Metadata: ${metadata?.description}\n")
 
         stateBuilder.setState(state ?: PlaybackState.STATE_ERROR, position, 1.0f, SystemClock.elapsedRealtime())
 
