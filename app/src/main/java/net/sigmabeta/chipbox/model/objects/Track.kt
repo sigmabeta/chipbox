@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.model.objects
 
 import android.media.MediaMetadata
+import android.support.v4.media.MediaMetadataCompat
 
 data class Track(val id: Long,
                  var trackNumber: Int,
@@ -20,8 +21,8 @@ data class Track(val id: Long,
         val PLATFORM_GENESIS = 1
         val PLATFORM_SNES = 2
 
-        fun toMetadata(track: Track): MediaMetadata {
-            return MediaMetadata.Builder()
+        fun toMetadata(track: Track): MediaMetadataCompat {
+            return MediaMetadataCompat.Builder()
                     .putString(MediaMetadata.METADATA_KEY_TITLE, track.title)
                     .putString(MediaMetadata.METADATA_KEY_ALBUM, track.gameTitle)
                     .putString(MediaMetadata.METADATA_KEY_ARTIST, track.artist)

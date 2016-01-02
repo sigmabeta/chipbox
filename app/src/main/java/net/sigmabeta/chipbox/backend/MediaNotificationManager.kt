@@ -7,17 +7,20 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.media.MediaDescription
-import android.media.MediaMetadata
-import android.media.session.MediaController
-import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.support.v4.app.NotificationCompat.Action
+import android.support.v4.content.ContextCompat
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
+import android.support.v7.app.NotificationCompat
+import android.view.KeyEvent
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logVerbose
-import net.sigmabeta.chipbox.view.activity.PlayerActivity
 
 class MediaNotificationManager(val playerService: PlayerService) : BroadcastReceiver() {
     val prevIntent = PendingIntent.getBroadcast(playerService, REQUEST_CODE,
@@ -33,12 +36,12 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
 
     val notificationService = playerService.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    var mediaController: MediaController? = null
-    var transportControls: MediaController.TransportControls? = null
-    var sessionToken: MediaSession.Token? = null
+    var mediaController: MediaControllerCompat? = null
+    var transportControls: MediaControllerCompat.TransportControls? = null
+    var sessionToken: MediaSessionCompat.Token? = null
 
-    var mediaMetadata: MediaMetadata? = null
-    var playbackState: PlaybackState? = null
+    var mediaMetadata: MediaMetadataCompat? = null
+    var playbackState: PlaybackStateCompat? = null
 
     var started = false
 
@@ -72,7 +75,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
             sessionToken = freshToken
 
             mediaController?.unregisterCallback(controllerCallback)
-            mediaController = MediaController(playerService, sessionToken)
+            mediaController = MediaControllerCompat(playerService, sessionToken)
 
             transportControls = mediaController?.transportControls
 
@@ -145,7 +148,9 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
             return null
         }
 
-        val notificationBuilder = Notification.Builder(playerService)
+        val session = playerService.session ?: return null
+
+        val notificationBuilder = builderFrom(playerService, session) ?: return null
 
         var playButtonPosition = 0
 
@@ -179,20 +184,24 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
 
         val description = mediaMetadata?.description
 
-        notificationBuilder.setStyle(Notification.MediaStyle().setShowActionsInCompactView(*intArrayOf(playButtonPosition))
-                .setMediaSession(sessionToken))
+        val cancelIntent = getActionIntent(playerService, KeyEvent.KEYCODE_MEDIA_STOP)
+
+        val mediaStyle = NotificationCompat.MediaStyle()
+                .setShowActionsInCompactView(*intArrayOf(playButtonPosition))
+                .setMediaSession(sessionToken)
+                .setShowCancelButton(true)
+                .setCancelButtonIntent(cancelIntent)
+
+        notificationBuilder.setStyle(mediaStyle)
                 .setSmallIcon(R.mipmap.ic_launcher)
-                .setVisibility(Notification.VISIBILITY_PUBLIC)
-                .setContentIntent(createContentIntent(description))
-                .setContentTitle(description?.title)
-                .setContentText(description?.subtitle)
+                .setColor(ContextCompat.getColor(playerService, R.color.primary_dark))
 
         setNotificationPlaybackState(notificationBuilder)
 
         return notificationBuilder.build()
     }
 
-    private fun addPlayPauseAction(builder: Notification.Builder) {
+    private fun addPlayPauseAction(builder: NotificationCompat.Builder) {
         logDebug("[MediaNotificationManager] Updating play/pause button.")
 
         val label: String
@@ -208,10 +217,10 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
             icon = R.drawable.ic_play_arrow_white_24dp
             intent = playIntent
         }
-        builder.addAction(Notification.Action(icon, label, intent))
+        builder.addAction(Action(icon, label, intent))
     }
 
-    private fun setNotificationPlaybackState(builder: Notification.Builder) {
+    private fun setNotificationPlaybackState(builder: NotificationCompat.Builder) {
         logDebug("[MediaNotificationManager] Updating notification's playback state.")
 
         if (playbackState == null || !started) {
@@ -225,25 +234,22 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
         builder.setOngoing(playbackState?.getState() == PlaybackState.STATE_PLAYING)
     }
 
-    private fun createContentIntent(description: MediaDescription?): PendingIntent {
-        val openUI = Intent(playerService, PlayerActivity::class.java)
-
-        return PendingIntent.getActivity(playerService, REQUEST_CODE, openUI,
-                PendingIntent.FLAG_CANCEL_CURRENT)
-    }
-
     /**
      *      Listeners & Callbacks
      */
 
-    private val controllerCallback = object : MediaController.Callback() {
-        override fun onPlaybackStateChanged(state: PlaybackState) {
+    private val controllerCallback = object : MediaControllerCompat.Callback() {
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
             logDebug("[MediaNotificationManager] Playback state changed: ${state}")
             playbackState = state
 
             if (state.state == PlaybackState.STATE_STOPPED || state.state == PlaybackState.STATE_NONE) {
                 stopNotification()
             } else {
+                if (state.state == PlaybackState.STATE_PAUSED) {
+                    playerService.stopForeground(false)
+                }
+
                 val notification = createNotification()
                 if (notification != null) {
                     notificationService.notify(NOTIFICATION_ID, notification)
@@ -251,7 +257,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
             }
         }
 
-        override fun onMetadataChanged(metadata: MediaMetadata?) {
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             logDebug("[MediaNotificationManager] Metadata changed: ${metadata}")
             mediaMetadata = metadata
 
@@ -279,5 +285,51 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
         val ACTION_PREV = "${BuildConfig.APPLICATION_ID}.prev"
         val ACTION_NEXT = "${BuildConfig.APPLICATION_ID}.next"
         val ACTION_STOP = "${BuildConfig.APPLICATION_ID}.stop"
+
+        /**
+         * Build a notification using the information from the given media session. Makes heavy use
+         * of [MediaMetadataCompat.getDescription] to extract the appropriate information.
+         * @param context Context used to construct the notification.
+         * *
+         * @param mediaSession Media session to get information.
+         * *
+         * @return A pre-built notification with information from the given media session.
+         */
+        fun builderFrom(context: Context, mediaSession: MediaSessionCompat): NotificationCompat.Builder? {
+            val controller = mediaSession.controller
+            val mediaMetadata = controller.metadata
+            val description = mediaMetadata?.description ?: return null
+
+            val builder = NotificationCompat.Builder(context)
+
+            builder.setContentTitle(description.title)
+                    .setContentText(description.subtitle)
+                    .setSubText(description.description)
+                    .setLargeIcon(description.iconBitmap)
+                    .setContentIntent(controller.sessionActivity)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+
+            return builder
+        }
+
+        /**
+         * Create a [PendingIntent] appropriate for a MediaStyle notification's action. Assumes
+         * you are using a media button receiver.
+         * @param context Context used to contruct the pending intent.
+         * *
+         * @param mediaKeyEvent KeyEvent code to send to your media button receiver.
+         * *
+         * @return An appropriate pending intent for sending a media button to your media button
+         * *      receiver.
+         */
+        fun getActionIntent(context: Context, mediaKeyEvent: Int): PendingIntent {
+            val intent = Intent(Intent.ACTION_MEDIA_BUTTON)
+
+            intent.setPackage(context.packageName)
+            intent.putExtra(Intent.EXTRA_KEY_EVENT,
+                    KeyEvent(KeyEvent.ACTION_DOWN, mediaKeyEvent))
+
+            return PendingIntent.getBroadcast(context, mediaKeyEvent, intent, 0)
+        }
     }
 }

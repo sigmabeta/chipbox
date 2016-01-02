@@ -1,9 +1,9 @@
 package net.sigmabeta.chipbox.backend
 
-import android.media.session.MediaSession
+import android.support.v4.media.session.MediaSessionCompat
 import net.sigmabeta.chipbox.util.logVerbose
 
-class SessionCallback(val playerService: PlayerService) : MediaSession.Callback() {
+class SessionCallback(val playerService: PlayerService) : MediaSessionCompat.Callback() {
     override fun onPlay() {
         logVerbose("[SessionCallback] Received PLAY command.")
 
