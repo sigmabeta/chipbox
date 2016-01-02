@@ -20,7 +20,8 @@ class GamePresenter @Inject constructor(val view: GameView,
     fun onCreate(gameId: Long) {
         this.gameId = gameId
 
-        database.getSongListForGame(gameId).subscribeOn(Schedulers.io())
+        database.getSongListForGame(gameId)
+                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
