@@ -9,6 +9,9 @@ import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.IBinder
 import android.os.SystemClock
+import android.support.v4.media.session.MediaButtonReceiver
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import net.sigmabeta.chipbox.dagger.injector.ServiceInjector
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.logDebug
@@ -22,7 +25,7 @@ class PlayerService : Service(), BackendView {
 
     var notificationManager: MediaNotificationManager? = null
 
-    var session: MediaSession? = null
+    var session: MediaSessionCompat? = null
 
     var noisyRegistered = false
     var noisyReceiver: NoisyReceiver? = null
@@ -39,7 +42,7 @@ class PlayerService : Service(), BackendView {
 
         noisyReceiver = NoisyReceiver(player!!)
 
-        session = MediaSession(this, "Chipbox")
+        session = MediaSessionCompat(this, "Chipbox")
 
         session?.setCallback(SessionCallback(this))
         session?.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
@@ -50,6 +53,8 @@ class PlayerService : Service(), BackendView {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         logVerbose("[PlayerService] Received StartCommand: ${intent?.action}")
 
+        MediaButtonReceiver.handleIntent(session, intent)
+
         player?.backendView = this
 
         updatePlaybackState(null)
@@ -59,6 +64,8 @@ class PlayerService : Service(), BackendView {
     override fun onDestroy() {
         super.onDestroy()
         logVerbose("[PlayerService] Destroying...")
+
+        session?.release()
 
         player?.backendView = null
     }
@@ -74,6 +81,7 @@ class PlayerService : Service(), BackendView {
     override fun play(track: Track) {
         logVerbose("[PlayerService] Processed PLAY command.")
 
+        session?.isActive = true
         registerNoisyReceiver()
 
         updatePlaybackState(null)
@@ -90,6 +98,7 @@ class PlayerService : Service(), BackendView {
     override fun stop() {
         logVerbose("[PlayerService] Processed STOP command.")
 
+        session?.isActive = false
         unregisterNoisyReceiver()
 
         updatePlaybackState(null)
@@ -110,7 +119,7 @@ class PlayerService : Service(), BackendView {
      * Public methods
      */
 
-    fun getSessionToken(): MediaSession.Token? {
+    fun getSessionToken(): MediaSessionCompat.Token? {
         return session?.sessionToken
     }
 
@@ -132,7 +141,7 @@ class PlayerService : Service(), BackendView {
 
         var position = player?.position ?: PlaybackState.PLAYBACK_POSITION_UNKNOWN
 
-        val stateBuilder = PlaybackState.Builder().setActions(getAvailableActions())
+        val stateBuilder = PlaybackStateCompat.Builder().setActions(getAvailableActions())
 
         var state = player?.state
 

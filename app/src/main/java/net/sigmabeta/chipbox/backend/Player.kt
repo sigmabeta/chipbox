@@ -70,10 +70,12 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             if (isTrackOver()) {
                 logVerbose("[Player] Track has ended.")
 
-                stop()
+                pause()
 
                 if (!skipToNext()) {
                     logInfo("[Player] No more tracks to play.")
+
+                    stop()
                 }
 
                 break
