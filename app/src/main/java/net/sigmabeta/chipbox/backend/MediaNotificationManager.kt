@@ -140,13 +140,14 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
      */
 
     private fun createNotification(): Notification? {
-        logDebug("[MediaNotificationManager] Creating notification.")
         if (mediaMetadata == null || playbackState == null) {
             logError("[MediaNotificationManager] Can't create notification. " +
                     "Playback state: ${playbackState} " +
                     "Metadata: ${mediaMetadata}")
             return null
         }
+
+        logDebug("[MediaNotificationManager] Creating notification.")
 
         val session = playerService.session ?: return null
 
