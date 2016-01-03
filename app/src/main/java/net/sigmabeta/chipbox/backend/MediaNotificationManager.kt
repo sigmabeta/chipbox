@@ -43,7 +43,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
     var mediaMetadata: MediaMetadataCompat? = null
     var playbackState: PlaybackStateCompat? = null
 
-    var started = false
+    var notified = false
 
     init {
         updateSessionToken()
@@ -75,11 +75,12 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
             sessionToken = freshToken
 
             mediaController?.unregisterCallback(controllerCallback)
+
             mediaController = MediaControllerCompat(playerService, sessionToken)
 
             transportControls = mediaController?.transportControls
 
-            if (started) {
+            if (controllerCallback != null) {
                 mediaController?.registerCallback(controllerCallback)
             }
         }
@@ -91,15 +92,13 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
      * destroyed before [.stopNotification] is called.
      */
     fun startNotification() {
-        if (!started) {
+        if (!notified) {
             mediaMetadata = mediaController?.getMetadata()
             playbackState = mediaController?.getPlaybackState()
 
-            // The notification must be updated after setting started to true
             val notification = createNotification()
             if (notification != null) {
                 logVerbose("[MediaNotificationManager] Starting foreground notification...")
-                mediaController?.registerCallback(controllerCallback)
 
                 val filter = IntentFilter()
                 filter.addAction(ACTION_PAUSE)
@@ -111,7 +110,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
                 playerService.registerReceiver(this, filter)
                 playerService.startForeground(NOTIFICATION_ID, notification)
 
-                started = true
+                notified = true
             }
         }
     }
@@ -121,9 +120,12 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
      * was destroyed this has no effect.
      */
     fun stopNotification() {
-        if (started) {
-            started = false
+        if (notified) {
+            logDebug("[MediaNotificationManager] Stopping notification.")
+
+            notified = false
             mediaController?.unregisterCallback(controllerCallback)
+
             try {
                 notificationService.cancel(NOTIFICATION_ID)
                 playerService.unregisterReceiver(this)
@@ -133,6 +135,13 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
 
             playerService.stopForeground(true)
         }
+    }
+
+    /**
+     * A workaround for the fact that controllerCallback is null inside the init {} constructor.
+     */
+    fun setControllerCallback() {
+        mediaController?.registerCallback(controllerCallback)
     }
 
     /**
@@ -225,7 +234,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
     private fun setNotificationPlaybackState(builder: NotificationCompat.Builder) {
         logDebug("[MediaNotificationManager] Updating notification's playback state.")
 
-        if (playbackState == null || !started) {
+        if (playbackState == null || !notified) {
             logVerbose("[MediaNotificationManager] Canceling notification.")
 
             playerService.stopForeground(true)

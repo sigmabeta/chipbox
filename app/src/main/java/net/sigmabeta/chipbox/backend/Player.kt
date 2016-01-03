@@ -70,15 +70,13 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             if (isTrackOver()) {
                 logVerbose("[Player] Track has ended.")
 
-                pause()
-
-                if (!skipToNext()) {
+                if (!nextTrackAvailable()) {
                     logInfo("[Player] No more tracks to play.")
-
                     stop()
+                    break
+                } else {
+                    getNextTrack()
                 }
-
-                break
             }
 
             // Get the next samples from the native player.
@@ -113,7 +111,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             }
         }
 
-        logVerbose("[Player] Playback loop has ended..")
+        logVerbose("[Player] Playback loop has ended.")
     }
 
     fun play() {
@@ -134,7 +132,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 if (backendView == null) {
                     PlayerService.start(context)
                 } else {
-                    backendView?.play(localTrack)
+                    backendView?.play()
                 }
 
                 // Start a thread for the playback loop.
@@ -148,10 +146,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     }
 
     fun play(track: Track) {
-        if (state == PlaybackState.STATE_PLAYING) {
-            pause()
-        }
-
         logVerbose("[Player] Playing new track: ${track.title}")
 
         playingTrack = track
@@ -164,10 +158,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     fun play(playbackQueue: ArrayList<Track>, position: Int) {
         if (position < playbackQueue.size) {
-            if (state == PlaybackState.STATE_PLAYING) {
-                pause()
-            }
-
             logVerbose("[Player] Playing new playlist, starting from track ${position} of ${playbackQueue.size}.")
 
             this.playbackQueue = playbackQueue
@@ -197,26 +187,41 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         }
     }
 
-    fun skipToNext(): Boolean {
+    fun nextTrackAvailable(): Boolean {
+        val queue = playbackQueue
+        var position = playbackQueuePosition
+
+        return (queue != null && position != null && position < queue.size - 1)
+    }
+
+    fun getNextTrack() {
         val queue = playbackQueue
         var position = playbackQueuePosition
 
         if (queue != null && position != null && position < queue.size - 1) {
-            if (state == PlaybackState.STATE_PLAYING) {
-                pause()
-            }
-
             position += 1
 
             playingTrack = queue.get(position)
             playbackQueuePosition = position
 
-            play()
             logInfo("[Player] Loading track ${position} of ${queue.size}.")
-            return true
+            backendView?.skipToNext()
         }
+    }
 
-        return false
+    fun skipToNext() {
+        val queue = playbackQueue
+        var position = playbackQueuePosition
+
+        if (queue != null && position != null && position < queue.size - 1) {
+            position += 1
+
+            playingTrack = queue.get(position)
+            playbackQueuePosition = position
+
+            logInfo("[Player] Loading track ${position} of ${queue.size}.")
+            backendView?.skipToNext()
+        }
     }
 
     fun skipToPrev() {
@@ -224,16 +229,13 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         var position = playbackQueuePosition
 
         if (queue != null && position != null && position >= 0) {
-            if (state == PlaybackState.STATE_PLAYING) {
-                pause()
-            }
-
             position -= 1
 
             playingTrack = queue.get(position)
             playbackQueuePosition = position
 
             logInfo("[Player] Loading track ${position} of ${queue.size}.")
+            backendView?.skipToPrev()
         }
     }
 
@@ -248,7 +250,11 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         state = PlaybackState.STATE_PAUSED
 
         audioTrack?.pause()
-        audioTrack?.flush()
+        try {
+            audioTrack?.flush()
+        } catch (ex: IllegalStateException) {
+            logError("[Player] Error flushing track: ${ex.message}")
+        }
 
         backendView?.pause()
     }

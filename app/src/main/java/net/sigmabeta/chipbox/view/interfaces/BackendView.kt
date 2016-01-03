@@ -1,9 +1,7 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-import net.sigmabeta.chipbox.model.objects.Track
-
 interface BackendView {
-    fun play(track: Track)
+    fun play()
 
     fun pause()
 

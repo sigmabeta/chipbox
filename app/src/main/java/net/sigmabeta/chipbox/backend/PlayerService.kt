@@ -51,16 +51,23 @@ class PlayerService : Service(), BackendView {
         session?.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
         notificationManager = MediaNotificationManager(this)
+
+        // A workaround for the fact that controllerCallback is null inside the init {} constructor.
+        notificationManager?.setControllerCallback()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        logVerbose("[PlayerService] Received StartCommand: ${intent?.action}")
+        logVerbose("[PlayerService] Received StartCommand: ${intent?.action} " +
+                "-> ${intent?.extras?.get(Intent.EXTRA_KEY_EVENT)}")
 
         MediaButtonReceiver.handleIntent(session, intent)
 
-        player?.backendView = this
+        if (player?.backendView != this) {
+            player?.backendView = this
 
-        updatePlaybackState(null)
+            play()
+        }
+
         return Service.START_STICKY
     }
 
@@ -81,7 +88,7 @@ class PlayerService : Service(), BackendView {
      * BackendView
      */
 
-    override fun play(track: Track) {
+    override fun play() {
         logVerbose("[PlayerService] Processed PLAY command.")
 
         session?.isActive = true
@@ -144,9 +151,7 @@ class PlayerService : Service(), BackendView {
 
         var position = player?.position ?: PlaybackState.PLAYBACK_POSITION_UNKNOWN
 
-
         var state = player?.state
-
 
         val track = player?.playingTrack
 
@@ -190,13 +195,14 @@ class PlayerService : Service(), BackendView {
 
         session?.setPlaybackState(stateBuilder.build())
 
-        if (state == PlaybackState.STATE_PLAYING || state == PlaybackState.STATE_PAUSED) {
+        if (state == PlaybackState.STATE_PLAYING || state == PlaybackState.STATE_PAUSED
+                && !(notificationManager?.notified ?: false)) {
             notificationManager?.startNotification()
         }
     }
 
     private fun getAvailableActions(): Long {
-        var actions = PlaybackState.ACTION_PLAY
+        var actions = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_STOP
 
         if (player?.state == PlaybackState.STATE_PLAYING) {
             actions = actions or PlaybackState.ACTION_PAUSE
@@ -221,10 +227,13 @@ class PlayerService : Service(), BackendView {
 
     private fun registerNoisyReceiver() {
         logVerbose("[Player] Registering NOISY BroadcastReceiver.")
-        val intentFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-        registerReceiver(noisyReceiver, intentFilter)
 
-        noisyRegistered = true
+        if (!noisyRegistered) {
+            val intentFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+            registerReceiver(noisyReceiver, intentFilter)
+
+            noisyRegistered = true
+        }
     }
 
     private fun unregisterNoisyReceiver() {
