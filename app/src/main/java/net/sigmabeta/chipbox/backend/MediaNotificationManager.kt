@@ -185,15 +185,16 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
 
         val description = mediaMetadata?.description
 
-        val cancelIntent = getActionIntent(playerService, KeyEvent.KEYCODE_MEDIA_STOP)
+        val stop = getActionIntent(playerService, KeyEvent.KEYCODE_MEDIA_STOP)
 
         val mediaStyle = NotificationCompat.MediaStyle()
                 .setShowActionsInCompactView(*intArrayOf(playButtonPosition))
                 .setMediaSession(sessionToken)
                 .setShowCancelButton(true)
-                .setCancelButtonIntent(cancelIntent)
+                .setCancelButtonIntent(stop)
 
         notificationBuilder.setStyle(mediaStyle)
+                .setDeleteIntent(stop)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setColor(ContextCompat.getColor(playerService, R.color.primary_dark))
 
