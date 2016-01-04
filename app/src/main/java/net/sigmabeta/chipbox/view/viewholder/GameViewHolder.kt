@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.view.viewholder
 
 import android.database.Cursor
+import android.graphics.Bitmap
 import android.support.v7.widget.RecyclerView
 import android.view.View
 import com.squareup.picasso.Picasso
@@ -32,6 +33,7 @@ class GameViewHolder(val view: View, val adapter: GameGridAdapter) : RecyclerVie
 
         Picasso.with(view.context)
                 .load(imagePath)
+                .config(Bitmap.Config.RGB_565)
                 .centerCrop()
                 .fit()
                 .into(view.image_game_box_art)
