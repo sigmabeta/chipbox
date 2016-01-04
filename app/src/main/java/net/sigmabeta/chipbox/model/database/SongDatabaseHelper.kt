@@ -5,10 +5,12 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.*
 import org.apache.commons.io.FileUtils
 import rx.Observable
+import rx.Subscriber
 import java.io.File
 import java.util.*
 
@@ -352,7 +354,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         )
     }
 
-    fun scanLibrary(): Observable<String?> {
+    fun scanLibrary(): Observable<FileScanEvent> {
         return Observable.create(
                 {
                     // OnSubscribe.call. it: String
@@ -360,7 +362,6 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                     val database = writableDatabase
 
-                    it.onNext("Removing missing files from the library...")
                     database.beginTransaction()
                     // Before scanning known folders, go through the game table and remove any entries for which the file itself is missing.
                     trimMissingFiles(database)
@@ -385,9 +386,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                         val folderPath = folderCursor.getString(COLUMN_FOLDER_PATH)
                         val folder = File(folderPath)
 
-                        it.onNext("Scanning for tracks: ${folderPath}")
-
-                        scanFolder(folder, database)
+                        scanFolder(folder, database, it as Subscriber<FileScanEvent>)
                     }
 
                     folderCursor.close()
@@ -398,11 +397,13 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         )
     }
 
-    private fun scanFolder(folder: File, database: SQLiteDatabase) {
+    private fun scanFolder(folder: File, database: SQLiteDatabase, sub: Subscriber<FileScanEvent>) {
         database.beginTransaction()
 
         val folderPath = folder.absolutePath
         logInfo("[SongDatabaseHelper] Reading files from library folder: ${folderPath}")
+
+        sub.onNext(FileScanEvent(folderPath, null))
 
         var folderGameId: Long? = null
 
@@ -417,7 +418,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             for (file in children) {
                 if (!file.isHidden) {
                     if (file.isDirectory) {
-                        scanFolder(file, database)
+                        scanFolder(file, database, sub)
                     } else {
                         val filePath = file.absolutePath
 
@@ -437,6 +438,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                                     folderGameId = values.getAsLong(KEY_TRACK_GAME_ID)
                                     addTrackToDatabase(values, database)
+
+                                    sub.onNext(FileScanEvent(null, filePath))
                                 } else {
                                     logError("[SongDatabaseHelper] Couldn't read track at ${filePath}")
                                 }

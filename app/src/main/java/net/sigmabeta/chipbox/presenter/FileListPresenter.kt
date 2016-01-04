@@ -57,7 +57,7 @@ class FileListPresenter @Inject constructor(val view: FileListView,
             view.showProgressDialog()
 
             databaseHelper.scanLibrary()
-                    .throttleLast(16, TimeUnit.MILLISECONDS)
+                    .throttleLast(32, TimeUnit.MILLISECONDS)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
