@@ -25,19 +25,15 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
 
         setContentView(R.layout.activity_player)
 
-        val launcher = intent
-
-        val fragmentArg = launcher.getLongExtra(ARGUMENT_FRAGMENT_ARG, -1)
-
-        presenter?.onCreate(fragmentArg)
+        presenter?.onCreate()
     }
 
     /**
      * PlayerView
      */
 
-    override fun showPlayerFragment(trackId: Long) {
-        var fragment = PlayerFragment.newInstance(trackId)
+    override fun showPlayerFragment() {
+        var fragment = PlayerFragment.newInstance()
 
         supportFragmentManager.beginTransaction()
                 .add(R.id.frame_fragment, fragment, PlayerFragment.FRAGMENT_TAG)
@@ -88,14 +84,14 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
     companion object {
         val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.player"
 
-        val ARGUMENT_FRAGMENT_ARG = "${ACTIVITY_TAG}.fragment_argument"
-
-        fun launch(context: Context, fragmentArg: Long) {
+        fun launch(context: Context) {
             val launcher = Intent(context, PlayerActivity::class.java)
 
-            launcher.putExtra(ARGUMENT_FRAGMENT_ARG, fragmentArg)
-
             context.startActivity(launcher)
+        }
+
+        fun getLauncher(context: Context): Intent {
+            return Intent(context, PlayerActivity::class.java)
         }
     }
 }

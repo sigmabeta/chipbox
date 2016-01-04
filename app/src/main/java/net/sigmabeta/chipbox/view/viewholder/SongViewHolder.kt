@@ -38,7 +38,7 @@ class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerVie
         }
 
         if (view.text_song_track_number != null) {
-            val trackNumber = toBind.getLong(COLUMN_TRACK_NUMBER)
+            val trackNumber = toBind.getInt(COLUMN_TRACK_NUMBER)
 
             view.text_song_track_number.text = trackNumber.toString()
         }

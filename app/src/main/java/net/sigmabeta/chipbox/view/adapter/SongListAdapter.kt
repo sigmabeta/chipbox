@@ -6,6 +6,7 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.view.interfaces.SongListView
 import net.sigmabeta.chipbox.view.viewholder.SongViewHolder
@@ -37,6 +38,13 @@ class SongListAdapter(val view: SongListView,
     }
 
     fun onItemClick(id: Long, position: Int) {
-        view.onItemClick(id, position)
+        val localCursor = cursor
+
+        if (localCursor != null) {
+            localCursor.moveToPosition(position)
+
+            val track = Track.fromCursor(localCursor)
+            view.onItemClick(track, position)
+        }
     }
 }

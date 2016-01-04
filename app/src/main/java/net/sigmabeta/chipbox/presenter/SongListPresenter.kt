@@ -35,9 +35,10 @@ class SongListPresenter @Inject constructor(val view: SongListView,
                 )
     }
 
-    fun onItemClick(id: Long, position: Int) {
+    fun onItemClick(track: Track, position: Int) {
         if (artist == Track.PLATFORM_ALL.toLong()) {
-            view.launchPlayerActivity(id)
+            player.play(track)
+            view.launchPlayerActivity()
         } else {
             val cursor = view.getCursor()
 

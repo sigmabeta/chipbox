@@ -5,6 +5,9 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.session.PlaybackState
+import net.sigmabeta.chipbox.model.events.PositionEvent
+import net.sigmabeta.chipbox.model.events.StateEvent
+import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.objects.AudioConfig
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.external.*
@@ -21,7 +24,13 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                                  val context: Context): AudioManager.OnAudioFocusChangeListener {
     var backendView: BackendView? = null
 
+    val updater = UiUpdater()
+
     var state = PlaybackState.STATE_STOPPED
+        set (value) {
+            field = value
+            updater.send(StateEvent(value))
+        }
 
     var position = 0L
 
@@ -36,6 +45,12 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 loadTrackNative(value,
                         audioConfig.sampleRate,
                         audioConfig.minBufferSize.toLong())
+
+                updater.send(TrackEvent(value))
+            }
+
+            if (state != PlaybackState.STATE_PLAYING) {
+                audioTrack?.flush()
             }
 
             field = value
@@ -250,12 +265,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         state = PlaybackState.STATE_PAUSED
 
         audioTrack?.pause()
-        try {
-            audioTrack?.flush()
-        } catch (ex: IllegalStateException) {
-            logError("[Player] Error flushing track: ${ex.message}")
-        }
-
         backendView?.pause()
     }
 
@@ -343,14 +352,11 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
         // Set a listener to update the UI's playback position.
         audioTrack?.setPlaybackPositionUpdateListener(object : AudioTrack.OnPlaybackPositionUpdateListener {
-            override fun onMarkerReached(track: AudioTrack) {
-                // Do nothing
+            override fun onPeriodicNotification(track: AudioTrack) {
+                updater.send(PositionEvent(getMillisPlayed()))
             }
 
-            override fun onPeriodicNotification(track: AudioTrack) {
-                // TODO Update the UI.
-                // logVerbose("[Player] Has played ${getMillisPlayed() / 1000} seconds.")
-            }
+            override fun onMarkerReached(track: AudioTrack) { }
         })
 
         return true

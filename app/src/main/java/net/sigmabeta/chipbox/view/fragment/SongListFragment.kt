@@ -11,6 +11,7 @@ import kotlinx.android.synthetic.fragment_song_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
+import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.presenter.SongListPresenter
 import net.sigmabeta.chipbox.view.activity.PlayerActivity
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
@@ -57,12 +58,12 @@ class SongListFragment : BaseFragment(), SongListView {
         adapter?.changeCursor(cursor)
     }
 
-    override fun onItemClick(id: Long, position: Int) {
-        presenter?.onItemClick(id, position)
+    override fun onItemClick(track: Track, position: Int) {
+        presenter?.onItemClick(track, position)
     }
 
-    override fun launchPlayerActivity(id: Long) {
-        PlayerActivity.launch(activity, id)
+    override fun launchPlayerActivity() {
+        PlayerActivity.launch(activity)
     }
 
     override fun getCursor(): Cursor? {

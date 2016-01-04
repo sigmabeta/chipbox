@@ -4,6 +4,7 @@ import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.objects.Game
+import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.view.interfaces.GameView
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
@@ -31,7 +32,7 @@ class GamePresenter @Inject constructor(val view: GameView,
 
     }
 
-    fun onItemClick(id: Long, position: Int) {
+    fun onItemClick(track: Track, position: Int) {
         val cursor = view.getCursor()
 
         if (cursor != null) {

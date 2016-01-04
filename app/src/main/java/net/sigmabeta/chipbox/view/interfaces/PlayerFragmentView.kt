@@ -7,5 +7,11 @@ interface PlayerFragmentView {
 
     fun setArtist(artist: String)
 
+    fun setTimeElapsed(time: String)
+
     fun setGameBoxart(gameId: Long)
+
+    fun showPauseButton()
+
+    fun showPlayButton()
 }
