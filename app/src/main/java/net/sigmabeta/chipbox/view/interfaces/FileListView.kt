@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.view.interfaces
 
+import net.sigmabeta.chipbox.model.events.FileScanEvent
+
 interface FileListView {
     fun onItemClick(path: String)
 
@@ -19,5 +21,5 @@ interface FileListView {
 
     fun showProgressDialog()
 
-    fun updateProgressText(progressText: String?)
+    fun updateProgressText(event: FileScanEvent)
 }

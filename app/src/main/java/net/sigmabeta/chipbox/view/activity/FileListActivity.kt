@@ -13,6 +13,7 @@ import kotlinx.android.synthetic.activity_file_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
+import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.presenter.FileListPresenter
 import net.sigmabeta.chipbox.util.generateFileList
 import net.sigmabeta.chipbox.util.logVerbose
@@ -132,10 +133,15 @@ class FileListActivity : BaseActivity(), FileListView {
                 false)
     }
 
-    override fun updateProgressText(progressText: String?) {
-        logVerbose("[FileListActivity] Updating progress dialog: ${progressText}")
-        if (progressText != null) {
-            progressDialog?.setMessage(progressText)
+    override fun updateProgressText(event: FileScanEvent) {
+        logVerbose("[FileListActivity] Updating progress dialog: ${event}")
+
+        if (event.path != null) {
+            progressDialog?.setMessage(event.path)
+        }
+
+        if (event.file != null) {
+            progressDialog?.setMessage(event.file)
         }
     }
 
