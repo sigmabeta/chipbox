@@ -37,7 +37,7 @@ dependencies {
     compile 'com.android.support:design:23.1.1'
 
     // Enable RxJava-style asynrchronous calls
-    compile 'io.reactivex:rxandroid:1.0.0'
+    compile 'io.reactivex:rxandroid:1.1.0'
 
     // Display images loaded from storage.
     compile 'com.squareup.picasso:picasso:2.5.2'
