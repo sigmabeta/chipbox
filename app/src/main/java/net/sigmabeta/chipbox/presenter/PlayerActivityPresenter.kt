@@ -6,7 +6,7 @@ import javax.inject.Inject
 
 @ActivityScoped
 class PlayerActivityPresenter @Inject constructor(val view: PlayerActivityView) {
-    fun onCreate(trackId: Long) {
-        view.showPlayerFragment(trackId)
+    fun onCreate() {
+        view.showPlayerFragment()
     }
 }

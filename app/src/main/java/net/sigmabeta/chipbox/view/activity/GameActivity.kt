@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.model.database.COLUMN_TRACK_GAME_ID
 import net.sigmabeta.chipbox.model.database.COLUMN_TRACK_GAME_TITLE
+import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.presenter.GamePresenter
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
 import net.sigmabeta.chipbox.view.interfaces.GameView
@@ -74,11 +75,11 @@ class GameActivity : BaseActivity(), GameView, SongListView {
      * SongListView
      */
 
-    override fun onItemClick(id: Long, position: Int) {
-        presenter.onItemClick(id, position)
+    override fun onItemClick(track: Track, position: Int) {
+        presenter.onItemClick(track, position)
     }
 
-    override fun launchPlayerActivity(id: Long) {
+    override fun launchPlayerActivity() {
         // No-op
     }
 

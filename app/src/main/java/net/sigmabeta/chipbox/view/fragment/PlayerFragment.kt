@@ -21,15 +21,11 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val trackId = arguments.getLong(ARGUMENT_TRACK_ID)
-
-        presenter?.onCreate(trackId)
+        presenter?.onCreate()
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val rootView = inflater?.inflate(R.layout.fragment_player, container, false)
-
-        presenter?.onCreateView()
 
         return rootView
     }
@@ -37,9 +33,23 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        presenter?.onViewCreated()
+
         button_play.setOnClickListener {
             presenter?.onFabClick()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        presenter?.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+        presenter?.onPause()
     }
 
     /**
@@ -58,6 +68,10 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
         text_track_artist.text = artist
     }
 
+    override fun setTimeElapsed(time: String) {
+        text_track_elapsed.text = time
+    }
+
     override fun setGameBoxart(gameId: Long) {
         val imagesFolderPath = "file://" + activity.getExternalFilesDir(null).absolutePath + "/images/"
         val imagePath = imagesFolderPath + gameId.toString() + "/local.png"
@@ -67,6 +81,14 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
                 .centerCrop()
                 .fit()
                 .into(image_game_box_art)
+    }
+
+    override fun showPauseButton() {
+        button_play.setImageResource(R.drawable.ic_pause_white_48dp)
+    }
+
+    override fun showPlayButton() {
+        button_play.setImageResource(R.drawable.ic_play_48dp)
     }
 
     /**
@@ -88,17 +110,8 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.player"
 
-        val ARGUMENT_TRACK_ID = "${FRAGMENT_TAG}.track_id"
-
-        fun newInstance(trackId: Long): PlayerFragment {
-            val fragment = PlayerFragment()
-
-            val arguments = Bundle()
-            arguments.putLong(ARGUMENT_TRACK_ID, trackId)
-
-
-            fragment.arguments = arguments
-            return fragment
+        fun newInstance(): PlayerFragment {
+            return PlayerFragment()
         }
     }
 }

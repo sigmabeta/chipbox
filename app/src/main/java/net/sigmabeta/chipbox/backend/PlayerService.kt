@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.backend
 
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -19,6 +20,7 @@ import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logVerbose
+import net.sigmabeta.chipbox.view.activity.PlayerActivity
 import net.sigmabeta.chipbox.view.interfaces.BackendView
 import javax.inject.Inject
 
@@ -46,6 +48,8 @@ class PlayerService : Service(), BackendView {
         noisyReceiver = NoisyReceiver(player!!)
 
         session = MediaSessionCompat(this, "Chipbox")
+
+        session?.setSessionActivity(getPlayerActivityIntent())
 
         session?.setCallback(SessionCallback(this))
         session?.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
@@ -199,6 +203,10 @@ class PlayerService : Service(), BackendView {
                 && !(notificationManager?.notified ?: false)) {
             notificationManager?.startNotification()
         }
+    }
+
+    private fun getPlayerActivityIntent(): PendingIntent {
+        return PendingIntent.getActivity(this, 0, PlayerActivity.getLauncher(this), 0)
     }
 
     private fun getAvailableActions(): Long {
