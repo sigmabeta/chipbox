@@ -7,7 +7,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.BitmapFactory
 import android.media.session.PlaybackState
+import android.os.SystemClock
 import android.support.v4.app.NotificationCompat.Action
 import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaMetadataCompat
@@ -18,9 +20,16 @@ import android.support.v7.app.NotificationCompat
 import android.view.KeyEvent
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.model.events.PositionEvent
+import net.sigmabeta.chipbox.model.events.StateEvent
+import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logVerbose
+import net.sigmabeta.chipbox.util.logWarning
+import rx.Subscription
+import rx.android.schedulers.AndroidSchedulers
 
 class MediaNotificationManager(val playerService: PlayerService) : BroadcastReceiver() {
     val prevIntent = PendingIntent.getBroadcast(playerService, REQUEST_CODE,
@@ -45,9 +54,31 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
 
     var notified = false
 
+    var subscription: Subscription? = null
+
     init {
         updateSessionToken()
         notificationService.cancelAll()
+    }
+
+    fun subscribeToUpdates() {
+        val player = playerService.player
+
+        if (player != null) {
+            subscription = player.updater.asObservable()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe {
+                        when (it) {
+                            is TrackEvent -> updateTrack(it.track)
+                            is StateEvent -> updateState(it.state)
+                        }
+                    }
+        }
+    }
+
+    fun unsubscribeFromUpdates() {
+        subscription?.unsubscribe()
+        subscription = null
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -64,53 +95,33 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
     }
 
     /**
-     * Update the state based on a change on the session token. Called either when
-     * we are running for the first time or when the media session owner has destroyed the session
-     * (see [android.media.session.MediaController.Callback.onSessionDestroyed])
-     */
-    private fun updateSessionToken() {
-        val freshToken = playerService.getSessionToken()
-
-        if (sessionToken == null || sessionToken != freshToken) {
-            sessionToken = freshToken
-
-            mediaController?.unregisterCallback(controllerCallback)
-
-            mediaController = MediaControllerCompat(playerService, sessionToken)
-
-            transportControls = mediaController?.transportControls
-
-            if (controllerCallback != null) {
-                mediaController?.registerCallback(controllerCallback)
-            }
-        }
-    }
-
-    /**
      * Posts the notification and starts tracking the session to keep it
      * updated. The notification will automatically be removed if the session is
      * destroyed before [.stopNotification] is called.
      */
     fun startNotification() {
         if (!notified) {
-            mediaMetadata = mediaController?.getMetadata()
-            playbackState = mediaController?.getPlaybackState()
+            val player = playerService.player
+            if (player != null && player.playingTrack != null) {
+                updateState(player.state)
+                updateTrack(player.playingTrack!!)
 
-            val notification = createNotification()
-            if (notification != null) {
-                logVerbose("[MediaNotificationManager] Starting foreground notification...")
+                val notification = createNotification()
+                if (notification != null) {
+                    logVerbose("[MediaNotificationManager] Starting foreground notification...")
 
-                val filter = IntentFilter()
-                filter.addAction(ACTION_PAUSE)
-                filter.addAction(ACTION_PLAY)
-                filter.addAction(ACTION_STOP)
-                filter.addAction(ACTION_PREV)
-                filter.addAction(ACTION_NEXT)
+                    val filter = IntentFilter()
+                    filter.addAction(ACTION_PAUSE)
+                    filter.addAction(ACTION_PLAY)
+                    filter.addAction(ACTION_STOP)
+                    filter.addAction(ACTION_PREV)
+                    filter.addAction(ACTION_NEXT)
 
-                playerService.registerReceiver(this, filter)
-                playerService.startForeground(NOTIFICATION_ID, notification)
+                    playerService.registerReceiver(this, filter)
+                    playerService.startForeground(NOTIFICATION_ID, notification)
 
-                notified = true
+                    notified = true
+                }
             }
         }
     }
@@ -147,6 +158,34 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
     /**
      *      Private Methods
      */
+
+    private fun updateTrack(track: Track) {
+        logDebug("[MediaNotificationManager] Updating notification track.")
+
+        mediaMetadata = getMetadataFrom(track)
+        playerService.session?.setMetadata(mediaMetadata)
+
+        // TODO Maybe update notification?
+    }
+
+    private fun updateState(state: Int) {
+        logDebug("[MediaNotificationManager] Updating notification state.")
+
+        val player = playerService.player
+
+        if (player != null) {
+            var position = player.position ?: PlaybackState.PLAYBACK_POSITION_UNKNOWN
+
+            val actions = getAvailableActions(player.state, player.playbackQueuePosition, player.playbackQueue?.size)
+
+            val stateBuilder = PlaybackStateCompat.Builder().setActions(actions)
+            stateBuilder.setState(state, position, 1.0f, SystemClock.elapsedRealtime())
+
+            playbackState = stateBuilder.build()
+            playerService.session?.setPlaybackState(playbackState)
+        }
+        // TODO Maybe update notification?
+    }
 
     private fun createNotification(): Notification? {
         if (mediaMetadata == null || playbackState == null) {
@@ -245,6 +284,65 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
         builder.setOngoing(playbackState?.getState() == PlaybackState.STATE_PLAYING)
     }
 
+    private fun getMetadataFrom(track: Track): MediaMetadataCompat {
+        val imagesFolderPath = playerService.getExternalFilesDir(null).absolutePath + "/images/"
+        val imagePath = imagesFolderPath + track.gameId.toString() + "/local.png"
+
+        val metadataBuilder = Track.toMetadataBuilder(track)
+
+        // TODO May need to do this asynchronously.
+        val imageBitmap = BitmapFactory.decodeFile(imagePath)
+
+        if (imageBitmap != null) {
+            metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, imageBitmap)
+        } else {
+            logError("[MediaNotificationManager] Couldn't load game art.")
+        }
+
+        return metadataBuilder.build()
+    }
+
+    private fun getAvailableActions(state: Int, queuePosition: Int?, queueSize: Int?): Long {
+        var actions = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_STOP
+
+        if (state == PlaybackState.STATE_PLAYING) {
+            actions = actions or PlaybackState.ACTION_PAUSE
+        }
+
+        if (queuePosition != null && queueSize != null) {
+            actions = actions or PlaybackState.ACTION_SKIP_TO_PREVIOUS
+
+            if (queuePosition < queueSize - 1) {
+                actions = actions or PlaybackState.ACTION_SKIP_TO_NEXT
+            }
+        }
+
+        return actions
+    }
+
+    /**
+     * Update the state based on a change on the session token. Called either when
+     * we are running for the first time or when the media session owner has destroyed the session
+     * (see [android.media.session.MediaController.Callback.onSessionDestroyed])
+     */
+    private fun updateSessionToken() {
+        val freshToken = playerService.getSessionToken()
+
+        if (sessionToken == null || sessionToken != freshToken) {
+            sessionToken = freshToken
+
+            mediaController?.unregisterCallback(controllerCallback)
+
+            mediaController = MediaControllerCompat(playerService, sessionToken)
+
+            transportControls = mediaController?.transportControls
+
+            if (controllerCallback != null) {
+                mediaController?.registerCallback(controllerCallback)
+            }
+        }
+    }
+
     /**
      *      Listeners & Callbacks
      */
@@ -284,6 +382,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
             updateSessionToken()
         }
     }
+
 
 
     companion object {

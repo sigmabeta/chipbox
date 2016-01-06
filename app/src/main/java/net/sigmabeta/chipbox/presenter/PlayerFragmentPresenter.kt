@@ -70,6 +70,7 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
 
     fun onPause() {
         subscription?.unsubscribe()
+        subscription = null
     }
 
     private fun displayTrack(track: Track) {
