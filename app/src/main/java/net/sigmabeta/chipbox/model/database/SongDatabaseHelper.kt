@@ -245,6 +245,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     logVerbose("[SongDatabaseHelper] Cursor size: ${resultCursor.count}")
 
                     it.onNext(resultCursor)
+
+                    database.close()
                     it.onCompleted()
                 }
         )
@@ -270,6 +272,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     logVerbose("[SongDatabaseHelper] Cursor size: ${resultCursor.count}")
 
                     it.onNext(resultCursor)
+
+                    database.close()
                     it.onCompleted()
                 }
         )
@@ -295,6 +299,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     logVerbose("[SongDatabaseHelper] Result size: ${resultCursor.count}")
 
                     it.onNext(resultCursor)
+
+                    database.close()
                     it.onCompleted()
                 }
         )
@@ -322,6 +328,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     logVerbose("[SongDatabaseHelper] Result size: ${resultCursor.count}")
 
                     it.onNext(resultCursor)
+
+                    database.close()
                     it.onCompleted()
                 }
         )
@@ -349,6 +357,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     logVerbose("[SongDatabaseHelper] Result size: ${resultCursor.count}")
 
                     it.onNext(resultCursor)
+
+                    database.close()
                     it.onCompleted()
                 }
         )
@@ -390,8 +400,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     }
 
                     folderCursor.close()
-                    database.close()
 
+                    database.close()
                     it.onCompleted()
                 }
         )
