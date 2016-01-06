@@ -15,7 +15,6 @@ public class ChipboxApplication : Application() {
         @JvmField var appComponent: AppComponent? = null
     }
 
-
     /**
      * Calls the superclass constructor, then initializes the singleton
      * Dagger Components.
