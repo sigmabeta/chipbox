@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.presenter
 import android.media.session.PlaybackState
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.FragmentScoped
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
@@ -19,7 +18,6 @@ import javax.inject.Inject
 
 @FragmentScoped
 class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
-                                                  val database: SongDatabaseHelper,
                                                   val player: Player) {
     var track: Track? = null
     var state = player.state
@@ -46,13 +44,7 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
 
             PlaybackState.STATE_PAUSED -> player.play()
 
-            PlaybackState.STATE_STOPPED -> {
-                val localTrack = track
-
-                if (localTrack != null) {
-                    player.play(localTrack)
-                }
-            }
+            PlaybackState.STATE_STOPPED -> player.play()
         }
     }
 
