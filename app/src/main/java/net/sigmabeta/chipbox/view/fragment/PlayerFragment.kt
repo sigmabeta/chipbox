@@ -15,13 +15,13 @@ import net.sigmabeta.chipbox.view.interfaces.PlayerFragmentView
 import javax.inject.Inject
 
 class PlayerFragment : BaseFragment(), PlayerFragmentView {
-    var presenter: PlayerFragmentPresenter? = null
+    lateinit var presenter: PlayerFragmentPresenter
         @Inject set
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        presenter?.onCreate()
+        presenter.onCreate()
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -33,23 +33,31 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        presenter?.onViewCreated()
+        presenter.onViewCreated()
 
         button_play.setOnClickListener {
-            presenter?.onFabClick()
+            presenter.onFabClick()
+        }
+
+        button_skip_forward.setOnClickListener {
+            presenter.onNextClick()
+        }
+
+        button_skip_back.setOnClickListener {
+            presenter.onRewindClick()
         }
     }
 
     override fun onResume() {
         super.onResume()
 
-        presenter?.onResume()
+        presenter.onResume()
     }
 
     override fun onPause() {
         super.onPause()
 
-        presenter?.onPause()
+        presenter.onPause()
     }
 
     /**

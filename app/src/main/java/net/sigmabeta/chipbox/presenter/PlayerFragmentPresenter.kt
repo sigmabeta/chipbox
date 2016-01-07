@@ -55,6 +55,14 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
         }
     }
 
+    fun onNextClick() {
+        player.skipToNext()
+    }
+
+    fun onRewindClick() {
+        player.skipToPrev()
+    }
+
     fun onResume() {
         subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
