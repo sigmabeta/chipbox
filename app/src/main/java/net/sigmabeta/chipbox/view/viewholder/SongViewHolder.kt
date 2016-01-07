@@ -8,6 +8,7 @@ import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.list_item_song.view.*
 import kotlinx.android.synthetic.main.list_item_song_game.view.text_song_track_number
 import net.sigmabeta.chipbox.model.database.*
+import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
 
 
@@ -24,8 +25,11 @@ class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerVie
         val title = toBind.getString(COLUMN_TRACK_TITLE)
         val artistName = toBind.getString(COLUMN_TRACK_ARTIST)
 
+        val trackLength = getTimeStringFromMillis(toBind.getInt(COLUMN_TRACK_LENGTH))
+
         view.text_song_title.text = title
         view.text_song_artist.text = artistName
+        view.text_song_length.text = trackLength
 
         if (view.image_game_box_art != null) {
             val gameId = toBind.getLong(COLUMN_TRACK_GAME_ID)

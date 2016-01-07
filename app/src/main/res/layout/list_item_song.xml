@@ -20,7 +20,7 @@
         android:layout_marginRight="@dimen/spacing_medium"
         android:layout_marginTop="@dimen/spacing_medlarge"
         android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
+        android:layout_toStartOf="@+id/text_song_length"
         android:layout_toEndOf="@+id/image_game_box_art"/>
 
     <TextView
@@ -35,7 +35,7 @@
         android:layout_marginRight="@dimen/spacing_medium"
         android:layout_marginBottom="@dimen/spacing_medlarge"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
+        android:layout_toStartOf="@+id/text_song_length"
         android:layout_toEndOf="@+id/image_game_box_art"/>
 
     <ImageView
@@ -43,10 +43,21 @@
         android:layout_width="48dp"
         android:layout_height="0dp"
         android:layout_margin="@dimen/spacing_medium"
-        tools:src="@drawable/placeholder_game_box_art"
+        tools:src="@mipmap/ic_launcher"
         android:scaleType="centerCrop"
         android:layout_centerVertical="true"
         android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"/>
+
+    <TextView
+        android:id="@+id/text_song_length"
+        android:layout_width="60dp"
+        android:layout_height="0dp"
+        android:gravity="right|center_vertical"
+        tools:text="4:29"
+        android:paddingEnd="@dimen/spacing_large"
+        android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
         android:layout_alignParentBottom="true"/>
 

@@ -6,6 +6,7 @@ import net.sigmabeta.chipbox.util.external.getFileInfoNative
 import net.sigmabeta.chipbox.util.external.getPlatformNative
 import java.io.File
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 val GME_PLATFORM_SNES = "Super Nintendo"
 val GME_PLATFORM_GENESIS = "Sega SMS/Genesis"
@@ -120,3 +121,12 @@ fun generateFileList(folder: File): ArrayList<FileListItem> {
     return fileList
 }
 
+fun getTimeStringFromMillis(millis: Int): String {
+    val millisAsLong = millis.toLong()
+
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(millisAsLong)
+    val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(millisAsLong)
+    val displaySeconds = totalSeconds - TimeUnit.MINUTES.toSeconds(minutes)
+
+    return "%d:%02d".format(minutes, displaySeconds)
+}
