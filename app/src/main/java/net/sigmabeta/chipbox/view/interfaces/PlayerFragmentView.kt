@@ -14,4 +14,6 @@ interface PlayerFragmentView {
     fun showPauseButton()
 
     fun showPlayButton()
+
+    fun setTrackLength(trackLength: String)
 }

@@ -8,6 +8,7 @@ import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
 import net.sigmabeta.chipbox.view.interfaces.PlayerFragmentView
@@ -88,19 +89,13 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
         view.setArtist(track.artist)
         view.setGameTitle(track.gameTitle)
         view.setGameBoxart(track.gameId)
+        view.setTrackLength(getTimeStringFromMillis(track.trackLength))
 
         displayPosition(0)
     }
 
     private fun displayPosition(millisPlayed: Int) {
-        val millisAsLong = millisPlayed.toLong()
-
-        val minutes = TimeUnit.MILLISECONDS.toMinutes(millisAsLong)
-        val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(millisAsLong)
-        val displaySeconds = totalSeconds - TimeUnit.MINUTES.toSeconds(minutes)
-
-        val timeString = "%d:%02d".format(minutes, displaySeconds)
-
+        val timeString = getTimeStringFromMillis(millisPlayed)
         view.setTimeElapsed(timeString)
     }
 

@@ -80,6 +80,10 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
         text_track_elapsed.text = time
     }
 
+    override fun setTrackLength(trackLength: String) {
+        text_track_length.text = trackLength
+    }
+
     override fun setGameBoxart(gameId: Long) {
         val imagesFolderPath = "file://" + activity.getExternalFilesDir(null).absolutePath + "/images/"
         val imagePath = imagesFolderPath + gameId.toString() + "/local.png"
