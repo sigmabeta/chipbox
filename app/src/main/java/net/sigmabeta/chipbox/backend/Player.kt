@@ -301,9 +301,12 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
                 logVerbose("[Player] Focus lost temporarily. Pausing...")
-                pause()
 
-                focusLossPaused = true
+                if (state == PlaybackState.STATE_PLAYING) {
+                    focusLossPaused = true
+                }
+
+                pause()
             }
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
