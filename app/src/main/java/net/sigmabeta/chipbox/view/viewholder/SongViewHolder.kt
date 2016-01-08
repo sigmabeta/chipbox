@@ -7,6 +7,7 @@ import android.view.View
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.list_item_song.view.*
 import kotlinx.android.synthetic.main.list_item_song_game.view.text_song_track_number
+import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.database.*
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
@@ -47,6 +48,18 @@ class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerVie
             val trackNumber = toBind.getInt(COLUMN_TRACK_NUMBER)
 
             view.text_song_track_number.text = trackNumber.toString()
+        }
+
+        if (trackId == adapter.playingTrackId) {
+            view.text_song_title.setTextColor(adapter.playingTextColor)
+            view.text_song_artist.setTextColor(adapter.playingTextColor)
+            view.text_song_length.setTextColor(adapter.playingTextColor)
+            view.text_song_track_number?.setTextColor(adapter.playingTextColor)
+        } else {
+            view.text_song_title.setTextColor(adapter.primaryTextColor)
+            view.text_song_artist.setTextColor(adapter.secondaryTextColor)
+            view.text_song_length.setTextColor(adapter.primaryTextColor)
+            view.text_song_track_number?.setTextColor(adapter.secondaryTextColor)
         }
     }
 
