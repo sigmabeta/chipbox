@@ -16,6 +16,16 @@ class SongListAdapter(val view: SongListView,
                       val showArt: Boolean) : BaseCursorAdapter() {
     val imagesPath = "file://" + context.getExternalFilesDir(null).absolutePath + "/images/"
 
+    val playingTextColor = context.getColor(R.color.primary)
+    val primaryTextColor = context.getColor(R.color.primary_text)
+    val secondaryTextColor = context.getColor(R.color.secondary_text)
+
+    var playingTrackId: Long? = null
+        set (value) {
+            field = value
+            notifyDataSetChanged()
+        }
+
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): RecyclerView.ViewHolder? {
         val row = LayoutInflater.from(parent?.context)
                 ?.inflate(

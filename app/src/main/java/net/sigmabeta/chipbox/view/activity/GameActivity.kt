@@ -34,8 +34,6 @@ class GameActivity : BaseActivity(), GameView, SongListView {
 
         val gameId = launcher.getLongExtra(ARGUMENT_GAME_ID, -1)
 
-        presenter.onCreate(gameId)
-
         val layoutManager = LinearLayoutManager(this)
 
         val adapter = SongListAdapter(this, this, false)
@@ -43,6 +41,20 @@ class GameActivity : BaseActivity(), GameView, SongListView {
 
         list_tracks.adapter = adapter
         list_tracks.layoutManager = layoutManager
+
+        presenter.onCreate(gameId)
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        presenter.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+        presenter.onPause()
     }
 
     /**
@@ -69,6 +81,14 @@ class GameActivity : BaseActivity(), GameView, SongListView {
 
     override fun getCursor(): Cursor? {
         return adapter?.cursor
+    }
+
+    override fun setPlayingTrack(track: Track) {
+        adapter?.playingTrackId = track.id
+    }
+
+    override fun setPlaybackState(state: Int) {
+        // no-op for now
     }
 
     /**
