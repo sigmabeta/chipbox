@@ -20,14 +20,12 @@ import android.support.v7.app.NotificationCompat
 import android.view.KeyEvent
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logVerbose
-import net.sigmabeta.chipbox.util.logWarning
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 
@@ -231,6 +229,11 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
             }
         }
 
+        val notificationIcon = if (playbackState?.state == PlaybackState.STATE_PLAYING)
+            R.drawable.ic_stat_play
+        else
+            R.drawable.ic_stat_pause
+
         val description = mediaMetadata?.description
 
         val stop = getActionIntent(playerService, KeyEvent.KEYCODE_MEDIA_STOP)
@@ -243,7 +246,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
 
         notificationBuilder.setStyle(mediaStyle)
                 .setDeleteIntent(stop)
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(notificationIcon)
                 .setColor(ContextCompat.getColor(playerService, R.color.primary_dark))
 
         setNotificationPlaybackState(notificationBuilder)
