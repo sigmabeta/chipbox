@@ -16,4 +16,6 @@ interface PlayerFragmentView {
     fun showPlayButton()
 
     fun setTrackLength(trackLength: String)
+
+    fun setUnderrunCount(count: String)
 }

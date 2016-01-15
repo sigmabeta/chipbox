@@ -103,6 +103,10 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
         button_play.setImageResource(R.drawable.ic_play_48dp)
     }
 
+    override fun setUnderrunCount(count: String) {
+        text_underrun_count.text = count
+    }
+
     /**
      * BaseFragment
      */
