@@ -44,7 +44,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             if (value != null) {
                 loadTrackNative(value,
                         audioConfig.sampleRate,
-                        audioConfig.minBufferSize.toLong())
+                        audioConfig.bufferSizeBytes.toLong())
 
                 updater.send(TrackEvent(value))
             }
@@ -56,12 +56,14 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             field = value
         }
 
-    var nativeBuffer = ShortArray(audioConfig.minBufferSize)
+    var nativeBuffer = ShortArray(audioConfig.bufferSizeBytes)
 
     var audioTrack: AudioTrack? = null
 
     var ducking = false
     var focusLossPaused = false
+
+    val stats = StatsManager(audioConfig)
 
     fun playbackLoop() {
         logDebug("[Player] Starting playback loop.")
@@ -98,13 +100,15 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             readNextSamples(nativeBuffer)
             val error = getLastError()
 
+            stats.recordTime(System.currentTimeMillis())
+
             if (error == null) {
                 // Check if necessary to make volume adjustments
                 if (ducking) {
                     logDebug("[Player] Ducking behind other app...")
 
                     if (duckVolume > 0.3f) {
-                        duckVolume -= 0.2f
+                        duckVolume -= 0.4f
                         logVerbose("[Player] Lowering volume to $duckVolume...")
                     }
 
@@ -118,7 +122,10 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                     audioTrack?.setVolume(duckVolume)
                 }
 
-                audioTrack?.write(nativeBuffer, 0, audioConfig.minBufferSize)
+                val bytesWritten = audioTrack?.write(nativeBuffer, 0, audioConfig.bufferSizeBytes) ?: ERROR_AUDIO_TRACK_NULL
+                stats.recordTime(System.currentTimeMillis())
+
+                logProblems(bytesWritten)
             } else {
                 logError("[Player] GME Error: ${error}")
                 stop()
@@ -266,6 +273,9 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
         audioTrack?.pause()
         backendView?.pause()
+
+        logStats()
+        stats.clear()
     }
 
     fun stop() {
@@ -336,13 +346,13 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     private fun initializeAudioTrack(): Boolean {
         logVerbose("[Player] Initializing audio track.\n" +
                 "[Player] Sample Rate: ${audioConfig.sampleRate}\n" +
-                "[Player] Buffer size: ${audioConfig.minBufferSize}")
+                "[Player] Buffer size: ${audioConfig.bufferSizeBytes}")
 
         audioTrack = AudioTrack(AudioManager.STREAM_MUSIC,
                 audioConfig.sampleRate,
                 AudioFormat.CHANNEL_OUT_STEREO,
                 AudioFormat.ENCODING_PCM_16BIT,
-                audioConfig.minBufferSize,
+                audioConfig.bufferSizeBytes,
                 AudioTrack.MODE_STREAM)
 
         if (audioTrack == null) {
@@ -363,5 +373,28 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         })
 
         return true
+    }
+
+    private fun logProblems(bytesWritten: Int) {
+        if (bytesWritten == audioConfig.bufferSizeBytes)
+            return
+
+        var error = when (bytesWritten) {
+            AudioTrack.ERROR_INVALID_OPERATION -> "Invalid AudioTrack operation."
+            AudioTrack.ERROR_BAD_VALUE -> "Invalid AudioTrack value."
+            AudioTrack.ERROR -> "Unknown AudioTrack error."
+            ERROR_AUDIO_TRACK_NULL -> "No audio track found."
+            else -> "Wrote fewer bytes than expected: ${bytesWritten}"
+        }
+
+        logError("[Player] $error")
+    }
+
+    private fun logStats() {
+        logInfo("[Player] Underruns since playback started: ${stats.underrunCount}")
+    }
+
+    companion object {
+        val ERROR_AUDIO_TRACK_NULL = -100
     }
 }
