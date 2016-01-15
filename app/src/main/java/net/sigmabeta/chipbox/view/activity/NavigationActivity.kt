@@ -33,7 +33,7 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
         val title = launcher.getStringExtra(ARGUMENT_TITLE)
 
         setTitle(title)
-        presenter?.onCreate(fragmentTag, fragmentArg)
+        presenter?.onCreate(fragmentTag, fragmentArg, savedInstanceState)
     }
 
     /**

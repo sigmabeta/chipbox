@@ -25,7 +25,7 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
 
         setContentView(R.layout.activity_player)
 
-        presenter?.onCreate()
+        presenter?.onCreate(savedInstanceState)
     }
 
     /**
