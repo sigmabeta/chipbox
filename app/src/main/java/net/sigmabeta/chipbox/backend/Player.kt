@@ -8,6 +8,7 @@ import android.media.session.PlaybackState
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.objects.AudioBuffer
 import net.sigmabeta.chipbox.model.objects.AudioConfig
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.external.*
@@ -39,6 +40,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var playingTrack: Track? = null
         set (value) {
+
             teardown()
 
             if (value != null) {
@@ -56,7 +58,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             field = value
         }
 
-    var nativeBuffer = ShortArray(audioConfig.bufferSizeBytes)
+
+    var audioBuffers = Array(READ_AHEAD_BUFFER_SIZE) { AudioBuffer(audioConfig.bufferSizeBytes) }
 
     var audioTrack: AudioTrack? = null
 
@@ -65,25 +68,12 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     val stats = StatsManager(audioConfig)
 
-    fun playbackLoop() {
-        logDebug("[Player] Starting playback loop.")
-
-        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO)
-
-        // If audioTrack is not null, we're likely resuming a paused track.
-        if (audioTrack == null) {
-            if (!initializeAudioTrack())
-                return
-        } else {
-            logVerbose("[Player] AudioTrack already setup; resuming playback.")
-        }
-
-        var duckVolume = 1.0f
-
-        // Begin playback loop
-        audioTrack?.play()
+    fun readerLoop() {
+        var readerIndex = 0
 
         while (state == PlaybackState.STATE_PLAYING) {
+            val audioBuffer = audioBuffers[readerIndex]
+
             if (isTrackOver()) {
                 logVerbose("[Player] Track has ended.")
 
@@ -96,13 +86,76 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 }
             }
 
+            if (isTrackOver()) {
+                logVerbose("[Player] Track has ended.")
+
+                if (!nextTrackAvailable()) {
+                    logInfo("[Player] No more tracks to play.")
+                    stop()
+                    break
+                } else {
+                    getNextTrack()
+                }
+            }
+
+            if (audioBuffer.bufferFull == true) {
+                Thread.sleep(audioConfig.minimumLatency.toLong())
+                continue
+            }
+
             // Get the next samples from the native player.
-            readNextSamples(nativeBuffer)
+            synchronized(playingTrack ?: break) {
+                readNextSamples(audioBuffer.buffer)
+            }
+
             val error = getLastError()
 
-            stats.recordTime(System.currentTimeMillis())
-
             if (error == null) {
+                audioBuffer.bufferFull = true
+            } else {
+                logError("[Player] GME Error: ${error}")
+                stop()
+                break
+            }
+
+            readerIndex += 1
+            if (readerIndex == READ_AHEAD_BUFFER_SIZE) {
+                readerIndex = 0
+            }
+        }
+
+        logVerbose("[Player] Clearing audio buffers...")
+
+        for (audioBuffer in audioBuffers) {
+            audioBuffer.bufferFull = false
+        }
+
+        logVerbose("[Player] Reader loop has ended.")
+    }
+
+    fun writerLoop() {
+        logDebug("[Player] Starting writer loop.")
+
+        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO)
+
+        // If audioTrack is not null, we're likely resuming a paused track.
+        if (audioTrack == null) {
+            if (!initializeAudioTrack())
+                return
+        } else {
+            logVerbose("[Player] AudioTrack already setup; resuming playback.")
+        }
+
+        var duckVolume = 1.0f
+        var writerIndex = 0
+
+        // Begin playback loop
+        audioTrack?.play()
+
+        while (state == PlaybackState.STATE_PLAYING) {
+            val audioBuffer = audioBuffers[writerIndex]
+
+            if (audioBuffer.bufferFull == true) {
                 // Check if necessary to make volume adjustments
                 if (ducking) {
                     logDebug("[Player] Ducking behind other app...")
@@ -117,23 +170,28 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                     if (duckVolume < 1.0f) {
                         duckVolume += 0.1f
                         logVerbose("[Player] Raising volume to $duckVolume...")
-                    }
 
-                    audioTrack?.setVolume(duckVolume)
+                        audioTrack?.setVolume(duckVolume)
+                    }
                 }
 
-                val bytesWritten = audioTrack?.write(nativeBuffer, 0, audioConfig.bufferSizeBytes) ?: ERROR_AUDIO_TRACK_NULL
-                stats.recordTime(System.currentTimeMillis())
+                val bytesWritten = audioTrack?.write(audioBuffer.buffer, 0, audioConfig.bufferSizeBytes)
+                        ?: ERROR_AUDIO_TRACK_NULL
+
+                audioBuffer.bufferFull = false
 
                 logProblems(bytesWritten)
+
+                writerIndex += 1
+                if (writerIndex == READ_AHEAD_BUFFER_SIZE) {
+                    writerIndex = 0
+                }
             } else {
-                logError("[Player] GME Error: ${error}")
-                stop()
-                break
+                logError("[Player] Buffer underrun.")
             }
         }
 
-        logVerbose("[Player] Playback loop has ended.")
+        logVerbose("[Player] Writer loop has ended.")
     }
 
     fun play() {
@@ -158,7 +216,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 }
 
                 // Start a thread for the playback loop.
-                Thread { playbackLoop() }.start()
+                Thread { writerLoop() }.start()
+                Thread { readerLoop() }.start()
             } else {
                 logError("[Player] Received play command, but no Track selected.")
             }
@@ -396,5 +455,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     companion object {
         val ERROR_AUDIO_TRACK_NULL = -100
+
+        val READ_AHEAD_BUFFER_SIZE = 2
     }
 }
