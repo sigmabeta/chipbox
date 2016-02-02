@@ -131,7 +131,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             }
         }
 
-        logVerbose("[Player] Clearing audio buffers...")
+        logVerbose("[Player] Clearing empty buffer queue...")
 
         emptyBuffers.clear()
 
@@ -164,6 +164,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
             if (audioBuffer == null) {
                 logError("[Player] Buffer underrun.")
+                stats.underrunCount += 1
 
                 audioBuffer = fullBuffers.poll(timeout, TimeUnit.MILLISECONDS)
 
@@ -205,6 +206,10 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 writerIndex = 0
             }
         }
+
+        logVerbose("[Player] Clearing full buffer queue...")
+
+        fullBuffers.clear()
 
         logVerbose("[Player] Writer loop has ended.")
     }
