@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.support.v7.app.ActionBarDrawerToggle
 import android.view.MenuItem
 import kotlinx.android.synthetic.activity_main.*
+import kotlinx.android.synthetic.main.content_main.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.presenter.MainPresenter
