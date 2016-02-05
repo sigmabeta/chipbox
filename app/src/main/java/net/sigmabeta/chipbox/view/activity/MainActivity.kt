@@ -4,8 +4,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.support.v7.app.ActionBarDrawerToggle
 import android.view.MenuItem
-import kotlinx.android.synthetic.activity_main.*
-import kotlinx.android.synthetic.main.content_main.*
+import kotlinx.android.synthetic.main.activity_main.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.presenter.MainPresenter
@@ -34,7 +33,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         setSupportActionBar(toolbar)
 
         val actionBar = supportActionBar
-        actionBar.setDisplayHomeAsUpEnabled(true)
+        actionBar?.setDisplayHomeAsUpEnabled(true)
 
         setUpNavigationDrawer()
         setUpViewPagerTabs()

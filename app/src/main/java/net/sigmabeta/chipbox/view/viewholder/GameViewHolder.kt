@@ -5,9 +5,7 @@ import android.graphics.Bitmap
 import android.support.v7.widget.RecyclerView
 import android.view.View
 import com.squareup.picasso.Picasso
-import kotlinx.android.synthetic.grid_item_game.view.image_game_box_art
-import kotlinx.android.synthetic.grid_item_game.view.text_company
-import kotlinx.android.synthetic.grid_item_game.view.text_game_title
+import kotlinx.android.synthetic.main.grid_item_game.view.*
 import net.sigmabeta.chipbox.model.database.COLUMN_DB_ID
 import net.sigmabeta.chipbox.model.database.COLUMN_GAME_COMPANY
 import net.sigmabeta.chipbox.model.database.COLUMN_GAME_TITLE
