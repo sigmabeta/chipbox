@@ -2,8 +2,7 @@ package net.sigmabeta.chipbox.view.viewholder
 
 import android.support.v7.widget.RecyclerView
 import android.view.View
-import kotlinx.android.synthetic.list_item_file.view.image_type
-import kotlinx.android.synthetic.list_item_file.view.text_file_name
+import kotlinx.android.synthetic.main.list_item_file.view.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.util.TYPE_FOLDER

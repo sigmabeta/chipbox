@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.view.viewholder
 import android.database.Cursor
 import android.support.v7.widget.RecyclerView
 import android.view.View
-import kotlinx.android.synthetic.list_item_artist.view.text_artist_name
+import kotlinx.android.synthetic.main.list_item_artist.view.*
 import net.sigmabeta.chipbox.model.database.COLUMN_ARTIST_NAME
 import net.sigmabeta.chipbox.model.database.COLUMN_DB_ID
 import net.sigmabeta.chipbox.view.adapter.ArtistListAdapter
