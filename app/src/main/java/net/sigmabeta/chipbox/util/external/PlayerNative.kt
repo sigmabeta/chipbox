@@ -22,18 +22,18 @@ external fun teardown()
 
 external fun getLastError(): String?
 
-fun loadTrackNative(track: Track, sampleRate: Int, bufferSize: Long) {
+fun loadTrackNative(track: Track, sampleRate: Int, bufferSizeShorts: Long) {
     val path = track.path
 
     logDebug("[PlayerNative] Loading file: ${path}")
-    loadFile(path, 0, sampleRate, bufferSize)
+    loadFile(path, 0, sampleRate, bufferSizeShorts)
 
     if (getLastError() != null) {
         logError("[PlayerNative] Unable to load file.")
 
         val loadError = getLastError()
         if (loadError != null) {
-            logError("[Player] GME Error: ${loadError}")
+            logError("[PlayerNative] GME Error: ${loadError}")
         }
     }
 }
