@@ -48,7 +48,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             if (value != null) {
                 loadTrackNative(value,
                         audioConfig.sampleRate,
-                        audioConfig.bufferSizeBytes.toLong())
+                        audioConfig.bufferSizeShorts.toLong())
 
                 updater.send(TrackEvent(value))
             }
@@ -74,7 +74,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         // Pre-seed the emptyQueue.
         while (true) {
             try {
-                emptyBuffers.add(AudioBuffer(audioConfig.bufferSizeBytes))
+                emptyBuffers.add(AudioBuffer(audioConfig.bufferSizeShorts))
             } catch (ex: IllegalStateException) {
                 break
             }
@@ -194,7 +194,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 }
             }
 
-            val bytesWritten = audioTrack?.write(audioBuffer.buffer, 0, audioConfig.bufferSizeBytes)
+            val bytesWritten = audioTrack?.write(audioBuffer.buffer, 0, audioConfig.bufferSizeShorts)
                     ?: ERROR_AUDIO_TRACK_NULL
 
             emptyBuffers.put(audioBuffer)
@@ -425,7 +425,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     private fun initializeAudioTrack(): Boolean {
         logVerbose("[Player] Initializing audio track.\n" +
                 "[Player] Sample Rate: ${audioConfig.sampleRate}\n" +
-                "[Player] Buffer size: ${audioConfig.bufferSizeBytes}")
+                "[Player] Buffer size: ${audioConfig.bufferSizeBytes} bytes.")
 
         audioTrack = AudioTrack(AudioManager.STREAM_MUSIC,
                 audioConfig.sampleRate,
@@ -455,7 +455,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     }
 
     private fun logProblems(bytesWritten: Int) {
-        if (bytesWritten == audioConfig.bufferSizeBytes)
+        if (bytesWritten == audioConfig.bufferSizeShorts)
             return
 
         var error = when (bytesWritten) {
