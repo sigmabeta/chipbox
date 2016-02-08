@@ -85,7 +85,7 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
         displayPosition(0)
     }
 
-    private fun displayPosition(millisPlayed: Int) {
+    private fun displayPosition(millisPlayed: Long) {
         val timeString = getTimeStringFromMillis(millisPlayed)
         view.setTimeElapsed(timeString)
 

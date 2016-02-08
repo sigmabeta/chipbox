@@ -8,7 +8,7 @@ external fun loadFile(filename: String, track: Int, sampleRate: Int, bufferSize:
 
 external fun readNextSamples(targetBuffer: ShortArray)
 
-external fun getMillisPlayed(): Int
+external fun getMillisPlayed(): Long
 
 external fun seekNative(timeInSec: Int): String
 

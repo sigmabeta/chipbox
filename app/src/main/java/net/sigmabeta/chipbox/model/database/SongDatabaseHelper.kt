@@ -17,7 +17,7 @@ import java.util.*
 val DB_VERSION = 1
 val DB_FILENAME = "songs.db"
 
-val TRACK_LENGTH_DEFAULT = 150000
+val TRACK_LENGTH_DEFAULT = 150000L
 
 val COLUMN_DB_ID = 0
 
@@ -568,16 +568,16 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     cursor.getString(COLUMN_TRACK_GAME_TITLE),
                     cursor.getInt(COLUMN_TRACK_GAME_PLATFORM),
                     cursor.getString(COLUMN_TRACK_ARTIST),
-                    cursor.getInt(COLUMN_TRACK_LENGTH),
-                    cursor.getInt(COLUMN_TRACK_INTRO_LENGTH),
-                    cursor.getInt(COLUMN_TRACK_LOOP_LENGTH)
+                    cursor.getLong(COLUMN_TRACK_LENGTH),
+                    cursor.getLong(COLUMN_TRACK_INTRO_LENGTH),
+                    cursor.getLong(COLUMN_TRACK_LOOP_LENGTH)
             )
         }
 
         private fun getContentValuesFromTrack(track: Track, database: SQLiteDatabase): ContentValues {
             val values = ContentValues()
 
-            var trackLength = 0;
+            var trackLength = 0L;
 
             if (track.trackLength > 0) {
                 trackLength = track.trackLength
@@ -587,7 +587,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                 trackLength = track.introLength + (track.loopLength * 2)
             }
 
-            if (trackLength == 0) {
+            if (trackLength == 0L) {
                 trackLength = TRACK_LENGTH_DEFAULT
             }
 
