@@ -95,18 +95,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 }
             }
 
-            if (isTrackOver()) {
-                logVerbose("[Player] Track has ended.")
-
-                if (!nextTrackAvailable()) {
-                    logInfo("[Player] No more tracks to play.")
-                    stop()
-                    break
-                } else {
-                    getNextTrack()
-                }
-            }
-
             val audioBuffer = emptyBuffers.poll(timeout, TimeUnit.MILLISECONDS)
 
             if (audioBuffer == null) {
