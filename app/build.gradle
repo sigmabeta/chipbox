@@ -52,10 +52,6 @@ dependencies {
     // Copy album art more easily.
     compile 'commons-io:commons-io:2.4'
 
-    // Detect memory leaks.
-    debugCompile 'com.squareup.leakcanary:leakcanary-android:1.4-SNAPSHOT'
-    releaseCompile 'com.squareup.leakcanary:leakcanary-android-no-op:1.4-SNAPSHOT'
-
     // Dependency Injection.
     compile 'com.google.dagger:dagger:2.0'
     provided 'org.glassfish:javax.annotation:10.0-b28'
