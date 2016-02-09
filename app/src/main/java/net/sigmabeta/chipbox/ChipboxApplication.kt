@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox
 
 import android.app.Application
 import android.os.Build
-import com.squareup.leakcanary.LeakCanary
 import net.sigmabeta.chipbox.dagger.Initializer
 import net.sigmabeta.chipbox.dagger.component.AppComponent
 import net.sigmabeta.chipbox.util.logDebug
@@ -24,8 +23,6 @@ public class ChipboxApplication : Application() {
         super.onCreate()
 
         System.loadLibrary("gme")
-
-        LeakCanary.install(this);
 
         logDebug("[ChipboxApplication] Starting Application.")
         logDebug("[ChipboxApplication] Build type: ${BuildConfig.BUILD_TYPE}")
