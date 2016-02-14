@@ -11,8 +11,9 @@ import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.presenter.MainPresenter
-import net.sigmabeta.chipbox.util.slideViewDown
-import net.sigmabeta.chipbox.util.slideViewUp
+import net.sigmabeta.chipbox.util.slideViewOffscreen
+import net.sigmabeta.chipbox.util.slideViewOnscreen
+import net.sigmabeta.chipbox.util.slideViewToProperLocation
 import net.sigmabeta.chipbox.view.adapter.MainTabPagerAdapter
 import net.sigmabeta.chipbox.view.interfaces.FragmentContainer
 import net.sigmabeta.chipbox.view.interfaces.MainView
@@ -143,7 +144,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         coordinator_main.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_now_playing).toInt())
 
         if (animate) {
-            layout_now_playing.slideViewUp()
+            layout_now_playing.slideViewOnscreen()
         }
     }
 
@@ -151,7 +152,13 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         coordinator_main.setPadding(0, 0, 0, 0)
 
         if (animate) {
-            layout_now_playing.slideViewDown().withEndAction {
+            // TODO this
+            // if ((getFragment() as  TopLevelFragment).isScrolledToBottom()) {
+                coordinator_main.translationY = -(resources.getDimension(R.dimen.height_now_playing))
+                coordinator_main.slideViewToProperLocation()
+            //}
+
+            layout_now_playing.slideViewOffscreen().withEndAction {
                 layout_now_playing.visibility = View.GONE
             }
         } else {
