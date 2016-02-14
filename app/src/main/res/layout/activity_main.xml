@@ -6,16 +6,21 @@
                                         android:layout_height="match_parent"
                                         android:fitsSystemWindows="true">
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="match_parent" >
+
+        <include
+            android:id="@+id/layout_now_playing"
+            android:layout_gravity="bottom"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            layout="@layout/layout_now_playing"/>
 
         <android.support.design.widget.CoordinatorLayout
             android:id="@+id/coordinator_main"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1">
+            android:layout_height="match_parent">
 
             <android.support.design.widget.AppBarLayout
                 android:id="@+id/appbar"
@@ -47,10 +52,7 @@
 
         </android.support.design.widget.CoordinatorLayout>
 
-        <include
-            android:id="@+id/layout_now_playing"
-            layout="@layout/layout_now_playing"/>
-    </LinearLayout>
+    </FrameLayout>
 
     <android.support.design.widget.NavigationView
         android:id="@+id/drawer_navigation"
