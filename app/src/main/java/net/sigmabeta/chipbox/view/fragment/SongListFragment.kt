@@ -16,11 +16,12 @@ import net.sigmabeta.chipbox.presenter.SongListPresenter
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.activity.PlayerActivity
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
+import net.sigmabeta.chipbox.view.interfaces.NavigationFragment
 import net.sigmabeta.chipbox.view.interfaces.SongListView
 import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import javax.inject.Inject
 
-class SongListFragment : BaseFragment(), SongListView, TopLevelFragment {
+class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, NavigationFragment {
     var presenter: SongListPresenter? = null
         @Inject set
 

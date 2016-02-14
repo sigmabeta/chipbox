@@ -19,10 +19,11 @@ import net.sigmabeta.chipbox.view.GridSpaceDecoration
 import net.sigmabeta.chipbox.view.activity.GameActivity
 import net.sigmabeta.chipbox.view.adapter.GameGridAdapter
 import net.sigmabeta.chipbox.view.interfaces.GameListView
+import net.sigmabeta.chipbox.view.interfaces.NavigationFragment
 import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import javax.inject.Inject
 
-class GameGridFragment : BaseFragment(), GameListView, TopLevelFragment {
+class GameGridFragment : BaseFragment(), GameListView, TopLevelFragment, NavigationFragment {
     var presenter: GameGridPresenter? = null
         @Inject set
 

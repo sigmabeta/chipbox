@@ -130,7 +130,6 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
                 .into(image_playing_game_box_art)
     }
 
-
     override fun showPauseButton() {
         fab_play_pause.setImageResource(R.drawable.ic_pause_white_48dp)
     }
@@ -164,6 +163,10 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         }
     }
 
+    override fun launchPlayerActivity() {
+        PlayerActivity.launch(this)
+    }
+
     private fun getFragment(): TopLevelFragment? {
         val selectedPosition = pager_categories.currentItem
 
@@ -178,10 +181,6 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         } else {
             return null
         }
-    }
-
-    override fun launchPlayerActivity() {
-        PlayerActivity.launch(this)
     }
 }
 
