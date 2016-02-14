@@ -11,12 +11,11 @@ import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.presenter.MainPresenter
-import net.sigmabeta.chipbox.util.slideViewOffscreen
-import net.sigmabeta.chipbox.util.slideViewOnscreen
-import net.sigmabeta.chipbox.util.slideViewToProperLocation
+import net.sigmabeta.chipbox.util.*
 import net.sigmabeta.chipbox.view.adapter.MainTabPagerAdapter
 import net.sigmabeta.chipbox.view.interfaces.FragmentContainer
 import net.sigmabeta.chipbox.view.interfaces.MainView
+import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import javax.inject.Inject
 
 class MainActivity : BaseActivity(), MainView, FragmentContainer {
@@ -152,11 +151,10 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         coordinator_main.setPadding(0, 0, 0, 0)
 
         if (animate) {
-            // TODO this
-            // if ((getFragment() as  TopLevelFragment).isScrolledToBottom()) {
+            if (getFragment()?.isScrolledToBottom() ?: false) {
                 coordinator_main.translationY = -(resources.getDimension(R.dimen.height_now_playing))
                 coordinator_main.slideViewToProperLocation()
-            //}
+            }
 
             layout_now_playing.slideViewOffscreen().withEndAction {
                 layout_now_playing.visibility = View.GONE
@@ -166,7 +164,24 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         }
     }
 
+    private fun getFragment(): TopLevelFragment? {
+        val selectedPosition = pager_categories.currentItem
+
+        logVerbose("[MainActivity] Selected fragment position is $selectedPosition")
+        val adapter = pagerAdapter
+
+        if (adapter != null) {
+            val fragment = adapter.fragments[selectedPosition]
+            logDebug("[MainActivity] Selected fragment: ${fragment.getTitle()}")
+
+            return fragment
+        } else {
+            return null
+        }
+    }
+
     override fun launchPlayerActivity() {
         PlayerActivity.launch(this)
     }
 }
+

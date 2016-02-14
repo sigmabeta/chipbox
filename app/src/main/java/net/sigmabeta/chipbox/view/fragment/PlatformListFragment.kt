@@ -12,13 +12,15 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.model.objects.Platform
 import net.sigmabeta.chipbox.presenter.PlatformListPresenter
+import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.activity.NavigationActivity
 import net.sigmabeta.chipbox.view.adapter.PlatformListAdapter
 import net.sigmabeta.chipbox.view.interfaces.PlatformListView
+import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import java.util.*
 import javax.inject.Inject
 
-class PlatformListFragment : BaseFragment(), PlatformListView {
+class PlatformListFragment : BaseFragment(), PlatformListView, TopLevelFragment {
     var presenter: PlatformListPresenter? = null
         @Inject set
 
@@ -55,6 +57,14 @@ class PlatformListFragment : BaseFragment(), PlatformListView {
     }
 
     /**
+     * TopLevelFragment
+     */
+
+    override fun isScrolledToBottom(): Boolean {
+        return list_platforms?.isScrolledToBottom() ?: false
+    }
+
+    /**
      * BaseFragment
      */
 
@@ -67,7 +77,7 @@ class PlatformListFragment : BaseFragment(), PlatformListView {
     }
 
     override fun getTitle(): String {
-        return getString(R.string.app_name)
+        return "Systems"
     }
 
     companion object {

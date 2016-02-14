@@ -13,12 +13,14 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.presenter.SongListPresenter
+import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.activity.PlayerActivity
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
 import net.sigmabeta.chipbox.view.interfaces.SongListView
+import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import javax.inject.Inject
 
-class SongListFragment : BaseFragment(), SongListView {
+class SongListFragment : BaseFragment(), SongListView, TopLevelFragment {
     var presenter: SongListPresenter? = null
         @Inject set
 
@@ -71,6 +73,14 @@ class SongListFragment : BaseFragment(), SongListView {
     }
 
     /**
+     * TopLevelFragment
+     */
+
+    override fun isScrolledToBottom(): Boolean {
+        return list_songs?.isScrolledToBottom() ?: false
+    }
+
+    /**
      * BaseFragment
      */
 
@@ -83,7 +93,7 @@ class SongListFragment : BaseFragment(), SongListView {
     }
 
     override fun getTitle(): String {
-        return getString(R.string.app_name)
+        return "Songs"
     }
 
     companion object {
