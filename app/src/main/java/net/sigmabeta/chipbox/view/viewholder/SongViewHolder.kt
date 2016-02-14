@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import android.support.v7.widget.RecyclerView
 import android.view.View
 import com.squareup.picasso.Picasso
-import kotlinx.android.synthetic.main.list_item_song.view.*
+import kotlinx.android.synthetic.main.list_item_song.view.image_game_box_art
 import kotlinx.android.synthetic.main.list_item_song_game.view.*
 import net.sigmabeta.chipbox.model.database.*
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
