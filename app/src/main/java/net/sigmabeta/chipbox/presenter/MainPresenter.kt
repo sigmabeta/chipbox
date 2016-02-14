@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.presenter
 import android.media.session.PlaybackState
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
@@ -13,6 +14,7 @@ import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
+@ActivityScoped
 class MainPresenter @Inject constructor(val view: MainView,
                                         val player: Player) {
     var subscription: Subscription? = null

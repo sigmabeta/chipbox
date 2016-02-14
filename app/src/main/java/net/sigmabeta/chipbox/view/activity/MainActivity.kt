@@ -5,13 +5,14 @@ import android.os.Bundle
 import android.support.v7.app.ActionBarDrawerToggle
 import android.view.MenuItem
 import android.view.View
-import android.widget.TextView
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.presenter.MainPresenter
+import net.sigmabeta.chipbox.util.slideViewDown
+import net.sigmabeta.chipbox.util.slideViewUp
 import net.sigmabeta.chipbox.view.adapter.MainTabPagerAdapter
 import net.sigmabeta.chipbox.view.interfaces.FragmentContainer
 import net.sigmabeta.chipbox.view.interfaces.MainView
@@ -111,12 +112,11 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     }
 
     override fun setTrackTitle(title: String) {
-        val textView = findViewById(R.id.text_song_title) as TextView
-        textView.text = title
+        text_playing_song_title.text = title
     }
 
     override fun setArtist(artist: String) {
-        text_song_artist.text = artist
+        text_playing_song_artist.text = artist
     }
 
     override fun setGameBoxart(gameId: Long) {
@@ -127,7 +127,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
                 .load(imagePath)
                 .centerCrop()
                 .fit()
-                .into(image_game_box_art)
+                .into(image_playing_game_box_art)
     }
 
 
@@ -140,11 +140,23 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     }
 
     override fun showNowPlaying(animate: Boolean) {
-        layout_now_playing.visibility = View.VISIBLE
+        coordinator_main.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_now_playing).toInt())
+
+        if (animate) {
+            layout_now_playing.slideViewUp()
+        }
     }
 
     override fun hideNowPlaying(animate: Boolean) {
-        layout_now_playing.visibility = View.GONE
+        coordinator_main.setPadding(0, 0, 0, 0)
+
+        if (animate) {
+            layout_now_playing.slideViewDown().withEndAction {
+                layout_now_playing.visibility = View.GONE
+            }
+        } else {
+            layout_now_playing.visibility = View.GONE
+        }
     }
 
     override fun launchPlayerActivity() {

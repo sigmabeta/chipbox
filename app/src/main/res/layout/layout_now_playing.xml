@@ -4,15 +4,15 @@
                 xmlns:tools="http://schemas.android.com/tools"
                 android:id="@+id/relative_now_playing"
                 android:layout_width="match_parent"
-                android:layout_height="64dp"
+                android:layout_height="@dimen/height_now_playing"
                 android:background="@android:color/white"
                 android:elevation="16dp"
                 tools:showIn="@layout/activity_main">
 
     <TextView
-        android:id="@+id/text_song_title"
+        android:id="@+id/text_playing_song_title"
         style="@style/TextAppearance.AppCompat.Subhead"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         tools:text="The Island in the Void"
         android:ellipsize="end"
@@ -21,13 +21,13 @@
         android:layout_marginRight="@dimen/spacing_medium"
         android:layout_marginTop="@dimen/spacing_medlarge"
         android:layout_alignParentTop="true"
-        android:layout_toEndOf="@+id/image_game_box_art"
+        android:layout_toEndOf="@+id/image_playing_game_box_art"
         android:layout_toStartOf="@+id/fab_play_pause"/>
 
     <TextView
-        android:id="@+id/text_song_artist"
+        android:id="@+id/text_playing_song_artist"
         style="@style/TextAppearance.AppCompat.Caption"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         tools:text="Yasunori Shiono"
         android:ellipsize="end"
@@ -36,11 +36,11 @@
         android:layout_marginRight="@dimen/spacing_medium"
         android:layout_marginBottom="@dimen/spacing_medlarge"
         android:layout_alignParentBottom="true"
-        android:layout_toEndOf="@+id/image_game_box_art"
+        android:layout_toEndOf="@+id/image_playing_game_box_art"
         android:layout_toStartOf="@+id/fab_play_pause"/>
 
     <ImageView
-        android:id="@+id/image_game_box_art"
+        android:id="@+id/image_playing_game_box_art"
         android:layout_width="48dp"
         android:layout_height="0dp"
         android:layout_margin="@dimen/spacing_medium"
