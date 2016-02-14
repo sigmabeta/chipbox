@@ -14,13 +14,15 @@ import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.presenter.GameGridPresenter
 import net.sigmabeta.chipbox.util.convertDpToPx
+import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.GridSpaceDecoration
 import net.sigmabeta.chipbox.view.activity.GameActivity
 import net.sigmabeta.chipbox.view.adapter.GameGridAdapter
 import net.sigmabeta.chipbox.view.interfaces.GameListView
+import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import javax.inject.Inject
 
-class GameGridFragment : BaseFragment(), GameListView {
+class GameGridFragment : BaseFragment(), GameListView, TopLevelFragment {
     var presenter: GameGridPresenter? = null
         @Inject set
 
@@ -55,6 +57,14 @@ class GameGridFragment : BaseFragment(), GameListView {
         grid_games.layoutManager = layoutManager
     }
 
+    /**
+     * TopLevelFragment
+     */
+
+    override fun isScrolledToBottom(): Boolean {
+        return grid_games?.isScrolledToBottom() ?: false
+    }
+
     override fun inject() {
         FragmentInjector.inject(this)
     }
@@ -72,7 +82,7 @@ class GameGridFragment : BaseFragment(), GameListView {
     }
 
     override fun getTitle(): String {
-        return getString(R.string.app_name)
+        return "Games"
     }
 
     companion object {
