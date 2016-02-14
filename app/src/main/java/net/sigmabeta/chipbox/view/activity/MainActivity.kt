@@ -4,7 +4,11 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.support.v7.app.ActionBarDrawerToggle
 import android.view.MenuItem
+import android.view.View
+import android.widget.TextView
+import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.presenter.MainPresenter
@@ -37,6 +41,19 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
 
         setUpNavigationDrawer()
         setUpViewPagerTabs()
+
+        layout_now_playing.setOnClickListener { presenter?.onNowPlayingClicked() }
+        fab_play_pause.setOnClickListener { presenter?.onPlayFabClicked() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        presenter?.onResume()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        presenter?.onPause()
     }
 
     private fun setUpNavigationDrawer() {
@@ -91,5 +108,46 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
 
     override fun setActivityTitle(title: String) {
         setTitle(title)
+    }
+
+    override fun setTrackTitle(title: String) {
+        val textView = findViewById(R.id.text_song_title) as TextView
+        textView.text = title
+    }
+
+    override fun setArtist(artist: String) {
+        text_song_artist.text = artist
+    }
+
+    override fun setGameBoxart(gameId: Long) {
+        val imagesFolderPath = "file://" + getExternalFilesDir(null).absolutePath + "/images/"
+        val imagePath = imagesFolderPath + gameId.toString() + "/local.png"
+
+        Picasso.with(this)
+                .load(imagePath)
+                .centerCrop()
+                .fit()
+                .into(image_game_box_art)
+    }
+
+
+    override fun showPauseButton() {
+        fab_play_pause.setImageResource(R.drawable.ic_pause_white_48dp)
+    }
+
+    override fun showPlayButton() {
+        fab_play_pause.setImageResource(R.drawable.ic_play_48dp)
+    }
+
+    override fun showNowPlaying(animate: Boolean) {
+        layout_now_playing.visibility = View.VISIBLE
+    }
+
+    override fun hideNowPlaying(animate: Boolean) {
+        layout_now_playing.visibility = View.GONE
+    }
+
+    override fun launchPlayerActivity() {
+        PlayerActivity.launch(this)
     }
 }
