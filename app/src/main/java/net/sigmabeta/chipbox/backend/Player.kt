@@ -40,6 +40,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     var playbackQueue: ArrayList<Track>? = null
     var playbackQueuePosition: Int? = null
 
+    var pausedTrack: Track? = null
+    var queuedTrack: Track? = null
     var playingTrack: Track? = null
         set (value) {
 
@@ -83,10 +85,19 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         val timeout = 1000L
 
         while (state == PlaybackState.STATE_PLAYING) {
+            if (pausedTrack != null) {
+                pausedTrack = null
+            }
+
+            if (queuedTrack != null) {
+                playingTrack = queuedTrack
+                queuedTrack = null
+            }
+
             if (isTrackOver()) {
                 logVerbose("[Player] Track has ended.")
 
-                if (!nextTrackAvailable()) {
+                if (!isNextTrackAvailable()) {
                     logInfo("[Player] No more tracks to play.")
                     stop()
                     break
@@ -211,7 +222,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         val focusResult = requestAudioFocus()
         if (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
-            val localTrack = playingTrack
+            val localTrack = queuedTrack ?: pausedTrack
 
             if (localTrack != null) {
                 logVerbose("[Player] Playing track: ${localTrack.title}")
@@ -224,8 +235,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 }
 
                 // Start a thread for the playback loop.
-                Thread { writerLoop() }.start()
-                Thread { readerLoop() }.start()
+                Thread({ writerLoop() }, "writer").start()
+                Thread({ readerLoop() }, "reader").start()
             } else {
                 logError("[Player] Received play command, but no Track selected.")
             }
@@ -237,7 +248,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     fun play(track: Track) {
         logVerbose("[Player] Playing new track: ${track.title}")
 
-        playingTrack = track
+        queuedTrack = track
 
         playbackQueue = null
         playbackQueuePosition = null
@@ -252,7 +263,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             this.playbackQueue = playbackQueue
             playbackQueuePosition = position
 
-            playingTrack = playbackQueue.get(position)
+            queuedTrack = playbackQueue.get(position)
 
             play()
         } else {
@@ -265,7 +276,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         if (queue != null) {
             if (position < queue.size) {
                 playbackQueuePosition = position
-                playingTrack = queue.get(position)
+                queuedTrack = queue.get(position)
 
                 play()
             } else {
@@ -276,7 +287,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         }
     }
 
-    fun nextTrackAvailable(): Boolean {
+    fun isNextTrackAvailable(): Boolean {
         val queue = playbackQueue
         var position = playbackQueuePosition
 
@@ -290,7 +301,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         if (queue != null && position != null && position < queue.size - 1) {
             position += 1
 
-            playingTrack = queue.get(position)
+            queuedTrack = queue.get(position)
             playbackQueuePosition = position
 
             logInfo("[Player] Loading track ${position} of ${queue.size}.")
@@ -305,7 +316,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         if (queue != null && position != null && position < queue.size - 1) {
             position += 1
 
-            playingTrack = queue.get(position)
+            queuedTrack = queue.get(position)
             playbackQueuePosition = position
 
             logInfo("[Player] Loading track ${position} of ${queue.size}.")
@@ -320,7 +331,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         if (queue != null && position != null && position >= 0) {
             position -= 1
 
-            playingTrack = queue.get(position)
+            queuedTrack = queue.get(position)
             playbackQueuePosition = position
 
             logInfo("[Player] Loading track ${position} of ${queue.size}.")
@@ -335,6 +346,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         }
 
         logVerbose("[Player] Pausing track: ${playingTrack?.title}")
+
+        pausedTrack = playingTrack
 
         state = PlaybackState.STATE_PAUSED
 
@@ -361,6 +374,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         audioTrack = null
 
         playingTrack = null
+        pausedTrack = null
+        queuedTrack = null
 
         teardown()
 
