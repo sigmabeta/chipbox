@@ -41,9 +41,8 @@
 
     <ImageView
         android:id="@+id/image_playing_game_box_art"
-        android:layout_width="48dp"
+        android:layout_width="64dp"
         android:layout_height="0dp"
-        android:layout_margin="@dimen/spacing_medium"
         tools:src="@mipmap/ic_launcher"
         android:scaleType="centerCrop"
         android:layout_centerVertical="true"
