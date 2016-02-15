@@ -77,7 +77,7 @@ class PlatformListFragment : BaseFragment(), PlatformListView, TopLevelFragment 
     }
 
     override fun getTitle(): String {
-        return "Systems"
+        return getString(R.string.app_name)
     }
 
     companion object {

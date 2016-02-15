@@ -94,7 +94,7 @@ class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, Navigat
     }
 
     override fun getTitle(): String {
-        return "Songs"
+        return getString(R.string.app_name)
     }
 
     companion object {
