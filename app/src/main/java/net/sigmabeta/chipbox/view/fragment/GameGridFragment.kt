@@ -83,7 +83,7 @@ class GameGridFragment : BaseFragment(), GameListView, TopLevelFragment, Navigat
     }
 
     override fun getTitle(): String {
-        return "Games"
+        return getString(R.string.app_name)
     }
 
     companion object {

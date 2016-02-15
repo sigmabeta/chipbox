@@ -53,7 +53,6 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
         val fragment = super.instantiateItem(container, position) as Fragment
 
         if (fragment is TopLevelFragment) {
-            logVerbose("[MainTabPagerAdapter] Keeping ${fragment.getTitle()} fragment at position $position")
             fragments.set(position, fragment)
         } else {
             logError("[MainTabPagerAdapter] Invalid fragment at position ${position}")

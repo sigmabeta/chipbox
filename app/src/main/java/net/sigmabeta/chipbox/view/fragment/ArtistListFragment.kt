@@ -76,7 +76,7 @@ class ArtistListFragment : BaseFragment(), ArtistListView, TopLevelFragment {
     }
 
     override fun getTitle(): String {
-        return "Artists"
+        return getString(R.string.app_name)
     }
 
     companion object {
