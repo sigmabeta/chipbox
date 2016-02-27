@@ -156,7 +156,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         // Begin playback loop
         audioTrack?.play()
 
-        val timeout = audioConfig.minimumLatency.toLong() * READ_AHEAD_BUFFER_SIZE
+        val timeout = 5000L
 
         while (state == PlaybackState.STATE_PLAYING) {
             var audioBuffer = fullBuffers.poll()
@@ -169,7 +169,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
                 if (audioBuffer == null) {
                     logError("[Player] Couldn't get a full buffer after ${timeout}ms; stopping...")
-                    stop()
+                    state = PlaybackState.STATE_ERROR
                     break
                 }
             }
