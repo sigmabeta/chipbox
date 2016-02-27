@@ -387,8 +387,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     override fun onAudioFocusChange(focusChange: Int) {
         when (focusChange) {
             AudioManager.AUDIOFOCUS_LOSS -> {
-                logVerbose("[Player] Focus lost. Stopping...")
-                stop()
+                logVerbose("[Player] Focus lost. Pausing...")
+                pause()
             }
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
