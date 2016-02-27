@@ -69,9 +69,9 @@ fun readTrackInfoFromPath(path: String, trackNumber: Int): Track? {
     val gameTitle = info.get(INDEX_TRACK_INFO_GAME)
     val artist = info.get(INDEX_TRACK_INFO_ARTIST)
 
-    val trackLength = Integer.parseInt(info.get(INDEX_TRACK_INFO_LENGTH))
-    val introLength = Integer.parseInt(info.get(INDEX_TRACK_INFO_INTRO_LENGTH))
-    val loopLength = Integer.parseInt(info.get(INDEX_TRACK_INFO_LOOP_LENGTH))
+    val trackLength = info.get(INDEX_TRACK_INFO_LENGTH).toLong()
+    val introLength = info.get(INDEX_TRACK_INFO_INTRO_LENGTH).toLong()
+    val loopLength = info.get(INDEX_TRACK_INFO_LOOP_LENGTH).toLong()
 
     return Track(
             -1,
@@ -121,7 +121,7 @@ fun generateFileList(folder: File): ArrayList<FileListItem> {
     return fileList
 }
 
-fun getTimeStringFromMillis(millis: Int): String {
+fun getTimeStringFromMillis(millis: Long): String {
     val millisAsLong = millis.toLong()
 
     val minutes = TimeUnit.MILLISECONDS.toMinutes(millisAsLong)

@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.model.events
 
-class PositionEvent(val millisPlayed: Int) : PlaybackEvent() {
+class PositionEvent(val millisPlayed: Long) : PlaybackEvent() {
     override fun getType(): String {
         return EVENT_TYPE
     }

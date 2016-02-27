@@ -5,6 +5,13 @@
              android:layout_width="match_parent"
              android:layout_height="match_parent">
 
+    <include
+        android:id="@+id/layout_now_playing"
+        android:layout_gravity="bottom"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        layout="@layout/layout_now_playing"/>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -25,18 +32,4 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
     </LinearLayout>
-
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/button_play"
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:layout_margin="@dimen/spacing_large"
-        android:layout_gravity="bottom|right|end"
-        android:src="@drawable/ic_play_48dp"
-        app:borderWidth="0dp"
-        app:rippleColor="?android:colorPrimaryDark"
-        app:layout_anchor="@+id/list_files"
-        app:elevation="6dp"
-        app:pressedTranslationZ="12dp"/>
-
 </FrameLayout>

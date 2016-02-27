@@ -13,7 +13,6 @@ import net.sigmabeta.chipbox.util.logWarning
 import net.sigmabeta.chipbox.view.interfaces.PlayerFragmentView
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @FragmentScoped
@@ -86,9 +85,11 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
         displayPosition(0)
     }
 
-    private fun displayPosition(millisPlayed: Int) {
+    private fun displayPosition(millisPlayed: Long) {
         val timeString = getTimeStringFromMillis(millisPlayed)
         view.setTimeElapsed(timeString)
+
+        view.setUnderrunCount("Underruns ${player.stats.underrunCount}")
     }
 
     private fun displayState(state: Int) {

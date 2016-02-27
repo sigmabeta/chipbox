@@ -7,18 +7,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import kotlinx.android.synthetic.fragment_artist_list.frame_content
-import kotlinx.android.synthetic.fragment_artist_list.list_artists
+import kotlinx.android.synthetic.main.fragment_artist_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.presenter.ArtistListPresenter
+import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.activity.NavigationActivity
 import net.sigmabeta.chipbox.view.adapter.ArtistListAdapter
 import net.sigmabeta.chipbox.view.interfaces.ArtistListView
+import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import javax.inject.Inject
 
-class ArtistListFragment : BaseFragment(), ArtistListView {
+class ArtistListFragment : BaseFragment(), ArtistListView, TopLevelFragment {
     var presenter: ArtistListPresenter? = null
         @Inject set
 
@@ -52,6 +53,14 @@ class ArtistListFragment : BaseFragment(), ArtistListView {
                 SongListFragment.FRAGMENT_TAG,
                 id,
                 artistName)
+    }
+
+    /**
+     * TopLevelFragment
+     */
+
+    override fun isScrolledToBottom(): Boolean {
+        return list_artists?.isScrolledToBottom() ?: false
     }
 
     /**

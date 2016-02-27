@@ -7,18 +7,21 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import kotlinx.android.synthetic.fragment_song_list.*
+import kotlinx.android.synthetic.main.fragment_song_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.presenter.SongListPresenter
+import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.activity.PlayerActivity
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
+import net.sigmabeta.chipbox.view.interfaces.NavigationFragment
 import net.sigmabeta.chipbox.view.interfaces.SongListView
+import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import javax.inject.Inject
 
-class SongListFragment : BaseFragment(), SongListView {
+class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, NavigationFragment {
     var presenter: SongListPresenter? = null
         @Inject set
 
@@ -68,6 +71,14 @@ class SongListFragment : BaseFragment(), SongListView {
 
     override fun getCursor(): Cursor? {
         return adapter?.cursor
+    }
+
+    /**
+     * TopLevelFragment
+     */
+
+    override fun isScrolledToBottom(): Boolean {
+        return list_songs?.isScrolledToBottom() ?: false
     }
 
     /**

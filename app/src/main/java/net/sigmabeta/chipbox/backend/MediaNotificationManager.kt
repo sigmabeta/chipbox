@@ -100,25 +100,31 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
     fun startNotification() {
         if (!notified) {
             val player = playerService.player
-            if (player != null && player.playingTrack != null) {
-                updateState(player.state)
-                updateTrack(player.playingTrack!!)
+            if (player != null) {
+                val localTrack = player.playingTrack ?: player.queuedTrack ?: player.pausedTrack
 
-                val notification = createNotification()
-                if (notification != null) {
-                    logVerbose("[MediaNotificationManager] Starting foreground notification...")
+                if (localTrack != null) {
+                    updateState(player.state)
+                    updateTrack(localTrack)
 
-                    val filter = IntentFilter()
-                    filter.addAction(ACTION_PAUSE)
-                    filter.addAction(ACTION_PLAY)
-                    filter.addAction(ACTION_STOP)
-                    filter.addAction(ACTION_PREV)
-                    filter.addAction(ACTION_NEXT)
+                    val notification = createNotification()
+                    if (notification != null) {
+                        logVerbose("[MediaNotificationManager] Starting foreground notification...")
 
-                    playerService.registerReceiver(this, filter)
-                    playerService.startForeground(NOTIFICATION_ID, notification)
+                        val filter = IntentFilter()
+                        filter.addAction(ACTION_PAUSE)
+                        filter.addAction(ACTION_PLAY)
+                        filter.addAction(ACTION_STOP)
+                        filter.addAction(ACTION_PREV)
+                        filter.addAction(ACTION_NEXT)
 
-                    notified = true
+                        playerService.registerReceiver(this, filter)
+                        playerService.startForeground(NOTIFICATION_ID, notification)
+
+                        notified = true
+                    }
+                } else {
+                    logError("[MediaNotificationManager] Can't show notification: no track found.")
                 }
             }
         }

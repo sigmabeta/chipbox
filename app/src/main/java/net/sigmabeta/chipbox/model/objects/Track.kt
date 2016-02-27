@@ -13,9 +13,9 @@ data class Track(val id: Long,
                  val gameTitle: String,
                  val platform: Int,
                  val artist: String,
-                 val trackLength: Int,
-                 val introLength: Int,
-                 val loopLength: Int) {
+                 val trackLength: Long,
+                 val introLength: Long,
+                 val loopLength: Long) {
 
     companion object {
         val PLATFORM_UNSUPPORTED = 100
@@ -40,9 +40,9 @@ data class Track(val id: Long,
                     toBind.getString(COLUMN_TRACK_GAME_TITLE),
                     toBind.getInt(COLUMN_TRACK_GAME_PLATFORM),
                     toBind.getString(COLUMN_TRACK_ARTIST),
-                    toBind.getInt(COLUMN_TRACK_LENGTH),
-                    toBind.getInt(COLUMN_TRACK_INTRO_LENGTH),
-                    toBind.getInt(COLUMN_TRACK_LOOP_LENGTH)
+                    toBind.getLong(COLUMN_TRACK_LENGTH),
+                    toBind.getLong(COLUMN_TRACK_INTRO_LENGTH),
+                    toBind.getLong(COLUMN_TRACK_LOOP_LENGTH)
             )
         }
     }
