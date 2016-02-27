@@ -5,9 +5,8 @@ import android.graphics.Bitmap
 import android.support.v7.widget.RecyclerView
 import android.view.View
 import com.squareup.picasso.Picasso
-import kotlinx.android.synthetic.main.list_item_song.view.*
-import kotlinx.android.synthetic.main.list_item_song_game.view.text_song_track_number
-import net.sigmabeta.chipbox.R
+import kotlinx.android.synthetic.main.list_item_song.view.image_game_box_art
+import kotlinx.android.synthetic.main.list_item_song_game.view.*
 import net.sigmabeta.chipbox.model.database.*
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
@@ -26,7 +25,7 @@ class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerVie
         val title = toBind.getString(COLUMN_TRACK_TITLE)
         val artistName = toBind.getString(COLUMN_TRACK_ARTIST)
 
-        val trackLength = getTimeStringFromMillis(toBind.getInt(COLUMN_TRACK_LENGTH))
+        val trackLength = getTimeStringFromMillis(toBind.getLong(COLUMN_TRACK_LENGTH))
 
         view.text_song_title.text = title
         view.text_song_artist.text = artistName

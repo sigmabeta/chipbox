@@ -6,20 +6,21 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import kotlinx.android.synthetic.fragment_platform_list.frame_content
-import kotlinx.android.synthetic.fragment_platform_list.list_platforms
+import kotlinx.android.synthetic.main.fragment_platform_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.model.objects.Platform
 import net.sigmabeta.chipbox.presenter.PlatformListPresenter
+import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.activity.NavigationActivity
 import net.sigmabeta.chipbox.view.adapter.PlatformListAdapter
 import net.sigmabeta.chipbox.view.interfaces.PlatformListView
+import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import java.util.*
 import javax.inject.Inject
 
-class PlatformListFragment : BaseFragment(), PlatformListView {
+class PlatformListFragment : BaseFragment(), PlatformListView, TopLevelFragment {
     var presenter: PlatformListPresenter? = null
         @Inject set
 
@@ -53,6 +54,14 @@ class PlatformListFragment : BaseFragment(), PlatformListView {
 
     override fun setList(list: ArrayList<Platform>) {
         adapter.setData(list)
+    }
+
+    /**
+     * TopLevelFragment
+     */
+
+    override fun isScrolledToBottom(): Boolean {
+        return list_platforms?.isScrolledToBottom() ?: false
     }
 
     /**

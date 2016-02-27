@@ -6,7 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import com.squareup.picasso.Picasso
-import kotlinx.android.synthetic.fragment_player.*
+import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
@@ -101,6 +101,10 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
 
     override fun showPlayButton() {
         button_play.setImageResource(R.drawable.ic_play_48dp)
+    }
+
+    override fun setUnderrunCount(count: String) {
+        text_underrun_count.text = count
     }
 
     /**

@@ -5,20 +5,12 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.BitmapFactory
 import android.media.AudioManager
 import android.media.session.MediaSession
-import android.media.session.PlaybackState
 import android.os.IBinder
-import android.os.SystemClock
-import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import net.sigmabeta.chipbox.dagger.injector.ServiceInjector
-import net.sigmabeta.chipbox.model.objects.Track
-import net.sigmabeta.chipbox.util.logDebug
-import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logVerbose
 import net.sigmabeta.chipbox.view.activity.PlayerActivity
 import net.sigmabeta.chipbox.view.interfaces.BackendView
@@ -76,7 +68,7 @@ class PlayerService : Service(), BackendView {
             play()
         }
 
-        return Service.START_STICKY
+        return Service.START_NOT_STICKY
     }
 
     override fun onDestroy() {

@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.view.viewholder
 
 import android.support.v7.widget.RecyclerView
 import android.view.View
-import kotlinx.android.synthetic.list_item_platform.view.text_platform_name
+import kotlinx.android.synthetic.main.list_item_platform.view.*
 import net.sigmabeta.chipbox.model.objects.Platform
 import net.sigmabeta.chipbox.view.adapter.PlatformListAdapter
 

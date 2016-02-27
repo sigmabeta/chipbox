@@ -45,6 +45,11 @@ class GamePresenter @Inject constructor(val view: GameView,
     }
 
     fun onResume() {
+        val track = player.playingTrack
+        if (track != null) {
+            setPlayingTrack(track)
+        }
+
         subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
@@ -66,11 +71,11 @@ class GamePresenter @Inject constructor(val view: GameView,
         subscription = null
     }
 
-    fun setPlayingTrack(track: Track) {
+    private fun setPlayingTrack(track: Track) {
         view.setPlayingTrack(track)
     }
 
-    fun setPlaybackState(state: Int) {
+    private fun setPlaybackState(state: Int) {
         view.setPlaybackState(state)
     }
 

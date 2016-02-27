@@ -7,20 +7,23 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
-import kotlinx.android.synthetic.fragment_game_grid.*
+import kotlinx.android.synthetic.main.fragment_game_grid.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.presenter.GameGridPresenter
 import net.sigmabeta.chipbox.util.convertDpToPx
+import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.GridSpaceDecoration
 import net.sigmabeta.chipbox.view.activity.GameActivity
 import net.sigmabeta.chipbox.view.adapter.GameGridAdapter
 import net.sigmabeta.chipbox.view.interfaces.GameListView
+import net.sigmabeta.chipbox.view.interfaces.NavigationFragment
+import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import javax.inject.Inject
 
-class GameGridFragment : BaseFragment(), GameListView {
+class GameGridFragment : BaseFragment(), GameListView, TopLevelFragment, NavigationFragment {
     var presenter: GameGridPresenter? = null
         @Inject set
 
@@ -53,6 +56,14 @@ class GameGridFragment : BaseFragment(), GameListView {
         grid_games.adapter = adapter
         grid_games.addItemDecoration(GridSpaceDecoration(spacing))
         grid_games.layoutManager = layoutManager
+    }
+
+    /**
+     * TopLevelFragment
+     */
+
+    override fun isScrolledToBottom(): Boolean {
+        return grid_games?.isScrolledToBottom() ?: false
     }
 
     override fun inject() {
