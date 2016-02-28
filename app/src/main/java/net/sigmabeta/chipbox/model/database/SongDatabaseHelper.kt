@@ -6,6 +6,7 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import net.sigmabeta.chipbox.model.events.FileScanEvent
+import net.sigmabeta.chipbox.model.objects.Artist
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.*
@@ -396,13 +397,14 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     folderCursor.moveToPosition(-1)
 
                     val gameMap = HashMap<Long, Game>()
+                    val artistMap = HashMap<Long, Artist>()
 
                     // Iterate through all results of the DB query (i.e. all folders in the library.)
                     while (folderCursor.moveToNext()) {
                         val folderPath = folderCursor.getString(COLUMN_FOLDER_PATH)
                         val folder = File(folderPath)
 
-                        scanFolder(folder, gameMap, database, it as Subscriber<FileScanEvent>)
+                        scanFolder(folder, gameMap, artistMap, database, it as Subscriber<FileScanEvent>)
                     }
 
                     folderCursor.close()
@@ -419,7 +421,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         )
     }
 
-    private fun scanFolder(folder: File, gameMap: HashMap<Long, Game>, database: SQLiteDatabase, sub: Subscriber<FileScanEvent>) {
+    private fun scanFolder(folder: File, gameMap: HashMap<Long, Game>, artistMap: HashMap<Long, Artist>, database: SQLiteDatabase, sub: Subscriber<FileScanEvent>) {
         database.beginTransaction()
 
         val folderPath = folder.absolutePath
@@ -440,7 +442,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             for (file in children) {
                 if (!file.isHidden) {
                     if (file.isDirectory) {
-                        scanFolder(file, gameMap, database, sub)
+                        scanFolder(file, gameMap, artistMap, database, sub)
                     } else {
                         val filePath = file.absolutePath
 
@@ -457,7 +459,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                                 if (track != null) {
                                     folderGameId = getGameId(track.gameTitle, track.platform, gameMap, database)
-                                    val values = getContentValuesFromTrack(track, database, folderGameId)
+                                    val artistId = getArtistId(track.artist, artistMap, database)
+                                    val values = getContentValuesFromTrack(track, folderGameId, artistId)
 
                                     addTrackToDatabase(values, database)
 
@@ -584,7 +587,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             )
         }
 
-        private fun getContentValuesFromTrack(track: Track, database: SQLiteDatabase, gameId: Long): ContentValues {
+        private fun getContentValuesFromTrack(track: Track, gameId: Long, artistId: Long): ContentValues {
             val values = ContentValues()
 
             var trackLength = 0L;
@@ -607,7 +610,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             values.put(KEY_TRACK_GAME_ID, gameId)
             values.put(KEY_TRACK_GAME_TITLE, track.gameTitle)
             values.put(KEY_TRACK_GAME_PLATFORM, track.platform)
-            values.put(KEY_TRACK_ARTIST_ID, getArtistId(track.artist, database))
+            values.put(KEY_TRACK_ARTIST_ID, artistId)
             values.put(KEY_TRACK_ARTIST, track.artist)
             values.put(KEY_TRACK_LENGTH, trackLength)
             values.put(KEY_TRACK_INTRO_LENGTH, track.introLength)
@@ -616,35 +619,66 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             return values
         }
 
-        private fun getArtistId(artist: String, database: SQLiteDatabase): Long {
+        private fun getArtistId(name: String, artistMap: HashMap<Long, Artist>, database: SQLiteDatabase): Long {
+            var artist: Artist? = null
+
+            // Check if this artist has already been seen during this scan.
+            artistMap.keys.forEach {
+                val currentArtist = artistMap.get(it)
+                if (currentArtist?.name == name) {
+                    logVerbose("[SongDatabaseHelper] Found cached artist $name with id ${currentArtist?.id}")
+                    artist = currentArtist
+                    return@forEach
+                }
+            }
+
+            // If it has, we already know its ID.
+            if (artist != null) {
+                return artist!!.id
+            }
+
             val resultCursor = database.query(TABLE_NAME_ARTISTS,
                     null, // Get all columns.
                     "${KEY_ARTIST_NAME} = ?", // Get only the artist matching this name.
-                    arrayOf(artist), // The name to match.
+                    arrayOf(name), // The name to match.
                     null, // No grouping.
                     null, // No havingBy.
                     null) // Should only be one result, so order is irrelevant.
 
-            when (resultCursor.count) {
+            val artistToReturn = when (resultCursor.count) {
                 0 -> {
                     resultCursor.close()
-                    return addArtistToDatabase(artist, database)
+                    val newArtist = addArtistToDatabase(name, database)
+
+                    // Assign to artistToReturn
+                    newArtist
                 }
-                1 -> logDebug("[SongDatabaseHelper] Found database entry for artist ${artist}.")
-                else -> logError("[SongDatabaseHelper] Found multiple database entries with artist ${artist}")
+                1 -> {
+                    logDebug("[SongDatabaseHelper] Found database entry for artist ${artist}.")
+                    resultCursor.moveToFirst()
+                    val id = resultCursor.getLong(COLUMN_DB_ID)
+
+                    resultCursor.close()
+
+                    val artistFromDatabase = Artist(id, name)
+
+                    // Assign to artistToReturn
+                    artistFromDatabase
+                }
+                else -> {
+                    logError("[SongDatabaseHelper] Found multiple database entries with artist ${artist}")
+                    return -1
+                }
             }
 
-            resultCursor.moveToFirst()
-            val id = resultCursor.getLong(COLUMN_DB_ID)
-
-            resultCursor.close()
-            return id
+            artistMap.put(artistToReturn.id, artistToReturn)
+            return artistToReturn.id
         }
 
-        private fun addArtistToDatabase(artist: String, database: SQLiteDatabase): Long {
+        private fun addArtistToDatabase(name: String, database: SQLiteDatabase): Artist {
             val values = ContentValues()
 
-            values.put(KEY_ARTIST_NAME, artist)
+            values.put(KEY_ARTIST_NAME, name)
 
             val artistId = database.insert(TABLE_NAME_ARTISTS,
                     null,
@@ -652,13 +686,13 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
             if (artistId < 0) {
                 // TODO Do more than just report an error.
-                logError("[SongDatabaseHelper] Unable to add artist ${artist} to database.")
-                throw UnsupportedOperationException("Unable to add artist ${artist} to database.")
+                logError("[SongDatabaseHelper] Unable to add artist ${name} to database.")
+                throw UnsupportedOperationException("Unable to add artist ${name} to database.")
             } else {
-                logInfo("[SongDatabaseHelper] Added artist #${artistId}: ${artist} to database.")
+                logInfo("[SongDatabaseHelper] Added artist #${artistId}: ${name} to database.")
             }
 
-            return artistId
+            return Artist(artistId, name)
         }
 
         private fun getGameId(gameTitle: String, gamePlatform: Int, gameMap: HashMap<Long, Game>, database: SQLiteDatabase): Long {
@@ -668,7 +702,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             gameMap.keys.forEach {
                 val currentGame = gameMap.get(it)
                 if (currentGame?.title == gameTitle && currentGame?.platform == gamePlatform) {
-                    logVerbose("[SongDatabaseHelper] Found cached game $gameTitle with id $currentGame.id")
+                    logVerbose("[SongDatabaseHelper] Found cached game $gameTitle with id ${currentGame?.id}")
                     game = currentGame
                     return@forEach
                 }
