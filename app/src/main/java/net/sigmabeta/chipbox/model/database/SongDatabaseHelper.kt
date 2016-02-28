@@ -372,6 +372,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     // OnSubscribe.call. it: String
                     logInfo("[SongDatabaseHelper] Scanning library...")
 
+                    val startTime = System.currentTimeMillis()
+
                     val database = writableDatabase
 
                     database.beginTransaction()
@@ -404,6 +406,12 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     folderCursor.close()
 
                     database.close()
+
+                    val endTime = System.currentTimeMillis()
+                    val scanDuration = (endTime - startTime) / 1000.0f
+
+                    logInfo("[SongDatabaseHelper] Scanned library in ${scanDuration} seconds.")
+
                     it.onCompleted()
                 }
         )
