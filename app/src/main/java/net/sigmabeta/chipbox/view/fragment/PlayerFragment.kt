@@ -92,6 +92,7 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
                 .load(imagePath)
                 .centerCrop()
                 .fit()
+                .error(R.drawable.img_album_art_blank)
                 .into(image_game_box_art)
     }
 
