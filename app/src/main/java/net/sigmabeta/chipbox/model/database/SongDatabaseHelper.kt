@@ -6,6 +6,7 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import net.sigmabeta.chipbox.model.events.FileScanEvent
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.*
 import org.apache.commons.io.FileUtils
@@ -376,10 +377,9 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                     val database = writableDatabase
 
-                    database.beginTransaction()
                     // Before scanning known folders, go through the game table and remove any entries for which the file itself is missing.
+                    database.beginTransaction()
                     trimMissingFiles(database)
-
                     database.setTransactionSuccessful()
                     database.endTransaction()
 
@@ -395,12 +395,14 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     // Possibly overly defensive, but ensures that moveToNext() does not skip a row.
                     folderCursor.moveToPosition(-1)
 
+                    val gameMap = HashMap<Long, Game>()
+
                     // Iterate through all results of the DB query (i.e. all folders in the library.)
                     while (folderCursor.moveToNext()) {
                         val folderPath = folderCursor.getString(COLUMN_FOLDER_PATH)
                         val folder = File(folderPath)
 
-                        scanFolder(folder, database, it as Subscriber<FileScanEvent>)
+                        scanFolder(folder, gameMap, database, it as Subscriber<FileScanEvent>)
                     }
 
                     folderCursor.close()
@@ -417,7 +419,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         )
     }
 
-    private fun scanFolder(folder: File, database: SQLiteDatabase, sub: Subscriber<FileScanEvent>) {
+    private fun scanFolder(folder: File, gameMap: HashMap<Long, Game>, database: SQLiteDatabase, sub: Subscriber<FileScanEvent>) {
         database.beginTransaction()
 
         val folderPath = folder.absolutePath
@@ -438,7 +440,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             for (file in children) {
                 if (!file.isHidden) {
                     if (file.isDirectory) {
-                        scanFolder(file, database, sub)
+                        scanFolder(file, gameMap, database, sub)
                     } else {
                         val filePath = file.absolutePath
 
@@ -454,9 +456,9 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                                 trackCount += 1
 
                                 if (track != null) {
-                                    val values = getContentValuesFromTrack(track, database)
+                                    folderGameId = getGameId(track.gameTitle, track.platform, gameMap, database)
+                                    val values = getContentValuesFromTrack(track, database, folderGameId)
 
-                                    folderGameId = values.getAsLong(KEY_TRACK_GAME_ID)
                                     addTrackToDatabase(values, database)
 
                                     sub.onNext(FileScanEvent(null, filePath))
@@ -582,7 +584,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             )
         }
 
-        private fun getContentValuesFromTrack(track: Track, database: SQLiteDatabase): ContentValues {
+        private fun getContentValuesFromTrack(track: Track, database: SQLiteDatabase, gameId: Long): ContentValues {
             val values = ContentValues()
 
             var trackLength = 0L;
@@ -602,7 +604,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             values.put(KEY_TRACK_NUMBER, track.trackNumber)
             values.put(KEY_TRACK_PATH, track.path)
             values.put(KEY_TRACK_TITLE, track.title)
-            values.put(KEY_TRACK_GAME_ID, getGameId(track.gameTitle, track.platform, database))
+            values.put(KEY_TRACK_GAME_ID, gameId)
             values.put(KEY_TRACK_GAME_TITLE, track.gameTitle)
             values.put(KEY_TRACK_GAME_PLATFORM, track.platform)
             values.put(KEY_TRACK_ARTIST_ID, getArtistId(track.artist, database))
@@ -659,7 +661,25 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             return artistId
         }
 
-        private fun getGameId(gameTitle: String, gamePlatform: Int, database: SQLiteDatabase): Long {
+        private fun getGameId(gameTitle: String, gamePlatform: Int, gameMap: HashMap<Long, Game>, database: SQLiteDatabase): Long {
+            var game: Game? = null
+
+            // Check if this game has already been seen during this scan.
+            gameMap.keys.forEach {
+                val currentGame = gameMap.get(it)
+                if (currentGame?.title == gameTitle && currentGame?.platform == gamePlatform) {
+                    logVerbose("[SongDatabaseHelper] Found cached game $gameTitle with id $currentGame.id")
+                    game = currentGame
+                    return@forEach
+                }
+            }
+
+            // If it has, we already know its ID.
+            if (game != null) {
+                return game!!.id
+            }
+
+            // If not, we have to ask the database.
             val resultCursor = database.query(TABLE_NAME_GAMES,
                     null, // Get all columns.
                     "${KEY_GAME_TITLE} = ? AND ${KEY_GAME_PLATFORM} = ?", // Get only the game matching this title.
@@ -668,23 +688,38 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     null, // No havingBy.
                     null) // Should only be one result, so order is irrelevant.
 
-            when (resultCursor.count) {
+            val gameToReturn = when (resultCursor.count) {
                 0 -> {
                     resultCursor.close()
-                    return addGameToDatabase(gameTitle, gamePlatform, database)
+                    val newGame = addGameToDatabase(gameTitle, gamePlatform, database)
+
+                    // Assign to gameToReturn
+                    newGame
                 }
-                1 -> logDebug("[SongDatabaseHelper] Found database entry for game ${gameTitle}.")
-                else -> logError("[SongDatabaseHelper] Found multiple database entries with title ${gameTitle}")
+                1 -> {
+                    logDebug("[SongDatabaseHelper] Found database entry for game ${gameTitle}.")
+
+                    resultCursor.moveToFirst()
+                    val id = resultCursor.getLong(COLUMN_DB_ID)
+
+                    resultCursor.close()
+
+                    val gameFromDatabase = Game(id, gameTitle, gamePlatform)
+
+                    // Assign to gameToReturn
+                    gameFromDatabase
+                }
+                else -> {
+                    logError("[SongDatabaseHelper] Found multiple database entries with title ${gameTitle}")
+                    return -1
+                }
             }
 
-            resultCursor.moveToFirst()
-            val id = resultCursor.getLong(COLUMN_DB_ID)
-
-            resultCursor.close()
-            return id
+            gameMap.put(gameToReturn.id, gameToReturn)
+            return gameToReturn.id
         }
 
-        private fun addGameToDatabase(gameTitle: String, gamePlatform: Int, database: SQLiteDatabase): Long {
+        private fun addGameToDatabase(gameTitle: String, gamePlatform: Int, database: SQLiteDatabase): Game {
             val values = ContentValues()
 
             values.put(KEY_GAME_TITLE, gameTitle)
@@ -702,7 +737,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                 logInfo("[SongDatabaseHelper] Added game #${gameId}: ${gameTitle} to database.")
             }
 
-            return gameId
+            return Game(gameId, gameTitle, gamePlatform)
         }
     }
 }
