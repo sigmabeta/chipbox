@@ -94,6 +94,7 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
                 .load(imagePath)
                 .centerCrop()
                 .fit()
+                .error(R.drawable.img_album_art_blank)
                 .into(image_playing_game_box_art)
     }
 

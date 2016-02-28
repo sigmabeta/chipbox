@@ -6,6 +6,7 @@ import android.support.v7.widget.RecyclerView
 import android.view.View
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.grid_item_game.view.*
+import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.database.COLUMN_DB_ID
 import net.sigmabeta.chipbox.model.database.COLUMN_GAME_COMPANY
 import net.sigmabeta.chipbox.model.database.COLUMN_GAME_TITLE
@@ -34,6 +35,7 @@ class GameViewHolder(val view: View, val adapter: GameGridAdapter) : RecyclerVie
                 .config(Bitmap.Config.RGB_565)
                 .centerCrop()
                 .fit()
+                .error(R.drawable.img_album_art_blank)
                 .into(view.image_game_box_art)
     }
 

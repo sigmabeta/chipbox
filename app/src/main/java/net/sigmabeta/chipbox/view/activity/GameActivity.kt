@@ -72,6 +72,7 @@ class GameActivity : BaseActivity(), GameView, SongListView {
                 .load(imagePath)
                 .centerCrop()
                 .fit()
+                .error(R.drawable.img_album_art_blank)
                 .into(image_hero_boxart)
 
         val gameTitle = cursor.getString(COLUMN_TRACK_GAME_TITLE)
