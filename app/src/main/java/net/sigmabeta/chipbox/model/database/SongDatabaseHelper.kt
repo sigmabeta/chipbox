@@ -27,6 +27,8 @@ val COLUMN_GAME_PLATFORM = 1
 val COLUMN_GAME_TITLE = 2
 val COLUMN_GAME_DESCRIPTION = 3
 val COLUMN_GAME_COMPANY = 4
+val COLUMN_GAME_ART_LOCAL = 5
+val COLUMN_GAME_ART_WEB = 6
 
 val COLUMN_ARTIST_NAME = 1
 
@@ -50,6 +52,8 @@ val KEY_GAME_PLATFORM = "platform"
 val KEY_GAME_TITLE = "title"
 val KEY_GAME_DESCRIPTION = "description"
 val KEY_GAME_COMPANY = "company"
+val KEY_GAME_ART_LOCAL = "art_local"
+val KEY_GAME_ART_WEB = "art_web"
 
 val KEY_ARTIST_NAME = "name"
 
@@ -90,7 +94,9 @@ private val SQL_CREATE_GAMES = "${SQL_CREATE} ${TABLE_NAME_GAMES} (${KEY_DB_ID} 
         "${KEY_GAME_PLATFORM} ${SQL_TYPE_INTEGER}, " +
         "${KEY_GAME_TITLE} ${SQL_TYPE_STRING}, " +
         "${KEY_GAME_DESCRIPTION} ${SQL_TYPE_STRING}, " +
-        "${KEY_GAME_COMPANY} ${SQL_TYPE_STRING})"
+        "${KEY_GAME_COMPANY} ${SQL_TYPE_STRING}, " +
+        "${KEY_GAME_ART_LOCAL} ${SQL_TYPE_STRING}, " +
+        "${KEY_GAME_ART_WEB} ${SQL_TYPE_STRING})"
 
 private val SQL_CREATE_ARTISTS = "${SQL_CREATE} ${TABLE_NAME_ARTISTS} (${KEY_DB_ID} ${SQL_TYPE_PRIMARY}, " +
         "${KEY_ARTIST_NAME} ${SQL_TYPE_STRING})"
@@ -470,7 +476,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                                 }
                             } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
                                 if (folderGameId != null) {
-                                    copyImageToInternal(folderGameId, file)
+                                    copyImageToInternal(folderGameId, file, database)
                                 } else {
                                     logError("[SongDatabaseHelper] Found image, but game ID unknown: ${filePath}")
                                 }
@@ -512,7 +518,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         }
     }
 
-    private fun copyImageToInternal(gameId: Long, sourceFile: File) {
+    private fun copyImageToInternal(gameId: Long, sourceFile: File, database: SQLiteDatabase) {
         val storageDir = context.getExternalFilesDir(null)
 
         val targetDirPath = storageDir.absolutePath + "/images/" + gameId.toString()
@@ -530,6 +536,11 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         FileUtils.copyFile(sourceFile, targetFile)
 
         logInfo("[SongDatabaseHelper] Copied image: ${sourcePath} to ${targetFilePath}")
+
+        val values = ContentValues()
+        values.put(KEY_GAME_ART_LOCAL, "file://"  + targetFilePath)
+
+        updateGame(gameId, values, database)
     }
 
     private fun trimMissingFiles(database: SQLiteDatabase) {
@@ -772,6 +783,21 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             }
 
             return Game(gameId, gameTitle, gamePlatform)
+        }
+
+        private fun updateGame(gameId: Long, values: ContentValues, database: SQLiteDatabase) {
+            val updatedRows = database.update(
+                    TABLE_NAME_GAMES,
+                    values,
+                    "$KEY_DB_ID = ?",
+                    arrayOf(gameId.toString())
+            )
+
+            if (updatedRows > 0) {
+                logVerbose("[SongDatabaseHelper] Successfully updated game #$gameId.")
+            } else {
+                logError("[SongDatabaseHelper] Failed to update game #$gameId.")
+            }
         }
     }
 }
