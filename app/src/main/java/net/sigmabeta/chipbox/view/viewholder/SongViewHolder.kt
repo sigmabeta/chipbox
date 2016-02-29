@@ -34,15 +34,24 @@ class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerVie
 
         if (view.image_game_box_art != null) {
             val gameId = toBind.getLong(COLUMN_TRACK_GAME_ID)
-            val imagePath = adapter.imagesPath + gameId.toString() + "/local.png"
+            val imagePath = adapter.getImagePath(gameId)
 
-            Picasso.with(view.context)
-                    .load(imagePath)
-                    .config(Bitmap.Config.RGB_565)
-                    .centerCrop()
-                    .fit()
-                    .error(R.drawable.img_album_art_blank)
-                    .into(view.image_game_box_art)
+            if (imagePath != null) {
+                Picasso.with(view.context)
+                        .load(imagePath)
+                        .config(Bitmap.Config.RGB_565)
+                        .centerCrop()
+                        .fit()
+                        .error(R.drawable.img_album_art_blank)
+                        .into(view.image_game_box_art)
+            } else {
+                Picasso.with(view.context)
+                        .load(R.drawable.img_album_art_blank)
+                        .config(Bitmap.Config.RGB_565)
+                        .centerCrop()
+                        .fit()
+                        .into(view.image_game_box_art)
+            }
         }
 
         if (view.text_song_track_number != null) {

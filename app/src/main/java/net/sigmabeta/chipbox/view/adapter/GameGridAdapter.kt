@@ -11,8 +11,6 @@ import net.sigmabeta.chipbox.view.interfaces.GameListView
 import net.sigmabeta.chipbox.view.viewholder.GameViewHolder
 
 class GameGridAdapter(val view: GameListView, val context: Context) : BaseCursorAdapter() {
-    val imagesPath = "file://" + context.getExternalFilesDir(null).absolutePath + "/images/"
-
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): RecyclerView.ViewHolder? {
         val card = LayoutInflater.from(parent?.context)
                 ?.inflate(R.layout.grid_item_game, parent, false)
