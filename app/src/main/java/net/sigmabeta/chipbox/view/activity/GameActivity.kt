@@ -10,8 +10,7 @@ import kotlinx.android.synthetic.main.activity_game.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
-import net.sigmabeta.chipbox.model.database.COLUMN_TRACK_GAME_ID
-import net.sigmabeta.chipbox.model.database.COLUMN_TRACK_GAME_TITLE
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.presenter.GamePresenter
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
@@ -62,22 +61,29 @@ class GameActivity : BaseActivity(), GameView, SongListView {
      */
 
     override fun setCursor(cursor: Cursor) {
-        cursor.moveToFirst()
         adapter?.changeCursor(cursor)
+    }
 
-        val gameId = cursor.getLong(COLUMN_TRACK_GAME_ID)
-        val imagePath = adapter?.imagesPath + gameId.toString() + "/local.png"
+    override fun setGame(game: Game) {
+        val imagePath = game.artLocal
 
-        Picasso.with(this)
-                .load(imagePath)
-                .centerCrop()
-                .fit()
-                .error(R.drawable.img_album_art_blank)
-                .into(image_hero_boxart)
+        if (imagePath != null) {
+            Picasso.with(this)
+                    .load(imagePath)
+                    .centerCrop()
+                    .fit()
+                    .error(R.drawable.img_album_art_blank)
+                    .into(image_hero_boxart)
+        } else {
+            Picasso.with(this)
+                    .load(R.drawable.img_album_art_blank)
+                    .centerCrop()
+                    .fit()
+                    .error(R.drawable.img_album_art_blank)
+                    .into(image_hero_boxart)
+        }
 
-        val gameTitle = cursor.getString(COLUMN_TRACK_GAME_TITLE)
-
-        collapsing_toolbar.title = gameTitle
+        collapsing_toolbar.title = game.title
     }
 
     override fun getCursor(): Cursor? {
@@ -102,6 +108,15 @@ class GameActivity : BaseActivity(), GameView, SongListView {
 
     override fun launchPlayerActivity() {
         // No-op
+    }
+
+    override fun getImagePath(gameId: Long): String? {
+        // No-op
+        return null
+    }
+
+    override fun refreshList() {
+        adapter?.notifyDataSetChanged()
     }
 
     /**

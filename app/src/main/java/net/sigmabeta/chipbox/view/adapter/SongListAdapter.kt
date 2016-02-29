@@ -15,8 +15,6 @@ import net.sigmabeta.chipbox.view.viewholder.SongViewHolder
 class SongListAdapter(val view: SongListView,
                       val context: Context,
                       val showArt: Boolean) : BaseCursorAdapter() {
-    val imagesPath = "file://" + context.getExternalFilesDir(null).absolutePath + "/images/"
-
     val playingTextColor = ContextCompat.getColor(context, R.color.primary)
     val primaryTextColor = ContextCompat.getColor(context, R.color.primary_text)
     val secondaryTextColor = ContextCompat.getColor(context, R.color.secondary_text)
@@ -57,5 +55,9 @@ class SongListAdapter(val view: SongListView,
             val track = Track.fromCursor(localCursor)
             view.onItemClick(track, position)
         }
+    }
+
+    fun getImagePath(gameId: Long): String? {
+        return view.getImagePath(gameId)
     }
 }

@@ -232,7 +232,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                         whereClause = "${KEY_DB_ID} = ?"
                         whereArgs = arrayOf(gameId.toString())
                     } else {
-                        it.onError(Exception("Bad track ID."))
+                        it.onError(Exception("Bad game ID."))
                         return@create
                     }
 
@@ -254,7 +254,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                         it.onNext(game)
                         it.onCompleted()
                     } else {
-                        it.onError(Exception("Couldn't find track."))
+                        it.onError(Exception("Couldn't find game."))
                     }
                 }
         )
@@ -292,6 +292,67 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     logVerbose("[SongDatabaseHelper] Cursor size: ${resultCursor.count}")
 
                     it.onNext(resultCursor)
+
+                    database.close()
+                    it.onCompleted()
+                }
+        )
+    }
+
+    fun getGamesForTrackCursor(tracks: Cursor): Observable<HashMap<Long, Game>> {
+        return Observable.create(
+                {
+                    logInfo("[SongDatabaseHelper] Getting games for currently displayed tracks...")
+                    val startTime = System.currentTimeMillis()
+
+                    val database = readableDatabase
+
+                    val games = HashMap<Long, Game>()
+
+                    while (tracks.moveToNext()) {
+                        val whereClause: String?
+                        val whereArgs: Array<String>?
+
+                        val gameId = tracks.getLong(COLUMN_TRACK_GAME_ID)
+
+                        if (games.get(gameId) != null) {
+                            continue
+                        }
+
+                        if (gameId > 0) {
+                            whereClause = "${KEY_DB_ID} = ?"
+                            whereArgs = arrayOf(gameId.toString())
+                        } else {
+                            it.onError(Exception("Bad game ID: $gameId"))
+                            return@create
+                        }
+
+                        val gameCursor = database.query(
+                                TABLE_NAME_GAMES,
+                                null,
+                                whereClause,
+                                whereArgs,
+                                null,
+                                null,
+                                null
+                        )
+
+                        if (gameCursor.moveToFirst()) {
+                            val game = getGameFromCursor(gameCursor)
+                            games.put(gameId, game)
+                        }
+
+                        gameCursor.close()
+                    }
+
+                    logVerbose("[SongDatabaseHelper] Game map size: ${games.size}")
+
+                    val endTime = System.currentTimeMillis()
+                    val scanDuration = (endTime - startTime) / 1000.0f
+
+                    logInfo("[SongDatabaseHelper] Found games in ${scanDuration} seconds.")
+
+                    it.onNext(games)
 
                     database.close()
                     it.onCompleted()

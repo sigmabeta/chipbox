@@ -22,7 +22,7 @@ import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import javax.inject.Inject
 
 class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, NavigationFragment {
-    var presenter: SongListPresenter? = null
+    lateinit var presenter: SongListPresenter
         @Inject set
 
     var adapter: SongListAdapter? = null
@@ -32,13 +32,13 @@ class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, Navigat
 
         val artist = arguments.getLong(ARGUMENT_ARTIST)
 
-        presenter?.onCreate(artist)
+        presenter.onCreate(artist)
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val rootView = inflater?.inflate(R.layout.fragment_song_list, container, false)
 
-        presenter?.onCreateView()
+        presenter.onCreateView()
 
         return rootView
     }
@@ -62,7 +62,7 @@ class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, Navigat
     }
 
     override fun onItemClick(track: Track, position: Int) {
-        presenter?.onItemClick(track, position)
+        presenter.onItemClick(track, position)
     }
 
     override fun launchPlayerActivity() {
@@ -71,6 +71,14 @@ class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, Navigat
 
     override fun getCursor(): Cursor? {
         return adapter?.cursor
+    }
+
+    override fun getImagePath(gameId: Long): String? {
+        return presenter.getImagePath(gameId)
+    }
+
+    override fun refreshList() {
+        adapter?.notifyDataSetChanged()
     }
 
     /**

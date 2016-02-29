@@ -11,4 +11,8 @@ interface SongListView {
     fun getCursor(): Cursor?
 
     fun launchPlayerActivity()
+
+    fun getImagePath(gameId: Long): String?
+
+    fun refreshList()
 }

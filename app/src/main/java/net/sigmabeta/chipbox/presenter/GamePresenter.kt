@@ -37,6 +37,13 @@ class GamePresenter @Inject constructor(val view: GameView,
                         }
                 )
 
+        database.getGame(gameId)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    view.setGame(it)
+                }
+
         val track = player.playingTrack
 
         if (track != null) {
