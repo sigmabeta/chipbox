@@ -13,14 +13,6 @@ val GME_PLATFORM_GENESIS = "Sega SMS/Genesis"
 val TYPE_OTHER = -1
 val TYPE_FOLDER = 0
 
-val INDEX_TRACK_INFO_LENGTH = 0
-val INDEX_TRACK_INFO_INTRO_LENGTH = 1
-val INDEX_TRACK_INFO_LOOP_LENGTH = 2
-val INDEX_TRACK_INFO_TITLE = 3
-val INDEX_TRACK_INFO_GAME = 4
-val INDEX_TRACK_INFO_SYSTEM = 5
-val INDEX_TRACK_INFO_ARTIST = 6
-
 val EXTENSIONS_MUSIC: HashSet<String> = HashSet(arrayListOf(
         ".spc", ".vgm", ".vgz")
 )
@@ -68,6 +60,7 @@ fun readTrackInfoFromPath(path: String, trackNumber: Int): Track? {
     val platform = when (platformString) {
         "Super Nintendo" -> Track.PLATFORM_SNES
         "Sega Mega Drive", "Sega Mega Drive / Genesis", "Sega MegaDrive / Genesis", "Sega Genesis" -> Track.PLATFORM_GENESIS
+        "Sega 32X / Mega 32X" -> Track.PLATFORM_32X
         else ->  {
             logError("[File] Unsupported platform: $platformString")
             return null
