@@ -211,6 +211,8 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     if (resultCursor.moveToFirst()) {
                         val track = getTrackFromCursor(resultCursor)
 
+                        resultCursor.close()
+
                         it.onNext(track)
                         it.onCompleted()
                     } else {
@@ -250,6 +252,9 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                     if (resultCursor.moveToFirst()) {
                         val game = getGameFromCursor(resultCursor)
+
+                        resultCursor.close()
+                        database.close()
 
                         it.onNext(game)
                         it.onCompleted()
@@ -466,7 +471,6 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                     it.onNext(resultCursor)
 
-                    database.close()
                     it.onCompleted()
                 }
         )
