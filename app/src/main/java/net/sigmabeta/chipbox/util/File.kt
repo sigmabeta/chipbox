@@ -2,8 +2,7 @@ package net.sigmabeta.chipbox.util
 
 import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.model.objects.Track
-import net.sigmabeta.chipbox.util.external.getFileInfoNative
-import net.sigmabeta.chipbox.util.external.getPlatformNative
+import net.sigmabeta.chipbox.util.external.*
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -55,23 +54,35 @@ fun getFileType(file: File): Int {
 }
 
 fun readTrackInfoFromPath(path: String, trackNumber: Int): Track? {
-    val info = getFileInfoNative(path, trackNumber) ?: return null
+    val error = fileInfoSetupNative(path)
 
-    val title = info.get(INDEX_TRACK_INFO_TITLE)
-
-    val platform: Int
-    when (info.get(INDEX_TRACK_INFO_SYSTEM)) {
-        "Super Nintendo" -> platform = Track.PLATFORM_SNES
-        "Sega Mega Drive", "Sega Mega Drive / Genesis", "Sega Genesis" -> platform = Track.PLATFORM_GENESIS
-        else -> return null
+    if (error != null) {
+        logError("[File] Error reading file: $error")
+        return null
     }
 
-    val gameTitle = info.get(INDEX_TRACK_INFO_GAME)
-    val artist = info.get(INDEX_TRACK_INFO_ARTIST)
+    fileInfoSetTrackNumberNative(trackNumber)
 
-    val trackLength = info.get(INDEX_TRACK_INFO_LENGTH).toLong()
-    val introLength = info.get(INDEX_TRACK_INFO_INTRO_LENGTH).toLong()
-    val loopLength = info.get(INDEX_TRACK_INFO_LOOP_LENGTH).toLong()
+    val platformString = getFilePlatform().convert()
+
+    val platform = when (platformString) {
+        "Super Nintendo" -> Track.PLATFORM_SNES
+        "Sega Mega Drive", "Sega Mega Drive / Genesis", "Sega MegaDrive / Genesis", "Sega Genesis" -> Track.PLATFORM_GENESIS
+        else ->  {
+            logError("[File] Unsupported platform: $platformString")
+            return null
+        }
+    }
+
+    val title = getFileTitle().convert()
+    val gameTitle = getFileGameTitle().convert()
+    val artist = getFileArtist().convert()
+
+    val trackLength = getFileTrackLength()
+    val introLength = getFileIntroLength()
+    val loopLength = getFileLoopLength()
+
+    fileInfoTeardownNative()
 
     return Track(
             -1,
