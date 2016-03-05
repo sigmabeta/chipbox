@@ -18,4 +18,6 @@ interface PlayerFragmentView {
     fun setTrackLength(trackLength: String)
 
     fun setUnderrunCount(count: String)
+
+    fun setProgress(percentPlayed: Int)
 }

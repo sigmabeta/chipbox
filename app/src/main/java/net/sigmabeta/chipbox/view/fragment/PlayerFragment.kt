@@ -109,6 +109,10 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
         text_underrun_count.text = count
     }
 
+    override fun setProgress(percentPlayed: Int) {
+        seek_playback_progress.progress = percentPlayed
+    }
+
     /**
      * BaseFragment
      */

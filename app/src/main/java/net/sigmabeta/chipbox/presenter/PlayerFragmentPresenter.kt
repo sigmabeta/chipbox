@@ -87,6 +87,10 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
     }
 
     private fun displayPosition(millisPlayed: Long) {
+        val percentPlayed = 100 * millisPlayed / (track?.trackLength ?: 100)
+
+        view.setProgress(percentPlayed.toInt())
+
         val timeString = getTimeStringFromMillis(millisPlayed)
         view.setTimeElapsed(timeString)
 
