@@ -443,8 +443,9 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     private fun initializeAudioTrack(): Boolean {
         logVerbose("[Player] Initializing audio track.\n" +
-                "[Player] Sample Rate: ${audioConfig.sampleRate}\n" +
-                "[Player] Buffer size: ${audioConfig.bufferSizeBytes} bytes.")
+                "[Player] Sample Rate: ${audioConfig.sampleRate}Hz\n" +
+                "[Player] Buffer size: ${audioConfig.bufferSizeBytes} bytes\n" +
+                "[Player] Buffer length: ${audioConfig.minimumLatency * READ_AHEAD_BUFFER_SIZE} msec")
 
         audioTrack = AudioTrack(AudioManager.STREAM_MUSIC,
                 audioConfig.sampleRate,
@@ -495,6 +496,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     companion object {
         val ERROR_AUDIO_TRACK_NULL = -100
 
-        val READ_AHEAD_BUFFER_SIZE = 2
+        val READ_AHEAD_BUFFER_SIZE = 4
     }
 }
