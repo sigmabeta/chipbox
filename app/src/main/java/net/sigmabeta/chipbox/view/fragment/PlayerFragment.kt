@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.SeekBar
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -14,7 +15,7 @@ import net.sigmabeta.chipbox.presenter.PlayerFragmentPresenter
 import net.sigmabeta.chipbox.view.interfaces.PlayerFragmentView
 import javax.inject.Inject
 
-class PlayerFragment : BaseFragment(), PlayerFragmentView {
+class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChangeListener {
     lateinit var presenter: PlayerFragmentPresenter
         @Inject set
 
@@ -46,6 +47,8 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
         button_skip_back.setOnClickListener {
             presenter.onRewindClick()
         }
+
+        seek_playback_progress.setOnSeekBarChangeListener(this)
     }
 
     override fun onResume() {
@@ -111,6 +114,20 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView {
 
     override fun setProgress(percentPlayed: Int) {
         seek_playback_progress.progress = percentPlayed
+    }
+
+    /**
+     * OnSeekbarChangeListener
+     */
+
+    override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) { }
+
+    override fun onStartTrackingTouch(p0: SeekBar?) {
+        presenter.onSeekbarTouch()
+    }
+
+    override fun onStopTrackingTouch(bar: SeekBar?) {
+        presenter.onSeekbarRelease(bar?.progress ?: 0)
     }
 
     /**

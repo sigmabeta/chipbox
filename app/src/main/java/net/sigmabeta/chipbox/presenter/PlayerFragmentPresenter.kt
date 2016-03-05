@@ -23,6 +23,8 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
 
     var subscription: Subscription? = null
 
+    var seekbarTouched = false
+
     fun onCreate() { }
 
     fun onViewCreated() {
@@ -44,6 +46,15 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
 
     fun onRewindClick() {
         player.skipToPrev()
+    }
+
+    fun onSeekbarTouch() {
+        seekbarTouched = true
+    }
+
+    fun onSeekbarRelease(progress: Int) {
+        player.seek(progress)
+        seekbarTouched = false
     }
 
     fun onResume() {
@@ -87,9 +98,10 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
     }
 
     private fun displayPosition(millisPlayed: Long) {
-        val percentPlayed = 100 * millisPlayed / (track?.trackLength ?: 100)
-
-        view.setProgress(percentPlayed.toInt())
+        if (!seekbarTouched) {
+            val percentPlayed = 100 * millisPlayed / (track?.trackLength ?: 100)
+            view.setProgress(percentPlayed.toInt())
+        }
 
         val timeString = getTimeStringFromMillis(millisPlayed)
         view.setTimeElapsed(timeString)
