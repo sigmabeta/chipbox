@@ -127,6 +127,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
                 .load(imagePath)
                 .centerCrop()
                 .fit()
+                .noPlaceholder()
                 .error(R.drawable.img_album_art_blank)
                 .into(image_playing_game_box_art)
     }
