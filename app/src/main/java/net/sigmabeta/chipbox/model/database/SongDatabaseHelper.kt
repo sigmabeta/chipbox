@@ -480,17 +480,13 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         return Observable.create(
                 {
                     // OnSubscribe.call. it: String
+                    clearTables()
+
                     logInfo("[SongDatabaseHelper] Scanning library...")
 
                     val startTime = System.currentTimeMillis()
 
                     val database = writableDatabase
-
-                    // Before scanning known folders, go through the game table and remove any entries for which the file itself is missing.
-                    database.beginTransaction()
-                    trimMissingFiles(database)
-                    database.setTransactionSuccessful()
-                    database.endTransaction()
 
                     // Get a cursor listing all the folders the user has added to the library.
                     val folderCursor = database.query(TABLE_NAME_FOLDERS,
@@ -527,6 +523,18 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     it.onCompleted()
                 }
         )
+    }
+
+    private fun clearTables() {
+        logInfo("[SongDatabaseHelper] Clearing library...")
+
+        val database = writableDatabase
+
+        database.delete(TABLE_NAME_GAMES, null, null)
+        database.delete(TABLE_NAME_ARTISTS, null, null)
+        database.delete(TABLE_NAME_TRACKS, null, null)
+
+        database.close()
     }
 
     private fun scanFolder(folder: File, gameMap: HashMap<Long, Game>, artistMap: HashMap<Long, Artist>, database: SQLiteDatabase, sub: Subscriber<FileScanEvent>) {
@@ -643,33 +651,6 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         values.put(KEY_GAME_ART_LOCAL, "file://"  + targetFilePath)
 
         updateGame(gameId, values, database)
-    }
-
-    private fun trimMissingFiles(database: SQLiteDatabase) {
-        val fileCursor = database.query(TABLE_NAME_TRACKS,
-                null, // Get all columns.
-                null, // Get all rows.
-                null,
-                null, // No grouping.
-                null,
-                null) // Order of games is irrelevant.
-
-        // Possibly overly defensive, but ensures that moveToNext() does not skip a row.
-        fileCursor.moveToPosition(-1)
-
-        while (fileCursor.moveToNext()) {
-            val trackPath = fileCursor.getString(COLUMN_TRACK_PATH)
-            val track = File(trackPath)
-
-            if (!track.exists()) {
-                logError("[SongDatabaseHelper] Game file no longer exists. Removing from the library: " + trackPath)
-                database.delete(TABLE_NAME_TRACKS,
-                        "${KEY_DB_ID}  = ?",
-                        arrayOf(fileCursor.getLong(COLUMN_DB_ID).toString()))
-            }
-        }
-
-        fileCursor.close()
     }
 
     companion object {
