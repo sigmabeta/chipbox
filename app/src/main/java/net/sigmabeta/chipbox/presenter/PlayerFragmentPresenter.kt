@@ -26,15 +26,6 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
     fun onCreate() { }
 
     fun onViewCreated() {
-        val localTrack = player.playingTrack
-
-        if (localTrack != null) {
-            displayTrack(localTrack)
-        } else {
-            logError("[PlayerFragmentPresenter] No track to display.")
-        }
-
-        displayState(state)
     }
 
     fun onFabClick() {
@@ -56,6 +47,16 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
     }
 
     fun onResume() {
+        val localTrack = player.playingTrack
+
+        if (localTrack != null) {
+            displayTrack(localTrack)
+        } else {
+            logError("[PlayerFragmentPresenter] No track to display.")
+        }
+
+        displayState(state)
+
         subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
