@@ -129,7 +129,10 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             val error = getLastError()
 
             if (error == null) {
-                fullBuffers.put(audioBuffer)
+                // Check this so that we don't put one last buffer into the full queue after it's cleared.
+                if (state == PlaybackState.STATE_PLAYING) {
+                    fullBuffers.put(audioBuffer)
+                }
             } else {
                 logError("[Player] GME Error: ${error}")
                 stop()
