@@ -40,6 +40,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     var playbackQueue: ArrayList<Track>? = null
     var playbackQueuePosition: Int? = null
 
+    var queuedSeekPosition: Int? = null
+
     var pausedTrack: Track? = null
     var queuedTrack: Track? = null
     var playingTrack: Track? = null
@@ -92,6 +94,11 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             if (queuedTrack != null) {
                 playingTrack = queuedTrack
                 queuedTrack = null
+            }
+
+            if (queuedSeekPosition != null) {
+                seekNative(queuedSeekPosition!!)
+                queuedSeekPosition = null
             }
 
             if (isTrackOver()) {
@@ -382,6 +389,12 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         audioManager.abandonAudioFocus(this)
 
         backendView?.stop()
+    }
+
+    fun seek(progress: Int) {
+        val length = playingTrack?.trackLength ?: 0
+        val seekPosition = (length * progress / 100).toInt()
+        queuedSeekPosition = seekPosition
     }
 
     override fun onAudioFocusChange(focusChange: Int) {
