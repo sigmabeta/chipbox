@@ -29,7 +29,8 @@
             android:theme="@style/ThemeFileList"/>
 
         <activity android:name=".view.activity.PlayerActivity"
-            android:theme="@style/ThemeFileList"/>
+            android:theme="@style/ThemeFileList"
+            android:launchMode="singleTask"/>
 
         <activity android:name=".view.activity.GameActivity"
             android:theme="@style/ThemeMain"/>
