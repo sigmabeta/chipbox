@@ -45,6 +45,8 @@
         <item name="android:layout_marginStart">@dimen/activity_horizontal_margin</item>
         <item name="android:layout_marginEnd">@dimen/activity_horizontal_margin</item>
         <item name="android:layout_marginTop">@dimen/spacing_medium</item>
+        <item name="android:ellipsize">start</item>
+        <item name="android:singleLine">true</item>
     </style>
 
     <style name="TextScanHeading" parent="TextAppearance.AppCompat.Subhead">

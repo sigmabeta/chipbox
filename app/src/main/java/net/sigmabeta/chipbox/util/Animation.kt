@@ -48,3 +48,29 @@ fun View.slideViewToProperLocation(): ViewPropertyAnimator {
             .setDuration(400)
             .translationY(0.0f)
 }
+
+fun View.fadeOutToLeft(): ViewPropertyAnimator {
+    return animate()
+            .withLayer()
+            .setInterpolator(DECELERATE)
+            .setDuration(200)
+            .scaleY(0.8f)
+            .scaleX(1.1f)
+            .translationX(-width / 4.0f)
+            .alpha(0.0f)
+}
+
+fun View.fadeInFromRight(): ViewPropertyAnimator {
+    translationX = width / 4.0f
+    alpha = 0.0f
+    visibility = View.VISIBLE
+
+    return animate()
+            .withLayer()
+            .setInterpolator(ACCELERATE)
+            .setDuration(300)
+            .scaleX(1.0f)
+            .scaleY(1.0f)
+            .translationX(0.0f)
+            .alpha(1.0f)
+}

@@ -8,6 +8,8 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.presenter.ScanPresenter
+import net.sigmabeta.chipbox.util.fadeInFromRight
+import net.sigmabeta.chipbox.util.fadeOutToLeft
 import net.sigmabeta.chipbox.view.interfaces.ScanView
 import javax.inject.Inject
 
@@ -28,11 +30,17 @@ class ScanActivity : BaseActivity(), ScanView {
      */
 
     override fun onScanFailed() {
-        text_status.setText(R.string.scan_status_failed)
+        text_status.fadeOutToLeft().withEndAction {
+            text_status.setText(R.string.scan_status_failed)
+            text_status.fadeInFromRight()
+        }
     }
 
     override fun onScanComplete() {
-        text_status.setText(R.string.scan_status_complete)
+        text_status.fadeOutToLeft().withEndAction {
+            text_status.setText(R.string.scan_status_complete)
+            text_status.fadeInFromRight()
+        }
     }
 
     override fun showCurrentFolder(name: String) {
