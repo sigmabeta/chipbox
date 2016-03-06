@@ -98,7 +98,7 @@
         <SeekBar
             android:id="@+id/seek_playback_progress"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="32dp"
             android:padding="0dp"
             android:elevation="12dp"
             android:max="100"
