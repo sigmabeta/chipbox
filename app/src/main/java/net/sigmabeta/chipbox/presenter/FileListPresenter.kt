@@ -7,6 +7,8 @@ import net.sigmabeta.chipbox.util.generateFileList
 import net.sigmabeta.chipbox.util.readTrackInfoFromPath
 import net.sigmabeta.chipbox.view.interfaces.FileListView
 import rx.Observable
+import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
 import java.io.File
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -48,12 +50,24 @@ class FileListPresenter @Inject constructor(val view: FileListView,
     }
 
     fun addDirectory(path: String) {
-        val addSuccess = databaseHelper.addDirectory(path)
+        databaseHelper.addDirectory(path)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        {
+                            when (it) {
+                                SongDatabaseHelper.ADD_STATUS_GOOD -> view.startScanActivity()
+                                SongDatabaseHelper.ADD_STATUS_EXISTS -> view.showExistsMessage()
+                                SongDatabaseHelper.ADD_STATUS_DB_ERROR -> view.showErrorMessage(R.string.file_list_error_adding)
+                            }
+                        },
+                        {
+                            view.showErrorMessage(R.string.file_list_error_adding)
+                        }
+                )
+    }
 
-        if (addSuccess) {
-            view.startScanActivity()
-        } else {
-            view.showErrorMessage(R.string.file_list_error_adding)
-        }
+    fun onRescanClick() {
+        view.startScanActivity()
     }
 }

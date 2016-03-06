@@ -8,6 +8,7 @@ import android.os.Environment
 import android.support.v7.widget.LinearLayoutManager
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_file_list.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -21,7 +22,7 @@ import java.io.File
 import javax.inject.Inject
 
 class FileListActivity : BaseActivity(), FileListView {
-    var presenter: FileListPresenter? = null
+    lateinit var presenter: FileListPresenter
         @Inject set
 
     var progressDialog: ProgressDialog? = null
@@ -69,7 +70,7 @@ class FileListActivity : BaseActivity(), FileListView {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return presenter?.onOptionsItemSelected(item.itemId)
+        return presenter.onOptionsItemSelected(item.itemId)
                 ?: super.onOptionsItemSelected(item)
     }
 
@@ -85,12 +86,12 @@ class FileListActivity : BaseActivity(), FileListView {
         val path = adapter?.currentPath
 
         if (path != null) {
-            presenter?.addDirectory(path)
+            presenter.addDirectory(path)
         }
     }
 
     override fun onItemClick(path: String) {
-        presenter?.onItemClick(path)
+        presenter.onItemClick(path)
     }
 
     override fun updateSubtitle(path: String) {
@@ -111,6 +112,13 @@ class FileListActivity : BaseActivity(), FileListView {
 
     override fun startScanActivity() {
         ScanActivity.launch(this)
+    }
+
+    override fun showExistsMessage() {
+        showErrorSnackbar(
+                getString(R.string.file_list_error_exists),
+                View.OnClickListener { presenter.onRescanClick() },
+                R.string.file_list_snackbar_rescan)
     }
 
     companion object {
