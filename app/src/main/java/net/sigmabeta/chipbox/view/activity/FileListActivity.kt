@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.view.activity
 
+import android.app.Activity
 import android.app.ProgressDialog
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Environment
@@ -110,8 +110,9 @@ class FileListActivity : BaseActivity(), FileListView {
         Toast.makeText(this, errorId, Toast.LENGTH_SHORT).show()
     }
 
-    override fun startScanActivity() {
-        ScanActivity.launch(this)
+    override fun onAddSuccessful() {
+        setResult(RESULT_ADD_SUCCESSFUL)
+        finish()
     }
 
     override fun showExistsMessage() {
@@ -122,10 +123,13 @@ class FileListActivity : BaseActivity(), FileListView {
     }
 
     companion object {
-        fun launch(context: Context) {
-            val launcher = Intent(context, FileListActivity::class.java)
+        val REQUEST_ADD_FOLDER = 100
+        val RESULT_ADD_SUCCESSFUL = 1000
 
-            context.startActivity(launcher)
+        fun launch(activity: Activity) {
+            val launcher = Intent(activity, FileListActivity::class.java)
+
+            activity.startActivityForResult(launcher, REQUEST_ADD_FOLDER)
         }
     }
 }

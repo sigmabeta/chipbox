@@ -56,7 +56,7 @@ class FileListPresenter @Inject constructor(val view: FileListView,
                 .subscribe(
                         {
                             when (it) {
-                                SongDatabaseHelper.ADD_STATUS_GOOD -> view.startScanActivity()
+                                SongDatabaseHelper.ADD_STATUS_GOOD -> view.onAddSuccessful()
                                 SongDatabaseHelper.ADD_STATUS_EXISTS -> view.showExistsMessage()
                                 SongDatabaseHelper.ADD_STATUS_DB_ERROR -> view.showErrorMessage(R.string.file_list_error_adding)
                             }
@@ -68,6 +68,6 @@ class FileListPresenter @Inject constructor(val view: FileListView,
     }
 
     fun onRescanClick() {
-        view.startScanActivity()
+        view.onAddSuccessful()
     }
 }

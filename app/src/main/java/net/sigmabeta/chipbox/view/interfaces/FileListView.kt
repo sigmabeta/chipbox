@@ -13,7 +13,7 @@ interface FileListView {
 
     fun showErrorMessage(errorId: Int)
 
-    fun startScanActivity()
-
     fun showExistsMessage()
+
+    fun onAddSuccessful()
 }
