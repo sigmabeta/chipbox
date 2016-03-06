@@ -22,12 +22,12 @@
     <!-- File List Screen-->
     <string name="file_list_up">Up One Level</string>
 
-    <string name="file_list_scanning">Scanning library…</string>
+    <string name="file_list_snackbar_rescan">Rescan</string>
 
+    <string name="file_list_error_exists">This folder is already in your library. Did you want to rescan?</string>
     <string name="file_list_error_empty_folder">That folder is empty.</string>
     <string name="file_list_error_invalid_track">That file is not a valid track.</string>
     <string name="file_list_error_adding">There was an error adding that directory to your library.</string>
-    <string name="file_list_error_scanning">There was an error scanning your library.</string>
 
     <!-- Notification -->
     <string name="notification_label_pause">Pause</string>

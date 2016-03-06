@@ -1,7 +1,9 @@
 package net.sigmabeta.chipbox.view.activity
 
 import android.os.Bundle
+import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
+import android.view.View
 import android.widget.Toast
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.util.logError
@@ -22,6 +24,16 @@ public abstract class BaseActivity : AppCompatActivity() {
 
     fun showToastMessage(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+
+    fun showErrorSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) {
+        val snackbar = Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG)
+
+        if (action != null && actionLabel != null) {
+            snackbar.setAction(actionLabel, action)
+        }
+
+        snackbar.show()
     }
 
     /**
