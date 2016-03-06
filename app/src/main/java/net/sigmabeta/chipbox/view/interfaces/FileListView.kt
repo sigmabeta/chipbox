@@ -1,7 +1,5 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-import net.sigmabeta.chipbox.model.events.FileScanEvent
-
 interface FileListView {
     fun onItemClick(path: String)
 
@@ -11,15 +9,9 @@ interface FileListView {
 
     fun setPath(path: String)
 
-    fun onAdditionComplete()
-
-    fun onAdditionFailed()
-
     fun showToastMessage(message: String)
 
     fun showErrorMessage(errorId: Int)
 
-    fun showProgressDialog()
-
-    fun updateProgressText(event: FileScanEvent)
+    fun startScanActivity()
 }

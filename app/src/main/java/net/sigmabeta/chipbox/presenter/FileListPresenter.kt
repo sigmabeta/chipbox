@@ -4,12 +4,9 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.util.generateFileList
-import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.readTrackInfoFromPath
 import net.sigmabeta.chipbox.view.interfaces.FileListView
 import rx.Observable
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import java.io.File
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -54,27 +51,7 @@ class FileListPresenter @Inject constructor(val view: FileListView,
         val addSuccess = databaseHelper.addDirectory(path)
 
         if (addSuccess) {
-            view.showProgressDialog()
-
-            databaseHelper.scanLibrary()
-                    .throttleLast(32, TimeUnit.MILLISECONDS)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(
-                            {
-                                // OnNext. it: String
-                                view.updateProgressText(it)
-                            },
-                            {
-                                // OnError. it: Throwable
-                                view.onAdditionFailed()
-                                logError("[FileListPresenter] File scanning error: ${it.message}")
-                            },
-                            {
-                                // OnCompleted.
-                                view.onAdditionComplete()
-                            }
-                    )
+            view.startScanActivity()
         } else {
             view.showErrorMessage(R.string.file_list_error_adding)
         }

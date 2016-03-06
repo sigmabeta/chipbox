@@ -543,7 +543,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         val folderPath = folder.absolutePath
         logInfo("[SongDatabaseHelper] Reading files from library folder: ${folderPath}")
 
-        sub.onNext(FileScanEvent(folderPath, null))
+        sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folderPath))
 
         var folderGameId: Long? = null
 
@@ -580,9 +580,10 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                                     addTrackToDatabase(values, database)
 
-                                    sub.onNext(FileScanEvent(null, filePath))
+                                    sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
                                 } else {
                                     logError("[SongDatabaseHelper] Couldn't read track at ${filePath}")
+                                    sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                                 }
                             } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
                                 if (folderGameId != null) {

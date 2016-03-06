@@ -39,5 +39,7 @@ interface AppComponent {
     fun plus(platformListModule: PlatformListModule): PlatformListComponent
 
     fun plus(playerFragmentModule: PlayerFragmentModule): PlayerFragmentComponent
+
+    fun plus(scanModule: ScanModule): ScanComponent
 }
 

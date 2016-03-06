@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/text_status"
+        tools:text="Scanning..."
+        style="@style/TextAppearance.AppCompat.Headline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="128dp"
+        android:layout_marginEnd="@dimen/activity_horizontal_margin"/>
+
+    <TextView
+        android:id="@+id/text_heading_folder"
+        android:text="@string/scan_heading_folder"
+        style="@style/TextScanHeading"
+        android:layout_below="@+id/text_status"/>
+
+    <TextView
+        android:id="@+id/text_current_folder"
+        tools:text="/sdcard/VGM/Super NES/Lufia"
+        style="@style/TextScanItem"
+        android:layout_below="@+id/text_heading_folder"/>
+
+    <TextView
+        android:id="@+id/text_heading_file"
+        android:text="@string/scan_heading_file"
+        style="@style/TextScanHeading"
+        android:layout_below="@+id/text_current_folder"/>
+
+    <TextView
+        android:id="@+id/text_last_file"
+        tools:text="102 Title Screen.spc"
+        style="@style/TextScanItem"
+        android:layout_below="@+id/text_heading_file"/>
+
+    <TextView
+        android:id="@+id/text_file_added_label"
+        android:text="@string/scan_label_files_added_count"
+        android:layout_toStartOf="@+id/text_file_added_count"
+        android:layout_alignBottom="@+id/text_file_added_count"
+        style="@style/TextScanCountLabel"/>
+
+    <TextView
+        android:id="@+id/text_file_added_count"
+        tools:text="762"
+        android:layout_above="@+id/text_bad_file_count"
+        style="@style/TextScanCountItem"/>
+
+    <TextView
+        android:id="@+id/text_bad_file_label"
+        android:text="@string/scan_label_bad_file_count"
+        android:layout_toStartOf="@+id/text_bad_file_count"
+        android:layout_alignBottom="@+id/text_bad_file_count"
+        style="@style/TextScanCountLabel"/>
+
+    <TextView
+        android:id="@+id/text_bad_file_count"
+        tools:text="28"
+        style="@style/TextScanCountItem"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="64dp"/>
+</RelativeLayout>

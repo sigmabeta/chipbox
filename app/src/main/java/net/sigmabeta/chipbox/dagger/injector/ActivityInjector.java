@@ -6,17 +6,20 @@ import net.sigmabeta.chipbox.presenter.module.GameModule;
 import net.sigmabeta.chipbox.presenter.module.MainModule;
 import net.sigmabeta.chipbox.presenter.module.NavigationModule;
 import net.sigmabeta.chipbox.presenter.module.PlayerActivityModule;
+import net.sigmabeta.chipbox.presenter.module.ScanModule;
 import net.sigmabeta.chipbox.util.LogKt;
 import net.sigmabeta.chipbox.view.activity.FileListActivity;
 import net.sigmabeta.chipbox.view.activity.GameActivity;
 import net.sigmabeta.chipbox.view.activity.MainActivity;
 import net.sigmabeta.chipbox.view.activity.NavigationActivity;
 import net.sigmabeta.chipbox.view.activity.PlayerActivity;
+import net.sigmabeta.chipbox.view.activity.ScanActivity;
 import net.sigmabeta.chipbox.view.interfaces.FileListView;
 import net.sigmabeta.chipbox.view.interfaces.GameView;
 import net.sigmabeta.chipbox.view.interfaces.MainView;
 import net.sigmabeta.chipbox.view.interfaces.NavigationView;
 import net.sigmabeta.chipbox.view.interfaces.PlayerActivityView;
+import net.sigmabeta.chipbox.view.interfaces.ScanView;
 
 public class ActivityInjector {
     public static void inject(MainView view) {
@@ -57,5 +60,13 @@ public class ActivityInjector {
         ChipboxApplication.appComponent
                 .plus(new GameModule(view))
                 .inject((GameActivity) view);
+    }
+
+    public static void inject(ScanView view) {
+        LogKt.logVerbose("[ActivityInjector] Injecting ScanView.");
+
+        ChipboxApplication.appComponent
+                .plus(new ScanModule(view))
+                .inject((ScanActivity) view);
     }
 }
