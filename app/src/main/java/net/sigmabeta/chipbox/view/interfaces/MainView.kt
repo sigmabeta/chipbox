@@ -18,4 +18,6 @@ interface MainView {
     fun hideNowPlaying(animate: Boolean)
 
     fun launchPlayerActivity()
+
+    fun launchScanActivity()
 }

@@ -169,6 +169,10 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         PlayerActivity.launch(this)
     }
 
+    override fun launchScanActivity() {
+        ScanActivity.launch(this)
+    }
+
     private fun getFragment(): TopLevelFragment? {
         val selectedPosition = pager_categories.currentItem
 

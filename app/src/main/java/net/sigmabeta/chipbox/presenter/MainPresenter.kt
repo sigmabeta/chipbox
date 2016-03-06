@@ -49,6 +49,7 @@ class MainPresenter @Inject constructor(val view: MainView,
     fun onOptionsItemSelected(itemId: Int): Boolean {
         when (itemId) {
             R.id.drawer_add_folder -> view.launchFileListActivity()
+            R.id.drawer_refresh -> view.launchScanActivity()
         }
 
         return true
