@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.view.activity
 
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.support.v7.app.ActionBarDrawerToggle
@@ -19,7 +20,7 @@ import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import javax.inject.Inject
 
 class MainActivity : BaseActivity(), MainView, FragmentContainer {
-    var presenter: MainPresenter? = null
+    lateinit var presenter: MainPresenter
         @Inject set
 
     var drawerToggle: ActionBarDrawerToggle? = null
@@ -43,18 +44,18 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         setUpNavigationDrawer()
         setUpViewPagerTabs()
 
-        layout_now_playing.setOnClickListener { presenter?.onNowPlayingClicked() }
-        fab_play_pause.setOnClickListener { presenter?.onPlayFabClicked() }
+        layout_now_playing.setOnClickListener { presenter.onNowPlayingClicked() }
+        fab_play_pause.setOnClickListener { presenter.onPlayFabClicked() }
     }
 
     override fun onResume() {
         super.onResume()
-        presenter?.onResume()
+        presenter.onResume()
     }
 
     override fun onPause() {
         super.onPause()
-        presenter?.onPause()
+        presenter.onPause()
     }
 
     private fun setUpNavigationDrawer() {
@@ -66,7 +67,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         layout_drawer.setDrawerListener(drawerToggle)
 
         drawer_navigation.setNavigationItemSelectedListener {
-            return@setNavigationItemSelectedListener presenter?.onOptionsItemSelected(it.itemId)
+            return@setNavigationItemSelectedListener presenter.onOptionsItemSelected(it.itemId)
                     ?: false
         }
     }
@@ -99,8 +100,12 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         }
 
         // If something else was clicked, handle it ourselves.
-        return presenter?.onOptionsItemSelected(item.itemId)
+        return presenter.onOptionsItemSelected(item.itemId)
                 ?: super.onOptionsItemSelected(item)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        presenter.onActivityResult(requestCode, resultCode)
     }
 
     override fun launchFileListActivity() {

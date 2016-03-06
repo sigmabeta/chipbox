@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.logWarning
+import net.sigmabeta.chipbox.view.activity.FileListActivity
 import net.sigmabeta.chipbox.view.interfaces.MainView
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
@@ -93,5 +94,13 @@ class MainPresenter @Inject constructor(val view: MainView,
         view.setTrackTitle(track.title)
         view.setArtist(track.artist)
         view.setGameBoxart(track.gameId)
+    }
+
+    fun onActivityResult(requestCode: Int, resultCode: Int) {
+        if (requestCode == FileListActivity.REQUEST_ADD_FOLDER) {
+            if (resultCode == FileListActivity.RESULT_ADD_SUCCESSFUL) {
+                view.launchScanActivity()
+            }
+        }
     }
 }
