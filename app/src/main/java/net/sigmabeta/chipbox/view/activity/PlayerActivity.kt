@@ -2,10 +2,6 @@ package net.sigmabeta.chipbox.view.activity
 
 import android.content.Context
 import android.content.Intent
-import android.media.MediaMetadata
-import android.media.session.MediaController
-import android.media.session.MediaSession
-import android.media.session.PlaybackState
 import android.os.Bundle
 import android.view.View
 import net.sigmabeta.chipbox.BuildConfig
@@ -18,7 +14,7 @@ import net.sigmabeta.chipbox.view.interfaces.PlayerActivityView
 import javax.inject.Inject
 
 class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
-    var presenter: PlayerActivityPresenter? = null
+    lateinit var presenter: PlayerActivityPresenter
         @Inject set
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,7 +25,7 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
                         View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
 
-        presenter?.onCreate(savedInstanceState)
+        presenter.onCreate(savedInstanceState)
     }
 
     /**
@@ -53,36 +49,11 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
     }
 
     /**
-     * Private Methods
-     */
-
-    private fun connectToSession(token: MediaSession.Token) {
-        val mediaController = MediaController(this, token)
-
-        setMediaController(mediaController)
-        mediaController.registerCallback(controllerCallback)
-    }
-
-    /**
      * BaseActivity
      */
 
     override fun inject() {
         ActivityInjector.inject(this)
-    }
-
-    /**
-     * Callbacks and Listeners
-     */
-
-    private val controllerCallback = object : MediaController.Callback() {
-        override fun onPlaybackStateChanged(state: PlaybackState?) {
-            super.onPlaybackStateChanged(state)
-        }
-
-        override fun onMetadataChanged(metadata: MediaMetadata?) {
-            super.onMetadataChanged(metadata)
-        }
     }
 
     companion object {
