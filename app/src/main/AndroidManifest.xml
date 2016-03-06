@@ -36,7 +36,8 @@
             android:theme="@style/ThemeMain"/>
 
         <activity android:name=".view.activity.ScanActivity"
-            android:theme="@style/ThemeScan"/>
+                  android:theme="@style/ThemeScan"
+                  android:screenOrientation="portrait"/>
 
         <service
             android:name=".backend.PlayerService"
