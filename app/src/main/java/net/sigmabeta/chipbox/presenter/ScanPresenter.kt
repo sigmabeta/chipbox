@@ -19,7 +19,7 @@ class ScanPresenter @Inject constructor(val view: ScanView,
 
     fun onCreate() {
         database.scanLibrary()
-                .throttleLast(32, TimeUnit.MILLISECONDS)
+                .buffer(17, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -39,24 +39,40 @@ class ScanPresenter @Inject constructor(val view: ScanView,
                 )
     }
 
-    private fun handleEvent(event: FileScanEvent) {
-        when (event.type) {
-            FileScanEvent.TYPE_FOLDER -> {
-                view.showCurrentFolder(event.name)
+    private fun handleEvent(events: MutableList<FileScanEvent>) {
+        var currentFolder: String? = null
+        var lastFile: String? = null
+        var lastError: String? = null
+
+        for (event in events) {
+            when (event.type) {
+                FileScanEvent.TYPE_FOLDER -> {
+                    currentFolder = event.name
+                }
+
+                FileScanEvent.TYPE_TRACK -> {
+                    filesAdded++
+                    lastFile = event.name
+                }
+
+                FileScanEvent.TYPE_BAD_TRACK -> {
+                    badFiles++
+                    lastError = event.name
+                }
             }
+        }
 
-            FileScanEvent.TYPE_TRACK -> {
-                filesAdded++
+        if (currentFolder != null) {
+            view.showCurrentFolder(currentFolder)
+        }
 
-                view.showLastFile(event.name)
-                view.updateFilesAdded(filesAdded)
-            }
+        if (lastFile != null) {
+            view.showLastFile(lastFile)
+            view.updateFilesAdded(filesAdded)
+        }
 
-            FileScanEvent.TYPE_BAD_TRACK -> {
-                badFiles++
-
-                view.updateBadFiles(badFiles)
-            }
+        if (lastError != null) {
+            view.updateBadFiles(badFiles)
         }
     }
 }
