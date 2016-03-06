@@ -60,9 +60,10 @@ fun readTrackInfoFromPath(path: String, trackNumber: Int): Track? {
     val platform = when (platformString) {
         "Super Nintendo" -> Track.PLATFORM_SNES
         "Sega Mega Drive", "Sega Mega Drive / Genesis", "Sega MegaDrive / Genesis", "Sega Genesis" -> Track.PLATFORM_GENESIS
-        "Sega 32X / Mega 32X" -> Track.PLATFORM_32X
+        "Sega 32X / Mega 32X", "Sega 32X" -> Track.PLATFORM_32X
         else ->  {
             logError("[File] Unsupported platform: $platformString")
+            fileInfoTeardownNative()
             return null
         }
     }
