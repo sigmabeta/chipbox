@@ -13,10 +13,8 @@ import kotlinx.android.synthetic.main.activity_file_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
-import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.presenter.FileListPresenter
 import net.sigmabeta.chipbox.util.generateFileList
-import net.sigmabeta.chipbox.util.logVerbose
 import net.sigmabeta.chipbox.view.adapter.FileAdapter
 import net.sigmabeta.chipbox.view.interfaces.FileListView
 import java.io.File
@@ -107,42 +105,12 @@ class FileListActivity : BaseActivity(), FileListView {
         adapter?.setPath(path)
     }
 
-    override fun onAdditionComplete() {
-        progressDialog?.dismiss()
-        progressDialog = null
-
-        showToastMessage("Successfully scanned library.")
-
-        finish()
-    }
-
-    override fun onAdditionFailed() {
-        progressDialog?.dismiss()
-        showErrorMessage(R.string.file_list_error_scanning)
-    }
-
     override fun showErrorMessage(errorId: Int) {
         Toast.makeText(this, errorId, Toast.LENGTH_SHORT).show()
     }
 
-    override fun showProgressDialog() {
-        progressDialog = ProgressDialog.show(this,
-                getString(R.string.file_list_scanning),
-                getString(R.string.file_list_scanning),
-                true,
-                false)
-    }
-
-    override fun updateProgressText(event: FileScanEvent) {
-        logVerbose("[FileListActivity] Updating progress dialog: ${event}")
-
-        if (event.path != null) {
-            progressDialog?.setMessage(event.path)
-        }
-
-        if (event.file != null) {
-            progressDialog?.setMessage(event.file)
-        }
+    override fun startScanActivity() {
+        ScanActivity.launch(this)
     }
 
     companion object {

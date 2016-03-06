@@ -35,4 +35,14 @@
     <string name="notification_label_prev">Previous Track</string>
     <string name="notification_label_next">Next Track</string>
     <string name="notification_label_stop">Stop Playback</string>
+
+
+    <!-- Scanning-->
+    <string name="scan_status_scanning">Scanning…</string>
+    <string name="scan_status_complete">Complete!</string>
+    <string name="scan_status_failed">Failed!</string>
+    <string name="scan_heading_folder">Current Folder</string>
+    <string name="scan_heading_file">Last File Added</string>
+    <string name="scan_label_files_added_count">Tracks Added</string>
+    <string name="scan_label_bad_file_count">Unreadable Files</string>
 </resources>

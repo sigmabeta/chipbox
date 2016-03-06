@@ -35,6 +35,9 @@
         <activity android:name=".view.activity.GameActivity"
             android:theme="@style/ThemeMain"/>
 
+        <activity android:name=".view.activity.ScanActivity"
+            android:theme="@style/ThemeScan"/>
+
         <service
             android:name=".backend.PlayerService"
             android:enabled="true"

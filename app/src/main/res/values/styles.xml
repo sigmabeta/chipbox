@@ -28,4 +28,46 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 
+    <style name="ThemeScan" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+
+        <item name="android:windowBackground">?attr/colorPrimary</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="TextScanItem" parent="TextAppearance.AppCompat.Caption">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_alignParentStart">true</item>
+        <item name="android:layout_alignParentEnd">true</item>
+        <item name="android:layout_marginStart">@dimen/activity_horizontal_margin</item>
+        <item name="android:layout_marginEnd">@dimen/activity_horizontal_margin</item>
+        <item name="android:layout_marginTop">@dimen/spacing_medium</item>
+    </style>
+
+    <style name="TextScanHeading" parent="TextAppearance.AppCompat.Subhead">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_alignParentStart">true</item>
+        <item name="android:layout_marginStart">@dimen/activity_horizontal_margin</item>
+        <item name="android:layout_marginTop">@dimen/spacing_xlarge</item>
+    </style>
+
+    <style name="TextScanCountItem">
+        <item name="android:layout_width">64dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_alignParentEnd">true</item>
+        <item name="android:gravity">right</item>
+        <item name="android:layout_marginBottom">@dimen/spacing_large</item>
+        <item name="android:layout_marginEnd">@dimen/activity_horizontal_margin</item>
+    </style>
+
+    <style name="TextScanCountLabel">
+        <item name="android:layout_marginEnd">@dimen/spacing_medium</item>
+        <item name="android:layout_width">128dp</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+
 </resources>
