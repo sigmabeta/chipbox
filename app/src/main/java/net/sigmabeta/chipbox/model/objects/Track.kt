@@ -8,7 +8,7 @@ import net.sigmabeta.chipbox.model.database.*
 data class Track(val id: Long,
                  var trackNumber: Int,
                  val path: String,
-                 val title: String,
+                 var title: String,
                  val gameId: Long,
                  val gameTitle: String,
                  val platform: Int,
@@ -23,6 +23,7 @@ data class Track(val id: Long,
         val PLATFORM_GENESIS = 1
         val PLATFORM_32X = 2
         val PLATFORM_SNES = 3
+        val PLATFORM_NES = 4
 
         fun toMetadataBuilder(track: Track): MediaMetadataCompat.Builder {
             return MediaMetadataCompat.Builder()

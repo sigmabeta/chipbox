@@ -4,6 +4,8 @@ external fun getPlatformNative(path: String): String
 
 external fun fileInfoSetupNative(path: String): String?
 
+external fun fileInfoGetTrackCount(): Int
+
 external fun fileInfoSetTrackNumberNative(trackNumber: Int)
 
 external fun fileInfoTeardownNative()

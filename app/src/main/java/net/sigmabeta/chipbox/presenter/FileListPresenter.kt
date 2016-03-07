@@ -4,7 +4,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.util.generateFileList
-import net.sigmabeta.chipbox.util.readTrackInfoFromPath
+import net.sigmabeta.chipbox.util.readSingleTrackFile
 import net.sigmabeta.chipbox.view.interfaces.FileListView
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
@@ -38,7 +38,7 @@ class FileListPresenter @Inject constructor(val view: FileListView,
                         .subscribe()
             }
         } else {
-            val track = readTrackInfoFromPath(path, 0)
+            val track = readSingleTrackFile(path, 0)
 
             if (track != null) {
                 // TODO Show human-readable details.
