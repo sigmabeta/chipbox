@@ -14,11 +14,11 @@ val TYPE_OTHER = -1
 val TYPE_FOLDER = 0
 
 val EXTENSIONS_MUSIC: HashSet<String> = HashSet(arrayListOf(
-        ".spc", ".vgm", ".vgz", ".nsf", ".gbs")
+        ".spc", ".vgm", ".vgz", ".nsf", ".nsfe", ".gbs")
 )
 
 val EXTENSIONS_MULTI_TRACK: HashSet<String> = HashSet(arrayListOf(
-        ".nsf", ".gbs")
+        ".nsf", ".nsfe", ".gbs")
 )
 
 val EXTENSIONS_IMAGES: HashSet<String> = HashSet(arrayListOf(

@@ -496,6 +496,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     companion object {
         val ERROR_AUDIO_TRACK_NULL = -100
 
-        val READ_AHEAD_BUFFER_SIZE = 4
+        val READ_AHEAD_BUFFER_SIZE = 2
     }
 }
