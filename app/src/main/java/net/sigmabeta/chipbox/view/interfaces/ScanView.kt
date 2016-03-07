@@ -12,4 +12,6 @@ interface ScanView {
     fun updateFilesAdded(filesAdded: Int)
 
     fun updateBadFiles(badFiles: Int)
+
+    fun finish()
 }
