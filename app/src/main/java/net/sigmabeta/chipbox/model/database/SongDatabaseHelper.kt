@@ -625,7 +625,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                         if (fileExtension != null) {
                             // Check that the file has an extension we care about before trying to read out of it.
                             if (EXTENSIONS_MUSIC.contains(fileExtension)) {
-                                if (fileExtension.equals(".nsf")) {
+                                if (EXTENSIONS_MULTI_TRACK.contains(fileExtension)) {
                                     folderGameId = readMultipleTracks(artistMap, database, file, filePath, gameMap, sub)
                                     if (folderGameId <= 0) {
                                         sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))

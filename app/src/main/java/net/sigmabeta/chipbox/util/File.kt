@@ -14,11 +14,11 @@ val TYPE_OTHER = -1
 val TYPE_FOLDER = 0
 
 val EXTENSIONS_MUSIC: HashSet<String> = HashSet(arrayListOf(
-        ".spc", ".vgm", ".vgz", ".nsf")
+        ".spc", ".vgm", ".vgz", ".nsf", ".gbs")
 )
 
 val EXTENSIONS_MULTI_TRACK: HashSet<String> = HashSet(arrayListOf(
-        ".nsf")
+        ".nsf", ".gbs")
 )
 
 val EXTENSIONS_IMAGES: HashSet<String> = HashSet(arrayListOf(
@@ -134,6 +134,7 @@ private fun getTrackPlatform(): Int? {
         "Sega Mega Drive", "Sega Mega Drive / Genesis", "Sega MegaDrive / Genesis", "Sega Genesis" -> Track.PLATFORM_GENESIS
         "Sega 32X / Mega 32X", "Sega 32X" -> Track.PLATFORM_32X
         "Nintendo Entertainment System", "Famicom", "Nintendo NES" -> Track.PLATFORM_NES
+        "Game Boy" -> Track.PLATFORM_GAMEBOY
         else -> {
             logError("[File] Unsupported platform: $platformString")
             null

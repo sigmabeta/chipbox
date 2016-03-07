@@ -24,6 +24,7 @@ data class Track(val id: Long,
         val PLATFORM_32X = 2
         val PLATFORM_SNES = 3
         val PLATFORM_NES = 4
+        val PLATFORM_GAMEBOY = 5
 
         fun toMetadataBuilder(track: Track): MediaMetadataCompat.Builder {
             return MediaMetadataCompat.Builder()
