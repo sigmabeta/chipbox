@@ -19,6 +19,7 @@
     <string name="platform_name_32x">Sega 32X</string>
     <string name="platform_name_snes">Super NES</string>
     <string name="platform_name_nes">NES</string>
+    <string name="platform_name_gameboy">Game Boy</string>
 
     <!-- File List Screen-->
     <string name="file_list_up">Up One Level</string>
