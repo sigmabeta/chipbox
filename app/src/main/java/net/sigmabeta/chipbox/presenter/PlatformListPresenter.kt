@@ -16,7 +16,8 @@ class PlatformListPresenter @Inject constructor(val view: PlatformListView,
             Platform(Track.PLATFORM_GENESIS.toLong(), R.string.platform_name_genesis, 0),
             Platform(Track.PLATFORM_32X.toLong(), R.string.platform_name_32x, 0),
             Platform(Track.PLATFORM_SNES.toLong(), R.string.platform_name_snes, 0),
-            Platform(Track.PLATFORM_NES.toLong(), R.string.platform_name_nes, 0)
+            Platform(Track.PLATFORM_NES.toLong(), R.string.platform_name_nes, 0),
+            Platform(Track.PLATFORM_GAMEBOY.toLong(), R.string.platform_name_gameboy, 0)
     )
 
     fun onCreateView() {
