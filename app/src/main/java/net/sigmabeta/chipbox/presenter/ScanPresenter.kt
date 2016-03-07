@@ -17,6 +17,8 @@ class ScanPresenter @Inject constructor(val view: ScanView,
     var filesAdded = 0
     var badFiles = 0
 
+    var backAllowed = false
+
     fun onCreate() {
         database.scanLibrary()
                 .buffer(17, TimeUnit.MILLISECONDS)
@@ -30,10 +32,12 @@ class ScanPresenter @Inject constructor(val view: ScanView,
                         {
                             // OnError. it: Throwable
                             view.onScanFailed()
+                            backAllowed = true
                             logError("[FileListPresenter] File scanning error: ${it.message}")
                         },
                         {
                             // OnCompleted.
+                            backAllowed = true
                             view.onScanComplete()
                         }
                 )
@@ -73,6 +77,12 @@ class ScanPresenter @Inject constructor(val view: ScanView,
 
         if (lastError != null) {
             view.updateBadFiles(badFiles)
+        }
+    }
+
+    fun onBackPressed() {
+        if (backAllowed) {
+            view.finish()
         }
     }
 }

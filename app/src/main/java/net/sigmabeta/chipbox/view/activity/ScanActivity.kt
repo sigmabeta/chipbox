@@ -25,6 +25,10 @@ class ScanActivity : BaseActivity(), ScanView {
         presenter.onCreate()
     }
 
+    override fun onBackPressed() {
+        presenter.onBackPressed()
+    }
+
     /**
      * ScanView
      */
