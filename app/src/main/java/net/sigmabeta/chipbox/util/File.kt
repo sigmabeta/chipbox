@@ -17,6 +17,10 @@ val EXTENSIONS_MUSIC: HashSet<String> = HashSet(arrayListOf(
         ".spc", ".vgm", ".vgz", ".nsf")
 )
 
+val EXTENSIONS_MULTI_TRACK: HashSet<String> = HashSet(arrayListOf(
+        ".nsf")
+)
+
 val EXTENSIONS_IMAGES: HashSet<String> = HashSet(arrayListOf(
         ".jpg", ".png")
 )
@@ -42,6 +46,16 @@ fun getFileType(file: File): Int {
                 return TYPE_OTHER
             }
         }
+    }
+}
+
+fun getFileExtension(filePath: String): String? {
+    val extensionStart = filePath.lastIndexOf('.')
+
+    if (extensionStart > 0) {
+        return filePath.substring(extensionStart)
+    } else {
+        return null
     }
 }
 
