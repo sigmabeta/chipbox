@@ -109,6 +109,11 @@ private fun getTrack(path: String, trackNumber: Int): Track? {
 
     val platform = getTrackPlatform() ?: return null
 
+    var artist = getFileArtist().convert()
+    if (artist.isBlank()) {
+        artist = "Unknown"
+    }
+
     val track = Track(
             -1,
             trackNumber,
@@ -117,7 +122,7 @@ private fun getTrack(path: String, trackNumber: Int): Track? {
             -1,
             getFileGameTitle().convert(),
             platform,
-            getFileArtist().convert(),
+            artist,
             getFileTrackLength(),
             getFileIntroLength(),
             getFileLoopLength()
