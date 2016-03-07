@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.util.external
 
 import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.util.EXTENSIONS_MULTI_TRACK
+import net.sigmabeta.chipbox.util.getFileExtension
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 
@@ -26,7 +28,15 @@ fun loadTrackNative(track: Track, sampleRate: Int, bufferSizeShorts: Long) {
     val path = track.path
 
     logDebug("[PlayerNative] Loading file: ${path}")
-    loadFile(path, 0, sampleRate, bufferSizeShorts, track.trackLength)
+
+    val extension = getFileExtension(path)
+    val trackNumber = if (EXTENSIONS_MULTI_TRACK.contains(extension)) {
+        track.trackNumber - 1
+    } else {
+        0
+    }
+
+    loadFile(path, trackNumber, sampleRate, bufferSizeShorts, track.trackLength)
 
     if (getLastError() != null) {
         logError("[PlayerNative] Unable to load file.")

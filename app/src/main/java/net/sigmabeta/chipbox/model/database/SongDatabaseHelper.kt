@@ -620,11 +620,9 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                         scanFolder(file, gameMap, artistMap, database, sub)
                     } else {
                         val filePath = file.absolutePath
+                        val fileExtension = getFileExtension(filePath)
 
-                        val extensionStart = filePath.lastIndexOf('.')
-                        if (extensionStart > 0) {
-                            val fileExtension = filePath.substring(extensionStart)
-
+                        if (fileExtension != null) {
                             // Check that the file has an extension we care about before trying to read out of it.
                             if (EXTENSIONS_MUSIC.contains(fileExtension)) {
                                 if (fileExtension.equals(".nsf")) {
@@ -688,8 +686,6 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
         var folderGameId = -1L
         tracks.forEach { track ->
-            logVerbose("[SongDatabaseHelper] Track details: $track")
-
             folderGameId = getGameId(track.gameTitle, track.platform, gameMap, database)
             val artistId = getArtistId(track.artist, artistMap, database)
             val values = getContentValuesFromTrack(track, folderGameId, artistId)
