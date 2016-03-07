@@ -14,7 +14,7 @@ val TYPE_OTHER = -1
 val TYPE_FOLDER = 0
 
 val EXTENSIONS_MUSIC: HashSet<String> = HashSet(arrayListOf(
-        ".spc", ".vgm", ".vgz")
+        ".spc", ".vgm", ".vgz", ".nsf")
 )
 
 val EXTENSIONS_IMAGES: HashSet<String> = HashSet(arrayListOf(
@@ -45,7 +45,7 @@ fun getFileType(file: File): Int {
     }
 }
 
-fun readTrackInfoFromPath(path: String, trackNumber: Int): Track? {
+fun readSingleTrackFile(path: String, trackNumber: Int): Track? {
     val error = fileInfoSetupNative(path)
 
     if (error != null) {
@@ -53,44 +53,79 @@ fun readTrackInfoFromPath(path: String, trackNumber: Int): Track? {
         return null
     }
 
+    val track = getTrack(path, 0)
+
+    track?.trackNumber = trackNumber
+
+    fileInfoTeardownNative()
+
+    return track
+}
+
+fun readMultipleTrackFile(path: String): List<Track>? {
+    val error = fileInfoSetupNative(path)
+
+    if (error != null) {
+        logError("[File] Error reading file: $error")
+        return null
+    }
+
+    val trackCount = fileInfoGetTrackCount()
+
+    val tracks = ArrayList<Track>(trackCount)
+    for (trackNumber in 0..trackCount - 1) {
+        val track = getTrack(path, trackNumber)
+        if (track != null) {
+            if (track.title.isEmpty()) {
+                track.title = "${track.gameTitle} Track ${trackNumber + 1}"
+            }
+
+            track.trackNumber = trackNumber + 1
+
+            tracks.add(track)
+        }
+    }
+
+    fileInfoTeardownNative()
+    return tracks
+}
+
+private fun getTrack(path: String, trackNumber: Int): Track? {
     fileInfoSetTrackNumberNative(trackNumber)
 
+    val platform = getTrackPlatform() ?: return null
+
+    val track = Track(
+            -1,
+            trackNumber,
+            path,
+            getFileTitle().convert(),
+            -1,
+            getFileGameTitle().convert(),
+            platform,
+            getFileArtist().convert(),
+            getFileTrackLength(),
+            getFileIntroLength(),
+            getFileLoopLength()
+    )
+
+    return track
+}
+
+private fun getTrackPlatform(): Int? {
     val platformString = getFilePlatform().convert()
 
     val platform = when (platformString) {
         "Super Nintendo" -> Track.PLATFORM_SNES
         "Sega Mega Drive", "Sega Mega Drive / Genesis", "Sega MegaDrive / Genesis", "Sega Genesis" -> Track.PLATFORM_GENESIS
         "Sega 32X / Mega 32X", "Sega 32X" -> Track.PLATFORM_32X
-        else ->  {
+        "Nintendo Entertainment System", "Famicom", "Nintendo NES" -> Track.PLATFORM_NES
+        else -> {
             logError("[File] Unsupported platform: $platformString")
-            fileInfoTeardownNative()
-            return null
+            null
         }
     }
-
-    val title = getFileTitle().convert()
-    val gameTitle = getFileGameTitle().convert()
-    val artist = getFileArtist().convert()
-
-    val trackLength = getFileTrackLength()
-    val introLength = getFileIntroLength()
-    val loopLength = getFileLoopLength()
-
-    fileInfoTeardownNative()
-
-    return Track(
-            -1,
-            trackNumber,
-            path,
-            title,
-            -1,
-            gameTitle,
-            platform,
-            artist,
-            trackLength,
-            introLength,
-            loopLength
-    )
+    return platform
 }
 
 fun getPlatform(path: String): Int {

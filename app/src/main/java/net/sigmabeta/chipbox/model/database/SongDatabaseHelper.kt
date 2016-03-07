@@ -627,22 +627,17 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                             // Check that the file has an extension we care about before trying to read out of it.
                             if (EXTENSIONS_MUSIC.contains(fileExtension)) {
-                                val track = readTrackInfoFromPath(filePath, 0)
-
-                                track?.trackNumber = trackCount
-                                trackCount += 1
-
-                                if (track != null) {
-                                    folderGameId = getGameId(track.gameTitle, track.platform, gameMap, database)
-                                    val artistId = getArtistId(track.artist, artistMap, database)
-                                    val values = getContentValuesFromTrack(track, folderGameId, artistId)
-
-                                    addTrackToDatabase(values, database)
-
-                                    sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
+                                if (fileExtension.equals(".nsf")) {
+                                    folderGameId = readMultipleTracks(artistMap, database, file, filePath, gameMap, sub)
+                                    if (folderGameId <= 0) {
+                                        sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
+                                    }
                                 } else {
-                                    logError("[SongDatabaseHelper] Couldn't read track at ${filePath}")
-                                    sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
+                                    folderGameId = readSingleTrack(artistMap, database, file, filePath, gameMap, sub, trackCount)
+
+                                    if (folderGameId > 0) {
+                                        trackCount += 1
+                                    }
                                 }
                             } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
                                 if (folderGameId != null) {
@@ -665,6 +660,46 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         }
 
         database.endTransaction()
+    }
+
+    private fun readSingleTrack(artistMap: HashMap<Long, Artist>, database: SQLiteDatabase, file: File, filePath: String, gameMap: HashMap<Long, Game>, sub: Subscriber<FileScanEvent>, trackNumber: Int): Long {
+        val track = readSingleTrackFile(filePath, trackNumber)
+
+        if (track != null) {
+            var folderGameId = getGameId(track.gameTitle, track.platform, gameMap, database)
+            val artistId = getArtistId(track.artist, artistMap, database)
+            val values = getContentValuesFromTrack(track, folderGameId, artistId)
+
+            addTrackToDatabase(values, database)
+
+            sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
+
+            return folderGameId
+        } else {
+            logError("[SongDatabaseHelper] Couldn't read track at ${filePath}")
+            sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
+
+            return -1
+        }
+    }
+
+    private fun readMultipleTracks(artistMap: HashMap<Long, Artist>, database: SQLiteDatabase, file: File, filePath: String, gameMap: HashMap<Long, Game>, sub: Subscriber<FileScanEvent>): Long {
+        val tracks = readMultipleTrackFile(filePath) ?: return -1
+
+        var folderGameId = -1L
+        tracks.forEach { track ->
+            logVerbose("[SongDatabaseHelper] Track details: $track")
+
+            folderGameId = getGameId(track.gameTitle, track.platform, gameMap, database)
+            val artistId = getArtistId(track.artist, artistMap, database)
+            val values = getContentValuesFromTrack(track, folderGameId, artistId)
+
+            addTrackToDatabase(values, database)
+
+            sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
+        }
+
+        return folderGameId
     }
 
     private fun addTrackToDatabase(values: ContentValues, database: SQLiteDatabase) {
