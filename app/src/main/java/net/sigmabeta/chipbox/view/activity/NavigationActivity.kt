@@ -2,14 +2,15 @@ package net.sigmabeta.chipbox.view.activity
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import android.view.View
+import android.widget.FrameLayout
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_navigation.*
 import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
+import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.NavigationPresenter
 import net.sigmabeta.chipbox.util.slideViewOffscreen
 import net.sigmabeta.chipbox.util.slideViewOnscreen
@@ -23,39 +24,8 @@ import net.sigmabeta.chipbox.view.interfaces.NavigationView
 import javax.inject.Inject
 
 class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
-    var presenter: NavigationPresenter? = null
+    lateinit var presenter: NavigationPresenter
         @Inject set
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        setContentView(R.layout.activity_navigation)
-
-        setSupportActionBar(toolbar_navigation)
-
-        val launcher = intent
-
-        val fragmentTag = launcher.getStringExtra(ARGUMENT_FRAGMENT_TAG)
-        val fragmentArg = launcher.getLongExtra(ARGUMENT_FRAGMENT_ARG, -1)
-        val title = launcher.getStringExtra(ARGUMENT_TITLE)
-
-        setTitle(title)
-
-        layout_now_playing.setOnClickListener { presenter?.onNowPlayingClicked() }
-        fab_play_pause.setOnClickListener { presenter?.onPlayFabClicked() }
-
-        presenter?.onCreate(fragmentTag, fragmentArg, savedInstanceState)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        presenter?.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        presenter?.onPause()
-    }
 
     /**
      * NavigationView
@@ -72,7 +42,6 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
                 return
             }
         }
-
         supportFragmentManager.beginTransaction()
                 .add(R.id.frame_fragment, fragment, fragmentTag)
                 .commit()
@@ -147,6 +116,29 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
 
     override fun inject() {
         ActivityInjector.inject(this)
+    }
+
+    override fun getPresenter(): ActivityPresenter {
+        return presenter
+    }
+
+    override fun configureViews() {
+        setSupportActionBar(toolbar_navigation)
+
+        layout_now_playing.setOnClickListener { presenter.onNowPlayingClicked() }
+        fab_play_pause.setOnClickListener { presenter.onPlayFabClicked() }
+    }
+
+    override fun getLayoutId(): Int {
+        return R.layout.activity_navigation
+    }
+
+    override fun getContentLayout(): FrameLayout {
+        return frame_fragment
+    }
+
+    override fun setTitle(title: String) {
+        this.title = title
     }
 
     private fun getFragment(): NavigationFragment? {

@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.presenter
 
+import android.database.Cursor
+import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
@@ -9,55 +11,75 @@ import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.logWarning
+import net.sigmabeta.chipbox.view.activity.GameActivity
+import net.sigmabeta.chipbox.view.interfaces.BaseView
 import net.sigmabeta.chipbox.view.interfaces.GameView
-import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class GamePresenter @Inject constructor(val view: GameView,
-                                        val database: SongDatabaseHelper,
-                                        val player: Player) {
+class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
+                                        val player: Player) : ActivityPresenter() {
+    var view: GameView? = null
+
     var gameId: Long? = null
 
     var game: Game? = null
+    var songs: Cursor? = null
 
-    var subscription: Subscription? = null
+    fun onItemClick(track: Track, position: Int) {
+        val cursor = view?.getCursor()
 
-    fun onCreate(gameId: Long) {
-        this.gameId = gameId
-
-        database.getSongListForGame(gameId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            view.setCursor(it)
-                        }
-                )
-
-        database.getGame(gameId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    view.setGame(it)
-                }
-
-        val track = player.playingTrack
-
-        if (track != null) {
-            setPlayingTrack(track)
+        if (cursor != null) {
+            val queue = SongDatabaseHelper.getPlaybackQueueFromCursor(cursor)
+            player.play(queue, position)
         }
     }
 
-    fun onResume() {
-        val track = player.playingTrack
-        if (track != null) {
-            setPlayingTrack(track)
+    override fun onReCreate(savedInstanceState: Bundle) {
+    }
+
+    override fun onTempDestroy() {
+    }
+
+    override fun setup(arguments: Bundle?) {
+        val gameId = arguments?.getLong(GameActivity.ARGUMENT_GAME_ID) ?: -1
+        this.gameId = gameId
+
+        val songsSubscription = database.getSongListForGame(gameId)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    songs = it
+                    view?.setCursor(it)
+                }
+
+
+        val gameSubscription = database.getGame(gameId)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    game = it
+                    view?.setGame(it)
+                }
+
+        subscriptions.add(songsSubscription)
+        subscriptions.add(gameSubscription)
+    }
+
+    override fun teardown() {
+        gameId = null
+        game = null
+        songs = null
+    }
+
+    override fun updateViewState() {
+        player.playingTrack?.let {
+            setPlayingTrack(it)
         }
 
-        subscription = player.updater.asObservable()
+        val subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
@@ -71,27 +93,23 @@ class GamePresenter @Inject constructor(val view: GameView,
                         else -> logWarning("[GamePresenter] Unhandled ${it}")
                     }
                 }
+
+        subscriptions.add(subscription)
     }
 
-    fun onPause() {
-        subscription?.unsubscribe()
-        subscription = null
+    override fun setView(view: BaseView) {
+        if (view is GameView) this.view = view
+    }
+
+    override fun clearView() {
+        view = null
     }
 
     private fun setPlayingTrack(track: Track) {
-        view.setPlayingTrack(track)
+        view?.setPlayingTrack(track)
     }
 
     private fun setPlaybackState(state: Int) {
-        view.setPlaybackState(state)
-    }
-
-    fun onItemClick(track: Track, position: Int) {
-        val cursor = view.getCursor()
-
-        if (cursor != null) {
-            val queue = SongDatabaseHelper.getPlaybackQueueFromCursor(cursor)
-            player.play(queue, position)
-        }
+        view?.setPlaybackState(state)
     }
 }

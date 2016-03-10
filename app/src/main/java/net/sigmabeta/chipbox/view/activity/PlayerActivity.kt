@@ -2,11 +2,13 @@ package net.sigmabeta.chipbox.view.activity
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import android.view.View
+import android.widget.FrameLayout
+import kotlinx.android.synthetic.main.activity_player.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
+import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.PlayerActivityPresenter
 import net.sigmabeta.chipbox.view.fragment.PlayerFragment
 import net.sigmabeta.chipbox.view.interfaces.FragmentContainer
@@ -16,17 +18,6 @@ import javax.inject.Inject
 class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
     lateinit var presenter: PlayerActivityPresenter
         @Inject set
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        setContentView(R.layout.activity_player)
-
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-
-        presenter.onCreate(savedInstanceState)
-    }
 
     /**
      * PlayerView
@@ -54,6 +45,23 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
 
     override fun inject() {
         ActivityInjector.inject(this)
+    }
+
+    override fun getPresenter(): ActivityPresenter {
+        return presenter
+    }
+
+    override fun configureViews() {
+        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+    }
+
+    override fun getLayoutId(): Int {
+        return R.layout.activity_player
+    }
+
+    override fun getContentLayout(): FrameLayout {
+        return frame_fragment
     }
 
     companion object {

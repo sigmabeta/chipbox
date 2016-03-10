@@ -18,4 +18,6 @@ interface NavigationView {
     fun hideNowPlaying(animate: Boolean)
 
     fun launchPlayerActivity()
+
+    fun setTitle(title: String)
 }

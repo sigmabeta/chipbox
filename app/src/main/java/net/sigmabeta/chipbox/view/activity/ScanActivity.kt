@@ -2,11 +2,11 @@ package net.sigmabeta.chipbox.view.activity
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
+import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_scan.*
-import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
+import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.ScanPresenter
 import net.sigmabeta.chipbox.util.fadeInFromRight
 import net.sigmabeta.chipbox.util.fadeOutToLeft
@@ -16,14 +16,6 @@ import javax.inject.Inject
 class ScanActivity : BaseActivity(), ScanView {
     lateinit var presenter: ScanPresenter
         @Inject set
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        setContentView(R.layout.activity_scan)
-
-        presenter.onCreate()
-    }
 
     override fun onBackPressed() {
         presenter.onBackPressed()
@@ -71,14 +63,24 @@ class ScanActivity : BaseActivity(), ScanView {
         ActivityInjector.inject(this)
     }
 
+    override fun getPresenter(): ActivityPresenter {
+        return presenter
+    }
+
+    override fun configureViews() {
+    }
+
+    override fun getLayoutId(): Int {
+        return R.layout.activity_scan
+    }
+
+    override fun getContentLayout(): FrameLayout {
+        return findViewById(android.R.id.content) as FrameLayout
+    }
+
     companion object {
-        val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.Scan"
-
-        val ARGUMENT_ID = "${ACTIVITY_TAG}.id"
-
         fun launch(context: Context) {
             val launcher = Intent(context, ScanActivity::class.java)
-
             context.startActivity(launcher)
         }
     }

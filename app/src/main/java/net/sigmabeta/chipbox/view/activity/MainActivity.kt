@@ -6,11 +6,13 @@ import android.os.Bundle
 import android.support.v7.app.ActionBarDrawerToggle
 import android.view.MenuItem
 import android.view.View
+import android.widget.FrameLayout
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
+import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.MainPresenter
 import net.sigmabeta.chipbox.util.*
 import net.sigmabeta.chipbox.view.adapter.MainTabPagerAdapter
@@ -26,58 +28,6 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     var drawerToggle: ActionBarDrawerToggle? = null
 
     var pagerAdapter: MainTabPagerAdapter? = null
-
-    override fun inject() {
-        ActivityInjector.inject(this)
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        setContentView(R.layout.activity_main)
-
-        setSupportActionBar(toolbar)
-
-        val actionBar = supportActionBar
-        actionBar?.setDisplayHomeAsUpEnabled(true)
-
-        setUpNavigationDrawer()
-        setUpViewPagerTabs()
-
-        layout_now_playing.setOnClickListener { presenter.onNowPlayingClicked() }
-        fab_play_pause.setOnClickListener { presenter.onPlayFabClicked() }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        presenter.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        presenter.onPause()
-    }
-
-    private fun setUpNavigationDrawer() {
-        drawerToggle = ActionBarDrawerToggle(this,
-                layout_drawer,
-                R.string.navigation_drawer_open,
-                R.string.navigation_drawer_close)
-
-        layout_drawer.setDrawerListener(drawerToggle)
-
-        drawer_navigation.setNavigationItemSelectedListener {
-            return@setNavigationItemSelectedListener presenter.onOptionsItemSelected(it.itemId)
-                    ?: false
-        }
-    }
-
-    private fun setUpViewPagerTabs() {
-        pagerAdapter = MainTabPagerAdapter(supportFragmentManager, this)
-        pager_categories.adapter = pagerAdapter
-
-        tabs_categories.setupWithViewPager(pager_categories)
-    }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
@@ -101,7 +51,6 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
 
         // If something else was clicked, handle it ourselves.
         return presenter.onOptionsItemSelected(item.itemId)
-                ?: super.onOptionsItemSelected(item)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -176,6 +125,56 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
 
     override fun launchScanActivity() {
         ScanActivity.launch(this)
+    }
+
+    override fun inject() {
+        ActivityInjector.inject(this)
+    }
+
+    override fun getPresenter(): ActivityPresenter {
+        return presenter
+    }
+
+    override fun configureViews() {
+        setSupportActionBar(toolbar)
+
+        val actionBar = supportActionBar
+        actionBar?.setDisplayHomeAsUpEnabled(true)
+
+        setUpNavigationDrawer()
+        setUpViewPagerTabs()
+
+        layout_now_playing.setOnClickListener { presenter.onNowPlayingClicked() }
+        fab_play_pause.setOnClickListener { presenter.onPlayFabClicked() }
+    }
+
+    override fun getLayoutId(): Int {
+        return R.layout.activity_main
+    }
+
+    override fun getContentLayout(): FrameLayout {
+        return frame_content
+    }
+
+    private fun setUpNavigationDrawer() {
+        drawerToggle = ActionBarDrawerToggle(this,
+                layout_drawer,
+                R.string.navigation_drawer_open,
+                R.string.navigation_drawer_close)
+
+        layout_drawer.setDrawerListener(drawerToggle)
+
+        drawer_navigation.setNavigationItemSelectedListener {
+            return@setNavigationItemSelectedListener presenter.onOptionsItemSelected(it.itemId)
+                    ?: false
+        }
+    }
+
+    private fun setUpViewPagerTabs() {
+        pagerAdapter = MainTabPagerAdapter(supportFragmentManager, this)
+        pager_categories.adapter = pagerAdapter
+
+        tabs_categories.setupWithViewPager(pager_categories)
     }
 
     private fun getFragment(): TopLevelFragment? {

@@ -11,7 +11,9 @@ import net.sigmabeta.chipbox.view.viewholder.FileViewHolder
 import java.io.File
 import java.util.*
 
-public class FileAdapter(var currentPath: String, var fileList: ArrayList<FileListItem>, private val view: FileListView) : RecyclerView.Adapter<FileViewHolder>() {
+public class FileAdapter(val view: FileListView) : RecyclerView.Adapter<FileViewHolder>() {
+    var currentPath: String? = null
+    var fileList: ArrayList<FileListItem>? = null
     /**
      * Called by the LayoutManager when it is necessary to create a new view.
      *
@@ -38,9 +40,11 @@ public class FileAdapter(var currentPath: String, var fileList: ArrayList<FileLi
      */
     override public fun onBindViewHolder(holder: FileViewHolder, position: Int) {
         // Get a reference to the item from the dataset; we'll use this to fill in the view contents.
-        val file = fileList.get(position)
+        val file = fileList?.get(position)
 
-        holder.bind(file)
+        if (file != null) {
+            holder.bind(file)
+        }
     }
 
     /**
@@ -49,7 +53,7 @@ public class FileAdapter(var currentPath: String, var fileList: ArrayList<FileLi
      * @return Size of the dataset.
      */
     override fun getItemCount(): Int {
-        return fileList.size
+        return fileList?.size ?: 0
     }
 
     public fun setPath(path: String) {

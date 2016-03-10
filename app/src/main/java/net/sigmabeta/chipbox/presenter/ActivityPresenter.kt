@@ -4,12 +4,15 @@ import android.os.Bundle
 import net.sigmabeta.chipbox.view.interfaces.BaseView
 
 abstract class ActivityPresenter : BasePresenter() {
+    var recreated = false
+
     fun onCreate(arguments: Bundle?, savedInstanceState: Bundle?, view: BaseView) {
         setView(view)
 
         if (savedInstanceState == null) {
             setup(arguments)
         } else {
+            recreated = true
             onReCreate(savedInstanceState)
         }
     }
@@ -19,6 +22,7 @@ abstract class ActivityPresenter : BasePresenter() {
 
         if (finishing) {
             teardown()
+            recreated = false
         } else {
             onTempDestroy()
         }

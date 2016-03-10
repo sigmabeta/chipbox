@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.presenter
 
 import android.media.session.PlaybackState
+import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.FragmentScoped
 import net.sigmabeta.chipbox.model.events.PositionEvent
@@ -10,25 +11,20 @@ import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
+import net.sigmabeta.chipbox.view.interfaces.BaseView
 import net.sigmabeta.chipbox.view.interfaces.PlayerFragmentView
-import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @FragmentScoped
-class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
-                                                  val player: Player) {
-    var track: Track? = null
-    var state = player.state
+class PlayerFragmentPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
+    var view: PlayerFragmentView? = null
 
-    var subscription: Subscription? = null
+    var track: Track? = null
+
+    var state: Int? = null
 
     var seekbarTouched = false
-
-    fun onCreate() { }
-
-    fun onViewCreated() {
-    }
 
     fun onFabClick() {
         when (player.state) {
@@ -57,18 +53,73 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
         seekbarTouched = false
     }
 
-    fun onResume() {
-        val localTrack = player.playingTrack
 
-        if (localTrack != null) {
-            displayTrack(localTrack)
-        } else {
+    private fun displayTrack(track: Track) {
+        this.track = track
+
+        view?.setTrackTitle(track.title)
+        view?.setArtist(track.artist)
+        view?.setGameTitle(track.gameTitle)
+        view?.setGameBoxart(track.gameId)
+        view?.setTrackLength(getTimeStringFromMillis(track.trackLength))
+
+        displayPosition(0)
+    }
+
+    private fun displayPosition(millisPlayed: Long) {
+        if (!seekbarTouched) {
+            val percentPlayed = 100 * millisPlayed / (track?.trackLength ?: 100)
+            view?.setProgress(percentPlayed.toInt())
+        }
+
+        val timeString = getTimeStringFromMillis(millisPlayed)
+        view?.setTimeElapsed(timeString)
+
+        view?.setUnderrunCount("Underruns ${player.stats.underrunCount}")
+    }
+
+    private fun displayState(state: Int) {
+        this.state = state
+
+        when (state) {
+            PlaybackState.STATE_PLAYING -> view?.showPauseButton()
+
+            PlaybackState.STATE_PAUSED -> view?.showPlayButton()
+
+            PlaybackState.STATE_STOPPED -> {
+                view?.showPlayButton()
+                displayPosition(0)
+            }
+        }
+    }
+
+    /**
+     * FragmentPresenter
+     */
+
+    override fun onReCreate(savedInstanceState: Bundle) {
+    }
+
+    override fun setup(arguments: Bundle?) {
+    }
+
+    override fun teardown() {
+        track = null
+        state = null
+        seekbarTouched = false
+    }
+
+    override fun updateViewState() {
+        player.playingTrack?.let {
+            displayTrack(it)
+        } ?: let {
             logError("[PlayerFragmentPresenter] No track to display.")
         }
 
-        displayState(state)
-
-        subscription = player.updater.asObservable()
+        state?.let {
+            displayState(it)
+        }
+        val subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
@@ -78,49 +129,15 @@ class PlayerFragmentPresenter @Inject constructor(val view: PlayerFragmentView,
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
                     }
                 }
+
+        subscriptions.add(subscription)
     }
 
-    fun onPause() {
-        subscription?.unsubscribe()
-        subscription = null
+    override fun setView(view: BaseView) {
+        if (view is PlayerFragmentView) this.view = view
     }
 
-    private fun displayTrack(track: Track) {
-        this.track = track
-
-        view.setTrackTitle(track.title)
-        view.setArtist(track.artist)
-        view.setGameTitle(track.gameTitle)
-        view.setGameBoxart(track.gameId)
-        view.setTrackLength(getTimeStringFromMillis(track.trackLength))
-
-        displayPosition(0)
-    }
-
-    private fun displayPosition(millisPlayed: Long) {
-        if (!seekbarTouched) {
-            val percentPlayed = 100 * millisPlayed / (track?.trackLength ?: 100)
-            view.setProgress(percentPlayed.toInt())
-        }
-
-        val timeString = getTimeStringFromMillis(millisPlayed)
-        view.setTimeElapsed(timeString)
-
-        view.setUnderrunCount("Underruns ${player.stats.underrunCount}")
-    }
-
-    private fun displayState(state: Int) {
-        this.state = state
-
-        when (state) {
-            PlaybackState.STATE_PLAYING -> view.showPauseButton()
-
-            PlaybackState.STATE_PAUSED -> view.showPlayButton()
-
-            PlaybackState.STATE_STOPPED -> {
-                view.showPlayButton()
-                displayPosition(0)
-            }
-        }
+    override fun clearView() {
+        view = null
     }
 }

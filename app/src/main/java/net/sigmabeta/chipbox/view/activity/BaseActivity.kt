@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.Toast
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.presenter.ActivityPresenter
@@ -18,11 +19,15 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        setContentView(getLayoutId())
+
         if (ChipboxApplication.appComponent == null) {
             logError("[DaggerActivity] AppComponent null.")
         }
 
         inject()
+
+        configureViews()
         getPresenter().onCreate(intent.extras, savedInstanceState, this)
     }
 
@@ -46,7 +51,7 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
     }
 
     override fun showErrorSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) {
-        val snackbar = Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG)
+        val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)
 
         if (action != null && actionLabel != null) {
             snackbar.setAction(actionLabel, action)
@@ -68,4 +73,8 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
      * etc.
      */
     protected abstract fun configureViews()
+
+    protected abstract fun getLayoutId(): Int
+
+    protected abstract fun getContentLayout(): FrameLayout
 }
