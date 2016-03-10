@@ -29,10 +29,8 @@ class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
     var songs: Cursor? = null
 
     fun onItemClick(track: Track, position: Int) {
-        val cursor = view?.getCursor()
-
-        if (cursor != null) {
-            val queue = SongDatabaseHelper.getPlaybackQueueFromCursor(cursor)
+        songs?.let {
+            val queue = SongDatabaseHelper.getPlaybackQueueFromCursor(it)
             player.play(queue, position)
         }
     }

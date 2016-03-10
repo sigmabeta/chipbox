@@ -33,7 +33,7 @@ class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerVie
 
         if (view.image_game_box_art != null) {
             val gameId = toBind.getLong(COLUMN_TRACK_GAME_ID)
-            val imagePath = adapter.getImagePath(gameId)
+            val imagePath = adapter.games?.get(gameId)?.artLocal
 
             if (imagePath != null) {
                 loadImageLowQuality(view.image_game_box_art, imagePath)

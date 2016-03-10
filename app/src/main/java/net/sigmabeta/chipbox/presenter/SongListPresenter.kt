@@ -27,34 +27,11 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
 
     var gameMap: HashMap<Long, Game>? = null
 
-    fun loadGames(tracks: Cursor) {
-        val subscription = database.getGamesForTrackCursor(tracks)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            logInfo("[SongListPresenter] Loaded ${it.size} games.")
-                            gameMap = it
-                            view?.setCursor(tracks)
-                        }
-                )
-
-        subscriptions.add(subscription)
-    }
-
     fun onItemClick(track: Track, position: Int) {
-        val cursor = view?.getCursor()
-
-        if (cursor != null) {
-            val queue = SongDatabaseHelper.getPlaybackQueueFromCursor(cursor)
+        songs?.let {
+            val queue = SongDatabaseHelper.getPlaybackQueueFromCursor(it)
             player.play(queue, position)
         }
-    }
-
-    fun getImagePath(gameId: Long): String? {
-        val game = gameMap?.get(gameId)
-
-        return game?.artLocal
     }
 
     /**
@@ -70,13 +47,15 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
             database.getSongListForArtist(artist)
         }
 
-        val subscription = readOperation.subscribeOn(Schedulers.io())
+        val subscription = readOperation
+                .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
                             logInfo("[SongListPresenter] Loaded ${it.count} tracks.")
 
                             songs = it
+                            view?.setCursor(it)
                             loadGames(it)
                         }
                 )
@@ -94,9 +73,12 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
     }
 
     override fun updateViewState() {
-        val cursor = songs
-        if (cursor != null) {
-            loadGames(cursor)
+        songs?.let {
+            view?.setCursor(it)
+        }
+
+        gameMap?.let {
+            view?.setGames(it)
         }
     }
 
@@ -106,5 +88,20 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
 
     override fun clearView() {
         view = null
+    }
+
+    private fun loadGames(tracks: Cursor) {
+        val subscription = database.getGamesForTrackCursor(tracks)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        {
+                            logInfo("[SongListPresenter] Loaded ${it.size} games.")
+                            gameMap = it
+                            view?.setGames(it)
+                        }
+                )
+
+        subscriptions.add(subscription)
     }
 }
