@@ -3,8 +3,8 @@ package net.sigmabeta.chipbox.view.activity
 import android.content.Context
 import android.content.Intent
 import android.database.Cursor
-import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
+import android.widget.FrameLayout
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_game.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.GamePresenter
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
 import net.sigmabeta.chipbox.view.interfaces.GameView
@@ -23,38 +24,6 @@ class GameActivity : BaseActivity(), GameView, SongListView {
         @Inject set
 
     var adapter: SongListAdapter? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        setContentView(R.layout.activity_game)
-
-        val launcher = intent
-
-        val gameId = launcher.getLongExtra(ARGUMENT_GAME_ID, -1)
-
-        val layoutManager = LinearLayoutManager(this)
-
-        val adapter = SongListAdapter(this, this, false)
-        this.adapter = adapter
-
-        list_tracks.adapter = adapter
-        list_tracks.layoutManager = layoutManager
-
-        presenter.onCreate(gameId)
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        presenter.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-
-        presenter.onPause()
-    }
 
     /**
      * GameView
@@ -127,6 +96,27 @@ class GameActivity : BaseActivity(), GameView, SongListView {
         ActivityInjector.inject(this)
     }
 
+    override fun getPresenter(): ActivityPresenter {
+        return presenter
+    }
+
+    override fun configureViews() {
+        val layoutManager = LinearLayoutManager(this)
+
+        val adapter = SongListAdapter(this, this, false)
+        this.adapter = adapter
+
+        list_tracks.adapter = adapter
+        list_tracks.layoutManager = layoutManager
+    }
+
+    override fun getLayoutId(): Int {
+        return R.layout.activity_game
+    }
+
+    override fun getContentLayout(): FrameLayout {
+        return findViewById(android.R.id.content) as FrameLayout
+    }
 
     companion object {
         val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.game"

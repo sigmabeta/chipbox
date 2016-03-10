@@ -1,16 +1,13 @@
 package net.sigmabeta.chipbox.view.fragment
 
-import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_platform_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.model.objects.Platform
+import net.sigmabeta.chipbox.presenter.FragmentPresenter
 import net.sigmabeta.chipbox.presenter.PlatformListPresenter
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.activity.NavigationActivity
@@ -21,25 +18,10 @@ import java.util.*
 import javax.inject.Inject
 
 class PlatformListFragment : BaseFragment(), PlatformListView, TopLevelFragment {
-    var presenter: PlatformListPresenter? = null
+    lateinit var presenter: PlatformListPresenter
         @Inject set
 
     val adapter = PlatformListAdapter(this)
-
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val rootView = inflater?.inflate(R.layout.fragment_platform_list, container, false)
-
-        presenter?.onCreateView()
-
-        return rootView
-    }
-
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
-        val layoutManager = LinearLayoutManager(activity)
-
-        list_platforms.adapter = adapter
-        list_platforms.layoutManager = layoutManager
-    }
 
     /**
      * PlatformListView
@@ -78,6 +60,21 @@ class PlatformListFragment : BaseFragment(), PlatformListView, TopLevelFragment 
 
     override fun getTitle(): String {
         return getString(R.string.app_name)
+    }
+
+    override fun getPresenter(): FragmentPresenter {
+        return presenter
+    }
+
+    override fun getLayoutId(): Int {
+        return R.layout.fragment_platform_list
+    }
+
+    override fun configureViews() {
+        val layoutManager = LinearLayoutManager(activity)
+
+        list_platforms.adapter = adapter
+        list_platforms.layoutManager = layoutManager
     }
 
     companion object {

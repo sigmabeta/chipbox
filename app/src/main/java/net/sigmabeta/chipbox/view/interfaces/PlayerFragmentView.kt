@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-interface PlayerFragmentView {
+interface PlayerFragmentView : BaseView {
     fun setTrackTitle(title: String)
 
     fun setGameTitle(title: String)

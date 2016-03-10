@@ -20,6 +20,7 @@ data class Track(val id: Long,
     companion object {
         val PLATFORM_UNSUPPORTED = 100
         val PLATFORM_ALL = -2
+        val PLATFORM_UNDEFINED = -1
         val PLATFORM_GENESIS = 1
         val PLATFORM_32X = 2
         val PLATFORM_SNES = 3

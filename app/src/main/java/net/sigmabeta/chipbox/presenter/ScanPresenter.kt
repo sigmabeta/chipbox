@@ -1,9 +1,11 @@
 package net.sigmabeta.chipbox.presenter
 
+import android.os.Bundle
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.util.logError
+import net.sigmabeta.chipbox.view.interfaces.BaseView
 import net.sigmabeta.chipbox.view.interfaces.ScanView
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
@@ -12,14 +14,27 @@ import javax.inject.Inject
 
 
 @ActivityScoped
-class ScanPresenter @Inject constructor(val view: ScanView,
-                                        val database: SongDatabaseHelper ) {
+class ScanPresenter @Inject constructor(val database: SongDatabaseHelper) : ActivityPresenter() {
+    var view: ScanView? = null
+
     var filesAdded = 0
     var badFiles = 0
 
     var backAllowed = false
 
-    fun onCreate() {
+    fun onBackPressed() {
+        if (backAllowed) {
+            view?.finish()
+        }
+    }
+
+    override fun onReCreate(savedInstanceState: Bundle) {
+    }
+
+    override fun onTempDestroy() {
+    }
+
+    override fun setup(arguments: Bundle?) {
         database.scanLibrary()
                 .buffer(17, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
@@ -31,16 +46,33 @@ class ScanPresenter @Inject constructor(val view: ScanView,
                         },
                         {
                             // OnError. it: Throwable
-                            view.onScanFailed()
+                            view?.onScanFailed()
                             backAllowed = true
                             logError("[FileListPresenter] File scanning error: ${it.message}")
                         },
                         {
                             // OnCompleted.
                             backAllowed = true
-                            view.onScanComplete()
+                            view?.onScanComplete()
                         }
                 )
+    }
+
+    override fun teardown() {
+        filesAdded = 0
+        badFiles = 0
+        backAllowed = false
+    }
+
+    override fun updateViewState() {
+    }
+
+    override fun setView(view: BaseView) {
+        if (view is ScanView) this.view = view
+    }
+
+    override fun clearView() {
+        view = null
     }
 
     private fun handleEvent(events: MutableList<FileScanEvent>) {
@@ -67,22 +99,16 @@ class ScanPresenter @Inject constructor(val view: ScanView,
         }
 
         if (currentFolder != null) {
-            view.showCurrentFolder(currentFolder)
+            view?.showCurrentFolder(currentFolder)
         }
 
         if (lastFile != null) {
-            view.showLastFile(lastFile)
-            view.updateFilesAdded(filesAdded)
+            view?.showLastFile(lastFile)
+            view?.updateFilesAdded(filesAdded)
         }
 
         if (lastError != null) {
-            view.updateBadFiles(badFiles)
-        }
-    }
-
-    fun onBackPressed() {
-        if (backAllowed) {
-            view.finish()
+            view?.updateBadFiles(badFiles)
         }
     }
 }

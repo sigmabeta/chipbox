@@ -1,17 +1,14 @@
 package net.sigmabeta.chipbox.view.fragment
 
 import android.database.Cursor
-import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_artist_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.presenter.ArtistListPresenter
+import net.sigmabeta.chipbox.presenter.FragmentPresenter
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.activity.NavigationActivity
 import net.sigmabeta.chipbox.view.adapter.ArtistListAdapter
@@ -20,25 +17,10 @@ import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import javax.inject.Inject
 
 class ArtistListFragment : BaseFragment(), ArtistListView, TopLevelFragment {
-    var presenter: ArtistListPresenter? = null
+    lateinit var presenter: ArtistListPresenter
         @Inject set
 
     val adapter = ArtistListAdapter(this)
-
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val rootView = inflater?.inflate(R.layout.fragment_artist_list, container, false)
-
-        presenter?.onCreateView()
-
-        return rootView
-    }
-
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
-        val layoutManager = LinearLayoutManager(activity)
-
-        list_artists.adapter = adapter
-        list_artists.layoutManager = layoutManager
-    }
 
     /**
      * ArtistListView
@@ -77,6 +59,21 @@ class ArtistListFragment : BaseFragment(), ArtistListView, TopLevelFragment {
 
     override fun getTitle(): String {
         return getString(R.string.app_name)
+    }
+
+    override fun getPresenter(): FragmentPresenter {
+        return presenter
+    }
+
+    override fun getLayoutId(): Int {
+        return R.layout.fragment_artist_list
+    }
+
+    override fun configureViews() {
+        val layoutManager = LinearLayoutManager(activity)
+
+        list_artists.adapter = adapter
+        list_artists.layoutManager = layoutManager
     }
 
     companion object {

@@ -1,9 +1,5 @@
 package net.sigmabeta.chipbox.view.fragment
 
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.SeekBar
 import com.squareup.picasso.Picasso
@@ -11,6 +7,7 @@ import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
+import net.sigmabeta.chipbox.presenter.FragmentPresenter
 import net.sigmabeta.chipbox.presenter.PlayerFragmentPresenter
 import net.sigmabeta.chipbox.view.interfaces.PlayerFragmentView
 import javax.inject.Inject
@@ -18,50 +15,6 @@ import javax.inject.Inject
 class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChangeListener {
     lateinit var presenter: PlayerFragmentPresenter
         @Inject set
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        presenter.onCreate()
-    }
-
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val rootView = inflater?.inflate(R.layout.fragment_player, container, false)
-
-        return rootView
-    }
-
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        presenter.onViewCreated()
-
-        button_play.setOnClickListener {
-            presenter.onFabClick()
-        }
-
-        button_skip_forward.setOnClickListener {
-            presenter.onNextClick()
-        }
-
-        button_skip_back.setOnClickListener {
-            presenter.onRewindClick()
-        }
-
-        seek_playback_progress.setOnSeekBarChangeListener(this)
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        presenter.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-
-        presenter.onPause()
-    }
 
     /**
      * PlayerFragmentView
@@ -144,6 +97,30 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
 
     override fun getTitle(): String {
         return ""
+    }
+
+    override fun getPresenter(): FragmentPresenter {
+        return presenter
+    }
+
+    override fun getLayoutId(): Int {
+        return R.layout.fragment_player
+    }
+
+    override fun configureViews() {
+        button_play.setOnClickListener {
+            presenter.onFabClick()
+        }
+
+        button_skip_forward.setOnClickListener {
+            presenter.onNextClick()
+        }
+
+        button_skip_back.setOnClickListener {
+            presenter.onRewindClick()
+        }
+
+        seek_playback_progress.setOnSeekBarChangeListener(this)
     }
 
     companion object {
