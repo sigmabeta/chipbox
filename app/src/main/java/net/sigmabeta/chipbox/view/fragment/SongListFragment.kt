@@ -8,6 +8,7 @@ import kotlinx.android.synthetic.main.fragment_song_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.presenter.FragmentPresenter
 import net.sigmabeta.chipbox.presenter.SongListPresenter
@@ -17,6 +18,7 @@ import net.sigmabeta.chipbox.view.adapter.SongListAdapter
 import net.sigmabeta.chipbox.view.interfaces.NavigationFragment
 import net.sigmabeta.chipbox.view.interfaces.SongListView
 import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
+import java.util.*
 import javax.inject.Inject
 
 class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, NavigationFragment {
@@ -33,22 +35,16 @@ class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, Navigat
         adapter?.changeCursor(cursor)
     }
 
+    override fun setGames(games: HashMap<Long, Game>) {
+        adapter?.games = games
+    }
+
     override fun onItemClick(track: Track, position: Int) {
         presenter.onItemClick(track, position)
     }
 
     override fun launchPlayerActivity() {
         PlayerActivity.launch(activity)
-    }
-
-    override fun getCursor(): Cursor? {
-        return adapter?.cursor
-    }
-
-    // TODO Instead of doing this, have the presenter pass the map to the fragment
-    // TODO which can then pass the map to the adapter
-    override fun getImagePath(gameId: Long): String? {
-        return presenter.getImagePath(gameId)
     }
 
     override fun refreshList() {

@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.util.loadImageHighQuality
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
 import net.sigmabeta.chipbox.view.interfaces.GameView
 import net.sigmabeta.chipbox.view.interfaces.SongListView
+import java.util.*
 import javax.inject.Inject
 
 class GameActivity : BaseActivity(), GameView, SongListView {
@@ -29,10 +30,6 @@ class GameActivity : BaseActivity(), GameView, SongListView {
      * GameView
      */
 
-    override fun setCursor(cursor: Cursor) {
-        adapter?.changeCursor(cursor)
-    }
-
     override fun setGame(game: Game) {
         val imagePath = game.artLocal
 
@@ -43,10 +40,6 @@ class GameActivity : BaseActivity(), GameView, SongListView {
         }
 
         collapsing_toolbar.title = game.title
-    }
-
-    override fun getCursor(): Cursor? {
-        return adapter?.cursor
     }
 
     override fun setPlayingTrack(track: Track) {
@@ -69,13 +62,16 @@ class GameActivity : BaseActivity(), GameView, SongListView {
         // No-op
     }
 
-    override fun getImagePath(gameId: Long): String? {
-        // No-op
-        return null
-    }
-
     override fun refreshList() {
         adapter?.notifyDataSetChanged()
+    }
+
+    override fun setCursor(cursor: Cursor) {
+        adapter?.changeCursor(cursor)
+    }
+
+    override fun setGames(games: HashMap<Long, Game>) {
+        adapter?.games = games
     }
 
     /**
