@@ -32,6 +32,7 @@ fun loadImageHighQuality(view: ImageView, path: String) {
             .load(path)
             .centerCrop()
             .fit()
+            .noPlaceholder()
             .error(R.drawable.img_album_art_blank)
             .into(view)
 }
@@ -42,6 +43,7 @@ fun loadImageHighQuality(view: ImageView, resource: Int) {
             .load(resource)
             .centerCrop()
             .fit()
+            .noPlaceholder()
             .error(R.drawable.img_album_art_blank)
             .into(view)
 }
