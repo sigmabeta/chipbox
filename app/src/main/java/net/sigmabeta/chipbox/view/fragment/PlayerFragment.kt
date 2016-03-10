@@ -2,13 +2,13 @@ package net.sigmabeta.chipbox.view.fragment
 
 import android.widget.FrameLayout
 import android.widget.SeekBar
-import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.presenter.FragmentPresenter
 import net.sigmabeta.chipbox.presenter.PlayerFragmentPresenter
+import net.sigmabeta.chipbox.util.loadImageHighQuality
 import net.sigmabeta.chipbox.view.interfaces.PlayerFragmentView
 import javax.inject.Inject
 
@@ -44,13 +44,7 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
         val imagesFolderPath = "file://" + activity.getExternalFilesDir(null).absolutePath + "/images/"
         val imagePath = imagesFolderPath + gameId.toString() + "/local.png"
 
-        Picasso.with(context)
-                .load(imagePath)
-                .centerCrop()
-                .fit()
-                .noPlaceholder()
-                .error(R.drawable.img_album_art_blank)
-                .into(image_game_box_art)
+        loadImageHighQuality(image_game_box_art, imagePath)
     }
 
     override fun showPauseButton() {

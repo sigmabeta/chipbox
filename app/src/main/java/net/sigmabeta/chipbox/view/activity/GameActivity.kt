@@ -5,7 +5,6 @@ import android.content.Intent
 import android.database.Cursor
 import android.support.v7.widget.LinearLayoutManager
 import android.widget.FrameLayout
-import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_game.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -14,6 +13,7 @@ import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.GamePresenter
+import net.sigmabeta.chipbox.util.loadImageHighQuality
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
 import net.sigmabeta.chipbox.view.interfaces.GameView
 import net.sigmabeta.chipbox.view.interfaces.SongListView
@@ -37,19 +37,9 @@ class GameActivity : BaseActivity(), GameView, SongListView {
         val imagePath = game.artLocal
 
         if (imagePath != null) {
-            Picasso.with(this)
-                    .load(imagePath)
-                    .centerCrop()
-                    .fit()
-                    .error(R.drawable.img_album_art_blank)
-                    .into(image_hero_boxart)
+            loadImageHighQuality(image_hero_boxart, imagePath)
         } else {
-            Picasso.with(this)
-                    .load(R.drawable.img_album_art_blank)
-                    .centerCrop()
-                    .fit()
-                    .error(R.drawable.img_album_art_blank)
-                    .into(image_hero_boxart)
+            loadImageHighQuality(image_hero_boxart, R.drawable.img_album_art_blank)
         }
 
         collapsing_toolbar.title = game.title
