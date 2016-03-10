@@ -59,10 +59,14 @@ abstract class BaseCursorAdapter() : RecyclerView.Adapter<RecyclerView.ViewHolde
     fun swapCursor(cursor: Cursor): Cursor? {
         val oldCursor = this.cursor
 
-        this.cursor = cursor
-        datasetValid = true
+        if (oldCursor != cursor) {
+            this.cursor = cursor
+            datasetValid = true
 
-        notifyDataSetChanged()
-        return oldCursor
+            notifyDataSetChanged()
+            return oldCursor
+        } else {
+            return null
+        }
     }
 }
