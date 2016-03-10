@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.view.View
 import android.widget.FrameLayout
-import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_navigation.*
 import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -12,6 +11,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.NavigationPresenter
+import net.sigmabeta.chipbox.util.loadImageLowQuality
 import net.sigmabeta.chipbox.util.slideViewOffscreen
 import net.sigmabeta.chipbox.util.slideViewOnscreen
 import net.sigmabeta.chipbox.util.slideViewToProperLocation
@@ -59,12 +59,7 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
         val imagesFolderPath = "file://" + getExternalFilesDir(null).absolutePath + "/images/"
         val imagePath = imagesFolderPath + gameId.toString() + "/local.png"
 
-        Picasso.with(this)
-                .load(imagePath)
-                .centerCrop()
-                .fit()
-                .error(R.drawable.img_album_art_blank)
-                .into(image_playing_game_box_art)
+        loadImageLowQuality(image_playing_game_box_art, imagePath)
     }
 
     override fun showPauseButton() {

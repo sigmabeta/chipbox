@@ -7,7 +7,6 @@ import android.support.v7.app.ActionBarDrawerToggle
 import android.view.MenuItem
 import android.view.View
 import android.widget.FrameLayout
-import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.R
@@ -77,13 +76,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         val imagesFolderPath = "file://" + getExternalFilesDir(null).absolutePath + "/images/"
         val imagePath = imagesFolderPath + gameId.toString() + "/local.png"
 
-        Picasso.with(this)
-                .load(imagePath)
-                .centerCrop()
-                .fit()
-                .noPlaceholder()
-                .error(R.drawable.img_album_art_blank)
-                .into(image_playing_game_box_art)
+        loadImageLowQuality(image_playing_game_box_art, imagePath)
     }
 
     override fun showPauseButton() {
