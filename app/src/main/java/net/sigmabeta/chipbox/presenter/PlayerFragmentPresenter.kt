@@ -4,9 +4,11 @@ import android.media.session.PlaybackState
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.FragmentScoped
+import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.logError
@@ -14,13 +16,29 @@ import net.sigmabeta.chipbox.util.logWarning
 import net.sigmabeta.chipbox.view.interfaces.BaseView
 import net.sigmabeta.chipbox.view.interfaces.PlayerFragmentView
 import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 @FragmentScoped
-class PlayerFragmentPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
+class PlayerFragmentPresenter @Inject constructor(val player: Player,
+                                                  val database: SongDatabaseHelper) : FragmentPresenter() {
     var view: PlayerFragmentView? = null
 
+    var gameId: Long = -1L
+        set (value) {
+            if (field != value) {
+                field = value
+                loadGame(value)
+            }
+        }
+
+    var game: Game? = null
+
     var track: Track? = null
+        set (value) {
+            field = value
+            gameId = value?.gameId ?: -1L
+        }
 
     var state: Int? = null
 
@@ -51,46 +69,6 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     fun onSeekbarRelease(progress: Int) {
         player.seek(progress)
         seekbarTouched = false
-    }
-
-
-    private fun displayTrack(track: Track) {
-        this.track = track
-
-        view?.setTrackTitle(track.title)
-        view?.setArtist(track.artist)
-        view?.setGameTitle(track.gameTitle)
-        view?.setGameBoxart(track.gameId)
-        view?.setTrackLength(getTimeStringFromMillis(track.trackLength))
-
-        displayPosition(0)
-    }
-
-    private fun displayPosition(millisPlayed: Long) {
-        if (!seekbarTouched) {
-            val percentPlayed = 100 * millisPlayed / (track?.trackLength ?: 100)
-            view?.setProgress(percentPlayed.toInt())
-        }
-
-        val timeString = getTimeStringFromMillis(millisPlayed)
-        view?.setTimeElapsed(timeString)
-
-        view?.setUnderrunCount("Underruns ${player.stats.underrunCount}")
-    }
-
-    private fun displayState(state: Int) {
-        this.state = state
-
-        when (state) {
-            PlaybackState.STATE_PLAYING -> view?.showPauseButton()
-
-            PlaybackState.STATE_PAUSED -> view?.showPlayButton()
-
-            PlaybackState.STATE_STOPPED -> {
-                view?.showPlayButton()
-                displayPosition(0)
-            }
-        }
     }
 
     /**
@@ -139,5 +117,59 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
 
     override fun clearView() {
         view = null
+    }
+
+    private fun loadGame(id: Long) {
+        val gameLoader = database.getGame(gameId)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    game = it
+                    displayArt(it)
+                }
+
+        subscriptions.add(gameLoader)
+    }
+
+    private fun displayArt(game: Game) {
+        view?.setGameBoxart(game.artLocal)
+    }
+
+    private fun displayTrack(track: Track) {
+        this.track = track
+
+        view?.setTrackTitle(track.title)
+        view?.setArtist(track.artist)
+        view?.setGameTitle(track.gameTitle)
+        view?.setTrackLength(getTimeStringFromMillis(track.trackLength))
+
+        displayPosition(0)
+    }
+
+    private fun displayPosition(millisPlayed: Long) {
+        if (!seekbarTouched) {
+            val percentPlayed = 100 * millisPlayed / (track?.trackLength ?: 100)
+            view?.setProgress(percentPlayed.toInt())
+        }
+
+        val timeString = getTimeStringFromMillis(millisPlayed)
+        view?.setTimeElapsed(timeString)
+
+        view?.setUnderrunCount("Underruns ${player.stats.underrunCount}")
+    }
+
+    private fun displayState(state: Int) {
+        this.state = state
+
+        when (state) {
+            PlaybackState.STATE_PLAYING -> view?.showPauseButton()
+
+            PlaybackState.STATE_PAUSED -> view?.showPlayButton()
+
+            PlaybackState.STATE_STOPPED -> {
+                view?.showPlayButton()
+                displayPosition(0)
+            }
+        }
     }
 }

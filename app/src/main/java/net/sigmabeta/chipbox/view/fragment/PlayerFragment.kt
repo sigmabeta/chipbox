@@ -40,11 +40,12 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
         text_track_length.text = trackLength
     }
 
-    override fun setGameBoxart(gameId: Long) {
-        val imagesFolderPath = "file://" + activity.getExternalFilesDir(null).absolutePath + "/images/"
-        val imagePath = imagesFolderPath + gameId.toString() + "/local.png"
-
-        loadImageHighQuality(image_game_box_art, imagePath)
+    override fun setGameBoxart(path: String?) {
+        if (path != null) {
+            loadImageHighQuality(image_game_box_art, path)
+        } else {
+            loadImageHighQuality(image_game_box_art, R.drawable.img_album_art_blank)
+        }
     }
 
     override fun showPauseButton() {
