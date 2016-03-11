@@ -36,9 +36,9 @@ class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerVie
             val imagePath = adapter.games?.get(gameId)?.artLocal
 
             if (imagePath != null) {
-                loadImageLowQuality(view.image_game_box_art, imagePath)
+                view.image_game_box_art.loadImageLowQuality(imagePath)
             } else {
-                loadImageLowQuality(view.image_game_box_art, R.drawable.img_album_art_blank)
+                view.image_game_box_art.loadImageLowQuality(R.drawable.img_album_art_blank)
             }
         }
 
