@@ -12,7 +12,6 @@ interface FragmentComponent {
      * Passing an interface here will result in a no-op injection.
      */
     fun inject(view: SongListFragment)
-
     fun inject(view: PlatformListFragment)
     fun inject(view: PlayerFragment)
     fun inject(view: GameGridFragment)
