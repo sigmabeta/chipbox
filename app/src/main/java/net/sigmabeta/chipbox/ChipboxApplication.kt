@@ -3,7 +3,9 @@ package net.sigmabeta.chipbox
 import android.app.Application
 import android.os.Build
 import net.sigmabeta.chipbox.dagger.Initializer
+import net.sigmabeta.chipbox.dagger.component.ActivityComponent
 import net.sigmabeta.chipbox.dagger.component.AppComponent
+import net.sigmabeta.chipbox.dagger.component.FragmentComponent
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logVerbose
 
@@ -13,6 +15,8 @@ public class ChipboxApplication : Application() {
      */
     companion object {
         @JvmField var appComponent: AppComponent? = null
+        @JvmField var activityComponent: ActivityComponent? = null
+        @JvmField var fragmentComponent: FragmentComponent? = null
     }
 
     /**
@@ -34,6 +38,9 @@ public class ChipboxApplication : Application() {
         appComponent = Initializer.initAppComponent(this)
         if (appComponent != null) {
             logVerbose("[ChipboxApplication] Initialized Dagger AppComponent.")
+
+            activityComponent = Initializer.initActivityComponent()
+            fragmentComponent = Initializer.initFragmentComponent()
         }
     }
 }
