@@ -2,8 +2,11 @@ package net.sigmabeta.chipbox.dagger;
 
 import android.app.Application;
 
+import net.sigmabeta.chipbox.ChipboxApplication;
+import net.sigmabeta.chipbox.dagger.component.ActivityComponent;
 import net.sigmabeta.chipbox.dagger.component.AppComponent;
 import net.sigmabeta.chipbox.dagger.component.DaggerAppComponent;
+import net.sigmabeta.chipbox.dagger.component.FragmentComponent;
 import net.sigmabeta.chipbox.dagger.module.AppModule;
 import net.sigmabeta.chipbox.util.LogKt;
 
@@ -14,5 +17,17 @@ public class Initializer {
         return DaggerAppComponent.builder()
                 .appModule(new AppModule(application))
                 .build();
+    }
+
+    public static ActivityComponent initActivityComponent() {
+        LogKt.logVerbose("[Initializer] Initializing Dagger ActivityComponent.");
+
+        return ChipboxApplication.appComponent.plusActivities();
+    }
+
+    public static FragmentComponent initFragmentComponent() {
+        LogKt.logVerbose("[Initializer] Initializing Dagger FragmentComponent.");
+
+        return ChipboxApplication.appComponent.plusFragments();
     }
 }
