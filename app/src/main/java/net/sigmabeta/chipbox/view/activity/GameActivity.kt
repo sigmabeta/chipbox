@@ -34,9 +34,9 @@ class GameActivity : BaseActivity(), GameView, SongListView {
         val imagePath = game.artLocal
 
         if (imagePath != null) {
-            loadImageHighQuality(image_hero_boxart, imagePath)
+            image_hero_boxart.loadImageHighQuality(imagePath)
         } else {
-            loadImageHighQuality(image_hero_boxart, R.drawable.img_album_art_blank)
+            image_hero_boxart.loadImageHighQuality(R.drawable.img_album_art_blank)
         }
 
         collapsing_toolbar.title = game.title

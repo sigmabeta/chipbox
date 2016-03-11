@@ -42,9 +42,9 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
 
     override fun setGameBoxart(path: String?) {
         if (path != null) {
-            loadImageHighQuality(image_game_box_art, path)
+            image_game_box_art.loadImageHighQuality(path)
         } else {
-            loadImageHighQuality(image_game_box_art, R.drawable.img_album_art_blank)
+            image_game_box_art.loadImageHighQuality(R.drawable.img_album_art_blank)
         }
     }
 

@@ -76,7 +76,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         val imagesFolderPath = "file://" + getExternalFilesDir(null).absolutePath + "/images/"
         val imagePath = imagesFolderPath + gameId.toString() + "/local.png"
 
-        loadImageLowQuality(image_playing_game_box_art, imagePath)
+        image_playing_game_box_art.loadImageLowQuality(imagePath)
     }
 
     override fun showPauseButton() {

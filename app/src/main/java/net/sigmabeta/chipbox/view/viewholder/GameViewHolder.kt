@@ -31,9 +31,9 @@ class GameViewHolder(val view: View, val adapter: GameGridAdapter) : RecyclerVie
         val imagePath = toBind.getString(COLUMN_GAME_ART_LOCAL)
 
         if (imagePath != null) {
-            loadImageLowQuality(view.image_game_box_art, imagePath)
+            view.image_game_box_art.loadImageLowQuality(imagePath)
         } else {
-            loadImageLowQuality(view.image_game_box_art, R.drawable.img_album_art_blank)
+            view.image_game_box_art.loadImageLowQuality(R.drawable.img_album_art_blank)
         }
     }
 

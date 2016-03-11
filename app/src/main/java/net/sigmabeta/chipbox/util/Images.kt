@@ -5,45 +5,45 @@ import android.widget.ImageView
 import com.squareup.picasso.Picasso
 import net.sigmabeta.chipbox.R
 
-fun loadImageLowQuality(view: ImageView, path: String) {
-    Picasso.with(view.context)
+fun ImageView.loadImageLowQuality(path: String) {
+    Picasso.with(context)
             .load(path)
             .config(Bitmap.Config.RGB_565)
             .centerCrop()
             .fit()
             .noPlaceholder()
             .error(R.drawable.img_album_art_blank)
-            .into(view)
+            .into(this)
 }
 
-fun loadImageLowQuality(view: ImageView, resource: Int) {
-    Picasso.with(view.context)
+fun ImageView.loadImageLowQuality(resource: Int) {
+    Picasso.with(context)
             .load(resource)
             .config(Bitmap.Config.RGB_565)
             .centerCrop()
             .fit()
             .noPlaceholder()
             .error(R.drawable.img_album_art_blank)
-            .into(view)
+            .into(this)
 }
 
-fun loadImageHighQuality(view: ImageView, path: String) {
-    Picasso.with(view.context)
+fun ImageView.loadImageHighQuality(path: String) {
+    Picasso.with(context)
             .load(path)
             .centerCrop()
             .fit()
             .noPlaceholder()
             .error(R.drawable.img_album_art_blank)
-            .into(view)
+            .into(this)
 }
 
 
-fun loadImageHighQuality(view: ImageView, resource: Int) {
-    Picasso.with(view.context)
+fun ImageView.loadImageHighQuality(resource: Int) {
+    Picasso.with(context)
             .load(resource)
             .centerCrop()
             .fit()
             .noPlaceholder()
             .error(R.drawable.img_album_art_blank)
-            .into(view)
+            .into(this)
 }
