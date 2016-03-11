@@ -73,6 +73,14 @@ class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
     }
 
     override fun updateViewState() {
+        game?.let {
+            view?.setGame(it)
+        }
+
+        songs?.let {
+            view?.setCursor(it)
+        }
+
         player.playingTrack?.let {
             setPlayingTrack(it)
         }
