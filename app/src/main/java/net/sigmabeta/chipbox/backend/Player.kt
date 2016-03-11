@@ -42,6 +42,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var queuedSeekPosition: Int? = null
 
+    var playbackTimePosition: Long = 0
+
     var pausedTrack: Track? = null
     var queuedTrack: Track? = null
     var playingTrack: Track? = null
@@ -142,6 +144,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
         logVerbose("[Player] Clearing empty buffer queue...")
 
+        playbackTimePosition = 0
         emptyBuffers.clear()
 
         logVerbose("[Player] Reader loop has ended.")
@@ -465,7 +468,10 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         // Set a listener to update the UI's playback position.
         audioTrack?.setPlaybackPositionUpdateListener(object : AudioTrack.OnPlaybackPositionUpdateListener {
             override fun onPeriodicNotification(track: AudioTrack) {
-                updater.send(PositionEvent(getMillisPlayed()))
+                val millisPlayed = getMillisPlayed()
+
+                playbackTimePosition = millisPlayed
+                updater.send(PositionEvent(millisPlayed))
             }
 
             override fun onMarkerReached(track: AudioTrack) { }

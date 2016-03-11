@@ -94,9 +94,11 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
             logError("[PlayerFragmentPresenter] No track to display.")
         }
 
-        state?.let {
-            displayState(it)
-        }
+        displayState(player.state)
+
+        displayPosition(player.playbackTimePosition)
+
+        player.playbackTimePosition
         val subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
