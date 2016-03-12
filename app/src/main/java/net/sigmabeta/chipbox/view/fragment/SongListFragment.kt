@@ -25,18 +25,18 @@ class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, Navigat
     lateinit var presenter: SongListPresenter
         @Inject set
 
-    var adapter: SongListAdapter? = null
+    var adapter = SongListAdapter(this, true)
 
     /**
      * SongListView
      */
 
     override fun setCursor(cursor: Cursor) {
-        adapter?.changeCursor(cursor)
+        adapter.changeCursor(cursor)
     }
 
     override fun setGames(games: HashMap<Long, Game>) {
-        adapter?.games = games
+        adapter.games = games
     }
 
     override fun onItemClick(track: Track, position: Int) {
@@ -48,7 +48,7 @@ class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, Navigat
     }
 
     override fun refreshList() {
-        adapter?.notifyDataSetChanged()
+        adapter.notifyDataSetChanged()
     }
 
     /**
@@ -85,9 +85,6 @@ class SongListFragment : BaseFragment(), SongListView, TopLevelFragment, Navigat
 
     override fun configureViews() {
         val layoutManager = LinearLayoutManager(activity)
-
-        val adapter = SongListAdapter(this, activity, true)
-        this.adapter = adapter
 
         list_songs.adapter = adapter
         list_songs.layoutManager = layoutManager

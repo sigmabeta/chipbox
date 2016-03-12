@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.view.adapter
 
-import android.content.Context
 import android.database.Cursor
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -14,7 +13,6 @@ import net.sigmabeta.chipbox.view.viewholder.SongViewHolder
 import java.util.*
 
 class SongListAdapter(val view: SongListView,
-                      val context: Context,
                       val showArt: Boolean) : BaseCursorAdapter() {
 
     var playingTrackId: Long? = null
