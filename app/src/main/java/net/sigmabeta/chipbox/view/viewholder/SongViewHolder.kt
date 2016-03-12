@@ -49,15 +49,15 @@ class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerVie
         }
 
         if (trackId == adapter.playingTrackId) {
-            view.text_song_title.setTextColor(adapter.playingTextColor)
-            view.text_song_artist.setTextColor(adapter.playingTextColor)
-            view.text_song_length.setTextColor(adapter.playingTextColor)
-            view.text_song_track_number?.setTextColor(adapter.playingTextColor)
+            view.text_song_title.setTextAppearance(view.context, R.style.TextlistTrackTitlePlaying)
+            view.text_song_artist.setTextAppearance(view.context, R.style.TextListTrackArtistPlaying)
+            view.text_song_length.setTextAppearance(view.context, R.style.TextListTrackLengthPlaying)
+            view.text_song_track_number?.setTextAppearance(view.context, R.style.TextListTrackNumberPlaying)
         } else {
-            view.text_song_title.setTextColor(adapter.primaryTextColor)
-            view.text_song_artist.setTextColor(adapter.secondaryTextColor)
-            view.text_song_length.setTextColor(adapter.primaryTextColor)
-            view.text_song_track_number?.setTextColor(adapter.secondaryTextColor)
+            view.text_song_title.setTextAppearance(view.context, R.style.TextListTrackTitle)
+            view.text_song_artist.setTextAppearance(view.context, R.style.TextListTrackArtist)
+            view.text_song_length.setTextAppearance(view.context, R.style.TextListTrackLength)
+            view.text_song_track_number?.setTextAppearance(view.context, R.style.TextListTrackNumber)
         }
     }
 

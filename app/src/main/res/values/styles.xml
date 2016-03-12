@@ -72,4 +72,55 @@
         <item name="android:layout_height">wrap_content</item>
     </style>
 
+    <style name="TextListTrackTitle" parent="TextAppearance.AppCompat.Subhead">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:layout_marginLeft">@dimen/spacing_medium</item>
+        <item name="android:layout_marginRight">@dimen/spacing_medium</item>
+        <item name="android:layout_marginTop">@dimen/spacing_medlarge</item>
+    </style>
+
+    <style name="TextListTrackArtist" parent="TextAppearance.AppCompat.Caption">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:layout_marginLeft">@dimen/spacing_medium</item>
+        <item name="android:layout_marginRight">@dimen/spacing_medium</item>
+        <item name="android:layout_marginBottom">@dimen/spacing_medlarge</item>
+    </style>
+
+    <style name="TextListTrackLength">
+        <item name="android:layout_width">60dp</item>
+        <item name="android:layout_height">0dp</item>
+        <item name="android:gravity">right|center_vertical</item>
+        <item name="android:paddingEnd">@dimen/spacing_large</item>
+    </style>
+
+    <style name="TextListTrackNumber">
+        <item name="android:layout_width">24dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_margin">@dimen/spacing_large</item>
+        <item name="android:gravity">center_vertical|right</item>
+        <item name="android:layout_centerVertical">true</item>
+    </style>
+
+    <style name="TextlistTrackTitlePlaying" parent="TextListTrackTitle">
+        <item name="android:textColor">@color/primary</item>
+    </style>
+
+    <style name="TextListTrackArtistPlaying" parent="TextListTrackArtist">
+        <item name="android:textColor">@color/primary</item>
+    </style>
+
+    <style name="TextListTrackLengthPlaying" parent="TextListTrackLength">
+        <item name="android:textColor">@color/primary</item>
+    </style>
+
+    <style name="TextListTrackNumberPlaying" parent="TextListTrackNumber">
+        <item name="android:textColor">@color/primary</item>
+    </style>
+
 </resources>

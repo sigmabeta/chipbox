@@ -38,9 +38,8 @@ class ArtistListPresenter @Inject constructor(val database: SongDatabaseHelper) 
     }
 
     override fun updateViewState() {
-        val cursor = artists
-        if (cursor != null) {
-            view?.setCursor(cursor)
+        artists?.let {
+            view?.setCursor(it)
         }
     }
 
