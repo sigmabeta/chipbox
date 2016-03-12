@@ -71,7 +71,7 @@ class GameGridFragment : BaseFragment(), GameListView, TopLevelFragment, Navigat
         val columnCount = resources.getInteger(R.integer.columns_game_grid)
         val layoutManager = GridLayoutManager(activity, columnCount)
 
-        val adapter = GameGridAdapter(this, activity)
+        val adapter = GameGridAdapter(this)
         this.adapter = adapter
 
         grid_games.adapter = adapter

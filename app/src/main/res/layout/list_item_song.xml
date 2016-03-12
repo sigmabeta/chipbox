@@ -10,30 +10,16 @@
 
     <TextView
         android:id="@+id/text_song_title"
-        style="@style/TextAppearance.AppCompat.Subhead"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        style="@style/TextListTrackTitle"
         tools:text="The Island in the Void"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:layout_marginLeft="@dimen/spacing_medium"
-        android:layout_marginRight="@dimen/spacing_medium"
-        android:layout_marginTop="@dimen/spacing_medlarge"
         android:layout_alignParentTop="true"
         android:layout_toStartOf="@+id/text_song_length"
         android:layout_toEndOf="@+id/image_game_box_art"/>
 
     <TextView
         android:id="@+id/text_song_artist"
-        style="@style/TextAppearance.AppCompat.Caption"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        style="@style/TextListTrackArtist"
         tools:text="Yasunori Shiono"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:layout_marginLeft="@dimen/spacing_medium"
-        android:layout_marginRight="@dimen/spacing_medium"
-        android:layout_marginBottom="@dimen/spacing_medlarge"
         android:layout_alignParentBottom="true"
         android:layout_toStartOf="@+id/text_song_length"
         android:layout_toEndOf="@+id/image_game_box_art"/>
@@ -52,13 +38,10 @@
 
     <TextView
         android:id="@+id/text_song_length"
-        android:layout_width="60dp"
-        android:layout_height="0dp"
-        android:gravity="right|center_vertical"
         tools:text="4:29"
-        android:paddingEnd="@dimen/spacing_large"
         android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
-        android:layout_alignParentBottom="true"/>
+        android:layout_alignParentBottom="true"
+        style="@style/TextListTrackLength"/>
 
 </RelativeLayout>

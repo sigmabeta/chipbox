@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.view.adapter
 
-import android.content.Context
 import android.database.Cursor
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -10,7 +9,7 @@ import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.view.interfaces.GameListView
 import net.sigmabeta.chipbox.view.viewholder.GameViewHolder
 
-class GameGridAdapter(val view: GameListView, val context: Context) : BaseCursorAdapter() {
+class GameGridAdapter(val view: GameListView) : BaseCursorAdapter() {
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): RecyclerView.ViewHolder? {
         val card = LayoutInflater.from(parent?.context)
                 ?.inflate(R.layout.grid_item_game, parent, false)

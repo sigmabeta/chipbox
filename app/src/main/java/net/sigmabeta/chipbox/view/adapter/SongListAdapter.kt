@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.view.adapter
 
 import android.content.Context
 import android.database.Cursor
-import android.support.v4.content.ContextCompat
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -17,9 +16,6 @@ import java.util.*
 class SongListAdapter(val view: SongListView,
                       val context: Context,
                       val showArt: Boolean) : BaseCursorAdapter() {
-    val playingTextColor = ContextCompat.getColor(context, R.color.primary)
-    val primaryTextColor = ContextCompat.getColor(context, R.color.primary_text)
-    val secondaryTextColor = ContextCompat.getColor(context, R.color.secondary_text)
 
     var playingTrackId: Long? = null
         set (value) {
