@@ -24,7 +24,7 @@ class GameGridFragment : BaseFragment(), GameListView, TopLevelFragment, Navigat
     lateinit var presenter: GameGridPresenter
         @Inject set
 
-    var adapter: GameGridAdapter? = null
+    var adapter = GameGridAdapter(this)
 
     /**
      * TopLevelFragment
@@ -39,7 +39,7 @@ class GameGridFragment : BaseFragment(), GameListView, TopLevelFragment, Navigat
     }
 
     override fun setCursor(cursor: Cursor) {
-        adapter?.changeCursor(cursor)
+        adapter.changeCursor(cursor)
     }
 
     override fun onItemClick(id: Long) {
@@ -70,9 +70,6 @@ class GameGridFragment : BaseFragment(), GameListView, TopLevelFragment, Navigat
         val spacing = convertDpToPx(4.0f, activity).toInt()
         val columnCount = resources.getInteger(R.integer.columns_game_grid)
         val layoutManager = GridLayoutManager(activity, columnCount)
-
-        val adapter = GameGridAdapter(this)
-        this.adapter = adapter
 
         grid_games.adapter = adapter
         grid_games.addItemDecoration(GridSpaceDecoration(spacing))

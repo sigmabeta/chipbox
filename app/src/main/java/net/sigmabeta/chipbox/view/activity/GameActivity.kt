@@ -24,7 +24,7 @@ class GameActivity : BaseActivity(), GameView, SongListView {
     lateinit var presenter: GamePresenter
         @Inject set
 
-    var adapter: SongListAdapter? = null
+    var adapter = SongListAdapter(this, false)
 
     /**
      * GameView
@@ -43,7 +43,7 @@ class GameActivity : BaseActivity(), GameView, SongListView {
     }
 
     override fun setPlayingTrack(track: Track) {
-        adapter?.playingTrackId = track.id
+        adapter.playingTrackId = track.id
     }
 
     override fun setPlaybackState(state: Int) {
@@ -63,15 +63,15 @@ class GameActivity : BaseActivity(), GameView, SongListView {
     }
 
     override fun refreshList() {
-        adapter?.notifyDataSetChanged()
+        adapter.notifyDataSetChanged()
     }
 
     override fun setCursor(cursor: Cursor) {
-        adapter?.changeCursor(cursor)
+        adapter.changeCursor(cursor)
     }
 
     override fun setGames(games: HashMap<Long, Game>) {
-        adapter?.games = games
+        adapter.games = games
     }
 
     /**
@@ -88,9 +88,6 @@ class GameActivity : BaseActivity(), GameView, SongListView {
 
     override fun configureViews() {
         val layoutManager = LinearLayoutManager(this)
-
-        val adapter = SongListAdapter(this, this, false)
-        this.adapter = adapter
 
         list_tracks.adapter = adapter
         list_tracks.layoutManager = layoutManager
