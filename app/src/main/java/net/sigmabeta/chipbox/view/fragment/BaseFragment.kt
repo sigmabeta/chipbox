@@ -56,7 +56,9 @@ abstract class BaseFragment : Fragment(), BaseView {
 
     override fun onDestroy() {
         super.onDestroy()
-        getPresenter().onDestroy()
+
+        val ending = activity.isFinishing || isRemoving
+        getPresenter().onDestroy(ending)
     }
 
     override fun showToastMessage(message: String) {
