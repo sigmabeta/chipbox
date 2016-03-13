@@ -146,14 +146,12 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
 
         val ARGUMENT_FRAGMENT_TAG = "${ACTIVITY_TAG}.fragment_tag"
         val ARGUMENT_FRAGMENT_ARG = "${ACTIVITY_TAG}.fragment_argument"
-        val ARGUMENT_TITLE = "${ACTIVITY_TAG}.title"
 
-        fun launch(context: Context, fragmentTag: String, fragmentArg: Long, title: String) {
+        fun launch(context: Context, fragmentTag: String, fragmentArg: Long) {
             val launcher = Intent(context, NavigationActivity::class.java)
 
             launcher.putExtra(ARGUMENT_FRAGMENT_TAG, fragmentTag)
             launcher.putExtra(ARGUMENT_FRAGMENT_ARG, fragmentArg)
-            launcher.putExtra(ARGUMENT_TITLE, title)
 
             context.startActivity(launcher)
         }

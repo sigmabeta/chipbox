@@ -1,20 +1,14 @@
 package net.sigmabeta.chipbox.view.adapter
 
-import android.database.Cursor
-import android.support.v7.widget.RecyclerView
-import android.view.LayoutInflater
-import android.view.ViewGroup
+import android.view.View
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.view.interfaces.SongListView
+import net.sigmabeta.chipbox.view.interfaces.ItemListView
 import net.sigmabeta.chipbox.view.viewholder.SongViewHolder
 import java.util.*
 
-class SongListAdapter(val view: SongListView,
-                      val showArt: Boolean) : BaseCursorAdapter() {
-
+class SongListAdapter(view: ItemListView, val showArt: Boolean) : BaseArrayAdapter<Track, SongViewHolder>(view) {
     var playingTrackId: Long? = null
         set (value) {
             field = value
@@ -27,35 +21,18 @@ class SongListAdapter(val view: SongListView,
             notifyDataSetChanged()
         }
 
-    override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): RecyclerView.ViewHolder? {
-        val row = LayoutInflater.from(parent?.context)
-                ?.inflate(
-                        if (showArt)
-                            R.layout.list_item_song
-                        else
-                            R.layout.list_item_song_game,
-                        parent, false)
-
-        if (row != null) {
-            return SongViewHolder(row, this)
-        } else {
-            logError("[SongListAdapter] Unable to inflate row...")
-            return null
-        }
+    override fun getLayoutId(): Int {
+        return if (showArt)
+            R.layout.list_item_song
+        else
+            R.layout.list_item_song_game
     }
 
-    override fun bind(holder: RecyclerView.ViewHolder, cursor: Cursor) {
-        (holder as SongViewHolder).bind(cursor)
+    override fun createViewHolder(view: View): SongViewHolder {
+        return SongViewHolder(view, this)
     }
 
-    fun onItemClick(id: Long, position: Int) {
-        val localCursor = cursor
-
-        if (localCursor != null) {
-            localCursor.moveToPosition(position)
-
-            val track = Track.fromCursor(localCursor)
-            view.onItemClick(track, position)
-        }
+    override fun bind(holder: SongViewHolder, item: Track) {
+        holder.bind(item)
     }
 }

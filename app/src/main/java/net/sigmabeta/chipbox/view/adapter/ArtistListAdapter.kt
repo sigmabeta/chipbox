@@ -1,32 +1,21 @@
 package net.sigmabeta.chipbox.view.adapter
 
-import android.database.Cursor
-import android.support.v7.widget.RecyclerView
-import android.view.LayoutInflater
-import android.view.ViewGroup
+import android.view.View
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.view.interfaces.ArtistListView
+import net.sigmabeta.chipbox.model.objects.Artist
+import net.sigmabeta.chipbox.view.interfaces.ItemListView
 import net.sigmabeta.chipbox.view.viewholder.ArtistViewHolder
 
-class ArtistListAdapter(val view: ArtistListView) : BaseCursorAdapter() {
-    override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): RecyclerView.ViewHolder? {
-        val row = LayoutInflater.from(parent?.context)
-                ?.inflate(R.layout.list_item_artist, parent, false)
-
-        if (row != null) {
-            return ArtistViewHolder(row, this)
-        } else {
-            logError("[ArtistListAdapter] Unable to inflate row...")
-            return null
-        }
+class ArtistListAdapter(view: ItemListView) : BaseArrayAdapter<Artist, ArtistViewHolder>(view) {
+    override fun getLayoutId(): Int {
+        return R.layout.list_item_artist
     }
 
-    override fun bind(holder: RecyclerView.ViewHolder, cursor: Cursor) {
-        (holder as ArtistViewHolder).bind(cursor)
+    override fun createViewHolder(view: View): ArtistViewHolder {
+        return ArtistViewHolder(view, this)
     }
 
-    fun onItemClick(id: Long, artistName: String) {
-        view.onItemClick(id, artistName)
+    override fun bind(holder: ArtistViewHolder, item: Artist) {
+        holder.bind(item)
     }
 }

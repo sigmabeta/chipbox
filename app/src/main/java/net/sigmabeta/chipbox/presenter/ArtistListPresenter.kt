@@ -1,20 +1,25 @@
 package net.sigmabeta.chipbox.presenter
 
-import android.database.Cursor
 import android.os.Bundle
 import net.sigmabeta.chipbox.dagger.scope.FragmentScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.objects.Artist
 import net.sigmabeta.chipbox.view.interfaces.ArtistListView
 import net.sigmabeta.chipbox.view.interfaces.BaseView
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
+import java.util.*
 import javax.inject.Inject
 
 @FragmentScoped
 class ArtistListPresenter @Inject constructor(val database: SongDatabaseHelper) : FragmentPresenter() {
     var view: ArtistListView? = null
 
-    var artists: Cursor? = null
+    var artists: ArrayList<Artist>? = null
+
+    fun onItemClick(id: Long) {
+        view?.launchNavActivity(id)
+    }
 
     override fun setup(arguments: Bundle?) {
         val subscription = database.getArtistList()
@@ -23,7 +28,7 @@ class ArtistListPresenter @Inject constructor(val database: SongDatabaseHelper) 
                 .subscribe(
                         {
                             artists = it
-                            view?.setCursor(it)
+                            view?.setArtists(it)
                         }
                 )
 
@@ -39,7 +44,7 @@ class ArtistListPresenter @Inject constructor(val database: SongDatabaseHelper) 
 
     override fun updateViewState() {
         artists?.let {
-            view?.setCursor(it)
+            view?.setArtists(it)
         }
     }
 

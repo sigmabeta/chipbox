@@ -1,38 +1,32 @@
 package net.sigmabeta.chipbox.view.viewholder
 
-import android.database.Cursor
-import android.support.v7.widget.RecyclerView
 import android.view.View
 import kotlinx.android.synthetic.main.list_item_song.view.image_game_box_art
 import kotlinx.android.synthetic.main.list_item_song_game.view.*
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.database.*
+import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.loadImageLowQuality
+import net.sigmabeta.chipbox.view.adapter.BaseViewHolder
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
 
 
-class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerView.ViewHolder(view), View.OnClickListener {
+class SongViewHolder(view: View, adapter: SongListAdapter) : BaseViewHolder<Track, SongViewHolder, SongListAdapter>(view, adapter), View.OnClickListener {
     var trackId: Long? = null
 
-    init {
-        view.setOnClickListener(this)
+    override fun getId(): Long? {
+        return adapterPosition.toLong()
     }
 
-    fun bind(toBind: Cursor) {
-        trackId = toBind.getLong(COLUMN_DB_ID)
+    override fun bind(toBind: Track) {
+        trackId = toBind.id
 
-        val title = toBind.getString(COLUMN_TRACK_TITLE)
-        val artistName = toBind.getString(COLUMN_TRACK_ARTIST)
-
-        val trackLength = getTimeStringFromMillis(toBind.getLong(COLUMN_TRACK_LENGTH))
-
-        view.text_song_title.text = title
-        view.text_song_artist.text = artistName
-        view.text_song_length.text = trackLength
+        view.text_song_title.text = toBind.title
+        view.text_song_artist.text = toBind.artist
+        view.text_song_length.text = getTimeStringFromMillis(toBind.trackLength)
 
         if (view.image_game_box_art != null) {
-            val gameId = toBind.getLong(COLUMN_TRACK_GAME_ID)
+            val gameId = toBind.gameId
             val imagePath = adapter.games?.get(gameId)?.artLocal
 
             if (imagePath != null) {
@@ -43,7 +37,7 @@ class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerVie
         }
 
         if (view.text_song_track_number != null) {
-            val trackNumber = toBind.getInt(COLUMN_TRACK_NUMBER)
+            val trackNumber = toBind.trackNumber
 
             view.text_song_track_number.text = trackNumber.toString()
         }
@@ -59,10 +53,5 @@ class SongViewHolder(val view: View, val adapter: SongListAdapter) : RecyclerVie
             view.text_song_length.setTextAppearance(view.context, R.style.TextListTrackLength)
             view.text_song_track_number?.setTextAppearance(view.context, R.style.TextListTrackNumber)
         }
-    }
-
-
-    override fun onClick(v: View) {
-        adapter.onItemClick(trackId ?: return, adapterPosition)
     }
 }

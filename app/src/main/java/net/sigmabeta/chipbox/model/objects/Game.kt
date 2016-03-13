@@ -5,5 +5,6 @@ data class Game(
         val title: String,
         val platform: Int,
         val artLocal: String?,
-        val artWeb: String?
+        val artWeb: String?,
+        val company: String?
 )

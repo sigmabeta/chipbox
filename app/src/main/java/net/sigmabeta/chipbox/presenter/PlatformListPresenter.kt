@@ -22,6 +22,10 @@ class PlatformListPresenter @Inject constructor(val database: SongDatabaseHelper
             Platform(Track.PLATFORM_GAMEBOY.toLong(), R.string.platform_name_gameboy, 0)
     )
 
+    fun onItemClick(id: Long) {
+        view?.launchNavActivity(id)
+    }
+
     /**
      * FragmentPresenter
      */

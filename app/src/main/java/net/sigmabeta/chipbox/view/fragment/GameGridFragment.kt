@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.view.fragment
 
-import android.database.Cursor
 import android.os.Bundle
 import android.support.v7.widget.GridLayoutManager
 import android.widget.FrameLayout
@@ -8,6 +7,7 @@ import kotlinx.android.synthetic.main.fragment_game_grid.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.presenter.FragmentPresenter
 import net.sigmabeta.chipbox.presenter.GameGridPresenter
 import net.sigmabeta.chipbox.util.convertDpToPx
@@ -16,15 +16,29 @@ import net.sigmabeta.chipbox.view.GridSpaceDecoration
 import net.sigmabeta.chipbox.view.activity.GameActivity
 import net.sigmabeta.chipbox.view.adapter.GameGridAdapter
 import net.sigmabeta.chipbox.view.interfaces.GameListView
+import net.sigmabeta.chipbox.view.interfaces.ItemListView
 import net.sigmabeta.chipbox.view.interfaces.NavigationFragment
 import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
+import java.util.*
 import javax.inject.Inject
 
-class GameGridFragment : BaseFragment(), GameListView, TopLevelFragment, NavigationFragment {
+class GameGridFragment : BaseFragment(), GameListView, ItemListView, TopLevelFragment, NavigationFragment {
     lateinit var presenter: GameGridPresenter
         @Inject set
 
     var adapter = GameGridAdapter(this)
+
+    /**
+     * GameListView
+     */
+
+    override fun setGames(games: ArrayList<Game>) {
+        adapter.dataset = games
+    }
+
+    override fun launchGameActivity(id: Long) {
+        GameActivity.launch(activity, id)
+    }
 
     /**
      * TopLevelFragment
@@ -38,20 +52,20 @@ class GameGridFragment : BaseFragment(), GameListView, TopLevelFragment, Navigat
         FragmentInjector.inject(this)
     }
 
-    override fun setCursor(cursor: Cursor) {
-        adapter.changeCursor(cursor)
-    }
-
-    override fun onItemClick(id: Long) {
-        GameActivity.launch(activity, id)
-    }
-
     override fun getContentLayout(): FrameLayout {
         return frame_content
     }
 
     override fun getTitle(): String {
         return getString(R.string.app_name)
+    }
+
+    /**
+     * ItemListView
+     */
+
+    override fun onItemClick(id: Long) {
+        presenter.onItemClick(id)
     }
 
     /**

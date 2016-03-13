@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.presenter
 
-import android.database.Cursor
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.FragmentScoped
@@ -23,14 +22,13 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
 
     var artist = Track.PLATFORM_ALL.toLong()
 
-    var songs: Cursor? = null
+    var songs: ArrayList<Track>? = null
 
     var gameMap: HashMap<Long, Game>? = null
 
-    fun onItemClick(track: Track, position: Int) {
+    fun onItemClick(position: Long) {
         songs?.let {
-            val queue = SongDatabaseHelper.getPlaybackQueueFromCursor(it)
-            player.play(queue, position)
+            player.play(it, position.toInt())
         }
     }
 
@@ -52,10 +50,10 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
-                            logInfo("[SongListPresenter] Loaded ${it.count} tracks.")
+                            logInfo("[SongListPresenter] Loaded ${it.size} tracks.")
 
                             songs = it
-                            view?.setCursor(it)
+                            view?.setSongs(it)
                             loadGames(it)
                         }
                 )
@@ -74,7 +72,7 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
 
     override fun updateViewState() {
         songs?.let {
-            view?.setCursor(it)
+            view?.setSongs(it)
         }
 
         gameMap?.let {
@@ -90,7 +88,7 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
         view = null
     }
 
-    private fun loadGames(tracks: Cursor) {
+    private fun loadGames(tracks: ArrayList<Track>) {
         val subscription = database.getGamesForTrackCursor(tracks)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())

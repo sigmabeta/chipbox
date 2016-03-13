@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-interface NavigationView {
+interface NavigationView : BaseView {
     fun showFragment(fragmentTag: String, fragmentArg: Long)
 
     fun setTrackTitle(title: String)

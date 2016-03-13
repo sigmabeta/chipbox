@@ -1,9 +1,10 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-import android.database.Cursor
+import net.sigmabeta.chipbox.model.objects.Artist
+import java.util.*
 
-interface ArtistListView {
-    fun onItemClick(id: Long, artistName: String)
+interface ArtistListView : BaseView {
+    fun setArtists(artists: ArrayList<Artist>)
 
-    fun setCursor(cursor: Cursor)
+    fun launchNavActivity(id: Long)
 }

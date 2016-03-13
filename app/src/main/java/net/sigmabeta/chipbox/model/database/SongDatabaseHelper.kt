@@ -277,7 +277,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         )
     }
 
-    fun getGamesList(platform: Int): Observable<Cursor> {
+    fun getGamesList(platform: Int): Observable<ArrayList<Game>> {
         return Observable.create(
                 {
                     logInfo("[SongDatabaseHelper] Reading games list...")
@@ -306,17 +306,25 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                             "${KEY_GAME_TITLE} ASC"
                     )
 
-                    logVerbose("[SongDatabaseHelper] Cursor size: ${resultCursor.count}")
+                    val games = ArrayList<Game>()
 
-                    it.onNext(resultCursor)
+                    resultCursor.moveToPosition(-1)
+                    while (resultCursor.moveToNext()) {
+                        games.add(getGameFromCursor(resultCursor))
+                    }
 
+                    logVerbose("[SongDatabaseHelper] Found ${resultCursor.count} games.")
+
+                    it.onNext(games)
+
+                    resultCursor.close()
                     database.close()
                     it.onCompleted()
                 }
         )
     }
 
-    fun getGamesForTrackCursor(tracks: Cursor): Observable<HashMap<Long, Game>> {
+    fun getGamesForTrackCursor(tracks: ArrayList<Track>): Observable<HashMap<Long, Game>> {
         return Observable.create(
                 {
                     logInfo("[SongDatabaseHelper] Getting games for currently displayed tracks...")
@@ -326,11 +334,11 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                     val games = HashMap<Long, Game>()
 
-                    while (tracks.moveToNext()) {
+                    for (track in tracks) {
                         val whereClause: String?
                         val whereArgs: Array<String>?
 
-                        val gameId = tracks.getLong(COLUMN_TRACK_GAME_ID)
+                        val gameId = track.gameId
 
                         if (games.get(gameId) != null) {
                             continue
@@ -377,7 +385,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         )
     }
 
-    fun getArtistList(): Observable<Cursor> {
+    fun getArtistList(): Observable<ArrayList<Artist>> {
         return Observable.create(
                 {
                     logInfo("[SongDatabaseHelper] Reading artist list...")
@@ -394,17 +402,25 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                             "${KEY_ARTIST_NAME} ASC"
                     )
 
-                    logVerbose("[SongDatabaseHelper] Cursor size: ${resultCursor.count}")
 
-                    it.onNext(resultCursor)
+                    val artists = ArrayList<Artist>()
 
+                    resultCursor.moveToPosition(-1)
+                    while (resultCursor.moveToNext()) {
+                        artists.add(getArtistFromCursor(resultCursor))
+                    }
+
+                    logVerbose("[SongDatabaseHelper] Found ${resultCursor.count} artists.")
+                    it.onNext(artists)
+
+                    resultCursor.close()
                     database.close()
                     it.onCompleted()
                 }
         )
     }
 
-    fun getSongList(): Observable<Cursor> {
+    fun getSongList(): Observable<ArrayList<Track>> {
         return Observable.create(
                 {
                     logInfo("[SongDatabaseHelper] Reading song list...")
@@ -421,17 +437,24 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                             "${KEY_TRACK_TITLE} ASC"
                     )
 
-                    logVerbose("[SongDatabaseHelper] Result size: ${resultCursor.count}")
+                    val tracks = ArrayList<Track>()
 
-                    it.onNext(resultCursor)
+                    resultCursor.moveToPosition(-1)
+                    while (resultCursor.moveToNext()) {
+                        tracks.add(getTrackFromCursor(resultCursor))
+                    }
 
+                    logVerbose("[SongDatabaseHelper] Found ${resultCursor.count} tracks.")
+                    it.onNext(tracks)
+
+                    resultCursor.close()
                     database.close()
                     it.onCompleted()
                 }
         )
     }
 
-    fun getSongListForArtist(artist: Long): Observable<Cursor> {
+    fun getSongListForArtist(artist: Long): Observable<ArrayList<Track>> {
         return Observable.create(
                 {
                     logInfo("[SongDatabaseHelper] Reading song list...")
@@ -450,17 +473,24 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                             "${KEY_TRACK_GAME_ID} ASC"
                     )
 
-                    logVerbose("[SongDatabaseHelper] Result size: ${resultCursor.count}")
+                    val tracks = ArrayList<Track>()
 
-                    it.onNext(resultCursor)
+                    resultCursor.moveToPosition(-1)
+                    while (resultCursor.moveToNext()) {
+                        tracks.add(getTrackFromCursor(resultCursor))
+                    }
 
+                    logVerbose("[SongDatabaseHelper] Found ${resultCursor.count} tracks.")
+                    it.onNext(tracks)
+
+                    resultCursor.close()
                     database.close()
                     it.onCompleted()
                 }
         )
     }
 
-    fun getSongListForGame(game: Long): Observable<Cursor> {
+    fun getSongListForGame(game: Long): Observable<ArrayList<Track>> {
         return Observable.create(
                 {
                     logInfo("[SongDatabaseHelper] Reading song list...")
@@ -479,10 +509,18 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                             "${KEY_TRACK_NUMBER} ASC"
                     )
 
-                    logVerbose("[SongDatabaseHelper] Result size: ${resultCursor.count}")
+                    val tracks = ArrayList<Track>()
 
-                    it.onNext(resultCursor)
+                    resultCursor.moveToPosition(-1)
+                    while (resultCursor.moveToNext()) {
+                        tracks.add(getTrackFromCursor(resultCursor))
+                    }
 
+                    logVerbose("[SongDatabaseHelper] Found ${resultCursor.count} tracks.")
+                    it.onNext(tracks)
+
+                    resultCursor.close()
+                    database.close()
                     it.onCompleted()
                 }
         )
@@ -782,7 +820,15 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     cursor.getString(COLUMN_GAME_TITLE),
                     cursor.getInt(COLUMN_GAME_PLATFORM),
                     cursor.getString(COLUMN_GAME_ART_LOCAL),
-                    cursor.getString(COLUMN_GAME_ART_WEB)
+                    cursor.getString(COLUMN_GAME_ART_WEB),
+                    cursor.getString(COLUMN_GAME_COMPANY)
+            )
+        }
+
+        private fun getArtistFromCursor(cursor: Cursor): Artist {
+            return Artist(
+                    cursor.getLong(COLUMN_DB_ID),
+                    cursor.getString(COLUMN_ARTIST_NAME)
             )
         }
 
@@ -937,7 +983,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                     resultCursor.close()
 
-                    val gameFromDatabase = Game(id, gameTitle, gamePlatform, null, null)
+                    val gameFromDatabase = Game(id, gameTitle, gamePlatform, null, null, null)
 
                     // Assign to gameToReturn
                     gameFromDatabase
@@ -970,7 +1016,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                 logInfo("[SongDatabaseHelper] Added game #${gameId}: ${gameTitle} to database.")
             }
 
-            return Game(gameId, gameTitle, gamePlatform, null, null)
+            return Game(gameId, gameTitle, gamePlatform, null, null, null)
         }
 
         private fun updateGame(gameId: Long, values: ContentValues, database: SQLiteDatabase) {

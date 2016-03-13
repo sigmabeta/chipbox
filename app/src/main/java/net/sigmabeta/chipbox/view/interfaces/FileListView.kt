@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-interface FileListView {
+interface FileListView : BaseView {
     fun onItemClick(path: String)
 
     fun updateSubtitle(path: String)
@@ -8,8 +8,6 @@ interface FileListView {
     fun upOneLevel()
 
     fun setPath(path: String)
-
-    fun showToastMessage(message: String)
 
     fun showErrorMessage(errorId: Int)
 
