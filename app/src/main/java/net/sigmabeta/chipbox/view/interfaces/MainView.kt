@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-interface MainView {
+interface MainView : BaseView {
     fun launchFileListActivity()
 
     fun setTrackTitle(title: String)

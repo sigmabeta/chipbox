@@ -48,12 +48,6 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
         if (fragmentTag != null && fragmentArg != null) {
             view?.showFragment(fragmentTag, fragmentArg)
         }
-
-        val title = arguments?.getString(NavigationActivity.ARGUMENT_TITLE)
-
-        if (title != null) {
-            view?.setTitle(title)
-        }
     }
 
     override fun teardown() {

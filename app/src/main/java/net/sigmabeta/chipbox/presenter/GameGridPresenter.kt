@@ -1,15 +1,16 @@
 package net.sigmabeta.chipbox.presenter
 
-import android.database.Cursor
 import android.os.Bundle
 import net.sigmabeta.chipbox.dagger.scope.FragmentScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.view.fragment.GameGridFragment
 import net.sigmabeta.chipbox.view.interfaces.BaseView
 import net.sigmabeta.chipbox.view.interfaces.GameListView
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
+import java.util.*
 import javax.inject.Inject
 
 @FragmentScoped
@@ -18,7 +19,11 @@ class GameGridPresenter @Inject constructor(val database: SongDatabaseHelper) : 
 
     var platform = Track.PLATFORM_ALL
 
-    var games: Cursor? = null
+    var games: ArrayList<Game>? = null
+
+    fun onItemClick(id: Long) {
+        view?.launchGameActivity(id)
+    }
 
     /**
      * FragmentPresenter
@@ -33,7 +38,7 @@ class GameGridPresenter @Inject constructor(val database: SongDatabaseHelper) : 
                 .subscribe(
                         {
                             games = it
-                            view?.setCursor(it)
+                            view?.setGames(it)
                         }
                 )
 
@@ -49,9 +54,8 @@ class GameGridPresenter @Inject constructor(val database: SongDatabaseHelper) : 
     }
 
     override fun updateViewState() {
-        val cursor = games
-        if (cursor != null) {
-            view?.setCursor(cursor)
+        games?.let {
+            view?.setGames(it)
         }
     }
 

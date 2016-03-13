@@ -1,11 +1,11 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-import android.database.Cursor
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
+import java.util.*
 
-interface GameView {
-    fun setCursor(cursor: Cursor)
+interface GameView : BaseView {
+    fun setSongs(songs: ArrayList<Track>)
 
     fun setPlayingTrack(track: Track)
 

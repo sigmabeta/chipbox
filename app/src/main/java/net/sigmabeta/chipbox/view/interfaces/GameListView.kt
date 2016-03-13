@@ -1,10 +1,10 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-import android.database.Cursor
+import net.sigmabeta.chipbox.model.objects.Game
+import java.util.*
 
-interface GameListView {
-    fun onItemClick(id: Long)
+interface GameListView : BaseView {
+    fun setGames(games: ArrayList<Game>)
 
-    fun setCursor(cursor: Cursor)
-
+    fun launchGameActivity(id: Long)
 }

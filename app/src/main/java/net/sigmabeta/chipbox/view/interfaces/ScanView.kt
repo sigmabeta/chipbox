@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-interface ScanView {
+interface ScanView : BaseView {
     fun onScanFailed()
 
     fun onScanComplete()

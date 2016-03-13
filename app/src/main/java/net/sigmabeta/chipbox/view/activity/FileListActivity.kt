@@ -17,9 +17,10 @@ import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.FileListPresenter
 import net.sigmabeta.chipbox.view.adapter.FileAdapter
 import net.sigmabeta.chipbox.view.interfaces.FileListView
+import net.sigmabeta.chipbox.view.interfaces.ItemListView
 import javax.inject.Inject
 
-class FileListActivity : BaseActivity(), FileListView {
+class FileListActivity : BaseActivity(), FileListView, ItemListView {
     lateinit var presenter: FileListPresenter
         @Inject set
 
@@ -72,6 +73,10 @@ class FileListActivity : BaseActivity(), FileListView {
     override fun onAddSuccessful() {
         setResult(RESULT_ADD_SUCCESSFUL)
         finish()
+    }
+
+    override fun onItemClick(id: Long) {
+        // No-op
     }
 
     override fun showExistsMessage() {

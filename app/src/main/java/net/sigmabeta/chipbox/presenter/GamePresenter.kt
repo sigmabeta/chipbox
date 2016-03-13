@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.presenter
 
-import android.database.Cursor
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
@@ -16,6 +15,7 @@ import net.sigmabeta.chipbox.view.interfaces.BaseView
 import net.sigmabeta.chipbox.view.interfaces.GameView
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
+import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
@@ -26,12 +26,11 @@ class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
     var gameId: Long? = null
 
     var game: Game? = null
-    var songs: Cursor? = null
+    var songs: ArrayList<Track>? = null
 
-    fun onItemClick(track: Track, position: Int) {
+    fun onItemClick(position: Long) {
         songs?.let {
-            val queue = SongDatabaseHelper.getPlaybackQueueFromCursor(it)
-            player.play(queue, position)
+            player.play(it, position.toInt())
         }
     }
 
@@ -50,7 +49,7 @@ class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     songs = it
-                    view?.setCursor(it)
+                    view?.setSongs(it)
                 }
 
 
@@ -78,7 +77,7 @@ class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
         }
 
         songs?.let {
-            view?.setCursor(it)
+            view?.setSongs(it)
         }
 
         player.playingTrack?.let {

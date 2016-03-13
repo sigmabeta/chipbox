@@ -1,22 +1,22 @@
 package net.sigmabeta.chipbox.view.viewholder
 
-import android.support.v7.widget.RecyclerView
 import android.view.View
 import kotlinx.android.synthetic.main.list_item_file.view.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.util.TYPE_FOLDER
 import net.sigmabeta.chipbox.util.TYPE_OTHER
+import net.sigmabeta.chipbox.view.adapter.BaseViewHolder
 import net.sigmabeta.chipbox.view.adapter.FileAdapter
 
-public class FileViewHolder(val view: View, val adapter: FileAdapter) : RecyclerView.ViewHolder(view), View.OnClickListener {
+public class FileViewHolder(view: View, adapter: FileAdapter) : BaseViewHolder<FileListItem, FileViewHolder, FileAdapter>(view, adapter), View.OnClickListener {
     var file: FileListItem? = null
 
-    init {
-        view.setOnClickListener(this)
+    override fun getId(): Long? {
+        return adapterPosition.toLong()
     }
 
-    fun bind(toBind: FileListItem) {
+    override fun bind(toBind: FileListItem) {
         file = toBind
 
         view.text_file_name.text = toBind.filename
@@ -28,13 +28,8 @@ public class FileViewHolder(val view: View, val adapter: FileAdapter) : Recycler
         }
     }
 
-    /**
-     * When a file is clicked, determine if it is a directory; if it is, show that new directory's
-     * contents. If it is not, end the activity successfully.
-
-     * @param view The View representing the file the user clicked on.
-     */
-    override fun onClick(view: View) {
+    // TODO Get rid of this
+    override fun onClick(clicked: View) {
         val path = file?.path ?: return
 
         adapter.onItemClick(path)

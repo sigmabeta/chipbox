@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.view.activity
 
 import android.content.Context
 import android.content.Intent
-import android.database.Cursor
 import android.support.v7.widget.LinearLayoutManager
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_game.*
@@ -16,11 +15,12 @@ import net.sigmabeta.chipbox.presenter.GamePresenter
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import net.sigmabeta.chipbox.view.adapter.SongListAdapter
 import net.sigmabeta.chipbox.view.interfaces.GameView
+import net.sigmabeta.chipbox.view.interfaces.ItemListView
 import net.sigmabeta.chipbox.view.interfaces.SongListView
 import java.util.*
 import javax.inject.Inject
 
-class GameActivity : BaseActivity(), GameView, SongListView {
+class GameActivity : BaseActivity(), GameView, ItemListView, SongListView {
     lateinit var presenter: GamePresenter
         @Inject set
 
@@ -54,10 +54,6 @@ class GameActivity : BaseActivity(), GameView, SongListView {
      * SongListView
      */
 
-    override fun onItemClick(track: Track, position: Int) {
-        presenter.onItemClick(track, position)
-    }
-
     override fun launchPlayerActivity() {
         // No-op
     }
@@ -66,12 +62,20 @@ class GameActivity : BaseActivity(), GameView, SongListView {
         adapter.notifyDataSetChanged()
     }
 
-    override fun setCursor(cursor: Cursor) {
-        adapter.changeCursor(cursor)
+    override fun setSongs(songs: ArrayList<Track>) {
+        adapter.dataset = songs
     }
 
     override fun setGames(games: HashMap<Long, Game>) {
         adapter.games = games
+    }
+
+    /**
+     * ItemListView
+     */
+
+    override fun onItemClick(position: Long) {
+        presenter.onItemClick(position)
     }
 
     /**

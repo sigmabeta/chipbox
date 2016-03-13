@@ -1,5 +1,5 @@
 package net.sigmabeta.chipbox.view.interfaces
 
-interface PlayerActivityView {
+interface PlayerActivityView : BaseView {
     fun showPlayerFragment()
 }

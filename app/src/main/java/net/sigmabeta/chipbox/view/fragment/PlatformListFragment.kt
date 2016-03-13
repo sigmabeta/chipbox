@@ -12,12 +12,13 @@ import net.sigmabeta.chipbox.presenter.PlatformListPresenter
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.activity.NavigationActivity
 import net.sigmabeta.chipbox.view.adapter.PlatformListAdapter
+import net.sigmabeta.chipbox.view.interfaces.ItemListView
 import net.sigmabeta.chipbox.view.interfaces.PlatformListView
 import net.sigmabeta.chipbox.view.interfaces.TopLevelFragment
 import java.util.*
 import javax.inject.Inject
 
-class PlatformListFragment : BaseFragment(), PlatformListView, TopLevelFragment {
+class PlatformListFragment : BaseFragment(), PlatformListView, ItemListView, TopLevelFragment {
     lateinit var presenter: PlatformListPresenter
         @Inject set
 
@@ -27,15 +28,14 @@ class PlatformListFragment : BaseFragment(), PlatformListView, TopLevelFragment 
      * PlatformListView
      */
 
-    override fun onItemClick(id: Long, stringId: Int) {
-        NavigationActivity.launch(activity,
-                GameGridFragment.FRAGMENT_TAG,
-                id,
-                getString(stringId))
+    override fun setList(list: ArrayList<Platform>) {
+        adapter.dataset = list
     }
 
-    override fun setList(list: ArrayList<Platform>) {
-        adapter.setData(list)
+    override fun launchNavActivity(id: Long) {
+        NavigationActivity.launch(activity,
+                GameGridFragment.FRAGMENT_TAG,
+                id)
     }
 
     /**
@@ -44,6 +44,14 @@ class PlatformListFragment : BaseFragment(), PlatformListView, TopLevelFragment 
 
     override fun isScrolledToBottom(): Boolean {
         return list_platforms?.isScrolledToBottom() ?: false
+    }
+
+    /**
+     * ItemListView
+     */
+
+    override fun onItemClick(id: Long) {
+        presenter.onItemClick(id)
     }
 
     /**
