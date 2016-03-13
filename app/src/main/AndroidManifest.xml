@@ -13,7 +13,8 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name">
 
-        <activity android:name=".view.activity.MainActivity"
+        <activity
+            android:name=".ui.main.MainActivity"
             android:theme="@style/ThemeMain">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -22,22 +23,27 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".view.activity.FileListActivity"
+        <activity
+            android:name=".ui.file.FileListActivity"
             android:theme="@style/ThemeFileList"/>
 
-        <activity android:name=".view.activity.NavigationActivity"
+        <activity
+            android:name=".ui.navigation.NavigationActivity"
             android:theme="@style/ThemeFileList"/>
 
-        <activity android:name=".view.activity.PlayerActivity"
+        <activity
+            android:name=".ui.player.PlayerActivity"
             android:theme="@style/ThemePlayer"
             android:launchMode="singleTask"/>
 
-        <activity android:name=".view.activity.GameActivity"
+        <activity
+            android:name=".ui.game.GameActivity"
             android:theme="@style/ThemeMain"/>
 
-        <activity android:name=".view.activity.ScanActivity"
-                  android:theme="@style/ThemeScan"
-                  android:screenOrientation="portrait"/>
+        <activity
+            android:name=".ui.scan.ScanActivity"
+            android:theme="@style/ThemeScan"
+            android:screenOrientation="portrait"/>
 
         <service
             android:name=".backend.PlayerService"

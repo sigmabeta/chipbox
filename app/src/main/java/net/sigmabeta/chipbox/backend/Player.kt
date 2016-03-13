@@ -16,7 +16,7 @@ import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
-import net.sigmabeta.chipbox.view.interfaces.BackendView
+import net.sigmabeta.chipbox.backend.BackendView
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit

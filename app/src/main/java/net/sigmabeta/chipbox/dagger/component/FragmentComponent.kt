@@ -2,7 +2,11 @@ package net.sigmabeta.chipbox.dagger.component
 
 import dagger.Subcomponent
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
-import net.sigmabeta.chipbox.view.fragment.*
+import net.sigmabeta.chipbox.ui.artist.ArtistListFragment
+import net.sigmabeta.chipbox.ui.games.GameGridFragment
+import net.sigmabeta.chipbox.ui.platform.PlatformListFragment
+import net.sigmabeta.chipbox.ui.player.PlayerFragment
+import net.sigmabeta.chipbox.ui.song.SongListFragment
 
 @ActivityScoped
 @Subcomponent

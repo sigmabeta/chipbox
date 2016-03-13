@@ -12,8 +12,8 @@ import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.util.logVerbose
-import net.sigmabeta.chipbox.view.activity.PlayerActivity
-import net.sigmabeta.chipbox.view.interfaces.BackendView
+import net.sigmabeta.chipbox.ui.player.PlayerActivity
+import net.sigmabeta.chipbox.backend.BackendView
 import javax.inject.Inject
 
 class PlayerService : Service(), BackendView {
