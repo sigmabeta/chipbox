@@ -55,8 +55,12 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
                             songs = it
                             view?.setSongs(it)
                             loadGames(it)
+                        },
+                        {
+                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
                 )
+
 
         subscriptions.add(subscription)
     }
