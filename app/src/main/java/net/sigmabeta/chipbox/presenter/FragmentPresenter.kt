@@ -15,8 +15,12 @@ abstract class FragmentPresenter : BasePresenter() {
         }
     }
 
-    fun onDestroy() {
+    fun onDestroy(ending: Boolean) {
         clearView()
+
+        if (ending) {
+            teardown()
+        }
     }
 
     /**
