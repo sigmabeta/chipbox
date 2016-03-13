@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.view.activity
 
 import android.app.Activity
 import android.content.Intent
-import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.view.Menu
 import android.view.MenuItem
@@ -13,11 +12,13 @@ import kotlinx.android.synthetic.main.activity_file_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
+import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.FileListPresenter
 import net.sigmabeta.chipbox.view.adapter.FileAdapter
 import net.sigmabeta.chipbox.view.interfaces.FileListView
 import net.sigmabeta.chipbox.view.interfaces.ItemListView
+import java.util.*
 import javax.inject.Inject
 
 class FileListActivity : BaseActivity(), FileListView, ItemListView {
@@ -35,35 +36,16 @@ class FileListActivity : BaseActivity(), FileListView, ItemListView {
         return presenter.onOptionsItemSelected(item.itemId)
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-
-        // Save the path we're looking at so when rotation is done, we start from same folder.
-        outState.putString(KEY_CURRENT_PATH, adapter.currentPath)
-    }
-
     fun onFabClick() {
-        val path = adapter.currentPath
-
-        if (path != null) {
-            presenter.addDirectory(path)
-        }
+        presenter.onFabClick()
     }
 
-    override fun onItemClick(path: String) {
-        presenter.onItemClick(path)
+    override fun setFiles(files: ArrayList<FileListItem>) {
+        adapter.dataset = files
     }
 
     override fun updateSubtitle(path: String) {
         toolbar_folder_list.subtitle = path
-    }
-
-    override fun upOneLevel() {
-        adapter.upOneLevel()
-    }
-
-    override fun setPath(path: String) {
-        adapter.setPath(path)
     }
 
     override fun showErrorMessage(errorId: Int) {
@@ -75,8 +57,8 @@ class FileListActivity : BaseActivity(), FileListView, ItemListView {
         finish()
     }
 
-    override fun onItemClick(id: Long) {
-        // No-op
+    override fun onItemClick(position: Long) {
+        presenter.onItemClick(position)
     }
 
     override fun showExistsMessage() {
