@@ -10,8 +10,8 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_file_list.*
 import net.sigmabeta.chipbox.BuildConfig
+import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.FileListPresenter
@@ -69,7 +69,7 @@ class FileListActivity : BaseActivity(), FileListView, ItemListView {
     }
 
     override fun inject() {
-        ActivityInjector.inject(this)
+        ChipboxApplication.appComponent.inject(this)
     }
 
     override fun getPresenter(): ActivityPresenter {

@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.presenter
 import android.media.session.PlaybackState
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
-import net.sigmabeta.chipbox.dagger.scope.FragmentScoped
+import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
@@ -19,7 +19,7 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import javax.inject.Inject
 
-@FragmentScoped
+@ActivityScoped
 class PlayerFragmentPresenter @Inject constructor(val player: Player,
                                                   val database: SongDatabaseHelper) : FragmentPresenter() {
     var view: PlayerFragmentView? = null

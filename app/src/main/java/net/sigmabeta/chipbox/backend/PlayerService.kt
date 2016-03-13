@@ -10,7 +10,7 @@ import android.media.session.MediaSession
 import android.os.IBinder
 import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
-import net.sigmabeta.chipbox.dagger.injector.ServiceInjector
+import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.util.logVerbose
 import net.sigmabeta.chipbox.view.activity.PlayerActivity
 import net.sigmabeta.chipbox.view.interfaces.BackendView
@@ -133,7 +133,8 @@ class PlayerService : Service(), BackendView {
      */
 
     private fun inject() {
-        ServiceInjector.inject(this)
+        logVerbose("[ServiceInjector] Injecting BackendView.")
+        ChipboxApplication.appComponent.inject(this)
     }
 
     private fun getPlayerActivityIntent(): PendingIntent {

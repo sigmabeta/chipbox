@@ -1,12 +1,12 @@
 package net.sigmabeta.chipbox.presenter
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.view.interfaces.BaseView
 import net.sigmabeta.chipbox.view.interfaces.PlayerActivityView
 import javax.inject.Inject
+import javax.inject.Singleton
 
-@ActivityScoped
+@Singleton
 class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
     var view: PlayerActivityView? = null
 

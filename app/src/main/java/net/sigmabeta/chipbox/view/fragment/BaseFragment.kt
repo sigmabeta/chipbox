@@ -19,6 +19,7 @@ abstract class BaseFragment : Fragment(), BaseView {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        retainInstance = true
         getPresenter().onCreate(arguments, savedInstanceState, this)
     }
 

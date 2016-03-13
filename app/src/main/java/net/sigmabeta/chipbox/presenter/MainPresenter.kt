@@ -4,7 +4,6 @@ import android.media.session.PlaybackState
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.Player
-import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
@@ -15,8 +14,9 @@ import net.sigmabeta.chipbox.view.interfaces.BaseView
 import net.sigmabeta.chipbox.view.interfaces.MainView
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
+import javax.inject.Singleton
 
-@ActivityScoped
+@Singleton
 class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter() {
     var view: MainView? = null
 

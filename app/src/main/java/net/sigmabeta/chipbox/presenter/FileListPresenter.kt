@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.presenter
 import android.os.Bundle
 import android.os.Environment
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.util.generateFileList
@@ -15,8 +14,9 @@ import rx.schedulers.Schedulers
 import java.io.File
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Singleton
 
-@ActivityScoped
+@Singleton
 class FileListPresenter @Inject constructor(val databaseHelper: SongDatabaseHelper) : ActivityPresenter() {
     var view: FileListView? = null
 
