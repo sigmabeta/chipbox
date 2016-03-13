@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_scan.*
+import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.ScanPresenter
 import net.sigmabeta.chipbox.util.fadeInFromRight
@@ -60,7 +60,7 @@ class ScanActivity : BaseActivity(), ScanView {
      */
 
     override fun inject() {
-        ActivityInjector.inject(this)
+        ChipboxApplication.appComponent.inject(this)
     }
 
     override fun getPresenter(): ActivityPresenter {

@@ -1,10 +1,10 @@
 package net.sigmabeta.chipbox.dagger.component
 
 import dagger.Subcomponent
-import net.sigmabeta.chipbox.dagger.scope.FragmentScoped
+import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.view.fragment.*
 
-@FragmentScoped
+@ActivityScoped
 @Subcomponent
 interface FragmentComponent {
     /**
@@ -16,5 +16,4 @@ interface FragmentComponent {
     fun inject(view: PlayerFragment)
     fun inject(view: GameGridFragment)
     fun inject(view: ArtistListFragment)
-
 }

@@ -6,13 +6,13 @@ import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_game_grid.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.presenter.FragmentPresenter
 import net.sigmabeta.chipbox.presenter.GameGridPresenter
 import net.sigmabeta.chipbox.util.convertDpToPx
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import net.sigmabeta.chipbox.view.GridSpaceDecoration
+import net.sigmabeta.chipbox.view.activity.BaseActivity
 import net.sigmabeta.chipbox.view.activity.GameActivity
 import net.sigmabeta.chipbox.view.adapter.GameGridAdapter
 import net.sigmabeta.chipbox.view.interfaces.GameListView
@@ -48,10 +48,6 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView, TopLevelFra
         return grid_games?.isScrolledToBottom() ?: false
     }
 
-    override fun inject() {
-        FragmentInjector.inject(this)
-    }
-
     override fun getContentLayout(): FrameLayout {
         return frame_content
     }
@@ -71,6 +67,13 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView, TopLevelFra
     /**
      * BaseFragment
      */
+
+    override fun inject() {
+        val container = activity
+        if (container is BaseActivity) {
+            container.getFragmentComponent().inject(this)
+        }
+    }
 
     override fun getPresenter(): FragmentPresenter {
         return presenter

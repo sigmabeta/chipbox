@@ -5,10 +5,10 @@ import android.widget.SeekBar
 import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.presenter.FragmentPresenter
 import net.sigmabeta.chipbox.presenter.PlayerFragmentPresenter
 import net.sigmabeta.chipbox.util.loadImageHighQuality
+import net.sigmabeta.chipbox.view.activity.BaseActivity
 import net.sigmabeta.chipbox.view.interfaces.PlayerFragmentView
 import javax.inject.Inject
 
@@ -83,7 +83,10 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
      */
 
     override fun inject() {
-        FragmentInjector.inject(this)
+        val container = activity
+        if (container is BaseActivity) {
+            container.getFragmentComponent().inject(this)
+        }
     }
 
     override fun getContentLayout(): FrameLayout {

@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.presenter
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
-import net.sigmabeta.chipbox.dagger.scope.FragmentScoped
+import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
@@ -15,7 +15,7 @@ import rx.schedulers.Schedulers
 import java.util.*
 import javax.inject.Inject
 
-@FragmentScoped
+@ActivityScoped
 class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
                                             val player: Player) : FragmentPresenter() {
     var view: SongListView? = null

@@ -7,8 +7,8 @@ import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_navigation.*
 import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.BuildConfig
+import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.presenter.ActivityPresenter
 import net.sigmabeta.chipbox.presenter.NavigationPresenter
 import net.sigmabeta.chipbox.util.loadImageLowQuality
@@ -110,7 +110,7 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
      */
 
     override fun inject() {
-        ActivityInjector.inject(this)
+        ChipboxApplication.appComponent.inject(this)
     }
 
     override fun getPresenter(): ActivityPresenter {

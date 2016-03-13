@@ -6,8 +6,8 @@ import android.support.v7.widget.LinearLayoutManager
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_game.*
 import net.sigmabeta.chipbox.BuildConfig
+import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.dagger.injector.ActivityInjector
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.presenter.ActivityPresenter
@@ -83,7 +83,7 @@ class GameActivity : BaseActivity(), GameView, ItemListView, SongListView {
      */
 
     override fun inject() {
-        ActivityInjector.inject(this)
+        ChipboxApplication.appComponent.inject(this)
     }
 
     override fun getPresenter(): ActivityPresenter {

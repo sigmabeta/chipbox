@@ -5,11 +5,11 @@ import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_artist_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.dagger.injector.FragmentInjector
 import net.sigmabeta.chipbox.model.objects.Artist
 import net.sigmabeta.chipbox.presenter.ArtistListPresenter
 import net.sigmabeta.chipbox.presenter.FragmentPresenter
 import net.sigmabeta.chipbox.util.isScrolledToBottom
+import net.sigmabeta.chipbox.view.activity.BaseActivity
 import net.sigmabeta.chipbox.view.activity.NavigationActivity
 import net.sigmabeta.chipbox.view.adapter.ArtistListAdapter
 import net.sigmabeta.chipbox.view.interfaces.ArtistListView
@@ -57,7 +57,10 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView, TopLeve
      */
 
     override fun inject() {
-        FragmentInjector.inject(this)
+        val container = activity
+        if (container is BaseActivity) {
+            container.getFragmentComponent().inject(this)
+        }
     }
 
     override fun getContentLayout(): FrameLayout {

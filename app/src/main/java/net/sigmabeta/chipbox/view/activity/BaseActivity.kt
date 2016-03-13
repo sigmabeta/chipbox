@@ -6,9 +6,8 @@ import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.Toast
-import net.sigmabeta.chipbox.ChipboxApplication
+import net.sigmabeta.chipbox.dagger.component.FragmentComponent
 import net.sigmabeta.chipbox.presenter.ActivityPresenter
-import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.view.interfaces.BaseView
 
 abstract class BaseActivity : AppCompatActivity(), BaseView {
@@ -19,13 +18,8 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(getLayoutId())
-
-        if (ChipboxApplication.appComponent == null) {
-            logError("[DaggerActivity] AppComponent null.")
-        }
-
         inject()
+        setContentView(getLayoutId())
 
         configureViews()
         getPresenter().onCreate(intent.extras, savedInstanceState, this)
@@ -58,6 +52,10 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
         }
 
         snackbar.show()
+    }
+
+    fun getFragmentComponent(): FragmentComponent {
+        return getPresenter().fragmentComponent
     }
 
     /**

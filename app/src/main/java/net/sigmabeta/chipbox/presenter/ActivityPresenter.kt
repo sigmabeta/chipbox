@@ -1,9 +1,12 @@
 package net.sigmabeta.chipbox.presenter
 
 import android.os.Bundle
+import net.sigmabeta.chipbox.ChipboxApplication
+import net.sigmabeta.chipbox.dagger.component.FragmentComponent
 import net.sigmabeta.chipbox.view.interfaces.BaseView
 
 abstract class ActivityPresenter : BasePresenter() {
+    var fragmentComponent: FragmentComponent = ChipboxApplication.appComponent.plusFragments()
     var recreated = false
 
     fun onCreate(arguments: Bundle?, savedInstanceState: Bundle?, view: BaseView) {

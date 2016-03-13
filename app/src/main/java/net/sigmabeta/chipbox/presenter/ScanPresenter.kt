@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.presenter
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.util.logError
@@ -11,9 +10,10 @@ import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.inject.Singleton
 
 
-@ActivityScoped
+@Singleton
 class ScanPresenter @Inject constructor(val database: SongDatabaseHelper) : ActivityPresenter() {
     var view: ScanView? = null
 
