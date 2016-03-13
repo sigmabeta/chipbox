@@ -5,7 +5,12 @@ import net.sigmabeta.chipbox.backend.PlayerService
 import net.sigmabeta.chipbox.backend.module.AudioModule
 import net.sigmabeta.chipbox.dagger.module.AppModule
 import net.sigmabeta.chipbox.model.database.module.DatabaseModule
-import net.sigmabeta.chipbox.view.activity.*
+import net.sigmabeta.chipbox.ui.file.FileListActivity
+import net.sigmabeta.chipbox.ui.game.GameActivity
+import net.sigmabeta.chipbox.ui.main.MainActivity
+import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
+import net.sigmabeta.chipbox.ui.player.PlayerActivity
+import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import javax.inject.Singleton
 
 @Singleton
