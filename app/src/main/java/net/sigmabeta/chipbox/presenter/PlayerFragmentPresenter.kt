@@ -94,6 +94,10 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
             logError("[PlayerFragmentPresenter] No track to display.")
         }
 
+        game?.let {
+            displayArt(it)
+        }
+
         displayState(player.state)
 
         displayPosition(player.playbackTimePosition)
