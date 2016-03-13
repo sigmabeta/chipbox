@@ -47,19 +47,29 @@ class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
         val songsSubscription = database.getSongListForGame(gameId)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    songs = it
-                    view?.setSongs(it)
-                }
+                .subscribe (
+                        {
+                            songs = it
+                            view?.setSongs(it)
+                        },
+                        {
+                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                        }
+                )
 
 
         val gameSubscription = database.getGame(gameId)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    game = it
-                    view?.setGame(it)
-                }
+                .subscribe (
+                        {
+                            game = it
+                            view?.setGame(it)
+                        },
+                        {
+                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                        }
+                )
 
         subscriptions.add(songsSubscription)
         subscriptions.add(gameSubscription)

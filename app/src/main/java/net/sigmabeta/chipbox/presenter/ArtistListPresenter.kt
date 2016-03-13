@@ -29,8 +29,12 @@ class ArtistListPresenter @Inject constructor(val database: SongDatabaseHelper) 
                         {
                             artists = it
                             view?.setArtists(it)
+                        },
+                        {
+                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
                 )
+
 
         subscriptions.add(subscription)
     }

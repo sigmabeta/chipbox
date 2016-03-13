@@ -208,7 +208,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                         return@create
                     }
 
-                    val database = readableDatabase
+                    val database = writableDatabase
 
                     val resultCursor = database.query(
                             TABLE_NAME_TRACKS,
@@ -223,13 +223,15 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     if (resultCursor.moveToFirst()) {
                         val track = getTrackFromCursor(resultCursor)
 
-                        resultCursor.close()
 
                         it.onNext(track)
                         it.onCompleted()
                     } else {
                         it.onError(Exception("Couldn't find track."))
                     }
+
+                    resultCursor.close()
+                    database.close()
                 }
         )
     }
@@ -250,7 +252,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                         return@create
                     }
 
-                    val database = readableDatabase
+                    val database = writableDatabase
 
                     val resultCursor = database.query(
                             TABLE_NAME_GAMES,
@@ -265,14 +267,14 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     if (resultCursor.moveToFirst()) {
                         val game = getGameFromCursor(resultCursor)
 
-                        resultCursor.close()
-                        database.close()
-
                         it.onNext(game)
                         it.onCompleted()
                     } else {
                         it.onError(Exception("Couldn't find game."))
                     }
+
+                    resultCursor.close()
+                    database.close()
                 }
         )
     }
@@ -294,7 +296,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                         whereArgs = null
                     }
 
-                    val database = readableDatabase
+                    val database = writableDatabase
 
                     val resultCursor = database.query(
                             TABLE_NAME_GAMES,
@@ -316,10 +318,10 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     logVerbose("[SongDatabaseHelper] Found ${resultCursor.count} games.")
 
                     it.onNext(games)
+                    it.onCompleted()
 
                     resultCursor.close()
                     database.close()
-                    it.onCompleted()
                 }
         )
     }
@@ -330,7 +332,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     logInfo("[SongDatabaseHelper] Getting games for currently displayed tracks...")
                     val startTime = System.currentTimeMillis()
 
-                    val database = readableDatabase
+                    val database = writableDatabase
 
                     val games = HashMap<Long, Game>()
 
@@ -378,9 +380,9 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     logInfo("[SongDatabaseHelper] Found games in ${scanDuration} seconds.")
 
                     it.onNext(games)
+                    it.onCompleted()
 
                     database.close()
-                    it.onCompleted()
                 }
         )
     }
@@ -390,7 +392,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                 {
                     logInfo("[SongDatabaseHelper] Reading artist list...")
 
-                    val database = readableDatabase
+                    val database = writableDatabase
 
                     val resultCursor = database.query(
                             TABLE_NAME_ARTISTS,
@@ -425,7 +427,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                 {
                     logInfo("[SongDatabaseHelper] Reading song list...")
 
-                    val database = readableDatabase
+                    val database = writableDatabase
 
                     val resultCursor = database.query(
                             TABLE_NAME_TRACKS,
@@ -445,11 +447,12 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     }
 
                     logVerbose("[SongDatabaseHelper] Found ${resultCursor.count} tracks.")
+
                     it.onNext(tracks)
+                    it.onCompleted()
 
                     resultCursor.close()
                     database.close()
-                    it.onCompleted()
                 }
         )
     }
@@ -461,7 +464,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     val whereClause = "${KEY_TRACK_ARTIST_ID} = ?"
                     val whereArgs = arrayOf(artist.toString())
 
-                    val database = readableDatabase
+                    val database = writableDatabase
 
                     val resultCursor = database.query(
                             TABLE_NAME_TRACKS,
@@ -481,11 +484,12 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     }
 
                     logVerbose("[SongDatabaseHelper] Found ${resultCursor.count} tracks.")
+
                     it.onNext(tracks)
+                    it.onCompleted()
 
                     resultCursor.close()
                     database.close()
-                    it.onCompleted()
                 }
         )
     }
@@ -497,7 +501,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     val whereClause = "${KEY_TRACK_GAME_ID} = ?"
                     val whereArgs = arrayOf(game.toString())
 
-                    val database = readableDatabase
+                    val database = writableDatabase
 
                     val resultCursor = database.query(
                             TABLE_NAME_TRACKS,
@@ -517,11 +521,12 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     }
 
                     logVerbose("[SongDatabaseHelper] Found ${resultCursor.count} tracks.")
+
                     it.onNext(tracks)
+                    it.onCompleted()
 
                     resultCursor.close()
                     database.close()
-                    it.onCompleted()
                 }
         )
     }
@@ -911,6 +916,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     artistFromDatabase
                 }
                 else -> {
+                    resultCursor.close()
                     logError("[SongDatabaseHelper] Found multiple database entries with artist ${artist}")
                     return -1
                 }
@@ -989,6 +995,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     gameFromDatabase
                 }
                 else -> {
+                    resultCursor.close()
                     logError("[SongDatabaseHelper] Found multiple database entries with title ${gameTitle}")
                     return -1
                 }

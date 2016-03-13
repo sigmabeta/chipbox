@@ -39,6 +39,9 @@ class GameGridPresenter @Inject constructor(val database: SongDatabaseHelper) : 
                         {
                             games = it
                             view?.setGames(it)
+                        },
+                        {
+                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
                 )
 

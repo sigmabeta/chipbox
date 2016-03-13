@@ -125,10 +125,15 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         val gameLoader = database.getGame(gameId)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    game = it
-                    displayArt(it)
-                }
+                .subscribe (
+                        {
+                            game = it
+                            displayArt(it)
+                        },
+                        {
+                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                        }
+                )
 
         subscriptions.add(gameLoader)
     }
