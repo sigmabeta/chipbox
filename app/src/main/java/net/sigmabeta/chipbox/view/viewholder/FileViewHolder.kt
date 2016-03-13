@@ -27,11 +27,4 @@ public class FileViewHolder(view: View, adapter: FileAdapter) : BaseViewHolder<F
             else -> view.image_type.setImageResource(R.drawable.ic_audiotrack_white_24dp)
         }
     }
-
-    // TODO Get rid of this
-    override fun onClick(clicked: View) {
-        val path = file?.path ?: return
-
-        adapter.onItemClick(path)
-    }
 }
