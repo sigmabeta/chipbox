@@ -6,16 +6,10 @@ import kotlinx.android.synthetic.main.fragment_artist_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.objects.Artist
-import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
-import net.sigmabeta.chipbox.util.isScrolledToBottom
-import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.artist.ArtistListAdapter
-import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.song.SongListFragment
-import net.sigmabeta.chipbox.ui.artist.ArtistListView
-import net.sigmabeta.chipbox.ui.ItemListView
-import net.sigmabeta.chipbox.ui.TopLevelFragment
+import net.sigmabeta.chipbox.util.isScrolledToBottom
 import java.util.*
 import javax.inject.Inject
 
@@ -66,10 +60,6 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView, TopLeve
 
     override fun getContentLayout(): FrameLayout {
         return frame_content
-    }
-
-    override fun getTitle(): String {
-        return getString(R.string.app_name)
     }
 
     override fun getPresenter(): FragmentPresenter {

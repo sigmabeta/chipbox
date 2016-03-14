@@ -64,10 +64,6 @@ class PlatformListFragment : BaseFragment(), PlatformListView, ItemListView, Top
         return frame_content
     }
 
-    override fun getTitle(): String {
-        return getString(R.string.app_name)
-    }
-
     override fun getPresenter(): FragmentPresenter {
         return presenter
     }

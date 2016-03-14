@@ -11,12 +11,11 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.util.loadImageHighQuality
 import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.song.SongListAdapter
-import net.sigmabeta.chipbox.ui.game.GameView
 import net.sigmabeta.chipbox.ui.ItemListView
+import net.sigmabeta.chipbox.ui.song.SongListAdapter
 import net.sigmabeta.chipbox.ui.song.SongListView
+import net.sigmabeta.chipbox.util.loadImageHighQuality
 import java.util.*
 import javax.inject.Inject
 

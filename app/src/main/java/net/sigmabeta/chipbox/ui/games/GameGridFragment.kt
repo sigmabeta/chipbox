@@ -7,19 +7,10 @@ import kotlinx.android.synthetic.main.fragment_game_grid.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.objects.Game
-import net.sigmabeta.chipbox.ui.games.GameGridPresenter
-import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.util.convertDpToPx
 import net.sigmabeta.chipbox.util.isScrolledToBottom
-import net.sigmabeta.chipbox.ui.GridSpaceDecoration
-import net.sigmabeta.chipbox.ui.games.GameGridAdapter
-import net.sigmabeta.chipbox.ui.games.GameListView
-import net.sigmabeta.chipbox.ui.ItemListView
-import net.sigmabeta.chipbox.ui.NavigationFragment
-import net.sigmabeta.chipbox.ui.TopLevelFragment
 import java.util.*
 import javax.inject.Inject
 
@@ -28,6 +19,10 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView, TopLevelFra
         @Inject set
 
     var adapter = GameGridAdapter(this)
+
+    override fun setActivityTitle(titleResource: Int) {
+        setActivityTitle(getString(titleResource))
+    }
 
     /**
      * GameListView
@@ -51,10 +46,6 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView, TopLevelFra
 
     override fun getContentLayout(): FrameLayout {
         return frame_content
-    }
-
-    override fun getTitle(): String {
-        return getString(R.string.app_name)
     }
 
     /**

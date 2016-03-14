@@ -27,10 +27,6 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
             override fun isScrolledToBottom(): Boolean {
                 throw UnsupportedOperationException()
             }
-
-            override fun getTitle(): String {
-                throw UnsupportedOperationException()
-            }
         }
     })
 

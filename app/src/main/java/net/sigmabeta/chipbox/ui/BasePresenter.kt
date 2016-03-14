@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.ui
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.ui.BaseView
 import rx.subscriptions.CompositeSubscription
 
 abstract class BasePresenter {

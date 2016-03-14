@@ -8,17 +8,9 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
-import net.sigmabeta.chipbox.ui.song.SongListPresenter
-import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.util.isScrolledToBottom
-import net.sigmabeta.chipbox.ui.song.SongListAdapter
-import net.sigmabeta.chipbox.ui.ItemListView
-import net.sigmabeta.chipbox.ui.NavigationFragment
-import net.sigmabeta.chipbox.ui.song.SongListView
-import net.sigmabeta.chipbox.ui.TopLevelFragment
 import java.util.*
 import javax.inject.Inject
 
@@ -77,10 +69,6 @@ class SongListFragment : BaseFragment(), SongListView, ItemListView, TopLevelFra
 
     override fun getContentLayout(): FrameLayout {
         return frame_content
-    }
-
-    override fun getTitle(): String {
-        return getString(R.string.app_name)
     }
 
     override fun getPresenter(): FragmentPresenter {
