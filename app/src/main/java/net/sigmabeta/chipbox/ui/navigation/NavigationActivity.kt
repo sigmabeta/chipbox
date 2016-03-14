@@ -9,18 +9,14 @@ import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.ui.ActivityPresenter
+import net.sigmabeta.chipbox.ui.*
+import net.sigmabeta.chipbox.ui.games.GameGridFragment
+import net.sigmabeta.chipbox.ui.player.PlayerActivity
+import net.sigmabeta.chipbox.ui.song.SongListFragment
 import net.sigmabeta.chipbox.util.loadImageLowQuality
 import net.sigmabeta.chipbox.util.slideViewOffscreen
 import net.sigmabeta.chipbox.util.slideViewOnscreen
 import net.sigmabeta.chipbox.util.slideViewToProperLocation
-import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.player.PlayerActivity
-import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.games.GameGridFragment
-import net.sigmabeta.chipbox.ui.song.SongListFragment
-import net.sigmabeta.chipbox.ui.FragmentContainer
-import net.sigmabeta.chipbox.ui.NavigationFragment
 import javax.inject.Inject
 
 class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
@@ -118,8 +114,6 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
     }
 
     override fun configureViews() {
-        setSupportActionBar(toolbar_navigation)
-
         layout_now_playing.setOnClickListener { presenter.onNowPlayingClicked() }
         fab_play_pause.setOnClickListener { presenter.onPlayFabClicked() }
     }
