@@ -279,6 +279,49 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         )
     }
 
+    fun getArtist(artistId: Long): Observable<Artist> {
+        return Observable.create(
+                {
+                    logInfo("[SongDatabaseHelper] Getting artist #${artistId}...")
+
+                    val whereClause: String?
+                    val whereArgs: Array<String>?
+
+                    if (artistId > 0) {
+                        whereClause = "${KEY_DB_ID} = ?"
+                        whereArgs = arrayOf(artistId.toString())
+                    } else {
+                        it.onError(Exception("Bad artist ID."))
+                        return@create
+                    }
+
+                    val database = writableDatabase
+
+                    val resultCursor = database.query(
+                            TABLE_NAME_ARTISTS,
+                            null,
+                            whereClause,
+                            whereArgs,
+                            null,
+                            null,
+                            null
+                    )
+
+                    if (resultCursor.moveToFirst()) {
+                        val artist = getArtistFromCursor(resultCursor)
+
+                        it.onNext(artist)
+                        it.onCompleted()
+                    } else {
+                        it.onError(Exception("Couldn't find artist."))
+                    }
+
+                    resultCursor.close()
+                    database.close()
+                }
+        )
+    }
+
     fun getGamesList(platform: Int): Observable<ArrayList<Game>> {
         return Observable.create(
                 {

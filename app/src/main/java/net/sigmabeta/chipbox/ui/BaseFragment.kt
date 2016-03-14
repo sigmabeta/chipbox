@@ -15,7 +15,7 @@ abstract class BaseFragment : Fragment(), BaseView {
     var injected: Boolean = false
 
     fun setActivityTitle(title: String) {
-        (activity as FragmentContainer).setActivityTitle(title)
+        (activity as FragmentContainer).setTitle(title)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

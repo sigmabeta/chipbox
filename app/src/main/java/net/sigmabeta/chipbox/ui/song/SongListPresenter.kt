@@ -4,10 +4,12 @@ import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.objects.Artist
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
@@ -19,7 +21,9 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
                                             val player: Player) : FragmentPresenter() {
     var view: SongListView? = null
 
-    var artistId = Track.PLATFORM_ALL.toLong()
+    var artistId = Artist.ARTIST_ALL
+
+    var artist: Artist? = null
 
     var songs: ArrayList<Track>? = null
 
@@ -36,15 +40,15 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
      */
 
     override fun setup(arguments: Bundle?) {
-        artistId = arguments?.getLong(SongListFragment.ARGUMENT_ARTIST) ?: -1
+        artistId = arguments?.getLong(SongListFragment.ARGUMENT_ARTIST) ?: Artist.ARTIST_ALL
 
-        val readOperation = if (artistId == Track.PLATFORM_ALL.toLong()) {
+        val readOperation = if (artistId == Artist.ARTIST_ALL) {
             database.getSongList()
         } else {
             database.getSongListForArtist(artistId)
         }
 
-        val subscription = readOperation
+        val songsLoad = readOperation
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -60,8 +64,24 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
                         }
                 )
 
+        subscriptions.add(songsLoad)
 
-        subscriptions.add(subscription)
+        if (artistId != Artist.ARTIST_ALL) {
+            val artistLoad = database.getArtist(artistId).subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                            {
+                                this.artist = it
+                                view?.setActivityTitle(it.name)
+                            },
+                            {
+                                logError("[SongListPresenter] Error: ${it.message}")
+                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                            }
+                    )
+
+            subscriptions.add(artistLoad)
+        }
     }
 
     override fun onReCreate(savedInstanceState: Bundle) {

@@ -75,7 +75,7 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
                 R.string.file_list_snackbar_rescan)
     }
 
-    override fun setActivityTitle(title: String) {
+    override fun setTitle(title: String) {
         this.title = title
     }
 

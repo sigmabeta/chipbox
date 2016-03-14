@@ -69,6 +69,10 @@ class GameActivity : BaseActivity(), GameView, ItemListView, SongListView {
         adapter.games = games
     }
 
+    override fun setActivityTitle(name: String) {
+        this.title = title
+    }
+
     /**
      * ItemListView
      */
