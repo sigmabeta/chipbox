@@ -1,13 +1,13 @@
 package net.sigmabeta.chipbox.ui.games
 
 import android.os.Bundle
+import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
-import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.games.GameListView
+import net.sigmabeta.chipbox.ui.FragmentPresenter
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import java.util.*
@@ -59,6 +59,19 @@ class GameGridPresenter @Inject constructor(val database: SongDatabaseHelper) : 
     override fun updateViewState() {
         games?.let {
             view?.setGames(it)
+        }
+
+        val titleResource = when (platform) {
+            Track.PLATFORM_32X -> R.string.platform_name_32x
+            Track.PLATFORM_GAMEBOY -> R.string.platform_name_gameboy
+            Track.PLATFORM_GENESIS -> R.string.platform_name_genesis
+            Track.PLATFORM_NES -> R.string.platform_name_nes
+            Track.PLATFORM_SNES -> R.string.platform_name_snes
+            else -> -1
+        }
+
+        if (titleResource != -1) {
+            view?.setActivityTitle(titleResource)
         }
     }
 

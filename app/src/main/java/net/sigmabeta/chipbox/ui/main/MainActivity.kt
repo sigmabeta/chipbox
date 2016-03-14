@@ -12,16 +12,13 @@ import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.main.MainPresenter
-import net.sigmabeta.chipbox.util.*
 import net.sigmabeta.chipbox.ui.BaseActivity
+import net.sigmabeta.chipbox.ui.FragmentContainer
+import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.scan.ScanActivity
-import net.sigmabeta.chipbox.ui.main.MainTabPagerAdapter
-import net.sigmabeta.chipbox.ui.FragmentContainer
-import net.sigmabeta.chipbox.ui.main.MainView
-import net.sigmabeta.chipbox.ui.TopLevelFragment
+import net.sigmabeta.chipbox.util.*
 import javax.inject.Inject
 
 class MainActivity : BaseActivity(), MainView, FragmentContainer {
@@ -65,7 +62,6 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     }
 
     override fun setActivityTitle(title: String) {
-        setTitle(title)
     }
 
     override fun setTrackTitle(title: String) {
@@ -182,7 +178,6 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
 
         if (adapter != null) {
             val fragment = adapter.fragments[selectedPosition]
-            logDebug("[MainActivity] Selected fragment: ${fragment.getTitle()}")
 
             return fragment
         } else {

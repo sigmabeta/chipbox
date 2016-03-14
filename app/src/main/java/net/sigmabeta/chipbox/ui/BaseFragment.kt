@@ -10,11 +10,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
-import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.FragmentContainer
 
 abstract class BaseFragment : Fragment(), BaseView {
     var injected: Boolean = false
+
+    fun setActivityTitle(title: String) {
+        (activity as FragmentContainer).setActivityTitle(title)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,8 +85,6 @@ abstract class BaseFragment : Fragment(), BaseView {
 
     protected abstract fun getContentLayout(): FrameLayout
 
-    protected abstract fun getTitle(): String
-
     /**
      * Perform any necessary run-time setup of views: RecyclerViews, ClickListeners,
      * etc.
@@ -96,7 +96,5 @@ abstract class BaseFragment : Fragment(), BaseView {
             inject()
             injected = true
         }
-
-        (activity as FragmentContainer).setActivityTitle(getTitle())
     }
 }

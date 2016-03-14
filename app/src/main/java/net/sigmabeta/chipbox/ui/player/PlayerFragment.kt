@@ -5,12 +5,10 @@ import android.widget.SeekBar
 import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.ui.player.PlayerFragmentPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.loadImageHighQuality
-import net.sigmabeta.chipbox.ui.player.PlayerFragmentView
 import javax.inject.Inject
 
 class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChangeListener {
@@ -92,10 +90,6 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
 
     override fun getContentLayout(): FrameLayout {
         return frame_content
-    }
-
-    override fun getTitle(): String {
-        return ""
     }
 
     override fun getPresenter(): FragmentPresenter {

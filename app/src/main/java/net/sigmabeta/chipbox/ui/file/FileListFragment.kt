@@ -69,10 +69,6 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView {
         return frame_content
     }
 
-    override fun getTitle(): String {
-        return getString(R.string.file_list_title)
-    }
-
     override fun configureViews() {
         // Specifying the LayoutManager determines how the RecyclerView arranges views.
         val layoutManager = LinearLayoutManager(activity, LinearLayoutManager.VERTICAL, false)

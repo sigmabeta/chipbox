@@ -6,10 +6,9 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logInfo
-import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.song.SongListView
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import java.util.*
@@ -20,7 +19,7 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
                                             val player: Player) : FragmentPresenter() {
     var view: SongListView? = null
 
-    var artist = Track.PLATFORM_ALL.toLong()
+    var artistId = Track.PLATFORM_ALL.toLong()
 
     var songs: ArrayList<Track>? = null
 
@@ -37,12 +36,12 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
      */
 
     override fun setup(arguments: Bundle?) {
-        artist = arguments?.getLong(SongListFragment.ARGUMENT_ARTIST) ?: -1
+        artistId = arguments?.getLong(SongListFragment.ARGUMENT_ARTIST) ?: -1
 
-        val readOperation = if (artist == Track.PLATFORM_ALL.toLong()) {
+        val readOperation = if (artistId == Track.PLATFORM_ALL.toLong()) {
             database.getSongList()
         } else {
-            database.getSongListForArtist(artist)
+            database.getSongListForArtist(artistId)
         }
 
         val subscription = readOperation
@@ -69,7 +68,7 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
     }
 
     override fun teardown() {
-        artist = -1
+        artistId = -1
         songs = null
         gameMap = null
     }
