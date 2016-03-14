@@ -1,35 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout android:id="@+id/frame_content"
+             xmlns:android="http://schemas.android.com/apk/res/android"
              xmlns:app="http://schemas.android.com/apk/res-auto"
-             android:id="@+id/frame_content"
              android:layout_width="match_parent"
              android:layout_height="match_parent">
 
     <include
         android:id="@+id/layout_now_playing"
-        android:layout_gravity="bottom"
+        layout="@layout/layout_now_playing"
         android:layout_width="match_parent"
         android:layout_height="64dp"
-        layout="@layout/layout_now_playing"/>
+        android:layout_gravity="bottom"/>
 
-    <LinearLayout
+    <FrameLayout
+        android:id="@+id/frame_fragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical" >
-
-        <android.support.v7.widget.Toolbar
-            android:id="@+id/toolbar_navigation"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/colorPrimary"
-            android:minHeight="?android:attr/actionBarSize"
-            android:theme="@android:style/ThemeOverlay.Material.Dark.ActionBar"
-            android:elevation="6dp"
-            android:fitsSystemWindows="true"/>
-
-        <FrameLayout
-            android:id="@+id/frame_fragment"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
-    </LinearLayout>
+        android:layout_height="match_parent"/>
 </FrameLayout>
