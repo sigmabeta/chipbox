@@ -32,7 +32,7 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
      * FragmentContainer
      */
 
-    override fun setActivityTitle(title: String) {
+    override fun setTitle(title: String) {
         setTitle(title)
     }
 

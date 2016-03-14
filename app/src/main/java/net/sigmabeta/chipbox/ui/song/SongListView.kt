@@ -13,4 +13,6 @@ interface SongListView : BaseView {
     fun launchPlayerActivity()
 
     fun refreshList()
+
+    fun setActivityTitle(name: String)
 }

@@ -96,14 +96,6 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
     }
 
     /**
-     * FragmentContainer
-     */
-
-    override fun setActivityTitle(title: String) {
-        this.title = title
-    }
-
-    /**
      * BaseActivity
      */
 

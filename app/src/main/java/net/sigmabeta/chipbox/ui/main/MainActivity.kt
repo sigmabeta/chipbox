@@ -61,7 +61,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         FilesActivity.launch(this)
     }
 
-    override fun setActivityTitle(title: String) {
+    override fun setTitle(title: String) {
     }
 
     override fun setTrackTitle(title: String) {

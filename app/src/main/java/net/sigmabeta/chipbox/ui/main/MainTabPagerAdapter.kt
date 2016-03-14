@@ -6,6 +6,7 @@ import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentPagerAdapter
 import android.view.ViewGroup
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.model.objects.Artist
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.artist.ArtistListFragment
@@ -39,7 +40,7 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
             0 -> return PlatformListFragment.newInstance()
             1 -> return ArtistListFragment.newInstance()
             2 -> return GameGridFragment.newInstance(Track.PLATFORM_ALL)
-            3 -> return SongListFragment.newInstance(Track.PLATFORM_ALL.toLong())
+            3 -> return SongListFragment.newInstance(Artist.ARTIST_ALL)
             else -> return null
         }
     }
