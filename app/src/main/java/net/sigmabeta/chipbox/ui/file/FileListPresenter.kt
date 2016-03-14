@@ -1,84 +1,64 @@
 package net.sigmabeta.chipbox.ui.file
 
 import android.os.Bundle
-import android.os.Environment
-import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.file.FileListItem
-import net.sigmabeta.chipbox.ui.ActivityPresenter
+import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.generateFileList
 import net.sigmabeta.chipbox.util.readSingleTrackFile
-import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.file.FileListView
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import java.io.File
 import java.util.*
 import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class FileListPresenter @Inject constructor(val databaseHelper: SongDatabaseHelper) : ActivityPresenter() {
+class FileListPresenter @Inject constructor() : FragmentPresenter() {
     var view: FileListView? = null
-
-    var path: String? = null
 
     var files: ArrayList<FileListItem>? = null
 
     fun onItemClick(position: Long) {
-        val fileListItem = files?.get(position.toInt())
-        val path = fileListItem?.path
-
-        if (path == null) {
-            view?.showErrorSnackbar("Invalid file.", null, null)
-            return
-        } else {
-            val clickedFile = File(path)
+        files?.get(position.toInt())?.let {
+            val clickedFile = File(it.path)
 
             if (clickedFile.isDirectory) {
                 val fileList = generateFileList(clickedFile)
 
-                if (fileList.isEmpty()) {
-                    view?.showErrorMessage(R.string.file_list_error_empty_folder)
-                } else {
-                    loadFolder(clickedFile)
-                }
+                view?.onDirectoryClicked(it.path)
             } else {
-                val track = readSingleTrackFile(path, 0)
+                val track = readSingleTrackFile(it.path, 0)
 
                 if (track != null) {
                     // TODO Show human-readable details.
                     view?.showToastMessage(track.toString())
                 } else {
-                    view?.showErrorMessage(R.string.file_list_error_invalid_track)
+                    view?.onInvalidTrackClicked()
                 }
             }
         }
     }
 
-    fun onOptionsItemSelected(itemId: Int): Boolean {
-        when (itemId) {
-            R.id.menu_up_one_level -> upOneLevel()
-        }
-
-        return true
+    override fun onReCreate(savedInstanceState: Bundle) {
     }
 
-    fun onFabClick() {
-        path?.let {
-            val subscription = databaseHelper.addDirectory(it)
+    override fun setup(arguments: Bundle?) {
+        val path = arguments?.getString(FileListFragment.ARGUMENT_PATH)
+
+        if (path != null) {
+            val folder = File(path)
+
+            val subscription = generateFileList(folder)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
-                                when (it) {
-                                    SongDatabaseHelper.ADD_STATUS_GOOD -> view?.onAddSuccessful()
-                                    SongDatabaseHelper.ADD_STATUS_EXISTS -> view?.showExistsMessage()
-                                    SongDatabaseHelper.ADD_STATUS_DB_ERROR -> view?.showErrorMessage(R.string.file_list_error_adding)
+                                files = it
+                                if (it != null) {
+                                    view?.setFiles(it)
                                 }
                             },
                             {
-                                view?.showErrorMessage(R.string.file_list_error_adding)
+                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
                             }
                     )
 
@@ -86,25 +66,8 @@ class FileListPresenter @Inject constructor(val databaseHelper: SongDatabaseHelp
         }
     }
 
-    fun onRescanClick() {
-        view?.onAddSuccessful()
-    }
-
-    override fun onReCreate(savedInstanceState: Bundle) {
-    }
-
-    override fun onTempDestroy() {
-    }
-
-    override fun setup(arguments: Bundle?) {
-        path = Environment.getExternalStorageDirectory().path
-
-        val folder = File(path)
-        files = generateFileList(folder)
-    }
-
     override fun teardown() {
-        path = null
+        files = null
     }
 
     override fun updateViewState() {
@@ -119,21 +82,5 @@ class FileListPresenter @Inject constructor(val databaseHelper: SongDatabaseHelp
 
     override fun clearView() {
         view = null
-    }
-
-    private fun upOneLevel() {
-        val currentDirectory = File(path)
-        val parentDirectory = currentDirectory.parentFile
-
-        loadFolder(parentDirectory)
-    }
-
-    private fun loadFolder(clickedFile: File) {
-        val files = generateFileList(clickedFile)
-
-        this.files = files
-        this.path = clickedFile.path
-
-        view?.setFiles(files)
     }
 }

@@ -15,7 +15,7 @@ import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.main.MainPresenter
 import net.sigmabeta.chipbox.util.*
 import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.file.FileListActivity
+import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import net.sigmabeta.chipbox.ui.main.MainTabPagerAdapter
@@ -61,7 +61,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     }
 
     override fun launchFileListActivity() {
-        FileListActivity.launch(this)
+        FilesActivity.launch(this)
     }
 
     override fun setActivityTitle(title: String) {

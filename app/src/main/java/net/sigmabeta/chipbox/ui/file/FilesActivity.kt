@@ -2,30 +2,41 @@ package net.sigmabeta.chipbox.ui.file
 
 import android.app.Activity
 import android.content.Intent
-import android.support.v7.widget.LinearLayoutManager
+import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.Toast
-import kotlinx.android.synthetic.main.activity_file_list.*
+import kotlinx.android.synthetic.main.activity_files.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.file.FileAdapter
-import net.sigmabeta.chipbox.ui.file.FileListView
-import net.sigmabeta.chipbox.ui.ItemListView
-import java.util.*
+import net.sigmabeta.chipbox.ui.FragmentContainer
 import javax.inject.Inject
 
-class FileListActivity : BaseActivity(), FileListView, ItemListView {
-    lateinit var presenter: FileListPresenter
+class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
+    lateinit var presenter: FilesPresenter
         @Inject set
 
-    var adapter = FileAdapter(this)
+    override fun showFileFragment(path: String, stack: Boolean) {
+        var fragment = FileListFragment.newInstance(path)
+
+        val transaction = supportFragmentManager.beginTransaction()
+
+        if (stack) {
+            transaction.addToBackStack(null)
+        }
+
+        transaction.replace(R.id.frame_fragment, fragment, FileListFragment.FRAGMENT_TAG + "." + path)
+        transaction.commit()
+    }
+
+    override fun popBackStack() {
+        supportFragmentManager.popBackStack()
+    }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_file_list, menu)
@@ -40,12 +51,8 @@ class FileListActivity : BaseActivity(), FileListView, ItemListView {
         presenter.onFabClick()
     }
 
-    override fun setFiles(files: ArrayList<FileListItem>) {
-        adapter.dataset = files
-    }
-
     override fun updateSubtitle(path: String) {
-        toolbar_folder_list.subtitle = path
+        actionBar?.subtitle = path
     }
 
     override fun showErrorMessage(errorId: Int) {
@@ -57,8 +64,8 @@ class FileListActivity : BaseActivity(), FileListView, ItemListView {
         finish()
     }
 
-    override fun onItemClick(position: Long) {
-        presenter.onItemClick(position)
+    override fun onDirectoryClicked(path: String) {
+        presenter.onDirectoryClicked(path)
     }
 
     override fun showExistsMessage() {
@@ -66,6 +73,10 @@ class FileListActivity : BaseActivity(), FileListView, ItemListView {
                 getString(R.string.file_list_error_exists),
                 View.OnClickListener { presenter.onRescanClick() },
                 R.string.file_list_snackbar_rescan)
+    }
+
+    override fun setActivityTitle(title: String) {
+        this.title = title
     }
 
     override fun inject() {
@@ -77,19 +88,11 @@ class FileListActivity : BaseActivity(), FileListView, ItemListView {
     }
 
     override fun configureViews() {
-        setSupportActionBar(toolbar_folder_list)
-
-        // Specifying the LayoutManager determines how the RecyclerView arranges views.
-        val layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-
-        list_files.layoutManager = layoutManager
-        list_files.adapter = adapter
-
         button_add_directory.setOnClickListener { onFabClick() }
     }
 
     override fun getLayoutId(): Int {
-        return R.layout.activity_file_list
+        return R.layout.activity_files
     }
 
     override fun getContentLayout(): FrameLayout {
@@ -100,10 +103,14 @@ class FileListActivity : BaseActivity(), FileListView, ItemListView {
         val REQUEST_ADD_FOLDER = 100
         val RESULT_ADD_SUCCESSFUL = 1000
 
-        val KEY_CURRENT_PATH: String = "${BuildConfig.APPLICATION_ID}.path"
+        val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.files"
+
+        val ARGUMENT_PATH: String = "${ACTIVITY_TAG}.path"
 
         fun launch(activity: Activity) {
-            val launcher = Intent(activity, FileListActivity::class.java)
+            val launcher = Intent(activity, FilesActivity::class.java)
+
+            launcher.putExtra(ARGUMENT_PATH, Environment.getExternalStorageDirectory().path)
 
             activity.startActivityForResult(launcher, REQUEST_ADD_FOLDER)
         }

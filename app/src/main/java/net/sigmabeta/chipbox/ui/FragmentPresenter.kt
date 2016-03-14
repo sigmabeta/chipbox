@@ -1,8 +1,6 @@
 package net.sigmabeta.chipbox.ui
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.ui.BasePresenter
-import net.sigmabeta.chipbox.ui.BaseView
 
 abstract class FragmentPresenter : BasePresenter() {
 

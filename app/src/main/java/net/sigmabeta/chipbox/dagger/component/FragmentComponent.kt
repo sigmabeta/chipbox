@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.dagger.component
 import dagger.Subcomponent
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.artist.ArtistListFragment
+import net.sigmabeta.chipbox.ui.file.FileListFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.platform.PlatformListFragment
 import net.sigmabeta.chipbox.ui.player.PlayerFragment
@@ -20,4 +21,5 @@ interface FragmentComponent {
     fun inject(view: PlayerFragment)
     fun inject(view: GameGridFragment)
     fun inject(view: ArtistListFragment)
+    fun inject(view: FileListFragment)
 }

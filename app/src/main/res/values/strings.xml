@@ -22,6 +22,7 @@
     <string name="platform_name_gameboy">Game Boy</string>
 
     <!-- File List Screen-->
+    <string name="file_list_title">Add to Library</string>
     <string name="file_list_up">Up One Level</string>
 
     <string name="file_list_snackbar_rescan">Rescan</string>
