@@ -10,7 +10,7 @@ import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.util.logWarning
-import net.sigmabeta.chipbox.ui.file.FileListActivity
+import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.BaseView
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
@@ -72,8 +72,8 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
     }
 
     fun onActivityResult(requestCode: Int, resultCode: Int) {
-        if (requestCode == FileListActivity.REQUEST_ADD_FOLDER) {
-            if (resultCode == FileListActivity.RESULT_ADD_SUCCESSFUL) {
+        if (requestCode == FilesActivity.REQUEST_ADD_FOLDER) {
+            if (resultCode == FilesActivity.RESULT_ADD_SUCCESSFUL) {
                 view?.launchScanActivity()
             }
         }

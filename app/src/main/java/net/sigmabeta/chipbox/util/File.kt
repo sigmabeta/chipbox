@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.util
 import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.external.*
+import rx.Observable
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -165,20 +166,28 @@ fun createFileListItem(file: File): FileListItem {
     return FileListItem(type, file.name, file.absolutePath)
 }
 
-fun generateFileList(folder: File): ArrayList<FileListItem> {
-    val children = folder.listFiles() ?: return ArrayList<FileListItem>()
+fun generateFileList(folder: File): Observable<ArrayList<FileListItem>?> {
+    return Observable.create {
+        val children = folder.listFiles()
 
-    val fileList = ArrayList<FileListItem>(children.size)
+        if (children == null) {
+            it.onError(Exception("This file is not a directory."))
+        } else {
+            val itemList = ArrayList<FileListItem>(children.size)
 
-    for (child in children) {
-        if (!child.isHidden) {
-            val item = createFileListItem(child)
-            fileList.add(item)
+            for (child in children) {
+                if (!child.isHidden) {
+                    val item = createFileListItem(child)
+                    itemList.add(item)
+                }
+            }
+
+            Collections.sort(itemList)
+
+            it.onNext(itemList)
+            it.onCompleted()
         }
     }
-
-    Collections.sort(fileList)
-    return fileList
 }
 
 fun getTimeStringFromMillis(millis: Long): String {

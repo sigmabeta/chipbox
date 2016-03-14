@@ -5,15 +5,11 @@ import android.content.Intent
 import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_player.*
-import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.player.PlayerActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.player.PlayerFragment
 import net.sigmabeta.chipbox.ui.FragmentContainer
-import net.sigmabeta.chipbox.ui.player.PlayerActivityView
 import javax.inject.Inject
 
 class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
@@ -66,8 +62,6 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
     }
 
     companion object {
-        val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.player"
-
         fun launch(context: Context) {
             val launcher = Intent(context, PlayerActivity::class.java)
 
