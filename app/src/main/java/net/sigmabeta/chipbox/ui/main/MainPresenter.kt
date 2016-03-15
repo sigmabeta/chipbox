@@ -76,7 +76,7 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
         }
 
         player.playingGame?.let {
-            displayGame(it)
+            displayGame(it, true)
         }
 
         displayState(state, player.state)
@@ -89,7 +89,7 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
                         is PositionEvent -> {
                             /* no-op */
                         }
-                        is GameEvent -> displayGame(it.game)
+                        is GameEvent -> displayGame(it.game, false)
                         is StateEvent -> displayState(state, it.state)
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
                     }
@@ -104,14 +104,6 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
 
     override fun clearView() {
         view = null
-    }
-
-    private fun displayGame(game: Game?) {
-        if (this.game != game) {
-            view?.setGameBoxArt(game?.artLocal)
-        }
-
-        this.game = game
     }
 
     private fun displayState(oldState: Int, newState: Int) {
@@ -137,5 +129,13 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
     private fun displayTrack(track: Track) {
         view?.setTrackTitle(track.title)
         view?.setArtist(track.artist)
+    }
+
+    private fun displayGame(game: Game?, force: Boolean) {
+        if (force || this.game != game) {
+            view?.setGameBoxArt(game?.artLocal)
+        }
+
+        this.game = game
     }
 }
