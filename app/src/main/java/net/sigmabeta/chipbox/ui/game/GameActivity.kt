@@ -35,7 +35,7 @@ class GameActivity : BaseActivity(), GameView, ItemListView, SongListView {
         if (imagePath != null) {
             image_hero_boxart.loadImageHighQuality(imagePath)
         } else {
-            image_hero_boxart.loadImageHighQuality(R.drawable.img_album_art_blank)
+            image_hero_boxart.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK)
         }
 
         collapsing_toolbar.title = game.title

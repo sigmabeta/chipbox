@@ -5,6 +5,7 @@ import android.widget.SeekBar
 import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.FragmentPresenter
@@ -39,11 +40,11 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
         text_track_length.text = trackLength
     }
 
-    override fun setGameBoxart(path: String?) {
+    override fun setGameBoxArt(path: String?) {
         if (path != null) {
             image_game_box_art.loadImageHighQuality(path)
         } else {
-            image_game_box_art.loadImageHighQuality(R.drawable.img_album_art_blank)
+            image_game_box_art.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK)
         }
     }
 

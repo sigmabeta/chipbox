@@ -20,8 +20,10 @@ import android.support.v7.app.NotificationCompat
 import android.view.KeyEvent
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
@@ -50,6 +52,9 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
     var mediaMetadata: MediaMetadataCompat? = null
     var playbackState: PlaybackStateCompat? = null
 
+    var playingTrack: Track? = null
+    var playingGame: Game? = null
+
     var notified = false
 
     var subscription: Subscription? = null
@@ -69,11 +74,11 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
                         when (it) {
                             is TrackEvent -> updateTrack(it.track)
                             is StateEvent -> updateState(it.state)
+                            is GameEvent -> updateGame(it.game)
                         }
                     }
         }
     }
-
     fun unsubscribeFromUpdates() {
         subscription?.unsubscribe()
         subscription = null
@@ -166,11 +171,20 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
     private fun updateTrack(track: Track) {
         logDebug("[MediaNotificationManager] Updating notification track.")
 
-        mediaMetadata = getMetadataFrom(track)
-        playerService.session?.setMetadata(mediaMetadata)
+        playingTrack = track
 
-        // TODO Maybe update notification?
+        mediaMetadata = updateMetadata()
+        playerService.session?.setMetadata(mediaMetadata)
     }
+
+    private fun updateGame(game: Game?) {
+        logDebug("[MediaNotificationManager] Updating notification track.")
+
+        playingGame = game
+        mediaMetadata = updateMetadata()
+        playerService.session?.setMetadata(mediaMetadata)
+    }
+
 
     private fun updateState(state: Int) {
         logDebug("[MediaNotificationManager] Updating notification state.")
@@ -178,7 +192,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
         val player = playerService.player
 
         if (player != null) {
-            var position = player.position ?: PlaybackState.PLAYBACK_POSITION_UNKNOWN
+            var position = player.position
 
             val actions = getAvailableActions(player.state, player.playbackQueuePosition, player.playbackQueue?.size)
 
@@ -188,7 +202,6 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
             playbackState = stateBuilder.build()
             playerService.session?.setPlaybackState(playbackState)
         }
-        // TODO Maybe update notification?
     }
 
     private fun createNotification(): Notification? {
@@ -293,22 +306,29 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
         builder.setOngoing(playbackState?.getState() == PlaybackState.STATE_PLAYING)
     }
 
-    private fun getMetadataFrom(track: Track): MediaMetadataCompat {
-        val imagesFolderPath = playerService.getExternalFilesDir(null).absolutePath + "/images/"
-        val imagePath = imagesFolderPath + track.gameId.toString() + "/local.png"
-
-        val metadataBuilder = Track.toMetadataBuilder(track)
-
-        // TODO May need to do this asynchronously.
-        val imageBitmap = BitmapFactory.decodeFile(imagePath)
-
-        if (imageBitmap != null) {
-            metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, imageBitmap)
-        } else {
-            logError("[MediaNotificationManager] Couldn't load game art.")
+    private fun updateMetadata(): MediaMetadataCompat? {
+        val imagePath = playingGame?.let {
+            it.artLocal?.substringAfter(Game.PICASSO_PREFIX)
+        } ?: let {
+            Game.ASSET_ALBUM_ART_BLANK
         }
 
-        return metadataBuilder.build()
+        playingTrack?.let {
+            val metadataBuilder = Track.toMetadataBuilder(it)
+
+            // TODO May need to do this asynchronously.
+            val imageBitmap = BitmapFactory.decodeFile(imagePath)
+
+            if (imageBitmap != null) {
+                metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, imageBitmap)
+            } else {
+                logError("[MediaNotificationManager] Couldn't load game art.")
+            }
+
+            return metadataBuilder.build()
+        }
+
+        return null
     }
 
     private fun getAvailableActions(state: Int, queuePosition: Int?, queueSize: Int?): Long {

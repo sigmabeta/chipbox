@@ -11,6 +11,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
@@ -72,11 +73,12 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         text_playing_song_artist.text = artist
     }
 
-    override fun setGameBoxart(gameId: Long) {
-        val imagesFolderPath = "file://" + getExternalFilesDir(null).absolutePath + "/images/"
-        val imagePath = imagesFolderPath + gameId.toString() + "/local.png"
-
-        image_playing_game_box_art.loadImageLowQuality(imagePath)
+    override fun setGameBoxArt(imagePath: String?) {
+        if (imagePath != null) {
+            image_playing_game_box_art.loadImageLowQuality(imagePath)
+        } else {
+            image_playing_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK)
+        }
     }
 
     override fun showPauseButton() {

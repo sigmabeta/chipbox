@@ -5,25 +5,32 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.session.PlaybackState
+import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.objects.AudioBuffer
 import net.sigmabeta.chipbox.model.objects.AudioConfig
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.util.external.*
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
-import net.sigmabeta.chipbox.backend.BackendView
+import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
 import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class Player @Inject constructor(val audioConfig: AudioConfig,
                                  val audioManager: AudioManager,
+                                 val database: SongDatabaseHelper,
                                  val context: Context): AudioManager.OnAudioFocusChangeListener {
     var backendView: BackendView? = null
 
@@ -48,7 +55,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     var queuedTrack: Track? = null
     var playingTrack: Track? = null
         set (value) {
-
             teardown()
 
             if (value != null) {
@@ -63,6 +69,34 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 audioTrack?.flush()
             }
 
+            playingGameId = value?.gameId
+
+            field = value
+        }
+
+    var playingGameId: Long? = null
+        set (value) {
+            if (field != value) {
+                if (value != null) {
+                    database.getGame(value)
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(AndroidSchedulers.mainThread())
+                            .subscribe (
+                                    {
+                                        playingGame = it
+                                    },
+                                    {
+                                        backendView?.onGameLoadError()
+                                        logError("[Player] Couldn't load game #$value.")
+                                    }
+                            )
+                }
+            }
+        }
+
+    var playingGame: Game? = null
+        set (value) {
+            updater.send(GameEvent(value))
             field = value
         }
 

@@ -1,12 +1,10 @@
 package net.sigmabeta.chipbox.backend.module
 
-import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import dagger.Module
 import dagger.Provides
-import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.model.objects.AudioConfig
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logVerbose
@@ -28,10 +26,5 @@ class AudioModule {
         logDebug("[AudioModule] Minimum audio latency: ${minimumLatency}ms.")
 
         return AudioConfig(sampleRate, bufferSizeBytes, minimumLatency)
-    }
-
-    @Provides @Singleton fun providePlayer(audioConfig: AudioConfig, audioManager: AudioManager, context: Context): Player {
-        logVerbose("[AudioModule] Providing Player...")
-        return Player(audioConfig, audioManager, context)
     }
 }

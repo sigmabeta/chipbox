@@ -5,19 +5,18 @@ import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
-import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.player.PlayerFragmentView
 import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 @ActivityScoped
@@ -25,21 +24,9 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
                                                   val database: SongDatabaseHelper) : FragmentPresenter() {
     var view: PlayerFragmentView? = null
 
-    var gameId: Long = -1L
-        set (value) {
-            if (field != value) {
-                field = value
-                loadGame(value)
-            }
-        }
-
     var game: Game? = null
 
     var track: Track? = null
-        set (value) {
-            field = value
-            gameId = value?.gameId ?: -1L
-        }
 
     var state: Int? = null
 
@@ -95,8 +82,8 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
             logError("[PlayerFragmentPresenter] No track to display.")
         }
 
-        game?.let {
-            displayArt(it)
+        player.playingGame?.let {
+            displayGame(it)
         }
 
         displayState(player.state)
@@ -111,6 +98,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
                         is TrackEvent -> displayTrack(it.track)
                         is PositionEvent -> displayPosition(it.millisPlayed)
                         is StateEvent -> displayState(it.state)
+                        is GameEvent -> displayGame(it.game)
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
                     }
                 }
@@ -126,25 +114,12 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         view = null
     }
 
-    private fun loadGame(id: Long) {
-        val gameLoader = database.getGame(gameId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe (
-                        {
-                            game = it
-                            displayArt(it)
-                        },
-                        {
-                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                        }
-                )
+    private fun displayGame(game: Game?) {
+        if (this.game != game) {
+            view?.setGameBoxArt(game?.artLocal)
+        }
 
-        subscriptions.add(gameLoader)
-    }
-
-    private fun displayArt(game: Game) {
-        view?.setGameBoxart(game.artLocal)
+        this.game = game
     }
 
     private fun displayTrack(track: Track) {

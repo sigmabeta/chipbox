@@ -4,11 +4,11 @@ import android.view.View
 import kotlinx.android.synthetic.main.list_item_song.view.image_game_box_art
 import kotlinx.android.synthetic.main.list_item_song_game.view.*
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.ui.BaseViewHolder
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.loadImageLowQuality
-import net.sigmabeta.chipbox.ui.song.SongListAdapter
 
 
 class SongViewHolder(view: View, adapter: SongListAdapter) : BaseViewHolder<Track, SongViewHolder, SongListAdapter>(view, adapter), View.OnClickListener {
@@ -32,7 +32,7 @@ class SongViewHolder(view: View, adapter: SongListAdapter) : BaseViewHolder<Trac
             if (imagePath != null) {
                 view.image_game_box_art.loadImageLowQuality(imagePath)
             } else {
-                view.image_game_box_art.loadImageLowQuality(R.drawable.img_album_art_blank)
+                view.image_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK)
             }
         }
 
