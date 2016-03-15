@@ -4,14 +4,16 @@ import android.media.session.PlaybackState
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.util.logWarning
-import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.ui.file.FilesActivity
+import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -21,6 +23,8 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
     var view: MainView? = null
 
     var state = player.state
+
+    var game: Game? = null
 
     fun onOptionsItemSelected(itemId: Int): Boolean {
         when (itemId) {
@@ -43,6 +47,71 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
 
             PlaybackState.STATE_STOPPED -> player.play()
         }
+    }
+
+    fun onActivityResult(requestCode: Int, resultCode: Int) {
+        if (requestCode == FilesActivity.REQUEST_ADD_FOLDER) {
+            if (resultCode == FilesActivity.RESULT_ADD_SUCCESSFUL) {
+                view?.launchScanActivity()
+            }
+        }
+    }
+
+    override fun onReCreate(savedInstanceState: Bundle) {
+    }
+
+    override fun onTempDestroy() {
+    }
+
+    override fun setup(arguments: Bundle?) {
+    }
+
+    override fun teardown() {
+        game = null
+    }
+
+    override fun updateViewState() {
+        player.playingTrack?.let {
+            displayTrack(it)
+        }
+
+        player.playingGame?.let {
+            displayGame(it)
+        }
+
+        displayState(state, player.state)
+
+        val subscription = player.updater.asObservable()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    when (it) {
+                        is TrackEvent -> displayTrack(it.track)
+                        is PositionEvent -> {
+                            /* no-op */
+                        }
+                        is GameEvent -> displayGame(it.game)
+                        is StateEvent -> displayState(state, it.state)
+                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                    }
+                }
+
+        subscriptions.add(subscription)
+    }
+
+    override fun setView(view: BaseView) {
+        if (view is MainView) this.view = view
+    }
+
+    override fun clearView() {
+        view = null
+    }
+
+    private fun displayGame(game: Game?) {
+        if (this.game != game) {
+            view?.setGameBoxArt(game?.artLocal)
+        }
+
+        this.game = game
     }
 
     private fun displayState(oldState: Int, newState: Int) {
@@ -68,57 +137,5 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
     private fun displayTrack(track: Track) {
         view?.setTrackTitle(track.title)
         view?.setArtist(track.artist)
-        view?.setGameBoxart(track.gameId)
-    }
-
-    fun onActivityResult(requestCode: Int, resultCode: Int) {
-        if (requestCode == FilesActivity.REQUEST_ADD_FOLDER) {
-            if (resultCode == FilesActivity.RESULT_ADD_SUCCESSFUL) {
-                view?.launchScanActivity()
-            }
-        }
-    }
-
-    override fun onReCreate(savedInstanceState: Bundle) {
-    }
-
-    override fun onTempDestroy() {
-    }
-
-    override fun setup(arguments: Bundle?) {
-    }
-
-    override fun teardown() {
-    }
-
-    override fun updateViewState() {
-        player.playingTrack?.let {
-            displayTrack(it)
-        }
-
-        displayState(state, player.state)
-
-        val subscription = player.updater.asObservable()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    when (it) {
-                        is TrackEvent -> displayTrack(it.track)
-                        is PositionEvent -> {
-                            /* no-op */
-                        }
-                        is StateEvent -> displayState(state, it.state)
-                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
-                    }
-                }
-
-        subscriptions.add(subscription)
-    }
-
-    override fun setView(view: BaseView) {
-        if (view is MainView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
     }
 }

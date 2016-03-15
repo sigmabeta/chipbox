@@ -11,7 +11,7 @@ interface PlayerFragmentView : BaseView {
 
     fun setTimeElapsed(time: String)
 
-    fun setGameBoxart(path: String?)
+    fun setGameBoxArt(path: String?)
 
     fun showPauseButton()
 

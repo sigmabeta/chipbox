@@ -10,10 +10,10 @@ import android.media.session.MediaSession
 import android.os.IBinder
 import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
+import android.widget.Toast
 import net.sigmabeta.chipbox.ChipboxApplication
-import net.sigmabeta.chipbox.util.logVerbose
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
-import net.sigmabeta.chipbox.backend.BackendView
+import net.sigmabeta.chipbox.util.logVerbose
 import javax.inject.Inject
 
 class PlayerService : Service(), BackendView {
@@ -118,6 +118,10 @@ class PlayerService : Service(), BackendView {
 
     override fun skipToPrev() {
         logVerbose("[PlayerService] Processed PREV command.")
+    }
+
+    override fun onGameLoadError() {
+        Toast.makeText(this, "Couldn't load game.", Toast.LENGTH_SHORT).show()
     }
 
     /**

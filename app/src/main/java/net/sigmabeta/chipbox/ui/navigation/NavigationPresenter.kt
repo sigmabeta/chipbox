@@ -6,17 +6,19 @@ import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.util.logWarning
 import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.navigation.NavigationView
+import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 
 class NavigationPresenter @Inject constructor(val player: Player) : ActivityPresenter() {
     var view: NavigationView? = null
+
+    var game: Game? = null
 
     // A property is kept in order to be able to track changes in state.
     var state = player.state
@@ -52,11 +54,16 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
 
     override fun teardown() {
         state = -1
+        game = null
     }
 
     override fun updateViewState() {
         player.playingTrack?.let {
             displayTrack(it)
+        }
+
+        player.playingGame?.let {
+            displayGame(it)
         }
 
         displayState(state, player.state)
@@ -106,6 +113,13 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
     private fun displayTrack(track: Track) {
         view?.setTrackTitle(track.title)
         view?.setArtist(track.artist)
-        view?.setGameBoxart(track.gameId)
+    }
+
+    private fun displayGame(game: Game?) {
+        if (this.game != game) {
+            view?.setGameBoxArt(game?.artLocal)
+        }
+
+        this.game = game
     }
 }

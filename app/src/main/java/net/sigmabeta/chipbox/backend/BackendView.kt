@@ -10,4 +10,6 @@ interface BackendView {
     fun skipToNext()
 
     fun skipToPrev()
+
+    fun onGameLoadError()
 }

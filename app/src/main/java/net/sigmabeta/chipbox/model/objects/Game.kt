@@ -7,4 +7,12 @@ data class Game(
         val artLocal: String?,
         val artWeb: String?,
         val company: String?
-)
+) {
+    companion object {
+        val PICASSO_PREFIX = "file://"
+
+        val ASSET_ALBUM_ART_BLANK = "/android_asset/img_album_art_blank.png"
+
+        val PICASSO_ASSET_ALBUM_ART_BLANK = PICASSO_PREFIX + ASSET_ALBUM_ART_BLANK
+    }
+}
