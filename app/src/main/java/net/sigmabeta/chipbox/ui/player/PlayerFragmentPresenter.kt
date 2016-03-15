@@ -83,7 +83,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         }
 
         player.playingGame?.let {
-            displayGame(it)
+            displayGame(it, true)
         }
 
         displayState(player.state)
@@ -98,7 +98,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
                         is TrackEvent -> displayTrack(it.track)
                         is PositionEvent -> displayPosition(it.millisPlayed)
                         is StateEvent -> displayState(it.state)
-                        is GameEvent -> displayGame(it.game)
+                        is GameEvent -> displayGame(it.game, false)
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
                     }
                 }
@@ -114,8 +114,8 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         view = null
     }
 
-    private fun displayGame(game: Game?) {
-        if (this.game != game) {
+    private fun displayGame(game: Game?, force: Boolean) {
+        if (force || this.game != game) {
             view?.setGameBoxArt(game?.artLocal)
         }
 

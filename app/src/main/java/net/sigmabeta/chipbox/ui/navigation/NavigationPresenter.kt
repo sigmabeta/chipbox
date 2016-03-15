@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui.navigation
 import android.media.session.PlaybackState
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
@@ -13,15 +14,16 @@ import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
+import javax.inject.Singleton
 
-
+@Singleton
 class NavigationPresenter @Inject constructor(val player: Player) : ActivityPresenter() {
     var view: NavigationView? = null
 
-    var game: Game? = null
-
     // A property is kept in order to be able to track changes in state.
     var state = player.state
+
+    var game: Game? = null
 
     fun onNowPlayingClicked() {
         view?.launchPlayerActivity()
@@ -63,7 +65,7 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
         }
 
         player.playingGame?.let {
-            displayGame(it)
+            displayGame(it, true)
         }
 
         displayState(state, player.state)
@@ -74,6 +76,7 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
                     when (it) {
                         is TrackEvent -> displayTrack(it.track)
                         is PositionEvent -> { /* no-op */ }
+                        is GameEvent -> displayGame(it.game, false)
                         is StateEvent -> displayState(state, it.state)
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
                     }
@@ -115,8 +118,8 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
         view?.setArtist(track.artist)
     }
 
-    private fun displayGame(game: Game?) {
-        if (this.game != game) {
+    private fun displayGame(game: Game?, force: Boolean) {
+        if (force || this.game != game) {
             view?.setGameBoxArt(game?.artLocal)
         }
 
