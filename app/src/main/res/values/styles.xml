@@ -92,14 +92,14 @@
         <item name="android:layout_marginBottom">@dimen/spacing_medlarge</item>
     </style>
 
-    <style name="TextListTrackLength">
+    <style name="TextListTrackLength" parent="TextAppearance.AppCompat.Small">
         <item name="android:layout_width">60dp</item>
         <item name="android:layout_height">0dp</item>
         <item name="android:gravity">right|center_vertical</item>
         <item name="android:paddingEnd">@dimen/spacing_large</item>
     </style>
 
-    <style name="TextListTrackNumber">
+    <style name="TextListTrackNumber" parent="TextAppearance.AppCompat.Small">
         <item name="android:layout_width">24dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_margin">@dimen/spacing_large</item>
