@@ -14,6 +14,8 @@ import net.sigmabeta.chipbox.util.loadImageLowQuality
 class SongViewHolder(view: View, adapter: SongListAdapter) : BaseViewHolder<Track, SongViewHolder, SongListAdapter>(view, adapter), View.OnClickListener {
     var trackId: Long? = null
 
+    var boundAtLeastOnce = false
+
     override fun getId(): Long? {
         return adapterPosition.toLong()
     }
@@ -30,9 +32,9 @@ class SongViewHolder(view: View, adapter: SongListAdapter) : BaseViewHolder<Trac
             val imagePath = adapter.games?.get(gameId)?.artLocal
 
             if (imagePath != null) {
-                view.image_game_box_art.loadImageLowQuality(imagePath)
+                view.image_game_box_art.loadImageLowQuality(imagePath, boundAtLeastOnce, true)
             } else {
-                view.image_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK)
+                view.image_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, boundAtLeastOnce, true)
             }
         }
 
@@ -53,5 +55,7 @@ class SongViewHolder(view: View, adapter: SongListAdapter) : BaseViewHolder<Trac
             view.text_song_length.setTextAppearance(view.context, R.style.TextListTrackLength)
             view.text_song_track_number?.setTextAppearance(view.context, R.style.TextListTrackNumber)
         }
+
+        boundAtLeastOnce = true
     }
 }

@@ -9,6 +9,8 @@ import net.sigmabeta.chipbox.util.loadImageLowQuality
 class GameViewHolder(view: View, adapter: GameGridAdapter) : BaseViewHolder<Game, GameViewHolder, GameGridAdapter>(view, adapter), View.OnClickListener {
     var gameId: Long? = null
 
+    var boundAtLeastOnce = false
+
     override fun getId(): Long? {
         return gameId
     }
@@ -20,9 +22,11 @@ class GameViewHolder(view: View, adapter: GameGridAdapter) : BaseViewHolder<Game
         view.text_company.text = toBind.company
 
         toBind.artLocal?.let {
-            view.image_game_box_art.loadImageLowQuality(it)
+            view.image_game_box_art.loadImageLowQuality(it, boundAtLeastOnce, true)
         } ?: let {
-            view.image_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK)
+            view.image_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, boundAtLeastOnce, true)
         }
+
+        boundAtLeastOnce = true
     }
 }

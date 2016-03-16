@@ -133,7 +133,7 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
 
     private fun displayGame(game: Game?, force: Boolean) {
         if (force || this.game != game) {
-            view?.setGameBoxArt(game?.artLocal)
+            view?.setGameBoxArt(game?.artLocal, !force)
         }
 
         this.game = game

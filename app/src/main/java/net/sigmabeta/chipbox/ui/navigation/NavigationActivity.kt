@@ -52,11 +52,11 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
         text_playing_song_artist.text = artist
     }
 
-    override fun setGameBoxArt(imagePath: String?) {
+    override fun setGameBoxArt(imagePath: String?, fade: Boolean) {
         if (imagePath != null) {
-            image_playing_game_box_art.loadImageLowQuality(imagePath)
+            image_playing_game_box_art.loadImageLowQuality(imagePath, fade, false)
         } else {
-            image_playing_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK)
+            image_playing_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false)
         }
     }
 

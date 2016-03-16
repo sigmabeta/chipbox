@@ -9,7 +9,7 @@ interface NavigationView : BaseView {
 
     fun setArtist(artist: String)
 
-    fun setGameBoxArt(imagePath: String?)
+    fun setGameBoxArt(imagePath: String?, fade: Boolean)
 
     fun showPauseButton()
 
