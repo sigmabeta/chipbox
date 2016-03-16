@@ -9,6 +9,7 @@
         <item name="android:windowBackground">@color/background_grey</item>
 
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowActivityTransitions">true</item>
     </style>
 
     <style name="ThemeFileList" parent="Theme.AppCompat.Light.DarkActionBar">
@@ -17,6 +18,7 @@
         <item name="colorAccent">@color/accent</item>
 
         <item name="android:windowBackground">@color/background_grey</item>
+        <item name="android:windowActivityTransitions">true</item>
     </style>
 
     <style name="ThemePlayer" parent="Theme.AppCompat.Light.NoActionBar">
@@ -26,6 +28,7 @@
 
         <item name="android:windowBackground">@color/background_grey</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowActivityTransitions">true</item>
     </style>
 
     <style name="ThemeScan" parent="Theme.AppCompat.NoActionBar">
@@ -35,6 +38,7 @@
 
         <item name="android:windowBackground">?attr/colorPrimary</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowActivityTransitions">true</item>
     </style>
 
     <style name="TextScanItem" parent="TextAppearance.AppCompat.Caption">

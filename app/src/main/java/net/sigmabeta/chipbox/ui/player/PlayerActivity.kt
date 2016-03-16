@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.ui.player
 
+import android.app.Activity
+import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import android.view.View
@@ -62,10 +64,12 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
     }
 
     companion object {
-        fun launch(context: Context) {
-            val launcher = Intent(context, PlayerActivity::class.java)
+        fun launch(activity: Activity, sharedView: View) {
+            val launcher = Intent(activity, PlayerActivity::class.java)
 
-            context.startActivity(launcher)
+            val options = ActivityOptions.makeSceneTransitionAnimation(activity, sharedView, "image_playing_boxart")
+
+            activity.startActivity(launcher, options.toBundle())
         }
 
         fun getLauncher(context: Context): Intent {
