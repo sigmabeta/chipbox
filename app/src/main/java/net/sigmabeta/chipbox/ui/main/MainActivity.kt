@@ -115,7 +115,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     }
 
     override fun launchPlayerActivity() {
-        PlayerActivity.launch(this)
+        PlayerActivity.launch(this, image_playing_game_box_art)
     }
 
     override fun launchScanActivity() {

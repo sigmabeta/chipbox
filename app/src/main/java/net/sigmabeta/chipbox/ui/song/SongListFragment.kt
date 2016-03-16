@@ -9,7 +9,6 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.ui.*
-import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import java.util.*
 import javax.inject.Inject
@@ -30,10 +29,6 @@ class SongListFragment : BaseFragment(), SongListView, ItemListView, TopLevelFra
 
     override fun setGames(games: HashMap<Long, Game>) {
         adapter.games = games
-    }
-
-    override fun launchPlayerActivity() {
-        PlayerActivity.launch(activity)
     }
 
     override fun refreshList() {

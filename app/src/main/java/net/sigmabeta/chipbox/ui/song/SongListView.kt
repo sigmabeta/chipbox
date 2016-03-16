@@ -10,8 +10,6 @@ interface SongListView : BaseView {
 
     fun setGames(games: HashMap<Long, Game>)
 
-    fun launchPlayerActivity()
-
     fun refreshList()
 
     fun setActivityTitle(name: String)

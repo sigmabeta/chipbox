@@ -53,10 +53,6 @@ class GameActivity : BaseActivity(), GameView, ItemListView, SongListView {
      * SongListView
      */
 
-    override fun launchPlayerActivity() {
-        // No-op
-    }
-
     override fun refreshList() {
         adapter.notifyDataSetChanged()
     }
