@@ -40,11 +40,11 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
         text_track_length.text = trackLength
     }
 
-    override fun setGameBoxArt(path: String?) {
+    override fun setGameBoxArt(path: String?, fade: Boolean) {
         if (path != null) {
-            image_game_box_art.loadImageHighQuality(path)
+            image_game_box_art.loadImageHighQuality(path, fade, false)
         } else {
-            image_game_box_art.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK)
+            image_game_box_art.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false)
         }
     }
 

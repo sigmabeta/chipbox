@@ -120,7 +120,7 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
 
     private fun displayGame(game: Game?, force: Boolean) {
         if (force || this.game != game) {
-            view?.setGameBoxArt(game?.artLocal)
+            view?.setGameBoxArt(game?.artLocal, !force)
         }
 
         this.game = game
