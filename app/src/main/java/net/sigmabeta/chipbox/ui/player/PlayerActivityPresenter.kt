@@ -37,4 +37,6 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
     override fun clearView() {
         view = null
     }
+
+    override fun onReenter() = Unit
 }
