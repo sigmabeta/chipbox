@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.platform
 
 import android.support.v7.widget.LinearLayoutManager
+import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_platform_list.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -78,6 +79,8 @@ class PlatformListFragment : BaseFragment(), PlatformListView, ItemListView, Top
         list_platforms.adapter = adapter
         list_platforms.layoutManager = layoutManager
     }
+
+    override fun getSharedImage(): View? = null
 
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.platform_list"

@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui.game
 import android.content.Context
 import android.content.Intent
 import android.support.v7.widget.LinearLayoutManager
+import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_game.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -103,6 +104,10 @@ class GameActivity : BaseActivity(), GameView, ItemListView, SongListView {
     override fun getContentLayout(): FrameLayout {
         return findViewById(android.R.id.content) as FrameLayout
     }
+
+    override fun getSharedImage(): View? = image_hero_boxart
+
+    override fun shouldDelayTransitionForFragment() = false
 
     companion object {
         val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.game"

@@ -4,9 +4,8 @@ import android.os.Bundle
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.objects.Artist
-import net.sigmabeta.chipbox.ui.FragmentPresenter
-import net.sigmabeta.chipbox.ui.artist.ArtistListView
 import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.ui.FragmentPresenter
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import java.util.*
@@ -52,6 +51,8 @@ class ArtistListPresenter @Inject constructor(val database: SongDatabaseHelper) 
             view?.setArtists(it)
         }
     }
+
+    override fun getView(): BaseView? = view
 
     override fun setView(view: BaseView) {
         if (view is ArtistListView) this.view = view

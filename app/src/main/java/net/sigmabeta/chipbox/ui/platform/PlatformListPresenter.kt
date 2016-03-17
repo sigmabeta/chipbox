@@ -6,9 +6,8 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.objects.Platform
 import net.sigmabeta.chipbox.model.objects.Track
-import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.platform.PlatformListView
+import net.sigmabeta.chipbox.ui.FragmentPresenter
 import javax.inject.Inject
 
 @ActivityScoped
@@ -42,6 +41,8 @@ class PlatformListPresenter @Inject constructor(val database: SongDatabaseHelper
     override fun updateViewState() {
         view?.setList(platformList)
     }
+
+    override fun getView(): BaseView? = view
 
     override fun setView(view: BaseView) {
         if (view is PlatformListView) this.view = view

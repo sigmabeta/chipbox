@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.artist
 
 import android.support.v7.widget.LinearLayoutManager
+import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_artist_list.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -76,6 +77,8 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView, TopLeve
         list_artists.adapter = adapter
         list_artists.layoutManager = layoutManager
     }
+
+    override fun getSharedImage(): View? = null
 
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.artist_list"

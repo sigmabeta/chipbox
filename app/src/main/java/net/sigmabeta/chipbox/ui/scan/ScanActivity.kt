@@ -2,16 +2,15 @@ package net.sigmabeta.chipbox.ui.scan
 
 import android.content.Context
 import android.content.Intent
+import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_scan.*
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.scan.ScanPresenter
+import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.util.fadeInFromRight
 import net.sigmabeta.chipbox.util.fadeOutToLeft
-import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.scan.ScanView
 import javax.inject.Inject
 
 class ScanActivity : BaseActivity(), ScanView {
@@ -78,6 +77,10 @@ class ScanActivity : BaseActivity(), ScanView {
     override fun getContentLayout(): FrameLayout {
         return findViewById(android.R.id.content) as FrameLayout
     }
+
+    override fun getSharedImage(): View? = null
+
+    override fun shouldDelayTransitionForFragment() = false
 
     companion object {
         fun launch(context: Context) {

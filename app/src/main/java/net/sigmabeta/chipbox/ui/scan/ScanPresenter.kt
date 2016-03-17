@@ -4,9 +4,8 @@ import android.os.Bundle
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.scan.ScanView
+import net.sigmabeta.chipbox.util.logError
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import java.util.concurrent.TimeUnit
@@ -67,6 +66,8 @@ class ScanPresenter @Inject constructor(val database: SongDatabaseHelper) : Acti
 
     override fun updateViewState() {
     }
+
+    override fun getView(): BaseView? = view
 
     override fun setView(view: BaseView) {
         if (view is ScanView) this.view = view

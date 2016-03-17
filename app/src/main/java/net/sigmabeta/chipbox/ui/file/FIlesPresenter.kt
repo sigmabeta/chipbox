@@ -83,6 +83,8 @@ class FilesPresenter @Inject constructor(val databaseHelper: SongDatabaseHelper)
     override fun updateViewState() {
     }
 
+    override fun getView(): BaseView? = view
+
     override fun setView(view: BaseView) {
         if (view is FilesView) this.view = view
     }

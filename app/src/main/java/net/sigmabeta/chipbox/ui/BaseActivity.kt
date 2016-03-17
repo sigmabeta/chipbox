@@ -4,13 +4,36 @@ import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.view.View
+import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import android.widget.Toast
+import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.dagger.component.FragmentComponent
-import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.util.logError
 
 abstract class BaseActivity : AppCompatActivity(), BaseView {
+    val sharedPreDrawListener = object : ViewTreeObserver.OnPreDrawListener {
+        var sharedView: View? = null
+
+        override fun onPreDraw(): Boolean {
+            sharedView?.viewTreeObserver?.removeOnPreDrawListener(this)
+            getPresenter().onSharedPreDraw()
+            return true
+        }
+    }
+
+    fun getPicassoCallback(): Callback {
+        return object : Callback {
+            override fun onSuccess() {
+                getPresenter().onSharedImageLoaded()
+            }
+
+            override fun onError() {
+                logError("[PlayerFragment] Couldn't load image.")
+            }
+        }
+    }
+
     /**
      * Calls the superclass constructor, and then automatically
      * requests an injection of the Activity's dependencies.
@@ -23,6 +46,15 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
 
         configureViews()
         getPresenter().onCreate(intent.extras, savedInstanceState, this)
+
+        val sharedImage = getSharedImage()
+
+        if (sharedImage != null) {
+            sharedImage.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
+            postponeEnterTransition()
+        } else if (shouldDelayTransitionForFragment()) {
+            postponeEnterTransition()
+        }
     }
 
     override fun onResume() {
@@ -38,6 +70,10 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
     override fun onDestroy() {
         super.onDestroy()
         getPresenter().onDestroy(isFinishing)
+    }
+
+    override fun startTransition() {
+        startPostponedEnterTransition()
     }
 
     override fun showToastMessage(message: String) {
@@ -75,4 +111,13 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
     protected abstract fun getLayoutId(): Int
 
     protected abstract fun getContentLayout(): FrameLayout
+
+    protected abstract fun getSharedImage(): View?
+
+    /**
+     * Return true here if the Activity contains a Fragment with a SharedElement view inside
+     * it for whose readiness we must wait before beginning the transition. If this Activity's
+     * getSharedImage() call returns non-null, this is ignored.
+     */
+    protected abstract fun shouldDelayTransitionForFragment(): Boolean
 }

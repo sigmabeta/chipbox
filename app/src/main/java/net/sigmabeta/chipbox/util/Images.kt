@@ -30,7 +30,7 @@ fun ImageView.loadImageLowQuality(path: String, fade: Boolean, placeholder: Bool
 
 }
 
-fun ImageView.loadImageHighQuality(path: String, fade: Boolean, placeholder: Boolean) {
+fun ImageView.loadImageHighQuality(path: String, fade: Boolean, placeholder: Boolean, callback: Callback? = null) {
     val requestCreator = Picasso.with(context)
             .load(path)
             .centerCrop()
@@ -45,5 +45,9 @@ fun ImageView.loadImageHighQuality(path: String, fade: Boolean, placeholder: Boo
         requestCreator.noPlaceholder()
     }
 
-    requestCreator.into(this)
+    callback?.let {
+        requestCreator.into(this, callback)
+    } ?: let {
+        requestCreator.into(this)
+    }
 }

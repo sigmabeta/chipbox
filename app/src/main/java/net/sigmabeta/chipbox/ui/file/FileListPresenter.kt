@@ -76,6 +76,8 @@ class FileListPresenter @Inject constructor() : FragmentPresenter() {
         }
     }
 
+    override fun getView(): BaseView? = view
+
     override fun setView(view: BaseView) {
         if (view is FileListView) this.view = view
     }

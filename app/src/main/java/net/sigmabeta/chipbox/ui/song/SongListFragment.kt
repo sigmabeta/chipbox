@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.ui.song
 
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
+import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_song_list.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -80,6 +81,8 @@ class SongListFragment : BaseFragment(), SongListView, ItemListView, TopLevelFra
         list_songs.adapter = adapter
         list_songs.layoutManager = layoutManager
     }
+
+    override fun getSharedImage(): View? = null
 
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.song_list"
