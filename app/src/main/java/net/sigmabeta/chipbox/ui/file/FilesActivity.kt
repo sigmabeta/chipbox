@@ -15,6 +15,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
+import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import javax.inject.Inject
 
 class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
@@ -60,7 +61,7 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
     }
 
     override fun onAddSuccessful() {
-        setResult(RESULT_ADD_SUCCESSFUL)
+        ScanActivity.launch(this)
         finish()
     }
 
