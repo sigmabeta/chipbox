@@ -26,12 +26,10 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
         return object : Callback {
             override fun onSuccess() {
                 getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
-                getPresenter().onSharedImageLoaded()
             }
 
             override fun onError() {
                 getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
-                getPresenter().onSharedImageLoaded()
                 logError("[PlayerFragment] Couldn't load image.")
             }
         }

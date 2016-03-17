@@ -1,13 +1,9 @@
 package net.sigmabeta.chipbox.ui
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.util.logError
 import rx.subscriptions.CompositeSubscription
 
 abstract class BasePresenter {
-    var sharedElementPreDrawn = false
-    var sharedImageLoaded = false
-
     var subscriptions = CompositeSubscription()
 
     fun onResume() {
@@ -20,21 +16,7 @@ abstract class BasePresenter {
     }
 
     fun onSharedPreDraw() {
-        sharedElementPreDrawn = true
-        attemptTransitionStart()
-    }
-
-    fun onSharedImageLoaded() {
-        sharedImageLoaded = true
-        attemptTransitionStart()
-    }
-
-    fun attemptTransitionStart() {
-        if (sharedElementPreDrawn && sharedImageLoaded) {
-            getView()?.startTransition()
-        } else {
-            logError("[FragmentPresenter] Skipping transition: sharedImageLoaded = $sharedImageLoaded sharedElementPreDrawn = $sharedElementPreDrawn")
-        }
+        getView()?.startTransition()
     }
 
     /**

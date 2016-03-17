@@ -31,7 +31,6 @@ abstract class BaseFragment : Fragment(), BaseView {
         return object : Callback {
             override fun onSuccess() {
                 getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
-                getPresenter().onSharedImageLoaded()
             }
 
             override fun onError() {
