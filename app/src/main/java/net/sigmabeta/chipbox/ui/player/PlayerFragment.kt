@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.player
 
+import android.view.View
 import android.widget.FrameLayout
 import android.widget.SeekBar
 import kotlinx.android.synthetic.main.fragment_player.*
@@ -42,9 +43,9 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
 
     override fun setGameBoxArt(path: String?, fade: Boolean) {
         if (path != null) {
-            image_game_box_art.loadImageHighQuality(path, fade, false)
+            image_game_box_art.loadImageHighQuality(path, fade, false, getPicassoCallback())
         } else {
-            image_game_box_art.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false)
+            image_game_box_art.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false, getPicassoCallback())
         }
     }
 
@@ -99,6 +100,10 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
 
     override fun getLayoutId(): Int {
         return R.layout.fragment_player
+    }
+
+    override fun getSharedImage(): View? {
+        return image_game_box_art
     }
 
     override fun configureViews() {

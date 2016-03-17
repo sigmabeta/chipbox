@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.ui.file
 
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
+import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_file_list.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -76,6 +77,8 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView {
         list_files.layoutManager = layoutManager
         list_files.adapter = adapter
     }
+
+    override fun getSharedImage(): View? = null
 
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.file_list"

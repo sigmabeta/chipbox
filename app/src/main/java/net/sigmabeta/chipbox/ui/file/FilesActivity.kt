@@ -99,6 +99,10 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
         return frame_content
     }
 
+    override fun getSharedImage(): View? = null
+
+    override fun shouldDelayTransitionForFragment() = false
+
     companion object {
         val REQUEST_ADD_FOLDER = 100
         val RESULT_ADD_SUCCESSFUL = 1000

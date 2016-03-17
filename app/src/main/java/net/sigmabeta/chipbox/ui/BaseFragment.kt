@@ -8,11 +8,36 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import android.widget.Toast
+import com.squareup.picasso.Callback
+import net.sigmabeta.chipbox.util.logError
 
 abstract class BaseFragment : Fragment(), BaseView {
     var injected: Boolean = false
+
+    val sharedPreDrawListener = object : ViewTreeObserver.OnPreDrawListener {
+        var sharedView: View? = null
+
+        override fun onPreDraw(): Boolean {
+            sharedView?.viewTreeObserver?.removeOnPreDrawListener(this)
+            getPresenter().onSharedPreDraw()
+            return true
+        }
+    }
+
+    fun getPicassoCallback(): Callback {
+        return object : Callback {
+            override fun onSuccess() {
+                getPresenter().onSharedImageLoaded()
+            }
+
+            override fun onError() {
+                logError("[PlayerFragment] Couldn't load image.")
+            }
+        }
+    }
 
     fun setActivityTitle(title: String) {
         (activity as FragmentContainer).setTitle(title)
@@ -31,6 +56,9 @@ abstract class BaseFragment : Fragment(), BaseView {
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         configureViews()
+
+        val sharedImage = getSharedImage()
+        sharedImage?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
     }
 
     override fun onAttach(context: Context?) {
@@ -63,6 +91,10 @@ abstract class BaseFragment : Fragment(), BaseView {
         getPresenter().onDestroy(ending)
     }
 
+    override fun startTransition() {
+        activity?.startPostponedEnterTransition()
+    }
+
     override fun showToastMessage(message: String) {
         Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
     }
@@ -84,6 +116,8 @@ abstract class BaseFragment : Fragment(), BaseView {
     protected abstract fun getLayoutId(): Int
 
     protected abstract fun getContentLayout(): FrameLayout
+
+    protected abstract fun getSharedImage(): View?
 
     /**
      * Perform any necessary run-time setup of views: RecyclerViews, ClickListeners,

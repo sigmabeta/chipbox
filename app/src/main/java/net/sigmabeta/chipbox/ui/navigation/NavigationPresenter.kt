@@ -113,6 +113,8 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
         this.state = newState
     }
 
+    override fun getView(): BaseView? = view
+
     private fun displayTrack(track: Track) {
         view?.setTrackTitle(track.title)
         view?.setArtist(track.artist)

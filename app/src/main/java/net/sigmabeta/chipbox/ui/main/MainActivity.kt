@@ -172,6 +172,10 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         tabs_categories.setupWithViewPager(pager_categories)
     }
 
+    override fun getSharedImage(): View? = null
+
+    override fun shouldDelayTransitionForFragment() = false
+
     private fun getFragment(): TopLevelFragment? {
         val selectedPosition = pager_categories.currentItem
 

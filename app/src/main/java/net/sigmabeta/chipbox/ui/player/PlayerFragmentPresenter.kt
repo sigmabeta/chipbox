@@ -106,6 +106,8 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         subscriptions.add(subscription)
     }
 
+    override fun getView(): BaseView? = view
+
     override fun setView(view: BaseView) {
         if (view is PlayerFragmentView) this.view = view
     }

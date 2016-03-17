@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.ui.player
 import android.os.Bundle
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.player.PlayerActivityView
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,6 +18,7 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
     }
 
     override fun setup(arguments: Bundle?) {
+        view?.delayTransition()
         view?.showPlayerFragment()
     }
 
@@ -27,6 +27,8 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
 
     override fun updateViewState() {
     }
+
+    override fun getView(): BaseView? = view
 
     override fun setView(view: BaseView) {
         if (view is PlayerActivityView) this.view = view

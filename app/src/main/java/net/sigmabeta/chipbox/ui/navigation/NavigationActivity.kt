@@ -126,6 +126,10 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
         this.title = title
     }
 
+    override fun getSharedImage(): View? = null
+
+    override fun shouldDelayTransitionForFragment() = false
+
     private fun getFragment(): NavigationFragment? {
         val fragment = supportFragmentManager.findFragmentById(R.id.frame_fragment) as NavigationFragment
         return fragment

@@ -30,6 +30,10 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
                 .commit()
     }
 
+    override fun delayTransition() {
+        postponeEnterTransition()
+    }
+
     /**
      * FragmentContainer
      */
@@ -62,6 +66,10 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
     override fun getContentLayout(): FrameLayout {
         return frame_fragment
     }
+
+    override fun getSharedImage(): View? = null
+
+    override fun shouldDelayTransitionForFragment() = true
 
     companion object {
         fun launch(activity: Activity, sharedView: View) {

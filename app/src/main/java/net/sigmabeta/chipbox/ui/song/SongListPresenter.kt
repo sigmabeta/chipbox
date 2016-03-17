@@ -103,6 +103,8 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
         }
     }
 
+    override fun getView(): BaseView? = view
+
     override fun setView(view: BaseView) {
         if (view is SongListView) this.view = view
     }

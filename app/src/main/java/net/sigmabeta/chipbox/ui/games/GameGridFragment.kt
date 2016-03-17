@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.ui.games
 
 import android.os.Bundle
 import android.support.v7.widget.GridLayoutManager
+import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_game_grid.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -84,6 +85,8 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView, TopLevelFra
         grid_games.addItemDecoration(GridSpaceDecoration(spacing))
         grid_games.layoutManager = layoutManager
     }
+
+    override fun getSharedImage(): View? = null
 
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.game_grid"

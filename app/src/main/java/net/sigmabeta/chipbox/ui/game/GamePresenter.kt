@@ -9,10 +9,8 @@ import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.util.logWarning
-import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.game.GameView
+import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import java.util.*
@@ -112,6 +110,8 @@ class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
 
         subscriptions.add(subscription)
     }
+
+    override fun getView(): BaseView? = view
 
     override fun setView(view: BaseView) {
         if (view is GameView) this.view = view
