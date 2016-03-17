@@ -73,6 +73,8 @@ class GameGridPresenter @Inject constructor(val database: SongDatabaseHelper) : 
         if (titleResource != -1) {
             view?.setActivityTitle(titleResource)
         }
+
+        view?.clearClickedViewHolder()
     }
 
     override fun getView(): BaseView? = view

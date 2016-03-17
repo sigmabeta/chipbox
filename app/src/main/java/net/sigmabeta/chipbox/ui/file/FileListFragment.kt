@@ -15,7 +15,7 @@ import net.sigmabeta.chipbox.ui.ItemListView
 import java.util.*
 import javax.inject.Inject
 
-class FileListFragment : BaseFragment(), FileListView, ItemListView {
+class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHolder> {
     lateinit var presenter: FileListPresenter
         @Inject set
 
@@ -43,7 +43,7 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView {
      * ItemListView
      */
 
-    override fun onItemClick(position: Long) {
+    override fun onItemClick(position: Long, clickedViewHolder: FileViewHolder) {
         presenter.onItemClick(position)
     }
 

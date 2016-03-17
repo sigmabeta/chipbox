@@ -15,15 +15,13 @@ import net.sigmabeta.chipbox.util.isScrolledToBottom
 import java.util.*
 import javax.inject.Inject
 
-class GameGridFragment : BaseFragment(), GameListView, ItemListView, TopLevelFragment, NavigationFragment {
+class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHolder>, TopLevelFragment, NavigationFragment {
     lateinit var presenter: GameGridPresenter
         @Inject set
 
     var adapter = GameGridAdapter(this)
 
-    override fun setActivityTitle(titleResource: Int) {
-        setActivityTitle(getString(titleResource))
-    }
+    var clickedViewHolder: GameViewHolder? = null
 
     /**
      * GameListView
@@ -33,8 +31,20 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView, TopLevelFra
         adapter.dataset = games
     }
 
+    override fun setActivityTitle(titleResource: Int) {
+        setActivityTitle(getString(titleResource))
+    }
+
     override fun launchGameActivity(id: Long) {
-        GameActivity.launch(activity, id)
+        clickedViewHolder?.let {
+            GameActivity.launch(activity, id, it.getSharedImage())
+        } ?: let {
+            GameActivity.launch(activity, id)
+        }
+    }
+
+    override fun clearClickedViewHolder() {
+        clickedViewHolder = null
     }
 
     /**
@@ -53,7 +63,8 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView, TopLevelFra
      * ItemListView
      */
 
-    override fun onItemClick(id: Long) {
+    override fun onItemClick(id: Long, clickedViewHolder: GameViewHolder) {
+        this.clickedViewHolder = clickedViewHolder
         presenter.onItemClick(id)
     }
 

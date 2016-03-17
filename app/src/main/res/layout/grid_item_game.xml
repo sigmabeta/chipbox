@@ -6,7 +6,6 @@
                                     android:clickable="true"
                                     android:focusable="true"
                                     android:foreground="?android:attr/selectableItemBackground"
-                                    android:transitionName="card_game"
                                     tools:layout_width="160dp">
 
     <LinearLayout
@@ -19,8 +18,7 @@
             android:id="@+id/image_game_box_art"
             android:layout_width="match_parent"
             android:layout_height="180dp"
-            android:scaleType="centerCrop"
-            android:transitionName="image_game_screenshot"/>
+            android:scaleType="centerCrop"/>
 
         <TextView
             android:id="@+id/text_game_title"

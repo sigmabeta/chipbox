@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.ui.game
 
+import android.app.Activity
+import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import android.support.v7.widget.LinearLayoutManager
@@ -16,11 +18,12 @@ import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ItemListView
 import net.sigmabeta.chipbox.ui.song.SongListAdapter
 import net.sigmabeta.chipbox.ui.song.SongListView
+import net.sigmabeta.chipbox.ui.song.SongViewHolder
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import java.util.*
 import javax.inject.Inject
 
-class GameActivity : BaseActivity(), GameView, ItemListView, SongListView {
+class GameActivity : BaseActivity(), GameView, ItemListView<SongViewHolder>, SongListView {
     lateinit var presenter: GamePresenter
         @Inject set
 
@@ -34,9 +37,9 @@ class GameActivity : BaseActivity(), GameView, ItemListView, SongListView {
         val imagePath = game.artLocal
 
         if (imagePath != null) {
-            image_hero_boxart.loadImageHighQuality(imagePath, false, false)
+            image_hero_boxart.loadImageHighQuality(imagePath, false, false, getPicassoCallback())
         } else {
-            image_hero_boxart.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, false, false)
+            image_hero_boxart.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, false, false, getPicassoCallback())
         }
 
         collapsing_toolbar.title = game.title
@@ -74,7 +77,7 @@ class GameActivity : BaseActivity(), GameView, ItemListView, SongListView {
      * ItemListView
      */
 
-    override fun onItemClick(position: Long) {
+    override fun onItemClick(position: Long, clickedViewHolder: SongViewHolder) {
         presenter.onItemClick(position)
     }
 
@@ -120,6 +123,16 @@ class GameActivity : BaseActivity(), GameView, ItemListView, SongListView {
             launcher.putExtra(ARGUMENT_GAME_ID, gameId)
 
             context.startActivity(launcher)
+        }
+
+        fun launch(activity: Activity, gameId: Long, sharedView: View) {
+            val launcher = Intent(activity, GameActivity::class.java)
+
+            launcher.putExtra(ARGUMENT_GAME_ID, gameId)
+
+            val options = ActivityOptions.makeSceneTransitionAnimation(activity, sharedView, "image_clicked_game")
+
+            activity.startActivity(launcher, options.toBundle())
         }
     }
 }

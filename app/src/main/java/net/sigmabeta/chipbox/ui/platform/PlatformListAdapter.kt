@@ -6,7 +6,7 @@ import net.sigmabeta.chipbox.model.objects.Platform
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
 import net.sigmabeta.chipbox.ui.ItemListView
 
-class PlatformListAdapter(view: ItemListView) : BaseArrayAdapter<Platform, PlatformViewHolder>(view) {
+class PlatformListAdapter(view: ItemListView<PlatformViewHolder>) : BaseArrayAdapter<Platform, PlatformViewHolder>(view) {
     override fun getLayoutId(): Int {
         return R.layout.list_item_platform
     }

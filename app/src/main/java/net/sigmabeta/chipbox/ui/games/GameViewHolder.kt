@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.games
 
 import android.view.View
+import android.widget.ImageView
 import kotlinx.android.synthetic.main.grid_item_game.view.*
 import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.ui.BaseViewHolder
@@ -29,4 +30,6 @@ class GameViewHolder(view: View, adapter: GameGridAdapter) : BaseViewHolder<Game
 
         boundAtLeastOnce = true
     }
+
+    fun getSharedImage(): ImageView = view.image_game_box_art
 }

@@ -10,4 +10,6 @@ interface GameListView : BaseView {
     fun setGames(games: ArrayList<Game>)
 
     fun launchGameActivity(id: Long)
+
+    fun clearClickedViewHolder()
 }

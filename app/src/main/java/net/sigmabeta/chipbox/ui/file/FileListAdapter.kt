@@ -6,7 +6,7 @@ import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
 import net.sigmabeta.chipbox.ui.ItemListView
 
-public class FileListAdapter(view: ItemListView) : BaseArrayAdapter<FileListItem, FileViewHolder>(view) {
+public class FileListAdapter(view: ItemListView<FileViewHolder>) : BaseArrayAdapter<FileListItem, FileViewHolder>(view) {
     override fun getLayoutId(): Int {
         return R.layout.list_item_file
     }

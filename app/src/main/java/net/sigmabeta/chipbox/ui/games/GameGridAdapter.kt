@@ -6,7 +6,7 @@ import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
 import net.sigmabeta.chipbox.ui.ItemListView
 
-class GameGridAdapter(view: ItemListView) : BaseArrayAdapter<Game, GameViewHolder>(view) {
+class GameGridAdapter(view: ItemListView<GameViewHolder>) : BaseArrayAdapter<Game, GameViewHolder>(view) {
     override fun getLayoutId(): Int {
         return R.layout.grid_item_game
     }

@@ -5,10 +5,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.ui.ItemListView
 import java.util.*
 
-abstract class BaseArrayAdapter<T, VH : RecyclerView.ViewHolder>(val view: ItemListView) : RecyclerView.Adapter<VH>() {
+abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemListView<VH>) : RecyclerView.Adapter<VH>() {
     var dataset: ArrayList<T>? = null
         set (value) {
             field = value
@@ -46,8 +45,8 @@ abstract class BaseArrayAdapter<T, VH : RecyclerView.ViewHolder>(val view: ItemL
         return dataset?.get(position)
     }
 
-    fun onItemClick(id: Long) {
-        view.onItemClick(id)
+    fun onItemClick(id: Long, clickedViewHolder: VH) {
+        view.onItemClick(id, clickedViewHolder)
     }
 
     abstract fun getLayoutId(): Int

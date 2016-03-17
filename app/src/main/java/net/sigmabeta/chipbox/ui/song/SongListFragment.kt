@@ -14,7 +14,7 @@ import net.sigmabeta.chipbox.util.isScrolledToBottom
 import java.util.*
 import javax.inject.Inject
 
-class SongListFragment : BaseFragment(), SongListView, ItemListView, TopLevelFragment, NavigationFragment {
+class SongListFragment : BaseFragment(), SongListView, ItemListView<SongViewHolder>, TopLevelFragment, NavigationFragment {
     lateinit var presenter: SongListPresenter
         @Inject set
 
@@ -48,7 +48,7 @@ class SongListFragment : BaseFragment(), SongListView, ItemListView, TopLevelFra
      * ItemListView
      */
 
-    override fun onItemClick(position: Long) {
+    override fun onItemClick(position: Long, clickedViewHolder: SongViewHolder) {
         presenter.onItemClick(position)
     }
 
