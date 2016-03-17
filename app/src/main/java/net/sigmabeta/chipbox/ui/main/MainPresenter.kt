@@ -12,7 +12,6 @@ import net.sigmabeta.chipbox.model.objects.Game
 import net.sigmabeta.chipbox.model.objects.Track
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
@@ -46,14 +45,6 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
             PlaybackState.STATE_PAUSED -> player.play()
 
             PlaybackState.STATE_STOPPED -> player.play()
-        }
-    }
-
-    fun onActivityResult(requestCode: Int, resultCode: Int) {
-        if (requestCode == FilesActivity.REQUEST_ADD_FOLDER) {
-            if (resultCode == FilesActivity.RESULT_ADD_SUCCESSFUL) {
-                view?.launchScanActivity()
-            }
         }
     }
 

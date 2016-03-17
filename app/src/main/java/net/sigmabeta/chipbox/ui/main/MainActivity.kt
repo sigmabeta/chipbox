@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.ui.main
 
-import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.support.v7.app.ActionBarDrawerToggle
@@ -52,10 +51,6 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
 
         // If something else was clicked, handle it ourselves.
         return presenter.onOptionsItemSelected(item.itemId)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        presenter.onActivityResult(requestCode, resultCode)
     }
 
     override fun launchFileListActivity() {
