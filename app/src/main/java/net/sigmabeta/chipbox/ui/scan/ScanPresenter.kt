@@ -113,4 +113,6 @@ class ScanPresenter @Inject constructor(val database: SongDatabaseHelper) : Acti
             view?.updateBadFiles(badFiles)
         }
     }
+
+    override fun onReenter() = Unit
 }

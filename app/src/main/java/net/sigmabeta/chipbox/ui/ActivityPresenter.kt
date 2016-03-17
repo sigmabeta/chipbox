@@ -31,8 +31,14 @@ abstract class ActivityPresenter : BasePresenter() {
     }
 
     /**
+     * Perform actions that need to be performed in order for a
+     * re-enter animation to not screw up.
+     */
+    abstract fun onReenter()
+
+    /**
      * Perform actions that only need to be performed on
-     * subsequent creations of an activitiy; i.e. after a rotation.
+     * subsequent creations of an activity; i.e. after a rotation.
      */
     abstract fun onReCreate(savedInstanceState: Bundle)
 

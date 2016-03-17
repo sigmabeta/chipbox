@@ -60,15 +60,7 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
     }
 
     override fun updateViewState() {
-        player.playingTrack?.let {
-            displayTrack(it)
-        }
-
-        player.playingGame?.let {
-            displayGame(it, true)
-        }
-
-        displayState(state, player.state)
+        updateHelper()
 
         val subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
@@ -83,6 +75,18 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
                 }
 
         subscriptions.add(subscription)
+    }
+
+    private fun updateHelper() {
+        player.playingTrack?.let {
+            displayTrack(it)
+        }
+
+        player.playingGame?.let {
+            displayGame(it, true)
+        }
+
+        displayState(state, player.state)
     }
 
     override fun setView(view: BaseView) {
@@ -114,6 +118,9 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
     }
 
     override fun getView(): BaseView? = view
+
+    override fun onReenter() {
+    }
 
     private fun displayTrack(track: Track) {
         view?.setTrackTitle(track.title)

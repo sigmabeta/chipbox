@@ -93,6 +93,8 @@ class FilesPresenter @Inject constructor(val databaseHelper: SongDatabaseHelper)
         view = null
     }
 
+    override fun onReenter() = Unit
+
     private fun upOneLevel() {
         var popStack = false
 

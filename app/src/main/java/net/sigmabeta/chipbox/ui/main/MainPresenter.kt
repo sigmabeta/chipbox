@@ -62,15 +62,7 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
     }
 
     override fun updateViewState() {
-        player.playingTrack?.let {
-            displayTrack(it)
-        }
-
-        player.playingGame?.let {
-            displayGame(it, true)
-        }
-
-        displayState(state, player.state)
+        updateHelper()
 
         val subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
@@ -95,6 +87,22 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
 
     override fun clearView() {
         view = null
+    }
+
+    override fun onReenter() {
+        updateHelper()
+    }
+
+    private fun updateHelper() {
+        player.playingTrack?.let {
+            displayTrack(it)
+        }
+
+        player.playingGame?.let {
+            displayGame(it, true)
+        }
+
+        displayState(state, player.state)
     }
 
     private fun displayState(oldState: Int, newState: Int) {

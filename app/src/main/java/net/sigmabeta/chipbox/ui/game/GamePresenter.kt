@@ -121,6 +121,8 @@ class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
         view = null
     }
 
+    override fun onReenter() = Unit
+
     private fun setPlayingTrack(track: Track) {
         view?.setPlayingTrack(track)
     }

@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
@@ -50,9 +51,16 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
 
         if (getSharedImage() != null) {
             postponeEnterTransition()
+            setResult(RESULT_OK)
         } else if (shouldDelayTransitionForFragment()) {
             postponeEnterTransition()
+            setResult(RESULT_OK)
         }
+    }
+
+    override fun onActivityReenter(resultCode: Int, data: Intent?) {
+        super.onActivityReenter(resultCode, data)
+        getPresenter().onReenter()
     }
 
     override fun onResume() {
