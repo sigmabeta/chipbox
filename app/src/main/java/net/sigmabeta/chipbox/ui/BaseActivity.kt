@@ -25,10 +25,13 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
     fun getPicassoCallback(): Callback {
         return object : Callback {
             override fun onSuccess() {
+                getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
                 getPresenter().onSharedImageLoaded()
             }
 
             override fun onError() {
+                getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
+                getPresenter().onSharedImageLoaded()
                 logError("[PlayerFragment] Couldn't load image.")
             }
         }
@@ -47,10 +50,7 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
         configureViews()
         getPresenter().onCreate(intent.extras, savedInstanceState, this)
 
-        val sharedImage = getSharedImage()
-
-        if (sharedImage != null) {
-            sharedImage.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
+        if (getSharedImage() != null) {
             postponeEnterTransition()
         } else if (shouldDelayTransitionForFragment()) {
             postponeEnterTransition()

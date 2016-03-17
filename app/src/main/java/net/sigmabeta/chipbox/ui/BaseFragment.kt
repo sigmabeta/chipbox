@@ -30,10 +30,12 @@ abstract class BaseFragment : Fragment(), BaseView {
     fun getPicassoCallback(): Callback {
         return object : Callback {
             override fun onSuccess() {
+                getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
                 getPresenter().onSharedImageLoaded()
             }
 
             override fun onError() {
+                getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
                 logError("[PlayerFragment] Couldn't load image.")
             }
         }
@@ -56,9 +58,6 @@ abstract class BaseFragment : Fragment(), BaseView {
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         configureViews()
-
-        val sharedImage = getSharedImage()
-        sharedImage?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
     }
 
     override fun onAttach(context: Context?) {

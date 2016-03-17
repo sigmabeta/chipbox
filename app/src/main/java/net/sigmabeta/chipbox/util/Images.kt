@@ -27,7 +27,6 @@ fun ImageView.loadImageLowQuality(path: String, fade: Boolean, placeholder: Bool
     } ?: let {
         requestCreator.into(this)
     }
-
 }
 
 fun ImageView.loadImageHighQuality(path: String, fade: Boolean, placeholder: Boolean, callback: Callback? = null) {
