@@ -8,7 +8,7 @@ import net.sigmabeta.chipbox.ui.BaseArrayAdapter
 import net.sigmabeta.chipbox.ui.ItemListView
 import java.util.*
 
-class SongListAdapter(view: ItemListView, val showArt: Boolean) : BaseArrayAdapter<Track, SongViewHolder>(view) {
+class SongListAdapter(view: ItemListView<SongViewHolder>, val showArt: Boolean) : BaseArrayAdapter<Track, SongViewHolder>(view) {
     var playingTrackId: Long? = null
         set (value) {
             field = value

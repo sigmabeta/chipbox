@@ -1,5 +1,5 @@
 package net.sigmabeta.chipbox.ui
 
-interface ItemListView {
-    fun onItemClick(id: Long)
+interface ItemListView<VH : BaseViewHolder<*, *, *>> {
+    fun onItemClick(id: Long, clickedViewHolder: VH)
 }
