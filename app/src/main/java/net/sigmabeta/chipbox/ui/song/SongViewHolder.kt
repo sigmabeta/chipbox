@@ -4,8 +4,8 @@ import android.view.View
 import kotlinx.android.synthetic.main.list_item_song.view.image_game_box_art
 import kotlinx.android.synthetic.main.list_item_song_game.view.*
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.objects.Game
-import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseViewHolder
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.loadImageLowQuality

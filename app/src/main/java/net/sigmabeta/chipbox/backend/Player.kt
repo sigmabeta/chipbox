@@ -10,10 +10,10 @@ import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.model.objects.AudioBuffer
-import net.sigmabeta.chipbox.model.objects.AudioConfig
-import net.sigmabeta.chipbox.model.objects.Game
-import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.model.audio.AudioBuffer
+import net.sigmabeta.chipbox.model.audio.AudioConfig
+import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.util.external.*
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError

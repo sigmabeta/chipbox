@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.ui.artist
 
 import android.view.View
 import kotlinx.android.synthetic.main.list_item_artist.view.*
-import net.sigmabeta.chipbox.model.objects.Artist
+import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.artist.ArtistListAdapter
 import net.sigmabeta.chipbox.ui.BaseViewHolder
 

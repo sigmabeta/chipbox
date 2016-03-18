@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.backend
 
-import net.sigmabeta.chipbox.model.objects.AudioConfig
+import net.sigmabeta.chipbox.model.audio.AudioConfig
 import net.sigmabeta.chipbox.util.logError
 
 class StatsManager(val audioConfig: AudioConfig) {

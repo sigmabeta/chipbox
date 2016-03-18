@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.model.objects
+package net.sigmabeta.chipbox.model.audio
 
 data class AudioConfig(val sampleRate: Int,
                        val bufferSizeBytes: Int,

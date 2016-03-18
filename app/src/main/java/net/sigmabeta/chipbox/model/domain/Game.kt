@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.model.objects
+package net.sigmabeta.chipbox.model.domain
 
 data class Game(
         val id: Long,

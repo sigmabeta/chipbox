@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.util.external
 
-import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.util.EXTENSIONS_MULTI_TRACK
 import net.sigmabeta.chipbox.util.getFileExtension
 import net.sigmabeta.chipbox.util.logDebug

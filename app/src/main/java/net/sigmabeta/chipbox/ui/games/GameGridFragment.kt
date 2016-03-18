@@ -7,7 +7,7 @@ import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_game_grid.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.objects.Game
+import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.util.convertDpToPx

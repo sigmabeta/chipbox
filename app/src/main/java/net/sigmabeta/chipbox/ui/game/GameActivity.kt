@@ -11,8 +11,8 @@ import kotlinx.android.synthetic.main.activity_game.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.objects.Game
-import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ItemListView

@@ -6,8 +6,8 @@ import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentPagerAdapter
 import android.view.ViewGroup
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.objects.Artist
-import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.model.domain.Artist
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.artist.ArtistListFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
