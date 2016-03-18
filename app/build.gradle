@@ -52,11 +52,15 @@ dependencies {
     // Copy album art more easily.
     compile 'commons-io:commons-io:2.4'
 
+    // Annotation-processing based DB codegen.
+    def dbflow_version = "3.0.0-beta5"
+    kapt "com.github.Raizlabs.DBFlow:dbflow-processor:${dbflow_version}"
+    compile "com.github.Raizlabs.DBFlow:dbflow-core:${dbflow_version}"
+    compile "com.github.Raizlabs.DBFlow:dbflow:${dbflow_version}"
+
     // Dependency Injection.
     compile 'com.google.dagger:dagger:2.0'
     provided 'org.glassfish:javax.annotation:10.0-b28'
-
-    // Kotlin-based Annotation Processing.
     kapt 'com.google.dagger:dagger-compiler:2.0'
 }
 
