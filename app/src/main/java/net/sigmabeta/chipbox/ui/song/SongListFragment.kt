@@ -7,8 +7,8 @@ import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_song_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.objects.Game
-import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import java.util.*

@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.ui.games
 
-import net.sigmabeta.chipbox.model.objects.Game
+import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.BaseView
 import java.util.*
 

@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.ui.artist
 
 import android.view.View
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.objects.Artist
+import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
 import net.sigmabeta.chipbox.ui.ItemListView
 

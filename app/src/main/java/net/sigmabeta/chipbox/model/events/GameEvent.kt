@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.model.events
 
-import net.sigmabeta.chipbox.model.objects.Game
+import net.sigmabeta.chipbox.model.domain.Game
 
 class GameEvent(val game: Game?) : PlaybackEvent() {
     override fun getType(): String {

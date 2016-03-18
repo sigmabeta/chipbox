@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.ui.artist
 
-import net.sigmabeta.chipbox.model.objects.Artist
+import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.BaseView
 import java.util.*
 

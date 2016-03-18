@@ -6,7 +6,7 @@ import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_artist_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.objects.Artist
+import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
 import net.sigmabeta.chipbox.ui.song.SongListFragment

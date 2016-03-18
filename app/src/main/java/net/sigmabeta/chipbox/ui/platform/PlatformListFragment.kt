@@ -6,7 +6,7 @@ import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_platform_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.objects.Platform
+import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity

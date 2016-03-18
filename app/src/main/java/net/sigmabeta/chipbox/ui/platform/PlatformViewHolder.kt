@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.ui.platform
 
 import android.view.View
 import kotlinx.android.synthetic.main.list_item_platform.view.*
-import net.sigmabeta.chipbox.model.objects.Platform
+import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.ui.BaseViewHolder
 import net.sigmabeta.chipbox.ui.platform.PlatformListAdapter
 

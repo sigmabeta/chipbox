@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.util
 
 import net.sigmabeta.chipbox.model.file.FileListItem
-import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.util.external.*
 import rx.Observable
 import java.io.File

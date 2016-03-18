@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.model.events
 
-import net.sigmabeta.chipbox.model.objects.Track
+import net.sigmabeta.chipbox.model.domain.Track
 
 class TrackEvent(val track: Track): PlaybackEvent() {
     override fun getType(): String {

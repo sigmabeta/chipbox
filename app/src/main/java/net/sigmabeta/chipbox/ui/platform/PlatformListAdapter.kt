@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.ui.platform
 
 import android.view.View
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.objects.Platform
+import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
 import net.sigmabeta.chipbox.ui.ItemListView
 

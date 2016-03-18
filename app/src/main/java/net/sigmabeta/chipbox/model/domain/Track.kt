@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.model.objects
+package net.sigmabeta.chipbox.model.domain
 
 import android.media.MediaMetadata
 import android.support.v4.media.MediaMetadataCompat

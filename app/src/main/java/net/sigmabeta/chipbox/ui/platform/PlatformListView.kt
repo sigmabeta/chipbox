@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.ui.platform
 
-import net.sigmabeta.chipbox.model.objects.Platform
+import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.ui.BaseView
 import java.util.*
 

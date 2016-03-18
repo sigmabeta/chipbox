@@ -5,7 +5,7 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import dagger.Module
 import dagger.Provides
-import net.sigmabeta.chipbox.model.objects.AudioConfig
+import net.sigmabeta.chipbox.model.audio.AudioConfig
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logVerbose
 import javax.inject.Singleton

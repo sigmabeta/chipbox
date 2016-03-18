@@ -9,7 +9,7 @@ import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.objects.Game
+import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
