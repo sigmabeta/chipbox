@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox
 
 import android.app.Application
 import android.os.Build
+import com.raizlabs.android.dbflow.config.FlowManager
 import net.sigmabeta.chipbox.dagger.Initializer
 import net.sigmabeta.chipbox.dagger.component.AppComponent
 import net.sigmabeta.chipbox.util.logDebug
@@ -21,14 +22,16 @@ public class ChipboxApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        System.loadLibrary("gme")
-
         logDebug("[ChipboxApplication] Starting Application.")
         logDebug("[ChipboxApplication] Build type: ${BuildConfig.BUILD_TYPE}")
 
         logDebug("[ChipboxApplication] Android version: ${Build.VERSION.RELEASE}")
         logDebug("[ChipboxApplication] Device manufacturer: ${Build.MANUFACTURER}")
         logDebug("[ChipboxApplication] Device model: ${Build.MODEL}")
+
+        System.loadLibrary("gme")
+        FlowManager.init(this);
+
 
         appComponent = Initializer.initAppComponent(this)
     }
