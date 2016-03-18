@@ -5,10 +5,13 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import net.sigmabeta.chipbox.model.events.FileScanEvent
+import com.raizlabs.android.dbflow.sql.language.SQLite
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
+import net.sigmabeta.chipbox.model.events.FileScanEvent
+import net.sigmabeta.chipbox.model.file.Folder
+import net.sigmabeta.chipbox.model.file.Folder_Table
 import net.sigmabeta.chipbox.util.*
 import org.apache.commons.io.FileUtils
 import rx.Observable
@@ -163,30 +166,19 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
     fun addDirectory(path: String): Observable<Int> {
         return Observable.create {
-            val database = writableDatabase
 
-            if (checkIfContained(database, path)) {
+            if (checkIfContained(path)) {
                 it.onNext(ADD_STATUS_EXISTS)
                 it.onCompleted()
                 return@create
             }
 
-            removeContainedEntries(database, path)
+            removeContainedEntries(path)
 
-            val values = ContentValues()
+            Folder(path).insert()
 
-            values.put(KEY_FOLDER_PATH, path)
-
-            val id = database.insert(TABLE_NAME_FOLDERS, null, values)
-            database.close()
-
-            if (id >= 0) {
-                logInfo("[SongDatabaseHelper] Successfully added folder to database.")
-                it.onNext(ADD_STATUS_GOOD)
-            } else {
-                logError("[SongDatabaseHelper] Unable to add folder to database.")
-                it.onNext(ADD_STATUS_DB_ERROR)
-            }
+            logInfo("[SongDatabaseHelper] Successfully added folder to database.")
+            it.onNext(ADD_STATUS_GOOD)
 
             it.onCompleted()
         }
@@ -576,7 +568,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
     fun scanLibrary(): Observable<FileScanEvent> {
         return Observable.create(
-                {
+                { sub ->
                     // OnSubscribe.call. it: String
                     clearTables()
 
@@ -585,23 +577,16 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     val startTime = System.currentTimeMillis()
 
                     val database = writableDatabase
-                    val folderCursor = getFolders(database)
-
-                    // Possibly overly defensive, but ensures that moveToNext() does not skip a row.
-                    folderCursor.moveToPosition(-1)
+                    val folders = getFolders()
 
                     val gameMap = HashMap<Long, Game>()
                     val artistMap = HashMap<Long, Artist>()
 
-                    // Iterate through all results of the DB query (i.e. all folders in the library.)
-                    while (folderCursor.moveToNext()) {
-                        val folderPath = folderCursor.getString(COLUMN_FOLDER_PATH)
-                        val folder = File(folderPath)
-
-                        scanFolder(folder, gameMap, artistMap, database, it as Subscriber<FileScanEvent>)
+                    folders.forEach { folder ->
+                        folder.path?.let {
+                            scanFolder(File(it), gameMap, artistMap, database, sub as Subscriber<FileScanEvent>)
+                        }
                     }
-
-                    folderCursor.close()
 
                     database.close()
 
@@ -610,63 +595,57 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                     logInfo("[SongDatabaseHelper] Scanned library in ${scanDuration} seconds.")
 
-                    it.onCompleted()
+                    sub.onCompleted()
                 }
         )
     }
 
-    private fun getFolders(database: SQLiteDatabase): Cursor {
-        // Get a cursor listing all the folders the user has added to the library.
-        return database.query(TABLE_NAME_FOLDERS,
-                null, // Get all columns.
-                null, // Get all rows.
-                null,
-                null, // No grouping.
-                null,
-                null) // Order of folders is irrelevant.
-    }
 
-    private fun checkIfContained(database: SQLiteDatabase, path: String): Boolean {
-        val folderCursor = getFolders(database)
+    private fun checkIfContained(newPath: String): Boolean {
+        val folders = getFolders()
 
-        while (folderCursor.moveToNext()) {
-            val folderPath = folderCursor.getString(COLUMN_FOLDER_PATH)
-
-            if (path.contains(folderPath)) {
-                logError("[SongDatabaseHelper] New folder $path is contained by a previously added folder: $folderPath")
-
-                folderCursor.close()
-                return true
+        folders.forEach {
+            it.path?.let { oldPath ->
+                if (newPath.contains(oldPath)) {
+                    logError("[SongDatabaseHelper] New folder $newPath is contained by a previously added folder: $oldPath")
+                    return true
+                }
             }
         }
 
-        folderCursor.close()
         return false
     }
 
-    private fun removeContainedEntries(database: SQLiteDatabase, path: String) {
-        val folderCursor = getFolders(database)
+    private fun getFolders(): List<Folder> {
+        return SQLite.select()
+                .from(Folder::class.java)
+                .queryList()
+    }
+
+    private fun removeContainedEntries(newPath: String) {
+        val folders = getFolders()
 
         // Remove any folders from the DB that are contained by the new folder.
         val idsToRemove = mutableListOf<Long>()
-        while (folderCursor.moveToNext()) {
-            val folderPath = folderCursor.getString(COLUMN_FOLDER_PATH)
+        folders.forEach { oldFolder ->
+            oldFolder.path?.let { oldPath ->
+                if (oldPath.contains(newPath)) {
+                    logInfo("[SongDatabaseHelper] New folder contains a previously added folder: $oldPath")
 
-            if (folderPath.contains(path)) {
-                logInfo("[SongDatabaseHelper] New folder contains a previously added folder: $folderPath")
-                idsToRemove.add(folderCursor.getLong(COLUMN_DB_ID))
+                    oldFolder.id?.let {
+                        idsToRemove.add(it)
+                    }
+                }
             }
         }
 
-        folderCursor.close()
-
         if (idsToRemove.isNotEmpty()) {
             val idsString = idsToRemove.joinToString()
-
             logInfo("[SongDatabaseHelper] Deleting folders with ids: $idsString")
-            database.delete(TABLE_NAME_FOLDERS,
-                    "$KEY_DB_ID IN ($idsString)",
-                    null)
+
+            SQLite.delete().from(Folder::class.java)
+                    .where(Folder_Table.id.`in`(idsToRemove))
+                    .query()
         }
     }
 
