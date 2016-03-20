@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.ui.game
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.PositionEvent
@@ -17,8 +16,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
-                                        val player: Player) : ActivityPresenter() {
+class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter() {
     var view: GameView? = null
 
     var gameId: Long? = null
@@ -42,7 +40,7 @@ class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
         val gameId = arguments?.getLong(GameActivity.ARGUMENT_GAME_ID) ?: -1
         this.gameId = gameId
 
-        val songsSubscription = database.getSongListForGame(gameId)
+        val songsSubscription = Track.getFromGame(gameId)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe (
