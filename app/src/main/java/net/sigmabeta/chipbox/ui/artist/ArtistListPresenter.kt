@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.ui.artist
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
@@ -11,7 +10,7 @@ import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class ArtistListPresenter @Inject constructor(val database: SongDatabaseHelper) : FragmentPresenter() {
+class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
     var view: ArtistListView? = null
 
     var artists: List<Artist>? = null

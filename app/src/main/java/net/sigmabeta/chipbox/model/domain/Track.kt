@@ -59,14 +59,14 @@ class Track() : BaseModel() {
 
         fun getAll(): Observable<List<Track>> {
             return Observable.create {
-                logInfo("[SongDatabaseHelper] Reading song list...")
+                logInfo("[Track] Reading song list...")
 
                 val tracks = SQLite.select().from(Track::class.java)
                         .where()
                         .orderBy(Track_Table.title, true)
                         .queryList()
 
-                logVerbose("[SongDatabaseHelper] Found ${tracks.size} tracks.")
+                logVerbose("[Track] Found ${tracks.size} tracks.")
 
                 it.onNext(tracks)
                 it.onCompleted()
@@ -75,14 +75,14 @@ class Track() : BaseModel() {
 
         fun getFromArtist(artistId: Long): Observable<List<Track>> {
             return Observable.create {
-                logInfo("[SongDatabaseHelper] Reading song list for artist #$artistId...")
+                logInfo("[Track] Reading song list for artist #$artistId...")
 
                 val tracks = SQLite.select().from(Track::class.java)
                         .where(Track_Table.artistId.eq(artistId))
                         .orderBy(Track_Table.gameId, true)
                         .queryList()
 
-                logVerbose("[SongDatabaseHelper] Found ${tracks.size} tracks.")
+                logVerbose("[Track] Found ${tracks.size} tracks.")
 
                 it.onNext(tracks)
                 it.onCompleted()
@@ -92,14 +92,14 @@ class Track() : BaseModel() {
 
         fun getFromGame(gameId: Long): Observable<List<Track>> {
             return Observable.create {
-                logInfo("[SongDatabaseHelper] Reading song list for game #$gameId...")
+                logInfo("[Track] Reading song list for game #$gameId...")
 
                 val tracks = SQLite.select().from(Track::class.java)
                         .where(Track_Table.gameId.eq(gameId))
                         .orderBy(Track_Table.trackNumber, true)
                         .queryList()
 
-                logVerbose("[SongDatabaseHelper] Found ${tracks.size} tracks.")
+                logVerbose("[Track] Found ${tracks.size} tracks.")
 
                 it.onNext(tracks)
                 it.onCompleted()

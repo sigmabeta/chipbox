@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.ui.platform
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseView
@@ -11,7 +10,7 @@ import net.sigmabeta.chipbox.ui.FragmentPresenter
 import javax.inject.Inject
 
 @ActivityScoped
-class PlatformListPresenter @Inject constructor(val database: SongDatabaseHelper) : FragmentPresenter() {
+class PlatformListPresenter @Inject constructor() : FragmentPresenter() {
     var view: PlatformListView? = null
 
     val platformList = arrayListOf(

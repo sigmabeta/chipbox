@@ -25,7 +25,7 @@ class Artist() : BaseModel() {
 
         fun get(artistId: Long): Observable<Artist> {
             return Observable.create {
-                logInfo("[SongDatabaseHelper] Getting artist #${artistId}...")
+                logInfo("[Artist] Getting artist #${artistId}...")
 
                 if (artistId > 0) {
                     val artist = queryDatabase(artistId)
@@ -44,14 +44,14 @@ class Artist() : BaseModel() {
 
         fun getAll(): Observable<List<Artist>> {
             return Observable.create {
-                logInfo("[SongDatabaseHelper] Reading artist list...")
+                logInfo("[Artist] Reading artist list...")
 
                 val artists = SQLite.select().from(Artist::class.java)
                         .where()
                         .orderBy(Artist_Table.name, true)
                         .queryList()
 
-                logVerbose("[SongDatabaseHelper] Found ${artists.size} artists.")
+                logVerbose("[Artist] Found ${artists.size} artists.")
 
                 it.onNext(artists)
                 it.onCompleted()
@@ -71,7 +71,7 @@ class Artist() : BaseModel() {
                 val currentArtist = artistMap.get(it)
                 if (currentArtist?.name == name) {
                     currentArtist?.id?.let {
-                        logVerbose("[SongDatabaseHelper] Found cached artist $name with id ${it}")
+                        logVerbose("[Artist] Found cached artist $name with id ${it}")
                         return it
                     }
                 }
@@ -92,7 +92,7 @@ class Artist() : BaseModel() {
                 }
             }
 
-            logError("[SongDatabaseHelper] Unable to find artist ID.")
+            logError("[Artist] Unable to find artist ID.")
             return -1L
         }
 

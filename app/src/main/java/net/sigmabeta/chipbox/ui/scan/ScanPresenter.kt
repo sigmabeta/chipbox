@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.ui.scan
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.database.Library
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
@@ -14,7 +14,7 @@ import javax.inject.Singleton
 
 
 @Singleton
-class ScanPresenter @Inject constructor(val database: SongDatabaseHelper) : ActivityPresenter() {
+class ScanPresenter @Inject constructor(val library: Library) : ActivityPresenter() {
     var view: ScanView? = null
 
     var filesAdded = 0
@@ -35,7 +35,7 @@ class ScanPresenter @Inject constructor(val database: SongDatabaseHelper) : Acti
     }
 
     override fun setup(arguments: Bundle?) {
-        database.scanLibrary()
+        library.scanLibrary()
                 .buffer(17, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())

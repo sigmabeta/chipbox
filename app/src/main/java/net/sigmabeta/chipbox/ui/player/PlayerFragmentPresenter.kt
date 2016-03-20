@@ -4,7 +4,6 @@ import android.media.session.PlaybackState
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
@@ -20,8 +19,7 @@ import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class PlayerFragmentPresenter @Inject constructor(val player: Player,
-                                                  val database: SongDatabaseHelper) : FragmentPresenter() {
+class PlayerFragmentPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
     var view: PlayerFragmentView? = null
 
     var game: Game? = null
