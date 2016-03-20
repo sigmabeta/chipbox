@@ -233,9 +233,9 @@ class SongDatabaseHelper(val context: Context) {
     private fun clearTables() {
         logInfo("[SongDatabaseHelper] Clearing library...")
 
-        SQLite.delete(Artist::class.java)
-        SQLite.delete(Game::class.java)
-        SQLite.delete(Track::class.java)
+        SQLite.delete(Artist::class.java).query()
+        SQLite.delete(Game::class.java).query()
+        SQLite.delete(Track::class.java).query()
     }
 
     private fun scanFolder(folder: File, gameMap: HashMap<Long, Game>, artistMap: HashMap<Long, Artist>, sub: Subscriber<FileScanEvent>) {
