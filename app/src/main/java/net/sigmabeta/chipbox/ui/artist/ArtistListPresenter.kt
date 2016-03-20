@@ -8,7 +8,6 @@ import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
-import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
@@ -22,7 +21,7 @@ class ArtistListPresenter @Inject constructor(val database: SongDatabaseHelper) 
     }
 
     override fun setup(arguments: Bundle?) {
-        val subscription = database.getArtistList()
+        val subscription = Artist.getAll()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(

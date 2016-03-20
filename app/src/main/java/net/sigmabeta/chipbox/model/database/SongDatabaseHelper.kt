@@ -2,7 +2,10 @@ package net.sigmabeta.chipbox.model.database
 
 import android.content.Context
 import com.raizlabs.android.dbflow.sql.language.SQLite
-import net.sigmabeta.chipbox.model.domain.*
+import net.sigmabeta.chipbox.model.domain.Artist
+import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
+import net.sigmabeta.chipbox.model.domain.Track_Table
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.model.file.Folder
 import net.sigmabeta.chipbox.util.*
@@ -15,45 +18,6 @@ import java.util.*
 val TRACK_LENGTH_DEFAULT = 150000L
 
 class SongDatabaseHelper(val context: Context) {
-    fun getArtist(artistId: Long): Observable<Artist> {
-        return Observable.create(
-                {
-                    logInfo("[SongDatabaseHelper] Getting artist #${artistId}...")
-
-                    if (artistId > 0) {
-                        val artist = getArtistFromDb(artistId)
-
-                        if (artist != null) {
-                            it.onNext(artist)
-                            it.onCompleted()
-                        } else {
-                            it.onError(Exception("Couldn't find game."))
-                        }
-                    } else {
-                        it.onError(Exception("Bad game ID."))
-                    }
-                }
-        )
-    }
-
-    fun getArtistList(): Observable<List<Artist>> {
-        return Observable.create(
-                {
-                    logInfo("[SongDatabaseHelper] Reading artist list...")
-
-                    val artists = SQLite.select().from(Artist::class.java)
-                            .where()
-                            .orderBy(Artist_Table.name, true)
-                            .queryList()
-
-                    logVerbose("[SongDatabaseHelper] Found ${artists.size} artists.")
-
-                    it.onNext(artists)
-                    it.onCompleted()
-                }
-        )
-    }
-
     fun getSongList(): Observable<List<Track>> {
         return Observable.create(
                 {
@@ -235,7 +199,7 @@ class SongDatabaseHelper(val context: Context) {
 
     private fun addTrackToDb(artistMap: HashMap<Long, Artist>, gameMap: HashMap<Long, Game>, track: Track): Long {
         var folderGameId = Game.getId(track.gameTitle, track.platform, gameMap)
-        val artistId = getArtistId(track.artist, artistMap)
+        val artistId = Artist.getId(track.artist, artistMap)
 
         track.gameId = folderGameId
         track.artistId = artistId
@@ -271,56 +235,11 @@ class SongDatabaseHelper(val context: Context) {
         val ADD_STATUS_EXISTS = 1
         val ADD_STATUS_DB_ERROR = 2
 
-        private fun getArtistFromDb(id: Long): Artist? {
-            return SQLite.select()
-                    .from(Artist::class.java)
-                    .where(Artist_Table.id.eq(id))
-                    .querySingle()
-        }
-
         private fun getTrackFromDb(id: Long): Track {
             return SQLite.select()
                     .from(Track::class.java)
                     .where(Track_Table.id.eq(id))
                     .querySingle()
-        }
-
-        private fun getArtistId(name: String?, artistMap: HashMap<Long, Artist>): Long {
-            // Check if this artist has already been seen during this scan.
-            artistMap.keys.forEach {
-                val currentArtist = artistMap.get(it)
-                if (currentArtist?.name == name) {
-                    currentArtist?.id?.let {
-                        logVerbose("[SongDatabaseHelper] Found cached artist $name with id ${it}")
-                        return it
-                    }
-                }
-            }
-
-            val artist = SQLite.select()
-                    .from(Artist::class.java)
-                    .where(Artist_Table.name.eq(name))
-                    .querySingle()
-
-            artist?.id?.let {
-                artistMap.put(it, artist)
-                return it
-            } ?: let {
-                val newArtist = addArtistToDatabase(name ?: "Unknown Artist")
-                newArtist.id?.let {
-                    return it
-                }
-            }
-
-            logError("[SongDatabaseHelper] Unable to find artist ID.")
-            return -1L
-        }
-
-        private fun addArtistToDatabase(name: String): Artist {
-            val artist = Artist(name)
-            artist.insert()
-
-            return artist
         }
     }
 }

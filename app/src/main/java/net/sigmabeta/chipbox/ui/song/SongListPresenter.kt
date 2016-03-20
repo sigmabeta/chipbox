@@ -67,7 +67,8 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
         subscriptions.add(songsLoad)
 
         if (artistId != Artist.ARTIST_ALL) {
-            val artistLoad = database.getArtist(artistId).subscribeOn(Schedulers.io())
+            val artistLoad = Artist.get(artistId)
+                    .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
