@@ -25,7 +25,7 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
 
     var artist: Artist? = null
 
-    var songs: ArrayList<Track>? = null
+    var songs: List<Track>? = null
 
     var gameMap: HashMap<Long, Game>? = null
 
@@ -113,8 +113,8 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
         view = null
     }
 
-    private fun loadGames(tracks: ArrayList<Track>) {
-        val subscription = database.getGamesForTrackCursor(tracks)
+    private fun loadGames(tracks: List<Track>) {
+        val subscription = database.getGamesForTrackList(tracks)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(

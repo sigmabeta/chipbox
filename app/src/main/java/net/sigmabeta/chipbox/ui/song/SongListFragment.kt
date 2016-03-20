@@ -24,7 +24,7 @@ class SongListFragment : BaseFragment(), SongListView, ItemListView<SongViewHold
      * SongListView
      */
 
-    override fun setSongs(songs: ArrayList<Track>) {
+    override fun setSongs(songs: List<Track>) {
         adapter.dataset = songs
     }
 

@@ -3,12 +3,12 @@ package net.sigmabeta.chipbox.ui.navigation
 import android.media.session.PlaybackState
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logWarning
@@ -123,8 +123,8 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
     }
 
     private fun displayTrack(track: Track) {
-        view?.setTrackTitle(track.title)
-        view?.setArtist(track.artist)
+        view?.setTrackTitle(track.title.orEmpty())
+        view?.setArtist(track.artist.orEmpty())
     }
 
     private fun displayGame(game: Game?, force: Boolean) {

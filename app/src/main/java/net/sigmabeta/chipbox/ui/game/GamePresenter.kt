@@ -3,17 +3,16 @@ package net.sigmabeta.chipbox.ui.game
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
-import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,7 +24,7 @@ class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
     var gameId: Long? = null
 
     var game: Game? = null
-    var songs: ArrayList<Track>? = null
+    var songs: List<Track>? = null
 
     fun onItemClick(position: Long) {
         songs?.let {

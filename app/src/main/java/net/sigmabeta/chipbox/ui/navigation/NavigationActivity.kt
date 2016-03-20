@@ -32,7 +32,7 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
         var fragment: BaseFragment
 
         when (fragmentTag) {
-            GameGridFragment.FRAGMENT_TAG -> fragment = GameGridFragment.newInstance(fragmentArg.toInt())
+            GameGridFragment.FRAGMENT_TAG -> fragment = GameGridFragment.newInstance(fragmentArg)
             SongListFragment.FRAGMENT_TAG -> fragment = SongListFragment.newInstance(fragmentArg)
             else -> {
                 showToastMessage("Unsupported fragment.")

@@ -61,7 +61,7 @@ class GameActivity : BaseActivity(), GameView, ItemListView<SongViewHolder>, Son
         adapter.notifyDataSetChanged()
     }
 
-    override fun setSongs(songs: ArrayList<Track>) {
+    override fun setSongs(songs: List<Track>) {
         adapter.dataset = songs
     }
 

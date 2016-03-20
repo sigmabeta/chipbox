@@ -103,11 +103,11 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
 
         val ARGUMENT_PLATFORM_INDEX = "${FRAGMENT_TAG}.platform_index"
 
-        fun newInstance(platformIndex: Int): GameGridFragment {
+        fun newInstance(platformIndex: Long): GameGridFragment {
             val fragment = GameGridFragment()
 
             val arguments = Bundle()
-            arguments.putInt(ARGUMENT_PLATFORM_INDEX, platformIndex)
+            arguments.putLong(ARGUMENT_PLATFORM_INDEX, platformIndex)
 
             fragment.arguments = arguments
 
