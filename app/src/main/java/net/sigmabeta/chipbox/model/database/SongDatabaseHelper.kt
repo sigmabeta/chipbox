@@ -1,8 +1,6 @@
 package net.sigmabeta.chipbox.model.database
 
 import android.content.Context
-import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteOpenHelper
 import com.raizlabs.android.dbflow.sql.language.SQLite
 import net.sigmabeta.chipbox.model.domain.*
 import net.sigmabeta.chipbox.model.events.FileScanEvent
@@ -15,112 +13,9 @@ import rx.Subscriber
 import java.io.File
 import java.util.*
 
-val DB_VERSION = 1
-val DB_FILENAME = "songs.db"
-
 val TRACK_LENGTH_DEFAULT = 150000L
 
-val COLUMN_DB_ID = 0
-
-val COLUMN_GAME_PLATFORM = 1
-val COLUMN_GAME_TITLE = 2
-val COLUMN_GAME_DESCRIPTION = 3
-val COLUMN_GAME_COMPANY = 4
-val COLUMN_GAME_ART_LOCAL = 5
-val COLUMN_GAME_ART_WEB = 6
-
-val COLUMN_ARTIST_NAME = 1
-
-val COLUMN_FOLDER_PATH = 1
-
-val COLUMN_TRACK_NUMBER = 1
-val COLUMN_TRACK_PATH = 2
-val COLUMN_TRACK_TITLE = 3
-val COLUMN_TRACK_GAME_ID = 4
-val COLUMN_TRACK_GAME_TITLE = 5
-val COLUMN_TRACK_GAME_PLATFORM = 6
-val COLUMN_TRACK_ARTIST_ID = 7
-val COLUMN_TRACK_ARTIST = 8
-val COLUMN_TRACK_LENGTH = 9
-val COLUMN_TRACK_INTRO_LENGTH = 10
-val COLUMN_TRACK_LOOP_LENGTH = 11
-
-val KEY_DB_ID = "_id"
-
-val KEY_GAME_PLATFORM = "platform"
-val KEY_GAME_TITLE = "title"
-val KEY_GAME_DESCRIPTION = "description"
-val KEY_GAME_COMPANY = "company"
-val KEY_GAME_ART_LOCAL = "art_local"
-val KEY_GAME_ART_WEB = "art_web"
-
-val KEY_ARTIST_NAME = "name"
-
-val KEY_FOLDER_PATH = "path"
-
-val KEY_TRACK_NUMBER = "number"
-val KEY_TRACK_PATH = "path"
-val KEY_TRACK_TITLE = "title"
-val KEY_TRACK_GAME_ID = "game_id"
-val KEY_TRACK_GAME_TITLE = "game_title"
-val KEY_TRACK_GAME_PLATFORM = "game_platform"
-val KEY_TRACK_ARTIST_ID = "artist_id"
-val KEY_TRACK_ARTIST = "artist"
-val KEY_TRACK_LENGTH = "length"
-val KEY_TRACK_INTRO_LENGTH = "intro_length"
-val KEY_TRACK_LOOP_LENGTH = "loop_length"
-
-val TABLE_NAME_FOLDERS = "folders"
-val TABLE_NAME_GAMES = "games"
-
-private val SQL_TYPE_PRIMARY = "INTEGER PRIMARY KEY"
-private val SQL_TYPE_INTEGER = "INTEGER"
-private val SQL_TYPE_STRING = "TEXT"
-
-private val SQL_CONSTRAINT_UNIQUE = "UNIQUE"
-
-private val SQL_CREATE = "CREATE TABLE"
-private val SQL_DELETE = "DROP TABLE IF EXISTS"
-private val SQL_FOREIGN = "FOREIGN KEY"
-private val SQL_REFERENCES = "REFERENCES"
-
-private val SQL_CREATE_FOLDERS = "${SQL_CREATE} ${TABLE_NAME_FOLDERS} (${KEY_DB_ID} ${SQL_TYPE_PRIMARY}, " +
-        "${KEY_FOLDER_PATH} ${SQL_TYPE_STRING} ${SQL_CONSTRAINT_UNIQUE})"
-
-private val SQL_CREATE_GAMES = "${SQL_CREATE} ${TABLE_NAME_GAMES} (${KEY_DB_ID} ${SQL_TYPE_PRIMARY}, " +
-        "${KEY_GAME_PLATFORM} ${SQL_TYPE_INTEGER}, " +
-        "${KEY_GAME_TITLE} ${SQL_TYPE_STRING}, " +
-        "${KEY_GAME_DESCRIPTION} ${SQL_TYPE_STRING}, " +
-        "${KEY_GAME_COMPANY} ${SQL_TYPE_STRING}, " +
-        "${KEY_GAME_ART_LOCAL} ${SQL_TYPE_STRING}, " +
-        "${KEY_GAME_ART_WEB} ${SQL_TYPE_STRING})"
-
-private val SQL_DELETE_GAMES = "${SQL_DELETE} ${TABLE_NAME_GAMES}"
-
-class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FILENAME, null, DB_VERSION) {
-    override fun onCreate(database: SQLiteDatabase) {
-        logDebug("[SongDatabaseHelper] Creating database...")
-
-        logVerbose("[SongDatabaseHelper] Executing SQL: " + SQL_CREATE_GAMES)
-        database.execSQL(SQL_CREATE_GAMES)
-
-        logVerbose("[SongDatabaseHelper] Executing SQL: " + SQL_CREATE_FOLDERS)
-        database.execSQL(SQL_CREATE_FOLDERS)
-    }
-
-    override fun onUpgrade(database: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        logInfo("[SongDatabaseHelper] Upgrading database from schema version " + oldVersion + " to " + newVersion)
-
-        logVerbose("[SongDatabaseHelper] Executing SQL: " + SQL_DELETE_GAMES)
-        database.execSQL(SQL_DELETE_GAMES)
-
-        logVerbose("[SongDatabaseHelper] Executing SQL: " + SQL_CREATE_GAMES)
-        database.execSQL(SQL_CREATE_GAMES)
-
-        logVerbose("[SongDatabaseHelper] Re-scanning library with new schema.")
-        scanLibrary()
-    }
-
+class SongDatabaseHelper(val context: Context) {
     fun addDirectory(path: String): Observable<Int> {
         return Observable.create {
 
@@ -335,7 +230,6 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                     val startTime = System.currentTimeMillis()
 
-                    val database = writableDatabase
                     val folders = getFolders()
 
                     val gameMap = HashMap<Long, Game>()
@@ -343,11 +237,9 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                     folders.forEach { folder ->
                         folder.path?.let {
-                            scanFolder(File(it), gameMap, artistMap, database, sub as Subscriber<FileScanEvent>)
+                            scanFolder(File(it), gameMap, artistMap, sub as Subscriber<FileScanEvent>)
                         }
                     }
-
-                    database.close()
 
                     val endTime = System.currentTimeMillis()
                     val scanDuration = (endTime - startTime) / 1000.0f
@@ -411,16 +303,12 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
     private fun clearTables() {
         logInfo("[SongDatabaseHelper] Clearing library...")
 
-        val database = writableDatabase
-
-        database.delete(TABLE_NAME_GAMES, null, null)
-
-        database.close()
+        SQLite.delete(Artist::class.java)
+        SQLite.delete(Game::class.java)
+        SQLite.delete(Track::class.java)
     }
 
-    private fun scanFolder(folder: File, gameMap: HashMap<Long, Game>, artistMap: HashMap<Long, Artist>, database: SQLiteDatabase, sub: Subscriber<FileScanEvent>) {
-        database.beginTransaction()
-
+    private fun scanFolder(folder: File, gameMap: HashMap<Long, Game>, artistMap: HashMap<Long, Artist>, sub: Subscriber<FileScanEvent>) {
         val folderPath = folder.absolutePath
         logInfo("[SongDatabaseHelper] Reading files from library folder: ${folderPath}")
 
@@ -439,7 +327,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             for (file in children) {
                 if (!file.isHidden) {
                     if (file.isDirectory) {
-                        scanFolder(file, gameMap, artistMap, database, sub)
+                        scanFolder(file, gameMap, artistMap, sub)
                     } else {
                         val filePath = file.absolutePath
                         val fileExtension = getFileExtension(filePath)
@@ -448,12 +336,12 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                             // Check that the file has an extension we care about before trying to read out of it.
                             if (EXTENSIONS_MUSIC.contains(fileExtension)) {
                                 if (EXTENSIONS_MULTI_TRACK.contains(fileExtension)) {
-                                    folderGameId = readMultipleTracks(artistMap, database, file, filePath, gameMap, sub)
+                                    folderGameId = readMultipleTracks(artistMap, file, filePath, gameMap, sub)
                                     if (folderGameId <= 0) {
                                         sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                                     }
                                 } else {
-                                    folderGameId = readSingleTrack(artistMap, database, file, filePath, gameMap, sub, trackCount)
+                                    folderGameId = readSingleTrack(artistMap, file, filePath, gameMap, sub, trackCount)
 
                                     if (folderGameId > 0) {
                                         trackCount += 1
@@ -461,7 +349,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                                 }
                             } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
                                 if (folderGameId != null) {
-                                    copyImageToInternal(folderGameId, file, database)
+                                    copyImageToInternal(folderGameId, file)
                                 } else {
                                     logError("[SongDatabaseHelper] Found image, but game ID unknown: ${filePath}")
                                 }
@@ -471,22 +359,18 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                 }
             }
 
-            database.setTransactionSuccessful()
-
         } else if (!folder.exists()) {
             logError("[SongDatabaseHelper] Folder no longer exists: ${folderPath}")
         } else {
             logError("[SongDatabaseHelper] Folder contains no tracks:  ${folderPath}")
         }
-
-        database.endTransaction()
     }
 
-    private fun readSingleTrack(artistMap: HashMap<Long, Artist>, database: SQLiteDatabase, file: File, filePath: String, gameMap: HashMap<Long, Game>, sub: Subscriber<FileScanEvent>, trackNumber: Int): Long {
+    private fun readSingleTrack(artistMap: HashMap<Long, Artist>, file: File, filePath: String, gameMap: HashMap<Long, Game>, sub: Subscriber<FileScanEvent>, trackNumber: Int): Long {
         val track = readSingleTrackFile(filePath, trackNumber)
 
         if (track != null) {
-            var folderGameId = addTrackToDb(artistMap, database, gameMap, track)
+            var folderGameId = addTrackToDb(artistMap, gameMap, track)
 
             sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
             return folderGameId
@@ -498,21 +382,21 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         }
     }
 
-    private fun readMultipleTracks(artistMap: HashMap<Long, Artist>, database: SQLiteDatabase, file: File, filePath: String, gameMap: HashMap<Long, Game>, sub: Subscriber<FileScanEvent>): Long {
+    private fun readMultipleTracks(artistMap: HashMap<Long, Artist>, file: File, filePath: String, gameMap: HashMap<Long, Game>, sub: Subscriber<FileScanEvent>): Long {
         val tracks = readMultipleTrackFile(filePath) ?: return -1
 
         var folderGameId = -1L
         tracks.forEach { track ->
-            folderGameId = addTrackToDb(artistMap, database, gameMap, track)
+            folderGameId = addTrackToDb(artistMap, gameMap, track)
             sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
         }
 
         return folderGameId
     }
 
-    private fun addTrackToDb(artistMap: HashMap<Long, Artist>, database: SQLiteDatabase, gameMap: HashMap<Long, Game>, track: Track): Long {
-        var folderGameId = getGameId(track.gameTitle, track.platform, gameMap, database)
-        val artistId = getArtistId(track.artist, artistMap, database)
+    private fun addTrackToDb(artistMap: HashMap<Long, Artist>, gameMap: HashMap<Long, Game>, track: Track): Long {
+        var folderGameId = getGameId(track.gameTitle, track.platform, gameMap)
+        val artistId = getArtistId(track.artist, artistMap)
 
         track.gameId = folderGameId
         track.artistId = artistId
@@ -521,7 +405,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         return folderGameId
     }
 
-    private fun copyImageToInternal(gameId: Long, sourceFile: File, database: SQLiteDatabase) {
+    private fun copyImageToInternal(gameId: Long, sourceFile: File) {
         val storageDir = context.getExternalFilesDir(null)
 
         val targetDirPath = storageDir.absolutePath + "/images/" + gameId.toString()
@@ -569,7 +453,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     .querySingle()
         }
 
-        private fun getArtistId(name: String?, artistMap: HashMap<Long, Artist>, database: SQLiteDatabase): Long {
+        private fun getArtistId(name: String?, artistMap: HashMap<Long, Artist>): Long {
             // Check if this artist has already been seen during this scan.
             artistMap.keys.forEach {
                 val currentArtist = artistMap.get(it)
@@ -607,7 +491,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             return artist
         }
 
-        private fun getGameId(gameTitle: String?, gamePlatform: Long?, gameMap: HashMap<Long, Game>, database: SQLiteDatabase): Long {
+        private fun getGameId(gameTitle: String?, gamePlatform: Long?, gameMap: HashMap<Long, Game>): Long {
             // Check if this game has already been seen during this scan.
             gameMap.keys.forEach {
                 val currentGame = gameMap.get(it)
