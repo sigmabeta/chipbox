@@ -5,10 +5,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import net.sigmabeta.chipbox.util.logError
-import java.util.*
 
 abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemListView<VH>) : RecyclerView.Adapter<VH>() {
-    var dataset: ArrayList<T>? = null
+    var dataset: List<T>? = null
         set (value) {
             field = value
             notifyDataSetChanged()

@@ -1,13 +1,26 @@
 package net.sigmabeta.chipbox.model.domain
 
-data class Game(
-        val id: Long,
-        val title: String,
-        val platform: Int,
-        val artLocal: String?,
-        val artWeb: String?,
-        val company: String?
-) {
+import com.raizlabs.android.dbflow.annotation.PrimaryKey
+import com.raizlabs.android.dbflow.annotation.Table
+import com.raizlabs.android.dbflow.structure.BaseModel
+import net.sigmabeta.chipbox.ChipboxDatabase
+
+@Table(database = ChipboxDatabase::class, allFields = true)
+class Game() : BaseModel() {
+    constructor(title: String, platform: Int) : this() {
+        this.title = title
+        this.platform = platform
+    }
+
+    @PrimaryKey (autoincrement = true) var id: Long? = null
+    var title: String? = null
+    var platform: Int? = null
+    var artLocal: String? = null
+    var artWeb: String? = null
+    var company: String? = null
+
+
+
     companion object {
         val PICASSO_PREFIX = "file://"
 

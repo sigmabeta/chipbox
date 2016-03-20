@@ -10,7 +10,6 @@ import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
-import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
@@ -19,7 +18,7 @@ class GameGridPresenter @Inject constructor(val database: SongDatabaseHelper) : 
 
     var platform = Track.PLATFORM_ALL
 
-    var games: ArrayList<Game>? = null
+    var games: List<Game>? = null
 
     fun onItemClick(id: Long) {
         view?.launchGameActivity(id)
