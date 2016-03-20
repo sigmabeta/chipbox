@@ -16,14 +16,14 @@ import java.util.*
 
 val TRACK_LENGTH_DEFAULT = 150000L
 
-class SongDatabaseHelper(val context: Context) {
+class Library(val context: Context) {
     fun scanLibrary(): Observable<FileScanEvent> {
         return Observable.create(
                 { sub ->
                     // OnSubscribe.call. it: String
                     clearTables()
 
-                    logInfo("[SongDatabaseHelper] Scanning library...")
+                    logInfo("[Library] Scanning library...")
 
                     val startTime = System.currentTimeMillis()
 
@@ -41,7 +41,7 @@ class SongDatabaseHelper(val context: Context) {
                     val endTime = System.currentTimeMillis()
                     val scanDuration = (endTime - startTime) / 1000.0f
 
-                    logInfo("[SongDatabaseHelper] Scanned library in ${scanDuration} seconds.")
+                    logInfo("[Library] Scanned library in ${scanDuration} seconds.")
 
                     sub.onCompleted()
                 }
@@ -50,7 +50,7 @@ class SongDatabaseHelper(val context: Context) {
 
     private fun scanFolder(folder: File, gameMap: HashMap<Long, Game>, artistMap: HashMap<Long, Artist>, sub: Subscriber<FileScanEvent>) {
         val folderPath = folder.absolutePath
-        logInfo("[SongDatabaseHelper] Reading files from library folder: ${folderPath}")
+        logInfo("[Library] Reading files from library folder: ${folderPath}")
 
         sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folderPath))
 
@@ -91,7 +91,7 @@ class SongDatabaseHelper(val context: Context) {
                                 if (folderGameId != null) {
                                     copyImageToInternal(folderGameId, file)
                                 } else {
-                                    logError("[SongDatabaseHelper] Found image, but game ID unknown: ${filePath}")
+                                    logError("[Library] Found image, but game ID unknown: ${filePath}")
                                 }
                             }
                         }
@@ -100,9 +100,9 @@ class SongDatabaseHelper(val context: Context) {
             }
 
         } else if (!folder.exists()) {
-            logError("[SongDatabaseHelper] Folder no longer exists: ${folderPath}")
+            logError("[Library] Folder no longer exists: ${folderPath}")
         } else {
-            logError("[SongDatabaseHelper] Folder contains no tracks:  ${folderPath}")
+            logError("[Library] Folder contains no tracks:  ${folderPath}")
         }
     }
 
@@ -115,7 +115,7 @@ class SongDatabaseHelper(val context: Context) {
             sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
             return folderGameId
         } else {
-            logError("[SongDatabaseHelper] Couldn't read track at ${filePath}")
+            logError("[Library] Couldn't read track at ${filePath}")
             sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
 
             return -1
@@ -151,13 +151,13 @@ class SongDatabaseHelper(val context: Context) {
 
         FileUtils.copyFile(sourceFile, targetFile)
 
-        logInfo("[SongDatabaseHelper] Copied image: ${sourcePath} to ${targetFilePath}")
+        logInfo("[Library] Copied image: ${sourcePath} to ${targetFilePath}")
 
         Game.addLocalImage(gameId, "file://" + targetFilePath)
     }
 
     private fun clearTables() {
-        logInfo("[SongDatabaseHelper] Clearing library...")
+        logInfo("[Library] Clearing library...")
 
         SQLite.delete(Artist::class.java).query()
         SQLite.delete(Game::class.java).query()

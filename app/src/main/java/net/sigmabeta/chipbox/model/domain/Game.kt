@@ -34,7 +34,7 @@ class Game() : BaseModel() {
 
         fun get(gameId: Long): Observable<Game> {
             return Observable.create {
-                logInfo("[SongDatabaseHelper] Getting game #${gameId}...")
+                logInfo("[Game] Getting game #${gameId}...")
 
                 if (gameId > 0) {
                     val game = queryDatabase(gameId)
@@ -53,7 +53,7 @@ class Game() : BaseModel() {
 
         fun getFromPlatform(platform: Long): Observable<List<Game>> {
             return Observable.create {
-                logInfo("[SongDatabaseHelper] Reading games list...")
+                logInfo("[Game] Reading games list...")
 
                 var games: List<Game>
                 val query = SQLite.select().from(Game::class.java)
@@ -70,7 +70,7 @@ class Game() : BaseModel() {
                             .queryList()
                 }
 
-                logVerbose("[SongDatabaseHelper] Found ${games.size} games.")
+                logVerbose("[Game] Found ${games.size} games.")
 
                 it.onNext(games)
                 it.onCompleted()
@@ -79,7 +79,7 @@ class Game() : BaseModel() {
 
         fun getFromTrackList(tracks: List<Track>): Observable<HashMap<Long, Game>> {
             return Observable.create {
-                logInfo("[SongDatabaseHelper] Getting games for currently displayed tracks...")
+                logInfo("[Game] Getting games for currently displayed tracks...")
                 val startTime = System.currentTimeMillis()
 
                 val games = HashMap<Long, Game>()
@@ -105,12 +105,12 @@ class Game() : BaseModel() {
                     }
                 }
 
-                logVerbose("[SongDatabaseHelper] Game map size: ${games.size}")
+                logVerbose("[Game] Game map size: ${games.size}")
 
                 val endTime = System.currentTimeMillis()
                 val scanDuration = (endTime - startTime) / 1000.0f
 
-                logInfo("[SongDatabaseHelper] Found games in ${scanDuration} seconds.")
+                logInfo("[Game] Found games in ${scanDuration} seconds.")
 
                 it.onNext(games)
                 it.onCompleted()
@@ -123,7 +123,7 @@ class Game() : BaseModel() {
                 val currentGame = gameMap.get(it)
                 if (currentGame?.title == gameTitle && currentGame?.platform == gamePlatform) {
                     currentGame?.id?.let {
-                        logVerbose("[SongDatabaseHelper] Found cached game $gameTitle with id ${it}")
+                        logVerbose("[Game] Found cached game $gameTitle with id ${it}")
                         return it
                     }
                 }
@@ -144,7 +144,7 @@ class Game() : BaseModel() {
                     return it
                 }
             }
-            logError("[SongDatabaseHelper] Unable to find game ID.")
+            logError("[Game] Unable to find game ID.")
             return -1L
         }
 
@@ -162,9 +162,9 @@ class Game() : BaseModel() {
                     .query()
 
             if (game != null) {
-                logVerbose("[SongDatabaseHelper] Successfully updated game #$gameId.")
+                logVerbose("[Game] Successfully updated game #$gameId.")
             } else {
-                logError("[SongDatabaseHelper] Failed to update game #$gameId.")
+                logError("[Game] Failed to update game #$gameId.")
             }
         }
 

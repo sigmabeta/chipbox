@@ -4,7 +4,7 @@ import dagger.Component
 import net.sigmabeta.chipbox.backend.PlayerService
 import net.sigmabeta.chipbox.backend.module.AudioModule
 import net.sigmabeta.chipbox.dagger.module.AppModule
-import net.sigmabeta.chipbox.model.database.module.DatabaseModule
+import net.sigmabeta.chipbox.model.database.module.LibraryModule
 import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.ui.main.MainActivity
@@ -18,7 +18,7 @@ import javax.inject.Singleton
         modules = arrayOf(
                 AppModule::class,
                 AudioModule::class,
-                DatabaseModule::class
+                LibraryModule::class
         )
 )
 interface AppComponent {

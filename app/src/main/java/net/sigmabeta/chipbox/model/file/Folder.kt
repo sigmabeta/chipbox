@@ -6,7 +6,7 @@ import com.raizlabs.android.dbflow.annotation.Unique
 import com.raizlabs.android.dbflow.sql.language.SQLite
 import com.raizlabs.android.dbflow.structure.BaseModel
 import net.sigmabeta.chipbox.ChipboxDatabase
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.database.Library
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import rx.Observable
@@ -31,7 +31,7 @@ class Folder() : BaseModel() {
             return Observable.create {
 
                 if (checkIfContained(path)) {
-                    it.onNext(SongDatabaseHelper.ADD_STATUS_EXISTS)
+                    it.onNext(Library.ADD_STATUS_EXISTS)
                     it.onCompleted()
                     return@create
                 }
@@ -40,8 +40,8 @@ class Folder() : BaseModel() {
 
                 Folder(path).insert()
 
-                logInfo("[SongDatabaseHelper] Successfully added folder to database.")
-                it.onNext(SongDatabaseHelper.ADD_STATUS_GOOD)
+                logInfo("[Folder] Successfully added folder to database.")
+                it.onNext(Library.ADD_STATUS_GOOD)
 
                 it.onCompleted()
             }
@@ -53,7 +53,7 @@ class Folder() : BaseModel() {
             folders.forEach {
                 it.path?.let { oldPath ->
                     if (newPath.contains(oldPath)) {
-                        logError("[SongDatabaseHelper] New folder $newPath is contained by a previously added folder: $oldPath")
+                        logError("[Folder] New folder $newPath is contained by a previously added folder: $oldPath")
                         return true
                     }
                 }
@@ -70,7 +70,7 @@ class Folder() : BaseModel() {
             folders.forEach { oldFolder ->
                 oldFolder.path?.let { oldPath ->
                     if (oldPath.contains(newPath)) {
-                        logInfo("[SongDatabaseHelper] New folder contains a previously added folder: $oldPath")
+                        logInfo("[Folder] New folder contains a previously added folder: $oldPath")
 
                         oldFolder.id?.let {
                             idsToRemove.add(it)
@@ -81,7 +81,7 @@ class Folder() : BaseModel() {
 
             if (idsToRemove.isNotEmpty()) {
                 val idsString = idsToRemove.joinToString()
-                logInfo("[SongDatabaseHelper] Deleting folders with ids: $idsString")
+                logInfo("[Folder] Deleting folders with ids: $idsString")
 
                 SQLite.delete().from(Folder::class.java)
                         .where(Folder_Table.id.`in`(idsToRemove))

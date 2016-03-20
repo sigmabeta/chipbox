@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.ui.games
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseView
@@ -13,7 +12,7 @@ import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class GameGridPresenter @Inject constructor(val database: SongDatabaseHelper) : FragmentPresenter() {
+class GameGridPresenter @Inject constructor() : FragmentPresenter() {
     var view: GameListView? = null
 
     var platform = Track.PLATFORM_ALL

@@ -7,7 +7,6 @@ import android.media.AudioTrack
 import android.media.session.PlaybackState
 import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
@@ -29,7 +28,6 @@ import javax.inject.Singleton
 @Singleton
 class Player @Inject constructor(val audioConfig: AudioConfig,
                                  val audioManager: AudioManager,
-                                 val database: SongDatabaseHelper,
                                  val context: Context): AudioManager.OnAudioFocusChangeListener {
     var backendView: BackendView? = null
 

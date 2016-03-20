@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.ui.file
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.database.Library
 import net.sigmabeta.chipbox.model.file.Folder
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
@@ -14,7 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class FilesPresenter @Inject constructor(val databaseHelper: SongDatabaseHelper) : ActivityPresenter() {
+class FilesPresenter @Inject constructor() : ActivityPresenter() {
     // TODO DI this
     lateinit var startPath: String
 
@@ -43,9 +43,9 @@ class FilesPresenter @Inject constructor(val databaseHelper: SongDatabaseHelper)
                     .subscribe(
                             {
                                 when (it) {
-                                    SongDatabaseHelper.ADD_STATUS_GOOD -> view?.onAddSuccessful()
-                                    SongDatabaseHelper.ADD_STATUS_EXISTS -> view?.showExistsMessage()
-                                    SongDatabaseHelper.ADD_STATUS_DB_ERROR -> view?.showErrorMessage(R.string.file_list_error_adding)
+                                    Library.ADD_STATUS_GOOD -> view?.onAddSuccessful()
+                                    Library.ADD_STATUS_EXISTS -> view?.showExistsMessage()
+                                    Library.ADD_STATUS_DB_ERROR -> view?.showErrorMessage(R.string.file_list_error_adding)
                                 }
                             },
                             {
