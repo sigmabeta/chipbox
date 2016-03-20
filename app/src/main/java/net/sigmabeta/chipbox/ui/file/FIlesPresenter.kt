@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui.file
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.file.Folder
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
@@ -36,7 +37,7 @@ class FilesPresenter @Inject constructor(val databaseHelper: SongDatabaseHelper)
 
     fun onFabClick() {
         path?.let {
-            val subscription = databaseHelper.addDirectory(it)
+            val subscription = Folder.addToDatabase(it)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
