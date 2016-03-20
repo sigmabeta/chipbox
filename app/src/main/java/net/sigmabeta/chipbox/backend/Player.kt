@@ -77,7 +77,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         set (value) {
             if (field != value) {
                 if (value != null) {
-                    database.getGame(value)
+                    Game.get(value)
                             .subscribeOn(Schedulers.io())
                             .observeOn(AndroidSchedulers.mainThread())
                             .subscribe (
