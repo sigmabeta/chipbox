@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.ui.song
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
-import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
@@ -17,8 +16,7 @@ import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
-class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
-                                            val player: Player) : FragmentPresenter() {
+class SongListPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
     var view: SongListView? = null
 
     var artistId = Artist.ARTIST_ALL
@@ -43,9 +41,9 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
         artistId = arguments?.getLong(SongListFragment.ARGUMENT_ARTIST) ?: Artist.ARTIST_ALL
 
         val readOperation = if (artistId == Artist.ARTIST_ALL) {
-            database.getSongList()
+            Track.getAll()
         } else {
-            database.getSongListForArtist(artistId)
+            Track.getFromArtist(artistId)
         }
 
         val songsLoad = readOperation

@@ -5,7 +5,6 @@ import com.raizlabs.android.dbflow.sql.language.SQLite
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.domain.Track_Table
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.model.file.Folder
 import net.sigmabeta.chipbox.util.*
@@ -18,60 +17,6 @@ import java.util.*
 val TRACK_LENGTH_DEFAULT = 150000L
 
 class SongDatabaseHelper(val context: Context) {
-    fun getSongList(): Observable<List<Track>> {
-        return Observable.create(
-                {
-                    logInfo("[SongDatabaseHelper] Reading song list...")
-
-                    val tracks = SQLite.select().from(Track::class.java)
-                            .where()
-                            .orderBy(Track_Table.title, true)
-                            .queryList()
-
-                    logVerbose("[SongDatabaseHelper] Found ${tracks.size} tracks.")
-
-                    it.onNext(tracks)
-                    it.onCompleted()
-                }
-        )
-    }
-
-    fun getSongListForArtist(artistId: Long): Observable<List<Track>> {
-        return Observable.create(
-                {
-                    logInfo("[SongDatabaseHelper] Reading song list for artist #$artistId...")
-
-                    val tracks = SQLite.select().from(Track::class.java)
-                            .where(Track_Table.artistId.eq(artistId))
-                            .orderBy(Track_Table.gameId, true)
-                            .queryList()
-
-                    logVerbose("[SongDatabaseHelper] Found ${tracks.size} tracks.")
-
-                    it.onNext(tracks)
-                    it.onCompleted()
-                }
-        )
-    }
-
-    fun getSongListForGame(gameId: Long): Observable<List<Track>> {
-        return Observable.create(
-                {
-                    logInfo("[SongDatabaseHelper] Reading song list for game #$gameId...")
-
-                    val tracks = SQLite.select().from(Track::class.java)
-                            .where(Track_Table.gameId.eq(gameId))
-                            .orderBy(Track_Table.trackNumber, true)
-                            .queryList()
-
-                    logVerbose("[SongDatabaseHelper] Found ${tracks.size} tracks.")
-
-                    it.onNext(tracks)
-                    it.onCompleted()
-                }
-        )
-    }
-
     fun scanLibrary(): Observable<FileScanEvent> {
         return Observable.create(
                 { sub ->
@@ -101,14 +46,6 @@ class SongDatabaseHelper(val context: Context) {
                     sub.onCompleted()
                 }
         )
-    }
-
-    private fun clearTables() {
-        logInfo("[SongDatabaseHelper] Clearing library...")
-
-        SQLite.delete(Artist::class.java).query()
-        SQLite.delete(Game::class.java).query()
-        SQLite.delete(Track::class.java).query()
     }
 
     private fun scanFolder(folder: File, gameMap: HashMap<Long, Game>, artistMap: HashMap<Long, Artist>, sub: Subscriber<FileScanEvent>) {
@@ -173,7 +110,7 @@ class SongDatabaseHelper(val context: Context) {
         val track = readSingleTrackFile(filePath, trackNumber)
 
         if (track != null) {
-            var folderGameId = addTrackToDb(artistMap, gameMap, track)
+            var folderGameId = Track.addToDatabase(artistMap, gameMap, track)
 
             sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
             return folderGameId
@@ -190,21 +127,10 @@ class SongDatabaseHelper(val context: Context) {
 
         var folderGameId = -1L
         tracks.forEach { track ->
-            folderGameId = addTrackToDb(artistMap, gameMap, track)
+            folderGameId = Track.addToDatabase(artistMap, gameMap, track)
             sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
         }
 
-        return folderGameId
-    }
-
-    private fun addTrackToDb(artistMap: HashMap<Long, Artist>, gameMap: HashMap<Long, Game>, track: Track): Long {
-        var folderGameId = Game.getId(track.gameTitle, track.platform, gameMap)
-        val artistId = Artist.getId(track.artist, artistMap)
-
-        track.gameId = folderGameId
-        track.artistId = artistId
-
-        track.insert()
         return folderGameId
     }
 
@@ -230,16 +156,17 @@ class SongDatabaseHelper(val context: Context) {
         Game.addLocalImage(gameId, "file://" + targetFilePath)
     }
 
+    private fun clearTables() {
+        logInfo("[SongDatabaseHelper] Clearing library...")
+
+        SQLite.delete(Artist::class.java).query()
+        SQLite.delete(Game::class.java).query()
+        SQLite.delete(Track::class.java).query()
+    }
+
     companion object {
         val ADD_STATUS_GOOD = 0
         val ADD_STATUS_EXISTS = 1
         val ADD_STATUS_DB_ERROR = 2
-
-        private fun getTrackFromDb(id: Long): Track {
-            return SQLite.select()
-                    .from(Track::class.java)
-                    .where(Track_Table.id.eq(id))
-                    .querySingle()
-        }
     }
 }
