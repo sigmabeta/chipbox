@@ -5,6 +5,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.util.logError
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import java.io.File
@@ -47,6 +48,7 @@ class FilesPresenter @Inject constructor(val databaseHelper: SongDatabaseHelper)
                                 }
                             },
                             {
+                                logError("[FilesPresenter] File add error: ${it.message}")
                                 view?.showErrorMessage(R.string.file_list_error_adding)
                             }
                     )

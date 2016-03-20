@@ -12,7 +12,6 @@ import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.util.convertDpToPx
 import net.sigmabeta.chipbox.util.isScrolledToBottom
-import java.util.*
 import javax.inject.Inject
 
 class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHolder>, TopLevelFragment, NavigationFragment {
@@ -27,7 +26,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
      * GameListView
      */
 
-    override fun setGames(games: ArrayList<Game>) {
+    override fun setGames(games: List<Game>) {
         adapter.dataset = games
     }
 

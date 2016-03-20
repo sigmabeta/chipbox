@@ -12,8 +12,6 @@ class Folder() : BaseModel() {
         this.path = path
     }
 
-    @PrimaryKey var id: Long? = null
-
-    @Unique
-    var path: String? = null
+    @PrimaryKey (autoincrement = true) var id: Long? = null
+    @Unique var path: String? = null
 }

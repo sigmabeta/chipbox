@@ -32,7 +32,6 @@ public class ChipboxApplication : Application() {
         System.loadLibrary("gme")
         FlowManager.init(this);
 
-
         appComponent = Initializer.initAppComponent(this)
     }
 }

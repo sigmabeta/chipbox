@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteOpenHelper
 import com.raizlabs.android.dbflow.sql.language.SQLite
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Game_Table
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.model.file.Folder
@@ -184,89 +185,24 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         }
     }
 
-    fun getTrack(trackId: Long): Observable<Track> {
-        return Observable.create(
-                {
-                    logInfo("[SongDatabaseHelper] Getting track #${trackId}...")
-
-                    val whereClause: String?
-                    val whereArgs: Array<String>?
-
-                    if (trackId > 0) {
-                        whereClause = "${KEY_DB_ID} = ?"
-                        whereArgs = arrayOf(trackId.toString())
-                    } else {
-                        it.onError(Exception("Bad track ID."))
-                        return@create
-                    }
-
-                    val database = writableDatabase
-
-                    val resultCursor = database.query(
-                            TABLE_NAME_TRACKS,
-                            null,
-                            whereClause,
-                            whereArgs,
-                            null,
-                            null,
-                            null
-                    )
-
-                    if (resultCursor.moveToFirst()) {
-                        val track = getTrackFromCursor(resultCursor)
-
-
-                        it.onNext(track)
-                        it.onCompleted()
-                    } else {
-                        it.onError(Exception("Couldn't find track."))
-                    }
-
-                    resultCursor.close()
-                    database.close()
-                }
-        )
-    }
-
     fun getGame(gameId: Long): Observable<Game> {
         return Observable.create(
                 {
                     logInfo("[SongDatabaseHelper] Getting game #${gameId}...")
 
-                    val whereClause: String?
-                    val whereArgs: Array<String>?
-
                     if (gameId > 0) {
-                        whereClause = "${KEY_DB_ID} = ?"
-                        whereArgs = arrayOf(gameId.toString())
+                        val game = getGameFromDb(gameId)
+
+                        if (game != null) {
+                            it.onNext(game)
+                            it.onCompleted()
+                        } else {
+                            it.onError(Exception("Couldn't find game."))
+                        }
                     } else {
                         it.onError(Exception("Bad game ID."))
                         return@create
                     }
-
-                    val database = writableDatabase
-
-                    val resultCursor = database.query(
-                            TABLE_NAME_GAMES,
-                            null,
-                            whereClause,
-                            whereArgs,
-                            null,
-                            null,
-                            null
-                    )
-
-                    if (resultCursor.moveToFirst()) {
-                        val game = getGameFromCursor(resultCursor)
-
-                        it.onNext(game)
-                        it.onCompleted()
-                    } else {
-                        it.onError(Exception("Couldn't find game."))
-                    }
-
-                    resultCursor.close()
-                    database.close()
                 }
         )
     }
@@ -314,49 +250,30 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         )
     }
 
-    fun getGamesList(platform: Int): Observable<ArrayList<Game>> {
+    fun getGamesList(platform: Int): Observable<List<Game>> {
         return Observable.create(
                 {
                     logInfo("[SongDatabaseHelper] Reading games list...")
 
-                    val whereClause: String?
-                    val whereArgs: Array<String>?
+                    var games: List<Game>
+                    val query = SQLite.select().from(Game::class.java)
 
-                    // If -1 passed in, return all games. Else, return games for one platform only.
+                    // If -2 passed in, return all games. Else, return games for one platform only.
                     if (platform != Track.PLATFORM_ALL) {
-                        whereClause = "${KEY_GAME_PLATFORM} = ?"
-                        whereArgs = arrayOf(platform.toString())
+                        games = query
+                                .where(Game_Table.platform.eq(platform))
+                                .orderBy(Game_Table.title, true)
+                                .queryList()
                     } else {
-                        whereClause = null
-                        whereArgs = null
+                        games = query
+                                .orderBy(Game_Table.title, true)
+                                .queryList()
                     }
 
-                    val database = writableDatabase
-
-                    val resultCursor = database.query(
-                            TABLE_NAME_GAMES,
-                            null,
-                            whereClause,
-                            whereArgs,
-                            null,
-                            null,
-                            "${KEY_GAME_TITLE} ASC"
-                    )
-
-                    val games = ArrayList<Game>()
-
-                    resultCursor.moveToPosition(-1)
-                    while (resultCursor.moveToNext()) {
-                        games.add(getGameFromCursor(resultCursor))
-                    }
-
-                    logVerbose("[SongDatabaseHelper] Found ${resultCursor.count} games.")
+                    logVerbose("[SongDatabaseHelper] Found ${games.size} games.")
 
                     it.onNext(games)
                     it.onCompleted()
-
-                    resultCursor.close()
-                    database.close()
                 }
         )
     }
@@ -367,44 +284,27 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     logInfo("[SongDatabaseHelper] Getting games for currently displayed tracks...")
                     val startTime = System.currentTimeMillis()
 
-                    val database = writableDatabase
-
                     val games = HashMap<Long, Game>()
 
                     for (track in tracks) {
-                        val whereClause: String?
-                        val whereArgs: Array<String>?
-
                         val gameId = track.gameId
 
-                        if (games.get(gameId) != null) {
+                        if (games[gameId] != null) {
                             continue
                         }
 
                         if (gameId > 0) {
-                            whereClause = "${KEY_DB_ID} = ?"
-                            whereArgs = arrayOf(gameId.toString())
+                            val game = getGameFromDb(gameId)
+                            if (game != null) {
+                                games.put(gameId, game)
+                            } else {
+                                it.onError(Exception("Couldn't find game."))
+                                return@create
+                            }
                         } else {
                             it.onError(Exception("Bad game ID: $gameId"))
                             return@create
                         }
-
-                        val gameCursor = database.query(
-                                TABLE_NAME_GAMES,
-                                null,
-                                whereClause,
-                                whereArgs,
-                                null,
-                                null,
-                                null
-                        )
-
-                        if (gameCursor.moveToFirst()) {
-                            val game = getGameFromCursor(gameCursor)
-                            games.put(gameId, game)
-                        }
-
-                        gameCursor.close()
                     }
 
                     logVerbose("[SongDatabaseHelper] Game map size: ${games.size}")
@@ -416,8 +316,6 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
                     it.onNext(games)
                     it.onCompleted()
-
-                    database.close()
                 }
         )
     }
@@ -803,10 +701,7 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
 
         logInfo("[SongDatabaseHelper] Copied image: ${sourcePath} to ${targetFilePath}")
 
-        val values = ContentValues()
-        values.put(KEY_GAME_ART_LOCAL, "file://"  + targetFilePath)
-
-        updateGame(gameId, values, database)
+        addLocalImageToGame(gameId, "file://" + targetFilePath)
     }
 
     companion object {
@@ -825,6 +720,13 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
             return queue
         }
 
+        private fun getGameFromDb(id: Long): Game? {
+            return SQLite.select()
+                    .from(Game::class.java)
+                    .where(Game_Table.id.eq(id))
+                    .querySingle()
+        }
+
         private fun getTrackFromCursor(cursor: Cursor): Track {
             return Track(
                     cursor.getLong(COLUMN_DB_ID),
@@ -838,17 +740,6 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
                     cursor.getLong(COLUMN_TRACK_LENGTH),
                     cursor.getLong(COLUMN_TRACK_INTRO_LENGTH),
                     cursor.getLong(COLUMN_TRACK_LOOP_LENGTH)
-            )
-        }
-
-        private fun getGameFromCursor(cursor: Cursor): Game {
-            return Game(
-                    cursor.getLong(COLUMN_DB_ID),
-                    cursor.getString(COLUMN_GAME_TITLE),
-                    cursor.getInt(COLUMN_GAME_PLATFORM),
-                    cursor.getString(COLUMN_GAME_ART_LOCAL),
-                    cursor.getString(COLUMN_GAME_ART_WEB),
-                    cursor.getString(COLUMN_GAME_COMPANY)
             )
         }
 
@@ -969,94 +860,50 @@ class SongDatabaseHelper(val context: Context) : SQLiteOpenHelper(context, DB_FI
         }
 
         private fun getGameId(gameTitle: String, gamePlatform: Int, gameMap: HashMap<Long, Game>, database: SQLiteDatabase): Long {
-            var game: Game? = null
-
             // Check if this game has already been seen during this scan.
             gameMap.keys.forEach {
                 val currentGame = gameMap.get(it)
                 if (currentGame?.title == gameTitle && currentGame?.platform == gamePlatform) {
-                    logVerbose("[SongDatabaseHelper] Found cached game $gameTitle with id ${currentGame?.id}")
-                    game = currentGame
-                    return@forEach
+                    currentGame?.id?.let {
+                        logVerbose("[SongDatabaseHelper] Found cached game $gameTitle with id ${it}")
+                        return it
+                    }
                 }
             }
 
-            // If it has, we already know its ID.
+            val game = SQLite.select()
+                    .from(Game::class.java)
+                    .where(Game_Table.title.eq(gameTitle))
+                    .and(Game_Table.platform.eq(gamePlatform))
+                    .querySingle()
+
+            game?.id?.let {
+                gameMap.put(it, game)
+                return it
+            } ?: let {
+                val newGame = addGameToDatabase(gameTitle, gamePlatform)
+                newGame.id?.let {
+                    return it
+                }
+            }
+            logError("[SongDatabaseHelper] Unable to find game ID.")
+            return -1L
+        }
+
+        private fun addGameToDatabase(gameTitle: String, gamePlatform: Int): Game {
+            val game = Game(gameTitle, gamePlatform)
+            game.insert()
+
+            return game
+        }
+
+        private fun addLocalImageToGame(gameId: Long, artLocal: String) {
+            val game = SQLite.update(Game::class.java)
+                    .set(Game_Table.artLocal.eq(artLocal))
+                    .where(Game_Table.id.eq(gameId))
+                    .query()
+
             if (game != null) {
-                return game!!.id
-            }
-
-            // If not, we have to ask the database.
-            val resultCursor = database.query(TABLE_NAME_GAMES,
-                    null, // Get all columns.
-                    "${KEY_GAME_TITLE} = ? AND ${KEY_GAME_PLATFORM} = ?", // Get only the game matching this title.
-                    arrayOf(gameTitle, gamePlatform.toString()), // The title to match.
-                    null, // No grouping.
-                    null, // No havingBy.
-                    null) // Should only be one result, so order is irrelevant.
-
-            val gameToReturn = when (resultCursor.count) {
-                0 -> {
-                    resultCursor.close()
-                    val newGame = addGameToDatabase(gameTitle, gamePlatform, database)
-
-                    // Assign to gameToReturn
-                    newGame
-                }
-                1 -> {
-                    logDebug("[SongDatabaseHelper] Found database entry for game ${gameTitle}.")
-
-                    resultCursor.moveToFirst()
-                    val id = resultCursor.getLong(COLUMN_DB_ID)
-
-                    resultCursor.close()
-
-                    val gameFromDatabase = Game(id, gameTitle, gamePlatform, null, null, null)
-
-                    // Assign to gameToReturn
-                    gameFromDatabase
-                }
-                else -> {
-                    resultCursor.close()
-                    logError("[SongDatabaseHelper] Found multiple database entries with title ${gameTitle}")
-                    return -1
-                }
-            }
-
-            gameMap.put(gameToReturn.id, gameToReturn)
-            return gameToReturn.id
-        }
-
-        private fun addGameToDatabase(gameTitle: String, gamePlatform: Int, database: SQLiteDatabase): Game {
-            val values = ContentValues()
-
-            values.put(KEY_GAME_TITLE, gameTitle)
-            values.put(KEY_GAME_PLATFORM, gamePlatform)
-
-            val gameId = database.insert(TABLE_NAME_GAMES,
-                    null,
-                    values)
-
-            if (gameId < 0) {
-                // TODO Do more than just report an error.
-                logError("[SongDatabaseHelper] Unable to add game ${gameTitle} to database.")
-                throw UnsupportedOperationException("Unable to add game ${gameTitle} to database.")
-            } else {
-                logInfo("[SongDatabaseHelper] Added game #${gameId}: ${gameTitle} to database.")
-            }
-
-            return Game(gameId, gameTitle, gamePlatform, null, null, null)
-        }
-
-        private fun updateGame(gameId: Long, values: ContentValues, database: SQLiteDatabase) {
-            val updatedRows = database.update(
-                    TABLE_NAME_GAMES,
-                    values,
-                    "$KEY_DB_ID = ?",
-                    arrayOf(gameId.toString())
-            )
-
-            if (updatedRows > 0) {
                 logVerbose("[SongDatabaseHelper] Successfully updated game #$gameId.")
             } else {
                 logError("[SongDatabaseHelper] Failed to update game #$gameId.")
