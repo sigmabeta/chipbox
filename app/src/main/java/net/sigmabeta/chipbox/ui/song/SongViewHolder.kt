@@ -28,7 +28,7 @@ class SongViewHolder(view: View, adapter: SongListAdapter) : BaseViewHolder<Trac
         view.text_song_length.text = getTimeStringFromMillis(toBind.trackLength ?: 0)
 
         if (view.image_game_box_art != null) {
-            val gameId = toBind.gameId
+            val gameId = toBind.gameContainer?.toModel()?.id
             val imagePath = adapter.games?.get(gameId)?.artLocal
 
             if (imagePath != null) {

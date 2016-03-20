@@ -18,8 +18,6 @@ import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -66,29 +64,9 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 audioTrack?.flush()
             }
 
-            playingGameId = value?.gameId
+            playingGame = value?.gameContainer?.toModel()
 
             field = value
-        }
-
-    var playingGameId: Long? = null
-        set (value) {
-            if (field != value) {
-                if (value != null) {
-                    Game.get(value)
-                            .subscribeOn(Schedulers.io())
-                            .observeOn(AndroidSchedulers.mainThread())
-                            .subscribe (
-                                    {
-                                        playingGame = it
-                                    },
-                                    {
-                                        backendView?.onGameLoadError()
-                                        logError("[Player] Couldn't load game #$value.")
-                                    }
-                            )
-                }
-            }
         }
 
     var playingGame: Game? = null
