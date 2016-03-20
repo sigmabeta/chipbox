@@ -31,7 +31,7 @@ class GameGridPresenter @Inject constructor(val database: SongDatabaseHelper) : 
     override fun setup(arguments: Bundle?) {
         platform = arguments?.getLong(GameGridFragment.ARGUMENT_PLATFORM_INDEX) ?: Track.PLATFORM_UNDEFINED
 
-        val subscription = database.getGamesList(platform)
+        val subscription = Game.getFromPlatform(platform)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(

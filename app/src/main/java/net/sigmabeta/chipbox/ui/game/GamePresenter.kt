@@ -56,7 +56,7 @@ class GamePresenter @Inject constructor(val database: SongDatabaseHelper,
                 )
 
 
-        val gameSubscription = database.getGame(gameId)
+        val gameSubscription = Game.get(gameId)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe (

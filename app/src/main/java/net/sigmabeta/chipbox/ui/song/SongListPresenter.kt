@@ -114,7 +114,7 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
     }
 
     private fun loadGames(tracks: List<Track>) {
-        val subscription = database.getGamesForTrackList(tracks)
+        val subscription = Game.getFromTrackList(tracks)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
