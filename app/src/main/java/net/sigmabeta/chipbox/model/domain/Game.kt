@@ -19,8 +19,6 @@ class Game() : BaseModel() {
     var artWeb: String? = null
     var company: String? = null
 
-
-
     companion object {
         val PICASSO_PREFIX = "file://"
 

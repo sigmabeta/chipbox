@@ -15,7 +15,7 @@ import javax.inject.Inject
 class ArtistListPresenter @Inject constructor(val database: SongDatabaseHelper) : FragmentPresenter() {
     var view: ArtistListView? = null
 
-    var artists: ArrayList<Artist>? = null
+    var artists: List<Artist>? = null
 
     fun onItemClick(id: Long) {
         view?.launchNavActivity(id)

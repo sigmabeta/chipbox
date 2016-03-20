@@ -72,7 +72,7 @@ class SongListPresenter @Inject constructor(val database: SongDatabaseHelper,
                     .subscribe(
                             {
                                 this.artist = it
-                                view?.setActivityTitle(it.name)
+                                view?.setActivityTitle(it.name ?: "Unknown Artist")
                             },
                             {
                                 logError("[SongListPresenter] Error: ${it.message}")
