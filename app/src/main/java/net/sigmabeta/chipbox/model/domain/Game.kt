@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.model.domain
 
-import com.raizlabs.android.dbflow.annotation.PrimaryKey
-import com.raizlabs.android.dbflow.annotation.Table
+import com.raizlabs.android.dbflow.annotation.*
 import com.raizlabs.android.dbflow.sql.language.SQLite
 import com.raizlabs.android.dbflow.structure.BaseModel
 import net.sigmabeta.chipbox.ChipboxDatabase
@@ -11,6 +10,7 @@ import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
 import java.util.*
 
+@ModelContainer
 @Table(database = ChipboxDatabase::class, allFields = true)
 class Game() : BaseModel() {
     constructor(title: String, platform: Long) : this() {
@@ -24,6 +24,27 @@ class Game() : BaseModel() {
     var artLocal: String? = null
     var artWeb: String? = null
     var company: String? = null
+
+    @ColumnIgnore
+    @JvmField
+    var tracks: List<Track>? = null
+
+    @OneToMany(methods = arrayOf(OneToMany.Method.SAVE, OneToMany.Method.DELETE))
+    fun getTracks(): List<Track> {
+        this.tracks?.let {
+            if (!it.isEmpty()) {
+                return it
+            }
+        }
+
+        val tracks = SQLite.select()
+                .from(Track::class.java)
+                .where(Track_Table.gameContainer_id.eq(id))
+                .queryList()
+
+        this.tracks = tracks
+        return tracks
+    }
 
     companion object {
         val PICASSO_PREFIX = "file://"
@@ -84,25 +105,30 @@ class Game() : BaseModel() {
 
                 val games = HashMap<Long, Game>()
 
-                for (track in tracks) {
-                    val gameId = track.gameId ?: -1
+                tracks.forEach { track ->
+                    logInfo("[Game] Checking for game for track: ${track.title}")
 
-                    if (games[gameId] != null) {
-                        continue
-                    }
+                    track.gameContainer?.toModel()?.id?.let { id ->
+                        if (games[id] != null) {
+                            logInfo("[Game] Already found.")
 
-                    if (gameId > 0) {
-                        val game = Game.queryDatabase(gameId)
+                            return@forEach
+                        }
+
+                        val game = Game.queryDatabase(id)
                         if (game != null) {
-                            games.put(gameId, game)
+                            games.put(id, game)
+                            logInfo("[Game] Added.")
+                            return@forEach
+
                         } else {
                             it.onError(Exception("Couldn't find game."))
                             return@create
                         }
-                    } else {
-                        it.onError(Exception("Bad game ID: $gameId"))
-                        return@create
                     }
+
+                    it.onError(Exception("Bad game ID."))
+                    return@create
                 }
 
                 logVerbose("[Game] Game map size: ${games.size}")
@@ -117,13 +143,13 @@ class Game() : BaseModel() {
             }
         }
 
-        fun getId(gameTitle: String?, gamePlatform: Long?, gameMap: HashMap<Long, Game>): Long {
+        fun get(gameTitle: String?, gamePlatform: Long?, gameMap: HashMap<Long, Game>): Game {
             // Check if this game has already been seen during this scan.
             gameMap.keys.forEach {
                 val currentGame = gameMap.get(it)
                 if (currentGame?.title == gameTitle && currentGame?.platform == gamePlatform) {
-                    currentGame?.id?.let {
-                        logVerbose("[Game] Found cached game $gameTitle with id ${it}")
+                    currentGame?.let {
+                        logVerbose("[Game] Found cached game ${it.title} with id ${it.id}")
                         return it
                     }
                 }
@@ -137,15 +163,10 @@ class Game() : BaseModel() {
 
             game?.id?.let {
                 gameMap.put(it, game)
-                return it
+                return game
             } ?: let {
-                val newGame = addToDatabase(gameTitle ?: "Unknown Game", gamePlatform ?: -Track.PLATFORM_UNSUPPORTED)
-                newGame.id?.let {
-                    return it
-                }
+                return addToDatabase(gameTitle ?: "Unknown Game", gamePlatform ?: -Track.PLATFORM_UNSUPPORTED)
             }
-            logError("[Game] Unable to find game ID.")
-            return -1L
         }
 
         fun queryDatabase(id: Long): Game? {

@@ -2,10 +2,14 @@ package net.sigmabeta.chipbox.model.domain
 
 import android.media.MediaMetadata
 import android.support.v4.media.MediaMetadataCompat
+import com.raizlabs.android.dbflow.annotation.ColumnIgnore
+import com.raizlabs.android.dbflow.annotation.ForeignKey
 import com.raizlabs.android.dbflow.annotation.PrimaryKey
 import com.raizlabs.android.dbflow.annotation.Table
+import com.raizlabs.android.dbflow.config.FlowManager
 import com.raizlabs.android.dbflow.sql.language.SQLite
 import com.raizlabs.android.dbflow.structure.BaseModel
+import com.raizlabs.android.dbflow.structure.container.ForeignKeyContainer
 import net.sigmabeta.chipbox.ChipboxDatabase
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
@@ -38,14 +42,24 @@ class Track() : BaseModel() {
     var trackNumber: Int? = null
     var path: String? = null
     var title: String? = null
-    var gameId: Long? = null
-    var gameTitle: String? = null
     var platform: Long? = null
     var artistId: Long? = null
     var artist: String? = null
     var trackLength: Long? = null
     var introLength: Long? = null
     var loopLength: Long? = null
+
+    @ColumnIgnore
+    var gameTitle: String? = null
+
+    @ForeignKey (saveForeignKeyModel = false)
+    var gameContainer: ForeignKeyContainer<Game>? = null
+
+    fun associateGame(game: Game) {
+        gameContainer = FlowManager
+                .getContainerAdapter(Game::class.java)
+                .toForeignKeyContainer(game)
+    }
 
     companion object {
         val PLATFORM_UNSUPPORTED = 100L
@@ -76,27 +90,9 @@ class Track() : BaseModel() {
         fun getFromArtist(artistId: Long): Observable<List<Track>> {
             return Observable.create {
                 logInfo("[Track] Reading song list for artist #$artistId...")
-
                 val tracks = SQLite.select().from(Track::class.java)
                         .where(Track_Table.artistId.eq(artistId))
-                        .orderBy(Track_Table.gameId, true)
-                        .queryList()
-
-                logVerbose("[Track] Found ${tracks.size} tracks.")
-
-                it.onNext(tracks)
-                it.onCompleted()
-            }
-        }
-
-
-        fun getFromGame(gameId: Long): Observable<List<Track>> {
-            return Observable.create {
-                logInfo("[Track] Reading song list for game #$gameId...")
-
-                val tracks = SQLite.select().from(Track::class.java)
-                        .where(Track_Table.gameId.eq(gameId))
-                        .orderBy(Track_Table.trackNumber, true)
+                        .orderBy(Track_Table.gameContainer_id, true)
                         .queryList()
 
                 logVerbose("[Track] Found ${tracks.size} tracks.")
@@ -109,19 +105,19 @@ class Track() : BaseModel() {
         fun toMetadataBuilder(track: Track): MediaMetadataCompat.Builder {
             return MediaMetadataCompat.Builder()
                     .putString(MediaMetadata.METADATA_KEY_TITLE, track.title)
-                    .putString(MediaMetadata.METADATA_KEY_ALBUM, track.gameTitle)
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, track.gameContainer?.toModel()?.title)
                     .putString(MediaMetadata.METADATA_KEY_ARTIST, track.artist)
         }
 
         fun addToDatabase(artistMap: HashMap<Long, Artist>, gameMap: HashMap<Long, Game>, track: Track): Long {
-            var folderGameId = Game.getId(track.gameTitle, track.platform, gameMap)
+            var game = Game.get(track.gameTitle, track.platform, gameMap)
             val artistId = Artist.getId(track.artist, artistMap)
 
-            track.gameId = folderGameId
+            track.associateGame(game)
             track.artistId = artistId
 
             track.insert()
-            return folderGameId
+            return game.id!!
         }
     }
 }

@@ -40,34 +40,23 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
         val gameId = arguments?.getLong(GameActivity.ARGUMENT_GAME_ID) ?: -1
         this.gameId = gameId
 
-        val songsSubscription = Track.getFromGame(gameId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe (
-                        {
-                            songs = it
-                            view?.setSongs(it)
-                        },
-                        {
-                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                        }
-                )
-
-
         val gameSubscription = Game.get(gameId)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe (
-                        {
-                            game = it
-                            view?.setGame(it)
+                        { game ->
+                            this.game = game
+                            view?.setGame(game)
+
+                            val tracks = game.getTracks()
+                            this.songs = tracks
+                            view?.setSongs(tracks)
                         },
                         {
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
                 )
 
-        subscriptions.add(songsSubscription)
         subscriptions.add(gameSubscription)
     }
 
