@@ -1,7 +1,8 @@
 package net.sigmabeta.chipbox.util
 
-import net.sigmabeta.chipbox.model.file.FileListItem
+import net.sigmabeta.chipbox.model.database.TRACK_LENGTH_DEFAULT
 import net.sigmabeta.chipbox.model.domain.Track
+import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.util.external.*
 import rx.Observable
 import java.io.File
@@ -13,6 +14,7 @@ val GME_PLATFORM_GENESIS = "Sega SMS/Genesis"
 
 val TYPE_OTHER = -1
 val TYPE_FOLDER = 0
+val TYPE_TRACK = 1
 
 val EXTENSIONS_MUSIC: HashSet<String> = HashSet(arrayListOf(
         ".spc", ".vgm", ".vgz", ".nsf", ".nsfe", ".gbs")
@@ -91,7 +93,7 @@ fun readMultipleTrackFile(path: String): List<Track>? {
     for (trackNumber in 0..trackCount - 1) {
         val track = getTrack(path, trackNumber)
         if (track != null) {
-            if (track.title.isEmpty()) {
+            if (track.title.isNullOrEmpty()) {
                 track.title = "${track.gameTitle} Track ${trackNumber + 1}"
             }
 
@@ -115,24 +117,39 @@ private fun getTrack(path: String, trackNumber: Int): Track? {
         artist = "Unknown"
     }
 
-    val track = Track(
-            -1,
-            trackNumber,
+    var trackLength = 0L
+
+    val fileTrackLength = getFileTrackLength()
+    val fileIntroLength = getFileIntroLength()
+    val fileLoopLength = getFileLoopLength()
+
+    if (fileTrackLength > 0) {
+        trackLength = fileTrackLength
+    }
+
+    if (fileLoopLength > 0) {
+        trackLength = fileIntroLength + (fileLoopLength * 2)
+    }
+
+    if (trackLength == 0L) {
+        trackLength = TRACK_LENGTH_DEFAULT
+    }
+
+    val track = Track(trackNumber,
             path,
             getFileTitle().convert(),
-            -1,
             getFileGameTitle().convert(),
-            platform,
             artist,
-            getFileTrackLength(),
-            getFileIntroLength(),
-            getFileLoopLength()
+            platform.toLong(),
+            trackLength,
+            fileIntroLength,
+            fileLoopLength
     )
 
     return track
 }
 
-private fun getTrackPlatform(): Int? {
+private fun getTrackPlatform(): Long? {
     val platformString = getFilePlatform().convert()
 
     val platform = when (platformString) {
@@ -151,8 +168,8 @@ private fun getTrackPlatform(): Int? {
 
 fun getPlatform(path: String): Int {
     when (getPlatformNative(path)) {
-        GME_PLATFORM_GENESIS -> return Track.PLATFORM_GENESIS
-        GME_PLATFORM_SNES -> return Track.PLATFORM_SNES
+        GME_PLATFORM_GENESIS -> return TYPE_TRACK
+        GME_PLATFORM_SNES -> return TYPE_TRACK
         else -> return TYPE_OTHER
 
     // TODO Handle error state (i.e non-vgm file with vgm extension)

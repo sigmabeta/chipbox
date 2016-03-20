@@ -25,18 +25,18 @@ external fun teardown()
 external fun getLastError(): String?
 
 fun loadTrackNative(track: Track, sampleRate: Int, bufferSizeShorts: Long) {
-    val path = track.path
+    val path = track.path.orEmpty()
 
     logDebug("[PlayerNative] Loading file: ${path}")
 
     val extension = getFileExtension(path)
     val trackNumber = if (EXTENSIONS_MULTI_TRACK.contains(extension)) {
-        track.trackNumber - 1
+        track.trackNumber ?: 1 - 1
     } else {
         0
     }
 
-    loadFile(path, trackNumber, sampleRate, bufferSizeShorts, track.trackLength)
+    loadFile(path, trackNumber, sampleRate, bufferSizeShorts, track.trackLength ?: 60000)
 
     if (getLastError() != null) {
         logError("[PlayerNative] Unable to load file.")

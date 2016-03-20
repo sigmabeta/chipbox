@@ -6,7 +6,7 @@ import net.sigmabeta.chipbox.ui.BaseView
 import java.util.*
 
 interface SongListView : BaseView {
-    fun setSongs(songs: ArrayList<Track>)
+    fun setSongs(songs: List<Track>)
 
     fun setGames(games: HashMap<Long, Game>)
 

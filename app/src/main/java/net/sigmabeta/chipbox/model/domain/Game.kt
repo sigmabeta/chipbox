@@ -7,14 +7,14 @@ import net.sigmabeta.chipbox.ChipboxDatabase
 
 @Table(database = ChipboxDatabase::class, allFields = true)
 class Game() : BaseModel() {
-    constructor(title: String, platform: Int) : this() {
+    constructor(title: String, platform: Long) : this() {
         this.title = title
         this.platform = platform
     }
 
     @PrimaryKey (autoincrement = true) var id: Long? = null
     var title: String? = null
-    var platform: Int? = null
+    var platform: Long? = null
     var artLocal: String? = null
     var artWeb: String? = null
     var company: String? = null

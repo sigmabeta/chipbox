@@ -5,15 +5,15 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.session.PlaybackState
+import net.sigmabeta.chipbox.model.audio.AudioBuffer
+import net.sigmabeta.chipbox.model.audio.AudioConfig
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.model.audio.AudioBuffer
-import net.sigmabeta.chipbox.model.audio.AudioConfig
-import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.util.external.*
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
@@ -21,7 +21,6 @@ import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
-import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -44,7 +43,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var position = 0L
 
-    var playbackQueue: ArrayList<Track>? = null
+    var playbackQueue: List<Track>? = null
     var playbackQueuePosition: Int? = null
 
     var queuedSeekPosition: Int? = null
@@ -303,7 +302,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         play()
     }
 
-    fun play(playbackQueue: ArrayList<Track>, position: Int) {
+    fun play(playbackQueue: List<Track>, position: Int) {
         if (position < playbackQueue.size) {
             logVerbose("[Player] Playing new playlist, starting from track ${position} of ${playbackQueue.size}.")
 

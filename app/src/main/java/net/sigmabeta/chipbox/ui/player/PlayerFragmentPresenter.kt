@@ -5,12 +5,12 @@ import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.database.SongDatabaseHelper
+import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
@@ -127,10 +127,10 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
     private fun displayTrack(track: Track) {
         this.track = track
 
-        view?.setTrackTitle(track.title)
-        view?.setArtist(track.artist)
-        view?.setGameTitle(track.gameTitle)
-        view?.setTrackLength(getTimeStringFromMillis(track.trackLength))
+        view?.setTrackTitle(track.title.orEmpty())
+        view?.setArtist(track.artist.orEmpty())
+        view?.setGameTitle(track.gameTitle.orEmpty())
+        view?.setTrackLength(getTimeStringFromMillis(track.trackLength ?: 0))
 
         displayPosition(0)
     }

@@ -128,8 +128,8 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
     override fun getView(): BaseView? = view
 
     private fun displayTrack(track: Track) {
-        view?.setTrackTitle(track.title)
-        view?.setArtist(track.artist)
+        view?.setTrackTitle(track.title.orEmpty())
+        view?.setArtist(track.artist.orEmpty())
     }
 
     private fun displayGame(game: Game?, force: Boolean) {
