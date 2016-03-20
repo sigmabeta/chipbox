@@ -11,7 +11,6 @@ import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
 import net.sigmabeta.chipbox.ui.song.SongListFragment
 import net.sigmabeta.chipbox.util.isScrolledToBottom
-import java.util.*
 import javax.inject.Inject
 
 class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistViewHolder>, TopLevelFragment {
@@ -28,7 +27,7 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistVi
         NavigationActivity.launch(activity, SongListFragment.FRAGMENT_TAG, id)
     }
 
-    override fun setArtists(artists: ArrayList<Artist>) {
+    override fun setArtists(artists: List<Artist>) {
         adapter.dataset = artists
     }
 
