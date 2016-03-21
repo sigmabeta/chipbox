@@ -31,7 +31,7 @@ class Track() : BaseModel() {
         this.path = path
         this.title = title
         this.gameTitle = gameTitle
-        this.artist = artist
+        this.artistText = artist
         this.platform = platform
         this.trackLength = trackLength
         this.introLength = introLength
@@ -43,8 +43,7 @@ class Track() : BaseModel() {
     var path: String? = null
     var title: String? = null
     var platform: Long? = null
-    var artistId: Long? = null
-    var artist: String? = null
+    var artistText: String? = null
     var trackLength: Long? = null
     var introLength: Long? = null
     var loopLength: Long? = null
@@ -53,7 +52,16 @@ class Track() : BaseModel() {
     var gameTitle: String? = null
 
     @ForeignKey (saveForeignKeyModel = false)
+    var artistContainer: ForeignKeyContainer<Artist>? = null
+
+    @ForeignKey (saveForeignKeyModel = false)
     var gameContainer: ForeignKeyContainer<Game>? = null
+
+    fun associateArtist(artist: Artist) {
+        artistContainer = FlowManager
+                .getContainerAdapter(Artist::class.java)
+                .toForeignKeyContainer(artist)
+    }
 
     fun associateGame(game: Game) {
         gameContainer = FlowManager
@@ -87,34 +95,19 @@ class Track() : BaseModel() {
             }
         }
 
-        fun getFromArtist(artistId: Long): Observable<List<Track>> {
-            return Observable.create {
-                logInfo("[Track] Reading song list for artist #$artistId...")
-                val tracks = SQLite.select().from(Track::class.java)
-                        .where(Track_Table.artistId.eq(artistId))
-                        .orderBy(Track_Table.gameContainer_id, true)
-                        .queryList()
-
-                logVerbose("[Track] Found ${tracks.size} tracks.")
-
-                it.onNext(tracks)
-                it.onCompleted()
-            }
-        }
-
         fun toMetadataBuilder(track: Track): MediaMetadataCompat.Builder {
             return MediaMetadataCompat.Builder()
                     .putString(MediaMetadata.METADATA_KEY_TITLE, track.title)
                     .putString(MediaMetadata.METADATA_KEY_ALBUM, track.gameContainer?.toModel()?.title)
-                    .putString(MediaMetadata.METADATA_KEY_ARTIST, track.artist)
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, track.artistText)
         }
 
         fun addToDatabase(artistMap: HashMap<Long, Artist>, gameMap: HashMap<Long, Game>, track: Track): Long {
             var game = Game.get(track.gameTitle, track.platform, gameMap)
-            val artistId = Artist.getId(track.artist, artistMap)
+            val artist = Artist.get(track.artistText, artistMap)
 
             track.associateGame(game)
-            track.artistId = artistId
+            track.associateArtist(artist)
 
             track.insert()
             return game.id!!

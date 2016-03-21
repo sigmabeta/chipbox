@@ -40,31 +40,25 @@ class SongListPresenter @Inject constructor(val player: Player) : FragmentPresen
     override fun setup(arguments: Bundle?) {
         artistId = arguments?.getLong(SongListFragment.ARGUMENT_ARTIST) ?: Artist.ARTIST_ALL
 
-        val readOperation = if (artistId == Artist.ARTIST_ALL) {
-            Track.getAll()
+        if (artistId == Artist.ARTIST_ALL) {
+            val songsLoad = Track.getAll()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                            {
+                                logInfo("[SongListPresenter] Loaded ${it.size} tracks.")
+
+                                songs = it
+                                view?.setSongs(it)
+                                loadGames(it)
+                            },
+                            {
+                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                            }
+                    )
+
+            subscriptions.add(songsLoad)
         } else {
-            Track.getFromArtist(artistId)
-        }
-
-        val songsLoad = readOperation
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            logInfo("[SongListPresenter] Loaded ${it.size} tracks.")
-
-                            songs = it
-                            view?.setSongs(it)
-                            loadGames(it)
-                        },
-                        {
-                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                        }
-                )
-
-        subscriptions.add(songsLoad)
-
-        if (artistId != Artist.ARTIST_ALL) {
             val artistLoad = Artist.get(artistId)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
@@ -72,6 +66,11 @@ class SongListPresenter @Inject constructor(val player: Player) : FragmentPresen
                             {
                                 this.artist = it
                                 view?.setActivityTitle(it.name ?: "Unknown Artist")
+
+                                val tracks = it.getTracks()
+                                view?.setSongs(tracks)
+                                songs = tracks
+                                loadGames(tracks)
                             },
                             {
                                 logError("[SongListPresenter] Error: ${it.message}")
