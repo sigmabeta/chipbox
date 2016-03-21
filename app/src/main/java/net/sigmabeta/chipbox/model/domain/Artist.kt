@@ -1,16 +1,15 @@
 package net.sigmabeta.chipbox.model.domain
 
-import com.raizlabs.android.dbflow.annotation.PrimaryKey
-import com.raizlabs.android.dbflow.annotation.Table
+import com.raizlabs.android.dbflow.annotation.*
 import com.raizlabs.android.dbflow.sql.language.SQLite
 import com.raizlabs.android.dbflow.structure.BaseModel
 import net.sigmabeta.chipbox.ChipboxDatabase
-import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
 import java.util.*
 
+@ModelContainer
 @Table(database = ChipboxDatabase::class, allFields = true)
 class Artist() : BaseModel() {
     constructor(name: String) : this() {
@@ -19,6 +18,27 @@ class Artist() : BaseModel() {
 
     @PrimaryKey (autoincrement = true) var id: Long? = null
     var name: String? = null
+
+    @ColumnIgnore
+    @JvmField
+    var tracks: List<Track>? = null
+
+    @OneToMany(methods = arrayOf(OneToMany.Method.SAVE, OneToMany.Method.DELETE))
+    fun getTracks(): List<Track> {
+        this.tracks?.let {
+            if (!it.isEmpty()) {
+                return it
+            }
+        }
+
+        val tracks = SQLite.select()
+                .from(Track::class.java)
+                .where(Track_Table.artistContainer_id.eq(id))
+                .queryList()
+
+        this.tracks = tracks
+        return tracks
+    }
 
     companion object {
         val ARTIST_ALL = -1L
@@ -65,13 +85,13 @@ class Artist() : BaseModel() {
                     .querySingle()
         }
 
-        fun getId(name: String?, artistMap: HashMap<Long, Artist>): Long {
+        fun get(name: String?, artistMap: HashMap<Long, Artist>): Artist {
             // Check if this artist has already been seen during this scan.
             artistMap.keys.forEach {
                 val currentArtist = artistMap.get(it)
                 if (currentArtist?.name == name) {
-                    currentArtist?.id?.let {
-                        logVerbose("[Artist] Found cached artist $name with id ${it}")
+                    currentArtist?.let {
+                        logVerbose("[Artist] Found cached artist ${it.name} with id ${it.id}")
                         return it
                     }
                 }
@@ -84,16 +104,10 @@ class Artist() : BaseModel() {
 
             artist?.id?.let {
                 artistMap.put(it, artist)
-                return it
+                return artist
             } ?: let {
-                val newArtist = addToDatabase(name ?: "Unknown Artist")
-                newArtist.id?.let {
-                    return it
-                }
+                return addToDatabase(name ?: "Unknown Artist")
             }
-
-            logError("[Artist] Unable to find artist ID.")
-            return -1L
         }
 
         private fun addToDatabase(name: String): Artist {

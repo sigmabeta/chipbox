@@ -127,7 +127,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
         this.track = track
 
         view?.setTrackTitle(track.title.orEmpty())
-        view?.setArtist(track.artist.orEmpty())
+        view?.setArtist(track.artistText.orEmpty())
         view?.setTrackLength(getTimeStringFromMillis(track.trackLength ?: 0))
 
         displayPosition(0)
