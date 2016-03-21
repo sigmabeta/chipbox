@@ -11,5 +11,5 @@ interface GameView : BaseView {
 
     fun setPlaybackState(state: Int)
 
-    fun setGame(game: Game)
+    fun setGame(game: Game?)
 }
