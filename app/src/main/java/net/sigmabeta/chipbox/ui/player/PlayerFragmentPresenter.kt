@@ -117,6 +117,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     private fun displayGame(game: Game?, force: Boolean) {
         if (force || this.game != game) {
             view?.setGameBoxArt(game?.artLocal, !force)
+            view?.setGameTitle(game?.title ?: "Unknown")
         }
 
         this.game = game
@@ -127,7 +128,6 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
 
         view?.setTrackTitle(track.title.orEmpty())
         view?.setArtist(track.artist.orEmpty())
-        view?.setGameTitle(track.gameContainer?.toModel()?.title.orEmpty())
         view?.setTrackLength(getTimeStringFromMillis(track.trackLength ?: 0))
 
         displayPosition(0)

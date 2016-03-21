@@ -53,6 +53,7 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
                             view?.setSongs(tracks)
                         },
                         {
+                            view?.setGame(null)
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
                 )

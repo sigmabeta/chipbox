@@ -33,8 +33,8 @@ class GameActivity : BaseActivity(), GameView, ItemListView<SongViewHolder>, Son
      * GameView
      */
 
-    override fun setGame(game: Game) {
-        val imagePath = game.artLocal
+    override fun setGame(game: Game?) {
+        val imagePath = game?.artLocal
 
         if (imagePath != null) {
             image_hero_boxart.loadImageHighQuality(imagePath, false, false, getPicassoCallback())
@@ -42,7 +42,7 @@ class GameActivity : BaseActivity(), GameView, ItemListView<SongViewHolder>, Son
             image_hero_boxart.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, false, false, getPicassoCallback())
         }
 
-        collapsing_toolbar.title = game.title
+        collapsing_toolbar.title = game?.title ?: "Error"
     }
 
     override fun setPlayingTrack(track: Track) {

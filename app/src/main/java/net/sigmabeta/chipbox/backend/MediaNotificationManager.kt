@@ -20,11 +20,11 @@ import android.support.v7.app.NotificationCompat
 import android.view.KeyEvent
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logVerbose
@@ -315,6 +315,8 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
 
         playingTrack?.let {
             val metadataBuilder = Track.toMetadataBuilder(it)
+
+            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, playingGame?.title ?: "Unknown")
 
             // TODO May need to do this asynchronously.
             val imageBitmap = BitmapFactory.decodeFile(imagePath)
