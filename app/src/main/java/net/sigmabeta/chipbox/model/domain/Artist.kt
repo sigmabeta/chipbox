@@ -1,6 +1,9 @@
 package net.sigmabeta.chipbox.model.domain
 
-import com.raizlabs.android.dbflow.annotation.*
+import com.raizlabs.android.dbflow.annotation.ColumnIgnore
+import com.raizlabs.android.dbflow.annotation.ManyToMany
+import com.raizlabs.android.dbflow.annotation.PrimaryKey
+import com.raizlabs.android.dbflow.annotation.Table
 import com.raizlabs.android.dbflow.sql.language.SQLite
 import com.raizlabs.android.dbflow.structure.BaseModel
 import net.sigmabeta.chipbox.ChipboxDatabase
@@ -9,7 +12,8 @@ import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
 import java.util.*
 
-@ModelContainer
+
+@ManyToMany(referencedTable = Track::class)
 @Table(database = ChipboxDatabase::class, allFields = true)
 class Artist() : BaseModel() {
     constructor(name: String) : this() {
@@ -23,7 +27,6 @@ class Artist() : BaseModel() {
     @JvmField
     var tracks: List<Track>? = null
 
-    @OneToMany(methods = arrayOf(OneToMany.Method.SAVE, OneToMany.Method.DELETE))
     fun getTracks(): List<Track> {
         this.tracks?.let {
             if (!it.isEmpty()) {
@@ -31,10 +34,16 @@ class Artist() : BaseModel() {
             }
         }
 
-        val tracks = SQLite.select()
-                .from(Track::class.java)
-                .where(Track_Table.artistContainer_id.eq(id))
+        val relations = SQLite.select()
+                .from(Artist_Track::class.java)
+                .where(Artist_Track_Table.artist_id.eq(id))
                 .queryList()
+
+        val tracks = ArrayList<Track>(relations.size)
+
+        relations.forEach {
+            tracks.add(it.track)
+        }
 
         this.tracks = tracks
         return tracks

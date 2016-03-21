@@ -52,21 +52,38 @@ class Track() : BaseModel() {
     var gameTitle: String? = null
 
     @ForeignKey (saveForeignKeyModel = false)
-    var artistContainer: ForeignKeyContainer<Artist>? = null
-
-    @ForeignKey (saveForeignKeyModel = false)
     var gameContainer: ForeignKeyContainer<Game>? = null
 
-    fun associateArtist(artist: Artist) {
-        artistContainer = FlowManager
-                .getContainerAdapter(Artist::class.java)
-                .toForeignKeyContainer(artist)
-    }
+    @ColumnIgnore
+    @JvmField
+    var artists: List<Artist>? = null
 
     fun associateGame(game: Game) {
         gameContainer = FlowManager
                 .getContainerAdapter(Game::class.java)
                 .toForeignKeyContainer(game)
+    }
+
+    fun getArtists(): List<Artist> {
+        this.artists?.let {
+            if (!it.isEmpty()) {
+                return it
+            }
+        }
+
+        val relations = SQLite.select()
+                .from(Artist_Track::class.java)
+                .where(Artist_Track_Table.track_id.eq(id))
+                .queryList()
+
+        val artists = ArrayList<Artist>(relations.size)
+
+        relations.forEach {
+            artists.add(it.artist)
+        }
+
+        this.artists = artists
+        return artists
     }
 
     companion object {
@@ -103,13 +120,21 @@ class Track() : BaseModel() {
         }
 
         fun addToDatabase(artistMap: HashMap<Long, Artist>, gameMap: HashMap<Long, Game>, track: Track): Long {
-            var game = Game.get(track.gameTitle, track.platform, gameMap)
-            val artist = Artist.get(track.artistText, artistMap)
+            val game = Game.get(track.gameTitle, track.platform, gameMap)
+            val artists = track.artistText?.split(", ")
 
             track.associateGame(game)
-            track.associateArtist(artist)
-
             track.insert()
+
+            artists?.forEach {
+                val artist = Artist.get(it, artistMap)
+
+                val relation = Artist_Track()
+                relation.artist = artist
+                relation.track = track
+
+                relation.insert()
+            }
             return game.id!!
         }
     }
