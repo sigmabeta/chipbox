@@ -33,7 +33,7 @@
             tools:text="Lufia II: Rise of the Sinistrals"/>
 
         <TextView
-            android:id="@+id/text_company"
+            android:id="@+id/text_artist"
             style="@style/TextAppearance.AppCompat.Caption"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -43,7 +43,7 @@
             android:layout_marginTop="@dimen/spacing_small"
             android:ellipsize="end"
             android:maxLines="1"
-            tools:text="Natsume"/>
+            tools:text="Yasunori Shiono"/>
 
     </LinearLayout>
 

@@ -20,7 +20,7 @@ class GameViewHolder(view: View, adapter: GameGridAdapter) : BaseViewHolder<Game
         gameId = toBind.id
 
         view.text_game_title.text = toBind.title
-        view.text_company.text = toBind.company
+        view.text_artist.text = toBind.artist?.name
 
         toBind.artLocal?.let {
             view.image_game_box_art.loadImageLowQuality(it, boundAtLeastOnce, true)

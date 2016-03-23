@@ -126,6 +126,9 @@ class Track() : BaseModel() {
             track.associateGame(game)
             track.insert()
 
+            var gameArtist = game.artist
+            var gameHadMultipleArtists = game.multipleArtists ?: false
+
             artists?.forEach {
                 val artist = Artist.get(it, artistMap)
 
@@ -134,7 +137,27 @@ class Track() : BaseModel() {
                 relation.track = track
 
                 relation.insert()
+
+                // If this game has just one artist...
+                if (gameArtist != null && !gameHadMultipleArtists) {
+                    // And the one we just got is different
+                    if (artist.id != gameArtist?.id) {
+                        // We'll save this later.
+                        gameArtist = null
+                        gameHadMultipleArtists = true
+                    }
+                } else if (gameArtist == null) {
+                    gameArtist = artist
+                }
             }
+
+            if ((gameArtist != game.artist) || (gameHadMultipleArtists != game.multipleArtists)) {
+                game.artist = gameArtist
+                game.multipleArtists = gameHadMultipleArtists
+                game.save()
+            }
+
+            // Callers are actually not interested in the Track ID, but the Game ID.
             return game.id!!
         }
     }
