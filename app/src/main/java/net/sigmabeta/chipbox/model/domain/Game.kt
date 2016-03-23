@@ -24,6 +24,16 @@ class Game() : BaseModel() {
     var artLocal: String? = null
     var artWeb: String? = null
     var company: String? = null
+    var multipleArtists: Boolean? = null
+
+    @ForeignKey var artist: Artist? = null
+        get() {
+            if (multipleArtists ?: false) {
+                return Artist("Various Artists")
+            } else {
+                return field
+            }
+        }
 
     @ColumnIgnore
     @JvmField

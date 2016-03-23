@@ -1,9 +1,6 @@
 package net.sigmabeta.chipbox.model.domain
 
-import com.raizlabs.android.dbflow.annotation.ColumnIgnore
-import com.raizlabs.android.dbflow.annotation.ManyToMany
-import com.raizlabs.android.dbflow.annotation.PrimaryKey
-import com.raizlabs.android.dbflow.annotation.Table
+import com.raizlabs.android.dbflow.annotation.*
 import com.raizlabs.android.dbflow.sql.language.SQLite
 import com.raizlabs.android.dbflow.structure.BaseModel
 import net.sigmabeta.chipbox.ChipboxDatabase
@@ -12,7 +9,7 @@ import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
 import java.util.*
 
-
+@ModelContainer
 @ManyToMany(referencedTable = Track::class)
 @Table(database = ChipboxDatabase::class, allFields = true)
 class Artist() : BaseModel() {
