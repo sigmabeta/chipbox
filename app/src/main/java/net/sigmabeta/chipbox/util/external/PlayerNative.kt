@@ -31,7 +31,7 @@ fun loadTrackNative(track: Track, sampleRate: Int, bufferSizeShorts: Long) {
 
     val extension = getFileExtension(path)
     val trackNumber = if (EXTENSIONS_MULTI_TRACK.contains(extension)) {
-        track.trackNumber ?: 1 - 1
+        (track.trackNumber ?: 1) - 1
     } else {
         0
     }
