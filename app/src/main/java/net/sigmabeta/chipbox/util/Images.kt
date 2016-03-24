@@ -14,6 +14,8 @@ fun loadBitmapLowQuality(context: Context, path: String): Observable<Bitmap> {
         val bitmap = Picasso.with(context)
                 .load(path)
                 .config(Bitmap.Config.RGB_565)
+                .resize(400, 400)
+                .centerCrop()
                 .error(R.drawable.img_album_art_blank)
                 .get()
 
