@@ -27,13 +27,14 @@ class GameActivity : BaseActivity(), GameView, ItemListView<SongViewHolder>, Son
     lateinit var presenter: GamePresenter
         @Inject set
 
-    var adapter = SongListAdapter(this, false)
+    var adapter = SongListAdapter(this, false, true)
 
     /**
      * GameView
      */
 
     override fun setGame(game: Game?) {
+        adapter.game = game
         val imagePath = game?.artLocal
 
         if (imagePath != null) {
@@ -78,7 +79,9 @@ class GameActivity : BaseActivity(), GameView, ItemListView<SongViewHolder>, Son
      */
 
     override fun onItemClick(position: Long, clickedViewHolder: SongViewHolder) {
-        presenter.onItemClick(position)
+        if (position > 0L) {
+            presenter.onItemClick(position - 1L)
+        }
     }
 
     /**

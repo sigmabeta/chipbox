@@ -13,4 +13,6 @@
     <dimen name="hero_image_size">384dp</dimen>
 
     <dimen name="height_now_playing">64dp</dimen>
+
+    <dimen name="divider_margin_top_bottom">6dp</dimen>
 </resources>
