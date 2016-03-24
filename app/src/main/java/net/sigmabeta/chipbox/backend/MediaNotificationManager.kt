@@ -7,7 +7,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.BitmapFactory
+import android.graphics.Bitmap
 import android.media.session.PlaybackState
 import android.os.SystemClock
 import android.support.v4.app.NotificationCompat.Action
@@ -25,11 +25,13 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.util.loadBitmapLowQuality
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logVerbose
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
 
 class MediaNotificationManager(val playerService: PlayerService) : BroadcastReceiver() {
     val prevIntent = PendingIntent.getBroadcast(playerService, REQUEST_CODE,
@@ -54,6 +56,9 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
 
     var playingTrack: Track? = null
     var playingGame: Game? = null
+
+    var playingGameArtPath: String? = null
+    var playingGameArtBitmap: Bitmap? = null
 
     var notified = false
 
@@ -154,6 +159,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
             }
 
             playerService.stopForeground(true)
+            playingGameArtBitmap = null
         }
     }
 
@@ -180,6 +186,25 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
     private fun updateGame(game: Game?) {
         logDebug("[MediaNotificationManager] Updating notification track.")
 
+        val imagePath = game?.let {
+            it.artLocal
+        } ?: let {
+            Game.PICASSO_ASSET_ALBUM_ART_BLANK
+        }
+
+        if (imagePath != playingGameArtPath) {
+            playingGameArtPath = imagePath
+
+            loadBitmapLowQuality(playerService, imagePath)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe {
+                        playingGameArtBitmap = it
+
+                        mediaMetadata = updateMetadata()
+                        playerService.session?.setMetadata(mediaMetadata)
+                    }
+        }
         playingGame = game
         mediaMetadata = updateMetadata()
         playerService.session?.setMetadata(mediaMetadata)
@@ -307,22 +332,13 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
     }
 
     private fun updateMetadata(): MediaMetadataCompat? {
-        val imagePath = playingGame?.let {
-            it.artLocal?.substringAfter(Game.PICASSO_PREFIX)
-        } ?: let {
-            Game.ASSET_ALBUM_ART_BLANK
-        }
-
         playingTrack?.let {
             val metadataBuilder = Track.toMetadataBuilder(it)
 
             metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, playingGame?.title ?: "Unknown")
 
-            // TODO May need to do this asynchronously.
-            val imageBitmap = BitmapFactory.decodeFile(imagePath)
-
-            if (imageBitmap != null) {
-                metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, imageBitmap)
+            if (playingGameArtBitmap != null) {
+                metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, playingGameArtBitmap)
             } else {
                 logError("[MediaNotificationManager] Couldn't load game art.")
             }
