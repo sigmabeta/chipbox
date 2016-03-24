@@ -8,7 +8,15 @@ import net.sigmabeta.chipbox.ui.BaseArrayAdapter
 import net.sigmabeta.chipbox.ui.ItemListView
 import java.util.*
 
-class SongListAdapter(view: ItemListView<SongViewHolder>, val showArt: Boolean) : BaseArrayAdapter<Track, SongViewHolder>(view) {
+class SongListAdapter(view: ItemListView<SongViewHolder>, val showArt: Boolean, val withHeader: Boolean = false) : BaseArrayAdapter<Track, SongViewHolder>(view) {
+    var game: Game? = null
+        set (value) {
+            field = value
+            if (value != null) {
+                notifyItemChanged(0)
+            }
+        }
+
     var playingTrackId: Long? = null
         set (value) {
             field = value
@@ -26,6 +34,28 @@ class SongListAdapter(view: ItemListView<SongViewHolder>, val showArt: Boolean) 
             R.layout.list_item_song
         else
             R.layout.list_item_song_game
+    }
+
+    override fun onBindViewHolder(holder: SongViewHolder, position: Int) {
+        getItem(position)?.let {
+            bind(holder, it)
+        } ?: let {
+            if (position == 0 && holder is GameHeaderViewHolder) {
+                holder.bind()
+            }
+        }
+    }
+
+    override fun createHeaderViewHolder(view: View): SongViewHolder? {
+        return GameHeaderViewHolder(view, this)
+    }
+
+    override fun getHeaderLayoutId(): Int {
+        return if (withHeader) {
+            R.layout.list_header_game
+        } else {
+            0
+        }
     }
 
     override fun createViewHolder(view: View): SongViewHolder {
