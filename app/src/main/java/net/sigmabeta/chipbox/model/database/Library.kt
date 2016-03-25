@@ -29,8 +29,8 @@ class Library(val context: Context) {
 
                     val folders = Folder.getAll()
 
-                    val gameMap = HashMap<Long, Game>()
-                    val artistMap = HashMap<Long, Artist>()
+                    val gameMap = HashMap<Long, HashMap<String, Game>>()
+                    val artistMap = HashMap<String, Artist>()
 
                     folders.forEach { folder ->
                         folder.path?.let {
@@ -48,7 +48,7 @@ class Library(val context: Context) {
         )
     }
 
-    private fun scanFolder(folder: File, gameMap: HashMap<Long, Game>, artistMap: HashMap<Long, Artist>, sub: Subscriber<FileScanEvent>) {
+    private fun scanFolder(folder: File, gameMap: HashMap<Long, HashMap<String, Game>>, artistMap: HashMap<String, Artist>, sub: Subscriber<FileScanEvent>) {
         val folderPath = folder.absolutePath
         logInfo("[Library] Reading files from library folder: ${folderPath}")
 
@@ -106,7 +106,7 @@ class Library(val context: Context) {
         }
     }
 
-    private fun readSingleTrack(artistMap: HashMap<Long, Artist>, file: File, filePath: String, gameMap: HashMap<Long, Game>, sub: Subscriber<FileScanEvent>, trackNumber: Int): Long {
+    private fun readSingleTrack(artistMap: HashMap<String, Artist>, file: File, filePath: String, gameMap: HashMap<Long, HashMap<String, Game>>, sub: Subscriber<FileScanEvent>, trackNumber: Int): Long {
         val track = readSingleTrackFile(filePath, trackNumber)
 
         if (track != null) {
@@ -122,7 +122,7 @@ class Library(val context: Context) {
         }
     }
 
-    private fun readMultipleTracks(artistMap: HashMap<Long, Artist>, file: File, filePath: String, gameMap: HashMap<Long, Game>, sub: Subscriber<FileScanEvent>): Long {
+    private fun readMultipleTracks(artistMap: HashMap<String, Artist>, file: File, filePath: String, gameMap: HashMap<Long, HashMap<String, Game>>, sub: Subscriber<FileScanEvent>): Long {
         val tracks = readMultipleTrackFile(filePath) ?: return -1
 
         var folderGameId = -1L

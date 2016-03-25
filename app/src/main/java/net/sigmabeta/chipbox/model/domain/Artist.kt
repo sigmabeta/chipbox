@@ -92,16 +92,11 @@ class Artist() : BaseModel() {
                     .querySingle()
         }
 
-        fun get(name: String?, artistMap: HashMap<Long, Artist>): Artist {
+        fun get(name: String, artistMap: HashMap<String, Artist>): Artist {
             // Check if this artist has already been seen during this scan.
-            artistMap.keys.forEach {
-                val currentArtist = artistMap.get(it)
-                if (currentArtist?.name == name) {
-                    currentArtist?.let {
-                        logVerbose("[Artist] Found cached artist ${it.name} with id ${it.id}")
-                        return it
-                    }
-                }
+            artistMap.get(name)?.let {
+                logVerbose("[Artist] Found cached artist ${it.name} with id ${it.id}")
+                return it
             }
 
             val artist = SQLite.select()
@@ -111,7 +106,7 @@ class Artist() : BaseModel() {
                     .querySingle()
 
             artist?.id?.let {
-                artistMap.put(it, artist)
+                artistMap.put(name, artist)
                 return artist
             } ?: let {
                 return addToDatabase(name ?: "Unknown Artist")

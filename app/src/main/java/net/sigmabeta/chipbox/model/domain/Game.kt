@@ -151,15 +151,16 @@ class Game() : BaseModel() {
             }
         }
 
-        fun get(gameTitle: String?, gamePlatform: Long?, gameMap: HashMap<Long, Game>): Game {
+        fun get(gameTitle: String?, gamePlatform: Long?, gameMap: HashMap<Long, HashMap<String, Game>>): Game {
             // Check if this game has already been seen during this scan.
-            gameMap.keys.forEach {
-                val currentGame = gameMap.get(it)
-                if (currentGame?.title == gameTitle && currentGame?.platform == gamePlatform) {
-                    currentGame?.let {
-                        logVerbose("[Game] Found cached game ${it.title} with id ${it.id}")
-                        return it
-                    }
+            gameMap.get(gamePlatform)?.let { platform ->
+                platform.get(gameTitle)?.let { game ->
+                    logVerbose("[Game] Found cached game ${game.title} with id ${game.id}")
+                    return game
+                }
+            } ?: let {
+                if (gamePlatform != null) {
+                    gameMap.put(gamePlatform, HashMap<String, Game>())
                 }
             }
 
@@ -171,7 +172,12 @@ class Game() : BaseModel() {
                     .querySingle()
 
             game?.id?.let {
-                gameMap.put(it, game)
+                if (gameTitle != null) {
+                    gameMap.get(gamePlatform)?.put(gameTitle, game)
+                } else {
+                    logError("[Game] Something really weird happened...?")
+                }
+
                 return game
             } ?: let {
                 return addToDatabase(gameTitle ?: "Unknown Game", gamePlatform ?: -Track.PLATFORM_UNSUPPORTED)
