@@ -11,7 +11,7 @@ import rx.Observable
 import java.util.*
 
 @ModelContainer
-@Table(database = ChipboxDatabase::class, allFields = true)
+@Table(database = ChipboxDatabase::class, allFields = true, indexGroups = arrayOf(IndexGroup(number = 1, name = "titlePlatform")))
 class Game() : BaseModel() {
     constructor(title: String, platform: Long) : this() {
         this.title = title
@@ -19,8 +19,10 @@ class Game() : BaseModel() {
     }
 
     @PrimaryKey (autoincrement = true) var id: Long? = null
-    var title: String? = null
-    var platform: Long? = null
+
+    @Index(indexGroups = intArrayOf(1)) var title: String? = null
+    @Index(indexGroups = intArrayOf(1)) var platform: Long? = null
+
     var artLocal: String? = null
     var artWeb: String? = null
     var company: String? = null
@@ -116,12 +118,8 @@ class Game() : BaseModel() {
                 val games = HashMap<Long, Game>()
 
                 tracks.forEach { track ->
-                    logInfo("[Game] Checking for game for track: ${track.title}")
-
                     track.gameContainer?.toModel()?.id?.let { id ->
                         if (games[id] != null) {
-                            logInfo("[Game] Already found.")
-
                             return@forEach
                         }
 
@@ -167,6 +165,7 @@ class Game() : BaseModel() {
 
             val game = SQLite.select()
                     .from(Game::class.java)
+                    .indexedBy(Game_Table.index_titlePlatform)
                     .where(Game_Table.title.eq(gameTitle))
                     .and(Game_Table.platform.eq(gamePlatform))
                     .querySingle()

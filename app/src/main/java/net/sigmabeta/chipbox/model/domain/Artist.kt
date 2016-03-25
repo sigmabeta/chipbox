@@ -11,14 +11,15 @@ import java.util.*
 
 @ModelContainer
 @ManyToMany(referencedTable = Track::class)
-@Table(database = ChipboxDatabase::class, allFields = true)
+@Table(database = ChipboxDatabase::class, allFields = true, indexGroups = arrayOf(IndexGroup(number = 1, name = "name")))
 class Artist() : BaseModel() {
     constructor(name: String) : this() {
         this.name = name
     }
 
     @PrimaryKey (autoincrement = true) var id: Long? = null
-    var name: String? = null
+
+    @Index(indexGroups = intArrayOf(1)) var name: String? = null
 
     @ColumnIgnore
     @JvmField
@@ -105,6 +106,7 @@ class Artist() : BaseModel() {
 
             val artist = SQLite.select()
                     .from(Artist::class.java)
+                    .indexedBy(Artist_Table.index_name)
                     .where(Artist_Table.name.eq(name))
                     .querySingle()
 
