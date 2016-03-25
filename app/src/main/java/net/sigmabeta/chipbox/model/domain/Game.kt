@@ -126,7 +126,6 @@ class Game() : BaseModel() {
                         val game = Game.queryDatabase(id)
                         if (game != null) {
                             games.put(id, game)
-                            logInfo("[Game] Added.")
                             return@forEach
 
                         } else {
@@ -155,7 +154,6 @@ class Game() : BaseModel() {
             // Check if this game has already been seen during this scan.
             gameMap.get(gamePlatform)?.let { platform ->
                 platform.get(gameTitle)?.let { game ->
-                    logVerbose("[Game] Found cached game ${game.title} with id ${game.id}")
                     return game
                 }
             } ?: let {
