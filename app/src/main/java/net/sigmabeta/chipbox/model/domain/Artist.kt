@@ -95,7 +95,6 @@ class Artist() : BaseModel() {
         fun get(name: String, artistMap: HashMap<String, Artist>): Artist {
             // Check if this artist has already been seen during this scan.
             artistMap.get(name)?.let {
-                logVerbose("[Artist] Found cached artist ${it.name} with id ${it.id}")
                 return it
             }
 
