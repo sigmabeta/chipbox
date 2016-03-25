@@ -192,16 +192,10 @@ class Game() : BaseModel() {
         }
 
         fun addLocalImage(gameId: Long, artLocal: String) {
-            val game = SQLite.update(Game::class.java)
+            SQLite.update(Game::class.java)
                     .set(Game_Table.artLocal.eq(artLocal))
                     .where(Game_Table.id.eq(gameId))
                     .query()
-
-            if (game != null) {
-                logVerbose("[Game] Successfully updated game #$gameId.")
-            } else {
-                logError("[Game] Failed to update game #$gameId.")
-            }
         }
 
         private fun addToDatabase(gameTitle: String, gamePlatform: Long): Game {
