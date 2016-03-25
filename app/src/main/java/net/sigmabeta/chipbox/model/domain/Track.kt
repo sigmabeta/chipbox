@@ -119,7 +119,7 @@ class Track() : BaseModel() {
                     .putString(MediaMetadata.METADATA_KEY_ARTIST, track.artistText)
         }
 
-        fun addToDatabase(artistMap: HashMap<Long, Artist>, gameMap: HashMap<Long, Game>, track: Track): Long {
+        fun addToDatabase(artistMap: HashMap<String, Artist>, gameMap: HashMap<Long, HashMap<String, Game>>, track: Track): Long {
             val game = Game.get(track.gameTitle, track.platform, gameMap)
             val artists = track.artistText?.split(", ")
 
