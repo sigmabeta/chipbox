@@ -151,7 +151,7 @@ class Track() : BaseModel() {
                 }
             }
 
-            if ((gameArtist != game.artist) || (gameHadMultipleArtists != game.multipleArtists)) {
+            if ((gameArtist?.name != game.artist?.name) || (gameHadMultipleArtists != game.multipleArtists)) {
                 game.artist = gameArtist
                 game.multipleArtists = gameHadMultipleArtists
                 game.save()
