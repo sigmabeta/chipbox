@@ -17,10 +17,11 @@
             android:transitionName="image_playing_boxart"
             android:id="@+id/image_game_box_art"
             android:layout_width="match_parent"
-            android:layout_height="320dp"
+            android:layout_height="0dp"
             android:scaleType="centerCrop"
             android:elevation="8dp"
             android:layout_alignParentTop="true"
+            android:layout_above="@+id/text_track_title"
             android:clipToPadding="false"
             android:outlineProvider="bounds"
             tools:src="@drawable/img_album_art_blank"/>
@@ -28,43 +29,33 @@
 
             <TextView
                 android:id="@+id/text_track_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_below="@+id/image_game_box_art"
+                android:layout_above="@+id/text_game_title"
                 android:layout_marginBottom="@dimen/spacing_small"
-                android:layout_marginLeft="@dimen/spacing_large"
+                android:layout_marginEnd="64dp"
                 android:layout_marginTop="@dimen/spacing_large"
-                android:fontFamily="sans-serif-medium"
-                android:singleLine="true"
-                android:textSize="21sp"
-                tools:text="The Island in the Void"/>
+                android:textSize="20sp"
+                android:fontFamily="sans-serif-condensed"
+                tools:text="The Island in the Void"
+                style="@style/PlayerText"/>
 
             <TextView
                 android:id="@+id/text_game_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_below="@+id/text_track_title"
+                android:layout_above="@+id/text_track_artist"
                 android:layout_marginBottom="@dimen/spacing_small"
-                android:layout_marginLeft="@dimen/spacing_large"
                 android:layout_marginTop="@dimen/spacing_small"
-                android:singleLine="true"
-                android:textSize="17sp"
-                tools:text="Lufia II: Rise of the Sinistrals"/>
+                android:textSize="12sp"
+                android:fontFamily="sans-serif-medium"
+                tools:text="Lufia II: Rise of the Sinistrals"
+                style="@style/PlayerText"/>
 
             <TextView
                 android:id="@+id/text_track_artist"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_below="@+id/text_game_title"
+                android:layout_above="@+id/text_track_elapsed"
                 android:layout_marginBottom="@dimen/spacing_large"
-                android:layout_marginLeft="@dimen/spacing_large"
-                android:layout_marginTop="@dimen/spacing_small"
-                android:singleLine="true"
-                android:textSize="15sp"
-                tools:text="Yasunori Shiono"/>
+                android:textSize="12sp"
+                tools:text="Yasunori Shiono"
+                android:fontFamily="sans-serif-medium"
+                style="@style/PlayerText"/>
 
             <TextView
                 android:id="@+id/text_track_length"
@@ -74,7 +65,7 @@
                 android:layout_alignParentTop="false"
                 android:layout_above="@+id/layout_controls"
                 android:layout_marginBottom="@dimen/spacing_large"
-                android:layout_marginRight="@dimen/spacing_large"
+                android:layout_marginEnd="@dimen/spacing_large"
                 tools:text="5:20"/>
 
             <TextView
@@ -85,7 +76,7 @@
                 android:layout_alignParentStart="true"
                 android:layout_alignParentTop="false"
                 android:layout_marginBottom="@dimen/spacing_large"
-                android:layout_marginLeft="@dimen/spacing_large"
+                android:layout_marginStart="@dimen/spacing_large"
                 android:textColor="?attr/colorAccent"
                 tools:text="2:56"/>
 
