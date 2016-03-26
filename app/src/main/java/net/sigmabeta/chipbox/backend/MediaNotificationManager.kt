@@ -250,7 +250,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
         if (actions != null) {
             // If skip to previous action is enabled
             if ((actions and PlaybackState.ACTION_SKIP_TO_PREVIOUS) != 0L) {
-                notificationBuilder.addAction(R.drawable.ic_skip_previous_white_24dp,
+                notificationBuilder.addAction(R.drawable.ic_skip_previous_black_24dp,
                         playerService.getString(R.string.notification_label_prev), prevIntent)
 
                 /*
@@ -268,7 +268,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
         if (actions != null) {
             // If skip to next action is enabled
             if ((actions and PlaybackState.ACTION_SKIP_TO_NEXT) != 0L) {
-                notificationBuilder.addAction(R.drawable.ic_skip_next_white_24dp,
+                notificationBuilder.addAction(R.drawable.ic_skip_next_black_24dp,
                         playerService.getString(R.string.notification_label_next), nextIntent)
             }
         }
@@ -277,8 +277,6 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
             R.drawable.ic_stat_play
         else
             R.drawable.ic_stat_pause
-
-        val description = mediaMetadata?.description
 
         val stop = getActionIntent(playerService, KeyEvent.KEYCODE_MEDIA_STOP)
 
@@ -307,11 +305,11 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
 
         if (playbackState?.state == PlaybackState.STATE_PLAYING) {
             label = playerService.getString(R.string.notification_label_pause)
-            icon = R.drawable.ic_pause_white_24dp
+            icon = R.drawable.ic_pause_black_24dp
             intent = pauseIntent
         } else {
             label = playerService.getString(R.string.notification_label_play)
-            icon = R.drawable.ic_play_arrow_white_24dp
+            icon = R.drawable.ic_play_arrow_black_24dp
             intent = playIntent
         }
         builder.addAction(Action(icon, label, intent))
