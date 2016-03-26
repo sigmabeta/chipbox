@@ -14,7 +14,7 @@
         android:orientation="vertical">
 
         <ImageView
-            android:src="@drawable/img_album_art_blank"
+            tools:src="@drawable/img_album_art_blank"
             android:id="@+id/image_game_box_art"
             android:layout_width="match_parent"
             android:layout_height="180dp"
