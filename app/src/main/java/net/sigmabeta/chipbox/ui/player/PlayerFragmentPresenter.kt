@@ -142,7 +142,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
         val timeString = getTimeStringFromMillis(millisPlayed)
         view?.setTimeElapsed(timeString)
 
-        view?.setUnderrunCount("Underruns ${player.stats.underrunCount}")
+        //        view?.setUnderrunCount("Underruns ${player.stats.underrunCount}")
     }
 
     private fun displayState(state: Int) {

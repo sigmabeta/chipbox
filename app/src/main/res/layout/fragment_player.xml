@@ -85,7 +85,8 @@
                 android:layout_height="wrap_content"
                 android:id="@+id/text_underrun_count"
                 android:layout_below="@+id/image_game_box_art"
-                android:layout_alignParentEnd="true"/>
+                android:layout_alignParentEnd="true"
+                android:visibility="gone"/>
 
         <SeekBar
             android:id="@+id/seek_playback_progress"
