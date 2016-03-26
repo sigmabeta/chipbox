@@ -50,11 +50,11 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
     }
 
     override fun showPauseButton() {
-        button_play.setImageResource(R.drawable.ic_pause_white_48dp)
+        button_play.setImageResource(R.drawable.ic_pause_black_24dp)
     }
 
     override fun showPlayButton() {
-        button_play.setImageResource(R.drawable.ic_play_48dp)
+        button_play.setImageResource(R.drawable.ic_play_arrow_black_24dp)
     }
 
     override fun setUnderrunCount(count: String) {

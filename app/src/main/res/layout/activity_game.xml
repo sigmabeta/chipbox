@@ -55,7 +55,8 @@
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/spacing_large"
         android:clickable="true"
-        android:src="@drawable/ic_play_arrow_white_24dp"
+        android:src="@drawable/ic_play_arrow_black_24dp"
+        android:tint="@android:color/white"
         app:layout_anchor="@id/appbar"
         app:layout_anchorGravity="bottom|right|end"/>
 

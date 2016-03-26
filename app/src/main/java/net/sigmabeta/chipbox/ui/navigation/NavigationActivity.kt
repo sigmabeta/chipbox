@@ -61,11 +61,11 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
     }
 
     override fun showPauseButton() {
-        fab_play_pause.setImageResource(R.drawable.ic_pause_white_48dp)
+        fab_play_pause.setImageResource(R.drawable.ic_pause_black_24dp)
     }
 
     override fun showPlayButton() {
-        fab_play_pause.setImageResource(R.drawable.ic_play_48dp)
+        fab_play_pause.setImageResource(R.drawable.ic_play_arrow_black_24dp)
     }
 
     override fun showNowPlaying(animate: Boolean) {

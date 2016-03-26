@@ -114,20 +114,23 @@
                 style="@style/Widget.AppCompat.Button.Borderless"
                 android:layout_width="72dp"
                 android:layout_height="match_parent"
-                android:src="@drawable/ic_repeat_white_24dp"/>
+                android:tint="@android:color/white"
+                android:src="@drawable/ic_repeat_black_24dp"/>
 
             <ImageButton
                 android:id="@+id/button_skip_back"
                 style="@style/Widget.AppCompat.Button.Borderless"
                 android:layout_width="72dp"
                 android:layout_height="match_parent"
-                android:src="@drawable/ic_skip_previous_white_36dp"/>
+                android:tint="@android:color/white"
+                android:src="@drawable/ic_skip_previous_black_24dp"/>
 
             <android.support.design.widget.FloatingActionButton
                 android:id="@+id/button_play"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
-                android:src="@drawable/ic_play_48dp"
+                android:src="@drawable/ic_play_arrow_black_24dp"
+                android:tint="@android:color/white"
                 app:borderWidth="0dp"
                 app:pressedTranslationZ="12dp"
                 app:rippleColor="?android:colorPrimaryDark"
@@ -139,7 +142,8 @@
                 android:layout_width="72dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_vertical"
-                android:src="@drawable/ic_skip_next_white_36dp"/>
+                android:tint="@android:color/white"
+                android:src="@drawable/ic_skip_next_black_24dp"/>
 
             <ImageButton
                 android:id="@+id/button_shuffle"
@@ -147,7 +151,8 @@
                 android:layout_width="72dp"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_vertical"
-                android:src="@drawable/ic_shuffle_white_24dp"
+                android:tint="@android:color/white"
+                android:src="@drawable/ic_shuffle_black_24dp"
                 />
         </LinearLayout>
     </RelativeLayout>
