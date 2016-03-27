@@ -77,11 +77,11 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     }
 
     override fun showPauseButton() {
-        fab_play_pause.setImageResource(R.drawable.ic_pause_black_24dp)
+        button_play_pause.setImageResource(R.drawable.ic_pause_black_24dp)
     }
 
     override fun showPlayButton() {
-        fab_play_pause.setImageResource(R.drawable.ic_play_arrow_black_24dp)
+        button_play_pause.setImageResource(R.drawable.ic_play_arrow_black_24dp)
     }
 
     override fun showNowPlaying(animate: Boolean) {
@@ -135,7 +135,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         setUpViewPagerTabs()
 
         layout_now_playing.setOnClickListener { presenter.onNowPlayingClicked() }
-        fab_play_pause.setOnClickListener { presenter.onPlayFabClicked() }
+        button_play_pause.setOnClickListener { presenter.onPlayFabClicked() }
     }
 
     override fun getLayoutId(): Int {
