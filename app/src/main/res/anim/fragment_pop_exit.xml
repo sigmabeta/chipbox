@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+     android:interpolator="@android:interpolator/accelerate_cubic"
+     android:duration="@integer/duration_enter">
+
+    <translate
+        android:toYDelta="100%"
+        android:fromYDelta="0"/>
+
+    <scale
+        android:pivotX="50%"
+        android:pivotY="50%"
+        android:toXScale="@dimen/fragment_anim_scale_big"
+        android:toYScale="@dimen/fragment_anim_scale_big"
+        android:fromXScale="@dimen/fragment_anim_scale_full"
+        android:fromYScale="@dimen/fragment_anim_scale_full"/>
+
+</set>

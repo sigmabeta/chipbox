@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="fragment_anim_alpha_low" format="float" type="dimen">0.6</item>
+    <item name="fragment_anim_alpha_full" format="float" type="dimen">1.0</item>
+
+    <item name="fragment_anim_scale_small" format="float" type="dimen">0.6</item>
+    <item name="fragment_anim_scale_full" format="float" type="dimen">1.0</item>
+    <item name="fragment_anim_scale_big" format="float" type="dimen">1.1</item>
+</resources>
