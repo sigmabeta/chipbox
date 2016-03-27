@@ -2,11 +2,11 @@
 <transitionSet xmlns:android="http://schemas.android.com/apk/res/android">
     <fade
         android:fadingMode="fade_in"
-        android:interpolator="@android:interpolator/accelerate_cubic"
-        android:startDelay="300"
-        android:duration="200"/>
+        android:startDelay="@integer/duration_fade_in_delay"
+        android:duration="@integer/duration_fade_in_time"
+        android:interpolator="@android:interpolator/accelerate_cubic"/>
     <slide
         android:slideEdge="bottom"
-        android:duration="500"
+        android:duration="@integer/duration_enter"
         android:interpolator="@android:interpolator/decelerate_cubic"/>
 </transitionSet>
