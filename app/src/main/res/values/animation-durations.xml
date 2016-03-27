@@ -7,4 +7,5 @@
     <integer name="duration_fade_in_delay">350</integer>
     <integer name="duration_fade_in_time">50</integer>
 
+    <integer name="duration_fragment_enter_delay">200</integer>
 </resources>
