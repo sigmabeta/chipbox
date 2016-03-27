@@ -10,8 +10,6 @@ import net.sigmabeta.chipbox.util.loadImageLowQuality
 class GameViewHolder(view: View, adapter: GameGridAdapter) : BaseViewHolder<Game, GameViewHolder, GameGridAdapter>(view, adapter), View.OnClickListener {
     var gameId: Long? = null
 
-    var boundAtLeastOnce = false
-
     override fun getId(): Long? {
         return gameId
     }
@@ -23,12 +21,10 @@ class GameViewHolder(view: View, adapter: GameGridAdapter) : BaseViewHolder<Game
         view.text_artist.text = toBind.artist?.name
 
         toBind.artLocal?.let {
-            view.image_game_box_art.loadImageLowQuality(it, boundAtLeastOnce, true)
+            view.image_game_box_art.loadImageLowQuality(it, true, true)
         } ?: let {
-            view.image_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, boundAtLeastOnce, true)
+            view.image_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, true, true)
         }
-
-        boundAtLeastOnce = true
     }
 
     fun getSharedImage(): ImageView = view.image_game_box_art

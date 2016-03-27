@@ -7,7 +7,7 @@ import net.sigmabeta.chipbox.ui.file.FileListFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.platform.PlatformListFragment
 import net.sigmabeta.chipbox.ui.player.PlayerFragment
-import net.sigmabeta.chipbox.ui.song.SongListFragment
+import net.sigmabeta.chipbox.ui.track.TrackListFragment
 
 @ActivityScoped
 @Subcomponent
@@ -16,7 +16,7 @@ interface FragmentComponent {
      * Crucial: injection targets must be the correct type.
      * Passing an interface here will result in a no-op injection.
      */
-    fun inject(view: SongListFragment)
+    fun inject(view: TrackListFragment)
     fun inject(view: PlatformListFragment)
     fun inject(view: PlayerFragment)
     fun inject(view: GameGridFragment)

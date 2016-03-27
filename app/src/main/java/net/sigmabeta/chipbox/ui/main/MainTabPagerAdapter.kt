@@ -12,7 +12,7 @@ import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.artist.ArtistListFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.platform.PlatformListFragment
-import net.sigmabeta.chipbox.ui.song.SongListFragment
+import net.sigmabeta.chipbox.ui.track.TrackListFragment
 import net.sigmabeta.chipbox.util.logError
 
 class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context) : FragmentPagerAdapter(fragManager) {
@@ -40,7 +40,7 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
             0 -> return PlatformListFragment.newInstance()
             1 -> return ArtistListFragment.newInstance()
             2 -> return GameGridFragment.newInstance(Track.PLATFORM_ALL)
-            3 -> return SongListFragment.newInstance(Artist.ARTIST_ALL)
+            3 -> return TrackListFragment.newInstance(Artist.ARTIST_ALL)
             else -> return null
         }
     }

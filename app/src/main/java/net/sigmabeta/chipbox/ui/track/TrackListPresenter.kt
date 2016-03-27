@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.ui.song
+package net.sigmabeta.chipbox.ui.track
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
@@ -16,8 +16,8 @@ import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
-class SongListPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
-    var view: SongListView? = null
+class TrackListPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
+    var view: TrackListView? = null
 
     var artistId = Artist.ARTIST_ALL
 
@@ -38,7 +38,7 @@ class SongListPresenter @Inject constructor(val player: Player) : FragmentPresen
      */
 
     override fun setup(arguments: Bundle?) {
-        artistId = arguments?.getLong(SongListFragment.ARGUMENT_ARTIST) ?: Artist.ARTIST_ALL
+        artistId = arguments?.getLong(TrackListFragment.ARGUMENT_ARTIST) ?: Artist.ARTIST_ALL
 
         if (artistId == Artist.ARTIST_ALL) {
             val songsLoad = Track.getAll()
@@ -104,7 +104,7 @@ class SongListPresenter @Inject constructor(val player: Player) : FragmentPresen
     override fun getView(): BaseView? = view
 
     override fun setView(view: BaseView) {
-        if (view is SongListView) this.view = view
+        if (view is TrackListView) this.view = view
     }
 
     override fun clearView() {

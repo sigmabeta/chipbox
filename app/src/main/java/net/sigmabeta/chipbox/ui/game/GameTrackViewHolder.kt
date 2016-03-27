@@ -1,17 +1,14 @@
-package net.sigmabeta.chipbox.ui.song
+package net.sigmabeta.chipbox.ui.game
 
 import android.view.View
-import kotlinx.android.synthetic.main.list_item_song.view.image_game_box_art
 import kotlinx.android.synthetic.main.list_item_song_game.view.*
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseViewHolder
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
-import net.sigmabeta.chipbox.util.loadImageLowQuality
 
 
-open class SongViewHolder(view: View, adapter: SongListAdapter) : BaseViewHolder<Track, SongViewHolder, SongListAdapter>(view, adapter), View.OnClickListener {
+open class GameTrackViewHolder(view: View, adapter: GameTrackListAdapter) : BaseViewHolder<Track, GameTrackViewHolder, GameTrackListAdapter>(view, adapter), View.OnClickListener {
     var trackId: Long? = null
 
     var boundAtLeastOnce = false
@@ -26,17 +23,6 @@ open class SongViewHolder(view: View, adapter: SongListAdapter) : BaseViewHolder
         view.text_song_title.text = toBind.title
         view.text_song_artist.text = toBind.artistText
         view.text_song_length.text = getTimeStringFromMillis(toBind.trackLength ?: 0)
-
-        if (view.image_game_box_art != null) {
-            val gameId = toBind.gameContainer?.toModel()?.id
-            val imagePath = adapter.games?.get(gameId)?.artLocal
-
-            if (imagePath != null) {
-                view.image_game_box_art.loadImageLowQuality(imagePath, boundAtLeastOnce, true)
-            } else {
-                view.image_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, boundAtLeastOnce, true)
-            }
-        }
 
         if (view.text_song_track_number != null) {
             val trackNumber = toBind.trackNumber

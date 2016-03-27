@@ -16,18 +16,14 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ItemListView
-import net.sigmabeta.chipbox.ui.song.SongListAdapter
-import net.sigmabeta.chipbox.ui.song.SongListView
-import net.sigmabeta.chipbox.ui.song.SongViewHolder
 import net.sigmabeta.chipbox.util.loadImageHighQuality
-import java.util.*
 import javax.inject.Inject
 
-class GameActivity : BaseActivity(), GameView, ItemListView<SongViewHolder>, SongListView {
+class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder> {
     lateinit var presenter: GamePresenter
         @Inject set
 
-    var adapter = SongListAdapter(this, false, true)
+    var adapter = GameTrackListAdapter(this, false)
 
     /**
      * GameView
@@ -54,31 +50,15 @@ class GameActivity : BaseActivity(), GameView, ItemListView<SongViewHolder>, Son
         // no-op for now
     }
 
-    /**
-     * SongListView
-     */
-
-    override fun refreshList() {
-        adapter.notifyDataSetChanged()
-    }
-
     override fun setSongs(songs: List<Track>) {
         adapter.dataset = songs
-    }
-
-    override fun setGames(games: HashMap<Long, Game>) {
-        adapter.games = games
-    }
-
-    override fun setActivityTitle(name: String) {
-        this.title = title
     }
 
     /**
      * ItemListView
      */
 
-    override fun onItemClick(position: Long, clickedViewHolder: SongViewHolder) {
+    override fun onItemClick(position: Long, clickedViewHolder: GameTrackViewHolder) {
         if (position > 0L) {
             presenter.onItemClick(position - 1L)
         }

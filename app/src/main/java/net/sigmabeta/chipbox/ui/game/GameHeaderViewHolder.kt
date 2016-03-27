@@ -1,11 +1,11 @@
-package net.sigmabeta.chipbox.ui.song
+package net.sigmabeta.chipbox.ui.game
 
 import android.view.View
 import kotlinx.android.synthetic.main.list_header_game.view.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Track
 
-class GameHeaderViewHolder(view: View, adapter: SongListAdapter) : SongViewHolder(view, adapter) {
+class GameHeaderViewHolder(view: View, adapter: GameTrackListAdapter) : GameTrackViewHolder(view, adapter) {
 
     override fun getId(): Long? {
         return 0

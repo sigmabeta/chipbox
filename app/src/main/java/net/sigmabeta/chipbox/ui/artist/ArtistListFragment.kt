@@ -9,7 +9,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
-import net.sigmabeta.chipbox.ui.song.SongListFragment
+import net.sigmabeta.chipbox.ui.track.TrackListFragment
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import javax.inject.Inject
 
@@ -24,7 +24,7 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistVi
      */
 
     override fun launchNavActivity(id: Long) {
-        NavigationActivity.launch(activity, SongListFragment.FRAGMENT_TAG, id)
+        NavigationActivity.launch(activity, TrackListFragment.FRAGMENT_TAG, id)
     }
 
     override fun setArtists(artists: List<Artist>) {

@@ -14,24 +14,13 @@ abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemL
         }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): VH? {
-        if (viewType == TYPE_HEADER) {
-            val headerView = LayoutInflater.from(parent?.context)?.inflate(getHeaderLayoutId(), parent, false)
+        val card = LayoutInflater.from(parent?.context)?.inflate(getLayoutId(), parent, false)
 
-            if (headerView != null) {
-                return createHeaderViewHolder(headerView)
-            } else {
-                logError("[BaseArrayAdapter] Unable to inflate view...")
-                return null
-            }
+        if (card != null) {
+            return createViewHolder(card)
         } else {
-            val itemView = LayoutInflater.from(parent?.context)?.inflate(getLayoutId(), parent, false)
-
-            if (itemView != null) {
-                return createViewHolder(itemView)
-            } else {
-                logError("[BaseArrayAdapter] Unable to inflate view...")
-                return null
-            }
+            logError("[BaseArrayAdapter] Unable to inflate view...")
+            return null
         }
     }
 
@@ -51,36 +40,12 @@ abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemL
         return position.toLong()
     }
 
-    fun getItem(position: Int): T? {
-        if (getHeaderLayoutId() != 0) {
-            if (position > 0) {
-                return dataset?.get(position - 1)
-            } else {
-                return null
-            }
-        } else {
-            return dataset?.get(position)
-        }
+    open fun getItem(position: Int): T? {
+        return dataset?.get(position)
     }
 
     fun onItemClick(id: Long, clickedViewHolder: VH) {
         view.onItemClick(id, clickedViewHolder)
-    }
-
-    override fun getItemViewType(position: Int): Int {
-        return if (getHeaderLayoutId() != 0 && position == 0) {
-            TYPE_HEADER
-        } else {
-            TYPE_ITEM
-        }
-    }
-
-    open fun getHeaderLayoutId(): Int {
-        return 0
-    }
-
-    open fun createHeaderViewHolder(view: View): VH? {
-        return null
     }
 
     abstract fun getLayoutId(): Int
@@ -88,9 +53,4 @@ abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemL
     abstract fun createViewHolder(view: View): VH
 
     abstract protected fun bind(holder: VH, item: T)
-
-    companion object {
-        val TYPE_HEADER = 0
-        val TYPE_ITEM = 1
-    }
 }
