@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.ui.track
 
 import android.view.View
-import kotlinx.android.synthetic.main.list_item_song.view.*
+import kotlinx.android.synthetic.main.list_item_track.view.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
