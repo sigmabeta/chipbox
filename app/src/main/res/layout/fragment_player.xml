@@ -8,8 +8,20 @@
     <RelativeLayout
         android:id="@+id/layout_content"
         android:layout_width="match_parent"
-
         android:layout_height="match_parent">
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/button_fab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-28dp"
+            android:layout_marginEnd="@dimen/spacing_large"
+            android:clickable="true"
+            android:src="@drawable/ic_queue_music_black_24dp"
+            android:tint="@android:color/white"
+            android:layout_alignParentEnd="true"
+            android:layout_below="@+id/image_game_box_art"
+            android:elevation="10dp"/>
 
         <ImageView
             android:transitionName="image_playing_boxart"
@@ -23,19 +35,6 @@
             android:clipToPadding="false"
             android:outlineProvider="bounds"
             tools:src="@drawable/img_album_art_blank"/>
-
-        <android.support.design.widget.FloatingActionButton
-            android:id="@+id/button_fab"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="-28dp"
-            android:layout_marginEnd="@dimen/spacing_large"
-            android:clickable="true"
-            android:src="@drawable/ic_queue_music_black_24dp"
-            android:tint="@android:color/white"
-            android:layout_alignParentEnd="true"
-            android:layout_below="@id/image_game_box_art"
-            android:elevation="10dp"/>
 
             <TextView
                 android:id="@+id/text_track_title"
