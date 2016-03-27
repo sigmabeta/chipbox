@@ -1,11 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>>
-    <integer name="duration_enter">400</integer>
-    <integer name="duration_return">400</integer>
+    <integer name="duration_enter">500</integer>
+    <integer name="duration_return">500</integer>
 
     <!-- These two must sum equally to the duration of the enter transition. -->
-    <integer name="duration_fade_in_delay">350</integer>
-    <integer name="duration_fade_in_time">50</integer>
+    <integer name="duration_enter_fade_in_delay">300</integer>
+    <integer name="duration_enter_fade_in_time">200</integer>
+
+    <!-- These two must sum equally to the duration of the re-enter transition. -->
+    <integer name="duration_reenter_fade_in_delay">350</integer>
+    <integer name="duration_reenter_fade_in_time">150</integer>
+
+    <integer name="duration_fade_out">400</integer>
 
     <integer name="duration_fragment_enter_delay">200</integer>
 </resources>
