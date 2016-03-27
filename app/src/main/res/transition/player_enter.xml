@@ -3,8 +3,8 @@
     <fade
         android:fadingMode="fade_in"
         android:interpolator="@android:interpolator/accelerate_cubic"
-        android:startDelay="200"
-        android:duration="300"/>
+        android:startDelay="300"
+        android:duration="200"/>
     <slide
         android:slideEdge="bottom"
         android:duration="500"
