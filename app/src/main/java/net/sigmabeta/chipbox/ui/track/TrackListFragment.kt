@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.ui.song
+package net.sigmabeta.chipbox.ui.track
 
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
@@ -14,11 +14,11 @@ import net.sigmabeta.chipbox.util.isScrolledToBottom
 import java.util.*
 import javax.inject.Inject
 
-class SongListFragment : BaseFragment(), SongListView, ItemListView<SongViewHolder>, TopLevelFragment, NavigationFragment {
-    lateinit var presenter: SongListPresenter
+class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewHolder>, TopLevelFragment, NavigationFragment {
+    lateinit var presenter: TrackListPresenter
         @Inject set
 
-    var adapter = SongListAdapter(this, true)
+    var adapter = TrackListAdapter(this, true)
 
     /**
      * SongListView
@@ -48,7 +48,7 @@ class SongListFragment : BaseFragment(), SongListView, ItemListView<SongViewHold
      * ItemListView
      */
 
-    override fun onItemClick(position: Long, clickedViewHolder: SongViewHolder) {
+    override fun onItemClick(position: Long, clickedViewHolder: TrackViewHolder) {
         presenter.onItemClick(position)
     }
 
@@ -89,8 +89,8 @@ class SongListFragment : BaseFragment(), SongListView, ItemListView<SongViewHold
 
         val ARGUMENT_ARTIST = "${FRAGMENT_TAG}.artist"
 
-        fun newInstance(artist: Long): SongListFragment {
-            val fragment = SongListFragment()
+        fun newInstance(artist: Long): TrackListFragment {
+            val fragment = TrackListFragment()
 
             val arguments = Bundle()
             arguments.putLong(ARGUMENT_ARTIST, artist)

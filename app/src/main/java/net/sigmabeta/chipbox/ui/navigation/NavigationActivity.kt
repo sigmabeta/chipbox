@@ -13,7 +13,7 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
-import net.sigmabeta.chipbox.ui.song.SongListFragment
+import net.sigmabeta.chipbox.ui.track.TrackListFragment
 import net.sigmabeta.chipbox.util.loadImageLowQuality
 import net.sigmabeta.chipbox.util.slideViewOffscreen
 import net.sigmabeta.chipbox.util.slideViewOnscreen
@@ -33,7 +33,7 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
 
         when (fragmentTag) {
             GameGridFragment.FRAGMENT_TAG -> fragment = GameGridFragment.newInstance(fragmentArg)
-            SongListFragment.FRAGMENT_TAG -> fragment = SongListFragment.newInstance(fragmentArg)
+            TrackListFragment.FRAGMENT_TAG -> fragment = TrackListFragment.newInstance(fragmentArg)
             else -> {
                 showToastMessage("Unsupported fragment.")
                 return
