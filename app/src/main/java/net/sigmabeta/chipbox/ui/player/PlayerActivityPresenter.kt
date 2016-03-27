@@ -18,7 +18,6 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
     }
 
     override fun setup(arguments: Bundle?) {
-        view?.delayTransition()
         view?.showPlayerFragment()
     }
 

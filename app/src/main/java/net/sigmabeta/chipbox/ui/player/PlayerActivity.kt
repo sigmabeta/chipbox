@@ -30,10 +30,6 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
                 .commit()
     }
 
-    override fun delayTransition() {
-        postponeEnterTransition()
-    }
-
     /**
      * FragmentContainer
      */
