@@ -9,7 +9,10 @@
         <item name="android:windowBackground">@color/background_grey</item>
 
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:windowActivityTransitions">true</item>
+        <item name="android:windowActivityTransitions">true</item><!--
+
+        <item name="android:windowExitTransition">@transition/player_enter</item>
+        <item name="android:windowReenterTransition">@transition/player_exit</item>-->
     </style>
 
     <style name="ThemeFileList" parent="Theme.AppCompat.Light.DarkActionBar">
@@ -29,6 +32,9 @@
         <item name="android:windowBackground">@color/background_grey</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowActivityTransitions">true</item>
+
+        <item name="android:windowEnterTransition">@transition/player_enter</item>
+        <item name="android:windowReturnTransition">@transition/player_exit</item>
     </style>
 
     <style name="ThemeScan" parent="Theme.AppCompat.NoActionBar">
