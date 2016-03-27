@@ -2,10 +2,10 @@
 <transitionSet xmlns:android="http://schemas.android.com/apk/res/android">
     <fade
         android:fadingMode="fade_out"
-        android:interpolator="@android:interpolator/accelerate_cubic"
-        android:duration="200"/>
+        android:duration="@integer/duration_return"
+        android:interpolator="@android:interpolator/accelerate_cubic"/>
     <slide
         android:slideEdge="bottom"
-        android:duration="300"
+        android:duration="@integer/duration_return"
         android:interpolator="@android:interpolator/accelerate_cubic"/>
 </transitionSet>

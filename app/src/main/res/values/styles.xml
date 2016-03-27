@@ -33,6 +33,8 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowActivityTransitions">true</item>
 
+        <item name="android:windowSharedElementEnterTransition">@transition/shared_enter</item>
+        <item name="android:windowSharedElementReturnTransition">@transition/shared_return</item>
         <item name="android:windowEnterTransition">@transition/player_enter</item>
         <item name="android:windowReturnTransition">@transition/player_return</item>
     </style>
