@@ -45,6 +45,10 @@
             android:theme="@style/ThemeScan"
             android:screenOrientation="portrait"/>
 
+        <activity
+            android:name=".ui.playlist.PlaylistActivity"
+            android:theme="@style/ThemePlaylist"/>
+
         <service
             android:name=".backend.PlayerService"
             android:enabled="true"

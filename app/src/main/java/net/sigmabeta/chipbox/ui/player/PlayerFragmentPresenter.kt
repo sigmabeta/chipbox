@@ -31,6 +31,10 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     var seekbarTouched = false
 
     fun onFabClick() {
+        view?.launchPlaylistActivity()
+    }
+
+    fun onPlayPauseClick() {
         when (player.state) {
             PlaybackState.STATE_PLAYING -> player.pause()
 
@@ -57,6 +61,9 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
         seekbarTouched = false
     }
 
+    fun onReenter() {
+        updateHelper()
+    }
     /**
      * FragmentPresenter
      */
@@ -74,21 +81,8 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     }
 
     override fun updateViewState() {
-        player.playingTrack?.let {
-            displayTrack(it)
-        } ?: let {
-            logError("[PlayerFragmentPresenter] No track to display.")
-        }
+        updateHelper()
 
-        player.playingGame?.let {
-            displayGame(it, true)
-        }
-
-        displayState(player.state)
-
-        displayPosition(player.playbackTimePosition)
-
-        player.playbackTimePosition
         val subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
@@ -102,6 +96,22 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
                 }
 
         subscriptions.add(subscription)
+    }
+
+    private fun updateHelper() {
+        player.playingTrack?.let {
+            displayTrack(it)
+        } ?: let {
+            logError("[PlayerFragmentPresenter] No track to display.")
+        }
+
+        player.playingGame?.let {
+            displayGame(it, true)
+        }
+
+        displayState(player.state)
+
+        displayPosition(player.playbackTimePosition)
     }
 
     override fun getView(): BaseView? = view

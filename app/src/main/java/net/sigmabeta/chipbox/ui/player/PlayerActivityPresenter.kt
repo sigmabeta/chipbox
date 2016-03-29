@@ -10,7 +10,6 @@ import javax.inject.Singleton
 class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
     var view: PlayerActivityView? = null
 
-
     override fun onReCreate(savedInstanceState: Bundle) {
     }
 
@@ -37,5 +36,7 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
         view = null
     }
 
-    override fun onReenter() = Unit
+    override fun onReenter() {
+        view?.updateFragments()
+    }
 }

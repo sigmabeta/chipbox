@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.dagger.component.FragmentComponent
@@ -49,12 +50,16 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
         configureViews()
         getPresenter().onCreate(intent.extras, savedInstanceState, this)
 
-        if (getSharedImage() != null) {
-            postponeEnterTransition()
+        val sharedView = getSharedImage()
+
+        if (sharedView != null) {
             setResult(RESULT_OK)
+            if (sharedView is ImageView) {
+                postponeEnterTransition()
+            }
         } else if (shouldDelayTransitionForFragment()) {
-            postponeEnterTransition()
             setResult(RESULT_OK)
+            postponeEnterTransition()
         }
     }
 

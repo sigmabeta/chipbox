@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.ui.main.MainActivity
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
+import net.sigmabeta.chipbox.ui.playlist.PlaylistActivity
 import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import javax.inject.Singleton
 
@@ -32,6 +33,7 @@ interface AppComponent {
     fun inject(view: ScanActivity)
     fun inject(view: FilesActivity)
     fun inject(view: GameActivity)
+    fun inject(view: PlaylistActivity)
     fun inject(backendView: PlayerService)
 
     fun plusFragments(): FragmentComponent

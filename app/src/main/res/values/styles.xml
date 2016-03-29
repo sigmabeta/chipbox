@@ -44,6 +44,22 @@
         <item name="android:windowReenterTransition">@transition/reenter</item>
     </style>
 
+    <style name="ThemePlaylist" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+
+        <item name="android:windowBackground">@color/background_grey</item>
+        <item name="android:windowActivityTransitions">true</item>
+
+        <item name="android:windowSharedElementEnterTransition">@transition/shared_enter</item>
+        <item name="android:windowSharedElementReturnTransition">@transition/shared_return</item>
+        <item name="android:windowEnterTransition">@transition/enter</item>
+        <item name="android:windowReturnTransition">@transition/returns</item>
+        <item name="android:windowExitTransition">@transition/exit</item>
+        <item name="android:windowReenterTransition">@transition/reenter</item>
+    </style>
+
     <style name="ThemePlayer" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>

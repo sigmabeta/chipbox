@@ -294,17 +294,16 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     }
 
     fun play(position: Int) {
-        val queue = playbackQueue
-        if (queue != null) {
-            if (position < queue.size) {
+        playbackQueue?.let {
+            if (position < it.size) {
                 playbackQueuePosition = position
-                queuedTrack = queue.get(position)
+                queuedTrack = it.get(position)
 
                 play()
             } else {
-                logError("[Player] Cannot play track #${position} of ${queue.size}.")
+                logError("[Player] Cannot play track #${position} of ${it.size}.")
             }
-        } else {
+        } ?: let {
             logError("[Player] Cannot play track #${position}: no playback queue exists.")
         }
     }
