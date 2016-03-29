@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.ui.file.FileListFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.platform.PlatformListFragment
 import net.sigmabeta.chipbox.ui.player.PlayerFragment
+import net.sigmabeta.chipbox.ui.playlist.PlaylistFragment
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
 
 @ActivityScoped
@@ -22,4 +23,5 @@ interface FragmentComponent {
     fun inject(view: GameGridFragment)
     fun inject(view: ArtistListFragment)
     fun inject(view: FileListFragment)
+    fun inject(view: PlaylistFragment)
 }

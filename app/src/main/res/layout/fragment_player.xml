@@ -108,58 +108,12 @@
             android:layout_alignParentEnd="true"
             android:layout_above="@id/layout_controls"/>
 
-        <LinearLayout
-            android:id="@+id/layout_controls"
-            android:layout_width="match_parent"
+        <include
+            layout="@layout/layout_player_controls"
+            android:layout_width="0dp"
             android:layout_height="72dp"
-            android:gravity="center"
-            android:layout_alignParentBottom="true"
-            android:orientation="horizontal">
-
-            <ImageButton
-                android:id="@+id/button_repeat"
-                style="@style/Widget.AppCompat.Button.Borderless"
-                android:layout_width="72dp"
-                android:layout_height="match_parent"
-                android:tint="@color/circle_grey"
-                android:src="@drawable/ic_repeat_black_24dp"/>
-
-            <ImageButton
-                android:id="@+id/button_skip_back"
-                style="@style/Widget.AppCompat.Button.Borderless"
-                android:layout_width="72dp"
-                android:layout_height="match_parent"
-                android:tint="@color/accent"
-                android:src="@drawable/ic_skip_previous_black_24dp"/>
-
-            <ImageButton
-                android:id="@+id/button_play"
-                style="@style/Widget.AppCompat.Button.Borderless"
-                android:scaleType="fitCenter"
-                android:layout_width="72dp"
-                android:layout_height="match_parent"
-                android:tint="@color/accent"
-                android:src="@drawable/ic_play_arrow_black_24dp"
-                />
-
-            <ImageButton
-                android:id="@+id/button_skip_forward"
-                style="@style/Widget.AppCompat.Button.Borderless"
-                android:layout_width="72dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center_vertical"
-                android:tint="@color/accent"
-                android:src="@drawable/ic_skip_next_black_24dp"/>
-
-            <ImageButton
-                android:id="@+id/button_shuffle"
-                style="@style/Widget.AppCompat.Button.Borderless"
-                android:layout_width="72dp"
-                android:layout_height="match_parent"
-                android:layout_gravity="center_vertical"
-                android:tint="@color/circle_grey"
-                android:src="@drawable/ic_shuffle_black_24dp"
-                />
-        </LinearLayout>
+            android:layout_alignParentStart="true"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentBottom="true"/>
     </RelativeLayout>
 </FrameLayout>

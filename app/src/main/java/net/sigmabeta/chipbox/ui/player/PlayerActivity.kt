@@ -30,6 +30,10 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
                 .commit()
     }
 
+    override fun updateFragments() {
+        getPlayerFragment()?.onReenter()
+    }
+
     /**
      * FragmentContainer
      */
@@ -66,6 +70,11 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
     override fun getSharedImage(): View? = null
 
     override fun shouldDelayTransitionForFragment() = true
+
+    private fun getPlayerFragment(): PlayerFragment? {
+        val fragment = supportFragmentManager.findFragmentByTag(PlayerFragment.FRAGMENT_TAG) as PlayerFragment
+        return fragment
+    }
 
     companion object {
         fun launch(activity: Activity, sharedView: View) {

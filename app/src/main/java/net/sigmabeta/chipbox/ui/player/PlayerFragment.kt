@@ -4,12 +4,14 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.SeekBar
 import kotlinx.android.synthetic.main.fragment_player.*
+import kotlinx.android.synthetic.main.layout_player_controls.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.playlist.PlaylistActivity
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import javax.inject.Inject
 
@@ -17,9 +19,17 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
     lateinit var presenter: PlayerFragmentPresenter
         @Inject set
 
+    fun onReenter() {
+        presenter.onReenter()
+    }
+
     /**
      * PlayerFragmentView
      */
+
+    override fun launchPlaylistActivity() {
+        PlaylistActivity.launch(activity, layout_controls)
+    }
 
     override fun setTrackTitle(title: String) {
         text_track_title.text = title
@@ -108,7 +118,7 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
 
     override fun configureViews() {
         button_play.setOnClickListener {
-            presenter.onFabClick()
+            presenter.onPlayPauseClick()
         }
 
         button_skip_forward.setOnClickListener {
@@ -117,6 +127,10 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
 
         button_skip_back.setOnClickListener {
             presenter.onRewindClick()
+        }
+
+        button_fab.setOnClickListener {
+            presenter.onFabClick()
         }
 
         seek_playback_progress.setOnSeekBarChangeListener(this)
