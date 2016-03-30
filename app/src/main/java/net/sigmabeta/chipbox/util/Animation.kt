@@ -74,3 +74,16 @@ fun View.fadeInFromRight(): ViewPropertyAnimator {
             .translationX(0.0f)
             .alpha(1.0f)
 }
+
+fun View.fadeInFromBelow(): ViewPropertyAnimator {
+    alpha = 0.0f
+    visibility = View.VISIBLE
+    translationY = height.toFloat()
+
+    return animate()
+            .withLayer()
+            .setInterpolator(DECELERATE)
+            .setDuration(300)
+            .translationY(0.0f)
+            .alpha(1.0f)
+}

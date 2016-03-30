@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.ui
+package net.sigmabeta.chipbox.ui.util
 
 import android.graphics.Rect
 import android.support.v7.widget.RecyclerView

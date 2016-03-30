@@ -21,7 +21,8 @@
             android:tint="@android:color/white"
             android:layout_alignParentEnd="true"
             android:layout_below="@+id/image_game_box_art"
-            android:elevation="10dp"/>
+            android:elevation="10dp"
+            android:alpha="0.0"/>
 
         <ImageView
             android:transitionName="image_playing_boxart"
