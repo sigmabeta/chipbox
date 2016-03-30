@@ -11,6 +11,10 @@ import android.widget.ImageView
 import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.dagger.component.FragmentComponent
+import net.sigmabeta.chipbox.ui.util.FadeInFromAboveTransition
+import net.sigmabeta.chipbox.ui.util.FadeInFromBelowTransition
+import net.sigmabeta.chipbox.ui.util.FadeOutDownTransition
+import net.sigmabeta.chipbox.ui.util.FadeOutUpTransition
 import net.sigmabeta.chipbox.util.logError
 
 abstract class BaseActivity : AppCompatActivity(), BaseView {
@@ -46,6 +50,11 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
 
         inject()
         setContentView(getLayoutId())
+
+        window.enterTransition = TRANSITION_FADE_IN_BELOW
+        window.reenterTransition = TRANSITION_FADE_IN_ABOVE
+        window.exitTransition = TRANSITION_FADE_OUT_UP
+        window.returnTransition = TRANSITION_FADE_OUT_DOWN
 
         configureViews()
         getPresenter().onCreate(intent.extras, savedInstanceState, this)
@@ -131,4 +140,11 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
      * getSharedImage() call returns non-null, this is ignored.
      */
     protected abstract fun shouldDelayTransitionForFragment(): Boolean
+
+    companion object {
+        val TRANSITION_FADE_OUT_UP = FadeOutUpTransition()
+        val TRANSITION_FADE_OUT_DOWN = FadeOutDownTransition()
+        val TRANSITION_FADE_IN_ABOVE = FadeInFromAboveTransition()
+        val TRANSITION_FADE_IN_BELOW = FadeInFromBelowTransition()
+    }
 }

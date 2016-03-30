@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.game.GameActivity
+import net.sigmabeta.chipbox.ui.util.GridSpaceDecoration
 import net.sigmabeta.chipbox.util.convertDpToPx
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import javax.inject.Inject
