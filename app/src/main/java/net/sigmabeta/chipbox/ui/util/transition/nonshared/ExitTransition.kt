@@ -1,10 +1,11 @@
 package net.sigmabeta.chipbox.ui.util.transition.nonshared
 
-import android.animation.AnimatorSet
+import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.transition.TransitionValues
 import android.view.View
 import net.sigmabeta.chipbox.util.ACCELERATE
+import java.util.*
 
 abstract class ExitTransition : NonSharedTransition() {
     override fun captureStartValues(transitionValues: TransitionValues?) {
@@ -20,14 +21,13 @@ abstract class ExitTransition : NonSharedTransition() {
         captureHeightAndVisibility(transitionValues)
     }
 
-    override fun fillAnimatorSet(set: AnimatorSet, view: View?, height: Float): AnimatorSet? {
+    override fun createAnimators(view: View?, height: Float): List<Animator>? {
+        val animations = ArrayList<Animator>(2)
 
-        set.playTogether(
-                ObjectAnimator.ofFloat(view, View.ALPHA, 1.0f, 0.0f),
-                ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, 0.0f, getDistanceScaler() * height)
-        )
+        animations.add(ObjectAnimator.ofFloat(view, View.ALPHA, 1.0f, 0.0f))
+        animations.add(ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, 0.0f, getDistanceScaler() * height))
 
-        return set
+        return animations
     }
 
     override fun getAnimationInterpolator() = ACCELERATE

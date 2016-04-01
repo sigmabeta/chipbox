@@ -51,7 +51,7 @@ class PlaylistControlsTransition : Transition() {
 
         val yDelta = endY - startY
 
-        val animations = fillAnimatorSet(view, yDelta, startElevation, endElevation)
+        val animations = createAnimators(view, yDelta, startElevation, endElevation)
 
         if (animations?.isEmpty() ?: true) {
             return null
@@ -75,7 +75,7 @@ class PlaylistControlsTransition : Transition() {
         return set
     }
 
-    fun fillAnimatorSet(view: View, yDelta: Int, startElevation: Float, endElevation: Float): List<Animator>? {
+    fun createAnimators(view: View, yDelta: Int, startElevation: Float, endElevation: Float): List<Animator>? {
         val animations = ArrayList<Animator>(3)
 
         if (yDelta != 0) {
