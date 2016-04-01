@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.ui.util
+package net.sigmabeta.chipbox.ui.util.transition.nonshared
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
@@ -8,7 +8,7 @@ import android.view.View
 import net.sigmabeta.chipbox.util.DECELERATE
 import net.sigmabeta.chipbox.util.fadeInFromBelow
 
-abstract class EnterTransition : BaseTransition() {
+abstract class EnterTransition : NonSharedTransition() {
     override fun captureEndValues(transitionValues: TransitionValues?) {
         val view = transitionValues?.view
 

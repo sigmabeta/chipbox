@@ -11,10 +11,11 @@ import android.widget.ImageView
 import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.dagger.component.FragmentComponent
-import net.sigmabeta.chipbox.ui.util.FadeInFromAboveTransition
-import net.sigmabeta.chipbox.ui.util.FadeInFromBelowTransition
-import net.sigmabeta.chipbox.ui.util.FadeOutDownTransition
-import net.sigmabeta.chipbox.ui.util.FadeOutUpTransition
+import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeInFromAboveTransition
+import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeInFromBelowTransition
+import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeOutDownTransition
+import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeOutUpTransition
+import net.sigmabeta.chipbox.ui.util.transition.shared.PlaylistControlsTransition
 import net.sigmabeta.chipbox.util.logError
 
 abstract class BaseActivity : AppCompatActivity(), BaseView {
@@ -142,6 +143,7 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
     protected abstract fun shouldDelayTransitionForFragment(): Boolean
 
     companion object {
+        val TRANSITION_SHARED_PLAYLIST = PlaylistControlsTransition()
         val TRANSITION_FADE_OUT_UP = FadeOutUpTransition()
         val TRANSITION_FADE_OUT_DOWN = FadeOutDownTransition()
         val TRANSITION_FADE_IN_ABOVE = FadeInFromAboveTransition()

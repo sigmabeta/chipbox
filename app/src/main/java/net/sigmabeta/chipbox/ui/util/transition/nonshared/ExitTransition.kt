@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.ui.util
+package net.sigmabeta.chipbox.ui.util.transition.nonshared
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
@@ -6,7 +6,7 @@ import android.transition.TransitionValues
 import android.view.View
 import net.sigmabeta.chipbox.util.ACCELERATE
 
-abstract class ExitTransition : BaseTransition() {
+abstract class ExitTransition : NonSharedTransition() {
     override fun captureStartValues(transitionValues: TransitionValues?) {
         val view = transitionValues?.view
 

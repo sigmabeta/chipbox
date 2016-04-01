@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui.playlist
 import android.app.Activity
 import android.app.ActivityOptions
 import android.content.Intent
+import android.os.Bundle
 import android.support.v4.content.ContextCompat
 import android.view.View
 import kotlinx.android.synthetic.main.activity_playlist.*
@@ -18,6 +19,12 @@ import javax.inject.Inject
 class PlaylistActivity : BaseActivity(), PlaylistActivityView {
     lateinit var presenter: PlaylistActivityPresenter
         @Inject set
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        window.sharedElementEnterTransition = TRANSITION_SHARED_PLAYLIST
+        window.sharedElementReturnTransition = TRANSITION_SHARED_PLAYLIST
+    }
 
     /**
      * PlaylistView
