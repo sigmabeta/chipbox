@@ -5,6 +5,7 @@ import android.animation.ObjectAnimator
 import android.transition.TransitionValues
 import android.view.View
 import net.sigmabeta.chipbox.util.ACCELERATE
+import net.sigmabeta.chipbox.util.DECELERATE
 import java.util.*
 
 abstract class ExitTransition : NonSharedTransition() {
@@ -22,21 +23,26 @@ abstract class ExitTransition : NonSharedTransition() {
     }
 
     override fun createAnimators(view: View?, height: Float): List<Animator>? {
-        val animations = ArrayList<Animator>(2)
+        val animations = ArrayList<Animator>(4)
+
         val distanceScaler = getDistanceScaler()
+        val sizeScale = if (distanceScaler > 0) 1.05f else 0.95f
 
-        animations.add(ObjectAnimator.ofFloat(view, View.ALPHA, 1.0f, 0.0f))
-        animations.add(ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, 0.0f, distanceScaler * height))
+        val fadingAnimation = ObjectAnimator.ofFloat(view, View.ALPHA, 1.0f, 0.0f)
+        val translAnimation = ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, 0.0f, distanceScaler * height)
+        val xScaleAnimation = ObjectAnimator.ofFloat(view, View.SCALE_X, 1.0f, sizeScale)
+        val yScaleAnimation = ObjectAnimator.ofFloat(view, View.SCALE_Y, 1.0f, sizeScale)
 
-        val sizeScale = if (distanceScaler > 0) {
-            1.1f
-        } else 0.9f
+        fadingAnimation.interpolator = ACCELERATE
+        translAnimation.interpolator = ACCELERATE
+        xScaleAnimation.interpolator = DECELERATE
+        yScaleAnimation.interpolator = DECELERATE
 
-        animations.add(ObjectAnimator.ofFloat(view, View.SCALE_X, 1.0f, sizeScale))
-        animations.add(ObjectAnimator.ofFloat(view, View.SCALE_Y, 1.0f, sizeScale))
+        animations.add(fadingAnimation)
+        animations.add(translAnimation)
+        animations.add(xScaleAnimation)
+        animations.add(yScaleAnimation)
 
         return animations
     }
-
-    override fun getAnimationInterpolator() = ACCELERATE
 }

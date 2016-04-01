@@ -7,7 +7,6 @@ import android.transition.Transition
 import android.transition.TransitionValues
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.Interpolator
 import net.sigmabeta.chipbox.BuildConfig
 
 abstract class NonSharedTransition : Transition() {
@@ -26,7 +25,6 @@ abstract class NonSharedTransition : Transition() {
 
         val set = AnimatorSet()
         set.duration = getAnimationDuration()
-        set.interpolator = getAnimationInterpolator()
 
         view?.setLayerType(View.LAYER_TYPE_HARDWARE, null)
         set.addListener(object : AnimatorListenerAdapter() {
@@ -55,8 +53,6 @@ abstract class NonSharedTransition : Transition() {
     abstract fun createAnimators(view: View?, height: Float): List<Animator>?
 
     abstract fun getDistanceScaler(): Int
-
-    abstract fun getAnimationInterpolator(): Interpolator
 
     companion object {
         val VALUE_HEIGHT = "${BuildConfig.APPLICATION_ID}.transition.height"
