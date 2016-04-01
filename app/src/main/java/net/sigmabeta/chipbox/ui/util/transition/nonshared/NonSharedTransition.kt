@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.ui.util
+package net.sigmabeta.chipbox.ui.util.transition.nonshared
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -10,7 +10,7 @@ import android.view.ViewGroup
 import android.view.animation.Interpolator
 import net.sigmabeta.chipbox.BuildConfig
 
-abstract class BaseTransition : Transition() {
+abstract class NonSharedTransition : Transition() {
 
     open fun getAnimationDuration() = 300L
 
