@@ -8,7 +8,7 @@ import net.sigmabeta.chipbox.ui.BaseArrayAdapter
 import net.sigmabeta.chipbox.ui.ItemListView
 import java.util.*
 
-class TrackListAdapter(view: ItemListView<TrackViewHolder>, val showArt: Boolean) : BaseArrayAdapter<Track, TrackViewHolder>(view) {
+class TrackListAdapter(view: ItemListView<TrackViewHolder>) : BaseArrayAdapter<Track, TrackViewHolder>(view) {
     var playingTrackId: Long? = null
         set (value) {
             field = value
@@ -21,12 +21,7 @@ class TrackListAdapter(view: ItemListView<TrackViewHolder>, val showArt: Boolean
             notifyDataSetChanged()
         }
 
-    override fun getLayoutId(): Int {
-        return if (showArt)
-            R.layout.list_item_track
-        else
-            R.layout.list_item_track_game
-    }
+    override fun getLayoutId() = R.layout.list_item_track
 
     override fun createViewHolder(view: View): TrackViewHolder {
         return TrackViewHolder(view, this)

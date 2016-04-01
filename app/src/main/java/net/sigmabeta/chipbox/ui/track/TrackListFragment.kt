@@ -18,7 +18,7 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
     lateinit var presenter: TrackListPresenter
         @Inject set
 
-    var adapter = TrackListAdapter(this, true)
+    var adapter = TrackListAdapter(this)
 
     /**
      * SongListView
