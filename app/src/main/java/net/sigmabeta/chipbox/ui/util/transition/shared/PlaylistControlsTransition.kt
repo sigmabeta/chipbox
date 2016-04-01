@@ -1,15 +1,16 @@
 package net.sigmabeta.chipbox.ui.util.transition.shared
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.AnimatorSet
-import android.animation.ObjectAnimator
+import android.animation.*
+import android.support.v4.content.ContextCompat
 import android.transition.Transition
 import android.transition.TransitionValues
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import net.sigmabeta.chipbox.BuildConfig
+import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.util.DECELERATE
+import java.util.*
 
 class PlaylistControlsTransition : Transition() {
     override fun captureStartValues(transitionValues: TransitionValues?) {
@@ -23,9 +24,13 @@ class PlaylistControlsTransition : Transition() {
     protected fun captureHelper(transitionValues: TransitionValues?) {
         val view = transitionValues?.view
 
-        val elevation = view?.elevation
+        if (view !is FrameLayout) {
+            return
+        }
+
+        val elevation = view.elevation
         val location = IntArray(2)
-        view?.getLocationInWindow(location)
+        view.getLocationInWindow(location)
 
         transitionValues?.values?.put(VALUE_ELEVATION, elevation)
         transitionValues?.values?.put(VALUE_POSITION_Y, location[1])
@@ -33,6 +38,10 @@ class PlaylistControlsTransition : Transition() {
 
     override fun createAnimator(sceneRoot: ViewGroup?, startValues: TransitionValues?, endValues: TransitionValues?): Animator? {
         val view = startValues?.view
+
+        if (view !is FrameLayout) {
+            return null
+        }
 
         val startY = startValues?.values?.get(VALUE_POSITION_Y) as Int
         val endY = endValues?.values?.get(VALUE_POSITION_Y) as Int
@@ -42,32 +51,62 @@ class PlaylistControlsTransition : Transition() {
 
         val yDelta = endY - startY
 
+        val animations = fillAnimatorSet(view, yDelta, startElevation, endElevation)
+
+        if (animations?.isEmpty() ?: true) {
+            return null
+        }
+
         val set = AnimatorSet()
+
         set.duration = getAnimationDuration()
         set.interpolator = getAnimationInterpolator()
 
-        view?.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        view.setLayerType(View.LAYER_TYPE_HARDWARE, null)
         set.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator?) {
-                view?.translationY = 0.0f
-                view?.setLayerType(View.LAYER_TYPE_NONE, null)
+                view.translationY = 0.0f
+                view.setLayerType(View.LAYER_TYPE_NONE, null)
             }
         })
 
-        return fillAnimatorSet(set, view, yDelta, startElevation, endElevation)
-    }
-
-    fun fillAnimatorSet(set: AnimatorSet, view: View?, yDelta: Int, startElevation: Float, endElevation: Float): AnimatorSet? {
-
-        set.playTogether(
-                ObjectAnimator.ofFloat(view, "elevation", startElevation, endElevation),
-                ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, -yDelta.toFloat(), 0.0f)
-        )
+        set.playTogether(animations)
 
         return set
     }
 
-    fun getAnimationDuration() = 200L
+    fun fillAnimatorSet(view: View, yDelta: Int, startElevation: Float, endElevation: Float): List<Animator>? {
+        val animations = ArrayList<Animator>(3)
+
+        if (yDelta != 0) {
+            animations.add(ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, -yDelta.toFloat(), 0.0f))
+        }
+
+        if (startElevation != endElevation) {
+            animations.add(ObjectAnimator.ofFloat(view, "elevation", startElevation, endElevation))
+
+            val colorAnimation = if (endElevation > startElevation) {
+                val startColor = ContextCompat.getColor(view.context, R.color.background_grey)
+                val endcolor = ContextCompat.getColor(view.context, android.R.color.white)
+                ValueAnimator.ofObject(ArgbEvaluator(), startColor, endcolor)
+            } else {
+                val startColor = ContextCompat.getColor(view.context, android.R.color.white)
+                val endcolor = ContextCompat.getColor(view.context, R.color.background_grey)
+                ValueAnimator.ofObject(ArgbEvaluator(), startColor, endcolor)
+            }
+
+            colorAnimation.addUpdateListener { animation ->
+                val color = animation.animatedValue as Int
+                view.setBackgroundColor(color)
+            }
+
+            animations.add(colorAnimation)
+        }
+
+        return animations
+    }
+
+    fun getAnimationDuration() = 500L
     fun getAnimationInterpolator() = DECELERATE
 
     companion object {
