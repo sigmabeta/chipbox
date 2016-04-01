@@ -1,12 +1,13 @@
 package net.sigmabeta.chipbox.ui.util.transition.nonshared
 
-import android.animation.AnimatorSet
+import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.support.design.widget.FloatingActionButton
 import android.transition.TransitionValues
 import android.view.View
 import net.sigmabeta.chipbox.util.DECELERATE
 import net.sigmabeta.chipbox.util.fadeInFromBelow
+import java.util.*
 
 abstract class EnterTransition : NonSharedTransition() {
     override fun captureEndValues(transitionValues: TransitionValues?) {
@@ -22,18 +23,20 @@ abstract class EnterTransition : NonSharedTransition() {
         captureHeightAndVisibility(transitionValues)
     }
 
-    override fun fillAnimatorSet(set: AnimatorSet, view: View?, height: Float): AnimatorSet? {
-        if (view is FloatingActionButton) {
+    override fun createAnimators(view: View?, height: Float): List<Animator>? {
+        val distanceScaler = getDistanceScaler()
+
+        if (view is FloatingActionButton && distanceScaler > 0) {
             view.fadeInFromBelow().setStartDelay(400)
             return null
         }
 
-        set.playTogether(
-                ObjectAnimator.ofFloat(view, View.ALPHA, 0.0f, 1.0f),
-                ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, getDistanceScaler() * height, 0.0f)
-        )
+        val animations = ArrayList<Animator>(2)
 
-        return set
+        animations.add(ObjectAnimator.ofFloat(view, View.ALPHA, 0.0f, 1.0f))
+        animations.add(ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, distanceScaler * height, 0.0f))
+
+        return animations
     }
 
     override fun getAnimationInterpolator() = DECELERATE

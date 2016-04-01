@@ -18,6 +18,12 @@ abstract class NonSharedTransition : Transition() {
         val view = startValues?.view
         val height = startValues?.values?.get(VALUE_HEIGHT) as Float
 
+        val animations = createAnimators(view, height)
+
+        if (animations?.isEmpty() ?: true) {
+            return null
+        }
+
         val set = AnimatorSet()
         set.duration = getAnimationDuration()
         set.interpolator = getAnimationInterpolator()
@@ -30,7 +36,8 @@ abstract class NonSharedTransition : Transition() {
             }
         })
 
-        return fillAnimatorSet(set, view, height)
+        set.playTogether(animations)
+        return set
     }
 
     protected fun captureHeightAndVisibility(transitionValues: TransitionValues?) {
@@ -43,7 +50,7 @@ abstract class NonSharedTransition : Transition() {
         transitionValues?.values?.put(VALUE_VISIBILITY, visibility)
     }
 
-    abstract fun fillAnimatorSet(set: AnimatorSet, view: View?, height: Float): AnimatorSet?
+    abstract fun createAnimators(view: View?, height: Float): List<Animator>?
 
     abstract fun getDistanceScaler(): Int
 
