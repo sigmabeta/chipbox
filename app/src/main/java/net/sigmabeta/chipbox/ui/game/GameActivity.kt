@@ -23,7 +23,7 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
     lateinit var presenter: GamePresenter
         @Inject set
 
-    var adapter = GameTrackListAdapter(this, false)
+    var adapter = GameTrackListAdapter(this)
 
     /**
      * GameView

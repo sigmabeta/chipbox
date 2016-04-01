@@ -19,7 +19,7 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Trac
     lateinit var presenter: PlaylistFragmentPresenter
         @Inject set
 
-    var adapter = TrackListAdapter(this, true)
+    var adapter = TrackListAdapter(this)
 
     /**
      * PlaylistFragmentView
@@ -49,7 +49,6 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Trac
     }
 
     override fun getPresenter(): FragmentPresenter = presenter
-
 
     override fun getLayoutId() = R.layout.fragment_playlist
 
