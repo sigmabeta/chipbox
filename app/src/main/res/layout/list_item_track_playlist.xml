@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:focusable="true"
+                android:clickable="true"
+                tools:background="@android:color/white">
+
+    <TextView
+        android:id="@+id/text_song_title"
+        style="@style/TextListTrackTitle"
+        tools:text="The Island in the Void"
+        android:layout_alignParentTop="true"
+        android:layout_toStartOf="@+id/text_song_length"
+        android:layout_toEndOf="@+id/handle_track"/>
+
+    <TextView
+        android:id="@+id/text_song_artist"
+        style="@style/TextListTrackArtist"
+        tools:text="Yasunori Shiono"
+        android:layout_alignParentBottom="true"
+        android:layout_toStartOf="@+id/text_song_length"
+        android:layout_toEndOf="@+id/handle_track"/>
+
+    <ImageView
+        android:id="@+id/handle_track"
+        android:layout_width="48dp"
+        android:layout_height="0dp"
+        android:layout_marginEnd="@dimen/spacing_medium"
+        android:paddingStart="@dimen/spacing_medium"
+        android:src="@drawable/ic_drag_handle_black_24dp"
+        android:tint="@color/circle_grey"
+        android:layout_centerVertical="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"/>
+
+    <TextView
+        android:id="@+id/text_song_length"
+        tools:text="4:29"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentBottom="true"
+        style="@style/TextListTrackLength"/>
+
+</RelativeLayout>
