@@ -23,9 +23,17 @@ abstract class ExitTransition : NonSharedTransition() {
 
     override fun createAnimators(view: View?, height: Float): List<Animator>? {
         val animations = ArrayList<Animator>(2)
+        val distanceScaler = getDistanceScaler()
 
         animations.add(ObjectAnimator.ofFloat(view, View.ALPHA, 1.0f, 0.0f))
-        animations.add(ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, 0.0f, getDistanceScaler() * height))
+        animations.add(ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, 0.0f, distanceScaler * height))
+
+        val sizeScale = if (distanceScaler > 0) {
+            1.1f
+        } else 0.9f
+
+        animations.add(ObjectAnimator.ofFloat(view, View.SCALE_X, 1.0f, sizeScale))
+        animations.add(ObjectAnimator.ofFloat(view, View.SCALE_Y, 1.0f, sizeScale))
 
         return animations
     }
