@@ -10,15 +10,11 @@ import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.loadImageLowQuality
 
 class TrackViewHolder(view: View, adapter: TrackListAdapter) : BaseViewHolder<Track, TrackViewHolder, TrackListAdapter>(view, adapter), View.OnClickListener {
-    var trackId: Long? = null
-
     override fun getId(): Long? {
         return adapterPosition.toLong()
     }
 
     override fun bind(toBind: Track) {
-        trackId = toBind.id
-
         view.text_song_title.text = toBind.title
         view.text_song_artist.text = toBind.artistText
         view.text_song_length.text = getTimeStringFromMillis(toBind.trackLength ?: 0)
@@ -32,7 +28,7 @@ class TrackViewHolder(view: View, adapter: TrackListAdapter) : BaseViewHolder<Tr
             view.image_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, true, true)
         }
 
-        if (trackId == adapter.playingTrackId) {
+        if (toBind.id == adapter.playingTrackId) {
             view.text_song_title.setTextAppearance(view.context, R.style.TextlistTrackTitlePlaying)
             view.text_song_artist.setTextAppearance(view.context, R.style.TextListTrackArtistPlaying)
             view.text_song_length.setTextAppearance(view.context, R.style.TextListTrackLengthPlaying)

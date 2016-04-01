@@ -10,16 +10,14 @@ import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.ItemListView
-import net.sigmabeta.chipbox.ui.track.TrackListAdapter
-import net.sigmabeta.chipbox.ui.track.TrackViewHolder
 import javax.inject.Inject
 
 @ActivityScoped
-class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<TrackViewHolder> {
+class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<PlaylistTrackViewHolder> {
     lateinit var presenter: PlaylistFragmentPresenter
         @Inject set
 
-    var adapter = TrackListAdapter(this)
+    var adapter = PlaylistAdapter(this)
 
     /**
      * PlaylistFragmentView
@@ -33,7 +31,7 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Trac
      * ItemListView
      */
 
-    override fun onItemClick(position: Long, clickedViewHolder: TrackViewHolder) {
+    override fun onItemClick(position: Long, clickedViewHolder: PlaylistTrackViewHolder) {
         presenter.onItemClick(position)
     }
 
