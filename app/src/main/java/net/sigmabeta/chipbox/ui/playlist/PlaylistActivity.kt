@@ -4,7 +4,6 @@ import android.app.Activity
 import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
-import android.support.v4.content.ContextCompat
 import android.view.View
 import kotlinx.android.synthetic.main.activity_playlist.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -13,7 +12,6 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.player.PlayerFragment
-import net.sigmabeta.chipbox.util.convertDpToPx
 import javax.inject.Inject
 
 class PlaylistActivity : BaseActivity(), PlaylistActivityView {
@@ -46,11 +44,7 @@ class PlaylistActivity : BaseActivity(), PlaylistActivityView {
 
     override fun getPresenter(): ActivityPresenter = presenter
 
-    override fun configureViews() {
-        layout_player_controls.elevation = convertDpToPx(6.0f, this)
-        val color = ContextCompat.getColor(this, android.R.color.white)
-        layout_player_controls.setBackgroundColor(color)
-    }
+    override fun configureViews() = Unit
 
     override fun getLayoutId() = R.layout.activity_playlist
 
