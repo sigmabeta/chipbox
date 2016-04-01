@@ -36,6 +36,13 @@ abstract class EnterTransition : NonSharedTransition() {
         animations.add(ObjectAnimator.ofFloat(view, View.ALPHA, 0.0f, 1.0f))
         animations.add(ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, distanceScaler * height, 0.0f))
 
+        val sizeScale = if (distanceScaler > 0) {
+            1.1f
+        } else 0.9f
+
+        animations.add(ObjectAnimator.ofFloat(view, View.SCALE_X, sizeScale, 1.0f))
+        animations.add(ObjectAnimator.ofFloat(view, View.SCALE_Y, sizeScale, 1.0f))
+
         return animations
     }
 

@@ -32,6 +32,8 @@ abstract class NonSharedTransition : Transition() {
         set.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator?) {
                 view?.translationY = 0.0f
+                view?.scaleX = 1.0f
+                view?.scaleY = 1.0f
                 view?.setLayerType(View.LAYER_TYPE_NONE, null)
             }
         })
