@@ -6,4 +6,6 @@ interface PlayerActivityView : BaseView {
     fun showPlayerFragment()
 
     fun showControlsFragment()
+
+    fun showPlaylist()
 }

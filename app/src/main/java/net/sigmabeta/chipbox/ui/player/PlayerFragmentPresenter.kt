@@ -29,7 +29,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     var seekbarTouched = false
 
     fun onFabClick() {
-        view?.showToastMessage("Playlist")
+        view?.showPlaylist()
     }
 
     fun onSeekbarTouch() {
