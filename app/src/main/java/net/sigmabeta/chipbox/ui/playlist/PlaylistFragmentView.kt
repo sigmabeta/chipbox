@@ -6,4 +6,7 @@ import net.sigmabeta.chipbox.ui.BaseView
 interface PlaylistFragmentView : BaseView {
     fun showQueue(queue: MutableList<Track>)
 
+    fun onTrackMoved(originPos: Int, destPos: Int)
+
+    fun onTrackRemoved(position: Int)
 }

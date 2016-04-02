@@ -411,6 +411,18 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         queuedSeekPosition = seekPosition
     }
 
+    fun onTrackMoved(originPos: Int, destPos: Int) {
+        if (originPos == playbackQueuePosition) {
+            playbackQueuePosition = destPos
+        }
+    }
+
+    fun onTrackRemoved(position: Int) {
+        if (position == playbackQueuePosition) {
+            skipToNext()
+        }
+    }
+
     override fun onAudioFocusChange(focusChange: Int) {
         when (focusChange) {
             AudioManager.AUDIOFOCUS_LOSS -> {
