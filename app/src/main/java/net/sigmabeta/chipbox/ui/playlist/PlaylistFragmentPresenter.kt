@@ -46,7 +46,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
-                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                        else -> logWarning("[PlaylistFragmentPresenter] Unhandled ${it}")
                     }
                 }
 

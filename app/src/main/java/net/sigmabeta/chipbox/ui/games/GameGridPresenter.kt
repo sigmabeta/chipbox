@@ -17,7 +17,7 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
 
     var platform = Track.PLATFORM_ALL
 
-    var games: List<Game>? = null
+    var games: MutableList<Game>? = null
 
     fun onItemClick(id: Long) {
         view?.launchGameActivity(id)

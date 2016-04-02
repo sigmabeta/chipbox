@@ -27,7 +27,7 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistVi
         NavigationActivity.launch(activity, TrackListFragment.FRAGMENT_TAG, id)
     }
 
-    override fun setArtists(artists: List<Artist>) {
+    override fun setArtists(artists: MutableList<Artist>) {
         adapter.dataset = artists
     }
 

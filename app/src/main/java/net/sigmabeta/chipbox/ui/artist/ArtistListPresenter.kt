@@ -13,7 +13,7 @@ import javax.inject.Inject
 class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
     var view: ArtistListView? = null
 
-    var artists: List<Artist>? = null
+    var artists: MutableList<Artist>? = null
 
     fun onItemClick(id: Long) {
         view?.launchNavActivity(id)

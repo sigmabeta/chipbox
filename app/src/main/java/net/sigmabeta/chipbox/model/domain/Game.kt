@@ -39,10 +39,10 @@ class Game() : BaseModel() {
 
     @ColumnIgnore
     @JvmField
-    var tracks: List<Track>? = null
+    var tracks: MutableList<Track>? = null
 
     @OneToMany(methods = arrayOf(OneToMany.Method.SAVE, OneToMany.Method.DELETE))
-    fun getTracks(): List<Track> {
+    fun getTracks(): MutableList<Track> {
         this.tracks?.let {
             if (!it.isEmpty()) {
                 return it
@@ -84,7 +84,7 @@ class Game() : BaseModel() {
             }
         }
 
-        fun getFromPlatform(platform: Long): Observable<List<Game>> {
+        fun getFromPlatform(platform: Long): Observable<MutableList<Game>> {
             return Observable.create {
                 logInfo("[Game] Reading games list...")
 

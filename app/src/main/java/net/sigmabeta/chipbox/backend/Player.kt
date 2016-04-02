@@ -39,7 +39,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var position = 0L
 
-    var playbackQueue: List<Track>? = null
+    var playbackQueue: MutableList<Track>? = null
     var playbackQueuePosition: Int? = null
 
     var queuedSeekPosition: Int? = null
@@ -278,7 +278,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         play()
     }
 
-    fun play(playbackQueue: List<Track>, position: Int) {
+    fun play(playbackQueue: MutableList<Track>, position: Int) {
         if (position < playbackQueue.size) {
             logVerbose("[Player] Playing new playlist, starting from track ${position} of ${playbackQueue.size}.")
 

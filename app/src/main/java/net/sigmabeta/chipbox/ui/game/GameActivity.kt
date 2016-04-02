@@ -50,7 +50,7 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
         // no-op for now
     }
 
-    override fun setSongs(songs: List<Track>) {
+    override fun setSongs(songs: MutableList<Track>) {
         adapter.dataset = songs
     }
 

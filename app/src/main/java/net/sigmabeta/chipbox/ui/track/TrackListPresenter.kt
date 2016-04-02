@@ -23,7 +23,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
     var artist: Artist? = null
 
-    var songs: List<Track>? = null
+    var songs: MutableList<Track>? = null
 
     var gameMap: HashMap<Long, Game>? = null
 
