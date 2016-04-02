@@ -1,7 +1,5 @@
 package net.sigmabeta.chipbox.ui.playlist
 
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.View
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
@@ -22,32 +20,6 @@ class PlaylistAdapter(view: ItemListView<PlaylistTrackViewHolder>) : BaseArrayAd
             field = value
             notifyDataSetChanged()
         }
-
-    val touchCallback = object : ItemTouchHelper.Callback() {
-        override fun getMovementFlags(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?): Int {
-            val dragFlags = ItemTouchHelper.UP or ItemTouchHelper.DOWN
-            val swipeFlags = ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
-            return makeMovementFlags(dragFlags, swipeFlags)
-        }
-
-        override fun onMove(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?, target: RecyclerView.ViewHolder?): Boolean {
-            viewHolder?.adapterPosition?.let { originPos ->
-                target?.adapterPosition?.let { destPos ->
-                    Collections.swap(dataset, originPos, destPos)
-                    notifyItemMoved(originPos, destPos)
-                    return true
-                }
-            }
-            return false
-        }
-
-        override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
-            viewHolder?.adapterPosition?.let { position ->
-                dataset?.removeAt(position)
-                notifyItemRemoved(position)
-            }
-        }
-    }
 
     override fun getLayoutId() = R.layout.list_item_track_playlist
 

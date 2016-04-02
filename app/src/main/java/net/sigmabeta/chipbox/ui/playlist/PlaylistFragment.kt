@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.playlist
 
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
 import kotlinx.android.synthetic.main.fragment_playlist.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -20,7 +21,31 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
 
     var adapter = PlaylistAdapter(this)
 
-    val touchHelper = ItemTouchHelper(adapter.touchCallback)
+    val touchCallback = object : ItemTouchHelper.Callback() {
+        override fun getMovementFlags(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?): Int {
+            val dragFlags = ItemTouchHelper.UP or ItemTouchHelper.DOWN
+            val swipeFlags = ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
+            return makeMovementFlags(dragFlags, swipeFlags)
+        }
+
+        override fun onMove(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?, target: RecyclerView.ViewHolder?): Boolean {
+            viewHolder?.adapterPosition?.let { originPos ->
+                target?.adapterPosition?.let { destPos ->
+                    presenter.onTrackMoved(originPos, destPos)
+                    return true
+                }
+            }
+            return false
+        }
+
+        override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
+            viewHolder?.adapterPosition?.let { position ->
+                presenter.onTrackRemoved(position)
+            }
+        }
+    }
+
+    val touchHelper = ItemTouchHelper(touchCallback)
 
     /**
      * PlaylistFragmentView
@@ -28,6 +53,14 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
 
     override fun showQueue(queue: MutableList<Track>) {
         adapter.dataset = queue
+    }
+
+    override fun onTrackMoved(originPos: Int, destPos: Int) {
+        adapter.notifyItemMoved(originPos, destPos)
+    }
+
+    override fun onTrackRemoved(position: Int) {
+        adapter.notifyItemRemoved(position)
     }
 
     /**
