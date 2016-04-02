@@ -7,5 +7,11 @@ interface PlayerActivityView : BaseView {
 
     fun showControlsFragment()
 
-    fun showPlaylist()
+    fun onPlaylistFabClicked()
+
+    fun showPlaylistFragment()
+
+    fun hidePlaylistFragment()
+
+    fun supportFinishAfterTransition()
 }

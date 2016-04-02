@@ -23,6 +23,10 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
      * PlayerView
      */
 
+    override fun onPlaylistFabClicked() {
+        presenter.onClick(R.id.button_fab)
+    }
+
     override fun showPlayerFragment() {
         var fragment = PlayerFragment.newInstance()
 
@@ -39,7 +43,7 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
                 .commit()
     }
 
-    override fun showPlaylist() {
+    override fun showPlaylistFragment() {
         var fragment = PlaylistFragment.newInstance()
 
         supportFragmentManager.beginTransaction()
@@ -47,6 +51,16 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
                 .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
                 .replace(R.id.frame_fragment, fragment, PlaylistFragment.FRAGMENT_TAG)
                 .commit()
+
+        val controls = getControlsFragment()
+        controls?.onPlaylistShown()
+    }
+
+    override fun hidePlaylistFragment() {
+        supportFragmentManager.popBackStackImmediate()
+
+        val controls = getControlsFragment()
+        controls?.onPlaylistHidden()
     }
 
     /**
@@ -85,6 +99,22 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
     override fun getSharedImage(): View? = null
 
     override fun shouldDelayTransitionForFragment() = true
+
+    /**
+     * Activity
+     */
+
+    override fun onBackPressed() {
+        presenter.onClick(R.string.back_button)
+    }
+
+    /**
+     * Private Methods
+     */
+
+    private fun getControlsFragment(): PlayerControlsView? {
+        return (supportFragmentManager.findFragmentByTag(PlayerControlsFragment.FRAGMENT_TAG)) as PlayerControlsView
+    }
 
     companion object {
         fun launch(activity: Activity, sharedView: View) {

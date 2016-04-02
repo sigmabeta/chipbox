@@ -15,9 +15,20 @@ import javax.inject.Inject
 class PlayerControlsPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
     var view: PlayerControlsView? = null
 
+    var elevated = false
     /**
      * Public Methods
      */
+
+    fun onPlaylistShown() {
+        view?.elevate()
+        elevated = true
+    }
+
+    fun onPlaylistHidden() {
+        view?.unElevate()
+        elevated = false
+    }
 
     fun onClick(id: Int) {
         when (id) {
@@ -64,6 +75,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
 
     override fun clearView() {
         view = null
+        elevated = false
     }
 
     /**
@@ -80,6 +92,12 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
 
     private fun updateHelper() {
         displayState(player.state)
+
+        if (elevated) {
+            view?.elevate()
+        } else {
+            view?.unElevate()
+        }
     }
 
     private fun displayState(state: Int) {
