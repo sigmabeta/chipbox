@@ -418,8 +418,12 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     }
 
     fun onTrackRemoved(position: Int) {
-        if (position == playbackQueuePosition) {
-            play(position)
+        playbackQueuePosition?.let {
+            if (position == it) {
+                play(position)
+            } else if (position < it) {
+                playbackQueuePosition = it - 1
+            }
         }
     }
 
