@@ -6,6 +6,7 @@ import net.sigmabeta.chipbox.ui.artist.ArtistListFragment
 import net.sigmabeta.chipbox.ui.file.FileListFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.platform.PlatformListFragment
+import net.sigmabeta.chipbox.ui.player.PlayerControlsFragment
 import net.sigmabeta.chipbox.ui.player.PlayerFragment
 import net.sigmabeta.chipbox.ui.playlist.PlaylistFragment
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
@@ -24,4 +25,5 @@ interface FragmentComponent {
     fun inject(view: ArtistListFragment)
     fun inject(view: FileListFragment)
     fun inject(view: PlaylistFragment)
+    fun inject(view: PlayerControlsFragment)
 }

@@ -17,6 +17,7 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
     }
 
     override fun setup(arguments: Bundle?) {
+        view?.showControlsFragment()
         view?.showPlayerFragment()
     }
 
@@ -37,6 +38,5 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
     }
 
     override fun onReenter() {
-        view?.updateFragments()
     }
 }

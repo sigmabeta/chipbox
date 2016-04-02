@@ -6,7 +6,6 @@
               android:orientation="vertical">
 
     <include
-        layout="@layout/layout_player_controls_white"
         android:id="@+id/layout_player_controls"
         android:layout_width="match_parent"
         android:layout_height="72dp"/>

@@ -26,30 +26,10 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
 
     var track: Track? = null
 
-    var state: Int? = null
-
     var seekbarTouched = false
 
     fun onFabClick() {
-        view?.launchPlaylistActivity()
-    }
-
-    fun onPlayPauseClick() {
-        when (player.state) {
-            PlaybackState.STATE_PLAYING -> player.pause()
-
-            PlaybackState.STATE_PAUSED -> player.play()
-
-            PlaybackState.STATE_STOPPED -> player.play()
-        }
-    }
-
-    fun onNextClick() {
-        player.skipToNext()
-    }
-
-    fun onRewindClick() {
-        player.skipToPrev()
+        view?.showToastMessage("Playlist")
     }
 
     fun onSeekbarTouch() {
@@ -61,9 +41,6 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
         seekbarTouched = false
     }
 
-    fun onReenter() {
-        updateHelper()
-    }
     /**
      * FragmentPresenter
      */
@@ -76,7 +53,6 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
 
     override fun teardown() {
         track = null
-        state = null
         seekbarTouched = false
     }
 
@@ -151,20 +127,11 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
 
         val timeString = getTimeStringFromMillis(millisPlayed)
         view?.setTimeElapsed(timeString)
-
-        //        view?.setUnderrunCount("Underruns ${player.stats.underrunCount}")
     }
 
     private fun displayState(state: Int) {
-        this.state = state
-
         when (state) {
-            PlaybackState.STATE_PLAYING -> view?.showPauseButton()
-
-            PlaybackState.STATE_PAUSED -> view?.showPlayButton()
-
             PlaybackState.STATE_STOPPED -> {
-                view?.showPlayButton()
                 displayPosition(0)
             }
         }
