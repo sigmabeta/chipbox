@@ -55,6 +55,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
 
     override fun teardown() {
         track = null
+        updatedOnce = false
         seekbarTouched = false
     }
 
