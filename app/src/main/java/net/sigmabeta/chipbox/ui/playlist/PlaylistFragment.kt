@@ -43,6 +43,8 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
                 presenter.onTrackRemoved(position)
             }
         }
+
+        override fun isLongPressDragEnabled() = false
     }
 
     val touchHelper = ItemTouchHelper(touchCallback)
