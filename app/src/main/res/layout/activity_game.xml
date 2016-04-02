@@ -59,6 +59,7 @@
         android:src="@drawable/ic_play_arrow_black_24dp"
         android:tint="@android:color/white"
         android:alpha="0.0"
+        app:borderWidth="2dp"
         app:layout_anchor="@id/appbar"
         app:layout_anchorGravity="bottom|right|end"/>
 
