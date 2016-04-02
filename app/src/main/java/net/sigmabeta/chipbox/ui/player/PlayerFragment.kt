@@ -58,7 +58,7 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
     }
 
     override fun showPlaylist() {
-        (activity as PlayerActivityView).showPlaylist()
+        (activity as PlayerActivityView).onPlaylistFabClicked()
     }
 
     /**

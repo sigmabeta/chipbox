@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.player
 
 import android.os.Bundle
+import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import javax.inject.Inject
@@ -9,6 +10,26 @@ import javax.inject.Singleton
 @Singleton
 class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
     var view: PlayerActivityView? = null
+
+    var playlistVisible = false
+
+    fun onClick(id: Int) {
+        when (id) {
+            R.id.button_fab -> {
+                playlistVisible = true
+                view?.showPlaylistFragment()
+            }
+
+            R.string.back_button -> {
+                if (playlistVisible) {
+                    view?.hidePlaylistFragment()
+                    playlistVisible = false
+                } else {
+                    view?.supportFinishAfterTransition()
+                }
+            }
+        }
+    }
 
     override fun onReCreate(savedInstanceState: Bundle) {
     }
@@ -22,6 +43,7 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
     }
 
     override fun teardown() {
+        playlistVisible = false
     }
 
     override fun updateViewState() {

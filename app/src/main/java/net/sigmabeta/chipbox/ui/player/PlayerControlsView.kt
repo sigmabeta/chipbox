@@ -6,4 +6,12 @@ interface PlayerControlsView : BaseView {
     fun showPauseButton()
 
     fun showPlayButton()
+
+    fun elevate()
+
+    fun unElevate()
+
+    fun onPlaylistShown()
+
+    fun onPlaylistHidden()
 }
