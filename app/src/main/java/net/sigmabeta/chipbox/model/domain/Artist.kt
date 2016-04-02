@@ -23,9 +23,9 @@ class Artist() : BaseModel() {
 
     @ColumnIgnore
     @JvmField
-    var tracks: List<Track>? = null
+    var tracks: MutableList<Track>? = null
 
-    fun getTracks(): List<Track> {
+    fun getTracks(): MutableList<Track> {
         this.tracks?.let {
             if (!it.isEmpty()) {
                 return it
@@ -69,7 +69,7 @@ class Artist() : BaseModel() {
             }
         }
 
-        fun getAll(): Observable<List<Artist>> {
+        fun getAll(): Observable<MutableList<Artist>> {
             return Observable.create {
                 logInfo("[Artist] Reading artist list...")
 

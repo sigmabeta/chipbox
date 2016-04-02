@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.playlist
 
 import android.support.v7.widget.LinearLayoutManager
+import android.support.v7.widget.helper.ItemTouchHelper
 import kotlinx.android.synthetic.main.fragment_playlist.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -19,11 +20,13 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
 
     var adapter = PlaylistAdapter(this)
 
+    val touchHelper = ItemTouchHelper(adapter.touchCallback)
+
     /**
      * PlaylistFragmentView
      */
 
-    override fun showQueue(queue: List<Track>) {
+    override fun showQueue(queue: MutableList<Track>) {
         adapter.dataset = queue
     }
 
@@ -33,6 +36,10 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
 
     override fun onItemClick(position: Long, clickedViewHolder: PlaylistTrackViewHolder) {
         presenter.onItemClick(position)
+    }
+
+    override fun startDrag(holder: PlaylistTrackViewHolder) {
+        touchHelper.startDrag(holder)
     }
 
     /**
@@ -59,6 +66,8 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
 
         recycler_playlist.adapter = adapter
         recycler_playlist.layoutManager = layoutManager
+
+        touchHelper.attachToRecyclerView(recycler_playlist)
     }
 
     companion object {

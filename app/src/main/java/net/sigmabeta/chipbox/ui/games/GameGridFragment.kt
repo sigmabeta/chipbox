@@ -27,7 +27,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
      * GameListView
      */
 
-    override fun setGames(games: List<Game>) {
+    override fun setGames(games: MutableList<Game>) {
         adapter.dataset = games
     }
 

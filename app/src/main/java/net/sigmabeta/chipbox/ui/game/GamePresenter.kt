@@ -22,7 +22,7 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
     var gameId: Long? = null
 
     var game: Game? = null
-    var songs: List<Track>? = null
+    var songs: MutableList<Track>? = null
 
     fun onItemClick(position: Long) {
         songs?.let {

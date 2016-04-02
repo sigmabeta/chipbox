@@ -96,7 +96,7 @@ class Track() : BaseModel() {
         val PLATFORM_NES = 4L
         val PLATFORM_GAMEBOY = 5L
 
-        fun getAll(): Observable<List<Track>> {
+        fun getAll(): Observable<MutableList<Track>> {
             return Observable.create {
                 logInfo("[Track] Reading song list...")
 
