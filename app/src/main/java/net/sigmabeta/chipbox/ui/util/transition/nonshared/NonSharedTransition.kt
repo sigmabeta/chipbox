@@ -14,10 +14,9 @@ abstract class NonSharedTransition : Transition() {
     open fun getAnimationDuration() = 300L
 
     override fun createAnimator(sceneRoot: ViewGroup?, startValues: TransitionValues?, endValues: TransitionValues?): Animator? {
-        val view = startValues?.view
-        val height = startValues?.values?.get(VALUE_HEIGHT) as Float
+        val view = startValues?.view ?: endValues?.view ?: return null
 
-        val animations = createAnimators(view, height)
+        val animations = createAnimators(view)
 
         if (animations?.isEmpty() ?: true) {
             return null
@@ -26,13 +25,13 @@ abstract class NonSharedTransition : Transition() {
         val set = AnimatorSet()
         set.duration = getAnimationDuration()
 
-        view?.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        view.setLayerType(View.LAYER_TYPE_HARDWARE, null)
         set.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator?) {
-                view?.translationY = 0.0f
-                view?.scaleX = 1.0f
-                view?.scaleY = 1.0f
-                view?.setLayerType(View.LAYER_TYPE_NONE, null)
+                view.translationY = 0.0f
+                view.scaleX = 1.0f
+                view.scaleY = 1.0f
+                view.setLayerType(View.LAYER_TYPE_NONE, null)
             }
         })
 
@@ -50,7 +49,7 @@ abstract class NonSharedTransition : Transition() {
         transitionValues?.values?.put(VALUE_VISIBILITY, visibility)
     }
 
-    abstract fun createAnimators(view: View?, height: Float): List<Animator>?
+    abstract fun createAnimators(view: View?): List<Animator>?
 
     abstract fun getDistanceScaler(): Int
 

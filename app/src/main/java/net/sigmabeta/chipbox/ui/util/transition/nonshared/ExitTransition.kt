@@ -6,6 +6,7 @@ import android.transition.TransitionValues
 import android.view.View
 import net.sigmabeta.chipbox.util.ACCELERATE
 import net.sigmabeta.chipbox.util.DECELERATE
+import net.sigmabeta.chipbox.util.convertDpToPx
 import java.util.*
 
 abstract class ExitTransition : NonSharedTransition() {
@@ -22,14 +23,18 @@ abstract class ExitTransition : NonSharedTransition() {
         captureHeightAndVisibility(transitionValues)
     }
 
-    override fun createAnimators(view: View?, height: Float): List<Animator>? {
+    override fun createAnimators(view: View?): List<Animator>? {
+        view ?: return null
+
         val animations = ArrayList<Animator>(4)
 
         val distanceScaler = getDistanceScaler()
         val sizeScale = if (distanceScaler > 0) 1.05f else 0.95f
 
+        val yDelta = distanceScaler * convertDpToPx(64.0f, view.context)
+
         val fadingAnimation = ObjectAnimator.ofFloat(view, View.ALPHA, 1.0f, 0.0f)
-        val translAnimation = ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, 0.0f, distanceScaler * height)
+        val translAnimation = ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, 0.0f, yDelta)
         val xScaleAnimation = ObjectAnimator.ofFloat(view, View.SCALE_X, 1.0f, sizeScale)
         val yScaleAnimation = ObjectAnimator.ofFloat(view, View.SCALE_Y, 1.0f, sizeScale)
 
