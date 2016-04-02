@@ -7,6 +7,7 @@ import android.transition.TransitionValues
 import android.view.View
 import net.sigmabeta.chipbox.util.ACCELERATE
 import net.sigmabeta.chipbox.util.DECELERATE
+import net.sigmabeta.chipbox.util.convertDpToPx
 import net.sigmabeta.chipbox.util.fadeInFromBelow
 import java.util.*
 
@@ -24,9 +25,13 @@ abstract class EnterTransition : NonSharedTransition() {
         captureHeightAndVisibility(transitionValues)
     }
 
-    override fun createAnimators(view: View?, height: Float): List<Animator>? {
+    override fun createAnimators(view: View?): List<Animator>? {
+        view ?: return null
+
         val distanceScaler = getDistanceScaler()
         val sizeScale = if (distanceScaler > 0) 1.05f else 0.95f
+
+        val yDelta = distanceScaler * convertDpToPx(64.0f, view.context)
 
         if (view is FloatingActionButton && distanceScaler > 0) {
             view.fadeInFromBelow().setStartDelay(400)
@@ -36,7 +41,7 @@ abstract class EnterTransition : NonSharedTransition() {
         val animations = ArrayList<Animator>(4)
 
         val fadingAnimation = ObjectAnimator.ofFloat(view, View.ALPHA, 0.0f, 1.0f)
-        val translAnimation = ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, distanceScaler * height, 0.0f)
+        val translAnimation = ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, yDelta, 0.0f)
         val xScaleAnimation = ObjectAnimator.ofFloat(view, View.SCALE_X, sizeScale, 1.0f)
         val yScaleAnimation = ObjectAnimator.ofFloat(view, View.SCALE_Y, sizeScale, 1.0f)
 
