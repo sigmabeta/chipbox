@@ -18,4 +18,6 @@ interface PlayerFragmentView : BaseView {
     fun setUnderrunCount(count: String)
 
     fun setProgress(percentPlayed: Int)
+
+    fun showPlaylist()
 }

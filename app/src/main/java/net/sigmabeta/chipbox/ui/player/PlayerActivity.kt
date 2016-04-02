@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
+import net.sigmabeta.chipbox.ui.playlist.PlaylistFragment
 import javax.inject.Inject
 
 class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
@@ -34,7 +35,16 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
         var fragment = PlayerControlsFragment.newInstance()
 
         supportFragmentManager.beginTransaction()
-                .add(R.id.frame_controls, fragment, PlayerFragment.FRAGMENT_TAG)
+                .add(R.id.frame_controls, fragment, PlayerControlsFragment.FRAGMENT_TAG)
+                .commit()
+    }
+
+    override fun showPlaylist() {
+        var fragment = PlaylistFragment.newInstance()
+
+        supportFragmentManager.beginTransaction()
+                .addToBackStack(null)
+                .replace(R.id.frame_fragment, fragment, PlaylistFragment.FRAGMENT_TAG)
                 .commit()
     }
 

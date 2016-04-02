@@ -57,6 +57,10 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
         seek_playback_progress.progress = percentPlayed
     }
 
+    override fun showPlaylist() {
+        (activity as PlayerActivityView).showPlaylist()
+    }
+
     /**
      * OnSeekbarChangeListener
      */
