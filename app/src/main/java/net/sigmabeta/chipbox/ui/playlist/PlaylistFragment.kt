@@ -65,6 +65,10 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
         adapter.notifyItemRemoved(position)
     }
 
+    override fun updatePosition(position: Int?) {
+        adapter.playingPosition = position ?: -1
+    }
+
     /**
      * ItemListView
      */

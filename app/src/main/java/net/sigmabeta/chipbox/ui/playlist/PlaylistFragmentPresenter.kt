@@ -4,6 +4,7 @@ import android.os.Bundle
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Track
+import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logWarning
@@ -64,6 +65,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
+                        is TrackEvent -> view?.updatePosition(player.playbackQueuePosition)
                         else -> logWarning("[PlaylistFragmentPresenter] Unhandled ${it}")
                     }
                 }
