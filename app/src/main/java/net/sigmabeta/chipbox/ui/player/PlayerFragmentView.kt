@@ -13,15 +13,9 @@ interface PlayerFragmentView : BaseView {
 
     fun setGameBoxArt(path: String?, fade: Boolean)
 
-    fun showPauseButton()
-
-    fun showPlayButton()
-
     fun setTrackLength(trackLength: String)
 
     fun setUnderrunCount(count: String)
 
     fun setProgress(percentPlayed: Int)
-
-    fun launchPlaylistActivity()
 }
