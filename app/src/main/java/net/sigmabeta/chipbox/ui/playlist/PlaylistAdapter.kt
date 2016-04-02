@@ -9,10 +9,13 @@ import net.sigmabeta.chipbox.ui.ItemListView
 import java.util.*
 
 class PlaylistAdapter(view: ItemListView<PlaylistTrackViewHolder>) : BaseArrayAdapter<Track, PlaylistTrackViewHolder>(view) {
-    var playingTrackId: Long? = null
+    var playingPosition: Int = -1
         set (value) {
+            val oldPosition = field
             field = value
-            notifyDataSetChanged()
+
+            notifyItemChanged(oldPosition)
+            notifyItemChanged(value)
         }
 
     var games: HashMap<Long, Game>? = null

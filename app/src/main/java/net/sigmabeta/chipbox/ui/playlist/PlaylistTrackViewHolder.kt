@@ -28,7 +28,7 @@ class PlaylistTrackViewHolder(view: View, adapter: PlaylistAdapter) : BaseViewHo
         val gameId = toBind.gameContainer?.toModel()?.id
         val imagePath = adapter.games?.get(gameId)?.artLocal
 
-        if (toBind.id == adapter.playingTrackId) {
+        if (adapterPosition == adapter.playingPosition) {
             view.text_song_title.setTextAppearance(view.context, R.style.TextlistTrackTitlePlaying)
             view.text_song_artist.setTextAppearance(view.context, R.style.TextListTrackArtistPlaying)
             view.text_song_length.setTextAppearance(view.context, R.style.TextListTrackLengthPlaying)
