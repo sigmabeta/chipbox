@@ -12,8 +12,6 @@ import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 class PlaylistTrackViewHolder(view: View, adapter: PlaylistAdapter) : BaseViewHolder<Track, PlaylistTrackViewHolder, PlaylistAdapter>(view, adapter), View.OnTouchListener {
     init {
         view.handle_track.setOnTouchListener(this)
-        view.relative_clickable.setOnClickListener(this)
-        view.setOnClickListener(null)
     }
 
     override fun getId(): Long? {
