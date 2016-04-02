@@ -3,10 +3,10 @@
                 xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
-                android:background="?android:attr/selectableItemBackground"
+                android:foreground="?android:attr/selectableItemBackground"
                 android:focusable="true"
                 android:clickable="true"
-                tools:background="@android:color/white">
+                android:background="@color/playlist_grey">
 
     <TextView
         android:id="@+id/text_song_title"
@@ -28,10 +28,11 @@
         android:id="@+id/handle_track"
         android:layout_width="48dp"
         android:layout_height="0dp"
-        android:layout_marginEnd="@dimen/spacing_medium"
         android:paddingStart="@dimen/spacing_medium"
+        android:paddingEnd="@dimen/spacing_medium"
         android:src="@drawable/ic_drag_handle_black_24dp"
         android:tint="@color/circle_grey"
+        android:scaleType="fitCenter"
         android:layout_centerVertical="true"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
