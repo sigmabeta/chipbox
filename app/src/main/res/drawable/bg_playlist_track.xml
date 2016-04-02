@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/backgroundColor">
+        <shape>
+            <solid android:color="@color/playlist_grey"/>
+        </shape>
+    </item>
+    <item android:drawable="?android:selectableItemBackground"/>
+</layer-list>
