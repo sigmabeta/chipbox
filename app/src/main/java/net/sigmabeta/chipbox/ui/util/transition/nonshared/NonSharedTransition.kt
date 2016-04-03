@@ -16,7 +16,7 @@ import net.sigmabeta.chipbox.util.convertDpToPx
 import net.sigmabeta.chipbox.util.growFromNothing
 import java.util.*
 
-abstract class NonSharedTransition(stagger: Boolean) : Visibility() {
+abstract class NonSharedTransition(stagger: Boolean, val fragment: Boolean) : Visibility() {
     init {
         if (stagger) {
             val propagator = SidePropagation()
@@ -40,10 +40,17 @@ abstract class NonSharedTransition(stagger: Boolean) : Visibility() {
         view.setLayerType(View.LAYER_TYPE_HARDWARE, null)
         set.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator?) {
-                view.translationY = 0.0f
-                view.scaleX = 1.0f
-                view.scaleY = 1.0f
                 view.setLayerType(View.LAYER_TYPE_NONE, null)
+
+                // Activity transitions' Shared Element expect the layout to look
+                // the way it will at the end of the animation, and this block should
+                // make that happen. However, fragments display this condition
+                // immediately, and so should not execute this block.
+                if (!fragment) {
+                    view.translationY = 0.0f
+                    view.scaleX = 1.0f
+                    view.scaleY = 1.0f
+                }
             }
         })
 
