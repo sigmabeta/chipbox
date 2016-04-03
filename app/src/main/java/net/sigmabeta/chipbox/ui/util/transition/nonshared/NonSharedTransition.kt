@@ -41,16 +41,9 @@ abstract class NonSharedTransition(stagger: Boolean, val fragment: Boolean) : Vi
         set.addListener(object : AnimatorListenerAdapter() {
             override fun onAnimationEnd(animation: Animator?) {
                 view.setLayerType(View.LAYER_TYPE_NONE, null)
-
-                // Activity transitions' Shared Element expect the layout to look
-                // the way it will at the end of the animation, and this block should
-                // make that happen. However, fragments display this condition
-                // immediately, and so should not execute this block.
-                if (!fragment) {
-                    view.translationY = 0.0f
-                    view.scaleX = 1.0f
-                    view.scaleY = 1.0f
-                }
+                view.translationY = 0.0f
+                view.scaleX = 1.0f
+                view.scaleY = 1.0f
             }
         })
 
@@ -68,12 +61,18 @@ abstract class NonSharedTransition(stagger: Boolean, val fragment: Boolean) : Vi
 
             return null
         }
+
         val animations = ArrayList<Animator>(4)
 
         val fadingAnimation = ObjectAnimator.ofFloat(view, View.ALPHA, getStartAlpha(appear), getEndAlpha(appear))
         val translAnimation = ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, getStartY(view, appear), getEndY(view, appear))
         val xScaleAnimation = ObjectAnimator.ofFloat(view, View.SCALE_X, getStartScale(appear), getEndScale(appear))
         val yScaleAnimation = ObjectAnimator.ofFloat(view, View.SCALE_Y, getStartScale(appear), getEndScale(appear))
+
+        if (fragment && distanceScaler > 0 && !appear) {
+            fadingAnimation.startDelay = DELAY_FRAGMENT_EXIT
+            fadingAnimation.duration = DURATION - DELAY_FRAGMENT_EXIT
+        }
 
         fadingAnimation.interpolator = decelerateIf(appear)
         translAnimation.interpolator = decelerateIf(appear)
@@ -110,6 +109,7 @@ abstract class NonSharedTransition(stagger: Boolean, val fragment: Boolean) : Vi
 
     companion object {
         val DURATION = 300L
+        val DELAY_FRAGMENT_EXIT = 25L
 
         val TRANSLATION_DEFAULT = 0.0f
 
