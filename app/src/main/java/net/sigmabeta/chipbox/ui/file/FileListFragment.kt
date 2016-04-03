@@ -93,6 +93,11 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHold
 
             fragment.arguments = arguments
 
+            fragment.enterTransition = BaseActivity.TRANSITION_FADE_IN_BELOW
+            fragment.returnTransition = BaseFragment.TRANSITION_FADE
+            fragment.reenterTransition = BaseActivity.TRANSITION_FADE_IN_ABOVE
+            fragment.exitTransition = BaseFragment.TRANSITION_FADE
+
             return fragment
         }
     }
