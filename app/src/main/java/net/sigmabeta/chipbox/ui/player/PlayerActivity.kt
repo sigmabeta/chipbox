@@ -48,7 +48,6 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
 
         supportFragmentManager.beginTransaction()
                 .addToBackStack(null)
-                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out, android.R.anim.fade_in, android.R.anim.fade_out)
                 .replace(R.id.frame_fragment, fragment, PlaylistFragment.FRAGMENT_TAG)
                 .commit()
 
