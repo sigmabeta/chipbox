@@ -27,10 +27,15 @@ val ACCELERATE = AccelerateInterpolator()
 val DECELERATE = DecelerateInterpolator()
 val ACC_DECELERATE = AccelerateDecelerateInterpolator()
 
-val TRANSITION_FADE_OUT_UP = FadeOutUpTransition()
-val TRANSITION_FADE_OUT_DOWN = FadeOutDownTransition()
-val TRANSITION_FADE_IN_ABOVE = FadeInFromAboveTransition()
-val TRANSITION_FADE_IN_BELOW = FadeInFromBelowTransition()
+val TRANSITION_FADE_OUT_UP = FadeOutUpTransition(false)
+val TRANSITION_FADE_OUT_DOWN = FadeOutDownTransition(false)
+val TRANSITION_FADE_IN_ABOVE = FadeInFromAboveTransition(false)
+val TRANSITION_FADE_IN_BELOW = FadeInFromBelowTransition(false)
+
+val TRANSITION_STAGGERED_FADE_OUT_UP = FadeOutUpTransition(true)
+val TRANSITION_STAGGERED_FADE_OUT_DOWN = FadeOutDownTransition(true)
+val TRANSITION_STAGGERED_FADE_IN_ABOVE = FadeInFromAboveTransition(true)
+val TRANSITION_STAGGERED_FADE_IN_BELOW = FadeInFromBelowTransition(true)
 
 fun View.slideViewOffscreen(): ViewPropertyAnimator {
     return animate()
