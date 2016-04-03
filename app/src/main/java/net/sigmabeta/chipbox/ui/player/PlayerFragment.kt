@@ -121,7 +121,7 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
             val fragment = PlayerFragment()
 
             fragment.reenterTransition = BaseActivity.TRANSITION_FADE_IN_ABOVE
-            fragment.exitTransition = BaseFragment.TRANSITION_FADE
+            fragment.exitTransition = BaseActivity.TRANSITION_FADE_OUT_UP
 
             return fragment
         }

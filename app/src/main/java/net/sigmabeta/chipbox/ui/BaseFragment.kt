@@ -5,7 +5,6 @@ import android.content.Context
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v4.app.Fragment
-import android.transition.Fade
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -129,9 +128,5 @@ abstract class BaseFragment : Fragment(), BaseView {
             inject()
             injected = true
         }
-    }
-
-    companion object {
-        val TRANSITION_FADE = Fade()
     }
 }
