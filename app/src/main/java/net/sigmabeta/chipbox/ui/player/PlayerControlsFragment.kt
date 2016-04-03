@@ -96,6 +96,9 @@ class PlayerControlsFragment : BaseFragment(), PlayerControlsView, View.OnClickL
             override fun onAnimationEnd(animation: Animator?) {
                 view.translationY = 0.0f
                 view.setLayerType(View.LAYER_TYPE_NONE, null)
+                if (!elevate) {
+                    view.setBackgroundColor(ContextCompat.getColor(view.context, android.R.color.transparent))
+                }
             }
         })
 
