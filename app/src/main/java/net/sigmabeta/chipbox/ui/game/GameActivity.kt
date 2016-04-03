@@ -18,6 +18,7 @@ import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ItemListView
 import net.sigmabeta.chipbox.util.loadImageHighQuality
+import net.sigmabeta.chipbox.util.shrinktoNothing
 import javax.inject.Inject
 
 class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder> {
@@ -95,6 +96,16 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
     override fun getSharedImage(): View? = image_hero_boxart
 
     override fun shouldDelayTransitionForFragment() = false
+
+    /**
+     * Activity
+     */
+
+    override fun onBackPressed() {
+        button_fab.shrinktoNothing().withEndAction {
+            supportFinishAfterTransition()
+        }
+    }
 
     companion object {
         val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.game"

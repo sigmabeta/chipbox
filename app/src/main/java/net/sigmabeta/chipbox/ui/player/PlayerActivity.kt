@@ -8,12 +8,14 @@ import android.util.Pair
 import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_player.*
+import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.playlist.PlaylistFragment
+import net.sigmabeta.chipbox.util.shrinktoNothing
 import javax.inject.Inject
 
 class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
@@ -61,6 +63,12 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
 
         val controls = getControlsFragment()
         controls?.onPlaylistHidden()
+    }
+
+    override fun callFinish() {
+        button_fab.shrinktoNothing().withEndAction {
+            supportFinishAfterTransition()
+        }
     }
 
     /**
