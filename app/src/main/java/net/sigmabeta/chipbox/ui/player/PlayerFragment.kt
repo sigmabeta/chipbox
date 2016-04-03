@@ -118,7 +118,12 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.player"
 
         fun newInstance(): PlayerFragment {
-            return PlayerFragment()
+            val fragment = PlayerFragment()
+
+            fragment.reenterTransition = BaseActivity.TRANSITION_FADE_IN_ABOVE
+            fragment.exitTransition = BaseFragment.TRANSITION_FADE
+
+            return fragment
         }
     }
 }

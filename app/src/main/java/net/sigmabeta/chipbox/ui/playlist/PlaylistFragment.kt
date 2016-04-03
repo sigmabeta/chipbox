@@ -114,6 +114,10 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
 
         fun newInstance(): PlaylistFragment {
             val fragment = PlaylistFragment()
+
+            fragment.enterTransition = BaseActivity.TRANSITION_FADE_IN_BELOW
+            fragment.returnTransition = BaseFragment.TRANSITION_FADE
+
             return fragment
         }
     }
