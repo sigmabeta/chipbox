@@ -12,8 +12,8 @@ import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.ItemListView
-import net.sigmabeta.chipbox.util.TRANSITION_FADE_IN_BELOW
-import net.sigmabeta.chipbox.util.TRANSITION_FADE_OUT_DOWN
+import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_FADE_IN_BELOW
+import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_FADE_OUT_DOWN
 import javax.inject.Inject
 
 @ActivityScoped
@@ -117,8 +117,8 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
         fun newInstance(): PlaylistFragment {
             val fragment = PlaylistFragment()
 
-            fragment.enterTransition = TRANSITION_FADE_IN_BELOW
-            fragment.returnTransition = TRANSITION_FADE_OUT_DOWN
+            fragment.enterTransition = TRANSITION_FRAGMENT_FADE_IN_BELOW
+            fragment.returnTransition = TRANSITION_FRAGMENT_FADE_OUT_DOWN
 
             return fragment
         }
