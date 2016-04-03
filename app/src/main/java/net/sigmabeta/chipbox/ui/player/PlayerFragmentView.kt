@@ -20,6 +20,4 @@ interface PlayerFragmentView : BaseView {
     fun setProgress(percentPlayed: Int)
 
     fun showPlaylist()
-
-    fun setFabVisible()
 }

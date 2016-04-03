@@ -63,9 +63,6 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
         (activity as PlayerActivityView).onPlaylistFabClicked()
     }
 
-    override fun setFabVisible() {
-    }
-
     /**
      * OnSeekbarChangeListener
      */

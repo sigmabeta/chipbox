@@ -15,6 +15,8 @@ import javax.inject.Inject
 class PlayerControlsPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
     var view: PlayerControlsView? = null
 
+    var updatedOnce = false
+
     var elevated = false
     /**
      * Public Methods
@@ -75,6 +77,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
 
     override fun clearView() {
         view = null
+        updatedOnce = false
         elevated = false
     }
 
@@ -93,11 +96,15 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
     private fun updateHelper() {
         displayState(player.state)
 
-        if (elevated) {
-            view?.elevate()
-        } else {
-            view?.unElevate()
+        if (updatedOnce) {
+            if (elevated) {
+                view?.elevate()
+            } else {
+                view?.unElevate()
+            }
         }
+
+        updatedOnce = true
     }
 
     private fun displayState(state: Int) {

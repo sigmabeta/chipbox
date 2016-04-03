@@ -28,8 +28,6 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
 
     var seekbarTouched = false
 
-    var updatedOnce = false
-
     fun onFabClick() {
         view?.showPlaylist()
     }
@@ -55,18 +53,11 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
 
     override fun teardown() {
         track = null
-        updatedOnce = false
         seekbarTouched = false
     }
 
     override fun updateViewState() {
         updateHelper()
-
-        if (updatedOnce) {
-            view?.setFabVisible()
-        }
-
-        updatedOnce = true
 
         val subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
