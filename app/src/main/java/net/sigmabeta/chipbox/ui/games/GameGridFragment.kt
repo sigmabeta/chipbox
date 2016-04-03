@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.ui.games
 
 import android.os.Bundle
 import android.support.v7.widget.GridLayoutManager
+import android.util.Pair
 import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.fragment_game_grid.*
@@ -12,6 +13,7 @@ import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.ui.util.GridSpaceDecoration
 import net.sigmabeta.chipbox.util.convertDpToPx
+import net.sigmabeta.chipbox.util.getShareableNavBar
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import javax.inject.Inject
 
@@ -37,7 +39,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
 
     override fun launchGameActivity(id: Long) {
         clickedViewHolder?.let {
-            GameActivity.launch(activity, id, it.getSharedImage())
+            GameActivity.launch(activity, id, getShareableViews())
         } ?: let {
             GameActivity.launch(activity, id)
         }
@@ -78,6 +80,10 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
             container.getFragmentComponent().inject(this)
         }
     }
+
+    override fun getShareableViews() = arrayOf(
+            Pair(clickedViewHolder!!.getSharedImage(), "image_clicked_game"),
+            activity.getShareableNavBar())
 
     override fun getPresenter(): FragmentPresenter {
         return presenter
