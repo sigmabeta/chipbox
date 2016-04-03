@@ -6,6 +6,10 @@ import android.view.ViewPropertyAnimator
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
+import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeInFromAboveTransition
+import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeInFromBelowTransition
+import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeOutDownTransition
+import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeOutUpTransition
 
 val SCROLL_DIRECTION_DOWN = 1
 val SCROLL_DIRECTION_UP = -1
@@ -22,6 +26,11 @@ fun RecyclerView.isScrolledToBottom(): Boolean {
 val ACCELERATE = AccelerateInterpolator()
 val DECELERATE = DecelerateInterpolator()
 val ACC_DECELERATE = AccelerateDecelerateInterpolator()
+
+val TRANSITION_FADE_OUT_UP = FadeOutUpTransition()
+val TRANSITION_FADE_OUT_DOWN = FadeOutDownTransition()
+val TRANSITION_FADE_IN_ABOVE = FadeInFromAboveTransition()
+val TRANSITION_FADE_IN_BELOW = FadeInFromBelowTransition()
 
 fun View.slideViewOffscreen(): ViewPropertyAnimator {
     return animate()

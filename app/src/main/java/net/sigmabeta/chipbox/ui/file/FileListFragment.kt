@@ -12,6 +12,10 @@ import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.ItemListView
+import net.sigmabeta.chipbox.util.TRANSITION_FADE_IN_ABOVE
+import net.sigmabeta.chipbox.util.TRANSITION_FADE_IN_BELOW
+import net.sigmabeta.chipbox.util.TRANSITION_FADE_OUT_DOWN
+import net.sigmabeta.chipbox.util.TRANSITION_FADE_OUT_UP
 import java.util.*
 import javax.inject.Inject
 
@@ -93,10 +97,10 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHold
 
             fragment.arguments = arguments
 
-            fragment.enterTransition = BaseActivity.TRANSITION_FADE_IN_BELOW
-            fragment.returnTransition = BaseActivity.TRANSITION_FADE_OUT_DOWN
-            fragment.reenterTransition = BaseActivity.TRANSITION_FADE_IN_ABOVE
-            fragment.exitTransition = BaseActivity.TRANSITION_FADE_OUT_UP
+            fragment.enterTransition = TRANSITION_FADE_IN_BELOW
+            fragment.returnTransition = TRANSITION_FADE_OUT_DOWN
+            fragment.reenterTransition = TRANSITION_FADE_IN_ABOVE
+            fragment.exitTransition = TRANSITION_FADE_OUT_UP
 
             return fragment
         }

@@ -10,6 +10,8 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.util.TRANSITION_FADE_IN_ABOVE
+import net.sigmabeta.chipbox.util.TRANSITION_FADE_OUT_UP
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import javax.inject.Inject
 
@@ -120,8 +122,8 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
         fun newInstance(): PlayerFragment {
             val fragment = PlayerFragment()
 
-            fragment.reenterTransition = BaseActivity.TRANSITION_FADE_IN_ABOVE
-            fragment.exitTransition = BaseActivity.TRANSITION_FADE_OUT_UP
+            fragment.reenterTransition = TRANSITION_FADE_IN_ABOVE
+            fragment.exitTransition = TRANSITION_FADE_OUT_UP
 
             return fragment
         }
