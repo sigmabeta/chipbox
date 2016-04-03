@@ -5,6 +5,7 @@ import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import android.support.v7.widget.LinearLayoutManager
+import android.util.Pair
 import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_game.*
@@ -108,12 +109,16 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
             context.startActivity(launcher)
         }
 
-        fun launch(activity: Activity, gameId: Long, sharedView: View) {
+        fun launch(activity: Activity, gameId: Long, sharedViewPairs: Array<Pair<View, String>>?) {
             val launcher = Intent(activity, GameActivity::class.java)
 
             launcher.putExtra(ARGUMENT_GAME_ID, gameId)
 
-            val options = ActivityOptions.makeSceneTransitionAnimation(activity, sharedView, "image_clicked_game")
+            val options = if (sharedViewPairs != null) {
+                ActivityOptions.makeSceneTransitionAnimation(activity, *sharedViewPairs)
+            } else {
+                ActivityOptions.makeSceneTransitionAnimation(activity)
+            }
 
             activity.startActivity(launcher, options.toBundle())
         }

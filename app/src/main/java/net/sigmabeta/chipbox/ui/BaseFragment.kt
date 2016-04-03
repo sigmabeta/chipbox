@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v4.app.Fragment
+import android.util.Pair
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -106,6 +107,8 @@ abstract class BaseFragment : Fragment(), BaseView {
 
         snackbar.show()
     }
+
+    open fun getShareableViews(): Array<Pair<View, String>>? = null
 
     protected abstract fun inject()
 
