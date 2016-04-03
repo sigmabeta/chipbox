@@ -29,6 +29,7 @@
         <ImageButton
             android:id="@+id/button_play"
             style="@style/Widget.AppCompat.Button.Borderless"
+            android:transitionName="button_play_pause"
             android:layout_width="72dp"
             android:layout_height="match_parent"
             android:scaleType="fitCenter"

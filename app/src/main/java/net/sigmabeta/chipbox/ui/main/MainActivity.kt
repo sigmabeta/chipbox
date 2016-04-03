@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui.main
 import android.content.res.Configuration
 import android.os.Bundle
 import android.support.v7.app.ActionBarDrawerToggle
+import android.util.Pair
 import android.view.MenuItem
 import android.view.View
 import android.widget.FrameLayout
@@ -110,12 +111,17 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     }
 
     override fun launchPlayerActivity() {
-        PlayerActivity.launch(this, image_playing_game_box_art)
+        PlayerActivity.launch(this, getShareableViews())
     }
 
     override fun launchScanActivity() {
         ScanActivity.launch(this)
     }
+
+    override fun getShareableViews() = arrayOf(
+            Pair(image_playing_game_box_art as View, "image_playing_boxart"),
+            Pair(button_play_pause as View, "button_play_pause"),
+            getShareableNavBar())
 
     override fun inject() {
         ChipboxApplication.appComponent.inject(this)
