@@ -27,13 +27,6 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
 
         val transaction = supportFragmentManager.beginTransaction()
 
-        transaction.setCustomAnimations(
-                R.anim.fragment_enter,
-                R.anim.fragment_exit,
-                R.anim.fragment_pop_enter,
-                R.anim.fragment_pop_exit
-        )
-
         if (stack) {
             transaction.addToBackStack(null)
         }
@@ -68,6 +61,7 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
     }
 
     override fun onAddSuccessful() {
+
         ScanActivity.launch(this)
         finish()
     }
