@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
+import android.util.Pair
 import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_player.*
@@ -116,10 +117,14 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
     }
 
     companion object {
-        fun launch(activity: Activity, sharedView: View) {
+        fun launch(activity: Activity, sharedViewPairs: Array<Pair<View, String>>?) {
             val launcher = Intent(activity, PlayerActivity::class.java)
 
-            val options = ActivityOptions.makeSceneTransitionAnimation(activity, sharedView, "image_playing_boxart")
+            val options = if (sharedViewPairs != null) {
+                ActivityOptions.makeSceneTransitionAnimation(activity, *sharedViewPairs)
+            } else {
+                ActivityOptions.makeSceneTransitionAnimation(activity)
+            }
 
             activity.startActivity(launcher, options.toBundle())
         }

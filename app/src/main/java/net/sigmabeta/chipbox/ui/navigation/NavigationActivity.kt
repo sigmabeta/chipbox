@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.ui.navigation
 
 import android.content.Context
 import android.content.Intent
+import android.util.Pair
 import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_navigation.*
@@ -14,10 +15,7 @@ import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
-import net.sigmabeta.chipbox.util.loadImageLowQuality
-import net.sigmabeta.chipbox.util.slideViewOffscreen
-import net.sigmabeta.chipbox.util.slideViewOnscreen
-import net.sigmabeta.chipbox.util.slideViewToProperLocation
+import net.sigmabeta.chipbox.util.*
 import javax.inject.Inject
 
 class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
@@ -94,12 +92,17 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
     }
 
     override fun launchPlayerActivity() {
-        PlayerActivity.launch(this, image_playing_game_box_art)
+        PlayerActivity.launch(this, getShareableViews())
     }
 
     /**
      * BaseActivity
      */
+
+    override fun getShareableViews() = arrayOf(
+            Pair(image_playing_game_box_art as View, "image_playing_boxart"),
+            Pair(button_play_pause as View, "button_play_pause"),
+            getShareableNavBar())
 
     override fun inject() {
         ChipboxApplication.appComponent.inject(this)
@@ -129,6 +132,11 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
     override fun getSharedImage(): View? = null
 
     override fun shouldDelayTransitionForFragment() = false
+
+
+    /**
+     * Private Methods
+     */
 
     private fun getFragment(): NavigationFragment? {
         val fragment = supportFragmentManager.findFragmentById(R.id.frame_fragment) as NavigationFragment

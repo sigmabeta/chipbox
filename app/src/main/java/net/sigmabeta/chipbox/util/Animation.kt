@@ -1,8 +1,12 @@
 package net.sigmabeta.chipbox.util
 
+import android.R
+import android.app.Activity
 import android.support.v7.widget.RecyclerView
+import android.util.Pair
 import android.view.View
 import android.view.ViewPropertyAnimator
+import android.view.Window
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
@@ -101,3 +105,8 @@ fun View.fadeInFromBelow(): ViewPropertyAnimator {
             .translationY(0.0f)
             .alpha(1.0f)
 }
+
+/**
+ * Not really anywhere better to put this, I guess.
+ */
+fun Activity.getShareableNavBar() = Pair(window.decorView.findViewById(R.id.navigationBarBackground), Window.NAVIGATION_BAR_BACKGROUND_TRANSITION_NAME)
