@@ -48,8 +48,8 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
         setContentView(getLayoutId())
 
         window.enterTransition = TRANSITION_FADE_IN_BELOW
-        window.reenterTransition = TRANSITION_FADE_IN_ABOVE
-        window.exitTransition = TRANSITION_FADE_OUT_UP
+        window.reenterTransition = TRANSITION_STAGGERED_FADE_IN_ABOVE
+        window.exitTransition = TRANSITION_STAGGERED_FADE_OUT_UP
         window.returnTransition = TRANSITION_FADE_OUT_DOWN
 
         configureViews()
