@@ -5,6 +5,7 @@ import android.animation.AnimatorListenerAdapter
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.support.design.widget.FloatingActionButton
+import android.transition.SidePropagation
 import android.transition.TransitionValues
 import android.transition.Visibility
 import android.view.View
@@ -15,7 +16,16 @@ import net.sigmabeta.chipbox.util.convertDpToPx
 import net.sigmabeta.chipbox.util.fadeInFromBelow
 import java.util.*
 
-abstract class NonSharedTransition : Visibility() {
+abstract class NonSharedTransition(stagger: Boolean) : Visibility() {
+    init {
+        if (stagger) {
+            val propagator = SidePropagation()
+
+            propagator.setPropagationSpeed(2.0f)
+
+            propagation = propagator
+        }
+    }
 
     override fun onAppear(sceneRoot: ViewGroup?, view: View?, startValues: TransitionValues?, endValues: TransitionValues?) = view?.let { createAnimatorSet(it, true) } ?: null
 
