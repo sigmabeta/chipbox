@@ -13,5 +13,5 @@ interface PlayerActivityView : BaseView {
 
     fun hidePlaylistFragment()
 
-    fun supportFinishAfterTransition()
+    fun callFinish()
 }

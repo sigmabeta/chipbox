@@ -25,7 +25,7 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
                     view?.hidePlaylistFragment()
                     playlistVisible = false
                 } else {
-                    view?.supportFinishAfterTransition()
+                    view?.callFinish()
                 }
             }
         }

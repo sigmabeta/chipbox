@@ -13,7 +13,7 @@ import android.view.ViewGroup
 import net.sigmabeta.chipbox.util.ACCELERATE
 import net.sigmabeta.chipbox.util.DECELERATE
 import net.sigmabeta.chipbox.util.convertDpToPx
-import net.sigmabeta.chipbox.util.fadeInFromBelow
+import net.sigmabeta.chipbox.util.growFromNothing
 import java.util.*
 
 abstract class NonSharedTransition(stagger: Boolean) : Visibility() {
@@ -54,11 +54,13 @@ abstract class NonSharedTransition(stagger: Boolean) : Visibility() {
     fun createAnimators(view: View, appear: Boolean): List<Animator>? {
         val distanceScaler = getDistanceScaler()
 
-        if (view is FloatingActionButton && distanceScaler > 0 && appear) {
-            view.fadeInFromBelow().setStartDelay(400)
+        if (view is FloatingActionButton && distanceScaler > 0) {
+            if (appear) {
+                view.growFromNothing().setStartDelay(500)
+            }
+
             return null
         }
-
         val animations = ArrayList<Animator>(4)
 
         val fadingAnimation = ObjectAnimator.ofFloat(view, View.ALPHA, getStartAlpha(appear), getEndAlpha(appear))
