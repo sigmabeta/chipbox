@@ -66,10 +66,10 @@ abstract class NonSharedTransition(stagger: Boolean) : Visibility() {
         val xScaleAnimation = ObjectAnimator.ofFloat(view, View.SCALE_X, getStartScale(appear), getEndScale(appear))
         val yScaleAnimation = ObjectAnimator.ofFloat(view, View.SCALE_Y, getStartScale(appear), getEndScale(appear))
 
-        fadingAnimation.interpolator = DECELERATE
-        translAnimation.interpolator = DECELERATE
-        xScaleAnimation.interpolator = ACCELERATE
-        yScaleAnimation.interpolator = ACCELERATE
+        fadingAnimation.interpolator = decelerateIf(appear)
+        translAnimation.interpolator = decelerateIf(appear)
+        xScaleAnimation.interpolator = decelerateIf(appear)
+        yScaleAnimation.interpolator = decelerateIf(appear)
 
         animations.add(fadingAnimation)
         animations.add(translAnimation)
@@ -94,6 +94,10 @@ abstract class NonSharedTransition(stagger: Boolean) : Visibility() {
     fun getScaleFactor() = if (getDistanceScaler() > 0) SCALE_LARGE else SCALE_SMALL
 
     abstract fun getDistanceScaler(): Int
+
+    private fun accelerateIf(appear: Boolean) = if (appear) ACCELERATE else DECELERATE
+
+    private fun decelerateIf(appear: Boolean) = if (appear) DECELERATE else DECELERATE
 
     companion object {
         val DURATION = 300L
