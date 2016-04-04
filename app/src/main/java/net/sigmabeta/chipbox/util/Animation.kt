@@ -124,4 +124,6 @@ fun View.growFromNothing() = animate()
 /**
  * Not really anywhere better to put this, I guess.
  */
-fun Activity.getShareableNavBar() = Pair(window.decorView.findViewById(R.id.navigationBarBackground), Window.NAVIGATION_BAR_BACKGROUND_TRANSITION_NAME)
+fun Activity.getShareableNavBar(): Pair<View, String>? {
+    return Pair(window.decorView.findViewById(R.id.navigationBarBackground) ?: return null, Window.NAVIGATION_BAR_BACKGROUND_TRANSITION_NAME)
+}

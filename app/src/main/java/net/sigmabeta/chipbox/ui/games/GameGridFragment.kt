@@ -15,6 +15,7 @@ import net.sigmabeta.chipbox.ui.util.GridSpaceDecoration
 import net.sigmabeta.chipbox.util.convertDpToPx
 import net.sigmabeta.chipbox.util.getShareableNavBar
 import net.sigmabeta.chipbox.util.isScrolledToBottom
+import java.util.*
 import javax.inject.Inject
 
 class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHolder>, TopLevelFragment, NavigationFragment {
@@ -81,9 +82,17 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
         }
     }
 
-    override fun getShareableViews() = arrayOf(
-            Pair(clickedViewHolder!!.getSharedImage(), "image_clicked_game"),
-            activity.getShareableNavBar())
+    override fun getShareableViews(): Array<Pair<View, String>>? {
+        val views = ArrayList<Pair<View, String>>(2)
+
+        views.add(Pair(clickedViewHolder!!.getSharedImage(), "image_clicked_game"))
+
+        activity.getShareableNavBar()?.let {
+            views.add(it)
+        }
+
+        return views.toTypedArray()
+    }
 
     override fun getPresenter(): FragmentPresenter {
         return presenter

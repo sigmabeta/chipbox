@@ -20,6 +20,7 @@ import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import net.sigmabeta.chipbox.util.*
+import java.util.*
 import javax.inject.Inject
 
 class MainActivity : BaseActivity(), MainView, FragmentContainer {
@@ -118,10 +119,18 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         ScanActivity.launch(this)
     }
 
-    override fun getShareableViews() = arrayOf(
-            Pair(image_playing_game_box_art as View, "image_playing_boxart"),
-            Pair(button_play_pause as View, "button_play_pause"),
-            getShareableNavBar())
+    override fun getShareableViews(): Array<Pair<View, String>>? {
+        val views = ArrayList<Pair<View, String>>(3)
+
+        views.add(Pair(image_playing_game_box_art as View, "image_playing_boxart"))
+        views.add(Pair(button_play_pause as View, "button_play_pause"))
+
+        getShareableNavBar()?.let {
+            views.add(it)
+        }
+
+        return views.toTypedArray()
+    }
 
     override fun inject() {
         ChipboxApplication.appComponent.inject(this)
