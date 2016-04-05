@@ -14,4 +14,8 @@ interface PlayerActivityView : BaseView {
     fun hidePlaylistFragment()
 
     fun callFinish()
+
+    fun showStatusBar()
+
+    fun hideStatusBar()
 }

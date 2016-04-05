@@ -1,9 +1,12 @@
 package net.sigmabeta.chipbox.ui.player
 
+import android.animation.ArgbEvaluator
+import android.animation.ValueAnimator
 import android.app.Activity
 import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
+import android.support.v4.content.ContextCompat
 import android.util.Pair
 import android.view.View
 import android.widget.FrameLayout
@@ -15,6 +18,7 @@ import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.playlist.PlaylistFragment
+import net.sigmabeta.chipbox.util.ACC_DECELERATE
 import net.sigmabeta.chipbox.util.shrinktoNothing
 import javax.inject.Inject
 
@@ -71,6 +75,18 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
         }
     }
 
+    override fun showStatusBar() {
+        frame_fragment.fitsSystemWindows = true
+        animateStatusBar(ContextCompat.getColor(this, android.R.color.transparent),
+                ContextCompat.getColor(this, R.color.primary_dark))
+    }
+
+    override fun hideStatusBar() {
+        frame_fragment.fitsSystemWindows = false
+        animateStatusBar(ContextCompat.getColor(this, R.color.primary_dark),
+                ContextCompat.getColor(this, android.R.color.transparent))
+    }
+
     /**
      * FragmentContainer
      */
@@ -122,6 +138,20 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
 
     private fun getControlsFragment(): PlayerControlsView? {
         return (supportFragmentManager.findFragmentByTag(PlayerControlsFragment.FRAGMENT_TAG)) as PlayerControlsView
+    }
+
+    private fun animateStatusBar(fromColor: Int, toColor: Int) {
+        val colorAnimation = ValueAnimator.ofObject(ArgbEvaluator(), fromColor, toColor)
+
+        colorAnimation.addUpdateListener { animation ->
+            val color = animation.animatedValue as Int
+            window.statusBarColor = color
+        }
+
+        colorAnimation.duration = 300L
+        colorAnimation.interpolator = ACC_DECELERATE
+
+        colorAnimation.start()
     }
 
     companion object {
