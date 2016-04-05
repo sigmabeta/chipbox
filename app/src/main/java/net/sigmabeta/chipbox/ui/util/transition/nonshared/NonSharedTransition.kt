@@ -56,7 +56,7 @@ abstract class NonSharedTransition(stagger: Boolean, val fragment: Boolean) : Vi
 
         if (view is FloatingActionButton && distanceScaler > 0) {
             if (appear) {
-                view.growFromNothing().setStartDelay(500)
+                view.growFromNothing().setStartDelay(500).withEndAction { view.animate().setStartDelay(0) }
             }
 
             return null
