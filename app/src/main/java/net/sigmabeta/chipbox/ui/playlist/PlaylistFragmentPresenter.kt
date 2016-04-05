@@ -20,6 +20,8 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
 
     var queuePosition: Int? = null
 
+    var oldQueuePosition = -1
+
     /**
      * Public Methods
      */
@@ -32,6 +34,14 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
         Collections.swap(playlist, originPos, destPos)
         player.onTrackMoved(originPos, destPos)
         view?.onTrackMoved(originPos, destPos)
+
+        if (originPos == queuePosition) {
+            queuePosition = destPos
+            oldQueuePosition = destPos
+        } else if (destPos == queuePosition) {
+            queuePosition = originPos
+            oldQueuePosition = originPos
+        }
     }
 
     fun onTrackRemoved(position: Int) {
@@ -71,7 +81,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
-                        is TrackEvent -> view?.updatePosition(player.playbackQueuePosition)
+                        is TrackEvent -> displayPosition(player.playbackQueuePosition ?: -1)
                         else -> logWarning("[PlaylistFragmentPresenter] Unhandled ${it}")
                     }
                 }
@@ -102,6 +112,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
     private fun displayPosition(position: Int) {
         this.queuePosition = position
 
-        view?.updatePosition(position)
+        view?.updatePosition(position, oldQueuePosition)
+        oldQueuePosition = -1
     }
 }
