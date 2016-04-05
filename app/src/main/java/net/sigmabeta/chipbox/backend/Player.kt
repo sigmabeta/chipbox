@@ -414,6 +414,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     fun onTrackMoved(originPos: Int, destPos: Int) {
         if (originPos == playbackQueuePosition) {
             playbackQueuePosition = destPos
+        } else if (destPos == playbackQueuePosition) {
+            playbackQueuePosition = originPos
         }
     }
 
