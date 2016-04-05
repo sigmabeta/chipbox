@@ -108,7 +108,6 @@ fun View.fadeInFromBelow(): ViewPropertyAnimator {
 
 fun View.shrinktoNothing() = animate()
         .withLayer()
-        .setStartDelay(0)
         .setInterpolator(ACCELERATE)
         .setDuration(200)
         .scaleX(0.0f)
