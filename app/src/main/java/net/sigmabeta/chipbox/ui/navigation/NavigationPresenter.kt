@@ -77,18 +77,6 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
         subscriptions.add(subscription)
     }
 
-    private fun updateHelper() {
-        player.playingTrack?.let {
-            displayTrack(it)
-        }
-
-        player.playingGame?.let {
-            displayGame(it, true)
-        }
-
-        displayState(state, player.state)
-    }
-
     override fun setView(view: BaseView) {
         if (view is NavigationView) this.view = view
     }
@@ -96,6 +84,13 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
     override fun clearView() {
         view = null
     }
+
+    override fun getView(): BaseView? = view
+
+    override fun onReenter() {
+        updateHelper()
+    }
+
 
     private fun displayState(oldState: Int, newState: Int) {
         when (newState) {
@@ -117,14 +112,21 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
         this.state = newState
     }
 
-    override fun getView(): BaseView? = view
-
-    override fun onReenter() {
-    }
-
     private fun displayTrack(track: Track) {
         view?.setTrackTitle(track.title.orEmpty())
         view?.setArtist(track.artistText.orEmpty())
+    }
+
+    private fun updateHelper() {
+        player.playingTrack?.let {
+            displayTrack(it)
+        }
+
+        player.playingGame?.let {
+            displayGame(it, true)
+        }
+
+        displayState(state, player.state)
     }
 
     private fun displayGame(game: Game?, force: Boolean) {
