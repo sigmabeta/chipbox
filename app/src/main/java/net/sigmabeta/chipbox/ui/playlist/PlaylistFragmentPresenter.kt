@@ -18,6 +18,8 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
 
     var playlist: MutableList<Track>? = null
 
+    var queuePosition: Int? = null
+
     /**
      * Public Methods
      */
@@ -61,6 +63,10 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
             displayTracks(it)
         }
 
+        player.playbackQueuePosition?.let {
+            displayPosition(it)
+        }
+
         val subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
@@ -91,5 +97,11 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
         this.playlist = playlist
 
         view?.showQueue(playlist)
+    }
+
+    private fun displayPosition(position: Int) {
+        this.queuePosition = position
+
+        view?.updatePosition(position)
     }
 }
