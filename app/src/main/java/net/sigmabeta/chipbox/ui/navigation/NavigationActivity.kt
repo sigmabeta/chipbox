@@ -72,6 +72,9 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
 
         if (animate) {
             layout_now_playing.slideViewOnscreen()
+        } else {
+            layout_now_playing.translationY = 0.0f
+            layout_now_playing.visibility = View.VISIBLE
         }
     }
 
