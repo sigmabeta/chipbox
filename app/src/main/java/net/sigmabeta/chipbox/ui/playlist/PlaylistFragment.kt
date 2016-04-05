@@ -107,10 +107,24 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
 
         recycler_playlist.adapter = adapter
         recycler_playlist.layoutManager = layoutManager
+        recycler_playlist.setPadding(0, getStatusBarHeight(), 0, 0)
 
         touchHelper.attachToRecyclerView(recycler_playlist)
     }
 
+    /**
+     * Private Methods
+     */
+
+    private fun getStatusBarHeight(): Int {
+        val id = resources.getIdentifier("status_bar_height", "dimen", "android")
+
+        if (id > 0) {
+            return resources.getDimensionPixelSize(id)
+        }
+
+        return 0
+    }
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.playlist"
 

@@ -18,11 +18,14 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
             R.id.button_fab -> {
                 playlistVisible = true
                 view?.showPlaylistFragment()
+                view?.showStatusBar()
             }
 
             R.string.back_button -> {
                 if (playlistVisible) {
                     view?.hidePlaylistFragment()
+                    view?.hideStatusBar()
+
                     playlistVisible = false
                 } else {
                     view?.callFinish()
@@ -47,6 +50,11 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
     }
 
     override fun updateViewState() {
+        if (playlistVisible) {
+            view?.showStatusBar()
+        } else {
+            view?.hideStatusBar()
+        }
     }
 
     override fun getView(): BaseView? = view
