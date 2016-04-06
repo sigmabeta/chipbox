@@ -26,6 +26,8 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
     lateinit var presenter: PlayerActivityPresenter
         @Inject set
 
+    var alreadyFinishing = false
+
     /**
      * PlayerView
      */
@@ -70,8 +72,11 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
     }
 
     override fun callFinish() {
-        button_fab.shrinktoNothing().withEndAction {
-            supportFinishAfterTransition()
+        if (!alreadyFinishing) {
+            alreadyFinishing = true
+            button_fab.shrinktoNothing().withEndAction {
+                supportFinishAfterTransition()
+            }
         }
     }
 

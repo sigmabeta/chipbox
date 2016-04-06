@@ -27,6 +27,8 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
 
     var adapter = GameTrackListAdapter(this)
 
+    var alreadyFinishing = false
+
     /**
      * GameView
      */
@@ -102,8 +104,11 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
      */
 
     override fun onBackPressed() {
-        button_fab.shrinktoNothing().withEndAction {
-            supportFinishAfterTransition()
+        if (!alreadyFinishing) {
+            alreadyFinishing = true
+            button_fab.shrinktoNothing().withEndAction {
+                supportFinishAfterTransition()
+            }
         }
     }
 
