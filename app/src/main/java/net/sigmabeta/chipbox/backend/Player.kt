@@ -346,17 +346,25 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     }
 
     fun skipToPrev() {
-        val queue = playbackQueue
-        var position = playbackQueuePosition
+        if (playbackTimePosition > 3000) {
+            seek(0)
+        } else {
+            val queue = playbackQueue
+            var position = playbackQueuePosition
 
-        if (queue != null && position != null && position >= 0) {
-            position -= 1
+            if (queue != null && position != null) {
+                if (position > 0) {
+                    position -= 1
 
-            queuedTrack = queue.get(position)
-            playbackQueuePosition = position
+                    queuedTrack = queue.get(position)
+                    playbackQueuePosition = position
 
-            logInfo("[Player] Loading track ${position} of ${queue.size}.")
-            backendView?.skipToPrev()
+                    logInfo("[Player] Loading track ${position} of ${queue.size}.")
+                    backendView?.skipToPrev()
+                } else {
+                    seek(0)
+                }
+            }
         }
     }
 
