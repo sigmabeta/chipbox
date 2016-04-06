@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui.player
 import android.animation.*
 import android.support.v4.content.ContextCompat
 import android.view.View
+import android.widget.ImageView
 import kotlinx.android.synthetic.main.fragment_player_controls.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -54,6 +55,14 @@ class PlayerControlsFragment : BaseFragment(), PlayerControlsView, View.OnClickL
         presenter.onPlaylistHidden()
     }
 
+    override fun setShuffleEnabled() {
+        setViewTint(button_shuffle, R.color.accent)
+    }
+
+    override fun setShuffleDisabled() {
+        setViewTint(button_shuffle, R.color.circle_grey)
+    }
+
     /**
      * BaseFragment
      */
@@ -84,6 +93,11 @@ class PlayerControlsFragment : BaseFragment(), PlayerControlsView, View.OnClickL
     /**
      * Private Methods
      */
+
+    private fun setViewTint(view: ImageView, colorId: Int) {
+        val color = ContextCompat.getColor(activity, colorId)
+        view.drawable.setTint(color)
+    }
 
     private fun animateControls(view: View, elevate: Boolean) {
         val set = AnimatorSet()

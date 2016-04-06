@@ -14,4 +14,8 @@ interface PlayerControlsView : BaseView {
     fun onPlaylistShown()
 
     fun onPlaylistHidden()
+
+    fun setShuffleEnabled()
+
+    fun setShuffleDisabled()
 }
