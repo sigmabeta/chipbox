@@ -37,6 +37,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
             R.id.button_play -> onPlayPauseClick()
             R.id.button_skip_forward -> player.skipToNext()
             R.id.button_skip_back -> player.skipToPrev()
+            R.id.button_shuffle -> toggleShuffle()
             else -> view?.showToastMessage("Unimplemented.")
         }
     }
@@ -93,7 +94,15 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
         }
     }
 
+    private fun toggleShuffle() {
+        player.shuffle = !player.shuffle
+
+        displayShuffle()
+    }
+
     private fun updateHelper() {
+        displayShuffle()
+
         displayState(player.state)
 
         if (updatedOnce) {
@@ -105,6 +114,14 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
         }
 
         updatedOnce = true
+    }
+
+    private fun displayShuffle() {
+        if (player.shuffle) {
+            view?.setShuffleEnabled()
+        } else {
+            view?.setShuffleDisabled()
+        }
     }
 
     private fun displayState(state: Int) {

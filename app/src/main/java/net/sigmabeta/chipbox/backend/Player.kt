@@ -18,6 +18,7 @@ import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
+import java.util.*
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -36,6 +37,10 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             field = value
             updater.send(StateEvent(value))
         }
+
+    var shuffle = false
+
+    var rng = Random(System.currentTimeMillis())
 
     var position = 0L
 
@@ -286,6 +291,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             this.playbackQueue = playbackQueue
             playbackQueuePosition = position
 
+            rng = Random(System.currentTimeMillis())
+
             queuedTrack = playbackQueue.get(position)
 
             play()
@@ -320,8 +327,14 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         val queue = playbackQueue
         var position = playbackQueuePosition
 
-        if (queue != null && position != null && position < queue.size - 1) {
-            position += 1
+        if (queue != null && position != null) {
+            if (shuffle) {
+                position = rng.nextInt(queue.size)
+            } else if (position < queue.size - 1) {
+                position += 1
+            } else {
+                return
+            }
 
             queuedTrack = queue.get(position)
             playbackQueuePosition = position
@@ -335,8 +348,14 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         val queue = playbackQueue
         var position = playbackQueuePosition
 
-        if (queue != null && position != null && position < queue.size - 1) {
-            position += 1
+        if (queue != null && position != null) {
+            if (shuffle) {
+                position = rng.nextInt(queue.size)
+            } else if (position < queue.size - 1) {
+                position += 1
+            } else {
+                return
+            }
 
             queuedTrack = queue.get(position)
             playbackQueuePosition = position
@@ -359,7 +378,11 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
             if (queue != null && position != null) {
                 if (position > 0) {
-                    position -= 1
+                    if (shuffle) {
+                        position = rng.nextInt(queue.size)
+                    } else {
+                        position -= 1
+                    }
 
                     queuedTrack = queue.get(position)
                     playbackQueuePosition = position
@@ -525,7 +548,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         if (bytesWritten == audioConfig.bufferSizeShorts)
             return
 
-        var error = when (bytesWritten) {
+        val error = when (bytesWritten) {
             AudioTrack.ERROR_INVALID_OPERATION -> "Invalid AudioTrack operation."
             AudioTrack.ERROR_BAD_VALUE -> "Invalid AudioTrack value."
             AudioTrack.ERROR -> "Unknown AudioTrack error."
