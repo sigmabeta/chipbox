@@ -87,7 +87,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     }
 
     override fun showNowPlaying(animate: Boolean) {
-        coordinator_main.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_now_playing).toInt())
+        pager_categories.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_now_playing).toInt())
 
         if (animate) {
             layout_now_playing.slideViewOnscreen()
@@ -98,12 +98,12 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     }
 
     override fun hideNowPlaying(animate: Boolean) {
-        coordinator_main.setPadding(0, 0, 0, 0)
+        pager_categories.setPadding(0, 0, 0, 0)
 
         if (animate) {
             if (getFragment()?.isScrolledToBottom() ?: false) {
-                coordinator_main.translationY = -(resources.getDimension(R.dimen.height_now_playing))
-                coordinator_main.slideViewToProperLocation()
+                pager_categories.translationY = -(resources.getDimension(R.dimen.height_now_playing))
+                pager_categories.slideViewToProperLocation()
             }
 
             layout_now_playing.slideViewOffscreen().withEndAction {
@@ -161,7 +161,7 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     }
 
     override fun getContentLayout(): FrameLayout {
-        return frame_content
+        return findViewById(android.R.id.content) as FrameLayout
     }
 
     private fun setUpNavigationDrawer() {
