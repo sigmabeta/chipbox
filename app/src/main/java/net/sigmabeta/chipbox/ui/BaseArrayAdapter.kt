@@ -14,10 +14,10 @@ abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemL
         }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): VH? {
-        val card = LayoutInflater.from(parent?.context)?.inflate(getLayoutId(), parent, false)
+        val item = LayoutInflater.from(parent?.context)?.inflate(getLayoutId(), parent, false)
 
-        if (card != null) {
-            return createViewHolder(card)
+        if (item != null) {
+            return createViewHolder(item)
         } else {
             logError("[BaseArrayAdapter] Unable to inflate view...")
             return null
