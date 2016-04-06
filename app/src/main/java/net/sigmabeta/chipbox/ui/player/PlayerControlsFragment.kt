@@ -63,6 +63,26 @@ class PlayerControlsFragment : BaseFragment(), PlayerControlsView, View.OnClickL
         setViewTint(button_shuffle, R.color.circle_grey)
     }
 
+    override fun setRepeatDisabled() {
+        button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
+        setViewTint(button_repeat, R.color.circle_grey)
+    }
+
+    override fun setRepeatAll() {
+        button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
+        setViewTint(button_repeat, R.color.accent)
+    }
+
+    override fun setRepeatOne() {
+        button_repeat.setImageResource(R.drawable.ic_repeat_one_black_24dp)
+        setViewTint(button_repeat, R.color.accent)
+    }
+
+    override fun setRepeatInfinite() {
+        button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
+        setViewTint(button_repeat, R.color.primary)
+    }
+
     /**
      * BaseFragment
      */
