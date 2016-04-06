@@ -18,4 +18,12 @@ interface PlayerControlsView : BaseView {
     fun setShuffleEnabled()
 
     fun setShuffleDisabled()
+
+    fun setRepeatDisabled()
+
+    fun setRepeatAll()
+
+    fun setRepeatOne()
+
+    fun setRepeatInfinite()
 }

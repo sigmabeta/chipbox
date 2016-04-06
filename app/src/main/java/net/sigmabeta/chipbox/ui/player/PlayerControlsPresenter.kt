@@ -18,6 +18,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
     var updatedOnce = false
 
     var elevated = false
+
     /**
      * Public Methods
      */
@@ -38,6 +39,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
             R.id.button_skip_forward -> player.skipToNext()
             R.id.button_skip_back -> player.skipToPrev()
             R.id.button_shuffle -> toggleShuffle()
+            R.id.button_repeat -> toggleRepeat()
             else -> view?.showToastMessage("Unimplemented.")
         }
     }
@@ -100,8 +102,20 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
         displayShuffle()
     }
 
+    private fun toggleRepeat() {
+        player.repeat = if (player.repeat >= Player.REPEAT_ONE) {
+            Player.REPEAT_OFF
+        } else {
+            player.repeat + 1
+        }
+
+        displayRepeat()
+    }
+
     private fun updateHelper() {
         displayShuffle()
+
+        displayRepeat()
 
         displayState(player.state)
 
@@ -121,6 +135,16 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
             view?.setShuffleEnabled()
         } else {
             view?.setShuffleDisabled()
+        }
+    }
+
+    private fun displayRepeat() {
+        when (player.repeat) {
+            Player.REPEAT_OFF -> view?.setRepeatDisabled()
+            Player.REPEAT_ALL -> view?.setRepeatAll()
+            Player.REPEAT_ONE -> view?.setRepeatOne()
+            Player.REPEAT_INFINITE -> view?.setRepeatInfinite()
+            else -> view?.showErrorSnackbar("Unimplemented state.", null, null)
         }
     }
 

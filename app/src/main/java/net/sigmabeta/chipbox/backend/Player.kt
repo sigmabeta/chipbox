@@ -40,6 +40,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var shuffle = false
 
+    var repeat = REPEAT_OFF
+
     var rng = Random(System.currentTimeMillis())
 
     var position = 0L
@@ -318,9 +320,9 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     fun isNextTrackAvailable(): Boolean {
         val queue = playbackQueue
-        var position = playbackQueuePosition
+        val position = playbackQueuePosition
 
-        return (queue != null && position != null && position < queue.size - 1)
+        return (queue != null && position != null && (position < queue.size - 1 || repeat != REPEAT_OFF))
     }
 
     fun getNextTrack() {
@@ -328,10 +330,15 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         var position = playbackQueuePosition
 
         if (queue != null && position != null) {
-            if (shuffle) {
+            if (repeat == REPEAT_ONE) {
+                queuedTrack = playingTrack
+                return
+            } else if (shuffle) {
                 position = rng.nextInt(queue.size)
             } else if (position < queue.size - 1) {
                 position += 1
+            } else if (repeat == REPEAT_ALL) {
+                position = 0
             } else {
                 return
             }
@@ -353,6 +360,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 position = rng.nextInt(queue.size)
             } else if (position < queue.size - 1) {
                 position += 1
+            } else if (repeat == REPEAT_ALL) {
+                position = 0
             } else {
                 return
             }
@@ -567,5 +576,10 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         val ERROR_AUDIO_TRACK_NULL = -100
 
         val READ_AHEAD_BUFFER_SIZE = 2
+
+        val REPEAT_OFF = 0
+        val REPEAT_ALL = 1
+        val REPEAT_ONE = 2
+        val REPEAT_INFINITE = 3
     }
 }
