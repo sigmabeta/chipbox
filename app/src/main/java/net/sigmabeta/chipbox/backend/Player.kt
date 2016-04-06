@@ -342,6 +342,10 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
             logInfo("[Player] Loading track ${position} of ${queue.size}.")
             backendView?.skipToNext()
+
+            if (state != PlaybackState.STATE_PLAYING) {
+                play()
+            }
         }
     }
 
@@ -361,6 +365,10 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
                     logInfo("[Player] Loading track ${position} of ${queue.size}.")
                     backendView?.skipToPrev()
+
+                    if (state != PlaybackState.STATE_PLAYING) {
+                        play()
+                    }
                 } else {
                     seek(0)
                 }
