@@ -99,6 +99,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
         while (state == PlaybackState.STATE_PLAYING) {
             if (pausedTrack != null) {
+                playingTrack = pausedTrack
                 pausedTrack = null
             }
 
@@ -410,9 +411,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         audioTrack?.release()
         audioTrack = null
 
-        playingTrack = null
-        pausedTrack = null
-        queuedTrack = null
+        pausedTrack = playingTrack
 
         teardown()
 
