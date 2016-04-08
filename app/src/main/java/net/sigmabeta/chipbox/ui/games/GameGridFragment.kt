@@ -103,7 +103,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
     }
 
     override fun configureViews() {
-        val spacing = convertDpToPx(4.0f, activity).toInt()
+        val spacing = convertDpToPx(1.0f, activity).toInt()
         val columnCount = resources.getInteger(R.integer.columns_game_grid)
         val layoutManager = GridLayoutManager(activity, columnCount)
 

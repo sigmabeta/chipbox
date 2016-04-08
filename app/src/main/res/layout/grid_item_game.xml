@@ -1,51 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
-                                    xmlns:tools="http://schemas.android.com/tools"
-                                    android:layout_width="0dp"
-                                    android:layout_height="wrap_content"
-                                    android:clickable="true"
-                                    android:focusable="true"
-                                    android:foreground="?android:attr/selectableItemBackground"
-                                    tools:layout_width="160dp">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
+              android:layout_width="0dp"
+              android:layout_height="wrap_content"
+              android:clickable="true"
+              android:focusable="true"
+              android:foreground="?android:attr/selectableItemBackground"
+              android:orientation="vertical"
+              tools:layout_width="160dp">
 
-    <LinearLayout
+    <ImageView
+        android:id="@+id/image_game_box_art"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="180dp"
+        android:scaleType="centerCrop"
+        tools:src="@drawable/img_album_art_blank"/>
 
-        <ImageView
-            tools:src="@drawable/img_album_art_blank"
-            android:id="@+id/image_game_box_art"
-            android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:scaleType="centerCrop"/>
+    <TextView
+        android:id="@+id/text_game_title"
+        style="@style/TextAppearance.AppCompat.Body2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/spacing_medium"
+        android:paddingEnd="@dimen/spacing_medium"
+        android:paddingTop="@dimen/spacing_medium"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:background="@android:color/white"
+        tools:text="Lufia II: Rise of the Sinistrals"/>
 
-        <TextView
-            android:id="@+id/text_game_title"
-            style="@style/TextAppearance.AppCompat.Body2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/spacing_medium"
-            android:layout_marginRight="@dimen/spacing_medium"
-            android:layout_marginTop="@dimen/spacing_medium"
-            android:ellipsize="end"
-            android:maxLines="1"
-            tools:text="Lufia II: Rise of the Sinistrals"/>
+    <TextView
+        android:id="@+id/text_artist"
+        style="@style/TextAppearance.AppCompat.Caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="@dimen/spacing_medium"
+        android:paddingStart="@dimen/spacing_medium"
+        android:paddingEnd="@dimen/spacing_medium"
+        android:paddingTop="@dimen/spacing_small"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:background="@android:color/white"
+        tools:text="Yasunori Shiono"/>
 
-        <TextView
-            android:id="@+id/text_artist"
-            style="@style/TextAppearance.AppCompat.Caption"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/spacing_medium"
-            android:layout_marginLeft="@dimen/spacing_medium"
-            android:layout_marginRight="@dimen/spacing_medium"
-            android:layout_marginTop="@dimen/spacing_small"
-            android:ellipsize="end"
-            android:maxLines="1"
-            tools:text="Yasunori Shiono"/>
-
-    </LinearLayout>
-
-</android.support.v7.widget.CardView>
-
+</LinearLayout>
