@@ -10,10 +10,7 @@ import android.view.Window
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
-import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeInFromAboveTransition
-import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeInFromBelowTransition
-import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeOutDownTransition
-import net.sigmabeta.chipbox.ui.util.transition.nonshared.FadeOutUpTransition
+import net.sigmabeta.chipbox.ui.util.transition.nonshared.*
 
 val SCROLL_DIRECTION_DOWN = 1
 val SCROLL_DIRECTION_UP = -1
@@ -40,6 +37,8 @@ val TRANSITION_FRAGMENT_FADE_OUT_DOWN = FadeOutDownTransition(false, true)
 val TRANSITION_FRAGMENT_FADE_IN_BELOW = FadeInFromBelowTransition(false, true)
 val TRANSITION_FRAGMENT_STAGGERED_FADE_OUT_UP = FadeOutUpTransition(true, true)
 val TRANSITION_FRAGMENT_STAGGERED_FADE_IN_ABOVE = FadeInFromAboveTransition(true, true)
+
+val TRANSITION_SLIDE = SlideTransition()
 
 fun View.slideViewOffscreen(): ViewPropertyAnimator {
     return animate()
