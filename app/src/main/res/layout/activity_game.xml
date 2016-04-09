@@ -47,6 +47,8 @@
         android:id="@+id/list_tracks"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@android:color/white"
+        android:elevation="6dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:listitem="@layout/list_item_track_game"/>
 

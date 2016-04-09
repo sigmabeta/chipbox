@@ -87,9 +87,9 @@ abstract class NonSharedTransition(stagger: Boolean, val fragment: Boolean) : Vi
         return animations
     }
 
-    fun getStartY(view: View, appear: Boolean) = if (appear) getDistanceScaler() * convertDpToPx(64.0f, view.context) else TRANSLATION_DEFAULT
+    fun getStartY(view: View, appear: Boolean) = if (appear) getDistanceScaler() * convertDpToPx(TRANSLATION_OFFSET, view.context) else TRANSLATION_DEFAULT
 
-    fun getEndY(view: View, appear: Boolean) = if (appear) TRANSLATION_DEFAULT else getDistanceScaler() * convertDpToPx(64.0f, view.context)
+    fun getEndY(view: View, appear: Boolean) = if (appear) TRANSLATION_DEFAULT else getDistanceScaler() * convertDpToPx(TRANSLATION_OFFSET, view.context)
 
     fun getStartScale(appear: Boolean) = if (appear) getScaleFactor() else SCALE_DEFAULT
 
@@ -112,6 +112,7 @@ abstract class NonSharedTransition(stagger: Boolean, val fragment: Boolean) : Vi
         val DELAY_FRAGMENT_EXIT = 25L
 
         val TRANSLATION_DEFAULT = 0.0f
+        val TRANSLATION_OFFSET = 64.0f
 
         val ALPHA_TRANSPARENT = 0.0f
         val ALPHA_OPAQUE = 1.0f
