@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.ui.file
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
-import android.widget.FrameLayout
+import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_file_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -70,7 +70,7 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHold
         return R.layout.fragment_file_list
     }
 
-    override fun getContentLayout(): FrameLayout {
+    override fun getContentLayout(): ViewGroup {
         return frame_content
     }
 

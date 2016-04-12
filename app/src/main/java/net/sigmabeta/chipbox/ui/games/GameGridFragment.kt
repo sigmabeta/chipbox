@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.support.v7.widget.GridLayoutManager
 import android.util.Pair
 import android.view.View
-import android.widget.FrameLayout
+import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_game_grid.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -58,7 +58,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
         return grid_games?.isScrolledToBottom() ?: false
     }
 
-    override fun getContentLayout(): FrameLayout {
+    override fun getContentLayout(): ViewGroup {
         return frame_content
     }
 

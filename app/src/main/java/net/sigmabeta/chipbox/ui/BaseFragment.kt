@@ -10,7 +10,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
-import android.widget.FrameLayout
 import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.util.logError
@@ -116,7 +115,7 @@ abstract class BaseFragment : Fragment(), BaseView {
 
     protected abstract fun getLayoutId(): Int
 
-    protected abstract fun getContentLayout(): FrameLayout
+    protected abstract fun getContentLayout(): ViewGroup
 
     protected abstract fun getSharedImage(): View?
 
