@@ -17,7 +17,6 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ItemListView
-import net.sigmabeta.chipbox.util.TRANSITION_SLIDE
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import net.sigmabeta.chipbox.util.shrinktoNothing
 import javax.inject.Inject
@@ -86,9 +85,6 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
 
         list_tracks.adapter = adapter
         list_tracks.layoutManager = layoutManager
-
-        window.enterTransition = TRANSITION_SLIDE
-        window.exitTransition = TRANSITION_SLIDE
     }
 
     override fun getLayoutId(): Int {
