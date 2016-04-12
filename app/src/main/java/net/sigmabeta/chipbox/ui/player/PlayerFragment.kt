@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.ui.player
 
 import android.view.View
-import android.widget.FrameLayout
+import android.view.ViewGroup
 import android.widget.SeekBar
 import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -88,8 +88,8 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
         }
     }
 
-    override fun getContentLayout(): FrameLayout {
-        return frame_content
+    override fun getContentLayout(): ViewGroup {
+        return linear_content
     }
 
     override fun getPresenter(): FragmentPresenter {
