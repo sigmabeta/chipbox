@@ -12,10 +12,7 @@ import android.widget.ImageView
 import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.dagger.component.FragmentComponent
-import net.sigmabeta.chipbox.util.TRANSITION_SLIDE
-import net.sigmabeta.chipbox.util.TRANSITION_STAGGERED_FADE_IN_ABOVE
-import net.sigmabeta.chipbox.util.TRANSITION_STAGGERED_FADE_OUT_UP
-import net.sigmabeta.chipbox.util.logError
+import net.sigmabeta.chipbox.util.*
 
 abstract class BaseActivity : AppCompatActivity(), BaseView {
     val sharedPreDrawListener = object : ViewTreeObserver.OnPreDrawListener {
@@ -51,10 +48,10 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
         inject()
         setContentView(getLayoutId())
 
-        window.enterTransition = TRANSITION_SLIDE
+        window.enterTransition = TRANSITION_FADE_IN_BELOW
         window.reenterTransition = TRANSITION_STAGGERED_FADE_IN_ABOVE
         window.exitTransition = TRANSITION_STAGGERED_FADE_OUT_UP
-        window.returnTransition = TRANSITION_SLIDE
+        window.returnTransition = TRANSITION_FADE_OUT_DOWN
 
         configureViews()
         getPresenter().onCreate(intent.extras, savedInstanceState, this)

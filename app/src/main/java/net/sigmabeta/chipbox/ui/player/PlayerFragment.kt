@@ -89,7 +89,7 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
     }
 
     override fun getContentLayout(): ViewGroup {
-        return linear_content
+        return frame_content
     }
 
     override fun getPresenter(): FragmentPresenter {
