@@ -105,7 +105,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         val timeout = 1000L
 
         while (state == PlaybackState.STATE_PLAYING) {
-            if (pausedTrack != null) {
+            if (playingTrack == null && pausedTrack != null) {
                 playingTrack = pausedTrack
                 pausedTrack = null
             }
