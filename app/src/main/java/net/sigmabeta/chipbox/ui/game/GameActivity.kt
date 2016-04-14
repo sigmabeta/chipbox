@@ -51,10 +51,6 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
         adapter.playingTrackId = track.id
     }
 
-    override fun setPlaybackState(state: Int) {
-        // no-op for now
-    }
-
     override fun setSongs(songs: MutableList<Track>) {
         adapter.dataset = songs
     }
@@ -86,6 +82,10 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
 
         list_tracks.adapter = adapter
         list_tracks.layoutManager = layoutManager
+
+        button_fab.setOnClickListener {
+            presenter.onClick(it.id)
+        }
 
         window.enterTransition = TRANSITION_SLIDE
         window.exitTransition = TRANSITION_SLIDE
