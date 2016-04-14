@@ -16,10 +16,8 @@ import net.sigmabeta.chipbox.util.*
 
 abstract class BaseActivity : AppCompatActivity(), BaseView {
     val sharedPreDrawListener = object : ViewTreeObserver.OnPreDrawListener {
-        var sharedView: View? = null
-
         override fun onPreDraw(): Boolean {
-            sharedView?.viewTreeObserver?.removeOnPreDrawListener(this)
+            getSharedImage()?.viewTreeObserver?.removeOnPreDrawListener(this)
             getPresenter().onSharedPreDraw()
             return true
         }
