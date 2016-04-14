@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.game
 
 import android.os.Bundle
+import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
@@ -27,6 +28,16 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
     fun onItemClick(position: Long) {
         songs?.let {
             player.play(it, position.toInt())
+        }
+    }
+
+    fun onClick(clickedId: Int) {
+        when (clickedId) {
+            R.id.button_fab -> {
+                songs?.let { them ->
+                    player.play(them, 0)
+                }
+            }
         }
     }
 
@@ -77,7 +88,7 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
         }
 
         player.playingTrack?.let {
-            setPlayingTrack(it)
+            displayTrack(it)
         }
 
         val subscription = player.updater.asObservable()
@@ -85,11 +96,10 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
                 .subscribe {
                     when (it) {
                         is TrackEvent -> {
-                            setPlayingTrack(it.track)
+                            displayTrack(it.track)
                         }
                         is PositionEvent -> { /* no-op */ }
-                        is StateEvent -> {
-                            setPlaybackState(it.state)
+                        is StateEvent -> { /* no-op */
                         }
                         else -> logWarning("[GamePresenter] Unhandled ${it}")
                     }
@@ -110,11 +120,7 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
 
     override fun onReenter() = Unit
 
-    private fun setPlayingTrack(track: Track) {
+    private fun displayTrack(track: Track) {
         view?.setPlayingTrack(track)
-    }
-
-    private fun setPlaybackState(state: Int) {
-        view?.setPlaybackState(state)
     }
 }
