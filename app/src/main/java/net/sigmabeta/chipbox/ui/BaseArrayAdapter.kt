@@ -9,29 +9,8 @@ import net.sigmabeta.chipbox.util.logError
 abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemListView<VH>) : RecyclerView.Adapter<VH>() {
     var dataset: MutableList<T>? = null
         set (value) {
-            field?.let {
-                val oldSize = it.size
-
-                if (value == null) {
-                    field = value
-                    notifyItemRangeRemoved(0, oldSize)
-                } else {
-                    val newSize = value.size
-
-                    if (newSize > oldSize) {
-                        notifyItemRangeChanged(0, oldSize)
-                        notifyItemRangeInserted(oldSize, newSize - oldSize)
-                    } else {
-                        notifyItemRangeChanged(0, newSize)
-                        notifyItemRangeRemoved(newSize, oldSize - newSize)
-                    }
-                }
-            } ?: let {
-                if (value != null) {
-                    field = value
-                    notifyItemRangeInserted(0, value.size)
-                }
-            }
+            field = value
+            notifyDataSetChanged()
         }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): VH? {
