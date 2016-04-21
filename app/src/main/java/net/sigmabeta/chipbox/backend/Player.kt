@@ -85,7 +85,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                         audioConfig.bufferSizeShorts.toLong())
 
                 voices = null
-                tempo = 100
+                tempo = null
                 updater.send(TrackEvent(value))
             }
 
