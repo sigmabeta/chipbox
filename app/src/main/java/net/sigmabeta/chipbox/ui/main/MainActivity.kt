@@ -19,6 +19,7 @@ import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.scan.ScanActivity
+import net.sigmabeta.chipbox.ui.settings.SettingsActivity
 import net.sigmabeta.chipbox.util.*
 import java.util.*
 import javax.inject.Inject
@@ -120,6 +121,10 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
 
     override fun launchScanActivity() {
         ScanActivity.launch(this)
+    }
+
+    override fun launchSettingsActivity() {
+        SettingsActivity.launch(this)
     }
 
     override fun getShareableViews(): Array<Pair<View, String>>? {

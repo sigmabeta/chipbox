@@ -29,6 +29,7 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
         when (itemId) {
             R.id.drawer_add_folder -> view?.launchFileListActivity()
             R.id.drawer_refresh -> view?.launchScanActivity()
+            R.id.drawer_settings -> view?.launchSettingsActivity()
         }
 
         return true

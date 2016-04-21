@@ -7,6 +7,7 @@ import android.media.AudioTrack
 import android.media.session.PlaybackState
 import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
+import net.sigmabeta.chipbox.model.audio.Voice
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
@@ -38,6 +39,25 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             updater.send(StateEvent(value))
         }
 
+    var tempo: Int? = 100
+        set (value: Int?) {
+            if (value != null) {
+                field = value
+                logInfo("[Player] Setting tempo to $value")
+                setTempoNative(value / 100.0)
+            } else {
+                field = 100
+            }
+        }
+
+    var voices: MutableList<Voice>? = null
+        get () {
+            if (field == null) {
+                field = getVoicesWrapper()
+            }
+            return field
+        }
+
     var shuffle = false
 
     var repeat = REPEAT_OFF
@@ -64,6 +84,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                         audioConfig.sampleRate,
                         audioConfig.bufferSizeShorts.toLong())
 
+                voices = null
+                tempo = 100
                 updater.send(TrackEvent(value))
             }
 

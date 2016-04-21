@@ -8,7 +8,7 @@ import net.sigmabeta.chipbox.ui.BaseViewHolder
 import net.sigmabeta.chipbox.util.TYPE_FOLDER
 import net.sigmabeta.chipbox.util.TYPE_OTHER
 
-public class FileViewHolder(view: View, adapter: FileListAdapter) : BaseViewHolder<FileListItem, FileViewHolder, FileListAdapter>(view, adapter), View.OnClickListener {
+public class FileViewHolder(view: View, adapter: FileListAdapter) : BaseViewHolder<FileListItem, FileViewHolder, FileListAdapter>(view, adapter) {
     var file: FileListItem? = null
 
     override fun getId(): Long? {
