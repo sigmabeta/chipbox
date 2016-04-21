@@ -65,10 +65,11 @@ dependencies {
 }
 
 buildscript {
-    ext.kotlin_version = '1.0.1-2'
+    ext.kotlin_version = '1.0.2-eap-15'
 
     repositories {
         mavenCentral()
+        maven { url "https://dl.bintray.com/kotlin/kotlin-eap/" }
     }
 
     dependencies {
