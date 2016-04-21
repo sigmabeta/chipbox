@@ -6,8 +6,8 @@ import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.util.Pair
 import android.view.View
+import android.view.ViewGroup
 import android.view.ViewTreeObserver
-import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.Toast
 import com.squareup.picasso.Callback
@@ -127,7 +127,7 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
 
     protected abstract fun getLayoutId(): Int
 
-    protected abstract fun getContentLayout(): FrameLayout
+    protected abstract fun getContentLayout(): ViewGroup
 
     protected abstract fun getSharedImage(): View?
 

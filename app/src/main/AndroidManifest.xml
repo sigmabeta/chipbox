@@ -45,6 +45,12 @@
             android:theme="@style/ThemeScan"
             android:screenOrientation="portrait"/>
 
+        <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:theme="@style/ThemeNav"
+            android:label="@string/title_settings"
+            android:screenOrientation="portrait"/>
+
         <service
             android:name=".backend.PlayerService"
             android:enabled="true"

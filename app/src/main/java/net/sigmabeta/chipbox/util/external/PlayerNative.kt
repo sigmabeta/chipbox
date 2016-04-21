@@ -1,10 +1,12 @@
 package net.sigmabeta.chipbox.util.external
 
+import net.sigmabeta.chipbox.model.audio.Voice
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.util.EXTENSIONS_MULTI_TRACK
 import net.sigmabeta.chipbox.util.getFileExtension
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
+import java.util.*
 
 external fun loadFile(filename: String, track: Int, sampleRate: Int, bufferSize: Long, fadeTimeMs: Long)
 
@@ -16,6 +18,10 @@ external fun seekNative(timeInSec: Int): String
 
 external fun setTempoNative(tempo: Double)
 
+external fun getVoiceCountNative(): Int
+
+external fun getVoiceNameNative(position: Int): String
+
 external fun muteVoiceNative(voiceNumber: Int, enabled: Int)
 
 external fun isTrackOver(): Boolean
@@ -23,6 +29,19 @@ external fun isTrackOver(): Boolean
 external fun teardown()
 
 external fun getLastError(): String?
+
+fun getVoicesWrapper(): MutableList<Voice> {
+    val voiceCount = getVoiceCountNative()
+    val voices = ArrayList<Voice>(voiceCount)
+
+    for (index in 0 until voiceCount) {
+        val voiceName = getVoiceNameNative(index)
+        val voice = Voice(index, voiceName)
+        voices.add(voice)
+    }
+
+    return voices
+}
 
 fun loadTrackNative(track: Track, sampleRate: Int, bufferSizeShorts: Long) {
     val path = track.path.orEmpty()
