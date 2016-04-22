@@ -164,7 +164,6 @@ class Game() : BaseModel() {
 
             val game = SQLite.select()
                     .from(Game::class.java)
-                    .indexedBy(Game_Table.index_titlePlatform)
                     .where(Game_Table.title.eq(gameTitle))
                     .and(Game_Table.platform.eq(gamePlatform))
                     .querySingle()

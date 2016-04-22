@@ -100,7 +100,6 @@ class Artist() : BaseModel() {
 
             val artist = SQLite.select()
                     .from(Artist::class.java)
-                    .indexedBy(Artist_Table.index_name)
                     .where(Artist_Table.name.eq(name))
                     .querySingle()
 
