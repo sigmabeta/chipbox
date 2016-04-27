@@ -7,7 +7,6 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
-import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import java.util.*
 import javax.inject.Inject
@@ -69,28 +68,17 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
     }
 
     override fun updateViewState() {
-        player.playbackQueue?.let {
-            displayTracks(it)
-        }
+        displayTracks(player.playbackQueue)
 
-        player.playbackQueuePosition?.let {
-            displayPosition(it)
-        }
+        displayPositionHelper(false)
 
         val subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
                         is TrackEvent -> {
-                            val position = if (player.shuffle) {
-                                player.shuffledPositionQueue?.get(player.playbackQueuePosition) ?: -1
-                            } else {
-                                player.playbackQueuePosition
-                            }
-
-                            displayPosition(position)
+                            displayPositionHelper(true)
                         }
-                        else -> logWarning("[PlaylistFragmentPresenter] Unhandled ${it}")
                     }
                 }
 
@@ -117,10 +105,22 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
         view?.showQueue(playlist)
     }
 
-    private fun displayPosition(position: Int) {
+    private fun displayPosition(position: Int, animate: Boolean) {
         this.queuePosition = position
 
         view?.updatePosition(position, oldQueuePosition)
         oldQueuePosition = -1
+
+        view?.scrollToPosition(position, animate)
+    }
+
+    private fun displayPositionHelper(animate: Boolean) {
+        val position = if (player.shuffle) {
+            player.shuffledPositionQueue?.get(player.playbackQueuePosition) ?: -1
+        } else {
+            player.playbackQueuePosition
+        }
+
+        displayPosition(position, animate)
     }
 }
