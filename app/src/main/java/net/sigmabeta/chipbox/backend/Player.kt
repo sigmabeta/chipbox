@@ -100,7 +100,10 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var playingGame: Game? = null
         set (value) {
-            updater.send(GameEvent(value))
+            if (field?.id != value?.id) {
+                updater.send(GameEvent(value))
+            }
+
             field = value
         }
 
