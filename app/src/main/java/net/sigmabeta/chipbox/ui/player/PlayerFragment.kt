@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_STAGGERED_FADE_IN_ABOVE
 import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_STAGGERED_FADE_OUT_UP
+import net.sigmabeta.chipbox.util.changeText
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import javax.inject.Inject
 
@@ -23,24 +24,40 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
      * PlayerFragmentView
      */
 
-    override fun setTrackTitle(title: String) {
-        text_track_title.text = title
+    override fun setTrackTitle(title: String, animate: Boolean) {
+        if (animate) {
+            text_track_title.changeText(title)
+        } else {
+            text_track_title.text = title
+        }
     }
 
-    override fun setGameTitle(title: String) {
-        text_game_title.text = title
+    override fun setGameTitle(title: String, animate: Boolean) {
+        if (animate) {
+            text_game_title.changeText(title)
+        } else {
+            text_game_title.text = title
+        }
     }
 
-    override fun setArtist(artist: String) {
-        text_track_artist.text = artist
+    override fun setArtist(artist: String, animate: Boolean) {
+        if (animate) {
+            text_track_artist.changeText(artist)
+        } else {
+            text_track_artist.text = artist
+        }
     }
 
     override fun setTimeElapsed(time: String) {
         text_track_elapsed.text = time
     }
 
-    override fun setTrackLength(trackLength: String) {
-        text_track_length.text = trackLength
+    override fun setTrackLength(trackLength: String, animate: Boolean) {
+        if (animate) {
+            text_track_length.changeText(trackLength)
+        } else {
+            text_track_length.text = trackLength
+        }
     }
 
     override fun setGameBoxArt(path: String?, fade: Boolean) {
