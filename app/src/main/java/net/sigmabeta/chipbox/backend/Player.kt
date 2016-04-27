@@ -140,8 +140,9 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 queuedTrack = null
             }
 
-            if (queuedSeekPosition != null) {
-                seekNative(queuedSeekPosition!!)
+            queuedSeekPosition?.let {
+                seekNative(it)
+                playbackTimePosition = it.toLong()
                 queuedSeekPosition = null
             }
 
