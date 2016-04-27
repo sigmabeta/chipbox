@@ -69,7 +69,7 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
-                        is TrackEvent -> displayTrack(it.track)
+                        is TrackEvent -> displayTrack(it.track, true)
                         is PositionEvent -> {
                             /* no-op */
                         }
@@ -96,7 +96,7 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
 
     private fun updateHelper() {
         player.playingTrack?.let {
-            displayTrack(it)
+            displayTrack(it, false)
         }
 
         player.playingGame?.let {
@@ -128,9 +128,9 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
 
     override fun getView(): BaseView? = view
 
-    private fun displayTrack(track: Track) {
-        view?.setTrackTitle(track.title.orEmpty())
-        view?.setArtist(track.artistText.orEmpty())
+    private fun displayTrack(track: Track, animate: Boolean) {
+        view?.setTrackTitle(track.title.orEmpty(), animate)
+        view?.setArtist(track.artistText.orEmpty(), animate)
     }
 
     private fun displayGame(game: Game?, force: Boolean) {

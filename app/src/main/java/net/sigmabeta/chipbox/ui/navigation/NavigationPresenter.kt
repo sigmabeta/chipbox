@@ -66,7 +66,7 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
-                        is TrackEvent -> displayTrack(it.track)
+                        is TrackEvent -> displayTrack(it.track, true)
                         is PositionEvent -> { /* no-op */ }
                         is GameEvent -> displayGame(it.game, false)
                         is StateEvent -> displayState(state, it.state)
@@ -112,14 +112,14 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
         this.state = newState
     }
 
-    private fun displayTrack(track: Track) {
-        view?.setTrackTitle(track.title.orEmpty())
-        view?.setArtist(track.artistText.orEmpty())
+    private fun displayTrack(track: Track, animate: Boolean) {
+        view?.setTrackTitle(track.title.orEmpty(), animate)
+        view?.setArtist(track.artistText.orEmpty(), animate)
     }
 
     private fun updateHelper() {
         player.playingTrack?.let {
-            displayTrack(it)
+            displayTrack(it, false)
         }
 
         player.playingGame?.let {

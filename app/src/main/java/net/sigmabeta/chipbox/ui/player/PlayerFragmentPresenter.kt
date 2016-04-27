@@ -63,10 +63,10 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
-                        is TrackEvent -> displayTrack(it.track)
+                        is TrackEvent -> displayTrack(it.track, true)
                         is PositionEvent -> displayPosition(it.millisPlayed)
                         is StateEvent -> displayState(it.state)
-                        is GameEvent -> displayGame(it.game, false)
+                        is GameEvent -> displayGame(it.game, false, true)
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
                     }
                 }
@@ -76,13 +76,13 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
 
     private fun updateHelper() {
         player.playingTrack?.let {
-            displayTrack(it)
+            displayTrack(it, false)
         } ?: let {
             logError("[PlayerFragmentPresenter] No track to display.")
         }
 
         player.playingGame?.let {
-            displayGame(it, true)
+            displayGame(it, true, false)
         }
 
         displayState(player.state)
@@ -100,21 +100,21 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
         view = null
     }
 
-    private fun displayGame(game: Game?, force: Boolean) {
+    private fun displayGame(game: Game?, force: Boolean, animate: Boolean) {
         if (force || this.game != game) {
             view?.setGameBoxArt(game?.artLocal, !force)
-            view?.setGameTitle(game?.title ?: "Unknown")
+            view?.setGameTitle(game?.title ?: "Unknown", animate)
         }
 
         this.game = game
     }
 
-    private fun displayTrack(track: Track) {
+    private fun displayTrack(track: Track, animate: Boolean) {
         this.track = track
 
-        view?.setTrackTitle(track.title.orEmpty())
-        view?.setArtist(track.artistText.orEmpty())
-        view?.setTrackLength(getTimeStringFromMillis(track.trackLength ?: 0))
+        view?.setTrackTitle(track.title.orEmpty(), animate)
+        view?.setArtist(track.artistText.orEmpty(), animate)
+        view?.setTrackLength(getTimeStringFromMillis(track.trackLength ?: 0), animate)
 
         displayPosition(0)
     }

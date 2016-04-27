@@ -10,6 +10,7 @@ import android.view.Window
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
+import android.widget.TextView
 import net.sigmabeta.chipbox.ui.util.transition.nonshared.*
 
 val SCROLL_DIRECTION_DOWN = 1
@@ -104,6 +105,19 @@ fun View.fadeInFromBelow(): ViewPropertyAnimator {
             .translationY(0.0f)
             .alpha(1.0f)
 }
+
+fun TextView.changeText(text: String) = animate().withLayer()
+        .setDuration(50)
+        .setInterpolator(DECELERATE)
+        .alpha(0.0f)
+        .withEndAction {
+            setText(text)
+
+            animate().withLayer()
+                    .setDuration(100)
+                    .setInterpolator(DECELERATE)
+                    .alpha(1.0f)
+        }
 
 fun View.shrinktoNothing() = animate()
         .withLayer()

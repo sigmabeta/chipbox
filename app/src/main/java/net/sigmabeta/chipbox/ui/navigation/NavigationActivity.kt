@@ -43,12 +43,20 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
                 .commit()
     }
 
-    override fun setTrackTitle(title: String) {
-        text_playing_song_title.text = title
+    override fun setTrackTitle(title: String, animate: Boolean) {
+        if (layout_now_playing.translationY == 0.0f && animate) {
+            text_playing_song_title.changeText(title)
+        } else {
+            text_playing_song_title.text = title
+        }
     }
 
-    override fun setArtist(artist: String) {
-        text_playing_song_artist.text = artist
+    override fun setArtist(artist: String, animate: Boolean) {
+        if (layout_now_playing.translationY == 0.0f && animate) {
+            text_playing_song_artist.changeText(artist)
+        } else {
+            text_playing_song_artist.text = artist
+        }
     }
 
     override fun setGameBoxArt(imagePath: String?, fade: Boolean) {
