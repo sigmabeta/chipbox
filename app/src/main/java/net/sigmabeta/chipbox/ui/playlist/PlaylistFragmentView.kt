@@ -11,4 +11,6 @@ interface PlaylistFragmentView : BaseView {
     fun onTrackRemoved(position: Int)
 
     fun updatePosition(position: Int?, oldPlayingPosition: Int): Unit
+
+    fun scrollToPosition(position: Int, animate: Boolean)
 }

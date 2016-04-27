@@ -74,6 +74,14 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
         }
     }
 
+    override fun scrollToPosition(position: Int, animate: Boolean) {
+        if (animate) {
+            recycler_playlist.smoothScrollToPosition(position)
+        } else {
+            recycler_playlist.scrollToPosition(position)
+        }
+    }
+
     /**
      * ItemListView
      */
