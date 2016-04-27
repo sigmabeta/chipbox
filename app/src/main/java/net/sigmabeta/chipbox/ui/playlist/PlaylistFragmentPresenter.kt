@@ -81,7 +81,15 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
-                        is TrackEvent -> displayPosition(player.playbackQueuePosition ?: -1)
+                        is TrackEvent -> {
+                            val position = if (player.shuffle) {
+                                player.shuffledPositionQueue?.get(player.playbackQueuePosition) ?: -1
+                            } else {
+                                player.playbackQueuePosition
+                            }
+
+                            displayPosition(position)
+                        }
                         else -> logWarning("[PlaylistFragmentPresenter] Unhandled ${it}")
                     }
                 }
