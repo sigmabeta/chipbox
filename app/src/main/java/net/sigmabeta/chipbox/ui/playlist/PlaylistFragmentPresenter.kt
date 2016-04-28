@@ -115,11 +115,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
     }
 
     private fun displayPositionHelper(animate: Boolean) {
-        val position = if (player.shuffle) {
-            player.shuffledPositionQueue?.get(player.playbackQueuePosition) ?: -1
-        } else {
-            player.playbackQueuePosition
-        }
+        val position = player.actualPlaybackQueuePosition
 
         displayPosition(position, animate)
     }
