@@ -58,11 +58,13 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             return field
         }
 
+    var playingShuffledTrack = false
     var shuffle = false
         set (value) {
             if (value == true) {
                 generateRandomPositionArray()
             } else {
+                playbackQueuePosition = shuffledPositionQueue?.get(playbackQueuePosition) ?: 0
                 shuffledPositionQueue = null
             }
             field = value
@@ -74,6 +76,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var playbackQueue: MutableList<Track> = ArrayList<Track>(0)
     var playbackQueuePosition: Int = 0
+    var actualPlaybackQueuePosition: Int = 0
 
     var shuffledPositionQueue: MutableList<Int>? = null
 
@@ -144,6 +147,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             }
 
             if (queuedTrack != null) {
+                playingShuffledTrack = shuffle
                 playingTrack = queuedTrack
                 queuedTrack = null
             }
@@ -341,75 +345,51 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     }
 
     fun play(position: Int) {
-        playbackQueue.let {
-            if (position < it.size) {
-                playbackQueuePosition = position
-                queuedTrack = it.get(position)
+        if (position < playbackQueue.size) {
+            playbackQueuePosition = position
 
-                play()
-            } else {
-                logError("[Player] Cannot play track #${position} of ${it.size}.")
-            }
+            // Don't use getTrackAt() here because we don't want shuffle to affect explicit user input
+            queuedTrack = playbackQueue.get(position)
+            actualPlaybackQueuePosition = position
+
+            play()
+        } else {
+            logError("[Player] Cannot play track #${playbackQueuePosition} of ${playbackQueue.size}.")
         }
     }
 
-    fun isNextTrackAvailable(): Boolean {
-        val queue = playbackQueue
-        val position = playbackQueuePosition
-
-        return (position < queue.size - 1 || repeat != REPEAT_OFF)
-    }
+    fun isNextTrackAvailable() = playbackQueuePosition < playbackQueue.size - 1 || repeat != REPEAT_OFF
 
     fun getNextTrack() {
-        val queue = playbackQueue
-        var position = playbackQueuePosition
-
         if (repeat == REPEAT_ONE) {
             queuedTrack = playingTrack
             return
-        } else if (position < queue.size - 1) {
-            position += 1
+        } else if (playbackQueuePosition < playbackQueue.size - 1) {
+            playbackQueuePosition += 1
         } else if (repeat == REPEAT_ALL) {
-            position = 0
+            playbackQueuePosition = 0
         } else {
             return
         }
 
-        queuedTrack = if (shuffle) {
-            val shuffledPosition = shuffledPositionQueue?.get(position) ?: 0
-            queue.get(shuffledPosition)
-        } else {
-            queue.get(position)
-        }
+        queuedTrack = getTrackAt(playbackQueuePosition)
 
-        playbackQueuePosition = position
-
-        logInfo("[Player] Loading track ${position} of ${queue.size}.")
+        logInfo("[Player] Loading track ${playbackQueuePosition} of ${playbackQueue.size}.")
         backendView?.skipToNext()
     }
 
     fun skipToNext() {
-        val queue = playbackQueue
-        var position = playbackQueuePosition
-
-        if (position < queue.size - 1) {
-            position += 1
+        if (playbackQueuePosition < playbackQueue.size - 1) {
+            playbackQueuePosition += 1
         } else if (repeat == REPEAT_ALL) {
-            position = 0
+            playbackQueuePosition = 0
         } else {
             return
         }
 
-        queuedTrack = if (shuffle) {
-            val shuffledPosition = shuffledPositionQueue?.get(position) ?: 0
-            queue.get(shuffledPosition)
-        } else {
-            queue.get(position)
-        }
+        queuedTrack = getTrackAt(playbackQueuePosition)
 
-        playbackQueuePosition = position
-
-        logInfo("[Player] Loading track ${position} of ${queue.size}.")
+        logInfo("[Player] Loading track ${playbackQueuePosition} of ${playbackQueue.size}.")
         backendView?.skipToNext()
 
         if (state != PlaybackState.STATE_PLAYING) {
@@ -421,22 +401,12 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         if (playbackTimePosition > 3000) {
             seek(0)
         } else {
-            val queue = playbackQueue
-            var position = playbackQueuePosition
+            if (playbackQueuePosition > 0) {
+                playbackQueuePosition -= 1
 
-            if (position > 0) {
-                position -= 1
+                queuedTrack = getTrackAt(playbackQueuePosition)
 
-                queuedTrack = if (shuffle) {
-                    val shuffledPosition = shuffledPositionQueue?.get(position) ?: 0
-                    queue.get(shuffledPosition)
-                } else {
-                    queue.get(position)
-                }
-
-                playbackQueuePosition = position
-
-                logInfo("[Player] Loading track ${position} of ${queue.size}.")
+                logInfo("[Player] Loading track ${playbackQueuePosition} of ${playbackQueue.size}.")
                 backendView?.skipToPrev()
 
                 if (state != PlaybackState.STATE_PLAYING) {
@@ -547,6 +517,19 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 }
             }
         }
+    }
+
+    private fun getTrackAt(position: Int): Track? {
+        val actualPosition = if (shuffle && !playingShuffledTrack) {
+            shuffledPositionQueue?.get(0) ?: 0
+        } else if (shuffle) {
+            shuffledPositionQueue?.get(position) ?: 0
+        } else {
+            position
+        }
+
+        actualPlaybackQueuePosition = actualPosition
+        return playbackQueue.get(actualPosition)
     }
 
     private fun generateRandomPositionArray() {
