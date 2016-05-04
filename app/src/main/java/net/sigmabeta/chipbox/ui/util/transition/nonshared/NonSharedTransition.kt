@@ -10,7 +10,6 @@ import android.transition.TransitionValues
 import android.transition.Visibility
 import android.view.View
 import android.view.ViewGroup
-import net.sigmabeta.chipbox.util.ACCELERATE
 import net.sigmabeta.chipbox.util.DECELERATE
 import net.sigmabeta.chipbox.util.convertDpToPx
 import net.sigmabeta.chipbox.util.growFromNothing
@@ -74,10 +73,10 @@ abstract class NonSharedTransition(stagger: Boolean, val fragment: Boolean) : Vi
             fadingAnimation.duration = DURATION - DELAY_FRAGMENT_EXIT
         }
 
-        fadingAnimation.interpolator = decelerateIf(appear)
-        translAnimation.interpolator = decelerateIf(appear)
-        xScaleAnimation.interpolator = decelerateIf(appear)
-        yScaleAnimation.interpolator = decelerateIf(appear)
+        fadingAnimation.interpolator = DECELERATE
+        translAnimation.interpolator = DECELERATE
+        xScaleAnimation.interpolator = DECELERATE
+        yScaleAnimation.interpolator = DECELERATE
 
         animations.add(fadingAnimation)
         animations.add(translAnimation)
@@ -102,10 +101,6 @@ abstract class NonSharedTransition(stagger: Boolean, val fragment: Boolean) : Vi
     fun getScaleFactor() = if (getDistanceScaler() > 0) SCALE_LARGE else SCALE_SMALL
 
     abstract fun getDistanceScaler(): Int
-
-    private fun accelerateIf(appear: Boolean) = if (appear) ACCELERATE else DECELERATE
-
-    private fun decelerateIf(appear: Boolean) = if (appear) DECELERATE else DECELERATE
 
     companion object {
         val DURATION = 300L
