@@ -9,6 +9,7 @@ import android.transition.TransitionValues
 import android.transition.Visibility
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.Interpolator
 import net.sigmabeta.chipbox.util.ACCELERATE
 import net.sigmabeta.chipbox.util.DECELERATE
 import net.sigmabeta.chipbox.util.convertDpToPx
@@ -63,7 +64,8 @@ class SlideTransition() : Visibility() {
 
     fun getEndY(view: View, appear: Boolean) = if (appear) TRANSLATION_DEFAULT else convertDpToPx(TRANSLATION_OFFSET, view.context)
 
-    private fun decelerateIf(appear: Boolean) = if (appear) DECELERATE else ACCELERATE
+    // This method needs explicit typing because API < 21 did not have BaseInterpolator
+    private fun decelerateIf(appear: Boolean): Interpolator = if (appear) DECELERATE else ACCELERATE
 
     companion object {
         val DURATION = 500L
