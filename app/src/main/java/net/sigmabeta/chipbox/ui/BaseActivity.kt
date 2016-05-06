@@ -15,6 +15,8 @@ import net.sigmabeta.chipbox.dagger.component.FragmentComponent
 import net.sigmabeta.chipbox.util.*
 
 abstract class BaseActivity : AppCompatActivity(), BaseView {
+    var injected = false
+
     val sharedPreDrawListener = object : ViewTreeObserver.OnPreDrawListener {
         override fun onPreDraw(): Boolean {
             getSharedImage()?.viewTreeObserver?.removeOnPreDrawListener(this)
@@ -31,19 +33,20 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
 
             override fun onError() {
                 getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
-                logError("[PlayerFragment] Couldn't load image.")
+                logError("[BaseActivity] Couldn't load image.")
             }
         }
     }
 
     /**
-     * Calls the superclass constructor, and then automatically
-     * requests an injection of the Activity's dependencies.
+     * Requests an injection of the Activity's dependencies (usually, a
+     * Presenter) then does the usual Activity setup (superclass implementation,
+     * setContentView, setup of transitions, etc.)
      */
     override fun onCreate(savedInstanceState: Bundle?) {
+        inject()
         super.onCreate(savedInstanceState)
 
-        inject()
         setContentView(getLayoutId())
 
         window.enterTransition = TRANSITION_FADE_IN_BELOW
