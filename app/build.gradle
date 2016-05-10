@@ -38,16 +38,13 @@ dependencies {
     compile 'com.android.support:design:23.1.1'
 
     // Enable RxJava-style asynrchronous calls
-    compile 'io.reactivex:rxandroid:1.1.0'
+    compile 'io.reactivex:rxandroid:1.2.0'
 
     // Display images loaded from storage.
     compile 'com.squareup.picasso:picasso:2.5.2'
 
     // Contains the Kotlin Standard Library
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-
-    // Kotlin Reflection
-    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
     // Copy album art more easily.
     compile 'commons-io:commons-io:2.4'
