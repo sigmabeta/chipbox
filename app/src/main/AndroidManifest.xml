@@ -38,7 +38,7 @@
 
         <activity
             android:name=".ui.game.GameActivity"
-            android:theme="@style/ThemeMain"/>
+            android:theme="@style/ThemeGame"/>
 
         <activity
             android:name=".ui.scan.ScanActivity"
