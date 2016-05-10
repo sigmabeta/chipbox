@@ -82,14 +82,14 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
 
     override fun showStatusBar() {
         frame_fragment.fitsSystemWindows = true
-        animateStatusBar(ContextCompat.getColor(this, android.R.color.transparent),
+        animateStatusBar(ContextCompat.getColor(this, R.color.grey_translucent),
                 ContextCompat.getColor(this, R.color.primary_dark))
     }
 
     override fun hideStatusBar() {
         frame_fragment.fitsSystemWindows = false
         animateStatusBar(ContextCompat.getColor(this, R.color.primary_dark),
-                ContextCompat.getColor(this, android.R.color.transparent))
+                ContextCompat.getColor(this, R.color.grey_translucent))
     }
 
     /**

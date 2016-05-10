@@ -16,4 +16,7 @@
     <color name="background_grey">#eeeeee</color>
 
     <color name="playlist_grey">#fbfbfb</color>
+
+    <color name="grey_translucent">#55000000</color>
+
 </resources>
