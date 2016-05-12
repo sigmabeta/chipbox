@@ -110,6 +110,9 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
         grid_games.adapter = adapter
         grid_games.addItemDecoration(GridSpaceDecoration(spacing))
         grid_games.layoutManager = layoutManager
+
+        // TODO We should only do this during animations
+        grid_games.clipChildren = false
     }
 
     override fun getSharedImage(): View? = null
