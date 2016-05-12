@@ -50,6 +50,10 @@ class SlideTransition() : Visibility() {
             return null
         }
 
+        if (view.id == android.R.id.statusBarBackground) {
+            return null
+        }
+
         val animations = ArrayList<Animator>(1)
 
         val translAnimation = ObjectAnimator.ofFloat(view, View.TRANSLATION_Y, getStartY(view, appear), getEndY(view, appear))
@@ -60,6 +64,10 @@ class SlideTransition() : Visibility() {
         return animations
     }
 
+    fun getStartAlpha(appear: Boolean) = if (appear) NonSharedTransition.ALPHA_TRANSPARENT else NonSharedTransition.ALPHA_OPAQUE
+
+    fun getEndAlpha(appear: Boolean) = if (appear) NonSharedTransition.ALPHA_OPAQUE else NonSharedTransition.ALPHA_TRANSPARENT
+
     fun getStartY(view: View, appear: Boolean) = if (appear) convertDpToPx(TRANSLATION_OFFSET, view.context) else TRANSLATION_DEFAULT
 
     fun getEndY(view: View, appear: Boolean) = if (appear) TRANSLATION_DEFAULT else convertDpToPx(TRANSLATION_OFFSET, view.context)
@@ -69,7 +77,6 @@ class SlideTransition() : Visibility() {
 
     companion object {
         val DURATION = 500L
-        val DELAY_FRAGMENT_EXIT = 25L
 
         val TRANSLATION_DEFAULT = 0.0f
         val TRANSLATION_OFFSET = 400.0f

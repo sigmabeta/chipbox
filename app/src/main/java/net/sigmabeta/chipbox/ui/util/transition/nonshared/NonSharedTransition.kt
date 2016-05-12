@@ -61,6 +61,10 @@ abstract class NonSharedTransition(stagger: Boolean, val fragment: Boolean) : Vi
             return null
         }
 
+        if (view.id == android.R.id.statusBarBackground) {
+            return null
+        }
+
         val animations = ArrayList<Animator>(4)
 
         val fadingAnimation = ObjectAnimator.ofFloat(view, View.ALPHA, getStartAlpha(appear), getEndAlpha(appear))
