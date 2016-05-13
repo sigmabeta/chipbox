@@ -50,7 +50,7 @@ dependencies {
     compile 'commons-io:commons-io:2.4'
 
     // Annotation-processing based DB codegen.
-    def dbflow_version = "3.0.0-beta5"
+    def dbflow_version = "3.0.0-beta6"
     kapt "com.github.Raizlabs.DBFlow:dbflow-processor:${dbflow_version}"
     compile "com.github.Raizlabs.DBFlow:dbflow-core:${dbflow_version}"
     compile "com.github.Raizlabs.DBFlow:dbflow:${dbflow_version}"

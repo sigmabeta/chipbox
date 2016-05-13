@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox
 
 import android.app.Application
 import android.os.Build
+import com.raizlabs.android.dbflow.config.FlowConfig
 import com.raizlabs.android.dbflow.config.FlowManager
 import net.sigmabeta.chipbox.dagger.Initializer
 import net.sigmabeta.chipbox.dagger.component.AppComponent
@@ -30,7 +31,7 @@ public class ChipboxApplication : Application() {
         logDebug("[ChipboxApplication] Device model: ${Build.MODEL}")
 
         System.loadLibrary("gme")
-        FlowManager.init(this);
+        FlowManager.init(FlowConfig.Builder(this).build())
 
         appComponent = Initializer.initAppComponent(this)
     }
