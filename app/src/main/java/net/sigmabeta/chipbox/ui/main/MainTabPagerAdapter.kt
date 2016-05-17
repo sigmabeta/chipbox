@@ -26,7 +26,8 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
     val fragments = Array<TopLevelFragment>(TAB_TITLES.size, {
         return@Array object: TopLevelFragment {
             override fun isScrolledToBottom(): Boolean {
-                throw UnsupportedOperationException()
+                logError("[MainTabPagerAdapter] Bottom Scroll check requested on dummy fragment.")
+                return false
             }
         }
     })
@@ -49,7 +50,7 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
         val fragment = super.instantiateItem(container, position) as Fragment
 
         if (fragment is TopLevelFragment) {
-            fragments.set(position, fragment)
+            fragments[position] = fragment
         } else {
             logError("[MainTabPagerAdapter] Invalid fragment at position ${position}")
         }
