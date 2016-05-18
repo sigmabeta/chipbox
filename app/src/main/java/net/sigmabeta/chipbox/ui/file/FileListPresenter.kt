@@ -38,10 +38,17 @@ class FileListPresenter @Inject constructor() : FragmentPresenter() {
         }
     }
 
-    override fun onReCreate(savedInstanceState: Bundle) {
+    override fun setup(arguments: Bundle?) {
+        setupHelper(arguments)
     }
 
-    override fun setup(arguments: Bundle?) {
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
+        if (files == null) {
+            setupHelper(arguments)
+        }
+    }
+
+    private fun setupHelper(arguments: Bundle?) {
         val path = arguments?.getString(FileListFragment.ARGUMENT_PATH)
 
         if (path != null) {

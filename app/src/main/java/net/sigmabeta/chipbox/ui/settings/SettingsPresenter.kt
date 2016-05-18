@@ -44,7 +44,7 @@ class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresen
 
     override fun onReenter() = Unit
 
-    override fun onReCreate(savedInstanceState: Bundle) = Unit
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
     override fun onTempDestroy() = Unit
 

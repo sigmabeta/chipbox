@@ -26,4 +26,6 @@ interface PlayerControlsView : BaseView {
     fun setRepeatOne()
 
     fun setRepeatInfinite()
+
+    fun finish()
 }

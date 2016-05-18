@@ -48,7 +48,11 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
      * FragmentPresenter
      */
 
-    override fun onReCreate(savedInstanceState: Bundle) = Unit
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
+        if (player.playingTrack == null && player.playbackQueue.isEmpty()) {
+            view?.finish()
+        }
+    }
 
     /**
      * BasePresenter

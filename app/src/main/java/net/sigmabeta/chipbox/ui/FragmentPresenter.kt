@@ -9,7 +9,7 @@ abstract class FragmentPresenter : BasePresenter() {
         if (savedInstanceState == null) {
             setup(arguments)
         } else {
-            onReCreate(savedInstanceState)
+            onReCreate(arguments, savedInstanceState)
         }
     }
 
@@ -22,8 +22,10 @@ abstract class FragmentPresenter : BasePresenter() {
     }
 
     /**
-     * Perform actions that only need to be performed on
-     * subsequent creations of a Fragment; i.e. after a rotation.
+     * Perform actions that only need to be performed o subsequent creations
+     * of a Fragment; i.e. after rotation or low-mem activity destruction. Generally,
+     * check if the operations performed in setup() need to be redone, and if so, do
+     * them.
      */
-    abstract fun onReCreate(savedInstanceState: Bundle)
+    abstract fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle)
 }

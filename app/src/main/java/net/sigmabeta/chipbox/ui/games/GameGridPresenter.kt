@@ -28,25 +28,13 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
      */
 
     override fun setup(arguments: Bundle?) {
-        platform = arguments?.getLong(GameGridFragment.ARGUMENT_PLATFORM_INDEX) ?: Track.PLATFORM_UNDEFINED
-
-        val subscription = Game.getFromPlatform(platform)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            games = it
-                            view?.setGames(it)
-                        },
-                        {
-                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                        }
-                )
-
-        subscriptions.add(subscription)
+        setupHelper(arguments)
     }
 
-    override fun onReCreate(savedInstanceState: Bundle) {
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
+        if (games == null) {
+            setupHelper(arguments)
+        }
     }
 
     override fun teardown() {
@@ -83,5 +71,24 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
 
     override fun clearView() {
         view = null
+    }
+
+    private fun setupHelper(arguments: Bundle?) {
+        platform = arguments?.getLong(GameGridFragment.ARGUMENT_PLATFORM_INDEX) ?: Track.PLATFORM_UNDEFINED
+
+        val subscription = Game.getFromPlatform(platform)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        {
+                            games = it
+                            view?.setGames(it)
+                        },
+                        {
+                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                        }
+                )
+
+        subscriptions.add(subscription)
     }
 }
