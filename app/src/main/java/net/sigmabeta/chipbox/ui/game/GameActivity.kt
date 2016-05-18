@@ -82,6 +82,7 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
 
         list_tracks.adapter = adapter
         list_tracks.layoutManager = layoutManager
+        list_tracks.clipChildren = false
 
         button_fab.setOnClickListener {
             presenter.onClick(it.id)
