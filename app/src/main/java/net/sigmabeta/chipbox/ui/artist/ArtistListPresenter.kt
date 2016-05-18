@@ -20,24 +20,13 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
     }
 
     override fun setup(arguments: Bundle?) {
-        val subscription = Artist.getAll()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            artists = it
-                            view?.setArtists(it)
-                        },
-                        {
-                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                        }
-                )
-
-
-        subscriptions.add(subscription)
+        setupHelper()
     }
 
-    override fun onReCreate(savedInstanceState: Bundle) {
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
+        if (artists == null) {
+            setupHelper()
+        }
     }
 
     override fun teardown() {
@@ -58,5 +47,23 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
 
     override fun clearView() {
         view = null
+    }
+
+    private fun setupHelper() {
+        val subscription = Artist.getAll()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        {
+                            artists = it
+                            view?.setArtists(it)
+                        },
+                        {
+                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                        }
+                )
+
+
+        subscriptions.add(subscription)
     }
 }

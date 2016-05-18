@@ -41,36 +41,17 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
         }
     }
 
-    override fun onReCreate(savedInstanceState: Bundle) {
-    }
-
-    override fun onTempDestroy() {
-    }
-
     override fun setup(arguments: Bundle?) {
-        val gameId = arguments?.getLong(GameActivity.ARGUMENT_GAME_ID) ?: -1
-        this.gameId = gameId
-
-        val gameSubscription = Game.get(gameId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe (
-                        { game ->
-                            this.game = game
-                            view?.setGame(game)
-
-                            val tracks = game.getTracks()
-                            this.songs = tracks
-                            view?.setSongs(tracks)
-                        },
-                        {
-                            view?.setGame(null)
-                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                        }
-                )
-
-        subscriptions.add(gameSubscription)
+        setupHelper(arguments)
     }
+
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
+        if (songs == null) {
+            setupHelper(arguments)
+        }
+    }
+
+    override fun onTempDestroy() = Unit
 
     override fun teardown() {
         gameId = null
@@ -122,5 +103,30 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
 
     private fun displayTrack(track: Track) {
         view?.setPlayingTrack(track)
+    }
+
+    private fun setupHelper(arguments: Bundle?) {
+        val gameId = arguments?.getLong(GameActivity.ARGUMENT_GAME_ID) ?: -1
+        this.gameId = gameId
+
+        val gameSubscription = Game.get(gameId)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe (
+                        { game ->
+                            this.game = game
+                            view?.setGame(game)
+
+                            val tracks = game.getTracks()
+                            this.songs = tracks
+                            view?.setSongs(tracks)
+                        },
+                        {
+                            view?.setGame(null)
+                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                        }
+                )
+
+        subscriptions.add(gameSubscription)
     }
 }

@@ -55,7 +55,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
      * FragmentPresenter
      */
 
-    override fun onReCreate(savedInstanceState: Bundle) = Unit
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
     /**
      * BasePresenter

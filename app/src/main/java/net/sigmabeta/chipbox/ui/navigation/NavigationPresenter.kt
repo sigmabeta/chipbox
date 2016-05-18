@@ -39,11 +39,9 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
         }
     }
 
-    override fun onReCreate(savedInstanceState: Bundle) {
-    }
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
-    override fun onTempDestroy() {
-    }
+    override fun onTempDestroy() = Unit
 
     override fun setup(arguments: Bundle?) {
         val fragmentTag = arguments?.getString(NavigationActivity.ARGUMENT_FRAGMENT_TAG)

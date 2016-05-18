@@ -27,6 +27,10 @@ class PlayerControlsFragment : BaseFragment(), PlayerControlsView, View.OnClickL
         }
     }
 
+    override fun finish() {
+        activity.finish()
+    }
+
     /**
      * PlayerControlsView
      */

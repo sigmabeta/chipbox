@@ -45,11 +45,9 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
      * FragmentPresenter
      */
 
-    override fun onReCreate(savedInstanceState: Bundle) {
-    }
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
-    override fun setup(arguments: Bundle?) {
-    }
+    override fun setup(arguments: Bundle?) = Unit
 
     override fun teardown() {
         track = null

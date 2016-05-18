@@ -49,14 +49,11 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
         }
     }
 
-    override fun onReCreate(savedInstanceState: Bundle) {
-    }
+    override fun setup(arguments: Bundle?) = Unit
 
-    override fun onTempDestroy() {
-    }
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
-    override fun setup(arguments: Bundle?) {
-    }
+    override fun onTempDestroy() = Unit
 
     override fun teardown() {
         game = null

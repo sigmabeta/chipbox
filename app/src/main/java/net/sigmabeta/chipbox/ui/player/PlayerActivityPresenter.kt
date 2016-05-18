@@ -34,16 +34,14 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
         }
     }
 
-    override fun onReCreate(savedInstanceState: Bundle) {
-    }
-
-    override fun onTempDestroy() {
-    }
-
     override fun setup(arguments: Bundle?) {
         view?.showControlsFragment()
         view?.showPlayerFragment()
     }
+
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
+
+    override fun onTempDestroy() = Unit
 
     override fun teardown() {
         playlistVisible = false

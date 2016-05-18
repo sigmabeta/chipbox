@@ -62,11 +62,9 @@ class FilesPresenter @Inject constructor() : ActivityPresenter() {
         view?.onAddSuccessful()
     }
 
-    override fun onReCreate(savedInstanceState: Bundle) {
-    }
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
-    override fun onTempDestroy() {
-    }
+    override fun onTempDestroy() = Unit
 
     override fun setup(arguments: Bundle?) {
         val path = arguments?.getString(FilesActivity.ARGUMENT_PATH)

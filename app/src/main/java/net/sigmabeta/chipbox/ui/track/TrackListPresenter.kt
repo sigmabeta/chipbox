@@ -38,6 +38,57 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
      */
 
     override fun setup(arguments: Bundle?) {
+        setupHelper(arguments)
+    }
+
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
+        if (songs == null) {
+            setupHelper(arguments)
+        }
+    }
+
+    override fun teardown() {
+        artistId = -1
+        songs = null
+        gameMap = null
+    }
+
+    override fun updateViewState() {
+        songs?.let {
+            view?.setSongs(it)
+        }
+
+        gameMap?.let {
+            view?.setGames(it)
+        }
+    }
+
+    override fun getView(): BaseView? = view
+
+    override fun setView(view: BaseView) {
+        if (view is TrackListView) this.view = view
+    }
+
+    override fun clearView() {
+        view = null
+    }
+
+    private fun loadGames(tracks: List<Track>) {
+        val subscription = Game.getFromTrackList(tracks)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        {
+                            logInfo("[SongListPresenter] Loaded ${it.size} games.")
+                            gameMap = it
+                            view?.setGames(it)
+                        }
+                )
+
+        subscriptions.add(subscription)
+    }
+
+    private fun setupHelper(arguments: Bundle?) {
         artistId = arguments?.getLong(TrackListFragment.ARGUMENT_ARTIST) ?: Artist.ARTIST_ALL
 
         if (artistId == Artist.ARTIST_ALL) {
@@ -80,49 +131,5 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
             subscriptions.add(artistLoad)
         }
-    }
-
-    override fun onReCreate(savedInstanceState: Bundle) {
-    }
-
-    override fun teardown() {
-        artistId = -1
-        songs = null
-        gameMap = null
-    }
-
-    override fun updateViewState() {
-        songs?.let {
-            view?.setSongs(it)
-        }
-
-        gameMap?.let {
-            view?.setGames(it)
-        }
-    }
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is TrackListView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
-
-    private fun loadGames(tracks: List<Track>) {
-        val subscription = Game.getFromTrackList(tracks)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            logInfo("[SongListPresenter] Loaded ${it.size} games.")
-                            gameMap = it
-                            view?.setGames(it)
-                        }
-                )
-
-        subscriptions.add(subscription)
     }
 }

@@ -28,14 +28,12 @@ class PlatformListPresenter @Inject constructor() : FragmentPresenter() {
     /**
      * FragmentPresenter
      */
-    override fun setup(arguments: Bundle?) {
-    }
 
-    override fun onReCreate(savedInstanceState: Bundle) {
-    }
+    override fun setup(arguments: Bundle?) = Unit
 
-    override fun teardown() {
-    }
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
+
+    override fun teardown() = Unit
 
     override fun updateViewState() {
         view?.setList(platformList)
