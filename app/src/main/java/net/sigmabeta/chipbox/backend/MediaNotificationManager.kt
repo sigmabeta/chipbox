@@ -83,7 +83,12 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
                         }
                     }
         }
+
+        player?.playingGame?.let {
+            updateGame(it)
+        }
     }
+
     fun unsubscribeFromUpdates() {
         subscription?.unsubscribe()
         subscription = null
@@ -184,7 +189,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
     }
 
     private fun updateGame(game: Game?) {
-        logDebug("[MediaNotificationManager] Updating notification track.")
+        logDebug("[MediaNotificationManager] Updating notification game.")
 
         val imagePath = game?.let {
             it.artLocal
