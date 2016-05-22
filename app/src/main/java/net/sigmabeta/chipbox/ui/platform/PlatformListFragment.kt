@@ -42,6 +42,8 @@ class PlatformListFragment : BaseFragment(), PlatformListView, ItemListView<Plat
         return list_platforms?.isScrolledToBottom() ?: false
     }
 
+    override fun refresh() = Unit
+
     /**
      * ItemListView
      */

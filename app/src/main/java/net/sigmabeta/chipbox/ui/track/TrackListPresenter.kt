@@ -34,6 +34,8 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
         }
     }
 
+    fun refresh(arguments: Bundle) = setupHelper(arguments)
+
     /**
      * FragmentPresenter
      */

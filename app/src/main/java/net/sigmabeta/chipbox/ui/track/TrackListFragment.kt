@@ -10,8 +10,11 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.*
-import net.sigmabeta.chipbox.ui.file.FilesActivity
-import net.sigmabeta.chipbox.util.*
+import net.sigmabeta.chipbox.ui.main.MainView
+import net.sigmabeta.chipbox.util.fadeIn
+import net.sigmabeta.chipbox.util.fadeOut
+import net.sigmabeta.chipbox.util.fadeOutPartially
+import net.sigmabeta.chipbox.util.isScrolledToBottom
 import java.util.*
 import javax.inject.Inject
 
@@ -38,7 +41,10 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
     }
 
     override fun showFilesScreen() {
-        FilesActivity.launch(activity)
+        val mainActivity = activity
+        if (mainActivity is MainView) {
+            mainActivity.launchFileListActivity()
+        }
     }
 
     override fun showLoadingSpinner() = ifVisible {
@@ -82,6 +88,8 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
     override fun isScrolledToBottom(): Boolean {
         return list_tracks?.isScrolledToBottom() ?: false
     }
+
+    override fun refresh() = presenter.refresh(arguments)
 
     /**
      * ItemListView

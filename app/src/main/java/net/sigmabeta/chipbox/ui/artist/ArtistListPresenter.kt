@@ -20,6 +20,8 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
         view?.launchNavActivity(id)
     }
 
+    fun refresh() = setupHelper()
+
     override fun setup(arguments: Bundle?) {
         setupHelper()
     }
