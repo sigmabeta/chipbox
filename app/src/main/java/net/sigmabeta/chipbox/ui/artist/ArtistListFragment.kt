@@ -117,6 +117,8 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistVi
 
         list_artists.adapter = adapter
         list_artists.layoutManager = layoutManager
+
+        button_empty_state.setOnClickListener(this)
     }
 
     override fun getSharedImage(): View? = null
