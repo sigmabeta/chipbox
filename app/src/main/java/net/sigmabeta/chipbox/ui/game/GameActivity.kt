@@ -51,8 +51,8 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
         adapter.playingTrackId = track.id
     }
 
-    override fun setSongs(songs: MutableList<Track>) {
-        adapter.dataset = songs
+    override fun setTracks(tracks: MutableList<Track>) {
+        adapter.dataset = tracks
     }
 
     /**
