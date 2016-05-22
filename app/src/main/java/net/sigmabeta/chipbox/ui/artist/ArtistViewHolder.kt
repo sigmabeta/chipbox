@@ -6,7 +6,7 @@ import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.artist.ArtistListAdapter
 import net.sigmabeta.chipbox.ui.BaseViewHolder
 
-class ArtistViewHolder(view: View, adapter: ArtistListAdapter) : BaseViewHolder<Artist, ArtistViewHolder, ArtistListAdapter>(view, adapter), View.OnClickListener {
+class ArtistViewHolder(view: View, adapter: ArtistListAdapter) : BaseViewHolder<Artist, ArtistViewHolder, ArtistListAdapter>(view, adapter) {
     var artistId: Long? = null
 
     override fun getId(): Long? {

@@ -62,8 +62,9 @@ class ScanPresenter @Inject constructor(val library: Library) : ActivityPresente
         backAllowed = false
     }
 
-    override fun updateViewState() {
-    }
+    override fun updateViewState() = Unit
+
+    override fun onClick(id: Int) = Unit
 
     override fun getView(): BaseView? = view
 

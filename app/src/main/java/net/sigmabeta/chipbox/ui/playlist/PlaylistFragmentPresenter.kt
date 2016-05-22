@@ -64,8 +64,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
     override fun setup(arguments: Bundle?) {
     }
 
-    override fun teardown() {
-    }
+    override fun teardown() = Unit
 
     override fun updateViewState() {
         displayTracks(player.playbackQueue)
@@ -84,6 +83,8 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
 
         subscriptions.add(subscription)
     }
+
+    override fun onClick(id: Int) = Unit
 
     override fun getView(): BaseView? = view
 

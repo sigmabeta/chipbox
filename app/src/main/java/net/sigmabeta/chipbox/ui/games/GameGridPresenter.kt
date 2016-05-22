@@ -63,6 +63,8 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
         view?.clearClickedViewHolder()
     }
 
+    override fun onClick(id: Int) = Unit
+
     override fun getView(): BaseView? = view
 
     override fun setView(view: BaseView) {

@@ -31,8 +31,8 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
         }
     }
 
-    fun onClick(clickedId: Int) {
-        when (clickedId) {
+    override fun onClick(id: Int) {
+        when (id) {
             R.id.button_fab -> {
                 tracks?.let { them ->
                     player.play(them, 0)

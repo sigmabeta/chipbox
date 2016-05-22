@@ -5,7 +5,7 @@ import kotlinx.android.synthetic.main.list_item_platform.view.*
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.ui.BaseViewHolder
 
-class PlatformViewHolder(view: View, adapter: PlatformListAdapter) : BaseViewHolder<Platform, PlatformViewHolder, PlatformListAdapter>(view, adapter), View.OnClickListener {
+class PlatformViewHolder(view: View, adapter: PlatformListAdapter) : BaseViewHolder<Platform, PlatformViewHolder, PlatformListAdapter>(view, adapter) {
     var platformId: Long? = null
 
     override fun getId(): Long? {

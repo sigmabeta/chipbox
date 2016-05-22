@@ -72,6 +72,8 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
         subscriptions.add(subscription)
     }
 
+    override fun onClick(id: Int) = Unit
+
     private fun updateHelper() {
         player.playingTrack?.let {
             displayTrack(it, false)

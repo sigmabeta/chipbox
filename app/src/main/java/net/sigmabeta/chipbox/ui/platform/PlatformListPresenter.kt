@@ -35,6 +35,8 @@ class PlatformListPresenter @Inject constructor() : FragmentPresenter() {
 
     override fun teardown() = Unit
 
+    override fun onClick(id: Int) = Unit
+
     override fun updateViewState() {
         view?.setList(platformList)
     }

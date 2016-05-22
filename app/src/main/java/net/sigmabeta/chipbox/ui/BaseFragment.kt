@@ -14,7 +14,7 @@ import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.util.logError
 
-abstract class BaseFragment : Fragment(), BaseView {
+abstract class BaseFragment : Fragment(), BaseView, View.OnClickListener {
     var injected: Boolean = false
 
     val sharedPreDrawListener = object : ViewTreeObserver.OnPreDrawListener {
@@ -105,6 +105,10 @@ abstract class BaseFragment : Fragment(), BaseView {
         }
 
         snackbar.show()
+    }
+
+    override fun onClick(clicked: View) {
+        getPresenter().onClick(clicked.id)
     }
 
     open fun getShareableViews(): Array<Pair<View, String>>? = null

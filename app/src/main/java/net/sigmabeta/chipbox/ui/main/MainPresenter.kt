@@ -79,6 +79,8 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
         subscriptions.add(subscription)
     }
 
+    override fun onClick(id: Int) = Unit
+
     override fun setView(view: BaseView) {
         if (view is MainView) this.view = view
     }
