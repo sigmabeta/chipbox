@@ -20,7 +20,7 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
             R.string.tab_main_game,
             R.string.tab_main_system,
             R.string.tab_main_artist,
-            R.string.tab_main_songs
+            R.string.tab_main_tracks
     )
 
     val fragments = Array<TopLevelFragment>(TAB_TITLES.size, {

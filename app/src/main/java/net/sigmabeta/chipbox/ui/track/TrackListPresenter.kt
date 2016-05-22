@@ -23,12 +23,12 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
     var artist: Artist? = null
 
-    var songs: MutableList<Track>? = null
+    var tracks: MutableList<Track>? = null
 
     var gameMap: HashMap<Long, Game>? = null
 
     fun onItemClick(position: Long) {
-        songs?.let {
+        tracks?.let {
             player.play(it, position.toInt())
         }
     }
@@ -42,20 +42,20 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
     }
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
-        if (songs == null) {
+        if (tracks == null) {
             setupHelper(arguments)
         }
     }
 
     override fun teardown() {
         artistId = -1
-        songs = null
+        tracks = null
         gameMap = null
     }
 
     override fun updateViewState() {
-        songs?.let {
-            view?.setSongs(it)
+        tracks?.let {
+            view?.setTracks(it)
         }
 
         gameMap?.let {
@@ -92,15 +92,15 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
         artistId = arguments?.getLong(TrackListFragment.ARGUMENT_ARTIST) ?: Artist.ARTIST_ALL
 
         if (artistId == Artist.ARTIST_ALL) {
-            val songsLoad = Track.getAll()
+            val tracksLoad = Track.getAll()
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
                                 logInfo("[SongListPresenter] Loaded ${it.size} tracks.")
 
-                                songs = it
-                                view?.setSongs(it)
+                                tracks = it
+                                view?.setTracks(it)
                                 loadGames(it)
                             },
                             {
@@ -108,7 +108,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
                             }
                     )
 
-            subscriptions.add(songsLoad)
+            subscriptions.add(tracksLoad)
         } else {
             val artistLoad = Artist.get(artistId)
                     .subscribeOn(Schedulers.io())
@@ -119,8 +119,8 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
                                 view?.setActivityTitle(it.name ?: "Unknown Artist")
 
                                 val tracks = it.getTracks()
-                                view?.setSongs(tracks)
-                                songs = tracks
+                                view?.setTracks(tracks)
+                                this.tracks = tracks
                                 loadGames(tracks)
                             },
                             {

@@ -24,8 +24,8 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
      * SongListView
      */
 
-    override fun setSongs(songs: MutableList<Track>) {
-        adapter.dataset = songs
+    override fun setTracks(tracks: MutableList<Track>) {
+        adapter.dataset = tracks
     }
 
     override fun setGames(games: HashMap<Long, Game>) {
@@ -41,7 +41,7 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
      */
 
     override fun isScrolledToBottom(): Boolean {
-        return list_songs?.isScrolledToBottom() ?: false
+        return list_tracks?.isScrolledToBottom() ?: false
     }
 
     /**
@@ -78,8 +78,8 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
     override fun configureViews() {
         val layoutManager = LinearLayoutManager(activity)
 
-        list_songs.adapter = adapter
-        list_songs.layoutManager = layoutManager
+        list_tracks.adapter = adapter
+        list_tracks.layoutManager = layoutManager
     }
 
     override fun getSharedImage(): View? = null

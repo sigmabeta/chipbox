@@ -23,10 +23,10 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
     var gameId: Long? = null
 
     var game: Game? = null
-    var songs: MutableList<Track>? = null
+    var tracks: MutableList<Track>? = null
 
     fun onItemClick(position: Long) {
-        songs?.let {
+        tracks?.let {
             player.play(it, position.toInt())
         }
     }
@@ -34,7 +34,7 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
     fun onClick(clickedId: Int) {
         when (clickedId) {
             R.id.button_fab -> {
-                songs?.let { them ->
+                tracks?.let { them ->
                     player.play(them, 0)
                 }
             }
@@ -46,7 +46,7 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
     }
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
-        if (songs == null) {
+        if (tracks == null) {
             setupHelper(arguments)
         }
     }
@@ -56,7 +56,7 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
     override fun teardown() {
         gameId = null
         game = null
-        songs = null
+        tracks = null
     }
 
     override fun updateViewState() {
@@ -64,8 +64,8 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
             view?.setGame(it)
         }
 
-        songs?.let {
-            view?.setSongs(it)
+        tracks?.let {
+            view?.setTracks(it)
         }
 
         player.playingTrack?.let {
@@ -118,8 +118,8 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
                             view?.setGame(game)
 
                             val tracks = game.getTracks()
-                            this.songs = tracks
-                            view?.setSongs(tracks)
+                            this.tracks = tracks
+                            view?.setTracks(tracks)
                         },
                         {
                             view?.setGame(null)

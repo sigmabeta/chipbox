@@ -5,7 +5,7 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseView
 
 interface GameView : BaseView {
-    fun setSongs(songs: MutableList<Track>)
+    fun setTracks(tracks: MutableList<Track>)
 
     fun setPlayingTrack(track: Track)
 

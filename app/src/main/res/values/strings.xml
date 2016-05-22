@@ -14,7 +14,7 @@
     <string name="tab_main_game">Game</string>
     <string name="tab_main_system">System</string>
     <string name="tab_main_artist">Artist</string>
-    <string name="tab_main_songs">Songs</string>
+    <string name="tab_main_tracks">Tracks</string>
 
     <string name="platform_name_genesis">Sega Genesis</string>
     <string name="platform_name_32x">Sega 32X</string>
