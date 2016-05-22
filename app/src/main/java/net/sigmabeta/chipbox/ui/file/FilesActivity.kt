@@ -19,7 +19,7 @@ import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import javax.inject.Inject
 
 class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
-    lateinit var presenter: RenamedPresenter
+    lateinit var presenter: FilesPresenter
         @Inject set
 
     override fun showFileFragment(path: String, stack: Boolean) {
