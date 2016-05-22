@@ -14,7 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class RenamedPresenter @Inject constructor() : ActivityPresenter() {
+class FilesPresenter @Inject constructor() : ActivityPresenter() {
     // TODO DI this
     lateinit var startPath: String
 
