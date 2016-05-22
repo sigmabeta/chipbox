@@ -66,7 +66,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
     }
 
     override fun hideContent() = ifVisible {
-        grid_games.fadeOut()
+        grid_games.fadeOutPartially()
     }
 
     override fun showEmptyState() = ifVisible {

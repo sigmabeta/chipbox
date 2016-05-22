@@ -90,7 +90,6 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
 
         view?.showLoadingSpinner()
         view?.hideEmptyState()
-        view?.hideContent()
 
         val subscription = Game.getFromPlatform(platform)
                 .subscribeOn(Schedulers.io())
@@ -114,8 +113,8 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
         subscriptions.add(subscription)
     }
 
-    private fun showContent(it: MutableList<Game>) {
-        view?.setGames(it)
+    private fun showContent(games: MutableList<Game>) {
+        view?.setGames(games)
         view?.hideLoadingSpinner()
         view?.hideEmptyState()
         view?.showContent()

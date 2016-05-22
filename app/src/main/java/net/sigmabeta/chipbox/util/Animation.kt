@@ -96,7 +96,7 @@ fun View.fadeInFromRight(): ViewPropertyAnimator {
 fun View.fadeInFromBelow(): ViewPropertyAnimator {
     alpha = 0.0f
     visibility = View.VISIBLE
-    translationY = height.toFloat()
+    translationY = height.toFloat() / 8
 
     return animate()
             .withLayer()
@@ -122,7 +122,17 @@ fun View.fadeOut(): ViewPropertyAnimator {
             .setInterpolator(ACCELERATE)
             .setDuration(150)
             .alpha(0.0f)
-            .withEndAction { visibility = View.GONE }
+            .withEndAction {
+                visibility = View.GONE
+            }
+}
+
+fun View.fadeOutPartially(): ViewPropertyAnimator {
+    return animate()
+            .withLayer()
+            .setInterpolator(ACCELERATE)
+            .setDuration(150)
+            .alpha(0.6f)
 }
 
 fun TextView.changeText(text: String) = animate().withLayer()
