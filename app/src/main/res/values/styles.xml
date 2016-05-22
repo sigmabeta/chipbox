@@ -5,6 +5,8 @@
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorAccent">@color/accent</item>
 
+        <item name="android:buttonStyle">@style/ChipboxButtonStyle</item>
+
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/background_grey</item>
 
@@ -169,6 +171,10 @@
         <item name="android:layout_marginStart">@dimen/spacing_large</item>
         <item name="android:layout_marginEnd">@dimen/spacing_large</item>
         <item name="android:singleLine">true</item>
+    </style>
+
+    <style name="ChipboxButtonStyle" parent="Widget.AppCompat.Button.Colored">
+        <item name="colorButtonNormal">@color/accent</item>
     </style>
 
 </resources>

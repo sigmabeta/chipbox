@@ -62,7 +62,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
     }
 
     override fun showContent() = ifVisible {
-        grid_games.fadeInFromBelow()
+        grid_games.fadeIn()
     }
 
     override fun hideContent() = ifVisible {

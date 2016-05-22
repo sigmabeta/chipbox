@@ -50,7 +50,7 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
     }
 
     override fun showContent() = ifVisible {
-        list_tracks.fadeInFromBelow()
+        list_tracks.fadeIn()
     }
 
     override fun hideContent() = ifVisible {
