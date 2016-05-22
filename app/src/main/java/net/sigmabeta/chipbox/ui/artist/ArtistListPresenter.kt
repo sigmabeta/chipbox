@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.artist
 
 import android.os.Bundle
+import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.BaseView
@@ -35,11 +36,21 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
 
     override fun updateViewState() {
         artists?.let {
-            view?.setArtists(it)
+            if (it.size > 0) {
+                showContent(it)
+            } else {
+                showEmptyState()
+            }
+        } ?: let {
+            showEmptyState()
         }
     }
 
-    override fun onClick(id: Int) = Unit
+    override fun onClick(id: Int) {
+        when (id) {
+            R.id.button_empty_state -> view?.showFilesScreen()
+        }
+    }
 
     override fun getView(): BaseView? = view
 
@@ -52,20 +63,42 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
     }
 
     private fun setupHelper() {
+        view?.showLoadingSpinner()
+        view?.hideEmptyState()
+
         val subscription = Artist.getAll()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
                             artists = it
-                            view?.setArtists(it)
+
+                            if (it.size > 0) {
+                                showContent(it)
+                            } else {
+                                showEmptyState()
+                            }
                         },
                         {
+                            showEmptyState()
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
                 )
 
 
         subscriptions.add(subscription)
+    }
+
+    private fun showContent(artists: MutableList<Artist>) {
+        view?.setArtists(artists)
+        view?.hideLoadingSpinner()
+        view?.hideEmptyState()
+        view?.showContent()
+    }
+
+    private fun showEmptyState() {
+        view?.hideLoadingSpinner()
+        view?.hideContent()
+        view?.showEmptyState()
     }
 }

@@ -8,9 +8,10 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.*
+import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
-import net.sigmabeta.chipbox.util.isScrolledToBottom
+import net.sigmabeta.chipbox.util.*
 import javax.inject.Inject
 
 class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistViewHolder>, TopLevelFragment {
@@ -29,6 +30,39 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistVi
 
     override fun setArtists(artists: MutableList<Artist>) {
         adapter.dataset = artists
+    }
+
+    override fun showFilesScreen() {
+        FilesActivity.launch(activity)
+    }
+
+    override fun showLoadingSpinner() = ifVisible {
+        loading_spinner.fadeIn()
+    }
+
+    override fun hideLoadingSpinner() = ifVisible {
+        loading_spinner.fadeOut()
+    }
+
+    override fun showContent() = ifVisible {
+        list_artists.fadeIn()
+    }
+
+    override fun hideContent() = ifVisible {
+        list_artists.fadeOutPartially()
+    }
+
+    override fun showEmptyState() = ifVisible {
+        layout_empty_state.visibility = View.VISIBLE
+        label_empty_state.fadeIn().setStartDelay(300)
+        button_empty_state.fadeIn().setStartDelay(600)
+    }
+
+    override fun hideEmptyState() = ifVisible {
+        layout_empty_state.fadeOut().withEndAction {
+            label_empty_state.alpha = 0.0f
+            button_empty_state.alpha = 0.0f
+        }
     }
 
     /**

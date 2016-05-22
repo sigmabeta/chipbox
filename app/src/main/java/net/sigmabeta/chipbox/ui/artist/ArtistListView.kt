@@ -7,4 +7,18 @@ interface ArtistListView : BaseView {
     fun setArtists(artists: MutableList<Artist>)
 
     fun launchNavActivity(id: Long)
+
+    fun showFilesScreen()
+
+    fun showLoadingSpinner()
+
+    fun hideLoadingSpinner()
+
+    fun showContent()
+
+    fun hideContent()
+
+    fun showEmptyState()
+
+    fun hideEmptyState()
 }
