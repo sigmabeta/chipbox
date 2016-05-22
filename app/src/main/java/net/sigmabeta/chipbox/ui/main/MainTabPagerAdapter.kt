@@ -35,9 +35,9 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
     override fun getCount() = TAB_TITLES.size
 
     override fun getItem(position: Int): Fragment? = when (position) {
-        2 -> GameGridFragment.newInstance(Track.PLATFORM_ALL)
-        0 -> PlatformListFragment.newInstance()
-        1 -> ArtistListFragment.newInstance()
+        0 -> GameGridFragment.newInstance(Track.PLATFORM_ALL)
+        1 -> PlatformListFragment.newInstance()
+        2 -> ArtistListFragment.newInstance()
         3 -> TrackListFragment.newInstance(Artist.ARTIST_ALL)
         else -> null
     }
