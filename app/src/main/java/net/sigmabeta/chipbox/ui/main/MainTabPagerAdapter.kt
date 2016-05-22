@@ -29,6 +29,8 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
                 logError("[MainTabPagerAdapter] Bottom Scroll check requested on dummy fragment.")
                 return false
             }
+
+            override fun refresh() = Unit
         }
     })
 

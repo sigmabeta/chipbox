@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.ui.scan
 
-import android.content.Context
+import android.app.Activity
 import android.content.Intent
 import android.view.View
 import android.widget.FrameLayout
@@ -32,7 +32,9 @@ class ScanActivity : BaseActivity(), ScanView {
         }
     }
 
-    override fun onScanComplete() {
+    override fun onScanComplete(refresh: Boolean) {
+        setResult(if (refresh) RESULT_CODE_REFRESH else RESULT_CODE_NO_REFRESH )
+
         text_status.fadeOutToLeft().withEndAction {
             text_status.setText(R.string.scan_status_complete)
             text_status.fadeInFromRight()
@@ -83,9 +85,14 @@ class ScanActivity : BaseActivity(), ScanView {
     override fun shouldDelayTransitionForFragment() = false
 
     companion object {
-        fun launch(context: Context) {
-            val launcher = Intent(context, ScanActivity::class.java)
-            context.startActivity(launcher)
+        val REQUEST_CODE_SCAN = 123
+
+        val RESULT_CODE_REFRESH = 789
+        val RESULT_CODE_NO_REFRESH = 456
+
+        fun launch(activity: Activity) {
+            val launcher = Intent(activity, ScanActivity::class.java)
+            activity.startActivityForResult(launcher, REQUEST_CODE_SCAN)
         }
     }
 }

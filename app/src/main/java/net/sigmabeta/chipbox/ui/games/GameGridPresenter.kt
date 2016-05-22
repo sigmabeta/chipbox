@@ -23,6 +23,8 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
         view?.launchGameActivity(id)
     }
 
+    fun refresh(arguments: Bundle) = setupHelper(arguments)
+
     /**
      * FragmentPresenter
      */

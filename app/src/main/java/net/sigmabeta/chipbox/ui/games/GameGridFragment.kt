@@ -10,8 +10,8 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.*
-import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.game.GameActivity
+import net.sigmabeta.chipbox.ui.main.MainView
 import net.sigmabeta.chipbox.ui.util.GridSpaceDecoration
 import net.sigmabeta.chipbox.util.*
 import java.util.*
@@ -50,7 +50,10 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
     }
 
     override fun showFilesScreen() {
-        FilesActivity.launch(activity)
+        val mainActivity = activity
+        if (mainActivity is MainView) {
+            mainActivity.launchFileListActivity()
+        }
     }
 
     override fun showLoadingSpinner() = ifVisible {
@@ -89,6 +92,8 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
     override fun isScrolledToBottom(): Boolean {
         return grid_games?.isScrolledToBottom() ?: false
     }
+
+    override fun refresh() = presenter.refresh(arguments)
 
     override fun getContentLayout(): ViewGroup {
         return frame_content

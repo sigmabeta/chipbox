@@ -63,7 +63,6 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
     override fun onAddSuccessful() {
 
         ScanActivity.launch(this)
-        finish()
     }
 
     override fun onDirectoryClicked(path: String) {
@@ -105,9 +104,18 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
 
     override fun shouldDelayTransitionForFragment() = false
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == ScanActivity.REQUEST_CODE_SCAN) {
+            if (resultCode == ScanActivity.RESULT_CODE_REFRESH) {
+                setResult(resultCode)
+                finish()
+            }
+        }
+    }
+
     companion object {
         val REQUEST_ADD_FOLDER = 100
-        val RESULT_ADD_SUCCESSFUL = 1000
 
         val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.files"
 

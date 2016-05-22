@@ -5,7 +5,7 @@ import net.sigmabeta.chipbox.ui.BaseView
 interface ScanView : BaseView {
     fun onScanFailed()
 
-    fun onScanComplete()
+    fun onScanComplete(refresh: Boolean)
 
     fun showCurrentFolder(name: String)
 

@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.main
 
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.support.v7.app.ActionBarDrawerToggle
@@ -201,6 +202,16 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     override fun getSharedImage(): View? = null
 
     override fun shouldDelayTransitionForFragment() = false
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (resultCode == ScanActivity.RESULT_CODE_REFRESH) {
+            pagerAdapter?.fragments?.forEach {
+                it.refresh()
+            }
+        }
+    }
 
     private fun getFragment(): TopLevelFragment? {
         val selectedPosition = pager_categories.currentItem

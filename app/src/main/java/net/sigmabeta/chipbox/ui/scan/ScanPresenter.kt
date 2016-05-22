@@ -51,7 +51,7 @@ class ScanPresenter @Inject constructor(val library: Library) : ActivityPresente
                         {
                             // OnCompleted.
                             backAllowed = true
-                            view?.onScanComplete()
+                            view?.onScanComplete(filesAdded > 0)
                         }
                 )
     }
