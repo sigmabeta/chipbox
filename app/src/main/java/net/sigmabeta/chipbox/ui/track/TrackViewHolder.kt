@@ -9,7 +9,7 @@ import net.sigmabeta.chipbox.ui.BaseViewHolder
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.loadImageLowQuality
 
-class TrackViewHolder(view: View, adapter: TrackListAdapter) : BaseViewHolder<Track, TrackViewHolder, TrackListAdapter>(view, adapter), View.OnClickListener {
+class TrackViewHolder(view: View, adapter: TrackListAdapter) : BaseViewHolder<Track, TrackViewHolder, TrackListAdapter>(view, adapter) {
     override fun getId(): Long? {
         return adapterPosition.toLong()
     }

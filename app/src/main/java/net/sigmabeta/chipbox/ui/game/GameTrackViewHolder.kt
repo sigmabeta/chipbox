@@ -8,7 +8,7 @@ import net.sigmabeta.chipbox.ui.BaseViewHolder
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 
 
-open class GameTrackViewHolder(view: View, adapter: GameTrackListAdapter) : BaseViewHolder<Track, GameTrackViewHolder, GameTrackListAdapter>(view, adapter), View.OnClickListener {
+open class GameTrackViewHolder(view: View, adapter: GameTrackListAdapter) : BaseViewHolder<Track, GameTrackViewHolder, GameTrackListAdapter>(view, adapter) {
     override fun getId(): Long? {
         return adapterPosition.toLong()
     }

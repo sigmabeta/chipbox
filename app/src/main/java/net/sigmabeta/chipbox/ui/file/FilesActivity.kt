@@ -73,7 +73,7 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
     override fun showExistsMessage() {
         showErrorSnackbar(
                 getString(R.string.file_list_error_exists),
-                View.OnClickListener { presenter.onRescanClick() },
+                this,
                 R.string.file_list_snackbar_rescan)
     }
 

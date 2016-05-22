@@ -17,15 +17,9 @@ import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
-class PlayerControlsFragment : BaseFragment(), PlayerControlsView, View.OnClickListener {
+class PlayerControlsFragment : BaseFragment(), PlayerControlsView {
     lateinit var presenter: PlayerControlsPresenter
         @Inject set
-
-    override fun onClick(clicked: View?) {
-        clicked?.id?.let {
-            presenter.onClick(it)
-        }
-    }
 
     override fun finish() {
         activity.finish()

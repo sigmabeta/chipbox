@@ -14,7 +14,7 @@ import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.dagger.component.FragmentComponent
 import net.sigmabeta.chipbox.util.*
 
-abstract class BaseActivity : AppCompatActivity(), BaseView {
+abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListener {
     var injected = false
 
     val sharedPreDrawListener = object : ViewTreeObserver.OnPreDrawListener {
@@ -106,6 +106,10 @@ abstract class BaseActivity : AppCompatActivity(), BaseView {
         }
 
         snackbar.show()
+    }
+
+    override fun onClick(clicked: View) {
+        getPresenter().onClick(clicked.id)
     }
 
     fun getFragmentComponent(): FragmentComponent {

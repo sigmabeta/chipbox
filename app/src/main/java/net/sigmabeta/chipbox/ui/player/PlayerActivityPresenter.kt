@@ -13,7 +13,7 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
 
     var playlistVisible = false
 
-    fun onClick(id: Int) {
+    override fun onClick(id: Int) {
         when (id) {
             R.id.button_fab -> {
                 playlistVisible = true

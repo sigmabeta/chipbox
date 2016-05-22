@@ -33,7 +33,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
         elevated = false
     }
 
-    fun onClick(id: Int) {
+    override fun onClick(id: Int) {
         when (id) {
             R.id.button_play -> onPlayPauseClick()
             R.id.button_skip_forward -> player.skipToNext()

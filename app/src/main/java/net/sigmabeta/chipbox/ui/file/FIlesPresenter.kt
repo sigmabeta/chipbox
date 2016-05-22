@@ -81,7 +81,12 @@ class FilesPresenter @Inject constructor() : ActivityPresenter() {
         path = null
     }
 
-    override fun updateViewState() {
+    override fun updateViewState() = Unit
+
+    override fun onClick(id: Int) {
+        when (id) {
+            android.support.design.R.id.snackbar_action -> onRescanClick()
+        }
     }
 
     override fun getView(): BaseView? = view

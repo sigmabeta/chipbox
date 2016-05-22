@@ -80,6 +80,8 @@ class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresen
         subscriptions.add(subscription)
     }
 
+    override fun onClick(id: Int) = Unit
+
     override fun getView(): BaseView? = view
 
     override fun setView(view: BaseView) {

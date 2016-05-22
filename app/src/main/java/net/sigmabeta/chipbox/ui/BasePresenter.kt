@@ -34,6 +34,11 @@ abstract class BasePresenter {
      */
     abstract fun updateViewState()
 
+    /**
+     * Handle click events.
+     */
+    abstract fun onClick(id: Int)
+
     abstract fun getView(): BaseView?
 
     abstract fun setView(view: BaseView)
