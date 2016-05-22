@@ -11,4 +11,18 @@ interface GameListView : BaseView {
     fun launchGameActivity(id: Long)
 
     fun clearClickedViewHolder()
+
+    fun showFilesScreen()
+
+    fun showLoadingSpinner()
+
+    fun hideLoadingSpinner()
+
+    fun showContent()
+
+    fun hideContent()
+
+    fun showEmptyState()
+
+    fun hideEmptyState()
 }

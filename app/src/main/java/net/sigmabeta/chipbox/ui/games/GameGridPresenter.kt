@@ -44,7 +44,13 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
 
     override fun updateViewState() {
         games?.let {
-            view?.setGames(it)
+            if (it.size > 0) {
+                showContent(it)
+            } else {
+                showEmptyState()
+            }
+        } ?: let {
+            showEmptyState()
         }
 
         val titleResource = when (platform) {
@@ -63,7 +69,11 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
         view?.clearClickedViewHolder()
     }
 
-    override fun onClick(id: Int) = Unit
+    override fun onClick(id: Int) {
+        when (id) {
+            R.id.button_empty_state -> view?.showFilesScreen()
+        }
+    }
 
     override fun getView(): BaseView? = view
 
@@ -78,19 +88,42 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
     private fun setupHelper(arguments: Bundle?) {
         platform = arguments?.getLong(GameGridFragment.ARGUMENT_PLATFORM_INDEX) ?: Track.PLATFORM_UNDEFINED
 
+        view?.showLoadingSpinner()
+        view?.hideEmptyState()
+        view?.hideContent()
+
         val subscription = Game.getFromPlatform(platform)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
                             games = it
-                            view?.setGames(it)
+
+                            if (it.size > 0) {
+                                showContent(it)
+                            } else {
+                                showEmptyState()
+                            }
                         },
                         {
+                            showEmptyState()
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
                 )
 
         subscriptions.add(subscription)
+    }
+
+    private fun showContent(it: MutableList<Game>) {
+        view?.setGames(it)
+        view?.hideLoadingSpinner()
+        view?.hideEmptyState()
+        view?.showContent()
+    }
+
+    private fun showEmptyState() {
+        view?.hideLoadingSpinner()
+        view?.hideContent()
+        view?.showEmptyState()
     }
 }

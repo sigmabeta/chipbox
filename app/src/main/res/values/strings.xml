@@ -2,7 +2,8 @@
     <string name="app_name">Chipbox</string>
 
     <string name="navigation_drawer_open">Open Navigation Drawer</string>
-    <string name="navigation_drawer_close">Close Navigation Drawer</string>
+    <string name="navigation_drawer_close">Close Navigation Drawer
+    </string>
 
     <string name="back_button">Back Button</string>
     <!-- Main Screen -->
@@ -53,4 +54,8 @@
     <!-- Settings -->
     <string name="title_settings">Playback Settings</string>
     <string name="label_tempo">Tempo</string>
+
+    <!-- Empty States -->
+    <string name="empty_state">Your library is empty.\n Get some tracks, then…</string>
+    <string name="button_empty_state">Add to Library</string>
 </resources>
