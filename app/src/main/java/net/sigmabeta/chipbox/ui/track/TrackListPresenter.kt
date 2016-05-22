@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.track
 
 import android.os.Bundle
+import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
@@ -55,7 +56,13 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
     override fun updateViewState() {
         tracks?.let {
-            view?.setTracks(it)
+            if (it.size > 0) {
+                showContent(it)
+            } else {
+                showEmptyState()
+            }
+        } ?: let {
+            showEmptyState()
         }
 
         gameMap?.let {
@@ -63,7 +70,11 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
         }
     }
 
-    override fun onClick(id: Int) = Unit
+    override fun onClick(id: Int) {
+        when (id) {
+            R.id.button_empty_state -> view?.showFilesScreen()
+        }
+    }
 
     override fun getView(): BaseView? = view
 
@@ -93,6 +104,9 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
     private fun setupHelper(arguments: Bundle?) {
         artistId = arguments?.getLong(TrackListFragment.ARGUMENT_ARTIST) ?: Artist.ARTIST_ALL
 
+        view?.showLoadingSpinner()
+        view?.hideEmptyState()
+
         if (artistId == Artist.ARTIST_ALL) {
             val tracksLoad = Track.getAll()
                     .subscribeOn(Schedulers.io())
@@ -102,10 +116,16 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
                                 logInfo("[SongListPresenter] Loaded ${it.size} tracks.")
 
                                 tracks = it
-                                view?.setTracks(it)
-                                loadGames(it)
+
+                                if (it.size > 0) {
+                                    showContent(it)
+                                    loadGames(it)
+                                } else {
+                                    showEmptyState()
+                                }
                             },
                             {
+                                showEmptyState()
                                 view?.showErrorSnackbar("Error: ${it.message}", null, null)
                             }
                     )
@@ -121,11 +141,19 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
                                 view?.setActivityTitle(it.name ?: "Unknown Artist")
 
                                 val tracks = it.getTracks()
-                                view?.setTracks(tracks)
-                                this.tracks = tracks
-                                loadGames(tracks)
+
+                                // TODO This really, really needs to be async
+                                if (tracks.size > 0) {
+                                    this.tracks = tracks
+                                    showContent(tracks)
+                                    loadGames(tracks)
+                                } else {
+                                    logError("[SongListPresenter] Error: No tracks for artist ${it.id}")
+                                    view?.onTrackLoadError()
+                                }
                             },
                             {
+                                view?.onTrackLoadError()
                                 logError("[SongListPresenter] Error: ${it.message}")
                                 view?.showErrorSnackbar("Error: ${it.message}", null, null)
                             }
@@ -133,5 +161,18 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
             subscriptions.add(artistLoad)
         }
+    }
+
+    private fun showContent(it: MutableList<Track>) {
+        view?.setTracks(it)
+        view?.hideLoadingSpinner()
+        view?.hideEmptyState()
+        view?.showContent()
+    }
+
+    private fun showEmptyState() {
+        view?.hideLoadingSpinner()
+        view?.hideContent()
+        view?.showEmptyState()
     }
 }
