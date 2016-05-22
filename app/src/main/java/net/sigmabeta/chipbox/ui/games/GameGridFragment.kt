@@ -10,11 +10,10 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.*
+import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.ui.util.GridSpaceDecoration
-import net.sigmabeta.chipbox.util.convertDpToPx
-import net.sigmabeta.chipbox.util.getShareableNavBar
-import net.sigmabeta.chipbox.util.isScrolledToBottom
+import net.sigmabeta.chipbox.util.*
 import java.util.*
 import javax.inject.Inject
 
@@ -48,6 +47,39 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
 
     override fun clearClickedViewHolder() {
         clickedViewHolder = null
+    }
+
+    override fun showFilesScreen() {
+        FilesActivity.launch(activity)
+    }
+
+    override fun showLoadingSpinner() = ifVisible {
+        loading_spinner.fadeIn()
+    }
+
+    override fun hideLoadingSpinner() = ifVisible {
+        loading_spinner.fadeOut()
+    }
+
+    override fun showContent() = ifVisible {
+        grid_games.fadeInFromBelow()
+    }
+
+    override fun hideContent() = ifVisible {
+        grid_games.fadeOut()
+    }
+
+    override fun showEmptyState() = ifVisible {
+        layout_empty_state.visibility = View.VISIBLE
+        label_empty_state.fadeIn().setStartDelay(300)
+        button_empty_state.fadeIn().setStartDelay(600)
+    }
+
+    override fun hideEmptyState() = ifVisible {
+        layout_empty_state.fadeOut().withEndAction {
+            label_empty_state.alpha = 0.0f
+            button_empty_state.alpha = 0.0f
+        }
     }
 
     /**
@@ -113,6 +145,8 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
 
         // TODO We should only do this during animations
         grid_games.clipChildren = false
+
+        button_empty_state.setOnClickListener(this)
     }
 
     override fun getSharedImage(): View? = null

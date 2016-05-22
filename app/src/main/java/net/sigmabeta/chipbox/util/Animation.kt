@@ -106,6 +106,25 @@ fun View.fadeInFromBelow(): ViewPropertyAnimator {
             .alpha(1.0f)
 }
 
+fun View.fadeIn(): ViewPropertyAnimator {
+    visibility = View.VISIBLE
+
+    return animate()
+            .withLayer()
+            .setInterpolator(DECELERATE)
+            .setDuration(150)
+            .alpha(1.0f)
+}
+
+fun View.fadeOut(): ViewPropertyAnimator {
+    return animate()
+            .withLayer()
+            .setInterpolator(ACCELERATE)
+            .setDuration(150)
+            .alpha(0.0f)
+            .withEndAction { visibility = View.GONE }
+}
+
 fun TextView.changeText(text: String) = animate().withLayer()
         .setDuration(50)
         .setInterpolator(DECELERATE)

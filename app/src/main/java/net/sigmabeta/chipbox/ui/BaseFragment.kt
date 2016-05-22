@@ -111,6 +111,14 @@ abstract class BaseFragment : Fragment(), BaseView, View.OnClickListener {
         getPresenter().onClick(clicked.id)
     }
 
+    /**
+     * Performs an operation (probably a view operation of some sort) only if this
+     * Fragment is visible to the user.
+     */
+    fun <T> ifVisible(viewOperation: () -> T) {
+       if (isVisible) viewOperation()
+    }
+
     open fun getShareableViews(): Array<Pair<View, String>>? = null
 
     protected abstract fun inject()
