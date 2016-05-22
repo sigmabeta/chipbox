@@ -17,9 +17,9 @@ import net.sigmabeta.chipbox.util.logError
 
 class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context) : FragmentPagerAdapter(fragManager) {
     val TAB_TITLES = arrayOf(
+            R.string.tab_main_game,
             R.string.tab_main_system,
             R.string.tab_main_artist,
-            R.string.tab_main_game,
             R.string.tab_main_songs
     )
 
@@ -32,18 +32,14 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
         }
     })
 
-    override fun getCount(): Int {
-        return TAB_TITLES.size
-    }
+    override fun getCount() = TAB_TITLES.size
 
-    override fun getItem(position: Int): Fragment? {
-        when (position) {
-            0 -> return PlatformListFragment.newInstance()
-            1 -> return ArtistListFragment.newInstance()
-            2 -> return GameGridFragment.newInstance(Track.PLATFORM_ALL)
-            3 -> return TrackListFragment.newInstance(Artist.ARTIST_ALL)
-            else -> return null
-        }
+    override fun getItem(position: Int): Fragment? = when (position) {
+        2 -> GameGridFragment.newInstance(Track.PLATFORM_ALL)
+        0 -> PlatformListFragment.newInstance()
+        1 -> ArtistListFragment.newInstance()
+        3 -> TrackListFragment.newInstance(Artist.ARTIST_ALL)
+        else -> null
     }
 
     override fun instantiateItem(container: ViewGroup?, position: Int): Any? {
@@ -58,7 +54,5 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
         return fragment
     }
 
-    override fun getPageTitle(position: Int): CharSequence? {
-        return context.getString(TAB_TITLES.get(position))
-    }
+    override fun getPageTitle(position: Int) = context.getString(TAB_TITLES[position])
 }
