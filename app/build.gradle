@@ -2,6 +2,28 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
+def getVersionCode = { ->
+    def proc = Runtime.getRuntime().exec("git rev-list --all --count")
+
+    def result = proc.waitFor()
+    if (result != 0) {
+        return 1 // no git revisions
+    }
+
+    return proc.getInputStream().readLines().get(0).toInteger()
+}
+
+def getVersionName = { ->
+    def proc = Runtime.getRuntime().exec("git describe --tags --dirty")
+
+    def result = proc.waitFor()
+    if (result != 0) {
+        return "git-error"
+    }
+
+    return proc.getInputStream().readLines().get(0)
+}
+
 android {
     compileSdkVersion 23
     buildToolsVersion '23.0.3'
@@ -12,8 +34,8 @@ android {
         minSdkVersion 21
         targetSdkVersion 21
 
-        versionCode 1
-        versionName "1.0"
+        versionCode getVersionCode()
+        versionName getVersionName()
     }
 
     buildTypes {
