@@ -36,5 +36,6 @@ tasks.xml
 build/
 *.iml
 build.properties
+.so
 
 *placeholder*
