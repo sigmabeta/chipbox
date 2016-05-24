@@ -291,6 +291,8 @@ String getAbi() {
         abi = "armeabi-v7a"
     } else if (taskName.contains("X86_64")) {
         abi = "x86_64"
+    } else if (taskName.contains("X86")) {
+        abi = "x86"
     }
 
     project.logger.quiet("Gradle: ABI name: " + abi)
@@ -311,6 +313,8 @@ String getToolchainName() {
         toolchain = "arm-linux-androideabi-4.9"
     } else if (taskName.contains("X86_64")) {
         toolchain = "x86_64-4.9"
+    } else if (taskName.contains("X86_64")) {
+        toolchain = "x86-4.9"
     }
 
     project.logger.quiet("Gradle: ABI name: " + toolchain)
