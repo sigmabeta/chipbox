@@ -1,0 +1,4 @@
+test:
+  override:
+    - ./gradlew assembleArm_64Debug -PdisablePreDex
+    - ./gradlew assembleX86_64Debug -PdisablePreDex
