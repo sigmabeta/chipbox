@@ -152,60 +152,26 @@ kapt {
 }
 
 task setupCMake(type: Exec) {
-    // Check if a build properties file exists.
-    def propsFile = rootProject.file("build.properties")
+    String abi = getAbi()
 
-    // If it does, call CMake.
-    if (propsFile.canRead()) {
-        // Read the properties file's contents.
-        def buildProperties = new Properties()
-        buildProperties.load(new FileInputStream(propsFile))
+    mkdir('build/' + abi)
+    workingDir 'build/' + abi
 
-        String abi = getAbi()
+    executable "cmake"
 
-        mkdir('build/' + abi)
-        workingDir 'build/' + abi
-
-        executable "cmake"
-
-        args "-DANDROID=true",
-                "-DANDROID_NATIVE_API_LEVEL=android-21",
-                "-DCMAKE_TOOLCHAIN_FILE=../../../android.toolchain.cmake",
-                "../../src/main/cpp/",
-                "-DANDROID_NDK=" + System.getenv("ANDROID_NDK"),
-                "-DANDROID_TOOLCHAIN_NAME=" + getToolchainName(),
-                "-DANDROID_ABI=" + abi
-    } else {
-        executable 'echo'
-        args 'No build.properties found; skipping CMake.'
-    }
+    args "-DANDROID=true",
+            "-DANDROID_NATIVE_API_LEVEL=android-21",
+            "-DCMAKE_TOOLCHAIN_FILE=../../../android.toolchain.cmake",
+            "../../src/main/cpp/",
+            "-DANDROID_NDK=" + System.getenv("ANDROID_NDK"),
+            "-DANDROID_TOOLCHAIN_NAME=" + getToolchainName(),
+            "-DANDROID_ABI=" + abi
 }
 
 task compileNative(type: Exec, dependsOn: 'setupCMake') {
-    // Check if a build properties file exists.
-    def propsFile = rootProject.file("build.properties")
-
-    // If it does, call make.
-    if (propsFile.canRead()) {
-        // Read the properties file's contents.
-        def buildProperties = new Properties()
-        buildProperties.load(new FileInputStream(propsFile))
-
-        String abi = getAbi()
-
-        workingDir 'build/' + abi
-
-        executable 'make'
-
-        if (buildProperties.makeArgs == null || buildProperties.makeArgs.isEmpty()) {
-            // TODO
-        } else {
-            args buildProperties.makeArgs
-        }
-    } else {
-        executable 'echo'
-        args 'No build.properties found; skipping native build.'
-    }
+    String abi = getAbi()
+    workingDir 'build/' + abi
+    executable 'make'
 }
 
 String getAbi() {
