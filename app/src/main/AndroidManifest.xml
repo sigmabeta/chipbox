@@ -4,8 +4,8 @@
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 
-    <!-- In order to be able to stop playback when phone calls happen. -->
-    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <!-- For Crashlytics -->
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:name=".ChipboxApplication"
@@ -66,6 +66,11 @@
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
         </receiver>
+
+        <meta-data
+            android:name="io.fabric.ApiKey"
+            android:value="1311766f43b29e9268a0a60a9e23fe2d3f722bcd"/>
+
     </application>
 
 </manifest>
