@@ -159,11 +159,14 @@ task setupCMake(type: Exec) {
 
     executable "cmake"
 
+    def ndkPath = System.getenv('ANDROID_NDK')
+    project.logger.quiet("Gradle: NDK Path: " + ndkPath)
+
     args "-DANDROID=true",
             "-DANDROID_NATIVE_API_LEVEL=android-21",
             "-DCMAKE_TOOLCHAIN_FILE=../../../android.toolchain.cmake",
             "../../src/main/cpp/",
-            "-DANDROID_NDK=" + System.getenv("ANDROID_NDK"),
+            "-DANDROID_NDK=" + ndkPath,
             "-DANDROID_TOOLCHAIN_NAME=" + getToolchainName(),
             "-DANDROID_ABI=" + abi
 }
@@ -216,6 +219,6 @@ String getToolchainName() {
         toolchain = "x86-4.9"
     }
 
-    project.logger.quiet("Gradle: ABI name: " + toolchain)
+    project.logger.quiet("Gradle: Toolchain name: " + toolchain)
     return toolchain;
 }
