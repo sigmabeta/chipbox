@@ -1,6 +1,8 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'io.fabric'
+
 
 def getVersionCode = { ->
     def proc = Runtime.getRuntime().exec("git rev-list --all --count")
@@ -113,6 +115,11 @@ dependencies {
     // Copy album art more easily.
     compile 'commons-io:commons-io:2.4'
 
+    // Crash Reporting
+    compile('com.crashlytics.sdk.android:crashlytics:2.5.5@aar') {
+        transitive = true;
+    }
+
     // Annotation-processing based DB codegen.
     kapt "com.github.Raizlabs.DBFlow:dbflow-processor:${dbflow_version}"
     compile "com.github.Raizlabs.DBFlow:dbflow-core:${dbflow_version}"
@@ -131,10 +138,12 @@ buildscript {
 
     repositories {
         mavenCentral()
+        maven { url 'https://maven.fabric.io/public' }
     }
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'io.fabric.tools:gradle:1.21.6'
     }
 }
 
@@ -199,29 +208,6 @@ task compileNative(type: Exec, dependsOn: 'setupCMake') {
         args 'No build.properties found; skipping native build.'
     }
 }
-
-/*task copyNative(type: Exec, dependsOn: 'compileNative') {
-    // Check if a build properties file exists.
-    def propsFile = rootProject.file("build.properties")
-
-    // If it does, copy native libs into jniLibs.
-    if (propsFile.canRead()) {
-        // Read the properties file's contents.
-        def buildProperties = new Properties()
-        buildProperties.load(new FileInputStream(propsFile))
-
-        String abi = getAbi()
-
-        workingDir 'build/' + abi
-
-        executable 'mv'
-
-        args "../../libs*//*", "../../.."
-    } else {
-        executable 'echo'
-        args 'No build.properties found; skipping native build.'
-    }
-}*/
 
 String getExecutablePath(String command) {
     def propsFile = rootProject.file("build.properties")
