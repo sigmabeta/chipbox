@@ -2,8 +2,10 @@ package net.sigmabeta.chipbox
 
 import android.app.Application
 import android.os.Build
+import com.crashlytics.android.Crashlytics
 import com.raizlabs.android.dbflow.config.FlowConfig
 import com.raizlabs.android.dbflow.config.FlowManager
+import io.fabric.sdk.android.Fabric
 import net.sigmabeta.chipbox.dagger.Initializer
 import net.sigmabeta.chipbox.dagger.component.AppComponent
 import net.sigmabeta.chipbox.util.logDebug
@@ -31,7 +33,18 @@ public class ChipboxApplication : Application() {
         logDebug("[ChipboxApplication] Device model: ${Build.MODEL}")
 
         System.loadLibrary("gme")
-        FlowManager.init(FlowConfig.Builder(this).build())
+
+        val flowConfig = FlowConfig.Builder(this)
+                .build()
+
+        FlowManager.init(flowConfig)
+
+        val fabric = Fabric.Builder(this)
+                .kits(Crashlytics())
+                .debuggable(BuildConfig.DEBUG)
+                .build()
+
+        Fabric.with(fabric)
 
         appComponent = Initializer.initAppComponent(this)
     }
