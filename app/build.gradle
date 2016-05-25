@@ -40,14 +40,22 @@ android {
         versionName getVersionName()
     }
 
+    signingConfigs {
+        release {
+            storeFile file("chipbox.jks")
+            storePassword System.getenv("KEYSTORE_PASSWORD")
+            keyAlias System.getenv("KEY_ALIAS")
+            keyPassword System.getenv("KEY_PASSWORD")
+        }
+    }
+
     buildTypes {
         release {
-            minifyEnabled true
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
 
         debug {
-            // TODO If this is ever modified, change application_id in debug/strings.xml
             applicationIdSuffix ".debug"
             versionNameSuffix '-debug'
             jniDebuggable true
