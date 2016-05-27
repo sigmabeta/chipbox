@@ -48,7 +48,7 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
     }
 
     override fun showLoadingSpinner() = ifVisible {
-        loading_spinner.fadeIn()
+        loading_spinner.fadeIn().setDuration(50)
     }
 
     override fun hideLoadingSpinner() = ifVisible {

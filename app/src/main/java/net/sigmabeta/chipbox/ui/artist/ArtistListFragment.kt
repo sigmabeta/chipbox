@@ -43,7 +43,7 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistVi
     }
 
     override fun showLoadingSpinner() = ifVisible {
-        loading_spinner.fadeIn()
+        loading_spinner.fadeIn().setDuration(50)
     }
 
     override fun hideLoadingSpinner() = ifVisible {

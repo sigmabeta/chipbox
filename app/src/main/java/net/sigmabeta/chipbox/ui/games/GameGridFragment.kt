@@ -57,7 +57,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
     }
 
     override fun showLoadingSpinner() = ifVisible {
-        loading_spinner.fadeIn()
+        loading_spinner.fadeIn().setDuration(50)
     }
 
     override fun hideLoadingSpinner() = ifVisible {
