@@ -162,36 +162,48 @@ kapt {
 task setupCMake(type: Exec) {
     String abi = getAbi()
 
-    mkdir('build/' + abi)
-    workingDir 'build/' + abi
-
-    executable getExecutablePath("cmake")
-
-    def ndkPath = getNdkPath()
-
-    String ndkArg
-
-    if (ndkPath != null) {
-        ndkArg = "-DANDROID_NDK=" + ndkPath
+    if (abi == null) {
+        executable "echo"
+        args "ABI is null, skipping CMake setup."
     } else {
-        ndkArg = ""
+
+        mkdir('build/' + abi)
+        workingDir 'build/' + abi
+
+        executable getExecutablePath("cmake")
+
+        def ndkPath = getNdkPath()
+
+        String ndkArg
+
+        if (ndkPath != null) {
+            ndkArg = "-DANDROID_NDK=" + ndkPath
+        } else {
+            ndkArg = ""
+        }
+
+        project.logger.quiet("Gradle: ndkArg: " + ndkArg)
+
+        args "-DANDROID=true",
+                "-DANDROID_NATIVE_API_LEVEL=android-21",
+                "-DCMAKE_TOOLCHAIN_FILE=../../../android.toolchain.cmake",
+                ndkArg,
+                "../../src/main/cpp/",
+                "-DANDROID_TOOLCHAIN_NAME=" + getToolchainName(),
+                "-DANDROID_ABI=" + abi
     }
-
-    project.logger.quiet("Gradle: ndkArg: " + ndkArg)
-
-    args "-DANDROID=true",
-            "-DANDROID_NATIVE_API_LEVEL=android-21",
-            "-DCMAKE_TOOLCHAIN_FILE=../../../android.toolchain.cmake",
-            ndkArg,
-            "../../src/main/cpp/",
-            "-DANDROID_TOOLCHAIN_NAME=" + getToolchainName(),
-            "-DANDROID_ABI=" + abi
 }
 
 task compileNative(type: Exec, dependsOn: 'setupCMake') {
     String abi = getAbi()
-    workingDir 'build/' + abi
-    executable 'make'
+
+    if (abi == null) {
+        executable "echo"
+        args "ABI is null, skipping native build."
+    } else {
+        workingDir 'build/' + abi
+        executable 'make'
+    }
 }
 
 String getAbi() {
