@@ -53,7 +53,9 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
     }
 
     override fun updateSubtitle(path: String) {
-        actionBar?.subtitle = path
+        supportActionBar?.let {
+            it.subtitle = path
+        }
     }
 
     override fun showErrorMessage(errorId: Int) {
