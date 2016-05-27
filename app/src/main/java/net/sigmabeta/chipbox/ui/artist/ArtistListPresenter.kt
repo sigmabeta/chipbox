@@ -44,7 +44,7 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
                 showEmptyState()
             }
         } ?: let {
-            showEmptyState()
+            view?.showLoadingSpinner()
         }
     }
 

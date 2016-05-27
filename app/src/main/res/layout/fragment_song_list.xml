@@ -32,6 +32,7 @@
             android:layout_marginBottom="8dp"
             android:alpha="0.0"
             android:gravity="center"
+            android:visibility="gone"
             android:text="@string/empty_state" />
 
         <Button
@@ -40,6 +41,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:alpha="0.0"
+            android:visibility="gone"
             android:text="@string/button_empty_state"/>
 
     </LinearLayout>
@@ -48,6 +50,7 @@
         android:id="@+id/loading_spinner"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         android:layout_gravity="center"/>
 
 </FrameLayout>
