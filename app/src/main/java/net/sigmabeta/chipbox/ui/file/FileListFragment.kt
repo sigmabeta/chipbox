@@ -43,6 +43,10 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHold
                 null)
     }
 
+    override fun setSubtitle(path: String) {
+        (activity as FilesView).updateSubtitle(path)
+    }
+
     /**
      * ItemListView
      */

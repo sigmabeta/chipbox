@@ -10,4 +10,6 @@ interface FileListView : BaseView {
     fun onDirectoryClicked(path: String)
 
     fun onInvalidTrackClicked()
+
+    fun setSubtitle(path: String)
 }

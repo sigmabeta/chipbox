@@ -25,6 +25,7 @@
 
         <activity
             android:name=".ui.file.FilesActivity"
+            android:label="@string/file_list_title"
             android:theme="@style/ThemeFileList"/>
 
         <activity
