@@ -110,6 +110,8 @@ abstract class BaseFragment : Fragment(), BaseView, View.OnClickListener {
 
     open fun getShareableViews(): Array<Pair<View, String>>? = null
 
+    abstract fun getFragmentTag(): String
+
     protected abstract fun inject()
 
     protected abstract fun getPresenter(): FragmentPresenter

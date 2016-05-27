@@ -88,6 +88,8 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHold
 
     override fun getSharedImage(): View? = null
 
+    override fun getFragmentTag() = "${BuildConfig.APPLICATION_ID}.file_list"
+
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.file_list"
 
