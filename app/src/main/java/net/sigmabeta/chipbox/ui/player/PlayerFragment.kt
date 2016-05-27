@@ -129,6 +129,8 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
         seek_playback_progress.setOnSeekBarChangeListener(this)
     }
 
+    override fun getFragmentTag() = "${BuildConfig.APPLICATION_ID}.player_fragment"
+
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.player"
 

@@ -133,6 +133,8 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
 
     override fun getSharedImage(): View? = null
 
+    override fun getFragmentTag() = "${BuildConfig.APPLICATION_ID}.track_list"
+
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.song_list"
 
