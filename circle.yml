@@ -1,0 +1,13 @@
+dependencies:
+  pre:
+    - echo y | android update sdk --no-ui --all --filter build-tools-23.0.3
+    - echo y | android update sdk --no-ui --all --filter extra-android-m2repository
+    - echo y | android update sdk --no-ui --all --filter extra-android-support
+
+    - echo apiSecret=$FABRIC_SECRET > app/fabric.properties
+test:
+  override:
+    - ./gradlew assembleArmRelease -PdisablePreDex
+    - ./gradlew assembleArm_64Release -PdisablePreDex
+    - ./gradlew assembleX86Release -PdisablePreDex
+    - ./gradlew assembleX86_64Release -PdisablePreDex
