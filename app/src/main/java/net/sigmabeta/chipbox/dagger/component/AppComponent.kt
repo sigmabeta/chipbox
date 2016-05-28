@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.ui.main.MainActivity
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
+import net.sigmabeta.chipbox.ui.onboarding.OnboardingActivity
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import net.sigmabeta.chipbox.ui.settings.SettingsActivity
@@ -34,6 +35,7 @@ interface AppComponent {
     fun inject(view: FilesActivity)
     fun inject(view: GameActivity)
     fun inject(view: SettingsActivity)
+    fun inject(view: OnboardingActivity)
     fun inject(backendView: PlayerService)
 
     fun plusFragments(): FragmentComponent
