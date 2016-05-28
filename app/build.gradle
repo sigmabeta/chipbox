@@ -266,10 +266,6 @@ String getNdkPath() {
         try {
             def stdout = new ByteArrayOutputStream()
 
-            def buildProperties = new Properties()
-            buildProperties.load(new FileInputStream(propsFile))
-            println buildProperties
-
             exec {
                 // ndk-build.cmd is a file unique to the root directory of android-ndk-r10e.
                 commandLine 'locate', 'ndk-build.cmd'
