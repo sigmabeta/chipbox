@@ -156,7 +156,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
 
     override fun getSharedImage(): View? = null
 
-    override fun getFragmentTag() = "${BuildConfig.APPLICATION_ID}.game_grid"
+    override fun getFragmentTag() = FRAGMENT_TAG
 
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.game_grid"
