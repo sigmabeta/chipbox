@@ -5,7 +5,7 @@
 
     <translate
         android:fromXDelta="@fraction/anim_onboarding_delta_center"
-        android:toXDelta="@fraction/anim_onboarding_delta_X_right" />
+        android:toXDelta="@fraction/anim_onboarding_delta_X_left" />
 
     <alpha
         android:fromAlpha="@dimen/anim_onboarding_alpha_clear"

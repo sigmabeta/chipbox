@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
+import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import javax.inject.Inject
 
 class OnboardingActivity : BaseActivity(), OnboardingView {
@@ -20,7 +21,8 @@ class OnboardingActivity : BaseActivity(), OnboardingView {
      */
 
     override fun showTitlePage() {
-        throw UnsupportedOperationException()
+        val fragment = TitleFragment.newInstance()
+        showFragment(fragment, false)
     }
 
     /**
@@ -49,6 +51,8 @@ class OnboardingActivity : BaseActivity(), OnboardingView {
                     R.anim.fade_out_left,
                     R.anim.fade_in_left,
                     R.anim.fade_out_right)
+        } else {
+            transaction.setCustomAnimations(R.anim.fade_in_bottom, 0)
         }
 
         transaction.replace(R.id.frame_fragment, fragment, fragment.getFragmentTag())
