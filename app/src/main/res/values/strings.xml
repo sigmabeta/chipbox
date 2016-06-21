@@ -59,4 +59,12 @@
     <!-- Empty States -->
     <string name="empty_state">Your library is empty.\n Get some tracks, then…</string>
     <string name="button_empty_state">Add to Library</string>
+
+    <!-- Onboarding -->
+
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+
+    <string name="onboarding_title_title">Chiptunes on your phone</string>
+    <string name="onboarding_title_detail">Listen to your favorite video game music. No internet connection required.</string>
 </resources>
