@@ -9,7 +9,6 @@ import android.util.Pair
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewTreeObserver
 import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.util.logError
@@ -17,27 +16,21 @@ import net.sigmabeta.chipbox.util.logError
 abstract class BaseFragment : Fragment(), BaseView, View.OnClickListener {
     var injected: Boolean = false
 
-    val sharedPreDrawListener = object : ViewTreeObserver.OnPreDrawListener {
-        var sharedView: View? = null
-
-        override fun onPreDraw(): Boolean {
-            sharedView?.viewTreeObserver?.removeOnPreDrawListener(this)
-            getPresenter().onSharedPreDraw()
-            return true
-        }
-    }
-
     fun getPicassoCallback(): Callback {
         return object : Callback {
             override fun onSuccess() {
-                getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
+                startTransition()
             }
 
             override fun onError() {
-                getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
+                startTransition()
                 logError("[PlayerFragment] Couldn't load image.")
             }
         }
+    }
+
+    fun startTransition() {
+        activity?.startPostponedEnterTransition()
     }
 
     fun setActivityTitle(title: String) {
@@ -87,10 +80,6 @@ abstract class BaseFragment : Fragment(), BaseView, View.OnClickListener {
 
         val ending = activity.isFinishing || isRemoving
         getPresenter().onDestroy(ending)
-    }
-
-    override fun startTransition() {
-        activity?.startPostponedEnterTransition()
     }
 
     override fun showToastMessage(message: String) {
