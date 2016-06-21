@@ -140,13 +140,14 @@ dependencies {
 }
 
 buildscript {
-    ext.kotlin_version = '1.0.2'
+    ext.kotlin_version = '1.0.3-eap-30'
     ext.dbflow_version = "3.0.0-beta6"
     ext.dagger_version = "2.2"
 
     repositories {
         mavenCentral()
         maven { url 'https://maven.fabric.io/public' }
+        maven { url "https://dl.bintray.com/kotlin/kotlin-eap/" }
     }
 
     dependencies {
