@@ -83,6 +83,8 @@
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorAccent">@color/accent</item>
 
+        <item name="android:buttonStyle">@style/ChipboxButtonStyle</item>
+
         <item name="android:windowBackground">?attr/colorPrimary</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowActivityTransitions">true</item>
@@ -187,6 +189,7 @@
 
     <style name="ChipboxButtonStyle" parent="Widget.AppCompat.Button.Colored">
         <item name="colorButtonNormal">@color/accent</item>
+        <item name="android:textColor">@android:color/white</item>
     </style>
 
 </resources>
