@@ -15,10 +15,6 @@ abstract class BasePresenter {
         subscriptions = CompositeSubscription()
     }
 
-    fun onSharedPreDraw() {
-        getView()?.startTransition()
-    }
-
     /**
      * Begin any expensive network or database operations.
      */
