@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.onboarding.OnboardingView
 import javax.inject.Inject
 
 @ActivityScoped
@@ -18,6 +19,13 @@ class TitleFragment : BaseFragment(), TitleView {
      * TitleView
      */
 
+    override fun onNextClicked() {
+        (activity as OnboardingView).showNextScreen()
+    }
+
+    override fun onSkipClicked() {
+        (activity as OnboardingView).skip()
+    }
 
     /**
      * BaseFragment
@@ -38,12 +46,15 @@ class TitleFragment : BaseFragment(), TitleView {
 
     override fun getSharedImage() = null
 
-    override fun configureViews() = Unit
+    override fun configureViews() {
+        button_next.setOnClickListener(this)
+        button_skip.setOnClickListener(this)
+    }
 
-    override fun getFragmentTag(): String = FRAGMENT_TAG
+    override fun getFragmentTag(): String = TAG
 
     companion object {
-        val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.title"
+        val TAG = "${BuildConfig.APPLICATION_ID}.title"
 
         fun newInstance() = TitleFragment()
     }
