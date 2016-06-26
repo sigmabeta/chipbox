@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.onboarding.title
 
 import android.os.Bundle
+import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
@@ -24,7 +25,12 @@ class TitlePresenter @Inject constructor(): FragmentPresenter() {
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
-    override fun onClick(id: Int) = Unit
+    override fun onClick(id: Int) {
+        when (id) {
+            R.id.button_next -> view?.onNextClicked()
+            R.id.button_skip -> view?.onSkipClicked()
+        }
+    }
 
     /**
      * BasePresenter

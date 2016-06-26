@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.main
 
+import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -225,6 +226,13 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
             return fragment
         } else {
             return null
+        }
+    }
+
+    companion object {
+        fun launch(context: Context) {
+            val launcher = Intent(context, MainActivity::class.java)
+            context.startActivity(launcher)
         }
     }
 }
