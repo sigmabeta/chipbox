@@ -91,12 +91,12 @@ class OnboardingActivity : BaseActivity(), OnboardingView {
     companion object {
         val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.onboarding"
 
-        val ARGUMENT_PAGE_ID = "${ACTIVITY_TAG}.page.id"
+        val ARGUMENT_PAGE_TAG = "${ACTIVITY_TAG}.page.tag"
 
-        fun launch(context: Context, id: Int) {
+        fun launch(context: Context, tag: String) {
             val launcher = Intent(context, OnboardingActivity::class.java)
 
-            launcher.putExtra(ARGUMENT_PAGE_ID, id)
+            launcher.putExtra(ARGUMENT_PAGE_TAG, tag)
 
             context.startActivity(launcher)
         }
