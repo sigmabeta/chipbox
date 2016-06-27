@@ -40,9 +40,11 @@ class OnboardingActivity : BaseActivity(), OnboardingView {
         showFragment(fragment, true)
     }
 
-    override fun exit() {
+    override fun exit(andLaunchMain: Boolean) {
         finish()
-        MainActivity.launch(this)
+        if (andLaunchMain) {
+            MainActivity.launch(this)
+        }
     }
 
     override fun updateCurrentScreen(tag: String) {

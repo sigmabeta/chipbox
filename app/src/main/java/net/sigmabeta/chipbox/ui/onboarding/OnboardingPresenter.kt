@@ -14,6 +14,8 @@ class OnboardingPresenter @Inject constructor() : ActivityPresenter() {
 
     var currentTag: String? = null
 
+    var launchedWithTag: Boolean = true
+
     /**
      * Public Methods
      */
@@ -21,12 +23,12 @@ class OnboardingPresenter @Inject constructor() : ActivityPresenter() {
     fun showNextScreen() {
         when (currentTag) {
             TitleFragment.TAG -> view?.showLibraryPage()
-            LibraryFragment.TAG -> view?.exit()
+            LibraryFragment.TAG -> view?.exit(!launchedWithTag)
         }
     }
 
     fun skip() {
-        view?.exit()
+        view?.exit(!launchedWithTag)
     }
 
     /**
@@ -48,14 +50,21 @@ class OnboardingPresenter @Inject constructor() : ActivityPresenter() {
     override fun setup(arguments: Bundle?) {
         // TODO Check if user's already been onboarded.
 
-        val tag = arguments?.getInt(OnboardingActivity.ARGUMENT_PAGE_TAG)
+        val tag = arguments?.getString(OnboardingActivity.ARGUMENT_PAGE_TAG)
 
         when (tag) {
-            else -> view?.showTitlePage()
+            TitleFragment.TAG -> view?.showTitlePage()
+            else -> {
+                launchedWithTag = false
+                view?.showTitlePage()
+            }
         }
     }
 
-    override fun teardown() = Unit
+    override fun teardown() {
+        launchedWithTag = true
+        currentTag = null
+    }
 
     override fun updateViewState() = Unit
 
