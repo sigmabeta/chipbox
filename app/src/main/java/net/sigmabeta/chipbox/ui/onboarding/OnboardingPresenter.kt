@@ -48,9 +48,9 @@ class OnboardingPresenter @Inject constructor() : ActivityPresenter() {
     override fun setup(arguments: Bundle?) {
         // TODO Check if user's already been onboarded.
 
-        val pageId = arguments?.getInt(OnboardingActivity.ARGUMENT_PAGE_ID)
+        val tag = arguments?.getInt(OnboardingActivity.ARGUMENT_PAGE_TAG)
 
-        when (pageId) {
+        when (tag) {
             else -> view?.showTitlePage()
         }
     }
