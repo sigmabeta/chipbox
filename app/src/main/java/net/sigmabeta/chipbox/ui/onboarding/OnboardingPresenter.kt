@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui.onboarding
 import android.os.Bundle
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.ui.onboarding.library.LibraryFragment
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,7 +20,8 @@ class OnboardingPresenter @Inject constructor() : ActivityPresenter() {
 
     fun showNextScreen() {
         when (currentTag) {
-            TitleFragment.TAG -> view?.exit()
+            TitleFragment.TAG -> view?.showLibraryPage()
+            LibraryFragment.TAG -> view?.exit()
         }
     }
 

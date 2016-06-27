@@ -5,6 +5,7 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.artist.ArtistListFragment
 import net.sigmabeta.chipbox.ui.file.FileListFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
+import net.sigmabeta.chipbox.ui.onboarding.library.LibraryFragment
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import net.sigmabeta.chipbox.ui.platform.PlatformListFragment
 import net.sigmabeta.chipbox.ui.player.PlayerControlsFragment
@@ -20,6 +21,7 @@ interface FragmentComponent {
      * Passing an interface here will result in a no-op injection.
      */
     fun inject(view: TitleFragment)
+    fun inject(view: LibraryFragment)
     fun inject(view: TrackListFragment)
     fun inject(view: PlatformListFragment)
     fun inject(view: PlayerFragment)
