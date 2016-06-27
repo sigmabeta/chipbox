@@ -11,7 +11,7 @@ interface OnboardingView : BaseView {
 
     fun skip()
 
-    fun exit()
+    fun exit(andLaunchMain: Boolean)
 
     fun updateCurrentScreen(tag: String)
 }
