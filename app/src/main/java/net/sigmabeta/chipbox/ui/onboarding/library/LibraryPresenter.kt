@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.ui.onboarding.title
+package net.sigmabeta.chipbox.ui.onboarding.library
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
@@ -9,9 +9,9 @@ import javax.inject.Inject
 
 
 @ActivityScoped
-class TitlePresenter @Inject constructor(): FragmentPresenter() {
+class LibraryPresenter @Inject constructor(): FragmentPresenter() {
 
-    var view: TitleView? = null
+    var view: LibraryView? = null
 
     /**
      * Public Methods
@@ -29,6 +29,7 @@ class TitlePresenter @Inject constructor(): FragmentPresenter() {
         when (id) {
             R.id.button_next -> view?.onNextClicked()
             R.id.button_skip -> view?.onSkipClicked()
+            R.id.button_add -> view?.onAddClicked()
         }
     }
 
@@ -47,7 +48,7 @@ class TitlePresenter @Inject constructor(): FragmentPresenter() {
     override fun getView(): BaseView? = view
 
     override fun setView(view: BaseView) {
-        if (view is TitleView) this.view = view
+        if (view is LibraryView) this.view = view
     }
 
     override fun clearView() {

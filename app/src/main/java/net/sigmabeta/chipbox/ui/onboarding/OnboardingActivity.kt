@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.main.MainActivity
+import net.sigmabeta.chipbox.ui.onboarding.library.LibraryFragment
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import javax.inject.Inject
 
@@ -32,12 +33,20 @@ class OnboardingActivity : BaseActivity(), OnboardingView {
     override fun showTitlePage() {
         val fragment = TitleFragment.newInstance()
         showFragment(fragment, false)
-        presenter.currentTag = TitleFragment.TAG
+    }
+
+    override fun showLibraryPage() {
+        val fragment = LibraryFragment.newInstance()
+        showFragment(fragment, true)
     }
 
     override fun exit() {
         finish()
         MainActivity.launch(this)
+    }
+
+    override fun updateCurrentScreen(tag: String) {
+        presenter.currentTag = tag
     }
 
     /**

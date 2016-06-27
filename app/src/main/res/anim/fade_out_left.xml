@@ -8,7 +8,7 @@
         android:toXDelta="@fraction/anim_onboarding_delta_X_left" />
 
     <alpha
-        android:fromAlpha="@dimen/anim_onboarding_alpha_clear"
-        android:toAlpha="@dimen/anim_onboarding_alpha_opaque"
+        android:fromAlpha="@dimen/anim_onboarding_alpha_opaque"
+        android:toAlpha="@dimen/anim_onboarding_alpha_clear"
         />
 </set>

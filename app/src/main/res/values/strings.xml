@@ -64,7 +64,11 @@
 
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_next">Next</string>
+    <string name="onboarding_add">Add Now</string>
 
     <string name="onboarding_title_title">Chiptunes on your phone</string>
     <string name="onboarding_title_detail">Listen to your favorite video game music. No internet connection required.</string>
+
+    <string name="onboarding_library_title">Add tracks to your library</string>
+    <string name="onboarding_library_detail">Put tracks into folders by game, album art optional. Then scan in Chipbox!</string>
 </resources>
