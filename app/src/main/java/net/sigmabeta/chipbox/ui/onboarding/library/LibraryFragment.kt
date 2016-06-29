@@ -4,7 +4,6 @@ import kotlinx.android.synthetic.main.fragment_library.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
-import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.file.FilesActivity
@@ -42,7 +41,7 @@ class LibraryFragment : BaseFragment(), LibraryView {
 
     override fun inject() {
         val container = activity
-        if (container is BaseActivity) {
+        if (container is OnboardingView) {
             container.getFragmentComponent().inject(this)
         }
     }

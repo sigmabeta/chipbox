@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.onboarding
 
+import net.sigmabeta.chipbox.dagger.component.FragmentComponent
 import net.sigmabeta.chipbox.ui.BaseView
 
 interface OnboardingView : BaseView {
@@ -14,4 +15,7 @@ interface OnboardingView : BaseView {
     fun exit(andLaunchMain: Boolean)
 
     fun updateCurrentScreen(tag: String)
+
+    fun configureViews()
+    open fun getFragmentComponent(): FragmentComponent
 }
