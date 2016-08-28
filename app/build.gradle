@@ -12,7 +12,9 @@ def getVersionCode = { ->
         return 1 // no git revisions
     }
 
-    return proc.getInputStream().readLines().get(0).toInteger()
+    // Add a million because of previous versionCode problems.
+    // Multiply by 10 so LSB can represent build type.
+    return (proc.getInputStream().readLines().get(0).toInteger() * 10 ) + 1000000
 }
 
 def getVersionName = { ->
@@ -36,7 +38,6 @@ android {
         minSdkVersion 21
         targetSdkVersion 21
 
-        versionCode getVersionCode()
         versionName getVersionName()
     }
 
@@ -69,7 +70,7 @@ android {
     productFlavors {
         arm {
             flavorDimension "abi"
-            versionCode getVersionCode() + 100000
+            versionCode getVersionCode() + 1
 
             ndk {
                 abiFilter "armeabi-v7a"
@@ -78,7 +79,7 @@ android {
 
         x86 {
             flavorDimension "abi"
-            versionCode getVersionCode() + 300000
+            versionCode getVersionCode() + 3
 
             ndk {
                 abiFilter "x86"
@@ -87,7 +88,7 @@ android {
 
         arm_64 {
             flavorDimension "abi"
-            versionCode getVersionCode() + 500000
+            versionCode getVersionCode() + 5
 
             ndk {
                 abiFilter "arm64-v8a"
@@ -96,7 +97,7 @@ android {
 
         x86_64 {
             flavorDimension "abi"
-            versionCode getVersionCode() + 700000
+            versionCode getVersionCode() + 7
 
             ndk {
                 abiFilter "x86_64"
