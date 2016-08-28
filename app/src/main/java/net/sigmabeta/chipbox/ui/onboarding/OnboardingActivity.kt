@@ -78,7 +78,7 @@ class OnboardingActivity : AppCompatActivity(), OnboardingView {
 
     override fun showErrorSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) = Unit
 
-    override fun startTransition() = Unit
+    fun startTransition() = Unit
 
     override fun onClick(clicked: View) {
         presenter.onClick(clicked.id)
