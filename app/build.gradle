@@ -69,6 +69,8 @@ android {
     productFlavors {
         arm {
             flavorDimension "abi"
+            versionCode getVersionCode() + 100000
+
             ndk {
                 abiFilter "armeabi-v7a"
             }
@@ -76,6 +78,8 @@ android {
 
         x86 {
             flavorDimension "abi"
+            versionCode getVersionCode() + 300000
+
             ndk {
                 abiFilter "x86"
             }
@@ -83,6 +87,8 @@ android {
 
         arm_64 {
             flavorDimension "abi"
+            versionCode getVersionCode() + 500000
+
             ndk {
                 abiFilter "arm64-v8a"
             }
@@ -90,6 +96,8 @@ android {
 
         x86_64 {
             flavorDimension "abi"
+            versionCode getVersionCode() + 700000
+
             ndk {
                 abiFilter "x86_64"
             }
