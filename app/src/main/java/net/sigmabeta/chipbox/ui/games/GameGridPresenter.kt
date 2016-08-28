@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.util.logError
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 import javax.inject.Inject
@@ -34,6 +35,8 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
     }
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
+        logError("Recreate")
+
         if (games == null) {
             setupHelper(arguments)
         }
@@ -52,7 +55,7 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
                 showEmptyState()
             }
         } ?: let {
-            showEmptyState()
+            view?.showLoadingSpinner()
         }
 
         val titleResource = when (platform) {

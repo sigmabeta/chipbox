@@ -84,6 +84,8 @@ class PlatformListFragment : BaseFragment(), PlatformListView, ItemListView<Plat
 
     override fun getSharedImage(): View? = null
 
+    override fun getFragmentTag() = FRAGMENT_TAG
+
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.platform_list"
 

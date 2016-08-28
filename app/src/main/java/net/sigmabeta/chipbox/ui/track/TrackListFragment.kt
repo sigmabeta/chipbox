@@ -48,7 +48,7 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
     }
 
     override fun showLoadingSpinner() = ifVisible {
-        loading_spinner.fadeIn()
+        loading_spinner.fadeIn().setDuration(50)
     }
 
     override fun hideLoadingSpinner() = ifVisible {
@@ -133,8 +133,10 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
 
     override fun getSharedImage(): View? = null
 
+    override fun getFragmentTag() = FRAGMENT_TAG
+
     companion object {
-        val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.song_list"
+        val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.track_list"
 
         val ARGUMENT_ARTIST = "${FRAGMENT_TAG}.artist"
 

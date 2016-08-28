@@ -17,6 +17,8 @@ class FileListPresenter @Inject constructor() : FragmentPresenter() {
 
     var files: ArrayList<FileListItem>? = null
 
+    var path: String? = null
+
     fun onItemClick(position: Long) {
         files?.get(position.toInt())?.let {
             val clickedFile = File(it.path)
@@ -49,7 +51,7 @@ class FileListPresenter @Inject constructor() : FragmentPresenter() {
     }
 
     private fun setupHelper(arguments: Bundle?) {
-        val path = arguments?.getString(FileListFragment.ARGUMENT_PATH)
+        path = arguments?.getString(FileListFragment.ARGUMENT_PATH)
 
         if (path != null) {
             val folder = File(path)
@@ -80,6 +82,10 @@ class FileListPresenter @Inject constructor() : FragmentPresenter() {
     override fun updateViewState() {
         files?.let {
             view?.setFiles(it)
+        }
+
+        path?.let {
+            view?.setSubtitle(it)
         }
     }
 

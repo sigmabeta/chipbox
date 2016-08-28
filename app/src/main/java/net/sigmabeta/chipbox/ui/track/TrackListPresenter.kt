@@ -64,7 +64,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
                 showEmptyState()
             }
         } ?: let {
-            showEmptyState()
+            view?.showLoadingSpinner()
         }
 
         gameMap?.let {

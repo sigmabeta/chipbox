@@ -15,4 +15,15 @@
     <dimen name="height_now_playing">64dp</dimen>
 
     <dimen name="divider_margin_top_bottom">6dp</dimen>
+
+
+    <!-- Onboarding Animations -->
+
+    <fraction name="anim_onboarding_delta_X_bottom">10%</fraction>
+    <fraction name="anim_onboarding_delta_X_left">-50%</fraction>
+    <fraction name="anim_onboarding_delta_X_right">50%</fraction>
+    <fraction name="anim_onboarding_delta_center">0%</fraction>
+
+    <item name="anim_onboarding_alpha_opaque" format="float" type="dimen">1.0</item>
+    <item name="anim_onboarding_alpha_clear" format="float" type="dimen">0.0</item>
 </resources>

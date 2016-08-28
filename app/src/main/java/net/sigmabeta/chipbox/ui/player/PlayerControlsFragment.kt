@@ -164,6 +164,8 @@ class PlayerControlsFragment : BaseFragment(), PlayerControlsView {
         set.start()
     }
 
+    override fun getFragmentTag() = FRAGMENT_TAG
+
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.player_controls"
 

@@ -4,11 +4,13 @@ import dagger.Component
 import net.sigmabeta.chipbox.backend.PlayerService
 import net.sigmabeta.chipbox.backend.module.AudioModule
 import net.sigmabeta.chipbox.dagger.module.AppModule
+import net.sigmabeta.chipbox.dagger.module.PreferenceModule
 import net.sigmabeta.chipbox.model.database.module.LibraryModule
 import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.ui.main.MainActivity
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
+import net.sigmabeta.chipbox.ui.onboarding.OnboardingActivity
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import net.sigmabeta.chipbox.ui.settings.SettingsActivity
@@ -19,7 +21,8 @@ import javax.inject.Singleton
         modules = arrayOf(
                 AppModule::class,
                 AudioModule::class,
-                LibraryModule::class
+                LibraryModule::class,
+                PreferenceModule::class
         )
 )
 interface AppComponent {
@@ -34,6 +37,7 @@ interface AppComponent {
     fun inject(view: FilesActivity)
     fun inject(view: GameActivity)
     fun inject(view: SettingsActivity)
+    fun inject(view: OnboardingActivity)
     fun inject(backendView: PlayerService)
 
     fun plusFragments(): FragmentComponent

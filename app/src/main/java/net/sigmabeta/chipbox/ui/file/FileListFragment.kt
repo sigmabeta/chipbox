@@ -43,6 +43,10 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHold
                 null)
     }
 
+    override fun setSubtitle(path: String) {
+        (activity as FilesView).updateSubtitle(path)
+    }
+
     /**
      * ItemListView
      */
@@ -83,6 +87,8 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHold
     }
 
     override fun getSharedImage(): View? = null
+
+    override fun getFragmentTag() = FRAGMENT_TAG
 
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.file_list"

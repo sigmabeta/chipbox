@@ -123,6 +123,8 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
         touchHelper.attachToRecyclerView(recycler_playlist)
     }
 
+    override fun getFragmentTag() = FRAGMENT_TAG
+
     /**
      * Private Methods
      */
@@ -136,6 +138,7 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
 
         return 0
     }
+
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.playlist"
 
