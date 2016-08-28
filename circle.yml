@@ -15,3 +15,5 @@ test:
     - ./gradlew assembleArm_64Release -PdisablePreDex
     - ./gradlew assembleX86Release -PdisablePreDex
     - ./gradlew assembleX86_64Release -PdisablePreDex
+
+    - cp -r ./app/build/outputs/* $CIRCLE_ARTIFACTS
