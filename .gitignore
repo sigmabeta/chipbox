@@ -37,5 +37,6 @@ build/
 *.iml
 build.properties
 .so
+app/src/main/jniLibs/
 
 *placeholder*
