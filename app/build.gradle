@@ -16,7 +16,7 @@ def getVersionCode = { ->
 }
 
 def getVersionName = { ->
-    def proc = Runtime.getRuntime().exec("git describe --tags --dirty")
+    def proc = Runtime.getRuntime().exec("git describe --tags")
 
     def result = proc.waitFor()
     if (result != 0) {
