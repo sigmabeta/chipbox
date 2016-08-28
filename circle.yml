@@ -11,6 +11,8 @@ dependencies:
     - echo apiSecret=$FABRIC_SECRET > app/fabric.properties
 test:
   override:
+    - git fetch --unshallow
+    - git fetch --tags
     - ./gradlew assembleArmRelease -PdisablePreDex
     - ./gradlew assembleArm_64Release -PdisablePreDex
     - ./gradlew assembleX86Release -PdisablePreDex
