@@ -7,7 +7,5 @@ interface BaseView {
 
     fun showErrorSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?)
 
-    fun startTransition()
-
     fun onClick(clicked: View)
 }
