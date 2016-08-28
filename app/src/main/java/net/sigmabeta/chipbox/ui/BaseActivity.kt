@@ -7,7 +7,6 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Pair
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewTreeObserver
 import android.widget.ImageView
 import android.widget.Toast
 import com.squareup.picasso.Callback
@@ -15,24 +14,14 @@ import net.sigmabeta.chipbox.dagger.component.FragmentComponent
 import net.sigmabeta.chipbox.util.*
 
 abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListener {
-    var injected = false
-
-    val sharedPreDrawListener = object : ViewTreeObserver.OnPreDrawListener {
-        override fun onPreDraw(): Boolean {
-            getSharedImage()?.viewTreeObserver?.removeOnPreDrawListener(this)
-            getPresenter().onSharedPreDraw()
-            return true
-        }
-    }
-
     fun getPicassoCallback(): Callback {
         return object : Callback {
             override fun onSuccess() {
-                getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
+                startPostponedEnterTransition()
             }
 
             override fun onError() {
-                getSharedImage()?.viewTreeObserver?.addOnPreDrawListener(sharedPreDrawListener)
+                startPostponedEnterTransition()
                 logError("[BaseActivity] Couldn't load image.")
             }
         }
@@ -88,10 +77,6 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
     override fun onDestroy() {
         super.onDestroy()
         getPresenter().onDestroy(isFinishing)
-    }
-
-    override fun startTransition() {
-        startPostponedEnterTransition()
     }
 
     override fun showToastMessage(message: String) {

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:interpolator/decelerate_cubic"
+    android:duration="@integer/duration_enter"
+    android:startOffset="@integer/duration_enter">
+
+    <translate
+        android:fromYDelta="@fraction/anim_onboarding_delta_X_bottom"
+        android:toYDelta="@fraction/anim_onboarding_delta_center"/>
+
+    <alpha
+        android:fromAlpha="@dimen/anim_onboarding_alpha_clear"
+        android:toAlpha="@dimen/anim_onboarding_alpha_opaque"
+        />
+</set>

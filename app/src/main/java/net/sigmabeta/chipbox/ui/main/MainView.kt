@@ -24,4 +24,6 @@ interface MainView : BaseView {
     fun launchScanActivity()
 
     fun launchSettingsActivity()
+
+    fun launchOnboarding()
 }

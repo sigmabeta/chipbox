@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:interpolator/decelerate_cubic"
+    android:duration="@integer/duration_enter">
+
+    <translate
+        android:fromXDelta="@fraction/anim_onboarding_delta_center"
+        android:toXDelta="@fraction/anim_onboarding_delta_X_left" />
+
+    <alpha
+        android:fromAlpha="@dimen/anim_onboarding_alpha_opaque"
+        android:toAlpha="@dimen/anim_onboarding_alpha_clear"
+        />
+</set>

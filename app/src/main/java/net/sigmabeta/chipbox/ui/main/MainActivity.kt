@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.main
 
+import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -18,6 +19,8 @@ import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.file.FilesActivity
+import net.sigmabeta.chipbox.ui.onboarding.OnboardingActivity
+import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import net.sigmabeta.chipbox.ui.settings.SettingsActivity
@@ -136,6 +139,10 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         SettingsActivity.launch(this)
     }
 
+    override fun launchOnboarding() {
+        OnboardingActivity.launch(this, TitleFragment.TAG)
+    }
+
     override fun getShareableViews(): Array<Pair<View, String>>? {
         val views = ArrayList<Pair<View, String>>(3)
 
@@ -225,6 +232,13 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
             return fragment
         } else {
             return null
+        }
+    }
+
+    companion object {
+        fun launch(context: Context) {
+            val launcher = Intent(context, MainActivity::class.java)
+            context.startActivity(launcher)
         }
     }
 }

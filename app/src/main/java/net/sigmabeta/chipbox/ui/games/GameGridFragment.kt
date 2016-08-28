@@ -57,7 +57,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
     }
 
     override fun showLoadingSpinner() = ifVisible {
-        loading_spinner.fadeIn()
+        loading_spinner.fadeIn().setDuration(50)
     }
 
     override fun hideLoadingSpinner() = ifVisible {
@@ -155,6 +155,8 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
     }
 
     override fun getSharedImage(): View? = null
+
+    override fun getFragmentTag() = FRAGMENT_TAG
 
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.game_grid"
