@@ -1,5 +1,5 @@
 package net.sigmabeta.chipbox.util
 
 fun ByteArray.convert(): String {
-    return toString(charset("UTF-8"))
+    return toString(Charsets.ISO_8859_1)
 }
