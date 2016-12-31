@@ -175,11 +175,3 @@ install(TARGETS gme LIBRARY DESTINATION ../jnilib${LIB_SUFFIX}
 
 install(FILES ${EXPORTED_HEADERS} DESTINATION include/gme)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgme.pc DESTINATION lib${LIB_SUFFIX}/pkgconfig)
-
-add_custom_command(TARGET gme POST_BUILD
-    COMMAND rm ARGS -rf ../../../src/main/jniLibs/
-)
-
-add_custom_command(TARGET gme POST_BUILD
-    COMMAND mv ARGS ../../../src/main/cpp/libs/ ../../../src/main/jniLibs/
-)
