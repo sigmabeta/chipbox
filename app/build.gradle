@@ -29,16 +29,33 @@ def getVersionName = { ->
 }
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion '23.0.3'
+    compileSdkVersion 25
+    buildToolsVersion '25.0.2'
 
     defaultConfig {
         applicationId "net.sigmabeta.chipbox"
 
         minSdkVersion 21
-        targetSdkVersion 21
+        targetSdkVersion 25
 
         versionName getVersionName()
+
+        // This block is different from the one you use to link Gradle to your CMake build script.
+        externalNativeBuild {
+            cmake {
+                // Use the following syntax when passing arguments to variables:
+                // arguments "-DVAR_NAME=VALUE"
+                arguments "-DANDROID=true",
+                        "-DANDROID_NATIVE_API_LEVEL=android-21"
+            }
+        }
+    }
+
+    // Use this block to link Gradle to your CMake build script.
+    externalNativeBuild {
+        cmake {
+            path 'src/main/cpp/CMakeLists.txt'
+        }
     }
 
     signingConfigs {
@@ -63,13 +80,8 @@ android {
         }
     }
 
-    tasks.withType(JavaCompile) { compileTask ->
-        compileTask.dependsOn(compileNative)
-    }
-
     productFlavors {
         arm {
-            flavorDimension "abi"
             versionCode getVersionCode() + 1
 
             ndk {
@@ -78,7 +90,6 @@ android {
         }
 
         x86 {
-            flavorDimension "abi"
             versionCode getVersionCode() + 3
 
             ndk {
@@ -87,7 +98,6 @@ android {
         }
 
         arm_64 {
-            flavorDimension "abi"
             versionCode getVersionCode() + 5
 
             ndk {
@@ -96,7 +106,6 @@ android {
         }
 
         x86_64 {
-            flavorDimension "abi"
             versionCode getVersionCode() + 7
 
             ndk {
@@ -112,13 +121,13 @@ android {
 
 dependencies {
     // Contains Lollipop UI View backports.
-    compile 'com.android.support:appcompat-v7:23.4.0'
+    compile "com.android.support:appcompat-v7:$support_lib_version"
 
     // RecyclerView backports.
-    compile 'com.android.support:recyclerview-v7:23.4.0'
+    compile "com.android.support:recyclerview-v7:$support_lib_version"
 
     // Contains new Material Design views. Automatically includes support-v4
-    compile 'com.android.support:design:23.4.0'
+    compile "com.android.support:design:$support_lib_version"
 
     // Enable RxJava-style asynrchronous calls
     compile 'io.reactivex:rxandroid:1.2.0'
@@ -148,182 +157,6 @@ dependencies {
     provided 'org.glassfish:javax.annotation:10.0-b28'
 }
 
-buildscript {
-    ext.kotlin_version = '1.0.3-eap-30'
-    ext.dbflow_version = "3.0.0-beta6"
-    ext.dagger_version = "2.2"
-
-    repositories {
-        mavenCentral()
-        maven { url 'https://maven.fabric.io/public' }
-        maven { url "https://dl.bintray.com/kotlin/kotlin-eap/" }
-    }
-
-    dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'io.fabric.tools:gradle:1.21.6'
-    }
-}
-
 kapt {
     generateStubs = true
-}
-
-task setupCMake(type: Exec) {
-    String abi = getAbi()
-
-    if (abi == null) {
-        executable "echo"
-        args "ABI is null, skipping CMake setup."
-    } else {
-
-        mkdir('build/' + abi)
-        workingDir 'build/' + abi
-
-        executable getExecutablePath("cmake")
-
-        def ndkPath = getNdkPath()
-
-        String ndkArg
-
-        if (ndkPath != null) {
-            ndkArg = "-DANDROID_NDK=" + ndkPath
-        } else {
-            ndkArg = ""
-        }
-
-        project.logger.quiet("Gradle: ndkArg: " + ndkArg)
-
-        args "-DANDROID=true",
-                "-DANDROID_NATIVE_API_LEVEL=android-21",
-                "-DCMAKE_TOOLCHAIN_FILE=../../../android.toolchain.cmake",
-                ndkArg,
-                "../../src/main/cpp/",
-                "-DANDROID_TOOLCHAIN_NAME=" + getToolchainName(),
-                "-DANDROID_ABI=" + abi
-    }
-}
-
-task compileNative(type: Exec, dependsOn: 'setupCMake') {
-    String abi = getAbi()
-
-    if (abi == null) {
-        executable "echo"
-        args "ABI is null, skipping native build."
-    } else {
-        workingDir 'build/' + abi
-        executable 'make'
-    }
-}
-
-String getAbi() {
-    String taskName = getGradle().startParameter.taskNames[0]
-    String abi;
-
-    if (taskName == null) {
-        return ""
-    }
-
-    project.logger.quiet("Gradle: Build = " + taskName)
-
-    if (taskName.contains("Arm_64")) {
-        abi = "arm64-v8a"
-    } else if (taskName.contains("Arm")) {
-        abi = "armeabi-v7a"
-    } else if (taskName.contains("X86_64")) {
-        abi = "x86_64"
-    } else if (taskName.contains("X86")) {
-        abi = "x86"
-    }
-
-    project.logger.quiet("Gradle: ABI name: " + abi)
-    return abi;
-}
-
-String getToolchainName() {
-    String taskName = getGradle().startParameter.taskNames[0]
-    String toolchain;
-
-    if (taskName == null) {
-        return ""
-    }
-
-    if (taskName.contains("Arm_64")) {
-        toolchain = "aarch64-linux-android-4.9"
-    } else if (taskName.contains("Arm")) {
-        toolchain = "arm-linux-androideabi-4.9"
-    } else if (taskName.contains("X86_64")) {
-        toolchain = "x86_64-4.9"
-    } else if (taskName.contains("X86")) {
-        toolchain = "x86-4.9"
-    }
-
-    project.logger.quiet("Gradle: Toolchain name: " + toolchain)
-    return toolchain;
-}
-
-String getNdkPath() {
-    def propsFile = rootProject.file("build.properties")
-    def ndkPath = null
-
-    if (propsFile.canRead()) {
-        def buildProperties = new Properties()
-        buildProperties.load(new FileInputStream(propsFile))
-        ndkPath = buildProperties.ndkPath
-    }
-
-    if (ndkPath == null || ndkPath.isEmpty()) {
-        try {
-            def stdout = new ByteArrayOutputStream()
-
-            exec {
-                // ndk-build.cmd is a file unique to the root directory of android-ndk-r10e.
-                commandLine 'locate', 'ndk-build.cmd'
-                standardOutput = stdout
-            }
-
-            def ndkCmdPath = stdout.toString()
-            ndkPath = ndkCmdPath.substring(0, ndkCmdPath.lastIndexOf('/'))
-        } catch (ignored) {
-            project.logger.error("Gradle error: Couldn't find NDK.")
-        }
-    }
-
-    if (ndkPath != null) {
-        project.logger.quiet("Gradle: Found Android NDK: " + ndkPath)
-    }
-    return ndkPath
-}
-
-String getExecutablePath(String command) {
-    def propsFile = rootProject.file("build.properties")
-    def path = null
-
-    if (propsFile.canRead()) {
-        def buildProperties = new Properties()
-        buildProperties.load(new FileInputStream(propsFile))
-        println buildProperties
-        path = buildProperties[command + "Path"]
-    }
-
-    if (path == null || path.isEmpty()) {
-        try {
-            def stdout = new ByteArrayOutputStream()
-
-            exec {
-                commandLine 'which', command
-                standardOutput = stdout
-            }
-
-            path = stdout.toString().trim()
-        } catch (ignored) {
-            project.logger.error("Gradle error: Couldn't find " + command + " executable.")
-        }
-    }
-
-    if (path != null) {
-        project.logger.quiet("Gradle: Found " + command + " executuable:" + path)
-    }
-
-    return path
 }
