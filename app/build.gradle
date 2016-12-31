@@ -29,14 +29,14 @@ def getVersionName = { ->
 }
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion '23.0.3'
+    compileSdkVersion 25
+    buildToolsVersion '25.0.2'
 
     defaultConfig {
         applicationId "net.sigmabeta.chipbox"
 
         minSdkVersion 21
-        targetSdkVersion 21
+        targetSdkVersion 25
 
         versionName getVersionName()
     }
