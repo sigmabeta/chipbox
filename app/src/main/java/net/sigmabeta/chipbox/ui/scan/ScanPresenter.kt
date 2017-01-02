@@ -1,8 +1,8 @@
 package net.sigmabeta.chipbox.ui.scan
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.model.database.Library
 import net.sigmabeta.chipbox.model.events.FileScanEvent
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
@@ -14,7 +14,7 @@ import javax.inject.Singleton
 
 
 @Singleton
-class ScanPresenter @Inject constructor(val library: Library) : ActivityPresenter() {
+class ScanPresenter @Inject constructor(val repository: Repository) : ActivityPresenter() {
     var view: ScanView? = null
 
     var filesAdded = 0
@@ -33,7 +33,7 @@ class ScanPresenter @Inject constructor(val library: Library) : ActivityPresente
     override fun onTempDestroy() = Unit
 
     override fun setup(arguments: Bundle?) {
-        library.scanLibrary()
+        repository.scanLibrary()
                 .buffer(17, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())

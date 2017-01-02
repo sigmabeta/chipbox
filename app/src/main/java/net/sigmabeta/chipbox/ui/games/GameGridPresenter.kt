@@ -5,6 +5,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
@@ -13,12 +14,12 @@ import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class GameGridPresenter @Inject constructor() : FragmentPresenter() {
+class GameGridPresenter @Inject constructor(val repository: Repository) : FragmentPresenter() {
     var view: GameListView? = null
 
     var platform = Track.PLATFORM_ALL
 
-    var games: MutableList<Game>? = null
+    var games: List<Game>? = null
 
     fun onItemClick(id: Long) {
         view?.launchGameActivity(id)
@@ -96,14 +97,14 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
         view?.showLoadingSpinner()
         view?.hideEmptyState()
 
-        val subscription = Game.getFromPlatform(platform)
+        val subscription = repository.getGamesForPlatform(platform)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
                             games = it
 
-                            if (it.size > 0) {
+                            if (it.isNotEmpty()) {
                                 showContent(it)
                             } else {
                                 showEmptyState()
@@ -118,7 +119,7 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
         subscriptions.add(subscription)
     }
 
-    private fun showContent(games: MutableList<Game>) {
+    private fun showContent(games: List<Game>) {
         view?.setGames(games)
         view?.hideLoadingSpinner()
         view?.hideEmptyState()

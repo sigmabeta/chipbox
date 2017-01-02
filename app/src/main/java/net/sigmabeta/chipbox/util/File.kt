@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.util
 
-import net.sigmabeta.chipbox.model.database.TRACK_LENGTH_DEFAULT
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.util.external.*
@@ -15,6 +14,8 @@ val GME_PLATFORM_GENESIS = "Sega SMS/Genesis"
 val TYPE_OTHER = -1
 val TYPE_FOLDER = 0
 val TYPE_TRACK = 1
+
+val TRACK_LENGTH_DEFAULT = 150000L
 
 val EXTENSIONS_MUSIC: HashSet<String> = HashSet(arrayListOf(
         ".spc", ".vgm", ".vgz", ".nsf", ".nsfe", ".gbs")
@@ -216,3 +217,4 @@ fun getTimeStringFromMillis(millis: Long): String {
 
     return "%d:%02d".format(minutes, displaySeconds)
 }
+

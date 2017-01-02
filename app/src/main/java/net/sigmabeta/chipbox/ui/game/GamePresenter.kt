@@ -8,6 +8,7 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logWarning
@@ -17,7 +18,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter() {
+class GamePresenter @Inject constructor(val player: Player, val repository: Repository) : ActivityPresenter() {
     var view: GameView? = null
 
     var gameId: Long? = null
@@ -109,17 +110,22 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
         val gameId = arguments?.getLong(GameActivity.ARGUMENT_GAME_ID) ?: -1
         this.gameId = gameId
 
-        val gameSubscription = Game.get(gameId)
+        val gameSubscription = repository.getGame(gameId)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe (
                         { game ->
-                            this.game = game
-                            view?.setGame(game)
+                            if (game != null) {
+                                this.game = game
+                                view?.setGame(game)
 
-                            val tracks = game.getTracks()
-                            this.tracks = tracks
-                            view?.setTracks(tracks)
+                                val tracks = game.getTracks()
+                                this.tracks = tracks
+                                view?.setTracks(tracks)
+                            } else {
+                                view?.setGame(null)
+                                view?.showErrorSnackbar("Error: Game not found.", null, null)
+                            }
                         },
                         {
                             view?.setGame(null)

@@ -4,6 +4,7 @@ import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import rx.android.schedulers.AndroidSchedulers
@@ -11,10 +12,10 @@ import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
+class ArtistListPresenter @Inject constructor(val repository: Repository) : FragmentPresenter() {
     var view: ArtistListView? = null
 
-    var artists: MutableList<Artist>? = null
+    var artists: List<Artist>? = null
 
     fun onItemClick(id: Long) {
         view?.launchNavActivity(id)
@@ -68,7 +69,7 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
         view?.showLoadingSpinner()
         view?.hideEmptyState()
 
-        val subscription = Artist.getAll()
+        val subscription = repository.getArtists()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -91,7 +92,7 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
         subscriptions.add(subscription)
     }
 
-    private fun showContent(artists: MutableList<Artist>) {
+    private fun showContent(artists: List<Artist>) {
         view?.setArtists(artists)
         view?.hideLoadingSpinner()
         view?.hideEmptyState()

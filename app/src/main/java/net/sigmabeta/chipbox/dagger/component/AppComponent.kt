@@ -5,7 +5,7 @@ import net.sigmabeta.chipbox.backend.PlayerService
 import net.sigmabeta.chipbox.backend.module.AudioModule
 import net.sigmabeta.chipbox.dagger.module.AppModule
 import net.sigmabeta.chipbox.dagger.module.PreferenceModule
-import net.sigmabeta.chipbox.model.database.module.LibraryModule
+import net.sigmabeta.chipbox.model.database.module.RepositoryModule
 import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.ui.main.MainActivity
@@ -21,7 +21,7 @@ import javax.inject.Singleton
         modules = arrayOf(
                 AppModule::class,
                 AudioModule::class,
-                LibraryModule::class,
+                RepositoryModule::class,
                 PreferenceModule::class
         )
 )
