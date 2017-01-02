@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_song_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.main.MainView
@@ -15,7 +14,6 @@ import net.sigmabeta.chipbox.util.fadeIn
 import net.sigmabeta.chipbox.util.fadeOut
 import net.sigmabeta.chipbox.util.fadeOutPartially
 import net.sigmabeta.chipbox.util.isScrolledToBottom
-import java.util.*
 import javax.inject.Inject
 
 class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewHolder>, TopLevelFragment, NavigationFragment {
@@ -30,10 +28,6 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
 
     override fun setTracks(tracks: List<Track>) {
         adapter.dataset = tracks
-    }
-
-    override fun setGames(games: HashMap<Long, Game>) {
-        adapter.games = games
     }
 
     override fun refreshList() {

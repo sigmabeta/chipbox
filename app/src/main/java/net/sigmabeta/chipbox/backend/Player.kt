@@ -104,7 +104,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 audioTrack?.flush()
             }
 
-            playingGame = value?.gameContainer?.load()
+            playingGame = value?.game
 
             field = value
         }

@@ -1,8 +1,13 @@
 package net.sigmabeta.chipbox.model.repository
 
 import android.content.Context
-import com.raizlabs.android.dbflow.sql.language.SQLite
-import net.sigmabeta.chipbox.model.domain.*
+import io.realm.Realm
+import net.sigmabeta.chipbox.model.database.findAll
+import net.sigmabeta.chipbox.model.database.findFirst
+import net.sigmabeta.chipbox.model.database.save
+import net.sigmabeta.chipbox.model.domain.Artist
+import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.model.file.Folder
 import net.sigmabeta.chipbox.util.*
@@ -12,7 +17,7 @@ import rx.Subscriber
 import java.io.File
 import java.util.*
 
-class DbFlowRepository(val context: Context) : Repository {
+class RealmRepository(val context: Context) : Repository {
     override fun scanLibrary(): Observable<FileScanEvent> {
         return Observable.create(
                 { sub ->
@@ -25,12 +30,9 @@ class DbFlowRepository(val context: Context) : Repository {
 
                     val folders = Folder.getAll()
 
-                    val gameMap = HashMap<Long, HashMap<String, Game>>()
-                    val artistMap = HashMap<String, Artist>()
-
                     folders.forEach { folder ->
                         folder.path?.let {
-                            scanFolder(File(it), gameMap, artistMap, sub as Subscriber<FileScanEvent>)
+                            scanFolder(File(it), sub as Subscriber<FileScanEvent>)
                         }
                     }
 
@@ -53,8 +55,8 @@ class DbFlowRepository(val context: Context) : Repository {
 
         val gameObservable = getGame(track.platform, track.gameTitle)
                 .map {
-                    track.associateGame(it)
-                    track.insert()
+                    track.game = it
+                    track.save()
                     return@map it
                 }
 
@@ -69,10 +71,8 @@ class DbFlowRepository(val context: Context) : Repository {
                     val gameArtist = game.artist
                     val gameHadMultipleArtists = game.multipleArtists ?: false
 
-                    val relation = Artist_Track()
-                    relation.artist = artist
-                    relation.track = track
-                    relation.insert()
+                    artist.tracks?.add(track)
+                    track.artists?.add(artist)
 
                     // If this game has just one artist...
                     if (gameArtist != null && !gameHadMultipleArtists) {
@@ -80,11 +80,9 @@ class DbFlowRepository(val context: Context) : Repository {
                         if (artist.id != gameArtist.id) {
                             // We'll save this later.
                             game.multipleArtists = true
-                            game.save()
                         }
                     } else if (gameArtist == null) {
                         game.artist = artist
-                        game.save()
                     }
 
                     return@combineLatest game.id
@@ -94,7 +92,7 @@ class DbFlowRepository(val context: Context) : Repository {
     override fun addGame(platformId: Long, title: String?): Observable<Game> {
         return Observable.create {
             val game = Game(title ?: "Unknown Game", platformId)
-            game.insert()
+            game.save()
 
             it.onNext(game)
             it.onCompleted()
@@ -104,7 +102,7 @@ class DbFlowRepository(val context: Context) : Repository {
     override fun addArtist(name: String?): Observable<Artist> {
         return Observable.create {
             val artist = Artist(name ?: "Unknown Artist")
-            artist.insert()
+            artist.save()
 
             it.onNext(artist)
             it.onCompleted()
@@ -120,7 +118,7 @@ class DbFlowRepository(val context: Context) : Repository {
             }
 
             Folder.removeContainedEntries(path)
-            Folder(path).insert()
+            Folder(path).save()
 
             logInfo("[Folder] Successfully added folder to database.")
 
@@ -133,189 +131,65 @@ class DbFlowRepository(val context: Context) : Repository {
      * Read
      */
 
-    override fun getTracks(): Observable<List<Track>> {
-        return Observable.create {
-            logInfo("[Track] Reading song list...")
-
-            val tracks = SQLite.select().from(Track::class.java)
-                    .where()
-                    .orderBy(Track_Table.title, true)
-                    .queryList()
-
-            logVerbose("[Track] Found ${tracks.size} tracks.")
-
-            it.onNext(tracks)
-            it.onCompleted()
-        }
+    override fun getTracks(): Observable<out List<Track>> {
+        val realm = Realm.getDefaultInstance()
+        return realm.findAll(Track::class.java)
     }
 
-    override fun getGame(id: Long): Observable<Game?> {
-        return Observable.create {
-            logInfo("[Game] Getting game #${id}...")
-
-            if (id > 0) {
-                val game = SQLite.select()
-                        .from(Game::class.java)
-                        .where(Game_Table.id.eq(id))
-                        .querySingle()
-
-                if (game != null) {
-                    it.onNext(game)
-                    it.onCompleted()
-                } else {
-                    it.onError(Exception("Couldn't find game."))
-                }
-            } else {
-                it.onError(Exception("Bad game ID."))
-            }
-        }
+    override fun getGame(id: Long): Observable<Game> {
+        val realm = Realm.getDefaultInstance()
+        return realm.findFirst(Game::class.java, id)
     }
 
-    override fun getGamesForPlatform(platformId: Long): Observable<List<Game>> {
-        return Observable.create {
-            logInfo("[Game] Reading games list...")
-
-            var games: List<Game>
-            val query = SQLite.select().from(Game::class.java)
-
-            // If -2 passed in, return all games. Else, return games for one platform only.
-            if (platformId != Track.PLATFORM_ALL) {
-                games = query
-                        .where(Game_Table.platform.eq(platformId))
-                        .orderBy(Game_Table.title, true)
-                        .queryList()
-            } else {
-                games = query
-                        .orderBy(Game_Table.title, true)
-                        .queryList()
-            }
-
-            logVerbose("[Game] Found ${games.size} games.")
-
-            it.onNext(games)
-            it.onCompleted()
-        }
+    override fun getGamesForPlatform(platformId: Long): Observable<out List<Game>> {
+        val realm = Realm.getDefaultInstance()
+        return realm
+                .where(Game::class.java)
+                .equalTo("platform", platformId)
+                .findAllAsync()
+                .asObservable()
     }
 
     override fun getGame(platformId: Long, title: String?): Observable<Game> {
-        return Observable.create<Game?> {
-            val game: Game?
-
-            if (title == null) {
-                game = null
-            } else {
-                game = SQLite.select()
-                        .from(Game::class.java)
-                        .where(Game_Table.title.eq(title))
-                        .and(Game_Table.platform.eq(platformId))
-                        .querySingle()
-            }
-
-            it.onNext(game)
-            it.onCompleted()
-            // TODO Add somewhere: return Game.addToDatabase(title ?: "Unknown Game", platformId ?: -Track.PLATFORM_UNSUPPORTED)
-        }.flatMap { game ->
-            if (game != null) {
-                return@flatMap Observable.just(game)
-            } else {
-                return@flatMap addGame(platformId, title)
-            }
-        }
+        val realm = Realm.getDefaultInstance()
+        return realm
+                .where(Game::class.java)
+                .equalTo("platform", platformId)
+                .equalTo("title", title)
+                .findFirstAsync()
+                .asObservable<Game>()
+                .map {
+                    var game = it
+                    if (!game.isValid) {
+                        game = realm.copyToRealm(it)
+                    }
+                    return@map game
+                }
     }
 
     override fun getArtist(id: Long): Observable<Artist> {
-        return Observable.create {
-            logInfo("[Artist] Getting artist #${id}...")
-
-            if (id > 0) {
-                val artist = SQLite.select()
-                        .from(Artist::class.java)
-                        .where(Artist_Table.id.eq(id))
-                        .querySingle()
-
-                if (artist != null) {
-                    it.onNext(artist)
-                    it.onCompleted()
-                } else {
-                    it.onError(Exception("Couldn't find game."))
-                }
-            } else {
-                it.onError(Exception("Bad game ID."))
-            }
-        }
+        val realm = Realm.getDefaultInstance()
+        return realm.findFirst(Artist::class.java, id)
     }
 
     override fun getArtist(name: String?): Observable<Artist> {
-        return Observable.create<Artist?> {
-            val artist: Artist?
-
-            if (name == null) {
-                artist = null
-            } else {
-                artist = SQLite.select()
-                        .from(Artist::class.java)
-                        .where(Artist_Table.name.eq(name))
-                        .querySingle()
-            }
-
-            it.onNext(artist)
-            it.onCompleted()
-        }.flatMap { artist: Artist? ->
-            if (artist != null) {
-                return@flatMap Observable.just(artist)
-            } else {
-                return@flatMap addArtist(name)
-            }
-        }
+        val realm = Realm.getDefaultInstance()
+        return realm.where(Artist::class.java)
+                .equalTo("name", name)
+                .findFirstAsync()
+                .asObservable<Artist>()
+                .filter { it.isLoaded }
     }
 
-    override fun getArtists(): Observable<List<Artist>> {
-        return Observable.create {
-            logInfo("[Artist] Reading artist list...")
-
-            val artists = SQLite.select().from(Artist::class.java)
-                    .where()
-                    .orderBy(Artist_Table.name, true)
-                    .queryList()
-
-            logVerbose("[Artist] Found ${artists.size} artists.")
-
-            it.onNext(artists)
-            it.onCompleted()
-        }
+    override fun getArtists(): Observable<out List<Artist>> {
+        val realm = Realm.getDefaultInstance()
+        return realm.findAll(Artist::class.java)
     }
 
-    override fun getArtistsForTrack(id: Long): Observable<List<Artist>> {
-        return Observable.create {
-            val relations = SQLite.select()
-                    .from(Artist_Track::class.java)
-                    .where(Artist_Track_Table.track_id.eq(id))
-                    .queryList()
-
-            val artists = ArrayList<Artist>(relations.size)
-
-            relations.forEach {
-                artists.add(it.artist)
-            }
-
-            it.onNext(artists)
-            it.onCompleted()
-        }
-    }
-
-    override fun getFolders(): Observable<List<Folder>> {
-        return Observable.create {
-            logInfo("[Folder] Reading folder list...")
-
-            val folders = SQLite.select()
-                    .from(Folder::class.java)
-                    .queryList()
-
-            logVerbose("[Folder] Found ${folders.size} folders.")
-
-            it.onNext(folders)
-            it.onCompleted()
-        }
+    override fun getFolders(): Observable<out List<Folder>> {
+        val realm = Realm.getDefaultInstance()
+        return realm.findAll(Folder::class.java)
+                .filter { it.isLoaded }
     }
 
     /**
@@ -327,17 +201,18 @@ class DbFlowRepository(val context: Context) : Repository {
      */
     override fun clearAll() {
         logInfo("[Library] Clearing library...")
-
-        SQLite.delete(Artist::class.java).query()
-        SQLite.delete(Game::class.java).query()
-        SQLite.delete(Track::class.java).query()
+        val realm = Realm.getDefaultInstance()
+        realm.beginTransaction()
+        realm.deleteAll()
+        realm.commitTransaction()
+        realm.close()
     }
 
     /**
      * Private Methods
      */
 
-    private fun scanFolder(folder: File, gameMap: HashMap<Long, HashMap<String, Game>>, artistMap: HashMap<String, Artist>, sub: Subscriber<FileScanEvent>) {
+    private fun scanFolder(folder: File, sub: Subscriber<FileScanEvent>) {
         val folderPath = folder.absolutePath
         logInfo("[Library] Reading files from library folder: ${folderPath}")
 
@@ -356,7 +231,7 @@ class DbFlowRepository(val context: Context) : Repository {
             for (file in children) {
                 if (!file.isHidden) {
                     if (file.isDirectory) {
-                        scanFolder(file, gameMap, artistMap, sub)
+                        scanFolder(file, sub)
                     } else {
                         val filePath = file.absolutePath
                         val fileExtension = getFileExtension(filePath)

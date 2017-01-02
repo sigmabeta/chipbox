@@ -5,7 +5,6 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
-import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.BaseView
@@ -14,7 +13,6 @@ import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
-import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
@@ -26,8 +24,6 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
     var artist: Artist? = null
 
     var tracks: List<Track>? = null
-
-    var gameMap: HashMap<Long, Game>? = null
 
     fun onItemClick(position: Long) {
         tracks?.let {
@@ -54,7 +50,6 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
     override fun teardown() {
         artistId = -1
         tracks = null
-        gameMap = null
     }
 
     override fun updateViewState() {
@@ -66,10 +61,6 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
             }
         } ?: let {
             view?.showLoadingSpinner()
-        }
-
-        gameMap?.let {
-            view?.setGames(it)
         }
     }
 
@@ -87,21 +78,6 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
 
     override fun clearView() {
         view = null
-    }
-
-    private fun loadGames(tracks: List<Track>) {
-        val subscription = Game.getFromTrackList(tracks)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            logInfo("[SongListPresenter] Loaded ${it.size} games.")
-                            gameMap = it
-                            view?.setGames(it)
-                        }
-                )
-
-        subscriptions.add(subscription)
     }
 
     private fun setupHelper(arguments: Bundle?) {
@@ -122,7 +98,6 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
 
                                 if (it.size > 0) {
                                     showContent(it)
-                                    loadGames(it)
                                 } else {
                                     showEmptyState()
                                 }
@@ -143,15 +118,14 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
                                 this.artist = it
                                 view?.setActivityTitle(it.name ?: "Unknown Artist")
 
-                                val tracks = it.getTracks()
-
                                 // TODO This really, really needs to be async
-                                if (tracks.size > 0) {
-                                    this.tracks = tracks
-                                    showContent(tracks)
-                                    loadGames(tracks)
-                                } else {
-                                    logError("[SongListPresenter] Error: No tracks for artist ${it.id}")
+                                tracks?.let {
+                                    if (it.isNotEmpty()) {
+                                        this.tracks = it
+                                        showContent(it)
+                                    }
+                                } ?: let {
+                                    logError("[SongListPresenter] Error: No tracks for artist ${this.artist?.id}")
                                     view?.onTrackLoadError()
                                 }
                             },

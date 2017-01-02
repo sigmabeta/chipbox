@@ -2,17 +2,11 @@ package net.sigmabeta.chipbox.model.domain
 
 import android.media.MediaMetadata
 import android.support.v4.media.MediaMetadataCompat
-import com.raizlabs.android.dbflow.annotation.ColumnIgnore
-import com.raizlabs.android.dbflow.annotation.ForeignKey
-import com.raizlabs.android.dbflow.annotation.PrimaryKey
-import com.raizlabs.android.dbflow.annotation.Table
-import com.raizlabs.android.dbflow.config.FlowManager
-import com.raizlabs.android.dbflow.structure.BaseModel
-import com.raizlabs.android.dbflow.structure.container.ForeignKeyContainer
-import net.sigmabeta.chipbox.ChipboxDatabase
+import io.realm.RealmList
+import io.realm.RealmObject
+import io.realm.annotations.PrimaryKey
 
-@Table(database = ChipboxDatabase::class, allFields = true)
-class Track() : BaseModel() {
+open class Track() : RealmObject() {
     constructor(number: Int,
                 path: String,
                 title: String,
@@ -33,7 +27,7 @@ class Track() : BaseModel() {
         this.loopLength = loopLength
     }
 
-    @PrimaryKey (autoincrement = true) var id: Long? = null
+    @PrimaryKey var id: Long? = null
     var trackNumber: Int? = null
     var path: String? = null
     var title: String? = null
@@ -42,22 +36,9 @@ class Track() : BaseModel() {
     var trackLength: Long? = null
     var introLength: Long? = null
     var loopLength: Long? = null
-
-    @ColumnIgnore
+    var game: Game? = null
     var gameTitle: String? = null
-
-    @ForeignKey (saveForeignKeyModel = false)
-    var gameContainer: ForeignKeyContainer<Game>? = null
-
-    @ColumnIgnore
-    @JvmField
-    var artists: List<Artist>? = null
-
-    fun associateGame(game: Game) {
-        gameContainer = FlowManager
-                .getContainerAdapter(Game::class.java)
-                .toForeignKeyContainer(game)
-    }
+    var artists: RealmList<Artist>? = null
 
     companion object {
         val PLATFORM_UNSUPPORTED = 100L
@@ -72,7 +53,7 @@ class Track() : BaseModel() {
         fun toMetadataBuilder(track: Track): MediaMetadataCompat.Builder {
             return MediaMetadataCompat.Builder()
                     .putString(MediaMetadata.METADATA_KEY_TITLE, track.title)
-                    .putString(MediaMetadata.METADATA_KEY_ALBUM, track.gameContainer?.toModel()?.title)
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, track.game?.title)
                     .putString(MediaMetadata.METADATA_KEY_ARTIST, track.artistText)
         }
     }
