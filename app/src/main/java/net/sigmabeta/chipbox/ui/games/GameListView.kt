@@ -6,7 +6,7 @@ import net.sigmabeta.chipbox.ui.BaseView
 interface GameListView : BaseView {
     fun setActivityTitle(titleResource: Int)
 
-    fun setGames(games: MutableList<Game>)
+    fun setGames(games: List<Game>)
 
     fun launchGameActivity(id: Long)
 
