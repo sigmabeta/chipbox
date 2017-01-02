@@ -5,7 +5,7 @@ buildscript {
     ext.kotlin_version = '1.0.6'
     ext.dagger_version = '2.8'
     ext.support_lib_version = '25.1.0'
-    ext.dbflow_version = "3.0.0-beta6"
+    ext.realm_version = '2.2.1'
 
     repositories {
         jcenter()
@@ -18,6 +18,9 @@ buildscript {
         // Allows gradle files to be able to build Kotlin.
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 
+        // Realm database plugin.
+        classpath "io.realm:realm-gradle-plugin:$realm_version"
+
         // Fabric
         classpath 'io.fabric.tools:gradle:1.+'
     }
@@ -26,8 +29,6 @@ buildscript {
 allprojects {
     repositories {
         jcenter()
-
-        maven { url "https://jitpack.io" }
         maven { url 'https://maven.fabric.io/public' }
     }
 }

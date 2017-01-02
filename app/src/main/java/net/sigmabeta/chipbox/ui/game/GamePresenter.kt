@@ -119,9 +119,12 @@ class GamePresenter @Inject constructor(val player: Player, val repository: Repo
                                 this.game = game
                                 view?.setGame(game)
 
-                                val tracks = game.getTracks()
-                                this.tracks = tracks
-                                view?.setTracks(tracks)
+                                val tracks = game.tracks?.toMutableList()
+
+                                tracks?.let {
+                                    this.tracks = tracks
+                                    view?.setTracks(tracks)
+                                }
                             } else {
                                 view?.setGame(null)
                                 view?.showErrorSnackbar("Error: Game not found.", null, null)

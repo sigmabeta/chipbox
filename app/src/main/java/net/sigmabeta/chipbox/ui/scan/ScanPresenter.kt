@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.scan
 
 import android.os.Bundle
+import android.util.Log
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
@@ -46,7 +47,7 @@ class ScanPresenter @Inject constructor(val repository: Repository) : ActivityPr
                             // OnError. it: Throwable
                             view?.onScanFailed()
                             backAllowed = true
-                            logError("[FileListPresenter] File scanning error: ${it.message}")
+                            logError("[FileListPresenter] File scanning error: ${Log.getStackTraceString(it)}")
                         },
                         {
                             // OnCompleted.

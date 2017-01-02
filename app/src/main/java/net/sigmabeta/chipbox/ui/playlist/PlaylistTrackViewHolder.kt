@@ -23,7 +23,7 @@ class PlaylistTrackViewHolder(view: View, adapter: PlaylistAdapter) : BaseViewHo
         view.text_song_artist.text = toBind.artistText
         view.text_song_length.text = getTimeStringFromMillis(toBind.trackLength ?: 0)
 
-        val gameId = toBind.gameContainer?.toModel()?.id
+        val gameId = toBind.game?.id
         val imagePath = adapter.games?.get(gameId)?.artLocal
 
         if (adapterPosition == adapter.playingPosition) {

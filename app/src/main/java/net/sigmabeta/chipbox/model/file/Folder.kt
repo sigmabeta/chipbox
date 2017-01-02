@@ -1,28 +1,26 @@
 package net.sigmabeta.chipbox.model.file
 
-import com.raizlabs.android.dbflow.annotation.PrimaryKey
-import com.raizlabs.android.dbflow.annotation.Table
-import com.raizlabs.android.dbflow.annotation.Unique
-import com.raizlabs.android.dbflow.sql.language.SQLite
-import com.raizlabs.android.dbflow.structure.BaseModel
-import net.sigmabeta.chipbox.ChipboxDatabase
+
+import io.realm.Realm
+import io.realm.RealmObject
+import io.realm.RealmResults
+import io.realm.annotations.PrimaryKey
+import net.sigmabeta.chipbox.model.database.findAllSync
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 
-@Table(database = ChipboxDatabase::class, allFields = true)
-class Folder() : BaseModel() {
+open class Folder() : RealmObject() {
     constructor(path: String) : this() {
         this.path = path
     }
 
-    @PrimaryKey (autoincrement = true) var id: Long? = null
-    @Unique var path: String? = null
+    @PrimaryKey var path: String? = null
 
     companion object {
-        fun getAll(): List<Folder> {
-            return SQLite.select()
-                    .from(Folder::class.java)
-                    .queryList()
+        fun getAll(): RealmResults<Folder> {
+            val realm = Realm.getDefaultInstance()
+            val folders = realm.findAllSync(Folder::class.java)
+            return folders
         }
 
         fun checkIfContained(newPath: String): Boolean {
@@ -44,26 +42,22 @@ class Folder() : BaseModel() {
             val folders = getAll()
 
             // Remove any folders from the DB that are contained by the new folder.
-            val idsToRemove = mutableListOf<Long>()
+            val foldersToRemove = mutableListOf<Folder>()
             folders.forEach { oldFolder ->
                 oldFolder.path?.let { oldPath ->
                     if (oldPath.contains(newPath)) {
                         logInfo("[Folder] New folder contains a previously added folder: $oldPath")
 
-                        oldFolder.id?.let {
-                            idsToRemove.add(it)
-                        }
+                        foldersToRemove.add(oldFolder)
                     }
                 }
             }
 
-            if (idsToRemove.isNotEmpty()) {
-                val idsString = idsToRemove.joinToString()
+            if (foldersToRemove.isNotEmpty()) {
+                val idsString = foldersToRemove.joinToString()
                 logInfo("[Folder] Deleting folders with ids: $idsString")
 
-                SQLite.delete().from(Folder::class.java)
-                        .where(Folder_Table.id.`in`(idsToRemove))
-                        .query()
+                foldersToRemove.forEach { it.deleteFromRealm() }
             }
         }
     }

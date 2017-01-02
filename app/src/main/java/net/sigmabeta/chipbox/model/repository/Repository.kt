@@ -24,18 +24,17 @@ interface Repository {
      * Read
      */
 
-    fun getTracks(): Observable<List<Track>>
+    fun getTracks(): Observable<out List<Track>>
 
-    fun getGame(id: Long): Observable<Game?>
-    fun getGamesForPlatform(platformId: Long): Observable<List<Game>>
+    fun getGame(id: Long): Observable<Game>
+    fun getGamesForPlatform(platformId: Long): Observable<out List<Game>>
     fun getGame(platformId: Long, title: String?): Observable<Game>
 
     fun getArtist(id: Long): Observable<Artist>
     fun getArtist(name: String?): Observable<Artist>
-    fun getArtists(): Observable<List<Artist>>
-    fun getArtistsForTrack(id: Long): Observable<List<Artist>>
+    fun getArtists(): Observable<out List<Artist>>
 
-    fun getFolders(): Observable<List<Folder>>
+    fun getFolders(): Observable<out List<Folder>>
 
     /**
      * Update
