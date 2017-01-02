@@ -406,11 +406,13 @@ class DbFlowRepository(val context: Context) : Repository {
                     .subscribe(
                             {
                                 folderGameId = it
-                                sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
                             },
                             {
                                 logError("[Library] Couldn't add track at ${filePath}")
                                 sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
+                            },
+                            {
+                                sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
                             }
                     )
 
@@ -435,11 +437,13 @@ class DbFlowRepository(val context: Context) : Repository {
                 .subscribe(
                         {
                             folderGameId = it
-                            sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
                         },
                         {
                             logError("[Library] Couldn't read multi track file at ${filePath}")
                             sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
+                        },
+                        {
+                            sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
                         }
                 )
 
