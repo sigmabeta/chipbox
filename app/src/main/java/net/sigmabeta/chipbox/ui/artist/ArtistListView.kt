@@ -4,7 +4,7 @@ import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.BaseView
 
 interface ArtistListView : BaseView {
-    fun setArtists(artists: MutableList<Artist>)
+    fun setArtists(artists: List<Artist>)
 
     fun launchNavActivity(id: Long)
 

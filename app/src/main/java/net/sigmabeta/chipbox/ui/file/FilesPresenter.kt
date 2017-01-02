@@ -2,8 +2,8 @@ package net.sigmabeta.chipbox.ui.file
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.database.Library
-import net.sigmabeta.chipbox.model.file.Folder
+import net.sigmabeta.chipbox.model.repository.DbFlowRepository
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
@@ -14,7 +14,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class FilesPresenter @Inject constructor() : ActivityPresenter() {
+class FilesPresenter @Inject constructor(val repository: Repository) : ActivityPresenter() {
     // TODO DI this
     lateinit var startPath: String
 
@@ -37,15 +37,15 @@ class FilesPresenter @Inject constructor() : ActivityPresenter() {
 
     fun onFabClick() {
         path?.let {
-            val subscription = Folder.addToDatabase(it)
+            val subscription = repository.addFolder(it)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
                                 when (it) {
-                                    Library.ADD_STATUS_GOOD -> view?.onAddSuccessful()
-                                    Library.ADD_STATUS_EXISTS -> view?.showExistsMessage()
-                                    Library.ADD_STATUS_DB_ERROR -> view?.showErrorMessage(R.string.file_list_error_adding)
+                                    DbFlowRepository.ADD_STATUS_GOOD -> view?.onAddSuccessful()
+                                    DbFlowRepository.ADD_STATUS_EXISTS -> view?.showExistsMessage()
+                                    DbFlowRepository.ADD_STATUS_DB_ERROR -> view?.showErrorMessage(R.string.file_list_error_adding)
                                 }
                             },
                             {

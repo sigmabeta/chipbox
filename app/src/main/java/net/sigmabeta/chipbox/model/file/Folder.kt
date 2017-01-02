@@ -6,10 +6,8 @@ import com.raizlabs.android.dbflow.annotation.Unique
 import com.raizlabs.android.dbflow.sql.language.SQLite
 import com.raizlabs.android.dbflow.structure.BaseModel
 import net.sigmabeta.chipbox.ChipboxDatabase
-import net.sigmabeta.chipbox.model.database.Library
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
-import rx.Observable
 
 @Table(database = ChipboxDatabase::class, allFields = true)
 class Folder() : BaseModel() {
@@ -27,27 +25,7 @@ class Folder() : BaseModel() {
                     .queryList()
         }
 
-        fun addToDatabase(path: String): Observable<Int> {
-            return Observable.create {
-
-                if (checkIfContained(path)) {
-                    it.onNext(Library.ADD_STATUS_EXISTS)
-                    it.onCompleted()
-                    return@create
-                }
-
-                removeContainedEntries(path)
-
-                Folder(path).insert()
-
-                logInfo("[Folder] Successfully added folder to database.")
-                it.onNext(Library.ADD_STATUS_GOOD)
-
-                it.onCompleted()
-            }
-        }
-
-        private fun checkIfContained(newPath: String): Boolean {
+        fun checkIfContained(newPath: String): Boolean {
             val folders = getAll()
 
             folders.forEach {
@@ -62,7 +40,7 @@ class Folder() : BaseModel() {
             return false
         }
 
-        private fun removeContainedEntries(newPath: String) {
+        fun removeContainedEntries(newPath: String) {
             val folders = getAll()
 
             // Remove any folders from the DB that are contained by the new folder.

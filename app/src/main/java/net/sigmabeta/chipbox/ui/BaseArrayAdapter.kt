@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import net.sigmabeta.chipbox.util.logError
 
 abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemListView<VH>) : RecyclerView.Adapter<VH>() {
-    var dataset: MutableList<T>? = null
+    var dataset: List<T>? = null
         set (value) {
             field = value
             notifyDataSetChanged()
