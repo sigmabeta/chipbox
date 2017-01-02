@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
@@ -17,20 +18,20 @@ import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
-class TrackListPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
+class TrackListPresenter @Inject constructor(val player: Player, val repository: Repository) : FragmentPresenter() {
     var view: TrackListView? = null
 
     var artistId = Artist.ARTIST_ALL
 
     var artist: Artist? = null
 
-    var tracks: MutableList<Track>? = null
+    var tracks: List<Track>? = null
 
     var gameMap: HashMap<Long, Game>? = null
 
     fun onItemClick(position: Long) {
         tracks?.let {
-            player.play(it, position.toInt())
+            player.play(it.toMutableList(), position.toInt())
         }
     }
 
@@ -110,7 +111,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
         view?.hideEmptyState()
 
         if (artistId == Artist.ARTIST_ALL) {
-            val tracksLoad = Track.getAll()
+            val tracksLoad = repository.getTracks()
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
@@ -134,7 +135,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
             subscriptions.add(tracksLoad)
         } else {
-            val artistLoad = Artist.get(artistId)
+            val artistLoad = repository.getArtist(artistId)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
@@ -165,7 +166,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
         }
     }
 
-    private fun showContent(it: MutableList<Track>) {
+    private fun showContent(it: List<Track>) {
         view?.setTracks(it)
         view?.hideLoadingSpinner()
         view?.hideEmptyState()

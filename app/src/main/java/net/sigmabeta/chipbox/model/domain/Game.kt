@@ -4,7 +4,6 @@ import com.raizlabs.android.dbflow.annotation.*
 import com.raizlabs.android.dbflow.sql.language.SQLite
 import com.raizlabs.android.dbflow.structure.BaseModel
 import net.sigmabeta.chipbox.ChipboxDatabase
-import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
@@ -65,51 +64,6 @@ class Game() : BaseModel() {
 
         val PICASSO_ASSET_ALBUM_ART_BLANK = PICASSO_PREFIX + ASSET_ALBUM_ART_BLANK
 
-        fun get(gameId: Long): Observable<Game> {
-            return Observable.create {
-                logInfo("[Game] Getting game #${gameId}...")
-
-                if (gameId > 0) {
-                    val game = queryDatabase(gameId)
-
-                    if (game != null) {
-                        it.onNext(game)
-                        it.onCompleted()
-                    } else {
-                        it.onError(Exception("Couldn't find game."))
-                    }
-                } else {
-                    it.onError(Exception("Bad game ID."))
-                }
-            }
-        }
-
-        fun getFromPlatform(platform: Long): Observable<MutableList<Game>> {
-            return Observable.create {
-                logInfo("[Game] Reading games list...")
-
-                var games: List<Game>
-                val query = SQLite.select().from(Game::class.java)
-
-                // If -2 passed in, return all games. Else, return games for one platform only.
-                if (platform != Track.PLATFORM_ALL) {
-                    games = query
-                            .where(Game_Table.platform.eq(platform))
-                            .orderBy(Game_Table.title, true)
-                            .queryList()
-                } else {
-                    games = query
-                            .orderBy(Game_Table.title, true)
-                            .queryList()
-                }
-
-                logVerbose("[Game] Found ${games.size} games.")
-
-                it.onNext(games)
-                it.onCompleted()
-            }
-        }
-
         fun getFromTrackList(tracks: List<Track>): Observable<HashMap<Long, Game>> {
             return Observable.create {
                 logInfo("[Game] Getting games for currently displayed tracks...")
@@ -123,7 +77,11 @@ class Game() : BaseModel() {
                             return@forEach
                         }
 
-                        val game = Game.queryDatabase(id)
+                        val game = SQLite.select()
+                                .from(Game::class.java)
+                                .where(Game_Table.id.eq(id))
+                                .querySingle()
+
                         if (game != null) {
                             games.put(id, game)
                             return@forEach
@@ -150,56 +108,11 @@ class Game() : BaseModel() {
             }
         }
 
-        fun get(gameTitle: String?, gamePlatform: Long?, gameMap: HashMap<Long, HashMap<String, Game>>): Game {
-            // Check if this game has already been seen during this scan.
-            gameMap.get(gamePlatform)?.let { platform ->
-                platform.get(gameTitle)?.let { game ->
-                    return game
-                }
-            } ?: let {
-                if (gamePlatform != null) {
-                    gameMap.put(gamePlatform, HashMap<String, Game>())
-                }
-            }
-
-            val game = SQLite.select()
-                    .from(Game::class.java)
-                    .where(Game_Table.title.eq(gameTitle))
-                    .and(Game_Table.platform.eq(gamePlatform))
-                    .querySingle()
-
-            game?.id?.let {
-                if (gameTitle != null) {
-                    gameMap.get(gamePlatform)?.put(gameTitle, game)
-                } else {
-                    logError("[Game] Something really weird happened...?")
-                }
-
-                return game
-            } ?: let {
-                return addToDatabase(gameTitle ?: "Unknown Game", gamePlatform ?: -Track.PLATFORM_UNSUPPORTED)
-            }
-        }
-
-        fun queryDatabase(id: Long): Game? {
-            return SQLite.select()
-                    .from(Game::class.java)
-                    .where(Game_Table.id.eq(id))
-                    .querySingle()
-        }
-
         fun addLocalImage(gameId: Long, artLocal: String) {
             SQLite.update(Game::class.java)
                     .set(Game_Table.artLocal.eq(artLocal))
                     .where(Game_Table.id.eq(gameId))
                     .query()
-        }
-
-        private fun addToDatabase(gameTitle: String, gamePlatform: Long): Game {
-            val game = Game(gameTitle, gamePlatform)
-            game.insert()
-
-            return game
         }
     }
 }
