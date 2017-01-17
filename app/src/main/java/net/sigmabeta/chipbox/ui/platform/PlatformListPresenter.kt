@@ -21,7 +21,8 @@ class PlatformListPresenter @Inject constructor() : FragmentPresenter() {
             Platform(Track.Companion.PLATFORM_GAMEBOY.toLong(), R.string.platform_name_gameboy, 0)
     )
 
-    fun onItemClick(id: Long) {
+    fun onItemClick(position: Int) {
+        val id = platformList.get(position).id
         view?.launchNavActivity(id)
     }
 

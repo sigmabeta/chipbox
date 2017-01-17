@@ -14,17 +14,10 @@ class PlaylistTrackViewHolder(view: View, adapter: PlaylistAdapter) : BaseViewHo
         view.handle_track.setOnTouchListener(this)
     }
 
-    override fun getId(): Long? {
-        return adapterPosition.toLong()
-    }
-
     override fun bind(toBind: Track) {
         view.text_song_title.text = toBind.title
         view.text_song_artist.text = toBind.artistText
         view.text_song_length.text = getTimeStringFromMillis(toBind.trackLength ?: 0)
-
-        val gameId = toBind.game?.id
-        val imagePath = adapter.games?.get(gameId)?.artLocal
 
         if (adapterPosition == adapter.playingPosition) {
             view.text_song_title.setTextAppearance(view.context, R.style.TextlistTrackTitlePlaying)

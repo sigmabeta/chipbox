@@ -26,9 +26,9 @@ class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresen
      * Public Methods
      */
 
-    fun onItemClick(position: Long) {
+    fun onItemClick(position: Int) {
         voices?.let {
-            val newValue = !it[position.toInt()].enabled
+            val newValue = !it[position].enabled
             it[position.toInt()].enabled = newValue
             view?.notifyChanged(position.toInt())
         }

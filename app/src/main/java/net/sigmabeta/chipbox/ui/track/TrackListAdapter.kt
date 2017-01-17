@@ -7,7 +7,7 @@ import net.sigmabeta.chipbox.ui.BaseArrayAdapter
 import net.sigmabeta.chipbox.ui.ItemListView
 
 class TrackListAdapter(view: ItemListView<TrackViewHolder>) : BaseArrayAdapter<Track, TrackViewHolder>(view) {
-    var playingTrackId: Long? = null
+    var playingTrackId: String? = null
         set (value) {
             field = value
             notifyDataSetChanged()

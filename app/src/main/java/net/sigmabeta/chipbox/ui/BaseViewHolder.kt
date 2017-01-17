@@ -11,10 +11,8 @@ abstract class BaseViewHolder<T, VH : BaseViewHolder<T, VH, A>, A : BaseArrayAda
     }
 
     override fun onClick(clicked: View) {
-        adapter.onItemClick(getId() ?: return, this as VH)
+        adapter.onItemClick(adapterPosition, this as VH)
     }
 
     abstract fun bind(toBind: T)
-
-    abstract fun getId(): Long?
 }

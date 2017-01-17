@@ -19,8 +19,8 @@ class FileListPresenter @Inject constructor() : FragmentPresenter() {
 
     var path: String? = null
 
-    fun onItemClick(position: Long) {
-        files?.get(position.toInt())?.let {
+    fun onItemClick(position: Int) {
+        files?.get(position)?.let {
             val clickedFile = File(it.path)
 
             if (clickedFile.isDirectory) {

@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.model.repository
 
 import android.content.Context
+import android.util.Log
 import io.realm.Realm
 import net.sigmabeta.chipbox.model.database.findAll
 import net.sigmabeta.chipbox.model.database.findFirst
@@ -50,7 +51,7 @@ class RealmRepository(val context: Context) : Repository {
      * Create
      */
 
-    override fun addTrack(track: Track): Observable<Long> {
+    override fun addTrack(track: Track): Observable<String> {
         val artists = track.artistText?.split(", ")
 
         val gameObservable = getGame(track.platform, track.gameTitle)
@@ -62,7 +63,7 @@ class RealmRepository(val context: Context) : Repository {
 
         val artistObservable = Observable.from(artists)
                 .flatMap { name ->
-                    return@flatMap getArtist(name)
+                    return@flatMap getArtistByName(name)
                 }
 
         // Combine operator happens once per Artist, once we have a Game.
@@ -70,6 +71,16 @@ class RealmRepository(val context: Context) : Repository {
                 { game: Game, artist: Artist ->
                     val gameArtist = game.artist
                     val gameHadMultipleArtists = game.multipleArtists ?: false
+
+                    val realm = Realm.getDefaultInstance()
+
+                    val wasInTransactionBefore: Boolean
+                    if (realm.isInTransaction) {
+                        wasInTransactionBefore = true
+                    } else {
+                        wasInTransactionBefore = false
+                        realm.beginTransaction()
+                    }
 
                     artist.tracks?.add(track)
                     track.artists?.add(artist)
@@ -83,6 +94,10 @@ class RealmRepository(val context: Context) : Repository {
                         }
                     } else if (gameArtist == null) {
                         game.artist = artist
+                    }
+
+                    if (wasInTransactionBefore) {
+                        realm.commitTransaction()
                     }
 
                     return@combineLatest game.id
@@ -136,7 +151,7 @@ class RealmRepository(val context: Context) : Repository {
         return realm.findAll(Track::class.java)
     }
 
-    override fun getGame(id: Long): Observable<Game> {
+    override fun getGame(id: String): Observable<Game> {
         val realm = Realm.getDefaultInstance()
         return realm.findFirst(Game::class.java, id)
     }
@@ -152,33 +167,44 @@ class RealmRepository(val context: Context) : Repository {
 
     override fun getGame(platformId: Long, title: String?): Observable<Game> {
         val realm = Realm.getDefaultInstance()
-        return realm
+        var game = realm
                 .where(Game::class.java)
                 .equalTo("platform", platformId)
                 .equalTo("title", title)
-                .findFirstAsync()
-                .asObservable<Game>()
-                .map {
-                    var game = it
-                    if (!game.isValid) {
-                        game = realm.copyToRealm(it)
-                    }
-                    return@map game
-                }
+                .findFirst()
+        realm.close()
+
+        val newGame: Game;
+        if (game == null || !game.isValid) {
+            newGame = Game(title ?: "Unknown Game", platformId)
+            logVerbose("Created game: ${newGame.title}")
+            game = newGame.save()
+        }
+
+        return Observable.just(game)
     }
 
-    override fun getArtist(id: Long): Observable<Artist> {
+    override fun getArtist(id: String): Observable<Artist> {
         val realm = Realm.getDefaultInstance()
         return realm.findFirst(Artist::class.java, id)
     }
 
-    override fun getArtist(name: String?): Observable<Artist> {
+    override fun getArtistByName(name: String?): Observable<Artist> {
         val realm = Realm.getDefaultInstance()
-        return realm.where(Artist::class.java)
+        var artist = realm.where(Artist::class.java)
                 .equalTo("name", name)
-                .findFirstAsync()
-                .asObservable<Artist>()
-                .filter { it.isLoaded }
+                .findFirst()
+
+        realm.close()
+
+        val newArtist: Artist
+        if (artist == null || !artist.isValid) {
+            newArtist = Artist(name ?: "Unknown Game")
+            logVerbose("Created artist: ${newArtist.name}")
+            artist = newArtist.save()
+        }
+
+        return Observable.just(artist)
     }
 
     override fun getArtists(): Observable<out List<Artist>> {
@@ -203,7 +229,11 @@ class RealmRepository(val context: Context) : Repository {
         logInfo("[Library] Clearing library...")
         val realm = Realm.getDefaultInstance()
         realm.beginTransaction()
-        realm.deleteAll()
+
+        realm.delete(Track::class.java)
+        realm.delete(Artist::class.java)
+        realm.delete(Game::class.java)
+
         realm.commitTransaction()
         realm.close()
     }
@@ -218,7 +248,7 @@ class RealmRepository(val context: Context) : Repository {
 
         sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folderPath))
 
-        var folderGameId: Long? = null
+        var folderGameId: String? = null
 
         // Iterate through every file in the folder.
         val children = folder.listFiles()
@@ -241,13 +271,13 @@ class RealmRepository(val context: Context) : Repository {
                             if (EXTENSIONS_MUSIC.contains(fileExtension)) {
                                 if (EXTENSIONS_MULTI_TRACK.contains(fileExtension)) {
                                     folderGameId = readMultipleTracks(file, filePath, sub)
-                                    if (folderGameId <= 0) {
+                                    if (folderGameId == null) {
                                         sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                                     }
                                 } else {
                                     folderGameId = readSingleTrack(file, filePath, sub, trackCount)
 
-                                    if (folderGameId > 0) {
+                                    if (folderGameId != null) {
                                         trackCount += 1
                                     }
                                 }
@@ -270,11 +300,11 @@ class RealmRepository(val context: Context) : Repository {
         }
     }
 
-    private fun readSingleTrack(file: File, filePath: String, sub: Subscriber<FileScanEvent>, trackNumber: Int): Long {
+    private fun readSingleTrack(file: File, filePath: String, sub: Subscriber<FileScanEvent>, trackNumber: Int): String? {
         val track = readSingleTrackFile(filePath, trackNumber)
 
         if (track != null) {
-            var folderGameId: Long = -1L
+            var folderGameId: String? = null
 
             addTrack(track)
                     .toBlocking()
@@ -283,7 +313,7 @@ class RealmRepository(val context: Context) : Repository {
                                 folderGameId = it
                             },
                             {
-                                logError("[Library] Couldn't add track at ${filePath}")
+                                logError("[Library] Couldn't add track at ${filePath}: ${Log.getStackTraceString(it)}")
                                 sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                             },
                             {
@@ -296,12 +326,12 @@ class RealmRepository(val context: Context) : Repository {
             logError("[Library] Couldn't read track at ${filePath}")
             sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
 
-            return -1
+            return null
         }
     }
 
-    private fun readMultipleTracks(file: File, filePath: String, sub: Subscriber<FileScanEvent>): Long {
-        var folderGameId = -1L
+    private fun readMultipleTracks(file: File, filePath: String, sub: Subscriber<FileScanEvent>): String? {
+        var folderGameId: String? = null
         val tracks = readMultipleTrackFile(filePath)
 
         tracks ?: return folderGameId
@@ -314,7 +344,7 @@ class RealmRepository(val context: Context) : Repository {
                             folderGameId = it
                         },
                         {
-                            logError("[Library] Couldn't read multi track file at ${filePath}")
+                            logError("[Library] Couldn't read multi track file at ${filePath}: ${Log.getStackTraceString(it)}")
                             sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                         },
                         {
@@ -325,7 +355,7 @@ class RealmRepository(val context: Context) : Repository {
         return folderGameId
     }
 
-    private fun copyImageToInternal(gameId: Long, sourceFile: File) {
+    private fun copyImageToInternal(gameId: String, sourceFile: File) {
         val storageDir = context.getExternalFilesDir(null)
 
         val targetDirPath = storageDir.absolutePath + "/images/" + gameId.toString()

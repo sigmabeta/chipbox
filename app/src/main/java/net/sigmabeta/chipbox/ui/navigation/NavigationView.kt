@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.ui.navigation
 import net.sigmabeta.chipbox.ui.BaseView
 
 interface NavigationView : BaseView {
-    fun showFragment(fragmentTag: String, fragmentArg: Long)
+    fun showFragment(fragmentTag: String, fragmentArg: String?, fragmentArgLong: Long)
 
     fun setTrackTitle(title: String, animate: Boolean)
 

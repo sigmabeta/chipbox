@@ -6,11 +6,6 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Track
 
 class GameHeaderViewHolder(view: View, adapter: GameTrackListAdapter) : GameTrackViewHolder(view, adapter) {
-
-    override fun getId(): Long? {
-        return 0
-    }
-
     fun bind() {
         adapter.game?.let {
             view.header_text_game_title.text = it.title ?: "Unknown Game"

@@ -45,10 +45,11 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
 
     override fun setup(arguments: Bundle?) {
         val fragmentTag = arguments?.getString(NavigationActivity.ARGUMENT_FRAGMENT_TAG)
-        val fragmentArg = arguments?.getLong(NavigationActivity.ARGUMENT_FRAGMENT_ARG, -1)
+        val fragmentArg = arguments?.getString(NavigationActivity.ARGUMENT_FRAGMENT_ARG_STRING)
+        val fragmentArgLong = arguments?.getLong(NavigationActivity.ARGUMENT_FRAGMENT_ARG_LONG) ?: Track.PLATFORM_ALL
 
-        if (fragmentTag != null && fragmentArg != null) {
-            view?.showFragment(fragmentTag, fragmentArg)
+        if (fragmentTag != null) {
+            view?.showFragment(fragmentTag, fragmentArg, fragmentArgLong)
         }
     }
 

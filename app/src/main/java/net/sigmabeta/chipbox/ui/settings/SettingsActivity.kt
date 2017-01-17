@@ -44,7 +44,7 @@ class SettingsActivity : BaseActivity(), SettingsView, ItemListView<VoiceViewHol
      * ItemListView
      */
 
-    override fun onItemClick(position: Long, clickedViewHolder: VoiceViewHolder) {
+    override fun onItemClick(position: Int, clickedViewHolder: VoiceViewHolder) {
         presenter.onItemClick(position)
     }
 

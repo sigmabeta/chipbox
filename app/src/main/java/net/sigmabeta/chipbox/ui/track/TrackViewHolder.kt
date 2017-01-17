@@ -10,10 +10,6 @@ import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.loadImageLowQuality
 
 class TrackViewHolder(view: View, adapter: TrackListAdapter) : BaseViewHolder<Track, TrackViewHolder, TrackListAdapter>(view, adapter) {
-    override fun getId(): Long? {
-        return adapterPosition.toLong()
-    }
-
     override fun bind(toBind: Track) {
         view.text_song_title.text = toBind.title
         view.text_song_artist.text = toBind.artistText

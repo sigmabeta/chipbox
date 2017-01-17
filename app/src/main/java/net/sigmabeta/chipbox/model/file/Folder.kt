@@ -9,13 +9,7 @@ import net.sigmabeta.chipbox.model.database.findAllSync
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 
-open class Folder() : RealmObject() {
-    constructor(path: String) : this() {
-        this.path = path
-    }
-
-    @PrimaryKey var path: String? = null
-
+open class Folder(@PrimaryKey open var path: String? = null) : RealmObject() {
     companion object {
         fun getAll(): RealmResults<Folder> {
             val realm = Realm.getDefaultInstance()

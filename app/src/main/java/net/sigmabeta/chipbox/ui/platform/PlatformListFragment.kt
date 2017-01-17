@@ -48,8 +48,8 @@ class PlatformListFragment : BaseFragment(), PlatformListView, ItemListView<Plat
      * ItemListView
      */
 
-    override fun onItemClick(id: Long, clickedViewHolder: PlatformViewHolder) {
-        presenter.onItemClick(id)
+    override fun onItemClick(position: Int, clickedViewHolder: PlatformViewHolder) {
+        presenter.onItemClick(position)
     }
 
     /**

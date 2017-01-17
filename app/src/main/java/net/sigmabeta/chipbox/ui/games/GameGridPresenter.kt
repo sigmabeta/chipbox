@@ -21,7 +21,8 @@ class GameGridPresenter @Inject constructor(val repository: Repository) : Fragme
 
     var games: List<Game>? = null
 
-    fun onItemClick(id: Long) {
+    fun onItemClick(position: Int) {
+        val id = games?.get(position)?.id ?: return
         view?.launchGameActivity(id)
     }
 

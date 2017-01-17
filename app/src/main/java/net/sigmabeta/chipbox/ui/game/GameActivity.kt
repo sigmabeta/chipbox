@@ -59,9 +59,9 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
      * ItemListView
      */
 
-    override fun onItemClick(position: Long, clickedViewHolder: GameTrackViewHolder) {
+    override fun onItemClick(position: Int, clickedViewHolder: GameTrackViewHolder) {
         if (position > 0L) {
-            presenter.onItemClick(position - 1L)
+            presenter.onItemClick(position - 1)
         }
     }
 
@@ -122,7 +122,7 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
 
         val ARGUMENT_GAME_ID = "${ACTIVITY_TAG}.game_id"
 
-        fun launch(context: Context, gameId: Long) {
+        fun launch(context: Context, gameId: String) {
             val launcher = Intent(context, GameActivity::class.java)
 
             launcher.putExtra(ARGUMENT_GAME_ID, gameId)
@@ -130,7 +130,7 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
             context.startActivity(launcher)
         }
 
-        fun launch(activity: Activity, gameId: Long, sharedViewPairs: Array<Pair<View, String>>?) {
+        fun launch(activity: Activity, gameId: String, sharedViewPairs: Array<Pair<View, String>>?) {
             val launcher = Intent(activity, GameActivity::class.java)
 
             launcher.putExtra(ARGUMENT_GAME_ID, gameId)
