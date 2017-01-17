@@ -89,7 +89,7 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
      * ItemListView
      */
 
-    override fun onItemClick(position: Long, clickedViewHolder: TrackViewHolder) {
+    override fun onItemClick(position: Int, clickedViewHolder: TrackViewHolder) {
         presenter.onItemClick(position)
     }
 
@@ -134,11 +134,11 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
 
         val ARGUMENT_ARTIST = "${FRAGMENT_TAG}.artist"
 
-        fun newInstance(artist: Long): TrackListFragment {
+        fun newInstance(id: String?): TrackListFragment {
             val fragment = TrackListFragment()
 
             val arguments = Bundle()
-            arguments.putLong(ARGUMENT_ARTIST, artist)
+            arguments.putString(ARGUMENT_ARTIST, id)
 
             fragment.arguments = arguments
             return fragment

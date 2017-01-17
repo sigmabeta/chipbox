@@ -17,7 +17,8 @@ class ArtistListPresenter @Inject constructor(val repository: Repository) : Frag
 
     var artists: List<Artist>? = null
 
-    fun onItemClick(id: Long) {
+    fun onItemClick(position: Int) {
+        val id = artists?.get(position)?.id ?: return
         view?.launchNavActivity(id)
     }
 

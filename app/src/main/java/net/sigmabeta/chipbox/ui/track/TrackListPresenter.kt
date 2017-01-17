@@ -19,15 +19,15 @@ import javax.inject.Inject
 class TrackListPresenter @Inject constructor(val player: Player, val repository: Repository) : FragmentPresenter() {
     var view: TrackListView? = null
 
-    var artistId = Artist.ARTIST_ALL
+    var artistId: String? = null
 
     var artist: Artist? = null
 
     var tracks: List<Track>? = null
 
-    fun onItemClick(position: Long) {
+    fun onItemClick(position: Int) {
         tracks?.let {
-            player.play(it.toMutableList(), position.toInt())
+            player.play(it.toMutableList(), position)
         }
     }
 
@@ -48,7 +48,7 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
     }
 
     override fun teardown() {
-        artistId = -1
+        artistId = null
         tracks = null
     }
 
@@ -81,36 +81,13 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
     }
 
     private fun setupHelper(arguments: Bundle?) {
-        artistId = arguments?.getLong(TrackListFragment.ARGUMENT_ARTIST) ?: Artist.ARTIST_ALL
+        artistId = arguments?.getString(TrackListFragment.ARGUMENT_ARTIST)
 
         view?.showLoadingSpinner()
         view?.hideEmptyState()
 
-        if (artistId == Artist.ARTIST_ALL) {
-            val tracksLoad = repository.getTracks()
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(
-                            {
-                                logInfo("[SongListPresenter] Loaded ${it.size} tracks.")
-
-                                tracks = it
-
-                                if (it.size > 0) {
-                                    showContent(it)
-                                } else {
-                                    showEmptyState()
-                                }
-                            },
-                            {
-                                showEmptyState()
-                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                            }
-                    )
-
-            subscriptions.add(tracksLoad)
-        } else {
-            val artistLoad = repository.getArtist(artistId)
+        artistId?.let {
+            val artistLoad = repository.getArtist(it)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
@@ -137,6 +114,29 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
                     )
 
             subscriptions.add(artistLoad)
+        } ?: let {
+            val tracksLoad = repository.getTracks()
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                            {
+                                logInfo("[SongListPresenter] Loaded ${it.size} tracks.")
+
+                                tracks = it
+
+                                if (it.size > 0) {
+                                    showContent(it)
+                                } else {
+                                    showEmptyState()
+                                }
+                            },
+                            {
+                                showEmptyState()
+                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                            }
+                    )
+
+            subscriptions.add(tracksLoad)
         }
     }
 

@@ -9,10 +9,6 @@ import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 
 
 open class GameTrackViewHolder(view: View, adapter: GameTrackListAdapter) : BaseViewHolder<Track, GameTrackViewHolder, GameTrackListAdapter>(view, adapter) {
-    override fun getId(): Long? {
-        return adapterPosition.toLong()
-    }
-
     override fun bind(toBind: Track) {
         view.text_song_title.text = toBind.title
         view.text_song_artist.text = toBind.artistText

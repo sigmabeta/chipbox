@@ -21,14 +21,14 @@ import javax.inject.Singleton
 class GamePresenter @Inject constructor(val player: Player, val repository: Repository) : ActivityPresenter() {
     var view: GameView? = null
 
-    var gameId: Long? = null
+    var gameId: String? = null
 
     var game: Game? = null
     var tracks: MutableList<Track>? = null
 
-    fun onItemClick(position: Long) {
+    fun onItemClick(position: Int) {
         tracks?.let {
-            player.play(it, position.toInt())
+            player.play(it, position)
         }
     }
 
@@ -107,35 +107,37 @@ class GamePresenter @Inject constructor(val player: Player, val repository: Repo
     }
 
     private fun setupHelper(arguments: Bundle?) {
-        val gameId = arguments?.getLong(GameActivity.ARGUMENT_GAME_ID) ?: -1
+        val gameId = arguments?.getString(GameActivity.ARGUMENT_GAME_ID)
         this.gameId = gameId
 
-        val gameSubscription = repository.getGame(gameId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe (
-                        { game ->
-                            if (game != null) {
-                                this.game = game
-                                view?.setGame(game)
+        gameId?.let {
+            val gameSubscription = repository.getGame(it)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                            { game ->
+                                if (game != null) {
+                                    this.game = game
+                                    view?.setGame(game)
 
-                                val tracks = game.tracks?.toMutableList()
+                                    val tracks = game.tracks?.toMutableList()
 
-                                tracks?.let {
-                                    this.tracks = tracks
-                                    view?.setTracks(tracks)
+                                    tracks?.let {
+                                        this.tracks = tracks
+                                        view?.setTracks(tracks)
+                                    }
+                                } else {
+                                    view?.setGame(null)
+                                    view?.showErrorSnackbar("Error: Game not found.", null, null)
                                 }
-                            } else {
+                            },
+                            {
                                 view?.setGame(null)
-                                view?.showErrorSnackbar("Error: Game not found.", null, null)
+                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
                             }
-                        },
-                        {
-                            view?.setGame(null)
-                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                        }
-                )
+                    )
 
-        subscriptions.add(gameSubscription)
+            subscriptions.add(gameSubscription)
+        }
     }
 }

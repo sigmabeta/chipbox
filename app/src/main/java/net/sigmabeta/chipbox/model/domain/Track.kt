@@ -5,8 +5,9 @@ import android.support.v4.media.MediaMetadataCompat
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import net.sigmabeta.chipbox.model.IdRealmObject
 
-open class Track() : RealmObject() {
+open class Track() : RealmObject(), IdRealmObject {
     constructor(number: Int,
                 path: String,
                 title: String,
@@ -27,18 +28,24 @@ open class Track() : RealmObject() {
         this.loopLength = loopLength
     }
 
-    @PrimaryKey var id: Long? = null
-    var trackNumber: Int? = null
-    var path: String? = null
-    var title: String? = null
-    var platform: Long = -1L
-    var artistText: String? = null
-    var trackLength: Long? = null
-    var introLength: Long? = null
-    var loopLength: Long? = null
-    var game: Game? = null
-    var gameTitle: String? = null
-    var artists: RealmList<Artist>? = null
+    @PrimaryKey open var id: String? = null
+
+    open var trackNumber: Int? = null
+    open var path: String? = null
+    open var title: String? = null
+    open var platform: Long = -1L
+    open var artistText: String? = null
+    open var trackLength: Long? = null
+    open var introLength: Long? = null
+    open var loopLength: Long? = null
+    open var game: Game? = null
+    open var gameTitle: String? = null
+    open var artists: RealmList<Artist>? = null
+
+    override fun getPrimaryKey() = id
+    override fun setPrimaryKey(id: String) {
+        this.id = id
+    }
 
     companion object {
         val PLATFORM_UNSUPPORTED = 100L

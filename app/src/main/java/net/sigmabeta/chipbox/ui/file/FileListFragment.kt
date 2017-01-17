@@ -51,7 +51,7 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHold
      * ItemListView
      */
 
-    override fun onItemClick(position: Long, clickedViewHolder: FileViewHolder) {
+    override fun onItemClick(position: Int, clickedViewHolder: FileViewHolder) {
         presenter.onItemClick(position)
     }
 

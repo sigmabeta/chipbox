@@ -25,8 +25,8 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
      * Public Methods
      */
 
-    fun onItemClick(position: Long) {
-        player.play(position.toInt())
+    fun onItemClick(position: Int) {
+        player.play(position)
     }
 
     fun onTrackMoved(originPos: Int, destPos: Int) {
