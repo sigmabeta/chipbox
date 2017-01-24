@@ -67,7 +67,8 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
     override fun teardown() = Unit
 
     override fun updateViewState() {
-        displayTracks(player.playbackQueue)
+        // TODO Get tracks, we only have IDs here
+//        displayTracks(player.playbackQueue)
 
         displayPositionHelper(false)
 

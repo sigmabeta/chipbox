@@ -65,6 +65,10 @@ fun <T : RealmObject> Realm.findFirst(clazz: Class<T>, id: String): Observable<T
         .asObservable<T>()
         .filter { it.isLoaded }
 
+fun <T : RealmObject> Realm.findFirstSync(clazz: Class<T>, id: String): T? = where(clazz)
+        .equalTo("id", id)
+        .findFirst()
+
 fun <T : RealmObject> Realm.findAll(clazz: Class<T>) = where(clazz)
         .findAllAsync()
         .asObservable()
