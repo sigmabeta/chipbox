@@ -26,7 +26,7 @@ class GamePresenter @Inject constructor(val player: Player, val repository: Repo
     var tracks: MutableList<Track>? = null
 
     fun onItemClick(position: Int) {
-        tracks?.let {
+        getTrackIdList()?.let {
             player.play(it, position)
         }
     }
@@ -34,7 +34,7 @@ class GamePresenter @Inject constructor(val player: Player, val repository: Repo
     override fun onClick(id: Int) {
         when (id) {
             R.id.button_fab -> {
-                tracks?.let { them ->
+                getTrackIdList()?.let { them ->
                     player.play(them, 0)
                 }
             }
@@ -100,6 +100,8 @@ class GamePresenter @Inject constructor(val player: Player, val repository: Repo
     }
 
     override fun onReenter() = Unit
+
+    private fun getTrackIdList() = tracks?.map(Track::id)?.toMutableList()
 
     private fun displayTrack(track: Track) {
         view?.setPlayingTrack(track)

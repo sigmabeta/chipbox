@@ -5,9 +5,11 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.session.PlaybackState
+import io.realm.Realm
 import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
 import net.sigmabeta.chipbox.model.audio.Voice
+import net.sigmabeta.chipbox.model.database.findFirstSync
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
@@ -74,7 +76,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var position = 0L
 
-    var playbackQueue: MutableList<Track> = ArrayList<Track>(0)
+    var playbackQueue: MutableList<String?> = ArrayList<String?>(0)
     var playbackQueuePosition: Int = 0
     var actualPlaybackQueuePosition: Int = 0
 
@@ -84,8 +86,9 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var playbackTimePosition: Long = 0
 
+    var queuedTrackId: String? = null
+
     var pausedTrack: Track? = null
-    var queuedTrack: Track? = null
     var playingTrack: Track? = null
         set (value) {
             teardown()
@@ -146,10 +149,10 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 pausedTrack = null
             }
 
-            if (queuedTrack != null) {
+            queuedTrackId?.let {
                 playingShuffledTrack = shuffle
-                playingTrack = queuedTrack
-                queuedTrack = null
+                playingTrack = getTrack(it)
+                queuedTrackId = null
             }
 
             queuedSeekPosition?.let {
@@ -290,10 +293,10 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         val focusResult = requestAudioFocus()
         if (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
-            val localTrack = queuedTrack ?: pausedTrack
+            val localTrackId = queuedTrackId ?: pausedTrack?.id
 
-            if (localTrack != null) {
-                logVerbose("[Player] Playing track: ${localTrack.title}")
+            if (localTrackId != null) {
+                logVerbose("[Player] Playing track: $localTrackId")
                 state = PlaybackState.STATE_PLAYING
 
                 if (backendView == null) {
@@ -313,19 +316,19 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         }
     }
 
-    fun play(track: Track) {
-        logVerbose("[Player] Playing new track: ${track.title}")
+    fun play(trackId: String) {
+        logVerbose("[Player] Playing new track: ${trackId}")
 
-        queuedTrack = track
+        queuedTrackId = trackId
 
-        playbackQueue = ArrayList<Track>(1)
-        playbackQueue.add(track)
+        playbackQueue = ArrayList<String?>(1)
+        playbackQueue.add(trackId)
         playbackQueuePosition = 0
 
         play()
     }
 
-    fun play(playbackQueue: MutableList<Track>, position: Int) {
+    fun play(playbackQueue: MutableList<String?>, position: Int) {
         if (position < playbackQueue.size) {
             logVerbose("[Player] Playing new playlist, starting from track ${position} of ${playbackQueue.size}.")
 
@@ -336,7 +339,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 generateRandomPositionArray()
             }
 
-            queuedTrack = playbackQueue.get(position)
+            queuedTrackId = getTrackIdAt(position)
 
             play()
         } else {
@@ -348,8 +351,11 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         if (position < playbackQueue.size) {
             playbackQueuePosition = position
 
+            // TODO This is a bad design, see comment below
             // Don't use getTrackAt() here because we don't want shuffle to affect explicit user input
-            queuedTrack = playbackQueue.get(position)
+            val trackId = playbackQueue.get(position)
+            queuedTrackId = trackId
+
             actualPlaybackQueuePosition = position
 
             play()
@@ -362,7 +368,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     fun getNextTrack() {
         if (repeat == REPEAT_ONE) {
-            queuedTrack = playingTrack
+            queuedTrackId = playingTrack?.id
             return
         } else if (playbackQueuePosition < playbackQueue.size - 1) {
             playbackQueuePosition += 1
@@ -372,7 +378,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             return
         }
 
-        queuedTrack = getTrackAt(playbackQueuePosition)
+        queuedTrackId = getTrackIdAt(playbackQueuePosition)
 
         logInfo("[Player] Loading track ${playbackQueuePosition} of ${playbackQueue.size}.")
         backendView?.skipToNext()
@@ -387,7 +393,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             return
         }
 
-        queuedTrack = getTrackAt(playbackQueuePosition)
+        queuedTrackId = getTrackIdAt(playbackQueuePosition)
 
         logInfo("[Player] Loading track ${playbackQueuePosition} of ${playbackQueue.size}.")
         backendView?.skipToNext()
@@ -404,7 +410,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             if (playbackQueuePosition > 0) {
                 playbackQueuePosition -= 1
 
-                queuedTrack = getTrackAt(playbackQueuePosition)
+                queuedTrackId = getTrackIdAt(playbackQueuePosition)
 
                 logInfo("[Player] Loading track ${playbackQueuePosition} of ${playbackQueue.size}.")
                 backendView?.skipToPrev()
@@ -519,7 +525,12 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         }
     }
 
-    private fun getTrackAt(position: Int): Track? {
+    private fun getTrack(trackId: String): Track? {
+        val realm = Realm.getDefaultInstance()
+        return realm.findFirstSync(Track::class.java, trackId)
+    }
+
+    private fun getTrackIdAt(position: Int): String? {
         val actualPosition = if (shuffle && !playingShuffledTrack) {
             shuffledPositionQueue?.get(0) ?: 0
         } else if (shuffle) {

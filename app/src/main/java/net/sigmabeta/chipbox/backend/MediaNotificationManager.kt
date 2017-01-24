@@ -116,7 +116,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
         if (!notified) {
             val player = playerService.player
             if (player != null) {
-                val localTrack = player.playingTrack ?: player.queuedTrack ?: player.pausedTrack
+                val localTrack = player.playingTrack ?: player.pausedTrack
 
                 if (localTrack != null) {
                     updateState(player.state)

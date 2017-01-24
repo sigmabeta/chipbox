@@ -24,7 +24,7 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
     var tracks: List<Track>? = null
 
     fun onItemClick(position: Int) {
-        tracks?.let {
+        getTrackIdList()?.let {
             player.play(it.toMutableList(), position)
         }
     }
@@ -144,4 +144,6 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
         view?.hideContent()
         view?.showEmptyState()
     }
+
+    private fun getTrackIdList() = tracks?.map(Track::id)?.toMutableList()
 }
