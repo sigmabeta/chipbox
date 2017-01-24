@@ -82,6 +82,7 @@ class RealmRepository(val context: Context) : Repository {
                         realm.beginTransaction()
                     }
 
+                    game.tracks?.add(track)
                     artist.tracks?.add(track)
                     track.artists?.add(artist)
 
