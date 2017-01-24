@@ -27,6 +27,7 @@ interface Repository {
     fun getTracks(): Observable<out List<Track>>
 
     fun getGame(id: String): Observable<Game>
+    fun getGames(): Observable<out List<Game>>
     fun getGamesForPlatform(platformId: Long): Observable<out List<Game>>
     fun getGame(platformId: Long, title: String?): Observable<Game>
 

@@ -11,8 +11,6 @@ import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 @ActivityScoped
@@ -88,14 +86,12 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
 
         artistId?.let {
             val artistLoad = repository.getArtist(it)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
                                 this.artist = it
                                 view?.setActivityTitle(it.name ?: "Unknown Artist")
 
-                                // TODO This really, really needs to be async
+                                tracks = it.tracks
                                 tracks?.let {
                                     if (it.isNotEmpty()) {
                                         this.tracks = it
@@ -103,11 +99,9 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
                                     }
                                 } ?: let {
                                     logError("[SongListPresenter] Error: No tracks for artist ${this.artist?.id}")
-                                    view?.onTrackLoadError()
                                 }
                             },
                             {
-                                view?.onTrackLoadError()
                                 logError("[SongListPresenter] Error: ${it.message}")
                                 view?.showErrorSnackbar("Error: ${it.message}", null, null)
                             }
@@ -116,8 +110,6 @@ class TrackListPresenter @Inject constructor(val player: Player, val repository:
             subscriptions.add(artistLoad)
         } ?: let {
             val tracksLoad = repository.getTracks()
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
                                 logInfo("[SongListPresenter] Loaded ${it.size} tracks.")

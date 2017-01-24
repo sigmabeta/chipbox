@@ -7,8 +7,6 @@ import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 @ActivityScoped
@@ -71,8 +69,6 @@ class ArtistListPresenter @Inject constructor(val repository: Repository) : Frag
         view?.hideEmptyState()
 
         val subscription = repository.getArtists()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
                             artists = it

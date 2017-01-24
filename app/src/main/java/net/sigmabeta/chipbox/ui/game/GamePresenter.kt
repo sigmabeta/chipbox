@@ -13,7 +13,6 @@ import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -112,8 +111,6 @@ class GamePresenter @Inject constructor(val player: Player, val repository: Repo
 
         gameId?.let {
             val gameSubscription = repository.getGame(it)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             { game ->
                                 if (game != null) {
