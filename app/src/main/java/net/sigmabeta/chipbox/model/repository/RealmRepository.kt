@@ -148,12 +148,25 @@ class RealmRepository(val context: Context) : Repository {
 
     override fun getTracks(): Observable<out List<Track>> {
         val realm = Realm.getDefaultInstance()
-        return realm.findAll(Track::class.java)
+        return realm
+                .where(Track::class.java)
+                .findAllSortedAsync("title")
+                .asObservable()
+                .filter { it.isLoaded }
     }
 
     override fun getGame(id: String): Observable<Game> {
         val realm = Realm.getDefaultInstance()
         return realm.findFirst(Game::class.java, id)
+    }
+
+    override fun getGames(): Observable<out List<Game>> {
+        val realm = Realm.getDefaultInstance()
+        return realm
+                .where(Game::class.java)
+                .findAllSortedAsync("title")
+                .asObservable()
+                .filter { it.isLoaded }
     }
 
     override fun getGamesForPlatform(platformId: Long): Observable<out List<Game>> {
@@ -209,7 +222,11 @@ class RealmRepository(val context: Context) : Repository {
 
     override fun getArtists(): Observable<out List<Artist>> {
         val realm = Realm.getDefaultInstance()
-        return realm.findAll(Artist::class.java)
+        return realm
+                .where(Artist::class.java)
+                .findAllSortedAsync("name")
+                .asObservable()
+                .filter { it.isLoaded }
     }
 
     override fun getFolders(): Observable<out List<Folder>> {

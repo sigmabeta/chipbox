@@ -105,7 +105,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
 
     override fun onItemClick(position: Int, clickedViewHolder: GameViewHolder) {
         this.clickedViewHolder = clickedViewHolder
-        presenter.onItemClick(id)
+        presenter.onItemClick(position)
     }
 
     /**

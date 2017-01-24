@@ -9,8 +9,6 @@ import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 @ActivityScoped
@@ -98,9 +96,12 @@ class GameGridPresenter @Inject constructor(val repository: Repository) : Fragme
         view?.showLoadingSpinner()
         view?.hideEmptyState()
 
-        val subscription = repository.getGamesForPlatform(platform)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+        val request = if (platform == Track.PLATFORM_ALL) {
+            repository.getGames()
+        } else {
+            repository.getGamesForPlatform(platform)
+        }
+        val subscription = request
                 .subscribe(
                         {
                             games = it
