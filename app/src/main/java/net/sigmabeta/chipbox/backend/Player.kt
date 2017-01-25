@@ -10,7 +10,6 @@ import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
 import net.sigmabeta.chipbox.model.audio.Voice
 import net.sigmabeta.chipbox.model.database.findFirstSync
-import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
@@ -88,33 +87,43 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     var queuedTrackId: String? = null
 
-    var pausedTrack: Track? = null
-    var playingTrack: Track? = null
+    var pausedTrackId: String? = null
+    var playingTrackId: String? = null
         set (value) {
             teardown()
 
             if (value != null) {
-                loadTrackNative(value,
-                        audioConfig.sampleRate,
-                        audioConfig.bufferSizeShorts.toLong())
+                val realm = Realm.getDefaultInstance()
+                val track = realm.findFirstSync(Track::class.java, value)
+
+                if (track != null) {
+                    playingGameId = track.game?.id
+
+                    loadTrackNative(track,
+                            audioConfig.sampleRate,
+                            audioConfig.bufferSizeShorts.toLong())
+                } else {
+                    playingGameId = null
+                }
 
                 voices = null
                 tempo = null
+
                 updater.send(TrackEvent(value))
+            } else {
+                playingGameId = null
             }
 
             if (state != PlaybackState.STATE_PLAYING) {
                 audioTrack?.flush()
             }
 
-            playingGame = value?.game
-
             field = value
         }
 
-    var playingGame: Game? = null
+    var playingGameId: String? = null
         set (value) {
-            if (field?.id != value?.id) {
+            if (field != value) {
                 updater.send(GameEvent(value))
             }
 
@@ -144,14 +153,14 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         val timeout = 1000L
 
         while (state == PlaybackState.STATE_PLAYING) {
-            if (playingTrack == null && pausedTrack != null) {
-                playingTrack = pausedTrack
-                pausedTrack = null
+            if (playingTrackId == null && pausedTrackId != null) {
+                playingTrackId = pausedTrackId
+                pausedTrackId = null
             }
 
             queuedTrackId?.let {
                 playingShuffledTrack = shuffle
-                playingTrack = getTrack(it)
+                playingTrackId = it
                 queuedTrackId = null
             }
 
@@ -182,7 +191,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             }
 
             // Get the next samples from the native player.
-            synchronized(playingTrack ?: break) {
+            synchronized(playingTrackId ?: break) {
                 readNextSamples(audioBuffer.buffer)
             }
 
@@ -286,14 +295,14 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     fun play() {
         if (state == PlaybackState.STATE_PLAYING) {
-            logError("[Player] Received play command, but already PLAYING a track: ${playingTrack?.path}")
+            logError("[Player] Received play command, but already PLAYING a track: ${playingTrackId}")
             return
         }
 
         val focusResult = requestAudioFocus()
         if (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
 
-            val localTrackId = queuedTrackId ?: pausedTrack?.id
+            val localTrackId = queuedTrackId ?: pausedTrackId
 
             if (localTrackId != null) {
                 logVerbose("[Player] Playing track: $localTrackId")
@@ -368,7 +377,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     fun getNextTrack() {
         if (repeat == REPEAT_ONE) {
-            queuedTrackId = playingTrack?.id
+            queuedTrackId = playingTrackId
             return
         } else if (playbackQueuePosition < playbackQueue.size - 1) {
             playbackQueuePosition += 1
@@ -430,9 +439,9 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             return
         }
 
-        logVerbose("[Player] Pausing track: ${playingTrack?.title}")
+        logVerbose("[Player] Pausing track: ${playingTrackId}")
 
-        pausedTrack = playingTrack
+        pausedTrackId = playingTrackId
 
         state = PlaybackState.STATE_PAUSED
 
@@ -449,7 +458,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             return
         }
 
-        logVerbose("[Player] Stopping track: ${playingTrack?.title}")
+        logVerbose("[Player] Stopping track: ${playingTrackId}")
 
         state = PlaybackState.STATE_STOPPED
 
@@ -458,7 +467,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         audioTrack?.release()
         audioTrack = null
 
-        pausedTrack = playingTrack
+        pausedTrackId = playingTrackId
 
         teardown()
 
@@ -468,7 +477,9 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     }
 
     fun seek(progress: Int) {
-        val length = playingTrack?.trackLength ?: 0
+        val realm = Realm.getDefaultInstance()
+        val track = realm.findFirstSync(Track::class.java, playingTrackId ?: return)
+        val length = track?.trackLength ?: 0
         val seekPosition = (length * progress / 100).toInt()
         queuedSeekPosition = seekPosition
     }
@@ -523,11 +534,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
                 }
             }
         }
-    }
-
-    private fun getTrack(trackId: String): Track? {
-        val realm = Realm.getDefaultInstance()
-        return realm.findFirstSync(Track::class.java, trackId)
     }
 
     private fun getTrackIdAt(position: Int): String? {

@@ -1,8 +1,10 @@
 package net.sigmabeta.chipbox.ui.game
 
 import android.os.Bundle
+import io.realm.Realm
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.model.database.findFirstSync
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.PositionEvent
@@ -11,6 +13,7 @@ import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
@@ -68,16 +71,14 @@ class GamePresenter @Inject constructor(val player: Player, val repository: Repo
             view?.setTracks(it)
         }
 
-        player.playingTrack?.let {
-            displayTrack(it)
-        }
+        displayTrack(player.playingTrackId)
 
         val subscription = player.updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
                         is TrackEvent -> {
-                            displayTrack(it.track)
+                            displayTrack(it.trackId)
                         }
                         is PositionEvent -> { /* no-op */ }
                         is StateEvent -> { /* no-op */
@@ -103,8 +104,17 @@ class GamePresenter @Inject constructor(val player: Player, val repository: Repo
 
     private fun getTrackIdList() = tracks?.map(Track::id)?.toMutableList()
 
-    private fun displayTrack(track: Track) {
-        view?.setPlayingTrack(track)
+    private fun displayTrack(trackId: String?) {
+        if (trackId != null) {
+            val realm = Realm.getDefaultInstance()
+            val track = realm.findFirstSync(Track::class.java, trackId)
+
+            if (track != null) {
+                view?.setPlayingTrack(track)
+            } else {
+                logError("Cannot load track with id $trackId")
+            }
+        }
     }
 
     private fun setupHelper(arguments: Bundle?) {

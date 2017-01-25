@@ -2,7 +2,9 @@ package net.sigmabeta.chipbox.ui.navigation
 
 import android.media.session.PlaybackState
 import android.os.Bundle
+import io.realm.Realm
 import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.model.database.findFirstSync
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
@@ -11,6 +13,7 @@ import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
@@ -65,9 +68,9 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
-                        is TrackEvent -> displayTrack(it.track, true)
+                        is TrackEvent -> displayTrack(it.trackId, true)
                         is PositionEvent -> { /* no-op */ }
-                        is GameEvent -> displayGame(it.game, false)
+                        is GameEvent -> displayGame(it.gameId, false)
                         is StateEvent -> displayState(state, it.state)
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
                     }
@@ -113,28 +116,42 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
         this.state = newState
     }
 
-    private fun displayTrack(track: Track, animate: Boolean) {
-        view?.setTrackTitle(track.title.orEmpty(), animate)
-        view?.setArtist(track.artistText.orEmpty(), animate)
+    private fun displayTrack(trackId: String?, animate: Boolean) {
+        if (trackId != null) {
+            val realm = Realm.getDefaultInstance()
+            val track = realm.findFirstSync(Track::class.java, trackId)
+
+            if (track != null) {
+                view?.setTrackTitle(track.title.orEmpty(), animate)
+                view?.setArtist(track.artistText.orEmpty(), animate)
+            } else {
+                logError("Cannot load track with id $trackId")
+            }
+        }
     }
 
     private fun updateHelper() {
-        player.playingTrack?.let {
+        player.playingTrackId?.let {
             displayTrack(it, false)
         }
 
-        player.playingGame?.let {
+        player.playingGameId?.let {
             displayGame(it, true)
         }
 
         displayState(state, player.state)
     }
 
-    private fun displayGame(game: Game?, force: Boolean) {
-        if (force || this.game != game) {
-            view?.setGameBoxArt(game?.artLocal, !force)
-        }
+    private fun displayGame(gameId: String?, force: Boolean) {
+        if (gameId != null) {
+            val realm = Realm.getDefaultInstance()
+            val game = realm.findFirstSync(Game::class.java, gameId)
 
-        this.game = game
+            if (force || this.game != game) {
+                view?.setGameBoxArt(game?.artLocal, !force)
+            }
+
+            this.game = game
+        }
     }
 }
