@@ -1,11 +1,12 @@
 package net.sigmabeta.chipbox.model.domain
 
 
-import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import net.sigmabeta.chipbox.model.IdRealmObject
+import net.sigmabeta.chipbox.model.database.getRealmInstance
+import net.sigmabeta.chipbox.model.database.inTransaction
 import net.sigmabeta.chipbox.model.database.save
 
 open class Game() : RealmObject(), IdRealmObject {
@@ -46,23 +47,14 @@ open class Game() : RealmObject(), IdRealmObject {
 
         val PICASSO_ASSET_ALBUM_ART_BLANK = PICASSO_PREFIX + ASSET_ALBUM_ART_BLANK
 
+        // TODO Move this to RealmUtils
         fun addLocalImage(gameId: String, artLocal: String) {
-            val realm = Realm.getDefaultInstance()
+            val realm = getRealmInstance()
             val game = realm.where(Game::class.java).equalTo("id", gameId).findFirst()
 
-            val wasInTransactionBefore: Boolean
-            if (realm.isInTransaction) {
-                wasInTransactionBefore = true
-            } else {
-                wasInTransactionBefore = false
-                realm.beginTransaction()
-            }
-
-            game?.artLocal = artLocal
-            game?.save()
-
-            if (wasInTransactionBefore) {
-                realm.commitTransaction()
+            realm.inTransaction {
+                game?.artLocal = artLocal
+                game?.save()
             }
 
             realm.close()

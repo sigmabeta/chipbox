@@ -5,7 +5,6 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.session.PlaybackState
-import io.realm.Realm
 import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
 import net.sigmabeta.chipbox.model.audio.Voice
@@ -93,7 +92,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
             teardown()
 
             if (value != null) {
-                val realm = Realm.getDefaultInstance()
                 val track = repository.getTrackSync(value)
 
                 if (track != null) {
@@ -477,7 +475,6 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     }
 
     fun seek(progress: Int) {
-        val realm = Realm.getDefaultInstance()
         val track = repository.getTrackSync(playingTrackId ?: return)
         val length = track?.trackLength ?: 0
         val seekPosition = (length * progress / 100).toInt()

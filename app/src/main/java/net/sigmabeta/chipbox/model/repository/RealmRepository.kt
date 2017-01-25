@@ -3,6 +3,8 @@ package net.sigmabeta.chipbox.model.repository
 import android.content.Context
 import android.util.Log
 import io.realm.Realm
+import net.sigmabeta.chipbox.model.database.getRealmInstance
+import net.sigmabeta.chipbox.model.database.inTransaction
 import net.sigmabeta.chipbox.model.database.save
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
@@ -17,11 +19,15 @@ import java.io.File
 import java.util.*
 
 class RealmRepository(val context: Context) : Repository {
+    private var scanningRealm: Realm? = null
+
     override fun scanLibrary(): Observable<FileScanEvent> {
         return Observable.create(
                 { sub ->
                     // OnSubscribe.call. it: String
                     clearAll()
+                    scanningRealm = getRealmInstance()
+                    val initialRefCount = Realm.getLocalInstanceCount(scanningRealm?.configuration)
 
                     logInfo("[Library] Scanning library...")
 
@@ -40,6 +46,13 @@ class RealmRepository(val context: Context) : Repository {
 
                     logInfo("[Library] Scanned library in ${scanDuration} seconds.")
 
+                    val endRefCount = Realm.getLocalInstanceCount(scanningRealm?.configuration)
+
+                    if (initialRefCount != endRefCount) {
+                        logError("Leaked ${endRefCount - initialRefCount} Realm references.")
+                    }
+
+                    scanningRealm?.close()
                     sub.onCompleted()
                 }
         )
@@ -51,26 +64,15 @@ class RealmRepository(val context: Context) : Repository {
 
     override fun addTrack(track: Track): Observable<String> {
         val artists = track.artistText?.split(", ")
-
         val gameObservable = getGame(track.platform, track.gameTitle)
                 .map {
                     track.game = it
                     track.save()
 
-                    val realm = Realm.getDefaultInstance()
-                    val wasInTransactionBefore: Boolean
-                    if (realm.isInTransaction) {
-                        wasInTransactionBefore = true
-                    } else {
-                        wasInTransactionBefore = false
-                        realm.beginTransaction()
+                    scanningRealm?.inTransaction {
+                        it.tracks?.add(track)
                     }
 
-                    it.tracks?.add(track)
-
-                    if (wasInTransactionBefore) {
-                        realm.commitTransaction()
-                    }
                     return@map it
                 }
 
@@ -85,35 +87,25 @@ class RealmRepository(val context: Context) : Repository {
                     val gameArtist = game.artist
                     val gameHadMultipleArtists = game.multipleArtists ?: false
 
-                    val realm = Realm.getDefaultInstance()
+                    scanningRealm?.inTransaction {
+                        artist.tracks?.add(track)
+                        track.artists?.add(artist)
 
-                    val wasInTransactionBefore: Boolean
-                    if (realm.isInTransaction) {
-                        wasInTransactionBefore = true
-                    } else {
-                        wasInTransactionBefore = false
-                        realm.beginTransaction()
-                    }
-
-                    artist.tracks?.add(track)
-                    track.artists?.add(artist)
-
-                    // If this game has just one artist...
-                    if (gameArtist != null && !gameHadMultipleArtists) {
-                        // And the one we just got is different
-                        if (artist.id != gameArtist.id) {
-                            // We'll save this later.
-                            game.multipleArtists = true
+                        // If this game has just one artist...
+                        if (gameArtist != null && !gameHadMultipleArtists) {
+                            // And the one we just got is different
+                            if (artist.id != gameArtist.id) {
+                                // We'll save this later.
+                                game.multipleArtists = true
+                            }
+                        } else if (gameArtist == null) {
+                            game.artist = artist
                         }
-                    } else if (gameArtist == null) {
-                        game.artist = artist
                     }
 
-                    if (wasInTransactionBefore) {
-                        realm.commitTransaction()
-                    }
+                    val gameId = game.id
 
-                    return@combineLatest game.id
+                    return@combineLatest gameId
                 })
     }
 
@@ -161,7 +153,7 @@ class RealmRepository(val context: Context) : Repository {
 
 
     override fun getTracks(): Observable<out List<Track>> {
-        val realm = Realm.getDefaultInstance()
+        val realm = getRealmInstance()
         return realm
                 .where(Track::class.java)
                 .findAllSortedAsync("title")
@@ -170,14 +162,13 @@ class RealmRepository(val context: Context) : Repository {
     }
 
     override fun getTrackSync(id: String): Track? {
-        val realm = Realm.getDefaultInstance()
-        return realm.where(Track::class.java)
+        return getRealmInstance().where(Track::class.java)
                 .equalTo("id", id)
                 .findFirst()
     }
 
     override fun getGame(id: String): Observable<Game> {
-        val realm = Realm.getDefaultInstance()
+        val realm = getRealmInstance()
         return realm.where(Game::class.java)
                 .equalTo("id", id)
                 .findFirstAsync()
@@ -186,14 +177,14 @@ class RealmRepository(val context: Context) : Repository {
     }
 
     override fun getGameSync(id: String): Game? {
-        val realm = Realm.getDefaultInstance()
+        val realm = getRealmInstance()
         return realm.where(Game::class.java)
                 .equalTo("id", id)
                 .findFirst()
     }
 
     override fun getGames(): Observable<out List<Game>> {
-        val realm = Realm.getDefaultInstance()
+        val realm = getRealmInstance()
         return realm
                 .where(Game::class.java)
                 .findAllSortedAsync("title")
@@ -202,7 +193,7 @@ class RealmRepository(val context: Context) : Repository {
     }
 
     override fun getGamesForPlatform(platformId: Long): Observable<out List<Game>> {
-        val realm = Realm.getDefaultInstance()
+        val realm = getRealmInstance()
         return realm
                 .where(Game::class.java)
                 .equalTo("platform", platformId)
@@ -212,15 +203,14 @@ class RealmRepository(val context: Context) : Repository {
     }
 
     override fun getGame(platformId: Long, title: String?): Observable<Game> {
-        val realm = Realm.getDefaultInstance()
+        val realm = scanningRealm!!
         var game = realm
                 .where(Game::class.java)
                 .equalTo("platform", platformId)
                 .equalTo("title", title)
                 .findFirst()
-        realm.close()
 
-        val newGame: Game;
+        val newGame: Game
         if (game == null || !game.isValid) {
             newGame = Game(title ?: "Unknown Game", platformId)
             logVerbose("Created game: ${newGame.title}")
@@ -231,7 +221,7 @@ class RealmRepository(val context: Context) : Repository {
     }
 
     override fun getArtist(id: String): Observable<Artist> {
-        val realm = Realm.getDefaultInstance()
+        val realm = getRealmInstance()
         return realm.where(Artist::class.java)
                 .equalTo("id", id)
                 .findFirstAsync()
@@ -240,12 +230,10 @@ class RealmRepository(val context: Context) : Repository {
     }
 
     override fun getArtistByName(name: String?): Observable<Artist> {
-        val realm = Realm.getDefaultInstance()
+        val realm = scanningRealm!!
         var artist = realm.where(Artist::class.java)
                 .equalTo("name", name)
                 .findFirst()
-
-        realm.close()
 
         val newArtist: Artist
         if (artist == null || !artist.isValid) {
@@ -258,7 +246,7 @@ class RealmRepository(val context: Context) : Repository {
     }
 
     override fun getArtists(): Observable<out List<Artist>> {
-        val realm = Realm.getDefaultInstance()
+        val realm = getRealmInstance()
         return realm
                 .where(Artist::class.java)
                 .findAllSortedAsync("name")
@@ -267,7 +255,7 @@ class RealmRepository(val context: Context) : Repository {
     }
 
     override fun getFolders(): Observable<out List<Folder>> {
-        val realm = Realm.getDefaultInstance()
+        val realm = getRealmInstance()
         return realm.where(Folder::class.java)
                 .findAllAsync()
                 .asObservable()
@@ -283,14 +271,14 @@ class RealmRepository(val context: Context) : Repository {
      */
     override fun clearAll() {
         logInfo("[Library] Clearing library...")
-        val realm = Realm.getDefaultInstance()
-        realm.beginTransaction()
+        val realm = getRealmInstance()
 
-        realm.delete(Track::class.java)
-        realm.delete(Artist::class.java)
-        realm.delete(Game::class.java)
+        realm.inTransaction {
+            realm.delete(Track::class.java)
+            realm.delete(Artist::class.java)
+            realm.delete(Game::class.java)
+        }
 
-        realm.commitTransaction()
         realm.close()
     }
 

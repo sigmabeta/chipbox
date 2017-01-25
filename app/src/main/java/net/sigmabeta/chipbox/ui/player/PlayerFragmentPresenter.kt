@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.ui.player
 
 import android.media.session.PlaybackState
 import android.os.Bundle
-import io.realm.Realm
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
@@ -104,7 +103,6 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player, val reposi
 
     private fun displayGame(gameId: String?, force: Boolean, animate: Boolean) {
         if (gameId != null) {
-            val realm = Realm.getDefaultInstance()
             val game = repository.getGameSync(gameId)
 
             if (force || this.game != game) {
@@ -119,7 +117,6 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player, val reposi
 
     private fun displayTrack(trackId: String?, animate: Boolean) {
         if (trackId != null) {
-            val realm = Realm.getDefaultInstance()
             val track = repository.getTrackSync(trackId)
 
             if (track != null) {

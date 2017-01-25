@@ -1,19 +1,21 @@
 package net.sigmabeta.chipbox.model.file
 
 
-import io.realm.Realm
 import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
+import net.sigmabeta.chipbox.model.database.getRealmInstance
+import net.sigmabeta.chipbox.model.database.inTransaction
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 
 open class Folder(@PrimaryKey open var path: String? = null) : RealmObject() {
     companion object {
-        fun getAll(): RealmResults<Folder> {
-            val realm = Realm.getDefaultInstance()
-            val folders = realm.where(Folder::class.java)
+        fun getAll(): List<Folder> {
+            val realm = getRealmInstance()
+            val foldersManaged = realm.where(Folder::class.java)
                     .findAll()
+            val folders = realm.copyFromRealm(foldersManaged)
+            realm.close()
             return folders
         }
 
@@ -51,7 +53,18 @@ open class Folder(@PrimaryKey open var path: String? = null) : RealmObject() {
                 val idsString = foldersToRemove.joinToString()
                 logInfo("[Folder] Deleting folders with ids: $idsString")
 
-                foldersToRemove.forEach { it.deleteFromRealm() }
+                val realm = getRealmInstance()
+
+                realm.inTransaction {
+                    foldersToRemove.forEach {
+                        realm.where(Folder::class.java)
+                                .equalTo("path", it.path)
+                                .findFirst()
+                                .deleteFromRealm()
+                    }
+                }
+
+                realm.close()
             }
         }
     }

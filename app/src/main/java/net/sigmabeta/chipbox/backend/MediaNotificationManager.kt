@@ -18,7 +18,6 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v7.app.NotificationCompat
 import android.view.KeyEvent
-import io.realm.Realm
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
@@ -185,7 +184,6 @@ class MediaNotificationManager(val playerService: PlayerService, val repository:
         logDebug("[MediaNotificationManager] Updating notification track.")
 
         if (trackId != null) {
-            val realm = Realm.getDefaultInstance()
             playingTrack = repository?.getTrackSync(trackId)
 
             mediaMetadata = updateMetadata()
@@ -198,7 +196,6 @@ class MediaNotificationManager(val playerService: PlayerService, val repository:
     private fun updateGame(gameId: String?) {
         logDebug("[MediaNotificationManager] Updating notification game.")
 
-        val realm = Realm.getDefaultInstance()
         val game = if (gameId != null) repository?.getGameSync(gameId) else null
 
         val imagePath = game?.artLocal ?: Game.PICASSO_ASSET_ALBUM_ART_BLANK
