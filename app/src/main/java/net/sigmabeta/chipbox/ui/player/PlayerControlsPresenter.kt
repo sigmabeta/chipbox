@@ -49,7 +49,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
      */
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
-        if (player.playingTrack == null && player.playbackQueue.isEmpty()) {
+        if (player.playingTrackId == null && player.playbackQueue.isEmpty()) {
             view?.finish()
         }
     }

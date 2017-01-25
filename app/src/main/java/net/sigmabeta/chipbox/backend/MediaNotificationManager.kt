@@ -18,8 +18,10 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v7.app.NotificationCompat
 import android.view.KeyEvent
+import io.realm.Realm
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.model.database.findFirstSync
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
@@ -77,14 +79,14 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe {
                         when (it) {
-                            is TrackEvent -> updateTrack(it.track)
+                            is TrackEvent -> updateTrack(it.trackId)
                             is StateEvent -> updateState(it.state)
-                            is GameEvent -> updateGame(it.game)
+                            is GameEvent -> updateGame(it.gameId)
                         }
                     }
         }
 
-        player?.playingGame?.let {
+        player?.playingGameId?.let {
             updateGame(it)
         }
     }
@@ -116,11 +118,11 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
         if (!notified) {
             val player = playerService.player
             if (player != null) {
-                val localTrack = player.playingTrack ?: player.pausedTrack
+                val localTrackId = player.playingTrackId ?: player.pausedTrackId
 
-                if (localTrack != null) {
+                if (localTrackId != null) {
                     updateState(player.state)
-                    updateTrack(localTrack)
+                    updateTrack(localTrackId)
 
                     val notification = createNotification()
                     if (notification != null) {
@@ -179,23 +181,27 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
      *      Private Methods
      */
 
-    private fun updateTrack(track: Track) {
+    private fun updateTrack(trackId: String?) {
         logDebug("[MediaNotificationManager] Updating notification track.")
 
-        playingTrack = track
+        if (trackId != null) {
+            val realm = Realm.getDefaultInstance()
+            playingTrack = realm.findFirstSync(Track::class.java, trackId)
 
-        mediaMetadata = updateMetadata()
-        playerService.session?.setMetadata(mediaMetadata)
+            mediaMetadata = updateMetadata()
+            playerService.session?.setMetadata(mediaMetadata)
+        } else {
+            notificationService.cancelAll()
+        }
     }
 
-    private fun updateGame(game: Game?) {
+    private fun updateGame(gameId: String?) {
         logDebug("[MediaNotificationManager] Updating notification game.")
 
-        val imagePath = game?.let {
-            it.artLocal
-        } ?: let {
-            Game.PICASSO_ASSET_ALBUM_ART_BLANK
-        }
+        val realm = Realm.getDefaultInstance()
+        val game = if (gameId != null) realm.findFirstSync(Game::class.java, gameId) else null
+
+        val imagePath = game?.artLocal ?: Game.PICASSO_ASSET_ALBUM_ART_BLANK
 
         if (imagePath != playingGameArtPath) {
             playingGameArtPath = imagePath
