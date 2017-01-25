@@ -56,6 +56,21 @@ class RealmRepository(val context: Context) : Repository {
                 .map {
                     track.game = it
                     track.save()
+
+                    val realm = Realm.getDefaultInstance()
+                    val wasInTransactionBefore: Boolean
+                    if (realm.isInTransaction) {
+                        wasInTransactionBefore = true
+                    } else {
+                        wasInTransactionBefore = false
+                        realm.beginTransaction()
+                    }
+
+                    it.tracks?.add(track)
+
+                    if (wasInTransactionBefore) {
+                        realm.commitTransaction()
+                    }
                     return@map it
                 }
 
@@ -80,7 +95,6 @@ class RealmRepository(val context: Context) : Repository {
                         realm.beginTransaction()
                     }
 
-                    game.tracks?.add(track)
                     artist.tracks?.add(track)
                     track.artists?.add(artist)
 
