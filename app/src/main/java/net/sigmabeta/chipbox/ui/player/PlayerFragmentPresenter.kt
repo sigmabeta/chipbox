@@ -5,13 +5,13 @@ import android.os.Bundle
 import io.realm.Realm
 import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
-import net.sigmabeta.chipbox.model.database.findFirstSync
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
@@ -21,7 +21,7 @@ import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class PlayerFragmentPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
+class PlayerFragmentPresenter @Inject constructor(val player: Player, val repository: Repository) : FragmentPresenter() {
     var view: PlayerFragmentView? = null
 
     var game: Game? = null
@@ -105,7 +105,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     private fun displayGame(gameId: String?, force: Boolean, animate: Boolean) {
         if (gameId != null) {
             val realm = Realm.getDefaultInstance()
-            val game = realm.findFirstSync(Game::class.java, gameId)
+            val game = repository.getGameSync(gameId)
 
             if (force || this.game != game) {
                 view?.setGameBoxArt(game?.artLocal, !force)
@@ -120,7 +120,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     private fun displayTrack(trackId: String?, animate: Boolean) {
         if (trackId != null) {
             val realm = Realm.getDefaultInstance()
-            val track = realm.findFirstSync(Track::class.java, trackId)
+            val track = repository.getTrackSync(trackId)
 
             if (track != null) {
 

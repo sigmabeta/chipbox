@@ -5,13 +5,12 @@ import android.os.Bundle
 import io.realm.Realm
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.Player
-import net.sigmabeta.chipbox.model.database.findFirstSync
 import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
@@ -21,7 +20,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter() {
+class MainPresenter @Inject constructor(val player: Player, val repository: Repository) : ActivityPresenter() {
     var view: MainView? = null
 
     var state = player.state
@@ -134,7 +133,7 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
     private fun displayTrack(trackId: String?, animate: Boolean) {
         if (trackId != null) {
             val realm = Realm.getDefaultInstance()
-            val track = realm.findFirstSync(Track::class.java, trackId)
+            val track = repository.getTrackSync(trackId)
 
             if (track != null) {
                 view?.setTrackTitle(track.title.orEmpty(), animate)
@@ -148,7 +147,7 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
     private fun displayGame(gameId: String?, force: Boolean) {
         if (gameId != null) {
             val realm = Realm.getDefaultInstance()
-            val game = realm.findFirstSync(Game::class.java, gameId)
+            val game = repository.getGameSync(gameId)
 
             if (force || this.game != game) {
                 view?.setGameBoxArt(game?.artLocal, !force)

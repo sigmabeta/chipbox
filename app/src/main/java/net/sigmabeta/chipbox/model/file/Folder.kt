@@ -5,7 +5,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
-import net.sigmabeta.chipbox.model.database.findAllSync
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 
@@ -13,7 +12,8 @@ open class Folder(@PrimaryKey open var path: String? = null) : RealmObject() {
     companion object {
         fun getAll(): RealmResults<Folder> {
             val realm = Realm.getDefaultInstance()
-            val folders = realm.findAllSync(Folder::class.java)
+            val folders = realm.where(Folder::class.java)
+                    .findAll()
             return folders
         }
 

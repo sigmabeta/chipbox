@@ -3,8 +3,6 @@ package net.sigmabeta.chipbox.model.repository
 import android.content.Context
 import android.util.Log
 import io.realm.Realm
-import net.sigmabeta.chipbox.model.database.findAll
-import net.sigmabeta.chipbox.model.database.findFirst
 import net.sigmabeta.chipbox.model.database.save
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
@@ -147,6 +145,7 @@ class RealmRepository(val context: Context) : Repository {
      * Read
      */
 
+
     override fun getTracks(): Observable<out List<Track>> {
         val realm = Realm.getDefaultInstance()
         return realm
@@ -156,9 +155,27 @@ class RealmRepository(val context: Context) : Repository {
                 .filter { it.isLoaded }
     }
 
+    override fun getTrackSync(id: String): Track? {
+        val realm = Realm.getDefaultInstance()
+        return realm.where(Track::class.java)
+                .equalTo("id", id)
+                .findFirst()
+    }
+
     override fun getGame(id: String): Observable<Game> {
         val realm = Realm.getDefaultInstance()
-        return realm.findFirst(Game::class.java, id)
+        return realm.where(Game::class.java)
+                .equalTo("id", id)
+                .findFirstAsync()
+                .asObservable<Game>()
+                .filter { it.isLoaded }
+    }
+
+    override fun getGameSync(id: String): Game? {
+        val realm = Realm.getDefaultInstance()
+        return realm.where(Game::class.java)
+                .equalTo("id", id)
+                .findFirst()
     }
 
     override fun getGames(): Observable<out List<Game>> {
@@ -177,6 +194,7 @@ class RealmRepository(val context: Context) : Repository {
                 .equalTo("platform", platformId)
                 .findAllAsync()
                 .asObservable()
+                .filter { it.isLoaded }
     }
 
     override fun getGame(platformId: Long, title: String?): Observable<Game> {
@@ -200,7 +218,11 @@ class RealmRepository(val context: Context) : Repository {
 
     override fun getArtist(id: String): Observable<Artist> {
         val realm = Realm.getDefaultInstance()
-        return realm.findFirst(Artist::class.java, id)
+        return realm.where(Artist::class.java)
+                .equalTo("id", id)
+                .findFirstAsync()
+                .asObservable<Artist>()
+                .filter { it.isLoaded }
     }
 
     override fun getArtistByName(name: String?): Observable<Artist> {
@@ -232,7 +254,9 @@ class RealmRepository(val context: Context) : Repository {
 
     override fun getFolders(): Observable<out List<Folder>> {
         val realm = Realm.getDefaultInstance()
-        return realm.findAll(Folder::class.java)
+        return realm.where(Folder::class.java)
+                .findAllAsync()
+                .asObservable()
                 .filter { it.isLoaded }
     }
 

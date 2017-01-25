@@ -12,12 +12,16 @@ import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
 import android.widget.Toast
 import net.sigmabeta.chipbox.ChipboxApplication
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.util.logVerbose
 import javax.inject.Inject
 
 class PlayerService : Service(), BackendView {
     var player: Player? = null
+        @Inject set
+
+    var repository: Repository? = null
         @Inject set
 
     var notificationManager: MediaNotificationManager? = null
@@ -46,7 +50,7 @@ class PlayerService : Service(), BackendView {
         session?.setCallback(SessionCallback(this))
         session?.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
-        notificationManager = MediaNotificationManager(this)
+        notificationManager = MediaNotificationManager(this, repository)
 
         // A workaround for the fact that controllerCallback is null inside the init {} constructor.
         notificationManager?.setControllerCallback()
