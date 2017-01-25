@@ -4,7 +4,6 @@ import android.os.Bundle
 import io.realm.Realm
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.Player
-import net.sigmabeta.chipbox.model.database.findFirstSync
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.PositionEvent
@@ -107,7 +106,7 @@ class GamePresenter @Inject constructor(val player: Player, val repository: Repo
     private fun displayTrack(trackId: String?) {
         if (trackId != null) {
             val realm = Realm.getDefaultInstance()
-            val track = realm.findFirstSync(Track::class.java, trackId)
+            val track = repository.getTrackSync(trackId)
 
             if (track != null) {
                 view?.setPlayingTrack(track)

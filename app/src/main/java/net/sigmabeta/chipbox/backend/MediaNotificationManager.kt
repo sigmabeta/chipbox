@@ -21,12 +21,12 @@ import android.view.KeyEvent
 import io.realm.Realm
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.database.findFirstSync
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.util.loadBitmapLowQuality
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
@@ -35,7 +35,7 @@ import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 
-class MediaNotificationManager(val playerService: PlayerService) : BroadcastReceiver() {
+class MediaNotificationManager(val playerService: PlayerService, val repository: Repository?) : BroadcastReceiver() {
     val prevIntent = PendingIntent.getBroadcast(playerService, REQUEST_CODE,
             Intent(ACTION_PREV).setPackage(playerService.packageName), PendingIntent.FLAG_CANCEL_CURRENT)
     val pauseIntent = PendingIntent.getBroadcast(playerService, REQUEST_CODE,
@@ -186,7 +186,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
 
         if (trackId != null) {
             val realm = Realm.getDefaultInstance()
-            playingTrack = realm.findFirstSync(Track::class.java, trackId)
+            playingTrack = repository?.getTrackSync(trackId)
 
             mediaMetadata = updateMetadata()
             playerService.session?.setMetadata(mediaMetadata)
@@ -199,7 +199,7 @@ class MediaNotificationManager(val playerService: PlayerService) : BroadcastRece
         logDebug("[MediaNotificationManager] Updating notification game.")
 
         val realm = Realm.getDefaultInstance()
-        val game = if (gameId != null) realm.findFirstSync(Game::class.java, gameId) else null
+        val game = if (gameId != null) repository?.getGameSync(gameId) else null
 
         val imagePath = game?.artLocal ?: Game.PICASSO_ASSET_ALBUM_ART_BLANK
 

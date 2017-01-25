@@ -9,12 +9,11 @@ import io.realm.Realm
 import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
 import net.sigmabeta.chipbox.model.audio.Voice
-import net.sigmabeta.chipbox.model.database.findFirstSync
-import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.util.external.*
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
@@ -29,6 +28,7 @@ import javax.inject.Singleton
 @Singleton
 class Player @Inject constructor(val audioConfig: AudioConfig,
                                  val audioManager: AudioManager,
+                                 val repository: Repository,
                                  val context: Context): AudioManager.OnAudioFocusChangeListener {
     var backendView: BackendView? = null
 
@@ -94,7 +94,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
             if (value != null) {
                 val realm = Realm.getDefaultInstance()
-                val track = realm.findFirstSync(Track::class.java, value)
+                val track = repository.getTrackSync(value)
 
                 if (track != null) {
                     playingGameId = track.game?.id
@@ -478,7 +478,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
 
     fun seek(progress: Int) {
         val realm = Realm.getDefaultInstance()
-        val track = realm.findFirstSync(Track::class.java, playingTrackId ?: return)
+        val track = repository.getTrackSync(playingTrackId ?: return)
         val length = track?.trackLength ?: 0
         val seekPosition = (length * progress / 100).toInt()
         queuedSeekPosition = seekPosition
