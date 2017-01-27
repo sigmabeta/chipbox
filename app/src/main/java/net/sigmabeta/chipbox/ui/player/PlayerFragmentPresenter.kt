@@ -10,7 +10,6 @@ import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
@@ -20,7 +19,7 @@ import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class PlayerFragmentPresenter @Inject constructor(val player: Player, val repository: Repository) : FragmentPresenter() {
+class PlayerFragmentPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
     var view: PlayerFragmentView? = null
 
     var game: Game? = null

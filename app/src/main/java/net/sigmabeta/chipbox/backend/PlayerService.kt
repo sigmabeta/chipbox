@@ -50,7 +50,7 @@ class PlayerService : Service(), BackendView {
         session?.setCallback(SessionCallback(this))
         session?.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
-        notificationManager = MediaNotificationManager(this, repository)
+        notificationManager = MediaNotificationManager(this, repository!!)
 
         // A workaround for the fact that controllerCallback is null inside the init {} constructor.
         notificationManager?.setControllerCallback()

@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.model.database
 import io.realm.Realm
 import io.realm.RealmObject
 import net.sigmabeta.chipbox.model.IdRealmObject
-import net.sigmabeta.chipbox.util.logInfo
 import java.util.*
 
 inline fun <reified T : RealmObject> T.getNextPrimaryKey(): String {
@@ -25,7 +24,7 @@ inline fun <reified T : RealmObject> T.save(): T {
         return@getFromTransaction copyToRealm(this@save)
     }
 
-    realm.close()
+    realm.closeAndReport()
 
     return managedObject
 }
@@ -69,7 +68,14 @@ fun getRealmInstance(): Realm {
     val refCount = Realm.getLocalInstanceCount(realm.configuration)
     val threadName = Thread.currentThread().name
 
-    logInfo("Getting realm instance #$refCount for thread $threadName.")
+//    logInfo("Getting realm instance #$refCount for thread $threadName.")
 
     return realm
+}
+
+fun Realm.closeAndReport() {
+    close()
+//    val refCount = Realm.getLocalInstanceCount(configuration)
+//    val threadName = Thread.currentThread().name
+//    logInfo("Closed realm instance. $refCount references remain for thread $threadName.")
 }

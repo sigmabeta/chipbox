@@ -5,6 +5,7 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import net.sigmabeta.chipbox.model.IdRealmObject
+import net.sigmabeta.chipbox.model.database.closeAndReport
 import net.sigmabeta.chipbox.model.database.getRealmInstance
 import net.sigmabeta.chipbox.model.database.inTransaction
 import net.sigmabeta.chipbox.model.database.save
@@ -57,7 +58,7 @@ open class Game() : RealmObject(), IdRealmObject {
                 game?.save()
             }
 
-            realm.close()
+            realm.closeAndReport()
         }
     }
 }

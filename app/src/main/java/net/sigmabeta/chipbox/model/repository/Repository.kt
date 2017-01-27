@@ -3,12 +3,12 @@ package net.sigmabeta.chipbox.model.repository
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.model.file.Folder
 import rx.Observable
 
 interface Repository {
-    fun scanLibrary(): Observable<FileScanEvent>
+    fun reopen()
+    fun close()
 
     /**
      * Create

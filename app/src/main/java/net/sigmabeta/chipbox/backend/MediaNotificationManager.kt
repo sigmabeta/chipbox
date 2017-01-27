@@ -34,7 +34,7 @@ import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 
-class MediaNotificationManager(val playerService: PlayerService, val repository: Repository?) : BroadcastReceiver() {
+class MediaNotificationManager(val playerService: PlayerService, val repository: Repository) : BroadcastReceiver() {
     val prevIntent = PendingIntent.getBroadcast(playerService, REQUEST_CODE,
             Intent(ACTION_PREV).setPackage(playerService.packageName), PendingIntent.FLAG_CANCEL_CURRENT)
     val pauseIntent = PendingIntent.getBroadcast(playerService, REQUEST_CODE,
@@ -184,7 +184,7 @@ class MediaNotificationManager(val playerService: PlayerService, val repository:
         logDebug("[MediaNotificationManager] Updating notification track.")
 
         if (trackId != null) {
-            playingTrack = repository?.getTrackSync(trackId)
+            playingTrack = repository.getTrackSync(trackId)
 
             mediaMetadata = updateMetadata()
             playerService.session?.setMetadata(mediaMetadata)
@@ -196,7 +196,7 @@ class MediaNotificationManager(val playerService: PlayerService, val repository:
     private fun updateGame(gameId: String?) {
         logDebug("[MediaNotificationManager] Updating notification game.")
 
-        val game = if (gameId != null) repository?.getGameSync(gameId) else null
+        val game = if (gameId != null) repository.getGameSync(gameId) else null
 
         val imagePath = game?.artLocal ?: Game.PICASSO_ASSET_ALBUM_ART_BLANK
 
