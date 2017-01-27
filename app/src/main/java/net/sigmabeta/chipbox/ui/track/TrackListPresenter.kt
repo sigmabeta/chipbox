@@ -6,7 +6,6 @@ import net.sigmabeta.chipbox.backend.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
@@ -14,7 +13,7 @@ import net.sigmabeta.chipbox.util.logInfo
 import javax.inject.Inject
 
 @ActivityScoped
-class TrackListPresenter @Inject constructor(val player: Player, val repository: Repository) : FragmentPresenter() {
+class TrackListPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
     var view: TrackListView? = null
 
     var artistId: String? = null

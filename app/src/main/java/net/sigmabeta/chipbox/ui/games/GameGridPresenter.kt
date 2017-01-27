@@ -5,14 +5,13 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
 import javax.inject.Inject
 
 @ActivityScoped
-class GameGridPresenter @Inject constructor(val repository: Repository) : FragmentPresenter() {
+class GameGridPresenter @Inject constructor() : FragmentPresenter() {
     var view: GameListView? = null
 
     var platform = Track.PLATFORM_ALL

@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.ui.file
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.repository.RealmRepository
-import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
@@ -14,7 +13,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class FilesPresenter @Inject constructor(val repository: Repository) : ActivityPresenter() {
+class FilesPresenter @Inject constructor() : ActivityPresenter() {
     // TODO DI this
     lateinit var startPath: String
 

@@ -20,5 +20,10 @@ class AppModule(val application: Application) {
 
         return context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     }
+
+    @Provides @Singleton fun provideExternalFilesPath(context: Context): String? {
+        logVerbose("[AppModule] Providing external files path.")
+        return context.getExternalFilesDir(null).absolutePath
+    }
 }
 

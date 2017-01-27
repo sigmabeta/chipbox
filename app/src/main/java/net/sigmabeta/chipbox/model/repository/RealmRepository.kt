@@ -1,61 +1,27 @@
 package net.sigmabeta.chipbox.model.repository
 
-import android.content.Context
-import android.util.Log
 import io.realm.Realm
+import net.sigmabeta.chipbox.model.database.closeAndReport
 import net.sigmabeta.chipbox.model.database.getRealmInstance
 import net.sigmabeta.chipbox.model.database.inTransaction
 import net.sigmabeta.chipbox.model.database.save
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.model.file.Folder
-import net.sigmabeta.chipbox.util.*
-import org.apache.commons.io.FileUtils
+import net.sigmabeta.chipbox.util.logInfo
+import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
-import rx.Subscriber
-import java.io.File
-import java.util.*
 
-class RealmRepository(val context: Context) : Repository {
-    private var scanningRealm: Realm? = null
+class RealmRepository(var realm: Realm) : Repository {
+    override fun reopen() {
+        if (realm.isClosed) {
+            realm = getRealmInstance()
+        }
+    }
 
-    override fun scanLibrary(): Observable<FileScanEvent> {
-        return Observable.create(
-                { sub ->
-                    // OnSubscribe.call. it: String
-                    clearAll()
-                    scanningRealm = getRealmInstance()
-                    val initialRefCount = Realm.getLocalInstanceCount(scanningRealm?.configuration)
-
-                    logInfo("[Library] Scanning library...")
-
-                    val startTime = System.currentTimeMillis()
-
-                    val folders = Folder.getAll()
-
-                    folders.forEach { folder ->
-                        folder.path?.let {
-                            scanFolder(File(it), sub as Subscriber<FileScanEvent>)
-                        }
-                    }
-
-                    val endTime = System.currentTimeMillis()
-                    val scanDuration = (endTime - startTime) / 1000.0f
-
-                    logInfo("[Library] Scanned library in ${scanDuration} seconds.")
-
-                    val endRefCount = Realm.getLocalInstanceCount(scanningRealm?.configuration)
-
-                    if (initialRefCount != endRefCount) {
-                        logError("Leaked ${endRefCount - initialRefCount} Realm references.")
-                    }
-
-                    scanningRealm?.close()
-                    sub.onCompleted()
-                }
-        )
+    override fun close() {
+        realm.closeAndReport()
     }
 
     /**
@@ -69,7 +35,7 @@ class RealmRepository(val context: Context) : Repository {
                     track.game = it
                     track.save()
 
-                    scanningRealm?.inTransaction {
+                    realm.inTransaction {
                         it.tracks?.add(track)
                     }
 
@@ -87,7 +53,7 @@ class RealmRepository(val context: Context) : Repository {
                     val gameArtist = game.artist
                     val gameHadMultipleArtists = game.multipleArtists ?: false
 
-                    scanningRealm?.inTransaction {
+                    realm.inTransaction {
                         artist.tracks?.add(track)
                         track.artists?.add(artist)
 
@@ -203,7 +169,6 @@ class RealmRepository(val context: Context) : Repository {
     }
 
     override fun getGame(platformId: Long, title: String?): Observable<Game> {
-        val realm = scanningRealm!!
         var game = realm
                 .where(Game::class.java)
                 .equalTo("platform", platformId)
@@ -230,7 +195,6 @@ class RealmRepository(val context: Context) : Repository {
     }
 
     override fun getArtistByName(name: String?): Observable<Artist> {
-        val realm = scanningRealm!!
         var artist = realm.where(Artist::class.java)
                 .equalTo("name", name)
                 .findFirst()
@@ -274,151 +238,10 @@ class RealmRepository(val context: Context) : Repository {
         val realm = getRealmInstance()
 
         realm.inTransaction {
-            realm.delete(Track::class.java)
-            realm.delete(Artist::class.java)
-            realm.delete(Game::class.java)
+            delete(Track::class.java)
+            delete(Artist::class.java)
+            delete(Game::class.java)
         }
-
-        realm.close()
-    }
-
-    /**
-     * Private Methods
-     */
-
-    private fun scanFolder(folder: File, sub: Subscriber<FileScanEvent>) {
-        val folderPath = folder.absolutePath
-        logInfo("[Library] Reading files from library folder: ${folderPath}")
-
-        sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folderPath))
-
-        var folderGameId: String? = null
-
-        // Iterate through every file in the folder.
-        val children = folder.listFiles()
-
-        if (children != null) {
-            Arrays.sort(children)
-
-            var trackCount = 1
-
-            for (file in children) {
-                if (!file.isHidden) {
-                    if (file.isDirectory) {
-                        scanFolder(file, sub)
-                    } else {
-                        val filePath = file.absolutePath
-                        val fileExtension = getFileExtension(filePath)
-
-                        if (fileExtension != null) {
-                            // Check that the file has an extension we care about before trying to read out of it.
-                            if (EXTENSIONS_MUSIC.contains(fileExtension)) {
-                                if (EXTENSIONS_MULTI_TRACK.contains(fileExtension)) {
-                                    folderGameId = readMultipleTracks(file, filePath, sub)
-                                    if (folderGameId == null) {
-                                        sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
-                                    }
-                                } else {
-                                    folderGameId = readSingleTrack(file, filePath, sub, trackCount)
-
-                                    if (folderGameId != null) {
-                                        trackCount += 1
-                                    }
-                                }
-                            } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
-                                if (folderGameId != null) {
-                                    copyImageToInternal(folderGameId, file)
-                                } else {
-                                    logError("[Library] Found image, but game ID unknown: ${filePath}")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-        } else if (!folder.exists()) {
-            logError("[Library] Folder no longer exists: ${folderPath}")
-        } else {
-            logError("[Library] Folder contains no tracks:  ${folderPath}")
-        }
-    }
-
-    private fun readSingleTrack(file: File, filePath: String, sub: Subscriber<FileScanEvent>, trackNumber: Int): String? {
-        val track = readSingleTrackFile(filePath, trackNumber)
-
-        if (track != null) {
-            var folderGameId: String? = null
-
-            addTrack(track)
-                    .toBlocking()
-                    .subscribe(
-                            {
-                                folderGameId = it
-                            },
-                            {
-                                logError("[Library] Couldn't add track at ${filePath}: ${Log.getStackTraceString(it)}")
-                                sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
-                            },
-                            {
-                                sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
-                            }
-                    )
-
-            return folderGameId
-        } else {
-            logError("[Library] Couldn't read track at ${filePath}")
-            sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
-
-            return null
-        }
-    }
-
-    private fun readMultipleTracks(file: File, filePath: String, sub: Subscriber<FileScanEvent>): String? {
-        var folderGameId: String? = null
-        val tracks = readMultipleTrackFile(filePath)
-
-        tracks ?: return folderGameId
-
-        Observable.from(tracks)
-                .flatMap { return@flatMap addTrack(it) }
-                .toBlocking()
-                .subscribe(
-                        {
-                            folderGameId = it
-                        },
-                        {
-                            logError("[Library] Couldn't read multi track file at ${filePath}: ${Log.getStackTraceString(it)}")
-                            sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
-                        },
-                        {
-                            sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
-                        }
-                )
-
-        return folderGameId
-    }
-
-    private fun copyImageToInternal(gameId: String, sourceFile: File) {
-        val storageDir = context.getExternalFilesDir(null)
-
-        val targetDirPath = storageDir.absolutePath + "/images/" + gameId.toString()
-        val targetDir = File(targetDirPath)
-
-        targetDir.mkdirs()
-
-        val sourcePath = sourceFile.path
-        val extensionStart = sourcePath.lastIndexOf('.')
-        val fileExtension = sourcePath.substring(extensionStart)
-
-        val targetFilePath = targetDirPath + "/local" + fileExtension
-        val targetFile = File(targetFilePath)
-
-        FileUtils.copyFile(sourceFile, targetFile)
-
-        logInfo("[Library] Copied image: ${sourcePath} to ${targetFilePath}")
-
-        Game.addLocalImage(gameId, "file://" + targetFilePath)
     }
 
     companion object {

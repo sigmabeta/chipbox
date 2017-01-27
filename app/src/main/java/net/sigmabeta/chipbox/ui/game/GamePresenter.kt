@@ -8,7 +8,6 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
@@ -18,7 +17,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GamePresenter @Inject constructor(val player: Player, val repository: Repository) : ActivityPresenter() {
+class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter() {
     var view: GameView? = null
 
     var gameId: String? = null

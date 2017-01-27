@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.model.file
 
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import net.sigmabeta.chipbox.model.database.closeAndReport
 import net.sigmabeta.chipbox.model.database.getRealmInstance
 import net.sigmabeta.chipbox.model.database.inTransaction
 import net.sigmabeta.chipbox.util.logError
@@ -15,7 +16,7 @@ open class Folder(@PrimaryKey open var path: String? = null) : RealmObject() {
             val foldersManaged = realm.where(Folder::class.java)
                     .findAll()
             val folders = realm.copyFromRealm(foldersManaged)
-            realm.close()
+            realm.closeAndReport()
             return folders
         }
 
@@ -64,7 +65,7 @@ open class Folder(@PrimaryKey open var path: String? = null) : RealmObject() {
                     }
                 }
 
-                realm.close()
+                realm.closeAndReport()
             }
         }
     }
