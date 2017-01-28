@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.file.Folder
+import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
@@ -28,7 +29,7 @@ class RealmRepository(var realm: Realm) : Repository {
      * Create
      */
 
-    override fun addTrack(track: Track): Observable<String> {
+    override fun addTrack(track: Track): Observable<Game> {
         val artists = track.artistText?.split(", ")
         val gameObservable = getGame(track.platform, track.gameTitle)
                 .map {
@@ -69,9 +70,7 @@ class RealmRepository(var realm: Realm) : Repository {
                         }
                     }
 
-                    val gameId = game.id
-
-                    return@combineLatest gameId
+                    return@combineLatest game
                 })
     }
 
@@ -97,13 +96,13 @@ class RealmRepository(var realm: Realm) : Repository {
 
     override fun addFolder(path: String): Observable<Int> {
         return Observable.create {
-            if (Folder.checkIfContained(path)) {
+            if (checkIfContained(path)) {
                 it.onNext(ADD_STATUS_EXISTS)
                 it.onCompleted()
                 return@create
             }
 
-            Folder.removeContainedEntries(path)
+            removeContainedEntries(path)
             Folder(path).save()
 
             logInfo("[Folder] Successfully added folder to database.")
@@ -119,7 +118,7 @@ class RealmRepository(var realm: Realm) : Repository {
 
 
     override fun getTracks(): Observable<out List<Track>> {
-        val realm = getRealmInstance()
+
         return realm
                 .where(Track::class.java)
                 .findAllSortedAsync("title")
@@ -134,7 +133,7 @@ class RealmRepository(var realm: Realm) : Repository {
     }
 
     override fun getGame(id: String): Observable<Game> {
-        val realm = getRealmInstance()
+
         return realm.where(Game::class.java)
                 .equalTo("id", id)
                 .findFirstAsync()
@@ -143,14 +142,14 @@ class RealmRepository(var realm: Realm) : Repository {
     }
 
     override fun getGameSync(id: String): Game? {
-        val realm = getRealmInstance()
+
         return realm.where(Game::class.java)
                 .equalTo("id", id)
                 .findFirst()
     }
 
     override fun getGames(): Observable<out List<Game>> {
-        val realm = getRealmInstance()
+
         return realm
                 .where(Game::class.java)
                 .findAllSortedAsync("title")
@@ -159,7 +158,7 @@ class RealmRepository(var realm: Realm) : Repository {
     }
 
     override fun getGamesForPlatform(platformId: Long): Observable<out List<Game>> {
-        val realm = getRealmInstance()
+
         return realm
                 .where(Game::class.java)
                 .equalTo("platform", platformId)
@@ -186,7 +185,7 @@ class RealmRepository(var realm: Realm) : Repository {
     }
 
     override fun getArtist(id: String): Observable<Artist> {
-        val realm = getRealmInstance()
+
         return realm.where(Artist::class.java)
                 .equalTo("id", id)
                 .findFirstAsync()
@@ -210,7 +209,6 @@ class RealmRepository(var realm: Realm) : Repository {
     }
 
     override fun getArtists(): Observable<out List<Artist>> {
-        val realm = getRealmInstance()
         return realm
                 .where(Artist::class.java)
                 .findAllSortedAsync("name")
@@ -218,24 +216,26 @@ class RealmRepository(var realm: Realm) : Repository {
                 .filter { it.isLoaded }
     }
 
-    override fun getFolders(): Observable<out List<Folder>> {
-        val realm = getRealmInstance()
+    override fun getFoldersSync(): List<Folder> {
         return realm.where(Folder::class.java)
-                .findAllAsync()
-                .asObservable()
-                .filter { it.isLoaded }
+                .findAll()
     }
 
     /**
      * Update
      */
 
+    override fun updateGameArt(game: Game, artLocal: String) {
+        realm.inTransaction {
+            game.artLocal = artLocal
+        }
+    }
+
     /**
      * Delete
      */
     override fun clearAll() {
         logInfo("[Library] Clearing library...")
-        val realm = getRealmInstance()
 
         realm.inTransaction {
             delete(Track::class.java)
@@ -244,6 +244,50 @@ class RealmRepository(var realm: Realm) : Repository {
         }
     }
 
+    /**
+     * Private Methods
+     */
+
+    private fun checkIfContained(newPath: String): Boolean {
+        val folders = getFoldersSync()
+
+        folders.forEach {
+            it.path?.let { oldPath ->
+                if (newPath.contains(oldPath)) {
+                    logError("[Folder] New folder $newPath is contained by a previously added folder: $oldPath")
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    private fun removeContainedEntries(newPath: String) {
+        val folders = getFoldersSync()
+
+        // Remove any folders from the DB that are contained by the new folder.
+        val foldersToRemove = mutableListOf<Folder>()
+        folders.forEach { oldFolder ->
+            oldFolder.path?.let { oldPath ->
+                if (oldPath.contains(newPath)) {
+                    logInfo("[Folder] New folder contains a previously added folder: $oldPath")
+
+                    foldersToRemove.add(oldFolder)
+                }
+            }
+        }
+
+        if (foldersToRemove.isNotEmpty()) {
+            val idsString = foldersToRemove.joinToString()
+            logInfo("[Folder] Deleting folders with ids: $idsString")
+
+            realm.inTransaction {
+                foldersToRemove.forEach(Folder::deleteFromRealm)
+            }
+        }
+    }
+    
     companion object {
         val ADD_STATUS_GOOD = 0
         val ADD_STATUS_EXISTS = 1

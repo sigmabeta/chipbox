@@ -6,8 +6,6 @@ import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -37,8 +35,6 @@ class FilesPresenter @Inject constructor() : ActivityPresenter() {
     fun onFabClick() {
         path?.let {
             val subscription = repository.addFolder(it)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
                                 when (it) {
