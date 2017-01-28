@@ -4,7 +4,6 @@ import android.util.Log
 import dagger.Lazy
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.events.FileScanEvent
-import net.sigmabeta.chipbox.model.file.Folder
 import net.sigmabeta.chipbox.util.*
 import org.apache.commons.io.FileUtils
 import rx.Observable
@@ -28,7 +27,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>, v
 
                     val startTime = System.currentTimeMillis()
 
-                    val folders = Folder.getAll()
+                    val folders = repository.getFoldersSync()
 
                     folders.forEach { folder ->
                         folder.path?.let {
@@ -57,7 +56,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>, v
 
         sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folderPath))
 
-        var folderGameId: String? = null
+        var folderGame: Game? = null
 
         // Iterate through every file in the folder.
         val children = folder.listFiles()
@@ -79,20 +78,20 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>, v
                             // Check that the file has an extension we care about before trying to read out of it.
                             if (EXTENSIONS_MUSIC.contains(fileExtension)) {
                                 if (EXTENSIONS_MULTI_TRACK.contains(fileExtension)) {
-                                    folderGameId = readMultipleTracks(file, filePath, sub)
-                                    if (folderGameId == null) {
+                                    folderGame = readMultipleTracks(file, filePath, sub)
+                                    if (folderGame == null) {
                                         sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                                     }
                                 } else {
-                                    folderGameId = readSingleTrack(file, filePath, sub, trackCount)
+                                    folderGame = readSingleTrack(file, filePath, sub, trackCount)
 
-                                    if (folderGameId != null) {
+                                    if (folderGame != null) {
                                         trackCount += 1
                                     }
                                 }
                             } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
-                                if (folderGameId != null) {
-                                    copyImageToInternal(folderGameId, file)
+                                if (folderGame != null) {
+                                    copyImageToInternal(folderGame, file)
                                 } else {
                                     logError("[Library] Found image, but game ID unknown: ${filePath}")
                                 }
@@ -109,17 +108,17 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>, v
         }
     }
 
-    private fun readSingleTrack(file: File, filePath: String, sub: Subscriber<FileScanEvent>, trackNumber: Int): String? {
+    private fun readSingleTrack(file: File, filePath: String, sub: Subscriber<FileScanEvent>, trackNumber: Int): Game? {
         val track = readSingleTrackFile(filePath, trackNumber)
 
         if (track != null) {
-            var folderGameId: String? = null
+            var game: Game? = null
 
             repository.addTrack(track)
                     .toBlocking()
                     .subscribe(
                             {
-                                folderGameId = it
+                                game = it
                             },
                             {
                                 logError("[Library] Couldn't add track at ${filePath}: ${Log.getStackTraceString(it)}")
@@ -130,7 +129,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>, v
                             }
                     )
 
-            return folderGameId
+            return game
         } else {
             logError("[Library] Couldn't read track at ${filePath}")
             sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
@@ -139,18 +138,18 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>, v
         }
     }
 
-    private fun readMultipleTracks(file: File, filePath: String, sub: Subscriber<FileScanEvent>): String? {
-        var folderGameId: String? = null
+    private fun readMultipleTracks(file: File, filePath: String, sub: Subscriber<FileScanEvent>): Game? {
+        var game: Game? = null
         val tracks = readMultipleTrackFile(filePath)
 
-        tracks ?: return folderGameId
+        tracks ?: return game
 
         Observable.from(tracks)
                 .flatMap { return@flatMap repository.addTrack(it) }
                 .toBlocking()
                 .subscribe(
                         {
-                            folderGameId = it
+                            game = it
                         },
                         {
                             logError("[Library] Couldn't read multi track file at ${filePath}: ${Log.getStackTraceString(it)}")
@@ -161,11 +160,11 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>, v
                         }
                 )
 
-        return folderGameId
+        return game
     }
 
-    private fun copyImageToInternal(gameId: String, sourceFile: File) {
-        val targetDirPath = externalFilesPath + "/images/" + gameId
+    private fun copyImageToInternal(game: Game, sourceFile: File) {
+        val targetDirPath = externalFilesPath + "/images/" + game.id
         val targetDir = File(targetDirPath)
 
         targetDir.mkdirs()
@@ -181,6 +180,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>, v
 
         logInfo("[Library] Copied image: ${sourcePath} to ${targetFilePath}")
 
-        Game.addLocalImage(gameId, "file://" + targetFilePath)
+        val artLocal = "file://" + targetFilePath
+        repository.updateGameArt(game, artLocal)
     }
 }

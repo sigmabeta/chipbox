@@ -14,7 +14,7 @@ interface Repository {
      * Create
      */
 
-    fun addTrack(track: Track): Observable<String>
+    fun addTrack(track: Track): Observable<Game>
 
     fun addGame(platformId: Long, title: String?): Observable<Game>
     fun addArtist(name: String?): Observable<Artist>
@@ -37,12 +37,13 @@ interface Repository {
     fun getArtistByName(name: String?): Observable<Artist>
     fun getArtists(): Observable<out List<Artist>>
 
-    fun getFolders(): Observable<out List<Folder>>
+    fun getFoldersSync(): List<Folder>
 
     /**
      * Update
      */
 
+    fun updateGameArt(game: Game, artLocal: String)
 
     /**
      * Delete

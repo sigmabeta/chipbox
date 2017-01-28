@@ -5,10 +5,6 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import net.sigmabeta.chipbox.model.IdRealmObject
-import net.sigmabeta.chipbox.model.database.closeAndReport
-import net.sigmabeta.chipbox.model.database.getRealmInstance
-import net.sigmabeta.chipbox.model.database.inTransaction
-import net.sigmabeta.chipbox.model.database.save
 
 open class Game() : RealmObject(), IdRealmObject {
     constructor(title: String, platform: Long) : this() {
@@ -47,18 +43,5 @@ open class Game() : RealmObject(), IdRealmObject {
         val ASSET_ALBUM_ART_BLANK = "/android_asset/img_album_art_blank.png"
 
         val PICASSO_ASSET_ALBUM_ART_BLANK = PICASSO_PREFIX + ASSET_ALBUM_ART_BLANK
-
-        // TODO Move this to RealmUtils
-        fun addLocalImage(gameId: String, artLocal: String) {
-            val realm = getRealmInstance()
-            val game = realm.where(Game::class.java).equalTo("id", gameId).findFirst()
-
-            realm.inTransaction {
-                game?.artLocal = artLocal
-                game?.save()
-            }
-
-            realm.closeAndReport()
-        }
     }
 }
