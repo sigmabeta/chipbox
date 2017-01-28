@@ -158,11 +158,10 @@ class RealmRepository(var realm: Realm) : Repository {
     }
 
     override fun getGamesForPlatform(platformId: Long): Observable<out List<Game>> {
-
         return realm
                 .where(Game::class.java)
                 .equalTo("platform", platformId)
-                .findAllAsync()
+                .findAllSortedAsync("title")
                 .asObservable()
                 .filter { it.isLoaded }
     }
