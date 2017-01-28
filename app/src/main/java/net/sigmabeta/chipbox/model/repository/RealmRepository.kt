@@ -34,7 +34,7 @@ class RealmRepository(var realm: Realm) : Repository {
         val gameObservable = getGame(track.platform, track.gameTitle)
                 .map {
                     track.game = it
-                    track.save()
+                    track.save(realm)
 
                     realm.inTransaction {
                         it.tracks?.add(track)
@@ -77,7 +77,7 @@ class RealmRepository(var realm: Realm) : Repository {
     override fun addGame(platformId: Long, title: String?): Observable<Game> {
         return Observable.create {
             val game = Game(title ?: "Unknown Game", platformId)
-            game.save()
+            game.save(realm)
 
             it.onNext(game)
             it.onCompleted()
@@ -87,7 +87,7 @@ class RealmRepository(var realm: Realm) : Repository {
     override fun addArtist(name: String?): Observable<Artist> {
         return Observable.create {
             val artist = Artist(name ?: "Unknown Artist")
-            artist.save()
+            artist.save(realm)
 
             it.onNext(artist)
             it.onCompleted()
@@ -103,7 +103,7 @@ class RealmRepository(var realm: Realm) : Repository {
             }
 
             removeContainedEntries(path)
-            Folder(path).save()
+            Folder(path).save(realm)
 
             logInfo("[Folder] Successfully added folder to database.")
 
@@ -178,7 +178,7 @@ class RealmRepository(var realm: Realm) : Repository {
         if (game == null || !game.isValid) {
             newGame = Game(title ?: "Unknown Game", platformId)
             logVerbose("Created game: ${newGame.title}")
-            game = newGame.save()
+            game = newGame.save(realm)
         }
 
         return Observable.just(game)
@@ -202,7 +202,7 @@ class RealmRepository(var realm: Realm) : Repository {
         if (artist == null || !artist.isValid) {
             newArtist = Artist(name ?: "Unknown Game")
             logVerbose("Created artist: ${newArtist.name}")
-            artist = newArtist.save()
+            artist = newArtist.save(realm)
         }
 
         return Observable.just(artist)

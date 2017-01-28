@@ -5,6 +5,7 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.session.PlaybackState
+import dagger.Lazy
 import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
 import net.sigmabeta.chipbox.model.audio.Voice
@@ -27,8 +28,10 @@ import javax.inject.Singleton
 @Singleton
 class Player @Inject constructor(val audioConfig: AudioConfig,
                                  val audioManager: AudioManager,
-                                 val repository: Repository,
+                                 val repositoryLazy: Lazy<Repository>,
                                  val context: Context): AudioManager.OnAudioFocusChangeListener {
+    lateinit var repository: Repository
+
     var backendView: BackendView? = null
 
     val updater = UiUpdater()
@@ -139,6 +142,8 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
     val stats = StatsManager(audioConfig)
 
     fun readerLoop() {
+        repository = repositoryLazy.get()
+
         // Pre-seed the emptyQueue.
         while (true) {
             try {
