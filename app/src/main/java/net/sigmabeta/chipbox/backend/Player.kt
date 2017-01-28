@@ -479,10 +479,7 @@ class Player @Inject constructor(val audioConfig: AudioConfig,
         backendView?.stop()
     }
 
-    fun seek(progress: Int) {
-        val track = repository.getTrackSync(playingTrackId ?: return)
-        val length = track?.trackLength ?: 0
-        val seekPosition = (length * progress / 100).toInt()
+    fun seek(seekPosition: Int) {
         queuedSeekPosition = seekPosition
     }
 
