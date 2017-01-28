@@ -12,9 +12,7 @@ inline fun <reified T : RealmObject> T.getNextPrimaryKey(): String {
     return id.toString()
 }
 
-inline fun <reified T : RealmObject> T.save(): T {
-    val realm = getRealmInstance()
-
+inline fun <reified T : RealmObject> T.save(realm: Realm): T {
     val managedObject = realm.getFromTransaction {
         if (this@save is IdRealmObject) {
             if (this@save.getPrimaryKey() == null) {
@@ -24,8 +22,6 @@ inline fun <reified T : RealmObject> T.save(): T {
 
         return@getFromTransaction copyToRealm(this@save)
     }
-
-    realm.closeAndReport()
 
     return managedObject
 }
