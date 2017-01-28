@@ -127,7 +127,7 @@ class RealmRepository(var realm: Realm) : Repository {
     }
 
     override fun getTrackSync(id: String): Track? {
-        return getRealmInstance().where(Track::class.java)
+        return realm.where(Track::class.java)
                 .equalTo("id", id)
                 .findFirst()
     }
