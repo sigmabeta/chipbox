@@ -1,7 +1,9 @@
 package net.sigmabeta.chipbox.ui.settings
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Settings
 import net.sigmabeta.chipbox.model.audio.Voice
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
@@ -15,7 +17,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresenter() {
+class SettingsPresenter @Inject constructor(val player: Player,
+                                            val updater: UiUpdater,
+                                            val settings: Settings) : ActivityPresenter() {
     var view: SettingsView? = null
 
     var voices: MutableList<Voice>? = null
@@ -29,13 +33,13 @@ class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresen
     fun onItemClick(position: Int) {
         voices?.let {
             val newValue = !it[position].enabled
-            it[position.toInt()].enabled = newValue
-            view?.notifyChanged(position.toInt())
+            it[position].enabled = newValue
+            view?.notifyChanged(position)
         }
     }
 
     fun onTempoChange(position: Int) {
-        player.tempo = indexToTempoValue(position)
+        settings.tempo = indexToTempoValue(position)
     }
 
     /**
@@ -62,7 +66,7 @@ class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresen
     override fun updateViewState() {
         updateHelper()
 
-        val subscription = player.updater.asObservable()
+        val subscription = updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
@@ -97,8 +101,8 @@ class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresen
      */
 
     private fun updateHelper() {
-        tempo = player.tempo ?: 100
-        voices = player.voices
+        tempo = settings.tempo ?: 100
+        voices = settings.voices
 
         view?.setVoices(voices)
         view?.setDropdownValue(tempoValueToIndex(tempo))

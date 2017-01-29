@@ -2,7 +2,9 @@ package net.sigmabeta.chipbox.ui.navigation
 
 import android.media.session.PlaybackState
 import android.os.Bundle
-import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
@@ -18,7 +20,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NavigationPresenter @Inject constructor(val player: Player) : ActivityPresenter() {
+class NavigationPresenter @Inject constructor(val player: Player,
+                                              val playlist: Playlist,
+                                              val updater: UiUpdater) : ActivityPresenter() {
     var view: NavigationView? = null
 
     // A property is kept in order to be able to track changes in state.
@@ -34,9 +38,9 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
         when (player.state) {
             PlaybackState.STATE_PLAYING -> player.pause()
 
-            PlaybackState.STATE_PAUSED -> player.play()
+            PlaybackState.STATE_PAUSED -> player.start(null)
 
-            PlaybackState.STATE_STOPPED -> player.play()
+            PlaybackState.STATE_STOPPED -> player.start(null)
         }
     }
 
@@ -62,7 +66,7 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
     override fun updateViewState() {
         updateHelper()
 
-        val subscription = player.updater.asObservable()
+        val subscription = updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
@@ -128,11 +132,11 @@ class NavigationPresenter @Inject constructor(val player: Player) : ActivityPres
     }
 
     private fun updateHelper() {
-        player.playingTrackId?.let {
+        playlist.playingTrackId?.let {
             displayTrack(it, false)
         }
 
-        player.playingGameId?.let {
+        playlist.playingGameId?.let {
             displayGame(it, true)
         }
 

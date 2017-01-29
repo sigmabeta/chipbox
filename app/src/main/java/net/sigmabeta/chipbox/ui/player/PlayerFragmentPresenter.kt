@@ -2,7 +2,9 @@ package net.sigmabeta.chipbox.ui.player
 
 import android.media.session.PlaybackState
 import android.os.Bundle
-import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
@@ -19,7 +21,9 @@ import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class PlayerFragmentPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
+class PlayerFragmentPresenter @Inject constructor(val player: Player,
+                                                  val playlist: Playlist,
+                                                  val updater: UiUpdater) : FragmentPresenter() {
     var view: PlayerFragmentView? = null
 
     var game: Game? = null
@@ -59,7 +63,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     override fun updateViewState() {
         updateHelper()
 
-        val subscription = player.updater.asObservable()
+        val subscription = updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
@@ -77,13 +81,13 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     override fun onClick(id: Int) = Unit
 
     private fun updateHelper() {
-        player.playingTrackId?.let {
+        playlist.playingTrackId?.let {
             displayTrack(it, false)
         } ?: let {
             logError("[PlayerFragmentPresenter] No track to display.")
         }
 
-        player.playingGameId?.let {
+        playlist.playingGameId?.let {
             displayGame(it, true, false)
         }
 

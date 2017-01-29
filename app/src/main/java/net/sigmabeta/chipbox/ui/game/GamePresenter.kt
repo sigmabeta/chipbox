@@ -2,7 +2,8 @@ package net.sigmabeta.chipbox.ui.game
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.PositionEvent
@@ -17,7 +18,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter() {
+class GamePresenter @Inject constructor(val player: Player,
+                                        val updater: UiUpdater) : ActivityPresenter() {
     var view: GameView? = null
 
     var gameId: String? = null
@@ -68,9 +70,9 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
             view?.setTracks(it)
         }
 
-        displayTrack(player.playingTrackId)
+        displayTrack(player.playlist.playingTrackId)
 
-        val subscription = player.updater.asObservable()
+        val subscription = updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
