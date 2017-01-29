@@ -1,7 +1,9 @@
 package net.sigmabeta.chipbox.ui.playlist
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.TrackEvent
@@ -12,10 +14,12 @@ import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
-class PlaylistFragmentPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
+class PlaylistFragmentPresenter @Inject constructor(val player: Player,
+                                                    val playlist: Playlist,
+                                                    val updater: UiUpdater) : FragmentPresenter() {
     var view: PlaylistFragmentView? = null
 
-    var playlist: MutableList<Track>? = null
+    var trackList: MutableList<Track>? = null
 
     var queuePosition: Int? = null
 
@@ -30,8 +34,8 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
     }
 
     fun onTrackMoved(originPos: Int, destPos: Int) {
-        Collections.swap(playlist, originPos, destPos)
-        player.onTrackMoved(originPos, destPos)
+        Collections.swap(trackList, originPos, destPos)
+        playlist.onTrackMoved(originPos, destPos)
         view?.onTrackMoved(originPos, destPos)
 
         if (originPos == queuePosition) {
@@ -44,9 +48,9 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
     }
 
     fun onTrackRemoved(position: Int) {
-        playlist?.let {
+        trackList?.let {
             it.removeAt(position)
-            player.onTrackRemoved(position)
+            playlist.onTrackRemoved(position)
             view?.onTrackRemoved(position)
         }
     }
@@ -72,7 +76,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
 
         displayPositionHelper(false)
 
-        val subscription = player.updater.asObservable()
+        val subscription = updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
@@ -102,7 +106,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
      */
 
     private fun displayTracks(playlist: MutableList<Track>) {
-        this.playlist = playlist
+        this.trackList = playlist
 
         view?.showQueue(playlist)
     }
@@ -117,7 +121,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player) : Fragme
     }
 
     private fun displayPositionHelper(animate: Boolean) {
-        val position = player.actualPlaybackQueuePosition
+        val position = playlist.actualPlaybackQueuePosition
 
         displayPosition(position, animate)
     }

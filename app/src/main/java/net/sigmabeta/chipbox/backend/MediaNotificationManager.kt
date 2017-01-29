@@ -20,6 +20,8 @@ import android.support.v7.app.NotificationCompat
 import android.view.KeyEvent
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
@@ -34,7 +36,11 @@ import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
 
-class MediaNotificationManager(val playerService: PlayerService, val repository: Repository) : BroadcastReceiver() {
+class MediaNotificationManager(val playerService: PlayerService,
+                               val repository: Repository,
+                               val player: Player,
+                               val playlist: Playlist,
+                               val updater: UiUpdater) : BroadcastReceiver() {
     val prevIntent = PendingIntent.getBroadcast(playerService, REQUEST_CODE,
             Intent(ACTION_PREV).setPackage(playerService.packageName), PendingIntent.FLAG_CANCEL_CURRENT)
     val pauseIntent = PendingIntent.getBroadcast(playerService, REQUEST_CODE,
@@ -71,21 +77,18 @@ class MediaNotificationManager(val playerService: PlayerService, val repository:
     }
 
     fun subscribeToUpdates() {
-        val player = playerService.player
-
-        if (player != null) {
-            subscription = player.updater.asObservable()
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe {
-                        when (it) {
-                            is TrackEvent -> updateTrack(it.trackId)
-                            is StateEvent -> updateState(it.state)
-                            is GameEvent -> updateGame(it.gameId)
-                        }
+        subscription = updater.asObservable()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    when (it) {
+                        is TrackEvent -> updateTrack(it.trackId)
+                        is StateEvent -> updateState(it.state)
+                        is GameEvent -> updateGame(it.gameId)
                     }
-        }
+                }
 
-        player?.playingGameId?.let {
+
+        playlist.playingGameId?.let {
             updateGame(it)
         }
     }
@@ -115,33 +118,30 @@ class MediaNotificationManager(val playerService: PlayerService, val repository:
      */
     fun startNotification() {
         if (!notified) {
-            val player = playerService.player
-            if (player != null) {
-                val localTrackId = player.playingTrackId ?: player.pausedTrackId
+            val localTrackId = playlist.playingTrackId
 
-                if (localTrackId != null) {
-                    updateState(player.state)
-                    updateTrack(localTrackId)
+            if (localTrackId != null) {
+                updateState(player.state)
+                updateTrack(localTrackId)
 
-                    val notification = createNotification()
-                    if (notification != null) {
-                        logVerbose("[MediaNotificationManager] Starting foreground notification...")
+                val notification = createNotification()
+                if (notification != null) {
+                    logVerbose("[MediaNotificationManager] Starting foreground notification...")
 
-                        val filter = IntentFilter()
-                        filter.addAction(ACTION_PAUSE)
-                        filter.addAction(ACTION_PLAY)
-                        filter.addAction(ACTION_STOP)
-                        filter.addAction(ACTION_PREV)
-                        filter.addAction(ACTION_NEXT)
+                    val filter = IntentFilter()
+                    filter.addAction(ACTION_PAUSE)
+                    filter.addAction(ACTION_PLAY)
+                    filter.addAction(ACTION_STOP)
+                    filter.addAction(ACTION_PREV)
+                    filter.addAction(ACTION_NEXT)
 
-                        playerService.registerReceiver(this, filter)
-                        playerService.startForeground(NOTIFICATION_ID, notification)
+                    playerService.registerReceiver(this, filter)
+                    playerService.startForeground(NOTIFICATION_ID, notification)
 
-                        notified = true
-                    }
-                } else {
-                    logError("[MediaNotificationManager] Can't show notification: no track found.")
+                    notified = true
                 }
+            } else {
+                logError("[MediaNotificationManager] Can't show notification: no track found.")
             }
         }
     }
@@ -222,19 +222,15 @@ class MediaNotificationManager(val playerService: PlayerService, val repository:
     private fun updateState(state: Int) {
         logDebug("[MediaNotificationManager] Updating notification state.")
 
-        val player = playerService.player
+        val position = player.position
 
-        if (player != null) {
-            var position = player.position
+        val actions = getAvailableActions(player.state, playlist.playbackQueuePosition, playlist?.playbackQueue?.size)
 
-            val actions = getAvailableActions(player.state, player.playbackQueuePosition, player.playbackQueue?.size)
+        val stateBuilder = PlaybackStateCompat.Builder().setActions(actions)
+        stateBuilder.setState(state, position, 1.0f, SystemClock.elapsedRealtime())
 
-            val stateBuilder = PlaybackStateCompat.Builder().setActions(actions)
-            stateBuilder.setState(state, position, 1.0f, SystemClock.elapsedRealtime())
-
-            playbackState = stateBuilder.build()
-            playerService.session?.setPlaybackState(playbackState)
-        }
+        playbackState = stateBuilder.build()
+        playerService.session?.setPlaybackState(playbackState)
     }
 
     private fun createNotification(): Notification? {
@@ -262,7 +258,7 @@ class MediaNotificationManager(val playerService: PlayerService, val repository:
                         playerService.getString(R.string.notification_label_prev), prevIntent)
 
                 /*
-                * If there is a "skip to previous" button, the play/pause button will
+                * If there is a "skip to previous" button, the start/pause button will
                 * be the second one. We need to keep track of it, because the MediaStyle notification
                 * requires to specify the index of the buttons (actions) that should be visible
                 * when in compact view.
@@ -305,7 +301,7 @@ class MediaNotificationManager(val playerService: PlayerService, val repository:
     }
 
     private fun addPlayPauseAction(builder: NotificationCompat.Builder) {
-        logDebug("[MediaNotificationManager] Updating play/pause button.")
+        logDebug("[MediaNotificationManager] Updating start/pause button.")
 
         val label: String
         val icon: Int
@@ -443,7 +439,7 @@ class MediaNotificationManager(val playerService: PlayerService, val repository:
 
         val NOTIFICATION_ID = 5678
 
-        val ACTION_PLAY = "${BuildConfig.APPLICATION_ID}.play"
+        val ACTION_PLAY = "${BuildConfig.APPLICATION_ID}.start"
         val ACTION_PAUSE = "${BuildConfig.APPLICATION_ID}.pause"
         val ACTION_PREV = "${BuildConfig.APPLICATION_ID}.prev"
         val ACTION_NEXT = "${BuildConfig.APPLICATION_ID}.next"
