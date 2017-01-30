@@ -118,10 +118,18 @@ class RealmRepository(var realm: Realm) : Repository {
 
 
     override fun getTracks(): Observable<out List<Track>> {
-
         return realm
                 .where(Track::class.java)
                 .findAllSortedAsync("title")
+                .asObservable()
+                .filter { it.isLoaded }
+    }
+
+    override fun getTracksFromIds(trackIdsList: MutableList<String?>): Observable<out List<Track>> {
+        return realm
+                .where(Track::class.java)
+                .`in`("id", trackIdsList.toTypedArray())
+                .findAllAsync()
                 .asObservable()
                 .filter { it.isLoaded }
     }

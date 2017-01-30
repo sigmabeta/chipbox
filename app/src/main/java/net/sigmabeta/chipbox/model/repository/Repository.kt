@@ -26,6 +26,7 @@ interface Repository {
 
     fun getTrackSync(id: String): Track?
     fun getTracks(): Observable<out List<Track>>
+    fun getTracksFromIds(trackIdsList: MutableList<String?>): Observable<out List<Track>>
 
     fun getGame(id: String): Observable<Game>
     fun getGameSync(id: String): Game?
