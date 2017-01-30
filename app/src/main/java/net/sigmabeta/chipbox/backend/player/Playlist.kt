@@ -108,6 +108,8 @@ class Playlist @Inject constructor(val repository: Repository,
     }
 
     fun onTrackMoved(originPos: Int, destPos: Int) {
+        Collections.swap(playbackQueue, originPos, destPos)
+
         if (originPos == playbackQueuePosition) {
             playbackQueuePosition = destPos
         } else if (destPos == playbackQueuePosition) {
@@ -116,6 +118,8 @@ class Playlist @Inject constructor(val repository: Repository,
     }
 
     fun onTrackRemoved(position: Int) {
+        playbackQueue.removeAt(position)
+
         if (position == playbackQueuePosition) {
             // TODO Come up with a way to end current track
         } else if (position < playbackQueuePosition) {

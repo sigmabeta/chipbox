@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.util.logError
 import rx.android.schedulers.AndroidSchedulers
 import java.util.*
 import javax.inject.Inject
@@ -72,9 +73,17 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
 
     override fun updateViewState() {
         // TODO Get tracks, we only have IDs here
-//        displayTracks(player.playbackQueue)
-
-        displayPositionHelper(false)
+        val trackIdsList = playlist.playbackQueue
+        repository.getTracksFromIds(trackIdsList)
+                .subscribe(
+                        {
+                            displayTracks(it.toMutableList())
+                            displayPositionHelper(false)
+                        },
+                        {
+                            logError("Unable to load playlist: ${it.message}")
+                        }
+                )
 
         val subscription = updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
