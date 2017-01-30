@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.util.logError
+import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import java.util.concurrent.ArrayBlockingQueue
 import javax.inject.Inject
@@ -255,8 +256,8 @@ class Player @Inject constructor(val playlist: Playlist,
     }
 
     fun onPlaylistFinished() {
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-//        logInfo("[Player] No more tracks to start.")
+//        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
+        logInfo("[Player] No more tracks to start.")
     }
 
     /**
