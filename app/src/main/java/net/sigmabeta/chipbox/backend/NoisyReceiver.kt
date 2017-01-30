@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.backend
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.util.logWarning
 
 class NoisyReceiver constructor(val player: Player): BroadcastReceiver() {

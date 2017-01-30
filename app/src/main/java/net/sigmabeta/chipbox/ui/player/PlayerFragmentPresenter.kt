@@ -2,7 +2,9 @@ package net.sigmabeta.chipbox.ui.player
 
 import android.media.session.PlaybackState
 import android.os.Bundle
-import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
@@ -19,7 +21,9 @@ import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class PlayerFragmentPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
+class PlayerFragmentPresenter @Inject constructor(val player: Player,
+                                                  val playlist: Playlist,
+                                                  val updater: UiUpdater) : FragmentPresenter() {
     var view: PlayerFragmentView? = null
 
     var game: Game? = null
@@ -37,7 +41,9 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     }
 
     fun onSeekbarRelease(progress: Int) {
-        player.seek(progress)
+        val length = track?.trackLength ?: 0
+        val seekPosition = (length * progress / 100).toInt()
+        player.seek(seekPosition)
         seekbarTouched = false
     }
 
@@ -57,14 +63,14 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     override fun updateViewState() {
         updateHelper()
 
-        val subscription = player.updater.asObservable()
+        val subscription = updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
-                        is TrackEvent -> displayTrack(it.track, true)
+                        is TrackEvent -> displayTrack(it.trackId, true)
                         is PositionEvent -> displayPosition(it.millisPlayed)
                         is StateEvent -> displayState(it.state)
-                        is GameEvent -> displayGame(it.game, false, true)
+                        is GameEvent -> displayGame(it.gameId, false, true)
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
                     }
                 }
@@ -75,13 +81,13 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
     override fun onClick(id: Int) = Unit
 
     private fun updateHelper() {
-        player.playingTrack?.let {
+        playlist.playingTrackId?.let {
             displayTrack(it, false)
         } ?: let {
             logError("[PlayerFragmentPresenter] No track to display.")
         }
 
-        player.playingGame?.let {
+        playlist.playingGameId?.let {
             displayGame(it, true, false)
         }
 
@@ -100,23 +106,37 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player) : Fragment
         view = null
     }
 
-    private fun displayGame(game: Game?, force: Boolean, animate: Boolean) {
-        if (force || this.game != game) {
-            view?.setGameBoxArt(game?.artLocal, !force)
-            view?.setGameTitle(game?.title ?: "Unknown", animate)
-        }
+    private fun displayGame(gameId: String?, force: Boolean, animate: Boolean) {
+        if (gameId != null) {
+            val game = repository.getGameSync(gameId)
 
-        this.game = game
+            if (force || this.game != game) {
+                view?.setGameBoxArt(game?.artLocal, !force)
+                view?.setGameTitle(game?.title ?: "Unknown", animate)
+
+            }
+
+            this.game = game
+        }
     }
 
-    private fun displayTrack(track: Track, animate: Boolean) {
-        this.track = track
+    private fun displayTrack(trackId: String?, animate: Boolean) {
+        if (trackId != null) {
+            val track = repository.getTrackSync(trackId)
 
-        view?.setTrackTitle(track.title.orEmpty(), animate)
-        view?.setArtist(track.artistText.orEmpty(), animate)
-        view?.setTrackLength(getTimeStringFromMillis(track.trackLength ?: 0), animate)
+            if (track != null) {
 
-        displayPosition(0)
+                this.track = track
+
+                view?.setTrackTitle(track.title.orEmpty(), animate)
+                view?.setArtist(track.artistText.orEmpty(), animate)
+                view?.setTrackLength(getTimeStringFromMillis(track.trackLength ?: 0), animate)
+
+                displayPosition(0)
+            } else {
+                logError("Cannot load track with id $trackId")
+            }
+        }
     }
 
     private fun displayPosition(millisPlayed: Long) {

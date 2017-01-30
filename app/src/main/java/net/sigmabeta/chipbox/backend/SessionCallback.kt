@@ -7,7 +7,7 @@ class SessionCallback(val playerService: PlayerService) : MediaSessionCompat.Cal
     override fun onPlay() {
         logVerbose("[SessionCallback] Received PLAY command.")
 
-        playerService.player?.play()
+        playerService.player?.start(null)
     }
 
     override fun onStop() {

@@ -3,9 +3,9 @@ package net.sigmabeta.chipbox
 import android.app.Application
 import android.os.Build
 import com.crashlytics.android.Crashlytics
-import com.raizlabs.android.dbflow.config.FlowConfig
-import com.raizlabs.android.dbflow.config.FlowManager
 import io.fabric.sdk.android.Fabric
+import io.realm.Realm
+import io.realm.RealmConfiguration
 import net.sigmabeta.chipbox.dagger.Initializer
 import net.sigmabeta.chipbox.dagger.component.AppComponent
 import net.sigmabeta.chipbox.util.logDebug
@@ -34,10 +34,9 @@ public class ChipboxApplication : Application() {
 
         System.loadLibrary("gme")
 
-        val flowConfig = FlowConfig.Builder(this)
-                .build()
-
-        FlowManager.init(flowConfig)
+        Realm.init(this)
+        val realmConfig = RealmConfiguration.Builder().build()
+        Realm.setDefaultConfiguration(realmConfig)
 
         val fabric = Fabric.Builder(this)
                 .kits(Crashlytics())

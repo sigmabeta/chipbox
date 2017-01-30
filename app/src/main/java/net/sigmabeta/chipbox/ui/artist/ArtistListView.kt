@@ -6,7 +6,7 @@ import net.sigmabeta.chipbox.ui.BaseView
 interface ArtistListView : BaseView {
     fun setArtists(artists: List<Artist>)
 
-    fun launchNavActivity(id: Long)
+    fun launchNavActivity(id: String)
 
     fun showFilesScreen()
 

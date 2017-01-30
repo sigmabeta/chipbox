@@ -12,6 +12,7 @@ abstract class ActivityPresenter : BasePresenter() {
         setView(view)
 
         if (savedInstanceState == null) {
+            repository.reopen()
             setup(arguments)
         } else {
             recreated = true
@@ -24,6 +25,7 @@ abstract class ActivityPresenter : BasePresenter() {
 
         if (finishing) {
             teardown()
+            repository.close()
             recreated = false
         } else {
             onTempDestroy()

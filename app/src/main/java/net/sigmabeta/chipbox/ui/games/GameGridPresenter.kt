@@ -5,23 +5,21 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class GameGridPresenter @Inject constructor(val repository: Repository) : FragmentPresenter() {
+class GameGridPresenter @Inject constructor() : FragmentPresenter() {
     var view: GameListView? = null
 
     var platform = Track.PLATFORM_ALL
 
     var games: List<Game>? = null
 
-    fun onItemClick(id: Long) {
+    fun onItemClick(position: Int) {
+        val id = games?.get(position)?.id ?: return
         view?.launchGameActivity(id)
     }
 
@@ -97,9 +95,12 @@ class GameGridPresenter @Inject constructor(val repository: Repository) : Fragme
         view?.showLoadingSpinner()
         view?.hideEmptyState()
 
-        val subscription = repository.getGamesForPlatform(platform)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+        val request = if (platform == Track.PLATFORM_ALL) {
+            repository.getGames()
+        } else {
+            repository.getGamesForPlatform(platform)
+        }
+        val subscription = request
                 .subscribe(
                         {
                             games = it

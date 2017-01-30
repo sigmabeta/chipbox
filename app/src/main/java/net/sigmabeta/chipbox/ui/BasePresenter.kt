@@ -1,10 +1,15 @@
 package net.sigmabeta.chipbox.ui
 
 import android.os.Bundle
+import net.sigmabeta.chipbox.model.repository.Repository
 import rx.subscriptions.CompositeSubscription
+import javax.inject.Inject
 
 abstract class BasePresenter {
     var subscriptions = CompositeSubscription()
+
+    lateinit var repository: Repository
+        @Inject set
 
     fun onResume() {
         updateViewState()

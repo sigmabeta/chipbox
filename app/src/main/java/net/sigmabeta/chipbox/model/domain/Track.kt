@@ -2,17 +2,12 @@ package net.sigmabeta.chipbox.model.domain
 
 import android.media.MediaMetadata
 import android.support.v4.media.MediaMetadataCompat
-import com.raizlabs.android.dbflow.annotation.ColumnIgnore
-import com.raizlabs.android.dbflow.annotation.ForeignKey
-import com.raizlabs.android.dbflow.annotation.PrimaryKey
-import com.raizlabs.android.dbflow.annotation.Table
-import com.raizlabs.android.dbflow.config.FlowManager
-import com.raizlabs.android.dbflow.structure.BaseModel
-import com.raizlabs.android.dbflow.structure.container.ForeignKeyContainer
-import net.sigmabeta.chipbox.ChipboxDatabase
+import io.realm.RealmList
+import io.realm.RealmObject
+import io.realm.annotations.PrimaryKey
+import net.sigmabeta.chipbox.model.IdRealmObject
 
-@Table(database = ChipboxDatabase::class, allFields = true)
-class Track() : BaseModel() {
+open class Track() : RealmObject(), IdRealmObject {
     constructor(number: Int,
                 path: String,
                 title: String,
@@ -33,30 +28,23 @@ class Track() : BaseModel() {
         this.loopLength = loopLength
     }
 
-    @PrimaryKey (autoincrement = true) var id: Long? = null
-    var trackNumber: Int? = null
-    var path: String? = null
-    var title: String? = null
-    var platform: Long = -1L
-    var artistText: String? = null
-    var trackLength: Long? = null
-    var introLength: Long? = null
-    var loopLength: Long? = null
+    @PrimaryKey open var id: String? = null
 
-    @ColumnIgnore
-    var gameTitle: String? = null
+    open var trackNumber: Int? = null
+    open var path: String? = null
+    open var title: String? = null
+    open var platform: Long = -1L
+    open var artistText: String? = null
+    open var trackLength: Long? = null
+    open var introLength: Long? = null
+    open var loopLength: Long? = null
+    open var game: Game? = null
+    open var gameTitle: String? = null
+    open var artists: RealmList<Artist>? = null
 
-    @ForeignKey (saveForeignKeyModel = false)
-    var gameContainer: ForeignKeyContainer<Game>? = null
-
-    @ColumnIgnore
-    @JvmField
-    var artists: List<Artist>? = null
-
-    fun associateGame(game: Game) {
-        gameContainer = FlowManager
-                .getContainerAdapter(Game::class.java)
-                .toForeignKeyContainer(game)
+    override fun getPrimaryKey() = id
+    override fun setPrimaryKey(id: String) {
+        this.id = id
     }
 
     companion object {
@@ -72,7 +60,7 @@ class Track() : BaseModel() {
         fun toMetadataBuilder(track: Track): MediaMetadataCompat.Builder {
             return MediaMetadataCompat.Builder()
                     .putString(MediaMetadata.METADATA_KEY_TITLE, track.title)
-                    .putString(MediaMetadata.METADATA_KEY_ALBUM, track.gameContainer?.toModel()?.title)
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, track.game?.title)
                     .putString(MediaMetadata.METADATA_KEY_ARTIST, track.artistText)
         }
     }

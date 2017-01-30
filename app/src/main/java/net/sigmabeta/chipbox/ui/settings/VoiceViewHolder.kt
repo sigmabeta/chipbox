@@ -14,6 +14,4 @@ class VoiceViewHolder(view: View, adapter: VoicesAdapter) : BaseViewHolder<Voice
         view.text_voice_name.text = toBind.name
         view.checkbox_enabled.isChecked = toBind.enabled
     }
-
-    override fun getId() = adapterPosition.toLong()
 }

@@ -12,12 +12,24 @@ import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
 import android.widget.Toast
 import net.sigmabeta.chipbox.ChipboxApplication
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Playlist
+import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.util.logVerbose
 import javax.inject.Inject
 
 class PlayerService : Service(), BackendView {
-    var player: Player? = null
+    lateinit var player: Player
+        @Inject set
+
+    lateinit var playlist: Playlist
+        @Inject set
+
+    lateinit var repository: Repository
+        @Inject set
+
+    lateinit var updater: UiUpdater
         @Inject set
 
     var notificationManager: MediaNotificationManager? = null
@@ -37,7 +49,7 @@ class PlayerService : Service(), BackendView {
 
         inject()
 
-        noisyReceiver = NoisyReceiver(player!!)
+        noisyReceiver = NoisyReceiver(player)
 
         session = MediaSessionCompat(this, "Chipbox")
 
@@ -46,7 +58,7 @@ class PlayerService : Service(), BackendView {
         session?.setCallback(SessionCallback(this))
         session?.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
-        notificationManager = MediaNotificationManager(this)
+        notificationManager = MediaNotificationManager(this, repository, player, playlist, updater)
 
         // A workaround for the fact that controllerCallback is null inside the init {} constructor.
         notificationManager?.setControllerCallback()

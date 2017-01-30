@@ -2,19 +2,16 @@ package net.sigmabeta.chipbox.ui.file
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.repository.DbFlowRepository
-import net.sigmabeta.chipbox.model.repository.Repository
+import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class FilesPresenter @Inject constructor(val repository: Repository) : ActivityPresenter() {
+class FilesPresenter @Inject constructor() : ActivityPresenter() {
     // TODO DI this
     lateinit var startPath: String
 
@@ -38,14 +35,12 @@ class FilesPresenter @Inject constructor(val repository: Repository) : ActivityP
     fun onFabClick() {
         path?.let {
             val subscription = repository.addFolder(it)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
                                 when (it) {
-                                    DbFlowRepository.ADD_STATUS_GOOD -> view?.onAddSuccessful()
-                                    DbFlowRepository.ADD_STATUS_EXISTS -> view?.showExistsMessage()
-                                    DbFlowRepository.ADD_STATUS_DB_ERROR -> view?.showErrorMessage(R.string.file_list_error_adding)
+                                    RealmRepository.ADD_STATUS_GOOD -> view?.onAddSuccessful()
+                                    RealmRepository.ADD_STATUS_EXISTS -> view?.showExistsMessage()
+                                    RealmRepository.ADD_STATUS_DB_ERROR -> view?.showErrorMessage(R.string.file_list_error_adding)
                                 }
                             },
                             {

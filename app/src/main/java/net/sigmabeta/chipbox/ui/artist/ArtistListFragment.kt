@@ -27,7 +27,7 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistVi
      * ArtistListView
      */
 
-    override fun launchNavActivity(id: Long) {
+    override fun launchNavActivity(id: String) {
         NavigationActivity.launch(activity, TrackListFragment.FRAGMENT_TAG, id)
     }
 
@@ -75,8 +75,8 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistVi
      * ItemListView
      */
 
-    override fun onItemClick(id: Long, clickedViewHolder: ArtistViewHolder) {
-        presenter.onItemClick(id)
+    override fun onItemClick(position: Int, clickedViewHolder: ArtistViewHolder) {
+        presenter.onItemClick(position)
     }
 
     /**

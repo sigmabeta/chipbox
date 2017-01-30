@@ -11,10 +11,6 @@ import net.sigmabeta.chipbox.util.TYPE_OTHER
 public class FileViewHolder(view: View, adapter: FileListAdapter) : BaseViewHolder<FileListItem, FileViewHolder, FileListAdapter>(view, adapter) {
     var file: FileListItem? = null
 
-    override fun getId(): Long? {
-        return adapterPosition.toLong()
-    }
-
     override fun bind(toBind: FileListItem) {
         file = toBind
 

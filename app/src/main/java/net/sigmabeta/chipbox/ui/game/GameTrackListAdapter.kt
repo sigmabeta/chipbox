@@ -19,7 +19,7 @@ class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayA
             }
         }
 
-    var playingTrackId: Long? = null
+    var playingTrackId: String? = null
         set (value) {
             field = value
             notifyDataSetChanged()
