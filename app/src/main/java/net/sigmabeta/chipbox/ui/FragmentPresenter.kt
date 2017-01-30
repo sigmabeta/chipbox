@@ -7,6 +7,7 @@ abstract class FragmentPresenter : BasePresenter() {
         setView(view)
 
         if (savedInstanceState == null) {
+            repository.reopen()
             setup(arguments)
         } else {
             onReCreate(arguments, savedInstanceState)
@@ -18,6 +19,7 @@ abstract class FragmentPresenter : BasePresenter() {
 
         if (ending) {
             teardown()
+            repository.close()
         }
     }
 

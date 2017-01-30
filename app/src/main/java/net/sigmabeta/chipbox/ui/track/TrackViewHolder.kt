@@ -10,17 +10,12 @@ import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.loadImageLowQuality
 
 class TrackViewHolder(view: View, adapter: TrackListAdapter) : BaseViewHolder<Track, TrackViewHolder, TrackListAdapter>(view, adapter) {
-    override fun getId(): Long? {
-        return adapterPosition.toLong()
-    }
-
     override fun bind(toBind: Track) {
         view.text_song_title.text = toBind.title
         view.text_song_artist.text = toBind.artistText
         view.text_song_length.text = getTimeStringFromMillis(toBind.trackLength ?: 0)
 
-        val gameId = toBind.gameContainer?.toModel()?.id
-        val imagePath = adapter.games?.get(gameId)?.artLocal
+        val imagePath = toBind.game?.artLocal
 
         if (imagePath != null) {
             view.image_game_box_art.loadImageLowQuality(imagePath, true, true)

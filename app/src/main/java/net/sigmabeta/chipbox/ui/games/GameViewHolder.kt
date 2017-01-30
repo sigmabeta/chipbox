@@ -7,11 +7,7 @@ import net.sigmabeta.chipbox.ui.BaseViewHolder
 import net.sigmabeta.chipbox.util.loadImageLowQuality
 
 class GameViewHolder(view: View, adapter: GameGridAdapter) : BaseViewHolder<Game, GameViewHolder, GameGridAdapter>(view, adapter) {
-    var gameId: Long? = null
-
-    override fun getId(): Long? {
-        return gameId
-    }
+    var gameId: String? = null
 
     override fun bind(toBind: Game) {
         gameId = toBind.id

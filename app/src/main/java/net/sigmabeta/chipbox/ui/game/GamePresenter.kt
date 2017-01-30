@@ -2,40 +2,41 @@ package net.sigmabeta.chipbox.ui.game
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GamePresenter @Inject constructor(val player: Player, val repository: Repository) : ActivityPresenter() {
+class GamePresenter @Inject constructor(val player: Player,
+                                        val updater: UiUpdater) : ActivityPresenter() {
     var view: GameView? = null
 
-    var gameId: Long? = null
+    var gameId: String? = null
 
     var game: Game? = null
     var tracks: MutableList<Track>? = null
 
-    fun onItemClick(position: Long) {
-        tracks?.let {
-            player.play(it, position.toInt())
+    fun onItemClick(position: Int) {
+        getTrackIdList()?.let {
+            player.play(it, position)
         }
     }
 
     override fun onClick(id: Int) {
         when (id) {
             R.id.button_fab -> {
-                tracks?.let { them ->
+                getTrackIdList()?.let { them ->
                     player.play(them, 0)
                 }
             }
@@ -69,16 +70,14 @@ class GamePresenter @Inject constructor(val player: Player, val repository: Repo
             view?.setTracks(it)
         }
 
-        player.playingTrack?.let {
-            displayTrack(it)
-        }
+        displayTrack(player.playlist.playingTrackId)
 
-        val subscription = player.updater.asObservable()
+        val subscription = updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
                         is TrackEvent -> {
-                            displayTrack(it.track)
+                            displayTrack(it.trackId)
                         }
                         is PositionEvent -> { /* no-op */ }
                         is StateEvent -> { /* no-op */
@@ -102,37 +101,50 @@ class GamePresenter @Inject constructor(val player: Player, val repository: Repo
 
     override fun onReenter() = Unit
 
-    private fun displayTrack(track: Track) {
-        view?.setPlayingTrack(track)
+    private fun getTrackIdList() = tracks?.map(Track::id)?.toMutableList()
+
+    private fun displayTrack(trackId: String?) {
+        if (trackId != null) {
+            val track = repository.getTrackSync(trackId)
+
+            if (track != null) {
+                view?.setPlayingTrack(track)
+            } else {
+                logError("Cannot load track with id $trackId")
+            }
+        }
     }
 
     private fun setupHelper(arguments: Bundle?) {
-        val gameId = arguments?.getLong(GameActivity.ARGUMENT_GAME_ID) ?: -1
+        val gameId = arguments?.getString(GameActivity.ARGUMENT_GAME_ID)
         this.gameId = gameId
 
-        val gameSubscription = repository.getGame(gameId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe (
-                        { game ->
-                            if (game != null) {
-                                this.game = game
-                                view?.setGame(game)
+        gameId?.let {
+            val gameSubscription = repository.getGame(it)
+                    .subscribe(
+                            { game ->
+                                if (game != null) {
+                                    this.game = game
+                                    view?.setGame(game)
 
-                                val tracks = game.getTracks()
-                                this.tracks = tracks
-                                view?.setTracks(tracks)
-                            } else {
+                                    val tracks = game.tracks?.toMutableList()
+
+                                    tracks?.let {
+                                        this.tracks = tracks
+                                        view?.setTracks(tracks)
+                                    }
+                                } else {
+                                    view?.setGame(null)
+                                    view?.showErrorSnackbar("Error: Game not found.", null, null)
+                                }
+                            },
+                            {
                                 view?.setGame(null)
-                                view?.showErrorSnackbar("Error: Game not found.", null, null)
+                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
                             }
-                        },
-                        {
-                            view?.setGame(null)
-                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                        }
-                )
+                    )
 
-        subscriptions.add(gameSubscription)
+            subscriptions.add(gameSubscription)
+        }
     }
 }

@@ -5,8 +5,11 @@ import net.sigmabeta.chipbox.model.events.PlaybackEvent
 import rx.Observable
 import rx.subjects.PublishSubject
 import rx.subjects.SerializedSubject
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class UiUpdater {
+@Singleton
+class UiUpdater @Inject constructor() {
     private val subject = SerializedSubject(PublishSubject.create<PlaybackEvent>())
 
     fun send(event: PlaybackEvent) {

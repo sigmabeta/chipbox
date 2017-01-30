@@ -37,7 +37,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
         setActivityTitle(getString(titleResource))
     }
 
-    override fun launchGameActivity(id: Long) {
+    override fun launchGameActivity(id: String) {
         clickedViewHolder?.let {
             GameActivity.launch(activity, id, getShareableViews())
         } ?: let {
@@ -103,9 +103,9 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
      * ItemListView
      */
 
-    override fun onItemClick(id: Long, clickedViewHolder: GameViewHolder) {
+    override fun onItemClick(position: Int, clickedViewHolder: GameViewHolder) {
         this.clickedViewHolder = clickedViewHolder
-        presenter.onItemClick(id)
+        presenter.onItemClick(position)
     }
 
     /**
@@ -163,11 +163,11 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
 
         val ARGUMENT_PLATFORM_INDEX = "${FRAGMENT_TAG}.platform_index"
 
-        fun newInstance(platformIndex: Long): GameGridFragment {
+        fun newInstance(id: Long): GameGridFragment {
             val fragment = GameGridFragment()
 
             val arguments = Bundle()
-            arguments.putLong(ARGUMENT_PLATFORM_INDEX, platformIndex)
+            arguments.putLong(ARGUMENT_PLATFORM_INDEX, id)
 
             fragment.arguments = arguments
 

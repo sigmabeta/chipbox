@@ -3,22 +3,26 @@ package net.sigmabeta.chipbox.ui.main
 import android.media.session.PlaybackState
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter() {
+class MainPresenter @Inject constructor(val player: Player,
+                                        val playlist: Playlist,
+                                        val updater: UiUpdater) : ActivityPresenter() {
     var view: MainView? = null
 
     var state = player.state
@@ -44,9 +48,9 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
         when (player.state) {
             PlaybackState.STATE_PLAYING -> player.pause()
 
-            PlaybackState.STATE_PAUSED -> player.play()
+            PlaybackState.STATE_PAUSED -> player.start(null)
 
-            PlaybackState.STATE_STOPPED -> player.play()
+            PlaybackState.STATE_STOPPED -> player.start(null)
         }
     }
 
@@ -63,15 +67,15 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
     override fun updateViewState() {
         updateHelper()
 
-        val subscription = player.updater.asObservable()
+        val subscription = updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
-                        is TrackEvent -> displayTrack(it.track, true)
+                        is TrackEvent -> displayTrack(it.trackId, true)
                         is PositionEvent -> {
                             /* no-op */
                         }
-                        is GameEvent -> displayGame(it.game, false)
+                        is GameEvent -> displayGame(it.gameId, false)
                         is StateEvent -> displayState(state, it.state)
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
                     }
@@ -95,11 +99,11 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
     }
 
     private fun updateHelper() {
-        player.playingTrack?.let {
+        playlist.playingTrackId?.let {
             displayTrack(it, false)
         }
 
-        player.playingGame?.let {
+        playlist.playingGameId?.let {
             displayGame(it, true)
         }
 
@@ -128,16 +132,28 @@ class MainPresenter @Inject constructor(val player: Player) : ActivityPresenter(
 
     override fun getView(): BaseView? = view
 
-    private fun displayTrack(track: Track, animate: Boolean) {
-        view?.setTrackTitle(track.title.orEmpty(), animate)
-        view?.setArtist(track.artistText.orEmpty(), animate)
+    private fun displayTrack(trackId: String?, animate: Boolean) {
+        if (trackId != null) {
+            val track = repository.getTrackSync(trackId)
+
+            if (track != null) {
+                view?.setTrackTitle(track.title.orEmpty(), animate)
+                view?.setArtist(track.artistText.orEmpty(), animate)
+            } else {
+                logError("Cannot load track with id $trackId")
+            }
+        }
     }
 
-    private fun displayGame(game: Game?, force: Boolean) {
-        if (force || this.game != game) {
-            view?.setGameBoxArt(game?.artLocal, !force)
-        }
+    private fun displayGame(gameId: String?, force: Boolean) {
+        if (gameId != null) {
+            val game = repository.getGameSync(gameId)
 
-        this.game = game
+            if (force || this.game != game) {
+                view?.setGameBoxArt(game?.artLocal, !force)
+            }
+
+            this.game = game
+        }
     }
 }
