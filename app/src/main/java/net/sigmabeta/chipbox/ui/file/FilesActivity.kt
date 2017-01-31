@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.file
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.os.Environment
@@ -23,16 +24,18 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
         @Inject set
 
     override fun showFileFragment(path: String, stack: Boolean) {
-        var fragment = FileListFragment.newInstance(path)
+        doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
+            val fragment = FileListFragment.newInstance(path)
 
-        val transaction = supportFragmentManager.beginTransaction()
+            val transaction = supportFragmentManager.beginTransaction()
 
-        if (stack) {
-            transaction.addToBackStack(null)
+            if (stack) {
+                transaction.addToBackStack(null)
+            }
+
+            transaction.replace(R.id.frame_fragment, fragment, FileListFragment.FRAGMENT_TAG + "." + path)
+            transaction.commit()
         }
-
-        transaction.replace(R.id.frame_fragment, fragment, FileListFragment.FRAGMENT_TAG + "." + path)
-        transaction.commit()
     }
 
     override fun popBackStack() {
