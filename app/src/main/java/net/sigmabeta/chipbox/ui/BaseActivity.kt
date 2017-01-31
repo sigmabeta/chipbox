@@ -1,8 +1,12 @@
 package net.sigmabeta.chipbox.ui
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.support.design.widget.Snackbar
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Pair
 import android.view.View
@@ -10,10 +14,15 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.Toast
 import com.squareup.picasso.Callback
+import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.component.FragmentComponent
 import net.sigmabeta.chipbox.util.*
 
+
 abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListener {
+    var lastPermRequestId: String? = null
+    var lastPermRequestAction: (() -> Unit)? = null
+
     fun getPicassoCallback(): Callback {
         return object : Callback {
             override fun onSuccess() {
@@ -24,6 +33,24 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
                 startPostponedEnterTransition()
                 logError("[BaseActivity] Couldn't load image.")
             }
+        }
+    }
+
+    fun doWithPermission(permissionId: String, action: () -> Unit) {
+        // If we don't have permission to do the thing yet
+        if (ContextCompat.checkSelfPermission(this, permissionId) != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, permissionId)) {
+                showPermissionExplanation(permissionId, action)
+            } else {
+                requestPermission(permissionId, action)
+            }
+        } else {
+            lastPermRequestId = null
+            lastPermRequestAction = null
+            // Do the thing
+            action.invoke()
         }
     }
 
@@ -56,6 +83,31 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
         } else if (shouldDelayTransitionForFragment()) {
             setResult(RESULT_OK)
             postponeEnterTransition()
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            (lastPermRequestId?.hashCode() ?: 0) and 0xFFFF -> {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    lastPermRequestAction?.invoke()
+                } else {
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(this, permissions[0])) {
+                        // User may have accidentally clicked no.
+                        showPermissionExplanation(lastPermRequestId!!, lastPermRequestAction!!)
+                    } else {
+                        // User clicked "don't ask again."
+                        showPermanentDenialError(lastPermRequestId!!)
+                    }
+                }
+                lastPermRequestId = null
+                lastPermRequestAction = null
+
+                return
+            }
+
+            else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         }
     }
 
@@ -129,4 +181,29 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
      * getSharedImage() call returns non-null, this is ignored.
      */
     protected abstract fun shouldDelayTransitionForFragment(): Boolean
+
+    protected fun showPermissionExplanation(permissionId: String, action: () -> Unit) {
+        val message = if (permissionId == Manifest.permission.READ_EXTERNAL_STORAGE) {
+            getString(R.string.permission_storage_explanation)
+        } else {
+            getString(R.string.permission_general_explanation)
+        }
+
+        showErrorSnackbar(message,
+                View.OnClickListener { requestPermission(permissionId, action) },
+                R.string.permission_cta)
+    }
+
+    protected fun requestPermission(permissionId: String, action: () -> Unit) {
+        lastPermRequestId = permissionId
+        lastPermRequestAction = action
+
+        ActivityCompat.requestPermissions(this,
+                arrayOf<String>(permissionId),
+                permissionId.hashCode() and 0xFFFF)
+    }
+
+    private fun showPermanentDenialError(lastPermRequestId: String) {
+        showErrorSnackbar(getString(R.string.permission_general_permanent), null, 0)
+    }
 }

@@ -7,6 +7,10 @@
 
     <string name="back_button">Back Button</string>
 
+    <string name="permission_cta">Grant</string>
+    <string name="permission_storage_explanation">Without storage access permission, Chipbox cannot scan or access tracks.</string>
+    <string name="permission_general_explanation">Please grant this permission in order to use Chipbox.</string>
+    <string name="permission_general_permanent">"Please grant this permission in your device's settings in order to use Chipbox."</string>
     <!-- Main Screen -->
 
     <string name="drawer_add_folder">Add to Library</string>
