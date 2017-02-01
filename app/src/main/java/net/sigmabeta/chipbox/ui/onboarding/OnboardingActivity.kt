@@ -3,20 +3,27 @@ package net.sigmabeta.chipbox.ui.onboarding
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
 import android.view.View
 import kotlinx.android.synthetic.main.activity_onboarding.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.dagger.component.FragmentComponent
+import net.sigmabeta.chipbox.ui.ActivityPresenter
+import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.main.MainActivity
 import net.sigmabeta.chipbox.ui.onboarding.library.LibraryFragment
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import javax.inject.Inject
 
-class OnboardingActivity : AppCompatActivity(), OnboardingView {
+class OnboardingActivity : BaseActivity(), OnboardingView {
+
+    override fun getPresenter(): ActivityPresenter = presenter
+
+    override fun getSharedImage() = null
+
+    override fun shouldDelayTransitionForFragment() = false
+
     lateinit var presenter: OnboardingPresenter
         @Inject set
 
@@ -53,10 +60,6 @@ class OnboardingActivity : AppCompatActivity(), OnboardingView {
         presenter.currentTag = tag
     }
 
-    override fun getFragmentComponent(): FragmentComponent {
-        return presenter.fragmentComponent
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         inject()
         super.onCreate(savedInstanceState)
@@ -64,19 +67,17 @@ class OnboardingActivity : AppCompatActivity(), OnboardingView {
         presenter.onCreate(intent.extras, savedInstanceState, this)
     }
 
-    fun inject() = ChipboxApplication.appComponent.inject(this)
+    override fun inject() = ChipboxApplication.appComponent.inject(this)
 
     override fun configureViews() {
         setContentView(getLayoutId())
     }
 
-    fun getLayoutId() = R.layout.activity_onboarding
+    override fun getLayoutId() = R.layout.activity_onboarding
 
-    fun getContentLayout() = frame_content
+    override fun getContentLayout() = frame_content
 
     override fun showToastMessage(message: String) = Unit
-
-    override fun showErrorSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) = Unit
 
     fun startTransition() = Unit
 

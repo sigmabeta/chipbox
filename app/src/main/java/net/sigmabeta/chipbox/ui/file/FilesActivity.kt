@@ -24,18 +24,16 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
         @Inject set
 
     override fun showFileFragment(path: String, stack: Boolean) {
-        doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
-            val fragment = FileListFragment.newInstance(path)
+        val fragment = FileListFragment.newInstance(path)
 
-            val transaction = supportFragmentManager.beginTransaction()
+        val transaction = supportFragmentManager.beginTransaction()
 
-            if (stack) {
-                transaction.addToBackStack(null)
-            }
-
-            transaction.replace(R.id.frame_fragment, fragment, FileListFragment.FRAGMENT_TAG + "." + path)
-            transaction.commit()
+        if (stack) {
+            transaction.addToBackStack(null)
         }
+
+        transaction.replace(R.id.frame_fragment, fragment, FileListFragment.FRAGMENT_TAG + "." + path)
+        transaction.commit()
     }
 
     override fun popBackStack() {
@@ -126,7 +124,7 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
 
         val ARGUMENT_PATH: String = "${ACTIVITY_TAG}.path"
 
-        fun launch(activity: Activity) {
+        fun launch(activity: Activity) = (activity as BaseActivity).doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
             val launcher = Intent(activity, FilesActivity::class.java)
 
             launcher.putExtra(ARGUMENT_PATH, Environment.getExternalStorageDirectory().path)
