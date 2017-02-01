@@ -189,7 +189,7 @@ fun generateFileList(folder: File): Observable<ArrayList<FileListItem>?> {
         val children = folder.listFiles()
 
         if (children == null) {
-            it.onError(Exception("This file is not a directory."))
+            it.onError(IllegalStateException("This file is not a directory."))
         } else {
             val itemList = ArrayList<FileListItem>(children.size)
 

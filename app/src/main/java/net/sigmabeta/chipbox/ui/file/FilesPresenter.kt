@@ -2,19 +2,18 @@ package net.sigmabeta.chipbox.ui.file
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.dagger.module.AppModule
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
 import java.io.File
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
-class FilesPresenter @Inject constructor() : ActivityPresenter() {
-    // TODO DI this
-    lateinit var startPath: String
-
+class FilesPresenter @Inject constructor(@Named(AppModule.DEP_NAME_BROWSER_START) val startPath: String) : ActivityPresenter() {
     var view: FilesView? = null
 
     var path: String? = null
@@ -34,6 +33,10 @@ class FilesPresenter @Inject constructor() : ActivityPresenter() {
 
     fun onFabClick() {
         path?.let {
+            if (path == "/") {
+                view?.showNoAddingRootError()
+                return
+            }
             val subscription = repository.addFolder(it)
                     .subscribe(
                             {
@@ -57,19 +60,18 @@ class FilesPresenter @Inject constructor() : ActivityPresenter() {
         view?.onAddSuccessful()
     }
 
+    fun onNotFolderError() {
+        upOneLevel()
+
+    }
+
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
     override fun onTempDestroy() = Unit
 
     override fun setup(arguments: Bundle?) {
-        val path = arguments?.getString(FilesActivity.ARGUMENT_PATH)
-
-        if (path != null) {
-            this.path = path
-
-            startPath = path
-            view?.showFileFragment(path, false)
-        }
+        path = startPath
+        view?.showFileFragment(startPath, false)
     }
 
     override fun teardown() {
@@ -105,13 +107,18 @@ class FilesPresenter @Inject constructor() : ActivityPresenter() {
             }
         }
 
-        val parentPath = File(path).parentFile.path
-        this.path = parentPath
+        val parentFile = File(path).parentFile
+        if (parentFile != null) {
+            val parentPath = parentFile.path
+            this.path = parentPath
 
-        if (popStack) {
-            view?.popBackStack()
+            if (popStack) {
+                view?.popBackStack()
+            } else {
+                view?.showFileFragment(parentPath, true)
+            }
         } else {
-            view?.showFileFragment(parentPath, true)
+            view?.showErrorMessage(R.string.file_list_error_no_parent)
         }
     }
 }

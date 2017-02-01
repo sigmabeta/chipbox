@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.model.repository
 
 import android.util.Log
 import dagger.Lazy
+import net.sigmabeta.chipbox.dagger.module.AppModule
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.util.*
@@ -11,8 +12,10 @@ import rx.Subscriber
 import java.io.File
 import java.util.*
 import javax.inject.Inject
+import javax.inject.Named
 
-class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>, val externalFilesPath: String?) {
+class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
+                                         @Named(AppModule.DEP_NAME_APP_STORAGE_DIR) val appStorageDir: String?) {
     lateinit var repository: Repository
 
     fun scanLibrary(): Observable<FileScanEvent> {
@@ -164,7 +167,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>, v
     }
 
     private fun copyImageToInternal(game: Game, sourceFile: File) {
-        val targetDirPath = externalFilesPath + "/images/" + game.id
+        val targetDirPath = appStorageDir + "/images/" + game.id
         val targetDir = File(targetDirPath)
 
         targetDir.mkdirs()

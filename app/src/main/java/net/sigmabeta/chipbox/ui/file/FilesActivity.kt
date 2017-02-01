@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.ui.file
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -38,6 +37,14 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
 
     override fun popBackStack() {
         supportFragmentManager.popBackStack()
+    }
+
+    override fun onNotFolderError() {
+        presenter.onNotFolderError()
+    }
+
+    override fun showNoAddingRootError() {
+        showErrorSnackbar(getString(R.string.file_list_error_no_root_allowed), null, 0)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -126,9 +133,6 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
 
         fun launch(activity: Activity) = (activity as BaseActivity).doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
             val launcher = Intent(activity, FilesActivity::class.java)
-
-            launcher.putExtra(ARGUMENT_PATH, Environment.getExternalStorageDirectory().path)
-
             activity.startActivityForResult(launcher, REQUEST_ADD_FOLDER)
         }
     }
