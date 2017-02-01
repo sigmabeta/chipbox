@@ -35,6 +35,8 @@
 
     <string name="file_list_snackbar_rescan">Rescan</string>
 
+    <string name="file_list_error_no_parent">"There's no folder above this one."</string>
+    <string name="file_list_error_no_root_allowed">"Choose a folder to scan."</string>
     <string name="file_list_error_exists">This folder is already in your library. Did you want to rescan?</string>
     <string name="file_list_error_empty_folder">That folder is empty.</string>
     <string name="file_list_error_invalid_track">That file is not a valid track.</string>

@@ -47,6 +47,10 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHold
         (activity as FilesView).updateSubtitle(path)
     }
 
+    override fun onNotFolderError() {
+        (activity as FilesView).onNotFolderError()
+    }
+
     /**
      * ItemListView
      */

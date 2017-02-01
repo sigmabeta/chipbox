@@ -67,7 +67,11 @@ class FileListPresenter @Inject constructor() : FragmentPresenter() {
                                 }
                             },
                             {
-                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                                if (it is IllegalStateException) {
+                                    view?.onNotFolderError()
+                                } else {
+                                    view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                                }
                             }
                     )
 
