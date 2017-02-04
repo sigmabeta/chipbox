@@ -11,12 +11,7 @@ import net.sigmabeta.chipbox.dagger.component.AppComponent
 import net.sigmabeta.chipbox.util.logDebug
 
 public class ChipboxApplication : Application() {
-    /**
-     * Static methods and members go in a 'companion' object.
-     */
-    companion object {
-        lateinit var appComponent: AppComponent
-    }
+    lateinit var appComponent: AppComponent
 
     /**
      * Calls the superclass constructor, then initializes the singleton

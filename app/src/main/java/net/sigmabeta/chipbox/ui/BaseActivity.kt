@@ -14,12 +14,12 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.Toast
 import com.squareup.picasso.Callback
+import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.dagger.component.FragmentComponent
 import net.sigmabeta.chipbox.util.*
 
 
-abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListener {
+abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : AppCompatActivity(), BaseView, View.OnClickListener {
     var lastPermRequestId: String? = null
     var lastPermRequestAction: (() -> Unit)? = null
 
@@ -54,6 +54,10 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
         }
     }
 
+    override fun requestReSetup() {
+        getPresenterImpl().onCreate(intent.extras, null, this as V)
+    }
+
     /**
      * Requests an injection of the Activity's dependencies (usually, a
      * Presenter) then does the usual Activity setup (superclass implementation,
@@ -64,14 +68,11 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
         super.onCreate(savedInstanceState)
 
         setContentView(getLayoutId())
-
-        window.enterTransition = TRANSITION_FADE_IN_BELOW
-        window.reenterTransition = TRANSITION_STAGGERED_FADE_IN_ABOVE
-        window.exitTransition = TRANSITION_STAGGERED_FADE_OUT_UP
-        window.returnTransition = TRANSITION_FADE_OUT_DOWN
+        inflateContent()
+        setTransitions()
 
         configureViews()
-        getPresenter().onCreate(intent.extras, savedInstanceState, this)
+        getPresenterImpl().onCreate(intent.extras, savedInstanceState, this as V)
 
         val sharedView = getSharedImage()
 
@@ -113,23 +114,39 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
 
     override fun onActivityReenter(resultCode: Int, data: Intent?) {
         super.onActivityReenter(resultCode, data)
-        getPresenter().onReenter()
+        getPresenterImpl().onReenter()
     }
 
     override fun onResume() {
         super.onResume()
-        getPresenter().onResume()
+        getPresenterImpl().onResume(this as V)
     }
 
     override fun onPause() {
         super.onPause()
-        getPresenter().onPause()
+        getPresenterImpl().onPause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        getPresenter().onDestroy(isFinishing)
+        getPresenterImpl().onDestroy(isFinishing, this as V)
     }
+
+
+    // TODO Enable this
+    /*override fun onLowMemory() {
+        super.onLowMemory()
+        if (getTypedApplication().shouldShowDetailedErrors()) {
+            showSnackbar("Memory low.", null, 0)
+        }
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (getTypedApplication().shouldShowDetailedErrors()) {
+            showSnackbar("Trimming memory.", null, 0)
+        }
+    }*/
 
     override fun showToastMessage(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
@@ -146,14 +163,50 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
     }
 
     override fun onClick(clicked: View) {
-        getPresenter().onClick(clicked.id)
+        getPresenterImpl().onClick(clicked.id)
     }
 
-    fun getFragmentComponent(): FragmentComponent {
-        return getPresenter().fragmentComponent
+    override fun showInvalidClearError(error: InvalidClearViewException) {
+        showSnackbar("A previous instance of this screen tried to clear the Presenter's reference to it. "
+                + "Please check that all animations (including loading spinners) were cleared.", null, 0)
     }
+
+    fun getFragmentComponent() = getPresenterImpl().fragmentComponent
 
     open fun getShareableViews(): Array<Pair<View, String>>? = null
+
+    protected open fun inflateContent() {}
+
+    protected open fun setTransitions() {
+        window.enterTransition = TRANSITION_FADE_IN_BELOW
+        window.reenterTransition = TRANSITION_STAGGERED_FADE_IN_ABOVE
+        window.exitTransition = TRANSITION_STAGGERED_FADE_OUT_UP
+        window.returnTransition = TRANSITION_FADE_OUT_DOWN
+    }
+
+    protected fun showSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) {
+        val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)
+
+        if (action != null && actionLabel != null) {
+            snackbar.setAction(actionLabel, action)
+        }
+
+        snackbar.show()
+    }
+
+    protected fun showSnackbarPermanent(message: String, action: View.OnClickListener?, actionLabel: Int?) {
+        val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_INDEFINITE)
+
+        if (action != null && actionLabel != null) {
+            snackbar.setAction(actionLabel, action)
+        } else {
+            snackbar.setAction(R.string.error_cta_dismiss) { snackbar.dismiss() }
+        }
+
+        snackbar.show()
+    }
+
+    override fun getTypedApplication() = application as ChipboxApplication
 
     /**
      * Must be overridden to request the activity's dependencies
@@ -161,7 +214,7 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
      */
     protected abstract fun inject()
 
-    protected abstract fun getPresenter(): ActivityPresenter
+    protected abstract fun getPresenterImpl(): P
 
     /**
      * Perform any necessary run-time setup of views: RecyclerViews, ClickListeners,

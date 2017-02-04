@@ -11,10 +11,12 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import com.squareup.picasso.Callback
+import net.sigmabeta.chipbox.ChipboxApplication
+import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.util.logError
 
-abstract class BaseFragment : Fragment(), BaseView, View.OnClickListener {
-    var injected: Boolean = false
+abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : Fragment(), BaseView, View.OnClickListener {
+    var injected = false
 
     fun getPicassoCallback(): Callback {
         return object : Callback {
@@ -40,7 +42,7 @@ abstract class BaseFragment : Fragment(), BaseView, View.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         retainInstance = true
-        getPresenter().onCreate(arguments, savedInstanceState, this)
+        getPresenterImpl().onCreate(arguments, savedInstanceState, this as V)
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -67,20 +69,29 @@ abstract class BaseFragment : Fragment(), BaseView, View.OnClickListener {
 
     override fun onResume() {
         super.onResume()
-        getPresenter().onResume()
+        getPresenterImpl().onResume(this as V)
     }
 
     override fun onPause() {
         super.onPause()
-        getPresenter().onPause()
+        getPresenterImpl().onPause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
         val ending = activity.isFinishing || isRemoving
-        getPresenter().onDestroy(ending)
+        getPresenterImpl().onDestroy(ending, this as V)
     }
+
+    // TODO Enable this
+    /*override fun onLowMemory() {
+        super.onLowMemory()
+
+        if (getTypedApplication().shouldShowDetailedErrors()) {
+            showSnackbar("Memory low.", null, 0)
+        }
+    }*/
 
     override fun showToastMessage(message: String) {
         Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
@@ -96,8 +107,42 @@ abstract class BaseFragment : Fragment(), BaseView, View.OnClickListener {
         snackbar.show()
     }
 
+    override fun getTypedApplication() = activity.application as ChipboxApplication
+
+    fun showSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int) {
+        val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)
+
+        if (action != null && actionLabel > 0) {
+            snackbar.setAction(actionLabel, action)
+        }
+
+        snackbar.show()
+    }
+
+    fun showSnackbarPermanent(message: String, action: View.OnClickListener?, actionLabel: Int) {
+        val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_INDEFINITE)
+
+        if (action != null && actionLabel > 0) {
+            snackbar.setAction(actionLabel, action)
+        } else {
+            snackbar.setAction(R.string.error_cta_dismiss) { snackbar.dismiss() }
+        }
+
+        snackbar.show()
+    }
+
+    override fun requestReSetup() {
+        getPresenterImpl().onCreate(arguments, null, this as V)
+    }
+
+
     override fun onClick(clicked: View) {
-        getPresenter().onClick(clicked.id)
+        getPresenterImpl().onClick(clicked.id)
+    }
+
+    override fun showInvalidClearError(error: InvalidClearViewException) {
+        showSnackbar("A previous instance of this screen tried to clear the Presenter's reference to it. "
+                + "Please check that all animations (including loading spinners) were cleared.", null, 0)
     }
 
     /**
@@ -114,7 +159,7 @@ abstract class BaseFragment : Fragment(), BaseView, View.OnClickListener {
 
     protected abstract fun inject()
 
-    protected abstract fun getPresenter(): FragmentPresenter
+    protected abstract fun getPresenterImpl(): P
 
     protected abstract fun getLayoutId(): Int
 

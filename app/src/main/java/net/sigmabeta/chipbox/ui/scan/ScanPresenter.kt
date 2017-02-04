@@ -5,7 +5,6 @@ import android.util.Log
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.model.repository.LibraryScanner
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
@@ -15,9 +14,7 @@ import javax.inject.Singleton
 
 
 @Singleton
-class ScanPresenter @Inject constructor(val scanner: LibraryScanner) : ActivityPresenter() {
-    var view: ScanView? = null
-
+class ScanPresenter @Inject constructor(val scanner: LibraryScanner) : ActivityPresenter<ScanView>() {
     var filesAdded = 0
     var badFiles = 0
 
@@ -66,16 +63,6 @@ class ScanPresenter @Inject constructor(val scanner: LibraryScanner) : ActivityP
     override fun updateViewState() = Unit
 
     override fun onClick(id: Int) = Unit
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is ScanView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
 
     private fun handleEvent(events: MutableList<FileScanEvent>) {
         var currentFolder: String? = null

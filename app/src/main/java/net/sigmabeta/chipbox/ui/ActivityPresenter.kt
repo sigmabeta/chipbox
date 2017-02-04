@@ -1,18 +1,26 @@
 package net.sigmabeta.chipbox.ui
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.dagger.component.FragmentComponent
+import net.sigmabeta.chipbox.util.logWarning
 
-abstract class ActivityPresenter : BasePresenter() {
-    var fragmentComponent: FragmentComponent = ChipboxApplication.appComponent.plusFragments()
+abstract class ActivityPresenter<V : BaseView> : BasePresenter<V>() {
+    var fragmentComponent: FragmentComponent? = null
+        get () {
+            if (field == null) {
+                field = view?.getTypedApplication()?.appComponent?.plusFragments();
+            }
+            return field
+        }
+
     var recreated = false
 
-    fun onCreate(arguments: Bundle?, savedInstanceState: Bundle?, view: BaseView) {
-        setView(view)
+    fun onCreate(arguments: Bundle?, savedInstanceState: Bundle?, view: V) {
+        this.view = view
 
         if (savedInstanceState == null) {
             repository.reopen()
+            setupStartTime = System.currentTimeMillis()
             setup(arguments)
         } else {
             recreated = true
@@ -20,15 +28,25 @@ abstract class ActivityPresenter : BasePresenter() {
         }
     }
 
-    fun onDestroy(finishing: Boolean) {
-        clearView()
+    fun onDestroy(finishing: Boolean, destroyedView: V) {
+        if (destroyedView === this.view) {
+            clearView()
 
-        if (finishing) {
-            teardown()
-            repository.close()
-            recreated = false
+            if (finishing) {
+                setupStartTime = -1
+                teardown()
+                repository.close()
+
+                needsSetup = true
+                loading = false
+                recreated = false
+            } else {
+                onTempDestroy()
+            }
+        } else if (this.view == null) {
+            logWarning("Cannot clear reference to view: Presenter has already cleared reference.")
         } else {
-            onTempDestroy()
+            handleError(InvalidClearViewException(view), null)
         }
     }
 

@@ -6,16 +6,13 @@ import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import javax.inject.Inject
 
 @ActivityScoped
-class TrackListPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
-    var view: TrackListView? = null
-
+class TrackListPresenter @Inject constructor(val player: Player) : FragmentPresenter<TrackListView>() {
     var artistId: String? = null
 
     var artist: Artist? = null
@@ -65,16 +62,6 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
         when (id) {
             R.id.button_empty_state -> view?.showFilesScreen()
         }
-    }
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is TrackListView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
     }
 
     private fun setupHelper(arguments: Bundle?) {

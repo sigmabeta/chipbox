@@ -5,15 +5,13 @@ import android.content.Intent
 import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_scan.*
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.util.fadeInFromRight
 import net.sigmabeta.chipbox.util.fadeOutToLeft
 import javax.inject.Inject
 
-class ScanActivity : BaseActivity(), ScanView {
+class ScanActivity : BaseActivity<ScanPresenter, ScanView>(), ScanView {
     lateinit var presenter: ScanPresenter
         @Inject set
 
@@ -62,12 +60,14 @@ class ScanActivity : BaseActivity(), ScanView {
      */
 
     override fun inject() {
-        ChipboxApplication.appComponent.inject(this)
+        getTypedApplication().appComponent.inject(this)
     }
 
-    override fun getPresenter(): ActivityPresenter {
-        return presenter
-    }
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
+    override fun getPresenterImpl() = presenter
 
     override fun configureViews() {
     }

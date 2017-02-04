@@ -16,7 +16,7 @@ import net.sigmabeta.chipbox.util.fadeOutPartially
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import javax.inject.Inject
 
-class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewHolder>, TopLevelFragment, NavigationFragment {
+class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), TrackListView, ItemListView<TrackViewHolder>, TopLevelFragment, NavigationFragment {
     lateinit var presenter: TrackListPresenter
         @Inject set
 
@@ -97,10 +97,14 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
      * BaseFragment
      */
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
     override fun inject() {
         val container = activity
-        if (container is BaseActivity) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {
+            container.getFragmentComponent()?.inject(this)
         }
     }
 
@@ -108,9 +112,7 @@ class TrackListFragment : BaseFragment(), TrackListView, ItemListView<TrackViewH
         return frame_content
     }
 
-    override fun getPresenter(): FragmentPresenter {
-        return presenter
-    }
+    override fun getPresenterImpl() = presenter
 
     override fun getLayoutId(): Int {
         return R.layout.fragment_song_list

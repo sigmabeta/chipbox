@@ -8,10 +8,12 @@ import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_navigation.*
 import kotlinx.android.synthetic.main.layout_now_playing.*
 import net.sigmabeta.chipbox.BuildConfig
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.ui.*
+import net.sigmabeta.chipbox.ui.BaseActivity
+import net.sigmabeta.chipbox.ui.BaseFragment
+import net.sigmabeta.chipbox.ui.FragmentContainer
+import net.sigmabeta.chipbox.ui.NavigationFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
@@ -19,7 +21,7 @@ import net.sigmabeta.chipbox.util.*
 import java.util.*
 import javax.inject.Inject
 
-class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
+class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), NavigationView, FragmentContainer {
     lateinit var presenter: NavigationPresenter
         @Inject set
 
@@ -28,7 +30,7 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
      */
 
     override fun showFragment(fragmentTag: String, fragmentArg: String?, fragmentArgLong: Long) {
-        var fragment: BaseFragment
+        var fragment: BaseFragment<*, *>
 
         when (fragmentTag) {
             GameGridFragment.FRAGMENT_TAG -> fragment = GameGridFragment.newInstance(fragmentArgLong)
@@ -124,11 +126,15 @@ class NavigationActivity : BaseActivity(), NavigationView, FragmentContainer {
         return views.toTypedArray()
     }
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
     override fun inject() {
-        ChipboxApplication.appComponent.inject(this)
+        getTypedApplication().appComponent.inject(this)
     }
 
-    override fun getPresenter(): ActivityPresenter {
+    override fun getPresenterImpl(): NavigationPresenter {
         return presenter
     }
 

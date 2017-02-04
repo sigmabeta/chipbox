@@ -10,15 +10,13 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_files.*
 import net.sigmabeta.chipbox.BuildConfig
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import javax.inject.Inject
 
-class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
+class FilesActivity : BaseActivity<FilesPresenter, FilesView>(), FilesView, FragmentContainer {
     lateinit var presenter: FilesPresenter
         @Inject set
 
@@ -71,7 +69,6 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
     }
 
     override fun onAddSuccessful() {
-
         ScanActivity.launch(this)
     }
 
@@ -90,11 +87,15 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
         this.title = title
     }
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
     override fun inject() {
-        ChipboxApplication.appComponent.inject(this)
+        getTypedApplication().appComponent.inject(this)
     }
 
-    override fun getPresenter(): ActivityPresenter {
+    override fun getPresenterImpl(): FilesPresenter {
         return presenter
     }
 
@@ -131,7 +132,7 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
 
         val ARGUMENT_PATH: String = "${ACTIVITY_TAG}.path"
 
-        fun launch(activity: Activity) = (activity as BaseActivity).doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
+        fun launch(activity: Activity) = (activity as BaseActivity<*, *>).doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
             val launcher = Intent(activity, FilesActivity::class.java)
             activity.startActivityForResult(launcher, REQUEST_ADD_FOLDER)
         }

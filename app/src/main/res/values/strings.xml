@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Chipbox</string>
 
+    <string name="error_cta_dismiss">Dismiss</string>
+
     <string name="navigation_drawer_open">Open Navigation Drawer</string>
     <string name="navigation_drawer_close">Close Navigation Drawer
     </string>

@@ -3,16 +3,12 @@ package net.sigmabeta.chipbox.ui.onboarding.library
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import javax.inject.Inject
 
 
 @ActivityScoped
-class LibraryPresenter @Inject constructor(): FragmentPresenter() {
-
-    var view: LibraryView? = null
-
+class LibraryPresenter @Inject constructor() : FragmentPresenter<LibraryView>() {
     /**
      * Public Methods
      */
@@ -43,16 +39,6 @@ class LibraryPresenter @Inject constructor(): FragmentPresenter() {
 
     override fun updateViewState() {
         view?.updateCurrentScreen()
-    }
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is LibraryView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
     }
 
     /**

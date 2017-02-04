@@ -7,14 +7,17 @@ import kotlinx.android.synthetic.main.fragment_platform_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Platform
-import net.sigmabeta.chipbox.ui.*
+import net.sigmabeta.chipbox.ui.BaseActivity
+import net.sigmabeta.chipbox.ui.BaseFragment
+import net.sigmabeta.chipbox.ui.ItemListView
+import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import java.util.*
 import javax.inject.Inject
 
-class PlatformListFragment : BaseFragment(), PlatformListView, ItemListView<PlatformViewHolder>, TopLevelFragment {
+class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListView>(), PlatformListView, ItemListView<PlatformViewHolder>, TopLevelFragment {
     lateinit var presenter: PlatformListPresenter
         @Inject set
 
@@ -58,18 +61,20 @@ class PlatformListFragment : BaseFragment(), PlatformListView, ItemListView<Plat
 
     override fun inject() {
         val container = activity
-        if (container is BaseActivity) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {
+            container.getFragmentComponent()?.inject(this)
         }
     }
+
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
 
     override fun getContentLayout(): ViewGroup {
         return frame_content
     }
 
-    override fun getPresenter(): FragmentPresenter {
-        return presenter
-    }
+    override fun getPresenterImpl() = presenter
 
     override fun getLayoutId(): Int {
         return R.layout.fragment_platform_list

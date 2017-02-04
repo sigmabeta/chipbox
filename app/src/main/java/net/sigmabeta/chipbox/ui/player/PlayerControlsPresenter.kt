@@ -8,7 +8,6 @@ import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.events.StateEvent
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
@@ -16,11 +15,10 @@ import javax.inject.Inject
 @ActivityScoped
 class PlayerControlsPresenter @Inject constructor(val player: Player,
                                                   val playlist: Playlist,
-                                                  val updater: UiUpdater) : FragmentPresenter() {
-    var view: PlayerControlsView? = null
-
+                                                  val updater: UiUpdater) : FragmentPresenter<PlayerControlsView>() {
     var updatedOnce = false
 
+    // TODO Should this really be in presenter?
     var elevated = false
 
     /**
@@ -64,7 +62,10 @@ class PlayerControlsPresenter @Inject constructor(val player: Player,
 
     override fun setup(arguments: Bundle?) = Unit
 
-    override fun teardown() = Unit
+    override fun teardown() {
+        updatedOnce = false
+        elevated = false
+    }
 
     override fun updateViewState() {
         updateHelper()
@@ -78,18 +79,6 @@ class PlayerControlsPresenter @Inject constructor(val player: Player,
                 }
 
         subscriptions.add(subscription)
-    }
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is PlayerControlsView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-        updatedOnce = false
-        elevated = false
     }
 
     /**

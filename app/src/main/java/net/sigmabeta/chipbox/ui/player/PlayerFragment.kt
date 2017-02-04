@@ -9,14 +9,13 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_STAGGERED_FADE_IN_ABOVE
 import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_STAGGERED_FADE_OUT_UP
 import net.sigmabeta.chipbox.util.changeText
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import javax.inject.Inject
 
-class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChangeListener {
+class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>(), PlayerFragmentView, SeekBar.OnSeekBarChangeListener {
     lateinit var presenter: PlayerFragmentPresenter
         @Inject set
 
@@ -100,18 +99,19 @@ class PlayerFragment : BaseFragment(), PlayerFragmentView, SeekBar.OnSeekBarChan
 
     override fun inject() {
         val container = activity
-        if (container is BaseActivity) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {
+            container.getFragmentComponent()?.inject(this)
         }
     }
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
     override fun getContentLayout(): ViewGroup {
         return frame_content
     }
 
-    override fun getPresenter(): FragmentPresenter {
-        return presenter
-    }
+    override fun getPresenterImpl() = presenter
 
     override fun getLayoutId(): Int {
         return R.layout.fragment_player

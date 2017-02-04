@@ -11,10 +11,8 @@ import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.layout_now_playing.*
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.TopLevelFragment
@@ -28,7 +26,7 @@ import net.sigmabeta.chipbox.util.*
 import java.util.*
 import javax.inject.Inject
 
-class MainActivity : BaseActivity(), MainView, FragmentContainer {
+class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, FragmentContainer {
     lateinit var presenter: MainPresenter
         @Inject set
 
@@ -127,6 +125,10 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
         }
     }
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
     override fun launchPlayerActivity() {
         PlayerActivity.launch(this, getShareableViews())
     }
@@ -157,10 +159,10 @@ class MainActivity : BaseActivity(), MainView, FragmentContainer {
     }
 
     override fun inject() {
-        ChipboxApplication.appComponent.inject(this)
+        getTypedApplication().appComponent.inject(this)
     }
 
-    override fun getPresenter(): ActivityPresenter {
+    override fun getPresenterImpl(): MainPresenter {
         return presenter
     }
 
