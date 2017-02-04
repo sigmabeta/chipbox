@@ -12,9 +12,7 @@ import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_player.*
 import kotlinx.android.synthetic.main.fragment_player.*
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.playlist.PlaylistFragment
@@ -22,7 +20,7 @@ import net.sigmabeta.chipbox.util.ACC_DECELERATE
 import net.sigmabeta.chipbox.util.shrinktoNothing
 import javax.inject.Inject
 
-class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
+class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>(), PlayerActivityView, FragmentContainer {
     lateinit var presenter: PlayerActivityPresenter
         @Inject set
 
@@ -104,13 +102,15 @@ class PlayerActivity : BaseActivity(), PlayerActivityView, FragmentContainer {
      * BaseActivity
      */
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
     override fun inject() {
-        ChipboxApplication.appComponent.inject(this)
+        getTypedApplication().appComponent.inject(this)
     }
 
-    override fun getPresenter(): ActivityPresenter {
-        return presenter
-    }
+    override fun getPresenterImpl() = presenter
 
     override fun configureViews() {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or

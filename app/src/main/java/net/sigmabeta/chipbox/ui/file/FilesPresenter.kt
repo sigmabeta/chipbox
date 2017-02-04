@@ -5,7 +5,6 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.module.AppModule
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
 import java.io.File
 import javax.inject.Inject
@@ -13,9 +12,7 @@ import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
-class FilesPresenter @Inject constructor(@Named(AppModule.DEP_NAME_BROWSER_START) val startPath: String) : ActivityPresenter() {
-    var view: FilesView? = null
-
+class FilesPresenter @Inject constructor(@Named(AppModule.DEP_NAME_BROWSER_START) val startPath: String) : ActivityPresenter<FilesView>() {
     var path: String? = null
 
     fun onOptionsItemSelected(itemId: Int): Boolean {
@@ -84,16 +81,6 @@ class FilesPresenter @Inject constructor(@Named(AppModule.DEP_NAME_BROWSER_START
         when (id) {
             android.support.design.R.id.snackbar_action -> onRescanClick()
         }
-    }
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is FilesView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
     }
 
     override fun onReenter() = Unit

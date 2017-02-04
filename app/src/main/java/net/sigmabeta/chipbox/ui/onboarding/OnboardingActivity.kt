@@ -6,9 +6,7 @@ import android.os.Bundle
 import android.view.View
 import kotlinx.android.synthetic.main.activity_onboarding.*
 import net.sigmabeta.chipbox.BuildConfig
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.main.MainActivity
@@ -16,9 +14,9 @@ import net.sigmabeta.chipbox.ui.onboarding.library.LibraryFragment
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import javax.inject.Inject
 
-class OnboardingActivity : BaseActivity(), OnboardingView {
+class OnboardingActivity : BaseActivity<OnboardingPresenter, OnboardingView>(), OnboardingView {
 
-    override fun getPresenter(): ActivityPresenter = presenter
+    override fun getPresenterImpl() = presenter
 
     override fun getSharedImage() = null
 
@@ -67,7 +65,11 @@ class OnboardingActivity : BaseActivity(), OnboardingView {
         presenter.onCreate(intent.extras, savedInstanceState, this)
     }
 
-    override fun inject() = ChipboxApplication.appComponent.inject(this)
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
+    override fun inject() = getTypedApplication().appComponent.inject(this)
 
     override fun configureViews() {
         setContentView(getLayoutId())
@@ -85,7 +87,7 @@ class OnboardingActivity : BaseActivity(), OnboardingView {
         presenter.onClick(clicked.id)
     }
 
-    private fun showFragment(fragment: BaseFragment, backstack: Boolean) {
+    private fun showFragment(fragment: BaseFragment<*, *>, backstack: Boolean) {
         val transaction = supportFragmentManager.beginTransaction()
 
         if (backstack) {

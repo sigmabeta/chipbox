@@ -10,7 +10,6 @@ import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
@@ -19,9 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 class GamePresenter @Inject constructor(val player: Player,
-                                        val updater: UiUpdater) : ActivityPresenter() {
-    var view: GameView? = null
-
+                                        val updater: UiUpdater) : ActivityPresenter<GameView>() {
     var gameId: String? = null
 
     var game: Game? = null
@@ -87,16 +84,6 @@ class GamePresenter @Inject constructor(val player: Player,
                 }
 
         subscriptions.add(subscription)
-    }
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is GameView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
     }
 
     override fun onReenter() = Unit

@@ -10,14 +10,13 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.ItemListView
 import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_FADE_IN_BELOW
 import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_FADE_OUT_DOWN
 import javax.inject.Inject
 
 @ActivityScoped
-class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<PlaylistTrackViewHolder> {
+class PlaylistFragment : BaseFragment<PlaylistFragmentPresenter, PlaylistFragmentView>(), PlaylistFragmentView, ItemListView<PlaylistTrackViewHolder> {
     lateinit var presenter: PlaylistFragmentPresenter
         @Inject set
 
@@ -98,14 +97,18 @@ class PlaylistFragment : BaseFragment(), PlaylistFragmentView, ItemListView<Play
      * BaseFragment
      */
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
     override fun inject() {
         val container = activity
-        if (container is BaseActivity) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {
+            container.getFragmentComponent()?.inject(this)
         }
     }
 
-    override fun getPresenter(): FragmentPresenter = presenter
+    override fun getPresenterImpl() = presenter
 
     override fun getLayoutId() = R.layout.fragment_playlist
 

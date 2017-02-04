@@ -10,7 +10,6 @@ import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
@@ -19,9 +18,7 @@ import javax.inject.Singleton
 @Singleton
 class SettingsPresenter @Inject constructor(val player: Player,
                                             val updater: UiUpdater,
-                                            val settings: Settings) : ActivityPresenter() {
-    var view: SettingsView? = null
-
+                                            val settings: Settings) : ActivityPresenter<SettingsView>() {
     var voices: MutableList<Voice>? = null
 
     var tempo = 100
@@ -85,16 +82,6 @@ class SettingsPresenter @Inject constructor(val player: Player,
     }
 
     override fun onClick(id: Int) = Unit
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is SettingsView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
 
     /**
      * Private Methods

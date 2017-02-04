@@ -7,7 +7,10 @@ import kotlinx.android.synthetic.main.fragment_artist_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Artist
-import net.sigmabeta.chipbox.ui.*
+import net.sigmabeta.chipbox.ui.BaseActivity
+import net.sigmabeta.chipbox.ui.BaseFragment
+import net.sigmabeta.chipbox.ui.ItemListView
+import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.main.MainView
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
@@ -17,7 +20,7 @@ import net.sigmabeta.chipbox.util.fadeOutPartially
 import net.sigmabeta.chipbox.util.isScrolledToBottom
 import javax.inject.Inject
 
-class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistViewHolder>, TopLevelFragment {
+class ArtistListFragment : BaseFragment<ArtistListPresenter, ArtistListView>(), ArtistListView, ItemListView<ArtistViewHolder>, TopLevelFragment {
     lateinit var presenter: ArtistListPresenter
         @Inject set
 
@@ -42,33 +45,32 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistVi
         }
     }
 
-    override fun showLoadingSpinner() = ifVisible {
+    override fun showLoading() = ifVisible {
+        list_artists.fadeOutPartially()
         loading_spinner.fadeIn().setDuration(50)
+        layout_empty_state.fadeOut().withEndAction {
+            label_empty_state.alpha = 0.0f
+            button_empty_state.alpha = 0.0f
+        }
     }
 
-    override fun hideLoadingSpinner() = ifVisible {
+    override fun hideLoading() = ifVisible {
         loading_spinner.fadeOut()
     }
 
     override fun showContent() = ifVisible {
         list_artists.fadeIn()
-    }
 
-    override fun hideContent() = ifVisible {
-        list_artists.fadeOutPartially()
+        layout_empty_state.fadeOut().withEndAction {
+            label_empty_state.alpha = 0.0f
+            button_empty_state.alpha = 0.0f
+        }
     }
 
     override fun showEmptyState() = ifVisible {
         layout_empty_state.visibility = View.VISIBLE
         label_empty_state.fadeIn().setStartDelay(300)
         button_empty_state.fadeIn().setStartDelay(600)
-    }
-
-    override fun hideEmptyState() = ifVisible {
-        layout_empty_state.fadeOut().withEndAction {
-            label_empty_state.alpha = 0.0f
-            button_empty_state.alpha = 0.0f
-        }
     }
 
     /**
@@ -93,10 +95,11 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistVi
      * BaseFragment
      */
 
+
     override fun inject() {
         val container = activity
-        if (container is BaseActivity) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {
+            container.getFragmentComponent()?.inject(this) ?: activity.finish()
         }
     }
 
@@ -104,7 +107,7 @@ class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistVi
         return frame_content
     }
 
-    override fun getPresenter(): FragmentPresenter {
+    override fun getPresenterImpl(): ArtistListPresenter {
         return presenter
     }
 

@@ -12,7 +12,6 @@ import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
@@ -22,9 +21,7 @@ import javax.inject.Singleton
 @Singleton
 class NavigationPresenter @Inject constructor(val player: Player,
                                               val playlist: Playlist,
-                                              val updater: UiUpdater) : ActivityPresenter() {
-    var view: NavigationView? = null
-
+                                              val updater: UiUpdater) : ActivityPresenter<NavigationView>() {
     // A property is kept in order to be able to track changes in state.
     var state = player.state
 
@@ -82,16 +79,6 @@ class NavigationPresenter @Inject constructor(val player: Player,
     }
 
     override fun onClick(id: Int) = Unit
-
-    override fun setView(view: BaseView) {
-        if (view is NavigationView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
-
-    override fun getView(): BaseView? = view
 
     override fun onReenter() {
         updateHelper()

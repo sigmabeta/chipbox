@@ -4,13 +4,13 @@ import kotlinx.android.synthetic.main.fragment_title.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
+import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.onboarding.OnboardingView
 import javax.inject.Inject
 
 @ActivityScoped
-class TitleFragment : BaseFragment(), TitleView {
+class TitleFragment : BaseFragment<TitlePresenter, TitleView>(), TitleView {
     lateinit var presenter: TitlePresenter
         @Inject set
 
@@ -34,14 +34,18 @@ class TitleFragment : BaseFragment(), TitleView {
      * BaseFragment
      */
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
     override fun inject() {
         val container = activity
-        if (container is OnboardingView) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {
+            container.getFragmentComponent()?.inject(this)
         }
     }
 
-    override fun getPresenter(): FragmentPresenter = presenter
+    override fun getPresenterImpl(): TitlePresenter = presenter
 
     override fun getLayoutId() = R.layout.fragment_title
 
