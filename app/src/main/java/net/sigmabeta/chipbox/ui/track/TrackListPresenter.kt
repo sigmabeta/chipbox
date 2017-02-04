@@ -48,13 +48,11 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
     override fun updateViewState() {
         tracks?.let {
-            if (it.size > 0) {
+            if (it.isNotEmpty()) {
                 showContent(it)
             } else {
                 showEmptyState()
             }
-        } ?: let {
-            view?.showLoadingSpinner()
         }
     }
 
@@ -67,8 +65,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
     private fun setupHelper(arguments: Bundle?) {
         artistId = arguments?.getString(TrackListFragment.ARGUMENT_ARTIST)
 
-        view?.showLoadingSpinner()
-        view?.hideEmptyState()
+        loading = true
 
         artistId?.let {
             val artistLoad = repository.getArtist(it)
@@ -102,7 +99,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
                                 tracks = it
 
-                                if (it.size > 0) {
+                                if (it.isNotEmpty()) {
                                     showContent(it)
                                 } else {
                                     showEmptyState()
@@ -120,14 +117,10 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
     private fun showContent(it: List<Track>) {
         view?.setTracks(it)
-        view?.hideLoadingSpinner()
-        view?.hideEmptyState()
         view?.showContent()
     }
 
     private fun showEmptyState() {
-        view?.hideLoadingSpinner()
-        view?.hideContent()
         view?.showEmptyState()
     }
 

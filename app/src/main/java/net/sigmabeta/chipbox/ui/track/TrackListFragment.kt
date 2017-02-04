@@ -41,33 +41,19 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
         }
     }
 
-    override fun showLoadingSpinner() = ifVisible {
-        loading_spinner.fadeIn().setDuration(50)
-    }
-
-    override fun hideLoadingSpinner() = ifVisible {
-        loading_spinner.fadeOut()
-    }
-
     override fun showContent() = ifVisible {
         list_tracks.fadeIn()
-    }
 
-    override fun hideContent() = ifVisible {
-        list_tracks.fadeOutPartially()
+        layout_empty_state.fadeOut().withEndAction {
+            label_empty_state.alpha = 0.0f
+            button_empty_state.alpha = 0.0f
+        }
     }
 
     override fun showEmptyState() = ifVisible {
         layout_empty_state.visibility = View.VISIBLE
         label_empty_state.fadeIn().setStartDelay(300)
         button_empty_state.fadeIn().setStartDelay(600)
-    }
-
-    override fun hideEmptyState() = ifVisible {
-        layout_empty_state.fadeOut().withEndAction {
-            label_empty_state.alpha = 0.0f
-            button_empty_state.alpha = 0.0f
-        }
     }
 
     override fun onTrackLoadError() {
@@ -97,9 +83,19 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
      * BaseFragment
      */
 
-    override fun showLoading() = Unit
+    override fun showLoading() = ifVisible {
+        loading_spinner.fadeIn().setDuration(50)
+        list_tracks.fadeOutPartially()
 
-    override fun hideLoading() = Unit
+        layout_empty_state.fadeOut().withEndAction {
+            label_empty_state.alpha = 0.0f
+            button_empty_state.alpha = 0.0f
+        }
+    }
+
+    override fun hideLoading() = ifVisible {
+        loading_spinner.fadeOut()
+    }
 
     override fun inject() {
         val container = activity

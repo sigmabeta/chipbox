@@ -8,21 +8,13 @@ interface TrackListView : BaseView {
 
     fun refreshList()
 
-    fun setActivityTitle(name: String)
+    fun setActivityTitle(title: String)
 
     fun showFilesScreen()
 
-    fun showLoadingSpinner()
-
-    fun hideLoadingSpinner()
-
     fun showContent()
 
-    fun hideContent()
-
     fun showEmptyState()
-
-    fun hideEmptyState()
 
     fun onTrackLoadError()
 }
