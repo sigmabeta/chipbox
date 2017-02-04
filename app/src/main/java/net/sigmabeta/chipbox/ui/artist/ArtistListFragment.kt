@@ -14,10 +14,7 @@ import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.main.MainView
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
-import net.sigmabeta.chipbox.util.fadeIn
-import net.sigmabeta.chipbox.util.fadeOut
-import net.sigmabeta.chipbox.util.fadeOutPartially
-import net.sigmabeta.chipbox.util.isScrolledToBottom
+import net.sigmabeta.chipbox.util.*
 import javax.inject.Inject
 
 class ArtistListFragment : BaseFragment<ArtistListPresenter, ArtistListView>(), ArtistListView, ItemListView<ArtistViewHolder>, TopLevelFragment {
@@ -48,29 +45,22 @@ class ArtistListFragment : BaseFragment<ArtistListPresenter, ArtistListView>(), 
     override fun showLoading() = ifVisible {
         list_artists.fadeOutPartially()
         loading_spinner.fadeIn().setDuration(50)
-        layout_empty_state.fadeOut().withEndAction {
-            label_empty_state.alpha = 0.0f
-            button_empty_state.alpha = 0.0f
-        }
+        layout_empty_state.fadeOutGone()
     }
 
     override fun hideLoading() = ifVisible {
-        loading_spinner.fadeOut()
+        loading_spinner.fadeOutGone()
     }
 
     override fun showContent() = ifVisible {
         list_artists.fadeIn()
-
-        layout_empty_state.fadeOut().withEndAction {
-            label_empty_state.alpha = 0.0f
-            button_empty_state.alpha = 0.0f
-        }
+        layout_empty_state.fadeOutGone()
     }
 
     override fun showEmptyState() = ifVisible {
         layout_empty_state.visibility = View.VISIBLE
-        label_empty_state.fadeIn().setStartDelay(300)
-        button_empty_state.fadeIn().setStartDelay(600)
+        label_empty_state.fadeInFromZero().setStartDelay(300)
+        button_empty_state.fadeInFromZero().setStartDelay(600)
     }
 
     /**

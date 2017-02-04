@@ -10,10 +10,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.main.MainView
-import net.sigmabeta.chipbox.util.fadeIn
-import net.sigmabeta.chipbox.util.fadeOut
-import net.sigmabeta.chipbox.util.fadeOutPartially
-import net.sigmabeta.chipbox.util.isScrolledToBottom
+import net.sigmabeta.chipbox.util.*
 import javax.inject.Inject
 
 class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), TrackListView, ItemListView<TrackViewHolder>, TopLevelFragment, NavigationFragment {
@@ -43,17 +40,13 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
 
     override fun showContent() = ifVisible {
         list_tracks.fadeIn()
-
-        layout_empty_state.fadeOut().withEndAction {
-            label_empty_state.alpha = 0.0f
-            button_empty_state.alpha = 0.0f
-        }
+        layout_empty_state.fadeOutGone()
     }
 
     override fun showEmptyState() = ifVisible {
         layout_empty_state.visibility = View.VISIBLE
-        label_empty_state.fadeIn().setStartDelay(300)
-        button_empty_state.fadeIn().setStartDelay(600)
+        label_empty_state.fadeInFromZero().setStartDelay(300)
+        button_empty_state.fadeInFromZero().setStartDelay(600)
     }
 
     override fun onTrackLoadError() {
@@ -86,15 +79,11 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
     override fun showLoading() = ifVisible {
         loading_spinner.fadeIn().setDuration(50)
         list_tracks.fadeOutPartially()
-
-        layout_empty_state.fadeOut().withEndAction {
-            label_empty_state.alpha = 0.0f
-            button_empty_state.alpha = 0.0f
-        }
+        layout_empty_state.fadeOutGone()
     }
 
     override fun hideLoading() = ifVisible {
-        loading_spinner.fadeOut()
+        loading_spinner.fadeOutGone()
     }
 
     override fun inject() {

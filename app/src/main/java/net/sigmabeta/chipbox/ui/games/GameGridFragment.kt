@@ -58,18 +58,14 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
 
     override fun showContent() = ifVisible {
         grid_games.fadeIn()
-
-        layout_empty_state.fadeOut().withEndAction {
-            label_empty_state.alpha = 0.0f
-            button_empty_state.alpha = 0.0f
-        }
+        layout_empty_state.fadeOutGone()
     }
 
     override fun showEmptyState() = ifVisible {
         layout_empty_state.visibility = View.VISIBLE
-        label_empty_state.fadeIn().setStartDelay(300)
-        button_empty_state.fadeIn().setStartDelay(600)
-        grid_games.fadeOut()
+        label_empty_state.fadeInFromZero().setStartDelay(300)
+        button_empty_state.fadeInFromZero().setStartDelay(600)
+        grid_games.fadeOutGone()
     }
 
     /**
@@ -102,16 +98,12 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
     override fun showLoading() = ifVisible {
         grid_games.fadeOutPartially()
         loading_spinner.fadeIn().setDuration(50)
-
-        layout_empty_state.fadeOut().withEndAction {
-            label_empty_state.alpha = 0.0f
-            button_empty_state.alpha = 0.0f
-        }
+        layout_empty_state.fadeOutGone()
     }
 
 
     override fun hideLoading() {
-        loading_spinner.fadeOut()
+        loading_spinner.fadeOutGone()
     }
 
     override fun inject() {

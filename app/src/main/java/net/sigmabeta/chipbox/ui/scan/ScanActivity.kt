@@ -7,8 +7,7 @@ import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_scan.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.util.fadeInFromRight
-import net.sigmabeta.chipbox.util.fadeOutToLeft
+import net.sigmabeta.chipbox.util.changeText
 import javax.inject.Inject
 
 class ScanActivity : BaseActivity<ScanPresenter, ScanView>(), ScanView {
@@ -24,19 +23,12 @@ class ScanActivity : BaseActivity<ScanPresenter, ScanView>(), ScanView {
      */
 
     override fun onScanFailed() {
-        text_status.fadeOutToLeft().withEndAction {
-            text_status.setText(R.string.scan_status_failed)
-            text_status.fadeInFromRight()
-        }
+        text_status.changeText(getString(R.string.scan_status_failed))
     }
 
     override fun onScanComplete(refresh: Boolean) {
-        setResult(if (refresh) RESULT_CODE_REFRESH else RESULT_CODE_NO_REFRESH )
-
-        text_status.fadeOutToLeft().withEndAction {
-            text_status.setText(R.string.scan_status_complete)
-            text_status.fadeInFromRight()
-        }
+        setResult(if (refresh) RESULT_CODE_REFRESH else RESULT_CODE_NO_REFRESH)
+        text_status.changeText(getString(R.string.scan_status_complete))
     }
 
     override fun showCurrentFolder(name: String) {
