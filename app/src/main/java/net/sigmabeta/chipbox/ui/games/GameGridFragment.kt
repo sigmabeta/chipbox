@@ -99,15 +99,16 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
      * BaseFragment
      */
 
-    override fun showLoading() {
-        grid_games?.fadeOutPartially()
-        loading_spinner?.fadeIn()?.setDuration(50)
+    override fun showLoading() = ifVisible {
+        grid_games.fadeOutPartially()
+        loading_spinner.fadeIn().setDuration(50)
 
         layout_empty_state.fadeOut().withEndAction {
             label_empty_state.alpha = 0.0f
             button_empty_state.alpha = 0.0f
         }
     }
+
 
     override fun hideLoading() {
         loading_spinner.fadeOut()
