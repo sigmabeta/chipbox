@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.ui.onboarding
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import android.view.View
 import kotlinx.android.synthetic.main.activity_onboarding.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -56,13 +55,6 @@ class OnboardingActivity : BaseActivity<OnboardingPresenter, OnboardingView>(), 
 
     override fun updateCurrentScreen(tag: String) {
         presenter.currentTag = tag
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        inject()
-        super.onCreate(savedInstanceState)
-
-        presenter.onCreate(intent.extras, savedInstanceState, this)
     }
 
     override fun showLoading() = Unit
