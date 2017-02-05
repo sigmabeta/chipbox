@@ -7,15 +7,19 @@ import android.view.View
 import android.view.ViewGroup
 import net.sigmabeta.chipbox.model.domain.ListItem
 import net.sigmabeta.chipbox.util.logError
+import net.sigmabeta.chipbox.util.logInfo
 
 abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val view: ItemListView<VH>) : RecyclerView.Adapter<VH>() {
     protected var datasetInternal: List<T>? = null
+
+    protected var diffStartTime = 0L
 
     var dataset: List<T>?
         get () {
             return null
         }
         set (value) {
+            diffStartTime = System.currentTimeMillis()
             startAsyncListRefresh(value)
         }
 
@@ -60,10 +64,18 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
 
     abstract protected fun bind(holder: VH, item: T)
 
+    protected fun printBenchmark(eventName: String) {
+        if (diffStartTime > 0) {
+            val timeDiff = System.currentTimeMillis() - diffStartTime
+            logInfo("Benchmark: $eventName after ${timeDiff}ms.")
+        }
+    }
+
     private fun startAsyncListRefresh(input: List<T>?) {
         val callback = DiffCallback(datasetInternal, input)
         val result = DiffUtil.calculateDiff(callback)
 
+        printBenchmark("Diff Complete")
         datasetInternal = input
         result.dispatchUpdatesTo(this@BaseArrayAdapter)
     }

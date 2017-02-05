@@ -54,6 +54,8 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter<ArtistListVi
         val subscription = repository.getArtists()
                 .subscribe(
                         {
+                            printBenchmark("Artists Loaded")
+
                             loading = false
                             artists = it
 

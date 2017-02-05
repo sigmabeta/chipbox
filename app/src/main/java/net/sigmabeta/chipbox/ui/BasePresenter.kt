@@ -83,7 +83,7 @@ abstract class BasePresenter<V : BaseView> {
     protected fun printBenchmark(eventName: String) {
         if (setupStartTime > 0) {
             val timeDiff = System.currentTimeMillis() - setupStartTime
-            logInfo("Benchmark: $eventName after $timeDiff.")
+            logInfo("Benchmark: $eventName after ${timeDiff}ms.")
         }
     }
 
