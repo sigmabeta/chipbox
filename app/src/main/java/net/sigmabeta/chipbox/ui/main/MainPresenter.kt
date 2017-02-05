@@ -51,7 +51,9 @@ class MainPresenter @Inject constructor(val player: Player,
         }
     }
 
-    override fun setup(arguments: Bundle?) = Unit
+    override fun setup(arguments: Bundle?) {
+        needsSetup = false
+    }
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 

@@ -31,6 +31,8 @@ class ScanPresenter @Inject constructor(val scanner: LibraryScanner) : ActivityP
     override fun onTempDestroy() = Unit
 
     override fun setup(arguments: Bundle?) {
+        needsSetup = false
+
         scanner.scanLibrary()
                 .buffer(17, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())

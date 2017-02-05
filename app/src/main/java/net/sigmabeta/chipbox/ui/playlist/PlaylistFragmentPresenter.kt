@@ -64,6 +64,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
      */
 
     override fun setup(arguments: Bundle?) {
+        needsSetup = false
     }
 
     override fun teardown() = Unit

@@ -103,6 +103,8 @@ class GamePresenter @Inject constructor(val player: Player,
     }
 
     private fun setupHelper(arguments: Bundle?) {
+        loading = true
+
         val gameId = arguments?.getString(GameActivity.ARGUMENT_GAME_ID)
         this.gameId = gameId
 
@@ -110,6 +112,8 @@ class GamePresenter @Inject constructor(val player: Player,
             val gameSubscription = repository.getGame(it)
                     .subscribe(
                             { game ->
+                                loading = false
+
                                 if (game != null) {
                                     this.game = game
                                     view?.setGame(game)
@@ -126,6 +130,8 @@ class GamePresenter @Inject constructor(val player: Player,
                                 }
                             },
                             {
+                                loading = false
+
                                 view?.setGame(null)
                                 view?.showErrorSnackbar("Error: ${it.message}", null, null)
                             }

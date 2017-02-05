@@ -46,6 +46,8 @@ class NavigationPresenter @Inject constructor(val player: Player,
     override fun onTempDestroy() = Unit
 
     override fun setup(arguments: Bundle?) {
+        needsSetup = false
+
         val fragmentTag = arguments?.getString(NavigationActivity.ARGUMENT_FRAGMENT_TAG)
         val fragmentArg = arguments?.getString(NavigationActivity.ARGUMENT_FRAGMENT_ARG_STRING)
         val fragmentArgLong = arguments?.getLong(NavigationActivity.ARGUMENT_FRAGMENT_ARG_LONG) ?: Track.PLATFORM_ALL

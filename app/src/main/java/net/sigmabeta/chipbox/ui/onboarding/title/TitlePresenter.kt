@@ -32,7 +32,9 @@ class TitlePresenter @Inject constructor() : FragmentPresenter<TitleView>() {
      * BasePresenter
      */
 
-    override fun setup(arguments: Bundle?) = Unit
+    override fun setup(arguments: Bundle?) {
+        needsSetup = false
+    }
 
     override fun teardown() = Unit
 

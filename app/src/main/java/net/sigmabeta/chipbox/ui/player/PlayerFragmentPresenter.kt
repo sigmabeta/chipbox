@@ -50,7 +50,9 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
-    override fun setup(arguments: Bundle?) = Unit
+    override fun setup(arguments: Bundle?) {
+        needsSetup = false
+    }
 
     override fun teardown() {
         track = null

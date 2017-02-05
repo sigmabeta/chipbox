@@ -48,6 +48,7 @@ class FileListPresenter @Inject constructor() : FragmentPresenter<FileListView>(
     }
 
     private fun setupHelper(arguments: Bundle?) {
+        loading = true
         path = arguments?.getString(FileListFragment.ARGUMENT_PATH)
 
         if (path != null) {
@@ -58,12 +59,16 @@ class FileListPresenter @Inject constructor() : FragmentPresenter<FileListView>(
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
+                                loading = false
+
                                 files = it
                                 if (it != null) {
                                     view?.setFiles(it)
                                 }
                             },
                             {
+                                loading = false
+
                                 if (it is IllegalStateException) {
                                     view?.onNotFolderError()
                                 } else {
