@@ -259,8 +259,8 @@ class Player @Inject constructor(val playlist: Playlist,
     }
 
     fun onPlaylistFinished() {
-//        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
         logInfo("[Player] No more tracks to start.")
+        stop()
     }
 
     /**
