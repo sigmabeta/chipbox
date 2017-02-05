@@ -1,16 +1,22 @@
 package net.sigmabeta.chipbox.ui
 
+import android.support.v7.util.DiffUtil
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import net.sigmabeta.chipbox.model.domain.ListItem
 import net.sigmabeta.chipbox.util.logError
 
-abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemListView<VH>) : RecyclerView.Adapter<VH>() {
-    var dataset: List<T>? = null
+abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val view: ItemListView<VH>) : RecyclerView.Adapter<VH>() {
+    protected var datasetInternal: List<T>? = null
+
+    var dataset: List<T>?
+        get () {
+            return null
+        }
         set (value) {
-            field = value
-            notifyDataSetChanged()
+            startAsyncListRefresh(value)
         }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): VH? {
@@ -33,7 +39,7 @@ abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemL
     }
 
     override fun getItemCount(): Int {
-        return dataset?.size ?: 0
+        return datasetInternal?.size ?: 0
     }
 
     override fun getItemId(position: Int): Long {
@@ -41,7 +47,7 @@ abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemL
     }
 
     open fun getItem(position: Int): T? {
-        return dataset?.get(position)
+        return datasetInternal?.get(position)
     }
 
     fun onItemClick(position: Int, clickedViewHolder: VH) {
@@ -53,4 +59,12 @@ abstract class BaseArrayAdapter<T, VH : BaseViewHolder<*, *, *>>(val view: ItemL
     abstract fun createViewHolder(view: View): VH
 
     abstract protected fun bind(holder: VH, item: T)
+
+    private fun startAsyncListRefresh(input: List<T>?) {
+        val callback = DiffCallback(datasetInternal, input)
+        val result = DiffUtil.calculateDiff(callback)
+
+        datasetInternal = input
+        result.dispatchUpdatesTo(this@BaseArrayAdapter)
+    }
 }
