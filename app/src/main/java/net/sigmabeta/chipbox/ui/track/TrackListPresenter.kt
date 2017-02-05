@@ -63,9 +63,9 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
     }
 
     private fun setupHelper(arguments: Bundle?) {
-        artistId = arguments?.getString(TrackListFragment.ARGUMENT_ARTIST)
-
         loading = true
+
+        artistId = arguments?.getString(TrackListFragment.ARGUMENT_ARTIST)
 
         artistId?.let {
             val artistLoad = repository.getArtist(it)

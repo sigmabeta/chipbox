@@ -32,6 +32,8 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter<PlayerAc
     }
 
     override fun setup(arguments: Bundle?) {
+        needsSetup = false
+
         view?.showControlsFragment()
         view?.showPlayerFragment()
     }

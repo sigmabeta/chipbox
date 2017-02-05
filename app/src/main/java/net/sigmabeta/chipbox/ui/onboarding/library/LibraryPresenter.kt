@@ -33,7 +33,9 @@ class LibraryPresenter @Inject constructor() : FragmentPresenter<LibraryView>() 
      * BasePresenter
      */
 
-    override fun setup(arguments: Bundle?) = Unit
+    override fun setup(arguments: Bundle?) {
+        needsSetup = false
+    }
 
     override fun teardown() = Unit
 

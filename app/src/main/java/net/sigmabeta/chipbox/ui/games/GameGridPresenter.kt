@@ -87,6 +87,7 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>(
         val subscription = request
                 .subscribe(
                         {
+                            loading = false
                             games = it
 
                             if (it.isNotEmpty()) {
@@ -96,6 +97,7 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>(
                             }
                         },
                         {
+                            loading = false
                             showEmptyState()
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }

@@ -67,6 +67,8 @@ class FilesPresenter @Inject constructor(@Named(AppModule.DEP_NAME_BROWSER_START
     override fun onTempDestroy() = Unit
 
     override fun setup(arguments: Bundle?) {
+        needsSetup = false
+
         path = startPath
         view?.showFileFragment(startPath, false)
     }

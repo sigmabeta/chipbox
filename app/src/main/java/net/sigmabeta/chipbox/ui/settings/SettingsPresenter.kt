@@ -53,7 +53,9 @@ class SettingsPresenter @Inject constructor(val player: Player,
      * BasePresenter
      */
 
-    override fun setup(arguments: Bundle?) = Unit
+    override fun setup(arguments: Bundle?) {
+        needsSetup = false
+    }
 
     override fun teardown() {
         voices = null

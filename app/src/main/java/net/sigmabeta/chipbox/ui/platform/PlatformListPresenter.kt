@@ -27,7 +27,9 @@ class PlatformListPresenter @Inject constructor() : FragmentPresenter<PlatformLi
      * FragmentPresenter
      */
 
-    override fun setup(arguments: Bundle?) = Unit
+    override fun setup(arguments: Bundle?) {
+        needsSetup = false
+    }
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 

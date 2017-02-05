@@ -46,6 +46,8 @@ class OnboardingPresenter @Inject constructor(val prefManager: PrefManager) : Ac
     override fun onClick(id: Int) = Unit
 
     override fun setup(arguments: Bundle?) {
+        needsSetup = false
+
         val tag = arguments?.getString(OnboardingActivity.ARGUMENT_PAGE_TAG)
 
         when (tag) {
