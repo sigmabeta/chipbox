@@ -102,7 +102,6 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
             if (force || this.game != game) {
                 view?.setGameBoxArt(game?.artLocal, !force)
                 view?.setGameTitle(game?.title ?: "Unknown", animate)
-
             }
 
             this.game = game
@@ -110,7 +109,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
     }
 
     private fun displayTrack(trackId: String?, animate: Boolean) {
-        if (trackId != null) {
+        if (trackId != null && trackId != track?.id) {
             val track = repository.getTrackSync(trackId)
 
             if (track != null) {
