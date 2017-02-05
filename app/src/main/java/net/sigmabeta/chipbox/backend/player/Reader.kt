@@ -106,7 +106,9 @@ class Reader(val player: Player,
 
         logVerbose("[Player] Clearing empty buffer queue...")
 
-        player.onPlaybackPositionUpdate(0)
+        if (player.state != PlaybackState.STATE_PAUSED) {
+            player.onPlaybackPositionUpdate(0)
+        }
 
         emptyBuffers.clear()
 
