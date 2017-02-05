@@ -6,16 +6,13 @@ import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import javax.inject.Inject
 
 @ActivityScoped
-class TrackListPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
-    var view: TrackListView? = null
-
+class TrackListPresenter @Inject constructor(val player: Player) : FragmentPresenter<TrackListView>() {
     var artistId: String? = null
 
     var artist: Artist? = null
@@ -51,13 +48,11 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
     override fun updateViewState() {
         tracks?.let {
-            if (it.size > 0) {
+            if (it.isNotEmpty()) {
                 showContent(it)
             } else {
                 showEmptyState()
             }
-        } ?: let {
-            view?.showLoadingSpinner()
         }
     }
 
@@ -67,21 +62,10 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
         }
     }
 
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is TrackListView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
-
     private fun setupHelper(arguments: Bundle?) {
-        artistId = arguments?.getString(TrackListFragment.ARGUMENT_ARTIST)
+        loading = true
 
-        view?.showLoadingSpinner()
-        view?.hideEmptyState()
+        artistId = arguments?.getString(TrackListFragment.ARGUMENT_ARTIST)
 
         artistId?.let {
             val artistLoad = repository.getArtist(it)
@@ -115,7 +99,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
                                 tracks = it
 
-                                if (it.size > 0) {
+                                if (it.isNotEmpty()) {
                                     showContent(it)
                                 } else {
                                     showEmptyState()
@@ -133,14 +117,10 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
     private fun showContent(it: List<Track>) {
         view?.setTracks(it)
-        view?.hideLoadingSpinner()
-        view?.hideEmptyState()
         view?.showContent()
     }
 
     private fun showEmptyState() {
-        view?.hideLoadingSpinner()
-        view?.hideContent()
         view?.showEmptyState()
     }
 

@@ -4,14 +4,11 @@ import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import javax.inject.Inject
 
 @ActivityScoped
-class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
-    var view: ArtistListView? = null
-
+class ArtistListPresenter @Inject constructor() : FragmentPresenter<ArtistListView>() {
     var artists: List<Artist>? = null
 
     fun onItemClick(position: Int) {
@@ -40,10 +37,8 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
             if (it.size > 0) {
                 showContent(it)
             } else {
-                showEmptyState()
+                view?.showEmptyState()
             }
-        } ?: let {
-            view?.showLoadingSpinner()
         }
     }
 
@@ -53,33 +48,24 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
         }
     }
 
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is ArtistListView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
-
     private fun setupHelper() {
-        view?.showLoadingSpinner()
-        view?.hideEmptyState()
+        loading = true
 
         val subscription = repository.getArtists()
                 .subscribe(
                         {
+                            loading = false
                             artists = it
 
                             if (it.size > 0) {
                                 showContent(it)
                             } else {
-                                showEmptyState()
+                                view?.showEmptyState()
                             }
                         },
                         {
-                            showEmptyState()
+                            loading = false
+                            view?.showEmptyState()
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
                 )
@@ -90,14 +76,6 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter() {
 
     private fun showContent(artists: List<Artist>) {
         view?.setArtists(artists)
-        view?.hideLoadingSpinner()
-        view?.hideEmptyState()
         view?.showContent()
-    }
-
-    private fun showEmptyState() {
-        view?.hideLoadingSpinner()
-        view?.hideContent()
-        view?.showEmptyState()
     }
 }

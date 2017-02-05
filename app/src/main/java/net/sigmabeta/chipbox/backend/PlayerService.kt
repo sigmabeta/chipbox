@@ -150,7 +150,7 @@ class PlayerService : Service(), BackendView {
 
     private fun inject() {
         logVerbose("[ServiceInjector] Injecting BackendView.")
-        ChipboxApplication.appComponent.inject(this)
+        (application as ChipboxApplication).appComponent.inject(this)
     }
 
     private fun getPlayerActivityIntent(): PendingIntent {

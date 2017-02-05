@@ -12,4 +12,6 @@ interface FileListView : BaseView {
     fun onInvalidTrackClicked()
 
     fun setSubtitle(path: String)
+
+    fun onNotFolderError()
 }

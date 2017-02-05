@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.ui.file
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -11,35 +10,39 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_files.*
 import net.sigmabeta.chipbox.BuildConfig
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import javax.inject.Inject
 
-class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
+class FilesActivity : BaseActivity<FilesPresenter, FilesView>(), FilesView, FragmentContainer {
     lateinit var presenter: FilesPresenter
         @Inject set
 
     override fun showFileFragment(path: String, stack: Boolean) {
-        doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
-            val fragment = FileListFragment.newInstance(path)
+        val fragment = FileListFragment.newInstance(path)
 
-            val transaction = supportFragmentManager.beginTransaction()
+        val transaction = supportFragmentManager.beginTransaction()
 
-            if (stack) {
-                transaction.addToBackStack(null)
-            }
-
-            transaction.replace(R.id.frame_fragment, fragment, FileListFragment.FRAGMENT_TAG + "." + path)
-            transaction.commit()
+        if (stack) {
+            transaction.addToBackStack(null)
         }
+
+        transaction.replace(R.id.frame_fragment, fragment, FileListFragment.FRAGMENT_TAG + "." + path)
+        transaction.commit()
     }
 
     override fun popBackStack() {
         supportFragmentManager.popBackStack()
+    }
+
+    override fun onNotFolderError() {
+        presenter.onNotFolderError()
+    }
+
+    override fun showNoAddingRootError() {
+        showErrorSnackbar(getString(R.string.file_list_error_no_root_allowed), null, 0)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -66,7 +69,6 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
     }
 
     override fun onAddSuccessful() {
-
         ScanActivity.launch(this)
     }
 
@@ -85,11 +87,15 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
         this.title = title
     }
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
     override fun inject() {
-        ChipboxApplication.appComponent.inject(this)
+        getTypedApplication().appComponent.inject(this)
     }
 
-    override fun getPresenter(): ActivityPresenter {
+    override fun getPresenterImpl(): FilesPresenter {
         return presenter
     }
 
@@ -126,11 +132,8 @@ class FilesActivity : BaseActivity(), FilesView, FragmentContainer {
 
         val ARGUMENT_PATH: String = "${ACTIVITY_TAG}.path"
 
-        fun launch(activity: Activity) {
+        fun launch(activity: Activity) = (activity as BaseActivity<*, *>).doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
             val launcher = Intent(activity, FilesActivity::class.java)
-
-            launcher.putExtra(ARGUMENT_PATH, Environment.getExternalStorageDirectory().path)
-
             activity.startActivityForResult(launcher, REQUEST_ADD_FOLDER)
         }
     }

@@ -12,7 +12,6 @@ import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
@@ -22,9 +21,7 @@ import javax.inject.Singleton
 @Singleton
 class MainPresenter @Inject constructor(val player: Player,
                                         val playlist: Playlist,
-                                        val updater: UiUpdater) : ActivityPresenter() {
-    var view: MainView? = null
-
+                                        val updater: UiUpdater) : ActivityPresenter<MainView>() {
     var state = player.state
 
     var game: Game? = null
@@ -54,7 +51,9 @@ class MainPresenter @Inject constructor(val player: Player,
         }
     }
 
-    override fun setup(arguments: Bundle?) = Unit
+    override fun setup(arguments: Bundle?) {
+        needsSetup = false
+    }
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
@@ -85,14 +84,6 @@ class MainPresenter @Inject constructor(val player: Player,
     }
 
     override fun onClick(id: Int) = Unit
-
-    override fun setView(view: BaseView) {
-        if (view is MainView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
 
     override fun onReenter() {
         updateHelper()
@@ -129,9 +120,6 @@ class MainPresenter @Inject constructor(val player: Player,
 
         this.state = newState
     }
-
-    override fun getView(): BaseView? = view
-
     private fun displayTrack(trackId: String?, animate: Boolean) {
         if (trackId != null) {
             val track = repository.getTrackSync(trackId)

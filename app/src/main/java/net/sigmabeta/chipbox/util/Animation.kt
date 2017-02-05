@@ -67,45 +67,6 @@ fun View.slideViewToProperLocation(): ViewPropertyAnimator {
             .translationY(0.0f)
 }
 
-fun View.fadeOutToLeft(): ViewPropertyAnimator {
-    return animate()
-            .withLayer()
-            .setInterpolator(DECELERATE)
-            .setDuration(200)
-            .scaleY(0.8f)
-            .scaleX(1.1f)
-            .translationX(-width / 4.0f)
-            .alpha(0.0f)
-}
-
-fun View.fadeInFromRight(): ViewPropertyAnimator {
-    translationX = width / 4.0f
-    alpha = 0.0f
-    visibility = View.VISIBLE
-
-    return animate()
-            .withLayer()
-            .setInterpolator(ACCELERATE)
-            .setDuration(300)
-            .scaleX(1.0f)
-            .scaleY(1.0f)
-            .translationX(0.0f)
-            .alpha(1.0f)
-}
-
-fun View.fadeInFromBelow(): ViewPropertyAnimator {
-    alpha = 0.0f
-    visibility = View.VISIBLE
-    translationY = height.toFloat() / 8
-
-    return animate()
-            .withLayer()
-            .setInterpolator(DECELERATE)
-            .setDuration(300)
-            .translationY(0.0f)
-            .alpha(1.0f)
-}
-
 fun View.fadeIn(): ViewPropertyAnimator {
     visibility = View.VISIBLE
 
@@ -116,7 +77,18 @@ fun View.fadeIn(): ViewPropertyAnimator {
             .alpha(1.0f)
 }
 
-fun View.fadeOut(): ViewPropertyAnimator {
+fun View.fadeInFromZero(): ViewPropertyAnimator {
+    visibility = View.VISIBLE
+    alpha = 0.0f
+
+    return animate()
+            .withLayer()
+            .setInterpolator(DECELERATE)
+            .setDuration(150)
+            .alpha(1.0f)
+}
+
+fun View.fadeOutGone(): ViewPropertyAnimator {
     return animate()
             .withLayer()
             .setInterpolator(ACCELERATE)
@@ -127,6 +99,14 @@ fun View.fadeOut(): ViewPropertyAnimator {
             }
 }
 
+fun View.fadeOut(): ViewPropertyAnimator {
+    return animate()
+            .withLayer()
+            .setInterpolator(ACCELERATE)
+            .setDuration(150)
+            .alpha(0.0f)
+}
+
 fun View.fadeOutPartially(): ViewPropertyAnimator {
     return animate()
             .withLayer()
@@ -135,18 +115,23 @@ fun View.fadeOutPartially(): ViewPropertyAnimator {
             .alpha(0.6f)
 }
 
-fun TextView.changeText(text: String) = animate().withLayer()
-        .setDuration(50)
-        .setInterpolator(DECELERATE)
-        .alpha(0.0f)
-        .withEndAction {
-            setText(text)
+fun TextView.changeText(text: String) = if (getText() != text) {
+    animate().withLayer()
+            .setDuration(50)
+            .setInterpolator(DECELERATE)
+            .alpha(0.0f)
+            .withEndAction {
+                setText(text)
 
-            animate().withLayer()
-                    .setDuration(100)
-                    .setInterpolator(DECELERATE)
-                    .alpha(1.0f)
-        }
+                animate().withLayer()
+                        .setDuration(100)
+                        .setInterpolator(DECELERATE)
+                        .alpha(1.0f)
+            }
+} else {
+    null
+}
+
 
 fun View.shrinktoNothing() = animate()
         .withLayer()

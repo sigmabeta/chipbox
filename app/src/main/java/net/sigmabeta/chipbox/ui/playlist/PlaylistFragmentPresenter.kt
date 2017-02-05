@@ -7,7 +7,6 @@ import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
 import rx.android.schedulers.AndroidSchedulers
@@ -17,9 +16,7 @@ import javax.inject.Inject
 @ActivityScoped
 class PlaylistFragmentPresenter @Inject constructor(val player: Player,
                                                     val playlist: Playlist,
-                                                    val updater: UiUpdater) : FragmentPresenter() {
-    var view: PlaylistFragmentView? = null
-
+                                                    val updater: UiUpdater) : FragmentPresenter<PlaylistFragmentView>() {
     var trackList: MutableList<Track>? = null
 
     var queuePosition: Int? = null
@@ -67,6 +64,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
      */
 
     override fun setup(arguments: Bundle?) {
+        needsSetup = false
     }
 
     override fun teardown() = Unit
@@ -99,16 +97,6 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
     }
 
     override fun onClick(id: Int) = Unit
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is PlaylistFragmentView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
 
     /**
      * Private Methods

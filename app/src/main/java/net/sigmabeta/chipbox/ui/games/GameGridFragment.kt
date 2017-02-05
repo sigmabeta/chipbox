@@ -17,7 +17,7 @@ import net.sigmabeta.chipbox.util.*
 import java.util.*
 import javax.inject.Inject
 
-class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHolder>, TopLevelFragment, NavigationFragment {
+class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameListView, ItemListView<GameViewHolder>, TopLevelFragment, NavigationFragment {
     lateinit var presenter: GameGridPresenter
         @Inject set
 
@@ -56,33 +56,16 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
         }
     }
 
-    override fun showLoadingSpinner() = ifVisible {
-        loading_spinner.fadeIn().setDuration(50)
-    }
-
-    override fun hideLoadingSpinner() = ifVisible {
-        loading_spinner.fadeOut()
-    }
-
     override fun showContent() = ifVisible {
         grid_games.fadeIn()
-    }
-
-    override fun hideContent() = ifVisible {
-        grid_games.fadeOutPartially()
+        layout_empty_state.fadeOutGone()
     }
 
     override fun showEmptyState() = ifVisible {
         layout_empty_state.visibility = View.VISIBLE
-        label_empty_state.fadeIn().setStartDelay(300)
-        button_empty_state.fadeIn().setStartDelay(600)
-    }
-
-    override fun hideEmptyState() = ifVisible {
-        layout_empty_state.fadeOut().withEndAction {
-            label_empty_state.alpha = 0.0f
-            button_empty_state.alpha = 0.0f
-        }
+        label_empty_state.fadeInFromZero().setStartDelay(300)
+        button_empty_state.fadeInFromZero().setStartDelay(600)
+        grid_games.fadeOutGone()
     }
 
     /**
@@ -112,10 +95,21 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
      * BaseFragment
      */
 
+    override fun showLoading() = ifVisible {
+        grid_games.fadeOutPartially()
+        loading_spinner.fadeIn().setDuration(50)
+        layout_empty_state.fadeOutGone()
+    }
+
+
+    override fun hideLoading() {
+        loading_spinner.fadeOutGone()
+    }
+
     override fun inject() {
         val container = activity
-        if (container is BaseActivity) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {
+            container.getFragmentComponent()?.inject(this)
         }
     }
 
@@ -131,7 +125,7 @@ class GameGridFragment : BaseFragment(), GameListView, ItemListView<GameViewHold
         return views.toTypedArray()
     }
 
-    override fun getPresenter(): FragmentPresenter {
+    override fun getPresenterImpl(): GameGridPresenter {
         return presenter
     }
 

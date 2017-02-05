@@ -10,14 +10,13 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.ACC_DECELERATE
 import net.sigmabeta.chipbox.util.convertDpToPx
 import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
-class PlayerControlsFragment : BaseFragment(), PlayerControlsView {
+class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerControlsView>(), PlayerControlsView {
     lateinit var presenter: PlayerControlsPresenter
         @Inject set
 
@@ -85,14 +84,18 @@ class PlayerControlsFragment : BaseFragment(), PlayerControlsView {
      * BaseFragment
      */
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
     override fun inject() {
         val container = activity
-        if (container is BaseActivity) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {
+            container.getFragmentComponent()?.inject(this)
         }
     }
 
-    override fun getPresenter(): FragmentPresenter = presenter
+    override fun getPresenterImpl() = presenter
 
     override fun getLayoutId() = R.layout.fragment_player_controls
 

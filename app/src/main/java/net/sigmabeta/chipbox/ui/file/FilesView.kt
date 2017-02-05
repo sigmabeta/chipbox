@@ -16,4 +16,8 @@ interface FilesView : BaseView {
     fun showFileFragment(path: String, stack: Boolean)
 
     fun popBackStack()
+
+    fun onNotFolderError()
+
+    fun showNoAddingRootError()
 }
