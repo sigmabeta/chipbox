@@ -4,14 +4,14 @@ import kotlinx.android.synthetic.main.fragment_library.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
+import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.onboarding.OnboardingView
 import javax.inject.Inject
 
 @ActivityScoped
-class LibraryFragment : BaseFragment(), LibraryView {
+class LibraryFragment : BaseFragment<LibraryPresenter, LibraryView>(), LibraryView {
     lateinit var presenter: LibraryPresenter
         @Inject set
 
@@ -39,14 +39,18 @@ class LibraryFragment : BaseFragment(), LibraryView {
      * BaseFragment
      */
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
     override fun inject() {
         val container = activity
-        if (container is OnboardingView) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {
+            container.getFragmentComponent()?.inject(this)
         }
     }
 
-    override fun getPresenter(): FragmentPresenter = presenter
+    override fun getPresenterImpl(): LibraryPresenter = presenter
 
     override fun getLayoutId() = R.layout.fragment_library
 

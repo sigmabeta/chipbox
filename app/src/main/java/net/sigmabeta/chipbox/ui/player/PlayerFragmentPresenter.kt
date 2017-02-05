@@ -12,7 +12,6 @@ import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.logError
@@ -23,9 +22,7 @@ import javax.inject.Inject
 @ActivityScoped
 class PlayerFragmentPresenter @Inject constructor(val player: Player,
                                                   val playlist: Playlist,
-                                                  val updater: UiUpdater) : FragmentPresenter() {
-    var view: PlayerFragmentView? = null
-
+                                                  val updater: UiUpdater) : FragmentPresenter<PlayerFragmentView>() {
     var game: Game? = null
 
     var track: Track? = null
@@ -53,7 +50,9 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
-    override fun setup(arguments: Bundle?) = Unit
+    override fun setup(arguments: Bundle?) {
+        needsSetup = false
+    }
 
     override fun teardown() {
         track = null
@@ -94,16 +93,6 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         displayState(player.state)
 
         displayPosition(player.playbackTimePosition)
-    }
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is PlayerFragmentView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
     }
 
     private fun displayGame(gameId: String?, force: Boolean, animate: Boolean) {

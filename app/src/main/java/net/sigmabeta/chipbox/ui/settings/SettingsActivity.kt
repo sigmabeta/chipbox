@@ -6,15 +6,13 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import kotlinx.android.synthetic.main.activity_settings.*
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.audio.Voice
-import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ItemListView
 import javax.inject.Inject
 
-class SettingsActivity : BaseActivity(), SettingsView, ItemListView<VoiceViewHolder>, AdapterView.OnItemSelectedListener {
+class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), SettingsView, ItemListView<VoiceViewHolder>, AdapterView.OnItemSelectedListener {
     lateinit var presenter: SettingsPresenter
         @Inject set
 
@@ -62,9 +60,13 @@ class SettingsActivity : BaseActivity(), SettingsView, ItemListView<VoiceViewHol
      * BaseActivity
      */
 
-    override fun inject() = ChipboxApplication.appComponent.inject(this)
+    override fun showLoading() = Unit
 
-    override fun getPresenter(): ActivityPresenter = presenter
+    override fun hideLoading() = Unit
+
+    override fun inject() = getTypedApplication().appComponent.inject(this)
+
+    override fun getPresenterImpl() = presenter
 
     override fun configureViews() {
         recycler_voices.adapter = adapter

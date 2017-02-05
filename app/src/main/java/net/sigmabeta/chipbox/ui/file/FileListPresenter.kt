@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.ui.file
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.model.file.FileListItem
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.generateFileList
 import net.sigmabeta.chipbox.util.readSingleTrackFile
@@ -12,9 +11,7 @@ import java.io.File
 import java.util.*
 import javax.inject.Inject
 
-class FileListPresenter @Inject constructor() : FragmentPresenter() {
-    var view: FileListView? = null
-
+class FileListPresenter @Inject constructor() : FragmentPresenter<FileListView>() {
     var files: ArrayList<FileListItem>? = null
 
     var path: String? = null
@@ -51,6 +48,7 @@ class FileListPresenter @Inject constructor() : FragmentPresenter() {
     }
 
     private fun setupHelper(arguments: Bundle?) {
+        loading = true
         path = arguments?.getString(FileListFragment.ARGUMENT_PATH)
 
         if (path != null) {
@@ -61,13 +59,21 @@ class FileListPresenter @Inject constructor() : FragmentPresenter() {
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
+                                loading = false
+
                                 files = it
                                 if (it != null) {
                                     view?.setFiles(it)
                                 }
                             },
                             {
-                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                                loading = false
+
+                                if (it is IllegalStateException) {
+                                    view?.onNotFolderError()
+                                } else {
+                                    view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                                }
                             }
                     )
 
@@ -90,14 +96,4 @@ class FileListPresenter @Inject constructor() : FragmentPresenter() {
     }
 
     override fun onClick(id: Int) = Unit
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is FileListView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
 }

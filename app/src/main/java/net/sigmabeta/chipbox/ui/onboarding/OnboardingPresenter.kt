@@ -3,16 +3,13 @@ package net.sigmabeta.chipbox.ui.onboarding
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.PrefManager
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.onboarding.library.LibraryFragment
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class OnboardingPresenter @Inject constructor(val prefManager: PrefManager) : ActivityPresenter() {
-    var view: OnboardingView? = null
-
+class OnboardingPresenter @Inject constructor(val prefManager: PrefManager) : ActivityPresenter<OnboardingView>() {
     var currentTag: String? = null
 
     var launchedWithTag: Boolean = true
@@ -49,6 +46,8 @@ class OnboardingPresenter @Inject constructor(val prefManager: PrefManager) : Ac
     override fun onClick(id: Int) = Unit
 
     override fun setup(arguments: Bundle?) {
+        needsSetup = false
+
         val tag = arguments?.getString(OnboardingActivity.ARGUMENT_PAGE_TAG)
 
         when (tag) {
@@ -73,16 +72,6 @@ class OnboardingPresenter @Inject constructor(val prefManager: PrefManager) : Ac
     }
 
     override fun updateViewState() = Unit
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is OnboardingView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
 
     /**
      * Private Methods

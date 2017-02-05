@@ -10,15 +10,7 @@ interface ArtistListView : BaseView {
 
     fun showFilesScreen()
 
-    fun showLoadingSpinner()
-
-    fun hideLoadingSpinner()
-
     fun showContent()
 
-    fun hideContent()
-
     fun showEmptyState()
-
-    fun hideEmptyState()
 }

@@ -10,11 +10,9 @@ import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_game.*
 import net.sigmabeta.chipbox.BuildConfig
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ItemListView
 import net.sigmabeta.chipbox.util.TRANSITION_SLIDE
@@ -22,7 +20,7 @@ import net.sigmabeta.chipbox.util.loadImageHighQuality
 import net.sigmabeta.chipbox.util.shrinktoNothing
 import javax.inject.Inject
 
-class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder> {
+class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ItemListView<GameTrackViewHolder> {
     lateinit var presenter: GamePresenter
         @Inject set
 
@@ -69,11 +67,15 @@ class GameActivity : BaseActivity(), GameView, ItemListView<GameTrackViewHolder>
      * BaseActivity
      */
 
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
     override fun inject() {
-        ChipboxApplication.appComponent.inject(this)
+        getTypedApplication().appComponent.inject(this)
     }
 
-    override fun getPresenter(): ActivityPresenter {
+    override fun getPresenterImpl(): GamePresenter {
         return presenter
     }
 

@@ -5,15 +5,12 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
 import javax.inject.Inject
 
 @ActivityScoped
-class GameGridPresenter @Inject constructor() : FragmentPresenter() {
-    var view: GameListView? = null
-
+class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>() {
     var platform = Track.PLATFORM_ALL
 
     var games: List<Game>? = null
@@ -53,8 +50,6 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
             } else {
                 showEmptyState()
             }
-        } ?: let {
-            view?.showLoadingSpinner()
         }
 
         val titleResource = when (platform) {
@@ -79,21 +74,10 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
         }
     }
 
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is GameListView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
-
     private fun setupHelper(arguments: Bundle?) {
         platform = arguments?.getLong(GameGridFragment.ARGUMENT_PLATFORM_INDEX) ?: Track.PLATFORM_UNDEFINED
 
-        view?.showLoadingSpinner()
-        view?.hideEmptyState()
+        loading = true
 
         val request = if (platform == Track.PLATFORM_ALL) {
             repository.getGames()
@@ -103,6 +87,7 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
         val subscription = request
                 .subscribe(
                         {
+                            loading = false
                             games = it
 
                             if (it.isNotEmpty()) {
@@ -112,6 +97,7 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
                             }
                         },
                         {
+                            loading = false
                             showEmptyState()
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
@@ -122,14 +108,10 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter() {
 
     private fun showContent(games: List<Game>) {
         view?.setGames(games)
-        view?.hideLoadingSpinner()
-        view?.hideEmptyState()
         view?.showContent()
     }
 
     private fun showEmptyState() {
-        view?.hideLoadingSpinner()
-        view?.hideContent()
         view?.showEmptyState()
     }
 }

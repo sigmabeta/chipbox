@@ -10,7 +10,6 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.ItemListView
 import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_FADE_IN_BELOW
 import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_FADE_OUT_DOWN
@@ -19,7 +18,7 @@ import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_STAGGERED_FADE_OUT_UP
 import java.util.*
 import javax.inject.Inject
 
-class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHolder> {
+class FileListFragment : BaseFragment<FileListPresenter, FileListView>(), FileListView, ItemListView<FileViewHolder> {
     lateinit var presenter: FileListPresenter
         @Inject set
 
@@ -47,6 +46,10 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHold
         (activity as FilesView).updateSubtitle(path)
     }
 
+    override fun onNotFolderError() {
+        (activity as FilesView).onNotFolderError()
+    }
+
     /**
      * ItemListView
      */
@@ -59,14 +62,19 @@ class FileListFragment : BaseFragment(), FileListView, ItemListView<FileViewHold
      * BaseFragment
      */
 
+
     override fun inject() {
         val container = activity
-        if (container is BaseActivity) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {
+            container.getFragmentComponent()?.inject(this)
         }
     }
 
-    override fun getPresenter(): FragmentPresenter {
+    override fun showLoading() = Unit
+
+    override fun hideLoading() = Unit
+
+    override fun getPresenterImpl(): FileListPresenter {
         return presenter
     }
 
