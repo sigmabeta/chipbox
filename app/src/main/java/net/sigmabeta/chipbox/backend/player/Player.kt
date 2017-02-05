@@ -52,6 +52,8 @@ class Player @Inject constructor(val playlist: Playlist,
             return
         }
 
+        val resuming = (state == PlaybackState.STATE_PAUSED && trackId == null)
+
         val focusResult = requestAudioFocus()
         if (focusResult == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
             state = PlaybackState.STATE_PLAYING
@@ -90,7 +92,8 @@ class Player @Inject constructor(val playlist: Playlist,
                         audioConfig,
                         emptyBuffers,
                         fullBuffers,
-                        firstTrackId)
+                        firstTrackId,
+                        resuming)
 
                 reader?.loop()
                 reader = null
