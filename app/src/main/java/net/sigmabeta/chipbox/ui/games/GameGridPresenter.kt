@@ -87,6 +87,7 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>(
         val subscription = request
                 .subscribe(
                         {
+                            printBenchmark("Games Loaded")
                             loading = false
                             games = it
 

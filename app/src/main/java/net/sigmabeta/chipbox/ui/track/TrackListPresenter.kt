@@ -71,6 +71,8 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
             val artistLoad = repository.getArtist(it)
                     .subscribe(
                             {
+                                printBenchmark("Tracks Loaded")
+
                                 this.artist = it
                                 view?.setActivityTitle(it.name ?: "Unknown Artist")
 
@@ -96,6 +98,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
                     .subscribe(
                             {
                                 logInfo("[SongListPresenter] Loaded ${it.size} tracks.")
+                                printBenchmark("Tracks Loaded")
 
                                 tracks = it
 
