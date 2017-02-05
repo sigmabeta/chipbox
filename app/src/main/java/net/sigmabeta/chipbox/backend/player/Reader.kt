@@ -15,21 +15,23 @@ class Reader(val player: Player,
              val audioConfig: AudioConfig,
              val emptyBuffers: BlockingQueue<AudioBuffer>,
              val fullBuffers: BlockingQueue<AudioBuffer>,
-             val trackId: String) {
-
-    var queuedTrackId: String? = trackId
-
+             var queuedTrackId: String?,
+             var resuming: Boolean) {
     var playingTrackId: String? = null
         set (value) {
-            teardown()
-
             if (value != null) {
                 val track = repository.getTrackSync(value)
 
                 if (track != null) {
-                    loadTrackNative(track,
-                            audioConfig.sampleRate,
-                            audioConfig.bufferSizeShorts.toLong())
+                    if (!resuming) {
+                        teardown()
+
+                        loadTrackNative(track,
+                                audioConfig.sampleRate,
+                                audioConfig.bufferSizeShorts.toLong())
+                    } else {
+                        resuming = false
+                    }
                 }
 
                 player.onTrackChange(value, track?.game?.id)
@@ -104,7 +106,9 @@ class Reader(val player: Player,
 
         logVerbose("[Player] Clearing empty buffer queue...")
 
-        player.onPlaybackPositionUpdate(0)
+        if (player.state != PlaybackState.STATE_PAUSED) {
+            player.onPlaybackPositionUpdate(0)
+        }
 
         emptyBuffers.clear()
 

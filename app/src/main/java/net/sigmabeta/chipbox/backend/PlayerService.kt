@@ -120,6 +120,7 @@ class PlayerService : Service(), BackendView {
 
         session?.isActive = false
         unregisterNoisyReceiver()
+        notificationManager?.stopNotification()
 
         stopSelf()
     }
