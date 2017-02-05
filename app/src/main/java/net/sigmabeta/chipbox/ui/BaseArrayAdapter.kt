@@ -20,7 +20,11 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
         }
         set (value) {
             diffStartTime = System.currentTimeMillis()
-            startAsyncListRefresh(value)
+            if (value === datasetInternal) {
+
+            } else {
+                startAsyncListRefresh(value)
+            }
         }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): VH? {
