@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_scan.*
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.util.changeText
 import javax.inject.Inject
@@ -13,10 +14,6 @@ import javax.inject.Inject
 class ScanActivity : BaseActivity<ScanPresenter, ScanView>(), ScanView {
     lateinit var presenter: ScanPresenter
         @Inject set
-
-    override fun onBackPressed() {
-        presenter.onBackPressed()
-    }
 
     /**
      * ScanView
@@ -45,6 +42,11 @@ class ScanActivity : BaseActivity<ScanPresenter, ScanView>(), ScanView {
 
     override fun updateBadFiles(badFiles: Int) {
         text_bad_file_count.text = badFiles.toString()
+    }
+
+    override fun startScanner() {
+        val intent = Intent(this, ScanService::class.java)
+        startService(intent)
     }
 
     /**

@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.dagger.component
 
 import dagger.Component
 import net.sigmabeta.chipbox.backend.PlayerService
+import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.backend.module.AudioModule
 import net.sigmabeta.chipbox.dagger.module.AppModule
 import net.sigmabeta.chipbox.dagger.module.PreferenceModule
@@ -38,7 +39,9 @@ interface AppComponent {
     fun inject(view: GameActivity)
     fun inject(view: SettingsActivity)
     fun inject(view: OnboardingActivity)
+
     fun inject(backendView: PlayerService)
+    fun inject(backendView: ScanService)
 
     fun plusFragments(): FragmentComponent
 }

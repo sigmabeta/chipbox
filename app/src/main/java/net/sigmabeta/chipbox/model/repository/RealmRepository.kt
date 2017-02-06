@@ -13,6 +13,7 @@ import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
+import java.util.concurrent.TimeUnit
 
 class RealmRepository(var realm: Realm) : Repository {
     override fun reopen() {
@@ -123,6 +124,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findAllSortedAsync("title")
                 .asObservable()
                 .filter { it.isLoaded }
+                .throttleFirst(5000, TimeUnit.MILLISECONDS)
     }
 
     override fun getTracksFromIds(trackIdsList: MutableList<String?>): Observable<out List<Track>> {
@@ -163,6 +165,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findAllSortedAsync("title")
                 .asObservable()
                 .filter { it.isLoaded }
+                .throttleFirst(5000, TimeUnit.MILLISECONDS)
     }
 
     override fun getGamesForPlatform(platformId: Long): Observable<out List<Game>> {
@@ -172,6 +175,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findAllSortedAsync("title")
                 .asObservable()
                 .filter { it.isLoaded }
+                .throttleFirst(5000, TimeUnit.MILLISECONDS)
     }
 
     override fun getGame(platformId: Long, title: String?): Observable<Game> {
@@ -221,6 +225,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findAllSortedAsync("name")
                 .asObservable()
                 .filter { it.isLoaded }
+                .throttleFirst(5000, TimeUnit.MILLISECONDS)
     }
 
     override fun getFoldersSync(): List<Folder> {
