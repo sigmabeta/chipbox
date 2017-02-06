@@ -1,30 +1,19 @@
 package net.sigmabeta.chipbox.ui.scan
 
 import android.os.Bundle
-import android.util.Log
-import net.sigmabeta.chipbox.model.events.FileScanEvent
-import net.sigmabeta.chipbox.model.repository.LibraryScanner
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.util.logError
+import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 
 @Singleton
-class ScanPresenter @Inject constructor(val scanner: LibraryScanner) : ActivityPresenter<ScanView>() {
+class ScanPresenter @Inject constructor(val updater: UiUpdater) : ActivityPresenter<ScanView>() {
     var filesAdded = 0
     var badFiles = 0
-
-    var backAllowed = false
-
-    fun onBackPressed() {
-        if (backAllowed) {
-            view?.finish()
-        }
-    }
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
@@ -33,59 +22,55 @@ class ScanPresenter @Inject constructor(val scanner: LibraryScanner) : ActivityP
     override fun setup(arguments: Bundle?) {
         needsSetup = false
 
-        scanner.scanLibrary()
-                .buffer(17, TimeUnit.MILLISECONDS)
-                .subscribeOn(Schedulers.io())
+        view?.startScanner()
+
+        updater.asObservable()
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            // OnNext. it: FileScanEvent
-                            handleEvent(it)
-                        },
-                        {
-                            // OnError. it: Throwable
-                            view?.onScanFailed()
-                            backAllowed = true
-                            logError("[FileListPresenter] File scanning error: ${Log.getStackTraceString(it)}")
-                        },
-                        {
-                            // OnCompleted.
-                            backAllowed = true
-                            view?.onScanComplete(filesAdded > 0)
+                .subscribe {
+                    when (it) {
+                        is TrackEvent -> { /* No-op*/
                         }
-                )
+                        is PositionEvent -> { /* No-op*/
+                        }
+                        is GameEvent -> { /* No-op*/
+                        }
+                        is StateEvent -> { /* No-op*/
+                        }
+                        is FileScanEvent -> handleEvent(it)
+                        is FileScanFailedEvent -> view?.onScanFailed()
+                        is FileScanCompleteEvent -> view?.onScanComplete(true)
+                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                    }
+                }
     }
 
     override fun teardown() {
         filesAdded = 0
         badFiles = 0
-        backAllowed = false
     }
 
     override fun updateViewState() = Unit
 
     override fun onClick(id: Int) = Unit
 
-    private fun handleEvent(events: MutableList<FileScanEvent>) {
+    private fun handleEvent(event: FileScanEvent) {
         var currentFolder: String? = null
         var lastFile: String? = null
         var lastError: String? = null
 
-        for (event in events) {
-            when (event.type) {
-                FileScanEvent.TYPE_FOLDER -> {
-                    currentFolder = event.name
-                }
+        when (event.type) {
+            FileScanEvent.TYPE_FOLDER -> {
+                currentFolder = event.name
+            }
 
-                FileScanEvent.TYPE_TRACK -> {
-                    filesAdded++
-                    lastFile = event.name
-                }
+            FileScanEvent.TYPE_TRACK -> {
+                filesAdded++
+                lastFile = event.name
+            }
 
-                FileScanEvent.TYPE_BAD_TRACK -> {
-                    badFiles++
-                    lastError = event.name
-                }
+            FileScanEvent.TYPE_BAD_TRACK -> {
+                badFiles++
+                lastError = event.name
             }
         }
 

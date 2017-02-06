@@ -15,5 +15,5 @@ interface ScanView : BaseView {
 
     fun updateBadFiles(badFiles: Int)
 
-    fun finish()
+    fun startScanner()
 }
