@@ -102,7 +102,7 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
     }
 
 
-    override fun hideLoading() {
+    override fun hideLoading() = ifVisible {
         loading_spinner.fadeOutGone()
     }
 

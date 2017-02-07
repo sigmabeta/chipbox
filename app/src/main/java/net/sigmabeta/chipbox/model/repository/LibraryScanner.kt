@@ -11,6 +11,7 @@ import rx.Observable
 import rx.Subscriber
 import java.io.File
 import java.util.*
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Named
 
@@ -19,7 +20,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
     lateinit var repository: Repository
 
     fun scanLibrary(): Observable<FileScanEvent> {
-        return Observable.create(
+        val create = Observable.create<FileScanEvent>(
                 { sub ->
                     // OnSubscribe.call. it: String
                     repository = repositoryLazy.get()
@@ -47,6 +48,10 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                     sub.onCompleted()
                 }
         )
+
+        return create
+                .onBackpressureDrop()
+                .throttleFirst(5000, TimeUnit.MILLISECONDS)
     }
 
     /**

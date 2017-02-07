@@ -13,7 +13,6 @@ import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
-import java.util.concurrent.TimeUnit
 
 class RealmRepository(var realm: Realm) : Repository {
     override fun reopen() {
@@ -119,12 +118,19 @@ class RealmRepository(var realm: Realm) : Repository {
 
 
     override fun getTracks(): Observable<out List<Track>> {
-        return realm
-                .where(Track::class.java)
-                .findAllSortedAsync("title")
-                .asObservable()
-                .filter { it.isLoaded }
-                .throttleFirst(5000, TimeUnit.MILLISECONDS)
+        return Observable.create {
+            val localRealm = getRealmInstance()
+
+            val tracksManaged = localRealm.where(Track::class.java)
+                    .findAllSorted("title")
+
+            val tracksUnmanaged = localRealm.copyFromRealm(tracksManaged)
+
+            localRealm.closeAndReport()
+
+            it.onNext(tracksUnmanaged)
+            it.onCompleted()
+        }
     }
 
     override fun getTracksFromIds(trackIdsList: MutableList<String?>): Observable<out List<Track>> {
@@ -159,23 +165,36 @@ class RealmRepository(var realm: Realm) : Repository {
     }
 
     override fun getGames(): Observable<out List<Game>> {
+        return Observable.create {
+            val localRealm = getRealmInstance()
 
-        return realm
-                .where(Game::class.java)
-                .findAllSortedAsync("title")
-                .asObservable()
-                .filter { it.isLoaded }
-                .throttleFirst(5000, TimeUnit.MILLISECONDS)
+            val gamesManaged = localRealm.where(Game::class.java)
+                    .findAllSorted("title")
+
+            val gamesUnmanaged = localRealm.copyFromRealm(gamesManaged)
+
+            localRealm.closeAndReport()
+
+            it.onNext(gamesUnmanaged)
+            it.onCompleted()
+        }
     }
 
     override fun getGamesForPlatform(platformId: Long): Observable<out List<Game>> {
-        return realm
-                .where(Game::class.java)
-                .equalTo("platform", platformId)
-                .findAllSortedAsync("title")
-                .asObservable()
-                .filter { it.isLoaded }
-                .throttleFirst(5000, TimeUnit.MILLISECONDS)
+        return Observable.create {
+            val localRealm = getRealmInstance()
+
+            val gamesManaged = localRealm.where(Game::class.java)
+                    .equalTo("platform", platformId)
+                    .findAllSorted("title")
+
+            val gamesUnmanaged = localRealm.copyFromRealm(gamesManaged)
+
+            localRealm.closeAndReport()
+
+            it.onNext(gamesUnmanaged)
+            it.onCompleted()
+        }
     }
 
     override fun getGame(platformId: Long, title: String?): Observable<Game> {
@@ -220,12 +239,19 @@ class RealmRepository(var realm: Realm) : Repository {
     }
 
     override fun getArtists(): Observable<out List<Artist>> {
-        return realm
-                .where(Artist::class.java)
-                .findAllSortedAsync("name")
-                .asObservable()
-                .filter { it.isLoaded }
-                .throttleFirst(5000, TimeUnit.MILLISECONDS)
+        return Observable.create {
+            val localRealm = getRealmInstance()
+
+            val artistsManaged = localRealm.where(Artist::class.java)
+                    .findAllSorted("name")
+
+            val artistsUnmanaged = localRealm.copyFromRealm(artistsManaged)
+
+            localRealm.closeAndReport()
+
+            it.onNext(artistsUnmanaged)
+            it.onCompleted()
+        }
     }
 
     override fun getFoldersSync(): List<Folder> {
