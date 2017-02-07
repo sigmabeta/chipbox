@@ -7,16 +7,12 @@ import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.model.events.FileScanCompleteEvent
 import net.sigmabeta.chipbox.model.events.FileScanFailedEvent
 import net.sigmabeta.chipbox.model.repository.LibraryScanner
-import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import javax.inject.Inject
 
 class ScanService : IntentService("Scanner") {
-    lateinit var repository: Repository
-        @Inject set
-
     lateinit var updater: UiUpdater
         @Inject set
 
