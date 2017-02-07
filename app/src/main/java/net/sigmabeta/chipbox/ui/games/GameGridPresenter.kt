@@ -2,16 +2,19 @@ package net.sigmabeta.chipbox.ui.games
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
+import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
+import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>() {
+class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPresenter<GameListView>() {
     var platform = Track.PLATFORM_ALL
 
     var games: List<Game>? = null
@@ -67,6 +70,29 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>(
         }
 
         view?.clearClickedViewHolder()
+
+        val subscription = updater.asObservable()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    when (it) {
+                        is TrackEvent -> { /* no-op */
+                        }
+                        is PositionEvent -> { /* no-op */
+                        }
+                        is GameEvent -> { /* no-op */
+                        }
+                        is StateEvent -> { /* no-op */
+                        }
+                        is FileScanEvent -> loadGames()
+                        is FileScanCompleteEvent -> { /* no-op */
+                        }
+                        is FileScanFailedEvent -> { /* no-op */
+                        }
+                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                    }
+                }
+
+        subscriptions.add(subscription)
     }
 
     override fun onClick(id: Int) {
@@ -80,6 +106,10 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>(
 
         loading = true
 
+        loadGames()
+    }
+
+    private fun loadGames() {
         val request = if (platform == Track.PLATFORM_ALL) {
             repository.getGames()
         } else {

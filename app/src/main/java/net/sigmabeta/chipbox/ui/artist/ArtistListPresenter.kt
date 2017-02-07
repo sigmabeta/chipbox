@@ -2,14 +2,17 @@ package net.sigmabeta.chipbox.ui.artist
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
+import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class ArtistListPresenter @Inject constructor() : FragmentPresenter<ArtistListView>() {
+class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : FragmentPresenter<ArtistListView>() {
     var artists: List<Artist>? = null
 
     fun onItemClick(position: Int) {
@@ -41,6 +44,29 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter<ArtistListVi
                 view?.showEmptyState()
             }
         }
+
+        val subscription = updater.asObservable()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    when (it) {
+                        is TrackEvent -> { /* no-op */
+                        }
+                        is PositionEvent -> { /* no-op */
+                        }
+                        is GameEvent -> { /* no-op */
+                        }
+                        is StateEvent -> { /* no-op */
+                        }
+                        is FileScanEvent -> loadArtists()
+                        is FileScanCompleteEvent -> { /* no-op */
+                        }
+                        is FileScanFailedEvent -> { /* no-op */
+                        }
+                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                    }
+                }
+
+        subscriptions.add(subscription)
     }
 
     override fun onClick(id: Int) {
@@ -52,6 +78,10 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter<ArtistListVi
     private fun setupHelper() {
         loading = true
 
+        loadArtists()
+    }
+
+    private fun loadArtists() {
         val subscription = repository.getArtists()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(

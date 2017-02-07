@@ -2,18 +2,22 @@ package net.sigmabeta.chipbox.ui.track
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Track
+import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
+import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
-class TrackListPresenter @Inject constructor(val player: Player) : FragmentPresenter<TrackListView>() {
+class TrackListPresenter @Inject constructor(val player: Player,
+                                             val updater: UiUpdater) : FragmentPresenter<TrackListView>() {
     var artistId: String? = null
 
     var artist: Artist? = null
@@ -55,6 +59,29 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
                 showEmptyState()
             }
         }
+
+        val subscription = updater.asObservable()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    when (it) {
+                        is TrackEvent -> { /* no-op */
+                        }
+                        is PositionEvent -> { /* no-op */
+                        }
+                        is GameEvent -> { /* no-op */
+                        }
+                        is StateEvent -> { /* no-op */
+                        }
+                        is FileScanEvent -> loadTracks()
+                        is FileScanCompleteEvent -> { /* no-op */
+                        }
+                        is FileScanFailedEvent -> { /* no-op */
+                        }
+                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                    }
+                }
+
+        subscriptions.add(subscription)
     }
 
     override fun onClick(id: Int) {
@@ -68,6 +95,10 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
         artistId = arguments?.getString(TrackListFragment.ARGUMENT_ARTIST)
 
+        loadTracks()
+    }
+
+    private fun loadTracks() {
         artistId?.let {
             val artistLoad = repository.getArtist(it)
                     .observeOn(AndroidSchedulers.mainThread())
