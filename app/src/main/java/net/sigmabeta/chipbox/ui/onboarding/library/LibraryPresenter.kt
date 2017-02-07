@@ -25,7 +25,6 @@ class LibraryPresenter @Inject constructor() : FragmentPresenter<LibraryView>() 
         when (id) {
             R.id.button_next -> view?.onNextClicked()
             R.id.button_skip -> view?.onSkipClicked()
-            R.id.button_add -> view?.onAddClicked()
         }
     }
 

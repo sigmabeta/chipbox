@@ -8,7 +8,5 @@ interface LibraryView : BaseView {
 
     fun onSkipClicked()
 
-    fun onAddClicked()
-
     fun updateCurrentScreen()
 }

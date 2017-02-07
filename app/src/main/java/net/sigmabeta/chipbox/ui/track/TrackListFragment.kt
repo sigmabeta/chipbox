@@ -9,7 +9,7 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.*
-import net.sigmabeta.chipbox.ui.main.MainView
+import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import net.sigmabeta.chipbox.util.*
 import javax.inject.Inject
 
@@ -31,11 +31,8 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
         adapter.notifyDataSetChanged()
     }
 
-    override fun showFilesScreen() {
-        val mainActivity = activity
-        if (mainActivity is MainView) {
-            mainActivity.launchFileListActivity()
-        }
+    override fun showRescanScreen() {
+        ScanActivity.launch(activity)
     }
 
     override fun showContent() = ifVisible {

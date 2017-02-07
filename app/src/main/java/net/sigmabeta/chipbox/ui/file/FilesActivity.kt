@@ -1,7 +1,5 @@
 package net.sigmabeta.chipbox.ui.file
 
-import android.Manifest
-import android.app.Activity
 import android.content.Intent
 import android.view.Menu
 import android.view.MenuItem
@@ -132,9 +130,9 @@ class FilesActivity : BaseActivity<FilesPresenter, FilesView>(), FilesView, Frag
 
         val ARGUMENT_PATH: String = "${ACTIVITY_TAG}.path"
 
-        fun launch(activity: Activity) = (activity as BaseActivity<*, *>).doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
+        /*fun launch(activity: Activity) = (activity as BaseActivity<*, *>).doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
             val launcher = Intent(activity, FilesActivity::class.java)
             activity.startActivityForResult(launcher, REQUEST_ADD_FOLDER)
-        }
+        }*/
     }
 }

@@ -10,9 +10,9 @@ interface GameListView : BaseView {
 
     fun launchGameActivity(id: String)
 
-    fun clearClickedViewHolder()
+    fun showRescanScreen()
 
-    fun showFilesScreen()
+    fun clearClickedViewHolder()
 
     fun showContent()
 

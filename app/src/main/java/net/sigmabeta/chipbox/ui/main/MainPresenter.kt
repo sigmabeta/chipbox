@@ -28,7 +28,6 @@ class MainPresenter @Inject constructor(val player: Player,
 
     fun onOptionsItemSelected(itemId: Int): Boolean {
         when (itemId) {
-            R.id.drawer_add_folder -> view?.launchFileListActivity()
             R.id.drawer_refresh -> view?.launchScanActivity()
             R.id.drawer_settings -> view?.launchSettingsActivity()
             R.id.drawer_help -> view?.launchOnboarding()

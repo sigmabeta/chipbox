@@ -6,7 +6,6 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.onboarding.OnboardingView
 import javax.inject.Inject
 
@@ -27,9 +26,9 @@ class LibraryFragment : BaseFragment<LibraryPresenter, LibraryView>(), LibraryVi
         (activity as OnboardingView).skip()
     }
 
-    override fun onAddClicked() {
+    /*override fun onAddClicked() {
         FilesActivity.launch(activity)
-    }
+    }*/
 
     override fun updateCurrentScreen() {
         (activity as OnboardingView).updateCurrentScreen(TAG)
@@ -61,7 +60,6 @@ class LibraryFragment : BaseFragment<LibraryPresenter, LibraryView>(), LibraryVi
     override fun configureViews() {
         button_next.setOnClickListener(this)
         button_skip.setOnClickListener(this)
-        button_add.setOnClickListener(this)
     }
 
     override fun getFragmentTag(): String = TAG
