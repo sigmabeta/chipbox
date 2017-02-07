@@ -11,8 +11,8 @@ import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.ItemListView
 import net.sigmabeta.chipbox.ui.TopLevelFragment
-import net.sigmabeta.chipbox.ui.main.MainView
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
+import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
 import net.sigmabeta.chipbox.util.*
 import javax.inject.Inject
@@ -35,11 +35,8 @@ class ArtistListFragment : BaseFragment<ArtistListPresenter, ArtistListView>(), 
         adapter.dataset = artists
     }
 
-    override fun showFilesScreen() {
-        val mainActivity = activity
-        if (mainActivity is MainView) {
-            mainActivity.launchFileListActivity()
-        }
+    override fun showRescanScreen() {
+        ScanActivity.launch(activity)
     }
 
     override fun showLoading() = ifVisible {

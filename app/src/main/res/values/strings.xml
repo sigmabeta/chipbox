@@ -67,7 +67,7 @@
 
     <!-- Empty States -->
     <string name="empty_state">Your library is empty.\n Get some tracks, then…</string>
-    <string name="button_empty_state">Add to Library</string>
+    <string name="button_empty_state">Scan Library</string>
 
     <!-- Onboarding -->
 

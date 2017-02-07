@@ -3,8 +3,6 @@ package net.sigmabeta.chipbox.ui.main
 import net.sigmabeta.chipbox.ui.BaseView
 
 interface MainView : BaseView {
-    fun launchFileListActivity()
-
     fun setTrackTitle(title: String, animate: Boolean)
 
     fun setArtist(artist: String, animate: Boolean)

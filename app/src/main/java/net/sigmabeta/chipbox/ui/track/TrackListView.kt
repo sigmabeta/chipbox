@@ -10,7 +10,7 @@ interface TrackListView : BaseView {
 
     fun setActivityTitle(title: String)
 
-    fun showFilesScreen()
+    fun showRescanScreen()
 
     fun showContent()
 

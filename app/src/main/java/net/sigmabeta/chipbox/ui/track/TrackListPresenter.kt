@@ -86,7 +86,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
 
     override fun onClick(id: Int) {
         when (id) {
-            R.id.button_empty_state -> view?.showFilesScreen()
+            R.id.button_empty_state -> view?.showRescanScreen()
         }
     }
 

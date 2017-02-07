@@ -16,7 +16,6 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.TopLevelFragment
-import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.onboarding.OnboardingActivity
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
@@ -56,10 +55,6 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
 
         // If something else was clicked, handle it ourselves.
         return presenter.onOptionsItemSelected(item.itemId)
-    }
-
-    override fun launchFileListActivity() {
-        FilesActivity.launch(this)
     }
 
     override fun setTitle(title: String) {
