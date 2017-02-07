@@ -11,8 +11,6 @@ import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import javax.inject.Inject
 
 class ScanService : IntentService("Scanner") {
@@ -31,8 +29,6 @@ class ScanService : IntentService("Scanner") {
         inject()
 
         scanner.scanLibrary()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
                             val lastEvent = it
