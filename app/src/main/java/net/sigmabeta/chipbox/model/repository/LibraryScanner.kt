@@ -50,7 +50,6 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         )
 
         return create
-                .onBackpressureDrop()
                 .throttleFirst(5000, TimeUnit.MILLISECONDS)
     }
 
