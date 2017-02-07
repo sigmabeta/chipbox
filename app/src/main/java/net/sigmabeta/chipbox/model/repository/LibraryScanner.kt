@@ -20,7 +20,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
     lateinit var repository: Repository
 
     fun scanLibrary(): Observable<FileScanEvent> {
-        val create = Observable.create<FileScanEvent>(
+        val observable = Observable.create<FileScanEvent>(
                 { sub ->
                     // OnSubscribe.call. it: String
                     repository = repositoryLazy.get()
@@ -49,7 +49,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                 }
         )
 
-        return create
+        return observable
                 .throttleFirst(5000, TimeUnit.MILLISECONDS)
     }
 

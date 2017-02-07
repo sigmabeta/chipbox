@@ -13,6 +13,7 @@ import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
+import rx.schedulers.Schedulers
 
 class RealmRepository(var realm: Realm) : Repository {
     override fun reopen() {
@@ -118,7 +119,7 @@ class RealmRepository(var realm: Realm) : Repository {
 
 
     override fun getTracks(): Observable<out List<Track>> {
-        return Observable.create {
+        val observable = Observable.create<List<Track>> {
             val localRealm = getRealmInstance()
 
             val tracksManaged = localRealm.where(Track::class.java)
@@ -131,6 +132,8 @@ class RealmRepository(var realm: Realm) : Repository {
             it.onNext(tracksUnmanaged)
             it.onCompleted()
         }
+
+        return observable.subscribeOn(Schedulers.io())
     }
 
     override fun getTracksFromIds(trackIdsList: MutableList<String?>): Observable<out List<Track>> {
@@ -165,7 +168,7 @@ class RealmRepository(var realm: Realm) : Repository {
     }
 
     override fun getGames(): Observable<out List<Game>> {
-        return Observable.create {
+        val observable = Observable.create<List<Game>> {
             val localRealm = getRealmInstance()
 
             val gamesManaged = localRealm.where(Game::class.java)
@@ -178,10 +181,12 @@ class RealmRepository(var realm: Realm) : Repository {
             it.onNext(gamesUnmanaged)
             it.onCompleted()
         }
+
+        return observable.subscribeOn(Schedulers.io())
     }
 
     override fun getGamesForPlatform(platformId: Long): Observable<out List<Game>> {
-        return Observable.create {
+        val observable = Observable.create<List<Game>> {
             val localRealm = getRealmInstance()
 
             val gamesManaged = localRealm.where(Game::class.java)
@@ -195,6 +200,8 @@ class RealmRepository(var realm: Realm) : Repository {
             it.onNext(gamesUnmanaged)
             it.onCompleted()
         }
+
+        return observable.subscribeOn(Schedulers.io())
     }
 
     override fun getGame(platformId: Long, title: String?): Observable<Game> {
@@ -239,7 +246,7 @@ class RealmRepository(var realm: Realm) : Repository {
     }
 
     override fun getArtists(): Observable<out List<Artist>> {
-        return Observable.create {
+        val observable = Observable.create<List<Artist>> {
             val localRealm = getRealmInstance()
 
             val artistsManaged = localRealm.where(Artist::class.java)
@@ -252,6 +259,8 @@ class RealmRepository(var realm: Realm) : Repository {
             it.onNext(artistsUnmanaged)
             it.onCompleted()
         }
+
+        return observable.subscribeOn(Schedulers.io())
     }
 
     override fun getFoldersSync(): List<Folder> {
