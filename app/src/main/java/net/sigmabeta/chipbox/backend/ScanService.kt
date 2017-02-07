@@ -9,10 +9,10 @@ import net.sigmabeta.chipbox.model.events.FileScanFailedEvent
 import net.sigmabeta.chipbox.model.repository.LibraryScanner
 import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.util.logError
+import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 class ScanService : IntentService("Scanner") {
@@ -26,22 +26,23 @@ class ScanService : IntentService("Scanner") {
         @Inject set
 
     override fun onHandleIntent(intent: Intent?) {
+        logInfo("Scanning")
+
         inject()
 
         scanner.scanLibrary()
-                .buffer(17, TimeUnit.MILLISECONDS)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
-                            val lastEvent = it.last()
+                            val lastEvent = it
                             updater.send(lastEvent)
                         },
                         {
                             // OnError. it: Throwable
                             showFailedNotification()
                             updater.send(FileScanFailedEvent(it.message ?: "Unknown error."))
-                            logError("[FileListPresenter] File scanning error: ${Log.getStackTraceString(it)}")
+                            logError("[ScanService] File scanning error: ${Log.getStackTraceString(it)}")
                         },
                         {
                             // OnCompleted.

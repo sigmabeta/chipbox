@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.util.changeText
+import net.sigmabeta.chipbox.util.logInfo
 import javax.inject.Inject
 
 class ScanActivity : BaseActivity<ScanPresenter, ScanView>(), ScanView {
@@ -45,6 +46,8 @@ class ScanActivity : BaseActivity<ScanPresenter, ScanView>(), ScanView {
     }
 
     override fun startScanner() {
+        logInfo("Starting scan")
+
         val intent = Intent(this, ScanService::class.java)
         startService(intent)
     }

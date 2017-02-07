@@ -1,7 +1,5 @@
 #include "../Music_Emu.h"
-#include <stdlib.h>
 #include <stdio.h>
-#include "string.h"
 #include "net_sigmabeta_chipbox_util_external_FileNativeKt.h"
 #include <android/log.h>
 
@@ -20,7 +18,7 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_
 	}
 
 	const char* path = env->GetStringUTFChars(filePath, NULL);
-	__android_log_print(ANDROID_LOG_INFO, CHIPBOX_TAG, "Opening file at: %s", path);
+//	__android_log_print(ANDROID_LOG_INFO, CHIPBOX_TAG, "Opening file at: %s", path);
 
 	// Find out what type of VGM track the given file is.
 	gme_type_t file_type;
@@ -67,7 +65,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fil
 		g_track_info = NULL;
 	}
 
-	__android_log_print(ANDROID_LOG_INFO, CHIPBOX_TAG, "Opening track #: %i", track_number);
+//	__android_log_print(ANDROID_LOG_INFO, CHIPBOX_TAG, "Opening track #: %i", track_number);
 
 	gme_track_info(g_file_info_reader, &g_track_info, track_number);
 }
