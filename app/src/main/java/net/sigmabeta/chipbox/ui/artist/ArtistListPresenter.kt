@@ -5,6 +5,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
@@ -52,6 +53,7 @@ class ArtistListPresenter @Inject constructor() : FragmentPresenter<ArtistListVi
         loading = true
 
         val subscription = repository.getArtists()
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
                             printBenchmark("Artists Loaded")

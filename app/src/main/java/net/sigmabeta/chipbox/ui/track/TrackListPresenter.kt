@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
+import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
@@ -69,6 +70,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
 
         artistId?.let {
             val artistLoad = repository.getArtist(it)
+                    .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
                                 printBenchmark("Tracks Loaded")
@@ -95,6 +97,7 @@ class TrackListPresenter @Inject constructor(val player: Player) : FragmentPrese
             subscriptions.add(artistLoad)
         } ?: let {
             val tracksLoad = repository.getTracks()
+                    .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
                                 logInfo("[SongListPresenter] Loaded ${it.size} tracks.")

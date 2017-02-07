@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
+import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
@@ -85,6 +86,7 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>(
             repository.getGamesForPlatform(platform)
         }
         val subscription = request
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
                             printBenchmark("Games Loaded")
