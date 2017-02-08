@@ -13,6 +13,7 @@ import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @ActivityScoped
@@ -61,6 +62,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
         }
 
         val subscription = updater.asObservable()
+                .throttleFirst(5000, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
