@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.onboarding.library
 
+import android.Manifest
 import kotlinx.android.synthetic.main.fragment_library.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -19,16 +20,14 @@ class LibraryFragment : BaseFragment<LibraryPresenter, LibraryView>(), LibraryVi
      */
 
     override fun onNextClicked() {
-        (activity as OnboardingView).showNextScreen()
+        (activity as BaseActivity<*, *>).doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
+            (activity as OnboardingView).showNextScreen()
+        }
     }
 
     override fun onSkipClicked() {
         (activity as OnboardingView).skip()
     }
-
-    /*override fun onAddClicked() {
-        FilesActivity.launch(activity)
-    }*/
 
     override fun updateCurrentScreen() {
         (activity as OnboardingView).updateCurrentScreen(TAG)

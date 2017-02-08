@@ -8,8 +8,6 @@ import net.sigmabeta.chipbox.model.database.save
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.file.Folder
-import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
@@ -91,24 +89,6 @@ class RealmRepository(var realm: Realm) : Repository {
             artist.save(realm)
 
             it.onNext(artist)
-            it.onCompleted()
-        }
-    }
-
-    override fun addFolder(path: String): Observable<Int> {
-        return Observable.create {
-            if (checkIfContained(path)) {
-                it.onNext(ADD_STATUS_EXISTS)
-                it.onCompleted()
-                return@create
-            }
-
-            removeContainedEntries(path)
-            Folder(path).save(realm)
-
-            logInfo("[Folder] Successfully added folder to database.")
-
-            it.onNext(ADD_STATUS_GOOD)
             it.onCompleted()
         }
     }
@@ -263,11 +243,6 @@ class RealmRepository(var realm: Realm) : Repository {
         return observable.subscribeOn(Schedulers.io())
     }
 
-    override fun getFoldersSync(): List<Folder> {
-        return realm.where(Folder::class.java)
-                .findAll()
-    }
-
     /**
      * Update
      */
@@ -288,50 +263,6 @@ class RealmRepository(var realm: Realm) : Repository {
             delete(Track::class.java)
             delete(Artist::class.java)
             delete(Game::class.java)
-        }
-    }
-
-    /**
-     * Private Methods
-     */
-
-    private fun checkIfContained(newPath: String): Boolean {
-        val folders = getFoldersSync()
-
-        folders.forEach {
-            it.path?.let { oldPath ->
-                if (newPath.contains(oldPath)) {
-                    logError("[Folder] New folder $newPath is contained by a previously added folder: $oldPath")
-                    return true
-                }
-            }
-        }
-
-        return false
-    }
-
-    private fun removeContainedEntries(newPath: String) {
-        val folders = getFoldersSync()
-
-        // Remove any folders from the DB that are contained by the new folder.
-        val foldersToRemove = mutableListOf<Folder>()
-        folders.forEach { oldFolder ->
-            oldFolder.path?.let { oldPath ->
-                if (oldPath.contains(newPath)) {
-                    logInfo("[Folder] New folder contains a previously added folder: $oldPath")
-
-                    foldersToRemove.add(oldFolder)
-                }
-            }
-        }
-
-        if (foldersToRemove.isNotEmpty()) {
-            val idsString = foldersToRemove.joinToString()
-            logInfo("[Folder] Deleting folders with ids: $idsString")
-
-            realm.inTransaction {
-                foldersToRemove.forEach(Folder::deleteFromRealm)
-            }
         }
     }
     

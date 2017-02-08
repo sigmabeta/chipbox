@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.model.repository
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.file.Folder
 import rx.Observable
 
 interface Repository {
@@ -18,7 +17,6 @@ interface Repository {
 
     fun addGame(platformId: Long, title: String?): Observable<Game>
     fun addArtist(name: String?): Observable<Artist>
-    fun addFolder(path: String): Observable<Int>
 
     /**
      * Read
@@ -37,8 +35,6 @@ interface Repository {
     fun getArtist(id: String): Observable<Artist>
     fun getArtistByName(name: String?): Observable<Artist>
     fun getArtists(): Observable<out List<Artist>>
-
-    fun getFoldersSync(): List<Folder>
 
     /**
      * Update

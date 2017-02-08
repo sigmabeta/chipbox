@@ -3,9 +3,7 @@ package net.sigmabeta.chipbox.ui.file
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.module.AppModule
-import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.util.logError
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Named
@@ -34,22 +32,6 @@ class FilesPresenter @Inject constructor(@Named(AppModule.DEP_NAME_BROWSER_START
                 view?.showNoAddingRootError()
                 return
             }
-            val subscription = repository.addFolder(it)
-                    .subscribe(
-                            {
-                                when (it) {
-                                    RealmRepository.ADD_STATUS_GOOD -> view?.onAddSuccessful()
-                                    RealmRepository.ADD_STATUS_EXISTS -> view?.showExistsMessage()
-                                    RealmRepository.ADD_STATUS_DB_ERROR -> view?.showErrorMessage(R.string.file_list_error_adding)
-                                }
-                            },
-                            {
-                                logError("[FilesPresenter] File add error: ${it.message}")
-                                view?.showErrorMessage(R.string.file_list_error_adding)
-                            }
-                    )
-
-            subscriptions.add(subscription)
         }
     }
 
