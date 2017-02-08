@@ -35,7 +35,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
                     folders.forEach { folder ->
                         folder.let {
-                            scanFolder(File(it), sub as Subscriber<FileScanEvent>)
+                            scanFolder(it, sub as Subscriber<FileScanEvent>)
                         }
                     }
 
@@ -57,11 +57,14 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
      * Private Methods
      */
 
-    private fun getFolders(): List<String> {
-        val storageFolder = File("/storage")
+    private fun getFolders(): List<File> {
+        val storageFolderFiles = File("/storage").listFiles()
+        val selfPrimaryFiles = File("/storage/self/primary").listFiles()
+        val emulatedLegacyFiles = File("/storage/emulated/legacy").listFiles()
 
-        return storageFolder.listFiles()
-                .map { it.path }
+        val mergedArray = storageFolderFiles + selfPrimaryFiles.orEmpty() + emulatedLegacyFiles.orEmpty()
+
+        return mergedArray.toList()
     }
 
     private fun scanFolder(folder: File, sub: Subscriber<FileScanEvent>) {
