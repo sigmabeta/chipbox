@@ -31,10 +31,10 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
                     val startTime = System.currentTimeMillis()
 
-                    val folders = repository.getFoldersSync()
+                    val folders = getFolders()
 
                     folders.forEach { folder ->
-                        folder.path?.let {
+                        folder.let {
                             scanFolder(File(it), sub as Subscriber<FileScanEvent>)
                         }
                     }
@@ -56,6 +56,13 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
     /**
      * Private Methods
      */
+
+    private fun getFolders(): List<String> {
+        val storageFolder = File("/storage")
+
+        return storageFolder.listFiles()
+                .map { it.path }
+    }
 
     private fun scanFolder(folder: File, sub: Subscriber<FileScanEvent>) {
         val folderPath = folder.absolutePath
