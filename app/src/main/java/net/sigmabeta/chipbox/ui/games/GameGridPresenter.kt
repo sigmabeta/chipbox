@@ -11,6 +11,7 @@ import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @ActivityScoped
@@ -72,6 +73,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
         view?.clearClickedViewHolder()
 
         val subscription = updater.asObservable()
+                .throttleFirst(5000, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {

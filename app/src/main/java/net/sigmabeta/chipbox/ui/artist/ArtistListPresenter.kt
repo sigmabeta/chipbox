@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @ActivityScoped
@@ -46,6 +47,7 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
         }
 
         val subscription = updater.asObservable()
+                .throttleFirst(5000, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
