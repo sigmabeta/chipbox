@@ -13,10 +13,14 @@ import java.io.File
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Named
+import javax.inject.Singleton
 
+@Singleton
 class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                                          @Named(AppModule.DEP_NAME_APP_STORAGE_DIR) val appStorageDir: String?) {
     lateinit var repository: Repository
+
+    var state = STATE_NOT_SCANNING
 
     fun scanLibrary(): Observable<FileScanEvent> {
         return Observable.create(
@@ -67,7 +71,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         val folderPath = folder.absolutePath
         logInfo("[Library] Reading files from library folder: ${folderPath}")
 
-        sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folderPath))
+//        sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folderPath))
 
         var folderGame: Game? = null
 
@@ -195,5 +199,10 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
         val artLocal = "file://" + targetFilePath
         repository.updateGameArt(game, artLocal)
+    }
+
+    companion object {
+        val STATE_NOT_SCANNING = 0
+        val STATE_SCANNING = 1
     }
 }

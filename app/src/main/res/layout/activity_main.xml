@@ -40,11 +40,11 @@
                 app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
             <include
-                android:id="@+id/layout_now_playing"
+                android:id="@+id/layout_status"
                 android:layout_gravity="bottom"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
-                layout="@layout/layout_now_playing"/>
+                layout="@layout/layout_status"/>
 
         </android.support.design.widget.CoordinatorLayout>
 
