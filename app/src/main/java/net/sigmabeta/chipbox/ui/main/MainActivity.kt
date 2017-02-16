@@ -8,9 +8,11 @@ import android.support.v7.app.ActionBarDrawerToggle
 import android.util.Pair
 import android.view.MenuItem
 import android.view.View
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.layout_now_playing.*
+import kotlinx.android.synthetic.main.layout_status.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.BaseActivity
@@ -32,6 +34,8 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
     var drawerToggle: ActionBarDrawerToggle? = null
 
     var pagerAdapter: MainTabPagerAdapter? = null
+
+    private var state = STATE_UNKNOWN
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
@@ -61,7 +65,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
     }
 
     override fun setTrackTitle(title: String, animate: Boolean) {
-        if (layout_now_playing.translationY == 0.0f && animate) {
+        if (layout_status.translationY == 0.0f && animate) {
             text_playing_song_title.changeText(title)
         } else {
             text_playing_song_title.text = title
@@ -69,7 +73,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
     }
 
     override fun setArtist(artist: String, animate: Boolean) {
-        if (layout_now_playing.translationY == 0.0f && animate) {
+        if (layout_status.translationY == 0.0f && animate) {
             text_playing_song_artist.changeText(artist)
         } else {
             text_playing_song_artist.text = artist
@@ -92,32 +96,110 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         button_play_pause.setImageResource(R.drawable.ic_play_arrow_black_24dp)
     }
 
-    override fun showNowPlaying(animate: Boolean) {
-        pager_categories.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_now_playing).toInt())
+    override fun showNowPlaying() {
+        pager_categories.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_status_bar).toInt())
 
-        if (animate) {
-            layout_now_playing.slideViewOnscreen()
-        } else {
-            layout_now_playing.translationY = 0.0f
-            layout_now_playing.visibility = View.VISIBLE
+        relative_now_playing.visibility = View.VISIBLE
+        relative_scanning.visibility = View.GONE
+
+        when (state) {
+            STATE_IDLE -> {
+                state = STATE_PLAY_PAUSE
+                layout_status.slideViewOnscreen()
+            }
+            STATE_SCANNING -> state = STATE_SCAN_PLAY_PAUSE
+            STATE_PLAY_PAUSE -> Unit
+            STATE_SCAN_PLAY_PAUSE -> Unit
+            else -> {
+                state = STATE_PLAY_PAUSE
+
+                layout_status.translationY = 0.0f
+                layout_status.visibility = View.VISIBLE
+            }
         }
     }
 
-    override fun hideNowPlaying(animate: Boolean) {
-        pager_categories.setPadding(0, 0, 0, 0)
-
-        if (animate) {
-            if (getFragment()?.isScrolledToBottom() ?: false) {
-                pager_categories.translationY = -(resources.getDimension(R.dimen.height_now_playing))
-                pager_categories.slideViewToProperLocation()
+    override fun hideNowPlaying() {
+        when (state) {
+            STATE_PLAY_PAUSE -> {
+                state = STATE_IDLE
+                hideStatusBar()
             }
+            STATE_SCAN_PLAY_PAUSE -> {
+                state = STATE_SCANNING
 
-            layout_now_playing.slideViewOffscreen().withEndAction {
-                layout_now_playing.visibility = View.GONE
+                relative_now_playing.visibility = View.GONE
+                relative_scanning.visibility = View.VISIBLE
             }
-        } else {
-            layout_now_playing.visibility = View.GONE
+            STATE_SCANNING -> Unit
+            STATE_IDLE -> Unit
+            else -> {
+                state = STATE_IDLE
+
+                layout_status.visibility = View.GONE
+                pager_categories.setPadding(0, 0, 0, 0)
+            }
         }
+    }
+
+    override fun showScanning(name: String?) {
+        pager_categories.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_status_bar).toInt())
+
+        when (state) {
+            STATE_IDLE -> {
+                state = STATE_SCANNING
+
+                layout_status.slideViewOnscreen()
+                relative_now_playing.visibility = View.GONE
+                relative_scanning.visibility = View.VISIBLE
+                text_scanning_status.text = getStatusString(name)
+            }
+            STATE_SCANNING -> text_scanning_status.text = getStatusString(name)
+            STATE_SCAN_PLAY_PAUSE -> Unit
+            STATE_PLAY_PAUSE -> {
+                state = STATE_SCAN_PLAY_PAUSE
+                progress_now_playing.visibility = VISIBLE
+            }
+            else -> {
+                state = STATE_SCANNING
+
+                layout_status.translationY = 0.0f
+                layout_status.visibility = View.VISIBLE
+
+                relative_now_playing.visibility = View.GONE
+                relative_scanning.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    override fun hideScanning() {
+        when (state) {
+            STATE_PLAY_PAUSE -> Unit
+            STATE_SCANNING -> {
+                state = STATE_IDLE
+                hideStatusBar()
+            }
+            STATE_SCAN_PLAY_PAUSE -> {
+                state = STATE_PLAY_PAUSE
+                progress_now_playing.visibility = GONE
+            }
+            STATE_IDLE -> Unit
+            else -> {
+                state = STATE_IDLE
+                progress_now_playing.visibility = GONE
+
+                layout_status.visibility = View.GONE
+                pager_categories.setPadding(0, 0, 0, 0)
+            }
+        }
+    }
+
+    override fun showFileScanError(reason: String) {
+        showSnackbar(reason, null, 0)
+    }
+
+    override fun showFileScanSuccess(newTracks: Int) {
+        showSnackbar(getString(R.string.scan_status_success, newTracks), null, 0)
     }
 
     override fun showLoading() = Unit
@@ -170,7 +252,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         setUpNavigationDrawer()
         setUpViewPagerTabs()
 
-        layout_now_playing.setOnClickListener { presenter.onNowPlayingClicked() }
+        layout_status.setOnClickListener { presenter.onNowPlayingClicked() }
         button_play_pause.setOnClickListener { presenter.onPlayFabClicked() }
     }
 
@@ -217,6 +299,19 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         }
     }
 
+    private fun hideStatusBar() {
+        pager_categories.setPadding(0, 0, 0, 0)
+
+        if (getFragment()?.isScrolledToBottom() ?: false) {
+            pager_categories.translationY = -(resources.getDimension(R.dimen.height_status_bar))
+            pager_categories.slideViewToProperLocation()
+        }
+
+        layout_status.slideViewOffscreen().withEndAction {
+            layout_status.visibility = View.GONE
+        }
+    }
+
     private fun getFragment(): TopLevelFragment? {
         val selectedPosition = pager_categories.currentItem
 
@@ -232,7 +327,21 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         }
     }
 
+    private fun getStatusString(name: String?): String? {
+        return if (name != null) {
+            getString(R.string.scan_status_new_track, name)
+        } else {
+            getString(R.string.scan_status_no_track_yet)
+        }
+    }
+
     companion object {
+        val STATE_UNKNOWN = -1
+        val STATE_IDLE = 0
+        val STATE_SCANNING = 1
+        val STATE_PLAY_PAUSE = 2
+        val STATE_SCAN_PLAY_PAUSE = 3
+
         fun launch(context: Context) {
             val launcher = Intent(context, MainActivity::class.java)
             context.startActivity(launcher)

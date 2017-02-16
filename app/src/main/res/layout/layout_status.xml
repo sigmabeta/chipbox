@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:tools="http://schemas.android.com/tools"
+             android:id="@+id/frame_status_bar"
+             android:layout_width="match_parent"
+             android:layout_height="@dimen/height_status_bar"
+             android:background="@android:color/white"
+             android:elevation="16dp"
+             android:animateLayoutChanges="true"
+             tools:showIn="@layout/activity_main">
+
+    <RelativeLayout
+        android:id="@+id/relative_scanning"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <ProgressBar
+            android:id="@+id/progress_scanning"
+            android:layout_width="@dimen/height_status_bar"
+            android:layout_height="0dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_centerVertical="true"
+            android:padding="8dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"/>
+
+        <TextView
+            android:id="@+id/text_scanning_label"
+            style="@style/TextAppearance.AppCompat.Subhead"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="@dimen/spacing_medium"
+            android:layout_marginEnd="@dimen/spacing_medium"
+            android:layout_marginTop="@dimen/spacing_medlarge"
+            android:layout_toEndOf="@+id/progress_scanning"
+            android:layout_alignParentEnd="true"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/scan_status_scanning"/>
+
+        <TextView
+            android:id="@+id/text_scanning_status"
+            style="@style/TextAppearance.AppCompat.Caption"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="@dimen/spacing_medlarge"
+            android:layout_marginStart="@dimen/spacing_medium"
+            android:layout_marginEnd="@dimen/spacing_medium"
+            android:layout_toEndOf="@+id/progress_scanning"
+            android:layout_alignParentEnd="true"
+            android:ellipsize="end"
+            android:maxLines="1"
+            tools:text="Added track: Island in the Void"/>
+
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/relative_now_playing"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone">
+
+        <ProgressBar
+            style="?android:attr/progressBarStyleHorizontal"
+            android:id="@+id/progress_now_playing"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:layout_marginTop="-7dp"
+            android:layout_alignParentEnd="true"
+            android:layout_toEndOf="@+id/image_playing_game_box_art"
+            android:indeterminate="true"/>
+
+        <TextView
+            android:id="@+id/text_playing_song_title"
+            style="@style/TextAppearance.AppCompat.Subhead"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="@dimen/spacing_medium"
+            android:layout_marginEnd="@dimen/spacing_medium"
+            android:layout_marginTop="@dimen/spacing_medlarge"
+            android:layout_toEndOf="@+id/image_playing_game_box_art"
+            android:layout_toStartOf="@+id/button_play_pause"
+            android:ellipsize="end"
+            android:maxLines="1"
+            tools:text="The Island in the Void"/>
+
+        <TextView
+            android:id="@+id/text_playing_song_artist"
+            style="@style/TextAppearance.AppCompat.Caption"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_marginBottom="@dimen/spacing_medlarge"
+            android:layout_marginStart="@dimen/spacing_medium"
+            android:layout_marginEnd="@dimen/spacing_medium"
+            android:layout_toEndOf="@+id/image_playing_game_box_art"
+            android:layout_toStartOf="@+id/button_play_pause"
+            android:ellipsize="end"
+            android:maxLines="1"
+            tools:text="Yasunori Shiono"/>
+
+        <ImageView
+            android:id="@+id/image_playing_game_box_art"
+            android:layout_width="64dp"
+            android:layout_height="0dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_centerVertical="true"
+            android:scaleType="centerCrop"
+            tools:src="@drawable/img_album_art_blank"/>
+
+        <ImageButton
+            android:id="@+id/button_play_pause"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="64dp"
+            android:layout_height="0dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentTop="true"
+            android:gravity="end|center_vertical"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_play_arrow_black_24dp"
+            android:tint="@color/accent"/>
+
+    </RelativeLayout>
+
+</FrameLayout>

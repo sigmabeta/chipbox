@@ -13,9 +13,9 @@ interface MainView : BaseView {
 
     fun showPlayButton()
 
-    fun showNowPlaying(animate: Boolean)
+    fun showNowPlaying()
 
-    fun hideNowPlaying(animate: Boolean)
+    fun hideNowPlaying()
 
     fun launchPlayerActivity()
 
@@ -24,4 +24,12 @@ interface MainView : BaseView {
     fun launchSettingsActivity()
 
     fun launchOnboarding()
+
+    fun showScanning(name: String?)
+
+    fun hideScanning()
+
+    fun showFileScanError(reason: String)
+
+    fun showFileScanSuccess(newTracks: Int)
 }

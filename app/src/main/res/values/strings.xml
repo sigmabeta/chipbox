@@ -53,8 +53,11 @@
 
 
     <!-- Scanning-->
-    <string name="scan_status_scanning">Scanning…</string>
+    <string name="scan_status_scanning">Scanning Library…</string>
+    <string name="scan_status_new_track">Added track: %s</string>
+    <string name="scan_status_no_track_yet">Looking for tracks…</string>
     <string name="scan_status_complete">Complete!</string>
+    <string name="scan_status_success">Scanned library, and added %d tracks</string>
     <string name="scan_status_failed">Failed!</string>
     <string name="scan_heading_folder">Current Folder</string>
     <string name="scan_heading_file">Last File Added</string>
