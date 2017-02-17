@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import net.sigmabeta.chipbox.util.logError
@@ -101,7 +102,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
 
             if (force || this.game !== game) {
                 view?.setGameBoxArt(game?.artLocal, !force)
-                view?.setGameTitle(game?.title ?: "Unknown", animate)
+                view?.setGameTitle(game?.title ?: RealmRepository.GAME_UNKNOWN, animate)
             }
 
             this.game = game

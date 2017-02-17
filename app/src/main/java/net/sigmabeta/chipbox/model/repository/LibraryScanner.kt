@@ -3,7 +3,9 @@ package net.sigmabeta.chipbox.model.repository
 import android.util.Log
 import dagger.Lazy
 import net.sigmabeta.chipbox.dagger.module.AppModule
+import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.util.*
 import org.apache.commons.io.FileUtils
@@ -29,7 +31,6 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                     // OnSubscribe.call. it: String
                     repository = repositoryLazy.get()
                     repository.reopen()
-                    repository.clearAll()
 
                     logInfo("[Library] Scanning library...")
 
@@ -41,6 +42,18 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                         folder.let {
                             scanFolder(it, sub as Subscriber<FileScanEvent>)
                         }
+                    }
+
+                    repository.getTracksManaged().forEach {
+                        checkForDeletion(it)
+                    }
+
+                    repository.getGamesManaged().forEach {
+                        checkForDeletion(it)
+                    }
+
+                    repository.getArtistsManaged().forEach {
+                        checkForDeletion(it)
                     }
 
                     val endTime = System.currentTimeMillis()
@@ -131,7 +144,9 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         val track = readSingleTrackFile(filePath, trackNumber)
 
         if (track != null) {
-            var game: Game? = null
+            var game = checkForExistingTrack(filePath, track)
+
+            if (game != null) return game
 
             repository.addTrack(track)
                     .toBlocking()
@@ -163,7 +178,19 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
         tracks ?: return game
 
-        Observable.from(tracks)
+        val newTracks = ArrayList<Track>(tracks.size)
+
+        tracks.forEach { track ->
+            val existingTrackGame = checkForExistingTrack(filePath, track, track.trackNumber)
+
+            if (existingTrackGame == null) {
+                newTracks.add(track)
+            } else {
+                game = existingTrackGame
+            }
+        }
+
+        Observable.from(newTracks)
                 .flatMap { return@flatMap repository.addTrack(it) }
                 .toBlocking()
                 .subscribe(
@@ -175,11 +202,53 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                             sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                         },
                         {
+                            // TODO TYPE_MULTI_TRACK
                             sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
                         }
                 )
 
         return game
+    }
+
+    private fun checkForExistingTrack(filePath: String, track: Track, trackNumber: Int? = null): Game? {
+        // Check if this track modifies one we already had.
+        val existingTrack = repository.getTrackFromPath(filePath)
+
+        if (existingTrack != null) {
+            // Modify any of the existing track's values we care about, then save.
+            repository.updateTrack(existingTrack, track)
+            return existingTrack.game
+        }
+
+        // Check if this track is one we already had, but moved.
+        val movedTrack = repository.getTrack(track.title!!,
+                track.gameTitle ?: RealmRepository.GAME_UNKNOWN,
+                track.platform)
+
+        if (movedTrack != null) {
+            repository.updateTrack(movedTrack, track)
+            return movedTrack.game
+        }
+
+        return null
+    }
+
+    private fun checkForDeletion(track: Track) {
+        if (!File(track.path).exists()) {
+            track.deleteFromRealm()
+        }
+    }
+
+    private fun checkForDeletion(game: Game) {
+        if (game.tracks?.size ?: 0 <= 0) {
+            game.deleteFromRealm()
+        }
+    }
+
+    private fun checkForDeletion(artist: Artist) {
+        if (artist.tracks?.size ?: 0 <= 0) {
+            artist.deleteFromRealm()
+        }
     }
 
     private fun copyImageToInternal(game: Game, sourceFile: File) {
@@ -194,6 +263,13 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
         val targetFilePath = targetDirPath + "/local" + fileExtension
         val targetFile = File(targetFilePath)
+
+        if (targetFile.exists()) {
+            if (FileUtils.sizeOf(targetFile) == FileUtils.sizeOf(sourceFile)) {
+                logInfo("File ${targetFile.name} has same size as internally stored file. Skipping copy.")
+                return
+            }
+        }
 
         FileUtils.copyFile(sourceFile, targetFile)
 

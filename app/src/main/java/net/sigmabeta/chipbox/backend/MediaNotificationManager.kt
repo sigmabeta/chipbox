@@ -27,6 +27,7 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.util.loadBitmapLowQuality
 import net.sigmabeta.chipbox.util.logDebug
@@ -337,7 +338,7 @@ class MediaNotificationManager(val playerService: PlayerService,
         playingTrack?.let {
             val metadataBuilder = Track.toMetadataBuilder(it)
 
-            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, playingGame?.title ?: "Unknown")
+            metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ALBUM, playingGame?.title ?: RealmRepository.GAME_UNKNOWN)
 
             if (playingGameArtBitmap != null) {
                 metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, playingGameArtBitmap)
