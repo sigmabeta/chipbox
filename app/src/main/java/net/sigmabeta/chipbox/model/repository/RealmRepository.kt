@@ -11,6 +11,7 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
+import net.sigmabeta.chipbox.util.logWarning
 import rx.Observable
 import rx.schedulers.Schedulers
 
@@ -69,6 +70,7 @@ class RealmRepository(var realm: Realm) : Repository {
                             if (artist.id != gameArtist.id) {
                                 // We'll save this later.
                                 game.multipleArtists = true
+                                game.artist = null
                             }
                         } else if (gameArtist == null) {
                             game.artist = artist
@@ -81,7 +83,7 @@ class RealmRepository(var realm: Realm) : Repository {
 
     override fun addGame(platformId: Long, title: String?): Observable<Game> {
         return Observable.create {
-            val game = Game(title ?: "Unknown Game", platformId)
+            val game = Game(title ?: GAME_UNKNOWN, platformId)
             game.save(realm)
 
             it.onNext(game)
@@ -91,7 +93,7 @@ class RealmRepository(var realm: Realm) : Repository {
 
     override fun addArtist(name: String?): Observable<Artist> {
         return Observable.create {
-            val artist = Artist(name ?: "Unknown Artist")
+            val artist = Artist(name ?: ARTIST_UNKNOWN)
             artist.save(realm)
 
             it.onNext(artist)
@@ -102,7 +104,6 @@ class RealmRepository(var realm: Realm) : Repository {
     /**
      * Read
      */
-
 
     override fun getTracks(): Observable<out List<Track>> {
         val observable = Observable.create<List<Track>> {
@@ -122,6 +123,12 @@ class RealmRepository(var realm: Realm) : Repository {
         return observable.subscribeOn(Schedulers.io())
     }
 
+    override fun getTracksManaged(): List<Track> {
+        return realm
+                .where(Track::class.java)
+                .findAll()
+    }
+
     override fun getTracksFromIds(trackIdsList: MutableList<String?>): Observable<out List<Track>> {
         return realm
                 .where(Track::class.java)
@@ -129,6 +136,27 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findAllAsync()
                 .asObservable()
                 .filter { it.isLoaded }
+    }
+
+    override fun getTrackFromPath(path: String): Track? {
+        return realm.where(Track::class.java)
+                .equalTo("path", path)
+                .findFirst()
+    }
+
+    override fun getTrackFromPath(path: String, trackNumber: Int): Track? {
+        return realm.where(Track::class.java)
+                .equalTo("path", path)
+                .equalTo("trackNumber", trackNumber)
+                .findFirst()
+    }
+
+    override fun getTrack(title: String, gameTitle: String, platform: Long): Track? {
+        return realm.where(Track::class.java)
+                .equalTo("title", title)
+                .equalTo("gameTitle", gameTitle)
+                .equalTo("platform", platform)
+                .findFirst()
     }
 
     override fun getTrackSync(id: String): Track? {
@@ -171,6 +199,12 @@ class RealmRepository(var realm: Realm) : Repository {
         return observable.subscribeOn(Schedulers.io())
     }
 
+    override fun getGamesManaged(): List<Game> {
+        return realm
+                .where(Game::class.java)
+                .findAll()
+    }
+
     override fun getGamesForPlatform(platformId: Long): Observable<out List<Game>> {
         val observable = Observable.create<List<Game>> {
             val localRealm = getRealmInstance()
@@ -199,7 +233,7 @@ class RealmRepository(var realm: Realm) : Repository {
 
         val newGame: Game
         if (game == null || !game.isValid) {
-            newGame = Game(title ?: "Unknown Game", platformId)
+            newGame = Game(title ?: GAME_UNKNOWN, platformId)
             logVerbose("Created game: ${newGame.title}")
             game = newGame.save(realm)
         }
@@ -223,7 +257,7 @@ class RealmRepository(var realm: Realm) : Repository {
 
         val newArtist: Artist
         if (artist == null || !artist.isValid) {
-            newArtist = Artist(name ?: "Unknown Game")
+            newArtist = Artist(name ?: GAME_UNKNOWN)
             logVerbose("Created artist: ${newArtist.name}")
             artist = newArtist.save(realm)
         }
@@ -249,6 +283,12 @@ class RealmRepository(var realm: Realm) : Repository {
         return observable.subscribeOn(Schedulers.io())
     }
 
+    override fun getArtistsManaged(): List<Artist> {
+        return realm
+                .where(Artist::class.java)
+                .findAll()
+    }
+
     /**
      * Update
      */
@@ -259,9 +299,42 @@ class RealmRepository(var realm: Realm) : Repository {
         }
     }
 
+    override fun updateTrack(oldTrack: Track, newTrack: Track) {
+        realm.inTransaction {
+            if (oldTrack.title != newTrack.title) {
+                oldTrack.title = newTrack.title
+            }
+
+            updateArtists(newTrack, oldTrack)
+
+            updateGame(newTrack, oldTrack)
+
+            if (oldTrack.path != newTrack.path) {
+                oldTrack.path = newTrack.path
+            }
+
+            if (oldTrack.trackNumber != newTrack.trackNumber) {
+                oldTrack.trackNumber = newTrack.trackNumber
+            }
+
+            if (oldTrack.trackLength != newTrack.trackLength) {
+                oldTrack.trackLength = newTrack.trackLength
+            }
+
+            if (oldTrack.introLength != newTrack.introLength) {
+                oldTrack.introLength = newTrack.introLength
+            }
+
+            if (oldTrack.loopLength != newTrack.loopLength) {
+                oldTrack.loopLength = newTrack.loopLength
+            }
+        }
+    }
+
     /**
      * Delete
      */
+
     override fun clearAll() {
         logInfo("[Library] Clearing library...")
 
@@ -271,10 +344,81 @@ class RealmRepository(var realm: Realm) : Repository {
             delete(Game::class.java)
         }
     }
-    
+
+    /**
+     * Private Methods
+     */
+
+    private fun updateArtists(newTrack: Track, oldTrack: Track) {
+        if (oldTrack.artistText != newTrack.artistText) {
+            oldTrack.artistText = newTrack.artistText
+
+            val oldArtists = oldTrack.artists
+            val newArtists = newTrack.artistText?.split(", ")
+
+            // Remove any artists that no longer pertain to this track.
+            oldArtists?.forEach { oldArtist ->
+                val matchingArtist = newArtists?.first { newArtistName ->
+                    newArtistName == oldArtist.name
+                }
+
+                if (matchingArtist == null) {
+                    logWarning("New track missing artist: ${oldArtist.name}")
+                    oldArtist.tracks?.remove(oldTrack)
+                    oldTrack.artists?.remove(oldArtist)
+                }
+            }
+
+            // Add any new artists to this track.
+            newArtists?.forEach { newArtist ->
+                val matchingArtist = oldArtists?.first { oldArtist ->
+                    newArtist == oldArtist.name
+                }
+
+                if (matchingArtist == null) {
+                    logWarning("Adding artist: $newArtist")
+
+                    getArtistByName(newArtist)
+                            .subscribe {
+                                it.tracks?.add(oldTrack)
+                                oldTrack.artists?.add(it)
+                            }
+                }
+            }
+        }
+    }
+
+    private fun updateGame(newTrack: Track, oldTrack: Track) {
+        val oldGame = oldTrack.game
+        if (oldTrack.gameTitle != newTrack.gameTitle) {
+            oldGame?.tracks?.remove(oldTrack)
+
+            getGame(newTrack.platform, newTrack.gameTitle)
+                    .subscribe {
+                        it.tracks?.add(oldTrack)
+                        oldTrack.game = it
+                    }
+        }
+
+        if (oldGame != null) {
+            if (!(oldGame.multipleArtists ?: true)) {
+                if (oldTrack.artists?.size ?: 0 > 1) {
+                    oldGame.multipleArtists = true
+                    oldGame.artist = null
+                }
+            } else if (oldTrack.artists?.getOrNull(0)?.name != oldGame.artist?.name) {
+                oldGame.multipleArtists = true
+                oldGame.artist = null
+            }
+        }
+    }
+
     companion object {
         val ADD_STATUS_GOOD = 0
         val ADD_STATUS_EXISTS = 1
         val ADD_STATUS_DB_ERROR = 2
+
+        val GAME_UNKNOWN = "Unknown Game"
+        val ARTIST_UNKNOWN = "Unknown Artist"
     }
 }

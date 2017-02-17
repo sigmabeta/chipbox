@@ -8,6 +8,7 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.*
+import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
@@ -109,7 +110,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
                                 printBenchmark("Tracks Loaded")
 
                                 this.artist = it
-                                view?.setActivityTitle(it.name ?: "Unknown Artist")
+                                view?.setActivityTitle(it.name ?: RealmRepository.ARTIST_UNKNOWN)
 
                                 tracks = it.tracks
                                 tracks?.let {

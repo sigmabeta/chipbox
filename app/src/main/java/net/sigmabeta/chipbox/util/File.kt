@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.util
 
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.file.FileListItem
+import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.util.external.*
 import rx.Observable
 import java.io.File
@@ -115,7 +116,7 @@ private fun getTrack(path: String, trackNumber: Int): Track? {
 
     var artist = getFileArtist().convert()
     if (artist.isBlank()) {
-        artist = "Unknown"
+        artist = RealmRepository.ARTIST_UNKNOWN
     }
 
     var trackLength = 0L
