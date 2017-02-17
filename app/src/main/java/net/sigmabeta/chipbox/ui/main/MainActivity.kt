@@ -1,11 +1,13 @@
 package net.sigmabeta.chipbox.ui.main
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.support.v7.app.ActionBarDrawerToggle
 import android.util.Pair
+import android.view.Gravity
 import android.view.MenuItem
 import android.view.View
 import android.view.View.GONE
@@ -14,6 +16,7 @@ import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.layout_status.*
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.ui.BaseActivity
@@ -211,8 +214,13 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         PlayerActivity.launch(this, getShareableViews())
     }
 
-    override fun launchScanActivity() {
-        ScanActivity.launch(this)
+    override fun startScanner() {
+        doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
+            val intent = Intent(this, ScanService::class.java)
+            startService(intent)
+
+            layout_drawer.closeDrawer(Gravity.START)
+        }
     }
 
     override fun launchSettingsActivity() {
