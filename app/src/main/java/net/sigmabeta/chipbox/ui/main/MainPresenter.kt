@@ -72,7 +72,7 @@ class MainPresenter @Inject constructor(val player: Player,
                         }
                         is GameEvent -> displayGame(it.gameId, false)
                         is StateEvent -> displayState(it.state)
-                        is FileScanEvent -> view?.showScanning(it.name)
+                        is FileScanEvent -> view?.showScanning(it.type, it.name)
                         is FileScanFailedEvent -> {
                             view?.showFileScanError(it.reason)
                             view?.hideScanning()
@@ -124,7 +124,7 @@ class MainPresenter @Inject constructor(val player: Player,
         }
 
         if (scanner.state == LibraryScanner.STATE_SCANNING) {
-            view?.showScanning(null)
+            view?.showScanning(null, null)
         } else {
             view?.hideScanning()
         }

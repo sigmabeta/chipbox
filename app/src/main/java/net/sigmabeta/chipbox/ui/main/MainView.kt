@@ -25,7 +25,7 @@ interface MainView : BaseView {
 
     fun launchOnboarding()
 
-    fun showScanning(name: String?)
+    fun showScanning(type: Int?, name: String?)
 
     fun hideScanning()
 

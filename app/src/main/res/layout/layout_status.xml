@@ -25,8 +25,7 @@
             android:layout_alignParentTop="true"
             android:layout_centerVertical="true"
             android:padding="8dp"
-            android:scaleType="centerCrop"
-            android:visibility="gone"/>
+            android:scaleType="centerCrop"/>
 
         <TextView
             android:id="@+id/text_scanning_label"
@@ -76,6 +75,7 @@
             android:layout_marginTop="-7dp"
             android:layout_alignParentEnd="true"
             android:layout_toEndOf="@+id/image_playing_game_box_art"
+            android:visibility="gone"
             android:indeterminate="true"/>
 
         <TextView

@@ -15,6 +15,7 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.layout_status.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.TopLevelFragment
@@ -142,7 +143,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         }
     }
 
-    override fun showScanning(name: String?) {
+    override fun showScanning(type: Int?, name: String?) {
         pager_categories.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_status_bar).toInt())
 
         when (state) {
@@ -152,9 +153,9 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
                 layout_status.slideViewOnscreen()
                 relative_now_playing.visibility = View.GONE
                 relative_scanning.visibility = View.VISIBLE
-                text_scanning_status.text = getStatusString(name)
+                text_scanning_status.text = getStatusString(type, name)
             }
-            STATE_SCANNING -> text_scanning_status.text = getStatusString(name)
+            STATE_SCANNING -> text_scanning_status.text = getStatusString(type, name)
             STATE_SCAN_PLAY_PAUSE -> Unit
             STATE_PLAY_PAUSE -> {
                 state = STATE_SCAN_PLAY_PAUSE
@@ -327,9 +328,13 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         }
     }
 
-    private fun getStatusString(name: String?): String? {
+    private fun getStatusString(type: Int?, name: String?): String? {
         return if (name != null) {
-            getString(R.string.scan_status_new_track, name)
+            if (type == FileScanEvent.TYPE_FOLDER) {
+                getString(R.string.scan_status_folder, name)
+            } else {
+                getString(R.string.scan_status_new_track, name)
+            }
         } else {
             getString(R.string.scan_status_no_track_yet)
         }
