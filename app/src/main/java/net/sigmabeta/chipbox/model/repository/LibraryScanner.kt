@@ -25,6 +25,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
     fun scanLibrary(): Observable<FileScanEvent> {
         return Observable.create(
                 { sub ->
+                    state = STATE_SCANNING
                     // OnSubscribe.call. it: String
                     repository = repositoryLazy.get()
                     repository.reopen()
@@ -48,6 +49,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                     logInfo("[Library] Scanned library in ${scanDuration} seconds.")
 
                     repository.close()
+                    state = STATE_NOT_SCANNING
                     sub.onCompleted()
                 }
         )
@@ -71,7 +73,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         val folderPath = folder.absolutePath
         logInfo("[Library] Reading files from library folder: ${folderPath}")
 
-//        sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folderPath))
+        sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folderPath))
 
         var folderGame: Game? = null
 
