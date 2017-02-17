@@ -235,19 +235,19 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
     private fun checkForDeletion(track: Track) {
         if (!File(track.path).exists()) {
-            track.deleteFromRealm()
+            repository.deleteTrack(track)
         }
     }
 
     private fun checkForDeletion(game: Game) {
         if (game.tracks?.size ?: 0 <= 0) {
-            game.deleteFromRealm()
+            repository.deleteGame(game)
         }
     }
 
     private fun checkForDeletion(artist: Artist) {
         if (artist.tracks?.size ?: 0 <= 0) {
-            artist.deleteFromRealm()
+            repository.deleteArtist(artist)
         }
     }
 

@@ -345,6 +345,24 @@ class RealmRepository(var realm: Realm) : Repository {
         }
     }
 
+    override fun deleteTrack(track: Track) {
+        realm.inTransaction {
+            track.deleteFromRealm()
+        }
+    }
+
+    override fun deleteGame(game: Game) {
+        realm.inTransaction {
+            game.deleteFromRealm()
+        }
+    }
+
+    override fun deleteArtist(artist: Artist) {
+        realm.inTransaction {
+            artist.deleteFromRealm()
+        }
+    }
+
     /**
      * Private Methods
      */
