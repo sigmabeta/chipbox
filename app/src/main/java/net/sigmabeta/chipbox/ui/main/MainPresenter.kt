@@ -147,7 +147,7 @@ class MainPresenter @Inject constructor(val player: Player,
         if (gameId != null) {
             val game = repository.getGameSync(gameId)
 
-            if (force || this.game != game) {
+            if (force || this.game !== game) {
                 view?.setGameBoxArt(game?.artLocal, !force)
             }
 
