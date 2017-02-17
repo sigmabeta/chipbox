@@ -54,4 +54,8 @@ interface Repository {
      */
 
     fun clearAll()
+
+    fun deleteTrack(track: Track)
+    fun deleteGame(game: Game)
+    fun deleteArtist(artist: Artist)
 }
