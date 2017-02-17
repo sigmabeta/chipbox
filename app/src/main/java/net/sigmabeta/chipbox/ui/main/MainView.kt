@@ -19,8 +19,6 @@ interface MainView : BaseView {
 
     fun launchPlayerActivity()
 
-    fun launchScanActivity()
-
     fun launchSettingsActivity()
 
     fun launchOnboarding()
@@ -32,4 +30,6 @@ interface MainView : BaseView {
     fun showFileScanError(reason: String)
 
     fun showFileScanSuccess(newTracks: Int)
+
+    fun startScanner()
 }
