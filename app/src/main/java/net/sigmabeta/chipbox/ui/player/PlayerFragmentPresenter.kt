@@ -99,7 +99,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         if (gameId != null) {
             val game = repository.getGameSync(gameId)
 
-            if (force || this.game != game) {
+            if (force || this.game !== game) {
                 view?.setGameBoxArt(game?.artLocal, !force)
                 view?.setGameTitle(game?.title ?: "Unknown", animate)
             }

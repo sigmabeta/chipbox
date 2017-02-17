@@ -8,6 +8,7 @@ import net.sigmabeta.chipbox.model.database.save
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
+import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
 import rx.Observable
@@ -15,7 +16,12 @@ import rx.schedulers.Schedulers
 
 class RealmRepository(var realm: Realm) : Repository {
     override fun reopen() {
-        if (realm.isClosed) {
+        try {
+            if (realm.isClosed) {
+                realm = getRealmInstance()
+            }
+        } catch (error: IllegalStateException) {
+            logError("Illegal Realm instance access on thread ${Thread.currentThread().name}")
             realm = getRealmInstance()
         }
     }
