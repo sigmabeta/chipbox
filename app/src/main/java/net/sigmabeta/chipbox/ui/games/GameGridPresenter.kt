@@ -86,8 +86,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
                         is StateEvent -> { /* no-op */
                         }
                         is FileScanEvent -> loadGames()
-                        is FileScanCompleteEvent -> { /* no-op */
-                        }
+                        is FileScanCompleteEvent -> loadGames()
                         is FileScanFailedEvent -> { /* no-op */
                         }
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")

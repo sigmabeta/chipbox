@@ -63,7 +63,7 @@ class ScanPresenter @Inject constructor(val updater: UiUpdater) : ActivityPresen
                 currentFolder = event.name
             }
 
-            FileScanEvent.TYPE_TRACK -> {
+            FileScanEvent.TYPE_NEW_TRACK -> {
                 filesAdded++
                 lastFile = event.name
             }

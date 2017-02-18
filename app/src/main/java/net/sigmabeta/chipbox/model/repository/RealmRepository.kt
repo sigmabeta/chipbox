@@ -299,36 +299,55 @@ class RealmRepository(var realm: Realm) : Repository {
         }
     }
 
-    override fun updateTrack(oldTrack: Track, newTrack: Track) {
+    override fun updateTrack(oldTrack: Track, newTrack: Track): Boolean {
+        var actuallyChanged = false
+
         realm.inTransaction {
             if (oldTrack.title != newTrack.title) {
                 oldTrack.title = newTrack.title
+                actuallyChanged = true
             }
 
-            updateArtists(newTrack, oldTrack)
+            if (updateArtists(newTrack, oldTrack)) {
+                actuallyChanged = true
+            }
 
-            updateGame(newTrack, oldTrack)
+
+            if (updateGame(newTrack, oldTrack)) {
+                actuallyChanged = true
+            }
 
             if (oldTrack.path != newTrack.path) {
                 oldTrack.path = newTrack.path
+                actuallyChanged = true
             }
 
             if (oldTrack.trackNumber != newTrack.trackNumber) {
                 oldTrack.trackNumber = newTrack.trackNumber
+                actuallyChanged = true
             }
 
             if (oldTrack.trackLength != newTrack.trackLength) {
                 oldTrack.trackLength = newTrack.trackLength
+                actuallyChanged = true
             }
 
             if (oldTrack.introLength != newTrack.introLength) {
                 oldTrack.introLength = newTrack.introLength
+                actuallyChanged = true
             }
 
             if (oldTrack.loopLength != newTrack.loopLength) {
                 oldTrack.loopLength = newTrack.loopLength
+                actuallyChanged = true
             }
         }
+
+        if (actuallyChanged) {
+            logVerbose("Updated track: ${oldTrack.title}")
+        }
+
+        return actuallyChanged
     }
 
     /**
@@ -367,7 +386,9 @@ class RealmRepository(var realm: Realm) : Repository {
      * Private Methods
      */
 
-    private fun updateArtists(newTrack: Track, oldTrack: Track) {
+    private fun updateArtists(newTrack: Track, oldTrack: Track): Boolean {
+        var actuallyChanged = false
+
         if (oldTrack.artistText != newTrack.artistText) {
             oldTrack.artistText = newTrack.artistText
 
@@ -384,6 +405,8 @@ class RealmRepository(var realm: Realm) : Repository {
                     logWarning("New track missing artist: ${oldArtist.name}")
                     oldArtist.tracks?.remove(oldTrack)
                     oldTrack.artists?.remove(oldArtist)
+
+                    actuallyChanged = true
                 }
             }
 
@@ -394,21 +417,28 @@ class RealmRepository(var realm: Realm) : Repository {
                 }
 
                 if (matchingArtist == null) {
-                    logWarning("Adding artist: $newArtist")
+                    logVerbose("Adding artist: $newArtist")
 
                     getArtistByName(newArtist)
                             .subscribe {
                                 it.tracks?.add(oldTrack)
                                 oldTrack.artists?.add(it)
                             }
+
+                    actuallyChanged = true
                 }
             }
         }
+
+        return actuallyChanged
     }
 
-    private fun updateGame(newTrack: Track, oldTrack: Track) {
+    private fun updateGame(newTrack: Track, oldTrack: Track): Boolean {
+        var actuallyChanged = false
+
         val oldGame = oldTrack.game
         if (oldTrack.gameTitle != newTrack.gameTitle) {
+            logWarning("New track doesn't match old track game: ${oldTrack.gameTitle}")
             oldGame?.tracks?.remove(oldTrack)
 
             getGame(newTrack.platform, newTrack.gameTitle)
@@ -416,19 +446,29 @@ class RealmRepository(var realm: Realm) : Repository {
                         it.tracks?.add(oldTrack)
                         oldTrack.game = it
                     }
+
+            actuallyChanged = true
         }
 
-        if (oldGame != null) {
-            if (!(oldGame.multipleArtists ?: true)) {
+        val game = oldTrack.game
+        if (game != null) {
+            if (!(game.multipleArtists ?: true)) {
                 if (oldTrack.artists?.size ?: 0 > 1) {
-                    oldGame.multipleArtists = true
-                    oldGame.artist = null
+                    actuallyChanged = true
+
+                    game.multipleArtists = true
+                    game.artist = null
+
+                } else if (oldTrack.artists?.getOrNull(0)?.name != game.artist?.name) {
+                    actuallyChanged = true
+
+                    game.multipleArtists = true
+                    game.artist = null
                 }
-            } else if (oldTrack.artists?.getOrNull(0)?.name != oldGame.artist?.name) {
-                oldGame.multipleArtists = true
-                oldGame.artist = null
             }
         }
+
+        return actuallyChanged
     }
 
     companion object {

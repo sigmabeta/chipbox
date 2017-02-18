@@ -202,8 +202,21 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         showSnackbar(reason, null, 0)
     }
 
-    override fun showFileScanSuccess(newTracks: Int) {
-        showSnackbar(getString(R.string.scan_status_success, newTracks), null, 0)
+    override fun showFileScanSuccess(newTracks: Int, updatedTracks: Int) {
+        if (newTracks > 0) {
+            if (updatedTracks > 0) {
+                showSnackbar(getString(R.string.scan_status_success_new_and_updated_tracks, newTracks, updatedTracks), null, 0)
+            } else {
+                showSnackbar(getString(R.string.scan_status_success_new_tracks, newTracks), null, 0)
+            }
+        } else {
+
+            if (updatedTracks > 0) {
+                showSnackbar(getString(R.string.scan_status_success_updated_tracks, updatedTracks), null, 0)
+            } else {
+                showSnackbar(getString(R.string.scan_status_success_no_change), null, 0)
+            }
+        }
     }
 
     override fun showLoading() = Unit
@@ -338,10 +351,11 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
 
     private fun getStatusString(type: Int?, name: String?): String? {
         return if (name != null) {
-            if (type == FileScanEvent.TYPE_FOLDER) {
-                getString(R.string.scan_status_folder, name)
-            } else {
-                getString(R.string.scan_status_new_track, name)
+            when (type) {
+                FileScanEvent.TYPE_FOLDER -> getString(R.string.scan_status_folder, name)
+                FileScanEvent.TYPE_UPDATED_TRACK -> getString(R.string.scan_status_updated_track, name)
+                FileScanEvent.TYPE_DELETED_TRACK -> getString(R.string.scan_status_removed_track, name)
+                else -> getString(R.string.scan_status_new_track, name)
             }
         } else {
             getString(R.string.scan_status_no_track_yet)
