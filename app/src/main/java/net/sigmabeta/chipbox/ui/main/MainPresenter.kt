@@ -78,7 +78,7 @@ class MainPresenter @Inject constructor(val player: Player,
                             view?.hideScanning()
                         }
                         is FileScanCompleteEvent -> {
-                            view?.showFileScanSuccess(it.newTracks)
+                            view?.showFileScanSuccess(it.newTracks, it.updatedTracks)
                             view?.hideScanning()
                         }
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")

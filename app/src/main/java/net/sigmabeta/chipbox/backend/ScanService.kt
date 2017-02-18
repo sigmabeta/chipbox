@@ -5,9 +5,9 @@ import android.content.Intent
 import android.util.Log
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.model.events.FileScanCompleteEvent
+import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.model.events.FileScanFailedEvent
 import net.sigmabeta.chipbox.model.repository.LibraryScanner
-import net.sigmabeta.chipbox.util.TYPE_TRACK
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
 import net.sigmabeta.chipbox.util.logVerbose
@@ -26,15 +26,17 @@ class ScanService : IntentService("Scanner") {
         inject()
 
         var newTracks = 0
-        val updatedTracks = 0
+        var updatedTracks = 0
 
         scanner.scanLibrary()
                 .subscribe(
                         {
                             updater.send(it)
 
-                            if (it.type == TYPE_TRACK) {
-                                newTracks++
+                            when (it.type) {
+                                FileScanEvent.TYPE_NEW_TRACK -> newTracks++
+                                FileScanEvent.TYPE_NEW_MULTI_TRACK -> newTracks += it.count
+                                FileScanEvent.TYPE_UPDATED_TRACK -> updatedTracks++
                             }
                         },
                         {

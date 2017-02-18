@@ -45,7 +45,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                     }
 
                     repository.getTracksManaged().forEach {
-                        checkForDeletion(it)
+                        checkForDeletion(it, sub as Subscriber<FileScanEvent>)
                     }
 
                     repository.getGamesManaged().forEach {
@@ -86,7 +86,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         val folderPath = folder.absolutePath
         logInfo("[Library] Reading files from library folder: ${folderPath}")
 
-        sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folderPath))
+        sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folder.name))
 
         var folderGame: Game? = null
 
@@ -144,7 +144,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         val track = readSingleTrackFile(filePath, trackNumber)
 
         if (track != null) {
-            var game = checkForExistingTrack(filePath, track)
+            var game = checkForExistingTrack(filePath, track, sub)
 
             if (game != null) return game
 
@@ -159,7 +159,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                                 sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                             },
                             {
-                                sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
+                                sub.onNext(FileScanEvent(FileScanEvent.TYPE_NEW_TRACK, track.title!!))
                             }
                     )
 
@@ -181,7 +181,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         val newTracks = ArrayList<Track>(tracks.size)
 
         tracks.forEach { track ->
-            val existingTrackGame = checkForExistingTrack(filePath, track, track.trackNumber)
+            val existingTrackGame = checkForExistingTrack(filePath, track, sub, track.trackNumber)
 
             if (existingTrackGame == null) {
                 newTracks.add(track)
@@ -202,21 +202,27 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                             sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                         },
                         {
-                            // TODO TYPE_MULTI_TRACK
-                            sub.onNext(FileScanEvent(FileScanEvent.TYPE_TRACK, file.name))
+                            sub.onNext(FileScanEvent(FileScanEvent.TYPE_NEW_MULTI_TRACK, file.name, newTracks.size))
                         }
                 )
 
         return game
     }
 
-    private fun checkForExistingTrack(filePath: String, track: Track, trackNumber: Int? = null): Game? {
+    private fun checkForExistingTrack(filePath: String, track: Track, sub: Subscriber<FileScanEvent>, trackNumber: Int? = null): Game? {
         // Check if this track modifies one we already had.
-        val existingTrack = repository.getTrackFromPath(filePath)
+        val existingTrack = if (trackNumber == null) {
+            repository.getTrackFromPath(filePath)
+        } else {
+            repository.getTrackFromPath(filePath, trackNumber)
+        }
 
         if (existingTrack != null) {
             // Modify any of the existing track's values we care about, then save.
-            repository.updateTrack(existingTrack, track)
+            if (repository.updateTrack(existingTrack, track)) {
+                sub.onNext(FileScanEvent(FileScanEvent.TYPE_UPDATED_TRACK, existingTrack.title!!))
+            }
+
             return existingTrack.game
         }
 
@@ -227,26 +233,31 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
         if (movedTrack != null) {
             repository.updateTrack(movedTrack, track)
+            sub.onNext(FileScanEvent(FileScanEvent.TYPE_UPDATED_TRACK, movedTrack.title!!))
             return movedTrack.game
         }
 
         return null
     }
 
-    private fun checkForDeletion(track: Track) {
+    private fun checkForDeletion(track: Track, sub: Subscriber<FileScanEvent>) {
         if (!File(track.path).exists()) {
+            logInfo("Track not found on storage, deleting: ${track.title}")
+            sub.onNext(FileScanEvent(FileScanEvent.TYPE_DELETED_TRACK, track.title!!))
             repository.deleteTrack(track)
         }
     }
 
     private fun checkForDeletion(game: Game) {
         if (game.tracks?.size ?: 0 <= 0) {
+            logInfo("No tracks found for game, deleting: ${game.title}")
             repository.deleteGame(game)
         }
     }
 
     private fun checkForDeletion(artist: Artist) {
         if (artist.tracks?.size ?: 0 <= 0) {
+            logInfo("No tracks found for artist, deleting: ${artist.name}")
             repository.deleteArtist(artist)
         }
     }

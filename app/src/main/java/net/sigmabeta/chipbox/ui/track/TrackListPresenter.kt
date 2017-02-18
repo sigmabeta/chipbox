@@ -76,8 +76,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
                         is StateEvent -> { /* no-op */
                         }
                         is FileScanEvent -> loadTracks()
-                        is FileScanCompleteEvent -> { /* no-op */
-                        }
+                        is FileScanCompleteEvent -> loadTracks()
                         is FileScanFailedEvent -> { /* no-op */
                         }
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")

@@ -60,8 +60,7 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
                         is StateEvent -> { /* no-op */
                         }
                         is FileScanEvent -> loadArtists()
-                        is FileScanCompleteEvent -> { /* no-op */
-                        }
+                        is FileScanCompleteEvent -> loadArtists()
                         is FileScanFailedEvent -> { /* no-op */
                         }
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")

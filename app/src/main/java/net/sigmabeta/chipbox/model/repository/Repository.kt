@@ -46,7 +46,7 @@ interface Repository {
      * Update
      */
 
-    fun updateTrack(oldTrack: Track, newTrack: Track)
+    fun updateTrack(oldTrack: Track, newTrack: Track): Boolean
     fun updateGameArt(game: Game, artLocal: String)
 
     /**
