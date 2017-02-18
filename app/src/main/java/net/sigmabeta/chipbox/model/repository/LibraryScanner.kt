@@ -251,6 +251,21 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
     private fun checkForDeletion(game: Game) {
         if (game.tracks?.size ?: 0 <= 0) {
             logInfo("No tracks found for game, deleting: ${game.title}")
+
+            game.artLocal?.let {
+                val artLocalFile = File(it.substringAfter("file://"))
+
+                if (artLocalFile.exists()) {
+                    val parentFile = artLocalFile.parentFile
+
+                    logInfo("Deleting art for game at: $it")
+                    artLocalFile.delete()
+
+                    if (parentFile.listFiles()?.isEmpty() ?: false) {
+                        parentFile.delete()
+                    }
+                }
+            }
             repository.deleteGame(game)
         }
     }
@@ -263,17 +278,10 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
     }
 
     private fun copyImageToInternal(game: Game, sourceFile: File) {
-        val targetDirPath = appStorageDir + "/images/" + game.id
-        val targetDir = File(targetDirPath)
-
-        targetDir.mkdirs()
-
         val sourcePath = sourceFile.path
-        val extensionStart = sourcePath.lastIndexOf('.')
-        val fileExtension = sourcePath.substring(extensionStart)
+        val fileExtension = sourceFile.extension
 
-        val targetFilePath = targetDirPath + "/local" + fileExtension
-        val targetFile = File(targetFilePath)
+        val targetFile = getTargetImageFilePath(game.id!!, fileExtension)
 
         if (targetFile.exists()) {
             if (FileUtils.sizeOf(targetFile) == FileUtils.sizeOf(sourceFile)) {
@@ -284,10 +292,19 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
         FileUtils.copyFile(sourceFile, targetFile)
 
-        logInfo("[Library] Copied image: ${sourcePath} to ${targetFilePath}")
+        logInfo("[Library] Copied image: ${sourcePath} to ${targetFile.path}")
 
-        val artLocal = "file://" + targetFilePath
+        val artLocal = "file://" + targetFile.path
         repository.updateGameArt(game, artLocal)
+    }
+
+    private fun getTargetImageFilePath(gameId: String, fileExtension: String): File {
+        val targetDirPath = appStorageDir + "/images/" + gameId
+        val targetDir = File(targetDirPath)
+        targetDir.mkdirs()
+
+        val targetFilePath = targetDirPath + "/local" + fileExtension
+        return File(targetFilePath)
     }
 
     companion object {
