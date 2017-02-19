@@ -72,7 +72,10 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
 
     override fun onClick(id: Int) {
         when (id) {
-            R.id.button_empty_state -> view?.showRescanScreen()
+            R.id.button_empty_state -> {
+                view?.startRescan()
+                loading = true
+            }
         }
     }
 

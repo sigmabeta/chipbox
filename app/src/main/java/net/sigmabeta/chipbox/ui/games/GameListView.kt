@@ -10,7 +10,7 @@ interface GameListView : BaseView {
 
     fun launchGameActivity(id: String)
 
-    fun showRescanScreen()
+    fun startRescan()
 
     fun clearClickedViewHolder()
 

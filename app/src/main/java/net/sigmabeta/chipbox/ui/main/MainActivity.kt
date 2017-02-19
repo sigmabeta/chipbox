@@ -25,7 +25,6 @@ import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.onboarding.OnboardingActivity
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
-import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import net.sigmabeta.chipbox.ui.settings.SettingsActivity
 import net.sigmabeta.chipbox.util.*
 import java.util.*
@@ -310,16 +309,6 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
     override fun getSharedImage(): View? = null
 
     override fun shouldDelayTransitionForFragment() = false
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (resultCode == ScanActivity.RESULT_CODE_REFRESH) {
-            pagerAdapter?.fragments?.forEach {
-                it.refresh()
-            }
-        }
-    }
 
     private fun hideStatusBar() {
         pager_categories.setPadding(0, 0, 0, 0)
