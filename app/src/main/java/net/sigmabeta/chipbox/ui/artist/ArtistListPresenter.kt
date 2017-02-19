@@ -95,7 +95,7 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
                             loading = false
                             artists = it
 
-                            if (it.size > 0) {
+                            if (it.isNotEmpty()) {
                                 showContent(it)
                             } else {
                                 view?.showEmptyState()

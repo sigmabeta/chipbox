@@ -83,6 +83,9 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
     }
 
     private fun scanFolder(folder: File, sub: Subscriber<FileScanEvent>) {
+        // Without this, folder events get backpressure-dropped.
+        Thread.sleep(10)
+
         val folderPath = folder.absolutePath
         logInfo("[Library] Reading files from library folder: ${folderPath}")
 
