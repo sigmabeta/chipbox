@@ -50,7 +50,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
 
     override fun updateViewState() {
         games?.let {
-            if (it.size > 0) {
+            if (it.isNotEmpty()) {
                 showContent(it)
             } else {
                 showEmptyState()
