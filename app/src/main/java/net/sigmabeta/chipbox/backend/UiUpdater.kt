@@ -17,7 +17,7 @@ class UiUpdater @Inject constructor() {
     }
 
     fun asObservable(): Observable<PlaybackEvent> {
-        return subject
+        return subject.onBackpressureDrop()
     }
 
     fun hasObservers(): Boolean {

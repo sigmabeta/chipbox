@@ -23,6 +23,7 @@ abstract class FragmentPresenter<V : BaseView> : BasePresenter<V>() {
 
             if (ending) {
                 setupStartTime = -1
+                repository.close()
                 teardown()
 
                 needsSetup = true

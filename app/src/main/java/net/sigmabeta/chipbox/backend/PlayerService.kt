@@ -92,6 +92,7 @@ class PlayerService : Service(), BackendView {
         player?.backendView = null
 
         notificationManager?.unsubscribeFromUpdates()
+        repository.close()
     }
 
     override fun onBind(intent: Intent): IBinder? {

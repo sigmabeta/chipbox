@@ -1,12 +1,14 @@
 package net.sigmabeta.chipbox.ui.onboarding.library
 
+import android.Manifest
+import android.content.Intent
 import kotlinx.android.synthetic.main.fragment_library.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.onboarding.OnboardingView
 import javax.inject.Inject
 
@@ -20,15 +22,16 @@ class LibraryFragment : BaseFragment<LibraryPresenter, LibraryView>(), LibraryVi
      */
 
     override fun onNextClicked() {
-        (activity as OnboardingView).showNextScreen()
+        (activity as BaseActivity<*, *>).doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
+            val intent = Intent(activity, ScanService::class.java)
+            activity.startService(intent)
+
+            (activity as OnboardingView).showNextScreen()
+        }
     }
 
     override fun onSkipClicked() {
         (activity as OnboardingView).skip()
-    }
-
-    override fun onAddClicked() {
-        FilesActivity.launch(activity)
     }
 
     override fun updateCurrentScreen() {
@@ -61,7 +64,6 @@ class LibraryFragment : BaseFragment<LibraryPresenter, LibraryView>(), LibraryVi
     override fun configureViews() {
         button_next.setOnClickListener(this)
         button_skip.setOnClickListener(this)
-        button_add.setOnClickListener(this)
     }
 
     override fun getFragmentTag(): String = TAG

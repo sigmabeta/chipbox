@@ -56,15 +56,6 @@
         android:layout_marginBottom="16dp"/>
 
     <Button
-        android:id="@+id/button_add"
-        android:text="@string/onboarding_add"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_toStartOf="@id/button_next"
-        android:layout_marginBottom="16dp"/>
-
-    <Button
         style="@style/Base.Widget.AppCompat.Button.Borderless"
         android:id="@+id/button_skip"
         android:text="@string/onboarding_skip"

@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.games
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.widget.GridLayoutManager
 import android.util.Pair
@@ -8,10 +9,10 @@ import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_game_grid.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.game.GameActivity
-import net.sigmabeta.chipbox.ui.main.MainView
 import net.sigmabeta.chipbox.ui.util.GridSpaceDecoration
 import net.sigmabeta.chipbox.util.*
 import java.util.*
@@ -49,11 +50,9 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
         clickedViewHolder = null
     }
 
-    override fun showFilesScreen() {
-        val mainActivity = activity
-        if (mainActivity is MainView) {
-            mainActivity.launchFileListActivity()
-        }
+    override fun startRescan() {
+        val intent = Intent(activity, ScanService::class.java)
+        activity.startService(intent)
     }
 
     override fun showContent() = ifVisible {
@@ -102,7 +101,7 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
     }
 
 
-    override fun hideLoading() {
+    override fun hideLoading() = ifVisible {
         loading_spinner.fadeOutGone()
     }
 

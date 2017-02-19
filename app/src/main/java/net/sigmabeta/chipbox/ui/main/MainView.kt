@@ -3,8 +3,6 @@ package net.sigmabeta.chipbox.ui.main
 import net.sigmabeta.chipbox.ui.BaseView
 
 interface MainView : BaseView {
-    fun launchFileListActivity()
-
     fun setTrackTitle(title: String, animate: Boolean)
 
     fun setArtist(artist: String, animate: Boolean)
@@ -15,15 +13,23 @@ interface MainView : BaseView {
 
     fun showPlayButton()
 
-    fun showNowPlaying(animate: Boolean)
+    fun showNowPlaying()
 
-    fun hideNowPlaying(animate: Boolean)
+    fun hideNowPlaying()
 
     fun launchPlayerActivity()
-
-    fun launchScanActivity()
 
     fun launchSettingsActivity()
 
     fun launchOnboarding()
+
+    fun showScanning(type: Int?, name: String?)
+
+    fun hideScanning()
+
+    fun showFileScanError(reason: String)
+
+    fun showFileScanSuccess(newTracks: Int, updatedTracks: Int)
+
+    fun startScanner()
 }

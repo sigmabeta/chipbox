@@ -6,8 +6,9 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import net.sigmabeta.chipbox.model.IdRealmObject
+import net.sigmabeta.chipbox.model.domain.ListItem.Companion.CHANGE_ERROR
 
-open class Track() : RealmObject(), IdRealmObject {
+open class Track() : RealmObject(), IdRealmObject, ListItem {
     constructor(number: Int,
                 path: String,
                 title: String,
@@ -47,7 +48,40 @@ open class Track() : RealmObject(), IdRealmObject {
         this.id = id
     }
 
+    override fun isTheSameAs(theOther: ListItem?): Boolean {
+        if (theOther is Track) {
+            if (theOther.id == this.id) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    override fun hasSameContentAs(theOther: ListItem?): Boolean {
+        if (theOther is Track) {
+            if (theOther.artistText == this.artistText) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    override fun getChangeType(theOther: ListItem?): Int {
+
+        if (theOther is Track) {
+            if (theOther.artistText != this.artistText) {
+                return CHANGE_ARTIST
+            }
+        }
+
+        return CHANGE_ERROR
+    }
+
     companion object {
+        val CHANGE_ARTIST = 1
+
         val PLATFORM_UNSUPPORTED = 100L
         val PLATFORM_ALL = -2L
         val PLATFORM_UNDEFINED = -1L

@@ -1,26 +1,30 @@
 package net.sigmabeta.chipbox.ui.main
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.support.v7.app.ActionBarDrawerToggle
 import android.util.Pair
+import android.view.Gravity
 import android.view.MenuItem
 import android.view.View
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_main.*
-import kotlinx.android.synthetic.main.layout_now_playing.*
+import kotlinx.android.synthetic.main.layout_status.*
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.TopLevelFragment
-import net.sigmabeta.chipbox.ui.file.FilesActivity
 import net.sigmabeta.chipbox.ui.onboarding.OnboardingActivity
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
-import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import net.sigmabeta.chipbox.ui.settings.SettingsActivity
 import net.sigmabeta.chipbox.util.*
 import java.util.*
@@ -33,6 +37,8 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
     var drawerToggle: ActionBarDrawerToggle? = null
 
     var pagerAdapter: MainTabPagerAdapter? = null
+
+    private var state = STATE_UNKNOWN
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
@@ -58,15 +64,11 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         return presenter.onOptionsItemSelected(item.itemId)
     }
 
-    override fun launchFileListActivity() {
-        FilesActivity.launch(this)
-    }
-
     override fun setTitle(title: String) {
     }
 
     override fun setTrackTitle(title: String, animate: Boolean) {
-        if (layout_now_playing.translationY == 0.0f && animate) {
+        if (layout_status.translationY == 0.0f && animate) {
             text_playing_song_title.changeText(title)
         } else {
             text_playing_song_title.text = title
@@ -74,7 +76,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
     }
 
     override fun setArtist(artist: String, animate: Boolean) {
-        if (layout_now_playing.translationY == 0.0f && animate) {
+        if (layout_status.translationY == 0.0f && animate) {
             text_playing_song_artist.changeText(artist)
         } else {
             text_playing_song_artist.text = artist
@@ -97,31 +99,122 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         button_play_pause.setImageResource(R.drawable.ic_play_arrow_black_24dp)
     }
 
-    override fun showNowPlaying(animate: Boolean) {
-        pager_categories.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_now_playing).toInt())
+    override fun showNowPlaying() {
+        pager_categories.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_status_bar).toInt())
 
-        if (animate) {
-            layout_now_playing.slideViewOnscreen()
-        } else {
-            layout_now_playing.translationY = 0.0f
-            layout_now_playing.visibility = View.VISIBLE
+        relative_now_playing.visibility = View.VISIBLE
+        relative_scanning.visibility = View.GONE
+
+        when (state) {
+            STATE_IDLE -> {
+                state = STATE_PLAY_PAUSE
+                layout_status.slideViewOnscreen()
+            }
+            STATE_SCANNING -> state = STATE_SCAN_PLAY_PAUSE
+            STATE_PLAY_PAUSE -> Unit
+            STATE_SCAN_PLAY_PAUSE -> Unit
+            else -> {
+                state = STATE_PLAY_PAUSE
+
+                layout_status.translationY = 0.0f
+                layout_status.visibility = View.VISIBLE
+            }
         }
     }
 
-    override fun hideNowPlaying(animate: Boolean) {
-        pager_categories.setPadding(0, 0, 0, 0)
-
-        if (animate) {
-            if (getFragment()?.isScrolledToBottom() ?: false) {
-                pager_categories.translationY = -(resources.getDimension(R.dimen.height_now_playing))
-                pager_categories.slideViewToProperLocation()
+    override fun hideNowPlaying() {
+        when (state) {
+            STATE_PLAY_PAUSE -> {
+                state = STATE_IDLE
+                hideStatusBar()
             }
+            STATE_SCAN_PLAY_PAUSE -> {
+                state = STATE_SCANNING
 
-            layout_now_playing.slideViewOffscreen().withEndAction {
-                layout_now_playing.visibility = View.GONE
+                relative_now_playing.visibility = View.GONE
+                relative_scanning.visibility = View.VISIBLE
+            }
+            STATE_SCANNING -> Unit
+            STATE_IDLE -> Unit
+            else -> {
+                state = STATE_IDLE
+
+                layout_status.visibility = View.GONE
+                pager_categories.setPadding(0, 0, 0, 0)
+            }
+        }
+    }
+
+    override fun showScanning(type: Int?, name: String?) {
+        pager_categories.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_status_bar).toInt())
+
+        when (state) {
+            STATE_IDLE -> {
+                state = STATE_SCANNING
+
+                layout_status.slideViewOnscreen()
+                relative_now_playing.visibility = View.GONE
+                relative_scanning.visibility = View.VISIBLE
+                text_scanning_status.text = getStatusString(type, name)
+            }
+            STATE_SCANNING -> text_scanning_status.text = getStatusString(type, name)
+            STATE_SCAN_PLAY_PAUSE -> Unit
+            STATE_PLAY_PAUSE -> {
+                state = STATE_SCAN_PLAY_PAUSE
+                progress_now_playing.visibility = VISIBLE
+            }
+            else -> {
+                state = STATE_SCANNING
+
+                layout_status.translationY = 0.0f
+                layout_status.visibility = View.VISIBLE
+
+                relative_now_playing.visibility = View.GONE
+                relative_scanning.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    override fun hideScanning() {
+        when (state) {
+            STATE_PLAY_PAUSE -> Unit
+            STATE_SCANNING -> {
+                state = STATE_IDLE
+                hideStatusBar()
+            }
+            STATE_SCAN_PLAY_PAUSE -> {
+                state = STATE_PLAY_PAUSE
+                progress_now_playing.visibility = GONE
+            }
+            STATE_IDLE -> Unit
+            else -> {
+                state = STATE_IDLE
+                progress_now_playing.visibility = GONE
+
+                layout_status.visibility = View.GONE
+                pager_categories.setPadding(0, 0, 0, 0)
+            }
+        }
+    }
+
+    override fun showFileScanError(reason: String) {
+        showSnackbar(reason, null, 0)
+    }
+
+    override fun showFileScanSuccess(newTracks: Int, updatedTracks: Int) {
+        if (newTracks > 0) {
+            if (updatedTracks > 0) {
+                showSnackbar(getString(R.string.scan_status_success_new_and_updated_tracks, newTracks, updatedTracks), null, 0)
+            } else {
+                showSnackbar(getString(R.string.scan_status_success_new_tracks, newTracks), null, 0)
             }
         } else {
-            layout_now_playing.visibility = View.GONE
+
+            if (updatedTracks > 0) {
+                showSnackbar(getString(R.string.scan_status_success_updated_tracks, updatedTracks), null, 0)
+            } else {
+                showSnackbar(getString(R.string.scan_status_success_no_change), null, 0)
+            }
         }
     }
 
@@ -133,8 +226,13 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         PlayerActivity.launch(this, getShareableViews())
     }
 
-    override fun launchScanActivity() {
-        ScanActivity.launch(this)
+    override fun startScanner() {
+        doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
+            val intent = Intent(this, ScanService::class.java)
+            startService(intent)
+
+            layout_drawer.closeDrawer(Gravity.START)
+        }
     }
 
     override fun launchSettingsActivity() {
@@ -175,7 +273,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         setUpNavigationDrawer()
         setUpViewPagerTabs()
 
-        layout_now_playing.setOnClickListener { presenter.onNowPlayingClicked() }
+        layout_status.setOnClickListener { presenter.onNowPlayingClicked() }
         button_play_pause.setOnClickListener { presenter.onPlayFabClicked() }
     }
 
@@ -212,13 +310,16 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
 
     override fun shouldDelayTransitionForFragment() = false
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
+    private fun hideStatusBar() {
+        pager_categories.setPadding(0, 0, 0, 0)
 
-        if (resultCode == ScanActivity.RESULT_CODE_REFRESH) {
-            pagerAdapter?.fragments?.forEach {
-                it.refresh()
-            }
+        if (getFragment()?.isScrolledToBottom() ?: false) {
+            pager_categories.translationY = -(resources.getDimension(R.dimen.height_status_bar))
+            pager_categories.slideViewToProperLocation()
+        }
+
+        layout_status.slideViewOffscreen().withEndAction {
+            layout_status.visibility = View.GONE
         }
     }
 
@@ -237,7 +338,26 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         }
     }
 
+    private fun getStatusString(type: Int?, name: String?): String? {
+        return if (name != null) {
+            when (type) {
+                FileScanEvent.TYPE_FOLDER -> getString(R.string.scan_status_folder, name)
+                FileScanEvent.TYPE_UPDATED_TRACK -> getString(R.string.scan_status_updated_track, name)
+                FileScanEvent.TYPE_DELETED_TRACK -> getString(R.string.scan_status_removed_track, name)
+                else -> getString(R.string.scan_status_new_track, name)
+            }
+        } else {
+            getString(R.string.scan_status_no_track_yet)
+        }
+    }
+
     companion object {
+        val STATE_UNKNOWN = -1
+        val STATE_IDLE = 0
+        val STATE_SCANNING = 1
+        val STATE_PLAY_PAUSE = 2
+        val STATE_SCAN_PLAY_PAUSE = 3
+
         fun launch(context: Context) {
             val launcher = Intent(context, MainActivity::class.java)
             context.startActivity(launcher)

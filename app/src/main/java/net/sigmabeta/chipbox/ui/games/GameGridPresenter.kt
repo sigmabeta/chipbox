@@ -2,15 +2,20 @@ package net.sigmabeta.chipbox.ui.games
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
+import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.logError
+import net.sigmabeta.chipbox.util.logWarning
+import rx.android.schedulers.AndroidSchedulers
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @ActivityScoped
-class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>() {
+class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPresenter<GameListView>() {
     var platform = Track.PLATFORM_ALL
 
     var games: List<Game>? = null
@@ -45,7 +50,7 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>(
 
     override fun updateViewState() {
         games?.let {
-            if (it.size > 0) {
+            if (it.isNotEmpty()) {
                 showContent(it)
             } else {
                 showEmptyState()
@@ -66,11 +71,37 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>(
         }
 
         view?.clearClickedViewHolder()
+
+        val subscription = updater.asObservable()
+                .throttleFirst(5000, TimeUnit.MILLISECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    when (it) {
+                        is TrackEvent -> { /* no-op */
+                        }
+                        is PositionEvent -> { /* no-op */
+                        }
+                        is GameEvent -> { /* no-op */
+                        }
+                        is StateEvent -> { /* no-op */
+                        }
+                        is FileScanEvent -> loadGames()
+                        is FileScanCompleteEvent -> loadGames()
+                        is FileScanFailedEvent -> { /* no-op */
+                        }
+                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                    }
+                }
+
+        subscriptions.add(subscription)
     }
 
     override fun onClick(id: Int) {
         when (id) {
-            R.id.button_empty_state -> view?.showFilesScreen()
+            R.id.button_empty_state -> {
+                view?.startRescan()
+                loading = true
+            }
         }
     }
 
@@ -79,14 +110,20 @@ class GameGridPresenter @Inject constructor() : FragmentPresenter<GameListView>(
 
         loading = true
 
+        loadGames()
+    }
+
+    private fun loadGames() {
         val request = if (platform == Track.PLATFORM_ALL) {
             repository.getGames()
         } else {
             repository.getGamesForPlatform(platform)
         }
         val subscription = request
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
+                            printBenchmark("Games Loaded")
                             loading = false
                             games = it
 
