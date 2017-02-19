@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.track
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
@@ -7,9 +8,9 @@ import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_song_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.*
-import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import net.sigmabeta.chipbox.util.*
 import javax.inject.Inject
 
@@ -31,8 +32,9 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
         adapter.notifyDataSetChanged()
     }
 
-    override fun showRescanScreen() {
-        ScanActivity.launch(activity)
+    override fun startRescan() {
+        val intent = Intent(activity, ScanService::class.java)
+        activity.startService(intent)
     }
 
     override fun showContent() = ifVisible {

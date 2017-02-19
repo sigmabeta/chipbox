@@ -8,7 +8,7 @@ interface ArtistListView : BaseView {
 
     fun launchNavActivity(id: String)
 
-    fun showRescanScreen()
+    fun startRescan()
 
     fun showContent()
 

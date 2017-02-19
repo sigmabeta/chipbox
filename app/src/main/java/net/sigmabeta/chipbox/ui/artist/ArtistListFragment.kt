@@ -1,18 +1,19 @@
 package net.sigmabeta.chipbox.ui.artist
 
+import android.content.Intent
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
 import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_artist_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.ItemListView
 import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
-import net.sigmabeta.chipbox.ui.scan.ScanActivity
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
 import net.sigmabeta.chipbox.util.*
 import javax.inject.Inject
@@ -35,8 +36,9 @@ class ArtistListFragment : BaseFragment<ArtistListPresenter, ArtistListView>(), 
         adapter.dataset = artists
     }
 
-    override fun showRescanScreen() {
-        ScanActivity.launch(activity)
+    override fun startRescan() {
+        val intent = Intent(activity, ScanService::class.java)
+        activity.startService(intent)
     }
 
     override fun showLoading() = ifVisible {

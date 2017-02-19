@@ -30,11 +30,6 @@
             android:theme="@style/ThemeMain"/>
 
         <activity
-            android:name=".ui.file.FilesActivity"
-            android:label="@string/file_list_title"
-            android:theme="@style/ThemeFileList"/>
-
-        <activity
             android:name=".ui.navigation.NavigationActivity"
             android:theme="@style/ThemeNav"/>
 
@@ -46,11 +41,6 @@
         <activity
             android:name=".ui.game.GameActivity"
             android:theme="@style/ThemeGame"/>
-
-        <activity
-            android:name=".ui.scan.ScanActivity"
-            android:theme="@style/ThemeScan"
-            android:screenOrientation="portrait"/>
 
         <activity
             android:name=".ui.settings.SettingsActivity"
