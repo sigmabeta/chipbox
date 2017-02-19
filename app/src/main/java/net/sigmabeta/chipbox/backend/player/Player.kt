@@ -27,8 +27,6 @@ class Player @Inject constructor(val playlist: Playlist,
                                  val updater: UiUpdater,
                                  val settings: Settings,
                                  val context: Context) : AudioManager.OnAudioFocusChangeListener {
-    lateinit var repository: Repository
-
     var backendView: BackendView? = null
 
     var state = PlaybackState.STATE_STOPPED

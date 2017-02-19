@@ -7,10 +7,8 @@ import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.events.GameEvent
-import net.sigmabeta.chipbox.model.events.PositionEvent
-import net.sigmabeta.chipbox.model.events.StateEvent
-import net.sigmabeta.chipbox.model.events.TrackEvent
+import net.sigmabeta.chipbox.model.events.*
+import net.sigmabeta.chipbox.model.repository.LibraryScanner
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logWarning
@@ -20,16 +18,14 @@ import javax.inject.Singleton
 
 @Singleton
 class MainPresenter @Inject constructor(val player: Player,
+                                        val scanner: LibraryScanner,
                                         val playlist: Playlist,
                                         val updater: UiUpdater) : ActivityPresenter<MainView>() {
-    var state = player.state
-
     var game: Game? = null
 
     fun onOptionsItemSelected(itemId: Int): Boolean {
         when (itemId) {
-            R.id.drawer_add_folder -> view?.launchFileListActivity()
-            R.id.drawer_refresh -> view?.launchScanActivity()
+            R.id.drawer_refresh -> view?.startScanner()
             R.id.drawer_settings -> view?.launchSettingsActivity()
             R.id.drawer_help -> view?.launchOnboarding()
         }
@@ -75,7 +71,16 @@ class MainPresenter @Inject constructor(val player: Player,
                             /* no-op */
                         }
                         is GameEvent -> displayGame(it.gameId, false)
-                        is StateEvent -> displayState(state, it.state)
+                        is StateEvent -> displayState(it.state)
+                        is FileScanEvent -> view?.showScanning(it.type, it.name)
+                        is FileScanFailedEvent -> {
+                            view?.showFileScanError(it.reason)
+                            view?.hideScanning()
+                        }
+                        is FileScanCompleteEvent -> {
+                            view?.showFileScanSuccess(it.newTracks, it.updatedTracks)
+                            view?.hideScanning()
+                        }
                         else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
                     }
                 }
@@ -98,28 +103,33 @@ class MainPresenter @Inject constructor(val player: Player,
             displayGame(it, true)
         }
 
-        displayState(state, player.state)
+        displayState(player.state)
     }
 
-    private fun displayState(oldState: Int, newState: Int) {
+    private fun displayState(newState: Int) {
         when (newState) {
             PlaybackState.STATE_PLAYING -> {
                 view?.showPauseButton()
-                view?.showNowPlaying(oldState == PlaybackState.STATE_STOPPED)
+                view?.showNowPlaying()
             }
 
             PlaybackState.STATE_PAUSED -> {
                 view?.showPlayButton()
-                view?.showNowPlaying(oldState == PlaybackState.STATE_STOPPED)
+                view?.showNowPlaying()
             }
 
             PlaybackState.STATE_STOPPED -> {
-                view?.hideNowPlaying(oldState != PlaybackState.STATE_STOPPED)
+                view?.hideNowPlaying()
             }
         }
 
-        this.state = newState
+        if (scanner.state == LibraryScanner.STATE_SCANNING) {
+            view?.showScanning(null, null)
+        } else {
+            view?.hideScanning()
+        }
     }
+
     private fun displayTrack(trackId: String?, animate: Boolean) {
         if (trackId != null) {
             val track = repository.getTrackSync(trackId)
@@ -137,7 +147,7 @@ class MainPresenter @Inject constructor(val player: Player,
         if (gameId != null) {
             val game = repository.getGameSync(gameId)
 
-            if (force || this.game != game) {
+            if (force || this.game !== game) {
                 view?.setGameBoxArt(game?.artLocal, !force)
             }
 

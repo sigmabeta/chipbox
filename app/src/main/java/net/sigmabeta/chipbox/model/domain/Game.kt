@@ -5,8 +5,9 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import net.sigmabeta.chipbox.model.IdRealmObject
+import net.sigmabeta.chipbox.model.domain.ListItem.Companion.CHANGE_ERROR
 
-open class Game() : RealmObject(), IdRealmObject {
+open class Game() : RealmObject(), IdRealmObject, ListItem {
     constructor(title: String, platform: Long) : this() {
         this.title = title
         this.platform = platform
@@ -37,11 +38,44 @@ open class Game() : RealmObject(), IdRealmObject {
         this.id = id
     }
 
+
+    override fun isTheSameAs(theOther: ListItem?): Boolean {
+        if (theOther is Game) {
+            if (theOther.id == this.id) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    override fun hasSameContentAs(theOther: ListItem?): Boolean {
+        if (theOther is Game) {
+            if (this.artist?.name == theOther.artist?.name) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    override fun getChangeType(theOther: ListItem?): Int {
+        if (theOther is Game) {
+            if (this.artist?.name != theOther.artist?.name) {
+                return CHANGE_ARTIST
+            }
+        }
+
+        return CHANGE_ERROR
+    }
+
     companion object {
         val PICASSO_PREFIX = "file://"
 
         val ASSET_ALBUM_ART_BLANK = "/android_asset/img_album_art_blank.png"
 
         val PICASSO_ASSET_ALBUM_ART_BLANK = PICASSO_PREFIX + ASSET_ALBUM_ART_BLANK
+
+        val CHANGE_ARTIST = 1
     }
 }

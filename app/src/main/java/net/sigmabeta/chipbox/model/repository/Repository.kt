@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.model.repository
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.file.Folder
 import rx.Observable
 
 interface Repository {
@@ -18,7 +17,6 @@ interface Repository {
 
     fun addGame(platformId: Long, title: String?): Observable<Game>
     fun addArtist(name: String?): Observable<Artist>
-    fun addFolder(path: String): Observable<Int>
 
     /**
      * Read
@@ -26,24 +24,29 @@ interface Repository {
 
     fun getTrackSync(id: String): Track?
     fun getTracks(): Observable<out List<Track>>
+    fun getTracksManaged(): List<Track>
     fun getTracksFromIds(trackIdsList: MutableList<String?>): Observable<out List<Track>>
+    fun getTrackFromPath(path: String): Track?
+    fun getTrackFromPath(path: String, trackNumber: Int): Track?
+    fun getTrack(title: String, gameTitle: String, platform: Long): Track?
 
     fun getGame(id: String): Observable<Game>
     fun getGameSync(id: String): Game?
     fun getGames(): Observable<out List<Game>>
+    fun getGamesManaged(): List<Game>
     fun getGamesForPlatform(platformId: Long): Observable<out List<Game>>
     fun getGame(platformId: Long, title: String?): Observable<Game>
 
     fun getArtist(id: String): Observable<Artist>
     fun getArtistByName(name: String?): Observable<Artist>
     fun getArtists(): Observable<out List<Artist>>
-
-    fun getFoldersSync(): List<Folder>
+    fun getArtistsManaged(): List<Artist>
 
     /**
      * Update
      */
 
+    fun updateTrack(oldTrack: Track, newTrack: Track): Boolean
     fun updateGameArt(game: Game, artLocal: String)
 
     /**
@@ -51,4 +54,8 @@ interface Repository {
      */
 
     fun clearAll()
+
+    fun deleteTrack(track: Track)
+    fun deleteGame(game: Game)
+    fun deleteArtist(artist: Artist)
 }

@@ -6,7 +6,7 @@ import android.util.Pair
 import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_navigation.*
-import kotlinx.android.synthetic.main.layout_now_playing.*
+import kotlinx.android.synthetic.main.layout_status.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
@@ -78,7 +78,7 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
     }
 
     override fun showNowPlaying(animate: Boolean) {
-        frame_fragment.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_now_playing).toInt())
+        frame_fragment.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_status_bar).toInt())
 
         if (animate) {
             layout_now_playing.slideViewOnscreen()
@@ -93,7 +93,7 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
 
         if (animate) {
             if (getFragment()?.isScrolledToBottom() ?: false) {
-                frame_fragment.translationY = -(resources.getDimension(R.dimen.height_now_playing))
+                frame_fragment.translationY = -(resources.getDimension(R.dimen.height_status_bar))
                 frame_fragment.slideViewToProperLocation()
             }
 

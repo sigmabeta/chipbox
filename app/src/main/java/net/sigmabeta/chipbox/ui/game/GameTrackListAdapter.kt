@@ -60,12 +60,12 @@ class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayA
     }
 
     override fun getItemCount(): Int {
-        return (dataset?.size ?: 0) + 1
+        return (datasetInternal?.size ?: 0) + 1
     }
 
     override fun getItem(position: Int): Track? {
         if (position > 0) {
-            return dataset?.get(position - 1)
+            return datasetInternal?.get(position - 1)
         } else {
             return null
         }
