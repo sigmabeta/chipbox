@@ -70,6 +70,9 @@
     <string name="scan_label_files_added_count">Tracks Added</string>
     <string name="scan_label_bad_file_count">Unreadable Files</string>
 
+    <string name="notification_scan_failed_title">Chipbox Library</string>
+    <string name="notification_scan_failed_content">There was a problem scanning your library.</string>
+
     <!-- Settings -->
     <string name="title_settings">Playback Settings</string>
     <string name="label_tempo">Tempo</string>
