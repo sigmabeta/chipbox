@@ -1,5 +1,5 @@
 # CMake project definition file.
-project(libgme)
+project(libchipbox)
 
 include (CheckCXXCompilerFlag)
 
@@ -87,3 +87,4 @@ set( LIBGME_HAVE_GCC_VISIBILITY ${ENABLE_VISIBILITY} CACHE BOOL "GCC support for
 
 # Shared library defined here
 add_subdirectory(gme)
+add_subdirectory(VGMPlay)
