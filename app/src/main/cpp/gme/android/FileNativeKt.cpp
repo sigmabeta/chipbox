@@ -7,9 +7,10 @@
 
 Music_Emu * g_file_info_reader;
 
-gme_info_t * g_track_info;	
+gme_info_t * g_track_info;
 
-JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoSetupNative
+JNIEXPORT jstring JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoSetupNativeGme
   (JNIEnv * env, jclass clazz, jstring filePath)
 {	
 	if (g_file_info_reader) {
@@ -47,7 +48,8 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_
 	return NULL;
 }
 
-JNIEXPORT jint JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoGetTrackCount
+JNIEXPORT jint JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoGetTrackCountGme
   (JNIEnv * env, jclass clazz)
 {
 	if (g_file_info_reader)
@@ -56,7 +58,8 @@ JNIEXPORT jint JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fil
 		return -1;
 }
 
-JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoSetTrackNumberNative
+JNIEXPORT void JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoSetTrackNumberNativeGme
   (JNIEnv * env, jclass clazz, jint track_number)
 {
 	if (g_track_info)
@@ -70,55 +73,58 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fil
 	gme_track_info(g_file_info_reader, &g_track_info, track_number);
 }
 
-JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoTeardownNative
+JNIEXPORT void JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoTeardownNativeGme
   (JNIEnv * env, jclass clazz)
 {
 	teardown();
 }
 
-JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileTrackLength
+JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileTrackLengthGme
   (JNIEnv * env, jclass clazz)
 {
 	return g_track_info->length;
 }
 
-JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileIntroLength
+JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileIntroLengthGme
   (JNIEnv * env, jclass clazz)
 {
 	return g_track_info->intro_length;
 }
 
-JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileLoopLength
+JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileLoopLengthGme
   (JNIEnv * env, jclass clazz)
 {
 	return g_track_info->loop_length;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileTitle
+JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileTitleGme
   (JNIEnv * env, jclass clazz)
 {
 	return get_java_byte_array(env, g_track_info->song);
 }
 
-JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileGameTitle
+JNIEXPORT jbyteArray JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileGameTitleGme
   (JNIEnv * env, jclass clazz)
 {
 	return get_java_byte_array(env, g_track_info->game);
 }
 
-JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFilePlatform
+JNIEXPORT jbyteArray JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFilePlatformGme
   (JNIEnv * env, jclass clazz)
 {
 	return get_java_byte_array(env, g_track_info->system);
 }
 
-JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileArtist
+JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileArtistGme
   (JNIEnv * env, jclass clazz)
 {
 	return get_java_byte_array(env, g_track_info->author);
 }
 
-JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getPlatformNative
+JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getPlatformNativeGme
   (JNIEnv * env, jclass clazz, jstring jPath)
 {
 	const char* path = env->GetStringUTFChars(jPath, NULL);

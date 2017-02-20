@@ -9,90 +9,92 @@ extern "C" {
 #endif
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
- * Method:    loadFile
+ * Method:    loadFileGme
  * Signature: (Ljava/lang/String;IIJ)V
  */
-JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_loadFile
+JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_loadFileGme
   (JNIEnv *, jclass, jstring, jint, jint, jlong, jint);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
- * Method:    readNextSamples
+ * Method:    readNextSamplesGme
  * Signature: ([S)V
  */
-JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_readNextSamples
+JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_readNextSamplesGme
   (JNIEnv *, jclass, jshortArray);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
- * Method:    getMillisPlayed
+ * Method:    getMillisPlayedGme
  * Signature: ()I
  */
-JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_getMillisPlayed
+JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_getMillisPlayedGme
   (JNIEnv *, jclass);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
- * Method:    seekNative
+ * Method:    seekNativeGme
  * Signature: (I)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_seekNative
+JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_seekNativeGme
   (JNIEnv *, jclass, jint);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
- * Method:    setTempoNative
+ * Method:    setTempoNativeGme
  * Signature: (D)V
  */
-JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_setTempoNative
+JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_setTempoNativeGme
   (JNIEnv *, jclass, jdouble);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
- * Method:    getVoiceCountNative
+ * Method:    getVoiceCountNativeGme
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_getVoiceCountNative
+JNIEXPORT jint JNICALL
+Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_getVoiceCountNativeGme
   (JNIEnv *, jclass);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
- * Method:    getVoiceNameNative
+ * Method:    getVoiceNameNativeGme
  * Signature: (I)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_getVoiceNameNative
+JNIEXPORT jstring JNICALL
+Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_getVoiceNameNativeGme
   (JNIEnv *, jclass, jint);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
- * Method:    muteVoiceNative
+ * Method:    muteVoiceNativeGme
  * Signature: (II)V
  */
-JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_muteVoiceNative
+JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_muteVoiceNativeGme
   (JNIEnv *, jclass, jint, jint);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
- * Method:    isTrackOver
+ * Method:    isTrackOverGme
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_isTrackOver
+JNIEXPORT jboolean JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_isTrackOverGme
   (JNIEnv *, jclass);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
- * Method:    teardown
+ * Method:    teardownGme
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_teardown
+JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_teardownGme
   (JNIEnv *, jclass);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
- * Method:    getLastError
+ * Method:    getLastErrorGme
  * Signature: ()Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_getLastError
+JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_getLastErrorGme
   (JNIEnv *, jclass);
 
 #ifdef __cplusplus

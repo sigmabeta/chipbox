@@ -8,34 +8,34 @@ import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import java.util.*
 
-external fun loadFile(filename: String, track: Int, sampleRate: Int, bufferSize: Long, fadeTimeMs: Long)
+external fun loadFileGme(filename: String, track: Int, sampleRate: Int, bufferSize: Long, fadeTimeMs: Long)
 
-external fun readNextSamples(targetBuffer: ShortArray)
+external fun readNextSamplesGme(targetBuffer: ShortArray)
 
-external fun getMillisPlayed(): Long
+external fun getMillisPlayedGme(): Long
 
-external fun seekNative(timeInSec: Int): String
+external fun seekNativeGme(timeInSec: Int): String
 
-external fun setTempoNative(tempo: Double)
+external fun setTempoNativeGme(tempo: Double)
 
-external fun getVoiceCountNative(): Int
+external fun getVoiceCountNativeGme(): Int
 
-external fun getVoiceNameNative(position: Int): String
+external fun getVoiceNameNativeGme(position: Int): String
 
-external fun muteVoiceNative(voiceNumber: Int, enabled: Int)
+external fun muteVoiceNativeGme(voiceNumber: Int, enabled: Int)
 
-external fun isTrackOver(): Boolean
+external fun isTrackOverGme(): Boolean
 
-external fun teardown()
+external fun teardownGme()
 
-external fun getLastError(): String?
+external fun getLastErrorGme(): String?
 
 fun getVoicesWrapper(): MutableList<Voice> {
-    val voiceCount = getVoiceCountNative()
+    val voiceCount = getVoiceCountNativeGme()
     val voices = ArrayList<Voice>(voiceCount)
 
     for (index in 0 until voiceCount) {
-        val voiceName = getVoiceNameNative(index)
+        val voiceName = getVoiceNameNativeGme(index)
         val voice = Voice(index, voiceName)
         voices.add(voice)
     }
@@ -55,12 +55,12 @@ fun loadTrackNative(track: Track, sampleRate: Int, bufferSizeShorts: Long) {
         0
     }
 
-    loadFile(path, trackNumber, sampleRate, bufferSizeShorts, track.trackLength ?: 60000)
+    loadFileGme(path, trackNumber, sampleRate, bufferSizeShorts, track.trackLength ?: 60000)
 
-    if (getLastError() != null) {
+    if (getLastErrorGme() != null) {
         logError("[PlayerNative] Unable to load file.")
 
-        val loadError = getLastError()
+        val loadError = getLastErrorGme()
         if (loadError != null) {
             logError("[PlayerNative] GME Error: ${loadError}")
         }

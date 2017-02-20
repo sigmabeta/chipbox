@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.backend.player
 
 import net.sigmabeta.chipbox.model.audio.Voice
 import net.sigmabeta.chipbox.util.external.getVoicesWrapper
-import net.sigmabeta.chipbox.util.external.setTempoNative
+import net.sigmabeta.chipbox.util.external.setTempoNativeGme
 import net.sigmabeta.chipbox.util.logInfo
 import javax.inject.Inject
 
@@ -12,7 +12,7 @@ class Settings @Inject constructor() {
             if (value != null) {
                 field = value
                 logInfo("[Player] Setting tempo to $value")
-                setTempoNative(value / 100.0)
+                setTempoNativeGme(value / 100.0)
             } else {
                 field = 100
             }

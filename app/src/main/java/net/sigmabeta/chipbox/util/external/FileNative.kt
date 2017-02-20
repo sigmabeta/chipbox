@@ -1,25 +1,25 @@
 package net.sigmabeta.chipbox.util.external
 
-external fun getPlatformNative(path: String): String
+external fun getPlatformNativeGme(path: String): String
 
-external fun fileInfoSetupNative(path: String): String?
+external fun fileInfoSetupNativeGme(path: String): String?
 
-external fun fileInfoGetTrackCount(): Int
+external fun fileInfoGetTrackCountGme(): Int
 
-external fun fileInfoSetTrackNumberNative(trackNumber: Int)
+external fun fileInfoSetTrackNumberNativeGme(trackNumber: Int)
 
-external fun fileInfoTeardownNative()
+external fun fileInfoTeardownNativeGme()
 
-external fun getFileTrackLength(): Long
+external fun getFileTrackLengthGme(): Long
 
-external fun getFileIntroLength(): Long
+external fun getFileIntroLengthGme(): Long
 
-external fun getFileLoopLength(): Long
+external fun getFileLoopLengthGme(): Long
 
-external fun getFileTitle(): ByteArray
+external fun getFileTitleGme(): ByteArray
 
-external fun getFileGameTitle(): ByteArray
+external fun getFileGameTitleGme(): ByteArray
 
-external fun getFilePlatform(): ByteArray
+external fun getFilePlatformGme(): ByteArray
 
-external fun getFileArtist(): ByteArray
+external fun getFileArtistGme(): ByteArray

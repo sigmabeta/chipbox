@@ -65,7 +65,7 @@ fun getFileExtension(filePath: String): String? {
 }
 
 fun readSingleTrackFile(path: String, trackNumber: Int): Track? {
-    val error = fileInfoSetupNative(path)
+    val error = fileInfoSetupNativeGme(path)
 
     if (error != null) {
         logError("[File] Error reading file: $error")
@@ -76,20 +76,20 @@ fun readSingleTrackFile(path: String, trackNumber: Int): Track? {
 
     track?.trackNumber = trackNumber
 
-    fileInfoTeardownNative()
+    fileInfoTeardownNativeGme()
 
     return track
 }
 
 fun readMultipleTrackFile(path: String): List<Track>? {
-    val error = fileInfoSetupNative(path)
+    val error = fileInfoSetupNativeGme(path)
 
     if (error != null) {
         logError("[File] Error reading file: $error")
         return null
     }
 
-    val trackCount = fileInfoGetTrackCount()
+    val trackCount = fileInfoGetTrackCountGme()
 
     val tracks = ArrayList<Track>(trackCount)
     for (trackNumber in 0..trackCount - 1) {
@@ -105,25 +105,25 @@ fun readMultipleTrackFile(path: String): List<Track>? {
         }
     }
 
-    fileInfoTeardownNative()
+    fileInfoTeardownNativeGme()
     return tracks
 }
 
 private fun getTrack(path: String, trackNumber: Int): Track? {
-    fileInfoSetTrackNumberNative(trackNumber)
+    fileInfoSetTrackNumberNativeGme(trackNumber)
 
     val platform = getTrackPlatform() ?: return null
 
-    var artist = getFileArtist().convert()
+    var artist = getFileArtistGme().convert()
     if (artist.isBlank()) {
         artist = RealmRepository.ARTIST_UNKNOWN
     }
 
     var trackLength = 0L
 
-    val fileTrackLength = getFileTrackLength()
-    val fileIntroLength = getFileIntroLength()
-    val fileLoopLength = getFileLoopLength()
+    val fileTrackLength = getFileTrackLengthGme()
+    val fileIntroLength = getFileIntroLengthGme()
+    val fileLoopLength = getFileLoopLengthGme()
 
     if (fileTrackLength > 0) {
         trackLength = fileTrackLength
@@ -139,8 +139,8 @@ private fun getTrack(path: String, trackNumber: Int): Track? {
 
     val track = Track(trackNumber,
             path,
-            getFileTitle().convert(),
-            getFileGameTitle().convert(),
+            getFileTitleGme().convert(),
+            getFileGameTitleGme().convert(),
             artist,
             platform.toLong(),
             trackLength,
@@ -152,7 +152,7 @@ private fun getTrack(path: String, trackNumber: Int): Track? {
 }
 
 private fun getTrackPlatform(): Long? {
-    val platformString = getFilePlatform().convert()
+    val platformString = getFilePlatformGme().convert()
 
     val platform = when (platformString) {
         "Super Nintendo" -> Track.PLATFORM_SNES
@@ -169,7 +169,7 @@ private fun getTrackPlatform(): Long? {
 }
 
 fun getPlatform(path: String): Int {
-    when (getPlatformNative(path)) {
+    when (getPlatformNativeGme(path)) {
         GME_PLATFORM_GENESIS -> return TYPE_TRACK
         GME_PLATFORM_SNES -> return TYPE_TRACK
         else -> return TYPE_OTHER

@@ -24,7 +24,7 @@ class Reader(val player: Player,
 
                 if (track != null) {
                     if (!resuming) {
-                        teardown()
+                        teardownGme()
 
                         loadTrackNative(track,
                                 audioConfig.sampleRate,
@@ -59,12 +59,12 @@ class Reader(val player: Player,
             }
 
             queuedSeekPosition?.let {
-                seekNative(it)
+                seekNativeGme(it)
                 player.onPlaybackPositionUpdate(it.toLong())
                 queuedSeekPosition = null
             }
 
-            if (isTrackOver()) {
+            if (isTrackOverGme()) {
                 logVerbose("[Player] Track has ended.")
 
                 if (!playlist.isNextTrackAvailable()) {
@@ -88,10 +88,10 @@ class Reader(val player: Player,
 
             // Get the next samples from the native player.
             synchronized(playingTrackId ?: break) {
-                readNextSamples(audioBuffer.buffer)
+                readNextSamplesGme(audioBuffer.buffer)
             }
 
-            val error = getLastError()
+            val error = getLastErrorGme()
 
             if (error == null) {
                 // Check this so that we don't put one last buffer into the full queue after it's cleared.

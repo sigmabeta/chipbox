@@ -10,98 +10,104 @@ extern "C" {
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    getPlatformNative
+ * Method:    getPlatformNativeGme
  * Signature: (Ljava/lang/String;)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getPlatformNative
+JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getPlatformNativeGme
   (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    fileInfoSetupNative
+ * Method:    fileInfoSetupNativeGme
  * Signature: (Ljava/lang/String;)Ljava/lang/String;
  */
-JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoSetupNative
+JNIEXPORT jstring JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoSetupNativeGme
   (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    fileInfoGetTrackCount
+ * Method:    fileInfoGetTrackCountGme
  * Signature: ()I
  */
-JNIEXPORT jint JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoGetTrackCount
+JNIEXPORT jint JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoGetTrackCountGme
   (JNIEnv *, jclass);
-  
+
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    fileInfoSetTrackNumberNative
+ * Method:    fileInfoSetTrackNumberNativeGme
  * Signature: (I)V
  */
-JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoSetTrackNumberNative
+JNIEXPORT void JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoSetTrackNumberNativeGme
   (JNIEnv *, jclass, jint);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    fileInfoTeardownNative
+ * Method:    fileInfoTeardownNativeGme
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoTeardownNative
+JNIEXPORT void JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_fileInfoTeardownNativeGme
   (JNIEnv *, jclass);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    getFileTrackLength
+ * Method:    getFileTrackLengthGme
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileTrackLength
+JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileTrackLengthGme
   (JNIEnv *, jclass);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    getFileIntroLength
+ * Method:    getFileIntroLengthGme
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileIntroLength
+JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileIntroLengthGme
   (JNIEnv *, jclass);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    getFileLoopLength
+ * Method:    getFileLoopLengthGme
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileLoopLength
+JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileLoopLengthGme
   (JNIEnv *, jclass);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    getFileTitle
+ * Method:    getFileTitleGme
  * Signature: ()[B
  */
-JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileTitle
+JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileTitleGme
   (JNIEnv *, jclass);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    getFileGameTitle
+ * Method:    getFileGameTitleGme
  * Signature: ()[B
  */
-JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileGameTitle
+JNIEXPORT jbyteArray JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileGameTitleGme
   (JNIEnv *, jclass);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    getFilePlatform
+ * Method:    getFilePlatformGme
  * Signature: ()[B
  */
-JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFilePlatform
+JNIEXPORT jbyteArray JNICALL
+Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFilePlatformGme
   (JNIEnv *, jclass);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_FileNativeKt
- * Method:    getFileArtist
+ * Method:    getFileArtistGme
  * Signature: ()[B
  */
-JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileArtist
+JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_util_external_FileNativeKt_getFileArtistGme
   (JNIEnv *, jclass);
 
 jbyteArray get_java_byte_array(JNIEnv *, const char *);
