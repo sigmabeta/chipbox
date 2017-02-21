@@ -3968,7 +3968,7 @@ static void AddPCMData(UINT8 Type, UINT32 DataSize, const UINT8 *Data) {
         BankSize = DataSize;
     else
         BankSize = ReadLE32(&Data[0x01]);
-    TempPCM->Data = realloc(TempPCM->Data, TempPCM->DataSize + BankSize);
+    TempPCM->Data = (UINT8 *) realloc(TempPCM->Data, TempPCM->DataSize + BankSize);
     TempBnk = &TempPCM->Bank[CurBnk];
     TempBnk->DataStart = TempPCM->DataSize;
     if (!(Type & 0x40)) {

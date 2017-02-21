@@ -125,8 +125,8 @@ class Writer(val player: Player,
         // Set a listener to update the UI's playback position.
         audioTrack.setPlaybackPositionUpdateListener(object : AudioTrack.OnPlaybackPositionUpdateListener {
             override fun onPeriodicNotification(track: AudioTrack) {
-                val millisPlayed = getMillisPlayedGme()
-                player.onPlaybackPositionUpdate(millisPlayed)
+//                val millisPlayed = getMillisPlayedGme()
+//                player.onPlaybackPositionUpdate(millisPlayed)
             }
 
             override fun onMarkerReached(track: AudioTrack) {}
