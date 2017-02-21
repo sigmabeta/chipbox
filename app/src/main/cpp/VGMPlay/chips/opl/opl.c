@@ -34,7 +34,6 @@
 #include "opl.h"
 #include "../mamedef.h"
 
-
 //static fltype recipsamp;	// inverse of sampling rate		// moved to OPL_DATA
 static Bit16s wavtable[WAVEPREC * 3];    // wave form table
 

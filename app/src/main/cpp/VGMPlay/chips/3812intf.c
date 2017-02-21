@@ -29,9 +29,6 @@
 
 #define OPLTYPE_IS_OPL2
 
-#include "adlibemu.h"
-
-
 #define EC_DBOPL    0x00    // DosBox OPL (AdLibEmu)
 #ifdef ENABLE_ALL_CORES
 #define EC_MAME		0x01	// YM3826 core from MAME
