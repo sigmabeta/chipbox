@@ -57,7 +57,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_l
     __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[loadFileGme] Setting sample rate: %d",
                         rate);
 	g_last_error = g_emu->set_sample_rate( sample_rate ) ;
-	if (g_last_error) 
+    if (g_last_error)
 	{
 		__android_log_print(ANDROID_LOG_ERROR, CHIPBOX_TAG, "%s", g_last_error);
 		return;
@@ -75,7 +75,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_l
     __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[loadFileGme] Starting track: %d",
                         track);
 	g_last_error = g_emu->start_track(track);
-	if (g_last_error) 
+    if (g_last_error)
 	{
 		__android_log_print(ANDROID_LOG_ERROR, CHIPBOX_TAG, "%s", g_last_error);
 		return;
@@ -96,17 +96,16 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_l
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_readNextSamplesGme
 	(JNIEnv * env, jclass clazz, jshortArray java_array)
 {
-	if (g_emu != NULL) 
+    if (g_emu != NULL)
 	{
 		jboolean is_copy;
 		jshort * target_array = env->GetShortArrayElements(java_array, &is_copy);
 
-		if (target_array != NULL) 
+        if (target_array != NULL)
 		{
 			g_last_error = gme_play(g_emu, g_buffer_size, target_array);
 			env->ReleaseShortArrayElements(java_array, target_array, 0);
-		} 
-		else 
+        } else
 		{
 			g_last_error = "Couldn't write to Java buffer.";
 		}
@@ -120,11 +119,10 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_r
 JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_getMillisPlayedGme
   (JNIEnv * env, jclass clazz)
 {
-	if (g_emu != NULL) 
+    if (g_emu != NULL)
 	{
 		return gme_tell(g_emu);
-	} 
-	else 
+    } else
 	{
 		return -1;
 	}
@@ -135,27 +133,26 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeK
 {
 	gme_err_t seek_error;
 
-	if (g_emu != NULL) 
+    if (g_emu != NULL)
 	{
 		seek_error = gme_seek(g_emu, time_in_ms);
 		gme_set_fade(g_emu, g_fade_time_ms);
-	} 
-	else 
+    } else
 	{
 		seek_error = "Emulator is null.";
 	}
 
 	// C style string to Java String
-	jstring result = env->NewStringUTF(seek_error); 
+    jstring result = env->NewStringUTF(seek_error);
 	return result;
 }
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_setTempoNativeGme
   (JNIEnv * env, jclass clazz, jdouble tempo)
 {
-	if (g_emu != NULL) 
+    if (g_emu != NULL)
 	{
-		gme_set_tempo(g_emu, tempo);	
+        gme_set_tempo(g_emu, tempo);
 		gme_set_fade(g_emu, 1000000000);
 	}
 }
@@ -163,7 +160,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_s
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_muteVoiceNativeGme
   (JNIEnv *, jobject, jint voice_number, jint enabled)
 {
-	if (g_emu != NULL) 
+    if (g_emu != NULL)
 	{
 		gme_mute_voice(g_emu, voice_number, enabled);
 	}
@@ -176,7 +173,7 @@ JNIEXPORT jboolean JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNative
 	{
 		if (gme_track_ended(g_emu))
 		{
-			return true;		
+            return true;
 		}
 	}
 

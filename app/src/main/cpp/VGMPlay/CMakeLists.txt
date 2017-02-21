@@ -2,7 +2,9 @@
 
 AUX_SOURCE_DIRECTORY(. VGM_SRCS)
 AUX_SOURCE_DIRECTORY(chips CHIPS_SRCS)
-set(libvgm_SRCS ${CHIPS_SRCS} ${VGM_SRCS})
+set(libvgm_SRCS ${CHIPS_SRCS}
+                ${VGM_SRCS}
+                android/PlayerNativeVgmKt.cpp)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 

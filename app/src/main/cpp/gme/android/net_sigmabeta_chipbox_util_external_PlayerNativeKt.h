@@ -15,6 +15,9 @@ extern "C" {
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_loadFileGme
   (JNIEnv *, jclass, jstring, jint, jint, jlong, jint);
 
+JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_loadFileVgm
+        (JNIEnv *, jclass, jstring);
+
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
  * Method:    readNextSamplesGme
@@ -22,6 +25,9 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_l
  */
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_readNextSamplesGme
   (JNIEnv *, jclass, jshortArray);
+
+JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_readNextSamplesVgm
+        (JNIEnv *, jclass, jshortArray);
 
 /*
  * Class:     net_sigmabeta_chipbox_util_external_PlayerNativeKt
@@ -87,6 +93,9 @@ JNIEXPORT jboolean JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNative
  * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_teardownGme
+        (JNIEnv *, jclass);
+
+JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeKt_teardownVgm
   (JNIEnv *, jclass);
 
 /*

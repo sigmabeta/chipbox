@@ -55,14 +55,12 @@ fun loadTrackNative(track: Track, sampleRate: Int, bufferSizeShorts: Long) {
         0
     }
 
-    loadFileGme(path, trackNumber, sampleRate, bufferSizeShorts, track.trackLength ?: 60000)
+//    loadFileGme(path, trackNumber, sampleRate, bufferSizeShorts, track.trackLength ?: 60000)
+    loadFileVgm(path)
 
-    if (getLastErrorGme() != null) {
-        logError("[PlayerNative] Unable to load file.")
+    val loadError = getLastErrorVgm()
 
-        val loadError = getLastErrorGme()
-        if (loadError != null) {
-            logError("[PlayerNative] GME Error: ${loadError}")
-        }
+    if (loadError != null) {
+        logError("[PlayerNative] Unable to load file: $loadError")
     }
 }

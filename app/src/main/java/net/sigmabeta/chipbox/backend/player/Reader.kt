@@ -24,7 +24,8 @@ class Reader(val player: Player,
 
                 if (track != null) {
                     if (!resuming) {
-                        teardownGme()
+//                        teardownGme()
+                        teardownVgm()
 
                         loadTrackNative(track,
                                 audioConfig.sampleRate,
@@ -64,20 +65,20 @@ class Reader(val player: Player,
                 queuedSeekPosition = null
             }
 
-            if (isTrackOverGme()) {
-                logVerbose("[Player] Track has ended.")
-
-                if (!playlist.isNextTrackAvailable()) {
-                    player.onPlaylistFinished()
-                    break
-                } else {
-                    if (playlist.repeat == Player.REPEAT_ONE) {
-                        queuedTrackId = playingTrackId
-                    } else {
-                        queuedTrackId = playlist.getNextTrack()
-                    }
-                }
-            }
+//            if (isTrackOverGme()) {
+//                logVerbose("[Player] Track has ended.")
+//
+//                if (!playlist.isNextTrackAvailable()) {
+//                    player.onPlaylistFinished()
+//                    break
+//                } else {
+//                    if (playlist.repeat == Player.REPEAT_ONE) {
+//                        queuedTrackId = playingTrackId
+//                    } else {
+//                        queuedTrackId = playlist.getNextTrack()
+//                    }
+//                }
+//            }
 
             val audioBuffer = emptyBuffers.poll(Player.TIMEOUT_BUFFERS_FULL_MS, TimeUnit.MILLISECONDS)
 
@@ -88,10 +89,11 @@ class Reader(val player: Player,
 
             // Get the next samples from the native player.
             synchronized(playingTrackId ?: break) {
-                readNextSamplesGme(audioBuffer.buffer)
+                //                readNextSamplesGme(audioBuffer.buffer)
+                readNextSamplesVgm(audioBuffer.buffer, audioConfig.bufferSizeSamples)
             }
 
-            val error = getLastErrorGme()
+            val error = getLastErrorVgm()
 
             if (error == null) {
                 // Check this so that we don't put one last buffer into the full queue after it's cleared.
