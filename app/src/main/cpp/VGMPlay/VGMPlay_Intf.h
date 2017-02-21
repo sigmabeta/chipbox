@@ -2,6 +2,8 @@
 //
 
 //#define NO_WCHAR_FILENAMES
+#include "VGMFile.h"
+
 #ifndef WIN32
 // Linux uses UTF-8 Unicode and has no special wide-character file routines.
 #define NO_WCHAR_FILENAMES

@@ -1,5 +1,8 @@
 // Header file for VGM file handling
 
+#ifndef VGM_FILE_H
+#define VGM_FILE_H
+
 typedef struct _vgm_file_header {
     UINT32 fccVGM;
     UINT32 lngEOFOffset;
@@ -135,3 +138,5 @@ typedef struct _vgm_pcm_bank {
 
 #define FCC_VGM    0x206D6756    // 'Vgm '
 #define FCC_GD3    0x20336447    // 'Gd3 '
+
+#endif
