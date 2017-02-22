@@ -8,7 +8,6 @@ import android.os.Process
 import net.sigmabeta.chipbox.backend.StatsManager
 import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
-import net.sigmabeta.chipbox.util.external.getMillisPlayedGme
 import net.sigmabeta.chipbox.util.logDebug
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
@@ -125,8 +124,8 @@ class Writer(val player: Player,
         // Set a listener to update the UI's playback position.
         audioTrack.setPlaybackPositionUpdateListener(object : AudioTrack.OnPlaybackPositionUpdateListener {
             override fun onPeriodicNotification(track: AudioTrack) {
-//                val millisPlayed = getMillisPlayedGme()
-//                player.onPlaybackPositionUpdate(millisPlayed)
+                val millisPlayed = player.backend?.getMillisPlayed() ?: 0L
+                player.onPlaybackPositionUpdate(millisPlayed)
             }
 
             override fun onMarkerReached(track: AudioTrack) {}

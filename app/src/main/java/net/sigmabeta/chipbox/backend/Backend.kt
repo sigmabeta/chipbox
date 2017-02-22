@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.backend
 
+import net.sigmabeta.chipbox.model.audio.Voice
+
 
 interface Backend {
     fun loadFile(filename: String, track: Int, sampleRate: Int, bufferSize: Long, fadeTimeMs: Long)
@@ -23,6 +25,19 @@ interface Backend {
     fun teardown()
 
     fun getLastError(): String?
+
+    fun getVoices(): MutableList<Voice> {
+        val voiceCount = getVoiceCount()
+        val voices = ArrayList<Voice>(voiceCount)
+
+        for (index in 0 until voiceCount) {
+            val voiceName = getVoiceName(index)
+            val voice = Voice(index, voiceName ?: "Voice $index")
+            voices.add(voice)
+        }
+
+        return voices
+    }
 
     companion object {
         val GME = net.sigmabeta.chipbox.backend.gme.BackendImpl()

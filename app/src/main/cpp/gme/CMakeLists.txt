@@ -13,7 +13,7 @@ set(libgme_SRCS Blip_Buffer.cpp
                 Multi_Buffer.cpp
                 Music_Emu.cpp
                 android/Scanner.cpp
-                android/PlayerNativeKt.cpp
+                android/Backend.cpp
                 )
 
 # Ay_Apu is very popular around here
