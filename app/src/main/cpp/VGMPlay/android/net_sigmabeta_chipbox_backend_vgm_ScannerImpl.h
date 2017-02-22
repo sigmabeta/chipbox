@@ -103,6 +103,9 @@ JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_
 JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_getFileArtist
         (JNIEnv *, jobject);
 
+jbyteArray get_java_byte_array(JNIEnv *, wchar_t *);
+void teardown();
+
 #ifdef __cplusplus
 }
 #endif
