@@ -39,6 +39,10 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeVgmK
 JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeVgmKt_getLastErrorVgm
         (JNIEnv *, jclass);
 
+JNIEXPORT jbyteArray JNICALL
+Java_net_sigmabeta_chipbox_util_external_PlayerNativeVgmKt_getFileTitleVgm
+        (JNIEnv *, jclass);
+
 #ifdef __cplusplus
 }
 #endif

@@ -2,10 +2,7 @@ package net.sigmabeta.chipbox.util.external
 
 import net.sigmabeta.chipbox.model.audio.Voice
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.util.EXTENSIONS_MULTI_TRACK
-import net.sigmabeta.chipbox.util.getFileExtension
-import net.sigmabeta.chipbox.util.logDebug
-import net.sigmabeta.chipbox.util.logError
+import net.sigmabeta.chipbox.util.*
 import java.util.*
 
 external fun loadFileGme(filename: String, track: Int, sampleRate: Int, bufferSize: Long, fadeTimeMs: Long)
@@ -57,6 +54,11 @@ fun loadTrackNative(track: Track, sampleRate: Int, bufferSizeShorts: Long) {
 
 //    loadFileGme(path, trackNumber, sampleRate, bufferSizeShorts, track.trackLength ?: 60000)
     loadFileVgm(path)
+
+    val titleByteArray = getFileTitleVgm()
+    val title = titleByteArray.convert()
+
+    logInfo("File title: $title")
 
     val loadError = getLastErrorVgm()
 

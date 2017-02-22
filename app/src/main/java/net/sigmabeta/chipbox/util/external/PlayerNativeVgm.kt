@@ -7,3 +7,5 @@ external fun readNextSamplesVgm(targetBuffer: ShortArray, sampleCount: Int)
 external fun teardownVgm()
 
 external fun getLastErrorVgm(): String?
+
+external fun getFileTitleVgm(): ByteArray
