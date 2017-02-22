@@ -454,14 +454,22 @@ UINT16 Last95Drum;    // for optvgm debugging
 UINT16 Last95Max;    // for optvgm debugging
 UINT32 Last95Freq;    // for optvgm debugging
 
-void VGMPlay_Init(void) {
+long getSamplesPlayed() {
+    return VGMSmplPlayed;
+}
+
+void setPlaybackRate(int rate) {
+    VGMPbRate = rate;
+}
+
+void VGMPlay_Init(int sample_rate) {
     UINT8 CurChip;
     UINT8 CurCSet;
     UINT8 CurChn;
     CHIP_OPTS *TempCOpt;
     CAUD_ATTR *TempCAud;
 
-    SampleRate = 44100;
+    SampleRate = sample_rate;
     FadeTime = 5000;
     PauseTime = 0;
 

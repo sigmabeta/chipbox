@@ -10,8 +10,6 @@ extern "C" {
 #include "net_sigmabeta_chipbox_backend_vgm_ScannerImpl.h"
 #include <wchar.h>
 
-const char *g_last_error;
-
 VGM_HEADER g_header;
 GD3_TAG g_tag;
 
@@ -25,8 +23,7 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_fil
     int fileSize = GetVGMFileInfo(filename_c_str, &g_header, &g_tag);
 
     if (fileSize == 0) {
-        g_last_error = "Failed to load file.";
-        return env->NewStringUTF(g_last_error);
+        return env->NewStringUTF("Failed to load file.");
     }
 
     return NULL;
@@ -47,14 +44,14 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_fileIn
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_fileInfoTeardown
         (JNIEnv *env, jobject) {
-    g_last_error = NULL;
+    g_last_error_scanner = NULL;
 }
 
 
 JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_getFileTrackLength
         (JNIEnv *env, jobject) {
     // All vgm files are processed at this sample rate
-    return g_header.lngTotalSamples / 44100;
+    return g_header.lngTotalSamples * 1000 / 44100;
 }
 
 
