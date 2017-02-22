@@ -33,8 +33,8 @@ interface Scanner {
 
         val EXTENSIONS_MUSIC = hashMapOf<String, Scanner>(
                 Pair<String, Scanner>("spc", GME),
-                Pair<String, Scanner>("vgm", GME),
-                Pair<String, Scanner>("vgz", GME),
+                Pair<String, Scanner>("vgm", VGM),
+                Pair<String, Scanner>("vgz", VGM),
                 Pair<String, Scanner>("nsf", GME),
                 Pair<String, Scanner>("nsfe", GME),
                 Pair<String, Scanner>("gbs", GME)

@@ -87,24 +87,3 @@ Java_net_sigmabeta_chipbox_util_external_PlayerNativeVgmKt_getFileTitleVgm
         (JNIEnv *env, jclass clazz) {
     return get_java_byte_array(env, g_tag.strTrackNameE);
 }
-
-jbyteArray get_java_byte_array(JNIEnv *env, wchar_t *source) {
-    if (source != NULL) {
-        int length_in_wchars = wcslen(source);
-
-        char char_array[length_in_wchars];
-
-        for (int index = 0; index < length_in_wchars; index++) {
-            // Should truncate all the extra 0's.
-            char current = *(source + index);
-            char_array[index] = current;
-        }
-
-        jbyteArray destination = env->NewByteArray(length_in_wchars);
-        env->SetByteArrayRegion(destination, 0, length_in_wchars, (jbyte *) char_array);
-
-        return destination;
-    } else {
-        return NULL;
-    }
-}
