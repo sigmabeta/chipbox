@@ -1,23 +1,30 @@
 extern "C" {
 #include "../../VGMPlay/chips/mamedef.h"
 #include "../VGMPlay_Intf.h"
+#include "../VGMFile.h"
 }
 
 #include <string.h>
 #include <stdint.h>
 #include "net_sigmabeta_chipbox_util_external_PlayerNativeVgmKt.h"
 #include <android/log.h>
+#include <wchar.h>
 
 const char *g_last_error;
 
+VGM_HEADER g_header;
+GD3_TAG g_tag;
+
 #define CHIPBOX_TAG "ChipboxNative"
+#define BYTES_PER_W_CHAR 4
 
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeVgmKt_loadFileVgm
         (JNIEnv *env, jclass clazz, jstring filename) {
 
     const char *filename_c_str = env->GetStringUTFChars(filename, NULL);
-    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[loadFileGme] Loading file %s",
+    GetVGMFileInfo(filename_c_str, &g_header, &g_tag);
+    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[loadFileVgm] Loading file %s",
                         filename_c_str);
 
     bool successful_load = false;
@@ -26,9 +33,11 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeVgmK
 
     VGMPlay_Init();
 
+    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[loadFileVgm] Loaded header");
 
     // load configuration file here
     VGMPlay_Init2();
+
 
     successful_load = OpenVGMFile(filename_char_array);
     if (!successful_load) {
@@ -69,4 +78,33 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_util_external_PlayerNativeV
         (JNIEnv *env, jclass clazz) {
     jstring str = env->NewStringUTF(g_last_error);
     return str;
+}
+
+jbyteArray get_java_byte_array(JNIEnv *, wchar_t *);
+
+JNIEXPORT jbyteArray JNICALL
+Java_net_sigmabeta_chipbox_util_external_PlayerNativeVgmKt_getFileTitleVgm
+        (JNIEnv *env, jclass clazz) {
+    return get_java_byte_array(env, g_tag.strTrackNameE);
+}
+
+jbyteArray get_java_byte_array(JNIEnv *env, wchar_t *source) {
+    if (source != NULL) {
+        int length_in_wchars = wcslen(source);
+
+        char char_array[length_in_wchars];
+
+        for (int index = 0; index < length_in_wchars; index++) {
+            // Should truncate all the extra 0's.
+            char current = *(source + index);
+            char_array[index] = current;
+        }
+
+        jbyteArray destination = env->NewByteArray(length_in_wchars);
+        env->SetByteArrayRegion(destination, 0, length_in_wchars, (jbyte *) char_array);
+
+        return destination;
+    } else {
+        return NULL;
+    }
 }
