@@ -5,8 +5,7 @@ AUX_SOURCE_DIRECTORY(chips CHIPS_SRCS)
 set(libvgm_SRCS ${CHIPS_SRCS}
                 ${VGM_SRCS}
                 android/Scanner.cpp
-#                android/Backend.cpp
-                )
+                android/Backend.cpp )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 

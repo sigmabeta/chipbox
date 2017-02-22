@@ -20,7 +20,7 @@ typedef struct waveform_32bit_stereo {
 } WAVE_32BS;
 
 
-void VGMPlay_Init(void);
+void VGMPlay_Init(int sample_rate);
 
 void VGMPlay_Init2(void);
 
@@ -75,5 +75,9 @@ void RefreshMuting(void);
 void RefreshPanning(void);
 
 void RefreshPlaybackOptions(void);
+
+long getSamplesPlayed();
+
+void setPlaybackRate(int rate);
 
 UINT32 FillBuffer(WAVE_16BS *Buffer, UINT32 BufferSize);

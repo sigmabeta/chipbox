@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    VGMPlay_Init();
+    VGMPlay_Init(44100);
     VGMPlay_Init2();
 
     if (!OpenVGMFile(argv[1])) {
