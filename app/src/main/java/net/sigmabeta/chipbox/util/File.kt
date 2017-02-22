@@ -5,7 +5,6 @@ import net.sigmabeta.chipbox.backend.Scanner.Companion.EXTENSIONS_MUSIC
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.model.repository.RealmRepository
-import net.sigmabeta.chipbox.util.external.*
 import rx.Observable
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -114,7 +113,8 @@ private fun getTrack(scanner: Scanner, path: String, trackNumber: Int): Track? {
             platform.toLong(),
             trackLength,
             fileIntroLength,
-            fileLoopLength
+            fileLoopLength,
+            scanner.getBackendId()
     )
 
     return track

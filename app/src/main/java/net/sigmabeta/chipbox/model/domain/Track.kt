@@ -17,7 +17,8 @@ open class Track() : RealmObject(), IdRealmObject, ListItem {
                 platform: Long,
                 trackLength: Long,
                 introLength: Long,
-                loopLength: Long) : this() {
+                loopLength: Long,
+                backendId: Int) : this() {
         this.trackNumber = number
         this.path = path
         this.title = title
@@ -27,6 +28,7 @@ open class Track() : RealmObject(), IdRealmObject, ListItem {
         this.trackLength = trackLength
         this.introLength = introLength
         this.loopLength = loopLength
+        this.backendId = backendId
     }
 
     @PrimaryKey open var id: String? = null
@@ -42,6 +44,7 @@ open class Track() : RealmObject(), IdRealmObject, ListItem {
     open var game: Game? = null
     open var gameTitle: String? = null
     open var artists: RealmList<Artist>? = null
+    open var backendId: Int? = null
 
     override fun getPrimaryKey() = id
     override fun setPrimaryKey(id: String) {
