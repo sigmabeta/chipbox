@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.util.external
 import net.sigmabeta.chipbox.model.audio.Voice
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.util.*
+import java.io.File
 import java.util.*
 
 external fun loadFileGme(filename: String, track: Int, sampleRate: Int, bufferSize: Long, fadeTimeMs: Long)
@@ -45,7 +46,7 @@ fun loadTrackNative(track: Track, sampleRate: Int, bufferSizeShorts: Long) {
 
     logDebug("[PlayerNative] Loading file: ${path}")
 
-    val extension = getFileExtension(path)
+    val extension = File(path).extension
     val trackNumber = if (EXTENSIONS_MULTI_TRACK.contains(extension)) {
         (track.trackNumber ?: 1) - 1
     } else {
@@ -56,7 +57,7 @@ fun loadTrackNative(track: Track, sampleRate: Int, bufferSizeShorts: Long) {
     loadFileVgm(path)
 
     val titleByteArray = getFileTitleVgm()
-    val title = titleByteArray.convert()
+    val title = titleByteArray?.convert()
 
     logInfo("File title: $title")
 
