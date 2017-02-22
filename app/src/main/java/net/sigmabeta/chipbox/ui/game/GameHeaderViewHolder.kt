@@ -19,6 +19,7 @@ class GameHeaderViewHolder(view: View, adapter: GameTrackListAdapter) : GameTrac
                 Track.PLATFORM_GENESIS -> R.string.platform_name_genesis
                 Track.PLATFORM_NES -> R.string.platform_name_nes
                 Track.PLATFORM_SNES -> R.string.platform_name_snes
+                Track.PLATFORM_OTHER -> R.string.platform_name_other
                 else -> -1
             })
         }

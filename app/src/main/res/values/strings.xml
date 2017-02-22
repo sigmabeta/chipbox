@@ -30,6 +30,7 @@
     <string name="platform_name_snes">Super NES</string>
     <string name="platform_name_nes">NES</string>
     <string name="platform_name_gameboy">Game Boy</string>
+    <string name="platform_name_other">Other</string>
 
     <!-- File List Screen-->
     <string name="file_list_title">Add to Library</string>
