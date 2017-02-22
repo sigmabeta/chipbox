@@ -129,10 +129,7 @@ private fun getTrackPlatform(scanner: Scanner): Long? {
         "Sega 32X / Mega 32X", "Sega 32X" -> Track.PLATFORM_32X
         "Nintendo Entertainment System", "Famicom", "Nintendo NES" -> Track.PLATFORM_NES
         "Game Boy" -> Track.PLATFORM_GAMEBOY
-        else -> {
-            logError("[File] Unsupported platform: $platformString")
-            null
-        }
+        else -> Track.PLATFORM_OTHER
     }
     return platform
 }

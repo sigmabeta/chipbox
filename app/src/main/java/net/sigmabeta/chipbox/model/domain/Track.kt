@@ -93,6 +93,7 @@ open class Track() : RealmObject(), IdRealmObject, ListItem {
         val PLATFORM_SNES = 3L
         val PLATFORM_NES = 4L
         val PLATFORM_GAMEBOY = 5L
+        val PLATFORM_OTHER = 6L
 
         fun toMetadataBuilder(track: Track): MediaMetadataCompat.Builder {
             return MediaMetadataCompat.Builder()
