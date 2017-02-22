@@ -8,4 +8,4 @@ external fun teardownVgm()
 
 external fun getLastErrorVgm(): String?
 
-external fun getFileTitleVgm(): ByteArray
+external fun getFileTitleVgm(): ByteArray?

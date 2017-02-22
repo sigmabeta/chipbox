@@ -476,7 +476,9 @@ class RealmRepository(var realm: Realm) : Repository {
         val ADD_STATUS_EXISTS = 1
         val ADD_STATUS_DB_ERROR = 2
 
+        val TITLE_UNKNOWN = "Unknown Track"
         val GAME_UNKNOWN = "Unknown Game"
         val ARTIST_UNKNOWN = "Unknown Artist"
+        val PLATFORM_UNKNOWN = "Unknown Platform"
     }
 }

@@ -12,7 +12,7 @@ set(libgme_SRCS Blip_Buffer.cpp
                 M3u_Playlist.cpp
                 Multi_Buffer.cpp
                 Music_Emu.cpp
-                android/FileNativeKt.cpp
+                android/Scanner.cpp
                 android/PlayerNativeKt.cpp
                 )
 

@@ -1,12 +1,13 @@
 package net.sigmabeta.chipbox.util
 
+import net.sigmabeta.chipbox.backend.Scanner
+import net.sigmabeta.chipbox.backend.Scanner.Companion.EXTENSIONS_MUSIC
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.util.external.*
 import rx.Observable
 import java.io.File
-import java.util.*
 import java.util.concurrent.TimeUnit
 
 val GME_PLATFORM_SNES = "Super Nintendo"
@@ -18,82 +19,50 @@ val TYPE_TRACK = 1
 
 val TRACK_LENGTH_DEFAULT = 150000L
 
-val EXTENSIONS_MUSIC: HashSet<String> = HashSet(arrayListOf(
-        ".spc", ".vgm", ".vgz", ".nsf", ".nsfe", ".gbs")
-)
-
 val EXTENSIONS_MULTI_TRACK: HashSet<String> = HashSet(arrayListOf(
-        ".nsf", ".nsfe", ".gbs")
+        "nsf", "nsfe", "gbs")
 )
 
 val EXTENSIONS_IMAGES: HashSet<String> = HashSet(arrayListOf(
-        ".jpg", ".png")
+        "jpg", "png")
 )
 
-fun getFileType(file: File): Int {
-    if (file.isDirectory) {
-        return TYPE_FOLDER
-    } else {
-        val path = file.absolutePath
+fun readSingleTrackFile(file: File, trackNumber: Int): Track? {
+    val scanner = EXTENSIONS_MUSIC[file.extension] ?: return null
 
-        val extensionStart = path.lastIndexOf('.')
-        if (extensionStart < 1) {
-            // Ignore hidden files & files without extensions.
-            return TYPE_OTHER
-        } else {
-            val fileExtension = path.substring(extensionStart)
-
-            // Check that the file has an extension we care about before trying to read out of it.
-            if (EXTENSIONS_MUSIC.contains(fileExtension)) {
-                // Ask the native library what platform this song is from.
-                return getPlatform(path)
-            } else {
-                return TYPE_OTHER
-            }
-        }
-    }
-}
-
-fun getFileExtension(filePath: String): String? {
-    val extensionStart = filePath.lastIndexOf('.')
-
-    if (extensionStart > 0) {
-        return filePath.substring(extensionStart)
-    } else {
-        return null
-    }
-}
-
-fun readSingleTrackFile(path: String, trackNumber: Int): Track? {
-    val error = fileInfoSetupNativeGme(path)
+    val path = file.path
+    val error = scanner.fileInfoSetup(path)
 
     if (error != null) {
         logError("[File] Error reading file: $error")
         return null
     }
 
-    val track = getTrack(path, 0)
+    val track = getTrack(scanner, path, 0)
 
     track?.trackNumber = trackNumber
 
-    fileInfoTeardownNativeGme()
+    scanner.fileInfoTeardown()
 
     return track
 }
 
-fun readMultipleTrackFile(path: String): List<Track>? {
-    val error = fileInfoSetupNativeGme(path)
+fun readMultipleTrackFile(file: File): List<Track>? {
+    val scanner = EXTENSIONS_MUSIC[file.extension] ?: return null
+
+    val path = file.path
+    val error = scanner.fileInfoSetup(path)
 
     if (error != null) {
         logError("[File] Error reading file: $error")
         return null
     }
 
-    val trackCount = fileInfoGetTrackCountGme()
+    val trackCount = scanner.fileInfoGetTrackCount()
 
     val tracks = ArrayList<Track>(trackCount)
     for (trackNumber in 0..trackCount - 1) {
-        val track = getTrack(path, trackNumber)
+        val track = getTrack(scanner, path, trackNumber)
         if (track != null) {
             if (track.title.isNullOrEmpty()) {
                 track.title = "${track.gameTitle} Track ${trackNumber + 1}"
@@ -105,25 +74,25 @@ fun readMultipleTrackFile(path: String): List<Track>? {
         }
     }
 
-    fileInfoTeardownNativeGme()
+    scanner.fileInfoTeardown()
     return tracks
 }
 
-private fun getTrack(path: String, trackNumber: Int): Track? {
-    fileInfoSetTrackNumberNativeGme(trackNumber)
+private fun getTrack(scanner: Scanner, path: String, trackNumber: Int): Track? {
+    scanner.fileInfoSetTrackNumber(trackNumber)
 
-    val platform = getTrackPlatform() ?: return null
+    val platform = getTrackPlatform(scanner) ?: return null
 
-    var artist = getFileArtistGme().convert()
+    var artist = scanner.getFileArtist()?.convert() ?: RealmRepository.ARTIST_UNKNOWN
     if (artist.isBlank()) {
         artist = RealmRepository.ARTIST_UNKNOWN
     }
 
     var trackLength = 0L
 
-    val fileTrackLength = getFileTrackLengthGme()
-    val fileIntroLength = getFileIntroLengthGme()
-    val fileLoopLength = getFileLoopLengthGme()
+    val fileTrackLength = scanner.getFileTrackLength()
+    val fileIntroLength = scanner.getFileIntroLength()
+    val fileLoopLength = scanner.getFileLoopLength()
 
     if (fileTrackLength > 0) {
         trackLength = fileTrackLength
@@ -139,8 +108,8 @@ private fun getTrack(path: String, trackNumber: Int): Track? {
 
     val track = Track(trackNumber,
             path,
-            getFileTitleGme().convert(),
-            getFileGameTitleGme().convert(),
+            scanner.getFileTitle()?.convert() ?: RealmRepository.TITLE_UNKNOWN,
+            scanner.getFileGameTitle()?.convert() ?: RealmRepository.GAME_UNKNOWN,
             artist,
             platform.toLong(),
             trackLength,
@@ -151,8 +120,8 @@ private fun getTrack(path: String, trackNumber: Int): Track? {
     return track
 }
 
-private fun getTrackPlatform(): Long? {
-    val platformString = getFilePlatformGme().convert()
+private fun getTrackPlatform(scanner: Scanner): Long? {
+    val platformString = scanner.getFilePlatform()?.convert() ?: RealmRepository.PLATFORM_UNKNOWN
 
     val platform = when (platformString) {
         "Super Nintendo" -> Track.PLATFORM_SNES
@@ -166,47 +135,6 @@ private fun getTrackPlatform(): Long? {
         }
     }
     return platform
-}
-
-fun getPlatform(path: String): Int {
-    when (getPlatformNativeGme(path)) {
-        GME_PLATFORM_GENESIS -> return TYPE_TRACK
-        GME_PLATFORM_SNES -> return TYPE_TRACK
-        else -> return TYPE_OTHER
-
-    // TODO Handle error state (i.e non-vgm file with vgm extension)
-    // TODO Handle other systems.
-    }
-}
-
-fun createFileListItem(file: File): FileListItem {
-    val type = getFileType(file)
-
-    return FileListItem(type, file.name, file.absolutePath)
-}
-
-fun generateFileList(folder: File): Observable<ArrayList<FileListItem>?> {
-    return Observable.create {
-        val children = folder.listFiles()
-
-        if (children == null) {
-            it.onError(IllegalStateException("This file is not a directory."))
-        } else {
-            val itemList = ArrayList<FileListItem>(children.size)
-
-            for (child in children) {
-                if (!child.isHidden) {
-                    val item = createFileListItem(child)
-                    itemList.add(item)
-                }
-            }
-
-            Collections.sort(itemList)
-
-            it.onNext(itemList)
-            it.onCompleted()
-        }
-    }
 }
 
 fun getTimeStringFromMillis(millis: Long): String {
