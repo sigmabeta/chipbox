@@ -44,14 +44,12 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_fileIn
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_fileInfoTeardown
         (JNIEnv *env, jobject) {
-    g_last_error_scanner = NULL;
 }
 
 
 JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_getFileTrackLength
         (JNIEnv *env, jobject) {
-    // All vgm files are processed at this sample rate
-    return g_header.lngTotalSamples * 1000 / 44100;
+    return CalcSampleMSecExt(g_header.lngTotalSamples, 0b10, &g_header);
 }
 
 
