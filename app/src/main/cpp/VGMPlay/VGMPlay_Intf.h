@@ -78,6 +78,6 @@ void RefreshPlaybackOptions(void);
 
 long getSamplesPlayed();
 
-void setPlaybackRate(int rate);
+void setPlaybackRate(UINT32 rate);
 
 UINT32 FillBuffer(WAVE_16BS *Buffer, UINT32 BufferSize);

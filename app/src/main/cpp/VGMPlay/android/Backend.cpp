@@ -7,6 +7,7 @@ extern "C" {
 #include <stdio.h>
 #include "net_sigmabeta_chipbox_backend_vgm_BackendImpl.h"
 #include <android/log.h>
+#include <math.h>
 
 #define CHIPBOX_TAG "ChipboxVGM"
 
@@ -84,11 +85,9 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_see
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_setTempo
         (JNIEnv *env, jobject, jdouble tempo_relative) {
-    int rate = tempo_relative * 60;
-
-    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[ChipboxVGM] Setting playback rate: %d",
-                        rate);
-    setPlaybackRate(rate);
+    double rateDouble = tempo_relative * 100.0;
+    UINT32 rateInt = (UINT32) round(rateDouble);
+    setPlaybackRate(rateInt);
 }
 
 
