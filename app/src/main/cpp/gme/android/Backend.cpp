@@ -112,7 +112,7 @@ JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_gme_BackendImpl_getMi
 }
 
 JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_gme_BackendImpl_seek
-        (JNIEnv *env, jobject, jint time_in_ms) {
+        (JNIEnv *env, jobject, jlong time_in_ms) {
     gme_err_t seek_error;
 
     if (g_emu != NULL) {

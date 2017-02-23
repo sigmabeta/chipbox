@@ -10,7 +10,7 @@ interface Backend {
 
     fun getMillisPlayed(): Long
 
-    fun seek(timeInSec: Int): String
+    fun seek(timeInMsec: Long): String
 
     fun setTempo(tempo: Double)
 

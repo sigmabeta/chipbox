@@ -19,6 +19,10 @@ typedef struct waveform_32bit_stereo {
     INT32 Right;
 } WAVE_32BS;
 
+#define SAMPLES_TO_MSEC_RATE_DEFAULT 0b10
+#define SAMPLES_TO_MSEC_RATE_CURRENT 0b00
+#define MSEC_TO_SAMPLES_RATE_DEFAULT 0b11
+#define MSEC_TO_SAMPLES_RATE_CURRENT 0b01
 
 void VGMPlay_Init(int sample_rate);
 

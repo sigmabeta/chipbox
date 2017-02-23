@@ -73,13 +73,14 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_readNe
 JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_getMillisPlayed
         (JNIEnv *env, jobject) {
     long samples = getSamplesPlayed();
-    return CalcSampleMSec(samples, 0b10);
+    return CalcSampleMSec(samples, SAMPLES_TO_MSEC_RATE_CURRENT);
 }
 
 
 JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_seek
-        (JNIEnv *env, jobject, jint time_in_ms) {
-    SeekVGM(false, (time_in_ms * 1000) / g_sample_rate);
+        (JNIEnv *env, jobject, jlong time_in_ms) {
+    UINT32 samples = CalcSampleMSec(time_in_ms, MSEC_TO_SAMPLES_RATE_CURRENT);
+    SeekVGM(false, samples);
     return NULL;
 }
 

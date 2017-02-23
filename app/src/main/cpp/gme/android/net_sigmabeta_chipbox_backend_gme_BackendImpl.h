@@ -37,7 +37,7 @@ JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_gme_BackendImpl_getMi
  * Signature: (I)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_gme_BackendImpl_seek
-        (JNIEnv *, jobject, jint);
+        (JNIEnv *, jobject, jlong);
 
 /*
  * Class:     net_sigmabeta_chipbox_backend_gme_BackendImpl
