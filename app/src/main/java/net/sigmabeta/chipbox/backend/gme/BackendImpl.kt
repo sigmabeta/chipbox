@@ -9,7 +9,7 @@ class BackendImpl : Backend {
 
     external override fun getMillisPlayed(): Long
 
-    external override fun seek(timeInSec: Int): String
+    external override fun seek(timeInMsec: Long): String
 
     external override fun setTempo(tempo: Double)
 

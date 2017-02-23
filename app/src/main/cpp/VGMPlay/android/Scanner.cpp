@@ -49,7 +49,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_fileIn
 
 JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_getFileTrackLength
         (JNIEnv *env, jobject) {
-    return CalcSampleMSecExt(g_header.lngTotalSamples, 0b10, &g_header);
+    return CalcSampleMSecExt(g_header.lngTotalSamples, SAMPLES_TO_MSEC_RATE_DEFAULT, &g_header);
 }
 
 

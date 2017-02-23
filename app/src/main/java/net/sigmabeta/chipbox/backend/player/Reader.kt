@@ -45,7 +45,7 @@ class Reader(val player: Player,
             field = value
         }
 
-    var queuedSeekPosition: Int? = null
+    var queuedSeekPosition: Long? = null
 
     fun loop() {
         // Pre-seed the emptyQueue.

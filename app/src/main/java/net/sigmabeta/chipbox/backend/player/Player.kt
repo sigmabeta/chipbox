@@ -198,7 +198,7 @@ class Player @Inject constructor(val playlist: Playlist,
         backendView?.stop()
     }
 
-    fun seek(seekPosition: Int) {
+    fun seek(seekPosition: Long) {
         reader?.queuedSeekPosition = seekPosition
     }
 
