@@ -61,7 +61,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_readNe
 
         env->ReleaseShortArrayElements(java_array, target_array, 0);
 
-        if (g_sample_count != created_samples) {
+        if (g_sample_count != created_samples && !isVgmEnd()) {
             g_last_error = "Wrote fewer samples than expected.";
         }
     } else {
@@ -113,8 +113,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_muteVo
 
 JNIEXPORT jboolean JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_isTrackOver
         (JNIEnv *env, jobject) {
-    // no-op
-    return false;
+    return isVgmEnd();
 }
 
 

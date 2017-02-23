@@ -458,6 +458,10 @@ long getSamplesPlayed() {
     return VGMSmplPlayed;
 }
 
+bool isVgmEnd() {
+    return VGMEnd;
+}
+
 void setPlaybackRate(UINT32 rate) {
     // I know this seems backwards, but this is how it works.
     VGMSmplRateMul = 100 * SampleRate;
