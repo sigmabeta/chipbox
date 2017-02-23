@@ -72,7 +72,8 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_readNe
 
 JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_getMillisPlayed
         (JNIEnv *env, jobject) {
-    return getSamplesPlayed() / g_sample_rate;
+    long samples = getSamplesPlayed();
+    return CalcSampleMSec(samples, 0b10);
 }
 
 
