@@ -307,7 +307,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         val targetDir = File(targetDirPath)
         targetDir.mkdirs()
 
-        val targetFilePath = targetDirPath + "/local" + fileExtension
+        val targetFilePath = targetDirPath + "/local." + fileExtension
         return File(targetFilePath)
     }
 
