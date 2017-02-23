@@ -82,6 +82,8 @@ void RefreshPlaybackOptions(void);
 
 long getSamplesPlayed();
 
+bool isVgmEnd();
+
 void setPlaybackRate(UINT32 rate);
 
 UINT32 FillBuffer(WAVE_16BS *Buffer, UINT32 BufferSize);
