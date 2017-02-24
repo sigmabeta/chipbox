@@ -143,10 +143,14 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_get
         if (channel_number >= channel_count) {
             channel_number -= channel_count;
         } else {
-            std::ostringstream stream;
-            stream << chip_name << " Voice " << channel_number + 1;
+            if (channel_count > 1) {
+                std::ostringstream stream;
+                stream << chip_name << " Voice " << channel_number + 1;
 
-            voice_name = stream.str().c_str();
+                voice_name = stream.str().c_str();
+            } else {
+                voice_name = chip_name;
+            }
             break;
         }
     }
@@ -190,6 +194,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_teardo
 
     for (int chip_index = 0; chip_index < MAX_ACTIVE_CHIPS; ++chip_index) {
         g_active_chip_ids[chip_index] = -1;
+        g_mute_opts_array[chip_index] = NULL;
     }
 
     StopVGM();
@@ -222,6 +227,12 @@ void setMutingData(int mute_chip_id, CHIP_OPTS *mute_options, int channel_number
         case 0x08:    // YM2610
             special_modes = 3;
             break;
+        case 0x11:    // PWM
+        case 0x16:    // UPD7759
+        case 0x17:    // OKIM6258
+            mute_options->Disabled = muted;
+            RefreshMuting();
+            return;
         default:
             break; // no-op
     }
@@ -288,7 +299,7 @@ int getChannelCountForChipId(int chip_id) {
         case 0x0F:    // YMZ280B
             return 8;
         case 0x11:    // PWM
-            return 0;
+            return 1;
         case 0x12:    // AY8910
             return 3;
         case 0x13:    // GB DMG
@@ -298,9 +309,9 @@ int getChannelCountForChipId(int chip_id) {
         case 0x15:    // Multi PCM
             return 28;
         case 0x16:    // UPD7759
-            return 0;
+            return 1;
         case 0x17:    // OKIM6258
-            return 0;
+            return 1;
         case 0x18:    // OKIM6295
             return 4;
         case 0x19:    // K051649
