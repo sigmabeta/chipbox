@@ -440,10 +440,8 @@ bool ResetPBTimer;
 
 static bool Interpreting;
 
-#ifdef CONSOLE_MODE
-                                                                                                                        extern bool ErrorHappened;
-extern UINT8 CmdList[0x100];
-#endif
+UINT8 CmdList[0x100];
+bool ErrorHappened;
 
 UINT8 IsVGMInit;
 UINT16 Last95Drum;    // for optvgm debugging
