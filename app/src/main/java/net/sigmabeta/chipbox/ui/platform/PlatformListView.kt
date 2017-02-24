@@ -7,5 +7,5 @@ import java.util.*
 interface PlatformListView : BaseView {
     fun setList(list: ArrayList<Platform>)
 
-    fun launchNavActivity(id: Long)
+    fun launchNavActivity(id: String)
 }

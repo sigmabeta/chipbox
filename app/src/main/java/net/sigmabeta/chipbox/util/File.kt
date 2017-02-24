@@ -80,7 +80,7 @@ fun readMultipleTrackFile(file: File): List<Track>? {
 private fun getTrack(scanner: Scanner, path: String, trackNumber: Int): Track? {
     scanner.fileInfoSetTrackNumber(trackNumber)
 
-    val platform = getTrackPlatform(scanner) ?: return null
+    val platform = scanner.getFilePlatform()?.convert() ?: return null
 
     var artist = scanner.getFileArtist()?.convert() ?: RealmRepository.ARTIST_UNKNOWN
     if (artist.isBlank()) {
@@ -110,7 +110,7 @@ private fun getTrack(scanner: Scanner, path: String, trackNumber: Int): Track? {
             scanner.getFileTitle()?.convert() ?: RealmRepository.TITLE_UNKNOWN,
             scanner.getFileGameTitle()?.convert() ?: RealmRepository.GAME_UNKNOWN,
             artist,
-            platform.toLong(),
+            platform,
             trackLength,
             fileIntroLength,
             fileLoopLength,
@@ -118,20 +118,6 @@ private fun getTrack(scanner: Scanner, path: String, trackNumber: Int): Track? {
     )
 
     return track
-}
-
-private fun getTrackPlatform(scanner: Scanner): Long? {
-    val platformString = scanner.getFilePlatform()?.convert() ?: RealmRepository.PLATFORM_UNKNOWN
-
-    val platform = when (platformString) {
-        "Super Nintendo" -> Track.PLATFORM_SNES
-        "Sega Mega Drive", "Sega Mega Drive / Genesis", "Sega MegaDrive / Genesis", "Sega Genesis" -> Track.PLATFORM_GENESIS
-        "Sega 32X / Mega 32X", "Sega 32X" -> Track.PLATFORM_32X
-        "Nintendo Entertainment System", "Famicom", "Nintendo NES" -> Track.PLATFORM_NES
-        "Game Boy" -> Track.PLATFORM_GAMEBOY
-        else -> Track.PLATFORM_OTHER
-    }
-    return platform
 }
 
 fun getTimeStringFromMillis(millis: Long): String {

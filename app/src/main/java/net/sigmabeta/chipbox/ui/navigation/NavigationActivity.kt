@@ -29,11 +29,11 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
      * NavigationView
      */
 
-    override fun showFragment(fragmentTag: String, fragmentArg: String?, fragmentArgLong: Long) {
+    override fun showFragment(fragmentTag: String, fragmentArg: String?) {
         var fragment: BaseFragment<*, *>
 
         when (fragmentTag) {
-            GameGridFragment.FRAGMENT_TAG -> fragment = GameGridFragment.newInstance(fragmentArgLong)
+            GameGridFragment.FRAGMENT_TAG -> fragment = GameGridFragment.newInstance(fragmentArg)
             TrackListFragment.FRAGMENT_TAG -> fragment = TrackListFragment.newInstance(fragmentArg)
             else -> {
                 showToastMessage("Unsupported fragment.")
@@ -174,7 +174,6 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
 
         val ARGUMENT_FRAGMENT_TAG = "${ACTIVITY_TAG}.fragment_tag"
         val ARGUMENT_FRAGMENT_ARG_STRING = "${ACTIVITY_TAG}.fragment_argument_string"
-        val ARGUMENT_FRAGMENT_ARG_LONG = "${ACTIVITY_TAG}.fragment_argument_long"
 
         fun launch(context: Context, fragmentTag: String, fragmentArg: String) {
             val launcher = Intent(context, NavigationActivity::class.java)
@@ -185,11 +184,10 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
             context.startActivity(launcher)
         }
 
-        fun launch(context: Context, fragmentTag: String, fragmentArg: Long) {
+        fun launch(context: Context, fragmentTag: String) {
             val launcher = Intent(context, NavigationActivity::class.java)
 
             launcher.putExtra(ARGUMENT_FRAGMENT_TAG, fragmentTag)
-            launcher.putExtra(ARGUMENT_FRAGMENT_ARG_LONG, fragmentArg)
 
             context.startActivity(launcher)
         }

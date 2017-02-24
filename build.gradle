@@ -22,7 +22,7 @@ buildscript {
         classpath "io.realm:realm-gradle-plugin:$realm_version"
 
         // Fabric
-        classpath 'io.fabric.tools:gradle:1.+'
+        classpath 'io.fabric.tools:gradle:1.22.1'
     }
 }
 
