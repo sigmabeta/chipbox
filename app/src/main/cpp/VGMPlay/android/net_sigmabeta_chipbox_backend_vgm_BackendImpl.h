@@ -95,6 +95,8 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_teardo
 JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_getLastError
         (JNIEnv *, jobject);
 
+int getChannelCountForChipId(int chip_id);
+
 #ifdef __cplusplus
 }
 #endif
