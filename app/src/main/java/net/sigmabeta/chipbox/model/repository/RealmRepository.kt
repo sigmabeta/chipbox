@@ -315,6 +315,24 @@ class RealmRepository(var realm: Realm) : Repository {
         return Observable.just(platform)
     }
 
+    override fun getPlatforms(): Observable<out List<Platform>> {
+        val observable = Observable.create<List<Platform>> {
+            val localRealm = getRealmInstance()
+
+            val platformsManaged = localRealm.where(Platform::class.java)
+                    .findAllSorted("name")
+
+            val platformsUnmanaged = localRealm.copyFromRealm(platformsManaged)
+
+            localRealm.closeAndReport()
+
+            it.onNext(platformsUnmanaged)
+            it.onCompleted()
+        }
+
+        return observable.subscribeOn(Schedulers.io())
+    }
+
     /**
      * Update
      */
