@@ -7,6 +7,6 @@ import net.sigmabeta.chipbox.ui.BaseViewHolder
 
 class PlatformViewHolder(view: View, adapter: PlatformListAdapter) : BaseViewHolder<Platform, PlatformViewHolder, PlatformListAdapter>(view, adapter) {
     override fun bind(toBind: Platform) {
-        view.text_platform_name.setText(toBind.stringId)
+        view.text_platform_name.setText(toBind.name)
     }
 }

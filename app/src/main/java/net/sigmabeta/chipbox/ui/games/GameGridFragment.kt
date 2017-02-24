@@ -34,8 +34,8 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
         adapter.dataset = games
     }
 
-    override fun setActivityTitle(titleResource: Int) {
-        setActivityTitle(getString(titleResource))
+    override fun setTitle(platformName: String) {
+        setActivityTitle(platformName)
     }
 
     override fun launchGameActivity(id: String) {
@@ -154,13 +154,13 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.game_grid"
 
-        val ARGUMENT_PLATFORM_INDEX = "${FRAGMENT_TAG}.platform_index"
+        val ARGUMENT_PLATFORM_NAME = "${FRAGMENT_TAG}.platform_name"
 
-        fun newInstance(id: Long): GameGridFragment {
+        fun newInstance(platformName: String?): GameGridFragment {
             val fragment = GameGridFragment()
 
             val arguments = Bundle()
-            arguments.putLong(ARGUMENT_PLATFORM_INDEX, id)
+            arguments.putString(ARGUMENT_PLATFORM_NAME, platformName)
 
             fragment.arguments = arguments
 

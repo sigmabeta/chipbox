@@ -16,7 +16,7 @@ import javax.inject.Inject
 
 @ActivityScoped
 class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPresenter<GameListView>() {
-    var platform = Track.PLATFORM_ALL
+    var platformName: String? = null
 
     var games: List<Game>? = null
 
@@ -45,7 +45,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
 
     override fun teardown() {
         games = null
-        platform = Track.PLATFORM_UNDEFINED
+        platformName = null
     }
 
     override fun updateViewState() {
@@ -57,17 +57,8 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
             }
         }
 
-        val titleResource = when (platform) {
-            Track.PLATFORM_32X -> R.string.platform_name_32x
-            Track.PLATFORM_GAMEBOY -> R.string.platform_name_gameboy
-            Track.PLATFORM_GENESIS -> R.string.platform_name_genesis
-            Track.PLATFORM_NES -> R.string.platform_name_nes
-            Track.PLATFORM_SNES -> R.string.platform_name_snes
-            else -> -1
-        }
-
-        if (titleResource != -1) {
-            view?.setActivityTitle(titleResource)
+        platformName?.let {
+            view?.setTitle(it)
         }
 
         view?.clearClickedViewHolder()
@@ -106,7 +97,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
     }
 
     private fun setupHelper(arguments: Bundle?) {
-        platform = arguments?.getLong(GameGridFragment.ARGUMENT_PLATFORM_INDEX) ?: Track.PLATFORM_UNDEFINED
+        platformName = arguments?.getString(GameGridFragment.ARGUMENT_PLATFORM_NAME) ?: null
 
         loading = true
 
@@ -114,11 +105,13 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
     }
 
     private fun loadGames() {
-        val request = if (platform == Track.PLATFORM_ALL) {
+
+        val request = platformName?.let {
+            repository.getGamesForPlatform(it)
+        } ?: let {
             repository.getGames()
-        } else {
-            repository.getGamesForPlatform(platform)
         }
+
         val subscription = request
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(

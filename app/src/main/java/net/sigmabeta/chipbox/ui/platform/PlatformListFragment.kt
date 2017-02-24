@@ -31,7 +31,7 @@ class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListVie
         adapter.dataset = list
     }
 
-    override fun launchNavActivity(id: Long) {
+    override fun launchNavActivity(id: String) {
         NavigationActivity.launch(activity,
                 GameGridFragment.FRAGMENT_TAG,
                 id)

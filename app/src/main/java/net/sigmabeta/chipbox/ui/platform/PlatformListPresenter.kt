@@ -10,16 +10,11 @@ import javax.inject.Inject
 
 @ActivityScoped
 class PlatformListPresenter @Inject constructor() : FragmentPresenter<PlatformListView>() {
-    val platformList = arrayListOf(
-            Platform(Track.Companion.PLATFORM_GENESIS.toLong(), R.string.platform_name_genesis, 0),
-            Platform(Track.Companion.PLATFORM_32X.toLong(), R.string.platform_name_32x, 0),
-            Platform(Track.Companion.PLATFORM_SNES.toLong(), R.string.platform_name_snes, 0),
-            Platform(Track.Companion.PLATFORM_NES.toLong(), R.string.platform_name_nes, 0),
-            Platform(Track.Companion.PLATFORM_GAMEBOY.toLong(), R.string.platform_name_gameboy, 0)
-    )
+    val platformList = arrayListOf(Platform("Test"))
+
 
     fun onItemClick(position: Int) {
-        val id = platformList.get(position).id
+        val id = platformList.get(position).id ?: return
         view?.launchNavActivity(id)
     }
 

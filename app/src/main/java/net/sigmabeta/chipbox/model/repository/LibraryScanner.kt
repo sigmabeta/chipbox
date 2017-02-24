@@ -233,7 +233,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         // Check if this track is one we already had, but moved.
         val movedTrack = repository.getTrack(track.title!!,
                 track.gameTitle ?: RealmRepository.GAME_UNKNOWN,
-                track.platform)
+                track.platformName ?: RealmRepository.PLATFORM_UNKNOWN)
 
         if (movedTrack != null) {
             repository.updateTrack(movedTrack, track)

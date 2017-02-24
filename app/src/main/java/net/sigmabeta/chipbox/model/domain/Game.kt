@@ -8,15 +8,15 @@ import net.sigmabeta.chipbox.model.IdRealmObject
 import net.sigmabeta.chipbox.model.domain.ListItem.Companion.CHANGE_ERROR
 
 open class Game() : RealmObject(), IdRealmObject, ListItem {
-    constructor(title: String, platform: Long) : this() {
+    constructor(title: String, platformName: String) : this() {
         this.title = title
-        this.platform = platform
+        this.platformName = platformName
     }
 
     @PrimaryKey open var id: String? = null
 
     open var title: String? = null
-    open var platform: Long? = null
+    open var platformName: String? = null
 
     open var artLocal: String? = null
     open var artWeb: String? = null

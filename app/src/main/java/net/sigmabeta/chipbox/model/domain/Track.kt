@@ -14,7 +14,7 @@ open class Track() : RealmObject(), IdRealmObject, ListItem {
                 title: String,
                 gameTitle: String,
                 artist: String,
-                platform: Long,
+                platformName: String,
                 trackLength: Long,
                 introLength: Long,
                 loopLength: Long,
@@ -24,7 +24,7 @@ open class Track() : RealmObject(), IdRealmObject, ListItem {
         this.title = title
         this.gameTitle = gameTitle
         this.artistText = artist
-        this.platform = platform
+        this.platformName = platformName
         this.trackLength = trackLength
         this.introLength = introLength
         this.loopLength = loopLength
@@ -36,7 +36,7 @@ open class Track() : RealmObject(), IdRealmObject, ListItem {
     open var trackNumber: Int? = null
     open var path: String? = null
     open var title: String? = null
-    open var platform: Long = -1L
+    open var platform: Platform? = null
     open var artistText: String? = null
     open var trackLength: Long? = null
     open var introLength: Long? = null
@@ -45,6 +45,8 @@ open class Track() : RealmObject(), IdRealmObject, ListItem {
     open var gameTitle: String? = null
     open var artists: RealmList<Artist>? = null
     open var backendId: Int? = null
+
+    var platformName: String? = null
 
     override fun getPrimaryKey() = id
     override fun setPrimaryKey(id: String) {
@@ -84,16 +86,6 @@ open class Track() : RealmObject(), IdRealmObject, ListItem {
 
     companion object {
         val CHANGE_ARTIST = 1
-
-        val PLATFORM_UNSUPPORTED = 100L
-        val PLATFORM_ALL = -2L
-        val PLATFORM_UNDEFINED = -1L
-        val PLATFORM_GENESIS = 1L
-        val PLATFORM_32X = 2L
-        val PLATFORM_SNES = 3L
-        val PLATFORM_NES = 4L
-        val PLATFORM_GAMEBOY = 5L
-        val PLATFORM_OTHER = 6L
 
         fun toMetadataBuilder(track: Track): MediaMetadataCompat.Builder {
             return MediaMetadataCompat.Builder()
