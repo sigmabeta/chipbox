@@ -6,7 +6,6 @@ extern "C" {
 #include <string>
 #include <sstream>
 #include "net_sigmabeta_chipbox_backend_vgm_BackendImpl.h"
-#include "../VGMPlay.h"
 #include <android/log.h>
 #include <math.h>
 
@@ -23,6 +22,10 @@ int g_active_chip_count;
 int g_active_chip_ids[MAX_ACTIVE_CHIPS];
 
 extern VGM_HEADER VGMHead;
+
+extern CHIPS_OPTION ChipOpts[0x02];
+
+CHIP_OPTS *g_mute_opts_array[MAX_ACTIVE_CHIPS];
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_loadFile
         (JNIEnv *env, jobject, jstring java_filename, jint track, jint rate, jlong buffer_size,
@@ -67,12 +70,15 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_loadFi
 
             g_channel_count += channel_count;
             g_active_chip_ids[g_active_chip_count] = chip_index;
+            g_mute_opts_array[g_active_chip_count] = (CHIP_OPTS *) &ChipOpts[0] + chip_index;
+
             g_active_chip_count++;
 
             __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG,
                                 "Chip name: %s Channels: %d", chip_name, channel_count);
         }
     }
+
 }
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_readNextSamples
@@ -154,8 +160,20 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_get
 
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_muteVoice
-        (JNIEnv *env, jobject, jint, jint) {
-    // no-op
+        (JNIEnv *env, jobject, jint channel_number, jint enabled) {
+
+    for (int chip_index = 0; chip_index < g_active_chip_count; ++chip_index) {
+        int chip_id = g_active_chip_ids[chip_index];
+        int channel_count = getChannelCountForChipId(chip_id);
+
+        if (channel_number >= channel_count) {
+            channel_number -= channel_count;
+        } else {
+            CHIP_OPTS *mute_options = g_mute_opts_array[chip_index];
+            setMutingData(chip_id, mute_options, channel_number, enabled != 0);
+            break;
+        }
+    }
 }
 
 
@@ -189,6 +207,54 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_get
 /**
  * Private Methods
  */
+
+void setMutingData(int mute_chip_id, CHIP_OPTS *mute_options, int channel_number, bool muted) {
+    int current_channel;
+    int special_modes;
+    int current_mode;
+
+    special_modes = 0;
+    switch (mute_chip_id) {
+        case 0x06:    // YM2203
+            special_modes = 2;
+            break;
+        case 0x07:    // YM2608
+        case 0x08:    // YM2610
+            special_modes = 3;
+            break;
+        default:
+            break; // no-op
+    }
+
+    if (!special_modes) {
+        current_mode = 0;
+        if (mute_chip_id == 0x0D) {
+            current_mode = 1;
+        }
+        current_channel = channel_number;
+    } else {
+        current_mode = channel_number / 8;
+        current_channel = channel_number % 8;
+    }
+
+    switch (current_mode) {
+        case 0:
+            mute_options->ChnMute1 &= ~(1 << current_channel);
+            mute_options->ChnMute1 |= (muted << current_channel);
+            break;
+        case 1:
+            mute_options->ChnMute2 &= ~(1 << current_channel);
+            mute_options->ChnMute2 |= (muted << current_channel);
+            break;
+        case 2:
+            mute_options->ChnMute3 &= ~(1 << current_channel);
+            mute_options->ChnMute3 |= (muted << current_channel);
+            break;
+    }
+
+    RefreshMuting();
+    return;
+}
 
 int getChannelCountForChipId(int chip_id) {
     switch (chip_id) {
