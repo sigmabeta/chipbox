@@ -57,10 +57,6 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
             }
         }
 
-        platformName?.let {
-            view?.setTitle(it)
-        }
-
         view?.clearClickedViewHolder()
 
         val subscription = updater.asObservable()
@@ -98,6 +94,10 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
 
     private fun setupHelper(arguments: Bundle?) {
         platformName = arguments?.getString(GameGridFragment.ARGUMENT_PLATFORM_NAME) ?: null
+
+        platformName?.let {
+            view?.setTitle(it)
+        }
 
         loading = true
 

@@ -27,7 +27,7 @@ class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListVie
      * PlatformListView
      */
 
-    override fun setList(list: ArrayList<Platform>) {
+    override fun setList(list: List<Platform>) {
         adapter.dataset = list
     }
 

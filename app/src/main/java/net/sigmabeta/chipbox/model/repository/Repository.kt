@@ -44,6 +44,7 @@ interface Repository {
     fun getArtistsManaged(): List<Artist>
 
     fun getPlatform(name: String?): Observable<Platform>
+    fun getPlatforms(): Observable<out List<Platform>>
 
     /**
      * Update
