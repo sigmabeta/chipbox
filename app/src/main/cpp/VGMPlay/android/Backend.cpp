@@ -3,18 +3,26 @@ extern "C" {
 #include "../VGMPlay_Intf.h"
 }
 
-#include <string.h>
-#include <stdio.h>
+#include <string>
+#include <sstream>
 #include "net_sigmabeta_chipbox_backend_vgm_BackendImpl.h"
+#include "../VGMPlay.h"
 #include <android/log.h>
 #include <math.h>
 
 #define CHIPBOX_TAG "ChipboxVGM"
+#define MAX_ACTIVE_CHIPS 10 // Probably won't have more than this many chips running at a time.
 
 const char *g_last_error;
 
 long g_sample_count;
 int g_sample_rate;
+
+int g_channel_count;
+int g_active_chip_count;
+int g_active_chip_ids[MAX_ACTIVE_CHIPS];
+
+extern VGM_HEADER VGMHead;
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_loadFile
         (JNIEnv *env, jobject, jstring java_filename, jint track, jint rate, jlong buffer_size,
@@ -49,6 +57,22 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_loadFi
     }
 
     PlayVGM();
+
+    for (int chip_index = 0; chip_index < CHIP_COUNT; chip_index++) {
+        UINT32 clock = GetChipClock(&VGMHead, chip_index, NULL);
+
+        if (clock > 0) {
+            const char *chip_name = GetAccurateChipName(chip_index, 0);
+            int channel_count = getChannelCountForChipId(chip_index);
+
+            g_channel_count += channel_count;
+            g_active_chip_ids[g_active_chip_count] = chip_index;
+            g_active_chip_count++;
+
+            __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG,
+                                "Chip name: %s Channels: %d", chip_name, channel_count);
+        }
+    }
 }
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_readNextSamples
@@ -95,13 +119,37 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_setTem
 
 JNIEXPORT jint JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_getVoiceCount
         (JNIEnv *env, jobject) {
-    return 0;
+    return g_channel_count;
 }
 
 
 JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_getVoiceName
-        (JNIEnv *env, jobject, jint) {
-    return NULL;
+        (JNIEnv *env, jobject, jint voice_number) {
+    int channel_number = voice_number;
+
+    const char *voice_name = NULL;
+    for (int chip_index = 0; chip_index < g_active_chip_count; ++chip_index) {
+        int chip_id = g_active_chip_ids[chip_index];
+        int channel_count = getChannelCountForChipId(chip_id);
+
+        const char *chip_name = GetAccurateChipName(chip_id, 0);
+
+        if (channel_number >= channel_count) {
+            channel_number -= channel_count;
+        } else {
+            std::ostringstream stream;
+            stream << chip_name << " Voice " << channel_number + 1;
+
+            voice_name = stream.str().c_str();
+            break;
+        }
+    }
+
+    if (voice_name != NULL) {
+        return env->NewStringUTF(voice_name);
+    } else {
+        return NULL;
+    }
 }
 
 
@@ -119,6 +167,13 @@ JNIEXPORT jboolean JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_is
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_teardown
         (JNIEnv *env, jobject) {
+    g_channel_count = 0;
+    g_active_chip_count = 0;
+
+    for (int chip_index = 0; chip_index < MAX_ACTIVE_CHIPS; ++chip_index) {
+        g_active_chip_ids[chip_index] = -1;
+    }
+
     StopVGM();
     CloseVGMFile();
     VGMPlay_Deinit();
@@ -129,4 +184,92 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_get
         (JNIEnv *env, jobject) {
     jstring str = env->NewStringUTF(g_last_error);
     return str;
+}
+
+/**
+ * Private Methods
+ */
+
+int getChannelCountForChipId(int chip_id) {
+    switch (chip_id) {
+        case 0x00:    // SN76496
+            return 4;
+        case 0x01:    // YM2413
+        case 0x09:    // YM3812
+        case 0x0A:    // YM3526
+        case 0x0B:    // Y8950
+            return 14;
+        case 0x02:    // YM2612
+            return 7;
+        case 0x03:    // YM2151
+            return 8;
+        case 0x04:    // Sega PCM
+            return 16;
+        case 0x05:    // RF5C68
+        case 0x10:    // RF5C164
+            return 8;
+        case 0x06:    // YM2203
+            return 6;    // 3 FM + 3 AY8910
+        case 0x07:    // YM2608
+        case 0x08:    // YM2610
+            return 16;    // 6 FM + 6 ADPCM + 1 DeltaT + 3 AY8910
+        case 0x0C:    // YMF262
+            return 23;    // 18 + 5
+        case 0x0D:    // YMF278B
+            return 24;
+        case 0x0E:    // YMF271
+            return 12;
+        case 0x0F:    // YMZ280B
+            return 8;
+        case 0x11:    // PWM
+            return 0;
+        case 0x12:    // AY8910
+            return 3;
+        case 0x13:    // GB DMG
+            return 4;
+        case 0x14:    // NES APU
+            return 6;
+        case 0x15:    // Multi PCM
+            return 28;
+        case 0x16:    // UPD7759
+            return 0;
+        case 0x17:    // OKIM6258
+            return 0;
+        case 0x18:    // OKIM6295
+            return 4;
+        case 0x19:    // K051649
+            return 5;
+        case 0x1A:    // K054539
+            return 8;
+        case 0x1B:    // HuC6280
+            return 6;
+        case 0x1C:    // C140
+            return 24;
+        case 0x1D:    // K053260
+            return 4;
+        case 0x1E:    // Pokey
+            return 4;
+        case 0x1F:    // Q-Sound
+            return 16;
+        case 0x20:    // SCSP
+            return 32;
+        case 0x21:    // WonderSwan
+            return 4;
+        case 0x22:    // VSU
+            return 6;
+        case 0x23:    // SAA1099
+            return 6;
+        case 0x24:    // ES5503
+            return 32;
+        case 0x25:    // ES5506
+            return 32;
+        case 0x26:    // X1-010
+            return 16;
+        case 0x27:    // C352
+            return 32;
+        case 0x28:    // GA20
+            return 4;
+        default:
+            return -1;
+    }
 }
