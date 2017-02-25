@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.model.repository
 
 import android.util.Log
 import dagger.Lazy
+import net.sigmabeta.chipbox.backend.Scanner
 import net.sigmabeta.chipbox.dagger.module.AppModule
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
@@ -107,11 +108,11 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                         scanFolder(file, sub)
                     } else {
                         val filePath = file.absolutePath
-                        val fileExtension = getFileExtension(filePath)
+                        val fileExtension = file.extension
 
-                        if (fileExtension != null) {
+                        if (fileExtension.isNotEmpty()) {
                             // Check that the file has an extension we care about before trying to read out of it.
-                            if (EXTENSIONS_MUSIC.contains(fileExtension)) {
+                            if (Scanner.EXTENSIONS_MUSIC.contains(fileExtension)) {
                                 if (EXTENSIONS_MULTI_TRACK.contains(fileExtension)) {
                                     folderGame = readMultipleTracks(file, filePath, sub)
                                     if (folderGame == null) {
@@ -144,7 +145,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
     }
 
     private fun readSingleTrack(file: File, filePath: String, sub: Subscriber<FileScanEvent>, trackNumber: Int): Game? {
-        val track = readSingleTrackFile(filePath, trackNumber)
+        val track = readSingleTrackFile(file, trackNumber)
 
         if (track != null) {
             var game = checkForExistingTrack(filePath, track, sub)
@@ -177,7 +178,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
     private fun readMultipleTracks(file: File, filePath: String, sub: Subscriber<FileScanEvent>): Game? {
         var game: Game? = null
-        val tracks = readMultipleTrackFile(filePath)
+        val tracks = readMultipleTrackFile(file)
 
         tracks ?: return game
 
@@ -232,7 +233,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         // Check if this track is one we already had, but moved.
         val movedTrack = repository.getTrack(track.title!!,
                 track.gameTitle ?: RealmRepository.GAME_UNKNOWN,
-                track.platform)
+                track.platformName ?: RealmRepository.PLATFORM_UNKNOWN)
 
         if (movedTrack != null) {
             repository.updateTrack(movedTrack, track)
@@ -306,7 +307,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         val targetDir = File(targetDirPath)
         targetDir.mkdirs()
 
-        val targetFilePath = targetDirPath + "/local" + fileExtension
+        val targetFilePath = targetDirPath + "/local." + fileExtension
         return File(targetFilePath)
     }
 

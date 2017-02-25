@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.backend.player
 import android.content.Context
 import android.media.AudioManager
 import android.media.session.PlaybackState
+import net.sigmabeta.chipbox.backend.Backend
 import net.sigmabeta.chipbox.backend.BackendView
 import net.sigmabeta.chipbox.backend.PlayerService
 import net.sigmabeta.chipbox.backend.UiUpdater
@@ -43,6 +44,11 @@ class Player @Inject constructor(val playlist: Playlist,
 
     private var reader: Reader? = null
     private var writer: Writer? = null
+
+    var backend: Backend? = null
+        get() {
+            return reader?.backend
+        }
 
     fun start(trackId: String?) {
         if (state == PlaybackState.STATE_PLAYING) {
@@ -192,7 +198,7 @@ class Player @Inject constructor(val playlist: Playlist,
         backendView?.stop()
     }
 
-    fun seek(seekPosition: Int) {
+    fun seek(seekPosition: Long) {
         reader?.queuedSeekPosition = seekPosition
     }
 
