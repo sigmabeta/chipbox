@@ -7,6 +7,7 @@ import android.content.Intent
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Pair
 import android.view.View
+import android.view.View.VISIBLE
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_game.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -113,7 +114,11 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ItemList
     override fun onBackPressed() {
         if (!alreadyFinishing) {
             alreadyFinishing = true
-            button_fab.shrinktoNothing().withEndAction {
+            if (button_fab.visibility == VISIBLE) {
+                button_fab.shrinktoNothing().withEndAction {
+                    supportFinishAfterTransition()
+                }
+            } else {
                 supportFinishAfterTransition()
             }
         }
