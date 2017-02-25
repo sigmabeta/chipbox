@@ -22,7 +22,7 @@ class GamePresenter @Inject constructor(val player: Player,
     var gameId: String? = null
 
     var game: Game? = null
-    var tracks: MutableList<Track>? = null
+    var tracks: List<Track>? = null
 
     fun onItemClick(position: Int) {
         getTrackIdList()?.let {
