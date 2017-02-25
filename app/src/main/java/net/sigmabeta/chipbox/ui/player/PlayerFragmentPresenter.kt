@@ -40,7 +40,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
 
     fun onSeekbarRelease(progress: Int) {
         val length = track?.trackLength ?: 0
-        val seekPosition = (length * progress / 100).toInt()
+        val seekPosition = (length * progress / 100)
         player.seek(seekPosition)
         seekbarTouched = false
     }

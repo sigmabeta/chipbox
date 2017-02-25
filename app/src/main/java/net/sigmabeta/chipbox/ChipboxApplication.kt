@@ -28,6 +28,7 @@ public class ChipboxApplication : Application() {
         logDebug("[ChipboxApplication] Device model: ${Build.MODEL}")
 
         System.loadLibrary("gme")
+        System.loadLibrary("vgm")
 
         Realm.init(this)
         val realmConfig = RealmConfiguration.Builder().build()

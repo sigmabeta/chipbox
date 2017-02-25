@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.model.database.inTransaction
 import net.sigmabeta.chipbox.model.database.save
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.util.logError
 import net.sigmabeta.chipbox.util.logInfo
@@ -37,7 +38,8 @@ class RealmRepository(var realm: Realm) : Repository {
 
     override fun addTrack(track: Track): Observable<Game> {
         val artists = track.artistText?.split(", ")
-        val gameObservable = getGame(track.platform, track.gameTitle)
+
+        val gameObservable = getGame(track.platformName, track.gameTitle)
                 .map {
                     track.game = it
                     track.save(realm)
@@ -49,14 +51,20 @@ class RealmRepository(var realm: Realm) : Repository {
                     return@map it
                 }
 
+        val platformObservable = getPlatform(track.platformName)
+                .map {
+                    track.platform = it
+                    return@map it
+                }
+
         val artistObservable = Observable.from(artists)
                 .flatMap { name ->
                     return@flatMap getArtistByName(name)
                 }
 
         // Combine operator happens once per Artist, once we have a Game.
-        return Observable.combineLatest(gameObservable, artistObservable,
-                { game: Game, artist: Artist ->
+        return Observable.combineLatest(gameObservable, artistObservable, platformObservable,
+                { game: Game, artist: Artist, platform: Platform ->
                     val gameArtist = game.artist
                     val gameHadMultipleArtists = game.multipleArtists ?: false
 
@@ -75,15 +83,17 @@ class RealmRepository(var realm: Realm) : Repository {
                         } else if (gameArtist == null) {
                             game.artist = artist
                         }
+
+                        game.platformName = platform.name
                     }
 
                     return@combineLatest game
                 })
     }
 
-    override fun addGame(platformId: Long, title: String?): Observable<Game> {
+    override fun addGame(platformName: String, title: String?): Observable<Game> {
         return Observable.create {
-            val game = Game(title ?: GAME_UNKNOWN, platformId)
+            val game = Game(title ?: GAME_UNKNOWN, platformName)
             game.save(realm)
 
             it.onNext(game)
@@ -151,11 +161,11 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findFirst()
     }
 
-    override fun getTrack(title: String, gameTitle: String, platform: Long): Track? {
+    override fun getTrack(title: String, gameTitle: String, platformName: String): Track? {
         return realm.where(Track::class.java)
                 .equalTo("title", title)
                 .equalTo("gameTitle", gameTitle)
-                .equalTo("platform", platform)
+                .equalTo("platformName", platformName)
                 .findFirst()
     }
 
@@ -205,12 +215,12 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findAll()
     }
 
-    override fun getGamesForPlatform(platformId: Long): Observable<out List<Game>> {
+    override fun getGamesForPlatform(platformName: String): Observable<out List<Game>> {
         val observable = Observable.create<List<Game>> {
             val localRealm = getRealmInstance()
 
             val gamesManaged = localRealm.where(Game::class.java)
-                    .equalTo("platform", platformId)
+                    .equalTo("platformName", platformName)
                     .findAllSorted("title")
 
             val gamesUnmanaged = localRealm.copyFromRealm(gamesManaged)
@@ -224,16 +234,16 @@ class RealmRepository(var realm: Realm) : Repository {
         return observable.subscribeOn(Schedulers.io())
     }
 
-    override fun getGame(platformId: Long, title: String?): Observable<Game> {
+    override fun getGame(platformName: String?, title: String?): Observable<Game> {
         var game = realm
                 .where(Game::class.java)
-                .equalTo("platform", platformId)
+                .equalTo("platformName", platformName)
                 .equalTo("title", title)
                 .findFirst()
 
         val newGame: Game
         if (game == null || !game.isValid) {
-            newGame = Game(title ?: GAME_UNKNOWN, platformId)
+            newGame = Game(title ?: GAME_UNKNOWN, platformName ?: PLATFORM_UNKNOWN)
             logVerbose("Created game: ${newGame.title}")
             game = newGame.save(realm)
         }
@@ -287,6 +297,40 @@ class RealmRepository(var realm: Realm) : Repository {
         return realm
                 .where(Artist::class.java)
                 .findAll()
+    }
+
+    override fun getPlatform(name: String?): Observable<Platform> {
+        var platform = realm
+                .where(Platform::class.java)
+                .equalTo("name", name)
+                .findFirst()
+
+        val newPlatform: Platform
+        if (platform == null || !platform.isValid) {
+            logVerbose("Creating platform: ${name}")
+            newPlatform = Platform(name ?: PLATFORM_UNKNOWN)
+            platform = newPlatform.save(realm)
+        }
+
+        return Observable.just(platform)
+    }
+
+    override fun getPlatforms(): Observable<out List<Platform>> {
+        val observable = Observable.create<List<Platform>> {
+            val localRealm = getRealmInstance()
+
+            val platformsManaged = localRealm.where(Platform::class.java)
+                    .findAllSorted("name")
+
+            val platformsUnmanaged = localRealm.copyFromRealm(platformsManaged)
+
+            localRealm.closeAndReport()
+
+            it.onNext(platformsUnmanaged)
+            it.onCompleted()
+        }
+
+        return observable.subscribeOn(Schedulers.io())
     }
 
     /**
@@ -441,7 +485,7 @@ class RealmRepository(var realm: Realm) : Repository {
             logWarning("New track doesn't match old track game: ${oldTrack.gameTitle}")
             oldGame?.tracks?.remove(oldTrack)
 
-            getGame(newTrack.platform, newTrack.gameTitle)
+            getGame(newTrack.platformName, newTrack.gameTitle)
                     .subscribe {
                         it.tracks?.add(oldTrack)
                         oldTrack.game = it
@@ -476,7 +520,9 @@ class RealmRepository(var realm: Realm) : Repository {
         val ADD_STATUS_EXISTS = 1
         val ADD_STATUS_DB_ERROR = 2
 
+        val TITLE_UNKNOWN = "Unknown Track"
         val GAME_UNKNOWN = "Unknown Game"
         val ARTIST_UNKNOWN = "Unknown Artist"
+        val PLATFORM_UNKNOWN = "Unknown Platform"
     }
 }

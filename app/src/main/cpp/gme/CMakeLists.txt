@@ -12,8 +12,8 @@ set(libgme_SRCS Blip_Buffer.cpp
                 M3u_Playlist.cpp
                 Multi_Buffer.cpp
                 Music_Emu.cpp
-                android/FileNativeKt.cpp
-                android/PlayerNativeKt.cpp
+                android/Scanner.cpp
+                android/Backend.cpp
                 )
 
 # Ay_Apu is very popular around here

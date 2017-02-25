@@ -58,6 +58,7 @@ class PlayerService : Service(), BackendView {
         session?.setCallback(SessionCallback(this))
         session?.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS or MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS)
 
+        repository.reopen()
         notificationManager = MediaNotificationManager(this, repository, player, playlist, updater)
 
         // A workaround for the fact that controllerCallback is null inside the init {} constructor.

@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.model.repository
 
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.domain.Track
 import rx.Observable
 
@@ -15,7 +16,7 @@ interface Repository {
 
     fun addTrack(track: Track): Observable<Game>
 
-    fun addGame(platformId: Long, title: String?): Observable<Game>
+    fun addGame(platformName: String, title: String?): Observable<Game>
     fun addArtist(name: String?): Observable<Artist>
 
     /**
@@ -28,19 +29,22 @@ interface Repository {
     fun getTracksFromIds(trackIdsList: MutableList<String?>): Observable<out List<Track>>
     fun getTrackFromPath(path: String): Track?
     fun getTrackFromPath(path: String, trackNumber: Int): Track?
-    fun getTrack(title: String, gameTitle: String, platform: Long): Track?
+    fun getTrack(title: String, gameTitle: String, platformName: String): Track?
 
     fun getGame(id: String): Observable<Game>
     fun getGameSync(id: String): Game?
     fun getGames(): Observable<out List<Game>>
     fun getGamesManaged(): List<Game>
-    fun getGamesForPlatform(platformId: Long): Observable<out List<Game>>
-    fun getGame(platformId: Long, title: String?): Observable<Game>
+    fun getGamesForPlatform(platformName: String): Observable<out List<Game>>
+    fun getGame(platformName: String?, title: String?): Observable<Game>
 
     fun getArtist(id: String): Observable<Artist>
     fun getArtistByName(name: String?): Observable<Artist>
     fun getArtists(): Observable<out List<Artist>>
     fun getArtistsManaged(): List<Artist>
+
+    fun getPlatform(name: String?): Observable<Platform>
+    fun getPlatforms(): Observable<out List<Platform>>
 
     /**
      * Update
