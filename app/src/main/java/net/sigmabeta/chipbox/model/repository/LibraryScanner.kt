@@ -156,6 +156,9 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                     .toBlocking()
                     .subscribe(
                             {
+                                if (it.title?.contains("Ecco") ?: false) {
+                                    logWarning("Added track: ${track.title}")
+                                }
                                 game = it
                             },
                             {

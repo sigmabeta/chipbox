@@ -36,14 +36,14 @@ interface Repository {
     fun getGames(): Observable<out List<Game>>
     fun getGamesManaged(): List<Game>
     fun getGamesForPlatform(platformName: String): Observable<out List<Game>>
-    fun getGame(platformName: String?, title: String?): Observable<Game>
+    fun getGame(platformName: String?, title: String?): Game
 
     fun getArtist(id: String): Observable<Artist>
-    fun getArtistByName(name: String?): Observable<Artist>
+    fun getArtistByName(name: String?): Artist
     fun getArtists(): Observable<out List<Artist>>
     fun getArtistsManaged(): List<Artist>
 
-    fun getPlatform(name: String?): Observable<Platform>
+    fun getPlatform(name: String?): Platform
     fun getPlatforms(): Observable<out List<Platform>>
 
     /**

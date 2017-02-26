@@ -37,59 +37,49 @@ class RealmRepository(var realm: Realm) : Repository {
      */
 
     override fun addTrack(track: Track): Observable<Game> {
-        val artists = track.artistText?.split(*DELIMITERS_ARTISTS)
+        track.save(realm)
+
+        val game = getGame(track.platformName, track.gameTitle)
+        val platform = getPlatform(track.platformName)
+
+        realm.inTransaction {
+            track.game = game
+            game.tracks?.add(track)
+
+            track.platform = platform
+            game.platformName = track.platformName
+        }
+
+        val artistNames = track.artistText?.split(*DELIMITERS_ARTISTS)
                 ?.map(String::trim)
 
-        val gameObservable = getGame(track.platformName, track.gameTitle)
-                .map {
-                    track.game = it
-                    track.save(realm)
+        val artists = artistNames?.map { name ->
+            return@map getArtistByName(name)
+        }
 
-                    realm.inTransaction {
-                        it.tracks?.add(track)
+        val gameArtist = game.artist
+        val gameHadMultipleArtists = game.multipleArtists ?: false
+
+        artists?.forEach { artist ->
+            realm.inTransaction {
+                artist.tracks?.add(track)
+                track.artists?.add(artist)
+
+                // If this game has just one artist...
+                if (gameArtist != null && !gameHadMultipleArtists) {
+                    // And the one we just got is different
+                    if (artist.id != gameArtist.id) {
+                        // We'll save this later.
+                        game.multipleArtists = true
+                        game.artist = null
                     }
-
-                    return@map it
+                } else if (gameArtist == null) {
+                    game.artist = artist
                 }
+            }
+        }
 
-        val platformObservable = getPlatform(track.platformName)
-                .map {
-                    track.platform = it
-                    return@map it
-                }
-
-        val artistObservable = Observable.from(artists)
-                .flatMap { name ->
-                    return@flatMap getArtistByName(name)
-                }
-
-        // Combine operator happens once per Artist, once we have a Game.
-        return Observable.combineLatest(gameObservable, artistObservable, platformObservable,
-                { game: Game, artist: Artist, platform: Platform ->
-                    val gameArtist = game.artist
-                    val gameHadMultipleArtists = game.multipleArtists ?: false
-
-                    realm.inTransaction {
-                        artist.tracks?.add(track)
-                        track.artists?.add(artist)
-
-                        // If this game has just one artist...
-                        if (gameArtist != null && !gameHadMultipleArtists) {
-                            // And the one we just got is different
-                            if (artist.id != gameArtist.id) {
-                                // We'll save this later.
-                                game.multipleArtists = true
-                                game.artist = null
-                            }
-                        } else if (gameArtist == null) {
-                            game.artist = artist
-                        }
-
-                        game.platformName = platform.name
-                    }
-
-                    return@combineLatest game
-                })
+        return Observable.just(game)
     }
 
     override fun addGame(platformName: String, title: String?): Observable<Game> {
@@ -235,7 +225,7 @@ class RealmRepository(var realm: Realm) : Repository {
         return observable.subscribeOn(Schedulers.io())
     }
 
-    override fun getGame(platformName: String?, title: String?): Observable<Game> {
+    override fun getGame(platformName: String?, title: String?): Game {
         var game = realm
                 .where(Game::class.java)
                 .equalTo("platformName", platformName)
@@ -249,7 +239,7 @@ class RealmRepository(var realm: Realm) : Repository {
             game = newGame.save(realm)
         }
 
-        return Observable.just(game)
+        return game
     }
 
     override fun getArtist(id: String): Observable<Artist> {
@@ -261,7 +251,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 .filter { it.isLoaded }
     }
 
-    override fun getArtistByName(name: String?): Observable<Artist> {
+    override fun getArtistByName(name: String?): Artist {
         var artist = realm.where(Artist::class.java)
                 .equalTo("name", name)
                 .findFirst()
@@ -273,7 +263,7 @@ class RealmRepository(var realm: Realm) : Repository {
             artist = newArtist.save(realm)
         }
 
-        return Observable.just(artist)
+        return artist
     }
 
     override fun getArtists(): Observable<out List<Artist>> {
@@ -300,7 +290,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findAll()
     }
 
-    override fun getPlatform(name: String?): Observable<Platform> {
+    override fun getPlatform(name: String?): Platform {
         var platform = realm
                 .where(Platform::class.java)
                 .equalTo("name", name)
@@ -313,7 +303,7 @@ class RealmRepository(var realm: Realm) : Repository {
             platform = newPlatform.save(realm)
         }
 
-        return Observable.just(platform)
+        return platform
     }
 
     override fun getPlatforms(): Observable<out List<Platform>> {
@@ -465,11 +455,10 @@ class RealmRepository(var realm: Realm) : Repository {
                 if (matchingArtist == null) {
                     logVerbose("Adding artist: $newArtist")
 
-                    getArtistByName(newArtist)
-                            .subscribe {
-                                it.tracks?.add(oldTrack)
-                                oldTrack.artists?.add(it)
-                            }
+                    val artist = getArtistByName(newArtist)
+
+                    artist.tracks?.add(oldTrack)
+                    oldTrack.artists?.add(artist)
 
                     actuallyChanged = true
                 }
@@ -487,11 +476,10 @@ class RealmRepository(var realm: Realm) : Repository {
             logWarning("New track doesn't match old track game: ${oldTrack.gameTitle}")
             oldGame?.tracks?.remove(oldTrack)
 
-            getGame(newTrack.platformName, newTrack.gameTitle)
-                    .subscribe {
-                        it.tracks?.add(oldTrack)
-                        oldTrack.game = it
-                    }
+            val game = getGame(newTrack.platformName, newTrack.gameTitle)
+
+            game.tracks?.add(oldTrack)
+            oldTrack.game = game
 
             actuallyChanged = true
         }
