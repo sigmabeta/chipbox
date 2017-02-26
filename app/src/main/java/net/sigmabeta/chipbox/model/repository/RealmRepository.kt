@@ -37,7 +37,8 @@ class RealmRepository(var realm: Realm) : Repository {
      */
 
     override fun addTrack(track: Track): Observable<Game> {
-        val artists = track.artistText?.split(", ")
+        val artists = track.artistText?.split(*DELIMITERS_ARTISTS)
+                ?.map(String::trim)
 
         val gameObservable = getGame(track.platformName, track.gameTitle)
                 .map {
@@ -437,7 +438,8 @@ class RealmRepository(var realm: Realm) : Repository {
             oldTrack.artistText = newTrack.artistText
 
             val oldArtists = oldTrack.artists
-            val newArtists = newTrack.artistText?.split(", ")
+            val newArtists = newTrack.artistText?.split(*DELIMITERS_ARTISTS)
+                    ?.map(String::trim)
 
             // Remove any artists that no longer pertain to this track.
             oldArtists?.forEach { oldArtist ->
@@ -524,5 +526,7 @@ class RealmRepository(var realm: Realm) : Repository {
         val GAME_UNKNOWN = "Unknown Game"
         val ARTIST_UNKNOWN = "Unknown Artist"
         val PLATFORM_UNKNOWN = "Unknown Platform"
+
+        val DELIMITERS_ARTISTS = arrayOf(", &", ",", " or ", " and ", "&")
     }
 }
