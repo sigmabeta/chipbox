@@ -12,9 +12,7 @@ import net.sigmabeta.chipbox.model.events.FileScanCompleteEvent
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.model.events.FileScanFailedEvent
 import net.sigmabeta.chipbox.model.repository.LibraryScanner
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
-import net.sigmabeta.chipbox.util.logVerbose
+import timber.log.Timber
 import javax.inject.Inject
 
 
@@ -30,7 +28,7 @@ class ScanService : IntentService("Scanner") {
     }
 
     override fun onHandleIntent(intent: Intent?) {
-        logInfo("Scanning")
+        Timber.i("Scanning")
 
         manager.cancel(NOTIFICATION_ID_FAILED)
 
@@ -54,7 +52,7 @@ class ScanService : IntentService("Scanner") {
                             // OnError. it: Throwable
                             showFailedNotification()
                             updater.send(FileScanFailedEvent(it.message ?: "Unknown error."))
-                            logError("[ScanService] File scanning error: ${Log.getStackTraceString(it)}")
+                            Timber.e("File scanning error: %s", Log.getStackTraceString(it))
                         },
                         {
                             // OnCompleted.
@@ -73,7 +71,7 @@ class ScanService : IntentService("Scanner") {
     }
 
     private fun inject() {
-        logVerbose("[ServiceInjector] Injecting BackendView.")
+        Timber.v("Injecting ScanService.")
         (application as ChipboxApplication).appComponent.inject(this)
     }
 

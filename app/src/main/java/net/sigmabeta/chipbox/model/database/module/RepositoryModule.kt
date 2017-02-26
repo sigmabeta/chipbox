@@ -10,7 +10,7 @@ import net.sigmabeta.chipbox.model.database.getRealmInstance
 import net.sigmabeta.chipbox.model.repository.LibraryScanner
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.model.repository.Repository
-import net.sigmabeta.chipbox.util.logVerbose
+import timber.log.Timber
 import javax.inject.Named
 import javax.inject.Singleton
 
@@ -21,12 +21,12 @@ class RepositoryModule() {
     }
 
     @Provides fun provideRepository(context: Context, realm: Realm): Repository {
-        logVerbose("[RepositoryModule] Providing Repository...")
+        Timber.v("Providing Repository...")
         return RealmRepository(realm)
     }
 
     @Provides @Singleton fun provideScanner(repositoryLazy: Lazy<Repository>, @Named(AppModule.DEP_NAME_APP_STORAGE_DIR) externalFilesPath: String?): LibraryScanner {
-        logVerbose("[RepositoryModule] Providing Library Scanner...")
+        Timber.v("Providing Library Scanner...")
         return LibraryScanner(repositoryLazy, externalFilesPath)
     }
 }

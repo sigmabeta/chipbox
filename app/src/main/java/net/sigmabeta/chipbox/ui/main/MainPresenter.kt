@@ -10,9 +10,8 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.model.repository.LibraryScanner
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -81,7 +80,7 @@ class MainPresenter @Inject constructor(val player: Player,
                             view?.showFileScanSuccess(it.newTracks, it.updatedTracks)
                             view?.hideScanning()
                         }
-                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                        else -> Timber.w("Unhandled %s", it.toString())
                     }
                 }
 
@@ -138,7 +137,7 @@ class MainPresenter @Inject constructor(val player: Player,
                 view?.setTrackTitle(track.title.orEmpty(), animate)
                 view?.setArtist(track.artistText.orEmpty(), animate)
             } else {
-                logError("Cannot load track with id $trackId")
+                Timber.e("Cannot load track with id %s", trackId)
             }
         }
     }

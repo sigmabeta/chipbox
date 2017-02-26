@@ -10,9 +10,8 @@ import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -79,7 +78,7 @@ class GamePresenter @Inject constructor(val player: Player,
                         is PositionEvent -> { /* no-op */ }
                         is StateEvent -> { /* no-op */
                         }
-                        else -> logWarning("[GamePresenter] Unhandled ${it}")
+                        else -> Timber.w("Unhandled %s", it.toString())
                     }
                 }
 
@@ -97,7 +96,7 @@ class GamePresenter @Inject constructor(val player: Player,
             if (track != null) {
                 view?.setPlayingTrack(track)
             } else {
-                logError("Cannot load track with id $trackId")
+                Timber.e("Cannot load track with id %s", trackId)
             }
         }
     }

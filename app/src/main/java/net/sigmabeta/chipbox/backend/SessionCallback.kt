@@ -1,35 +1,35 @@
 package net.sigmabeta.chipbox.backend
 
 import android.support.v4.media.session.MediaSessionCompat
-import net.sigmabeta.chipbox.util.logVerbose
+import timber.log.Timber
 
 class SessionCallback(val playerService: PlayerService) : MediaSessionCompat.Callback() {
     override fun onPlay() {
-        logVerbose("[SessionCallback] Received PLAY command.")
+        Timber.v("Received PLAY command.")
 
         playerService.player?.start(null)
     }
 
     override fun onStop() {
-        logVerbose("[SessionCallback] Received STOP command.")
+        Timber.v("Received STOP command.")
 
         playerService.player?.stop()
     }
 
     override fun onPause() {
-        logVerbose("[SessionCallback] Received PAUSE command.")
+        Timber.v("Received PAUSE command.")
 
         playerService.player?.pause()
     }
 
     override fun onSkipToNext() {
-        logVerbose("[SessionCallback] Received NEXT command.")
+        Timber.v("Received NEXT command.")
 
         playerService.player?.skipToNext()
     }
 
     override fun onSkipToPrevious() {
-        logVerbose("[SessionCallback] Received PREV command.")
+        Timber.v("Received PREV command.")
 
         playerService.player?.skipToPrev()
     }

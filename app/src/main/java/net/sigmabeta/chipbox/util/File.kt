@@ -6,6 +6,7 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import rx.Observable
+import timber.log.Timber
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -34,7 +35,7 @@ fun readSingleTrackFile(file: File, trackNumber: Int): Track? {
     val error = scanner.fileInfoSetup(path)
 
     if (error != null) {
-        logError("[File] Error reading file: $error")
+        Timber.e("Error reading file: %s", error)
         return null
     }
 
@@ -54,7 +55,7 @@ fun readMultipleTrackFile(file: File): List<Track>? {
     val error = scanner.fileInfoSetup(path)
 
     if (error != null) {
-        logError("[File] Error reading file: $error")
+        Timber.e("Error reading file: %s", error)
         return null
     }
 

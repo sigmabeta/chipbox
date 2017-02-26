@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.ui
 
 import android.os.Bundle
 import net.sigmabeta.chipbox.dagger.component.FragmentComponent
-import net.sigmabeta.chipbox.util.logWarning
+import timber.log.Timber
 
 abstract class ActivityPresenter<V : BaseView> : BasePresenter<V>() {
     var fragmentComponent: FragmentComponent? = null
@@ -44,7 +44,7 @@ abstract class ActivityPresenter<V : BaseView> : BasePresenter<V>() {
                 onTempDestroy()
             }
         } else if (this.view == null) {
-            logWarning("Cannot clear reference to view: Presenter has already cleared reference.")
+            Timber.w("Cannot clear reference to view: Presenter has already cleared reference.")
         } else {
             handleError(InvalidClearViewException(view), null)
         }

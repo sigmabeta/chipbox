@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.backend
 
 import net.sigmabeta.chipbox.model.audio.AudioConfig
-import net.sigmabeta.chipbox.util.logError
+import timber.log.Timber
 
 class StatsManager(val audioConfig: AudioConfig) {
     val times = LongArray(STATS_COUNT)
@@ -22,7 +22,7 @@ class StatsManager(val audioConfig: AudioConfig) {
 
         if (index == 0) {
             if (difference > audioConfig.minimumLatency) {
-                logError("[StatsManager] Buffer underrun: Took ${difference}ms to fill a ${audioConfig.minimumLatency}ms buffer")
+                Timber.e("Buffer underrun: Took %d ms to fill a %d ms buffer", difference, audioConfig.minimumLatency)
                 underrunCount += 1
             }
         }

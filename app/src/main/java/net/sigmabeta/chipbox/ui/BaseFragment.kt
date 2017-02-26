@@ -13,7 +13,7 @@ import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.util.logError
+import timber.log.Timber
 
 abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : Fragment(), BaseView, View.OnClickListener {
     var injected = false
@@ -26,7 +26,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
 
             override fun onError() {
                 startTransition()
-                logError("[PlayerFragment] Couldn't load image.")
+                Timber.e("Couldn't load image.")
             }
         }
     }
