@@ -4,8 +4,7 @@ import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.repository.Repository
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
+import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -76,7 +75,7 @@ class Playlist @Inject constructor(val repository: Repository,
             return null
         }
 
-        logInfo("[Player] Loading track ${playbackQueuePosition} of ${playbackQueue.size}.")
+        Timber.i("Loading track %d of %d.", playbackQueuePosition, playbackQueue.size)
         return getTrackIdAt(playbackQueuePosition)
     }
 
@@ -87,13 +86,13 @@ class Playlist @Inject constructor(val repository: Repository,
             return null
         }
 
-        logInfo("[Player] Loading track ${playbackQueuePosition} of ${playbackQueue.size}.")
+        Timber.i("Loading track %d of %d.", playbackQueuePosition, playbackQueue.size)
         return getTrackIdAt(playbackQueuePosition)
     }
 
     fun getTrackIdAt(position: Int, ignoreShuffle: Boolean = false): String? {
         if (position > playbackQueue.size) {
-            logError("Requested invalid position: $position/${playbackQueue.size}")
+            Timber.e("Requested invalid position: %d / %d", position, playbackQueue.size)
             return null
         }
 

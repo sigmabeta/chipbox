@@ -142,6 +142,9 @@ dependencies {
     // Copy album art more easily.
     compile 'commons-io:commons-io:2.4'
 
+    // Simplified error logging.
+    compile 'com.jakewharton.timber:timber:4.5.1'
+
     // Crash Reporting
     compile('com.crashlytics.sdk.android:crashlytics:2.5.5@aar') {
         transitive = true;

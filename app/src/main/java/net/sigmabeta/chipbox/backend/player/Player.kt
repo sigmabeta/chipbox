@@ -12,9 +12,7 @@ import net.sigmabeta.chipbox.model.audio.AudioConfig
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.repository.Repository
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
-import net.sigmabeta.chipbox.util.logVerbose
+import timber.log.Timber
 import java.util.concurrent.ArrayBlockingQueue
 import javax.inject.Inject
 import javax.inject.Provider
@@ -52,7 +50,7 @@ class Player @Inject constructor(val playlist: Playlist,
 
     fun start(trackId: String?) {
         if (state == PlaybackState.STATE_PLAYING) {
-            logError("[Player] Received start command, but already PLAYING a track.")
+            Timber.e("Received start command, but already PLAYING a track.")
             return
         }
 
@@ -74,7 +72,7 @@ class Player @Inject constructor(val playlist: Playlist,
             val firstTrackId = trackId ?: playlist.playingTrackId
 
             if (firstTrackId == null) {
-                logError("Cannot start playback without a track ID.")
+                Timber.e("Cannot start playback without a track ID.")
                 return
             }
 
@@ -104,13 +102,13 @@ class Player @Inject constructor(val playlist: Playlist,
             }, "reader").start()
 
         } else {
-            logError("[Player] Unable to gain audio focus.")
+            Timber.e("Unable to gain audio focus.")
         }
     }
 
     fun play(playbackQueue: MutableList<String?>, position: Int) {
         if (position < playbackQueue.size) {
-            logVerbose("[Player] Playing new playlist, starting from track ${position} of ${playbackQueue.size}.")
+            Timber.v("Playing new playlist, starting from track %d of %d.", position, playbackQueue.size)
 
             playlist.playbackQueue = playbackQueue
             playlist.playbackQueuePosition = position
@@ -123,7 +121,7 @@ class Player @Inject constructor(val playlist: Playlist,
                 start(trackId)
             }
         } else {
-            logError("[Player] Tried to start new playlist, but invalid track number: ${position} of ${playbackQueue.size}")
+            Timber.e("Tried to start new playlist, but invalid track number: %d of %d", position, playbackQueue.size)
         }
     }
 
@@ -172,11 +170,11 @@ class Player @Inject constructor(val playlist: Playlist,
 
     fun pause() {
         if (state != PlaybackState.STATE_PLAYING) {
-            logError("[Player] Received pause command, but not currently PLAYING.")
+            Timber.e("Received pause command, but not currently PLAYING.")
             return
         }
 
-        logVerbose("[Player] Pausing playback.")
+        Timber.v("Pausing playback.")
 
         state = PlaybackState.STATE_PAUSED
 
@@ -185,11 +183,11 @@ class Player @Inject constructor(val playlist: Playlist,
 
     fun stop() {
         if (state == PlaybackState.STATE_STOPPED) {
-            logError("[Player] Received stop command, but already STOPPED.")
+            Timber.e("Received stop command, but already STOPPED.")
             return
         }
 
-        logVerbose("[Player] Stopping playback.")
+        Timber.v("Stopping playback.")
 
         state = PlaybackState.STATE_STOPPED
 
@@ -205,12 +203,12 @@ class Player @Inject constructor(val playlist: Playlist,
     override fun onAudioFocusChange(focusChange: Int) {
         when (focusChange) {
             AudioManager.AUDIOFOCUS_LOSS -> {
-                logVerbose("[Player] Focus lost. Pausing...")
+                Timber.v("Focus lost. Pausing...")
                 pause()
             }
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                logVerbose("[Player] Focus lost temporarily. Pausing...")
+                Timber.v("Focus lost temporarily. Pausing...")
 
                 if (state == PlaybackState.STATE_PLAYING) {
                     focusLossPaused = true
@@ -220,12 +218,12 @@ class Player @Inject constructor(val playlist: Playlist,
             }
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                logVerbose("[Player] Focus lost temporarily, but can duck. Lowering volume...")
+                Timber.v("Focus lost temporarily, but can duck. Lowering volume...")
                 writer?.ducking = true
             }
 
             AudioManager.AUDIOFOCUS_GAIN -> {
-                logVerbose("[Player] Focus gained. Resuming...")
+                Timber.v("Focus gained. Resuming...")
 
                 writer?.ducking = false
 
@@ -263,7 +261,7 @@ class Player @Inject constructor(val playlist: Playlist,
     }
 
     fun onPlaylistFinished() {
-        logInfo("[Player] No more tracks to start.")
+        Timber.i("No more tracks to start.")
         stop()
     }
 
@@ -272,13 +270,13 @@ class Player @Inject constructor(val playlist: Playlist,
      */
 
     fun errorReadFailed(error: String) {
-        logError("[Player] GME Error: ${error}")
+        Timber.e("Backend Error: %s", error)
         throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
 //        stop()
     }
 
     fun errorAllBuffersFull() {
-        logError("[Player] Couldn't get an empty AudioBuffer after ${TIMEOUT_BUFFERS_FULL_MS}ms.")
+        Timber.e("Couldn't get an empty AudioBuffer after %d ms.", TIMEOUT_BUFFERS_FULL_MS)
         throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
         //stop()
     }

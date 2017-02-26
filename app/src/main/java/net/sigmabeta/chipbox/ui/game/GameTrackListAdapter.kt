@@ -8,7 +8,7 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
 import net.sigmabeta.chipbox.ui.ItemListView
-import net.sigmabeta.chipbox.util.logError
+import timber.log.Timber
 
 class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayAdapter<Track, GameTrackViewHolder>(view) {
     var game: Game? = null
@@ -34,7 +34,7 @@ class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayA
             if (headerView != null) {
                 return createHeaderViewHolder(headerView)
             } else {
-                logError("[BaseArrayAdapter] Unable to inflate view...")
+                Timber.e("Unable to inflate view...")
                 return null
             }
         } else {
@@ -43,7 +43,7 @@ class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayA
             if (itemView != null) {
                 return createViewHolder(itemView)
             } else {
-                logError("[BaseArrayAdapter] Unable to inflate view...")
+                Timber.e("Unable to inflate view...")
                 return null
             }
         }

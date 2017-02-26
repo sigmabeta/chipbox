@@ -7,8 +7,8 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
-import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
+import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -63,7 +63,7 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
                         is FileScanCompleteEvent -> loadArtists()
                         is FileScanFailedEvent -> { /* no-op */
                         }
-                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                        else -> Timber.w("Unhandled %s", it.toString())
                     }
                 }
 

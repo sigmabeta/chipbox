@@ -9,12 +9,9 @@ import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
-import net.sigmabeta.chipbox.util.logVerbose
-import net.sigmabeta.chipbox.util.logWarning
 import rx.Observable
 import rx.schedulers.Schedulers
+import timber.log.Timber
 
 class RealmRepository(var realm: Realm) : Repository {
     override fun reopen() {
@@ -23,7 +20,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 realm = getRealmInstance()
             }
         } catch (error: IllegalStateException) {
-            logError("Illegal Realm instance access on thread ${Thread.currentThread().name}")
+            Timber.e("Illegal Realm instance access on thread ${Thread.currentThread().name}")
             realm = getRealmInstance()
         }
     }
@@ -235,7 +232,7 @@ class RealmRepository(var realm: Realm) : Repository {
         val newGame: Game
         if (game == null || !game.isValid) {
             newGame = Game(title ?: GAME_UNKNOWN, platformName ?: PLATFORM_UNKNOWN)
-            logVerbose("Created game: ${newGame.title}")
+            Timber.v("Created game: ${newGame.title}")
             game = newGame.save(realm)
         }
 
@@ -259,7 +256,7 @@ class RealmRepository(var realm: Realm) : Repository {
         val newArtist: Artist
         if (artist == null || !artist.isValid) {
             newArtist = Artist(name ?: GAME_UNKNOWN)
-            logVerbose("Created artist: ${newArtist.name}")
+            Timber.v("Created artist: ${newArtist.name}")
             artist = newArtist.save(realm)
         }
 
@@ -298,7 +295,7 @@ class RealmRepository(var realm: Realm) : Repository {
 
         val newPlatform: Platform
         if (platform == null || !platform.isValid) {
-            logVerbose("Creating platform: ${name}")
+            Timber.v("Creating platform: ${name}")
             newPlatform = Platform(name ?: PLATFORM_UNKNOWN)
             platform = newPlatform.save(realm)
         }
@@ -379,7 +376,7 @@ class RealmRepository(var realm: Realm) : Repository {
         }
 
         if (actuallyChanged) {
-            logVerbose("Updated track: ${oldTrack.title}")
+            Timber.v("Updated track: ${oldTrack.title}")
         }
 
         return actuallyChanged
@@ -390,7 +387,7 @@ class RealmRepository(var realm: Realm) : Repository {
      */
 
     override fun clearAll() {
-        logInfo("[Library] Clearing library...")
+        Timber.i("[Library] Clearing library...")
 
         realm.inTransaction {
             delete(Track::class.java)
@@ -438,7 +435,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 }
 
                 if (matchingArtist == null) {
-                    logWarning("New track missing artist: ${oldArtist.name}")
+                    Timber.w("New track missing artist: ${oldArtist.name}")
                     oldArtist.tracks?.remove(oldTrack)
                     oldTrack.artists?.remove(oldArtist)
 
@@ -453,7 +450,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 }
 
                 if (matchingArtist == null) {
-                    logVerbose("Adding artist: $newArtist")
+                    Timber.v("Adding artist: $newArtist")
 
                     val artist = getArtistByName(newArtist)
 
@@ -473,7 +470,7 @@ class RealmRepository(var realm: Realm) : Repository {
 
         val oldGame = oldTrack.game
         if (oldTrack.gameTitle != newTrack.gameTitle) {
-            logWarning("New track doesn't match old track game: ${oldTrack.gameTitle}")
+            Timber.w("New track doesn't match old track game: ${oldTrack.gameTitle}")
             oldGame?.tracks?.remove(oldTrack)
 
             val game = getGame(newTrack.platformName, newTrack.gameTitle)

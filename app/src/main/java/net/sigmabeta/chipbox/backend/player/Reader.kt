@@ -4,10 +4,10 @@ import android.media.session.PlaybackState
 import net.sigmabeta.chipbox.backend.Backend
 import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
-import net.sigmabeta.chipbox.model.audio.Voice
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.repository.Repository
-import net.sigmabeta.chipbox.util.*
+import net.sigmabeta.chipbox.util.EXTENSIONS_MULTI_TRACK
+import timber.log.Timber
 import java.io.File
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
@@ -70,7 +70,7 @@ class Reader(val player: Player,
             }
 
             if (backend?.isTrackOver() ?: true) {
-                logVerbose("[Player] Track has ended.")
+                Timber.v("Track has ended.")
 
                 if (!playlist.isNextTrackAvailable()) {
                     player.onPlaylistFinished()
@@ -109,7 +109,7 @@ class Reader(val player: Player,
             }
         }
 
-        logVerbose("[Player] Clearing empty buffer queue...")
+        Timber.v("Clearing empty buffer queue...")
 
         if (player.state != PlaybackState.STATE_PAUSED) {
             player.onPlaybackPositionUpdate(0)
@@ -119,7 +119,7 @@ class Reader(val player: Player,
 
         repository.close()
 
-        logVerbose("[Player] Reader loop has ended.")
+        Timber.v("Reader loop has ended.")
     }
 
     /**
@@ -130,13 +130,13 @@ class Reader(val player: Player,
         val backendId = track.backendId
 
         if (backendId == null) {
-            logError("Bad backend ID.")
+            Timber.e("Bad backend ID.")
             return
         }
 
         val path = track.path.orEmpty()
 
-        logDebug("[PlayerNative] Loading file: ${path}")
+        Timber.d("Loading file: %s", path)
 
         val extension = File(path).extension
         val trackNumber = if (EXTENSIONS_MULTI_TRACK.contains(extension)) {
@@ -151,7 +151,7 @@ class Reader(val player: Player,
         val loadError = backend?.getLastError()
 
         if (loadError != null) {
-            logError("[PlayerNative] Unable to load file: $loadError")
+            Timber.e("Unable to load file: %s", loadError)
         }
     }
 }

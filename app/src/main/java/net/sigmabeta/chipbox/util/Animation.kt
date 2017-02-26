@@ -12,6 +12,7 @@ import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.TextView
 import net.sigmabeta.chipbox.ui.util.transition.nonshared.*
+import timber.log.Timber
 
 val SCROLL_DIRECTION_DOWN = 1
 val SCROLL_DIRECTION_UP = -1
@@ -20,7 +21,7 @@ fun RecyclerView.isScrolledToBottom(): Boolean {
     val canScrollDown = canScrollVertically(SCROLL_DIRECTION_DOWN)
     val canScrollUp = canScrollVertically(SCROLL_DIRECTION_UP)
 
-    logVerbose("[RecyclerViewExtension] ScrollUp ${canScrollUp} ScrollDown ${canScrollDown}")
+    Timber.v("ScrollUp %b ScrollDown %b", canScrollUp, canScrollDown)
 
     return !canScrollDown && canScrollUp
 }

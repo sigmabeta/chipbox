@@ -10,10 +10,8 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.FragmentPresenter
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
-import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
+import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -79,7 +77,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
                         is FileScanCompleteEvent -> loadTracks()
                         is FileScanFailedEvent -> { /* no-op */
                         }
-                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                        else -> Timber.w("Unhandled %s", it.toString())
                     }
                 }
 
@@ -121,11 +119,11 @@ class TrackListPresenter @Inject constructor(val player: Player,
                                         showContent(it)
                                     }
                                 } ?: let {
-                                    logError("[SongListPresenter] Error: No tracks for artist ${this.artist?.id}")
+                                    Timber.e("Error: No tracks for artist %s", this.artist?.id)
                                 }
                             },
                             {
-                                logError("[SongListPresenter] Error: ${it.message}")
+                                Timber.e("Error: %s", it.message)
                                 view?.showErrorSnackbar("Error: ${it.message}", null, null)
                             }
                     )
@@ -136,7 +134,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
-                                logInfo("[SongListPresenter] Loaded ${it.size} tracks.")
+                                Timber.i("Loaded %s tracks.", it.size)
                                 printBenchmark("Tracks Loaded")
 
                                 tracks = it

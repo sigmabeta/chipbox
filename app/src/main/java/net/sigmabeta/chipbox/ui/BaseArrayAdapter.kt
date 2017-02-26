@@ -6,8 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import net.sigmabeta.chipbox.model.domain.ListItem
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
+import timber.log.Timber
 
 abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val view: ItemListView<VH>) : RecyclerView.Adapter<VH>() {
     protected var datasetInternal: List<T>? = null
@@ -33,7 +32,7 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
         if (item != null) {
             return createViewHolder(item)
         } else {
-            logError("[BaseArrayAdapter] Unable to inflate view...")
+            Timber.e("Unable to inflate view...")
             return null
         }
     }
@@ -42,7 +41,7 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
         getItem(position)?.let {
             bind(holder, it)
         } ?: let {
-            logError("[BaseArrayAdapter] Can't bind view; dataset is not valid.")
+            Timber.e("Can't bind view; dataset is not valid.")
         }
     }
 
@@ -71,7 +70,7 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
     protected fun printBenchmark(eventName: String) {
         if (diffStartTime > 0) {
             val timeDiff = System.currentTimeMillis() - diffStartTime
-            logInfo("Benchmark: $eventName after ${timeDiff}ms.")
+            Timber.i("Benchmark: %s after %d ms.", eventName, timeDiff)
         }
     }
 

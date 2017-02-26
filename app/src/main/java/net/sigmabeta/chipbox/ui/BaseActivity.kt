@@ -17,6 +17,7 @@ import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.util.*
+import timber.log.Timber
 
 
 abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : AppCompatActivity(), BaseView, View.OnClickListener {
@@ -31,7 +32,7 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
 
             override fun onError() {
                 startPostponedEnterTransition()
-                logError("[BaseActivity] Couldn't load image.")
+                Timber.e("Couldn't load image.")
             }
         }
     }

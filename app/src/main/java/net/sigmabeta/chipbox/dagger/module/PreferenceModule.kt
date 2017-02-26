@@ -5,13 +5,13 @@ import android.content.SharedPreferences
 import android.preference.PreferenceManager
 import dagger.Module
 import dagger.Provides
-import net.sigmabeta.chipbox.util.logVerbose
+import timber.log.Timber
 import javax.inject.Singleton
 
 @Module
 class PreferenceModule() {
     @Provides @Singleton fun provideSharedPreferences(context: Context): SharedPreferences {
-        logVerbose("[AppModule] Providing Shared Preferences...")
+        Timber.v("Providing Shared Preferences...")
         return PreferenceManager.getDefaultSharedPreferences(context)
     }
 }
