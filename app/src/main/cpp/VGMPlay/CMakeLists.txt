@@ -7,8 +7,6 @@ set(libvgm_SRCS ${CHIPS_SRCS}
                 android/Scanner.cpp
                 android/Backend.cpp )
 
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 # Add library to be compiled.
 add_library(vgm SHARED ${libvgm_SRCS})
 
@@ -24,12 +22,3 @@ if(ANDROID)
         "-Wl,--no-whole-archive"
         )
 endif()
-
-# 0.1 is a very arbitrary version number I just made up
-set_target_properties(vgm
-    PROPERTIES VERSION 0.1
-               SOVERSION 0)
-
-install(TARGETS vgm LIBRARY DESTINATION ../jnilib${LIB_SUFFIX}
-                    RUNTIME DESTINATION bin  # DLL platforms
-                    ARCHIVE DESTINATION lib) # DLL platforms
