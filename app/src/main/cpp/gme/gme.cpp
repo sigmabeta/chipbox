@@ -1,7 +1,6 @@
 // Game_Music_Emu 0.6.0. http://www.slack.net/~ant/
 
 #include "Music_Emu.h"
-#include "gme_types.h"
 #if !GME_DISABLE_STEREO_DEPTH
 #include "Effects_Buffer.h"
 #endif
