@@ -45,10 +45,6 @@ set(libgme_SRCS Blip_Buffer.cpp
 # These headers are part of the generic gme interface.
 set (EXPORTED_HEADERS gme.h)
 
-# Run during cmake phase, so this is available during make
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gme_types.h.in
-    ${CMAKE_CURRENT_BINARY_DIR}/gme_types.h)
-
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgme.pc.in
     ${CMAKE_CURRENT_BINARY_DIR}/libgme.pc @ONLY)
 
