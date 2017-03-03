@@ -68,10 +68,3 @@ if(ANDROID)
         "-Wl,--no-whole-archive"
         )
 endif()
-
-install(TARGETS gme LIBRARY DESTINATION ../jnilib${LIB_SUFFIX}
-                    RUNTIME DESTINATION bin  # DLL platforms
-                    ARCHIVE DESTINATION lib) # DLL platforms
-
-install(FILES ${EXPORTED_HEADERS} DESTINATION include/gme)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgme.pc DESTINATION lib${LIB_SUFFIX}/pkgconfig)
