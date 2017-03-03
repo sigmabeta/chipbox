@@ -72,15 +72,6 @@ if(ANDROID)
         )
 endif()
 
-# The version is the release.  The "soversion" is the API version.  As long
-# as only build fixes are performed (i.e. no backwards-incompatible changes
-# to the API), the SOVERSION should be the same even when bumping up VERSION.
-# The way gme.h is designed, SOVERSION should very rarely be bumped, if ever.
-# Hopefully the API can stay compatible with old versions.
-set_target_properties(gme
-    PROPERTIES VERSION ${GME_VERSION}
-               SOVERSION 0)
-
 install(TARGETS gme LIBRARY DESTINATION ../jnilib${LIB_SUFFIX}
                     RUNTIME DESTINATION bin  # DLL platforms
                     ARCHIVE DESTINATION lib) # DLL platforms
