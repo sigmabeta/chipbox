@@ -22,6 +22,8 @@
 //#include "streams.h"
 //#include "cpuintrf.h"
 #include "3812intf.h"
+#include "adlibemu_opl2.h"
+
 
 #ifdef ENABLE_ALL_CORES
 #include "fmopl.h"

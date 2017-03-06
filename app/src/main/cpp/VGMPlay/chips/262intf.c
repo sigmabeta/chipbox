@@ -10,6 +10,8 @@
 //#include "sndintrf.h"
 //#include "streams.h"
 #include "262intf.h"
+#include "adlibemu_opl3.h"
+
 
 #ifdef ENABLE_ALL_CORES
 #include "ymf262.h"
