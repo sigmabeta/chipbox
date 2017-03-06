@@ -1,3 +1,6 @@
+#ifndef CHIPBOX_OPL2_H
+#define CHIPBOX_OPL2_H
+
 /*
  *  Copyright (C) 2002-2010  The DOSBox Team
  *  OPL2/OPL3 emulation library
@@ -6,12 +9,12 @@
  *  modify it under the terms of the GNU Lesser General Public
  *  License as published by the Free Software Foundation; either
  *  version 2.1 of the License, or (at your option) any later version.
- * 
+ *
  *  This library is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  *  Lesser General Public License for more details.
- * 
+ *
  *  You should have received a copy of the GNU Lesser General Public
  *  License along with this library; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -25,7 +28,12 @@
  */
 
 
+#include "../stdbool.h"
+
 #define fltype double
+
+typedef void (*ADL_UPDATEHANDLER)(void *param);
+
 
 /*
 	define Bits, Bitu, Bit32s, Bit32u, Bit16s, Bit16u, Bit8s, Bit8u here
@@ -58,11 +66,7 @@ typedef INT8 Bit8s;
 
 
 #undef NUM_CHANNELS
-#if defined(OPLTYPE_IS_OPL3)
-#define NUM_CHANNELS    18
-#else
-#define NUM_CHANNELS	9
-#endif
+#define NUM_CHANNELS    9
 
 #define MAXOPERATORS    (NUM_CHANNELS*2)
 
@@ -78,11 +82,7 @@ typedef INT8 Bit8s;
 #define WAVEPREC        1024        // waveform precision (10 bits)
 
 //#define INTFREQU		((fltype)(14318180.0 / 288.0))		// clocking of the chip
-#if defined(OPLTYPE_IS_OPL3)
-#define INTFREQU        ((fltype)(OPL->chip_clock / 288.0))        // clocking of the chip
-#else
-#define INTFREQU		((fltype)(OPL->chip_clock / 72.0))		// clocking of the chip
-#endif
+#define INTFREQU        ((fltype)(OPL->chip_clock / 72.0))        // clocking of the chip
 
 
 #define OF_TYPE_ATT            0
@@ -157,11 +157,6 @@ typedef struct operator_struct {
     Bits env_step_a, env_step_d, env_step_r;    // number of std samples of one step (for attack/decay/release mode)
     Bit8u step_skip_pos_a;            // position of 8-cyclic step skipping (always 2^x to check against mask)
     Bits env_step_skip_a;            // bitmask that determines if a step is skipped (respective bit is zero then)
-
-#if defined(OPLTYPE_IS_OPL3)
-    bool is_4op, is_4op_attached;    // base of a 4op channel/part of a 4op channel
-    Bit32s left_pan, right_pan;        // opl3 stereo panning amount
-#endif
 } op_type;
 
 typedef struct opl_chip {
@@ -176,14 +171,9 @@ typedef struct opl_chip {
     Bit8u status;
     Bit32u opl_index;
     Bits opl_addr;
-#if defined(OPLTYPE_IS_OPL3)
-    Bit8u adlibreg[512];    // adlib register set (including second set)
-    Bit8u wave_sel[44];        // waveform selection
-#else
-    Bit8u adlibreg[256];	// adlib register set
-    Bit8u wave_sel[22];		// waveform selection
-#endif
 
+    Bit8u adlibreg[256];    // adlib register set
+    Bit8u wave_sel[22];        // waveform selection
 
     // vibrato/tremolo increment/counter
     Bit32u vibtab_pos;
@@ -233,3 +223,6 @@ void adlib_getsample(void *chip, Bit32s** sndptr, Bits numsamples);
 Bitu adlib_reg_read(void *chip, Bitu port);
 void adlib_write_index(void *chip, Bitu port, Bit8u val);*/
 static void adlib_write(void *chip, Bitu idx, Bit8u val);
+
+
+#endif //CHIPBOX_OPL2_H
