@@ -22,6 +22,10 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
             if (value === datasetInternal) {
 
             } else {
+                if (datasetInternal == null && value != null) {
+                    showFromEmptyList(value)
+                }
+
                 startAsyncListRefresh(value)
             }
         }
@@ -66,6 +70,11 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
     abstract fun createViewHolder(view: View): VH
 
     abstract protected fun bind(holder: VH, item: T)
+
+    protected open fun showFromEmptyList(value: List<T>) {
+        datasetInternal = value
+        notifyItemRangeInserted(0, value.size)
+    }
 
     protected fun printBenchmark(eventName: String) {
         if (diffStartTime > 0) {
