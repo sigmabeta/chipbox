@@ -94,6 +94,11 @@ class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayA
         holder.bind(item)
     }
 
+    override fun showFromEmptyList(value: List<Track>) {
+        datasetInternal = value
+        notifyDataSetChanged()
+    }
+
     companion object {
         val TYPE_HEADER = 0
         val TYPE_ITEM = 1
