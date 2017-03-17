@@ -134,6 +134,8 @@ class MediaNotificationManager(val playerService: PlayerService,
                     filter.addAction(ACTION_PREV)
                     filter.addAction(ACTION_NEXT)
 
+                    Timber.v("Starting foregroundness.")
+
                     playerService.registerReceiver(this, filter)
                     playerService.startForeground(NOTIFICATION_ID, notification)
 
@@ -163,6 +165,7 @@ class MediaNotificationManager(val playerService: PlayerService,
                 // ignore if the receiver is not registered.
             }
 
+            Timber.v("Stopping foregroundness.")
             playerService.stopForeground(true)
             playingGameArtBitmap = null
         }
@@ -323,7 +326,7 @@ class MediaNotificationManager(val playerService: PlayerService,
 
         if (playbackState == null || !notified) {
             Timber.v("Canceling notification.")
-
+            Timber.v("Stopping foregroundness.")
             playerService.stopForeground(true)
             return
         }
@@ -404,6 +407,7 @@ class MediaNotificationManager(val playerService: PlayerService,
                 stopNotification()
             } else {
                 if (state.state == PlaybackState.STATE_PAUSED) {
+                    Timber.v("Stopping foregroundness.")
                     playerService.stopForeground(false)
                 }
 
