@@ -12,21 +12,37 @@ import net.sigmabeta.chipbox.model.domain.Track
 import rx.Observable
 import rx.schedulers.Schedulers
 import timber.log.Timber
+import java.util.*
 
 class RealmRepository(var realm: Realm) : Repository {
+    var id: UUID = UUID.randomUUID()
+
+    var isClosed = false
+
     override fun reopen() {
         try {
-            if (realm.isClosed) {
+            if (isClosed) {
+                Timber.v("Reopening repository: %s", id)
                 realm = getRealmInstance()
+                isClosed = false
+            } else {
+                Timber.v("Already opened repository: %s", id)
             }
         } catch (error: IllegalStateException) {
             Timber.e("Illegal Realm instance access on thread ${Thread.currentThread().name}")
             realm = getRealmInstance()
+            isClosed = false
         }
     }
 
     override fun close() {
-        realm.closeAndReport()
+        if (!isClosed) {
+            Timber.v("Closing repository: %s", id)
+            realm.closeAndReport()
+            isClosed = true
+        } else {
+            Timber.e("Already closed repository: %s", id)
+        }
     }
 
     /**
