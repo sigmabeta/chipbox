@@ -178,12 +178,7 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
 
     protected open fun inflateContent() {}
 
-    protected open fun setTransitions() {
-        window.enterTransition = TRANSITION_FADE_IN_BELOW
-        window.reenterTransition = TRANSITION_STAGGERED_FADE_IN_ABOVE
-        window.exitTransition = TRANSITION_STAGGERED_FADE_OUT_UP
-        window.returnTransition = TRANSITION_FADE_OUT_DOWN
-    }
+    protected open fun setTransitions() = Unit
 
     protected fun showSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) {
         val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)

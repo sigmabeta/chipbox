@@ -9,8 +9,6 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_STAGGERED_FADE_IN_ABOVE
-import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_STAGGERED_FADE_OUT_UP
 import net.sigmabeta.chipbox.util.changeText
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import javax.inject.Inject
@@ -136,9 +134,6 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
 
         fun newInstance(): PlayerFragment {
             val fragment = PlayerFragment()
-
-            fragment.reenterTransition = TRANSITION_FRAGMENT_STAGGERED_FADE_IN_ABOVE
-            fragment.exitTransition = TRANSITION_FRAGMENT_STAGGERED_FADE_OUT_UP
 
             return fragment
         }
