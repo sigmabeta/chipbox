@@ -324,10 +324,10 @@ class MediaNotificationManager(val playerService: PlayerService,
     private fun setNotificationPlaybackState(builder: NotificationCompat.Builder) {
         Timber.d("Updating notification's playback state.")
 
-        if (playbackState == null || !notified) {
-            Timber.v("Canceling notification.")
-            Timber.v("Stopping foregroundness.")
+        if (playbackState == null) {
+            Timber.e("Stopping foregroundness, playbackState: %s", playbackState?.toString())
             playerService.stopForeground(true)
+            builder.setOngoing(false)
             return
         }
 
