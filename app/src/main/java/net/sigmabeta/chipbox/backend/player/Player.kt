@@ -200,6 +200,7 @@ class Player @Inject constructor(val playlist: Playlist,
         state = PlaybackState.STATE_STOPPED
 
         audioManager.abandonAudioFocus(this)
+        reader = null
 
         backendView?.stop()
     }
