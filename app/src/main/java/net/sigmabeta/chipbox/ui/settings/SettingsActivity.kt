@@ -42,7 +42,7 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
      * ItemListView
      */
 
-    override fun onItemClick(position: Int, clickedViewHolder: VoiceViewHolder) {
+    override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }
 

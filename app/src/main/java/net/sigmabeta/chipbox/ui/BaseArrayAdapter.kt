@@ -61,8 +61,8 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
         return datasetInternal?.get(position)
     }
 
-    fun onItemClick(position: Int, clickedViewHolder: VH) {
-        view.onItemClick(position, clickedViewHolder)
+    fun onItemClick(position: Int) {
+        view.onItemClick(position)
     }
 
     abstract fun getLayoutId(): Int
