@@ -66,8 +66,9 @@ class Player @Inject constructor(val playlist: Playlist,
                 backendView?.play()
             }
 
-            val emptyBuffers = ArrayBlockingQueue<AudioBuffer>(READ_AHEAD_BUFFER_SIZE)
-            val fullBuffers = ArrayBlockingQueue<AudioBuffer>(READ_AHEAD_BUFFER_SIZE)
+            // If track was paused, let's reuse the same buffers.
+            val emptyBuffers = reader?.emptyBuffers ?: ArrayBlockingQueue<AudioBuffer>(READ_AHEAD_BUFFER_SIZE)
+            val fullBuffers = reader?.fullBuffers ?: ArrayBlockingQueue<AudioBuffer>(READ_AHEAD_BUFFER_SIZE)
 
             val firstTrackId = trackId ?: playlist.playingTrackId
 
@@ -88,17 +89,24 @@ class Player @Inject constructor(val playlist: Playlist,
             }, "writer").start()
 
             Thread({
-                reader = Reader(this,
-                        playlist,
-                        repositoryProvider.get(),
-                        audioConfig,
-                        emptyBuffers,
-                        fullBuffers,
-                        firstTrackId,
-                        resuming)
+                if (state == PlaybackState.STATE_STOPPED || reader == null) {
+                    Timber.e("No existing reader; starting a new one.")
+                    reader = Reader(this,
+                            playlist,
+                            repositoryProvider,
+                            audioConfig,
+                            emptyBuffers,
+                            fullBuffers,
+                            firstTrackId,
+                            resuming)
+                }
 
                 reader?.loop()
-                reader = null
+
+                if (state == PlaybackState.STATE_STOPPED) {
+                    Timber.e("Playback stopped; clearing Reader.")
+                    reader = null
+                }
             }, "reader").start()
 
         } else {

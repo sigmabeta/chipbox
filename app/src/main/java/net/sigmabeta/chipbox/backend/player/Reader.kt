@@ -11,10 +11,11 @@ import timber.log.Timber
 import java.io.File
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
+import javax.inject.Provider
 
 class Reader(val player: Player,
              val playlist: Playlist,
-             val repository: Repository,
+             val repositoryProvider: Provider<Repository>,
              val audioConfig: AudioConfig,
              val emptyBuffers: BlockingQueue<AudioBuffer>,
              val fullBuffers: BlockingQueue<AudioBuffer>,
@@ -22,10 +23,12 @@ class Reader(val player: Player,
              var resuming: Boolean) {
     var backend: Backend? = null
 
+    var repository: Repository? = null
+
     var playingTrackId: String? = null
         set (value) {
             if (value != null) {
-                val track = repository.getTrackSync(value)
+                val track = repository?.getTrackSync(value)
 
                 if (track != null) {
                     if (!resuming) {
@@ -48,6 +51,8 @@ class Reader(val player: Player,
     var queuedSeekPosition: Long? = null
 
     fun loop() {
+        repository = repositoryProvider.get()
+
         // Pre-seed the emptyQueue.
         while (true) {
             try {
@@ -117,7 +122,7 @@ class Reader(val player: Player,
 
         emptyBuffers.clear()
 
-        repository.close()
+        repository?.close()
 
         Timber.v("Reader loop has ended.")
     }
