@@ -13,6 +13,7 @@ import android.view.animation.DecelerateInterpolator
 import android.widget.TextView
 import net.sigmabeta.chipbox.ui.util.transition.nonshared.*
 import timber.log.Timber
+import java.util.ArrayList
 
 val SCROLL_DIRECTION_DOWN = 1
 val SCROLL_DIRECTION_UP = -1
@@ -138,9 +139,15 @@ fun View.growFromNothing() = animate()
         .scaleX(1.0f)
         .scaleY(1.0f)
 
-/**
- * Not really anywhere better to put this, I guess.
- */
-fun Activity.getShareableNavBar(): Pair<View, String>? {
-    return Pair(window.decorView.findViewById(R.id.navigationBarBackground) ?: return null, Window.NAVIGATION_BAR_BACKGROUND_TRANSITION_NAME)
+
+fun removeNullViewPairs(vararg views: Pair<View, String>?): Array<Pair<View, String>> {
+    val viewsList = ArrayList<Pair<View, String>>(views.size)
+
+    views.forEach {
+        if (it != null) {
+            viewsList.add(it)
+        }
+    }
+
+    return viewsList.toTypedArray()
 }

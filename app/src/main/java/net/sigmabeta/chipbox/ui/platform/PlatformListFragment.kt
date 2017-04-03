@@ -51,7 +51,7 @@ class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListVie
      * ItemListView
      */
 
-    override fun onItemClick(position: Int, clickedViewHolder: PlatformViewHolder) {
+    override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }
 

@@ -83,7 +83,7 @@ class PlaylistFragment : BaseFragment<PlaylistFragmentPresenter, PlaylistFragmen
      * ItemListView
      */
 
-    override fun onItemClick(position: Int, clickedViewHolder: PlaylistTrackViewHolder) {
+    override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }
 

@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -11,6 +12,7 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Pair
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.ImageView
 import android.widget.Toast
 import com.squareup.picasso.Callback
@@ -18,6 +20,7 @@ import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.util.*
 import timber.log.Timber
+import java.util.ArrayList
 
 
 abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : AppCompatActivity(), BaseView, View.OnClickListener {
@@ -173,6 +176,16 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
     }
 
     fun getFragmentComponent() = getPresenterImpl().fragmentComponent
+
+    fun getShareableNavBar(): Pair<View, String>? {
+        return Pair(window.decorView.findViewById(android.R.id.navigationBarBackground) ?: return null,
+                Window.NAVIGATION_BAR_BACKGROUND_TRANSITION_NAME)
+    }
+
+    fun getShareableStatusBar(): Pair<View, String>? {
+        return Pair(window.decorView.findViewById(android.R.id.statusBarBackground) ?: return null,
+                Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
+    }
 
     open fun getShareableViews(): Array<Pair<View, String>>? = null
 

@@ -66,7 +66,7 @@ class ArtistListFragment : BaseFragment<ArtistListPresenter, ArtistListView>(), 
      * ItemListView
      */
 
-    override fun onItemClick(position: Int, clickedViewHolder: ArtistViewHolder) {
+    override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }
 

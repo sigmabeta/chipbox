@@ -20,7 +20,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
 
     fun onItemClick(position: Int) {
         val id = games?.get(position)?.id ?: return
-        view?.launchGameActivity(id)
+        view?.launchGameActivity(id, position)
     }
 
     fun refresh(arguments: Bundle) = setupHelper(arguments)
@@ -54,8 +54,6 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
                 showEmptyState()
             }
         }
-
-        view?.clearClickedViewHolder()
 
         val subscription = updater.asObservable()
                 .throttleFirst(5000, TimeUnit.MILLISECONDS)
