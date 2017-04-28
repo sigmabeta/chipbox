@@ -78,17 +78,6 @@ class Player @Inject constructor(val playlist: Playlist,
             }
 
             Thread({
-                writer = Writer(this,
-                        audioConfig,
-                        audioManager,
-                        emptyBuffers,
-                        fullBuffers)
-
-                writer?.loop()
-                writer = null
-            }, "writer").start()
-
-            Thread({
                 if (state == PlaybackState.STATE_STOPPED || reader == null) {
                     Timber.e("No existing reader; starting a new one.")
                     reader = Reader(this,
@@ -109,6 +98,17 @@ class Player @Inject constructor(val playlist: Playlist,
                 }
             }, "reader").start()
 
+            Thread({
+                writer = Writer(this,
+                        audioConfig,
+                        audioManager,
+                        emptyBuffers,
+                        fullBuffers)
+
+                writer?.loop()
+                writer = null
+            }, "writer").start()
+
         } else {
             Timber.e("Unable to gain audio focus.")
         }
@@ -125,6 +125,7 @@ class Player @Inject constructor(val playlist: Playlist,
 
             reader?.let {
                 it.queuedTrackId = trackId
+                start(null)
             } ?: let {
                 start(trackId)
             }
@@ -143,6 +144,7 @@ class Player @Inject constructor(val playlist: Playlist,
 
         reader?.let {
             it.queuedTrackId = trackId
+            start(null)
         } ?: let {
             start(trackId)
         }
@@ -152,6 +154,7 @@ class Player @Inject constructor(val playlist: Playlist,
         val nextTrack = playlist.getNextTrack()
         reader?.let {
             it.queuedTrackId = nextTrack
+            start(null)
         } ?: let {
             start(nextTrack)
         }
@@ -167,6 +170,7 @@ class Player @Inject constructor(val playlist: Playlist,
                 val prevTrack = playlist.getPrevTrack()
                 reader?.let {
                     it.queuedTrackId = prevTrack
+                    start(null)
                 } ?: let {
                     start(prevTrack)
                 }
@@ -267,6 +271,7 @@ class Player @Inject constructor(val playlist: Playlist,
         settings.onTrackChange()
         playlist.playingTrackId = trackId
         playlist.playingGameId = gameId
+        writer?.clearBuffers()
     }
 
     fun onPlaylistFinished() {
@@ -280,27 +285,23 @@ class Player @Inject constructor(val playlist: Playlist,
 
     fun errorReadFailed(error: String) {
         Timber.e("Backend Error: %s", error)
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-//        stop()
     }
 
     fun errorAllBuffersFull() {
         Timber.e("Couldn't get an empty AudioBuffer after %d ms.", TIMEOUT_BUFFERS_FULL_MS)
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-        //stop()
     }
 
 
     companion object {
         val ERROR_AUDIO_TRACK_NULL = -100
 
-        val READ_AHEAD_BUFFER_SIZE = 2
+        val READ_AHEAD_BUFFER_SIZE = 20
 
         val REPEAT_OFF = 0
         val REPEAT_ALL = 1
         val REPEAT_ONE = 2
         val REPEAT_INFINITE = 3
 
-        val TIMEOUT_BUFFERS_FULL_MS = 1000L
+        val TIMEOUT_BUFFERS_FULL_MS = 5000L
     }
 }

@@ -5,6 +5,7 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.session.PlaybackState
 import android.os.Process
+import android.util.Log
 import net.sigmabeta.chipbox.backend.StatsManager
 import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
@@ -21,17 +22,19 @@ class Writer(val player: Player,
 
     val stats = StatsManager(audioConfig)
 
+    var audioTrack: AudioTrack? = null
+
     fun loop() {
         Timber.d("Starting writer loop.")
 
         Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
 
-        val audioTrack = initializeAudioTrack()
+        audioTrack = initializeAudioTrack()
         var duckVolume = 1.0f
         var writerIndex = 0
 
         // Begin playback loop
-        audioTrack.play()
+        audioTrack?.play()
 
         val timeout = 5000L
 
@@ -60,17 +63,17 @@ class Writer(val player: Player,
                     Timber.v("Lowering volume to %.2f...", duckVolume)
                 }
 
-                audioTrack.setVolume(duckVolume)
+                audioTrack?.setVolume(duckVolume)
             } else {
                 if (duckVolume < 1.0f) {
                     duckVolume += 0.1f
                     Timber.v("Raising volume to %.2f...", duckVolume)
 
-                    audioTrack.setVolume(duckVolume)
+                    audioTrack?.setVolume(duckVolume)
                 }
             }
 
-            val bytesWritten = audioTrack.write(audioBuffer.buffer, 0, audioConfig.bufferSizeShorts)
+            val bytesWritten = audioTrack?.write(audioBuffer.buffer, 0, audioConfig.bufferSizeShorts)
                     ?: Player.ERROR_AUDIO_TRACK_NULL
 
             emptyBuffers.put(audioBuffer)
@@ -90,13 +93,34 @@ class Writer(val player: Player,
         Timber.v("Clearing full buffer queue...")
         fullBuffers.clear()
 
-        audioTrack.pause()
-        audioTrack.flush()
-        audioTrack.release()
+        audioTrack?.pause()
+        audioTrack?.release()
 
         Timber.v("Writer loop has ended.")
     }
 
+    fun clearBuffers() {
+        Timber.i("Resetting full buffers.")
+
+        audioTrack?.flush()
+
+        while (true) {
+            try {
+                val nextFullBuffer = fullBuffers.poll()
+
+                if (nextFullBuffer != null) {
+                    emptyBuffers.add(nextFullBuffer)
+                } else {
+                    break
+                }
+            } catch (ex: IllegalStateException) {
+                Timber.e("Empty buffers filled before full buffers cleared.")
+                Timber.e(Log.getStackTraceString(ex))
+                fullBuffers.clear()
+                break
+            }
+        }
+    }
 
     /**
      * Private Methods
