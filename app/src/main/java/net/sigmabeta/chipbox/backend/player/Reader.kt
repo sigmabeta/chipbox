@@ -37,6 +37,8 @@ class Reader(val player: Player,
                         loadTrack(track,
                                 audioConfig.sampleRate,
                                 audioConfig.bufferSizeShorts.toLong())
+
+                        resetEmptyBuffers()
                     } else {
                         resuming = false
                     }
@@ -53,15 +55,6 @@ class Reader(val player: Player,
     fun loop() {
         repository = repositoryProvider.get()
 
-        // Pre-seed the emptyQueue.
-        while (true) {
-            try {
-                emptyBuffers.add(AudioBuffer(audioConfig.bufferSizeShorts))
-            } catch (ex: IllegalStateException) {
-                break
-            }
-        }
-
         while (player.state == PlaybackState.STATE_PLAYING) {
             queuedTrackId?.let {
                 playingTrackId = it
@@ -77,15 +70,22 @@ class Reader(val player: Player,
             if (backend?.isTrackOver() ?: true) {
                 Timber.v("Track has ended.")
 
-                if (!playlist.isNextTrackAvailable()) {
-                    player.onPlaylistFinished()
-                    break
-                } else {
-                    if (playlist.repeat == Player.REPEAT_ONE) {
-                        queuedTrackId = playingTrackId
+                val nextFullBuffer = fullBuffers.peek()
+                if (nextFullBuffer == null) {
+                    if (!playlist.isNextTrackAvailable()) {
+                        player.onPlaylistFinished()
+                        break
                     } else {
-                        queuedTrackId = playlist.getNextTrack()
+                        if (playlist.repeat == Player.REPEAT_ONE) {
+                            queuedTrackId = playingTrackId
+                        } else {
+                            queuedTrackId = playlist.getNextTrack()
+                        }
                     }
+                } else {
+                    Timber.i("Writer still outputting finished track.")
+                    Thread.sleep(audioConfig.minimumLatency.toLong())
+                    continue
                 }
             }
 
@@ -114,13 +114,9 @@ class Reader(val player: Player,
             }
         }
 
-        Timber.v("Clearing empty buffer queue...")
-
         if (player.state != PlaybackState.STATE_PAUSED) {
             player.onPlaybackPositionUpdate(0)
         }
-
-        emptyBuffers.clear()
 
         repository?.close()
 
@@ -158,5 +154,22 @@ class Reader(val player: Player,
         if (loadError != null) {
             Timber.e("Unable to load file: %s", loadError)
         }
+    }
+
+    private fun resetEmptyBuffers() {
+        Timber.i("Resetting empty buffers; %d missing", emptyBuffers.remainingCapacity())
+        var returnedBuffers = 0
+        while (emptyBuffers.remainingCapacity() > 0) {
+            var nextBuffer = fullBuffers.poll()
+
+            if (nextBuffer == null) {
+                nextBuffer = AudioBuffer(audioConfig.bufferSizeShorts)
+            } else {
+                returnedBuffers++
+            }
+
+            emptyBuffers.add(nextBuffer)
+        }
+        Timber.i("Resetted %d buffers", returnedBuffers)
     }
 }
