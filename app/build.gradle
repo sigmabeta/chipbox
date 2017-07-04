@@ -82,8 +82,11 @@ android {
         }
     }
 
+    flavorDimensions "abi"
+
     productFlavors {
         arm {
+            dimension "abi"
             versionCode getVersionCode() + 1
 
             ndk {
@@ -92,6 +95,7 @@ android {
         }
 
         x86 {
+            dimension "abi"
             versionCode getVersionCode() + 3
 
             ndk {
@@ -100,6 +104,7 @@ android {
         }
 
         arm_64 {
+            dimension "abi"
             versionCode getVersionCode() + 5
 
             ndk {
@@ -108,6 +113,7 @@ android {
         }
 
         x86_64 {
+            dimension "abi"
             versionCode getVersionCode() + 7
 
             ndk {
