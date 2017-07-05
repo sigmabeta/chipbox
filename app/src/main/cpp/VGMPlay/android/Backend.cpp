@@ -91,7 +91,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_readNe
 
         env->ReleaseShortArrayElements(java_array, target_array, 0);
 
-        if (g_sample_count != created_samples && !isVgmEnd()) {
+        if (g_sample_count != created_samples && !isTrackOver()) {
             g_last_error = "Wrote fewer samples than expected.";
         }
     } else {
@@ -99,13 +99,10 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_readNe
     }
 }
 
-
-JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_getMillisPlayed
+jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_getMillisPlayed
         (JNIEnv *env, jobject) {
-    long samples = getSamplesPlayed();
-    return CalcSampleMSec(samples, SAMPLES_TO_MSEC_RATE_CURRENT);
+    return getMillisPlayed();
 }
-
 
 JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_seek
         (JNIEnv *env, jobject, jlong time_in_ms) {
@@ -183,7 +180,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_muteVo
 
 JNIEXPORT jboolean JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_isTrackOver
         (JNIEnv *env, jobject) {
-    return isVgmEnd();
+    return isTrackOver();
 }
 
 
@@ -212,6 +209,19 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_get
 /**
  * Private Methods
  */
+
+bool isTrackOver() {
+    return getMillisPlayed() >= getTrackLengthMillis();
+}
+
+long getMillisPlayed() {
+    long samples = getSamplesPlayed();
+    return CalcSampleMSec(samples, SAMPLES_TO_MSEC_RATE_CURRENT);
+}
+
+long getTrackLengthMillis() {
+    return CalcSampleMSecExt(VGMHead.lngTotalSamples, SAMPLES_TO_MSEC_RATE_DEFAULT, &VGMHead);
+}
 
 void setMutingData(int mute_chip_id, CHIP_OPTS *mute_options, int channel_number, bool muted) {
     int current_channel;

@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include "../Music_Emu.h"
 #include "net_sigmabeta_chipbox_backend_gme_ScannerImpl.h"
 
