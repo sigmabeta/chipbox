@@ -98,6 +98,9 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_get
 
 int getChannelCountForChipId(int);
 void setMutingData(int, CHIP_OPTS *, int, bool);
+bool isTrackOver();
+long getMillisPlayed();
+long getTrackLengthMillis();
 
 #ifdef __cplusplus
 }
