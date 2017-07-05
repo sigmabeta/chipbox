@@ -32,13 +32,15 @@ class Reader(val player: Player,
 
                 if (track != null) {
                     if (!resuming) {
+                        resetEmptyBuffers()
                         backend?.teardown()
+
+                        Thread.sleep(100)
 
                         loadTrack(track,
                                 audioConfig.sampleRate,
                                 audioConfig.bufferSizeShorts.toLong())
 
-                        resetEmptyBuffers()
                     } else {
                         resuming = false
                     }
@@ -98,7 +100,12 @@ class Reader(val player: Player,
 
             // Get the next samples from the native player.
             synchronized(playingTrackId ?: break) {
+                if (audioBuffer.timeStamp >= 0L) {
+                    Timber.e("Timestamp not cleared: ${audioBuffer.timeStamp}")
+                }
+
                 backend?.readNextSamples(audioBuffer.buffer)
+                audioBuffer.timeStamp = System.currentTimeMillis()
             }
 
             val error = backend?.getLastError()
@@ -166,6 +173,8 @@ class Reader(val player: Player,
                 nextBuffer = AudioBuffer(audioConfig.bufferSizeShorts)
             } else {
                 returnedBuffers++
+                nextBuffer.buffer.fill(0)
+                nextBuffer.timeStamp = -1L
             }
 
             emptyBuffers.add(nextBuffer)

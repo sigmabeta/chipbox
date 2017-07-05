@@ -24,6 +24,8 @@ class Writer(val player: Player,
 
     var audioTrack: AudioTrack? = null
 
+    var lastTimestamp = -1L
+
     fun loop() {
         Timber.d("Starting writer loop.")
 
@@ -73,8 +75,21 @@ class Writer(val player: Player,
                 }
             }
 
+            if (audioBuffer.timeStamp < 0L) {
+                throw RuntimeException("Invalid timestamp: ${audioBuffer.timeStamp}")
+            }
+
             val bytesWritten = audioTrack?.write(audioBuffer.buffer, 0, audioConfig.bufferSizeShorts)
                     ?: Player.ERROR_AUDIO_TRACK_NULL
+
+            if (lastTimestamp < audioBuffer.timeStamp) {
+                Timber.w("Playing buffer timestamped at %d", audioBuffer.timeStamp)
+            } else {
+                Timber.e("Buffer timestamp timing problem: %d > %d", lastTimestamp, audioBuffer.timeStamp)
+            }
+
+            lastTimestamp = audioBuffer.timeStamp
+            audioBuffer.timeStamp = -1L
 
             emptyBuffers.put(audioBuffer)
 
@@ -109,6 +124,7 @@ class Writer(val player: Player,
                 val nextFullBuffer = fullBuffers.poll()
 
                 if (nextFullBuffer != null) {
+                    nextFullBuffer.timeStamp = -1L
                     emptyBuffers.add(nextFullBuffer)
                 } else {
                     break

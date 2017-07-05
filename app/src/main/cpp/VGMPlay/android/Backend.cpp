@@ -211,7 +211,7 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_get
  */
 
 bool isTrackOver() {
-    return getMillisPlayed() >= getTrackLengthMillis();
+    return isVgmEnd();
 }
 
 long getMillisPlayed() {
