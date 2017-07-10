@@ -93,4 +93,12 @@
 
     <string name="onboarding_library_title">Add tracks to your library</string>
     <string name="onboarding_library_detail">Put tracks into folders by game, album art optional. Then scan in Chipbox!</string>
+
+    <!-- TODO Move to debug resources -->
+    <!-- Debug Strings-->
+    <string name="debug_label_buffer_bytes">Bytes Per Buffer</string>
+    <string name="debug_label_buffer_count">Buffer Count</string>
+    <string name="debug_label_latency_minimum">Minimum Latency (ms)</string>
+    <string name="debug_label_latency_total">Total Buffer Size (ms)</string>
+    <string name="debug_label_sample_rate">Sample Rate (Hz)</string>
 </resources>
