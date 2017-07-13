@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/linear_content"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -23,7 +24,7 @@
 
         <Spinner
             android:id="@+id/spinner_buffer_bytes"
-            android:layout_width="96dp"
+            android:layout_width="@dimen/debug_setting_value_width"
             android:layout_height="wrap_content"
             android:layout_marginEnd="16dp"/>
     </LinearLayout>
@@ -48,7 +49,7 @@
 
         <Spinner
             android:id="@+id/spinner_buffer_count"
-            android:layout_width="96dp"
+            android:layout_width="@dimen/debug_setting_value_width"
             android:layout_height="wrap_content"
             android:layout_marginEnd="16dp"/>
     </LinearLayout>
@@ -72,11 +73,37 @@
 
         <TextView
             android:id="@+id/text_buffer_latency_minimum"
-            android:layout_width="96dp"
+            android:layout_width="@dimen/debug_setting_value_width"
             android:layout_height="wrap_content"
             android:layout_marginEnd="16dp"
             android:gravity="end"
-            tools:text="5"/>
+            tools:text="5 ms"/>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:background="?attr/selectableItemBackground"
+        android:layout_height="72dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/text_label_buffer_latency_actual"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="16sp"
+            android:text="@string/debug_label_latency_actual"/>
+
+        <TextView
+            android:id="@+id/text_buffer_latency_actual"
+            android:layout_width="@dimen/debug_setting_value_width"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:gravity="end"
+            tools:text="20 ms"/>
     </LinearLayout>
 
     <LinearLayout
@@ -98,11 +125,11 @@
 
         <TextView
             android:id="@+id/text_buffer_latency_total"
-            android:layout_width="96dp"
+            android:layout_width="@dimen/debug_setting_value_width"
             android:layout_height="wrap_content"
             android:layout_marginEnd="16dp"
             android:gravity="end"
-            tools:text="5"/>
+            tools:text="30 ms"/>
     </LinearLayout>
 
     <LinearLayout
@@ -124,11 +151,11 @@
 
         <TextView
             android:id="@+id/text_sample_rate"
-            android:layout_width="96dp"
+            android:layout_width="@dimen/debug_setting_value_width"
             android:layout_height="wrap_content"
             android:layout_marginEnd="16dp"
             android:gravity="end"
-            tools:text="44100"
+            tools:text="44100 Hz"
             />
     </LinearLayout>
 

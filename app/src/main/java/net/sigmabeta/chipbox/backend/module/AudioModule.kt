@@ -14,16 +14,10 @@ class AudioModule {
     @Provides @Singleton fun provideAudioConfig(): AudioConfig {
         Timber.v("Providing AudioConfig...")
         val sampleRate = AudioTrack.getNativeOutputSampleRate(AudioManager.STREAM_MUSIC)
-        val bufferSizeBytes = AudioTrack.getMinBufferSize(sampleRate,
+        val minBufferSize = AudioTrack.getMinBufferSize(sampleRate,
                 AudioFormat.CHANNEL_OUT_STEREO,
-                AudioFormat.ENCODING_PCM_16BIT) * 10
+                AudioFormat.ENCODING_PCM_16BIT)
 
-        val bufferSizeSamples = bufferSizeBytes / 4
-        val minimumLatency = 1000 * bufferSizeSamples / sampleRate
-
-        Timber.d("Sample Rate: %d Hz.  Buffer size: %d samples.", sampleRate, bufferSizeSamples)
-        Timber.d("Minimum audio latency: %d ms.", minimumLatency)
-
-        return AudioConfig(sampleRate, bufferSizeBytes, minimumLatency)
+        return AudioConfig(sampleRate, minBufferSize, 1, 1)
     }
 }

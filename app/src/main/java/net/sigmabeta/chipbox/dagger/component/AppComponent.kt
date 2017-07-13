@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.backend.module.AudioModule
 import net.sigmabeta.chipbox.dagger.module.AppModule
 import net.sigmabeta.chipbox.dagger.module.PreferenceModule
 import net.sigmabeta.chipbox.model.database.module.RepositoryModule
+import net.sigmabeta.chipbox.ui.debug.DebugActivity
 import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.ui.main.MainActivity
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
@@ -34,6 +35,7 @@ interface AppComponent {
     fun inject(view: PlayerActivity)
     fun inject(view: GameActivity)
     fun inject(view: SettingsActivity)
+    fun inject(view: DebugActivity)
     fun inject(view: OnboardingActivity)
 
     fun inject(backendView: PlayerService)
