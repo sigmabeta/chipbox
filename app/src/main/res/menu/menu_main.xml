@@ -16,4 +16,9 @@
         android:id="@+id/drawer_help"
         android:title="@string/drawer_help" />
 
+    <item
+        android:icon="@drawable/ic_settings_black_24dp"
+        android:id="@+id/drawer_debug"
+        android:title="@string/drawer_debug"/>
+
 </menu>

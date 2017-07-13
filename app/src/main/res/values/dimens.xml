@@ -16,6 +16,7 @@
 
     <dimen name="divider_margin_top_bottom">6dp</dimen>
 
+    <dimen name="debug_setting_value_width">128dp</dimen>
 
     <!-- Onboarding Animations -->
 

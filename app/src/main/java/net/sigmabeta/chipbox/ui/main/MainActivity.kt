@@ -22,6 +22,7 @@ import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.TopLevelFragment
+import net.sigmabeta.chipbox.ui.debug.DebugActivity
 import net.sigmabeta.chipbox.ui.onboarding.OnboardingActivity
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
@@ -238,6 +239,10 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
 
     override fun launchSettingsActivity() {
         SettingsActivity.launch(this)
+    }
+
+    override fun launchDebugActivity() {
+        DebugActivity.launch(this)
     }
 
     override fun launchOnboarding() {
