@@ -106,7 +106,7 @@ class Writer(val player: Player,
         stats.clear()
 
         Timber.v("Clearing full buffer queue...")
-        fullBuffers.clear()
+        clearBuffers()
 
         audioTrack?.pause()
         audioTrack?.release()

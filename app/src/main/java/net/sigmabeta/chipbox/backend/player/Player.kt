@@ -271,6 +271,7 @@ class Player @Inject constructor(val playlist: Playlist,
         settings.onTrackChange()
         playlist.playingTrackId = trackId
         playlist.playingGameId = gameId
+        writer?.lastTimestamp = 0
         writer?.clearBuffers()
     }
 

@@ -18,6 +18,6 @@ class AudioModule {
                 AudioFormat.CHANNEL_OUT_STEREO,
                 AudioFormat.ENCODING_PCM_16BIT)
 
-        return AudioConfig(sampleRate, minBufferSize, 1, 1)
+        return AudioConfig(sampleRate, minBufferSize, 1, 3)
     }
 }
