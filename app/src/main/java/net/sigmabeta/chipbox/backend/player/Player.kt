@@ -67,8 +67,8 @@ class Player @Inject constructor(val playlist: Playlist,
             }
 
             // If track was paused, let's reuse the same buffers.
-            val emptyBuffers = reader?.emptyBuffers ?: ArrayBlockingQueue<AudioBuffer>(READ_AHEAD_BUFFER_SIZE)
-            val fullBuffers = reader?.fullBuffers ?: ArrayBlockingQueue<AudioBuffer>(READ_AHEAD_BUFFER_SIZE)
+            val emptyBuffers = reader?.emptyBuffers ?: ArrayBlockingQueue<AudioBuffer>(audioConfig.bufferCount)
+            val fullBuffers = reader?.fullBuffers ?: ArrayBlockingQueue<AudioBuffer>(audioConfig.bufferCount)
 
             val firstTrackId = trackId ?: playlist.playingTrackId
 
@@ -294,8 +294,6 @@ class Player @Inject constructor(val playlist: Playlist,
 
     companion object {
         val ERROR_AUDIO_TRACK_NULL = -100
-
-        val READ_AHEAD_BUFFER_SIZE = 20
 
         val REPEAT_OFF = 0
         val REPEAT_ALL = 1

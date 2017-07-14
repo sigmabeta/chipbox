@@ -96,7 +96,7 @@ class Writer(val player: Player,
             logProblems(bytesWritten)
 
             writerIndex += 1
-            if (writerIndex == Player.READ_AHEAD_BUFFER_SIZE) {
+            if (writerIndex == audioConfig.bufferCount) {
                 writerIndex = 0
             }
         }
@@ -149,7 +149,7 @@ class Writer(val player: Player,
                 "Buffer length: %d msec",
                 audioConfig.sampleRate,
                 audioConfig.bufferSizeBytes,
-                audioConfig.minimumLatency * Player.READ_AHEAD_BUFFER_SIZE)
+                audioConfig.actualLatency)
 
         val audioTrack = AudioTrack(AudioManager.STREAM_MUSIC,
                 audioConfig.sampleRate,
