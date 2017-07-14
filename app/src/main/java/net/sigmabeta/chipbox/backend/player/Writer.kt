@@ -88,6 +88,8 @@ class Writer(val player: Player,
                 Timber.e("Buffer timestamp timing problem: %d > %d", lastTimestamp, audioBuffer.timeStamp)
             }
 
+            player.onPlaybackPositionUpdate(audioBuffer.timeStamp)
+
             lastTimestamp = audioBuffer.timeStamp
             audioBuffer.timeStamp = -1L
 
@@ -160,16 +162,6 @@ class Writer(val player: Player,
 
         // Get updates on playback position every second (one frame is equal to one sample).
         audioTrack.positionNotificationPeriod = audioConfig.sampleRate
-
-        // Set a listener to update the UI's playback position.
-        audioTrack.setPlaybackPositionUpdateListener(object : AudioTrack.OnPlaybackPositionUpdateListener {
-            override fun onPeriodicNotification(track: AudioTrack) {
-                val millisPlayed = player.backend?.getMillisPlayed() ?: 0L
-                player.onPlaybackPositionUpdate(millisPlayed)
-            }
-
-            override fun onMarkerReached(track: AudioTrack) {}
-        })
 
         return audioTrack
     }
