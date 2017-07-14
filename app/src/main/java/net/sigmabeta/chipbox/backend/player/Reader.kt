@@ -105,7 +105,7 @@ class Reader(val player: Player,
                 }
 
                 backend?.readNextSamples(audioBuffer.buffer)
-                audioBuffer.timeStamp = System.currentTimeMillis()
+                audioBuffer.timeStamp = backend?.getMillisPlayed() ?: -1
             }
 
             val error = backend?.getLastError()
@@ -126,6 +126,8 @@ class Reader(val player: Player,
         }
 
         repository?.close()
+
+        resetEmptyBuffers()
 
         Timber.v("Reader loop has ended.")
     }
