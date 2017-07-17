@@ -87,7 +87,7 @@ class Reader(val player: Player,
                 } else {
                     Timber.i("Writer still outputting finished track.")
                     try {
-                        Thread.sleep(audioConfig.minimumLatency.toLong())
+                        Thread.sleep(audioConfig.singleBufferLatency.toLong())
                     } catch (ex: InterruptedException) {
                         Timber.e("Sleep interrupted.")
                     }
@@ -108,8 +108,8 @@ class Reader(val player: Player,
                     Timber.e("Timestamp not cleared: ${audioBuffer.timeStamp}")
                 }
 
-                backend?.readNextSamples(audioBuffer.buffer)
                 audioBuffer.timeStamp = backend?.getMillisPlayed() ?: -1
+                backend?.readNextSamples(audioBuffer.buffer)
             }
 
             val error = backend?.getLastError()
