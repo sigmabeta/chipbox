@@ -39,7 +39,7 @@ class Reader(val player: Player,
 
                         loadTrack(track,
                                 audioConfig.sampleRate,
-                                audioConfig.bufferSizeShorts.toLong())
+                                audioConfig.singleBufferSizeShorts.toLong())
 
                     } else {
                         resuming = false
@@ -65,7 +65,7 @@ class Reader(val player: Player,
 
             queuedSeekPosition?.let {
                 backend?.seek(it)
-                player.onPlaybackPositionUpdate(it.toLong())
+                player.onSeek(it)
                 queuedSeekPosition = null
             }
 
@@ -86,7 +86,11 @@ class Reader(val player: Player,
                     }
                 } else {
                     Timber.i("Writer still outputting finished track.")
-                    Thread.sleep(audioConfig.minimumLatency.toLong())
+                    try {
+                        Thread.sleep(audioConfig.minimumLatency.toLong())
+                    } catch (ex: InterruptedException) {
+                        Timber.e("Sleep interrupted.")
+                    }
                     continue
                 }
             }
@@ -168,12 +172,18 @@ class Reader(val player: Player,
     private fun resetEmptyBuffers() {
         Timber.i("Resetting empty buffers; %d missing", emptyBuffers.remainingCapacity())
         var returnedBuffers = 0
+        var createdBuffers = 0
         while (emptyBuffers.remainingCapacity() > 0) {
             var nextBuffer = fullBuffers.poll()
 
             if (nextBuffer == null) {
-                nextBuffer = AudioBuffer(audioConfig.bufferSizeShorts)
+                Timber.v("Creating new buffer...")
+
+                createdBuffers++
+                nextBuffer = AudioBuffer(audioConfig.singleBufferSizeShorts)
             } else {
+                Timber.v("Clearing full buffer...")
+
                 returnedBuffers++
                 nextBuffer.buffer.fill(0)
                 nextBuffer.timeStamp = -1L
@@ -181,6 +191,6 @@ class Reader(val player: Player,
 
             emptyBuffers.add(nextBuffer)
         }
-        Timber.i("Resetted %d buffers", returnedBuffers)
+        Timber.i("Resetted %d and created %d buffers", returnedBuffers, createdBuffers)
     }
 }
