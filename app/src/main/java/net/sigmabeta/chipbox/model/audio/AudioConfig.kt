@@ -8,26 +8,26 @@ class AudioConfig(val sampleRate: Int,
 
     val BYTES_PER_SHORT = 2
 
-    val minBufferSizeShorts
-        get() = minBufferSizeBytes / BYTES_PER_SHORT
-
-    val minBufferSizeSamples
-        get() = minBufferSizeShorts / (NUMBER_OF_CHANNELS)
-
     val singleBufferSizeBytes
         get() = minBufferSizeBytes * bufferSizeMultiplier
-
-    val singleBufferSizeShorts
-        get() = singleBufferSizeBytes / BYTES_PER_SHORT
-
-    val singleBufferSizeSamples
-        get() = singleBufferSizeShorts / NUMBER_OF_CHANNELS
 
     val totalBufferSizeBytes
         get() = singleBufferSizeBytes * bufferCount
 
+    val minBufferSizeShorts
+        get() = minBufferSizeBytes / BYTES_PER_SHORT
+
+    val singleBufferSizeShorts
+        get() = singleBufferSizeBytes / BYTES_PER_SHORT
+
     val totalBufferSizeShorts
         get() = totalBufferSizeBytes / BYTES_PER_SHORT
+
+    val minBufferSizeSamples
+        get() = minBufferSizeShorts / NUMBER_OF_CHANNELS
+
+    val singleBufferSizeSamples
+        get() = singleBufferSizeShorts / NUMBER_OF_CHANNELS
 
     val totalBufferSizeSamples
         get() = totalBufferSizeShorts / NUMBER_OF_CHANNELS
@@ -36,8 +36,8 @@ class AudioConfig(val sampleRate: Int,
         get() = 1000 * minBufferSizeSamples / sampleRate
 
     val singleBufferLatency
-        get() = minimumLatency * bufferSizeMultiplier
+        get() = 1000 * singleBufferSizeSamples / sampleRate
 
     val totalBufferSizeMs
-        get() = singleBufferLatency * bufferCount
+        get() = 1000 * totalBufferSizeSamples / sampleRate
 }
