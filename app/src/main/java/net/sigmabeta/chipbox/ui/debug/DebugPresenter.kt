@@ -16,14 +16,14 @@ class DebugPresenter @Inject constructor(val audioConfig: AudioConfig): Activity
     fun onBufferMultiplierChange(multiplier: Int) {
         audioConfig.bufferSizeMultiplier = multiplier
 
-        view?.showActualLatency(audioConfig.actualLatency)
+        view?.showActualLatency(audioConfig.singleBufferLatency)
         view?.showTotalBufferSize(audioConfig.totalBufferSizeMs)
     }
 
     fun onBufferCountChange(count: Int) {
         audioConfig.bufferCount = count
 
-        view?.showActualLatency(audioConfig.actualLatency)
+        view?.showActualLatency(audioConfig.singleBufferLatency)
         view?.showTotalBufferSize(audioConfig.totalBufferSizeMs)
     }
 
@@ -59,10 +59,10 @@ class DebugPresenter @Inject constructor(val audioConfig: AudioConfig): Activity
      */
 
     private fun setupHelper() {
-        view?.showBufferSize(audioConfig.minBufferSize, audioConfig.bufferSizeMultiplier)
+        view?.showBufferSize(audioConfig.minBufferSizeBytes, audioConfig.bufferSizeMultiplier)
         view?.showBufferCount(audioConfig.bufferCount)
         view?.showMinimumLatency(audioConfig.minimumLatency)
-        view?.showActualLatency(audioConfig.actualLatency)
+        view?.showActualLatency(audioConfig.singleBufferLatency)
         view?.showTotalBufferSize(audioConfig.totalBufferSizeMs)
         view?.showSampleRate(audioConfig.sampleRate)
     }

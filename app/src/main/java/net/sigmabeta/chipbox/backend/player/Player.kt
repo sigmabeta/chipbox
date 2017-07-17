@@ -263,6 +263,11 @@ class Player @Inject constructor(val playlist: Playlist,
         updater.send(PositionEvent(millisPlayed))
     }
 
+    fun onSeek(millisPlayed: Long) {
+        Timber.d("Seeking to $millisPlayed ms")
+        writer?.onSeek(millisPlayed)
+    }
+
     /**
      * Internal Events
      */
