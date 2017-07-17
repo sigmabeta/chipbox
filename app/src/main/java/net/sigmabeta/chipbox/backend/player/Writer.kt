@@ -84,17 +84,19 @@ class Writer(val player: Player,
             val bytesWritten = audioTrack?.write(audioBuffer.buffer, 0, audioConfig.singleBufferSizeShorts)
                     ?: Player.ERROR_AUDIO_TRACK_NULL
 
-            if (lastTimestamp < audioBuffer.timeStamp) {
-//                Timber.w("Playing buffer timestamped at %d", audioBuffer.timeStamp)
-            } else {
-                Timber.e("Buffer timestamp timing problem: %d > %d", lastTimestamp, audioBuffer.timeStamp)
-            }
-
             if (seeking) {
                 clearBuffers()
                 seeking = false
             } else {
                 player.onPlaybackPositionUpdate(audioBuffer.timeStamp)
+
+                if (lastTimestamp < audioBuffer.timeStamp) {
+//                Timber.w("Playing buffer timestamped at %d", audioBuffer.timeStamp)
+                } else if (audioBuffer.timeStamp > 0) {
+                    Timber.e("Buffer timestamp timing problem: %d > %d", lastTimestamp, audioBuffer.timeStamp)
+                } else {
+                    Timber.e("Buffer timestamp timing problem: %d is negative", audioBuffer.timeStamp)
+                }
             }
 
             lastTimestamp = audioBuffer.timeStamp
