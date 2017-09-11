@@ -55,12 +55,12 @@ JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_getFi
 
 JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_getFileIntroLength
         (JNIEnv *env, jobject) {
-    return CalcSampleMSecExt(g_header.lngLoopOffset, SAMPLES_TO_MSEC_RATE_DEFAULT, &g_header);;
+    return CalcSampleMSecExt(g_header.lngLoopOffset, SAMPLES_TO_MSEC_RATE_DEFAULT, &g_header);
 }
 
 JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_getFileLoopLength
         (JNIEnv *env, jobject) {
-    return CalcSampleMSecExt(g_header.lngLoopSamples, SAMPLES_TO_MSEC_RATE_DEFAULT, &g_header);;
+    return CalcSampleMSecExt(g_header.lngLoopSamples, SAMPLES_TO_MSEC_RATE_DEFAULT, &g_header);
 }
 
 JNIEXPORT jbyteArray JNICALL Java_net_sigmabeta_chipbox_backend_vgm_ScannerImpl_getFileTitle

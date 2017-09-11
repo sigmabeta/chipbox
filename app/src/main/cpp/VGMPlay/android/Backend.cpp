@@ -15,6 +15,7 @@ extern "C" {
 const char *g_last_error;
 
 long g_sample_count;
+long g_played_sample_count;
 int g_sample_rate;
 
 int g_channel_count;
@@ -40,6 +41,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_loadFi
     __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "Setting sample rate: %d",
                         rate);
 
+    g_played_sample_count = 0;
     g_sample_count = buffer_size / 2;
     g_sample_rate = rate;
 
@@ -89,6 +91,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_readNe
     if (target_array != NULL) {
         uint32_t created_samples = FillBuffer((WAVE_16BS *) target_array, (UINT32) g_sample_count);
 
+        g_played_sample_count += created_samples;
         env->ReleaseShortArrayElements(java_array, target_array, 0);
 
         if (g_sample_count != created_samples && !isTrackOver()) {
@@ -108,6 +111,8 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_see
         (JNIEnv *env, jobject, jlong time_in_ms) {
     UINT32 samples = CalcSampleMSec(time_in_ms, MSEC_TO_SAMPLES_RATE_CURRENT);
     SeekVGM(false, samples);
+
+    g_played_sample_count = samples;
     return NULL;
 }
 
@@ -215,8 +220,7 @@ bool isTrackOver() {
 }
 
 long getMillisPlayed() {
-    long samples = getSamplesPlayed();
-    return CalcSampleMSec(samples, SAMPLES_TO_MSEC_RATE_CURRENT);
+    return CalcSampleMSec(g_played_sample_count, SAMPLES_TO_MSEC_RATE_CURRENT);
 }
 
 long getTrackLengthMillis() {
@@ -360,3 +364,5 @@ int getChannelCountForChipId(int chip_id) {
             return -1;
     }
 }
+
+
