@@ -448,10 +448,6 @@ UINT16 Last95Drum;    // for optvgm debugging
 UINT16 Last95Max;    // for optvgm debugging
 UINT32 Last95Freq;    // for optvgm debugging
 
-long getSamplesPlayed() {
-    return VGMSmplPlayed + (VGMCurLoop * VGMHead.lngLoopSamples);
-}
-
 bool isVgmEnd() {
     return VGMEnd;
 }
