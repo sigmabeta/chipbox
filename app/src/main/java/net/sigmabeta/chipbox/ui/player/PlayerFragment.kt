@@ -81,7 +81,9 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
      * OnSeekbarChangeListener
      */
 
-    override fun onProgressChanged(p0: SeekBar?, p1: Int, p2: Boolean) { }
+    override fun onProgressChanged(p0: SeekBar?, progress: Int, p2: Boolean) {
+        presenter.onSeekbarChanged(progress)
+    }
 
     override fun onStartTrackingTouch(p0: SeekBar?) {
         presenter.onSeekbarTouch()
