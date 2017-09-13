@@ -222,7 +222,7 @@ class MediaNotificationManager(val playerService: PlayerService,
 
 
     private fun updateState(state: Int) {
-        Timber.d("Updating notification state.")
+        Timber.d("Updating notification state: $state")
 
         val position = player.position
 
@@ -236,11 +236,15 @@ class MediaNotificationManager(val playerService: PlayerService,
     }
 
     private fun createNotification(): Notification? {
-        if (mediaMetadata == null || playbackState == null) {
+        if (mediaMetadata == null) {
             Timber.e("Can't create notification. " +
                     "Playback state: %s " +
                     "Metadata: %s", playbackState, mediaMetadata)
             return null
+        }
+
+        if (playbackState == null) {
+            updateState(player.state)
         }
 
         Timber.d("Creating notification.")
@@ -286,6 +290,7 @@ class MediaNotificationManager(val playerService: PlayerService,
 
         val stop = getActionIntent(playerService, KeyEvent.KEYCODE_MEDIA_STOP)
 
+        Timber.e("Session token: $sessionToken")
         val mediaStyle = NotificationCompat.MediaStyle()
                 .setShowActionsInCompactView(*intArrayOf(playButtonPosition))
                 .setMediaSession(sessionToken)
@@ -377,6 +382,8 @@ class MediaNotificationManager(val playerService: PlayerService,
      * (see [android.media.session.MediaController.Callback.onSessionDestroyed])
      */
     private fun updateSessionToken() {
+        Timber.d("Updating session token.")
+
         val freshToken = playerService.getSessionToken()
 
         if (sessionToken == null || sessionToken != freshToken) {
