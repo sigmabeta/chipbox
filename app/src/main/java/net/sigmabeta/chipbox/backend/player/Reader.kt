@@ -173,7 +173,9 @@ class Reader(val player: Player,
         Timber.i("Resetting empty buffers; %d missing", emptyBuffers.remainingCapacity())
         var returnedBuffers = 0
         var createdBuffers = 0
-        while (emptyBuffers.remainingCapacity() > 0) {
+
+        var addedSuccessfully = true
+        while (emptyBuffers.remainingCapacity() > 0 && addedSuccessfully) {
             var nextBuffer = fullBuffers.poll()
 
             if (nextBuffer == null) {
@@ -189,8 +191,13 @@ class Reader(val player: Player,
                 nextBuffer.timeStamp = -1L
             }
 
-            emptyBuffers.add(nextBuffer)
+            addedSuccessfully = emptyBuffers.offer(nextBuffer)
         }
+
+        if (!addedSuccessfully) {
+            Timber.e("Empty buffers full after adding ${createdBuffers - 1} buffers.")
+        }
+
         Timber.i("Resetted %d and created %d buffers", returnedBuffers, createdBuffers)
     }
 }
