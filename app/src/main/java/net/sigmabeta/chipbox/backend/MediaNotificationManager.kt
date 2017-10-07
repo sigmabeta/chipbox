@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
+import android.media.MediaMetadata
 import android.media.session.PlaybackState
 import android.os.SystemClock
 import android.support.v4.app.NotificationCompat.Action
@@ -119,31 +120,28 @@ class MediaNotificationManager(val playerService: PlayerService,
         if (!notified) {
             val localTrackId = playlist.playingTrackId
 
-            if (localTrackId != null) {
-                updateState(player.state)
-                updateTrack(localTrackId)
+            updateState(player.state)
+            updateTrack(localTrackId)
 
-                val notification = createNotification()
-                if (notification != null) {
-                    Timber.v("Starting foreground notification...")
+            val notification = createNotification()
+            if (notification != null) {
+                Timber.v("Starting foreground notification...")
 
-                    val filter = IntentFilter()
-                    filter.addAction(ACTION_PAUSE)
-                    filter.addAction(ACTION_PLAY)
-                    filter.addAction(ACTION_STOP)
-                    filter.addAction(ACTION_PREV)
-                    filter.addAction(ACTION_NEXT)
+                val filter = IntentFilter()
+                filter.addAction(ACTION_PAUSE)
+                filter.addAction(ACTION_PLAY)
+                filter.addAction(ACTION_STOP)
+                filter.addAction(ACTION_PREV)
+                filter.addAction(ACTION_NEXT)
 
-                    Timber.v("Starting foregroundness.")
+                Timber.v("Starting foregroundness.")
 
-                    playerService.registerReceiver(this, filter)
-                    playerService.startForeground(NOTIFICATION_ID, notification)
+                playerService.registerReceiver(this, filter)
+                playerService.startForeground(NOTIFICATION_ID, notification)
 
-                    notified = true
-                }
-            } else {
-                Timber.e("Can't show notification: no track found.")
+                notified = true
             }
+
         }
     }
 
@@ -290,7 +288,7 @@ class MediaNotificationManager(val playerService: PlayerService,
 
         val stop = getActionIntent(playerService, KeyEvent.KEYCODE_MEDIA_STOP)
 
-        Timber.e("Session token: $sessionToken")
+        Timber.v("Session token: $sessionToken")
         val mediaStyle = NotificationCompat.MediaStyle()
                 .setShowActionsInCompactView(*intArrayOf(playButtonPosition))
                 .setMediaSession(sessionToken)
@@ -353,9 +351,13 @@ class MediaNotificationManager(val playerService: PlayerService,
             }
 
             return metadataBuilder.build()
+        } ?: let {
+            return MediaMetadataCompat.Builder()
+                    .putString(MediaMetadata.METADATA_KEY_TITLE, RealmRepository.TITLE_UNKNOWN)
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, RealmRepository.GAME_UNKNOWN)
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, RealmRepository.ARTIST_UNKNOWN)
+                    .build()
         }
-
-        return null
     }
 
     private fun getAvailableActions(state: Int, queuePosition: Int?, queueSize: Int?): Long {
