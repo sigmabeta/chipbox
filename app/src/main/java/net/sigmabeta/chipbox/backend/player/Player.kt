@@ -43,6 +43,8 @@ class Player @Inject constructor(val playlist: Playlist,
     private var reader: Reader? = null
     private var writer: Writer? = null
 
+    private var writerThread: Thread? = null
+
     var backend: Backend? = null
         get() {
             return reader?.backend
@@ -98,7 +100,7 @@ class Player @Inject constructor(val playlist: Playlist,
                 }
             }, "reader").start()
 
-            Thread({
+            writerThread = Thread({
                 writer = Writer(this,
                         audioConfig,
                         audioManager,
@@ -107,7 +109,9 @@ class Player @Inject constructor(val playlist: Playlist,
 
                 writer?.loop()
                 writer = null
-            }, "writer").start()
+            }, "writer")
+
+            writerThread?.start()
 
         } else {
             Timber.e("Unable to gain audio focus.")
@@ -190,6 +194,7 @@ class Player @Inject constructor(val playlist: Playlist,
 
         state = PlaybackState.STATE_PAUSED
 
+        writerThread?.interrupt()
         backendView?.pause()
     }
 
@@ -206,6 +211,7 @@ class Player @Inject constructor(val playlist: Playlist,
         audioManager.abandonAudioFocus(this)
         reader = null
 
+        writerThread?.interrupt()
         backendView?.stop()
     }
 

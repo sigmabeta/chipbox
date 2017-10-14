@@ -42,76 +42,79 @@ class Writer(val player: Player,
 
         val timeout = 5000L
 
-        while (player.state == PlaybackState.STATE_PLAYING) {
-            var audioBuffer = fullBuffers.poll()
-
-            if (audioBuffer == null) {
-                Timber.e("Buffer underrun.")
-                stats.underrunCount += 1
-
-                audioBuffer = fullBuffers.poll(timeout, TimeUnit.MILLISECONDS)
+        try {
+            while (player.state == PlaybackState.STATE_PLAYING) {
+                var audioBuffer = fullBuffers.poll()
 
                 if (audioBuffer == null) {
-                    Timber.e("Couldn't get a full buffer after %d ms; stopping...", timeout)
-                    player.state = PlaybackState.STATE_ERROR
-                    break
-                }
-            }
+                    Timber.e("Buffer underrun.")
+                    stats.underrunCount += 1
 
-            // Check if necessary to make volume adjustments
-            if (ducking) {
-                Timber.d("Ducking behind other app...")
+                    audioBuffer = fullBuffers.poll(timeout, TimeUnit.MILLISECONDS)
 
-                if (duckVolume > 0.3f) {
-                    duckVolume -= 0.4f
-                    Timber.v("Lowering volume to %.2f...", duckVolume)
+                    if (audioBuffer == null) {
+                        Timber.e("Couldn't get a full buffer after %d ms; stopping...", timeout)
+                        player.state = PlaybackState.STATE_ERROR
+                        break
+                    }
                 }
 
-                audioTrack?.setVolume(duckVolume)
-            } else {
-                if (duckVolume < 1.0f) {
-                    duckVolume += 0.1f
-                    Timber.v("Raising volume to %.2f...", duckVolume)
+                // Check if necessary to make volume adjustments
+                if (ducking) {
+                    Timber.d("Ducking behind other app...")
+
+                    if (duckVolume > 0.3f) {
+                        duckVolume -= 0.4f
+                        Timber.v("Lowering volume to %.2f...", duckVolume)
+                    }
 
                     audioTrack?.setVolume(duckVolume)
-                }
-            }
-
-            if (audioBuffer.timeStamp < 0L) {
-                throw RuntimeException("Invalid timestamp: ${audioBuffer.timeStamp}")
-            }
-
-            val bytesWritten = audioTrack?.write(audioBuffer.buffer, 0, audioConfig.singleBufferSizeShorts)
-                    ?: Player.ERROR_AUDIO_TRACK_NULL
-
-            if (seeking) {
-                clearBuffers()
-                seeking = false
-            } else {
-                player.onPlaybackPositionUpdate(audioBuffer.timeStamp)
-
-                if (lastTimestamp < audioBuffer.timeStamp) {
-//                Timber.w("Playing buffer timestamped at %d", audioBuffer.timeStamp)
-                } else if (audioBuffer.timeStamp > 0) {
-                    Timber.e("Buffer timestamp timing problem: %d > %d", lastTimestamp, audioBuffer.timeStamp)
                 } else {
-                    Timber.e("Buffer timestamp timing problem: %d is negative", audioBuffer.timeStamp)
+                    if (duckVolume < 1.0f) {
+                        duckVolume += 0.1f
+                        Timber.v("Raising volume to %.2f...", duckVolume)
+
+                        audioTrack?.setVolume(duckVolume)
+                    }
+                }
+
+                if (audioBuffer.timeStamp < 0L) {
+                    throw RuntimeException("Invalid timestamp: ${audioBuffer.timeStamp}")
+                }
+
+                val bytesWritten = audioTrack?.write(audioBuffer.buffer, 0, audioConfig.singleBufferSizeShorts)
+                        ?: Player.ERROR_AUDIO_TRACK_NULL
+
+                if (seeking) {
+                    clearBuffers()
+                    seeking = false
+                } else {
+                    player.onPlaybackPositionUpdate(audioBuffer.timeStamp)
+
+                    if (lastTimestamp < audioBuffer.timeStamp) {
+//                Timber.w("Playing buffer timestamped at %d", audioBuffer.timeStamp)
+                    } else if (audioBuffer.timeStamp > 0) {
+                        Timber.e("Buffer timestamp timing problem: %d > %d", lastTimestamp, audioBuffer.timeStamp)
+                    } else {
+                        Timber.e("Buffer timestamp timing problem: %d is negative", audioBuffer.timeStamp)
+                    }
+                }
+
+                lastTimestamp = audioBuffer.timeStamp
+                audioBuffer.timeStamp = -1L
+
+                emptyBuffers.put(audioBuffer)
+
+                logProblems(bytesWritten)
+
+                writerIndex += 1
+                if (writerIndex == audioConfig.bufferCount) {
+                    writerIndex = 0
                 }
             }
-
-            lastTimestamp = audioBuffer.timeStamp
-            audioBuffer.timeStamp = -1L
-
-            emptyBuffers.put(audioBuffer)
-
-            logProblems(bytesWritten)
-
-            writerIndex += 1
-            if (writerIndex == audioConfig.bufferCount) {
-                writerIndex = 0
-            }
+        } catch (ex: InterruptedException) {
+            Timber.d("Writer thread interrupted.")
         }
-
 
         logStats()
         stats.clear()
