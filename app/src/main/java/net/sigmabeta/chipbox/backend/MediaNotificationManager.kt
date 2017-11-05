@@ -230,14 +230,18 @@ class MediaNotificationManager(val playerService: PlayerService,
         stateBuilder.setState(state, position, 1.0f, SystemClock.elapsedRealtime())
 
         playbackState = stateBuilder.build()
-        playerService.session?.setPlaybackState(playbackState)
+        playerService.session?.setPlaybackState(playbackState) ?: Timber.e("Error")
     }
 
     private fun createNotification(): Notification? {
         if (mediaMetadata == null) {
-            Timber.e("Can't create notification. " +
-                    "Playback state: %s " +
-                    "Metadata: %s", playbackState, mediaMetadata)
+            mediaMetadata = updateMetadata()
+        }
+
+        val metadata = mediaMetadata
+
+        if (metadata == null) {
+            Timber.e("Notification can't be created without valid metadata.")
             return null
         }
 
@@ -247,9 +251,19 @@ class MediaNotificationManager(val playerService: PlayerService,
 
         Timber.d("Creating notification.")
 
-        val session = playerService.session ?: return null
+        val session = playerService.session
 
-        val notificationBuilder = builderFrom(playerService, session) ?: return null
+        if (session == null) {
+            Timber.e("No session available yet.")
+            return null
+        }
+
+        val notificationBuilder = builderFrom(playerService, session, metadata)
+
+        if (notificationBuilder == null) {
+            Timber.e("Notification can't be created.")
+            return null
+        }
 
         var playButtonPosition = 0
 
@@ -338,7 +352,7 @@ class MediaNotificationManager(val playerService: PlayerService,
         builder.setOngoing(playbackState?.getState() == PlaybackState.STATE_PLAYING)
     }
 
-    private fun updateMetadata(): MediaMetadataCompat? {
+    private fun updateMetadata(): MediaMetadataCompat {
         playingTrack?.let {
             val metadataBuilder = Track.toMetadataBuilder(it)
 
@@ -466,10 +480,14 @@ class MediaNotificationManager(val playerService: PlayerService,
          * *
          * @return A pre-built notification with information from the given media session.
          */
-        fun builderFrom(context: Context, mediaSession: MediaSessionCompat): NotificationCompat.Builder? {
+        fun builderFrom(context: Context, mediaSession: MediaSessionCompat, mediaMetadata: MediaMetadataCompat): NotificationCompat.Builder? {
             val controller = mediaSession.controller
-            val mediaMetadata = controller.metadata
-            val description = mediaMetadata?.description ?: return null
+            val description = mediaMetadata.description
+
+            if (description == null) {
+                Timber.e("Invalid metadata.")
+                return null
+            }
 
             val builder = NotificationCompat.Builder(context)
 
