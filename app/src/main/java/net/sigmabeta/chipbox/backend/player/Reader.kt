@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.backend.player
 
 import android.media.session.PlaybackState
 import net.sigmabeta.chipbox.backend.Backend
+import net.sigmabeta.chipbox.backend.vgm.BackendImpl
 import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
 import net.sigmabeta.chipbox.model.domain.Track
@@ -117,7 +118,11 @@ class Reader(val player: Player,
             if (error == null) {
                 // Check this so that we don't put one last buffer into the full queue after it's cleared.
                 if (player.state == PlaybackState.STATE_PLAYING) {
-                    fullBuffers.put(audioBuffer)
+
+                    // TODO Remove this VGM Backend workaround
+                    if (backend !is /* VGMPlay */ BackendImpl || backend?.isTrackOver() == false) {
+                        fullBuffers.put(audioBuffer)
+                    }
                 }
             } else {
                 player.errorReadFailed(error)
