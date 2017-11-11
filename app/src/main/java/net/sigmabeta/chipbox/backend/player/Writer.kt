@@ -5,13 +5,11 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.media.session.PlaybackState
 import android.os.Process
+import android.util.Log
 import net.sigmabeta.chipbox.backend.StatsManager
 import net.sigmabeta.chipbox.model.audio.AudioBuffer
 import net.sigmabeta.chipbox.model.audio.AudioConfig
-import net.sigmabeta.chipbox.util.logDebug
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
-import net.sigmabeta.chipbox.util.logVerbose
+import timber.log.Timber
 import java.util.concurrent.BlockingQueue
 import java.util.concurrent.TimeUnit
 
@@ -22,120 +20,174 @@ class Writer(val player: Player,
              val fullBuffers: BlockingQueue<AudioBuffer>) {
     var ducking = false
 
+    var seeking = false
+
     val stats = StatsManager(audioConfig)
 
+    var audioTrack: AudioTrack? = null
+
+    var lastTimestamp = -1L
+
     fun loop() {
-        logDebug("[Player] Starting writer loop.")
+        Timber.d("Starting writer loop.")
 
         Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
 
-        val audioTrack = initializeAudioTrack()
+        audioTrack = initializeAudioTrack()
         var duckVolume = 1.0f
         var writerIndex = 0
 
         // Begin playback loop
-        audioTrack.play()
+        audioTrack?.play()
 
         val timeout = 5000L
 
-        while (player.state == PlaybackState.STATE_PLAYING) {
-            var audioBuffer = fullBuffers.poll()
-
-            if (audioBuffer == null) {
-                logError("[Player] Buffer underrun.")
-                stats.underrunCount += 1
-
-                audioBuffer = fullBuffers.poll(timeout, TimeUnit.MILLISECONDS)
+        try {
+            while (player.state == PlaybackState.STATE_PLAYING) {
+                var audioBuffer = fullBuffers.poll()
 
                 if (audioBuffer == null) {
-                    logError("[Player] Couldn't get a full buffer after ${timeout}ms; stopping...")
-                    player.state = PlaybackState.STATE_ERROR
-                    break
-                }
-            }
+                    Timber.e("Buffer underrun.")
+                    stats.underrunCount += 1
 
-            // Check if necessary to make volume adjustments
-            if (ducking) {
-                logDebug("[Player] Ducking behind other app...")
+                    audioBuffer = fullBuffers.poll(timeout, TimeUnit.MILLISECONDS)
 
-                if (duckVolume > 0.3f) {
-                    duckVolume -= 0.4f
-                    logVerbose("[Player] Lowering volume to $duckVolume...")
+                    if (audioBuffer == null) {
+                        Timber.e("Couldn't get a full buffer after %d ms; stopping...", timeout)
+                        player.state = PlaybackState.STATE_ERROR
+                        break
+                    }
                 }
 
-                audioTrack.setVolume(duckVolume)
-            } else {
-                if (duckVolume < 1.0f) {
-                    duckVolume += 0.1f
-                    logVerbose("[Player] Raising volume to $duckVolume...")
+                // Check if necessary to make volume adjustments
+                if (ducking) {
+                    Timber.d("Ducking behind other app...")
 
-                    audioTrack.setVolume(duckVolume)
+                    if (duckVolume > 0.3f) {
+                        duckVolume -= 0.4f
+                        Timber.v("Lowering volume to %.2f...", duckVolume)
+                    }
+
+                    audioTrack?.setVolume(duckVolume)
+                } else {
+                    if (duckVolume < 1.0f) {
+                        duckVolume += 0.1f
+                        Timber.v("Raising volume to %.2f...", duckVolume)
+
+                        audioTrack?.setVolume(duckVolume)
+                    }
+                }
+
+                if (audioBuffer.timeStamp < 0L) {
+                    throw RuntimeException("Invalid timestamp: ${audioBuffer.timeStamp}")
+                }
+
+                val bytesWritten = audioTrack?.write(audioBuffer.buffer, 0, audioConfig.singleBufferSizeShorts)
+                        ?: Player.ERROR_AUDIO_TRACK_NULL
+
+                if (seeking) {
+                    clearBuffers()
+                    seeking = false
+                } else {
+                    player.onPlaybackPositionUpdate(audioBuffer.timeStamp)
+
+                    if (lastTimestamp < audioBuffer.timeStamp) {
+//                Timber.w("Playing buffer timestamped at %d", audioBuffer.timeStamp)
+                    } else if (audioBuffer.timeStamp > 0) {
+                        Timber.e("Buffer timestamp timing problem: %d > %d", lastTimestamp, audioBuffer.timeStamp)
+                    } else {
+                        Timber.e("Buffer timestamp timing problem: %d is negative", audioBuffer.timeStamp)
+                    }
+                }
+
+                lastTimestamp = audioBuffer.timeStamp
+                audioBuffer.timeStamp = -1L
+
+                emptyBuffers.put(audioBuffer)
+
+                logProblems(bytesWritten)
+
+                writerIndex += 1
+                if (writerIndex == audioConfig.bufferCount) {
+                    writerIndex = 0
                 }
             }
-
-            val bytesWritten = audioTrack.write(audioBuffer.buffer, 0, audioConfig.bufferSizeShorts)
-                    ?: Player.ERROR_AUDIO_TRACK_NULL
-
-            emptyBuffers.put(audioBuffer)
-
-            logProblems(bytesWritten)
-
-            writerIndex += 1
-            if (writerIndex == Player.READ_AHEAD_BUFFER_SIZE) {
-                writerIndex = 0
-            }
+        } catch (ex: InterruptedException) {
+            Timber.d("Writer thread interrupted.")
         }
-
 
         logStats()
         stats.clear()
 
-        logVerbose("[Player] Clearing full buffer queue...")
-        fullBuffers.clear()
+        Timber.v("Clearing full buffer queue...")
+        clearBuffers()
 
-        audioTrack.pause()
-        audioTrack.flush()
-        audioTrack.release()
+        audioTrack?.pause()
+        audioTrack?.release()
 
-        logVerbose("[Player] Writer loop has ended.")
+        Timber.v("Writer loop has ended.")
     }
 
+    fun onSeek(millisPlayed: Long) {
+        seeking = true
+    }
+
+    fun clearBuffers() {
+        Timber.i("Resetting full buffers.")
+
+        audioTrack?.flush()
+
+        var clearedBuffers = 0
+        while (true) {
+            try {
+                val nextFullBuffer = fullBuffers.poll()
+
+                if (nextFullBuffer != null) {
+                    Timber.v("Clearing full buffer...")
+                    clearedBuffers++
+                    nextFullBuffer.buffer.fill(0)
+                    nextFullBuffer.timeStamp = -1L
+                    emptyBuffers.add(nextFullBuffer)
+                } else {
+                    Timber.d("No full buffers remaining.")
+                    break
+                }
+            } catch (ex: IllegalStateException) {
+                Timber.e("Empty buffers filled before full buffers cleared.")
+                Timber.e(Log.getStackTraceString(ex))
+                fullBuffers.clear()
+                break
+            }
+        }
+
+        Timber.d("Cleared %d buffers.", clearedBuffers)
+    }
 
     /**
      * Private Methods
      */
 
     private fun initializeAudioTrack(): AudioTrack {
-        logVerbose("[Player] Initializing audio track.\n" +
-                "[Player] Sample Rate: ${audioConfig.sampleRate}Hz\n" +
-                "[Player] Buffer size: ${audioConfig.bufferSizeBytes} bytes\n" +
-                "[Player] Buffer length: ${audioConfig.minimumLatency * Player.READ_AHEAD_BUFFER_SIZE} msec")
+        Timber.v("Initializing audio track.\n" +
+                "Sample Rate: %d Hz\n" +
+                "Single Buffer size: %d bytes\n" +
+                "Single Buffer length: %d msec",
+                audioConfig.sampleRate,
+                audioConfig.singleBufferSizeBytes,
+                audioConfig.singleBufferLatency)
 
         val audioTrack = AudioTrack(AudioManager.STREAM_MUSIC,
                 audioConfig.sampleRate,
                 AudioFormat.CHANNEL_OUT_STEREO,
                 AudioFormat.ENCODING_PCM_16BIT,
-                audioConfig.bufferSizeBytes,
+                audioConfig.singleBufferSizeBytes,
                 AudioTrack.MODE_STREAM)
-
-        // Get updates on playback position every second (one frame is equal to one sample).
-        audioTrack.positionNotificationPeriod = audioConfig.sampleRate
-
-        // Set a listener to update the UI's playback position.
-        audioTrack.setPlaybackPositionUpdateListener(object : AudioTrack.OnPlaybackPositionUpdateListener {
-            override fun onPeriodicNotification(track: AudioTrack) {
-                val millisPlayed = player.backend?.getMillisPlayed() ?: 0L
-                player.onPlaybackPositionUpdate(millisPlayed)
-            }
-
-            override fun onMarkerReached(track: AudioTrack) {}
-        })
 
         return audioTrack
     }
 
     private fun logProblems(bytesWritten: Int) {
-        if (bytesWritten == audioConfig.bufferSizeShorts)
+        if (bytesWritten == audioConfig.singleBufferSizeShorts)
             return
 
         val error = when (bytesWritten) {
@@ -143,13 +195,13 @@ class Writer(val player: Player,
             AudioTrack.ERROR_BAD_VALUE -> "Invalid AudioTrack value."
             AudioTrack.ERROR -> "Unknown AudioTrack error."
             Player.ERROR_AUDIO_TRACK_NULL -> "No audio track found."
-            else -> "Wrote fewer bytes than expected: ${bytesWritten}"
+            else -> "Wrote fewer bytes than expected: $bytesWritten"
         }
 
-        logError("[Player] $error")
+        Timber.e(error)
     }
 
     private fun logStats() {
-        logInfo("[Player] Underruns since playback started: ${stats.underrunCount}")
+        Timber.i("Underruns since playback started: %d", stats.underrunCount)
     }
 }

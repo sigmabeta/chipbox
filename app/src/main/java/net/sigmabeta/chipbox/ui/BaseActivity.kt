@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -11,12 +12,15 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Pair
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.ImageView
 import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.util.*
+import timber.log.Timber
+import java.util.ArrayList
 
 
 abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : AppCompatActivity(), BaseView, View.OnClickListener {
@@ -31,7 +35,7 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
 
             override fun onError() {
                 startPostponedEnterTransition()
-                logError("[BaseActivity] Couldn't load image.")
+                Timber.e("Couldn't load image.")
             }
         }
     }
@@ -173,16 +177,21 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
 
     fun getFragmentComponent() = getPresenterImpl().fragmentComponent
 
+    fun getShareableNavBar(): Pair<View, String>? {
+        return Pair(window.decorView.findViewById(android.R.id.navigationBarBackground) ?: return null,
+                Window.NAVIGATION_BAR_BACKGROUND_TRANSITION_NAME)
+    }
+
+    fun getShareableStatusBar(): Pair<View, String>? {
+        return Pair(window.decorView.findViewById(android.R.id.statusBarBackground) ?: return null,
+                Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
+    }
+
     open fun getShareableViews(): Array<Pair<View, String>>? = null
 
     protected open fun inflateContent() {}
 
-    protected open fun setTransitions() {
-        window.enterTransition = TRANSITION_FADE_IN_BELOW
-        window.reenterTransition = TRANSITION_STAGGERED_FADE_IN_ABOVE
-        window.exitTransition = TRANSITION_STAGGERED_FADE_OUT_UP
-        window.returnTransition = TRANSITION_FADE_OUT_DOWN
-    }
+    protected open fun setTransitions() = Unit
 
     protected fun showSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) {
         val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)

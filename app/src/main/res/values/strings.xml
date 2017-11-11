@@ -18,6 +18,7 @@
     <string name="drawer_add_folder">Add to Library</string>
     <string name="drawer_refresh">Rescan Library</string>
     <string name="drawer_settings">Settings</string>
+    <string name="drawer_debug">Debug Settings</string>
     <string name="drawer_help">Help</string>
 
     <string name="tab_main_game">Game</string>
@@ -93,4 +94,17 @@
 
     <string name="onboarding_library_title">Add tracks to your library</string>
     <string name="onboarding_library_detail">Put tracks into folders by game, album art optional. Then scan in Chipbox!</string>
+
+    <!-- TODO Move to debug resources -->
+    <!-- Debug Strings-->
+    <string name="title_debug">Debug Settings</string>
+    <string name="debug_label_buffer_bytes">Bytes Per Buffer</string>
+    <string name="debug_label_buffer_count">Buffer Count</string>
+    <string name="debug_label_latency_minimum">Minimum Latency</string>
+    <string name="debug_label_latency_actual">Actual Latency</string>
+    <string name="debug_label_latency_total">Total Buffer Size</string>
+    <string name="debug_label_sample_rate">Sample Rate</string>
+
+    <string name="debug_value_latency">%d ms</string>
+    <string name="debug_value_sample_rate">%d Hz</string>
 </resources>

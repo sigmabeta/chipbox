@@ -8,11 +8,9 @@ interface GameListView : BaseView {
 
     fun setGames(games: List<Game>)
 
-    fun launchGameActivity(id: String)
+    fun launchGameActivity(id: String, position: Int)
 
     fun startRescan()
-
-    fun clearClickedViewHolder()
 
     fun showContent()
 

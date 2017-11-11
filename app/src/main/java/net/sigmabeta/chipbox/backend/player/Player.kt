@@ -12,9 +12,7 @@ import net.sigmabeta.chipbox.model.audio.AudioConfig
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.repository.Repository
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
-import net.sigmabeta.chipbox.util.logVerbose
+import timber.log.Timber
 import java.util.concurrent.ArrayBlockingQueue
 import javax.inject.Inject
 import javax.inject.Provider
@@ -45,6 +43,8 @@ class Player @Inject constructor(val playlist: Playlist,
     private var reader: Reader? = null
     private var writer: Writer? = null
 
+    private var writerThread: Thread? = null
+
     var backend: Backend? = null
         get() {
             return reader?.backend
@@ -52,7 +52,7 @@ class Player @Inject constructor(val playlist: Playlist,
 
     fun start(trackId: String?) {
         if (state == PlaybackState.STATE_PLAYING) {
-            logError("[Player] Received start command, but already PLAYING a track.")
+            Timber.e("Received start command, but already PLAYING a track.")
             return
         }
 
@@ -68,17 +68,39 @@ class Player @Inject constructor(val playlist: Playlist,
                 backendView?.play()
             }
 
-            val emptyBuffers = ArrayBlockingQueue<AudioBuffer>(READ_AHEAD_BUFFER_SIZE)
-            val fullBuffers = ArrayBlockingQueue<AudioBuffer>(READ_AHEAD_BUFFER_SIZE)
+            // If track was paused, let's reuse the same buffers.
+            val emptyBuffers = reader?.emptyBuffers ?: ArrayBlockingQueue<AudioBuffer>(audioConfig.bufferCount)
+            val fullBuffers = reader?.fullBuffers ?: ArrayBlockingQueue<AudioBuffer>(audioConfig.bufferCount)
 
             val firstTrackId = trackId ?: playlist.playingTrackId
 
             if (firstTrackId == null) {
-                logError("Cannot start playback without a track ID.")
+                Timber.e("Cannot start playback without a track ID.")
                 return
             }
 
             Thread({
+                if (state == PlaybackState.STATE_STOPPED || reader == null) {
+                    Timber.e("No existing reader; starting a new one.")
+                    reader = Reader(this,
+                            playlist,
+                            repositoryProvider,
+                            audioConfig,
+                            emptyBuffers,
+                            fullBuffers,
+                            firstTrackId,
+                            resuming)
+                }
+
+                reader?.loop()
+
+                if (state == PlaybackState.STATE_STOPPED) {
+                    Timber.e("Playback stopped; clearing Reader.")
+                    reader = null
+                }
+            }, "reader").start()
+
+            writerThread = Thread({
                 writer = Writer(this,
                         audioConfig,
                         audioManager,
@@ -87,30 +109,18 @@ class Player @Inject constructor(val playlist: Playlist,
 
                 writer?.loop()
                 writer = null
-            }, "writer").start()
+            }, "writer")
 
-            Thread({
-                reader = Reader(this,
-                        playlist,
-                        repositoryProvider.get(),
-                        audioConfig,
-                        emptyBuffers,
-                        fullBuffers,
-                        firstTrackId,
-                        resuming)
-
-                reader?.loop()
-                reader = null
-            }, "reader").start()
+            writerThread?.start()
 
         } else {
-            logError("[Player] Unable to gain audio focus.")
+            Timber.e("Unable to gain audio focus.")
         }
     }
 
     fun play(playbackQueue: MutableList<String?>, position: Int) {
         if (position < playbackQueue.size) {
-            logVerbose("[Player] Playing new playlist, starting from track ${position} of ${playbackQueue.size}.")
+            Timber.v("Playing new playlist, starting from track %d of %d.", position, playbackQueue.size)
 
             playlist.playbackQueue = playbackQueue
             playlist.playbackQueuePosition = position
@@ -119,11 +129,12 @@ class Player @Inject constructor(val playlist: Playlist,
 
             reader?.let {
                 it.queuedTrackId = trackId
+                start(null)
             } ?: let {
                 start(trackId)
             }
         } else {
-            logError("[Player] Tried to start new playlist, but invalid track number: ${position} of ${playbackQueue.size}")
+            Timber.e("Tried to start new playlist, but invalid track number: %d of %d", position, playbackQueue.size)
         }
     }
 
@@ -137,6 +148,7 @@ class Player @Inject constructor(val playlist: Playlist,
 
         reader?.let {
             it.queuedTrackId = trackId
+            start(null)
         } ?: let {
             start(trackId)
         }
@@ -146,6 +158,7 @@ class Player @Inject constructor(val playlist: Playlist,
         val nextTrack = playlist.getNextTrack()
         reader?.let {
             it.queuedTrackId = nextTrack
+            start(null)
         } ?: let {
             start(nextTrack)
         }
@@ -161,6 +174,7 @@ class Player @Inject constructor(val playlist: Playlist,
                 val prevTrack = playlist.getPrevTrack()
                 reader?.let {
                     it.queuedTrackId = prevTrack
+                    start(null)
                 } ?: let {
                     start(prevTrack)
                 }
@@ -172,29 +186,32 @@ class Player @Inject constructor(val playlist: Playlist,
 
     fun pause() {
         if (state != PlaybackState.STATE_PLAYING) {
-            logError("[Player] Received pause command, but not currently PLAYING.")
+            Timber.e("Received pause command, but not currently PLAYING.")
             return
         }
 
-        logVerbose("[Player] Pausing playback.")
+        Timber.v("Pausing playback.")
 
         state = PlaybackState.STATE_PAUSED
 
+        writerThread?.interrupt()
         backendView?.pause()
     }
 
     fun stop() {
         if (state == PlaybackState.STATE_STOPPED) {
-            logError("[Player] Received stop command, but already STOPPED.")
+            Timber.e("Received stop command, but already STOPPED.")
             return
         }
 
-        logVerbose("[Player] Stopping playback.")
+        Timber.v("Stopping playback.")
 
         state = PlaybackState.STATE_STOPPED
 
         audioManager.abandonAudioFocus(this)
+        reader = null
 
+        writerThread?.interrupt()
         backendView?.stop()
     }
 
@@ -205,12 +222,12 @@ class Player @Inject constructor(val playlist: Playlist,
     override fun onAudioFocusChange(focusChange: Int) {
         when (focusChange) {
             AudioManager.AUDIOFOCUS_LOSS -> {
-                logVerbose("[Player] Focus lost. Pausing...")
+                Timber.v("Focus lost. Pausing...")
                 pause()
             }
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                logVerbose("[Player] Focus lost temporarily. Pausing...")
+                Timber.v("Focus lost temporarily. Pausing...")
 
                 if (state == PlaybackState.STATE_PLAYING) {
                     focusLossPaused = true
@@ -220,12 +237,12 @@ class Player @Inject constructor(val playlist: Playlist,
             }
 
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                logVerbose("[Player] Focus lost temporarily, but can duck. Lowering volume...")
+                Timber.v("Focus lost temporarily, but can duck. Lowering volume...")
                 writer?.ducking = true
             }
 
             AudioManager.AUDIOFOCUS_GAIN -> {
-                logVerbose("[Player] Focus gained. Resuming...")
+                Timber.v("Focus gained. Resuming...")
 
                 writer?.ducking = false
 
@@ -252,6 +269,11 @@ class Player @Inject constructor(val playlist: Playlist,
         updater.send(PositionEvent(millisPlayed))
     }
 
+    fun onSeek(millisPlayed: Long) {
+        Timber.d("Seeking to $millisPlayed ms")
+        writer?.onSeek(millisPlayed)
+    }
+
     /**
      * Internal Events
      */
@@ -260,10 +282,12 @@ class Player @Inject constructor(val playlist: Playlist,
         settings.onTrackChange()
         playlist.playingTrackId = trackId
         playlist.playingGameId = gameId
+        writer?.lastTimestamp = 0
+        writer?.clearBuffers()
     }
 
     fun onPlaylistFinished() {
-        logInfo("[Player] No more tracks to start.")
+        Timber.i("No more tracks to start.")
         stop()
     }
 
@@ -272,28 +296,22 @@ class Player @Inject constructor(val playlist: Playlist,
      */
 
     fun errorReadFailed(error: String) {
-        logError("[Player] GME Error: ${error}")
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-//        stop()
+        Timber.e("Backend Error: %s", error)
     }
 
     fun errorAllBuffersFull() {
-        logError("[Player] Couldn't get an empty AudioBuffer after ${TIMEOUT_BUFFERS_FULL_MS}ms.")
-        throw UnsupportedOperationException("not implemented") //To change body of created functions use File | Settings | File Templates.
-        //stop()
+        Timber.e("Couldn't get an empty AudioBuffer after %d ms.", TIMEOUT_BUFFERS_FULL_MS)
     }
 
 
     companion object {
         val ERROR_AUDIO_TRACK_NULL = -100
 
-        val READ_AHEAD_BUFFER_SIZE = 2
-
         val REPEAT_OFF = 0
         val REPEAT_ALL = 1
         val REPEAT_ONE = 2
         val REPEAT_INFINITE = 3
 
-        val TIMEOUT_BUFFERS_FULL_MS = 1000L
+        val TIMEOUT_BUFFERS_FULL_MS = 5000L
     }
 }

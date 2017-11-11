@@ -8,7 +8,7 @@ import io.realm.Realm
 import io.realm.RealmConfiguration
 import net.sigmabeta.chipbox.dagger.Initializer
 import net.sigmabeta.chipbox.dagger.component.AppComponent
-import net.sigmabeta.chipbox.util.logDebug
+import timber.log.Timber
 
 public class ChipboxApplication : Application() {
     lateinit var appComponent: AppComponent
@@ -20,12 +20,13 @@ public class ChipboxApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        logDebug("[ChipboxApplication] Starting Application.")
-        logDebug("[ChipboxApplication] Build type: ${BuildConfig.BUILD_TYPE}")
+        Timber.plant(Timber.DebugTree())
+        Timber.d("Starting Application.")
+        Timber.d("Build type: %s", BuildConfig.BUILD_TYPE)
 
-        logDebug("[ChipboxApplication] Android version: ${Build.VERSION.RELEASE}")
-        logDebug("[ChipboxApplication] Device manufacturer: ${Build.MANUFACTURER}")
-        logDebug("[ChipboxApplication] Device model: ${Build.MODEL}")
+        Timber.d("Android version: %s", Build.VERSION.RELEASE)
+        Timber.d("Device manufacturer: %s", Build.MANUFACTURER)
+        Timber.d("Device model: %s", Build.MODEL)
 
         System.loadLibrary("gme")
         System.loadLibrary("vgm")

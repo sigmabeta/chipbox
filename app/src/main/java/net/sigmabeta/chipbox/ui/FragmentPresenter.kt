@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.ui
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.util.logWarning
+import timber.log.Timber
 
 abstract class FragmentPresenter<V : BaseView> : BasePresenter<V>() {
     fun onCreate(arguments: Bundle?, savedInstanceState: Bundle?, view: V) {
@@ -30,7 +30,7 @@ abstract class FragmentPresenter<V : BaseView> : BasePresenter<V>() {
                 loading = false
             }
         } else if (this.view == null) {
-            logWarning("Cannot clear reference; Presenter has already cleared reference.")
+            Timber.w("Cannot clear reference; Presenter has already cleared reference.")
         } else {
             handleError(InvalidClearViewException(view), null)
         }

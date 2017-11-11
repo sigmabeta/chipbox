@@ -21,6 +21,8 @@ interface MainView : BaseView {
 
     fun launchSettingsActivity()
 
+    fun launchDebugActivity()
+
     fun launchOnboarding()
 
     fun showScanning(type: Int?, name: String?)

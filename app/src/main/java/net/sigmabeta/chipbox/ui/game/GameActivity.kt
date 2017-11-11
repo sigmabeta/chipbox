@@ -7,6 +7,7 @@ import android.content.Intent
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Pair
 import android.view.View
+import android.view.View.VISIBLE
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_game.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -17,6 +18,7 @@ import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ItemListView
 import net.sigmabeta.chipbox.util.TRANSITION_SLIDE
 import net.sigmabeta.chipbox.util.loadImageHighQuality
+import net.sigmabeta.chipbox.util.removeNullViewPairs
 import net.sigmabeta.chipbox.util.shrinktoNothing
 import javax.inject.Inject
 
@@ -49,7 +51,7 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ItemList
         adapter.playingTrackId = track.id
     }
 
-    override fun setTracks(tracks: MutableList<Track>) {
+    override fun setTracks(tracks: List<Track>) {
         adapter.dataset = tracks
     }
 
@@ -57,7 +59,7 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ItemList
      * ItemListView
      */
 
-    override fun onItemClick(position: Int, clickedViewHolder: GameTrackViewHolder) {
+    override fun onItemClick(position: Int) {
         if (position > 0L) {
             presenter.onItemClick(position - 1)
         }
@@ -113,7 +115,11 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ItemList
     override fun onBackPressed() {
         if (!alreadyFinishing) {
             alreadyFinishing = true
-            button_fab.shrinktoNothing().withEndAction {
+            if (button_fab.visibility == VISIBLE) {
+                button_fab.shrinktoNothing().withEndAction {
+                    supportFinishAfterTransition()
+                }
+            } else {
                 supportFinishAfterTransition()
             }
         }
@@ -132,16 +138,13 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ItemList
             context.startActivity(launcher)
         }
 
-        fun launch(activity: Activity, gameId: String, sharedViewPairs: Array<Pair<View, String>>?) {
+        fun launch(activity: Activity, gameId: String, navBar: Pair<View, String>?, statusBar: Pair<View, String>?, imageView: Pair<View, String>?) {
             val launcher = Intent(activity, GameActivity::class.java)
 
             launcher.putExtra(ARGUMENT_GAME_ID, gameId)
 
-            val options = if (sharedViewPairs != null) {
-                ActivityOptions.makeSceneTransitionAnimation(activity, *sharedViewPairs)
-            } else {
-                ActivityOptions.makeSceneTransitionAnimation(activity)
-            }
+            val sharedViewPairs = removeNullViewPairs(navBar, statusBar, imageView)
+            val options = ActivityOptions.makeSceneTransitionAnimation(activity, *sharedViewPairs)
 
             activity.startActivity(launcher, options.toBundle())
         }

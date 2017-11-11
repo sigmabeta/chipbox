@@ -8,8 +8,8 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.FragmentPresenter
-import net.sigmabeta.chipbox.util.logError
 import rx.android.schedulers.AndroidSchedulers
+import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
@@ -79,7 +79,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
                             displayPositionHelper(false)
                         },
                         {
-                            logError("Unable to load playlist: ${it.message}")
+                            Timber.e("Unable to load playlist: %s", it.message)
                         }
                 )
 

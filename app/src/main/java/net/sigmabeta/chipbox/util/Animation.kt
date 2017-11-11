@@ -12,6 +12,8 @@ import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.TextView
 import net.sigmabeta.chipbox.ui.util.transition.nonshared.*
+import timber.log.Timber
+import java.util.ArrayList
 
 val SCROLL_DIRECTION_DOWN = 1
 val SCROLL_DIRECTION_UP = -1
@@ -20,7 +22,7 @@ fun RecyclerView.isScrolledToBottom(): Boolean {
     val canScrollDown = canScrollVertically(SCROLL_DIRECTION_DOWN)
     val canScrollUp = canScrollVertically(SCROLL_DIRECTION_UP)
 
-    logVerbose("[RecyclerViewExtension] ScrollUp ${canScrollUp} ScrollDown ${canScrollDown}")
+    Timber.v("ScrollUp %b ScrollDown %b", canScrollUp, canScrollDown)
 
     return !canScrollDown && canScrollUp
 }
@@ -28,16 +30,6 @@ fun RecyclerView.isScrolledToBottom(): Boolean {
 val ACCELERATE = AccelerateInterpolator()
 val DECELERATE = DecelerateInterpolator()
 val ACC_DECELERATE = AccelerateDecelerateInterpolator()
-
-val TRANSITION_FADE_OUT_DOWN = FadeOutDownTransition(false, false)
-val TRANSITION_FADE_IN_BELOW = FadeInFromBelowTransition(false, false)
-val TRANSITION_STAGGERED_FADE_OUT_UP = FadeOutUpTransition(true, false)
-val TRANSITION_STAGGERED_FADE_IN_ABOVE = FadeInFromAboveTransition(true, false)
-
-val TRANSITION_FRAGMENT_FADE_OUT_DOWN = FadeOutDownTransition(false, true)
-val TRANSITION_FRAGMENT_FADE_IN_BELOW = FadeInFromBelowTransition(false, true)
-val TRANSITION_FRAGMENT_STAGGERED_FADE_OUT_UP = FadeOutUpTransition(true, true)
-val TRANSITION_FRAGMENT_STAGGERED_FADE_IN_ABOVE = FadeInFromAboveTransition(true, true)
 
 val TRANSITION_SLIDE = SlideTransition()
 
@@ -147,9 +139,15 @@ fun View.growFromNothing() = animate()
         .scaleX(1.0f)
         .scaleY(1.0f)
 
-/**
- * Not really anywhere better to put this, I guess.
- */
-fun Activity.getShareableNavBar(): Pair<View, String>? {
-    return Pair(window.decorView.findViewById(R.id.navigationBarBackground) ?: return null, Window.NAVIGATION_BAR_BACKGROUND_TRANSITION_NAME)
+
+fun removeNullViewPairs(vararg views: Pair<View, String>?): Array<Pair<View, String>> {
+    val viewsList = ArrayList<Pair<View, String>>(views.size)
+
+    views.forEach {
+        if (it != null) {
+            viewsList.add(it)
+        }
+    }
+
+    return viewsList.toTypedArray()
 }

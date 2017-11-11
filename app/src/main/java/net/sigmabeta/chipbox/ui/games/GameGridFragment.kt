@@ -24,8 +24,6 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
 
     var adapter = GameGridAdapter(this)
 
-    var clickedViewHolder: GameViewHolder? = null
-
     /**
      * GameListView
      */
@@ -38,16 +36,18 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
         setActivityTitle(platformName)
     }
 
-    override fun launchGameActivity(id: String) {
-        clickedViewHolder?.let {
-            GameActivity.launch(activity, id, getShareableViews())
-        } ?: let {
-            GameActivity.launch(activity, id)
-        }
-    }
+    override fun launchGameActivity(id: String, position: Int) {
+        val activity = getBaseActivity()
 
-    override fun clearClickedViewHolder() {
-        clickedViewHolder = null
+        val holder = grid_games.findViewHolderForAdapterPosition(position) as GameViewHolder
+
+        val shareableImageView = Pair(holder.getSharedImage(), "image_clicked_game")
+        GameActivity.launch(activity,
+                id,
+                activity.getShareableNavBar(),
+                activity.getShareableStatusBar(),
+                shareableImageView
+        )
     }
 
     override fun startRescan() {
@@ -85,8 +85,7 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
      * ItemListView
      */
 
-    override fun onItemClick(position: Int, clickedViewHolder: GameViewHolder) {
-        this.clickedViewHolder = clickedViewHolder
+    override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }
 
@@ -110,18 +109,6 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
         if (container is BaseActivity<*, *>) {
             container.getFragmentComponent()?.inject(this)
         }
-    }
-
-    override fun getShareableViews(): Array<Pair<View, String>>? {
-        val views = ArrayList<Pair<View, String>>(2)
-
-        views.add(Pair(clickedViewHolder!!.getSharedImage(), "image_clicked_game"))
-
-        activity.getShareableNavBar()?.let {
-            views.add(it)
-        }
-
-        return views.toTypedArray()
     }
 
     override fun getPresenterImpl(): GameGridPresenter {

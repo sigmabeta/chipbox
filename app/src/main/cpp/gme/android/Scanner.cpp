@@ -1,9 +1,8 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include "../Music_Emu.h"
 #include "net_sigmabeta_chipbox_backend_gme_ScannerImpl.h"
-
-#define CHIPBOX_TAG "ChipboxGME"
 
 Music_Emu *g_file_info_reader;
 

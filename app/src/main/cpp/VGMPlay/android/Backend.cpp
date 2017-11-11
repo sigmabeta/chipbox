@@ -9,12 +9,13 @@ extern "C" {
 #include <android/log.h>
 #include <math.h>
 
-#define CHIPBOX_TAG "ChipboxVGM"
+#define CHIPBOX_TAG "BackendVGM"
 #define MAX_ACTIVE_CHIPS 10 // Probably won't have more than this many chips running at a time.
 
 const char *g_last_error;
 
 long g_sample_count;
+long g_played_sample_count;
 int g_sample_rate;
 
 int g_channel_count;
@@ -31,15 +32,16 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_loadFi
         (JNIEnv *env, jobject, jstring java_filename, jint track, jint rate, jlong buffer_size,
          jlong fade_time_ms) {
     const char *filename_c_str = env->GetStringUTFChars(java_filename, NULL);
-    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[loadFileVgm] Loading file %s",
+    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "Loading file %s",
                         filename_c_str);
 
-    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[ChipboxVGM] Buffer size: %lu shorts",
+    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "Buffer size: %lu shorts",
                         buffer_size);
 
-    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[ChipboxVGM] Setting sample rate: %d",
+    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "Setting sample rate: %d",
                         rate);
 
+    g_played_sample_count = 0;
     g_sample_count = buffer_size / 2;
     g_sample_rate = rate;
 
@@ -89,9 +91,10 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_readNe
     if (target_array != NULL) {
         uint32_t created_samples = FillBuffer((WAVE_16BS *) target_array, (UINT32) g_sample_count);
 
+        g_played_sample_count += created_samples;
         env->ReleaseShortArrayElements(java_array, target_array, 0);
 
-        if (g_sample_count != created_samples && !isVgmEnd()) {
+        if (g_sample_count != created_samples && !isTrackOver()) {
             g_last_error = "Wrote fewer samples than expected.";
         }
     } else {
@@ -99,18 +102,17 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_readNe
     }
 }
 
-
-JNIEXPORT jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_getMillisPlayed
+jlong JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_getMillisPlayed
         (JNIEnv *env, jobject) {
-    long samples = getSamplesPlayed();
-    return CalcSampleMSec(samples, SAMPLES_TO_MSEC_RATE_CURRENT);
+    return getMillisPlayed();
 }
-
 
 JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_seek
         (JNIEnv *env, jobject, jlong time_in_ms) {
     UINT32 samples = CalcSampleMSec(time_in_ms, MSEC_TO_SAMPLES_RATE_CURRENT);
     SeekVGM(false, samples);
+
+    g_played_sample_count = samples;
     return NULL;
 }
 
@@ -183,7 +185,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_muteVo
 
 JNIEXPORT jboolean JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_isTrackOver
         (JNIEnv *env, jobject) {
-    return isVgmEnd();
+    return isTrackOver();
 }
 
 
@@ -212,6 +214,18 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_get
 /**
  * Private Methods
  */
+
+bool isTrackOver() {
+    return isVgmEnd();
+}
+
+long getMillisPlayed() {
+    return CalcSampleMSec(g_played_sample_count, SAMPLES_TO_MSEC_RATE_CURRENT);
+}
+
+long getTrackLengthMillis() {
+    return CalcSampleMSecExt(VGMHead.lngTotalSamples, SAMPLES_TO_MSEC_RATE_DEFAULT, &VGMHead);
+}
 
 void setMutingData(int mute_chip_id, CHIP_OPTS *mute_options, int channel_number, bool muted) {
     int current_channel;
@@ -350,3 +364,5 @@ int getChannelCountForChipId(int chip_id) {
             return -1;
     }
 }
+
+
