@@ -15,9 +15,11 @@ import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logWarning
+import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
+import rx.schedulers.Schedulers
+import timber.log.Timber
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @ActivityScoped
@@ -34,6 +36,13 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         view?.showPlaylist()
     }
 
+    fun onSeekbarChanged(progress: Int) {
+        val length = track?.trackLength ?: 0
+        val seekPosition = (length * progress / 100)
+
+        displayTimeString(seekPosition)
+    }
+
     fun onSeekbarTouch() {
         seekbarTouched = true
     }
@@ -42,7 +51,14 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         val length = track?.trackLength ?: 0
         val seekPosition = (length * progress / 100)
         player.seek(seekPosition)
-        seekbarTouched = false
+
+        // TODO This is a hack
+        Observable.just(1)
+                .delay(66L, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.io())
+                .subscribe {
+                    seekbarTouched = false
+                }
     }
 
     /**
@@ -71,7 +87,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
                         is PositionEvent -> displayPosition(it.millisPlayed)
                         is StateEvent -> displayState(it.state)
                         is GameEvent -> displayGame(it.gameId, false, true)
-                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                        else -> Timber.w("Unhandled %s", it.toString())
                     }
                 }
 
@@ -84,7 +100,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         playlist.playingTrackId?.let {
             displayTrack(it, false)
         } ?: let {
-            logError("[PlayerFragmentPresenter] No track to display.")
+            Timber.e("No track to display.")
         }
 
         playlist.playingGameId?.let {
@@ -123,7 +139,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
 
                 displayPosition(0)
             } else {
-                logError("Cannot load track with id $trackId")
+                Timber.e("Cannot load track with id %s", trackId)
             }
         }
     }
@@ -132,8 +148,12 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         if (!seekbarTouched) {
             val percentPlayed = 100 * millisPlayed / (track?.trackLength ?: 100)
             view?.setProgress(percentPlayed.toInt())
-        }
 
+            displayTimeString(millisPlayed)
+        }
+    }
+
+    private fun displayTimeString(millisPlayed: Long) {
         val timeString = getTimeStringFromMillis(millisPlayed)
         view?.setTimeElapsed(timeString)
     }

@@ -1,15 +1,13 @@
 package net.sigmabeta.chipbox.ui.platform
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Platform
-import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
-import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
+import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -63,7 +61,7 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
                         is FileScanCompleteEvent -> loadPlatforms()
                         is FileScanFailedEvent -> { /* no-op */
                         }
-                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                        else -> Timber.w("Unhandled %s", it.toString())
                     }
                 }
 
