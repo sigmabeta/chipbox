@@ -6,15 +6,13 @@ import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -72,7 +70,7 @@ class NavigationPresenter @Inject constructor(val player: Player,
                         is PositionEvent -> { /* no-op */ }
                         is GameEvent -> displayGame(it.gameId, false)
                         is StateEvent -> displayState(state, it.state)
-                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                        else -> Timber.w("Unhandled %s", it.toString())
                     }
                 }
 
@@ -114,7 +112,7 @@ class NavigationPresenter @Inject constructor(val player: Player,
                 view?.setTrackTitle(track.title.orEmpty(), animate)
                 view?.setArtist(track.artistText.orEmpty(), animate)
             } else {
-                logError("Cannot load track with id $trackId")
+                Timber.e("Cannot load track with id %s", trackId)
             }
         }
     }

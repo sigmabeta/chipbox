@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.util.*
 import org.apache.commons.io.FileUtils
 import rx.Observable
 import rx.Subscriber
+import timber.log.Timber
 import java.io.File
 import java.util.*
 import javax.inject.Inject
@@ -33,7 +34,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                     repository = repositoryLazy.get()
                     repository.reopen()
 
-                    logInfo("[Library] Scanning library...")
+                    Timber.i("Scanning library...")
 
                     val startTime = System.currentTimeMillis()
 
@@ -60,7 +61,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                     val endTime = System.currentTimeMillis()
                     val scanDuration = (endTime - startTime) / 1000.0f
 
-                    logInfo("[Library] Scanned library in ${scanDuration} seconds.")
+                    Timber.i("Scanned library in %s seconds.", scanDuration)
 
                     repository.close()
                     state = STATE_NOT_SCANNING
@@ -88,7 +89,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         Thread.sleep(10)
 
         val folderPath = folder.absolutePath
-        logInfo("[Library] Reading files from library folder: ${folderPath}")
+        Timber.i("Reading files from library folder: %s", folderPath)
 
         sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folder.name))
 
@@ -129,7 +130,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                                 if (folderGame != null) {
                                     copyImageToInternal(folderGame, file)
                                 } else {
-                                    logError("[Library] Found image, but game ID unknown: ${filePath}")
+                                    Timber.e("Found image, but game ID unknown: %s", filePath)
                                 }
                             }
                         }
@@ -138,9 +139,9 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
             }
 
         } else if (!folder.exists()) {
-            logError("[Library] Folder no longer exists: ${folderPath}")
+            Timber.e("Folder no longer exists: %s", folderPath)
         } else {
-            logError("[Library] Folder contains no tracks:  ${folderPath}")
+            Timber.e("Folder contains no tracks: %s", folderPath)
         }
     }
 
@@ -156,10 +157,13 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                     .toBlocking()
                     .subscribe(
                             {
+                                if (it.title?.contains("Ecco") ?: false) {
+                                    Timber.w("Added track: %s", track.title)
+                                }
                                 game = it
                             },
                             {
-                                logError("[Library] Couldn't add track at ${filePath}: ${Log.getStackTraceString(it)}")
+                                Timber.e("Couldn't add track at %s: %s", filePath, Log.getStackTraceString(it))
                                 sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                             },
                             {
@@ -169,7 +173,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
             return game
         } else {
-            logError("[Library] Couldn't read track at ${filePath}")
+            Timber.e("Couldn't read track at %s", filePath)
             sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
 
             return null
@@ -202,7 +206,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                             game = it
                         },
                         {
-                            logError("[Library] Couldn't read multi track file at ${filePath}: ${Log.getStackTraceString(it)}")
+                            Timber.e("Couldn't read multi track file at %s: %s", filePath, Log.getStackTraceString(it))
                             sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                         },
                         {
@@ -246,7 +250,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
     private fun checkForDeletion(track: Track, sub: Subscriber<FileScanEvent>) {
         if (!File(track.path).exists()) {
-            logInfo("Track not found on storage, deleting: ${track.title}")
+            Timber.i("Track not found on storage, deleting: %s", track.title)
             sub.onNext(FileScanEvent(FileScanEvent.TYPE_DELETED_TRACK, track.title!!))
             repository.deleteTrack(track)
         }
@@ -254,7 +258,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
     private fun checkForDeletion(game: Game) {
         if (game.tracks?.size ?: 0 <= 0) {
-            logInfo("No tracks found for game, deleting: ${game.title}")
+            Timber.i("No tracks found for game, deleting: %s", game.title)
 
             game.artLocal?.let {
                 val artLocalFile = File(it.substringAfter("file://"))
@@ -262,7 +266,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                 if (artLocalFile.exists()) {
                     val parentFile = artLocalFile.parentFile
 
-                    logInfo("Deleting art for game at: $it")
+                    Timber.i("Deleting art for game at: %s", it)
                     artLocalFile.delete()
 
                     if (parentFile.listFiles()?.isEmpty() ?: false) {
@@ -276,7 +280,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
     private fun checkForDeletion(artist: Artist) {
         if (artist.tracks?.size ?: 0 <= 0) {
-            logInfo("No tracks found for artist, deleting: ${artist.name}")
+            Timber.i("No tracks found for artist, deleting: %s", artist.name)
             repository.deleteArtist(artist)
         }
     }
@@ -289,14 +293,14 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
         if (targetFile.exists()) {
             if (FileUtils.sizeOf(targetFile) == FileUtils.sizeOf(sourceFile)) {
-                logInfo("File ${targetFile.name} has same size as internally stored file. Skipping copy.")
+                Timber.i("File %s has same size as internally stored file. Skipping copy.", targetFile.name)
                 return
             }
         }
 
         FileUtils.copyFile(sourceFile, targetFile)
 
-        logInfo("[Library] Copied image: ${sourcePath} to ${targetFile.path}")
+        Timber.i("Copied image: %s to %s", sourcePath, targetFile.path)
 
         val artLocal = "file://" + targetFile.path
         repository.updateGameArt(game, artLocal)

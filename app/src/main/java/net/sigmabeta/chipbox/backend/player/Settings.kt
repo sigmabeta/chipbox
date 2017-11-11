@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.backend.player
 
 import net.sigmabeta.chipbox.model.audio.Voice
-import net.sigmabeta.chipbox.util.logInfo
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -11,7 +11,7 @@ class Settings @Inject constructor() {
         set (value: Int?) {
             if (value != null) {
                 field = value
-                logInfo("[Player] Setting tempo to $value")
+                Timber.i("Setting tempo to %s", value)
             } else {
                 field = 100
             }

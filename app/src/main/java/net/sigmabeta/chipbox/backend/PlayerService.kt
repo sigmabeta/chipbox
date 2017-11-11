@@ -16,7 +16,7 @@ import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
-import net.sigmabeta.chipbox.util.logVerbose
+import timber.log.Timber
 import javax.inject.Inject
 
 class PlayerService : Service(), BackendView {
@@ -45,7 +45,7 @@ class PlayerService : Service(), BackendView {
 
     override fun onCreate() {
         super.onCreate()
-        logVerbose("[PlayerService] Creating...")
+        Timber.v("Creating...")
 
         inject()
 
@@ -70,8 +70,7 @@ class PlayerService : Service(), BackendView {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        logVerbose("[PlayerService] Received StartCommand: ${intent?.action} " +
-                "-> ${intent?.extras?.get(Intent.EXTRA_KEY_EVENT)}")
+        Timber.v("Received StartCommand: %s -> %s", intent?.action, intent?.extras?.get(Intent.EXTRA_KEY_EVENT))
 
         MediaButtonReceiver.handleIntent(session, intent)
 
@@ -86,7 +85,7 @@ class PlayerService : Service(), BackendView {
 
     override fun onDestroy() {
         super.onDestroy()
-        logVerbose("[PlayerService] Destroying...")
+        Timber.v("Destroying...")
 
         session?.release()
 
@@ -105,20 +104,20 @@ class PlayerService : Service(), BackendView {
      */
 
     override fun play() {
-        logVerbose("[PlayerService] Processed PLAY command.")
+        Timber.v("Processed PLAY command.")
 
         session?.isActive = true
         registerNoisyReceiver()
     }
 
     override fun pause() {
-        logVerbose("[PlayerService] Processed PAUSE command.")
+        Timber.v("Processed PAUSE command.")
 
         unregisterNoisyReceiver()
     }
 
     override fun stop() {
-        logVerbose("[PlayerService] Processed STOP command.")
+        Timber.v("Processed STOP command.")
 
         session?.isActive = false
         unregisterNoisyReceiver()
@@ -128,11 +127,11 @@ class PlayerService : Service(), BackendView {
     }
 
     override fun skipToNext() {
-        logVerbose("[PlayerService] Processed NEXT command.")
+        Timber.v("Processed NEXT command.")
     }
 
     override fun skipToPrev() {
-        logVerbose("[PlayerService] Processed PREV command.")
+        Timber.v("Processed PREV command.")
     }
 
     override fun onGameLoadError() {
@@ -152,7 +151,7 @@ class PlayerService : Service(), BackendView {
      */
 
     private fun inject() {
-        logVerbose("[ServiceInjector] Injecting BackendView.")
+        Timber.v("Injecting BackendView.")
         (application as ChipboxApplication).appComponent.inject(this)
     }
 
@@ -161,7 +160,7 @@ class PlayerService : Service(), BackendView {
     }
 
     private fun registerNoisyReceiver() {
-        logVerbose("[Player] Registering NOISY BroadcastReceiver.")
+        Timber.v("Registering NOISY BroadcastReceiver.")
 
         if (!noisyRegistered) {
             val intentFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
@@ -173,7 +172,7 @@ class PlayerService : Service(), BackendView {
 
     private fun unregisterNoisyReceiver() {
         if (noisyRegistered) {
-            logVerbose("[Player] Unregistering NOISY BroadcastReceiver.")
+            Timber.v("Unregistering NOISY BroadcastReceiver.")
 
             unregisterReceiver(noisyReceiver)
             noisyRegistered = false

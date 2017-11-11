@@ -11,8 +11,6 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.ItemListView
-import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_FADE_IN_BELOW
-import net.sigmabeta.chipbox.util.TRANSITION_FRAGMENT_FADE_OUT_DOWN
 import javax.inject.Inject
 
 @ActivityScoped
@@ -85,7 +83,7 @@ class PlaylistFragment : BaseFragment<PlaylistFragmentPresenter, PlaylistFragmen
      * ItemListView
      */
 
-    override fun onItemClick(position: Int, clickedViewHolder: PlaylistTrackViewHolder) {
+    override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }
 
@@ -147,9 +145,6 @@ class PlaylistFragment : BaseFragment<PlaylistFragmentPresenter, PlaylistFragmen
 
         fun newInstance(): PlaylistFragment {
             val fragment = PlaylistFragment()
-
-            fragment.enterTransition = TRANSITION_FRAGMENT_FADE_IN_BELOW
-            fragment.returnTransition = TRANSITION_FRAGMENT_FADE_OUT_DOWN
 
             return fragment
         }

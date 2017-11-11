@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
 apply plugin: 'io.fabric'
 apply plugin: 'realm-android'
 
@@ -31,7 +32,7 @@ def getVersionName = { ->
 
 android {
     compileSdkVersion 25
-    buildToolsVersion '25.0.2'
+    buildToolsVersion '26.0.2'
 
     defaultConfig {
         applicationId "net.sigmabeta.chipbox"
@@ -81,8 +82,11 @@ android {
         }
     }
 
+    flavorDimensions "abi"
+
     productFlavors {
         arm {
+            dimension "abi"
             versionCode getVersionCode() + 1
 
             ndk {
@@ -91,6 +95,7 @@ android {
         }
 
         x86 {
+            dimension "abi"
             versionCode getVersionCode() + 3
 
             ndk {
@@ -99,6 +104,7 @@ android {
         }
 
         arm_64 {
+            dimension "abi"
             versionCode getVersionCode() + 5
 
             ndk {
@@ -107,6 +113,7 @@ android {
         }
 
         x86_64 {
+            dimension "abi"
             versionCode getVersionCode() + 7
 
             ndk {
@@ -142,6 +149,9 @@ dependencies {
     // Copy album art more easily.
     compile 'commons-io:commons-io:2.4'
 
+    // Simplified error logging.
+    compile 'com.jakewharton.timber:timber:4.5.1'
+
     // Crash Reporting
     compile('com.crashlytics.sdk.android:crashlytics:2.5.5@aar') {
         transitive = true;
@@ -151,8 +161,4 @@ dependencies {
     compile "com.google.dagger:dagger:${dagger_version}"
     kapt "com.google.dagger:dagger-compiler:${dagger_version}"
     provided 'org.glassfish:javax.annotation:10.0-b28'
-}
-
-kapt {
-    generateStubs = true
 }

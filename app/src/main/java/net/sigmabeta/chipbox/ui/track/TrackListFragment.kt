@@ -67,7 +67,7 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
      * ItemListView
      */
 
-    override fun onItemClick(position: Int, clickedViewHolder: TrackViewHolder) {
+    override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }
 

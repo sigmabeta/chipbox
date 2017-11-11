@@ -22,11 +22,13 @@ import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.TopLevelFragment
+import net.sigmabeta.chipbox.ui.debug.DebugActivity
 import net.sigmabeta.chipbox.ui.onboarding.OnboardingActivity
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.settings.SettingsActivity
 import net.sigmabeta.chipbox.util.*
+import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
@@ -239,6 +241,10 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         SettingsActivity.launch(this)
     }
 
+    override fun launchDebugActivity() {
+        DebugActivity.launch(this)
+    }
+
     override fun launchOnboarding() {
         OnboardingActivity.launch(this, TitleFragment.TAG)
     }
@@ -326,7 +332,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
     private fun getFragment(): TopLevelFragment? {
         val selectedPosition = pager_categories.currentItem
 
-        logVerbose("[MainActivity] Selected fragment position is $selectedPosition")
+        Timber.v("Selected fragment position is %d", selectedPosition)
         val adapter = pagerAdapter
 
         if (adapter != null) {

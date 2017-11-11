@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
+import android.media.MediaMetadata
 import android.media.session.PlaybackState
 import android.os.SystemClock
 import android.support.v4.app.NotificationCompat.Action
@@ -30,12 +31,10 @@ import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.util.loadBitmapLowQuality
-import net.sigmabeta.chipbox.util.logDebug
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logVerbose
 import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import rx.schedulers.Schedulers
+import timber.log.Timber
 
 class MediaNotificationManager(val playerService: PlayerService,
                                val repository: Repository,
@@ -101,14 +100,14 @@ class MediaNotificationManager(val playerService: PlayerService,
 
     override fun onReceive(context: Context?, intent: Intent?) {
         val action = intent?.getAction()
-        logDebug("[MediaNotificationManager] Received intent: ${action}")
+        Timber.d("Received intent: %s", action)
         when (action) {
             ACTION_PAUSE -> transportControls?.pause()
             ACTION_PLAY -> transportControls?.play()
             ACTION_PREV -> transportControls?.skipToPrevious()
             ACTION_NEXT -> transportControls?.skipToNext()
             ACTION_STOP -> transportControls?.stop()
-            else -> logError("[MediaNotificationManager] Unknown intent ignored: ${action}")
+            else -> Timber.e("Unknown intent ignored: %s", action)
         }
     }
 
@@ -121,29 +120,28 @@ class MediaNotificationManager(val playerService: PlayerService,
         if (!notified) {
             val localTrackId = playlist.playingTrackId
 
-            if (localTrackId != null) {
-                updateState(player.state)
-                updateTrack(localTrackId)
+            updateState(player.state)
+            updateTrack(localTrackId)
 
-                val notification = createNotification()
-                if (notification != null) {
-                    logVerbose("[MediaNotificationManager] Starting foreground notification...")
+            val notification = createNotification()
+            if (notification != null) {
+                Timber.v("Starting foreground notification...")
 
-                    val filter = IntentFilter()
-                    filter.addAction(ACTION_PAUSE)
-                    filter.addAction(ACTION_PLAY)
-                    filter.addAction(ACTION_STOP)
-                    filter.addAction(ACTION_PREV)
-                    filter.addAction(ACTION_NEXT)
+                val filter = IntentFilter()
+                filter.addAction(ACTION_PAUSE)
+                filter.addAction(ACTION_PLAY)
+                filter.addAction(ACTION_STOP)
+                filter.addAction(ACTION_PREV)
+                filter.addAction(ACTION_NEXT)
 
-                    playerService.registerReceiver(this, filter)
-                    playerService.startForeground(NOTIFICATION_ID, notification)
+                Timber.v("Starting foregroundness.")
 
-                    notified = true
-                }
-            } else {
-                logError("[MediaNotificationManager] Can't show notification: no track found.")
+                playerService.registerReceiver(this, filter)
+                playerService.startForeground(NOTIFICATION_ID, notification)
+
+                notified = true
             }
+
         }
     }
 
@@ -153,7 +151,7 @@ class MediaNotificationManager(val playerService: PlayerService,
      */
     fun stopNotification() {
         if (notified) {
-            logDebug("[MediaNotificationManager] Stopping notification.")
+            Timber.d("Stopping notification.")
 
             notified = false
             mediaController?.unregisterCallback(controllerCallback)
@@ -165,6 +163,7 @@ class MediaNotificationManager(val playerService: PlayerService,
                 // ignore if the receiver is not registered.
             }
 
+            Timber.v("Stopping foregroundness.")
             playerService.stopForeground(true)
             playingGameArtBitmap = null
         }
@@ -182,7 +181,7 @@ class MediaNotificationManager(val playerService: PlayerService,
      */
 
     private fun updateTrack(trackId: String?) {
-        logDebug("[MediaNotificationManager] Updating notification track.")
+        Timber.d("Updating notification track.")
 
         if (trackId != null) {
             playingTrack = repository.getTrackSync(trackId)
@@ -195,7 +194,7 @@ class MediaNotificationManager(val playerService: PlayerService,
     }
 
     private fun updateGame(gameId: String?) {
-        logDebug("[MediaNotificationManager] Updating notification game.")
+        Timber.d("Updating notification game.")
 
         val game = if (gameId != null) repository.getGameSync(gameId) else null
 
@@ -221,7 +220,7 @@ class MediaNotificationManager(val playerService: PlayerService,
 
 
     private fun updateState(state: Int) {
-        logDebug("[MediaNotificationManager] Updating notification state.")
+        Timber.d("Updating notification state: $state")
 
         val position = player.position
 
@@ -231,22 +230,40 @@ class MediaNotificationManager(val playerService: PlayerService,
         stateBuilder.setState(state, position, 1.0f, SystemClock.elapsedRealtime())
 
         playbackState = stateBuilder.build()
-        playerService.session?.setPlaybackState(playbackState)
+        playerService.session?.setPlaybackState(playbackState) ?: Timber.e("Error")
     }
 
     private fun createNotification(): Notification? {
-        if (mediaMetadata == null || playbackState == null) {
-            logError("[MediaNotificationManager] Can't create notification. " +
-                    "Playback state: ${playbackState} " +
-                    "Metadata: ${mediaMetadata}")
+        if (mediaMetadata == null) {
+            mediaMetadata = updateMetadata()
+        }
+
+        val metadata = mediaMetadata
+
+        if (metadata == null) {
+            Timber.e("Notification can't be created without valid metadata.")
             return null
         }
 
-        logDebug("[MediaNotificationManager] Creating notification.")
+        if (playbackState == null) {
+            updateState(player.state)
+        }
 
-        val session = playerService.session ?: return null
+        Timber.d("Creating notification.")
 
-        val notificationBuilder = builderFrom(playerService, session) ?: return null
+        val session = playerService.session
+
+        if (session == null) {
+            Timber.e("No session available yet.")
+            return null
+        }
+
+        val notificationBuilder = builderFrom(playerService, session, metadata)
+
+        if (notificationBuilder == null) {
+            Timber.e("Notification can't be created.")
+            return null
+        }
 
         var playButtonPosition = 0
 
@@ -285,6 +302,7 @@ class MediaNotificationManager(val playerService: PlayerService,
 
         val stop = getActionIntent(playerService, KeyEvent.KEYCODE_MEDIA_STOP)
 
+        Timber.v("Session token: $sessionToken")
         val mediaStyle = NotificationCompat.MediaStyle()
                 .setShowActionsInCompactView(*intArrayOf(playButtonPosition))
                 .setMediaSession(sessionToken)
@@ -302,7 +320,7 @@ class MediaNotificationManager(val playerService: PlayerService,
     }
 
     private fun addPlayPauseAction(builder: NotificationCompat.Builder) {
-        logDebug("[MediaNotificationManager] Updating start/pause button.")
+        Timber.d("Updating start/pause button.")
 
         val label: String
         val icon: Int
@@ -321,12 +339,12 @@ class MediaNotificationManager(val playerService: PlayerService,
     }
 
     private fun setNotificationPlaybackState(builder: NotificationCompat.Builder) {
-        logDebug("[MediaNotificationManager] Updating notification's playback state.")
+        Timber.d("Updating notification's playback state.")
 
-        if (playbackState == null || !notified) {
-            logVerbose("[MediaNotificationManager] Canceling notification.")
-
+        if (playbackState == null) {
+            Timber.e("Stopping foregroundness, playbackState: %s", playbackState?.toString())
             playerService.stopForeground(true)
+            builder.setOngoing(false)
             return
         }
 
@@ -334,7 +352,7 @@ class MediaNotificationManager(val playerService: PlayerService,
         builder.setOngoing(playbackState?.getState() == PlaybackState.STATE_PLAYING)
     }
 
-    private fun updateMetadata(): MediaMetadataCompat? {
+    private fun updateMetadata(): MediaMetadataCompat {
         playingTrack?.let {
             val metadataBuilder = Track.toMetadataBuilder(it)
 
@@ -343,13 +361,17 @@ class MediaNotificationManager(val playerService: PlayerService,
             if (playingGameArtBitmap != null) {
                 metadataBuilder.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, playingGameArtBitmap)
             } else {
-                logError("[MediaNotificationManager] Couldn't load game art.")
+                Timber.e("Couldn't load game art.")
             }
 
             return metadataBuilder.build()
+        } ?: let {
+            return MediaMetadataCompat.Builder()
+                    .putString(MediaMetadata.METADATA_KEY_TITLE, RealmRepository.TITLE_UNKNOWN)
+                    .putString(MediaMetadata.METADATA_KEY_ALBUM, RealmRepository.GAME_UNKNOWN)
+                    .putString(MediaMetadata.METADATA_KEY_ARTIST, RealmRepository.ARTIST_UNKNOWN)
+                    .build()
         }
-
-        return null
     }
 
     private fun getAvailableActions(state: Int, queuePosition: Int?, queueSize: Int?): Long {
@@ -376,6 +398,8 @@ class MediaNotificationManager(val playerService: PlayerService,
      * (see [android.media.session.MediaController.Callback.onSessionDestroyed])
      */
     private fun updateSessionToken() {
+        Timber.d("Updating session token.")
+
         val freshToken = playerService.getSessionToken()
 
         if (sessionToken == null || sessionToken != freshToken) {
@@ -399,13 +423,14 @@ class MediaNotificationManager(val playerService: PlayerService,
 
     private val controllerCallback = object : MediaControllerCompat.Callback() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
-            logDebug("[MediaNotificationManager] Playback state changed: ${state}")
+            Timber.d("Playback state changed: %s", state)
             playbackState = state
 
             if (state.state == PlaybackState.STATE_STOPPED || state.state == PlaybackState.STATE_NONE) {
                 stopNotification()
             } else {
                 if (state.state == PlaybackState.STATE_PAUSED) {
+                    Timber.v("Stopping foregroundness.")
                     playerService.stopForeground(false)
                 }
 
@@ -417,7 +442,7 @@ class MediaNotificationManager(val playerService: PlayerService,
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-            logDebug("[MediaNotificationManager] Metadata changed: ${metadata}")
+            Timber.d("Metadata changed: %s", metadata)
             mediaMetadata = metadata
 
             val notification = createNotification()
@@ -428,7 +453,7 @@ class MediaNotificationManager(val playerService: PlayerService,
 
         override fun onSessionDestroyed() {
             super.onSessionDestroyed()
-            logDebug("[MediaNotificationManager] Session destroyed; resetting session token.")
+            Timber.d("Session destroyed; resetting session token.")
             updateSessionToken()
         }
     }
@@ -455,10 +480,14 @@ class MediaNotificationManager(val playerService: PlayerService,
          * *
          * @return A pre-built notification with information from the given media session.
          */
-        fun builderFrom(context: Context, mediaSession: MediaSessionCompat): NotificationCompat.Builder? {
+        fun builderFrom(context: Context, mediaSession: MediaSessionCompat, mediaMetadata: MediaMetadataCompat): NotificationCompat.Builder? {
             val controller = mediaSession.controller
-            val mediaMetadata = controller.metadata
-            val description = mediaMetadata?.description ?: return null
+            val description = mediaMetadata.description
+
+            if (description == null) {
+                Timber.e("Invalid metadata.")
+                return null
+            }
 
             val builder = NotificationCompat.Builder(context)
 

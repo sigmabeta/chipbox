@@ -32,8 +32,8 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
 
     override fun setDropdownValue(index: Int) {
         dropdown_tempo.onItemSelectedListener = null
-        dropdown_tempo.setSelection(index)
         dropdown_tempo.post {
+            dropdown_tempo.setSelection(index)
             dropdown_tempo.onItemSelectedListener = this
         }
     }
@@ -42,7 +42,7 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
      * ItemListView
      */
 
-    override fun onItemClick(position: Int, clickedViewHolder: VoiceViewHolder) {
+    override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }
 
