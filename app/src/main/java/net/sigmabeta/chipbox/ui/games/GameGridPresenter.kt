@@ -5,12 +5,10 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logWarning
 import rx.android.schedulers.AndroidSchedulers
+import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
@@ -22,7 +20,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
 
     fun onItemClick(position: Int) {
         val id = games?.get(position)?.id ?: return
-        view?.launchGameActivity(id)
+        view?.launchGameActivity(id, position)
     }
 
     fun refresh(arguments: Bundle) = setupHelper(arguments)
@@ -36,7 +34,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
     }
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
-        logError("Recreate")
+        Timber.e("Recreate")
 
         if (games == null) {
             setupHelper(arguments)
@@ -57,8 +55,6 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
             }
         }
 
-        view?.clearClickedViewHolder()
-
         val subscription = updater.asObservable()
                 .throttleFirst(5000, TimeUnit.MILLISECONDS)
                 .observeOn(AndroidSchedulers.mainThread())
@@ -76,7 +72,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
                         is FileScanCompleteEvent -> loadGames()
                         is FileScanFailedEvent -> { /* no-op */
                         }
-                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                        else -> Timber.w("Unhandled %s", it.toString())
                     }
                 }
 

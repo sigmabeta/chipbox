@@ -5,9 +5,8 @@ import android.util.Log
 import android.view.View
 import com.crashlytics.android.Crashlytics
 import net.sigmabeta.chipbox.model.repository.Repository
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
 import rx.subscriptions.CompositeSubscription
+import timber.log.Timber
 import javax.inject.Inject
 
 abstract class BasePresenter<V : BaseView> {
@@ -63,7 +62,7 @@ abstract class BasePresenter<V : BaseView> {
      */
 
     protected fun handleError(error: Throwable, action: View.OnClickListener?) {
-        logError(Log.getStackTraceString(error))
+        Timber.e(Log.getStackTraceString(error))
         loading = false
 
         when (error) {
@@ -83,7 +82,7 @@ abstract class BasePresenter<V : BaseView> {
     protected fun printBenchmark(eventName: String) {
         if (setupStartTime > 0) {
             val timeDiff = System.currentTimeMillis() - setupStartTime
-            logInfo("Benchmark: $eventName after ${timeDiff}ms.")
+            Timber.i("Benchmark: %s after %d ms.", eventName, timeDiff)
         }
     }
 

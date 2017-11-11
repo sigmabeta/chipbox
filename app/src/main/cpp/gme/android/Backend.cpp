@@ -3,7 +3,7 @@
 #include "net_sigmabeta_chipbox_backend_gme_BackendImpl.h"
 #include <android/log.h>
 
-#define CHIPBOX_TAG "ChipboxGME"
+#define CHIPBOX_TAG "BackendGME"
 
 Music_Emu *g_emu;
 
@@ -43,7 +43,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_gme_BackendImpl_loadFi
     }
 
     __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG,
-                        "[ChipboxGME] Creating emulator instance.");
+                        "Creating emulator instance.");
     g_emu = file_type->new_emu();
     if (!g_emu) {
         g_last_error = "Out of memory";
@@ -51,7 +51,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_gme_BackendImpl_loadFi
         return;// handle_error( "Out of memory" );
     }
 
-    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[ChipboxGME] Setting sample rate: %d",
+    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "Setting sample rate: %d",
                         rate);
     g_last_error = g_emu->set_sample_rate(sample_rate);
     if (g_last_error) {
@@ -59,7 +59,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_gme_BackendImpl_loadFi
         return;
     }
 
-    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[ChipboxGME] Loading file %s",
+    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "Loading file %s",
                         filename);
     g_last_error = g_emu->load_file(filename);
     if (g_last_error) {
@@ -67,7 +67,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_gme_BackendImpl_loadFi
         return;
     }
 
-    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[ChipboxGME] Starting track: %d",
+    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "Starting track: %d",
                         track);
     g_last_error = g_emu->start_track(track);
     if (g_last_error) {
@@ -75,12 +75,12 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_gme_BackendImpl_loadFi
         return;
     }
 
-    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[ChipboxGME] Setting fade time: %lu",
+    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "Setting fade time: %lu",
                         fade_time_ms);
     gme_set_fade(g_emu, fade_time_ms);
     g_fade_time_ms = fade_time_ms;
 
-    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "[ChipboxGME] Buffer size: %lu",
+    __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG, "Buffer size: %lu",
                         buffer_size);
     g_buffer_size = buffer_size;
 }
@@ -182,7 +182,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_gme_BackendImpl_teardo
 
     if (g_emu != NULL) {
         __android_log_print(ANDROID_LOG_VERBOSE, CHIPBOX_TAG,
-                            "[teardownGme] Deleting emulator instance.");
+                            "Deleting emulator instance.");
         delete g_emu;
         g_emu = NULL;
     }

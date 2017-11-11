@@ -12,7 +12,7 @@ abstract class BaseViewHolder<T : ListItem, VH : BaseViewHolder<T, VH, A>, A : B
     }
 
     override fun onClick(clicked: View) {
-        adapter.onItemClick(adapterPosition, this as VH)
+        adapter.onItemClick(adapterPosition)
     }
 
     abstract fun bind(toBind: T)

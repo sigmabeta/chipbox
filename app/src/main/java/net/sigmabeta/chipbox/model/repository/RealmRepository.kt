@@ -9,27 +9,40 @@ import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
-import net.sigmabeta.chipbox.util.logVerbose
-import net.sigmabeta.chipbox.util.logWarning
 import rx.Observable
 import rx.schedulers.Schedulers
+import timber.log.Timber
+import java.util.*
 
 class RealmRepository(var realm: Realm) : Repository {
+    var id: UUID = UUID.randomUUID()
+
+    var isClosed = false
+
     override fun reopen() {
         try {
-            if (realm.isClosed) {
+            if (isClosed) {
+                Timber.v("Reopening repository: %s", id)
                 realm = getRealmInstance()
+                isClosed = false
+            } else {
+                Timber.v("Already opened repository: %s", id)
             }
         } catch (error: IllegalStateException) {
-            logError("Illegal Realm instance access on thread ${Thread.currentThread().name}")
+            Timber.e("Illegal Realm instance access on thread ${Thread.currentThread().name}")
             realm = getRealmInstance()
+            isClosed = false
         }
     }
 
     override fun close() {
-        realm.closeAndReport()
+        if (!isClosed) {
+            Timber.v("Closing repository: %s", id)
+            realm.closeAndReport()
+            isClosed = true
+        } else {
+            Timber.e("Already closed repository: %s", id)
+        }
     }
 
     /**
@@ -37,58 +50,49 @@ class RealmRepository(var realm: Realm) : Repository {
      */
 
     override fun addTrack(track: Track): Observable<Game> {
-        val artists = track.artistText?.split(", ")
+        track.save(realm)
 
-        val gameObservable = getGame(track.platformName, track.gameTitle)
-                .map {
-                    track.game = it
-                    track.save(realm)
+        val game = getGame(track.platformName, track.gameTitle)
+        val platform = getPlatform(track.platformName)
 
-                    realm.inTransaction {
-                        it.tracks?.add(track)
+        realm.inTransaction {
+            track.game = game
+            game.tracks?.add(track)
+
+            track.platform = platform
+            game.platformName = track.platformName
+        }
+
+        val artistNames = track.artistText?.split(*DELIMITERS_ARTISTS)
+                ?.map(String::trim)
+
+        val artists = artistNames?.map { name ->
+            return@map getArtistByName(name)
+        }
+
+        val gameArtist = game.artist
+        val gameHadMultipleArtists = game.multipleArtists ?: false
+
+        artists?.forEach { artist ->
+            realm.inTransaction {
+                artist.tracks?.add(track)
+                track.artists?.add(artist)
+
+                // If this game has just one artist...
+                if (gameArtist != null && !gameHadMultipleArtists) {
+                    // And the one we just got is different
+                    if (artist.id != gameArtist.id) {
+                        // We'll save this later.
+                        game.multipleArtists = true
+                        game.artist = null
                     }
-
-                    return@map it
+                } else if (gameArtist == null) {
+                    game.artist = artist
                 }
+            }
+        }
 
-        val platformObservable = getPlatform(track.platformName)
-                .map {
-                    track.platform = it
-                    return@map it
-                }
-
-        val artistObservable = Observable.from(artists)
-                .flatMap { name ->
-                    return@flatMap getArtistByName(name)
-                }
-
-        // Combine operator happens once per Artist, once we have a Game.
-        return Observable.combineLatest(gameObservable, artistObservable, platformObservable,
-                { game: Game, artist: Artist, platform: Platform ->
-                    val gameArtist = game.artist
-                    val gameHadMultipleArtists = game.multipleArtists ?: false
-
-                    realm.inTransaction {
-                        artist.tracks?.add(track)
-                        track.artists?.add(artist)
-
-                        // If this game has just one artist...
-                        if (gameArtist != null && !gameHadMultipleArtists) {
-                            // And the one we just got is different
-                            if (artist.id != gameArtist.id) {
-                                // We'll save this later.
-                                game.multipleArtists = true
-                                game.artist = null
-                            }
-                        } else if (gameArtist == null) {
-                            game.artist = artist
-                        }
-
-                        game.platformName = platform.name
-                    }
-
-                    return@combineLatest game
-                })
+        return Observable.just(game)
     }
 
     override fun addGame(platformName: String, title: String?): Observable<Game> {
@@ -234,7 +238,7 @@ class RealmRepository(var realm: Realm) : Repository {
         return observable.subscribeOn(Schedulers.io())
     }
 
-    override fun getGame(platformName: String?, title: String?): Observable<Game> {
+    override fun getGame(platformName: String?, title: String?): Game {
         var game = realm
                 .where(Game::class.java)
                 .equalTo("platformName", platformName)
@@ -244,11 +248,11 @@ class RealmRepository(var realm: Realm) : Repository {
         val newGame: Game
         if (game == null || !game.isValid) {
             newGame = Game(title ?: GAME_UNKNOWN, platformName ?: PLATFORM_UNKNOWN)
-            logVerbose("Created game: ${newGame.title}")
+            Timber.v("Created game: ${newGame.title}")
             game = newGame.save(realm)
         }
 
-        return Observable.just(game)
+        return game
     }
 
     override fun getArtist(id: String): Observable<Artist> {
@@ -260,7 +264,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 .filter { it.isLoaded }
     }
 
-    override fun getArtistByName(name: String?): Observable<Artist> {
+    override fun getArtistByName(name: String?): Artist {
         var artist = realm.where(Artist::class.java)
                 .equalTo("name", name)
                 .findFirst()
@@ -268,11 +272,11 @@ class RealmRepository(var realm: Realm) : Repository {
         val newArtist: Artist
         if (artist == null || !artist.isValid) {
             newArtist = Artist(name ?: GAME_UNKNOWN)
-            logVerbose("Created artist: ${newArtist.name}")
+            Timber.v("Created artist: ${newArtist.name}")
             artist = newArtist.save(realm)
         }
 
-        return Observable.just(artist)
+        return artist
     }
 
     override fun getArtists(): Observable<out List<Artist>> {
@@ -299,7 +303,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findAll()
     }
 
-    override fun getPlatform(name: String?): Observable<Platform> {
+    override fun getPlatform(name: String?): Platform {
         var platform = realm
                 .where(Platform::class.java)
                 .equalTo("name", name)
@@ -307,12 +311,12 @@ class RealmRepository(var realm: Realm) : Repository {
 
         val newPlatform: Platform
         if (platform == null || !platform.isValid) {
-            logVerbose("Creating platform: ${name}")
+            Timber.v("Creating platform: ${name}")
             newPlatform = Platform(name ?: PLATFORM_UNKNOWN)
             platform = newPlatform.save(realm)
         }
 
-        return Observable.just(platform)
+        return platform
     }
 
     override fun getPlatforms(): Observable<out List<Platform>> {
@@ -388,7 +392,7 @@ class RealmRepository(var realm: Realm) : Repository {
         }
 
         if (actuallyChanged) {
-            logVerbose("Updated track: ${oldTrack.title}")
+            Timber.v("Updated track: ${oldTrack.title}")
         }
 
         return actuallyChanged
@@ -399,7 +403,7 @@ class RealmRepository(var realm: Realm) : Repository {
      */
 
     override fun clearAll() {
-        logInfo("[Library] Clearing library...")
+        Timber.i("[Library] Clearing library...")
 
         realm.inTransaction {
             delete(Track::class.java)
@@ -437,7 +441,8 @@ class RealmRepository(var realm: Realm) : Repository {
             oldTrack.artistText = newTrack.artistText
 
             val oldArtists = oldTrack.artists
-            val newArtists = newTrack.artistText?.split(", ")
+            val newArtists = newTrack.artistText?.split(*DELIMITERS_ARTISTS)
+                    ?.map(String::trim)
 
             // Remove any artists that no longer pertain to this track.
             oldArtists?.forEach { oldArtist ->
@@ -446,7 +451,7 @@ class RealmRepository(var realm: Realm) : Repository {
                 }
 
                 if (matchingArtist == null) {
-                    logWarning("New track missing artist: ${oldArtist.name}")
+                    Timber.w("New track missing artist: ${oldArtist.name}")
                     oldArtist.tracks?.remove(oldTrack)
                     oldTrack.artists?.remove(oldArtist)
 
@@ -461,13 +466,12 @@ class RealmRepository(var realm: Realm) : Repository {
                 }
 
                 if (matchingArtist == null) {
-                    logVerbose("Adding artist: $newArtist")
+                    Timber.v("Adding artist: $newArtist")
 
-                    getArtistByName(newArtist)
-                            .subscribe {
-                                it.tracks?.add(oldTrack)
-                                oldTrack.artists?.add(it)
-                            }
+                    val artist = getArtistByName(newArtist)
+
+                    artist.tracks?.add(oldTrack)
+                    oldTrack.artists?.add(artist)
 
                     actuallyChanged = true
                 }
@@ -482,14 +486,13 @@ class RealmRepository(var realm: Realm) : Repository {
 
         val oldGame = oldTrack.game
         if (oldTrack.gameTitle != newTrack.gameTitle) {
-            logWarning("New track doesn't match old track game: ${oldTrack.gameTitle}")
+            Timber.w("New track doesn't match old track game: ${oldTrack.gameTitle}")
             oldGame?.tracks?.remove(oldTrack)
 
-            getGame(newTrack.platformName, newTrack.gameTitle)
-                    .subscribe {
-                        it.tracks?.add(oldTrack)
-                        oldTrack.game = it
-                    }
+            val game = getGame(newTrack.platformName, newTrack.gameTitle)
+
+            game.tracks?.add(oldTrack)
+            oldTrack.game = game
 
             actuallyChanged = true
         }
@@ -524,5 +527,7 @@ class RealmRepository(var realm: Realm) : Repository {
         val GAME_UNKNOWN = "Unknown Game"
         val ARTIST_UNKNOWN = "Unknown Artist"
         val PLATFORM_UNKNOWN = "Unknown Platform"
+
+        val DELIMITERS_ARTISTS = arrayOf(", &", ",", " or ", " and ", "&")
     }
 }
