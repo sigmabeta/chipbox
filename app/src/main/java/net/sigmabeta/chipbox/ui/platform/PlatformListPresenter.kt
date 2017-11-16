@@ -6,6 +6,7 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -36,7 +37,7 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
 
     override fun onClick(id: Int) = Unit
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         platformList?.let {
             showContent(it)
         } ?: let {
@@ -82,7 +83,7 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
                 .subscribe(
                         {
                             printBenchmark("Platforms Loaded")
-                            loading = false
+                            state = UiState.READY
                             platformList = it
 
                             if (it.isNotEmpty()) {
@@ -92,7 +93,7 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
                             }
                         },
                         {
-                            loading = false
+                            state = UiState.READY
                             showEmptyState()
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }

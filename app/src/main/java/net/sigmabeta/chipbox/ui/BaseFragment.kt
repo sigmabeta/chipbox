@@ -5,7 +5,6 @@ import android.content.Context
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v4.app.Fragment
-import android.util.Pair
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +16,14 @@ import timber.log.Timber
 
 abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : Fragment(), BaseView, View.OnClickListener {
     var injected = false
+
+    override fun showErrorState() {
+//        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun showEmptyState() {
+//        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 
     fun getPicassoCallback(): Callback {
         return object : Callback {

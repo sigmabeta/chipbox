@@ -95,9 +95,9 @@ class PlaylistFragment : BaseFragment<PlaylistFragmentPresenter, PlaylistFragmen
      * BaseFragment
      */
 
-    override fun showLoading() = Unit
+    override fun showLoadingState() = Unit
 
-    override fun hideLoading() = Unit
+    override fun showContent() = Unit
 
     override fun inject() {
         val container = activity
