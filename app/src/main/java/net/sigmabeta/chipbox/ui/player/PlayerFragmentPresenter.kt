@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
 import rx.Observable
 import rx.android.schedulers.AndroidSchedulers
@@ -68,7 +69,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
     override fun setup(arguments: Bundle?) {
-        needsSetup = false
+        state = UiState.READY
     }
 
     override fun teardown() {
@@ -76,7 +77,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         seekbarTouched = false
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         updateHelper()
 
         val subscription = updater.asObservable()

@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui.onboarding
 import android.os.Bundle
 import net.sigmabeta.chipbox.backend.PrefManager
 import net.sigmabeta.chipbox.ui.ActivityPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import net.sigmabeta.chipbox.ui.onboarding.library.LibraryFragment
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import javax.inject.Inject
@@ -46,7 +47,7 @@ class OnboardingPresenter @Inject constructor(val prefManager: PrefManager) : Ac
     override fun onClick(id: Int) = Unit
 
     override fun setup(arguments: Bundle?) {
-        needsSetup = false
+        state = UiState.READY
 
         val tag = arguments?.getString(OnboardingActivity.ARGUMENT_PAGE_TAG)
 
@@ -71,7 +72,7 @@ class OnboardingPresenter @Inject constructor(val prefManager: PrefManager) : Ac
         currentTag = null
     }
 
-    override fun updateViewState() = Unit
+    override fun showReadyState() = Unit
 
     /**
      * Private Methods

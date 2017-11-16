@@ -69,9 +69,9 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ItemList
      * BaseActivity
      */
 
-    override fun showLoading() = Unit
+    override fun showLoadingState() = Unit
 
-    override fun hideLoading() = Unit
+    override fun showContent() = Unit
 
     override fun inject() {
         getTypedApplication().appComponent.inject(this)

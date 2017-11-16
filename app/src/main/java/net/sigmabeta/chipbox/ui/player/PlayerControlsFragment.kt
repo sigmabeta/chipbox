@@ -28,11 +28,11 @@ class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerContr
      * PlayerControlsView
      */
 
-    override fun showPauseButton() {
+    override fun showPauseButton() = ifVisible {
         button_play.setImageResource(R.drawable.ic_pause_black_24dp)
     }
 
-    override fun showPlayButton() {
+    override fun showPlayButton() = ifVisible {
         button_play.setImageResource(R.drawable.ic_play_arrow_black_24dp)
     }
 
@@ -52,30 +52,30 @@ class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerContr
         presenter.onPlaylistHidden()
     }
 
-    override fun setShuffleEnabled() {
+    override fun setShuffleEnabled() = ifVisible {
         setViewTint(button_shuffle, R.color.accent)
     }
 
-    override fun setShuffleDisabled() {
+    override fun setShuffleDisabled() = ifVisible {
         setViewTint(button_shuffle, R.color.circle_grey)
     }
 
-    override fun setRepeatDisabled() {
+    override fun setRepeatDisabled() = ifVisible {
         button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
         setViewTint(button_repeat, R.color.circle_grey)
     }
 
-    override fun setRepeatAll() {
+    override fun setRepeatAll() = ifVisible {
         button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
         setViewTint(button_repeat, R.color.accent)
     }
 
-    override fun setRepeatOne() {
+    override fun setRepeatOne() = ifVisible {
         button_repeat.setImageResource(R.drawable.ic_repeat_one_black_24dp)
         setViewTint(button_repeat, R.color.accent)
     }
 
-    override fun setRepeatInfinite() {
+    override fun setRepeatInfinite() = ifVisible {
         button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
         setViewTint(button_repeat, R.color.primary)
     }
@@ -84,9 +84,9 @@ class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerContr
      * BaseFragment
      */
 
-    override fun showLoading() = Unit
+    override fun showLoadingState() = Unit
 
-    override fun hideLoading() = Unit
+    override fun showContent() = Unit
 
     override fun inject() {
         val container = activity
