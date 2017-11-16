@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -51,7 +52,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
         tracks = null
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         tracks?.let {
             if (it.isNotEmpty()) {
                 showContent(it)
@@ -88,13 +89,13 @@ class TrackListPresenter @Inject constructor(val player: Player,
         when (id) {
             R.id.button_empty_state -> {
                 view?.startRescan()
-                loading = true
+                state = UiState.LOADING
             }
         }
     }
 
     private fun setupHelper(arguments: Bundle?) {
-        loading = true
+        state = UiState.LOADING
 
         artistId = arguments?.getString(TrackListFragment.ARGUMENT_ARTIST)
 

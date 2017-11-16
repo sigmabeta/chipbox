@@ -8,6 +8,7 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import java.util.*
@@ -64,12 +65,12 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
      */
 
     override fun setup(arguments: Bundle?) {
-        needsSetup = false
+        state = UiState.READY
     }
 
     override fun teardown() = Unit
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         // TODO Get tracks, we only have IDs here
         val trackIdsList = playlist.playbackQueue
         repository.getTracksFromIds(trackIdsList)

@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.ui
 
 import android.Manifest
-import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -18,14 +17,20 @@ import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.util.*
 import timber.log.Timber
-import java.util.ArrayList
 
 
 abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : AppCompatActivity(), BaseView, View.OnClickListener {
     var lastPermRequestId: String? = null
     var lastPermRequestAction: (() -> Unit)? = null
+
+    override fun showErrorState() {
+//        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun showEmptyState() {
+//        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 
     fun getPicassoCallback(): Callback {
         return object : Callback {

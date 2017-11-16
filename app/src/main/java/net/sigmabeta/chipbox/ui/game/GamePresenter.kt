@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import javax.inject.Inject
@@ -57,7 +58,7 @@ class GamePresenter @Inject constructor(val player: Player,
         tracks = null
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         game?.let {
             view?.setGame(it)
         }
@@ -102,7 +103,7 @@ class GamePresenter @Inject constructor(val player: Player,
     }
 
     private fun setupHelper(arguments: Bundle?) {
-        loading = true
+        state = UiState.LOADING
 
         val gameId = arguments?.getString(GameActivity.ARGUMENT_GAME_ID)
         this.gameId = gameId
@@ -111,7 +112,7 @@ class GamePresenter @Inject constructor(val player: Player,
             val gameSubscription = repository.getGame(it)
                     .subscribe(
                             { game ->
-                                loading = false
+                                state = UiState.READY
 
                                 if (game != null) {
                                     this.game = game
@@ -129,7 +130,7 @@ class GamePresenter @Inject constructor(val player: Player,
                                 }
                             },
                             {
-                                loading = false
+                                state = UiState.ERROR
 
                                 view?.setGame(null)
                                 view?.showErrorSnackbar("Error: ${it.message}", null, null)
