@@ -37,8 +37,7 @@ abstract class ActivityPresenter<V : BaseView> : BasePresenter<V>() {
                 teardown()
                 repository.close()
 
-                needsSetup = true
-                loading = false
+                state = UiState.NONE
                 recreated = false
             } else {
                 onTempDestroy()

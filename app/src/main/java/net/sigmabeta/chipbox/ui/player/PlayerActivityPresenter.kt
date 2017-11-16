@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui.player
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ActivityPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -32,7 +33,7 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter<PlayerAc
     }
 
     override fun setup(arguments: Bundle?) {
-        needsSetup = false
+        state = UiState.READY
 
         view?.showControlsFragment()
         view?.showPlayerFragment()
@@ -46,7 +47,7 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter<PlayerAc
         playlistVisible = false
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         if (playlistVisible) {
             view?.showStatusBar()
         } else {

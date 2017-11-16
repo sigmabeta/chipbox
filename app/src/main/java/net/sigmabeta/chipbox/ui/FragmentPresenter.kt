@@ -26,8 +26,7 @@ abstract class FragmentPresenter<V : BaseView> : BasePresenter<V>() {
                 repository.close()
                 teardown()
 
-                needsSetup = true
-                loading = false
+                state = UiState.NONE
             }
         } else if (this.view == null) {
             Timber.w("Cannot clear reference; Presenter has already cleared reference.")

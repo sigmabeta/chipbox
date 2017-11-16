@@ -9,8 +9,4 @@ interface ArtistListView : BaseView {
     fun launchNavActivity(id: String)
 
     fun startRescan()
-
-    fun showContent()
-
-    fun showEmptyState()
 }

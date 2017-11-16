@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -37,7 +38,7 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
         artists = null
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         artists?.let {
             if (it.size > 0) {
                 showContent(it)
@@ -74,13 +75,13 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
         when (id) {
             R.id.button_empty_state -> {
                 view?.startRescan()
-                loading = true
+                state = UiState.LOADING
             }
         }
     }
 
     private fun setupHelper() {
-        loading = true
+        state = UiState.LOADING
 
         loadArtists()
     }
@@ -92,7 +93,7 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
                         {
                             printBenchmark("Artists Loaded")
 
-                            loading = false
+                            state = UiState.READY
                             artists = it
 
                             if (it.isNotEmpty()) {
@@ -102,7 +103,8 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
                             }
                         },
                         {
-                            loading = false
+                            state = UiState.ERROR
+
                             view?.showEmptyState()
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }

@@ -21,7 +21,7 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
      * PlayerFragmentView
      */
 
-    override fun setTrackTitle(title: String, animate: Boolean) {
+    override fun setTrackTitle(title: String, animate: Boolean) = ifVisible {
         if (animate) {
             text_track_title.changeText(title)
         } else {
@@ -29,7 +29,7 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
         }
     }
 
-    override fun setGameTitle(title: String, animate: Boolean) {
+    override fun setGameTitle(title: String, animate: Boolean) = ifVisible {
         if (animate) {
             text_game_title.changeText(title)
         } else {
@@ -37,7 +37,7 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
         }
     }
 
-    override fun setArtist(artist: String, animate: Boolean) {
+    override fun setArtist(artist: String, animate: Boolean) = ifVisible {
         if (animate) {
             text_track_artist.changeText(artist)
         } else {
@@ -45,11 +45,11 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
         }
     }
 
-    override fun setTimeElapsed(time: String) {
+    override fun setTimeElapsed(time: String) = ifVisible {
         text_track_elapsed.text = time
     }
 
-    override fun setTrackLength(trackLength: String, animate: Boolean) {
+    override fun setTrackLength(trackLength: String, animate: Boolean) = ifVisible {
         if (animate) {
             text_track_length.changeText(trackLength)
         } else {
@@ -65,11 +65,11 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
         }
     }
 
-    override fun setUnderrunCount(count: String) {
+    override fun setUnderrunCount(count: String) = ifVisible {
         text_underrun_count.text = count
     }
 
-    override fun setProgress(percentPlayed: Int) {
+    override fun setProgress(percentPlayed: Int) = ifVisible {
         seek_playback_progress.progress = percentPlayed
     }
 
@@ -104,9 +104,9 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
         }
     }
 
-    override fun showLoading() = Unit
+    override fun showLoadingState() = Unit
 
-    override fun hideLoading() = Unit
+    override fun showContent() = Unit
     override fun getContentLayout(): ViewGroup {
         return frame_content
     }

@@ -39,6 +39,7 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
 
     override fun showContent() = ifVisible {
         list_tracks.fadeIn()
+        loading_spinner.fadeOutGone()
         layout_empty_state.fadeOutGone()
     }
 
@@ -75,15 +76,12 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
      * BaseFragment
      */
 
-    override fun showLoading() = ifVisible {
+    override fun showLoadingState() = ifVisible {
         loading_spinner.fadeIn().setDuration(50)
         list_tracks.fadeOutPartially()
         layout_empty_state.fadeOutGone()
     }
 
-    override fun hideLoading() = ifVisible {
-        loading_spinner.fadeOutGone()
-    }
 
     override fun inject() {
         val container = activity

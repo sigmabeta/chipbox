@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import javax.inject.Inject
@@ -58,7 +59,7 @@ class SettingsPresenter @Inject constructor(val player: Player,
      */
 
     override fun setup(arguments: Bundle?) {
-        needsSetup = false
+        state = UiState.READY
     }
 
     override fun teardown() {
@@ -66,7 +67,7 @@ class SettingsPresenter @Inject constructor(val player: Player,
         tempo = 100
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         updateHelper()
 
         val subscription = updater.asObservable()

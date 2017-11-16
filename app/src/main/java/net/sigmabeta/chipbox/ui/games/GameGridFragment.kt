@@ -15,7 +15,6 @@ import net.sigmabeta.chipbox.ui.*
 import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.ui.util.GridSpaceDecoration
 import net.sigmabeta.chipbox.util.*
-import java.util.*
 import javax.inject.Inject
 
 class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameListView, ItemListView<GameViewHolder>, TopLevelFragment, NavigationFragment {
@@ -57,6 +56,7 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
 
     override fun showContent() = ifVisible {
         grid_games.fadeIn()
+        loading_spinner.fadeOutGone()
         layout_empty_state.fadeOutGone()
     }
 
@@ -93,15 +93,10 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
      * BaseFragment
      */
 
-    override fun showLoading() = ifVisible {
+    override fun showLoadingState() = ifVisible {
         grid_games.fadeOutPartially()
         loading_spinner.fadeIn().setDuration(50)
         layout_empty_state.fadeOutGone()
-    }
-
-
-    override fun hideLoading() = ifVisible {
-        loading_spinner.fadeOutGone()
     }
 
     override fun inject() {

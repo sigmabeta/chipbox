@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -46,7 +47,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
         platformName = null
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         games?.let {
             if (it.isNotEmpty()) {
                 showContent(it)
@@ -83,7 +84,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
         when (id) {
             R.id.button_empty_state -> {
                 view?.startRescan()
-                loading = true
+                state = UiState.LOADING
             }
         }
     }
@@ -95,7 +96,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
             view?.setTitle(it)
         }
 
-        loading = true
+        state = UiState.LOADING
 
         loadGames()
     }
@@ -113,7 +114,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
                 .subscribe(
                         {
                             printBenchmark("Games Loaded")
-                            loading = false
+                            state = UiState.READY
                             games = it
 
                             if (it.isNotEmpty()) {
@@ -123,7 +124,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
                             }
                         },
                         {
-                            loading = false
+                            state = UiState.ERROR
                             showEmptyState()
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }

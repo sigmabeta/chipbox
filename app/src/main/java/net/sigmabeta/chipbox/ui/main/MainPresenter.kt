@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.model.repository.LibraryScanner
 import net.sigmabeta.chipbox.ui.ActivityPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import javax.inject.Inject
@@ -48,7 +49,7 @@ class MainPresenter @Inject constructor(val player: Player,
     }
 
     override fun setup(arguments: Bundle?) {
-        needsSetup = false
+        state = UiState.READY
     }
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
@@ -59,7 +60,7 @@ class MainPresenter @Inject constructor(val player: Player,
         game = null
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         updateHelper()
 
         val subscription = updater.asObservable()

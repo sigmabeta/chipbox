@@ -14,7 +14,6 @@ import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
 import net.sigmabeta.chipbox.util.isScrolledToBottom
-import java.util.*
 import javax.inject.Inject
 
 class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListView>(), PlatformListView, ItemListView<PlatformViewHolder>, TopLevelFragment {
@@ -66,9 +65,9 @@ class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListVie
         }
     }
 
-    override fun showLoading() = Unit
+    override fun showLoadingState() = Unit
 
-    override fun hideLoading() = Unit
+    override fun showContent() = Unit
 
     override fun getContentLayout(): ViewGroup {
         return frame_content
