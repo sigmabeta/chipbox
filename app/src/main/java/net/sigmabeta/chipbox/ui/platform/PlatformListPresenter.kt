@@ -38,12 +38,8 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
     override fun onClick(id: Int) = Unit
 
     override fun showReadyState() {
-        platformList?.let {
-            showContent(it)
-        } ?: let {
-            view?.requestReSetup()
-        }
-
+        view?.setList(platformList!!)
+        view?.showContent()
 
         val subscription = updater.asObservable()
                 .throttleFirst(5000, TimeUnit.MILLISECONDS)
@@ -78,33 +74,28 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
     }
 
     private fun loadPlatforms() {
+        state = UiState.LOADING
+
         val subscription = repository.getPlatforms()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
                             printBenchmark("Platforms Loaded")
-                            state = UiState.READY
+
                             platformList = it
 
                             if (it.isNotEmpty()) {
-                                showContent(it)
+                                state = UiState.READY
                             } else {
-                                showEmptyState()
+                                state = UiState.EMPTY
                             }
                         },
                         {
-                            state = UiState.READY
-                            showEmptyState()
+                            state = UiState.ERROR
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
                 )
 
         subscriptions.add(subscription)
-    }
-
-    private fun showContent(platforms: List<Platform>) = view?.setList(platforms)
-
-    private fun showEmptyState() {
-        // TODO
     }
 }

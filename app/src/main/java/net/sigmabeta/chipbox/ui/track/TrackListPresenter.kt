@@ -53,13 +53,8 @@ class TrackListPresenter @Inject constructor(val player: Player,
     }
 
     override fun showReadyState() {
-        tracks?.let {
-            if (it.isNotEmpty()) {
-                showContent(it)
-            } else {
-                showEmptyState()
-            }
-        }
+        view?.setTracks(tracks!!)
+        view?.showContent()
 
         val subscription = updater.asObservable()
                 .throttleFirst(5000, TimeUnit.MILLISECONDS)
@@ -95,14 +90,14 @@ class TrackListPresenter @Inject constructor(val player: Player,
     }
 
     private fun setupHelper(arguments: Bundle?) {
-        state = UiState.LOADING
-
         artistId = arguments?.getString(TrackListFragment.ARGUMENT_ARTIST)
 
         loadTracks()
     }
 
     private fun loadTracks() {
+        state = UiState.LOADING
+
         artistId?.let {
             val artistLoad = repository.getArtist(it)
                     .observeOn(AndroidSchedulers.mainThread())
@@ -114,17 +109,21 @@ class TrackListPresenter @Inject constructor(val player: Player,
                                 view?.setActivityTitle(it.name ?: RealmRepository.ARTIST_UNKNOWN)
 
                                 tracks = it.tracks
-                                tracks?.let {
-                                    if (it.isNotEmpty()) {
-                                        this.tracks = it
-                                        showContent(it)
+                                tracks?.let { reference ->
+                                    if (reference.isNotEmpty()) {
+                                        this.tracks = reference
+                                        state = UiState.READY
+                                    } else {
+                                        state = UiState.EMPTY
                                     }
                                 } ?: let {
+                                    state = UiState.ERROR
                                     Timber.e("Error: No tracks for artist %s", this.artist?.id)
                                 }
                             },
                             {
                                 Timber.e("Error: %s", it.message)
+                                state = UiState.ERROR
                                 view?.showErrorSnackbar("Error: ${it.message}", null, null)
                             }
                     )
@@ -141,28 +140,19 @@ class TrackListPresenter @Inject constructor(val player: Player,
                                 tracks = it
 
                                 if (it.isNotEmpty()) {
-                                    showContent(it)
+                                    state = UiState.READY
                                 } else {
-                                    showEmptyState()
+                                    state = UiState.EMPTY
                                 }
                             },
                             {
-                                showEmptyState()
+                                state = UiState.ERROR
                                 view?.showErrorSnackbar("Error: ${it.message}", null, null)
                             }
                     )
 
             subscriptions.add(tracksLoad)
         }
-    }
-
-    private fun showContent(it: List<Track>) {
-        view?.setTracks(it)
-        view?.showContent()
-    }
-
-    private fun showEmptyState() {
-        view?.showEmptyState()
     }
 
     private fun getTrackIdList() = tracks?.map(Track::id)?.toMutableList()
