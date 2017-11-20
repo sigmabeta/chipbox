@@ -39,13 +39,8 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
     }
 
     override fun showReadyState() {
-        artists?.let {
-            if (it.size > 0) {
-                showContent(it)
-            } else {
-                view?.showEmptyState()
-            }
-        }
+        view?.setArtists(artists!!)
+        view?.showContent()
 
         val subscription = updater.asObservable()
                 .throttleFirst(5000, TimeUnit.MILLISECONDS)
@@ -93,13 +88,12 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
                         {
                             printBenchmark("Artists Loaded")
 
-                            state = UiState.READY
                             artists = it
 
                             if (it.isNotEmpty()) {
-                                showContent(it)
+                                state = UiState.READY
                             } else {
-                                view?.showEmptyState()
+                                state = UiState.EMPTY
                             }
                         },
                         {
@@ -112,10 +106,5 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
 
 
         subscriptions.add(subscription)
-    }
-
-    private fun showContent(artists: List<Artist>) {
-        view?.setArtists(artists)
-        view?.showContent()
     }
 }

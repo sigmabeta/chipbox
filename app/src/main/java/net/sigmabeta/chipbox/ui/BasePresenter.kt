@@ -43,7 +43,7 @@ abstract class BasePresenter<V : BaseView> {
         this.view = view
 
         when (state) {
-            UiState.NONE -> handleError(IllegalStateException("NONE state detected."), null)
+            UiState.NONE -> handleError(IllegalStateException("NONE state detected in class ${this::class.java.simpleName}"), null)
             UiState.CANCELED -> view.requestReSetup()
             UiState.ERROR -> view.showErrorState()
             UiState.EMPTY -> view.showEmptyState()
