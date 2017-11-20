@@ -48,13 +48,8 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
     }
 
     override fun showReadyState() {
-        games?.let {
-            if (it.isNotEmpty()) {
-                showContent(it)
-            } else {
-                showEmptyState()
-            }
-        }
+        view?.setGames(games!!)
+        view?.showContent()
 
         val subscription = updater.asObservable()
                 .throttleFirst(5000, TimeUnit.MILLISECONDS)
@@ -114,31 +109,20 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
                 .subscribe(
                         {
                             printBenchmark("Games Loaded")
-                            state = UiState.READY
                             games = it
 
                             if (it.isNotEmpty()) {
-                                showContent(it)
+                                state = UiState.READY
                             } else {
-                                showEmptyState()
+                                state = UiState.EMPTY
                             }
                         },
                         {
                             state = UiState.ERROR
-                            showEmptyState()
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
                 )
 
         subscriptions.add(subscription)
-    }
-
-    private fun showContent(games: List<Game>) {
-        view?.setGames(games)
-        view?.showContent()
-    }
-
-    private fun showEmptyState() {
-        view?.showEmptyState()
     }
 }
