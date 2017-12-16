@@ -41,19 +41,16 @@ class ArtistListFragment : BaseFragment<ArtistListPresenter, ArtistListView>(), 
         activity.startService(intent)
     }
 
-    override fun showLoading() = ifVisible {
+    override fun showLoadingState() = ifVisible {
         list_artists.fadeOutPartially()
         loading_spinner.fadeIn().setDuration(50)
         layout_empty_state.fadeOutGone()
     }
 
-    override fun hideLoading() = ifVisible {
-        loading_spinner.fadeOutGone()
-    }
-
     override fun showContent() = ifVisible {
         list_artists.fadeIn()
         layout_empty_state.fadeOutGone()
+        loading_spinner.fadeOutGone()
     }
 
     override fun showEmptyState() = ifVisible {

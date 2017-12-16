@@ -50,7 +50,7 @@ class DebugPresenter @Inject constructor(val audioConfig: AudioConfig): Activity
 
     override fun teardown() = Unit
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         setupHelper()
     }
 

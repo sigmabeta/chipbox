@@ -126,9 +126,9 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
         return views.toTypedArray()
     }
 
-    override fun showLoading() = Unit
+    override fun showLoadingState() = Unit
 
-    override fun hideLoading() = Unit
+    override fun showContent() = Unit
 
     override fun inject() {
         getTypedApplication().appComponent.inject(this)

@@ -60,9 +60,9 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
      * BaseActivity
      */
 
-    override fun showLoading() = Unit
+    override fun showLoadingState() = Unit
 
-    override fun hideLoading() = Unit
+    override fun showContent() = Unit
 
     override fun inject() = getTypedApplication().appComponent.inject(this)
 

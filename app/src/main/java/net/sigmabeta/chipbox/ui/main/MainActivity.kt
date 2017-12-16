@@ -220,9 +220,9 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         }
     }
 
-    override fun showLoading() = Unit
+    override fun showLoadingState() = Unit
 
-    override fun hideLoading() = Unit
+    override fun showContent() = Unit
 
     override fun launchPlayerActivity() {
         PlayerActivity.launch(this, getShareableViews())

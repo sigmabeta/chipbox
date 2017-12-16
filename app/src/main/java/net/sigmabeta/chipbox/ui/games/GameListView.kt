@@ -11,8 +11,4 @@ interface GameListView : BaseView {
     fun launchGameActivity(id: String, position: Int)
 
     fun startRescan()
-
-    fun showContent()
-
-    fun showEmptyState()
 }

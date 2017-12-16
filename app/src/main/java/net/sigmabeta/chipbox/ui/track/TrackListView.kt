@@ -12,9 +12,5 @@ interface TrackListView : BaseView {
 
     fun startRescan()
 
-    fun showContent()
-
-    fun showEmptyState()
-
     fun onTrackLoadError()
 }
