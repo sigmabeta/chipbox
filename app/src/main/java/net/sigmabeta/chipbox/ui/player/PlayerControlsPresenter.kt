@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
@@ -61,7 +62,11 @@ class PlayerControlsPresenter @Inject constructor(val player: Player,
      */
 
     override fun setup(arguments: Bundle?) {
-        needsSetup = false
+        if (state == UiState.CANCELED) {
+            state = UiState.READY
+        } else {
+            state = UiState.CANCELED
+        }
     }
 
     override fun teardown() {
@@ -69,7 +74,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player,
         elevated = false
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         updateHelper()
 
         val subscription = updater.asObservable()

@@ -23,38 +23,41 @@ abstract class BasePresenter<V : BaseView> {
 
     protected var view: V? = null
 
-    protected var needsSetup: Boolean = false
-
-    protected var loading = false
-        set (value) {
-            field = value
-            if (view != null) {
-                if (field) {
-                    view?.showLoading()
-                } else {
-                    view?.hideLoading()
-                }
-            }
-        }
-
     protected var setupStartTime = 0L
 
     protected var subscriptions = CompositeSubscription()
 
+    protected var state = UiState.NONE
+        set(value) {
+            when (value) {
+                UiState.ERROR -> view?.showErrorState()
+                UiState.EMPTY -> view?.showEmptyState()
+                UiState.LOADING -> view?.showLoadingState()
+                UiState.READY -> showReadyState()
+                else -> { /* no-op */ }
+            }
+            field = value
+        }
+
     fun onResume(view: V) {
         this.view = view
 
-        if (!needsSetup) {
-            updateViewState()
-        } else if (!loading) {
-            view.requestReSetup()
+        when (state) {
+            UiState.NONE -> handleError(IllegalStateException("NONE state detected in class ${this::class.java.simpleName}"), null)
+            UiState.CANCELED -> view.requestReSetup()
+            UiState.ERROR -> view.showErrorState()
+            UiState.EMPTY -> view.showEmptyState()
+            UiState.LOADING -> view.showLoadingState()
+            UiState.READY -> showReadyState()
         }
-
-        needsSetup = false
     }
 
     fun onPause() {
         subscriptions.clear()
+
+        if (state == UiState.LOADING) {
+            state = UiState.CANCELED
+        }
     }
 
     /**
@@ -63,7 +66,6 @@ abstract class BasePresenter<V : BaseView> {
 
     protected fun handleError(error: Throwable, action: View.OnClickListener?) {
         Timber.e(Log.getStackTraceString(error))
-        loading = false
 
         when (error) {
             is InvalidClearViewException -> handleInvalidClearError(error)
@@ -99,7 +101,7 @@ abstract class BasePresenter<V : BaseView> {
     /**
      * Set all views to reflect the current state.
      */
-    abstract fun updateViewState()
+    abstract fun showReadyState()
 
     /**
      * Handle click events.

@@ -17,60 +17,77 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
     lateinit var presenter: PlayerFragmentPresenter
         @Inject set
 
+
     /**
      * PlayerFragmentView
      */
 
     override fun setTrackTitle(title: String, animate: Boolean) {
-        if (animate) {
-            text_track_title.changeText(title)
-        } else {
-            text_track_title.text = title
+        if (isResumed) {
+            if (animate) {
+                text_track_title.changeText(title)
+            } else {
+                text_track_title.text = title
+            }
         }
     }
 
     override fun setGameTitle(title: String, animate: Boolean) {
-        if (animate) {
-            text_game_title.changeText(title)
-        } else {
-            text_game_title.text = title
+        if (isResumed) {
+            if (animate) {
+                text_game_title.changeText(title)
+            } else {
+                text_game_title.text = title
+            }
         }
     }
 
     override fun setArtist(artist: String, animate: Boolean) {
-        if (animate) {
-            text_track_artist.changeText(artist)
-        } else {
-            text_track_artist.text = artist
+        if (isResumed) {
+            if (animate) {
+                text_track_artist.changeText(artist)
+            } else {
+                text_track_artist.text = artist
+            }
         }
     }
 
     override fun setTimeElapsed(time: String) {
-        text_track_elapsed.text = time
+        if (isResumed) {
+            text_track_elapsed.text = time
+        }
     }
 
     override fun setTrackLength(trackLength: String, animate: Boolean) {
-        if (animate) {
-            text_track_length.changeText(trackLength)
-        } else {
-            text_track_length.text = trackLength
+        if (isResumed) {
+            if (animate) {
+                text_track_length.changeText(trackLength)
+            } else {
+                text_track_length.text = trackLength
+            }
         }
     }
 
     override fun setGameBoxArt(path: String?, fade: Boolean) {
-        if (path != null) {
-            image_game_box_art.loadImageHighQuality(path, fade, false, getPicassoCallback())
-        } else {
-            image_game_box_art.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false, getPicassoCallback())
+        if (isResumed) {
+            if (path != null) {
+                image_game_box_art.loadImageHighQuality(path, fade, false, getPicassoCallback())
+            } else {
+                image_game_box_art.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false, getPicassoCallback())
+            }
         }
     }
 
     override fun setUnderrunCount(count: String) {
-        text_underrun_count.text = count
+        if (isResumed) {
+            text_underrun_count.text = count
+        }
     }
 
     override fun setProgress(percentPlayed: Int) {
-        seek_playback_progress.progress = percentPlayed
+        if (isResumed) {
+            seek_playback_progress.progress = percentPlayed
+        }
     }
 
     override fun showPlaylist() {
@@ -104,9 +121,9 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
         }
     }
 
-    override fun showLoading() = Unit
+    override fun showLoadingState() = Unit
 
-    override fun hideLoading() = Unit
+    override fun showContent() = Unit
     override fun getContentLayout(): ViewGroup {
         return frame_content
     }

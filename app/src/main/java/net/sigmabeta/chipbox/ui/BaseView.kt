@@ -4,9 +4,6 @@ import android.view.View
 import net.sigmabeta.chipbox.ChipboxApplication
 
 interface BaseView {
-    fun showLoading()
-
-    fun hideLoading()
 
     fun showToastMessage(message: String)
 
@@ -18,6 +15,13 @@ interface BaseView {
 
     fun requestReSetup()
 
+    fun showErrorState()
+
+    fun showEmptyState()
+
+    fun showLoadingState()
+
+    fun showContent()
     /**
      * Error Handling
      */

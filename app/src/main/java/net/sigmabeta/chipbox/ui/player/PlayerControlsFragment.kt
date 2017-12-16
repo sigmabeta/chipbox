@@ -29,11 +29,15 @@ class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerContr
      */
 
     override fun showPauseButton() {
-        button_play.setImageResource(R.drawable.ic_pause_black_24dp)
+        if (isResumed) {
+            button_play.setImageResource(R.drawable.ic_pause_black_24dp)
+        }
     }
 
     override fun showPlayButton() {
-        button_play.setImageResource(R.drawable.ic_play_arrow_black_24dp)
+        if (isResumed) {
+            button_play.setImageResource(R.drawable.ic_play_arrow_black_24dp)
+        }
     }
 
     override fun elevate() {
@@ -53,40 +57,52 @@ class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerContr
     }
 
     override fun setShuffleEnabled() {
-        setViewTint(button_shuffle, R.color.accent)
+        if (isResumed) {
+            setViewTint(button_shuffle, R.color.accent)
+        }
     }
 
     override fun setShuffleDisabled() {
-        setViewTint(button_shuffle, R.color.circle_grey)
+        if (isResumed) {
+            setViewTint(button_shuffle, R.color.circle_grey)
+        }
     }
 
     override fun setRepeatDisabled() {
-        button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
-        setViewTint(button_repeat, R.color.circle_grey)
+        if (isResumed) {
+            button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
+            setViewTint(button_repeat, R.color.circle_grey)
+        }
     }
 
     override fun setRepeatAll() {
-        button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
-        setViewTint(button_repeat, R.color.accent)
+        if (isResumed) {
+            button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
+            setViewTint(button_repeat, R.color.accent)
+        }
     }
 
     override fun setRepeatOne() {
-        button_repeat.setImageResource(R.drawable.ic_repeat_one_black_24dp)
-        setViewTint(button_repeat, R.color.accent)
+        if (isResumed) {
+            button_repeat.setImageResource(R.drawable.ic_repeat_one_black_24dp)
+            setViewTint(button_repeat, R.color.accent)
+        }
     }
 
     override fun setRepeatInfinite() {
-        button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
-        setViewTint(button_repeat, R.color.primary)
+        if (isResumed) {
+            button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
+            setViewTint(button_repeat, R.color.primary)
+        }
     }
 
     /**
      * BaseFragment
      */
 
-    override fun showLoading() = Unit
+    override fun showLoadingState() = Unit
 
-    override fun hideLoading() = Unit
+    override fun showContent() = Unit
 
     override fun inject() {
         val container = activity

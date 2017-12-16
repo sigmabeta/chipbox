@@ -6,6 +6,7 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -36,13 +37,9 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
 
     override fun onClick(id: Int) = Unit
 
-    override fun updateViewState() {
-        platformList?.let {
-            showContent(it)
-        } ?: let {
-            view?.requestReSetup()
-        }
-
+    override fun showReadyState() {
+        view?.setList(platformList!!)
+        view?.showContent()
 
         val subscription = updater.asObservable()
                 .throttleFirst(5000, TimeUnit.MILLISECONDS)
@@ -77,33 +74,28 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
     }
 
     private fun loadPlatforms() {
+        state = UiState.LOADING
+
         val subscription = repository.getPlatforms()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         {
                             printBenchmark("Platforms Loaded")
-                            loading = false
+
                             platformList = it
 
                             if (it.isNotEmpty()) {
-                                showContent(it)
+                                state = UiState.READY
                             } else {
-                                showEmptyState()
+                                state = UiState.EMPTY
                             }
                         },
                         {
-                            loading = false
-                            showEmptyState()
+                            state = UiState.ERROR
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
                 )
 
         subscriptions.add(subscription)
-    }
-
-    private fun showContent(platforms: List<Platform>) = view?.setList(platforms)
-
-    private fun showEmptyState() {
-        // TODO
     }
 }
