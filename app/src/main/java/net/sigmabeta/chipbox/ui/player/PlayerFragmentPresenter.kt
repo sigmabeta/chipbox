@@ -69,7 +69,11 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
     override fun setup(arguments: Bundle?) {
-        state = UiState.READY
+        if (state == UiState.CANCELED) {
+            state = UiState.READY
+        } else {
+            state = UiState.CANCELED
+        }
     }
 
     override fun teardown() {
