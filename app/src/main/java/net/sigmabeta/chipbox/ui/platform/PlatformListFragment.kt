@@ -13,8 +13,10 @@ import net.sigmabeta.chipbox.ui.ItemListView
 import net.sigmabeta.chipbox.ui.TopLevelFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
+import net.sigmabeta.chipbox.util.fadeIn
+import net.sigmabeta.chipbox.util.fadeOutGone
+import net.sigmabeta.chipbox.util.fadeOutPartially
 import net.sigmabeta.chipbox.util.isScrolledToBottom
-import java.util.*
 import javax.inject.Inject
 
 class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListView>(), PlatformListView, ItemListView<PlatformViewHolder>, TopLevelFragment {
@@ -66,9 +68,17 @@ class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListVie
         }
     }
 
-    override fun showLoading() = Unit
+    override fun showLoadingState() = ifVisible {
+        loading_spinner.fadeIn().setDuration(50)
+        list_platforms.fadeOutPartially()
+        layout_empty_state.fadeOutGone()
+    }
 
-    override fun hideLoading() = Unit
+    override fun showContent()  = ifVisible {
+        list_platforms.fadeIn()
+        loading_spinner.fadeOutGone()
+        layout_empty_state.fadeOutGone()
+    }
 
     override fun getContentLayout(): ViewGroup {
         return frame_content

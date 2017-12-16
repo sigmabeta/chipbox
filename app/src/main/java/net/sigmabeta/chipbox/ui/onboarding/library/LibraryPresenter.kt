@@ -4,6 +4,7 @@ import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import javax.inject.Inject
 
 
@@ -33,12 +34,12 @@ class LibraryPresenter @Inject constructor() : FragmentPresenter<LibraryView>() 
      */
 
     override fun setup(arguments: Bundle?) {
-        needsSetup = false
+        state = UiState.READY
     }
 
     override fun teardown() = Unit
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         view?.updateCurrentScreen()
     }
 
