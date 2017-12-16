@@ -62,7 +62,11 @@ class PlayerControlsPresenter @Inject constructor(val player: Player,
      */
 
     override fun setup(arguments: Bundle?) {
-        state = UiState.READY
+        if (state == UiState.CANCELED) {
+            state = UiState.READY
+        } else {
+            state = UiState.CANCELED
+        }
     }
 
     override fun teardown() {
