@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
@@ -37,14 +38,9 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
         artists = null
     }
 
-    override fun updateViewState() {
-        artists?.let {
-            if (it.size > 0) {
-                showContent(it)
-            } else {
-                view?.showEmptyState()
-            }
-        }
+    override fun showReadyState() {
+        view?.setArtists(artists!!)
+        view?.showContent()
 
         val subscription = updater.asObservable()
                 .throttleFirst(5000, TimeUnit.MILLISECONDS)
@@ -74,13 +70,13 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
         when (id) {
             R.id.button_empty_state -> {
                 view?.startRescan()
-                loading = true
+                state = UiState.LOADING
             }
         }
     }
 
     private fun setupHelper() {
-        loading = true
+        state = UiState.LOADING
 
         loadArtists()
     }
@@ -92,17 +88,17 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
                         {
                             printBenchmark("Artists Loaded")
 
-                            loading = false
                             artists = it
 
                             if (it.isNotEmpty()) {
-                                showContent(it)
+                                state = UiState.READY
                             } else {
-                                view?.showEmptyState()
+                                state = UiState.EMPTY
                             }
                         },
                         {
-                            loading = false
+                            state = UiState.ERROR
+
                             view?.showEmptyState()
                             view?.showErrorSnackbar("Error: ${it.message}", null, null)
                         }
@@ -110,10 +106,5 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
 
 
         subscriptions.add(subscription)
-    }
-
-    private fun showContent(artists: List<Artist>) {
-        view?.setArtists(artists)
-        view?.showContent()
     }
 }

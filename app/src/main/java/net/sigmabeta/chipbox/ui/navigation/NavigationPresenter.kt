@@ -11,6 +11,7 @@ import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import javax.inject.Inject
@@ -21,7 +22,7 @@ class NavigationPresenter @Inject constructor(val player: Player,
                                               val playlist: Playlist,
                                               val updater: UiUpdater) : ActivityPresenter<NavigationView>() {
     // A property is kept in order to be able to track changes in state.
-    var state = player.state
+    var playerState = player.state
 
     var game: Game? = null
 
@@ -44,7 +45,7 @@ class NavigationPresenter @Inject constructor(val player: Player,
     override fun onTempDestroy() = Unit
 
     override fun setup(arguments: Bundle?) {
-        needsSetup = false
+        state = UiState.READY
 
         val fragmentTag = arguments?.getString(NavigationActivity.ARGUMENT_FRAGMENT_TAG)
         val fragmentArg = arguments?.getString(NavigationActivity.ARGUMENT_FRAGMENT_ARG_STRING)
@@ -55,11 +56,11 @@ class NavigationPresenter @Inject constructor(val player: Player,
     }
 
     override fun teardown() {
-        state = -1
+        playerState = -1
         game = null
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         updateHelper()
 
         val subscription = updater.asObservable()
@@ -69,7 +70,7 @@ class NavigationPresenter @Inject constructor(val player: Player,
                         is TrackEvent -> displayTrack(it.trackId, true)
                         is PositionEvent -> { /* no-op */ }
                         is GameEvent -> displayGame(it.gameId, false)
-                        is StateEvent -> displayState(state, it.state)
+                        is StateEvent -> displayState(playerState, it.state)
                         else -> Timber.w("Unhandled %s", it.toString())
                     }
                 }
@@ -101,7 +102,7 @@ class NavigationPresenter @Inject constructor(val player: Player,
             }
         }
 
-        this.state = newState
+        this.playerState = newState
     }
 
     private fun displayTrack(trackId: String?, animate: Boolean) {
@@ -126,7 +127,7 @@ class NavigationPresenter @Inject constructor(val player: Player,
             displayGame(it, true)
         }
 
-        displayState(state, player.state)
+        displayState(playerState, player.state)
     }
 
     private fun displayGame(gameId: String?, force: Boolean) {
