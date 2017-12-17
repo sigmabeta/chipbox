@@ -41,28 +41,30 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
         view?.setList(platformList!!)
         view?.showContent()
 
-        val subscription = updater.asObservable()
-                .throttleFirst(5000, TimeUnit.MILLISECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    when (it) {
-                        is TrackEvent -> { /* no-op */
+        if (!subscriptions.hasSubscriptions()) {
+            val subscription = updater.asObservable()
+                    .throttleFirst(5000, TimeUnit.MILLISECONDS)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe {
+                        when (it) {
+                            is TrackEvent -> { /* no-op */
+                            }
+                            is PositionEvent -> { /* no-op */
+                            }
+                            is GameEvent -> { /* no-op */
+                            }
+                            is StateEvent -> { /* no-op */
+                            }
+                            is FileScanEvent -> loadPlatforms()
+                            is FileScanCompleteEvent -> loadPlatforms()
+                            is FileScanFailedEvent -> { /* no-op */
+                            }
+                            else -> Timber.w("Unhandled %s", it.toString())
                         }
-                        is PositionEvent -> { /* no-op */
-                        }
-                        is GameEvent -> { /* no-op */
-                        }
-                        is StateEvent -> { /* no-op */
-                        }
-                        is FileScanEvent -> loadPlatforms()
-                        is FileScanCompleteEvent -> loadPlatforms()
-                        is FileScanFailedEvent -> { /* no-op */
-                        }
-                        else -> Timber.w("Unhandled %s", it.toString())
                     }
-                }
 
-        subscriptions.add(subscription)
+            subscriptions.add(subscription)
+        }
     }
 
     /**
