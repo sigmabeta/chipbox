@@ -53,31 +53,33 @@ class TrackListPresenter @Inject constructor(val player: Player,
     }
 
     override fun showReadyState() {
-        view?.setTracks(tracks!!)
-        view?.showContent()
+        if (!subscriptions.hasSubscriptions()) {
+            view?.setTracks(tracks!!)
+            view?.showContent()
 
-        val subscription = updater.asObservable()
-                .throttleFirst(5000, TimeUnit.MILLISECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    when (it) {
-                        is TrackEvent -> { /* no-op */
+            val subscription = updater.asObservable()
+                    .throttleFirst(5000, TimeUnit.MILLISECONDS)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe {
+                        when (it) {
+                            is TrackEvent -> { /* no-op */
+                            }
+                            is PositionEvent -> { /* no-op */
+                            }
+                            is GameEvent -> { /* no-op */
+                            }
+                            is StateEvent -> { /* no-op */
+                            }
+                            is FileScanEvent -> loadTracks()
+                            is FileScanCompleteEvent -> loadTracks()
+                            is FileScanFailedEvent -> { /* no-op */
+                            }
+                            else -> Timber.w("Unhandled %s", it.toString())
                         }
-                        is PositionEvent -> { /* no-op */
-                        }
-                        is GameEvent -> { /* no-op */
-                        }
-                        is StateEvent -> { /* no-op */
-                        }
-                        is FileScanEvent -> loadTracks()
-                        is FileScanCompleteEvent -> loadTracks()
-                        is FileScanFailedEvent -> { /* no-op */
-                        }
-                        else -> Timber.w("Unhandled %s", it.toString())
                     }
-                }
 
-        subscriptions.add(subscription)
+            subscriptions.add(subscription)
+        }
     }
 
     override fun onClick(id: Int) {

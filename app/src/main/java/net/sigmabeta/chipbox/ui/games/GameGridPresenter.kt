@@ -51,28 +51,30 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
         view?.setGames(games!!)
         view?.showContent()
 
-        val subscription = updater.asObservable()
-                .throttleFirst(5000, TimeUnit.MILLISECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    when (it) {
-                        is TrackEvent -> { /* no-op */
+        if (!subscriptions.hasSubscriptions()) {
+            val subscription = updater.asObservable()
+                    .throttleFirst(5000, TimeUnit.MILLISECONDS)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe {
+                        when (it) {
+                            is TrackEvent -> { /* no-op */
+                            }
+                            is PositionEvent -> { /* no-op */
+                            }
+                            is GameEvent -> { /* no-op */
+                            }
+                            is StateEvent -> { /* no-op */
+                            }
+                            is FileScanEvent -> loadGames()
+                            is FileScanCompleteEvent -> loadGames()
+                            is FileScanFailedEvent -> { /* no-op */
+                            }
+                            else -> Timber.w("Unhandled %s", it.toString())
                         }
-                        is PositionEvent -> { /* no-op */
-                        }
-                        is GameEvent -> { /* no-op */
-                        }
-                        is StateEvent -> { /* no-op */
-                        }
-                        is FileScanEvent -> loadGames()
-                        is FileScanCompleteEvent -> loadGames()
-                        is FileScanFailedEvent -> { /* no-op */
-                        }
-                        else -> Timber.w("Unhandled %s", it.toString())
                     }
-                }
 
-        subscriptions.add(subscription)
+            subscriptions.add(subscription)
+        }
     }
 
     override fun onClick(id: Int) {
