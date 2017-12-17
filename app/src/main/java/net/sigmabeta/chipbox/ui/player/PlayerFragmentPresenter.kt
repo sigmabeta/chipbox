@@ -88,7 +88,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
-                        is TrackEvent -> displayTrack(it.trackId, true)
+                        is TrackEvent -> displayTrack(it.trackId, false, true)
                         is PositionEvent -> displayPosition(it.millisPlayed)
                         is StateEvent -> displayState(it.state)
                         is GameEvent -> displayGame(it.gameId, false, true)
@@ -103,7 +103,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
 
     private fun updateHelper() {
         playlist.playingTrackId?.let {
-            displayTrack(it, false)
+            displayTrack(it, true, false)
         } ?: let {
             Timber.e("No track to display.")
         }
@@ -130,8 +130,8 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
         }
     }
 
-    private fun displayTrack(trackId: String?, animate: Boolean) {
-        if (trackId != null && trackId != track?.id) {
+    private fun displayTrack(trackId: String?, force: Boolean, animate: Boolean) {
+        if (trackId != null && (trackId != track?.id || force)) {
             val track = repository.getTrackSync(trackId)
 
             if (track != null) {
