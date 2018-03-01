@@ -10,7 +10,6 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.domain.Track
 import rx.Observable
-import rx.schedulers.Schedulers
 import timber.log.Timber
 import java.util.*
 
@@ -119,22 +118,16 @@ class RealmRepository(var realm: Realm) : Repository {
      * Read
      */
 
-    override fun getTracks(): Observable<out List<Track>> {
-        val observable = Observable.create<List<Track>> {
-            val localRealm = getRealmInstance()
+    override fun getTracks(): Observable<out List<Track>> = Observable.create<List<Track>> {
+        val localRealm = getRealmInstance()
 
-            val tracksManaged = localRealm.where(Track::class.java)
-                    .findAllSorted("title")
+        val tracksManaged = localRealm.where(Track::class.java)
+                .findAllSorted("title")
 
-            val tracksUnmanaged = localRealm.copyFromRealm(tracksManaged)
+        localRealm.closeAndReport()
 
-            localRealm.closeAndReport()
-
-            it.onNext(tracksUnmanaged)
-            it.onCompleted()
-        }
-
-        return observable.subscribeOn(Schedulers.io())
+        it.onNext(tracksManaged)
+        it.onCompleted()
     }
 
     override fun getTracksManaged(): List<Track> {
