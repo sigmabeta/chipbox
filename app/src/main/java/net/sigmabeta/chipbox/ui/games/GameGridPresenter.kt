@@ -5,12 +5,12 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.events.*
+import net.sigmabeta.chipbox.model.events.FileScanCompleteEvent
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
+import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @ActivityScoped
@@ -18,6 +18,8 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
     var platformName: String? = null
 
     var games: List<Game>? = null
+
+    private var scannerSubscription: Subscription? = null
 
     fun onItemClick(position: Int) {
         val id = games?.get(position)?.id ?: return
@@ -51,30 +53,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
         view?.setGames(games!!)
         view?.showContent()
 
-        if (!subscriptions.hasSubscriptions()) {
-            val subscription = updater.asObservable()
-                    .throttleFirst(5000, TimeUnit.MILLISECONDS)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe {
-                        when (it) {
-                            is TrackEvent -> { /* no-op */
-                            }
-                            is PositionEvent -> { /* no-op */
-                            }
-                            is GameEvent -> { /* no-op */
-                            }
-                            is StateEvent -> { /* no-op */
-                            }
-                            is FileScanEvent -> loadGames()
-                            is FileScanCompleteEvent -> loadGames()
-                            is FileScanFailedEvent -> { /* no-op */
-                            }
-                            else -> Timber.w("Unhandled %s", it.toString())
-                        }
-                    }
-
-            subscriptions.add(subscription)
-        }
+        listenForFileScans()
     }
 
     override fun onClick(id: Int) {
@@ -93,12 +72,11 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
             view?.setTitle(it)
         }
 
-        state = UiState.LOADING
-
         loadGames()
     }
 
     private fun loadGames() {
+        state = UiState.LOADING
 
         val request = platformName?.let {
             repository.getGamesForPlatform(it)
@@ -126,5 +104,23 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
                 )
 
         subscriptions.add(subscription)
+
+        listenForFileScans()
+    }
+
+    // TODO Move into a "Top level presenter" superclass
+    private fun listenForFileScans() {
+        if (scannerSubscription?.isUnsubscribed == false) {
+            scannerSubscription?.unsubscribe()
+        }
+
+        scannerSubscription = updater.asObservable()
+                .filter { it is FileScanCompleteEvent }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    loadGames()
+                }
+
+        subscriptions.add(scannerSubscription)
     }
 }
