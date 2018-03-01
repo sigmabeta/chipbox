@@ -7,13 +7,13 @@ import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.events.*
+import net.sigmabeta.chipbox.model.events.FileScanCompleteEvent
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
+import rx.Subscription
 import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @ActivityScoped
@@ -24,6 +24,8 @@ class TrackListPresenter @Inject constructor(val player: Player,
     var artist: Artist? = null
 
     var tracks: List<Track>? = null
+
+    private var scannerSubscription: Subscription? = null
 
     fun onItemClick(position: Int) {
         getTrackIdList()?.let {
@@ -56,30 +58,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
         view?.setTracks(tracks!!)
         view?.showContent()
 
-        if (!subscriptions.hasSubscriptions()) {
-            val subscription = updater.asObservable()
-                    .throttleFirst(5000, TimeUnit.MILLISECONDS)
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe {
-                        when (it) {
-                            is TrackEvent -> { /* no-op */
-                            }
-                            is PositionEvent -> { /* no-op */
-                            }
-                            is GameEvent -> { /* no-op */
-                            }
-                            is StateEvent -> { /* no-op */
-                            }
-                            is FileScanEvent -> loadTracks()
-                            is FileScanCompleteEvent -> loadTracks()
-                            is FileScanFailedEvent -> { /* no-op */
-                            }
-                            else -> Timber.w("Unhandled %s", it.toString())
-                        }
-                    }
-
-            subscriptions.add(subscription)
-        }
+        listenForFileScans()
     }
 
     override fun onClick(id: Int) {
@@ -154,7 +133,25 @@ class TrackListPresenter @Inject constructor(val player: Player,
                     )
 
             subscriptions.add(tracksLoad)
+
+            listenForFileScans()
         }
+    }
+
+    // TODO Move into a "Top level presenter" superclass
+    private fun listenForFileScans() {
+        if (scannerSubscription?.isUnsubscribed == false) {
+            scannerSubscription?.unsubscribe()
+        }
+
+        scannerSubscription = updater.asObservable()
+                .filter { it is FileScanCompleteEvent }
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe {
+                    loadTracks()
+                }
+
+        subscriptions.add(scannerSubscription)
     }
 
     private fun getTrackIdList() = tracks?.map(Track::id)?.toMutableList()
