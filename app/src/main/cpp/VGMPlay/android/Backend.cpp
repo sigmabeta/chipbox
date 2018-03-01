@@ -3,7 +3,7 @@ extern "C" {
 #include "../VGMPlay_Intf.h"
 }
 
-#include <string>
+#include <string.h>
 #include <sstream>
 #include "net_sigmabeta_chipbox_backend_vgm_BackendImpl.h"
 #include <android/log.h>
@@ -11,6 +11,8 @@ extern "C" {
 
 #define CHIPBOX_TAG "BackendVGM"
 #define MAX_ACTIVE_CHIPS 10 // Probably won't have more than this many chips running at a time.
+
+using namespace std;
 
 const char *g_last_error;
 
