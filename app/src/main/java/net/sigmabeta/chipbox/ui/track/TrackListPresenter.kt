@@ -53,10 +53,10 @@ class TrackListPresenter @Inject constructor(val player: Player,
     }
 
     override fun showReadyState() {
-        if (!subscriptions.hasSubscriptions()) {
-            view?.setTracks(tracks!!)
-            view?.showContent()
+        view?.setTracks(tracks!!)
+        view?.showContent()
 
+        if (!subscriptions.hasSubscriptions()) {
             val subscription = updater.asObservable()
                     .throttleFirst(5000, TimeUnit.MILLISECONDS)
                     .observeOn(AndroidSchedulers.mainThread())
