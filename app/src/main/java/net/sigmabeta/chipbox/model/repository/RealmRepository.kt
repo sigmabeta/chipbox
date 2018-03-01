@@ -195,22 +195,16 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findFirst()
     }
 
-    override fun getGames(): Observable<out List<Game>> {
-        val observable = Observable.create<List<Game>> {
-            val localRealm = getRealmInstance()
+    override fun getGames(): Observable<out List<Game>> = Observable.create<List<Game>> {
+        val localRealm = getRealmInstance()
 
-            val gamesManaged = localRealm.where(Game::class.java)
-                    .findAllSorted("title")
+        val gamesManaged = localRealm.where(Game::class.java)
+                .findAllSorted("title")
 
-            val gamesUnmanaged = localRealm.copyFromRealm(gamesManaged)
+        localRealm.closeAndReport()
 
-            localRealm.closeAndReport()
-
-            it.onNext(gamesUnmanaged)
-            it.onCompleted()
-        }
-
-        return observable.subscribeOn(Schedulers.io())
+        it.onNext(gamesManaged)
+        it.onCompleted()
     }
 
     override fun getGamesManaged(): List<Game> {
@@ -219,23 +213,17 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findAll()
     }
 
-    override fun getGamesForPlatform(platformName: String): Observable<out List<Game>> {
-        val observable = Observable.create<List<Game>> {
-            val localRealm = getRealmInstance()
+    override fun getGamesForPlatform(platformName: String): Observable<out List<Game>> = Observable.create<List<Game>> {
+        val localRealm = getRealmInstance()
 
-            val gamesManaged = localRealm.where(Game::class.java)
-                    .equalTo("platformName", platformName)
-                    .findAllSorted("title")
+        val gamesManaged = localRealm.where(Game::class.java)
+                .equalTo("platformName", platformName)
+                .findAllSorted("title")
 
-            val gamesUnmanaged = localRealm.copyFromRealm(gamesManaged)
+        localRealm.closeAndReport()
 
-            localRealm.closeAndReport()
-
-            it.onNext(gamesUnmanaged)
-            it.onCompleted()
-        }
-
-        return observable.subscribeOn(Schedulers.io())
+        it.onNext(gamesManaged)
+        it.onCompleted()
     }
 
     override fun getGame(platformName: String?, title: String?): Game {
@@ -279,22 +267,16 @@ class RealmRepository(var realm: Realm) : Repository {
         return artist
     }
 
-    override fun getArtists(): Observable<out List<Artist>> {
-        val observable = Observable.create<List<Artist>> {
-            val localRealm = getRealmInstance()
+    override fun getArtists(): Observable<out List<Artist>> = Observable.create<List<Artist>> {
+        val localRealm = getRealmInstance()
 
-            val artistsManaged = localRealm.where(Artist::class.java)
-                    .findAllSorted("name")
+        val artistsManaged = localRealm.where(Artist::class.java)
+                .findAllSorted("name")
 
-            val artistsUnmanaged = localRealm.copyFromRealm(artistsManaged)
+        localRealm.closeAndReport()
 
-            localRealm.closeAndReport()
-
-            it.onNext(artistsUnmanaged)
-            it.onCompleted()
-        }
-
-        return observable.subscribeOn(Schedulers.io())
+        it.onNext(artistsManaged)
+        it.onCompleted()
     }
 
     override fun getArtistsManaged(): List<Artist> {
@@ -319,22 +301,16 @@ class RealmRepository(var realm: Realm) : Repository {
         return platform
     }
 
-    override fun getPlatforms(): Observable<out List<Platform>> {
-        val observable = Observable.create<List<Platform>> {
-            val localRealm = getRealmInstance()
+    override fun getPlatforms(): Observable<out List<Platform>> = Observable.create<List<Platform>> {
+        val localRealm = getRealmInstance()
 
-            val platformsManaged = localRealm.where(Platform::class.java)
-                    .findAllSorted("name")
+        val platformsManaged = localRealm.where(Platform::class.java)
+                .findAllSorted("name")
 
-            val platformsUnmanaged = localRealm.copyFromRealm(platformsManaged)
+        localRealm.closeAndReport()
 
-            localRealm.closeAndReport()
-
-            it.onNext(platformsUnmanaged)
-            it.onCompleted()
-        }
-
-        return observable.subscribeOn(Schedulers.io())
+        it.onNext(platformsManaged)
+        it.onCompleted()
     }
 
     /**
