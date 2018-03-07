@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui.track
 import android.os.Bundle
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.realm.OrderedCollectionChangeSet
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
@@ -24,6 +25,8 @@ class TrackListPresenter @Inject constructor(val player: Player,
     var artist: Artist? = null
 
     var tracks: List<Track>? = null
+
+    var changeset: OrderedCollectionChangeSet? = null
 
     private var scannerSubscription: Disposable? = null
 
@@ -56,6 +59,11 @@ class TrackListPresenter @Inject constructor(val player: Player,
 
     override fun showReadyState() {
         view?.setTracks(tracks!!)
+
+        changeset?.let {
+            view?.animateChanges(it)
+        }
+
         view?.showContent()
 
         listenForFileScans()
@@ -75,6 +83,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
 
         loadTracks()
     }
+
 
     private fun loadTracks() {
         state = UiState.LOADING
@@ -115,12 +124,13 @@ class TrackListPresenter @Inject constructor(val player: Player,
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
-                                Timber.i("Loaded %s tracks.", it.size)
+                                Timber.i("Loaded %s tracks.", it.collection.size)
                                 printBenchmark("Tracks Loaded")
 
-                                tracks = it
+                                tracks = it.collection
+                                changeset = it.changeset
 
-                                if (it.isNotEmpty()) {
+                                if (it.collection.isNotEmpty()) {
                                     state = UiState.READY
                                 } else {
                                     state = UiState.EMPTY
