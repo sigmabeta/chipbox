@@ -4,8 +4,8 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import com.crashlytics.android.Crashlytics
+import io.reactivex.disposables.CompositeDisposable
 import net.sigmabeta.chipbox.model.repository.Repository
-import rx.subscriptions.CompositeSubscription
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -25,7 +25,7 @@ abstract class BasePresenter<V : BaseView> {
 
     protected var setupStartTime = 0L
 
-    protected var subscriptions = CompositeSubscription()
+    protected var subscriptions = CompositeDisposable()
 
     protected var state = UiState.NONE
         set(value) {

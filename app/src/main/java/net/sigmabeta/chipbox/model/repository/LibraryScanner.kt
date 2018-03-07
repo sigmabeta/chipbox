@@ -2,16 +2,21 @@ package net.sigmabeta.chipbox.model.repository
 
 import android.util.Log
 import dagger.Lazy
+import io.reactivex.BackpressureStrategy
+import io.reactivex.Emitter
+import io.reactivex.Flowable
+import io.reactivex.FlowableEmitter
 import net.sigmabeta.chipbox.backend.Scanner
 import net.sigmabeta.chipbox.dagger.module.AppModule
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.FileScanEvent
-import net.sigmabeta.chipbox.util.*
+import net.sigmabeta.chipbox.util.EXTENSIONS_IMAGES
+import net.sigmabeta.chipbox.util.EXTENSIONS_MULTI_TRACK
+import net.sigmabeta.chipbox.util.readMultipleTrackFile
+import net.sigmabeta.chipbox.util.readSingleTrackFile
 import org.apache.commons.io.FileUtils
-import rx.Observable
-import rx.Subscriber
 import timber.log.Timber
 import java.io.File
 import java.util.*
@@ -26,9 +31,9 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
     var state = STATE_NOT_SCANNING
 
-    fun scanLibrary(): Observable<FileScanEvent> {
-        return Observable.create(
-                { sub ->
+    fun scanLibrary(): Flowable<FileScanEvent> {
+        return Flowable.create (
+                { emitter: FlowableEmitter<FileScanEvent> ->
                     state = STATE_SCANNING
                     // OnSubscribe.call. it: String
                     repository = repositoryLazy.get()
@@ -42,12 +47,12 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
                     folders.forEach { folder ->
                         folder.let {
-                            scanFolder(it, sub as Subscriber<FileScanEvent>)
+                            scanFolder(it, emitter )
                         }
                     }
 
                     repository.getTracksManaged().forEach {
-                        checkForDeletion(it, sub as Subscriber<FileScanEvent>)
+                        checkForDeletion(it, emitter)
                     }
 
                     repository.getGamesManaged().forEach {
@@ -65,8 +70,8 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
                     repository.close()
                     state = STATE_NOT_SCANNING
-                    sub.onCompleted()
-                }
+                    emitter.onComplete()
+                }, BackpressureStrategy.LATEST
         )
     }
 
@@ -84,14 +89,14 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         return mergedArray.toList()
     }
 
-    private fun scanFolder(folder: File, sub: Subscriber<FileScanEvent>) {
+    private fun scanFolder(folder: File, emitter: Emitter<FileScanEvent>) {
         // Without this, folder events get backpressure-dropped.
         Thread.sleep(10)
 
         val folderPath = folder.absolutePath
         Timber.i("Reading files from library folder: %s", folderPath)
 
-        sub.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folder.name))
+        emitter.onNext(FileScanEvent(FileScanEvent.TYPE_FOLDER, folder.name))
 
         var folderGame: Game? = null
 
@@ -106,7 +111,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
             for (file in children) {
                 if (!file.isHidden) {
                     if (file.isDirectory) {
-                        scanFolder(file, sub)
+                        scanFolder(file, emitter)
                     } else {
                         val filePath = file.absolutePath
                         val fileExtension = file.extension
@@ -115,12 +120,12 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                             // Check that the file has an extension we care about before trying to read out of it.
                             if (Scanner.EXTENSIONS_MUSIC.contains(fileExtension)) {
                                 if (EXTENSIONS_MULTI_TRACK.contains(fileExtension)) {
-                                    folderGame = readMultipleTracks(file, filePath, sub)
+                                    folderGame = readMultipleTracks(file, filePath, emitter)
                                     if (folderGame == null) {
-                                        sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
+                                        emitter.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                                     }
                                 } else {
-                                    folderGame = readSingleTrack(file, filePath, sub, trackCount)
+                                    folderGame = readSingleTrack(file, filePath, emitter, trackCount)
 
                                     if (folderGame != null) {
                                         trackCount += 1
@@ -145,42 +150,38 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         }
     }
 
-    private fun readSingleTrack(file: File, filePath: String, sub: Subscriber<FileScanEvent>, trackNumber: Int): Game? {
+    private fun readSingleTrack(file: File, filePath: String, emitter: Emitter<FileScanEvent>, trackNumber: Int): Game? {
         val track = readSingleTrackFile(file, trackNumber)
 
         if (track != null) {
-            var game = checkForExistingTrack(filePath, track, sub)
+            var game = checkForExistingTrack(filePath, track, emitter)
 
             if (game != null) return game
 
             repository.addTrack(track)
-                    .toBlocking()
                     .subscribe(
                             {
-                                if (it.title?.contains("Ecco") ?: false) {
-                                    Timber.w("Added track: %s", track.title)
-                                }
                                 game = it
                             },
                             {
                                 Timber.e("Couldn't add track at %s: %s", filePath, Log.getStackTraceString(it))
-                                sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
+                                emitter.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                             },
                             {
-                                sub.onNext(FileScanEvent(FileScanEvent.TYPE_NEW_TRACK, track.title!!))
+                                emitter.onNext(FileScanEvent(FileScanEvent.TYPE_NEW_TRACK, track.title!!))
                             }
                     )
 
             return game
         } else {
             Timber.e("Couldn't read track at %s", filePath)
-            sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
+            emitter.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
 
             return null
         }
     }
 
-    private fun readMultipleTracks(file: File, filePath: String, sub: Subscriber<FileScanEvent>): Game? {
+    private fun readMultipleTracks(file: File, filePath: String, emitter: Emitter<FileScanEvent>): Game? {
         var game: Game? = null
         val tracks = readMultipleTrackFile(file)
 
@@ -189,7 +190,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         val newTracks = ArrayList<Track>(tracks.size)
 
         tracks.forEach { track ->
-            val existingTrackGame = checkForExistingTrack(filePath, track, sub, track.trackNumber)
+            val existingTrackGame = checkForExistingTrack(filePath, track, emitter, track.trackNumber)
 
             if (existingTrackGame == null) {
                 newTracks.add(track)
@@ -198,26 +199,25 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
             }
         }
 
-        Observable.from(newTracks)
+        Flowable.fromIterable(newTracks)
                 .flatMap { return@flatMap repository.addTrack(it) }
-                .toBlocking()
                 .subscribe(
                         {
                             game = it
                         },
                         {
                             Timber.e("Couldn't read multi track file at %s: %s", filePath, Log.getStackTraceString(it))
-                            sub.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
+                            emitter.onNext(FileScanEvent(FileScanEvent.TYPE_BAD_TRACK, file.name))
                         },
                         {
-                            sub.onNext(FileScanEvent(FileScanEvent.TYPE_NEW_MULTI_TRACK, file.name, newTracks.size))
+                            emitter.onNext(FileScanEvent(FileScanEvent.TYPE_NEW_MULTI_TRACK, file.name, newTracks.size))
                         }
                 )
 
         return game
     }
 
-    private fun checkForExistingTrack(filePath: String, track: Track, sub: Subscriber<FileScanEvent>, trackNumber: Int? = null): Game? {
+    private fun checkForExistingTrack(filePath: String, track: Track, emitter: Emitter<FileScanEvent>, trackNumber: Int? = null): Game? {
         // Check if this track modifies one we already had.
         val existingTrack = if (trackNumber == null) {
             repository.getTrackFromPath(filePath)
@@ -228,7 +228,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         if (existingTrack != null) {
             // Modify any of the existing track's values we care about, then save.
             if (repository.updateTrack(existingTrack, track)) {
-                sub.onNext(FileScanEvent(FileScanEvent.TYPE_UPDATED_TRACK, existingTrack.title!!))
+                emitter.onNext(FileScanEvent(FileScanEvent.TYPE_UPDATED_TRACK, existingTrack.title!!))
             }
 
             return existingTrack.game
@@ -241,17 +241,17 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
         if (movedTrack != null) {
             repository.updateTrack(movedTrack, track)
-            sub.onNext(FileScanEvent(FileScanEvent.TYPE_UPDATED_TRACK, movedTrack.title!!))
+            emitter.onNext(FileScanEvent(FileScanEvent.TYPE_UPDATED_TRACK, movedTrack.title!!))
             return movedTrack.game
         }
 
         return null
     }
 
-    private fun checkForDeletion(track: Track, sub: Subscriber<FileScanEvent>) {
+    private fun checkForDeletion(track: Track, emitter: Emitter<FileScanEvent>) {
         if (!File(track.path).exists()) {
             Timber.i("Track not found on storage, deleting: %s", track.title)
-            sub.onNext(FileScanEvent(FileScanEvent.TYPE_DELETED_TRACK, track.title!!))
+            emitter.onNext(FileScanEvent(FileScanEvent.TYPE_DELETED_TRACK, track.title!!))
             repository.deleteTrack(track)
         }
     }

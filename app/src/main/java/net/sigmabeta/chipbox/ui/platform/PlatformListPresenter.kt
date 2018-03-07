@@ -1,21 +1,21 @@
 package net.sigmabeta.chipbox.ui.platform
 
 import android.os.Bundle
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.events.FileScanCompleteEvent
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
 class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : FragmentPresenter<PlatformListView>() {
     var platformList: List<Platform>? = null
 
-    private var scannerSubscription: Subscription? = null
+    private var scannerSubscription: Disposable? = null
 
     fun onItemClick(position: Int) {
         val id = platformList?.get(position)?.name ?: return
@@ -83,17 +83,17 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
 
     // TODO Move into a "Top level presenter" superclass
     private fun listenForFileScans() {
-        if (scannerSubscription?.isUnsubscribed == false) {
-            scannerSubscription?.unsubscribe()
+        if (scannerSubscription?.isDisposed == false) {
+            scannerSubscription?.dispose()
         }
 
-        scannerSubscription = updater.asObservable()
+        scannerSubscription = updater.asFlowable()
                 .filter { it is FileScanCompleteEvent }
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     loadPlatforms()
                 }
 
-        subscriptions.add(scannerSubscription)
+        subscriptions.add(scannerSubscription!!)
     }
 }

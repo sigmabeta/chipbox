@@ -5,12 +5,12 @@ import android.graphics.Bitmap
 import android.widget.ImageView
 import com.squareup.picasso.Callback
 import com.squareup.picasso.Picasso
+import io.reactivex.Single
 import net.sigmabeta.chipbox.R
-import rx.Observable
 
 
-fun loadBitmapLowQuality(context: Context, path: String): Observable<Bitmap> {
-    return Observable.create {
+fun loadBitmapLowQuality(context: Context, path: String): Single<Bitmap> {
+    return Single.create {
         val bitmap = Picasso.with(context)
                 .load(path)
                 .config(Bitmap.Config.RGB_565)
@@ -19,8 +19,7 @@ fun loadBitmapLowQuality(context: Context, path: String): Observable<Bitmap> {
                 .error(R.drawable.img_album_art_blank)
                 .get()
 
-        it.onNext(bitmap)
-        it.onCompleted()
+        it.onSuccess(bitmap)
     }
 }
 

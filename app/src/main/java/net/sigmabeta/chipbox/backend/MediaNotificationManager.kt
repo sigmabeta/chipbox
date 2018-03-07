@@ -19,6 +19,9 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v7.app.NotificationCompat
 import android.view.KeyEvent
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
+import io.reactivex.schedulers.Schedulers
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.player.Player
@@ -31,9 +34,6 @@ import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.model.repository.Repository
 import net.sigmabeta.chipbox.util.loadBitmapLowQuality
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import timber.log.Timber
 
 class MediaNotificationManager(val playerService: PlayerService,
@@ -69,7 +69,7 @@ class MediaNotificationManager(val playerService: PlayerService,
 
     var notified = false
 
-    var subscription: Subscription? = null
+    var subscription: Disposable? = null
 
     init {
         updateSessionToken()
@@ -77,7 +77,7 @@ class MediaNotificationManager(val playerService: PlayerService,
     }
 
     fun subscribeToUpdates() {
-        subscription = updater.asObservable()
+        subscription = updater.asFlowable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
@@ -94,7 +94,7 @@ class MediaNotificationManager(val playerService: PlayerService,
     }
 
     fun unsubscribeFromUpdates() {
-        subscription?.unsubscribe()
+        subscription?.dispose()
         subscription = null
     }
 
@@ -206,8 +206,8 @@ class MediaNotificationManager(val playerService: PlayerService,
             loadBitmapLowQuality(playerService, imagePath)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe {
-                        playingGameArtBitmap = it
+                    .subscribe { bitmap ->
+                        playingGameArtBitmap = bitmap
 
                         mediaMetadata = updateMetadata()
                         playerService.session?.setMetadata(mediaMetadata)
