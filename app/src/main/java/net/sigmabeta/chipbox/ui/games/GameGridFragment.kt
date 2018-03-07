@@ -5,7 +5,9 @@ import android.os.Bundle
 import android.support.v7.widget.GridLayoutManager
 import android.util.Pair
 import android.view.View
+import android.view.View.VISIBLE
 import android.view.ViewGroup
+import io.realm.OrderedCollectionChangeSet
 import kotlinx.android.synthetic.main.fragment_game_grid.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -29,6 +31,10 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
 
     override fun setGames(games: List<Game>) {
         adapter.dataset = games
+    }
+
+    override fun animateChanges(changeset: OrderedCollectionChangeSet) {
+        adapter.processChanges(changeset)
     }
 
     override fun setTitle(platformName: String) {
@@ -55,16 +61,20 @@ class GameGridFragment : BaseFragment<GameGridPresenter, GameListView>(), GameLi
     }
 
     override fun showContent() = ifVisible {
-        grid_games.fadeIn()
-        loading_spinner.fadeOutGone()
-        layout_empty_state.fadeOutGone()
+        if (grid_games.visibility != VISIBLE) {
+            grid_games.fadeIn()
+            loading_spinner.fadeOutGone()
+            layout_empty_state.fadeOutGone()
+        }
     }
 
     override fun showEmptyState() = ifVisible {
-        layout_empty_state.visibility = View.VISIBLE
-        label_empty_state.fadeInFromZero().setStartDelay(300)
-        button_empty_state.fadeInFromZero().setStartDelay(600)
-        grid_games.fadeOutGone()
+        if (label_empty_state.visibility != VISIBLE) {
+            layout_empty_state.visibility = View.VISIBLE
+            label_empty_state.fadeInFromZero().setStartDelay(300)
+            button_empty_state.fadeInFromZero().setStartDelay(600)
+            grid_games.fadeOutGone()
+        }
     }
 
     /**

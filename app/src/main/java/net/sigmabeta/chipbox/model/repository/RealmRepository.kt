@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.domain.Track
 import timber.log.Timber
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 class RealmRepository(var realm: Realm) : Repository {
     var id: UUID = UUID.randomUUID()
@@ -120,11 +121,12 @@ class RealmRepository(var realm: Realm) : Repository {
      * Read
      */
 
-    override fun getTracks(): Flowable<out List<Track>> = realm.where(Track::class.java)
+    override fun getTracks() = realm.where(Track::class.java)
             .sort("title")
             .findAllAsync()
-            .asFlowable()
-            .filter { it.isLoaded }
+            .asChangesetObservable()
+            .sample(INTERVAL, TimeUnit.MILLISECONDS)
+            .filter { it.collection.isLoaded }
 
     override fun getTracksManaged(): RealmResults<Track> = realm
             .where(Track::class.java)
@@ -174,22 +176,24 @@ class RealmRepository(var realm: Realm) : Repository {
             .equalTo("id", id)
             .findFirst()
 
-    override fun getGames(): Flowable<out List<Game>> = realm.where(Game::class.java)
+    override fun getGames() = realm.where(Game::class.java)
             .sort("title")
             .findAllAsync()
-            .asFlowable()
-            .filter { it.isLoaded }
+            .asChangesetObservable()
+            .sample(INTERVAL, TimeUnit.MILLISECONDS)
+            .filter { it.collection.isLoaded }
 
     override fun getGamesManaged(): RealmResults<Game> = realm
             .where(Game::class.java)
             .findAll()
 
-    override fun getGamesForPlatform(platformName: String): Flowable<out List<Game>> = realm.where(Game::class.java)
+    override fun getGamesForPlatform(platformName: String) = realm.where(Game::class.java)
             .equalTo("platformName", platformName)
             .sort("title")
-            .findAll()
-            .asFlowable()
-            .filter { it.isLoaded }
+            .findAllAsync()
+            .asChangesetObservable()
+            .sample(INTERVAL, TimeUnit.MILLISECONDS)
+            .filter { it.collection.isLoaded }
 
     override fun getGame(platformName: String?, title: String?): Game {
         var game = realm
@@ -229,11 +233,12 @@ class RealmRepository(var realm: Realm) : Repository {
         return artist
     }
 
-    override fun getArtists(): Flowable<out List<Artist>> = realm.where(Artist::class.java)
+    override fun getArtists() = realm.where(Artist::class.java)
             .sort("name")
-            .findAll()
-            .asFlowable()
-            .filter { it.isLoaded }
+            .findAllAsync()
+            .asChangesetObservable()
+            .sample(INTERVAL, TimeUnit.MILLISECONDS)
+            .filter { it.collection.isLoaded }
 
 
     override fun getArtistsManaged(): List<Artist> = realm
@@ -256,11 +261,12 @@ class RealmRepository(var realm: Realm) : Repository {
         return platform
     }
 
-    override fun getPlatforms(): Flowable<out List<Platform>> = realm.where(Platform::class.java)
+    override fun getPlatforms() = realm.where(Platform::class.java)
             .sort("name")
-            .findAll()
-            .asFlowable()
-            .filter { it.isLoaded }
+            .findAllAsync()
+            .asChangesetObservable()
+            .sample(INTERVAL, TimeUnit.MILLISECONDS)
+            .filter { it.collection.isLoaded }
 
     /**
      * Update
@@ -454,5 +460,7 @@ class RealmRepository(var realm: Realm) : Repository {
         val PLATFORM_UNKNOWN = "Unknown Platform"
 
         val DELIMITERS_ARTISTS = arrayOf(", &", ",", " or ", " and ", "&")
+
+        const val INTERVAL = 50L
     }
 }

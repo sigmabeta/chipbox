@@ -2,7 +2,9 @@ package net.sigmabeta.chipbox.ui.platform
 
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
+import android.view.View.VISIBLE
 import android.view.ViewGroup
+import io.realm.OrderedCollectionChangeSet
 import kotlinx.android.synthetic.main.fragment_platform_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -31,6 +33,10 @@ class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListVie
 
     override fun setList(list: List<Platform>) {
         adapter.dataset = list
+    }
+
+    override fun animateChanges(changeset: OrderedCollectionChangeSet) {
+        adapter.processChanges(changeset)
     }
 
     override fun launchNavActivity(id: String) {
@@ -69,15 +75,19 @@ class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListVie
     }
 
     override fun showLoadingState() = ifVisible {
-        loading_spinner.fadeIn().setDuration(50)
-        list_platforms.fadeOutPartially()
-        layout_empty_state.fadeOutGone()
+        if (list_platforms.visibility != VISIBLE) {
+            loading_spinner.fadeIn().setDuration(50)
+            list_platforms.fadeOutPartially()
+            layout_empty_state.fadeOutGone()
+        }
     }
 
-    override fun showContent()  = ifVisible {
-        list_platforms.fadeIn()
-        loading_spinner.fadeOutGone()
-        layout_empty_state.fadeOutGone()
+    override fun showContent() = ifVisible {
+        if (label_empty_state.visibility != VISIBLE) {
+            list_platforms.fadeIn()
+            loading_spinner.fadeOutGone()
+            layout_empty_state.fadeOutGone()
+        }
     }
 
     override fun getContentLayout(): ViewGroup {

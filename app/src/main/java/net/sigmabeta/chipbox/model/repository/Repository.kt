@@ -1,6 +1,9 @@
 package net.sigmabeta.chipbox.model.repository
 
 import io.reactivex.Flowable
+import io.reactivex.Observable
+import io.realm.RealmResults
+import io.realm.rx.CollectionChange
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Platform
@@ -24,7 +27,7 @@ interface Repository {
      */
 
     fun getTrackSync(id: String): Track?
-    fun getTracks(): Flowable<out List<Track>>
+    fun getTracks(): Observable<CollectionChange<RealmResults<Track>>>
     fun getTracksManaged(): List<Track>
     fun getTracksFromIds(trackIdsList: MutableList<String?>): Flowable<out List<Track>>
     fun getTrackFromPath(path: String): Track?
@@ -33,18 +36,18 @@ interface Repository {
 
     fun getGame(id: String): Flowable<Game>
     fun getGameSync(id: String): Game?
-    fun getGames(): Flowable<out List<Game>>
+    fun getGames(): Observable<CollectionChange<RealmResults<Game>>>
     fun getGamesManaged(): List<Game>
-    fun getGamesForPlatform(platformName: String): Flowable<out List<Game>>
+    fun getGamesForPlatform(platformName: String): Observable<CollectionChange<RealmResults<Game>>>
     fun getGame(platformName: String?, title: String?): Game
 
     fun getArtist(id: String): Flowable<Artist>
     fun getArtistByName(name: String?): Artist
-    fun getArtists(): Flowable<out List<Artist>>
+    fun getArtists(): Observable<CollectionChange<RealmResults<Artist>>>
     fun getArtistsManaged(): List<Artist>
 
     fun getPlatform(name: String?): Platform
-    fun getPlatforms(): Flowable<out List<Platform>>
+    fun getPlatforms(): Observable<CollectionChange<RealmResults<Platform>>>
 
     /**
      * Update
