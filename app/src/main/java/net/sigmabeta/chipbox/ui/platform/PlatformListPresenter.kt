@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui.platform
 import android.os.Bundle
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
+import io.realm.OrderedCollectionChangeSet
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Platform
@@ -14,6 +15,8 @@ import javax.inject.Inject
 @ActivityScoped
 class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : FragmentPresenter<PlatformListView>() {
     var platformList: List<Platform>? = null
+
+    var changeset: OrderedCollectionChangeSet? = null
 
     private var scannerSubscription: Disposable? = null
 
@@ -40,6 +43,11 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
 
     override fun showReadyState() {
         view?.setList(platformList!!)
+
+        changeset?.let {
+            view?.animateChanges(it)
+        }
+
         view?.showContent()
 
         listenForFileScans()
@@ -62,9 +70,10 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
                         {
                             printBenchmark("Platforms Loaded")
 
-                            platformList = it
+                            platformList = it.collection
+                            changeset = it.changeset
 
-                            if (it.isNotEmpty()) {
+                            if (it.collection.isNotEmpty()) {
                                 state = UiState.READY
                             } else {
                                 state = UiState.EMPTY
