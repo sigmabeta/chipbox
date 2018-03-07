@@ -1,6 +1,9 @@
 package net.sigmabeta.chipbox.model.repository
 
+import io.reactivex.BackpressureStrategy
+import io.reactivex.Flowable
 import io.realm.Realm
+import io.realm.RealmResults
 import net.sigmabeta.chipbox.model.database.closeAndReport
 import net.sigmabeta.chipbox.model.database.getRealmInstance
 import net.sigmabeta.chipbox.model.database.inTransaction
@@ -9,7 +12,6 @@ import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.domain.Track
-import rx.Observable
 import timber.log.Timber
 import java.util.*
 
@@ -48,7 +50,7 @@ class RealmRepository(var realm: Realm) : Repository {
      * Create
      */
 
-    override fun addTrack(track: Track): Observable<Game> {
+    override fun addTrack(track: Track): Flowable<Game> {
         track.save(realm)
 
         val game = getGame(track.platformName, track.gameTitle)
@@ -91,59 +93,49 @@ class RealmRepository(var realm: Realm) : Repository {
             }
         }
 
-        return Observable.just(game)
+        return Flowable.just(game)
     }
 
-    override fun addGame(platformName: String, title: String?): Observable<Game> {
-        return Observable.create {
+    override fun addGame(platformName: String, title: String?): Flowable<Game> {
+        return Flowable.create({
             val game = Game(title ?: GAME_UNKNOWN, platformName)
             game.save(realm)
 
             it.onNext(game)
-            it.onCompleted()
-        }
+            it.onComplete()
+        }, BackpressureStrategy.LATEST)
     }
 
-    override fun addArtist(name: String?): Observable<Artist> {
-        return Observable.create {
+    override fun addArtist(name: String?): Flowable<Artist> {
+        return Flowable.create({
             val artist = Artist(name ?: ARTIST_UNKNOWN)
             artist.save(realm)
 
             it.onNext(artist)
-            it.onCompleted()
-        }
+            it.onComplete()
+        }, BackpressureStrategy.LATEST)
     }
 
     /**
      * Read
      */
 
-    override fun getTracks(): Observable<out List<Track>> = Observable.create<List<Track>> {
-        val localRealm = getRealmInstance()
+    override fun getTracks(): Flowable<out List<Track>> = realm.where(Track::class.java)
+            .sort("title")
+            .findAllAsync()
+            .asFlowable()
+            .filter { it.isLoaded }
 
-        val tracksManaged = localRealm.where(Track::class.java)
-                .findAllSorted("title")
+    override fun getTracksManaged(): RealmResults<Track> = realm
+            .where(Track::class.java)
+            .findAll()
 
-        localRealm.closeAndReport()
-
-        it.onNext(tracksManaged)
-        it.onCompleted()
-    }
-
-    override fun getTracksManaged(): List<Track> {
-        return realm
-                .where(Track::class.java)
-                .findAll()
-    }
-
-    override fun getTracksFromIds(trackIdsList: MutableList<String?>): Observable<out List<Track>> {
-        return realm
-                .where(Track::class.java)
-                .`in`("id", trackIdsList.toTypedArray())
-                .findAllAsync()
-                .asObservable()
-                .filter { it.isLoaded }
-    }
+    override fun getTracksFromIds(trackIdsList: MutableList<String?>): Flowable<RealmResults<Track>> = realm
+            .where(Track::class.java)
+            .`in`("id", trackIdsList.toTypedArray())
+            .findAllAsync()
+            .asFlowable()
+            .filter { it.isLoaded }
 
     override fun getTrackFromPath(path: String): Track? {
         return realm.where(Track::class.java)
@@ -172,52 +164,32 @@ class RealmRepository(var realm: Realm) : Repository {
                 .findFirst()
     }
 
-    override fun getGame(id: String): Observable<Game> {
+    override fun getGame(id: String) = realm.where(Game::class.java)
+            .equalTo("id", id)
+            .findFirstAsync()
+            .asFlowable<Game>()
+            .filter { it.isLoaded }
 
-        return realm.where(Game::class.java)
-                .equalTo("id", id)
-                .findFirstAsync()
-                .asObservable<Game>()
-                .filter { it.isLoaded }
-    }
+    override fun getGameSync(id: String) = realm.where(Game::class.java)
+            .equalTo("id", id)
+            .findFirst()
 
-    override fun getGameSync(id: String): Game? {
+    override fun getGames(): Flowable<out List<Game>> = realm.where(Game::class.java)
+            .sort("title")
+            .findAllAsync()
+            .asFlowable()
+            .filter { it.isLoaded }
 
-        return realm.where(Game::class.java)
-                .equalTo("id", id)
-                .findFirst()
-    }
+    override fun getGamesManaged(): RealmResults<Game> = realm
+            .where(Game::class.java)
+            .findAll()
 
-    override fun getGames(): Observable<out List<Game>> = Observable.create<List<Game>> {
-        val localRealm = getRealmInstance()
-
-        val gamesManaged = localRealm.where(Game::class.java)
-                .findAllSorted("title")
-
-        localRealm.closeAndReport()
-
-        it.onNext(gamesManaged)
-        it.onCompleted()
-    }
-
-    override fun getGamesManaged(): List<Game> {
-        return realm
-                .where(Game::class.java)
-                .findAll()
-    }
-
-    override fun getGamesForPlatform(platformName: String): Observable<out List<Game>> = Observable.create<List<Game>> {
-        val localRealm = getRealmInstance()
-
-        val gamesManaged = localRealm.where(Game::class.java)
-                .equalTo("platformName", platformName)
-                .findAllSorted("title")
-
-        localRealm.closeAndReport()
-
-        it.onNext(gamesManaged)
-        it.onCompleted()
-    }
+    override fun getGamesForPlatform(platformName: String): Flowable<out List<Game>> = realm.where(Game::class.java)
+            .equalTo("platformName", platformName)
+            .sort("title")
+            .findAll()
+            .asFlowable()
+            .filter { it.isLoaded }
 
     override fun getGame(platformName: String?, title: String?): Game {
         var game = realm
@@ -236,14 +208,11 @@ class RealmRepository(var realm: Realm) : Repository {
         return game
     }
 
-    override fun getArtist(id: String): Observable<Artist> {
-
-        return realm.where(Artist::class.java)
-                .equalTo("id", id)
-                .findFirstAsync()
-                .asObservable<Artist>()
-                .filter { it.isLoaded }
-    }
+    override fun getArtist(id: String) = realm.where(Artist::class.java)
+            .equalTo("id", id)
+            .findFirstAsync()
+            .asFlowable<Artist>()
+            .filter { it.isLoaded }
 
     override fun getArtistByName(name: String?): Artist {
         var artist = realm.where(Artist::class.java)
@@ -260,23 +229,16 @@ class RealmRepository(var realm: Realm) : Repository {
         return artist
     }
 
-    override fun getArtists(): Observable<out List<Artist>> = Observable.create<List<Artist>> {
-        val localRealm = getRealmInstance()
+    override fun getArtists(): Flowable<out List<Artist>> = realm.where(Artist::class.java)
+            .sort("name")
+            .findAll()
+            .asFlowable()
+            .filter { it.isLoaded }
 
-        val artistsManaged = localRealm.where(Artist::class.java)
-                .findAllSorted("name")
 
-        localRealm.closeAndReport()
-
-        it.onNext(artistsManaged)
-        it.onCompleted()
-    }
-
-    override fun getArtistsManaged(): List<Artist> {
-        return realm
-                .where(Artist::class.java)
-                .findAll()
-    }
+    override fun getArtistsManaged(): List<Artist> = realm
+            .where(Artist::class.java)
+            .findAll()
 
     override fun getPlatform(name: String?): Platform {
         var platform = realm
@@ -294,17 +256,11 @@ class RealmRepository(var realm: Realm) : Repository {
         return platform
     }
 
-    override fun getPlatforms(): Observable<out List<Platform>> = Observable.create<List<Platform>> {
-        val localRealm = getRealmInstance()
-
-        val platformsManaged = localRealm.where(Platform::class.java)
-                .findAllSorted("name")
-
-        localRealm.closeAndReport()
-
-        it.onNext(platformsManaged)
-        it.onCompleted()
-    }
+    override fun getPlatforms(): Flowable<out List<Platform>> = realm.where(Platform::class.java)
+            .sort("name")
+            .findAll()
+            .asFlowable()
+            .filter { it.isLoaded }
 
     /**
      * Update

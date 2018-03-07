@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.ui.artist
 
 import android.os.Bundle
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
@@ -8,15 +10,13 @@ import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.events.FileScanCompleteEvent
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
 class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : FragmentPresenter<ArtistListView>() {
     var artists: List<Artist>? = null
 
-    private var scannerSubscription: Subscription? = null
+    private var scannerSubscription: Disposable? = null
 
     fun onItemClick(position: Int) {
         val id = artists?.get(position)?.id ?: return
@@ -91,17 +91,17 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
 
     // TODO Move into a "Top level presenter" superclass
     private fun listenForFileScans() {
-        if (scannerSubscription?.isUnsubscribed == false) {
-            scannerSubscription?.unsubscribe()
+        if (scannerSubscription?.isDisposed == false) {
+            scannerSubscription?.dispose()
         }
 
-        scannerSubscription = updater.asObservable()
+        scannerSubscription = updater.asFlowable()
                 .filter { it is FileScanCompleteEvent }
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     loadArtists()
                 }
 
-        subscriptions.add(scannerSubscription)
+        subscriptions.add(scannerSubscription!!)
     }
 }

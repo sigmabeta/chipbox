@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.ui.games
 
 import android.os.Bundle
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.Disposable
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
@@ -8,8 +10,6 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.events.FileScanCompleteEvent
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
-import rx.Subscription
-import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -19,7 +19,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
 
     var games: List<Game>? = null
 
-    private var scannerSubscription: Subscription? = null
+    private var scannerSubscription: Disposable? = null
 
     fun onItemClick(position: Int) {
         val id = games?.get(position)?.id ?: return
@@ -110,17 +110,17 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
 
     // TODO Move into a "Top level presenter" superclass
     private fun listenForFileScans() {
-        if (scannerSubscription?.isUnsubscribed == false) {
-            scannerSubscription?.unsubscribe()
+        if (scannerSubscription?.isDisposed == false) {
+            scannerSubscription?.dispose()
         }
 
-        scannerSubscription = updater.asObservable()
+        scannerSubscription = updater.asFlowable()
                 .filter { it is FileScanCompleteEvent }
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     loadGames()
                 }
 
-        subscriptions.add(scannerSubscription)
+        subscriptions.add(scannerSubscription!!)
     }
 }
