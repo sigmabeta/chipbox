@@ -3,7 +3,9 @@ package net.sigmabeta.chipbox.ui.artist
 import android.content.Intent
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
+import android.view.View.VISIBLE
 import android.view.ViewGroup
+import io.realm.OrderedCollectionChangeSet
 import kotlinx.android.synthetic.main.fragment_artist_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -36,6 +38,10 @@ class ArtistListFragment : BaseFragment<ArtistListPresenter, ArtistListView>(), 
         adapter.dataset = artists
     }
 
+    override fun animateChanges(changeset: OrderedCollectionChangeSet) {
+        adapter.processChanges(changeset)
+    }
+
     override fun startRescan() {
         val intent = Intent(activity, ScanService::class.java)
         activity.startService(intent)
@@ -48,15 +54,19 @@ class ArtistListFragment : BaseFragment<ArtistListPresenter, ArtistListView>(), 
     }
 
     override fun showContent() = ifVisible {
-        list_artists.fadeIn()
-        layout_empty_state.fadeOutGone()
-        loading_spinner.fadeOutGone()
+        if (list_artists.visibility != VISIBLE) {
+            list_artists.fadeIn()
+            layout_empty_state.fadeOutGone()
+            loading_spinner.fadeOutGone()
+        }
     }
 
     override fun showEmptyState() = ifVisible {
-        layout_empty_state.visibility = View.VISIBLE
-        label_empty_state.fadeInFromZero().setStartDelay(300)
-        button_empty_state.fadeInFromZero().setStartDelay(600)
+        if (label_empty_state.visibility != VISIBLE) {
+            layout_empty_state.visibility = View.VISIBLE
+            label_empty_state.fadeInFromZero().setStartDelay(300)
+            button_empty_state.fadeInFromZero().setStartDelay(600)
+        }
     }
 
     /**

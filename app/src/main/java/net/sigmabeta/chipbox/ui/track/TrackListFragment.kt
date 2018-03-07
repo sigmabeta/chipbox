@@ -4,7 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
+import android.view.View.VISIBLE
 import android.view.ViewGroup
+import io.realm.OrderedCollectionChangeSet
 import kotlinx.android.synthetic.main.fragment_song_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -28,6 +30,10 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
         adapter.dataset = tracks
     }
 
+    override fun animateChanges(changeset: OrderedCollectionChangeSet) {
+        adapter.processChanges(changeset)
+    }
+
     override fun refreshList() {
         adapter.notifyDataSetChanged()
     }
@@ -38,15 +44,19 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
     }
 
     override fun showContent() = ifVisible {
-        list_tracks.fadeIn()
-        loading_spinner.fadeOutGone()
-        layout_empty_state.fadeOutGone()
+        if (list_tracks.visibility != VISIBLE) {
+            list_tracks.fadeIn()
+            loading_spinner.fadeOutGone()
+            layout_empty_state.fadeOutGone()
+        }
     }
 
     override fun showEmptyState() = ifVisible {
-        layout_empty_state.visibility = View.VISIBLE
-        label_empty_state.fadeInFromZero().setStartDelay(300)
-        button_empty_state.fadeInFromZero().setStartDelay(600)
+        if (label_empty_state.visibility != VISIBLE) {
+            layout_empty_state.visibility = View.VISIBLE
+            label_empty_state.fadeInFromZero().setStartDelay(300)
+            button_empty_state.fadeInFromZero().setStartDelay(600)
+        }
     }
 
     override fun onTrackLoadError() {

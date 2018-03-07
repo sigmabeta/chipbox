@@ -5,6 +5,8 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import io.realm.OrderedCollectionChangeSet
+import io.realm.RealmResults
 import net.sigmabeta.chipbox.model.domain.ListItem
 import timber.log.Timber
 
@@ -20,15 +22,37 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
         set (value) {
             diffStartTime = System.currentTimeMillis()
             if (value === datasetInternal) {
-
+                Timber.i("Received existing list of size %d", value?.size ?: -1)
             } else {
                 if (datasetInternal == null && value != null) {
                     showFromEmptyList(value)
                 }
 
-                startAsyncListRefresh(value)
+                // If this is a Realm-managed list, don't perform DiffUtils
+                if (value !is RealmResults && datasetInternal !is RealmResults) {
+                    startAsyncListRefresh(value)
+                }
             }
         }
+
+    fun processChanges(changeset: OrderedCollectionChangeSet?) {
+        if (changeset != null) {
+            changeset.insertionRanges.forEach { range ->
+                Timber.i("Inserting %d items at index %d", range.startIndex, range.length)
+                notifyItemRangeInserted(range.startIndex, range.length)
+            }
+
+            changeset.changeRanges.forEach { range ->
+                Timber.i("Changing %d items at index %d", range.startIndex, range.length)
+                notifyItemRangeChanged(range.startIndex, range.length)
+            }
+
+            changeset.deletionRanges.forEach { range ->
+                Timber.i("Deleting %d items at index %d", range.startIndex, range.length)
+                notifyItemRangeRemoved(range.startIndex, range.length)
+            }
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): VH? {
         val item = LayoutInflater.from(parent?.context)?.inflate(getLayoutId(), parent, false)
@@ -72,6 +96,7 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
     abstract protected fun bind(holder: VH, item: T)
 
     protected open fun showFromEmptyList(value: List<T>) {
+        Timber.i("Animating in all items in list of size %d", value.size)
         datasetInternal = value
         notifyItemRangeInserted(0, value.size)
     }
@@ -84,6 +109,8 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
     }
 
     private fun startAsyncListRefresh(input: List<T>?) {
+        Timber.i("Executing DiffUtil on list of size %d", input?.size ?: -1)
+
         val callback = DiffCallback(datasetInternal, input)
         val result = DiffUtil.calculateDiff(callback)
 
