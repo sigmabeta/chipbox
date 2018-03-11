@@ -29,6 +29,7 @@ abstract class BasePresenter<V : BaseView> {
 
     protected var state = UiState.NONE
         set(value) {
+            Timber.v("%s Setting new state: %s", this.javaClass.simpleName, value)
             when (value) {
                 UiState.ERROR -> view?.showErrorState()
                 UiState.EMPTY -> view?.showEmptyState()
@@ -41,6 +42,7 @@ abstract class BasePresenter<V : BaseView> {
 
     fun onResume(view: V) {
         this.view = view
+        Timber.v("%s resuming with state: %s", this.javaClass.simpleName, state)
 
         when (state) {
             UiState.NONE -> handleError(IllegalStateException("NONE state detected in class ${this::class.java.simpleName}"), null)
