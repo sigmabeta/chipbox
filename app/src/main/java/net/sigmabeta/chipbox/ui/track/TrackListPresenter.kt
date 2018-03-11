@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.ui.track
 
 import android.os.Bundle
 import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
 import io.realm.OrderedCollectionChangeSet
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
@@ -10,7 +9,6 @@ import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.events.FileScanCompleteEvent
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
@@ -27,8 +25,6 @@ class TrackListPresenter @Inject constructor(val player: Player,
     var tracks: List<Track>? = null
 
     var changeset: OrderedCollectionChangeSet? = null
-
-    private var scannerSubscription: Disposable? = null
 
     fun onItemClick(position: Int) {
         getTrackIdList()?.let {
@@ -65,8 +61,6 @@ class TrackListPresenter @Inject constructor(val player: Player,
         }
 
         view?.showContent()
-
-        listenForFileScans()
     }
 
     override fun onClick(id: Int) {
@@ -93,6 +87,8 @@ class TrackListPresenter @Inject constructor(val player: Player,
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
+                                // TODO Fine-grained notifications, somehow?
+
                                 printBenchmark("Tracks Loaded")
 
                                 this.artist = it
@@ -133,7 +129,9 @@ class TrackListPresenter @Inject constructor(val player: Player,
                                 if (it.collection.isNotEmpty()) {
                                     state = UiState.READY
                                 } else {
-                                    state = UiState.EMPTY
+                                    if (it.collection.isLoaded) {
+                                        state = UiState.EMPTY
+                                    }
                                 }
                             },
                             {
@@ -143,25 +141,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
                     )
 
             subscriptions.add(tracksLoad)
-
-            listenForFileScans()
         }
-    }
-
-    // TODO Move into a "Top level presenter" superclass
-    private fun listenForFileScans() {
-        if (scannerSubscription?.isDisposed == false) {
-            scannerSubscription?.dispose()
-        }
-
-        scannerSubscription = updater.asFlowable()
-                .filter { it is FileScanCompleteEvent }
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    loadTracks()
-                }
-
-        subscriptions.add(scannerSubscription!!)
     }
 
     private fun getTrackIdList() = tracks?.map(Track::id)?.toMutableList()
