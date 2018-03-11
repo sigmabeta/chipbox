@@ -2,13 +2,11 @@ package net.sigmabeta.chipbox.ui.games
 
 import android.os.Bundle
 import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
 import io.realm.OrderedCollectionChangeSet
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.events.FileScanCompleteEvent
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
 import timber.log.Timber
@@ -21,8 +19,6 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
     var games: List<Game>? = null
 
     var changeset: OrderedCollectionChangeSet? = null
-
-    private var scannerSubscription: Disposable? = null
 
     fun onItemClick(position: Int) {
         val id = games?.get(position)?.id ?: return
@@ -60,8 +56,6 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
         }
 
         view?.showContent()
-
-        listenForFileScans()
     }
 
     override fun onClick(id: Int) {
@@ -103,7 +97,9 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
                             if (it.collection.isNotEmpty()) {
                                 state = UiState.READY
                             } else {
-                                state = UiState.EMPTY
+                                if (it.collection.isLoaded) {
+                                    state = UiState.EMPTY
+                                }
                             }
                         },
                         {
@@ -113,23 +109,5 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : FragmentPr
                 )
 
         subscriptions.add(subscription)
-
-        listenForFileScans()
-    }
-
-    // TODO Move into a "Top level presenter" superclass
-    private fun listenForFileScans() {
-        if (scannerSubscription?.isDisposed == false) {
-            scannerSubscription?.dispose()
-        }
-
-        scannerSubscription = updater.asFlowable()
-                .filter { it is FileScanCompleteEvent }
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    loadGames()
-                }
-
-        subscriptions.add(scannerSubscription!!)
     }
 }

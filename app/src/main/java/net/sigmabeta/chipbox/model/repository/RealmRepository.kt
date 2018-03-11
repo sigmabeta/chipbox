@@ -14,7 +14,6 @@ import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.model.domain.Track
 import timber.log.Timber
 import java.util.*
-import java.util.concurrent.TimeUnit
 
 class RealmRepository(var realm: Realm) : Repository {
     var id: UUID = UUID.randomUUID()
@@ -125,8 +124,6 @@ class RealmRepository(var realm: Realm) : Repository {
             .sort("title")
             .findAllAsync()
             .asChangesetObservable()
-            .sample(INTERVAL, TimeUnit.MILLISECONDS)
-            .filter { it.collection.isLoaded }
 
     override fun getTracksManaged(): RealmResults<Track> = realm
             .where(Track::class.java)
@@ -180,8 +177,6 @@ class RealmRepository(var realm: Realm) : Repository {
             .sort("title")
             .findAllAsync()
             .asChangesetObservable()
-            .sample(INTERVAL, TimeUnit.MILLISECONDS)
-            .filter { it.collection.isLoaded }
 
     override fun getGamesManaged(): RealmResults<Game> = realm
             .where(Game::class.java)
@@ -192,8 +187,6 @@ class RealmRepository(var realm: Realm) : Repository {
             .sort("title")
             .findAllAsync()
             .asChangesetObservable()
-            .sample(INTERVAL, TimeUnit.MILLISECONDS)
-            .filter { it.collection.isLoaded }
 
     override fun getGame(platformName: String?, title: String?): Game {
         var game = realm
@@ -237,8 +230,6 @@ class RealmRepository(var realm: Realm) : Repository {
             .sort("name")
             .findAllAsync()
             .asChangesetObservable()
-            .sample(INTERVAL, TimeUnit.MILLISECONDS)
-            .filter { it.collection.isLoaded }
 
 
     override fun getArtistsManaged(): List<Artist> = realm
@@ -265,8 +256,6 @@ class RealmRepository(var realm: Realm) : Repository {
             .sort("name")
             .findAllAsync()
             .asChangesetObservable()
-            .sample(INTERVAL, TimeUnit.MILLISECONDS)
-            .filter { it.collection.isLoaded }
 
     /**
      * Update
@@ -460,7 +449,5 @@ class RealmRepository(var realm: Realm) : Repository {
         val PLATFORM_UNKNOWN = "Unknown Platform"
 
         val DELIMITERS_ARTISTS = arrayOf(", &", ",", " or ", " and ", "&")
-
-        const val INTERVAL = 50L
     }
 }

@@ -37,20 +37,22 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
 
     fun processChanges(changeset: OrderedCollectionChangeSet?) {
         if (changeset != null) {
+            changeset.deletionRanges.forEach { range ->
+//                Timber.i("Deleting %d items at index %d", range.length, range.startIndex)
+                notifyItemRangeRemoved(range.startIndex, range.length)
+            }
+
             changeset.insertionRanges.forEach { range ->
-                Timber.i("Inserting %d items at index %d", range.startIndex, range.length)
+//                Timber.i("Inserting %d items at index %d",range.length, range.startIndex)
                 notifyItemRangeInserted(range.startIndex, range.length)
             }
 
             changeset.changeRanges.forEach { range ->
-                Timber.i("Changing %d items at index %d", range.startIndex, range.length)
+//                Timber.i("Changing %d items at index %d", range.length, range.startIndex)
                 notifyItemRangeChanged(range.startIndex, range.length)
             }
-
-            changeset.deletionRanges.forEach { range ->
-                Timber.i("Deleting %d items at index %d", range.startIndex, range.length)
-                notifyItemRangeRemoved(range.startIndex, range.length)
-            }
+        } else {
+            notifyDataSetChanged();
         }
     }
 
