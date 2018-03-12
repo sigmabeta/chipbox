@@ -1,20 +1,20 @@
 package net.sigmabeta.chipbox.ui.platform
 
 import android.os.Bundle
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.realm.OrderedCollectionChangeSet
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Platform
-import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
-import rx.android.schedulers.AndroidSchedulers
-import timber.log.Timber
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @ActivityScoped
 class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : FragmentPresenter<PlatformListView>() {
     var platformList: List<Platform>? = null
+
+    var changeset: OrderedCollectionChangeSet? = null
 
     fun onItemClick(position: Int) {
         val id = platformList?.get(position)?.name ?: return
@@ -39,30 +39,12 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
 
     override fun showReadyState() {
         view?.setList(platformList!!)
+
+        changeset?.let {
+            view?.animateChanges(it)
+        }
+
         view?.showContent()
-
-        val subscription = updater.asObservable()
-                .throttleFirst(5000, TimeUnit.MILLISECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    when (it) {
-                        is TrackEvent -> { /* no-op */
-                        }
-                        is PositionEvent -> { /* no-op */
-                        }
-                        is GameEvent -> { /* no-op */
-                        }
-                        is StateEvent -> { /* no-op */
-                        }
-                        is FileScanEvent -> loadPlatforms()
-                        is FileScanCompleteEvent -> loadPlatforms()
-                        is FileScanFailedEvent -> { /* no-op */
-                        }
-                        else -> Timber.w("Unhandled %s", it.toString())
-                    }
-                }
-
-        subscriptions.add(subscription)
     }
 
     /**
@@ -82,12 +64,15 @@ class PlatformListPresenter @Inject constructor(val updater: UiUpdater) : Fragme
                         {
                             printBenchmark("Platforms Loaded")
 
-                            platformList = it
+                            platformList = it.collection
+                            changeset = it.changeset
 
-                            if (it.isNotEmpty()) {
+                            if (it.collection.isNotEmpty()) {
                                 state = UiState.READY
                             } else {
-                                state = UiState.EMPTY
+                                if (it.collection.isLoaded) {
+                                    state = UiState.EMPTY
+                                }
                             }
                         },
                         {

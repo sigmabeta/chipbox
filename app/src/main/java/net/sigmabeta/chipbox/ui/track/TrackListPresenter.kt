@@ -1,19 +1,18 @@
 package net.sigmabeta.chipbox.ui.track
 
 import android.os.Bundle
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.realm.OrderedCollectionChangeSet
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
-import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @ActivityScoped
@@ -24,6 +23,8 @@ class TrackListPresenter @Inject constructor(val player: Player,
     var artist: Artist? = null
 
     var tracks: List<Track>? = null
+
+    var changeset: OrderedCollectionChangeSet? = null
 
     fun onItemClick(position: Int) {
         getTrackIdList()?.let {
@@ -54,30 +55,12 @@ class TrackListPresenter @Inject constructor(val player: Player,
 
     override fun showReadyState() {
         view?.setTracks(tracks!!)
+
+        changeset?.let {
+            view?.animateChanges(it)
+        }
+
         view?.showContent()
-
-        val subscription = updater.asObservable()
-                .throttleFirst(5000, TimeUnit.MILLISECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    when (it) {
-                        is TrackEvent -> { /* no-op */
-                        }
-                        is PositionEvent -> { /* no-op */
-                        }
-                        is GameEvent -> { /* no-op */
-                        }
-                        is StateEvent -> { /* no-op */
-                        }
-                        is FileScanEvent -> loadTracks()
-                        is FileScanCompleteEvent -> loadTracks()
-                        is FileScanFailedEvent -> { /* no-op */
-                        }
-                        else -> Timber.w("Unhandled %s", it.toString())
-                    }
-                }
-
-        subscriptions.add(subscription)
     }
 
     override fun onClick(id: Int) {
@@ -95,6 +78,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
         loadTracks()
     }
 
+
     private fun loadTracks() {
         state = UiState.LOADING
 
@@ -103,6 +87,8 @@ class TrackListPresenter @Inject constructor(val player: Player,
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
+                                // TODO Fine-grained notifications, somehow?
+
                                 printBenchmark("Tracks Loaded")
 
                                 this.artist = it
@@ -134,15 +120,18 @@ class TrackListPresenter @Inject constructor(val player: Player,
                     .observeOn(AndroidSchedulers.mainThread())
                     .subscribe(
                             {
-                                Timber.i("Loaded %s tracks.", it.size)
+                                Timber.i("Loaded %s tracks.", it.collection.size)
                                 printBenchmark("Tracks Loaded")
 
-                                tracks = it
+                                tracks = it.collection
+                                changeset = it.changeset
 
-                                if (it.isNotEmpty()) {
+                                if (it.collection.isNotEmpty()) {
                                     state = UiState.READY
                                 } else {
-                                    state = UiState.EMPTY
+                                    if (it.collection.isLoaded) {
+                                        state = UiState.EMPTY
+                                    }
                                 }
                             },
                             {
