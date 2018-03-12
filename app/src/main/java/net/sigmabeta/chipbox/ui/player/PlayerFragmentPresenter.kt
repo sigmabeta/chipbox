@@ -2,6 +2,9 @@ package net.sigmabeta.chipbox.ui.player
 
 import android.media.session.PlaybackState
 import android.os.Bundle
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.backend.player.Playlist
@@ -16,9 +19,6 @@ import net.sigmabeta.chipbox.model.repository.RealmRepository
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
 import net.sigmabeta.chipbox.util.getTimeStringFromMillis
-import rx.Observable
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -84,7 +84,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
     override fun showReadyState() {
         updateHelper()
 
-        val subscription = updater.asObservable()
+        val subscription = updater.asFlowable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {

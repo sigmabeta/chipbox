@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.ui.player
 
 import android.media.session.PlaybackState
 import android.os.Bundle
+import io.reactivex.android.schedulers.AndroidSchedulers
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
@@ -10,7 +11,6 @@ import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
-import rx.android.schedulers.AndroidSchedulers
 import javax.inject.Inject
 
 @ActivityScoped
@@ -77,7 +77,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player,
     override fun showReadyState() {
         updateHelper()
 
-        val subscription = updater.asObservable()
+        val subscription = updater.asFlowable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {

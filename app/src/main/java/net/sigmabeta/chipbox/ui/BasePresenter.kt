@@ -4,8 +4,8 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import com.crashlytics.android.Crashlytics
+import io.reactivex.disposables.CompositeDisposable
 import net.sigmabeta.chipbox.model.repository.Repository
-import rx.subscriptions.CompositeSubscription
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -25,10 +25,11 @@ abstract class BasePresenter<V : BaseView> {
 
     protected var setupStartTime = 0L
 
-    protected var subscriptions = CompositeSubscription()
+    protected var subscriptions = CompositeDisposable()
 
     protected var state = UiState.NONE
         set(value) {
+            Timber.v("%s Setting new state: %s", this.javaClass.simpleName, value)
             when (value) {
                 UiState.ERROR -> view?.showErrorState()
                 UiState.EMPTY -> view?.showEmptyState()
@@ -41,6 +42,7 @@ abstract class BasePresenter<V : BaseView> {
 
     fun onResume(view: V) {
         this.view = view
+        Timber.v("%s resuming with state: %s", this.javaClass.simpleName, state)
 
         when (state) {
             UiState.NONE -> handleError(IllegalStateException("NONE state detected in class ${this::class.java.simpleName}"), null)

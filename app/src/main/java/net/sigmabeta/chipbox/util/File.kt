@@ -3,9 +3,7 @@ package net.sigmabeta.chipbox.util
 import net.sigmabeta.chipbox.backend.Scanner
 import net.sigmabeta.chipbox.backend.Scanner.Companion.EXTENSIONS_MUSIC
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.file.FileListItem
 import net.sigmabeta.chipbox.model.repository.RealmRepository
-import rx.Observable
 import timber.log.Timber
 import java.io.File
 import java.util.*
