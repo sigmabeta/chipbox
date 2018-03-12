@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.games
 
+import io.realm.OrderedCollectionChangeSet
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.BaseView
 
@@ -7,6 +8,8 @@ interface GameListView : BaseView {
     fun setTitle(platformName: String)
 
     fun setGames(games: List<Game>)
+
+    fun animateChanges(it: OrderedCollectionChangeSet)
 
     fun launchGameActivity(id: String, position: Int)
 

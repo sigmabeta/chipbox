@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.game
 
 import android.os.Bundle
+import io.reactivex.android.schedulers.AndroidSchedulers
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
@@ -11,7 +12,6 @@ import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.UiState
-import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -69,7 +69,7 @@ class GamePresenter @Inject constructor(val player: Player,
 
         displayTrack(player.playlist.playingTrackId)
 
-        val subscription = updater.asObservable()
+        val subscription = updater.asFlowable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {

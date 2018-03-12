@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui.playlist
 
 import android.os.Bundle
+import io.reactivex.android.schedulers.AndroidSchedulers
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.backend.player.Playlist
@@ -9,7 +10,6 @@ import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
-import rx.android.schedulers.AndroidSchedulers
 import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
@@ -84,7 +84,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
                         }
                 )
 
-        val subscription = updater.asObservable()
+        val subscription = updater.asFlowable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
