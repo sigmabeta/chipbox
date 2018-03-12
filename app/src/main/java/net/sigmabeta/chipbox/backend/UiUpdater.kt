@@ -1,26 +1,21 @@
 package net.sigmabeta.chipbox.backend
 
 
+import io.reactivex.Flowable
+import io.reactivex.processors.PublishProcessor
 import net.sigmabeta.chipbox.model.events.PlaybackEvent
-import rx.Observable
-import rx.subjects.PublishSubject
-import rx.subjects.SerializedSubject
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class UiUpdater @Inject constructor() {
-    private val subject = SerializedSubject(PublishSubject.create<PlaybackEvent>())
+    private val subject = PublishProcessor.create<PlaybackEvent>().toSerialized()
 
     fun send(event: PlaybackEvent) {
         subject.onNext(event)
     }
 
-    fun asObservable(): Observable<PlaybackEvent> {
+    fun asFlowable(): Flowable<PlaybackEvent> {
         return subject.onBackpressureDrop()
-    }
-
-    fun hasObservers(): Boolean {
-        return subject.hasObservers()
     }
 }

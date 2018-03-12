@@ -1,21 +1,21 @@
 package net.sigmabeta.chipbox.ui.artist
 
 import android.os.Bundle
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.realm.OrderedCollectionChangeSet
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Artist
-import net.sigmabeta.chipbox.model.events.*
 import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.UiState
-import rx.android.schedulers.AndroidSchedulers
-import timber.log.Timber
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @ActivityScoped
 class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : FragmentPresenter<ArtistListView>() {
     var artists: List<Artist>? = null
+
+    var changeset: OrderedCollectionChangeSet? = null
 
     fun onItemClick(position: Int) {
         val id = artists?.get(position)?.id ?: return
@@ -40,30 +40,12 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
 
     override fun showReadyState() {
         view?.setArtists(artists!!)
+
+        changeset?.let {
+            view?.animateChanges(it)
+        }
+
         view?.showContent()
-
-        val subscription = updater.asObservable()
-                .throttleFirst(5000, TimeUnit.MILLISECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    when (it) {
-                        is TrackEvent -> { /* no-op */
-                        }
-                        is PositionEvent -> { /* no-op */
-                        }
-                        is GameEvent -> { /* no-op */
-                        }
-                        is StateEvent -> { /* no-op */
-                        }
-                        is FileScanEvent -> loadArtists()
-                        is FileScanCompleteEvent -> loadArtists()
-                        is FileScanFailedEvent -> { /* no-op */
-                        }
-                        else -> Timber.w("Unhandled %s", it.toString())
-                    }
-                }
-
-        subscriptions.add(subscription)
     }
 
     override fun onClick(id: Int) {
@@ -88,12 +70,15 @@ class ArtistListPresenter @Inject constructor(val updater: UiUpdater) : Fragment
                         {
                             printBenchmark("Artists Loaded")
 
-                            artists = it
+                            artists = it.collection
+                            changeset = it.changeset
 
-                            if (it.isNotEmpty()) {
+                            if (it.collection.isNotEmpty()) {
                                 state = UiState.READY
                             } else {
-                                state = UiState.EMPTY
+                                if (it.collection.isLoaded) {
+                                    state = UiState.EMPTY
+                                }
                             }
                         },
                         {
