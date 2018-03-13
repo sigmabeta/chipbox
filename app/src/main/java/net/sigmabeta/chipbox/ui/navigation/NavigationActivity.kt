@@ -92,7 +92,7 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
         frame_fragment.setPadding(0, 0, 0, 0)
 
         if (animate) {
-            if (getFragment()?.isScrolledToBottom() ?: false) {
+            if (getFragment()?.isScrolledToBottom() == true) {
                 frame_fragment.translationY = -(resources.getDimension(R.dimen.height_status_bar))
                 frame_fragment.slideViewToProperLocation()
             }
@@ -165,7 +165,7 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
      */
 
     private fun getFragment(): NavigationFragment? {
-        val fragment = supportFragmentManager.findFragmentById(R.id.frame_fragment) as NavigationFragment
+        val fragment = supportFragmentManager.findFragmentById(R.id.frame_fragment) as NavigationFragment?
         return fragment
     }
 
@@ -180,14 +180,6 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
 
             launcher.putExtra(ARGUMENT_FRAGMENT_TAG, fragmentTag)
             launcher.putExtra(ARGUMENT_FRAGMENT_ARG_STRING, fragmentArg)
-
-            context.startActivity(launcher)
-        }
-
-        fun launch(context: Context, fragmentTag: String) {
-            val launcher = Intent(context, NavigationActivity::class.java)
-
-            launcher.putExtra(ARGUMENT_FRAGMENT_TAG, fragmentTag)
 
             context.startActivity(launcher)
         }
