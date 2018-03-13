@@ -45,3 +45,5 @@ public class ChipboxApplication : Application() {
         appComponent = Initializer.initAppComponent(this)
     }
 }
+
+fun Any.className() = this.javaClass.simpleName

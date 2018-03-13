@@ -5,10 +5,10 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
-import net.sigmabeta.chipbox.ui.ItemListView
+import net.sigmabeta.chipbox.ui.ListView
 import java.util.*
 
-class PlaylistAdapter(view: ItemListView<PlaylistTrackViewHolder>) : BaseArrayAdapter<Track, PlaylistTrackViewHolder>(view) {
+class PlaylistAdapter(view: ListView<Track, PlaylistTrackViewHolder>) : BaseArrayAdapter<Track, PlaylistTrackViewHolder>(view) {
     var playingPosition: Int = -1
         set (value) {
             val oldPosition = field
