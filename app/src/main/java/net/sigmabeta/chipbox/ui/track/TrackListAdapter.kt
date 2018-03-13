@@ -4,9 +4,9 @@ import android.view.View
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
-import net.sigmabeta.chipbox.ui.ItemListView
+import net.sigmabeta.chipbox.ui.ListView
 
-class TrackListAdapter(view: ItemListView<TrackViewHolder>) : BaseArrayAdapter<Track, TrackViewHolder>(view) {
+class TrackListAdapter(view: ListView<Track, TrackViewHolder>) : BaseArrayAdapter<Track, TrackViewHolder>(view) {
     var playingTrackId: String? = null
         set (value) {
             field = value

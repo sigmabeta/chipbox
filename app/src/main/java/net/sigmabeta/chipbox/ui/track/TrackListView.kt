@@ -1,19 +1,8 @@
 package net.sigmabeta.chipbox.ui.track
 
-import io.realm.OrderedCollectionChangeSet
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.ui.ListView
 
-interface TrackListView : BaseView {
-    fun setTracks(tracks: List<Track>)
-
-    fun animateChanges(changeset: OrderedCollectionChangeSet)
-
-    fun refreshList()
-
+interface TrackListView : ListView<Track, TrackViewHolder> {
     fun setActivityTitle(title: String)
-
-    fun startRescan()
-
-    fun onTrackLoadError()
 }

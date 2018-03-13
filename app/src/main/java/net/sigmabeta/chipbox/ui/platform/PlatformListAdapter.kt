@@ -4,9 +4,9 @@ import android.view.View
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
-import net.sigmabeta.chipbox.ui.ItemListView
+import net.sigmabeta.chipbox.ui.ListView
 
-class PlatformListAdapter(view: ItemListView<PlatformViewHolder>) : BaseArrayAdapter<Platform, PlatformViewHolder>(view) {
+class PlatformListAdapter(view: ListView<Platform, PlatformViewHolder>) : BaseArrayAdapter<Platform, PlatformViewHolder>(view) {
     override fun getLayoutId(): Int {
         return R.layout.list_item_platform
     }

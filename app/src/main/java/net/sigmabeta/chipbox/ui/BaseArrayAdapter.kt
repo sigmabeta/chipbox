@@ -10,7 +10,7 @@ import io.realm.RealmResults
 import net.sigmabeta.chipbox.model.domain.ListItem
 import timber.log.Timber
 
-abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val view: ItemListView<VH>) : RecyclerView.Adapter<VH>() {
+abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val view: ListView<T, VH>) : RecyclerView.Adapter<VH>() {
     protected var datasetInternal: List<T>? = null
 
     protected var diffStartTime = 0L
