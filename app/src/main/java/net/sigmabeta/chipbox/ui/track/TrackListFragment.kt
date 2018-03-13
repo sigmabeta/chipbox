@@ -1,97 +1,29 @@
 package net.sigmabeta.chipbox.ui.track
 
-import android.content.Intent
 import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
-import android.view.View
-import android.view.View.VISIBLE
-import android.view.ViewGroup
-import io.realm.OrderedCollectionChangeSet
-import kotlinx.android.synthetic.main.fragment_song_list.*
+import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.BuildConfig
-import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.ui.*
-import net.sigmabeta.chipbox.util.*
-import javax.inject.Inject
+import net.sigmabeta.chipbox.ui.BaseActivity
+import net.sigmabeta.chipbox.ui.ListFragment
+import net.sigmabeta.chipbox.ui.NavigationFragment
 
-class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), TrackListView, ItemListView<TrackViewHolder>, TopLevelFragment, NavigationFragment {
-    lateinit var presenter: TrackListPresenter
-        @Inject set
-
-    var adapter = TrackListAdapter(this)
+class TrackListFragment : ListFragment<TrackListPresenter, TrackListView, Track, TrackViewHolder, TrackListAdapter>(), TrackListView, NavigationFragment {
 
     /**
-     * SongListView
+     * TrackListView
      */
-
-    override fun setTracks(tracks: List<Track>) {
-        adapter.dataset = tracks
-    }
-
-    override fun animateChanges(changeset: OrderedCollectionChangeSet) {
-        adapter.processChanges(changeset)
-    }
-
-    override fun refreshList() {
-        adapter.notifyDataSetChanged()
-    }
-
-    override fun startRescan() {
-        val intent = Intent(activity, ScanService::class.java)
-        activity.startService(intent)
-    }
-
-    override fun showContent() = ifVisible {
-        if (list_tracks.visibility != VISIBLE) {
-            list_tracks.fadeIn()
-            loading_spinner.fadeOutGone()
-            layout_empty_state.fadeOutGone()
-        }
-    }
-
-    override fun showEmptyState() = ifVisible {
-        if (label_empty_state.visibility != VISIBLE) {
-            layout_empty_state.visibility = View.VISIBLE
-            label_empty_state.fadeInFromZero().setStartDelay(300)
-            button_empty_state.fadeInFromZero().setStartDelay(600)
-        }
-    }
-
-    override fun onTrackLoadError() {
-        showToastMessage("Error loading tracks.")
-        activity.finish()
-    }
 
     /**
-     * TopLevelFragment
+     * ListFragment
      */
 
-    override fun isScrolledToBottom(): Boolean {
-        return list_tracks?.isScrolledToBottom() ?: false
-    }
-
-    override fun refresh() = presenter.refresh(arguments)
-
-    /**
-     * ItemListView
-     */
-
-    override fun onItemClick(position: Int) {
-        presenter.onItemClick(position)
-    }
+    override fun createAdapter() = TrackListAdapter(this)
 
     /**
      * BaseFragment
      */
-
-    override fun showLoadingState() = ifVisible {
-        loading_spinner.fadeIn().setDuration(50)
-        list_tracks.fadeOutPartially()
-        layout_empty_state.fadeOutGone()
-    }
-
 
     override fun inject() {
         val container = activity
@@ -100,26 +32,16 @@ class TrackListFragment : BaseFragment<TrackListPresenter, TrackListView>(), Tra
         }
     }
 
-    override fun getContentLayout(): ViewGroup {
-        return frame_content
-    }
-
-    override fun getPresenterImpl() = presenter
-
-    override fun getLayoutId(): Int {
-        return R.layout.fragment_song_list
-    }
-
     override fun configureViews() {
+        super.configureViews()
+
         val layoutManager = LinearLayoutManager(activity)
 
-        list_tracks.adapter = adapter
-        list_tracks.layoutManager = layoutManager
+        recycler_list.adapter = adapter
+        recycler_list.layoutManager = layoutManager
 
         button_empty_state.setOnClickListener(this)
     }
-
-    override fun getSharedImage(): View? = null
 
     override fun getFragmentTag() = FRAGMENT_TAG
 

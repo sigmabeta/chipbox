@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.ui.playlist
 
-import android.os.Bundle
 import io.reactivex.android.schedulers.AndroidSchedulers
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
@@ -8,32 +7,20 @@ import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.ui.FragmentPresenter
-import net.sigmabeta.chipbox.ui.UiState
-import timber.log.Timber
+import net.sigmabeta.chipbox.ui.ListPresenter
 import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
 class PlaylistFragmentPresenter @Inject constructor(val player: Player,
                                                     val playlist: Playlist,
-                                                    val updater: UiUpdater) : FragmentPresenter<PlaylistFragmentView>() {
-    var trackList: MutableList<Track>? = null
-
+                                                    val updater: UiUpdater) : ListPresenter<PlaylistFragmentView, Track, PlaylistTrackViewHolder>() {
     var queuePosition: Int? = null
 
     var oldQueuePosition = -1
 
-    /**
-     * Public Methods
-     */
-
-    fun onItemClick(position: Int) {
-        player.play(position)
-    }
-
     fun onTrackMoved(originPos: Int, destPos: Int) {
-        Collections.swap(trackList, originPos, destPos)
+        Collections.swap(list, originPos, destPos)
         playlist.onTrackMoved(originPos, destPos)
         view?.onTrackMoved(originPos, destPos)
 
@@ -47,7 +34,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
     }
 
     fun onTrackRemoved(position: Int) {
-        trackList?.let {
+        (list as MutableList<Track>).let {
             it.removeAt(position)
             playlist.onTrackRemoved(position)
             view?.onTrackRemoved(position)
@@ -55,34 +42,26 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
     }
 
     /**
-     * FragmentPresenter
+     * ListPresenter
      */
 
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
+    override fun onItemClick(position: Int) {
+        player.play(position)
+    }
+
+    override fun getLoadOperation() = repository.getTracksFromIds(playlist.playbackQueue)
 
     /**
      * BasePresenter
      */
 
-    override fun setup(arguments: Bundle?) {
-        state = UiState.READY
+    override fun teardown() {
+        queuePosition = null
+        oldQueuePosition = -1
     }
 
-    override fun teardown() = Unit
-
     override fun showReadyState() {
-        // TODO Get tracks, we only have IDs here
-        val trackIdsList = playlist.playbackQueue
-        repository.getTracksFromIds(trackIdsList)
-                .subscribe(
-                        {
-                            displayTracks(it.toMutableList())
-                            displayPositionHelper(false)
-                        },
-                        {
-                            Timber.e("Unable to load playlist: %s", it.message)
-                        }
-                )
+        super.showReadyState()
 
         val subscription = updater.asFlowable()
                 .observeOn(AndroidSchedulers.mainThread())
@@ -97,30 +76,12 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
         subscriptions.add(subscription)
     }
 
-    override fun onClick(id: Int) = Unit
-
-    /**
-     * Private Methods
-     */
-
-    private fun displayTracks(playlist: MutableList<Track>) {
-        this.trackList = playlist
-
-        view?.showQueue(playlist)
-    }
-
-    private fun displayPosition(position: Int, animate: Boolean) {
-        this.queuePosition = position
-
-        view?.updatePosition(position, oldQueuePosition)
-        oldQueuePosition = -1
-
-        view?.scrollToPosition(position, animate)
-    }
-
     private fun displayPositionHelper(animate: Boolean) {
         val position = playlist.actualPlaybackQueuePosition
 
-        displayPosition(position, animate)
+        queuePosition = position
+        view?.updatePosition(position, oldQueuePosition)
+        oldQueuePosition = -1
+        view?.scrollToPosition(position, animate)
     }
 }

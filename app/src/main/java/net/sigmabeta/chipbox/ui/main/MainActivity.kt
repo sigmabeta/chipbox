@@ -21,7 +21,7 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.events.FileScanEvent
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
-import net.sigmabeta.chipbox.ui.TopLevelFragment
+import net.sigmabeta.chipbox.ui.ListFragment
 import net.sigmabeta.chipbox.ui.debug.DebugActivity
 import net.sigmabeta.chipbox.ui.onboarding.OnboardingActivity
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
@@ -329,7 +329,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         }
     }
 
-    private fun getFragment(): TopLevelFragment? {
+    private fun getFragment(): ListFragment<*,*,*,*,*>? {
         val selectedPosition = pager_categories.currentItem
 
         Timber.v("Selected fragment position is %d", selectedPosition)
