@@ -55,7 +55,7 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
 
     abstract fun onItemClick(position: Int)
 
-    abstract fun getLoadOperation(): Observable<CollectionChange<RealmResults<T>>>
+    abstract fun getLoadOperation(): Observable<CollectionChange<RealmResults<T>>>?
 
     /**
      * Implementation Details
@@ -66,16 +66,17 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
     private fun loadItems() {
         state = UiState.LOADING
 
+        // TODO Fix realm track list query problem
         val subscription = getLoadOperation()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
+                ?.observeOn(AndroidSchedulers.mainThread())
+                ?.subscribe(
                         {
                             printBenchmark("${className()} items Loaded")
 
                             list = it.collection
                             changeset = it.changeset
 
-                            if (it.collection.isNotEmpty()) {
+                            if (list?.isNotEmpty() == true) {
                                 Timber.v("Showing items.")
                                 state = UiState.READY
                             } else {
@@ -93,6 +94,8 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
                         }
                 )
 
-        subscriptions.add(subscription)
+        if (subscription != null) {
+            subscriptions.add(subscription)
+        }
     }
 }
