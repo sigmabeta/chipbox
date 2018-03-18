@@ -6,9 +6,12 @@ import io.realm.RealmResults
 import io.realm.rx.CollectionChange
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.ListPresenter
+import net.sigmabeta.chipbox.ui.UiState
+import timber.log.Timber
 import javax.inject.Inject
 
 @ActivityScoped
@@ -26,8 +29,9 @@ class TrackListPresenter @Inject constructor(val player: Player,
         }
     }
 
+    // TODO Fix realm track list query problem
     override fun getLoadOperation(): Observable<CollectionChange<RealmResults<Track>>> = artistId?.let {
-        repository.getTracksForArtist(it)
+        null
     } ?: let {
         repository.getTracks()
     }
@@ -40,12 +44,33 @@ class TrackListPresenter @Inject constructor(val player: Player,
         super.showReadyState()
 
         artistId?.let {
+            Timber.w("Artist id $it")
             val disposable = repository.getArtist(it)
                     .subscribe(
                             {
                                 it.name?.let { name ->
                                     view?.setActivityTitle(name)
                                 }
+
+                                printBenchmark("${className()} items Loaded")
+
+                                list = it.tracks
+
+                                if (list?.isNotEmpty() == true) {
+                                    Timber.v("Showing items.")
+                                    state = UiState.READY
+                                } else {
+                                    if (it.isLoaded) {
+                                        Timber.v("No items to show.")
+                                        state = UiState.EMPTY
+                                    } else {
+                                        Timber.v("Query not actually ready yet.")
+                                    }
+                                }
+                            },
+                            {
+                                state = UiState.ERROR
+                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
                             }
                     )
 
