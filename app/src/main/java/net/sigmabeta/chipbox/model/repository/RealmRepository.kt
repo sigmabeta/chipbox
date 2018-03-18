@@ -126,10 +126,9 @@ class RealmRepository(var realm: Realm) : Repository {
             .asChangesetObservable()
 
     override fun getTracksForArtist(artistId: String) = realm.where(Track::class.java)
-            .equalTo("artists.id", artistId)
-            .sort("title")
+            .contains("artists.id", artistId)
             .findAllAsync()
-            .asChangesetObservable()
+            .asFlowable()
 
     override fun getTracksManaged(): RealmResults<Track> = realm
             .where(Track::class.java)
