@@ -66,7 +66,7 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
      * FragmentPresenter
      */
 
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
+
 
     override fun setup(arguments: Bundle?) {
         if (state == UiState.CANCELED) {

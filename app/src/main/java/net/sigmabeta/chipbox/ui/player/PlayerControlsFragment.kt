@@ -7,11 +7,13 @@ import android.widget.ImageView
 import kotlinx.android.synthetic.main.fragment_player_controls.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.util.ACC_DECELERATE
 import net.sigmabeta.chipbox.util.convertDpToPx
+import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
@@ -104,10 +106,20 @@ class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerContr
 
     override fun showContent() = Unit
 
-    override fun inject() {
+    override fun inject(): Boolean {
         val container = activity
-        if (container is BaseActivity<*, *>) {
-            container.getFragmentComponent()?.inject(this)
+        if (container is BaseActivity<*, *>) {container.getFragmentComponent()?.let {
+
+
+                it.inject(this)
+                return true
+            } ?: let {
+                Timber.e("${className()} injection failure: ${container?.className()}'s FragmentComponent not valid.")
+                return false
+            }
+        } else {
+            Timber.e("${className()} injection failure: ${container?.className()} not valid.")
+            return false
         }
     }
 

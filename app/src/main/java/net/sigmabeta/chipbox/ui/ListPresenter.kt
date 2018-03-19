@@ -24,8 +24,6 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
         loadItems()
     }
 
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = loadItems()
-
     override fun teardown() {
         list = null
         changeset = null
