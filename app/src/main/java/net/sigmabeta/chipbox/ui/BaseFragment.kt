@@ -56,7 +56,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         created = true
 
         if (injected) {
-            Timber.i("${className()} setting up presenter...")
+            Timber.i("setting up presenter...")
             createHelper(savedInstanceState)
         } else {
             Timber.e("${className()} creating fragment, but not attached yet!")
