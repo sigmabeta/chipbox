@@ -22,7 +22,7 @@ abstract class BasePresenter<V : BaseView> {
      * Protected Variables
      */
 
-    protected var view: V? = null
+    internal var view: V? = null
 
     protected var setupStartTime = 0L
 

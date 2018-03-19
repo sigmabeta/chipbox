@@ -41,12 +41,41 @@ class GamePresenter @Inject constructor(val player: Player,
     }
 
     override fun setup(arguments: Bundle?) {
-        setupHelper(arguments)
-    }
+        state = UiState.LOADING
 
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
-        if (tracks == null) {
-            setupHelper(arguments)
+        val gameId = arguments?.getString(GameActivity.ARGUMENT_GAME_ID)
+        this.gameId = gameId
+
+        gameId?.let {
+            val gameSubscription = repository.getGame(it)
+                    .subscribe(
+                            { game ->
+                                state = UiState.READY
+
+                                if (game != null) {
+                                    this.game = game
+                                    view?.setGame(game)
+
+                                    val tracks = game.tracks?.toMutableList()
+
+                                    tracks?.let {
+                                        this.tracks = tracks
+                                        view?.setTracks(tracks)
+                                    }
+                                } else {
+                                    view?.setGame(null)
+                                    view?.showErrorSnackbar("Error: Game not found.", null, null)
+                                }
+                            },
+                            {
+                                state = UiState.ERROR
+
+                                view?.setGame(null)
+                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                            }
+                    )
+
+            subscriptions.add(gameSubscription)
         }
     }
 
@@ -102,42 +131,4 @@ class GamePresenter @Inject constructor(val player: Player,
         }
     }
 
-    private fun setupHelper(arguments: Bundle?) {
-        state = UiState.LOADING
-
-        val gameId = arguments?.getString(GameActivity.ARGUMENT_GAME_ID)
-        this.gameId = gameId
-
-        gameId?.let {
-            val gameSubscription = repository.getGame(it)
-                    .subscribe(
-                            { game ->
-                                state = UiState.READY
-
-                                if (game != null) {
-                                    this.game = game
-                                    view?.setGame(game)
-
-                                    val tracks = game.tracks?.toMutableList()
-
-                                    tracks?.let {
-                                        this.tracks = tracks
-                                        view?.setTracks(tracks)
-                                    }
-                                } else {
-                                    view?.setGame(null)
-                                    view?.showErrorSnackbar("Error: Game not found.", null, null)
-                                }
-                            },
-                            {
-                                state = UiState.ERROR
-
-                                view?.setGame(null)
-                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                            }
-                    )
-
-            subscriptions.add(gameSubscription)
-        }
-    }
 }
