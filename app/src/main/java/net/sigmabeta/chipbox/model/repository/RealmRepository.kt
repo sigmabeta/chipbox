@@ -125,16 +125,20 @@ class RealmRepository(var realm: Realm) : Repository {
             .findAllAsync()
             .asChangesetObservable()
 
+    override fun getTracksForArtist(artistId: String) = realm.where(Track::class.java)
+            .contains("artists.id", artistId)
+            .findAllAsync()
+            .asFlowable()
+
     override fun getTracksManaged(): RealmResults<Track> = realm
             .where(Track::class.java)
             .findAll()
 
-    override fun getTracksFromIds(trackIdsList: MutableList<String?>): Flowable<RealmResults<Track>> = realm
+    override fun getTracksFromIds(trackIdsList: MutableList<String?>) = realm
             .where(Track::class.java)
             .`in`("id", trackIdsList.toTypedArray())
             .findAllAsync()
-            .asFlowable()
-            .filter { it.isLoaded }
+            .asChangesetObservable()
 
     override fun getTrackFromPath(path: String): Track? {
         return realm.where(Track::class.java)
