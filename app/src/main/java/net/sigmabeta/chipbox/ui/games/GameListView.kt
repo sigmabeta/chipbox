@@ -1,17 +1,10 @@
 package net.sigmabeta.chipbox.ui.games
 
-import io.realm.OrderedCollectionChangeSet
 import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.ui.ListView
 
-interface GameListView : BaseView {
-    fun setTitle(platformName: String)
-
-    fun setGames(games: List<Game>)
-
-    fun animateChanges(it: OrderedCollectionChangeSet)
-
+interface GameListView : ListView<Game, GameViewHolder> {
     fun launchGameActivity(id: String, position: Int)
 
-    fun startRescan()
+    fun setTitle(platformName: String)
 }

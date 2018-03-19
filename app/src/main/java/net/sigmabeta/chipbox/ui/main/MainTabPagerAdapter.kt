@@ -6,7 +6,7 @@ import android.support.v4.app.FragmentManager
 import android.support.v4.app.FragmentPagerAdapter
 import android.view.ViewGroup
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.ui.TopLevelFragment
+import net.sigmabeta.chipbox.ui.ListFragment
 import net.sigmabeta.chipbox.ui.artist.ArtistListFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.platform.PlatformListFragment
@@ -21,15 +21,8 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
             R.string.tab_main_tracks
     )
 
-    val fragments = Array<TopLevelFragment>(TAB_TITLES.size, {
-        return@Array object: TopLevelFragment {
-            override fun isScrolledToBottom(): Boolean {
-                Timber.e("Bottom Scroll check requested on dummy fragment.")
-                return false
-            }
-
-            override fun refresh() = Unit
-        }
+    val fragments = Array<ListFragment<*, *, *, *, *>?>(TAB_TITLES.size, {
+        return@Array null
     })
 
     override fun getCount() = TAB_TITLES.size
@@ -45,7 +38,7 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
     override fun instantiateItem(container: ViewGroup?, position: Int): Any? {
         val fragment = super.instantiateItem(container, position) as Fragment
 
-        if (fragment is TopLevelFragment) {
+        if (fragment is ListFragment<*,*,*,*,*>) {
             fragments[position] = fragment
         } else {
             Timber.e("Invalid fragment at position %d", position)
