@@ -5,10 +5,12 @@ import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
 import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.BuildConfig
+import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ListFragment
+import timber.log.Timber
 
 @ActivityScoped
 class PlaylistFragment : ListFragment<PlaylistFragmentPresenter, PlaylistFragmentView, Track, PlaylistTrackViewHolder, PlaylistAdapter>(), PlaylistFragmentView {
@@ -50,10 +52,20 @@ class PlaylistFragment : ListFragment<PlaylistFragmentPresenter, PlaylistFragmen
      * BaseFragment
      */
 
-    override fun inject() {
+    override fun inject(): Boolean {
         val container = activity
-        if (container is BaseActivity<*, *>) {
-            container.getFragmentComponent()?.inject(this)
+        if (container is BaseActivity<*, *>) {container.getFragmentComponent()?.let {
+
+
+                it.inject(this)
+                return true
+            } ?: let {
+                Timber.e("${className()} injection failure: ${container?.className()}'s FragmentComponent not valid.")
+                return false
+            }
+        } else {
+            Timber.e("${className()} injection failure: ${container?.className()} not valid.")
+            return false
         }
     }
 
