@@ -21,7 +21,7 @@ abstract class ActivityPresenter<V : BaseView> : BasePresenter<V>() {
     var recreated = false
 
     fun onCreate(arguments: Bundle?, savedInstanceState: Bundle?, view: V) {
-        Timber.i("${className()} creating...")
+        Timber.i("creating...")
         this.view = view
 
         if (savedInstanceState == null) {
