@@ -3,22 +3,87 @@ package net.sigmabeta.chipbox.ui.playlist
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
-import kotlinx.android.synthetic.main.fragment_playlist.*
+import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.BuildConfig
-import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.ItemListView
-import javax.inject.Inject
+import net.sigmabeta.chipbox.ui.ListFragment
 
 @ActivityScoped
-class PlaylistFragment : BaseFragment<PlaylistFragmentPresenter, PlaylistFragmentView>(), PlaylistFragmentView, ItemListView<PlaylistTrackViewHolder> {
-    lateinit var presenter: PlaylistFragmentPresenter
-        @Inject set
+class PlaylistFragment : ListFragment<PlaylistFragmentPresenter, PlaylistFragmentView, Track, PlaylistTrackViewHolder, PlaylistAdapter>(), PlaylistFragmentView {
 
-    var adapter = PlaylistAdapter(this)
+    /**
+     * PlaylistFragmentView
+     */
+
+    override fun onTrackMoved(originPos: Int, destPos: Int) {
+        adapter.notifyItemMoved(originPos, destPos)
+    }
+
+    override fun onTrackRemoved(position: Int) {
+        adapter.notifyItemRemoved(position)
+    }
+
+    override fun updatePosition(position: Int?, oldPlayingPosition: Int) {
+        adapter.playingPosition = position ?: -1
+        if (oldPlayingPosition >= 0) {
+            adapter.notifyItemChanged(oldPlayingPosition)
+        }
+    }
+
+    override fun scrollToPosition(position: Int, animate: Boolean) {
+        if (animate) {
+            recycler_list.smoothScrollToPosition(position)
+        } else {
+            recycler_list.scrollToPosition(position)
+        }
+    }
+
+    /**
+     * ListFragment
+     */
+
+    override fun createAdapter() = PlaylistAdapter(this)
+
+    /**
+     * BaseFragment
+     */
+
+    override fun inject() {
+        val container = activity
+        if (container is BaseActivity<*, *>) {
+            container.getFragmentComponent()?.inject(this)
+        }
+    }
+
+    override fun configureViews() {
+        super.configureViews()
+
+        val layoutManager = LinearLayoutManager(activity)
+
+        recycler_list.adapter = adapter
+        recycler_list.layoutManager = layoutManager
+        recycler_list.setPadding(0, getStatusBarHeight(), 0, 0)
+
+        touchHelper.attachToRecyclerView(recycler_list)
+    }
+
+    override fun getFragmentTag() = FRAGMENT_TAG
+
+    /**
+     * Implementation Details
+     */
+
+    private fun getStatusBarHeight(): Int {
+        val id = resources.getIdentifier("status_bar_height", "dimen", "android")
+
+        if (id > 0) {
+            return resources.getDimensionPixelSize(id)
+        }
+
+        return 0
+    }
 
     val touchCallback = object : ItemTouchHelper.Callback() {
         override fun getMovementFlags(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?): Int {
@@ -47,98 +112,6 @@ class PlaylistFragment : BaseFragment<PlaylistFragmentPresenter, PlaylistFragmen
     }
 
     val touchHelper = ItemTouchHelper(touchCallback)
-
-    /**
-     * PlaylistFragmentView
-     */
-
-    override fun showQueue(queue: MutableList<Track>) {
-        adapter.dataset = queue
-    }
-
-    override fun onTrackMoved(originPos: Int, destPos: Int) {
-        adapter.notifyItemMoved(originPos, destPos)
-    }
-
-    override fun onTrackRemoved(position: Int) {
-        adapter.notifyItemRemoved(position)
-    }
-
-    override fun updatePosition(position: Int?, oldPlayingPosition: Int) {
-        adapter.playingPosition = position ?: -1
-        if (oldPlayingPosition >= 0) {
-            adapter.notifyItemChanged(oldPlayingPosition)
-        }
-    }
-
-    override fun scrollToPosition(position: Int, animate: Boolean) {
-        if (animate) {
-            recycler_playlist.smoothScrollToPosition(position)
-        } else {
-            recycler_playlist.scrollToPosition(position)
-        }
-    }
-
-    /**
-     * ItemListView
-     */
-
-    override fun onItemClick(position: Int) {
-        presenter.onItemClick(position)
-    }
-
-    override fun startDrag(holder: PlaylistTrackViewHolder) {
-        touchHelper.startDrag(holder)
-    }
-
-    /**
-     * BaseFragment
-     */
-
-    override fun showLoadingState() = Unit
-
-    override fun showContent() = Unit
-
-    override fun inject() {
-        val container = activity
-        if (container is BaseActivity<*, *>) {
-            container.getFragmentComponent()?.inject(this)
-        }
-    }
-
-    override fun getPresenterImpl() = presenter
-
-    override fun getLayoutId() = R.layout.fragment_playlist
-
-    override fun getContentLayout() = frame_content
-
-    override fun getSharedImage() = null
-
-    override fun configureViews() {
-        val layoutManager = LinearLayoutManager(activity)
-
-        recycler_playlist.adapter = adapter
-        recycler_playlist.layoutManager = layoutManager
-        recycler_playlist.setPadding(0, getStatusBarHeight(), 0, 0)
-
-        touchHelper.attachToRecyclerView(recycler_playlist)
-    }
-
-    override fun getFragmentTag() = FRAGMENT_TAG
-
-    /**
-     * Private Methods
-     */
-
-    private fun getStatusBarHeight(): Int {
-        val id = resources.getIdentifier("status_bar_height", "dimen", "android")
-
-        if (id > 0) {
-            return resources.getDimensionPixelSize(id)
-        }
-
-        return 0
-    }
 
     companion object {
         val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.playlist"

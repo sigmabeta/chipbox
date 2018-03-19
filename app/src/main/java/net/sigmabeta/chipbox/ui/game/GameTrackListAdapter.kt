@@ -7,10 +7,10 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
-import net.sigmabeta.chipbox.ui.ItemListView
+import net.sigmabeta.chipbox.ui.ListView
 import timber.log.Timber
 
-class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayAdapter<Track, GameTrackViewHolder>(view) {
+class GameTrackListAdapter(view: ListView<Track ,GameTrackViewHolder>) : BaseArrayAdapter<Track, GameTrackViewHolder>(view) {
     var game: Game? = null
         set (value) {
             field = value
