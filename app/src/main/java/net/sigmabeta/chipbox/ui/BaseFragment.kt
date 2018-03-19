@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.ui
 import android.app.Activity
 import android.content.Context
 import android.os.Bundle
+import android.os.Handler
 import android.support.design.widget.Snackbar
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
@@ -154,12 +155,42 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
                 + "Please check that all animations (including loading spinners) were cleared.", null, 0)
     }
 
+    var delayedViewOperation: Runnable? = null
+
     /**
      * Performs an operation (probably a view operation of some sort) only if this
      * Fragment is visible to the user.
      */
-    fun <T> ifVisible(viewOperation: () -> T) {
-       if (isVisible) viewOperation()
+    fun <T> ifVisible(override: Boolean = false, viewOperation: () -> T) {
+        val handler = Handler()
+
+        if (isVisible) {
+            if (override) {
+                delayedViewOperation = null
+            }
+            handler.post {
+                Timber.i("Executing view operation.")
+                viewOperation()
+            }
+       } else {
+            Timber.e("Fragment not visible yet.")
+            delayedViewOperation = Runnable {
+                if (isVisible) {
+                    Timber.i("Executing delayed view operation.")
+                    viewOperation()
+                } else {
+                    Timber.e("Fragment not visible after 16ms, aborting operation.")
+                }
+            }
+
+            handler.postDelayed({
+                if (delayedViewOperation != null) {
+                    handler.post(delayedViewOperation)
+                } else {
+                    Timber.e("Overridden view operation; aborting.")
+                }
+            }, 16)
+        }
     }
 
     abstract fun getFragmentTag(): String

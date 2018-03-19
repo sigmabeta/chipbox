@@ -5,14 +5,14 @@ import android.content.Intent
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import io.realm.OrderedCollectionChangeSet
 import kotlinx.android.synthetic.main.activity_settings.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.audio.Voice
 import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.ItemListView
 import javax.inject.Inject
 
-class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), SettingsView, ItemListView<VoiceViewHolder>, AdapterView.OnItemSelectedListener {
+class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), SettingsView, AdapterView.OnItemSelectedListener {
     lateinit var presenter: SettingsPresenter
         @Inject set
 
@@ -26,8 +26,8 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
         adapter.notifyItemChanged(position)
     }
 
-    override fun setVoices(voices: MutableList<Voice>?) {
-        adapter.dataset = voices
+    override fun setList(list: List<Voice>) {
+        adapter.dataset = list
     }
 
     override fun setDropdownValue(index: Int) {
@@ -38,13 +38,19 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
         }
     }
 
+    override fun animateChanges(changeset: OrderedCollectionChangeSet) = Unit
+
     /**
-     * ItemListView
+     * ListView
      */
 
     override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }
+
+    override fun isScrolledToBottom(): Boolean = true
+
+    override fun startRescan() = Unit
 
     /**
      * OnItemSelectedListener

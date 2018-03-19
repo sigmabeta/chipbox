@@ -1,67 +1,30 @@
 package net.sigmabeta.chipbox.ui.platform
 
 import android.support.v7.widget.LinearLayoutManager
-import android.view.View
-import android.view.View.VISIBLE
-import android.view.ViewGroup
-import io.realm.OrderedCollectionChangeSet
-import kotlinx.android.synthetic.main.fragment_platform_list.*
-import net.sigmabeta.chipbox.BuildConfig
-import net.sigmabeta.chipbox.R
+import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.ItemListView
-import net.sigmabeta.chipbox.ui.TopLevelFragment
+import net.sigmabeta.chipbox.ui.ListFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
-import net.sigmabeta.chipbox.util.fadeIn
-import net.sigmabeta.chipbox.util.fadeOutGone
-import net.sigmabeta.chipbox.util.fadeOutPartially
-import net.sigmabeta.chipbox.util.isScrolledToBottom
-import javax.inject.Inject
 
-class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListView>(), PlatformListView, ItemListView<PlatformViewHolder>, TopLevelFragment {
-    lateinit var presenter: PlatformListPresenter
-        @Inject set
-
-    val adapter = PlatformListAdapter(this)
+class PlatformListFragment : ListFragment<PlatformListPresenter, PlatformListView, Platform, PlatformViewHolder, PlatformListAdapter>(), PlatformListView {
 
     /**
      * PlatformListView
      */
 
-    override fun setList(list: List<Platform>) {
-        adapter.dataset = list
-    }
-
-    override fun animateChanges(changeset: OrderedCollectionChangeSet) {
-        adapter.processChanges(changeset)
-    }
-
-    override fun launchNavActivity(id: String) {
+    override fun launchNavActivity(platformName: String) {
         NavigationActivity.launch(activity,
                 GameGridFragment.FRAGMENT_TAG,
-                id)
+                platformName)
     }
 
     /**
-     * TopLevelFragment
+     * ListFragment
      */
 
-    override fun isScrolledToBottom(): Boolean {
-        return list_platforms?.isScrolledToBottom() ?: false
-    }
-
-    override fun refresh() = Unit
-
-    /**
-     * ItemListView
-     */
-
-    override fun onItemClick(position: Int) {
-        presenter.onItemClick(position)
-    }
+    override fun createAdapter() = PlatformListAdapter(this)
 
     /**
      * BaseFragment
@@ -74,46 +37,16 @@ class PlatformListFragment : BaseFragment<PlatformListPresenter, PlatformListVie
         }
     }
 
-    override fun showLoadingState() = ifVisible {
-        if (list_platforms.visibility != VISIBLE) {
-            loading_spinner.fadeIn().setDuration(50)
-            list_platforms.fadeOutPartially()
-            layout_empty_state.fadeOutGone()
-        }
-    }
-
-    override fun showContent() = ifVisible {
-        if (label_empty_state.visibility != VISIBLE) {
-            list_platforms.fadeIn()
-            loading_spinner.fadeOutGone()
-            layout_empty_state.fadeOutGone()
-        }
-    }
-
-    override fun getContentLayout(): ViewGroup {
-        return frame_content
-    }
-
-    override fun getPresenterImpl() = presenter
-
-    override fun getLayoutId(): Int {
-        return R.layout.fragment_platform_list
-    }
-
     override fun configureViews() {
+        super.configureViews()
+
         val layoutManager = LinearLayoutManager(activity)
 
-        list_platforms.adapter = adapter
-        list_platforms.layoutManager = layoutManager
+        recycler_list.adapter = adapter
+        recycler_list.layoutManager = layoutManager
     }
 
-    override fun getSharedImage(): View? = null
-
-    override fun getFragmentTag() = FRAGMENT_TAG
-
     companion object {
-        val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.platform_list"
-
         fun newInstance(): PlatformListFragment {
             val fragment = PlatformListFragment()
 

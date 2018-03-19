@@ -103,7 +103,7 @@ class SettingsPresenter @Inject constructor(val player: Player,
             settings.voices
         }
 
-        view?.setVoices(voices)
+        view?.setList(voices as List<Voice>)
         view?.setDropdownValue(tempoValueToIndex(tempo))
     }
 
