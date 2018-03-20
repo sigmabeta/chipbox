@@ -7,7 +7,6 @@ import io.realm.OrderedCollectionChangeSet
 import io.realm.RealmResults
 import io.realm.rx.CollectionChange
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.domain.ListItem
 import timber.log.Timber
 
@@ -23,8 +22,6 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
         loadArguments(arguments)
         loadItems()
     }
-
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = loadItems()
 
     override fun teardown() {
         list = null
@@ -71,7 +68,7 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
                 ?.observeOn(AndroidSchedulers.mainThread())
                 ?.subscribe(
                         {
-                            printBenchmark("${className()} items Loaded")
+                            printBenchmark("Items Loaded, size = ${it.collection.size}")
 
                             list = it.collection
                             changeset = it.changeset

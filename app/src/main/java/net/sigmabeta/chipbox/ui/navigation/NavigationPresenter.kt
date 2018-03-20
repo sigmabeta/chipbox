@@ -40,8 +40,6 @@ class NavigationPresenter @Inject constructor(val player: Player,
         }
     }
 
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
-
     override fun onTempDestroy() = Unit
 
     override fun setup(arguments: Bundle?) {
