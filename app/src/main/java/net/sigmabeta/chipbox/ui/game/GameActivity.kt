@@ -17,7 +17,6 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ListView
-import net.sigmabeta.chipbox.util.TRANSITION_SLIDE
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import net.sigmabeta.chipbox.util.removeNullViewPairs
 import net.sigmabeta.chipbox.util.shrinktoNothing
@@ -110,9 +109,6 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
         button_fab.setOnClickListener {
             presenter.onClick(it.id)
         }
-
-        window.enterTransition = TRANSITION_SLIDE
-        window.exitTransition = TRANSITION_SLIDE
     }
 
     override fun getLayoutId(): Int {
@@ -157,12 +153,17 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
             context.startActivity(launcher)
         }
 
-        fun launch(activity: Activity, gameId: String, navBar: Pair<View, String>?, statusBar: Pair<View, String>?, imageView: Pair<View, String>?) {
+        fun launch(activity: Activity,
+                   gameId: String,
+                   navBar: Pair<View, String>?,
+                   statusBar: Pair<View, String>?,
+                   imageView: Pair<View, String>?,
+                   background: Pair<View, String>?) {
             val launcher = Intent(activity, GameActivity::class.java)
 
             launcher.putExtra(ARGUMENT_GAME_ID, gameId)
 
-            val sharedViewPairs = removeNullViewPairs(navBar, statusBar, imageView)
+            val sharedViewPairs = removeNullViewPairs(navBar, statusBar, imageView, background)
             val options = ActivityOptions.makeSceneTransitionAnimation(activity, *sharedViewPairs)
 
             activity.startActivity(launcher, options.toBundle())

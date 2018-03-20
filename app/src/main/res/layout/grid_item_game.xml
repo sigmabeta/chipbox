@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             xmlns:tools="http://schemas.android.com/tools"
-             android:layout_width="match_parent"
-             android:layout_height="wrap_content"
-             android:clickable="true"
-             android:focusable="true"
-             android:foreground="?attr/selectableItemBackground"
-             tools:layout_width="160dp">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/background_card"
+    android:background="@android:color/white"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    android:layout_height="wrap_content"
+    android:layout_width="match_parent"
+    tools:layout_width="160dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -27,7 +29,6 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
-            android:background="@android:color/white"
             android:paddingEnd="@dimen/spacing_medium"
             android:paddingStart="@dimen/spacing_medium"
             android:paddingTop="@dimen/spacing_medium"
@@ -39,7 +40,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:background="@android:color/white"
             android:maxLines="1"
             android:paddingBottom="@dimen/spacing_medium"
             android:paddingEnd="@dimen/spacing_medium"

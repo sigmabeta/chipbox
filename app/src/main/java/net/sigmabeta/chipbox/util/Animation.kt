@@ -1,19 +1,15 @@
 package net.sigmabeta.chipbox.util
 
-import android.R
-import android.app.Activity
 import android.support.v7.widget.RecyclerView
 import android.util.Pair
 import android.view.View
 import android.view.ViewPropertyAnimator
-import android.view.Window
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.TextView
-import net.sigmabeta.chipbox.ui.util.transition.nonshared.*
 import timber.log.Timber
-import java.util.ArrayList
+import java.util.*
 
 val SCROLL_DIRECTION_DOWN = 1
 val SCROLL_DIRECTION_UP = -1
@@ -30,8 +26,6 @@ fun RecyclerView.isScrolledToBottom(): Boolean {
 val ACCELERATE = AccelerateInterpolator()
 val DECELERATE = DecelerateInterpolator()
 val ACC_DECELERATE = AccelerateDecelerateInterpolator()
-
-val TRANSITION_SLIDE = SlideTransition()
 
 fun View.slideViewOffscreen(): ViewPropertyAnimator {
     return animate()
