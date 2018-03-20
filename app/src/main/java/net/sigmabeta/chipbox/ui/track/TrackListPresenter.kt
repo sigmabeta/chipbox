@@ -68,8 +68,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
                                 }
                             },
                             {
-                                state = UiState.ERROR
-                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                                handleError(it)
                             }
                     )
 
