@@ -23,4 +23,6 @@ class GameViewHolder(view: View, adapter: GameGridAdapter) : BaseViewHolder<Game
     }
 
     fun getSharedImage(): View = view.image_game_box_art
+
+    fun getSharedCard(): View = view.background_card
 }
