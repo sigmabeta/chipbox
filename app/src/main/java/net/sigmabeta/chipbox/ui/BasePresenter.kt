@@ -67,17 +67,16 @@ abstract class BasePresenter<V : BaseView> {
      * Error Handling
      */
 
-    protected fun handleError(error: Throwable, action: View.OnClickListener?) {
+    protected fun handleError(error: Throwable, action: View.OnClickListener? = null) {
         Timber.e(Log.getStackTraceString(error))
+        state = UiState.ERROR
 
         when (error) {
-            is InvalidClearViewException -> handleInvalidClearError(error)
+            is InvalidClearViewException -> view?.showError("A previous instance of this screen tried to clear the Presenter's reference to it. "
+                    + "Please check that all animations (including loading spinners) were cleared.")
+            else -> view?.showError(error.message ?: "Unknown error.")
         }
         Crashlytics.logException(error)
-    }
-
-    protected fun handleInvalidClearError(error: InvalidClearViewException) {
-        view?.showInvalidClearError(error)
     }
 
     /**

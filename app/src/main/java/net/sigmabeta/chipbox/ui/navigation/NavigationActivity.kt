@@ -36,7 +36,7 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
             GameGridFragment.FRAGMENT_TAG -> fragment = GameGridFragment.newInstance(fragmentArg)
             TrackListFragment.FRAGMENT_TAG -> fragment = TrackListFragment.newInstance(fragmentArg)
             else -> {
-                showToastMessage("Unsupported fragment.")
+                presenter.onUnsupportedFragment()
                 return
             }
         }
