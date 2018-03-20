@@ -199,10 +199,6 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         }
     }
 
-    override fun showFileScanError(reason: String) {
-        showSnackbar(reason, null, 0)
-    }
-
     override fun showFileScanSuccess(newTracks: Int, updatedTracks: Int) {
         if (newTracks > 0) {
             if (updatedTracks > 0) {
