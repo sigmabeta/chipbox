@@ -4,10 +4,12 @@ import android.os.Bundle
 import android.support.v7.widget.LinearLayoutManager
 import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.BuildConfig
+import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ListFragment
 import net.sigmabeta.chipbox.ui.NavigationFragment
+import timber.log.Timber
 
 class TrackListFragment : ListFragment<TrackListPresenter, TrackListView, Track, TrackViewHolder, TrackListAdapter>(), TrackListView, NavigationFragment {
 
@@ -25,10 +27,20 @@ class TrackListFragment : ListFragment<TrackListPresenter, TrackListView, Track,
      * BaseFragment
      */
 
-    override fun inject() {
+    override fun inject() : Boolean {
         val container = activity
-        if (container is BaseActivity<*, *>) {
-            container.getFragmentComponent()?.inject(this)
+        if (container is BaseActivity<*, *>) {container.getFragmentComponent()?.let {
+
+
+                it.inject(this)
+                return true
+            } ?: let {
+                Timber.e("${className()} injection failure: ${container?.className()}'s FragmentComponent not valid.")
+                return false
+            }
+        } else {
+            Timber.e("${className()} injection failure: ${container?.className()} not valid.")
+            return false
         }
     }
 

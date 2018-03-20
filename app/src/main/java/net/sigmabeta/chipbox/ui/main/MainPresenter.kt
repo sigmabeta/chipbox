@@ -52,8 +52,6 @@ class MainPresenter @Inject constructor(val player: Player,
         state = UiState.READY
     }
 
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
-
     override fun onTempDestroy() = Unit
 
     override fun teardown() {

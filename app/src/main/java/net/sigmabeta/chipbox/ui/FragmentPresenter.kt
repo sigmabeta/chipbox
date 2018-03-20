@@ -41,5 +41,5 @@ abstract class FragmentPresenter<V : BaseView> : BasePresenter<V>() {
      * check if the operations performed in setup() need to be redone, and if so, do
      * them.
      */
-    abstract fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle)
+    open fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = setup(arguments)
 }

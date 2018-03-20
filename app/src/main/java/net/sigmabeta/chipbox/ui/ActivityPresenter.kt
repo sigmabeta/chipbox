@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui
 
 import android.os.Bundle
+import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.dagger.component.FragmentComponent
 import timber.log.Timber
 
@@ -8,7 +9,11 @@ abstract class ActivityPresenter<V : BaseView> : BasePresenter<V>() {
     var fragmentComponent: FragmentComponent? = null
         get () {
             if (field == null) {
-                field = view?.getTypedApplication()?.appComponent?.plusFragments();
+                view?.let { checkedView ->
+                    field = checkedView.getTypedApplication().appComponent.plusFragments()
+                } ?: let {
+                    Timber.e("${className()} view null.")
+                }
             }
             return field
         }
@@ -16,6 +21,7 @@ abstract class ActivityPresenter<V : BaseView> : BasePresenter<V>() {
     var recreated = false
 
     fun onCreate(arguments: Bundle?, savedInstanceState: Bundle?, view: V) {
+        Timber.i("creating...")
         this.view = view
 
         if (savedInstanceState == null) {
@@ -50,18 +56,17 @@ abstract class ActivityPresenter<V : BaseView> : BasePresenter<V>() {
     }
 
     /**
+     * Perform actions that only need to be performed o subsequent creations
+     * of a Activity; i.e. after rotation or low-mem activity destruction. By default,
+     * same as setup().
+     */
+    fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = setup(arguments)
+
+    /**
      * Perform actions that need to be performed in order for a
      * re-enter animation to not screw up.
      */
     abstract fun onReenter()
-
-    /**
-     * Perform actions that only need to be performed o subsequent creations
-     * of a Activity; i.e. after rotation or low-mem activity destruction. Generally,
-     * check if the operations performed in setup() need to be redone, and if so, do
-     * them.
-     */
-    abstract fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle)
 
     /**
      * Perform any temporary teardown operations because the View

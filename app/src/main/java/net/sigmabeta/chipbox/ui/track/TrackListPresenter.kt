@@ -6,7 +6,6 @@ import io.realm.RealmResults
 import io.realm.rx.CollectionChange
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
-import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.ListPresenter
@@ -52,7 +51,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
                                     view?.setActivityTitle(name)
                                 }
 
-                                printBenchmark("${className()} items Loaded")
+                                printBenchmark("items Loaded")
 
                                 list = it.tracks
 
