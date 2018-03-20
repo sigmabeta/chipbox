@@ -147,8 +147,7 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
         getPresenterImpl().onDestroy(isFinishing, this as V)
     }
 
-    // TODO Enable this
-    /*override fun onLowMemory() {
+    override fun onLowMemory() {
         super.onLowMemory()
         if (getTypedApplication().shouldShowDetailedErrors()) {
             showSnackbar("Memory low.", null, 0)
@@ -160,14 +159,18 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
         if (getTypedApplication().shouldShowDetailedErrors()) {
             showSnackbar("Trimming memory.", null, 0)
         }
-    }*/
+    }
 
     override fun onClick(clicked: View) {
         getPresenterImpl().onClick(clicked.id)
     }
 
     override fun showError(message: String, action: View.OnClickListener?, actionLabel: Int) {
-        showSnackbar(message, action, actionLabel)
+        if (getTypedApplication().shouldShowDetailedErrors()) {
+            showSnackbar(message, action, actionLabel)
+        } else {
+            showSnackbar("An error occurred. Please try again.", action, actionLabel)
+        }
     }
 
     fun getFragmentComponent() = getPresenterImpl().fragmentComponent

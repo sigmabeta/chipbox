@@ -107,14 +107,13 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         }
     }
 
-    // TODO Enable this
-    /*override fun onLowMemory() {
+    override fun onLowMemory() {
         super.onLowMemory()
 
         if (getTypedApplication().shouldShowDetailedErrors()) {
             showSnackbar("Memory low.", null, 0)
         }
-    }*/
+    }
 
     override fun getTypedApplication() = activity.application as ChipboxApplication
 
@@ -152,7 +151,11 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
     }
 
     override fun showError(message: String, action: View.OnClickListener?, actionLabel: Int) {
-        showSnackbar(message, action, actionLabel)
+        if (getTypedApplication().shouldShowDetailedErrors()) {
+            showSnackbar(message, action, actionLabel)
+        } else {
+            showSnackbar("An error occurred. Please try again.", action, actionLabel)
+        }
     }
 
     var delayedViewOperation: Runnable? = null
