@@ -9,7 +9,6 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
@@ -108,32 +107,17 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         }
     }
 
-    // TODO Enable this
-    /*override fun onLowMemory() {
+    override fun onLowMemory() {
         super.onLowMemory()
 
         if (getTypedApplication().shouldShowDetailedErrors()) {
             showSnackbar("Memory low.", null, 0)
         }
-    }*/
-
-    override fun showToastMessage(message: String) {
-        Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
-    }
-
-    override fun showErrorSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) {
-        val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)
-
-        if (action != null && actionLabel != null) {
-            snackbar.setAction(actionLabel, action)
-        }
-
-        snackbar.show()
     }
 
     override fun getTypedApplication() = activity.application as ChipboxApplication
 
-    fun showSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int) {
+    private fun showSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int) {
         val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)
 
         if (action != null && actionLabel > 0) {
@@ -143,7 +127,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         snackbar.show()
     }
 
-    fun showSnackbarPermanent(message: String, action: View.OnClickListener?, actionLabel: Int) {
+    private fun showSnackbarPermanent(message: String, action: View.OnClickListener?, actionLabel: Int) {
         val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_INDEFINITE)
 
         if (action != null && actionLabel > 0) {
@@ -166,9 +150,12 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         getPresenterImpl().onClick(clicked.id)
     }
 
-    override fun showInvalidClearError(error: InvalidClearViewException) {
-        showSnackbar("A previous instance of this screen tried to clear the Presenter's reference to it. "
-                + "Please check that all animations (including loading spinners) were cleared.", null, 0)
+    override fun showError(message: String, action: View.OnClickListener?, actionLabel: Int) {
+        if (getTypedApplication().shouldShowDetailedErrors()) {
+            showSnackbar(message, action, actionLabel)
+        } else {
+            showSnackbar("An error occurred. Please try again.", action, actionLabel)
+        }
     }
 
     var delayedViewOperation: Runnable? = null
@@ -189,7 +176,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
                 viewOperation()
             }
         } else {
-            Timber.e("Fragment not visible yet.")
+            Timber.w("Fragment not visible yet.")
             delayedViewOperation = Runnable {
                 if (isVisible) {
                     Timber.i("Executing delayed view operation.")
@@ -203,7 +190,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
                 if (delayedViewOperation != null) {
                     handler.post(delayedViewOperation)
                 } else {
-                    Timber.e("Overridden view operation; aborting.")
+                    Timber.d("Overridden view operation; aborting.")
                 }
             }, 16)
         }
@@ -232,7 +219,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
             inject()
             injected = true
         } else {
-            Timber.e("${className()} already injected.")
+            Timber.w("${className()} already injected.")
         }
 
         if (created) {

@@ -43,7 +43,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player,
             R.id.button_skip_back -> player.skipToPrev()
             R.id.button_shuffle -> toggleShuffle()
             R.id.button_repeat -> toggleRepeat()
-            else -> view?.showToastMessage("Unimplemented.")
+            else -> handleError(NotImplementedError("This button is not implemented yet"))
         }
     }
 
@@ -148,7 +148,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player,
             Player.REPEAT_ALL -> view?.setRepeatAll()
             Player.REPEAT_ONE -> view?.setRepeatOne()
             Player.REPEAT_INFINITE -> view?.setRepeatInfinite()
-            else -> view?.showErrorSnackbar("Unimplemented state.", null, null)
+            else -> handleError(IllegalStateException("Unimplemented player state."))
         }
     }
 

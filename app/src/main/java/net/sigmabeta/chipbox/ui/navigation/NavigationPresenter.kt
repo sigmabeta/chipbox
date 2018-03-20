@@ -40,6 +40,10 @@ class NavigationPresenter @Inject constructor(val player: Player,
         }
     }
 
+    fun onUnsupportedFragment() {
+        handleError(IllegalStateException("Unsupported fragment."))
+    }
+
     override fun onTempDestroy() = Unit
 
     override fun setup(arguments: Bundle?) {

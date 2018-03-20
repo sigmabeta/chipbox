@@ -51,7 +51,7 @@ abstract class ActivityPresenter<V : BaseView> : BasePresenter<V>() {
         } else if (this.view == null) {
             Timber.w("Cannot clear reference to view: Presenter has already cleared reference.")
         } else {
-            handleError(InvalidClearViewException(view), null)
+            handleError(InvalidClearViewException(view))
         }
     }
 

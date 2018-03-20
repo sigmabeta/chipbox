@@ -4,11 +4,6 @@ import android.view.View
 import net.sigmabeta.chipbox.ChipboxApplication
 
 interface BaseView {
-
-    fun showToastMessage(message: String)
-
-    fun showErrorSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?)
-
     fun onClick(clicked: View)
 
     fun getTypedApplication(): ChipboxApplication
@@ -22,9 +17,10 @@ interface BaseView {
     fun showLoadingState()
 
     fun showContent()
+
     /**
      * Error Handling
      */
 
-    fun showInvalidClearError(error: InvalidClearViewException)
+    fun showError(message: String, action: View.OnClickListener? = null, actionLabel: Int = 0)
 }
