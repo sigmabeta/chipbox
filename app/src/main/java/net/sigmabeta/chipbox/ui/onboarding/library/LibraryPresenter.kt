@@ -20,7 +20,7 @@ class LibraryPresenter @Inject constructor() : FragmentPresenter<LibraryView>() 
      * FragmentPresenter
      */
 
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
+
 
     override fun onClick(id: Int) {
         when (id) {

@@ -15,8 +15,10 @@ import android.view.Window
 import android.widget.ImageView
 import android.widget.Toast
 import com.squareup.picasso.Callback
+import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.className
 import timber.log.Timber
 
 
@@ -74,13 +76,18 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         inject()
+
+        if (savedInstanceState != null && !isChangingConfigurations) {
+            getPresenterImpl().view = this as V
+        }
+
         super.onCreate(savedInstanceState)
 
         setContentView(getLayoutId())
         inflateContent()
         setTransitions()
-
         configureViews()
+
         getPresenterImpl().onCreate(intent.extras, savedInstanceState, this as V)
 
         val sharedView = getSharedImage()
@@ -140,7 +147,6 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
         super.onDestroy()
         getPresenterImpl().onDestroy(isFinishing, this as V)
     }
-
 
     // TODO Enable this
     /*override fun onLowMemory() {
@@ -272,5 +278,9 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
 
     private fun showPermanentDenialError(lastPermRequestId: String) {
         showErrorSnackbar(getString(R.string.permission_general_permanent), null, 0)
+    }
+
+    companion object {
+        val ACTIVITY_ARGUMENTS = "${BuildConfig.APPLICATION_ID}.${className()}.arguments"
     }
 }
