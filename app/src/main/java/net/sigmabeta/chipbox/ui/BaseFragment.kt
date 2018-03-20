@@ -173,7 +173,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
                 viewOperation()
             }
         } else {
-            Timber.e("Fragment not visible yet.")
+            Timber.w("Fragment not visible yet.")
             delayedViewOperation = Runnable {
                 if (isVisible) {
                     Timber.i("Executing delayed view operation.")
@@ -187,7 +187,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
                 if (delayedViewOperation != null) {
                     handler.post(delayedViewOperation)
                 } else {
-                    Timber.e("Overridden view operation; aborting.")
+                    Timber.d("Overridden view operation; aborting.")
                 }
             }, 16)
         }
@@ -216,7 +216,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
             inject()
             injected = true
         } else {
-            Timber.e("${className()} already injected.")
+            Timber.w("${className()} already injected.")
         }
 
         if (created) {
