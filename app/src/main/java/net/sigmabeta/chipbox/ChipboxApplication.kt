@@ -28,6 +28,7 @@ public class ChipboxApplication : Application() {
         Timber.d("Device manufacturer: %s", Build.MANUFACTURER)
         Timber.d("Device model: %s", Build.MODEL)
 
+        // TODO load these on demand?
         System.loadLibrary("gme")
         System.loadLibrary("vgm")
 
@@ -44,6 +45,8 @@ public class ChipboxApplication : Application() {
 
         appComponent = Initializer.initAppComponent(this)
     }
+
+    fun shouldShowDetailedErrors() = BuildConfig.DEBUG
 }
 
 fun Any.className() = this.javaClass.simpleName

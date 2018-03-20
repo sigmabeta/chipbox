@@ -31,7 +31,7 @@ abstract class FragmentPresenter<V : BaseView> : BasePresenter<V>() {
         } else if (this.view == null) {
             Timber.w("Cannot clear reference; Presenter has already cleared reference.")
         } else {
-            handleError(InvalidClearViewException(view), null)
+            handleError(InvalidClearViewException(view))
         }
     }
 

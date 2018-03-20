@@ -1,12 +1,12 @@
 package net.sigmabeta.chipbox.model.events
 
-class FileScanFailedEvent(val reason: String) : PlaybackEvent() {
+class FileScanFailedEvent(val exception: Throwable) : PlaybackEvent() {
     override fun getType(): String {
         return EVENT_TYPE
     }
 
     override fun getDataAsString(): String? {
-        return reason
+        return exception.message
     }
 
     companion object {
