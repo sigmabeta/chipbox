@@ -71,8 +71,6 @@ class OnboardingActivity : BaseActivity<OnboardingPresenter, OnboardingView>(), 
 
     override fun getContentLayout() = frame_content
 
-    override fun showToastMessage(message: String) = Unit
-
     fun startTransition() = Unit
 
     override fun onClick(clicked: View) {

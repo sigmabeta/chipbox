@@ -9,7 +9,6 @@ import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
@@ -117,23 +116,9 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         }
     }*/
 
-    override fun showToastMessage(message: String) {
-        Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
-    }
-
-    override fun showErrorSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) {
-        val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)
-
-        if (action != null && actionLabel != null) {
-            snackbar.setAction(actionLabel, action)
-        }
-
-        snackbar.show()
-    }
-
     override fun getTypedApplication() = activity.application as ChipboxApplication
 
-    fun showSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int) {
+    private fun showSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int) {
         val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)
 
         if (action != null && actionLabel > 0) {
@@ -143,7 +128,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         snackbar.show()
     }
 
-    fun showSnackbarPermanent(message: String, action: View.OnClickListener?, actionLabel: Int) {
+    private fun showSnackbarPermanent(message: String, action: View.OnClickListener?, actionLabel: Int) {
         val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_INDEFINITE)
 
         if (action != null && actionLabel > 0) {
@@ -166,9 +151,8 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         getPresenterImpl().onClick(clicked.id)
     }
 
-    override fun showInvalidClearError(error: InvalidClearViewException) {
-        showSnackbar("A previous instance of this screen tried to clear the Presenter's reference to it. "
-                + "Please check that all animations (including loading spinners) were cleared.", null, 0)
+    override fun showError(message: String, action: View.OnClickListener?, actionLabel: Int) {
+        showSnackbar(message, action, actionLabel)
     }
 
     var delayedViewOperation: Runnable? = null

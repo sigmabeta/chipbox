@@ -13,7 +13,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.ImageView
-import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.ChipboxApplication
@@ -163,27 +162,12 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
         }
     }*/
 
-    override fun showToastMessage(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-    }
-
-    override fun showErrorSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) {
-        val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)
-
-        if (action != null && actionLabel != null) {
-            snackbar.setAction(actionLabel, action)
-        }
-
-        snackbar.show()
-    }
-
     override fun onClick(clicked: View) {
         getPresenterImpl().onClick(clicked.id)
     }
 
-    override fun showInvalidClearError(error: InvalidClearViewException) {
-        showSnackbar("A previous instance of this screen tried to clear the Presenter's reference to it. "
-                + "Please check that all animations (including loading spinners) were cleared.", null, 0)
+    override fun showError(message: String, action: View.OnClickListener?, actionLabel: Int) {
+        showSnackbar(message, action, actionLabel)
     }
 
     fun getFragmentComponent() = getPresenterImpl().fragmentComponent
@@ -262,7 +246,7 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
             getString(R.string.permission_general_explanation)
         }
 
-        showErrorSnackbar(message,
+        showSnackbar(message,
                 View.OnClickListener { requestPermission(permissionId, action) },
                 R.string.permission_cta)
     }
@@ -277,7 +261,7 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
     }
 
     private fun showPermanentDenialError(lastPermRequestId: String) {
-        showErrorSnackbar(getString(R.string.permission_general_permanent), null, 0)
+        showSnackbar(getString(R.string.permission_general_permanent), null, 0)
     }
 
     companion object {

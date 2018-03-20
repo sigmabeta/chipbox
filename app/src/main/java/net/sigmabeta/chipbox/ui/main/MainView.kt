@@ -29,8 +29,6 @@ interface MainView : BaseView {
 
     fun hideScanning()
 
-    fun showFileScanError(reason: String)
-
     fun showFileScanSuccess(newTracks: Int, updatedTracks: Int)
 
     fun startScanner()

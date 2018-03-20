@@ -86,8 +86,7 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
                             }
                         },
                         {
-                            state = UiState.ERROR
-                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                            handleError(it)
                         }
                 )
 

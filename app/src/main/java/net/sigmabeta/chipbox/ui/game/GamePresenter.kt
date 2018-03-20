@@ -63,15 +63,11 @@ class GamePresenter @Inject constructor(val player: Player,
                                         view?.setTracks(tracks)
                                     }
                                 } else {
-                                    view?.setGame(null)
-                                    view?.showErrorSnackbar("Error: Game not found.", null, null)
+                                    handleError(RuntimeException("Game not found."))
                                 }
                             },
                             {
-                                state = UiState.ERROR
-
-                                view?.setGame(null)
-                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
+                                handleError(it)
                             }
                     )
 
