@@ -2,11 +2,13 @@ package net.sigmabeta.chipbox.ui.platform
 
 import android.support.v7.widget.LinearLayoutManager
 import kotlinx.android.synthetic.main.fragment_list.*
+import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.domain.Platform
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ListFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
+import timber.log.Timber
 
 class PlatformListFragment : ListFragment<PlatformListPresenter, PlatformListView, Platform, PlatformViewHolder, PlatformListAdapter>(), PlatformListView {
 
@@ -30,10 +32,21 @@ class PlatformListFragment : ListFragment<PlatformListPresenter, PlatformListVie
      * BaseFragment
      */
 
-    override fun inject() {
+    override fun inject(): Boolean {
         val container = activity
         if (container is BaseActivity<*, *>) {
-            container.getFragmentComponent()?.inject(this)
+            container.getFragmentComponent()?.let {
+
+
+                it.inject(this)
+                return true
+            } ?: let {
+                Timber.e("${className()} injection failure: ${container?.className()}'s FragmentComponent not valid.")
+                return false
+            }
+        } else {
+            Timber.e("${className()} injection failure: ${container?.className()} not valid.")
+            return false
         }
     }
 

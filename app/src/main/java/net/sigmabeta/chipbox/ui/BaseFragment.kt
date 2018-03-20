@@ -13,10 +13,12 @@ import android.widget.Toast
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.className
 import timber.log.Timber
 
 abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : Fragment(), BaseView, View.OnClickListener {
     var injected = false
+    var created = false
 
     override fun showErrorState() {
 //        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -49,8 +51,16 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         retainInstance = true
-        getPresenterImpl().onCreate(arguments, savedInstanceState, this as V)
+        created = true
+
+        if (injected) {
+            Timber.i("setting up presenter...")
+            createHelper(savedInstanceState)
+        } else {
+            Timber.e("${className()} creating fragment, but not attached yet!")
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -90,6 +100,12 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
 
         val ending = activity.isFinishing || isRemoving
         getPresenterImpl().onDestroy(ending, this as V)
+
+        created = false
+
+        if (ending) {
+            injected = false
+        }
     }
 
     // TODO Enable this
@@ -172,7 +188,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
                 Timber.i("Executing view operation.")
                 viewOperation()
             }
-       } else {
+        } else {
             Timber.e("Fragment not visible yet.")
             delayedViewOperation = Runnable {
                 if (isVisible) {
@@ -195,7 +211,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
 
     abstract fun getFragmentTag(): String
 
-    protected abstract fun inject()
+    protected abstract fun inject() : Boolean
 
     protected abstract fun getPresenterImpl(): P
 
@@ -215,6 +231,16 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         if (!injected) {
             inject()
             injected = true
+        } else {
+            Timber.e("${className()} already injected.")
         }
+
+        if (created) {
+            createHelper(null)
+        }
+    }
+
+    private fun createHelper(savedInstanceState: Bundle?) {
+        getPresenterImpl().onCreate(arguments, savedInstanceState, this as V)
     }
 }
