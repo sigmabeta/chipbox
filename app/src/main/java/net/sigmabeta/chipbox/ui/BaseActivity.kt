@@ -18,7 +18,6 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.className
-import timber.log.Timber
 
 
 abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : AppCompatActivity(), BaseView, View.OnClickListener {
@@ -36,12 +35,13 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
     fun getPicassoCallback(): Callback {
         return object : Callback {
             override fun onSuccess() {
+                getPresenterImpl().onImageLoadSuccess()
                 startPostponedEnterTransition()
             }
 
             override fun onError() {
+                getPresenterImpl().onImageLoadError()
                 startPostponedEnterTransition()
-                Timber.e("Couldn't load image.")
             }
         }
     }
