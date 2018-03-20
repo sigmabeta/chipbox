@@ -73,7 +73,7 @@ class MainPresenter @Inject constructor(val player: Player,
                         is StateEvent -> displayState(it.state)
                         is FileScanEvent -> view?.showScanning(it.type, it.name)
                         is FileScanFailedEvent -> {
-                            view?.showFileScanError(it.reason)
+                            handleError(it.exception)
                             view?.hideScanning()
                         }
                         is FileScanCompleteEvent -> {

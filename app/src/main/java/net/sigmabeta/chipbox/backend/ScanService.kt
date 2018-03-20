@@ -51,7 +51,7 @@ class ScanService : IntentService("Scanner") {
                         {
                             // OnError. it: Throwable
                             showFailedNotification()
-                            updater.send(FileScanFailedEvent(it.message ?: "Unknown error."))
+                            updater.send(FileScanFailedEvent(it))
                             Timber.e("File scanning error: %s", Log.getStackTraceString(it))
                         },
                         {
