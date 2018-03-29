@@ -56,14 +56,14 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): VH? {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val item = LayoutInflater.from(parent?.context)?.inflate(getLayoutId(), parent, false)
 
         if (item != null) {
             return createViewHolder(item)
         } else {
             Timber.e("Unable to inflate view...")
-            return null
+            throw IllegalStateException("Unable to inflate view...")
         }
     }
 
