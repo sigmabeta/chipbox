@@ -6,7 +6,18 @@
     android:id="@+id/main_content"
     android:layout_height="match_parent"
     android:layout_width="match_parent"
-    android:transitionName="card_clicked_game">
+    android:background="@android:color/white">
+
+    <!-- Use a separate view for the background, rather than on the root view because it is a
+         shared element. Otherwise it interferes with the window enter transition i.e. as it is
+         resized for the shared element transition, many views are considered 'off-screen' so
+         visibility transitions are not run. -->
+    <View
+        android:id="@+id/background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/white"
+        android:transitionName="card_clicked_game" />
 
     <android.support.design.widget.AppBarLayout
         android:id="@+id/appbar"
@@ -22,7 +33,6 @@
             android:layout_height="match_parent"
             android:fitsSystemWindows="true"
             app:titleEnabled="false"
-            app:statusBarScrim="?attr/colorPrimary"
             app:layout_scrollFlags="scroll">
 
             <ImageView
@@ -30,15 +40,8 @@
                 android:transitionName="image_clicked_game"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/hero_image_size"
-                android:fitsSystemWindows="true"
                 android:scaleType="centerCrop"
                 app:layout_collapseMode="parallax"/>
-
-            <android.support.v7.widget.Toolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
         </android.support.design.widget.CollapsingToolbarLayout>
 
@@ -49,8 +52,8 @@
         android:scrollbars="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@android:color/white"
         android:elevation="6dp"
+        android:fitsSystemWindows="true"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:listitem="@layout/list_item_track_game"/>
 
