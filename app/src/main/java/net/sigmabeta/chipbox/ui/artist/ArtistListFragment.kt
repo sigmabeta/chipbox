@@ -17,7 +17,7 @@ class ArtistListFragment : ListFragment<ArtistListPresenter, ArtistListView, Art
      */
 
     override fun launchNavActivity(id: String) {
-        NavigationActivity.launch(activity,
+        NavigationActivity.launch(activity!!,
                 TrackListFragment.FRAGMENT_TAG,
                 id)
     }

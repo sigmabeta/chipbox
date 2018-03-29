@@ -42,7 +42,7 @@ abstract class ListFragment<P : ListPresenter<V, T, VH>,
 
     override fun startRescan() {
         val intent = Intent(activity, ScanService::class.java)
-        activity.startService(intent)
+        activity?.startService(intent)
     }
 
     override fun isScrolledToBottom(): Boolean {
