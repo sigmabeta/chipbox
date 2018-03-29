@@ -17,7 +17,7 @@ class PlatformListFragment : ListFragment<PlatformListPresenter, PlatformListVie
      */
 
     override fun launchNavActivity(platformName: String) {
-        NavigationActivity.launch(activity,
+        NavigationActivity.launch(activity!!,
                 GameGridFragment.FRAGMENT_TAG,
                 platformName)
     }

@@ -62,11 +62,11 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         return inflater?.inflate(getLayoutId(), container, false)
     }
 
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         configureViews()
     }
@@ -97,7 +97,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
     override fun onDestroy() {
         super.onDestroy()
 
-        val ending = activity.isFinishing || isRemoving
+        val ending = activity?.isFinishing ?: true || isRemoving
         getPresenterImpl().onDestroy(ending, this as V)
 
         created = false
@@ -115,7 +115,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         }
     }
 
-    override fun getTypedApplication() = activity.application as ChipboxApplication
+    override fun getTypedApplication() = activity?.application as ChipboxApplication
 
     private fun showSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int) {
         val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)
