@@ -28,12 +28,16 @@ class GameGridFragment : ListFragment<GameGridPresenter, GameListView, Game, Gam
         val holder = recycler_list.findViewHolderForAdapterPosition(position) as GameViewHolder
 
         val shareableImageView = Pair(holder.getSharedImage(), "image_clicked_game")
+        val shareableTitleView = Pair(holder.getSharedTitle(), "header_text_title")
+        val shareableSubtitleView = Pair(holder.getSharedSubtitle(), "subheader_text_subtitle")
         val shareableCardView = Pair(holder.getSharedCard(), "card_clicked_game")
         GameActivity.launch(activity,
                 id,
                 activity.getShareableNavBar(),
                 activity.getShareableStatusBar(),
                 shareableImageView,
+                shareableTitleView,
+                shareableSubtitleView,
                 shareableCardView)
     }
 

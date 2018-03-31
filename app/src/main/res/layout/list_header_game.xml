@@ -10,7 +10,7 @@
 
     <TextView
         style="@style/TextAppearance.AppCompat.Title"
-        android:id="@+id/header_text_game_title"
+        android:id="@+id/header_text_title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
@@ -19,28 +19,30 @@
         android:layout_marginEnd="64dp"
         android:layout_marginTop="@dimen/spacing_large"
         android:layout_marginBottom="@dimen/spacing_medium"
+        android:transitionName="header_text_title"
         tools:text="Lufia II: Rise of the Sinistrals"
         android:layout_alignParentEnd="true"/>
 
     <TextView
         android:textSize="13sp"
         android:textColor="@color/primary_text"
-        android:id="@+id/header_text_game_artist"
-        android:layout_below="@id/header_text_game_title"
+        android:id="@+id/subheader_text_subtitle"
+        android:layout_below="@id/header_text_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/header_text_game_title"
+        android:layout_alignStart="@+id/header_text_title"
         android:layout_marginEnd="64dp"
         android:layout_marginBottom="@dimen/spacing_small"
+        android:transitionName="subheader_text_subtitle"
         tools:text="Yasunori Shiono"/>
 
     <TextView
         android:textSize="12sp"
-        android:layout_below="@+id/header_text_game_artist"
+        android:layout_below="@+id/subheader_text_subtitle"
         android:id="@+id/header_text_game_platform"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignStart="@+id/header_text_game_title"
+        android:layout_alignStart="@+id/header_text_title"
         tools:text="Super NES"
         android:layout_marginBottom="@dimen/spacing_large"/>
 
@@ -59,7 +61,7 @@
 
     <TextView
         android:textSize="12sp"
-        android:layout_below="@+id/header_text_game_artist"
+        android:layout_below="@+id/subheader_text_subtitle"
         android:id="@+id/header_text_game_track_count"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
