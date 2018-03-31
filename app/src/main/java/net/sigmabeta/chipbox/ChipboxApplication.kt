@@ -59,14 +59,13 @@ public class ChipboxApplication : Application() {
     private fun setupNotifications() {
         val name = "Playback"
         val description = "Displays media controls."
-        val importance = NotificationManager.IMPORTANCE_DEFAULT
-        val mChannel = NotificationChannel(CHANNEL_ID_PLAYBACK, name, importance)
-        mChannel.description = description
-        // Register the channel with the system; you can't change the importance
-        // or other notification behaviors after this
-        val notificationManager = getSystemService(
-                Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.createNotificationChannel(mChannel)
+        val importance = NotificationManager.IMPORTANCE_LOW
+
+        val channel = NotificationChannel(CHANNEL_ID_PLAYBACK, name, importance)
+        channel.description = description
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 
     fun shouldShowDetailedErrors() = BuildConfig.DEBUG
