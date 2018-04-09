@@ -42,11 +42,11 @@ class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerContr
         }
     }
 
-    override fun elevate() {
+    override fun elevate() = ifVisible {
         animateControls(frame_content, true)
     }
 
-    override fun unElevate() {
+    override fun unElevate() = ifVisible {
         animateControls(frame_content, false)
     }
 

@@ -38,7 +38,7 @@ android {
         applicationId "net.sigmabeta.chipbox"
 
         minSdkVersion 21
-        targetSdkVersion 27
+        targetSdkVersion 25
 
         versionName getVersionName()
 
