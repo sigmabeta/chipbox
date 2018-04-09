@@ -82,7 +82,18 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
     }
 
     override fun showReadyState() {
-        updateHelper()
+        playlist.playingTrackId?.let {
+            displayTrack(it, true, false)
+        } ?: let {
+            Timber.e("No track to display.")
+        }
+
+        playlist.playingGameId?.let {
+            displayGame(it, true, false)
+        }
+
+        displayState(player.state)
+        displayPosition(player.playbackTimePosition)
 
         val subscription = updater.asFlowable()
                 .observeOn(AndroidSchedulers.mainThread())
@@ -100,22 +111,6 @@ class PlayerFragmentPresenter @Inject constructor(val player: Player,
     }
 
     override fun onClick(id: Int) = Unit
-
-    private fun updateHelper() {
-        playlist.playingTrackId?.let {
-            displayTrack(it, true, false)
-        } ?: let {
-            Timber.e("No track to display.")
-        }
-
-        playlist.playingGameId?.let {
-            displayGame(it, true, false)
-        }
-
-        displayState(player.state)
-
-        displayPosition(player.playbackTimePosition)
-    }
 
     private fun displayGame(gameId: String?, force: Boolean, animate: Boolean) {
         if (gameId != null) {
