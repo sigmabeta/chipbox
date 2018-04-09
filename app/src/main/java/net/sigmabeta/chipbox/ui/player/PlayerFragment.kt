@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.player
 
+import android.os.Handler
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
@@ -72,11 +73,13 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
 
     override fun setGameBoxArt(path: String?, fade: Boolean) {
         if (isResumed) {
+             TODO("Replace null with Aspect ratio")
+            Handler().postDelayed({
             if (path != null) {
-                image_game_box_art.loadImageHighQuality(path, fade, false, getPicassoCallback())
+                image_game_box_art.loadImageHighQuality(path, fade, 1.0f, getPicassoCallback())
             } else {
-                image_game_box_art.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false, getPicassoCallback())
-            }
+                image_game_box_art.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, null, getPicassoCallback())
+            }}, 200)
         }
     }
 
