@@ -47,66 +47,40 @@ fun ImageView.loadImageLowQuality(path: String, fade: Boolean, placeholder: Bool
     }
 }
 
-fun ImageView.loadImageHighQuality(path: String, fade: Boolean, placeholder: Boolean, callback: Callback? = null) {
-    val requestCreator = Picasso.with(context)
-            .load(path)
-            .centerCrop()
-            .fit()
-            .error(R.drawable.img_album_art_blank)
-
-    if (!fade) {
-        requestCreator.noFade()
+fun ImageView.loadImageHighQuality(path: String, fade: Boolean, aspectRatio: Float?, callback: Callback? = null) {
+    val bigWidth = width
+    val bigHeight = if (aspectRatio != null) {
+        getBigHeight(bigWidth, aspectRatio)
+    } else {
+        height
     }
 
-    if (!placeholder) {
-        requestCreator.noPlaceholder()
-    }
-
-    callback?.let {
-        requestCreator.into(this, callback)
-    } ?: let {
-        requestCreator.into(this)
-    }
+    loadImageSetSize(path, bigWidth, bigHeight, callback = callback)
 }
 
 fun ImageView.loadImageSetSize(path: String,
                                width: Int,
                                height: Int,
+                               fade: Boolean = true,
                                callback: Callback? = null) {
     Timber.v("Loading ${width}x${height} image into ${this.width}x${this.height} view")
 
-    Picasso.with(context)
+    val requestCreator = Picasso.with(context)
             .load(path)
             .resize(width, height)
             .centerCrop()
             .error(R.drawable.img_album_art_blank)
-            .noFade()
             .noPlaceholder()
+
+    if (!fade) {
+        requestCreator.noFade()
+    }
+
+    requestCreator
             .into(this, callback)
 }
 
-fun ImageView.loadImageHighQualityThumbnailFirst(path: String,
-                                                 width: Int,
-                                                 height: Int,
-                                                 callback: Callback) {
-    loadImageSetSize(path, width, height, object : Callback {
-                override fun onSuccess() {
-                    Timber.v("Loaded ${width}x${height} image into ${this@loadImageHighQualityThumbnailFirst.width}x${this@loadImageHighQualityThumbnailFirst.height} view")
-
-                    this@loadImageHighQualityThumbnailFirst.postDelayed({
-                        val bigWidth = this@loadImageHighQualityThumbnailFirst.width
-                        val bigHeight = (bigWidth / calculateAspectRatio(width, height)).toInt()
-
-                        loadImageSetSize(path, bigWidth, bigHeight)
-                    }, 200)
-
-                    callback.onSuccess()
-                }
-
-                override fun onError() {
-                    callback.onError()
-                }
-            })
-}
+fun getBigHeight(bigWidth: Int, aspectRatio: Float) =
+        (bigWidth / aspectRatio).toInt()
 
 fun calculateAspectRatio(width: Int, height: Int) = width / height.toFloat()

@@ -5,6 +5,7 @@ import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import android.support.v7.widget.LinearLayoutManager
+import android.transition.Transition
 import android.util.Pair
 import android.view.View
 import io.realm.OrderedCollectionChangeSet
@@ -15,7 +16,9 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ListView
-import net.sigmabeta.chipbox.util.loadImageHighQualityThumbnailFirst
+import net.sigmabeta.chipbox.util.calculateAspectRatio
+import net.sigmabeta.chipbox.util.loadImageHighQuality
+import net.sigmabeta.chipbox.util.loadImageSetSize
 import net.sigmabeta.chipbox.util.removeNullViewPairs
 import javax.inject.Inject
 
@@ -26,6 +29,10 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
     var adapter = GameTrackListAdapter(this)
 
     var alreadyFinishing = false
+
+    private var imagePath: String? = null
+
+    private var aspectRatio: Float? = null
 
     /**
      * ListView
@@ -42,16 +49,33 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
      */
 
 
-
     override fun setGame(game: Game, width: Int, height: Int) {
         adapter.game = game
+        imagePath = game.artLocal
+
+        aspectRatio = calculateAspectRatio(width, height)
         val imagePath = game.artLocal
 
         if (imagePath != null) {
-            image_hero_boxart.loadImageHighQualityThumbnailFirst(imagePath, width, height, getPicassoCallback())
+            image_hero_boxart.loadImageSetSize(imagePath, width, height, false, getPicassoCallback())
         } else {
-            image_hero_boxart.loadImageHighQualityThumbnailFirst(Game.PICASSO_ASSET_ALBUM_ART_BLANK,  width, height, getPicassoCallback())
+            image_hero_boxart.loadImageSetSize(Game.PICASSO_ASSET_ALBUM_ART_BLANK, width, height, false, getPicassoCallback())
         }
+
+        window.sharedElementEnterTransition.addListener(object : Transition.TransitionListener {
+            override fun onTransitionResume(p0: Transition?) = Unit
+            override fun onTransitionPause(p0: Transition?) = Unit
+            override fun onTransitionCancel(p0: Transition?) = Unit
+            override fun onTransitionStart(p0: Transition?) = Unit
+
+            override fun onTransitionEnd(p0: Transition?) {
+                imagePath?.let {
+                    image_hero_boxart.loadImageHighQuality(it, false, aspectRatio, getPicassoCallback())
+                } ?: let {
+                    image_hero_boxart.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, false, aspectRatio, getPicassoCallback())
+                }
+            }
+        })
     }
 
     override fun setList(list: List<Track>) {
