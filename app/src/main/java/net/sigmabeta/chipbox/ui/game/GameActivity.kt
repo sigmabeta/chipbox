@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.ui.game
 
 import android.app.Activity
 import android.app.ActivityOptions
+import android.app.SharedElementCallback
 import android.content.Context
 import android.content.Intent
 import android.support.v7.widget.LinearLayoutManager
@@ -10,16 +11,20 @@ import android.util.Pair
 import android.view.View
 import io.realm.OrderedCollectionChangeSet
 import kotlinx.android.synthetic.main.activity_game.*
+import kotlinx.android.synthetic.main.list_header_game.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.ListView
+import net.sigmabeta.chipbox.util.animation.CustomTextView
+import net.sigmabeta.chipbox.util.animation.ReflowText
+import net.sigmabeta.chipbox.util.animation.ReflowableTextView
+import net.sigmabeta.chipbox.util.animation.removeNullViewPairs
 import net.sigmabeta.chipbox.util.calculateAspectRatio
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import net.sigmabeta.chipbox.util.loadImageSetSize
-import net.sigmabeta.chipbox.util.removeNullViewPairs
 import javax.inject.Inject
 
 class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView<Track, GameTrackViewHolder> {
@@ -57,9 +62,9 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
         val imagePath = game.artLocal
 
         if (imagePath != null) {
-            image_hero_boxart.loadImageSetSize(imagePath, width, height, false, getPicassoCallback())
+            image_main.loadImageSetSize(imagePath, width, height, false, getPicassoCallback())
         } else {
-            image_hero_boxart.loadImageSetSize(Game.PICASSO_ASSET_ALBUM_ART_BLANK, width, height, false, getPicassoCallback())
+            image_main.loadImageSetSize(Game.PICASSO_ASSET_ALBUM_ART_BLANK, width, height, false, getPicassoCallback())
         }
 
         window.sharedElementEnterTransition.addListener(object : Transition.TransitionListener {
@@ -70,9 +75,9 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
 
             override fun onTransitionEnd(p0: Transition?) {
                 imagePath?.let {
-                    image_hero_boxart.loadImageHighQuality(it, false, aspectRatio, getPicassoCallback())
+                    image_main.loadImageHighQuality(it, false, aspectRatio, getPicassoCallback())
                 } ?: let {
-                    image_hero_boxart.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, false, aspectRatio, getPicassoCallback())
+                    image_main.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, false, aspectRatio, getPicassoCallback())
                 }
             }
         })
@@ -128,6 +133,23 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
         button_fab.setOnClickListener {
             presenter.onClick(it.id)
         }
+
+        setEnterSharedElementCallback(object : SharedElementCallback() {
+            override fun onMapSharedElements(names: MutableList<String>, sharedElements: MutableMap<String, View>) {
+                sharedElements["header_text_title"] = text_title
+                sharedElements["subheader_text_subtitle"] = text_subtitle
+            }
+
+            override fun onSharedElementStart(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
+                ReflowText.reflowDataFromIntent(intent, text_title)
+                ReflowText.reflowDataFromIntent(intent, text_subtitle)
+            }
+
+            override fun onSharedElementEnd(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
+                ReflowText.reflowDataFromView(ReflowableTextView(text_title))
+                ReflowText.reflowDataFromView(ReflowableTextView(text_subtitle))
+            }
+        })
     }
 
 
@@ -138,7 +160,7 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
 
     override fun getContentLayout() = main_content
 
-    override fun getSharedImage(): View? = image_hero_boxart
+    override fun getSharedImage(): View? = image_main
 
     override fun shouldDelayTransitionForFragment() = false
 
@@ -179,6 +201,8 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
                    navBar: Pair<View, String>?,
                    statusBar: Pair<View, String>?,
                    imageView: Pair<View, String>,
+                   titleText: Pair<View, String>,
+                   subtitleText: Pair<View, String>,
                    background: Pair<View, String>) {
             val launcher = Intent(activity, GameActivity::class.java)
 
@@ -186,7 +210,15 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
             launcher.putExtra(ARGUMENT_GAME_IMAGE_WIDTH, imageView.first?.width)
             launcher.putExtra(ARGUMENT_GAME_IMAGE_HEIGHT, imageView.first?.height)
 
-            val sharedViewPairs = removeNullViewPairs(navBar, statusBar, imageView, background)
+            ReflowText.addExtras(launcher, ReflowableTextView(titleText.first  as CustomTextView))
+            ReflowText.addExtras(launcher, ReflowableTextView(subtitleText.first as CustomTextView))
+
+            val sharedViewPairs = removeNullViewPairs(navBar,
+                    statusBar,
+                    imageView,
+                    titleText,
+                    subtitleText,
+                    background)
             val options = ActivityOptions.makeSceneTransitionAnimation(activity, *sharedViewPairs)
 
             activity.startActivity(launcher, options.toBundle())

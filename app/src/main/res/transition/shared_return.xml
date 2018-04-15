@@ -1,9 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
-<transitionSet xmlns:android="http://schemas.android.com/apk/res/android">
-    <changeBounds
-        android:duration="@integer/duration_return"
-        android:interpolator="@android:interpolator/decelerate_cubic"/>
-    <changeImageTransform
-        android:duration="@integer/duration_return"
-        android:interpolator="@android:interpolator/decelerate_cubic"/>
+
+
+
+<transitionSet xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/image_main" />
+        </targets>
+
+        <changeBounds
+            android:duration="@integer/duration_return"
+            android:interpolator="@android:interpolator/accelerate_cubic"/>
+        <changeImageTransform
+            android:duration="@integer/duration_return"
+            android:interpolator="@android:interpolator/accelerate_cubic"/>
+
+    </transitionSet>
+
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/layout_background" />
+        </targets>
+
+        <changeBounds
+            android:duration="@integer/duration_return"
+            android:interpolator="@android:interpolator/accelerate_cubic"/>
+    </transitionSet>
+
+    <transitionSet android:interpolator="@android:interpolator/accelerate_cubic">
+        <targets>
+            <target android:targetId="@id/text_title" />
+            <target android:targetId="@id/text_subtitle" />
+        </targets>
+
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.ReflowText"
+            android:duration="@integer/duration_return"
+            app:freezeFrame="true"
+            app:enter="false"/>
+    </transitionSet>
 </transitionSet>

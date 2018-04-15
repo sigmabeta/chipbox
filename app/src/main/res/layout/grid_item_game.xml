@@ -1,51 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/background_card"
+    android:id="@+id/layout_background"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:background="@android:color/white"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground"
-    android:layout_height="wrap_content"
-    android:layout_width="match_parent"
+    android:orientation="vertical"
     tools:layout_width="160dp">
 
-    <LinearLayout
+    <ImageView
+        android:id="@+id/image_game"
+        android:layout_width="match_parent"
+        android:layout_height="180dp"
+        android:scaleType="centerCrop"
+        tools:src="@drawable/img_album_art_blank" />
+
+    <net.sigmabeta.chipbox.util.animation.CustomTextView
+        android:id="@+id/text_title"
+        style="@style/TextAppearance.AppCompat.Body2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:paddingEnd="@dimen/spacing_medium"
+        android:paddingStart="@dimen/spacing_medium"
+        android:paddingTop="@dimen/spacing_medium"
+        tools:text="Lufia II: Rise of the Sinistrals" />
 
-        <ImageView
-            android:id="@+id/image_game_box_art"
-            android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:scaleType="centerCrop"
-            tools:src="@drawable/img_album_art_blank"/>
+    <net.sigmabeta.chipbox.util.animation.CustomTextView
+        android:id="@+id/text_subtitle"
+        style="@style/TextAppearance.AppCompat.Caption"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:paddingBottom="@dimen/spacing_medium"
+        android:paddingEnd="@dimen/spacing_medium"
+        android:paddingStart="@dimen/spacing_medium"
+        android:paddingTop="@dimen/spacing_small"
+        tools:text="Yasunori Shiono" />
 
-        <TextView
-            android:id="@+id/text_game_title"
-            style="@style/TextAppearance.AppCompat.Body2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:paddingEnd="@dimen/spacing_medium"
-            android:paddingStart="@dimen/spacing_medium"
-            android:paddingTop="@dimen/spacing_medium"
-            tools:text="Lufia II: Rise of the Sinistrals"/>
-
-        <TextView
-            android:id="@+id/text_artist"
-            style="@style/TextAppearance.AppCompat.Caption"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:paddingBottom="@dimen/spacing_medium"
-            android:paddingEnd="@dimen/spacing_medium"
-            android:paddingStart="@dimen/spacing_medium"
-            android:paddingTop="@dimen/spacing_small"
-            tools:text="Yasunori Shiono"/>
-
-    </LinearLayout>
-</FrameLayout>
+</LinearLayout>

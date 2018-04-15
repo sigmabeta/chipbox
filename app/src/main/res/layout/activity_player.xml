@@ -1,21 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout android:id="@+id/linear_content"
-              xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:clipChildren="false"
-              android:orientation="vertical">
 
-    <FrameLayout
-        android:id="@+id/frame_fragment"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/frame_content"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <View
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipChildren="false"/>
+        android:layout_height="match_parent"
+        android:id="@+id/layout_background"
+        android:background="@color/background_grey"
+        android:transitionName="background" />
 
-    <FrameLayout
-        android:id="@+id/frame_controls"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="72dp"/>
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:orientation="vertical">
 
-</LinearLayout>
+        <FrameLayout
+            android:id="@+id/frame_fragment"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipChildren="false" />
+
+        <FrameLayout
+            android:id="@+id/frame_controls"
+            android:layout_width="match_parent"
+            android:layout_height="72dp" />
+
+    </LinearLayout>
+</FrameLayout>

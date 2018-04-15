@@ -11,7 +11,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.domain.ListItem
-import net.sigmabeta.chipbox.util.*
+import net.sigmabeta.chipbox.util.animation.*
 import javax.inject.Inject
 
 abstract class ListFragment<P : ListPresenter<V, T, VH>,

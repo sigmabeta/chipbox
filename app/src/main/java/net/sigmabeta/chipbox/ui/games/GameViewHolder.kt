@@ -12,18 +12,18 @@ class GameViewHolder(view: View, adapter: GameGridAdapter) : BaseViewHolder<Game
     override fun bind(toBind: Game) {
         gameId = toBind.id
 
-        view.text_game_title.text = toBind.title
-        view.text_artist.text = toBind.artist?.name
+        view.text_title.text = toBind.title
+        view.text_subtitle.text = toBind.artist?.name
 
         toBind.artLocal?.let {
-            view.image_game_box_art.loadImageLowQuality(it, true, true)
+            view.image_game.loadImageLowQuality(it, true, true)
         } ?: let {
-            view.image_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, true, true)
+            view.image_game.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, true, true)
         }
     }
 
-    fun getSharedImage() : View = view.image_game_box_art
-    fun getSharedCard() : View = view.background_card
-    fun getSharedTitle() : View  = view.text_game_title
-    fun getSharedSubtitle() : View = view.text_artist
+    fun getSharedImage() : View = view.image_game
+    fun getSharedCard() : View = view.layout_background
+    fun getSharedTitle() : View  = view.text_title
+    fun getSharedSubtitle() : View = view.text_subtitle
 }
