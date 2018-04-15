@@ -157,7 +157,7 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         if (getTypedApplication().shouldShowDetailedErrors()) {
-            showSnackbar("Trimming memory.", null, 0)
+//            showSnackbar("Trimming memory.", null, 0)
         }
     }
 
@@ -184,8 +184,6 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
         return Pair(window.decorView.findViewById(android.R.id.statusBarBackground) ?: return null,
                 Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
     }
-
-    open fun getShareableViews(): Array<Pair<View, String>>? = null
 
     protected open fun inflateContent() {}
 

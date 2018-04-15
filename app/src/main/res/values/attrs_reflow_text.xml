@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Based on Plaid: https://github.com/nickbutcher/plaid -->
+
+<resources>
+
+    <declare-styleable name="ReflowText">
+        <attr name="freezeFrame" format="boolean" />
+        <attr name="enter" format="boolean" />
+    </declare-styleable>
+
+</resources>

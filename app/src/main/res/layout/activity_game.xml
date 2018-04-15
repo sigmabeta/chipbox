@@ -13,7 +13,7 @@
          resized for the shared element transition, many views are considered 'off-screen' so
          visibility transitions are not run. -->
     <View
-        android:id="@+id/background"
+        android:id="@+id/layout_background"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@android:color/white"
@@ -36,7 +36,7 @@
             app:layout_scrollFlags="scroll">
 
             <ImageView
-                android:id="@+id/image_hero_boxart"
+                android:id="@+id/image_main"
                 android:transitionName="image_clicked_game"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/hero_image_size"
@@ -54,6 +54,7 @@
         android:layout_height="match_parent"
         android:elevation="6dp"
         android:fitsSystemWindows="true"
+        android:background="@android:color/transparent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:listitem="@layout/list_item_track_game"/>
 

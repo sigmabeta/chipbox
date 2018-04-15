@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.util
+package net.sigmabeta.chipbox.util.animation
 
 import android.support.v7.widget.RecyclerView
 import android.util.Pair

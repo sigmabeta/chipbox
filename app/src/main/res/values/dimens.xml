@@ -27,4 +27,5 @@
 
     <item name="anim_onboarding_alpha_opaque" format="float" type="dimen">1.0</item>
     <item name="anim_onboarding_alpha_clear" format="float" type="dimen">0.0</item>
+
 </resources>
