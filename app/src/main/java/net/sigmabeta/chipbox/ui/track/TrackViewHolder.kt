@@ -18,9 +18,9 @@ class TrackViewHolder(view: View, adapter: TrackListAdapter) : BaseViewHolder<Tr
         val imagePath = toBind.game?.artLocal
 
         if (imagePath != null) {
-            view.image_game_box_art.loadImageLowQuality(imagePath, true, true)
+            view.image_track.loadImageLowQuality(imagePath, true, true)
         } else {
-            view.image_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, true, true)
+            view.image_track.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, true, true)
         }
 
         if (toBind.id == adapter.playingTrackId) {

@@ -14,7 +14,7 @@
         tools:text="The Island in the Void"
         android:layout_alignParentTop="true"
         android:layout_toStartOf="@+id/text_song_length"
-        android:layout_toEndOf="@+id/image_game_box_art"/>
+        android:layout_toEndOf="@+id/image_track"/>
 
     <TextView
         android:id="@+id/text_song_artist"
@@ -22,10 +22,10 @@
         tools:text="Yasunori Shiono"
         android:layout_alignParentBottom="true"
         android:layout_toStartOf="@+id/text_song_length"
-        android:layout_toEndOf="@+id/image_game_box_art"/>
+        android:layout_toEndOf="@+id/image_track"/>
 
     <ImageView
-        android:id="@+id/image_game_box_art"
+        android:id="@+id/image_track"
         android:layout_width="48dp"
         android:layout_height="0dp"
         android:layout_margin="@dimen/spacing_medium"

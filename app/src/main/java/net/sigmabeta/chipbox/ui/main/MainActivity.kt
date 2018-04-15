@@ -27,9 +27,12 @@ import net.sigmabeta.chipbox.ui.onboarding.OnboardingActivity
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.settings.SettingsActivity
-import net.sigmabeta.chipbox.util.*
+import net.sigmabeta.chipbox.util.animation.changeText
+import net.sigmabeta.chipbox.util.animation.slideViewOffscreen
+import net.sigmabeta.chipbox.util.animation.slideViewOnscreen
+import net.sigmabeta.chipbox.util.animation.slideViewToProperLocation
+import net.sigmabeta.chipbox.util.loadImageLowQuality
 import timber.log.Timber
-import java.util.*
 import javax.inject.Inject
 
 class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, FragmentContainer {
@@ -70,26 +73,26 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
     }
 
     override fun setTrackTitle(title: String, animate: Boolean) {
-        if (layout_status.translationY == 0.0f && animate) {
-            text_playing_song_title.changeText(title)
+        if (layout_bottom_bar.translationY == 0.0f && animate) {
+            text_title.changeText(title)
         } else {
-            text_playing_song_title.text = title
+            text_title.text = title
         }
     }
 
     override fun setArtist(artist: String, animate: Boolean) {
-        if (layout_status.translationY == 0.0f && animate) {
-            text_playing_song_artist.changeText(artist)
+        if (layout_bottom_bar.translationY == 0.0f && animate) {
+            text_subtitle.changeText(artist)
         } else {
-            text_playing_song_artist.text = artist
+            text_subtitle.text = artist
         }
     }
 
     override fun setGameBoxArt(imagePath: String?, fade: Boolean) {
         if (imagePath != null) {
-            image_playing_game_box_art.loadImageLowQuality(imagePath, fade, false)
+            image_main_small.loadImageLowQuality(imagePath, fade, false)
         } else {
-            image_playing_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false)
+            image_main_small.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false)
         }
     }
 
@@ -110,7 +113,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         when (state) {
             STATE_IDLE -> {
                 state = STATE_PLAY_PAUSE
-                layout_status.slideViewOnscreen()
+                layout_bottom_bar.slideViewOnscreen()
             }
             STATE_SCANNING -> state = STATE_SCAN_PLAY_PAUSE
             STATE_PLAY_PAUSE -> Unit
@@ -118,8 +121,8 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
             else -> {
                 state = STATE_PLAY_PAUSE
 
-                layout_status.translationY = 0.0f
-                layout_status.visibility = View.VISIBLE
+                layout_bottom_bar.translationY = 0.0f
+                layout_bottom_bar.visibility = View.VISIBLE
             }
         }
     }
@@ -141,7 +144,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
             else -> {
                 state = STATE_IDLE
 
-                layout_status.visibility = View.GONE
+                layout_bottom_bar.visibility = View.GONE
                 pager_categories.setPadding(0, 0, 0, 0)
             }
         }
@@ -154,7 +157,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
             STATE_IDLE -> {
                 state = STATE_SCANNING
 
-                layout_status.slideViewOnscreen()
+                layout_bottom_bar.slideViewOnscreen()
                 relative_now_playing.visibility = View.GONE
                 relative_scanning.visibility = View.VISIBLE
                 text_scanning_status.text = getStatusString(type, name)
@@ -168,8 +171,8 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
             else -> {
                 state = STATE_SCANNING
 
-                layout_status.translationY = 0.0f
-                layout_status.visibility = View.VISIBLE
+                layout_bottom_bar.translationY = 0.0f
+                layout_bottom_bar.visibility = View.VISIBLE
 
                 relative_now_playing.visibility = View.GONE
                 relative_scanning.visibility = View.VISIBLE
@@ -193,7 +196,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
                 state = STATE_IDLE
                 progress_now_playing.visibility = GONE
 
-                layout_status.visibility = View.GONE
+                layout_bottom_bar.visibility = View.GONE
                 pager_categories.setPadding(0, 0, 0, 0)
             }
         }
@@ -221,7 +224,18 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
     override fun showContent() = Unit
 
     override fun launchPlayerActivity() {
-        PlayerActivity.launch(this, getShareableViews())
+        val shareableImageView =        Pair(image_main_small as View, "image_playing_boxart")
+        val shareableTitleView =        Pair(text_title as View, "text_title")
+        val shareableSubtitleView =     Pair(text_subtitle as View, "text_subtitle")
+        val shareableBackgroundView =   Pair(layout_bottom_bar as View, "background")
+
+        PlayerActivity.launch(this,
+                getShareableNavBar(),
+                getShareableStatusBar(),
+                shareableImageView,
+                shareableTitleView,
+                shareableSubtitleView,
+                shareableBackgroundView)
     }
 
     override fun startScanner() {
@@ -245,19 +259,6 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         OnboardingActivity.launch(this, TitleFragment.TAG)
     }
 
-    override fun getShareableViews(): Array<Pair<View, String>>? {
-        val views = ArrayList<Pair<View, String>>(3)
-
-        views.add(Pair(image_playing_game_box_art as View, "image_playing_boxart"))
-        views.add(Pair(button_play_pause as View, "button_play_pause"))
-
-        getShareableNavBar()?.let {
-            views.add(it)
-        }
-
-        return views.toTypedArray()
-    }
-
     override fun inject() {
         getTypedApplication().appComponent.inject(this)
     }
@@ -275,7 +276,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         setUpNavigationDrawer()
         setUpViewPagerTabs()
 
-        layout_status.setOnClickListener { presenter.onNowPlayingClicked() }
+        layout_bottom_bar.setOnClickListener { presenter.onNowPlayingClicked() }
         button_play_pause.setOnClickListener { presenter.onPlayFabClicked() }
     }
 
@@ -320,8 +321,8 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
             pager_categories.slideViewToProperLocation()
         }
 
-        layout_status.slideViewOffscreen().withEndAction {
-            layout_status.visibility = View.GONE
+        layout_bottom_bar.slideViewOffscreen().withEndAction {
+            layout_bottom_bar.visibility = View.GONE
         }
     }
 
