@@ -40,8 +40,8 @@
                 app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
             <include
-                android:id="@+id/layout_status"
-                android:layout_gravity="bottom"
+                android:id="@+id/layout_bottom_bar"
+                android:layout_gravity="bottom|center_horizontal"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"
                 layout="@layout/layout_status"/>

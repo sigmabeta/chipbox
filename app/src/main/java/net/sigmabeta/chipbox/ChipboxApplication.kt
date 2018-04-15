@@ -5,7 +5,9 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.res.Resources
 import android.os.Build
+import android.view.View
 import com.crashlytics.android.Crashlytics
 import io.fabric.sdk.android.Fabric
 import io.realm.Realm
@@ -76,3 +78,11 @@ public class ChipboxApplication : Application() {
 }
 
 fun Any.className() = this.javaClass.simpleName
+
+fun View.name() : String {
+    return try {
+        this.resources.getResourceEntryName(id)
+    } catch (e: Resources.NotFoundException) {
+        "Unknown ${className()}"
+    }
+}

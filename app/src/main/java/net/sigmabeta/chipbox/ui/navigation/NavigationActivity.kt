@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.ui.navigation
 
 import android.content.Context
 import android.content.Intent
-import android.util.Pair
 import android.view.View
 import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_navigation.*
@@ -15,10 +14,12 @@ import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.NavigationFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
-import net.sigmabeta.chipbox.ui.player.PlayerActivity
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
-import net.sigmabeta.chipbox.util.*
-import java.util.*
+import net.sigmabeta.chipbox.util.animation.changeText
+import net.sigmabeta.chipbox.util.animation.slideViewOffscreen
+import net.sigmabeta.chipbox.util.animation.slideViewOnscreen
+import net.sigmabeta.chipbox.util.animation.slideViewToProperLocation
+import net.sigmabeta.chipbox.util.loadImageLowQuality
 import javax.inject.Inject
 
 class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), NavigationView, FragmentContainer {
@@ -47,25 +48,25 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
 
     override fun setTrackTitle(title: String, animate: Boolean) {
         if (layout_now_playing.translationY == 0.0f && animate) {
-            text_playing_song_title.changeText(title)
+            text_title.changeText(title)
         } else {
-            text_playing_song_title.text = title
+            text_title.text = title
         }
     }
 
     override fun setArtist(artist: String, animate: Boolean) {
         if (layout_now_playing.translationY == 0.0f && animate) {
-            text_playing_song_artist.changeText(artist)
+            text_subtitle.changeText(artist)
         } else {
-            text_playing_song_artist.text = artist
+            text_subtitle.text = artist
         }
     }
 
     override fun setGameBoxArt(imagePath: String?, fade: Boolean) {
         if (imagePath != null) {
-            image_playing_game_box_art.loadImageLowQuality(imagePath, fade, false)
+            image_main_small.loadImageLowQuality(imagePath, fade, false)
         } else {
-            image_playing_game_box_art.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false)
+            image_main_small.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false)
         }
     }
 
@@ -106,25 +107,12 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
     }
 
     override fun launchPlayerActivity() {
-        PlayerActivity.launch(this, getShareableViews())
+//        PlayerActivity.launch(this, getShareableViews())
     }
 
     /**
      * BaseActivity
      */
-
-    override fun getShareableViews(): Array<Pair<View, String>>? {
-        val views = ArrayList<Pair<View, String>>(3)
-
-        views.add(Pair(image_playing_game_box_art as View, "image_playing_boxart"))
-        views.add(Pair(button_play_pause as View, "button_play_pause"))
-
-        getShareableNavBar()?.let {
-            views.add(it)
-        }
-
-        return views.toTypedArray()
-    }
 
     override fun showLoadingState() = Unit
 

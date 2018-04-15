@@ -4,6 +4,7 @@ import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.app.Activity
 import android.app.ActivityOptions
+import android.app.SharedElementCallback
 import android.content.Context
 import android.content.Intent
 import android.support.v4.content.ContextCompat
@@ -15,9 +16,9 @@ import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
+import net.sigmabeta.chipbox.ui.game.GameActivity
 import net.sigmabeta.chipbox.ui.playlist.PlaylistFragment
-import net.sigmabeta.chipbox.util.ACC_DECELERATE
-import net.sigmabeta.chipbox.util.shrinktoNothing
+import net.sigmabeta.chipbox.util.animation.*
 import javax.inject.Inject
 
 class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>(), PlayerActivityView, FragmentContainer {
@@ -115,6 +116,18 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
     override fun configureViews() {
         window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+
+        setEnterSharedElementCallback(object : SharedElementCallback() {
+            override fun onSharedElementStart(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
+                ReflowText.reflowDataFromIntent(intent, text_title)
+                ReflowText.reflowDataFromIntent(intent, text_subtitle)
+            }
+
+            override fun onSharedElementEnd(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
+                ReflowText.reflowDataFromView(ReflowableTextView(text_title))
+                ReflowText.reflowDataFromView(ReflowableTextView(text_subtitle))
+            }
+        })
     }
 
     override fun getLayoutId(): Int {
@@ -160,14 +173,28 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
     }
 
     companion object {
-        fun launch(activity: Activity, sharedViewPairs: Array<Pair<View, String>>?) {
+        fun launch(activity: Activity,
+                   navBar: Pair<View, String>?,
+                   statusBar: Pair<View, String>?,
+                   imageView: Pair<View, String>,
+                   titleText: Pair<View, String>,
+                   subtitleText: Pair<View, String>,
+                   background: Pair<View, String>) {
             val launcher = Intent(activity, PlayerActivity::class.java)
 
-            val options = if (sharedViewPairs != null) {
-                ActivityOptions.makeSceneTransitionAnimation(activity, *sharedViewPairs)
-            } else {
-                ActivityOptions.makeSceneTransitionAnimation(activity)
-            }
+            launcher.putExtra(GameActivity.ARGUMENT_GAME_IMAGE_WIDTH, imageView.first?.width)
+            launcher.putExtra(GameActivity.ARGUMENT_GAME_IMAGE_HEIGHT, imageView.first?.height)
+
+            ReflowText.addExtras(launcher, ReflowableTextView(titleText.first as CustomTextView))
+            ReflowText.addExtras(launcher, ReflowableTextView(subtitleText.first as CustomTextView))
+
+            val sharedViewPairs = removeNullViewPairs(navBar,
+                    statusBar,
+                    imageView,
+                    titleText,
+                    subtitleText,
+                    background)
+            val options = ActivityOptions.makeSceneTransitionAnimation(activity, *sharedViewPairs)
 
             activity.startActivity(launcher, options.toBundle())
         }

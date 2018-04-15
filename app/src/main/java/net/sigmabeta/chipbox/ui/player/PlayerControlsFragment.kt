@@ -11,7 +11,7 @@ import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.util.ACC_DECELERATE
+import net.sigmabeta.chipbox.util.animation.ACC_DECELERATE
 import net.sigmabeta.chipbox.util.convertDpToPx
 import timber.log.Timber
 import java.util.*

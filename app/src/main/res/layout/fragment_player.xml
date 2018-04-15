@@ -23,7 +23,7 @@
             android:src="@drawable/ic_queue_music_black_24dp"
             android:tint="@android:color/white"
             android:layout_alignParentEnd="true"
-            android:layout_below="@+id/image_game_box_art"
+            android:layout_below="@+id/image_main"
             android:elevation="6dp"
             android:scaleX="0.0"
             android:scaleY="0.0"
@@ -31,19 +31,20 @@
 
         <ImageView
             android:transitionName="image_playing_boxart"
-            android:id="@+id/image_game_box_art"
+            android:id="@+id/image_main"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:scaleType="centerCrop"
             android:elevation="4dp"
             android:layout_alignParentTop="true"
-            android:layout_above="@+id/text_track_title"
+            android:layout_above="@+id/text_title"
             android:clipToPadding="false"
             android:outlineProvider="bounds"
             tools:src="@drawable/img_album_art_blank"/>
 
-            <TextView
-                android:id="@+id/text_track_title"
+            <net.sigmabeta.chipbox.util.animation.CustomTextView
+                android:id="@+id/text_title"
+                android:transitionName="text_title"
                 android:layout_above="@+id/text_game_title"
                 android:layout_marginBottom="@dimen/spacing_small"
                 android:layout_marginEnd="64dp"
@@ -53,9 +54,9 @@
                 tools:text="The Island in the Void"
                 style="@style/PlayerText"/>
 
-            <TextView
+            <net.sigmabeta.chipbox.util.animation.CustomTextView
                 android:id="@+id/text_game_title"
-                android:layout_above="@+id/text_track_artist"
+                android:layout_above="@+id/text_subtitle"
                 android:layout_marginBottom="@dimen/spacing_small"
                 android:layout_marginTop="@dimen/spacing_small"
                 android:textSize="12sp"
@@ -63,8 +64,9 @@
                 tools:text="Lufia II: Rise of the Sinistrals"
                 style="@style/PlayerText"/>
 
-            <TextView
-                android:id="@+id/text_track_artist"
+            <net.sigmabeta.chipbox.util.animation.CustomTextView
+                android:id="@+id/text_subtitle"
+                android:transitionName="text_subtitle"
                 android:layout_above="@+id/text_track_elapsed"
                 android:layout_marginBottom="@dimen/spacing_large"
                 android:textSize="12sp"
@@ -98,7 +100,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/text_underrun_count"
-                android:layout_below="@+id/image_game_box_art"
+                android:layout_below="@+id/image_main"
                 android:layout_alignParentEnd="true"
                 android:visibility="gone"/>
 
