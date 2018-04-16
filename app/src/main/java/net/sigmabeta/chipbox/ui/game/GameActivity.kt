@@ -179,8 +179,6 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
                    navBar: Pair<View, String>?,
                    statusBar: Pair<View, String>?,
                    imageView: Pair<View, String>,
-                   titleText: Pair<View, String>,
-                   subtitleText: Pair<View, String>,
                    background: Pair<View, String>) {
             val launcher = Intent(activity, GameActivity::class.java)
 
@@ -188,7 +186,7 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
             launcher.putExtra(ARGUMENT_GAME_IMAGE_WIDTH, imageView.first?.width)
             launcher.putExtra(ARGUMENT_GAME_IMAGE_HEIGHT, imageView.first?.height)
 
-            val sharedViewPairs = removeNullViewPairs(navBar, statusBar, imageView, titleText, background)
+            val sharedViewPairs = removeNullViewPairs(navBar, statusBar, imageView, background)
             val options = ActivityOptions.makeSceneTransitionAnimation(activity, *sharedViewPairs)
 
             activity.startActivity(launcher, options.toBundle())

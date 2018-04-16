@@ -73,7 +73,7 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
 
     override fun setGameBoxArt(path: String?, fade: Boolean) {
         if (isResumed) {
-             TODO("Replace null with Aspect ratio")
+            // TODO("Replace null with Aspect ratio")
             Handler().postDelayed({
             if (path != null) {
                 image_game_box_art.loadImageHighQuality(path, fade, 1.0f, getPicassoCallback())
