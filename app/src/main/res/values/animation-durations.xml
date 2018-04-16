@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>>
-    <integer name="duration_enter">500</integer>
-    <integer name="duration_return">500</integer>
+    <integer name="duration_enter">250</integer>
+    <integer name="duration_return">200</integer>
 
     <!-- These two must sum equally to the duration of the enter transition. -->
     <integer name="duration_enter_fade_in_delay">300</integer>
