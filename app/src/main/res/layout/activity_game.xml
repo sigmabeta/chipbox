@@ -5,8 +5,7 @@
     android:fitsSystemWindows="true"
     android:id="@+id/main_content"
     android:layout_height="match_parent"
-    android:layout_width="match_parent"
-    android:background="@android:color/white">
+    android:layout_width="match_parent">
 
     <!-- Use a separate view for the background, rather than on the root view because it is a
          shared element. Otherwise it interferes with the window enter transition i.e. as it is
