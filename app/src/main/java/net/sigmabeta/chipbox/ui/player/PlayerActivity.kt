@@ -179,6 +179,7 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
                    imageView: Pair<View, String>,
                    titleText: Pair<View, String>,
                    subtitleText: Pair<View, String>,
+                   playButton: Pair<View, String>,
                    background: Pair<View, String>) {
             val launcher = Intent(activity, PlayerActivity::class.java)
 
@@ -193,6 +194,7 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
                     imageView,
                     titleText,
                     subtitleText,
+                    playButton,
                     background)
             val options = ActivityOptions.makeSceneTransitionAnimation(activity, *sharedViewPairs)
 
