@@ -227,6 +227,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
         val shareableImageView =        Pair(image_main_small as View, "image_playing_boxart")
         val shareableTitleView =        Pair(text_title as View, "text_title")
         val shareableSubtitleView =     Pair(text_subtitle as View, "text_subtitle")
+        val shareableButtonView =     Pair(button_play_pause as View, "button_play_pause")
         val shareableBackgroundView =   Pair(layout_bottom_bar as View, "background")
 
         PlayerActivity.launch(this,
@@ -235,6 +236,7 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
                 shareableImageView,
                 shareableTitleView,
                 shareableSubtitleView,
+                shareableButtonView,
                 shareableBackgroundView)
     }
 

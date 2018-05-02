@@ -18,8 +18,6 @@ import android.transition.TransitionValues
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AccelerateInterpolator
-import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.name
@@ -102,7 +100,6 @@ class ReflowText(context: Context, attrs: AttributeSet) : Transition(context, at
         val runAnimators = createRunAnimators(view, startData, endData, startText, endText, runs)
 
         animatorSet.playTogether(runAnimators)
-        animatorSet.interpolator = if (enter) DecelerateInterpolator() else AccelerateInterpolator()
 
         if (!freezeFrame) {
             animatorSet.addListener(object : AnimatorListenerAdapter() {
@@ -335,7 +332,6 @@ class ReflowText(context: Context, attrs: AttributeSet) : Transition(context, at
             val runAnim = ObjectAnimator.ofPropertyValuesHolder(
                     drawable, topLeft, width, height, progress)
 
-            runAnim.startDelay = startDelay
             animators.add(runAnim)
 
             if (run.startVisible != run.endVisible) {
