@@ -3,19 +3,17 @@
 <!-- Based on Plaid: https://github.com/nickbutcher/plaid -->
 
 <transitionSet xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:interpolator="@android:interpolator/decelerate_cubic" >
 
     <transitionSet>
         <targets>
             <target android:targetId="@id/image_main" />
+            <target android:targetId="@id/button_play_pause" />
         </targets>
 
-        <changeBounds
-            android:duration="@integer/duration_enter"
-            android:interpolator="@android:interpolator/decelerate_cubic" />
-        <changeImageTransform
-            android:duration="@integer/duration_enter"
-            android:interpolator="@android:interpolator/decelerate_cubic" />
+        <autoTransition
+            android:duration="@integer/duration_enter" />
 
     </transitionSet>
 
@@ -25,11 +23,10 @@
         </targets>
 
         <changeBounds
-            android:duration="@integer/duration_enter"
-            android:interpolator="@android:interpolator/decelerate_cubic" />
+            android:duration="@integer/duration_enter" />
     </transitionSet>
 
-    <transitionSet android:interpolator="@android:interpolator/decelerate_cubic">
+    <transitionSet>
         <targets>
             <target android:targetId="@id/text_title" />
             <target android:targetId="@id/text_subtitle" />

@@ -3,19 +3,17 @@
 
 
 <transitionSet xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:interpolator="@android:interpolator/decelerate_cubic">
 
     <transitionSet>
         <targets>
             <target android:targetId="@id/image_main" />
+            <target android:targetId="@id/button_play_pause" />
         </targets>
 
-        <changeBounds
-            android:duration="@integer/duration_return"
-            android:interpolator="@android:interpolator/accelerate_cubic"/>
-        <changeImageTransform
-            android:duration="@integer/duration_return"
-            android:interpolator="@android:interpolator/accelerate_cubic"/>
+        <autoTransition
+            android:duration="@integer/duration_return" />
 
     </transitionSet>
 
@@ -25,11 +23,10 @@
         </targets>
 
         <changeBounds
-            android:duration="@integer/duration_return"
-            android:interpolator="@android:interpolator/accelerate_cubic"/>
+            android:duration="@integer/duration_return" />
     </transitionSet>
 
-    <transitionSet android:interpolator="@android:interpolator/accelerate_cubic">
+    <transitionSet>
         <targets>
             <target android:targetId="@id/text_title" />
             <target android:targetId="@id/text_subtitle" />
@@ -41,4 +38,5 @@
             app:freezeFrame="true"
             app:enter="false"/>
     </transitionSet>
+
 </transitionSet>
