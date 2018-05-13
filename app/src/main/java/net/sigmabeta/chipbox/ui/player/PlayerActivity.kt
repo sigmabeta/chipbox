@@ -71,12 +71,7 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
     }
 
     override fun callFinish() {
-        if (!alreadyFinishing) {
-            alreadyFinishing = true
-            button_fab.shrinktoNothing().withEndAction {
-                supportFinishAfterTransition()
-            }
-        }
+        supportFinishAfterTransition()
     }
 
     override fun showStatusBar() {
