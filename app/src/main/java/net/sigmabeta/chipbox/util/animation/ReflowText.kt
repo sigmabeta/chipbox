@@ -163,7 +163,6 @@ class ReflowText(context: Context, attrs: AttributeSet) : Transition(context, at
                         endData: ReflowData,
                         endLayout: Layout,
                         endLayoutMaxLines: Layout?): List<Run> {
-        val textLength = endLayout.text.length
         var currentStartLine = 0
         var currentStartRunLeft = 0
         var currentStartRunTop = 0
@@ -172,7 +171,19 @@ class ReflowText(context: Context, attrs: AttributeSet) : Transition(context, at
         var currentEndRunTop = 0
         val runs = ArrayList<Run>(endLayout.lineCount)
 
-        val layoutText = startLayoutMaxLines?.text
+        val startLayoutText = startLayout.text
+        val endLayoutText = endLayout.text
+
+        val textLength = if (startLayoutText != endLayoutText) {
+            Timber.e("Text mismatch: $startLayoutText | $endLayoutText")
+            if (startLayoutText.length > endLayoutText.length) {
+                endLayoutText.length
+            } else {
+                startLayoutText.length
+            }
+        } else {
+            endLayoutText.length
+        }
 
         for (charIndex in 0 until textLength) {
             // work out which line this letter is on in the start state
@@ -180,7 +191,7 @@ class ReflowText(context: Context, attrs: AttributeSet) : Transition(context, at
             var startMax = false
             var startMaxEllipsis = false
             if (startLayoutMaxLines != null) {
-                val letter = layoutText?.get(charIndex)
+                val letter = startLayoutText?.get(charIndex)
                 startMaxEllipsis = letter == '…'
                 if (letter != '\uFEFF'              // beyond max lines
                         && !startMaxEllipsis) {     // ellipsize inserted into layout
@@ -371,8 +382,10 @@ class ReflowText(context: Context, attrs: AttributeSet) : Transition(context, at
                     paint.typeface = font
                 }
             } catch (nfe: Resources.NotFoundException) {
+                Timber.e("Font error: ${nfe.message}")
             }
-
+        } else {
+            Timber.e("No font resource defined.")
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
