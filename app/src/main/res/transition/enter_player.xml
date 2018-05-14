@@ -9,7 +9,7 @@
     <transitionSet>
         <targets>
             <target android:targetId="@id/image_main" />
-            <target android:targetId="@id/button_play_pause" />
+            <target android:targetId="@id/button_play" />
         </targets>
 
         <autoTransition

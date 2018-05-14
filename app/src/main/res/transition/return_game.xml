@@ -9,7 +9,6 @@
     <transitionSet>
         <targets>
             <target android:targetId="@id/image_main" />
-            <target android:targetId="@id/button_play_pause" />
         </targets>
 
         <changeBounds
