@@ -4,7 +4,8 @@
 
         <fade
             android:fadingMode="fade_in"
-            android:duration="200" />
+            android:startDelay="225"
+            android:duration="75" />
 </transitionSet>
 
 
