@@ -53,7 +53,7 @@
         android:layout_height="match_parent"
         android:elevation="6dp"
         android:fitsSystemWindows="true"
-        android:background="@android:color/transparent"
+        android:background="@android:color/white"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:listitem="@layout/list_item_track_game"/>
 
