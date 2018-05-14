@@ -22,8 +22,10 @@
             <target android:targetId="@id/layout_background" />
         </targets>
 
-        <changeBounds
-            android:duration="@integer/duration_enter" />
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.ChangeBoundsFade"
+            android:duration="@integer/duration_enter"
+            app:enter="true"/>
     </transitionSet>
 
     <transitionSet>
