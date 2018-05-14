@@ -79,7 +79,7 @@
             android:indeterminate="true"/>
 
         <net.sigmabeta.chipbox.util.animation.CustomTextView
-            android:id="@+id/text_title"
+            android:id="@+id/text_playing_title"
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -94,7 +94,7 @@
             tools:text="The Island in the Void"/>
 
         <net.sigmabeta.chipbox.util.animation.CustomTextView
-            android:id="@+id/text_subtitle"
+            android:id="@+id/text_playing_subtitle"
             style="@style/TextAppearance.AppCompat.Caption"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

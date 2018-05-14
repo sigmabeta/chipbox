@@ -48,17 +48,17 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
 
     override fun setTrackTitle(title: String, animate: Boolean) {
         if (layout_now_playing.translationY == 0.0f && animate) {
-            text_title.changeText(title)
+            text_playing_title.changeText(title)
         } else {
-            text_title.text = title
+            text_playing_title.text = title
         }
     }
 
     override fun setArtist(artist: String, animate: Boolean) {
         if (layout_now_playing.translationY == 0.0f && animate) {
-            text_subtitle.changeText(artist)
+            text_playing_subtitle.changeText(artist)
         } else {
-            text_subtitle.text = artist
+            text_playing_subtitle.text = artist
         }
     }
 
