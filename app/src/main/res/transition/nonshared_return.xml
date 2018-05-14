@@ -2,5 +2,7 @@
 <transitionSet xmlns:android="http://schemas.android.com/apk/res/android"
     android:interpolator="@android:interpolator/linear_out_slow_in"
     android:transitionOrdering="together">
-    <fade android:duration="100"/>
+    <fade
+        android:startDelay="100"
+        android:duration="50"/>
 </transitionSet>
