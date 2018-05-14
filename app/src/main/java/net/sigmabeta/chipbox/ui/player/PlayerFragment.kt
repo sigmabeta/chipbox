@@ -29,9 +29,9 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
     override fun setTrackTitle(title: String, animate: Boolean) {
         if (isResumed) {
             if (animate) {
-                text_title.changeText(title)
+                text_playing_title.changeText(title)
             } else {
-                text_title.text = title
+                text_playing_title.text = title
             }
         }
     }
@@ -49,9 +49,9 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
     override fun setArtist(artist: String, animate: Boolean) {
         if (isResumed) {
             if (animate) {
-                text_subtitle.changeText(artist)
+                text_playing_subtitle.changeText(artist)
             } else {
-                text_subtitle.text = artist
+                text_playing_subtitle.text = artist
             }
         }
     }
@@ -166,8 +166,8 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
         seek_playback_progress.setOnSeekBarChangeListener(this)
 
         activity?.let {
-            ReflowText.reflowDataFromIntent(it.intent, text_title)
-            ReflowText.reflowDataFromIntent(it.intent, text_subtitle)
+            ReflowText.reflowDataFromIntent(it.intent, text_playing_title)
+            ReflowText.reflowDataFromIntent(it.intent, text_playing_subtitle)
         }
     }
 
