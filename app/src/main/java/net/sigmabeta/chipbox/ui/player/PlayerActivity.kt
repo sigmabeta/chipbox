@@ -114,13 +114,13 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
 
         setEnterSharedElementCallback(object : SharedElementCallback() {
             override fun onSharedElementStart(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
-                ReflowText.reflowDataFromIntent(intent, text_title)
-                ReflowText.reflowDataFromIntent(intent, text_subtitle)
+                ReflowText.reflowDataFromIntent(intent, text_playing_title)
+                ReflowText.reflowDataFromIntent(intent, text_playing_subtitle)
             }
 
             override fun onSharedElementEnd(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
-                ReflowText.reflowDataFromView(ReflowableTextView(text_title))
-                ReflowText.reflowDataFromView(ReflowableTextView(text_subtitle))
+                ReflowText.reflowDataFromView(ReflowableTextView(text_playing_title))
+                ReflowText.reflowDataFromView(ReflowableTextView(text_playing_subtitle))
             }
         })
     }

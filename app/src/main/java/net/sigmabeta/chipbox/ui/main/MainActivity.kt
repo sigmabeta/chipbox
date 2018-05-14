@@ -74,17 +74,17 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
 
     override fun setTrackTitle(title: String, animate: Boolean) {
         if (layout_bottom_bar.translationY == 0.0f && animate) {
-            text_title.changeText(title)
+            text_playing_title.changeText(title)
         } else {
-            text_title.text = title
+            text_playing_title.text = title
         }
     }
 
     override fun setArtist(artist: String, animate: Boolean) {
         if (layout_bottom_bar.translationY == 0.0f && animate) {
-            text_subtitle.changeText(artist)
+            text_playing_subtitle.changeText(artist)
         } else {
-            text_subtitle.text = artist
+            text_playing_subtitle.text = artist
         }
     }
 
@@ -225,8 +225,8 @@ class MainActivity : BaseActivity<MainPresenter, MainView>(), MainView, Fragment
 
     override fun launchPlayerActivity() {
         val shareableImageView =        Pair(image_main_small as View, "image_playing_boxart")
-        val shareableTitleView =        Pair(text_title as View, "text_title")
-        val shareableSubtitleView =     Pair(text_subtitle as View, "text_subtitle")
+        val shareableTitleView =        Pair(text_playing_title as View, "text_playing_title")
+        val shareableSubtitleView =     Pair(text_playing_subtitle as View, "text_playing_subtitle")
         val shareableButtonView =     Pair(button_play_pause as View, "button_play_pause")
         val shareableBackgroundView =   Pair(layout_bottom_bar as View, "background")
 
