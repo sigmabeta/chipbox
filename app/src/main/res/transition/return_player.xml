@@ -12,8 +12,12 @@
             <target android:targetId="@id/button_play_pause" />
         </targets>
 
-        <autoTransition
-            android:duration="@integer/duration_return" />
+        <changeBounds
+            android:duration="@integer/duration_return"
+            android:startDelay="63"  />
+        <changeImageTransform
+            android:duration="@integer/duration_return"
+            android:startDelay="63"  />
 
     </transitionSet>
 
@@ -22,8 +26,11 @@
             <target android:targetId="@id/layout_background" />
         </targets>
 
-        <changeBounds
-            android:duration="@integer/duration_return" />
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.ChangeBoundsFade"
+            android:duration="@integer/duration_enter"
+            app:fadeIn="false"/>
+
     </transitionSet>
 
     <transitionSet>
@@ -35,6 +42,7 @@
         <transition
             class="net.sigmabeta.chipbox.util.animation.ReflowText"
             android:duration="@integer/duration_return"
+            android:startDelay="63"
             app:freezeFrame="true"
             app:enter="false"/>
     </transitionSet>
