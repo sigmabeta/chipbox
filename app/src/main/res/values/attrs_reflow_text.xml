@@ -6,7 +6,6 @@
 
     <declare-styleable name="ReflowText">
         <attr name="freezeFrame" format="boolean" />
-        <attr name="enter" format="boolean" />
     </declare-styleable>
 
 </resources>

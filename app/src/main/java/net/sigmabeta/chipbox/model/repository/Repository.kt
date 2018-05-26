@@ -28,7 +28,7 @@ interface Repository {
 
     fun getTrackSync(id: String): Track?
     fun getTracks(): Observable<CollectionChange<RealmResults<Track>>>
-    fun getTracksForArtist(artistId: String): Flowable<RealmResults<Track>>
+    fun getTracksForArtist(artistId: String): Observable<CollectionChange<RealmResults<Track>>>
     fun getTracksManaged(): List<Track>
     fun getTracksFromIds(trackIdsList: MutableList<String?>): Observable<CollectionChange<RealmResults<Track>>>
     fun getTrackFromPath(path: String): Track?
