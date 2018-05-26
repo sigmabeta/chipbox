@@ -48,7 +48,8 @@ android {
                 // Use the following syntax when passing arguments to variables:
                 // arguments "-DVAR_NAME=VALUE"
                 arguments "-DANDROID=true",
-                        "-DANDROID_NATIVE_API_LEVEL=android-21"
+                        "-DANDROID_NATIVE_API_LEVEL=android-21",
+                        "-DANDROID_STL=c++_shared"
             }
         }
     }
