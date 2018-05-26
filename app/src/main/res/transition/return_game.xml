@@ -49,7 +49,7 @@
 
         <transition
             class="net.sigmabeta.chipbox.util.animation.Pop"
-            android:duration="1000"
+            android:duration="100"
             app:enter="false"/>
     </transitionSet>
 
