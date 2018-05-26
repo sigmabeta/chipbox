@@ -13,10 +13,10 @@
 
         <changeBounds
             android:duration="@integer/duration_return"
-            android:startDelay="63"  />
+            />
         <changeImageTransform
             android:duration="@integer/duration_return"
-            android:startDelay="63"  />
+            />
 
     </transitionSet>
 
@@ -33,6 +33,28 @@
 
     <transitionSet>
         <targets>
+            <target android:targetId="@id/list_tracks" />
+        </targets>
+
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.ChangeBoundsFade"
+            android:duration="@integer/duration_enter"
+            app:fadeIn="true"/>
+    </transitionSet>
+
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/button_fab" />
+        </targets>
+
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.Pop"
+            android:duration="1000"
+            app:enter="false"/>
+    </transitionSet>
+
+    <transitionSet>
+        <targets>
             <target android:targetId="@id/text_title" />
             <target android:targetId="@id/text_subtitle" />
         </targets>
@@ -40,7 +62,6 @@
         <transition
             class="net.sigmabeta.chipbox.util.animation.ReflowText"
             android:duration="@integer/duration_return"
-            android:startDelay="63"
             app:freezeFrame="true"
             app:enter="false"/>
     </transitionSet>

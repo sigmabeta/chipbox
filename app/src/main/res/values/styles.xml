@@ -68,14 +68,15 @@
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:statusBarColor">@color/grey_translucent</item>
         <item name="android:windowActivityTransitions">true</item>
-        
+
         <item name="android:windowSharedElementEnterTransition">@transition/enter_player</item>
         <item name="android:windowSharedElementReturnTransition">@transition/return_player</item>
 
         <item name="android:windowEnterTransition">@transition/nonshared_enter</item>
         <item name="android:windowReturnTransition">@transition/nonshared_return</item>
         <item name="android:windowExitAnimation">@null</item>
-        <item name="android:windowReenterTransition">@null</item>    </style>
+        <item name="android:windowReenterTransition">@null</item>
+    </style>
 
     <style name="ThemeScan" parent="Theme.AppCompat.NoActionBar">
         <item name="colorPrimary">@color/primary</item>

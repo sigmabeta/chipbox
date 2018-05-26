@@ -4,8 +4,8 @@
 
 <resources>
 
-    <declare-styleable name="ReflowText">
-        <attr name="freezeFrame" format="boolean" />
+    <declare-styleable name="Transitions">
+        <attr name="enter" format="boolean" />
     </declare-styleable>
 
 </resources>

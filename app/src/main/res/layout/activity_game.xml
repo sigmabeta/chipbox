@@ -62,7 +62,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/spacing_large"
-        android:clickable="true"
         android:src="@drawable/ic_play_arrow_black_24dp"
         android:tint="@android:color/white"
         app:borderWidth="2dp"

@@ -38,10 +38,14 @@ class ReflowText(context: Context, attrs: AttributeSet) : Transition(context, at
     private val freezeFrame: Boolean
 
     init {
-        val a = context.obtainStyledAttributes(attrs, R.styleable.ReflowText)
-        freezeFrame = a.getBoolean(R.styleable.ReflowText_freezeFrame, false)
-        enter = a.getBoolean(R.styleable.ReflowText_enter, true)
-        a.recycle()
+        val reflowAttrs = context.obtainStyledAttributes(attrs, R.styleable.ReflowText)
+        val transAttrs = context.obtainStyledAttributes(attrs, R.styleable.Transitions)
+
+        freezeFrame = reflowAttrs.getBoolean(R.styleable.ReflowText_freezeFrame, false)
+        enter = transAttrs.getBoolean(R.styleable.Transitions_enter, true)
+
+        transAttrs.recycle()
+        reflowAttrs.recycle()
     }
 
     override fun captureStartValues(transitionValues: TransitionValues) {
