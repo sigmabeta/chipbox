@@ -25,8 +25,6 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
     lateinit var presenter: PlayerActivityPresenter
         @Inject set
 
-    var alreadyFinishing = false
-
     /**
      * PlayerView
      */
@@ -113,6 +111,10 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
 
         setEnterSharedElementCallback(object : SharedElementCallback() {
+            override fun onMapSharedElements(names: MutableList<String>, sharedElements: MutableMap<String, View>) {
+                sharedElements["ignored"] = button_fab
+            }
+
             override fun onSharedElementStart(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
                 ReflowText.reflowDataFromIntent(intent, text_playing_title)
                 ReflowText.reflowDataFromIntent(intent, text_playing_subtitle)

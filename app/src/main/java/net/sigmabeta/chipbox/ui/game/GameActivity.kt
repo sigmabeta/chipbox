@@ -33,8 +33,6 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
 
     var adapter = GameTrackListAdapter(this)
 
-    var alreadyFinishing = false
-
     private var imagePath: String? = null
 
     private var aspectRatio: Float? = null
@@ -138,6 +136,7 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
             override fun onMapSharedElements(names: MutableList<String>, sharedElements: MutableMap<String, View>) {
                 sharedElements["header_text_title"] = text_title
                 sharedElements["subheader_text_subtitle"] = text_subtitle
+                sharedElements["ignored"] = button_fab
             }
 
             override fun onSharedElementStart(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
@@ -163,23 +162,6 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
     override fun getSharedImage(): View? = image_main
 
     override fun shouldDelayTransitionForFragment() = false
-
-    /**
-     * Activity
-     */
-
-//    override fun onBackPressed() {
-//        if (!alreadyFinishing) {
-//            alreadyFinishing = true
-//            if (button_fab.visibility == VISIBLE) {
-//                button_fab.shrinktoNothing().withEndAction {
-//                    supportFinishAfterTransition()
-//                }
-//            } else {
-//                supportFinishAfterTransition()
-//            }
-//        }
-//    }
 
     companion object {
         val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.game"
