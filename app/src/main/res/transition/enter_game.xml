@@ -47,7 +47,7 @@
         <transition
             class="net.sigmabeta.chipbox.util.animation.Pop"
             android:startDelay="@integer/duration_enter"
-            android:duration="1000"
+            android:duration="100"
             app:enter="true"/>
     </transitionSet>
 

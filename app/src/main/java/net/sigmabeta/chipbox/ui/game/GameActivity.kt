@@ -5,6 +5,8 @@ import android.app.ActivityOptions
 import android.app.SharedElementCallback
 import android.content.Context
 import android.content.Intent
+import android.support.design.widget.CoordinatorLayout
+import android.support.design.widget.FloatingActionButton
 import android.support.v7.widget.LinearLayoutManager
 import android.transition.Transition
 import android.util.Pair
@@ -132,6 +134,19 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
             presenter.onClick(it.id)
         }
 
+        val listener = object : Transition.TransitionListener {
+            override fun onTransitionEnd(transition: Transition?) = setFabAutohide(true)
+
+            override fun onTransitionStart(transition: Transition?) = Unit
+            override fun onTransitionResume(transition: Transition?) = Unit
+            override fun onTransitionPause(transition: Transition?) = Unit
+            override fun onTransitionCancel(transition: Transition?) = Unit
+        }
+
+        window.sharedElementEnterTransition.addListener(listener)
+
+        setFabAutohide(false)
+
         setEnterSharedElementCallback(object : SharedElementCallback() {
             override fun onMapSharedElements(names: MutableList<String>, sharedElements: MutableMap<String, View>) {
                 sharedElements["header_text_title"] = text_title
@@ -151,17 +166,34 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
         })
     }
 
-
-
-    override fun getLayoutId(): Int {
-        return R.layout.activity_game
-    }
+    override fun getLayoutId() = R.layout.activity_game
 
     override fun getContentLayout() = main_content
 
     override fun getSharedImage(): View? = image_main
 
     override fun shouldDelayTransitionForFragment() = false
+
+    /**
+     * Activity
+     */
+
+    override fun onBackPressed() {
+        setFabAutohide(false)
+        super.onBackPressed()
+    }
+
+    /**
+     * Implementation Details
+     */
+
+    private fun setFabAutohide(enabled: Boolean) {
+        val layoutParams = button_fab.layoutParams as CoordinatorLayout.LayoutParams
+        val behavior = FloatingActionButton.Behavior()
+
+        behavior.isAutoHideEnabled = enabled
+        layoutParams.behavior = behavior
+    }
 
     companion object {
         val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.game"
