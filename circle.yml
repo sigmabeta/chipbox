@@ -24,8 +24,6 @@ dependencies:
     # TODO: Uncomment this line and then use the new sdkmanager tool to download the two packages below, then delete the cache_Directories and environment sections above.
     - echo y | android update sdk --no-ui --all --filter "tools"
 
-    - sdkmanager --update && yes | sdkmanager --licenses
-
     # Set up the newest version of the NDK.
     - if [[ ! -e ~/android-ndk-r17-beta2 ]]; then wget http://dl.google.com/android/repository/android-ndk-r17-beta2-linux-x86_64.zip && unzip -d ~ android-ndk-r17-beta2-linux-x86_64.zip; fi
 
