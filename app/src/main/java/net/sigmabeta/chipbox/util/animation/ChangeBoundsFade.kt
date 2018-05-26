@@ -39,9 +39,9 @@ class ChangeBoundsFade(context: Context, attrs: AttributeSet) : ChangeBounds(con
         } else {
             start = 0.0f
             end = 1.0f
-            fadeDuration = duration / 4
+            fadeDuration = duration / 5
             fadeStartDelay = 0
-            superAnim.startDelay = 63
+//            superAnim.startDelay = 63
         }
 
         val fadeAnim = ObjectAnimator.ofFloat(view, View.ALPHA, start, end)

@@ -47,4 +47,15 @@
             app:enter="false"/>
     </transitionSet>
 
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/button_fab" />
+        </targets>
+
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.Pop"
+            android:duration="100"
+            app:enter="false"/>
+    </transitionSet>
+
 </transitionSet>
