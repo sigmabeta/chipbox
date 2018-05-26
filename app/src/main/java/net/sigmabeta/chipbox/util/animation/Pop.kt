@@ -40,13 +40,11 @@ class Pop(context: Context, attrs: AttributeSet) : Transition(context, attrs) {
             view.scaleY = 0f
             ObjectAnimator.ofPropertyValuesHolder(
                     view,
-                    PropertyValuesHolder.ofFloat(View.ROTATION, 0f, 180f, 360F),
                     PropertyValuesHolder.ofFloat(View.SCALE_X, 0f, 1f),
                     PropertyValuesHolder.ofFloat(View.SCALE_Y, 0f, 1f))
         } else {
             ObjectAnimator.ofPropertyValuesHolder(
                     view,
-                    PropertyValuesHolder.ofFloat(View.ROTATION,  360f, 180f, 0f),
                     PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 0f),
                     PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 0f))
         }
