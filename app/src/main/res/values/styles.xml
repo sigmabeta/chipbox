@@ -13,12 +13,18 @@
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:windowActivityTransitions">true</item>
 
-        <item name="android:windowSharedElementEnterTransition">@transition/shared_enter</item>
-        <item name="android:windowSharedElementReturnTransition">@transition/shared_return</item>
+        <item name="android:windowSharedElementEnterTransition">@transition/enter_game</item>
+        <item name="android:windowSharedElementReturnTransition">@transition/return_game</item>
+
+        <item name="android:windowEnterTransition">@transition/nonshared_enter</item>
+        <item name="android:windowReturnTransition">@transition/nonshared_return</item>
+        <item name="android:windowExitAnimation">@null</item>
+        <item name="android:windowReenterTransition">@null</item>
     </style>
 
     <style name="ThemeGame" parent="ThemeMain">
-        <item name="android:statusBarColor">@color/grey_translucent</item>
+        <item name="android:statusBarColor">@color/primary_dark</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
     </style>
 
     <style name="ThemeFileList" parent="Theme.AppCompat.Light.DarkActionBar">
@@ -38,8 +44,8 @@
         <item name="android:windowBackground">@color/background_grey</item>
         <item name="android:windowActivityTransitions">true</item>
 
-        <item name="android:windowSharedElementEnterTransition">@transition/shared_enter</item>
-        <item name="android:windowSharedElementReturnTransition">@transition/shared_return</item>
+        <item name="android:windowSharedElementEnterTransition">@transition/enter_game</item>
+        <item name="android:windowSharedElementReturnTransition">@transition/return_game</item>
     </style>
 
     <style name="ThemePlaylist" parent="Theme.AppCompat.Light.NoActionBar">
@@ -50,8 +56,8 @@
         <item name="android:windowBackground">@color/background_grey</item>
         <item name="android:windowActivityTransitions">true</item>
 
-        <item name="android:windowSharedElementEnterTransition">@transition/shared_enter</item>
-        <item name="android:windowSharedElementReturnTransition">@transition/shared_return</item>
+        <item name="android:windowSharedElementEnterTransition">@transition/enter_game</item>
+        <item name="android:windowSharedElementReturnTransition">@transition/return_game</item>
     </style>
 
     <style name="ThemePlayer" parent="Theme.AppCompat.Light.NoActionBar">
@@ -59,12 +65,17 @@
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorAccent">@color/accent</item>
 
-        <item name="android:windowBackground">@color/background_grey</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:statusBarColor">@color/grey_translucent</item>
         <item name="android:windowActivityTransitions">true</item>
 
-        <item name="android:windowSharedElementEnterTransition">@transition/shared_enter</item>
-        <item name="android:windowSharedElementReturnTransition">@transition/shared_return</item>
+        <item name="android:windowSharedElementEnterTransition">@transition/enter_player</item>
+        <item name="android:windowSharedElementReturnTransition">@transition/return_player</item>
+
+        <item name="android:windowEnterTransition">@transition/nonshared_enter</item>
+        <item name="android:windowReturnTransition">@transition/nonshared_return</item>
+        <item name="android:windowExitAnimation">@null</item>
+        <item name="android:windowReenterTransition">@null</item>
     </style>
 
     <style name="ThemeScan" parent="Theme.AppCompat.NoActionBar">

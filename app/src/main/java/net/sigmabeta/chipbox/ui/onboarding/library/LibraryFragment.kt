@@ -26,7 +26,7 @@ class LibraryFragment : BaseFragment<LibraryPresenter, LibraryView>(), LibraryVi
     override fun onNextClicked() {
         (activity as BaseActivity<*, *>).doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
             val intent = Intent(activity, ScanService::class.java)
-            activity.startService(intent)
+            activity!!.startService(intent)
 
             (activity as OnboardingView).showNextScreen()
         }

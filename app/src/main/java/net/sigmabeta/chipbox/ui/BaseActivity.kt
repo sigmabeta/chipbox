@@ -18,7 +18,6 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.className
-import timber.log.Timber
 
 
 abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : AppCompatActivity(), BaseView, View.OnClickListener {
@@ -36,12 +35,13 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
     fun getPicassoCallback(): Callback {
         return object : Callback {
             override fun onSuccess() {
+                getPresenterImpl().onImageLoadSuccess()
                 startPostponedEnterTransition()
             }
 
             override fun onError() {
+                getPresenterImpl().onImageLoadError()
                 startPostponedEnterTransition()
-                Timber.e("Couldn't load image.")
             }
         }
     }
@@ -157,7 +157,7 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         if (getTypedApplication().shouldShowDetailedErrors()) {
-            showSnackbar("Trimming memory.", null, 0)
+//            showSnackbar("Trimming memory.", null, 0)
         }
     }
 
@@ -184,8 +184,6 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
         return Pair(window.decorView.findViewById(android.R.id.statusBarBackground) ?: return null,
                 Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
     }
-
-    open fun getShareableViews(): Array<Pair<View, String>>? = null
 
     protected open fun inflateContent() {}
 

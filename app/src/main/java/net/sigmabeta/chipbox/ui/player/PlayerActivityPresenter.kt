@@ -37,6 +37,7 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter<PlayerAc
 
         view?.showControlsFragment()
         view?.showPlayerFragment()
+
     }
 
 

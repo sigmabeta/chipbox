@@ -86,7 +86,7 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
 
     override fun getLayoutId() = R.layout.activity_settings
 
-    override fun getContentLayout() = linear_content
+    override fun getContentLayout() = layout_background
 
     override fun getSharedImage() = null
 

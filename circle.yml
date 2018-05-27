@@ -3,20 +3,20 @@ machine:
     version: oraclejdk8
 
   environment:
-    ANDROID_NDK: $HOME/android-ndk-r14-beta2
+    ANDROID_NDK: $HOME/android-ndk-r17-beta2
     ANDROID_NDK_HOME: $ANDROID_NDK
     PATH: $PATH:$ANDROID_NDK
 
 dependencies:
   cache_directories:
-    - ~/android-ndk-r14-beta2
+    - ~/android-ndk-r17-beta2
 
   pre:
-    # Android SDK Platform 25
-    - if [ ! -d "/usr/local/android-sdk-linux/platforms/android-25" ]; then echo y | android update sdk --no-ui --all --filter "android-25"; fi
+    # Android SDK Platform 27
+    - if [ ! -d "/usr/local/android-sdk-linux/platforms/android-27" ]; then echo y | android update sdk --no-ui --all --filter "android-27"; fi
 
     # Android SDK Build-tools,
-    - if [ ! -d "/usr/local/android-sdk-linux/build-tools/26.0.2" ]; then echo y | android update sdk --no-ui --all --filter "build-tools-26.0.2"; fi
+    - if [ ! -d "/usr/local/android-sdk-linux/build-tools/27.0.3" ]; then echo y | android update sdk --no-ui --all --filter "build-tools-27.0.3"; fi
 
     # Android Support Repository: Local Maven repository for Support Libraries
     - echo y | android update sdk --no-ui --all --filter "extra-android-m2repository"
@@ -25,7 +25,7 @@ dependencies:
     - echo y | android update sdk --no-ui --all --filter "tools"
 
     # Set up the newest version of the NDK.
-    - if [[ ! -e ~/android-ndk-r14-beta2 ]]; then wget http://dl.google.com/android/repository/android-ndk-r14-beta2-linux-x86_64.zip && unzip -d ~ android-ndk-r14-beta2-linux-x86_64.zip; fi
+    - if [[ ! -e ~/android-ndk-r17-beta2 ]]; then wget http://dl.google.com/android/repository/android-ndk-r17-beta2-linux-x86_64.zip && unzip -d ~ android-ndk-r17-beta2-linux-x86_64.zip; fi
 
     # Google does not distribute CMake through the CLI. Until then, use this.
     - wget https://github.com/Commit451/android-cmake-installer/releases/download/1.1.0/install-cmake.sh && chmod +x install-cmake.sh && ./install-cmake.sh
