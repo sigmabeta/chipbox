@@ -16,9 +16,7 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
     protected var diffStartTime = 0L
 
     var dataset: List<T>?
-        get () {
-            return null
-        }
+        get () = datasetInternal
         set (value) {
             diffStartTime = System.currentTimeMillis()
             if (value === datasetInternal) {
