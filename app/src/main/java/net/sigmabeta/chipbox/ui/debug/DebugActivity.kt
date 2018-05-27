@@ -9,7 +9,7 @@ import kotlinx.android.synthetic.main.activity_debug.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.util.changeText
+import net.sigmabeta.chipbox.util.animation.changeText
 import javax.inject.Inject
 
 class DebugActivity : BaseActivity<DebugPresenter, DebugView>(),

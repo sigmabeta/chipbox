@@ -11,18 +11,19 @@ import android.graphics.Bitmap
 import android.media.MediaMetadata
 import android.media.session.PlaybackState
 import android.os.SystemClock
+import android.support.v4.app.NotificationCompat
 import android.support.v4.app.NotificationCompat.Action
 import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.support.v7.app.NotificationCompat
 import android.view.KeyEvent
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
 import net.sigmabeta.chipbox.BuildConfig
+import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.backend.player.Playlist
@@ -303,13 +304,14 @@ class MediaNotificationManager(val playerService: PlayerService,
         val stop = getActionIntent(playerService, KeyEvent.KEYCODE_MEDIA_STOP)
 
         Timber.v("Session token: $sessionToken")
-        val mediaStyle = NotificationCompat.MediaStyle()
+        val mediaStyle = android.support.v4.media.app.NotificationCompat.MediaStyle()
                 .setShowActionsInCompactView(*intArrayOf(playButtonPosition))
                 .setMediaSession(sessionToken)
                 .setShowCancelButton(true)
                 .setCancelButtonIntent(stop)
 
         notificationBuilder.setStyle(mediaStyle)
+                .setChannelId(ChipboxApplication.CHANNEL_ID_PLAYBACK)
                 .setDeleteIntent(stop)
                 .setSmallIcon(notificationIcon)
                 .setColor(ContextCompat.getColor(playerService, R.color.primary_dark))
@@ -407,7 +409,7 @@ class MediaNotificationManager(val playerService: PlayerService,
 
             mediaController?.unregisterCallback(controllerCallback)
 
-            mediaController = MediaControllerCompat(playerService, sessionToken)
+            mediaController = MediaControllerCompat(playerService, sessionToken!!)
 
             transportControls = mediaController?.transportControls
 

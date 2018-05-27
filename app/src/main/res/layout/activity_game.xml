@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout android:id="@+id/main_content"
-                                                 xmlns:android="http://schemas.android.com/apk/res/android"
-                                                 xmlns:app="http://schemas.android.com/apk/res-auto"
-                                                 xmlns:tools="http://schemas.android.com/tools"
-                                                 android:layout_width="match_parent"
-                                                 android:layout_height="match_parent"
-                                                 android:fitsSystemWindows="true">
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:fitsSystemWindows="true"
+    android:id="@+id/main_content"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent">
+
+    <!-- Use a separate view for the background, rather than on the root view because it is a
+         shared element. Otherwise it interferes with the window enter transition i.e. as it is
+         resized for the shared element transition, many views are considered 'off-screen' so
+         visibility transitions are not run. -->
+    <View
+        android:id="@+id/layout_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/white"
+        android:transitionName="card_clicked_game" />
 
     <android.support.design.widget.AppBarLayout
         android:id="@+id/appbar"
@@ -21,23 +32,15 @@
             android:layout_height="match_parent"
             android:fitsSystemWindows="true"
             app:titleEnabled="false"
-            app:statusBarScrim="?attr/colorPrimary"
             app:layout_scrollFlags="scroll">
 
             <ImageView
-                android:id="@+id/image_hero_boxart"
+                android:id="@+id/image_main"
                 android:transitionName="image_clicked_game"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/hero_image_size"
-                android:fitsSystemWindows="true"
                 android:scaleType="centerCrop"
                 app:layout_collapseMode="parallax"/>
-
-            <android.support.v7.widget.Toolbar
-                android:id="@+id/toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
-                app:popupTheme="@style/ThemeOverlay.AppCompat.Light"/>
 
         </android.support.design.widget.CollapsingToolbarLayout>
 
@@ -48,8 +51,9 @@
         android:scrollbars="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@android:color/white"
         android:elevation="6dp"
+        android:fitsSystemWindows="true"
+        android:background="@android:color/white"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:listitem="@layout/list_item_track_game"/>
 
@@ -58,11 +62,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/spacing_large"
-        android:clickable="true"
         android:src="@drawable/ic_play_arrow_black_24dp"
         android:tint="@android:color/white"
-        android:scaleX="0.0"
-        android:scaleY="0.0"
         app:borderWidth="2dp"
         app:layout_anchor="@id/appbar"
         app:layout_anchorGravity="bottom|right|end"/>
