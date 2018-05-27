@@ -8,6 +8,7 @@ import io.reactivex.disposables.CompositeDisposable
 import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.repository.Repository
 import timber.log.Timber
+import java.io.IOException
 import javax.inject.Inject
 
 abstract class BasePresenter<V : BaseView> {
@@ -61,6 +62,14 @@ abstract class BasePresenter<V : BaseView> {
         if (state == UiState.LOADING) {
             state = UiState.CANCELED
         }
+    }
+
+    fun onImageLoadSuccess() {
+        printBenchmark("Image loaded")
+    }
+
+    fun onImageLoadError() {
+        handleError(IOException("Image load failed."))
     }
 
     /**

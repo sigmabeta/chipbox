@@ -11,7 +11,7 @@ import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.util.ACC_DECELERATE
+import net.sigmabeta.chipbox.util.animation.ACC_DECELERATE
 import net.sigmabeta.chipbox.util.convertDpToPx
 import timber.log.Timber
 import java.util.*
@@ -23,7 +23,7 @@ class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerContr
         @Inject set
 
     override fun finish() {
-        activity.finish()
+        activity!!.finish()
     }
 
     /**
@@ -42,11 +42,11 @@ class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerContr
         }
     }
 
-    override fun elevate() {
+    override fun elevate() = ifVisible {
         animateControls(frame_content, true)
     }
 
-    override fun unElevate() {
+    override fun unElevate() = ifVisible {
         animateControls(frame_content, false)
     }
 
@@ -144,7 +144,7 @@ class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerContr
      */
 
     private fun setViewTint(view: ImageView, colorId: Int) {
-        val color = ContextCompat.getColor(activity, colorId)
+        val color = ContextCompat.getColor(activity!!, colorId)
         view.drawable.setTint(color)
     }
 
@@ -167,8 +167,8 @@ class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerContr
 
         val animations = ArrayList<Animator>(2)
 
-        val startElevation = if (elevate) 0.0f else convertDpToPx(16.0f, activity)
-        val endElevation = if (elevate) convertDpToPx(16.0f, activity) else 0.0f
+        val startElevation = if (elevate) 0.0f else convertDpToPx(16.0f, activity!!)
+        val endElevation = if (elevate) convertDpToPx(16.0f, activity!!) else 0.0f
 
         if (startElevation != endElevation) {
             animations.add(ObjectAnimator.ofFloat(view, "elevation", startElevation, endElevation))

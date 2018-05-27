@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.ui.player
 
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.SeekBar
 import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.BuildConfig
@@ -10,7 +11,8 @@ import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.util.changeText
+import net.sigmabeta.chipbox.util.animation.ReflowText
+import net.sigmabeta.chipbox.util.animation.changeText
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import timber.log.Timber
 import javax.inject.Inject
@@ -27,9 +29,9 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
     override fun setTrackTitle(title: String, animate: Boolean) {
         if (isResumed) {
             if (animate) {
-                text_track_title.changeText(title)
+                text_playing_title.changeText(title)
             } else {
-                text_track_title.text = title
+                text_playing_title.text = title
             }
         }
     }
@@ -47,9 +49,9 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
     override fun setArtist(artist: String, animate: Boolean) {
         if (isResumed) {
             if (animate) {
-                text_track_artist.changeText(artist)
+                text_playing_subtitle.changeText(artist)
             } else {
-                text_track_artist.text = artist
+                text_playing_subtitle.text = artist
             }
         }
     }
@@ -71,13 +73,19 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
     }
 
     override fun setGameBoxArt(path: String?, fade: Boolean) {
-        if (isResumed) {
-            if (path != null) {
-                image_game_box_art.loadImageHighQuality(path, fade, false, getPicassoCallback())
-            } else {
-                image_game_box_art.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false, getPicassoCallback())
+        image_main.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                image_main.viewTreeObserver.removeOnPreDrawListener(this)
+                if (isResumed) {
+                    if (path != null) {
+                        image_main.loadImageHighQuality(path, fade, 1.0f, getPicassoCallback())
+                    } else {
+                        image_main.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, null, getPicassoCallback())
+                    }
+                }
+                return true
             }
-        }
+        })
     }
 
     override fun setUnderrunCount(count: String) {
@@ -147,7 +155,7 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
     }
 
     override fun getSharedImage(): View? {
-        return image_game_box_art
+        return image_main
     }
 
     override fun configureViews() {
@@ -156,6 +164,11 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
         }
 
         seek_playback_progress.setOnSeekBarChangeListener(this)
+
+        activity?.let {
+            ReflowText.reflowDataFromIntent(it.intent, text_playing_title)
+            ReflowText.reflowDataFromIntent(it.intent, text_playing_subtitle)
+        }
     }
 
     override fun getFragmentTag() = FRAGMENT_TAG

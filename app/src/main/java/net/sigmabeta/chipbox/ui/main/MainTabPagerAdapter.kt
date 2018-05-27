@@ -35,7 +35,7 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
         else -> null
     }
 
-    override fun instantiateItem(container: ViewGroup?, position: Int): Any? {
+    override fun instantiateItem(container: ViewGroup, position: Int): Any {
         val fragment = super.instantiateItem(container, position) as Fragment
 
         if (fragment is ListFragment<*,*,*,*,*>) {

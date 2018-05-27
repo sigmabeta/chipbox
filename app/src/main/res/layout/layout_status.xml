@@ -74,12 +74,12 @@
             android:layout_gravity="top"
             android:layout_marginTop="-7dp"
             android:layout_alignParentEnd="true"
-            android:layout_toEndOf="@+id/image_playing_game_box_art"
+            android:layout_toEndOf="@+id/image_main_small"
             android:visibility="gone"
             android:indeterminate="true"/>
 
-        <TextView
-            android:id="@+id/text_playing_song_title"
+        <net.sigmabeta.chipbox.util.animation.CustomTextView
+            android:id="@+id/text_playing_title"
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -87,14 +87,14 @@
             android:layout_marginStart="@dimen/spacing_medium"
             android:layout_marginEnd="@dimen/spacing_medium"
             android:layout_marginTop="@dimen/spacing_medlarge"
-            android:layout_toEndOf="@+id/image_playing_game_box_art"
+            android:layout_toEndOf="@+id/image_main_small"
             android:layout_toStartOf="@+id/button_play_pause"
             android:ellipsize="end"
             android:maxLines="1"
             tools:text="The Island in the Void"/>
 
-        <TextView
-            android:id="@+id/text_playing_song_artist"
+        <net.sigmabeta.chipbox.util.animation.CustomTextView
+            android:id="@+id/text_playing_subtitle"
             style="@style/TextAppearance.AppCompat.Caption"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -102,14 +102,14 @@
             android:layout_marginBottom="@dimen/spacing_medlarge"
             android:layout_marginStart="@dimen/spacing_medium"
             android:layout_marginEnd="@dimen/spacing_medium"
-            android:layout_toEndOf="@+id/image_playing_game_box_art"
+            android:layout_toEndOf="@+id/image_main_small"
             android:layout_toStartOf="@+id/button_play_pause"
             android:ellipsize="end"
             android:maxLines="1"
             tools:text="Yasunori Shiono"/>
 
         <ImageView
-            android:id="@+id/image_playing_game_box_art"
+            android:id="@+id/image_main_small"
             android:layout_width="64dp"
             android:layout_height="0dp"
             android:layout_alignParentBottom="true"

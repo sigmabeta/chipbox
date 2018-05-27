@@ -24,6 +24,9 @@ class GamePresenter @Inject constructor(val player: Player,
     var game: Game? = null
     var tracks: List<Track>? = null
 
+    private var width = -1
+    private var height = -1
+
     fun onItemClick(position: Int) {
         getTrackIdList()?.let {
             player.play(it, position)
@@ -43,25 +46,21 @@ class GamePresenter @Inject constructor(val player: Player,
     override fun setup(arguments: Bundle?) {
         state = UiState.LOADING
 
-        val gameId = arguments?.getString(GameActivity.ARGUMENT_GAME_ID)
+        gameId = arguments?.getString(GameActivity.ARGUMENT_GAME_ID)
+        width = arguments?.getInt(GameActivity.ARGUMENT_GAME_IMAGE_WIDTH) ?: -1
+        height = arguments?.getInt(GameActivity.ARGUMENT_GAME_IMAGE_HEIGHT) ?: -1
+
         this.gameId = gameId
 
         gameId?.let {
             val gameSubscription = repository.getGame(it)
                     .subscribe(
                             { game ->
-                                state = UiState.READY
-
                                 if (game != null) {
                                     this.game = game
-                                    view?.setGame(game)
+                                    this.tracks = game.tracks?.toMutableList()
 
-                                    val tracks = game.tracks?.toMutableList()
-
-                                    tracks?.let {
-                                        this.tracks = tracks
-                                        view?.setTracks(tracks)
-                                    }
+                                    state = UiState.READY
                                 } else {
                                     handleError(RuntimeException("Game not found."))
                                 }
@@ -81,11 +80,13 @@ class GamePresenter @Inject constructor(val player: Player,
         gameId = null
         game = null
         tracks = null
+        width = -1
+        height = -1
     }
 
     override fun showReadyState() {
         game?.let {
-            view?.setGame(it)
+            view?.setGame(it, width, height)
         }
 
         tracks?.let {
