@@ -28,12 +28,17 @@ class GameGridFragment : ListFragment<GameGridPresenter, GameListView, Game, Gam
         val holder = recycler_list.findViewHolderForAdapterPosition(position) as GameViewHolder
 
         val shareableImageView = Pair(holder.getSharedImage(), "image_clicked_game")
+        val shareableTitleView = Pair(holder.getSharedTitle(), "header_text_title")
+        val shareableSubtitleView = Pair(holder.getSharedSubtitle(), "subheader_text_subtitle")
+        val shareableCardView = Pair(holder.getSharedCard(), "card_clicked_game")
         GameActivity.launch(activity,
                 id,
                 activity.getShareableNavBar(),
                 activity.getShareableStatusBar(),
-                shareableImageView
-        )
+                shareableImageView,
+                shareableTitleView,
+                shareableSubtitleView,
+                shareableCardView)
     }
 
     override fun setTitle(platformName: String) {
@@ -68,7 +73,7 @@ class GameGridFragment : ListFragment<GameGridPresenter, GameListView, Game, Gam
     override fun configureViews() {
         super.configureViews()
 
-        val spacing = convertDpToPx(1.0f, activity).toInt()
+        val spacing = convertDpToPx(1.0f, activity!!).toInt()
         val columnCount = resources.getInteger(R.integer.columns_game_grid)
         val layoutManager = GridLayoutManager(activity, columnCount)
 

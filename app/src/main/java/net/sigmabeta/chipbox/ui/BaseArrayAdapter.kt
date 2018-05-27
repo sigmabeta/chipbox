@@ -56,14 +56,14 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): VH? {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val item = LayoutInflater.from(parent?.context)?.inflate(getLayoutId(), parent, false)
 
         if (item != null) {
             return createViewHolder(item)
         } else {
             Timber.e("Unable to inflate view...")
-            return null
+            throw IllegalStateException("Unable to inflate view...")
         }
     }
 
@@ -98,9 +98,9 @@ abstract class BaseArrayAdapter<T : ListItem, VH : BaseViewHolder<*, *, *>>(val 
     abstract protected fun bind(holder: VH, item: T)
 
     protected open fun showFromEmptyList(value: List<T>) {
-        Timber.i("Animating in all items in list of size %d", value.size)
+        Timber.i("Showing all items in list of size %d", value.size)
         datasetInternal = value
-        notifyItemRangeInserted(0, value.size)
+        notifyDataSetChanged()
     }
 
     protected fun printBenchmark(eventName: String) {

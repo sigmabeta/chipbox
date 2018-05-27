@@ -27,7 +27,7 @@ class GameTrackListAdapter(view: ListView<Track ,GameTrackViewHolder>) : BaseArr
 
     override fun getLayoutId() = R.layout.list_item_track_game
 
-    override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): GameTrackViewHolder? {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GameTrackViewHolder {
         if (viewType == TYPE_HEADER) {
             val headerView = LayoutInflater.from(parent?.context)?.inflate(getHeaderLayoutId(), parent, false)
 
@@ -35,7 +35,7 @@ class GameTrackListAdapter(view: ListView<Track ,GameTrackViewHolder>) : BaseArr
                 return createHeaderViewHolder(headerView)
             } else {
                 Timber.e("Unable to inflate view...")
-                return null
+                throw IllegalStateException("Unable to inflate view...")
             }
         } else {
             val itemView = LayoutInflater.from(parent?.context)?.inflate(getLayoutId(), parent, false)
@@ -44,7 +44,7 @@ class GameTrackListAdapter(view: ListView<Track ,GameTrackViewHolder>) : BaseArr
                 return createViewHolder(itemView)
             } else {
                 Timber.e("Unable to inflate view...")
-                return null
+                throw IllegalStateException("Unable to inflate view...")
             }
         }
     }
@@ -79,7 +79,7 @@ class GameTrackListAdapter(view: ListView<Track ,GameTrackViewHolder>) : BaseArr
         }
     }
 
-    fun createHeaderViewHolder(view: View): GameTrackViewHolder? {
+    fun createHeaderViewHolder(view: View): GameTrackViewHolder {
         return GameHeaderViewHolder(view, this)
     }
 

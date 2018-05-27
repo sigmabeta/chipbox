@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Based on Plaid: https://github.com/nickbutcher/plaid -->
+
+<resources>
+    <item type="id" name="tag_reflow_data_start" />
+    <item type="id" name="tag_reflow_data_end" />
+</resources>

@@ -9,5 +9,5 @@ interface GameView : BaseView {
 
     fun setPlayingTrack(track: Track)
 
-    fun setGame(game: Game?)
+    fun setGame(game: Game, width: Int, height: Int)
 }
