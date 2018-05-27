@@ -27,7 +27,7 @@
 
         <transition
             class="net.sigmabeta.chipbox.util.animation.ChangeBoundsFade"
-            android:duration="@integer/duration_enter"
+            android:duration="@integer/duration_return"
             app:fadeIn="false"/>
     </transitionSet>
 
@@ -38,7 +38,7 @@
 
         <transition
             class="net.sigmabeta.chipbox.util.animation.ChangeBoundsFade"
-            android:duration="@integer/duration_enter"
+            android:duration="@integer/duration_return"
             app:fadeIn="true"/>
     </transitionSet>
 
