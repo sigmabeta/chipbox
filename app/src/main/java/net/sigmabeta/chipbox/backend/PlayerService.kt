@@ -7,9 +7,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
 import android.media.session.MediaSession
+import android.os.Build
 import android.os.IBinder
 import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
+import android.view.KeyEvent
+import android.view.KeyEvent.KEYCODE_MEDIA_STOP
 import android.widget.Toast
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.backend.player.Player
@@ -60,12 +63,7 @@ class PlayerService : Service(), BackendView {
 
         repository.reopen()
         notificationManager = MediaNotificationManager(this, repository, player, playlist, updater)
-
-        // A workaround for the fact that controllerCallback is null inside the init {} constructor.
-        notificationManager?.setControllerCallback()
-
         notificationManager?.subscribeToUpdates()
-
         notificationManager?.startNotification()
     }
 
@@ -78,6 +76,14 @@ class PlayerService : Service(), BackendView {
             player?.backendView = this
 
             play()
+        }
+
+        if (intent?.action == Intent.ACTION_MEDIA_BUTTON) {
+            val keyEvent = intent.extras?.get(Intent.EXTRA_KEY_EVENT) as KeyEvent?
+            if (keyEvent?.keyCode == KEYCODE_MEDIA_STOP) {
+                Timber.w("Notification was swiped away.")
+                notificationManager?.startNotification(true)
+            }
         }
 
         return Service.START_NOT_STICKY
@@ -187,7 +193,11 @@ class PlayerService : Service(), BackendView {
         fun start(context: Context) {
             val launcher = Intent(context, PlayerService::class.java)
 
-            context.startService(launcher)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(launcher)
+            } else {
+                context.startService(launcher)
+            }
         }
     }
 }
