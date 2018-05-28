@@ -72,7 +72,11 @@ class MediaNotificationManager(val playerService: PlayerService,
 
     var subscription: Disposable? = null
 
+    private lateinit var controllerCallback : MediaControllerCompat.Callback
+
     init {
+        initControllerCallback()
+
         updateSessionToken()
         notificationService.cancelAll()
     }
@@ -117,8 +121,8 @@ class MediaNotificationManager(val playerService: PlayerService,
      * updated. The notification will automatically be removed if the session is
      * destroyed before [.stopNotification] is called.
      */
-    fun startNotification() {
-        if (!notified) {
+    fun startNotification(force: Boolean = false) {
+        if (!notified || force) {
             val localTrackId = playlist.playingTrackId
 
             updateState(player.state)
@@ -142,7 +146,8 @@ class MediaNotificationManager(val playerService: PlayerService,
 
                 notified = true
             }
-
+        } else {
+            Timber.e("Called StartNotification, but notification already exists.")
         }
     }
 
@@ -168,13 +173,6 @@ class MediaNotificationManager(val playerService: PlayerService,
             playerService.stopForeground(true)
             playingGameArtBitmap = null
         }
-    }
-
-    /**
-     * A workaround for the fact that controllerCallback is null inside the init {} constructor.
-     */
-    fun setControllerCallback() {
-        mediaController?.registerCallback(controllerCallback)
     }
 
     /**
@@ -419,48 +417,44 @@ class MediaNotificationManager(val playerService: PlayerService,
         }
     }
 
-    /**
-     *      Listeners & Callbacks
-     */
+    private fun initControllerCallback() {
+        controllerCallback = object : MediaControllerCompat.Callback() {
+            override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
+                Timber.d("Playback state changed: %s", state)
+                playbackState = state
 
-    private val controllerCallback = object : MediaControllerCompat.Callback() {
-        override fun onPlaybackStateChanged(state: PlaybackStateCompat) {
-            Timber.d("Playback state changed: %s", state)
-            playbackState = state
+                if (state.state == PlaybackState.STATE_STOPPED || state.state == PlaybackState.STATE_NONE) {
+                    stopNotification()
+                } else {
+                    if (state.state == PlaybackState.STATE_PAUSED) {
+                        Timber.v("Stopping foregroundness.")
+                        playerService.stopForeground(false)
+                    }
 
-            if (state.state == PlaybackState.STATE_STOPPED || state.state == PlaybackState.STATE_NONE) {
-                stopNotification()
-            } else {
-                if (state.state == PlaybackState.STATE_PAUSED) {
-                    Timber.v("Stopping foregroundness.")
-                    playerService.stopForeground(false)
+                    val notification = createNotification()
+                    if (notification != null) {
+                        notificationService.notify(NOTIFICATION_ID, notification)
+                    }
                 }
+            }
+
+            override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+                Timber.d("Metadata changed: %s", metadata)
+                mediaMetadata = metadata
 
                 val notification = createNotification()
                 if (notification != null) {
                     notificationService.notify(NOTIFICATION_ID, notification)
                 }
             }
-        }
 
-        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-            Timber.d("Metadata changed: %s", metadata)
-            mediaMetadata = metadata
-
-            val notification = createNotification()
-            if (notification != null) {
-                notificationService.notify(NOTIFICATION_ID, notification)
+            override fun onSessionDestroyed() {
+                super.onSessionDestroyed()
+                Timber.d("Session destroyed; resetting session token.")
+                updateSessionToken()
             }
         }
-
-        override fun onSessionDestroyed() {
-            super.onSessionDestroyed()
-            Timber.d("Session destroyed; resetting session token.")
-            updateSessionToken()
-        }
     }
-
-
 
     companion object {
         val REQUEST_CODE = 1234
