@@ -46,7 +46,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
     override fun showReadyState() {
         super.showReadyState()
 
-        if (artistDisposable?.isDisposed == true) {
+        if (artistDisposable == null || artistDisposable?.isDisposed == true) {
             artistId?.let {
                 Timber.w("Artist id $it")
                 artistDisposable = repository.getArtist(it)
