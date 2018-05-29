@@ -17,7 +17,7 @@ interface Repository {
      * Create
      */
 
-    fun addTrack(track: Track): Flowable<Game>
+    fun addTrack(unmanagedTrack: Track): Flowable<Game>
 
     fun addGame(platformName: String, title: String?): Flowable<Game>
     fun addArtist(name: String?): Flowable<Artist>
