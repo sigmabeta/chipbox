@@ -50,8 +50,8 @@ class RealmRepository(var realm: Realm) : Repository {
      * Create
      */
 
-    override fun addTrack(track: Track): Flowable<Game> {
-        track.save(realm)
+    override fun addTrack(unmanagedTrack: Track): Flowable<Game> {
+        val track = unmanagedTrack.save(realm)
 
         val game = getGame(track.platformName, track.gameTitle)
         val platform = getPlatform(track.platformName)
