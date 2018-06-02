@@ -32,10 +32,8 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
 
     override fun setDropdownValue(index: Int) {
         dropdown_tempo.onItemSelectedListener = null
-        dropdown_tempo.post {
-            dropdown_tempo.setSelection(index)
-            dropdown_tempo.onItemSelectedListener = this
-        }
+        dropdown_tempo.setSelection(index, false)
+        dropdown_tempo.onItemSelectedListener = this
     }
 
     override fun animateChanges(changeset: OrderedCollectionChangeSet) = Unit
@@ -81,7 +79,6 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
         spinAdapter.setDropDownViewResource(R.layout.dropdown_after_click_tempo)
 
         dropdown_tempo.adapter = spinAdapter
-        dropdown_tempo.onItemSelectedListener = this
     }
 
     override fun getLayoutId() = R.layout.activity_settings
