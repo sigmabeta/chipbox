@@ -12,7 +12,4 @@ import javax.inject.Singleton
 class MainPresenter @Inject constructor(player: Player,
                                         scanner: LibraryScanner,
                                         playlist: Playlist,
-                                        updater: UiUpdater) : ChromePresenter<MainView>(player, scanner, playlist, updater) {
-
-
-}
+                                        updater: UiUpdater) : ChromePresenter<MainView>(player, scanner, playlist, updater)

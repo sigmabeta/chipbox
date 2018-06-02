@@ -52,6 +52,12 @@ class GameGridFragment : ListFragment<GameGridPresenter, GameListView, Game, Gam
     override fun createAdapter() = GameGridAdapter(this)
 
     /**
+     * NavigationFragment
+     */
+
+    override fun getScrollingView() = recycler_list
+
+    /**
      * BaseFragment
      */
 

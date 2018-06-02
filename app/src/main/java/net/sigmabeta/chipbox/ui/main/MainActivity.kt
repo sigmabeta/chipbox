@@ -35,9 +35,7 @@ class MainActivity : ChromeActivity<MainPresenter, MainView>(), MainView, Fragme
 
     override fun showContent() = Unit
 
-    override fun getPresenterImpl(): MainPresenter {
-        return presenter
-    }
+    override fun getPresenterImpl() = presenter
 
     /**
      * BaseActivity
