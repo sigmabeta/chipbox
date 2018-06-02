@@ -31,7 +31,7 @@
 
         <activity
             android:name=".ui.navigation.NavigationActivity"
-            android:theme="@style/ThemeNav"/>
+            android:theme="@style/ThemeMain"/>
 
         <activity
             android:name=".ui.player.PlayerActivity"

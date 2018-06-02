@@ -24,6 +24,12 @@ class TrackListFragment : ListFragment<TrackListPresenter, TrackListView, Track,
     override fun createAdapter() = TrackListAdapter(this)
 
     /**
+     * NavigationFragment
+     */
+
+    override fun getScrollingView() = recycler_list
+
+    /**
      * BaseFragment
      */
 
