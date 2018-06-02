@@ -18,9 +18,4 @@ class Settings @Inject constructor() {
         }
 
     var voices: MutableList<Voice>? = null
-
-    fun onTrackChange() {
-        tempo = null
-        voices = null
-    }
 }

@@ -45,7 +45,7 @@ class Player @Inject constructor(val playlist: Playlist,
 
     private var writerThread: Thread? = null
 
-    var backend: Backend? = null
+    private var backend: Backend? = null
         get() {
             return reader?.backend
         }
@@ -219,6 +219,16 @@ class Player @Inject constructor(val playlist: Playlist,
         reader?.queuedSeekPosition = seekPosition
     }
 
+    fun setTempo(newValue: Int) {
+        backend?.setTempo(newValue / 100.0)
+        settings.tempo = newValue
+    }
+
+    fun muteVoice(position: Int, enabled: Boolean) {
+        backend?.muteVoice(position, if (enabled) 0 else 1)
+        settings.voices?.get(position)?.enabled = enabled
+    }
+
     override fun onAudioFocusChange(focusChange: Int) {
         when (focusChange) {
             AudioManager.AUDIOFOCUS_LOSS -> {
@@ -279,9 +289,10 @@ class Player @Inject constructor(val playlist: Playlist,
      */
 
     fun onTrackChange(trackId: String?, gameId: String?) {
-        settings.onTrackChange()
         playlist.playingTrackId = trackId
         playlist.playingGameId = gameId
+        settings.voices = backend?.getVoices()
+        settings.tempo = 100
         writer?.lastTimestamp = 0
         writer?.clearBuffers()
     }
@@ -302,7 +313,6 @@ class Player @Inject constructor(val playlist: Playlist,
     fun errorAllBuffersFull() {
         Timber.e("Couldn't get an empty AudioBuffer after %d ms.", TIMEOUT_BUFFERS_FULL_MS)
     }
-
 
     companion object {
         val ERROR_AUDIO_TRACK_NULL = -100
