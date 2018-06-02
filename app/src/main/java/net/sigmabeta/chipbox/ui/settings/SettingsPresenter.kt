@@ -33,15 +33,14 @@ class SettingsPresenter @Inject constructor(val player: Player,
             val newValue = !it[position].enabled
             it[position].enabled = newValue
 
-            player.backend?.muteVoice(position, if (newValue) 0 else 1)
+            player.muteVoice(position, newValue)
             view?.notifyChanged(position)
         }
     }
 
     fun onTempoChange(position: Int) {
         val newValue = indexToTempoValue(position)
-        settings.tempo = newValue
-        player.backend?.setTempo(newValue / 100.0)
+        player.setTempo(newValue)
     }
 
     /**
@@ -96,14 +95,14 @@ class SettingsPresenter @Inject constructor(val player: Player,
 
     private fun updateHelper() {
         tempo = settings.tempo ?: 100
-        voices = if (settings.voices == null) {
-            settings.voices = player.backend?.getVoices()
-            settings.voices
-        } else {
-            settings.voices
+
+        voices = settings.voices
+        voices?.let {
+            view?.setList(it)
+        } ?: let {
+            state = UiState.EMPTY
         }
 
-        view?.setList(voices as List<Voice>)
         view?.setDropdownValue(tempoValueToIndex(tempo))
     }
 

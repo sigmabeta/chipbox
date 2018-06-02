@@ -37,10 +37,9 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter<PlayerAc
 
         view?.showControlsFragment()
         view?.showPlayerFragment()
-
     }
 
-
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 
     override fun onTempDestroy() = Unit
 
