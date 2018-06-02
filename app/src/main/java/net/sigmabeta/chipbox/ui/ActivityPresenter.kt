@@ -60,7 +60,7 @@ abstract class ActivityPresenter<V : BaseView> : BasePresenter<V>() {
      * of a Activity; i.e. after rotation or low-mem activity destruction. By default,
      * same as setup().
      */
-    fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = setup(arguments)
+    open fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = setup(arguments)
 
     /**
      * Perform actions that need to be performed in order for a
