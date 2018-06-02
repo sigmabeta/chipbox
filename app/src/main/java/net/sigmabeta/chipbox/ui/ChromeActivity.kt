@@ -29,7 +29,7 @@ import net.sigmabeta.chipbox.util.animation.slideViewOnscreen
 import net.sigmabeta.chipbox.util.animation.slideViewToProperLocation
 import net.sigmabeta.chipbox.util.loadImageLowQuality
 
-abstract class ChromeActivity<P: ChromePresenter<V>, V: ChromeView> : BaseActivity<P, V>(), ChromeView {
+abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActivity<P, V>(), ChromeView {
 
     var drawerToggle: ActionBarDrawerToggle? = null
 
@@ -61,7 +61,7 @@ abstract class ChromeActivity<P: ChromePresenter<V>, V: ChromeView> : BaseActivi
             image_main_small.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false)
         }
     }
-    
+
     override fun showPauseButton() {
         button_play_pause.setImageResource(R.drawable.ic_pause_black_24dp)
     }
@@ -207,11 +207,11 @@ abstract class ChromeActivity<P: ChromePresenter<V>, V: ChromeView> : BaseActivi
     }
 
     override fun launchPlayerActivity() {
-        val shareableImageView =        Pair(image_main_small as View, "image_playing_boxart")
-        val shareableTitleView =        Pair(text_playing_title as View, "text_playing_title")
-        val shareableSubtitleView =     Pair(text_playing_subtitle as View, "text_playing_subtitle")
-        val shareableButtonView =       Pair(button_play_pause as View, "button_play_pause")
-        val shareableBackgroundView =   Pair(layout_bottom_bar as View, "background")
+        val shareableImageView = Pair(image_main_small as View, "image_playing_boxart")
+        val shareableTitleView = Pair(text_playing_title as View, "text_playing_title")
+        val shareableSubtitleView = Pair(text_playing_subtitle as View, "text_playing_subtitle")
+        val shareableButtonView = Pair(button_play_pause as View, "button_play_pause")
+        val shareableBackgroundView = Pair(layout_bottom_bar as View, "background")
 
         PlayerActivity.launch(this,
                 getShareableNavBar(),
@@ -226,7 +226,7 @@ abstract class ChromeActivity<P: ChromePresenter<V>, V: ChromeView> : BaseActivi
     /**
      * Activity
      */
-    
+
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
 
@@ -269,6 +269,7 @@ abstract class ChromeActivity<P: ChromePresenter<V>, V: ChromeView> : BaseActivi
         actionBar?.setDisplayHomeAsUpEnabled(true)
 
         setUpNavigationDrawer()
+
         layout_bottom_bar.setOnClickListener { getPresenterImpl().onNowPlayingClicked() }
         button_play_pause.setOnClickListener { getPresenterImpl().onPlayFabClicked() }
     }
@@ -276,6 +277,8 @@ abstract class ChromeActivity<P: ChromePresenter<V>, V: ChromeView> : BaseActivi
     /**
      * Implementation Details
      */
+
+    protected open fun shouldShowBackButton() = true
 
     private var state = STATE_UNKNOWN
 
@@ -312,6 +315,8 @@ abstract class ChromeActivity<P: ChromePresenter<V>, V: ChromeView> : BaseActivi
                 R.string.navigation_drawer_open,
                 R.string.navigation_drawer_close)
 
+        if (shouldShowBackButton()) showBackArrowInToolbar()
+
         layout_drawer.addDrawerListener(drawerToggle!!)
 
         drawer_navigation.setNavigationItemSelectedListener {
@@ -319,12 +324,18 @@ abstract class ChromeActivity<P: ChromePresenter<V>, V: ChromeView> : BaseActivi
                     ?: false
         }
     }
-    abstract fun getContentLayoutId() : Int
+
+    private fun showBackArrowInToolbar() {
+        toolbar.setNavigationOnClickListener { v -> onBackPressed() }
+        drawerToggle?.isDrawerIndicatorEnabled = false
+    }
+
+    abstract fun getContentLayoutId(): Int
 
     abstract fun getScrollingContentView(): View?
 
-    abstract fun isScrolledToBottom() : Boolean
-    
+    abstract fun isScrolledToBottom(): Boolean
+
     companion object {
         const val STATE_UNKNOWN = -1
         const val STATE_IDLE = 0

@@ -27,6 +27,8 @@ class MainActivity : ChromeActivity<MainPresenter, MainView>(), MainView, Fragme
 
     override fun isScrolledToBottom(): Boolean = getFragment()?.isScrolledToBottom() ?: false
 
+    override fun shouldShowBackButton() = false
+
     /**
      * BaseView
      */
