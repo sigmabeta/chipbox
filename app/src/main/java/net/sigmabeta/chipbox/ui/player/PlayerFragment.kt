@@ -72,7 +72,7 @@ class PlayerFragment : BaseFragment<PlayerFragmentPresenter, PlayerFragmentView>
         }
     }
 
-    override fun setGameBoxArt(path: String?, fade: Boolean) {
+    override fun setGameBoxArt(path: String?, fade: Boolean) = ifVisible {
         image_main.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
             override fun onPreDraw(): Boolean {
                 image_main.viewTreeObserver.removeOnPreDrawListener(this)
