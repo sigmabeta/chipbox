@@ -80,14 +80,7 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
 
         dropdown_tempo.adapter = spinAdapter
 
-        if (toolbar != null) {
-            setSupportActionBar(toolbar)
-
-            val actionBar = supportActionBar
-            actionBar?.setDisplayHomeAsUpEnabled(true)
-        }
-
-        showBackXInToolbar()
+        setupToolbar(false)
     }
 
     override fun getLayoutId() = R.layout.activity_settings
