@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.ui.main
 
 import android.content.Context
 import android.content.Intent
-import android.view.View
 import kotlinx.android.synthetic.main.activity_main.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ChromeActivity
@@ -25,7 +24,7 @@ class MainActivity : ChromeActivity<MainPresenter, MainView>(), MainView, Fragme
 
     override fun getScrollingContentView() = pager_categories
 
-    override fun isScrolledToBottom(): Boolean = getFragment()?.isScrolledToBottom() ?: false
+    override fun isScrolledToBottom() = getFragment()?.isScrolledToBottom() ?: false
 
     override fun shouldShowBackButton() = false
 
@@ -54,7 +53,7 @@ class MainActivity : ChromeActivity<MainPresenter, MainView>(), MainView, Fragme
 
     override fun inject() = getTypedApplication().appComponent.inject(this)
 
-    override fun getSharedImage(): View? = null
+    override fun getSharedImage() = null
 
     override fun shouldDelayTransitionForFragment() = false
 

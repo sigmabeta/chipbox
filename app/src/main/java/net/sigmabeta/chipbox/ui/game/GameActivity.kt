@@ -18,18 +18,15 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.ui.BaseActivity
+import net.sigmabeta.chipbox.ui.ChromeActivity
 import net.sigmabeta.chipbox.ui.ListView
-import net.sigmabeta.chipbox.util.animation.CustomTextView
-import net.sigmabeta.chipbox.util.animation.ReflowText
-import net.sigmabeta.chipbox.util.animation.ReflowableTextView
-import net.sigmabeta.chipbox.util.animation.removeNullViewPairs
+import net.sigmabeta.chipbox.util.animation.*
 import net.sigmabeta.chipbox.util.calculateAspectRatio
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import net.sigmabeta.chipbox.util.loadImageSetSize
 import javax.inject.Inject
 
-class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView<Track, GameTrackViewHolder> {
+class GameActivity : ChromeActivity<GamePresenter, GameView>(), GameView, ListView<Track, GameTrackViewHolder> {
     lateinit var presenter: GamePresenter
         @Inject set
 
@@ -49,10 +46,15 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
         }
     }
 
+    override fun setList(list: List<Track>) = Unit
+
+    override fun animateChanges(changeset: OrderedCollectionChangeSet) = Unit
+
+    override fun startRescan() = Unit
+
     /**
      * GameView
      */
-
 
     override fun setGame(game: Game, width: Int, height: Int) {
         adapter.game = game
@@ -83,22 +85,6 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
         })
     }
 
-    override fun setList(list: List<Track>) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun animateChanges(changeset: OrderedCollectionChangeSet) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun isScrolledToBottom(): Boolean {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
-    override fun startRescan() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
-
     override fun setPlayingTrack(track: Track) {
         adapter.playingTrackId = track.id
     }
@@ -108,22 +94,30 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
     }
 
     /**
-     * BaseActivity
+     * BaseView
      */
 
     override fun showLoadingState() = Unit
 
     override fun showContent() = Unit
 
-    override fun inject() {
-        getTypedApplication().appComponent.inject(this)
-    }
+    override fun getPresenterImpl() = presenter
 
-    override fun getPresenterImpl(): GamePresenter {
-        return presenter
-    }
+    /**
+     * ChromeActivity
+     */
+
+    override fun getScrollingContentView() = list_tracks
+
+    override fun isScrolledToBottom() = getScrollingContentView().isScrolledToBottom()
+
+    /**
+     * BaseActivity
+     */
 
     override fun configureViews() {
+        super.configureViews()
+
         val layoutManager = LinearLayoutManager(this)
 
         list_tracks.adapter = adapter
@@ -166,11 +160,13 @@ class GameActivity : BaseActivity<GamePresenter, GameView>(), GameView, ListView
         })
     }
 
-    override fun getLayoutId() = R.layout.activity_game
+    override fun getContentLayoutId() = R.layout.activity_game
 
     override fun getContentLayout() = main_content
 
-    override fun getSharedImage(): View? = image_main
+    override fun inject() = getTypedApplication().appComponent.inject(this)
+
+    override fun getSharedImage() = image_main
 
     override fun shouldDelayTransitionForFragment() = false
 

@@ -2,9 +2,9 @@ package net.sigmabeta.chipbox.ui.game
 
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.ui.ChromeView
 
-interface GameView : BaseView {
+interface GameView : ChromeView {
     fun setTracks(tracks: List<Track>)
 
     fun setPlayingTrack(track: Track)

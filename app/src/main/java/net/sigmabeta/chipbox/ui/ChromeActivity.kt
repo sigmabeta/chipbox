@@ -263,10 +263,12 @@ abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActi
 
     @CallSuper
     override fun configureViews() {
-        setSupportActionBar(toolbar)
+        if (toolbar != null) {
+            setSupportActionBar(toolbar)
 
-        val actionBar = supportActionBar
-        actionBar?.setDisplayHomeAsUpEnabled(true)
+            val actionBar = supportActionBar
+            actionBar?.setDisplayHomeAsUpEnabled(true)
+        }
 
         setUpNavigationDrawer()
 
@@ -326,7 +328,7 @@ abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActi
     }
 
     private fun showBackArrowInToolbar() {
-        toolbar.setNavigationOnClickListener { v -> onBackPressed() }
+        toolbar?.setNavigationOnClickListener { v -> onBackPressed() }
         drawerToggle?.isDrawerIndicatorEnabled = false
     }
 
