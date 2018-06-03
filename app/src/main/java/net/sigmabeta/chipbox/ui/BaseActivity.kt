@@ -266,6 +266,19 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
         showSnackbar(getString(R.string.permission_general_permanent), null, 0)
     }
 
+    protected fun setupToolbar(showArrow: Boolean) {
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
+
+        if (toolbar != null) {
+            setSupportActionBar(toolbar)
+
+            val actionBar = supportActionBar
+            actionBar?.setDisplayHomeAsUpEnabled(true)
+        }
+
+        if (showArrow) showBackXInToolbar() else showBackXInToolbar()
+    }
+
     protected open fun showBackArrowInToolbar() {
         findViewById<Toolbar>(R.id.toolbar)?.setNavigationOnClickListener { v -> onBackPressed() }
     }
