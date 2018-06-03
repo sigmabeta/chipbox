@@ -8,6 +8,7 @@ import android.support.design.widget.Snackbar
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.Toolbar
 import android.util.Pair
 import android.view.View
 import android.view.ViewGroup
@@ -263,6 +264,15 @@ abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : 
 
     private fun showPermanentDenialError(lastPermRequestId: String) {
         showSnackbar(getString(R.string.permission_general_permanent), null, 0)
+    }
+
+    protected open fun showBackArrowInToolbar() {
+        findViewById<Toolbar>(R.id.toolbar)?.setNavigationOnClickListener { v -> onBackPressed() }
+    }
+
+    protected fun showBackXInToolbar() {
+        supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_clear_white_24dp)
+        findViewById<Toolbar>(R.id.toolbar)?.setNavigationOnClickListener { v -> onBackPressed() }
     }
 
     companion object {
