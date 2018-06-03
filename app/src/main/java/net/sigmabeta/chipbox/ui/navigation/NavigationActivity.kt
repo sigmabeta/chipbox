@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.ui.navigation
 
 import android.content.Context
 import android.content.Intent
-import android.view.View
 import kotlinx.android.synthetic.main.activity_navigation.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -27,16 +26,15 @@ class NavigationActivity : ChromeActivity<NavigationPresenter, NavigationView>()
     }
 
     override fun showFragment(fragmentTag: String, fragmentArg: String?) {
-        var fragment: BaseFragment<*, *>
-
-        when (fragmentTag) {
-            GameGridFragment.FRAGMENT_TAG -> fragment = GameGridFragment.newInstance(fragmentArg)
-            TrackListFragment.FRAGMENT_TAG -> fragment = TrackListFragment.newInstance(fragmentArg)
+        var fragment: BaseFragment<*, *> = when (fragmentTag) {
+            GameGridFragment.FRAGMENT_TAG -> GameGridFragment.newInstance(fragmentArg)
+            TrackListFragment.FRAGMENT_TAG -> TrackListFragment.newInstance(fragmentArg)
             else -> {
                 presenter.onUnsupportedFragment()
                 return
             }
         }
+
         supportFragmentManager.beginTransaction()
                 .add(R.id.frame_fragment, fragment, fragmentTag)
                 .commit()
@@ -58,7 +56,7 @@ class NavigationActivity : ChromeActivity<NavigationPresenter, NavigationView>()
 
     override fun getScrollingContentView() = getFragment()?.getScrollingView()
 
-    override fun isScrolledToBottom(): Boolean = getFragment()?.isScrolledToBottom() ?: false
+    override fun isScrolledToBottom() = getFragment()?.isScrolledToBottom() ?: false
 
     /**
      * BaseActivity
@@ -70,7 +68,7 @@ class NavigationActivity : ChromeActivity<NavigationPresenter, NavigationView>()
 
     override fun inject() = getTypedApplication().appComponent.inject(this)
 
-    override fun getSharedImage(): View? = null
+    override fun getSharedImage() = null
 
     override fun shouldDelayTransitionForFragment() = false
 

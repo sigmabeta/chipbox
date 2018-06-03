@@ -5,20 +5,24 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.ui.ActivityPresenter
+import net.sigmabeta.chipbox.model.repository.LibraryScanner
+import net.sigmabeta.chipbox.ui.ChromePresenter
 import net.sigmabeta.chipbox.ui.UiState
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GamePresenter @Inject constructor(val player: Player,
-                                        val updater: UiUpdater) : ActivityPresenter<GameView>() {
+class GamePresenter @Inject constructor(player: Player,
+                                        scanner: LibraryScanner,
+                                        playlist: Playlist,
+                                        updater: UiUpdater) : ChromePresenter<GameView>(player, scanner, playlist, updater) {
     var gameId: String? = null
 
     var game: Game? = null
@@ -49,8 +53,6 @@ class GamePresenter @Inject constructor(val player: Player,
         gameId = arguments?.getString(GameActivity.ARGUMENT_GAME_ID)
         width = arguments?.getInt(GameActivity.ARGUMENT_GAME_IMAGE_WIDTH) ?: -1
         height = arguments?.getInt(GameActivity.ARGUMENT_GAME_IMAGE_HEIGHT) ?: -1
-
-        this.gameId = gameId
 
         gameId?.let {
             val gameSubscription = repository.getGame(it)
@@ -85,6 +87,8 @@ class GamePresenter @Inject constructor(val player: Player,
     }
 
     override fun showReadyState() {
+        super.showReadyState()
+
         game?.let {
             view?.setGame(it, width, height)
         }
