@@ -17,7 +17,7 @@ abstract class ChromePresenter<V : ChromeView>(val player: Player,
                                                val scanner: LibraryScanner,
                                                val playlist: Playlist,
                                                val updater: UiUpdater) : ActivityPresenter<V>() {
-    var game: Game? = null
+    var nowPlayingGame: Game? = null
 
     fun onNowPlayingClicked() {
         view?.launchPlayerActivity()
@@ -95,7 +95,7 @@ abstract class ChromePresenter<V : ChromeView>(val player: Player,
     }
 
     override fun teardown() {
-        game = null
+        nowPlayingGame = null
     }
 
     /**
@@ -155,11 +155,11 @@ abstract class ChromePresenter<V : ChromeView>(val player: Player,
         if (gameId != null) {
             val game = repository.getGameSync(gameId)
 
-            if (force || this.game !== game) {
+            if (force || this.nowPlayingGame !== game) {
                 view?.setGameBoxArt(game?.artLocal, !force)
             }
 
-            this.game = game
+            this.nowPlayingGame = game
         }
     }
 }
