@@ -96,7 +96,16 @@ class DebugActivity : BaseActivity<DebugPresenter, DebugView>(),
 
     override fun getPresenterImpl() = presenter
 
-    override fun configureViews() = Unit
+    override fun configureViews() {
+        if (toolbar != null) {
+            setSupportActionBar(toolbar)
+
+            val actionBar = supportActionBar
+            actionBar?.setDisplayHomeAsUpEnabled(true)
+        }
+
+        showBackXInToolbar()
+    }
 
     override fun getLayoutId() = R.layout.activity_debug
 
