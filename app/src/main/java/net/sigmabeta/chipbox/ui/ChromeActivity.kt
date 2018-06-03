@@ -327,8 +327,8 @@ abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActi
         }
     }
 
-    private fun showBackArrowInToolbar() {
-        toolbar?.setNavigationOnClickListener { v -> onBackPressed() }
+    override fun showBackArrowInToolbar() {
+        super.showBackArrowInToolbar()
         drawerToggle?.isDrawerIndicatorEnabled = false
     }
 
