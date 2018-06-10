@@ -210,6 +210,7 @@ class GameActivity : ChromeActivity<GamePresenter, GameView>(), GameView, ListVi
                    gameId: String,
                    navBar: Pair<View, String>?,
                    statusBar: Pair<View, String>?,
+                   bottomBar: Pair<View, String>?,
                    imageView: Pair<View, String>,
                    titleText: Pair<View, String>,
                    subtitleText: Pair<View, String>,
@@ -225,6 +226,7 @@ class GameActivity : ChromeActivity<GamePresenter, GameView>(), GameView, ListVi
 
             val sharedViewPairs = removeNullViewPairs(navBar,
                     statusBar,
+                    bottomBar,
                     imageView,
                     titleText,
                     subtitleText,

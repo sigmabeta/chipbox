@@ -9,6 +9,7 @@
     <transitionSet>
         <targets>
             <target android:targetId="@id/image_main" />
+            <target android:targetId="@id/layout_bottom_bar" />
         </targets>
 
         <autoTransition
