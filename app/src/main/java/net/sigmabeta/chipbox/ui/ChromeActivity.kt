@@ -27,6 +27,7 @@ import net.sigmabeta.chipbox.util.animation.changeText
 import net.sigmabeta.chipbox.util.animation.slideViewOffscreen
 import net.sigmabeta.chipbox.util.animation.slideViewOnscreen
 import net.sigmabeta.chipbox.util.animation.slideViewToProperLocation
+import net.sigmabeta.chipbox.util.convertDpToPx
 import net.sigmabeta.chipbox.util.loadImageLowQuality
 
 abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActivity<P, V>(), ChromeView {
@@ -71,101 +72,39 @@ abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActi
     }
 
     override fun showNowPlaying() {
-        getScrollingContentView()?.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_status_bar).toInt())
-
-        relative_now_playing.visibility = View.VISIBLE
-        relative_scanning.visibility = View.GONE
-
-        when (state) {
-            STATE_IDLE -> {
-                state = STATE_PLAY_PAUSE
-                layout_bottom_bar.slideViewOnscreen()
-            }
-            STATE_SCANNING -> state = STATE_SCAN_PLAY_PAUSE
-            STATE_PLAY_PAUSE -> Unit
-            STATE_SCAN_PLAY_PAUSE -> Unit
-            else -> {
-                state = STATE_PLAY_PAUSE
-
-                layout_bottom_bar.translationY = 0.0f
-                layout_bottom_bar.visibility = View.VISIBLE
-            }
+        if (state == STATE_SCANNING) {
+            state = STATE_SCAN_PLAY_PAUSE
+        } else {
+            state = STATE_PLAY_PAUSE
         }
     }
 
     override fun hideNowPlaying() {
-        when (state) {
-            STATE_PLAY_PAUSE -> {
-                state = STATE_IDLE
-                hideStatusBar()
-            }
-            STATE_SCAN_PLAY_PAUSE -> {
-                state = STATE_SCANNING
-
-                relative_now_playing.visibility = View.GONE
-                relative_scanning.visibility = View.VISIBLE
-            }
-            STATE_SCANNING -> Unit
-            STATE_IDLE -> Unit
-            else -> {
-                state = STATE_IDLE
-
-                layout_bottom_bar.visibility = View.GONE
-                getScrollingContentView()?.setPadding(0, 0, 0, 0)
-            }
+        if (state == STATE_SCAN_PLAY_PAUSE) {
+            state = STATE_SCANNING
+        } else if (state != STATE_SCANNING) {
+            state = STATE_IDLE
         }
     }
 
-    override fun showScanning(type: Int?, name: String?) {
-        getScrollingContentView()?.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_status_bar).toInt())
-
-        when (state) {
-            STATE_IDLE -> {
-                state = STATE_SCANNING
-
-                layout_bottom_bar.slideViewOnscreen()
-                relative_now_playing.visibility = View.GONE
-                relative_scanning.visibility = View.VISIBLE
-                text_scanning_status.text = getStatusString(type, name)
-            }
-            STATE_SCANNING -> text_scanning_status.text = getStatusString(type, name)
-            STATE_SCAN_PLAY_PAUSE -> Unit
-            STATE_PLAY_PAUSE -> {
-                state = STATE_SCAN_PLAY_PAUSE
-                progress_now_playing.visibility = View.VISIBLE
-            }
-            else -> {
-                state = STATE_SCANNING
-
-                layout_bottom_bar.translationY = 0.0f
-                layout_bottom_bar.visibility = View.VISIBLE
-
-                relative_now_playing.visibility = View.GONE
-                relative_scanning.visibility = View.VISIBLE
-            }
+    override fun showScanning() {
+        if (state == STATE_PLAY_PAUSE) {
+            state = STATE_SCAN_PLAY_PAUSE
+        } else if (state != STATE_SCAN_PLAY_PAUSE) {
+            state = STATE_SCANNING
         }
     }
 
     override fun hideScanning() {
-        when (state) {
-            STATE_PLAY_PAUSE -> Unit
-            STATE_SCANNING -> {
-                state = STATE_IDLE
-                hideStatusBar()
-            }
-            STATE_SCAN_PLAY_PAUSE -> {
-                state = STATE_PLAY_PAUSE
-                progress_now_playing.visibility = View.GONE
-            }
-            STATE_IDLE -> Unit
-            else -> {
-                state = STATE_IDLE
-                progress_now_playing.visibility = View.GONE
-
-                layout_bottom_bar.visibility = View.GONE
-                getScrollingContentView()?.setPadding(0, 0, 0, 0)
-            }
+        if (state == STATE_SCAN_PLAY_PAUSE) {
+            state = STATE_PLAY_PAUSE
+        } else if (state != STATE_PLAY_PAUSE) {
+            state = STATE_IDLE
         }
+    }
+
+    override fun setScanText(type: Int?, name: String?) {
+        text_scanning_status.text = getStatusString(type, name)
     }
 
     override fun showFileScanSuccess(newTracks: Int, updatedTracks: Int) {
@@ -251,6 +190,15 @@ abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActi
         return getPresenterImpl().onOptionsItemSelected(item.itemId)
     }
 
+    override fun onPause() {
+        super.onPause()
+        state = STATE_UNKNOWN
+    }
+
+    /**
+     * BaseActivity
+     */
+
     override fun inflateContent() {
         val inflater = LayoutInflater.from(this)
         val contentLayoutId = getContentLayoutId()
@@ -283,6 +231,129 @@ abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActi
     protected open fun shouldShowBackButton() = true
 
     private var state = STATE_UNKNOWN
+        set(value) {
+            when (field) {
+                STATE_UNKNOWN -> fromUnknownTo(value)
+                STATE_IDLE -> fromIdleTo(value)
+                STATE_SCANNING -> fromScanningTo(value)
+                STATE_PLAY_PAUSE -> fromPlayingTo(value)
+                STATE_SCAN_PLAY_PAUSE -> fromScanPlayingTo(value)
+            }
+
+            field = value
+        }
+
+    private fun fromUnknownTo(state: Int) {
+        when (state) {
+            STATE_UNKNOWN -> Unit
+            STATE_IDLE -> {
+                layout_bottom_bar.visibility = View.GONE
+                layout_bottom_bar.translationY = convertDpToPx(64.0f, this)
+
+                getScrollingContentView()?.setPadding(0, 0, 0, 0)
+            }
+            STATE_SCANNING -> {
+                layout_bottom_bar.translationY = 0.0f
+                layout_bottom_bar.visibility = View.VISIBLE
+
+                relative_now_playing.visibility = View.GONE
+                relative_scanning.visibility = View.VISIBLE
+            }
+            STATE_PLAY_PAUSE -> {
+                layout_bottom_bar.translationY = 0.0f
+                layout_bottom_bar.visibility = View.VISIBLE
+                relative_now_playing.visibility = View.VISIBLE
+                relative_scanning.visibility = View.GONE
+            }
+            STATE_SCAN_PLAY_PAUSE -> {
+                layout_bottom_bar.translationY = 0.0f
+                layout_bottom_bar.visibility = View.VISIBLE
+                progress_now_playing.visibility = View.VISIBLE
+                relative_now_playing.visibility = View.VISIBLE
+                relative_scanning.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun fromIdleTo(state: Int) {
+        when (state) {
+            STATE_UNKNOWN -> Unit
+            STATE_IDLE -> Unit
+            STATE_SCANNING -> {
+                showStatusBar()
+
+                relative_now_playing.visibility = View.GONE
+                relative_scanning.visibility = View.VISIBLE
+            }
+            STATE_PLAY_PAUSE -> {
+                showStatusBar()
+
+                relative_now_playing.visibility = View.VISIBLE
+                relative_scanning.visibility = View.GONE
+                progress_now_playing.visibility = View.GONE
+            }
+            STATE_SCAN_PLAY_PAUSE -> {
+                showStatusBar()
+                relative_now_playing.visibility = View.VISIBLE
+                relative_scanning.visibility = View.GONE
+                progress_now_playing.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    private fun fromScanningTo(state: Int) {
+        when (state) {
+            STATE_UNKNOWN -> Unit
+            STATE_IDLE -> hideStatusBar()
+            STATE_SCANNING -> Unit
+            STATE_PLAY_PAUSE -> {
+                progress_now_playing.visibility = View.GONE
+                relative_now_playing.visibility = View.VISIBLE
+                relative_scanning.visibility = View.GONE
+            }
+            STATE_SCAN_PLAY_PAUSE -> {
+                progress_now_playing.visibility = View.VISIBLE
+                relative_now_playing.visibility = View.VISIBLE
+                relative_scanning.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun fromPlayingTo(state: Int) {
+        when (state) {
+            STATE_UNKNOWN -> Unit
+            STATE_IDLE -> hideStatusBar()
+            STATE_SCANNING -> {
+                progress_now_playing.visibility = View.GONE
+                relative_now_playing.visibility = View.GONE
+                relative_scanning.visibility = View.VISIBLE
+            }
+            STATE_PLAY_PAUSE -> Unit
+            STATE_SCAN_PLAY_PAUSE -> {
+                progress_now_playing.visibility = View.VISIBLE
+                relative_now_playing.visibility = View.VISIBLE
+                relative_scanning.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun fromScanPlayingTo(state: Int) {
+        when (state) {
+            STATE_UNKNOWN -> Unit
+            STATE_IDLE -> hideStatusBar()
+            STATE_SCANNING -> {
+                progress_now_playing.visibility = View.GONE
+                relative_now_playing.visibility = View.GONE
+                relative_scanning.visibility = View.VISIBLE
+            }
+            STATE_PLAY_PAUSE -> {
+                progress_now_playing.visibility = View.GONE
+                relative_now_playing.visibility = View.VISIBLE
+                relative_scanning.visibility = View.GONE
+            }
+            STATE_SCAN_PLAY_PAUSE -> Unit
+        }
+    }
 
     private fun getStatusString(type: Int?, name: String?): String? {
         return if (name != null) {
@@ -297,11 +368,16 @@ abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActi
         }
     }
 
+    private fun showStatusBar() {
+        getScrollingContentView()?.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_status_bar).toInt())
+        layout_bottom_bar.slideViewOnscreen()
+    }
+
     private fun hideStatusBar() {
         val scrollingContent = getScrollingContentView()
         scrollingContent?.setPadding(0, 0, 0, 0)
 
-        if (isScrolledToBottom() ?: false) {
+        if (isScrolledToBottom()) {
             scrollingContent?.translationY = -(resources.getDimension(R.dimen.height_status_bar))
             scrollingContent?.slideViewToProperLocation()
         }

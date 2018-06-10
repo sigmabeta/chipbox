@@ -23,7 +23,9 @@ interface ChromeView : BaseView {
 
     fun launchOnboarding()
 
-    fun showScanning(type: Int?, name: String?)
+    fun setScanText(type: Int?, name: String?)
+
+    fun showScanning()
 
     fun hideScanning()
 

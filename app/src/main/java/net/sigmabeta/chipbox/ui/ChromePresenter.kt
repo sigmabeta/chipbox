@@ -74,7 +74,10 @@ abstract class ChromePresenter<V : ChromeView>(val player: Player,
                         }
                         is GameEvent -> displayGame(it.gameId, false)
                         is StateEvent -> displayState(it.state)
-                        is FileScanEvent -> view?.showScanning(it.type, it.name)
+                        is FileScanEvent -> {
+                            view?.showScanning()
+                            view?.setScanText(it.type, it.name)
+                        }
                         is FileScanFailedEvent -> {
                             handleError(it.exception)
                             view?.hideScanning()
@@ -132,7 +135,7 @@ abstract class ChromePresenter<V : ChromeView>(val player: Player,
         }
 
         if (scanner.state == LibraryScanner.STATE_SCANNING) {
-            view?.showScanning(null, null)
+            view?.showScanning()
         } else {
             view?.hideScanning()
         }
