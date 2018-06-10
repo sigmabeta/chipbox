@@ -34,6 +34,9 @@ abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActi
 
     var drawerToggle: ActionBarDrawerToggle? = null
 
+    fun getShareableBottomBar(): Pair<View, String>? {
+        return Pair(layout_bottom_bar ?: return null, "bottom_bar")
+    }
 
     /**
      * ChromeView
