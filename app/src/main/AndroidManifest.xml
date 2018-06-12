@@ -27,11 +27,11 @@
 
         <activity
             android:name=".ui.main.MainActivity"
-            android:theme="@style/ThemeMain"/>
+            android:theme="@style/ThemeDrawer"/>
 
         <activity
             android:name=".ui.navigation.NavigationActivity"
-            android:theme="@style/ThemeNav"/>
+            android:theme="@style/ThemeDrawer"/>
 
         <activity
             android:name=".ui.player.PlayerActivity"
@@ -44,13 +44,13 @@
 
         <activity
             android:name=".ui.settings.SettingsActivity"
-            android:theme="@style/ThemeNav"
+            android:theme="@style/ThemeNoDrawer"
             android:label="@string/title_settings"
             android:screenOrientation="portrait"/>
 
         <activity
             android:name=".ui.debug.DebugActivity"
-            android:theme="@style/ThemeNav"
+            android:theme="@style/ThemeNoDrawer"
             android:label="@string/title_debug"
             android:screenOrientation="portrait" >
 

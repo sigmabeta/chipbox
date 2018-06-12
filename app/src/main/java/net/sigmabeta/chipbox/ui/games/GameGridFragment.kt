@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.BaseActivity
+import net.sigmabeta.chipbox.ui.ChromeActivity
 import net.sigmabeta.chipbox.ui.ListFragment
 import net.sigmabeta.chipbox.ui.NavigationFragment
 import net.sigmabeta.chipbox.ui.game.GameActivity
@@ -35,6 +36,7 @@ class GameGridFragment : ListFragment<GameGridPresenter, GameListView, Game, Gam
                 id,
                 activity.getShareableNavBar(),
                 activity.getShareableStatusBar(),
+                (activity as ChromeActivity).getShareableBottomBar(),
                 shareableImageView,
                 shareableTitleView,
                 shareableSubtitleView,
@@ -50,6 +52,12 @@ class GameGridFragment : ListFragment<GameGridPresenter, GameListView, Game, Gam
      */
 
     override fun createAdapter() = GameGridAdapter(this)
+
+    /**
+     * NavigationFragment
+     */
+
+    override fun getScrollingView() = recycler_list
 
     /**
      * BaseFragment
