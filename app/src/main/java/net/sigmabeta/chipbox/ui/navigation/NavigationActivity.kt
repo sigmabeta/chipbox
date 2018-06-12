@@ -2,27 +2,18 @@ package net.sigmabeta.chipbox.ui.navigation
 
 import android.content.Context
 import android.content.Intent
-import android.view.View
-import android.widget.FrameLayout
 import kotlinx.android.synthetic.main.activity_navigation.*
-import kotlinx.android.synthetic.main.layout_status.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
+import net.sigmabeta.chipbox.ui.ChromeActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.NavigationFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
-import net.sigmabeta.chipbox.util.animation.changeText
-import net.sigmabeta.chipbox.util.animation.slideViewOffscreen
-import net.sigmabeta.chipbox.util.animation.slideViewOnscreen
-import net.sigmabeta.chipbox.util.animation.slideViewToProperLocation
-import net.sigmabeta.chipbox.util.loadImageLowQuality
 import javax.inject.Inject
 
-class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), NavigationView, FragmentContainer {
+class NavigationActivity : ChromeActivity<NavigationPresenter, NavigationView>(), NavigationView, FragmentContainer {
     lateinit var presenter: NavigationPresenter
         @Inject set
 
@@ -30,126 +21,59 @@ class NavigationActivity : BaseActivity<NavigationPresenter, NavigationView>(), 
      * NavigationView
      */
 
-    override fun showFragment(fragmentTag: String, fragmentArg: String?) {
-        var fragment: BaseFragment<*, *>
+    override fun setTitle(title: String) {
+        this.title = title
+    }
 
-        when (fragmentTag) {
-            GameGridFragment.FRAGMENT_TAG -> fragment = GameGridFragment.newInstance(fragmentArg)
-            TrackListFragment.FRAGMENT_TAG -> fragment = TrackListFragment.newInstance(fragmentArg)
+    override fun showFragment(fragmentTag: String, fragmentArg: String?) {
+        var fragment: BaseFragment<*, *> = when (fragmentTag) {
+            GameGridFragment.FRAGMENT_TAG -> GameGridFragment.newInstance(fragmentArg)
+            TrackListFragment.FRAGMENT_TAG -> TrackListFragment.newInstance(fragmentArg)
             else -> {
                 presenter.onUnsupportedFragment()
                 return
             }
         }
+
         supportFragmentManager.beginTransaction()
                 .add(R.id.frame_fragment, fragment, fragmentTag)
                 .commit()
     }
 
-    override fun setTrackTitle(title: String, animate: Boolean) {
-        if (layout_now_playing.translationY == 0.0f && animate) {
-            text_playing_title.changeText(title)
-        } else {
-            text_playing_title.text = title
-        }
-    }
-
-    override fun setArtist(artist: String, animate: Boolean) {
-        if (layout_now_playing.translationY == 0.0f && animate) {
-            text_playing_subtitle.changeText(artist)
-        } else {
-            text_playing_subtitle.text = artist
-        }
-    }
-
-    override fun setGameBoxArt(imagePath: String?, fade: Boolean) {
-        if (imagePath != null) {
-            image_main_small.loadImageLowQuality(imagePath, fade, false)
-        } else {
-            image_main_small.loadImageLowQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, fade, false)
-        }
-    }
-
-    override fun showPauseButton() {
-        button_play_pause.setImageResource(R.drawable.ic_pause_black_24dp)
-    }
-
-    override fun showPlayButton() {
-        button_play_pause.setImageResource(R.drawable.ic_play_arrow_black_24dp)
-    }
-
-    override fun showNowPlaying(animate: Boolean) {
-        frame_fragment.setPadding(0, 0, 0, resources.getDimension(R.dimen.height_status_bar).toInt())
-
-        if (animate) {
-            layout_now_playing.slideViewOnscreen()
-        } else {
-            layout_now_playing.translationY = 0.0f
-            layout_now_playing.visibility = View.VISIBLE
-        }
-    }
-
-    override fun hideNowPlaying(animate: Boolean) {
-        frame_fragment.setPadding(0, 0, 0, 0)
-
-        if (animate) {
-            if (getFragment()?.isScrolledToBottom() == true) {
-                frame_fragment.translationY = -(resources.getDimension(R.dimen.height_status_bar))
-                frame_fragment.slideViewToProperLocation()
-            }
-
-            layout_now_playing.slideViewOffscreen().withEndAction {
-                layout_now_playing.visibility = View.GONE
-            }
-        } else {
-            layout_now_playing.visibility = View.GONE
-        }
-    }
-
-    override fun launchPlayerActivity() {
-//        PlayerActivity.launch(this, getShareableViews())
-    }
-
     /**
-     * BaseActivity
+     * BaseView
      */
 
     override fun showLoadingState() = Unit
 
     override fun showContent() = Unit
 
-    override fun inject() {
-        getTypedApplication().appComponent.inject(this)
-    }
+    override fun getPresenterImpl() = presenter
 
-    override fun getPresenterImpl(): NavigationPresenter {
-        return presenter
-    }
+    /**
+     * ChromeActivity
+     */
 
-    override fun configureViews() {
-        layout_now_playing.setOnClickListener { presenter.onNowPlayingClicked() }
-        button_play_pause.setOnClickListener { presenter.onPlayFabClicked() }
-    }
+    override fun getScrollingContentView() = getFragment()?.getScrollingView()
 
-    override fun getLayoutId(): Int {
-        return R.layout.activity_navigation
-    }
+    override fun isScrolledToBottom() = getFragment()?.isScrolledToBottom() ?: false
 
-    override fun getContentLayout(): FrameLayout {
-        return frame_fragment
-    }
+    /**
+     * BaseActivity
+     */
 
-    override fun setTitle(title: String) {
-        this.title = title
-    }
+    override fun getContentLayoutId() = R.layout.activity_navigation
 
-    override fun getSharedImage(): View? = null
+    override fun getContentLayout() = frame_fragment
+
+    override fun inject() = getTypedApplication().appComponent.inject(this)
+
+    override fun getSharedImage() = null
 
     override fun shouldDelayTransitionForFragment() = false
 
-
     /**
-     * Private Methods
+     * Implementation Details
      */
 
     private fun getFragment(): NavigationFragment? {
