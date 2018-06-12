@@ -1,6 +1,6 @@
 <resources>
 
-    <style name="ThemeMain" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="ThemeDrawer" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorAccent">@color/accent</item>
@@ -22,7 +22,18 @@
         <item name="android:windowReenterTransition">@null</item>
     </style>
 
-    <style name="ThemeGame" parent="ThemeMain">
+    <style name="ThemeNoDrawer" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+
+        <item name="android:buttonStyle">@style/ChipboxButtonStyle</item>
+
+        <item name="android:windowBackground">@color/background_grey</item>
+
+    </style>
+
+    <style name="ThemeGame" parent="ThemeDrawer">
         <item name="android:statusBarColor">@color/primary_dark</item>
         <item name="android:windowBackground">@android:color/transparent</item>
     </style>
@@ -34,18 +45,6 @@
 
         <item name="android:windowBackground">@color/background_grey</item>
         <item name="android:windowActivityTransitions">true</item>
-    </style>
-
-    <style name="ThemeNav" parent="Theme.AppCompat.Light.DarkActionBar">
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorPrimaryDark">@color/primary_dark</item>
-        <item name="colorAccent">@color/accent</item>
-
-        <item name="android:windowBackground">@color/background_grey</item>
-        <item name="android:windowActivityTransitions">true</item>
-
-        <item name="android:windowSharedElementEnterTransition">@transition/enter_game</item>
-        <item name="android:windowSharedElementReturnTransition">@transition/return_game</item>
     </style>
 
     <style name="ThemePlaylist" parent="Theme.AppCompat.Light.NoActionBar">
