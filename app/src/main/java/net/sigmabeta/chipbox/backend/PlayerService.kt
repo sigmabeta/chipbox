@@ -70,20 +70,21 @@ class PlayerService : Service(), BackendView {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Timber.v("Received StartCommand: %s -> %s", intent?.action, intent?.extras?.get(Intent.EXTRA_KEY_EVENT))
 
+        if (intent?.action == Intent.ACTION_MEDIA_BUTTON) {
+            val keyEvent = intent.extras?.get(Intent.EXTRA_KEY_EVENT) as KeyEvent?
+            if (keyEvent?.keyCode == KEYCODE_MEDIA_STOP) {
+                Timber.w("Notification was swiped away.")
+                notificationManager?.startNotification(true)
+                notificationManager?.stopNotification()
+            }
+        }
+
         MediaButtonReceiver.handleIntent(session, intent)
 
         if (player?.backendView != this) {
             player?.backendView = this
 
             play()
-        }
-
-        if (intent?.action == Intent.ACTION_MEDIA_BUTTON) {
-            val keyEvent = intent.extras?.get(Intent.EXTRA_KEY_EVENT) as KeyEvent?
-            if (keyEvent?.keyCode == KEYCODE_MEDIA_STOP) {
-                Timber.w("Notification was swiped away.")
-                notificationManager?.startNotification(true)
-            }
         }
 
         return Service.START_NOT_STICKY
@@ -113,6 +114,7 @@ class PlayerService : Service(), BackendView {
         Timber.v("Processed PLAY command.")
 
         session?.isActive = true
+        notificationManager?.startNotification(true)
         registerNoisyReceiver()
     }
 
