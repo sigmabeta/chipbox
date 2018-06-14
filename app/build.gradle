@@ -167,3 +167,9 @@ dependencies {
     kapt "com.google.dagger:dagger-compiler:${dagger_version}"
     compileOnly 'org.glassfish:javax.annotation:10.0-b28'
 }
+
+// To allow Viewholder caching.
+// TODO is this still necessary?
+androidExtensions {
+    experimental = true
+}
