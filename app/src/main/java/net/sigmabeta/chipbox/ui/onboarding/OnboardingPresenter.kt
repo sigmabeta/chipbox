@@ -53,12 +53,6 @@ class OnboardingPresenter @Inject constructor(val prefManager: PrefManager) : Ac
             TitleFragment.TAG -> view?.showTitlePage()
             else -> {
                 launchedWithTag = false
-                if (prefManager.get(PrefManager.KEY_ONBOARDED)) {
-                    exitHelper()
-                    return
-                } else {
-                    view?.showTitlePage()
-                }
             }
         }
 
