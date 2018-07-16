@@ -20,7 +20,7 @@
 
         <activity
             android:name=".ui.main.MainActivity"
-            android:theme="@style/ThemeDrawer">
+            android:theme="@style/ThemeDrawerNoTransition">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
