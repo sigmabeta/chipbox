@@ -1,11 +1,13 @@
 package net.sigmabeta.chipbox.ui.main
 
+import android.content.Intent
 import android.os.Bundle
 import kotlinx.android.synthetic.main.activity_main.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ChromeActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.ListFragment
+import net.sigmabeta.chipbox.ui.onboarding.OnboardingActivity
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -16,6 +18,14 @@ class MainActivity : ChromeActivity<MainPresenter, MainView>(), MainView, Fragme
     var pagerAdapter: MainTabPagerAdapter? = null
 
     override fun setTitle(title: String) = Unit
+
+    /**
+     * MainView
+     */
+
+    override fun launchFirstOnboarding() {
+        OnboardingActivity.launchForResult(this)
+    }
 
     /**
      * ChromeActivity
@@ -63,6 +73,10 @@ class MainActivity : ChromeActivity<MainPresenter, MainView>(), MainView, Fragme
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.ThemeDrawerNoTransition)
         super.onCreate(savedInstanceState)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        presenter.onActivityResult(requestCode, resultCode, data)
     }
 
     /**
