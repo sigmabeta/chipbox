@@ -8,7 +8,6 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.main.MainActivity
 import net.sigmabeta.chipbox.ui.onboarding.library.LibraryFragment
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
 import javax.inject.Inject
@@ -49,7 +48,7 @@ class OnboardingActivity : BaseActivity<OnboardingPresenter, OnboardingView>(), 
     override fun exit(andLaunchMain: Boolean) {
         finish()
         if (andLaunchMain) {
-            MainActivity.launch(this)
+//            MainActivity.launch(this)
         }
     }
 
