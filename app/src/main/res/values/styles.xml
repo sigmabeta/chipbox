@@ -1,5 +1,9 @@
 <resources>
 
+    <style name="Launcher" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/bg_launcher</item>
+    </style>
+
     <style name="ThemeDrawerNoTransition" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
