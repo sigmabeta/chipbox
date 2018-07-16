@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.main
 
+import android.os.Bundle
 import kotlinx.android.synthetic.main.activity_main.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ChromeActivity
@@ -54,6 +55,15 @@ class MainActivity : ChromeActivity<MainPresenter, MainView>(), MainView, Fragme
     override fun getSharedImage() = null
 
     override fun shouldDelayTransitionForFragment() = false
+
+    /**
+     * Activity
+     */
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.ThemeDrawerNoTransition)
+        super.onCreate(savedInstanceState)
+    }
 
     /**
      * Implementation Details
