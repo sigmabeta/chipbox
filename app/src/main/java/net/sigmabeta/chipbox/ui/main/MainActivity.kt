@@ -1,7 +1,5 @@
 package net.sigmabeta.chipbox.ui.main
 
-import android.content.Context
-import android.content.Intent
 import kotlinx.android.synthetic.main.activity_main.*
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ChromeActivity
@@ -79,13 +77,6 @@ class MainActivity : ChromeActivity<MainPresenter, MainView>(), MainView, Fragme
         pager_categories.adapter = pagerAdapter
 
         tabs_categories.setupWithViewPager(pager_categories)
-    }
-
-    companion object {
-        fun launch(context: Context) {
-            val launcher = Intent(context, MainActivity::class.java)
-            context.startActivity(launcher)
-        }
     }
 }
 
