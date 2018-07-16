@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.ui.main
 
+import android.os.Bundle
+import net.sigmabeta.chipbox.backend.PrefManager
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.backend.player.Playlist
@@ -9,7 +11,18 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class MainPresenter @Inject constructor(player: Player,
+class MainPresenter @Inject constructor(val prefManager: PrefManager,
+                                        player: Player,
                                         scanner: LibraryScanner,
                                         playlist: Playlist,
-                                        updater: UiUpdater) : ChromePresenter<MainView>(player, scanner, playlist, updater)
+                                        updater: UiUpdater) : ChromePresenter<MainView>(player, scanner, playlist, updater) {
+    override fun setup(arguments: Bundle?) {
+        super.setup(arguments)
+
+        if (prefManager.get(PrefManager.KEY_ONBOARDED)) {
+            return
+        } else {
+            view?.launchOnboarding()
+        }
+    }
+}
