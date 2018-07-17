@@ -77,8 +77,6 @@ class OnboardingActivity : BaseActivity<OnboardingPresenter, OnboardingView>(), 
     override fun getContentLayout() = frame_content
 
     override fun onBackPressed() {
-        super.onBackPressed()
-
         // From superclass
         val fragmentManager = supportFragmentManager
         val isStateSaved = fragmentManager.isStateSaved
