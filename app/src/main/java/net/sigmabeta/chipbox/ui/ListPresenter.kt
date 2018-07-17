@@ -37,6 +37,10 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
     }
 
     override fun showReadyState() {
+        if (subscriptions.isDisposed) {
+            loadItems()
+        }
+
         view?.setList(list!!)
 
         changeset?.let {
