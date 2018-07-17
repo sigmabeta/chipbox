@@ -21,7 +21,9 @@ class MainPresenter @Inject constructor(val prefManager: PrefManager,
                                         updater: UiUpdater) : ChromePresenter<MainView>(player, scanner, playlist, updater) {
     fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_ONBOARDING) {
-            if (resultCode != RESULT_OK) {
+            if (resultCode == RESULT_OK) {
+                view?.startScanner()
+            } else {
                 view?.finish()
             }
         }
