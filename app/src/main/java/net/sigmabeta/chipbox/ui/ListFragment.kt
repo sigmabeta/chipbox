@@ -51,7 +51,7 @@ abstract class ListFragment<P : ListPresenter<V, T, VH>,
      */
 
     override fun showLoadingState() = ifVisible {
-        if (recycler_list?.visibility != VISIBLE) {
+        if (recycler_list != null && recycler_list.visibility != VISIBLE) {
             loading_spinner.fadeIn().setDuration(50)
             recycler_list.fadeOutPartially()
             layout_empty_state.fadeOutGone()
@@ -59,7 +59,7 @@ abstract class ListFragment<P : ListPresenter<V, T, VH>,
     }
 
     override fun showContent() = ifVisible(true)  {
-        if (recycler_list?.visibility != VISIBLE) {
+        if (recycler_list != null && recycler_list.visibility != VISIBLE) {
             recycler_list.fadeIn()
             loading_spinner.fadeOutGone()
             layout_empty_state.fadeOutGone()
@@ -67,7 +67,7 @@ abstract class ListFragment<P : ListPresenter<V, T, VH>,
     }
 
     override fun showEmptyState() = ifVisible(true)  {
-        if (label_empty_state?.visibility != VISIBLE) {
+        if (label_empty_state != null && label_empty_state.visibility != VISIBLE) {
             layout_empty_state.fadeInFromZero()
             label_empty_state.fadeInFromZero().setStartDelay(300)
             button_empty_state.fadeInFromZero().setStartDelay(600)
