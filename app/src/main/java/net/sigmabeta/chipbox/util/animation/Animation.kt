@@ -56,6 +56,7 @@ fun View.slideViewToProperLocation(): ViewPropertyAnimator {
 fun View.fadeIn(): ViewPropertyAnimator {
     visibility = View.VISIBLE
 
+    animate().cancel()
     return animate()
             .withLayer()
             .setInterpolator(DECELERATE)
@@ -67,6 +68,7 @@ fun View.fadeInFromZero(): ViewPropertyAnimator {
     visibility = View.VISIBLE
     alpha = 0.0f
 
+    animate().cancel()
     return animate()
             .withLayer()
             .setInterpolator(DECELERATE)
@@ -75,6 +77,7 @@ fun View.fadeInFromZero(): ViewPropertyAnimator {
 }
 
 fun View.fadeOutGone(): ViewPropertyAnimator {
+    animate().cancel()
     return animate()
             .withLayer()
             .setInterpolator(ACCELERATE)
@@ -86,6 +89,7 @@ fun View.fadeOutGone(): ViewPropertyAnimator {
 }
 
 fun View.fadeOut(): ViewPropertyAnimator {
+    animate().cancel()
     return animate()
             .withLayer()
             .setInterpolator(ACCELERATE)
@@ -94,6 +98,7 @@ fun View.fadeOut(): ViewPropertyAnimator {
 }
 
 fun View.fadeOutPartially(): ViewPropertyAnimator {
+    animate().cancel()
     return animate()
             .withLayer()
             .setInterpolator(ACCELERATE)
