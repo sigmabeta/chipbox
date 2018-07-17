@@ -1,11 +1,8 @@
 package net.sigmabeta.chipbox.ui.onboarding.library
 
-import android.Manifest
-import android.content.Intent
 import kotlinx.android.synthetic.main.fragment_library.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.BaseActivity
@@ -24,12 +21,7 @@ class LibraryFragment : BaseFragment<LibraryPresenter, LibraryView>(), LibraryVi
      */
 
     override fun onNextClicked() {
-        (activity as BaseActivity<*, *>).doWithPermission(Manifest.permission.READ_EXTERNAL_STORAGE) {
-            val intent = Intent(activity, ScanService::class.java)
-            activity!!.startService(intent)
-
-            (activity as OnboardingView).showNextScreen()
-        }
+        (activity as OnboardingView).showNextScreen()
     }
 
     override fun onSkipClicked() {
