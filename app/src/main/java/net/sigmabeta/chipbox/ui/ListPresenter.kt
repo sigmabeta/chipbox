@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui
 
 import android.os.Bundle
+import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.realm.OrderedCollectionChangeSet
@@ -58,6 +59,8 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
 
     abstract fun getLoadOperation(): Observable<CollectionChange<RealmResults<T>>>?
 
+    protected open fun getLoadOperationWithoutDiffs() : Flowable<RealmResults<T>>? = null
+
     /**
      * Implementation Details
      */
@@ -68,16 +71,16 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
         state = UiState.LOADING
 
         // TODO Fix realm track list query problem
-        val subscription = getLoadOperation()
+        var subscription = getLoadOperation()
                 ?.observeOn(AndroidSchedulers.mainThread())
                 ?.subscribe(
                         {
-                            printBenchmark("Items Loaded, size = ${it.collection.size}")
-
                             list = it.collection
                             changeset = it.changeset
 
                             if (list?.isNotEmpty() == true) {
+                                printBenchmark("Items Loaded, size = ${it.collection.size}")
+
                                 Timber.v("Showing items.")
                                 state = UiState.READY
                             } else {
@@ -93,6 +96,33 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
                             handleError(it)
                         }
                 )
+
+        if (subscription == null) {
+            subscription = getLoadOperationWithoutDiffs()
+                    ?.observeOn(AndroidSchedulers.mainThread())
+                    ?.subscribe(
+                            {
+                                list = it.toMutableList()
+
+                                if (list?.isNotEmpty() == true) {
+                                    printBenchmark("Items Loaded, size = ${it.size}")
+
+                                    Timber.v("Showing items.")
+                                    state = UiState.READY
+                                } else {
+                                    if (it.isLoaded) {
+                                        Timber.v("No items to show.")
+                                        state = UiState.EMPTY
+                                    } else {
+                                        Timber.v("Query not actually ready yet.")
+                                    }
+                                }
+                            },
+                            {
+                                handleError(it)
+                            }
+                    )
+        }
 
         if (subscription != null) {
             subscriptions.add(subscription)
