@@ -19,8 +19,14 @@ class PlaylistFragment : ListFragment<PlaylistFragmentPresenter, PlaylistFragmen
      * PlaylistFragmentView
      */
 
+
+
     override fun onTrackMoved(originPos: Int, destPos: Int) {
         adapter.notifyItemMoved(originPos, destPos)
+    }
+
+    override fun startDrag(holder: PlaylistTrackViewHolder) {
+        touchHelper.startDrag(holder)
     }
 
     override fun onTrackRemoved(position: Int) {
@@ -55,8 +61,6 @@ class PlaylistFragment : ListFragment<PlaylistFragmentPresenter, PlaylistFragmen
     override fun inject(): Boolean {
         val container = activity
         if (container is BaseActivity<*, *>) {container.getFragmentComponent()?.let {
-
-
                 it.inject(this)
                 return true
             } ?: let {
