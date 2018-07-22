@@ -16,7 +16,11 @@
 
         <activity
             android:name=".ui.onboarding.OnboardingActivity"
-            android:theme="@style/ThemeOnboard">
+            android:theme="@style/ThemeOnboard"/>
+
+        <activity
+            android:name=".ui.main.MainActivity"
+            android:theme="@style/Launcher">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
@@ -24,10 +28,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".ui.main.MainActivity"
-            android:theme="@style/ThemeDrawer"/>
 
         <activity
             android:name=".ui.navigation.NavigationActivity"

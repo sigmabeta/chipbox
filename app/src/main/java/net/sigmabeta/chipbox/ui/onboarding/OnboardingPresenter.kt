@@ -30,6 +30,10 @@ class OnboardingPresenter @Inject constructor(val prefManager: PrefManager) : Ac
         exitHelper()
     }
 
+    fun onBackPressed() {
+        view?.exit(false)
+    }
+
     /**
      * ActivityPresenter
      */
@@ -53,12 +57,7 @@ class OnboardingPresenter @Inject constructor(val prefManager: PrefManager) : Ac
             TitleFragment.TAG -> view?.showTitlePage()
             else -> {
                 launchedWithTag = false
-                if (prefManager.get(PrefManager.KEY_ONBOARDED)) {
-                    exitHelper()
-                    return
-                } else {
-                    view?.showTitlePage()
-                }
+                view?.showTitlePage()
             }
         }
 

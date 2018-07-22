@@ -172,7 +172,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
                 delayedViewOperation = null
             }
             handler.post {
-                Timber.i("Executing view operation.")
+                Timber.i("%s: Executing view operation.", className())
                 viewOperation()
             }
         } else {
