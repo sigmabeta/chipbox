@@ -2,7 +2,7 @@
 
 buildscript {
     // This pattern is useful for libraries with multiple modular components.
-    ext.kotlin_version = '1.2.50'
+    ext.kotlin_version = '1.2.51'
     ext.dagger_version = '2.8'
     ext.support_lib_version = '27.1.0'
     ext.realm_version = '5.0.0'
@@ -15,7 +15,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.1.3'
+        classpath 'com.android.tools.build:gradle:3.2.0-beta04'
 
         // Allows gradle files to be able to build Kotlin.
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
@@ -24,7 +24,7 @@ buildscript {
         classpath "io.realm:realm-gradle-plugin:$realm_version"
 
         // Fabric
-        classpath 'io.fabric.tools:gradle:1.22.1'
+        classpath 'io.fabric.tools:gradle:1.25.4'
     }
 }
 
