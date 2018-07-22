@@ -49,7 +49,9 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
         player.play(position)
     }
 
-    override fun getLoadOperation() = repository.getTracksFromIds(playlist.playbackQueue)
+    override fun getLoadOperation() = null
+
+    override fun getLoadOperationWithoutDiffs() = repository.getTracksFromIds(playlist.playbackQueue)
 
     /**
      * BasePresenter
