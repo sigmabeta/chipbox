@@ -138,7 +138,7 @@ class RealmRepository(var realm: Realm) : Repository {
             .where(Track::class.java)
             .`in`("id", trackIdsList.toTypedArray())
             .findAllAsync()
-            .asChangesetObservable()
+            .asFlowable()
 
     override fun getTrackFromPath(path: String): Track? {
         return realm.where(Track::class.java)

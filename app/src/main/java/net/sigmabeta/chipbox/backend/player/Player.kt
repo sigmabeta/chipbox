@@ -144,6 +144,7 @@ class Player @Inject constructor(val playlist: Playlist,
 //            val trackId = playbackQueue.get(position)
 //            queuedTrackId = trackId
 
+        playlist.playbackQueuePosition = position
         val trackId = playlist.getTrackIdAt(position, true)
 
         reader?.let {
