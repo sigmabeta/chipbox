@@ -15,6 +15,7 @@ import io.realm.RealmConfiguration
 import net.sigmabeta.chipbox.dagger.Initializer
 import net.sigmabeta.chipbox.dagger.component.AppComponent
 import timber.log.Timber
+import java.io.File
 
 
 public class ChipboxApplication : Application() {
@@ -26,6 +27,11 @@ public class ChipboxApplication : Application() {
      */
     override fun onCreate() {
         super.onCreate()
+
+        if (findOldDbFile()) {
+            clearOldDbFile()
+            clearOldImages()
+        }
 
         Timber.plant(Timber.DebugTree())
         Timber.d("Starting Application.")
@@ -55,6 +61,27 @@ public class ChipboxApplication : Application() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             setupNotifications()
         }
+    }
+
+    private fun findOldDbFile(): Boolean {
+        val directory = filesDir
+        val oldDbFile = File(directory.absolutePath + "/chipbox.db")
+
+        return oldDbFile.exists()
+    }
+
+    private fun clearOldDbFile() {
+        val directory = filesDir
+        val oldDbFile = File(directory.absolutePath + "/chipbox.db")
+
+        oldDbFile.delete()
+    }
+
+    private fun clearOldImages() {
+        val directory = filesDir
+        val imagesFolder = File(directory.absolutePath + "/images")
+
+        imagesFolder.deleteRecursively()
     }
 
     @TargetApi(Build.VERSION_CODES.O)
