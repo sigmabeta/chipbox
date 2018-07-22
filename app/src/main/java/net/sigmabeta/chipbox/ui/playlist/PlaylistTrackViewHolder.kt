@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.ui.playlist
 
-import android.support.v4.view.MotionEventCompat
 import android.view.MotionEvent
 import android.view.View
 import kotlinx.android.synthetic.main.list_item_track_playlist.*
@@ -31,7 +30,7 @@ class PlaylistTrackViewHolder(view: View, adapter: PlaylistAdapter) : BaseViewHo
     }
 
     override fun onTouch(touched: View?, event: MotionEvent?): Boolean {
-        if (MotionEventCompat.getActionMasked(event) == MotionEvent.ACTION_DOWN) {
+        if (event?.actionMasked == MotionEvent.ACTION_DOWN) {
             adapter.onStartDrag(this)
             return true
         }
