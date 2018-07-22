@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.ui
 
-import android.content.Intent
 import android.support.annotation.CallSuper
 import android.view.View
 import android.view.View.VISIBLE
@@ -8,7 +7,6 @@ import io.realm.OrderedCollectionChangeSet
 import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.backend.ScanService
 import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.domain.ListItem
 import net.sigmabeta.chipbox.util.animation.*
@@ -41,8 +39,7 @@ abstract class ListFragment<P : ListPresenter<V, T, VH>,
     }
 
     override fun startRescan() {
-        val intent = Intent(activity, ScanService::class.java)
-        activity?.startService(intent)
+        (activity as ChromeActivity<*, *>).startScanner()
     }
 
     override fun isScrolledToBottom(): Boolean {
@@ -54,7 +51,7 @@ abstract class ListFragment<P : ListPresenter<V, T, VH>,
      */
 
     override fun showLoadingState() = ifVisible {
-        if (recycler_list.visibility != VISIBLE) {
+        if (recycler_list != null && recycler_list.visibility != VISIBLE) {
             loading_spinner.fadeIn().setDuration(50)
             recycler_list.fadeOutPartially()
             layout_empty_state.fadeOutGone()
@@ -62,7 +59,7 @@ abstract class ListFragment<P : ListPresenter<V, T, VH>,
     }
 
     override fun showContent() = ifVisible(true)  {
-        if (recycler_list.visibility != VISIBLE) {
+        if (recycler_list != null && recycler_list.visibility != VISIBLE) {
             recycler_list.fadeIn()
             loading_spinner.fadeOutGone()
             layout_empty_state.fadeOutGone()
@@ -70,10 +67,11 @@ abstract class ListFragment<P : ListPresenter<V, T, VH>,
     }
 
     override fun showEmptyState() = ifVisible(true)  {
-        if (label_empty_state.visibility != VISIBLE) {
-            layout_empty_state.visibility = View.VISIBLE
+        if (label_empty_state != null && label_empty_state.visibility != VISIBLE) {
+            layout_empty_state.fadeInFromZero()
             label_empty_state.fadeInFromZero().setStartDelay(300)
             button_empty_state.fadeInFromZero().setStartDelay(600)
+            loading_spinner.fadeOutGone()
             recycler_list.fadeOutGone()
         }
     }

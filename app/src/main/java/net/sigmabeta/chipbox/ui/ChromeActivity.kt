@@ -145,7 +145,7 @@ abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActi
     }
 
     override fun launchOnboarding() {
-        OnboardingActivity.launch(this, TitleFragment.TAG)
+        OnboardingActivity.launchNoResult(this, TitleFragment.TAG)
     }
 
     override fun launchPlayerActivity() {
