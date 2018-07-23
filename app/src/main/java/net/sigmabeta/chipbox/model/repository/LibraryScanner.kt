@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.model.repository
 
+import android.content.Context
 import android.util.Log
 import dagger.Lazy
 import io.reactivex.BackpressureStrategy
@@ -26,6 +27,7 @@ import javax.inject.Singleton
 
 @Singleton
 class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
+                                         val context: Context,
                                          @Named(AppModule.DEP_NAME_APP_STORAGE_DIR) val appStorageDir: String?) {
     lateinit var repository: Repository
 
@@ -34,6 +36,11 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
     fun scanLibrary(): Flowable<FileScanEvent> {
         return Flowable.create (
                 { emitter: FlowableEmitter<FileScanEvent> ->
+                    if (findOldDbPath()) {
+                        clearOldDb()
+                        clearOldImages()
+                    }
+
                     state = STATE_SCANNING
                     // OnSubscribe.call. it: String
                     repository = repositoryLazy.get()
@@ -313,6 +320,26 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
 
         val targetFilePath = targetDirPath + "/local." + fileExtension
         return File(targetFilePath)
+    }
+
+    private fun findOldDbPath(): Boolean {
+        val dbPath = context.getDatabasePath("chipbox.db")
+
+        Timber.w("Directory path %s exists %b", dbPath.path, dbPath.exists())
+
+        return dbPath.exists()
+    }
+
+    private fun clearOldDb() {
+        val dbPath = context.getDatabasePath("chipbox.db")
+        dbPath.deleteRecursively()
+    }
+
+    private fun clearOldImages() {
+        val directory = context.getExternalFilesDir(null)
+        val imagesFolder = File(directory, "/images")
+
+        imagesFolder.deleteRecursively()
     }
 
     companion object {

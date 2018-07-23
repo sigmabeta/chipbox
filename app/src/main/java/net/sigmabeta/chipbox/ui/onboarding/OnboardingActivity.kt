@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.view.View
+import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_onboarding.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
@@ -12,6 +13,7 @@ import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
 import net.sigmabeta.chipbox.ui.onboarding.library.LibraryFragment
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
+import java.io.File
 import javax.inject.Inject
 
 class OnboardingActivity : BaseActivity<OnboardingPresenter, OnboardingView>(), OnboardingView {
