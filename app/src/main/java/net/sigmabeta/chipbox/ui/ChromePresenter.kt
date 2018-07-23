@@ -37,7 +37,7 @@ abstract class ChromePresenter<V : ChromeView>(val player: Player,
         when (itemId) {
             R.id.drawer_refresh -> view?.startScanner()
             R.id.drawer_settings -> view?.launchSettingsActivity()
-            R.id.drawer_debug -> view?.launchDebugActivity()
+//            R.id.drawer_debug -> view?.launchDebugActivity()
             R.id.drawer_help -> view?.launchOnboarding()
         }
 
