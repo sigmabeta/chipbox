@@ -58,6 +58,7 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
      */
 
     override fun teardown() {
+        super.teardown()
         queuePosition = null
         oldQueuePosition = -1
     }

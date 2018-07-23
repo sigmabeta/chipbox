@@ -50,7 +50,11 @@ class GameActivity : ChromeActivity<GamePresenter, GameView>(), GameView, ListVi
 
     override fun animateChanges(changeset: OrderedCollectionChangeSet) = Unit
 
+    override fun refreshList() = Unit
+
     override fun startRescan() = Unit
+
+    override fun showScanningWaitMessage() = Unit
 
     /**
      * GameView
