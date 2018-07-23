@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.domain.ListItem
+import net.sigmabeta.chipbox.ui.main.MainActivity
 import net.sigmabeta.chipbox.util.animation.*
 import javax.inject.Inject
 
@@ -34,6 +35,15 @@ abstract class ListFragment<P : ListPresenter<V, T, VH>,
     override fun animateChanges(changeset: OrderedCollectionChangeSet) {
         adapter.processChanges(changeset)
     }
+
+    override fun refreshList() {
+        adapter.notifyDataSetChanged()
+    }
+
+    override fun showScanningWaitMessage() {
+        (activity as MainActivity).showScanningWaitMessage()
+    }
+
     override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }

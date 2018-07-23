@@ -74,6 +74,7 @@ class TrackListPresenter @Inject constructor(val player: Player,
      */
 
     override fun teardown() {
+        super.teardown()
         artistId = null
     }
 

@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.res.Resources
 import android.os.Build
 import android.view.View
+import android.widget.Toast
 import com.crashlytics.android.Crashlytics
 import io.fabric.sdk.android.Fabric
 import io.realm.Realm
@@ -27,11 +28,6 @@ public class ChipboxApplication : Application() {
      */
     override fun onCreate() {
         super.onCreate()
-
-        if (findOldDbFile()) {
-            clearOldDbFile()
-            clearOldImages()
-        }
 
         Timber.plant(Timber.DebugTree())
         Timber.d("Starting Application.")
@@ -61,27 +57,6 @@ public class ChipboxApplication : Application() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             setupNotifications()
         }
-    }
-
-    private fun findOldDbFile(): Boolean {
-        val directory = filesDir
-        val oldDbFile = File(directory.absolutePath + "/chipbox.db")
-
-        return oldDbFile.exists()
-    }
-
-    private fun clearOldDbFile() {
-        val directory = filesDir
-        val oldDbFile = File(directory.absolutePath + "/chipbox.db")
-
-        oldDbFile.delete()
-    }
-
-    private fun clearOldImages() {
-        val directory = filesDir
-        val imagesFolder = File(directory.absolutePath + "/images")
-
-        imagesFolder.deleteRecursively()
     }
 
     @TargetApi(Build.VERSION_CODES.O)
