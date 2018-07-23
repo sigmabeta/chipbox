@@ -44,6 +44,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : ListPresen
      */
 
     override fun teardown() {
+        super.teardown()
         platformName = null
     }
 }
