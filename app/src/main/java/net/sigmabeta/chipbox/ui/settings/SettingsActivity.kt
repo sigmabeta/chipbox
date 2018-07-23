@@ -52,6 +52,8 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
 
     override fun startRescan() = Unit
 
+    override fun showScanningWaitMessage() = Unit
+
     /**
      * OnItemSelectedListener
      */

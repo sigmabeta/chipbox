@@ -9,6 +9,8 @@
 
     <string name="back_button">Back Button</string>
 
+    <string name="error_scanning_wait">Please wait, scanning…</string>
+
     <string name="permission_cta">Grant</string>
     <string name="permission_storage_explanation">Without storage access permission, Chipbox cannot scan or access tracks.</string>
     <string name="permission_general_explanation">Please grant this permission in order to use Chipbox.</string>
