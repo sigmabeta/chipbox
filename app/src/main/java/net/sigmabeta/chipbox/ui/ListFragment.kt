@@ -34,6 +34,11 @@ abstract class ListFragment<P : ListPresenter<V, T, VH>,
     override fun animateChanges(changeset: OrderedCollectionChangeSet) {
         adapter.processChanges(changeset)
     }
+
+    override fun refreshList() {
+        adapter.notifyDataSetChanged()
+    }
+
     override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }
