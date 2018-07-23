@@ -17,7 +17,6 @@ import net.sigmabeta.chipbox.util.EXTENSIONS_IMAGES
 import net.sigmabeta.chipbox.util.EXTENSIONS_MULTI_TRACK
 import net.sigmabeta.chipbox.util.readMultipleTrackFile
 import net.sigmabeta.chipbox.util.readSingleTrackFile
-import org.apache.commons.io.FileUtils
 import timber.log.Timber
 import java.io.File
 import java.util.*
@@ -140,7 +139,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                                 }
                             } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
                                 if (folderGame != null) {
-                                    copyImageToInternal(folderGame, file)
+                                    addImageToGame(folderGame, file)
                                 } else {
                                     Timber.e("Found image, but game ID unknown: %s", filePath)
                                 }
@@ -292,34 +291,11 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         }
     }
 
-    private fun copyImageToInternal(game: Game, sourceFile: File) {
+    private fun addImageToGame(game: Game, sourceFile: File) {
         val sourcePath = sourceFile.path
-        val fileExtension = sourceFile.extension
 
-        val targetFile = getTargetImageFilePath(game.id!!, fileExtension)
-
-        if (targetFile.exists()) {
-            if (FileUtils.sizeOf(targetFile) == FileUtils.sizeOf(sourceFile)) {
-                Timber.i("File %s has same size as internally stored file. Skipping copy.", targetFile.name)
-                return
-            }
-        }
-
-        FileUtils.copyFile(sourceFile, targetFile)
-
-        Timber.i("Copied image: %s to %s", sourcePath, targetFile.path)
-
-        val artLocal = "file://" + targetFile.path
+        val artLocal = "file://$sourcePath"
         repository.updateGameArt(game, artLocal)
-    }
-
-    private fun getTargetImageFilePath(gameId: String, fileExtension: String): File {
-        val targetDirPath = appStorageDir + "/images/" + gameId
-        val targetDir = File(targetDirPath)
-        targetDir.mkdirs()
-
-        val targetFilePath = targetDirPath + "/local." + fileExtension
-        return File(targetFilePath)
     }
 
     private fun findOldDbPath(): Boolean {
