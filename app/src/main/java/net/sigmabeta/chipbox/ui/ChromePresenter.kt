@@ -20,7 +20,9 @@ abstract class ChromePresenter<V : ChromeView>(val player: Player,
     var nowPlayingGame: Game? = null
 
     fun onNowPlayingClicked() {
-        view?.launchPlayerActivity()
+        if (nowPlayingGame != null) {
+            view?.launchPlayerActivity()
+        }
     }
 
     fun onPlayFabClicked() {
