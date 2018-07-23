@@ -16,4 +16,6 @@ interface ListView<in T: ListItem, in VH : BaseViewHolder<*, *, *>> : BaseView {
     fun isScrolledToBottom(): Boolean
 
     fun startRescan()
+
+    fun refreshList()
 }

@@ -38,6 +38,8 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
 
     override fun animateChanges(changeset: OrderedCollectionChangeSet) = Unit
 
+    override fun refreshList() = Unit
+
     /**
      * ListView
      */
