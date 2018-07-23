@@ -54,6 +54,8 @@ class GameActivity : ChromeActivity<GamePresenter, GameView>(), GameView, ListVi
 
     override fun startRescan() = Unit
 
+    override fun showScanningWaitMessage() = Unit
+
     /**
      * GameView
      */
