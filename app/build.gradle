@@ -151,9 +151,6 @@ dependencies {
     // Contains the Kotlin Standard Library
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-    // Copy album art more easily.
-    implementation 'commons-io:commons-io:2.4'
-
     // Simplified error logging.
     implementation 'com.jakewharton.timber:timber:4.5.1'
 
