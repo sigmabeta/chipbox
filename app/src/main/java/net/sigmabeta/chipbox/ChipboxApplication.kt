@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.res.Resources
 import android.os.Build
 import android.view.View
+import android.widget.Toast
 import com.crashlytics.android.Crashlytics
 import io.fabric.sdk.android.Fabric
 import io.realm.Realm
@@ -31,6 +32,9 @@ public class ChipboxApplication : Application() {
         if (findOldDbFile()) {
             clearOldDbFile()
             clearOldImages()
+        } else {
+            val listString = filesDir.listFiles().joinToString()
+            Toast.makeText(this, "Found files: $listString", Toast.LENGTH_LONG).show()
         }
 
         Timber.plant(Timber.DebugTree())
@@ -80,6 +84,9 @@ public class ChipboxApplication : Application() {
     private fun clearOldImages() {
         val directory = filesDir
         val imagesFolder = File(directory.absolutePath + "/images")
+
+        val listString = imagesFolder.listFiles().joinToString()
+        Toast.makeText(this, "Found files: $listString", Toast.LENGTH_LONG).show()
 
         imagesFolder.deleteRecursively()
     }
