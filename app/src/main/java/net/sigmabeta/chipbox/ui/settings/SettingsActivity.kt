@@ -38,6 +38,8 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
 
     override fun animateChanges(changeset: OrderedCollectionChangeSet) = Unit
 
+    override fun refreshList() = Unit
+
     /**
      * ListView
      */
@@ -49,6 +51,8 @@ class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), Settin
     override fun isScrolledToBottom(): Boolean = true
 
     override fun startRescan() = Unit
+
+    override fun showScanningWaitMessage() = Unit
 
     /**
      * OnItemSelectedListener

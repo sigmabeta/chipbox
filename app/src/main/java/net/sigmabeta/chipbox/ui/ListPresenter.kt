@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.ui
 
 import android.os.Bundle
+import android.support.annotation.CallSuper
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -24,6 +25,7 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
         loadItems()
     }
 
+    @CallSuper
     override fun teardown() {
         list = null
         changeset = null
@@ -42,11 +44,18 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
             loadItems()
         }
 
-        view?.setList(list!!)
+        list?.let { checkedList ->
+            view?.setList(checkedList)
 
-        changeset?.let {
-            view?.animateChanges(it)
+            changeset?.let {
+                if (checkedList.size > 15) {
+                    view?.animateChanges(it)
+                } else {
+                    view?.refreshList()
+                }
+            }
         }
+
 
         view?.showContent()
     }
@@ -59,7 +68,7 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
 
     abstract fun getLoadOperation(): Observable<CollectionChange<RealmResults<T>>>?
 
-    protected open fun getLoadOperationWithoutDiffs() : Flowable<RealmResults<T>>? = null
+    protected open fun getLoadOperationWithoutDiffs(): Flowable<RealmResults<T>>? = null
 
     /**
      * Implementation Details
@@ -69,6 +78,8 @@ abstract class ListPresenter<V : ListView<T, VH>, T : ListItem, in VH : BaseView
 
     private fun loadItems() {
         state = UiState.LOADING
+
+        changeset = null
 
         // TODO Fix realm track list query problem
         var subscription = getLoadOperation()

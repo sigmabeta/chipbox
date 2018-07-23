@@ -17,6 +17,10 @@ class MainActivity : ChromeActivity<MainPresenter, MainView>(), MainView, Fragme
 
     var pagerAdapter: MainTabPagerAdapter? = null
 
+    fun showScanningWaitMessage() {
+        showSnackbar(getString(R.string.error_cta_dismiss), null, 0)
+    }
+
     override fun setTitle(title: String) = Unit
 
     /**

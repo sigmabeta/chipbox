@@ -25,9 +25,11 @@ class RepositoryModule() {
         return RealmRepository(realm)
     }
 
-    @Provides @Singleton fun provideScanner(repositoryLazy: Lazy<Repository>, @Named(AppModule.DEP_NAME_APP_STORAGE_DIR) externalFilesPath: String?): LibraryScanner {
+    @Provides @Singleton fun provideScanner(repositoryLazy: Lazy<Repository>,
+                                            context: Context,
+                                            @Named(AppModule.DEP_NAME_APP_STORAGE_DIR) externalFilesPath: String?): LibraryScanner {
         Timber.v("Providing Library Scanner...")
-        return LibraryScanner(repositoryLazy, externalFilesPath)
+        return LibraryScanner(repositoryLazy, context, externalFilesPath)
     }
 }
 

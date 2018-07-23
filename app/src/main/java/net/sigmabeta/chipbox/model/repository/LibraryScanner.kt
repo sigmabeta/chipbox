@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.model.repository
 
+import android.content.Context
 import android.util.Log
 import dagger.Lazy
 import io.reactivex.BackpressureStrategy
@@ -16,7 +17,6 @@ import net.sigmabeta.chipbox.util.EXTENSIONS_IMAGES
 import net.sigmabeta.chipbox.util.EXTENSIONS_MULTI_TRACK
 import net.sigmabeta.chipbox.util.readMultipleTrackFile
 import net.sigmabeta.chipbox.util.readSingleTrackFile
-import org.apache.commons.io.FileUtils
 import timber.log.Timber
 import java.io.File
 import java.util.*
@@ -26,6 +26,7 @@ import javax.inject.Singleton
 
 @Singleton
 class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
+                                         val context: Context,
                                          @Named(AppModule.DEP_NAME_APP_STORAGE_DIR) val appStorageDir: String?) {
     lateinit var repository: Repository
 
@@ -34,6 +35,11 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
     fun scanLibrary(): Flowable<FileScanEvent> {
         return Flowable.create (
                 { emitter: FlowableEmitter<FileScanEvent> ->
+                    if (findOldDbPath()) {
+                        clearOldDb()
+                        clearOldImages()
+                    }
+
                     state = STATE_SCANNING
                     // OnSubscribe.call. it: String
                     repository = repositoryLazy.get()
@@ -133,7 +139,7 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
                                 }
                             } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
                                 if (folderGame != null) {
-                                    copyImageToInternal(folderGame, file)
+                                    addImageToGame(folderGame, file)
                                 } else {
                                     Timber.e("Found image, but game ID unknown: %s", filePath)
                                 }
@@ -285,34 +291,31 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         }
     }
 
-    private fun copyImageToInternal(game: Game, sourceFile: File) {
+    private fun addImageToGame(game: Game, sourceFile: File) {
         val sourcePath = sourceFile.path
-        val fileExtension = sourceFile.extension
 
-        val targetFile = getTargetImageFilePath(game.id!!, fileExtension)
-
-        if (targetFile.exists()) {
-            if (FileUtils.sizeOf(targetFile) == FileUtils.sizeOf(sourceFile)) {
-                Timber.i("File %s has same size as internally stored file. Skipping copy.", targetFile.name)
-                return
-            }
-        }
-
-        FileUtils.copyFile(sourceFile, targetFile)
-
-        Timber.i("Copied image: %s to %s", sourcePath, targetFile.path)
-
-        val artLocal = "file://" + targetFile.path
+        val artLocal = "file://$sourcePath"
         repository.updateGameArt(game, artLocal)
     }
 
-    private fun getTargetImageFilePath(gameId: String, fileExtension: String): File {
-        val targetDirPath = appStorageDir + "/images/" + gameId
-        val targetDir = File(targetDirPath)
-        targetDir.mkdirs()
+    private fun findOldDbPath(): Boolean {
+        val dbPath = context.getDatabasePath("chipbox.db")
 
-        val targetFilePath = targetDirPath + "/local." + fileExtension
-        return File(targetFilePath)
+        Timber.w("Directory path %s exists %b", dbPath.path, dbPath.exists())
+
+        return dbPath.exists()
+    }
+
+    private fun clearOldDb() {
+        val dbPath = context.getDatabasePath("chipbox.db")
+        dbPath.deleteRecursively()
+    }
+
+    private fun clearOldImages() {
+        val directory = context.getExternalFilesDir(null)
+        val imagesFolder = File(directory, "/images")
+
+        imagesFolder.deleteRecursively()
     }
 
     companion object {
