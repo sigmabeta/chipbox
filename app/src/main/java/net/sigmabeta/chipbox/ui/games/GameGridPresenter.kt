@@ -4,11 +4,13 @@ import android.os.Bundle
 import net.sigmabeta.chipbox.backend.UiUpdater
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.domain.Game
+import net.sigmabeta.chipbox.model.repository.LibraryScanner
 import net.sigmabeta.chipbox.ui.ListPresenter
 import javax.inject.Inject
 
 @ActivityScoped
-class GameGridPresenter @Inject constructor(val updater: UiUpdater) : ListPresenter<GameListView, Game, GameViewHolder>() {
+class GameGridPresenter @Inject constructor(val updater: UiUpdater,
+                                            val scanner: LibraryScanner) : ListPresenter<GameListView, Game, GameViewHolder>() {
     var platformName: String? = null
 
     /**
@@ -16,8 +18,12 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : ListPresen
      */
 
     override fun onItemClick(position: Int) {
-        val id = list?.get(position)?.id ?: return
-        view?.launchGameActivity(id, position)
+        if (scanner.state != LibraryScanner.STATE_SCANNING) {
+            val id = list?.get(position)?.id ?: return
+            view?.launchGameActivity(id, position)
+        } else {
+            view?.showScanningWaitMessage()
+        }
     }
 
     override fun getLoadOperation() = platformName?.let {
@@ -44,6 +50,7 @@ class GameGridPresenter @Inject constructor(val updater: UiUpdater) : ListPresen
      */
 
     override fun teardown() {
+        super.teardown()
         platformName = null
     }
 }
