@@ -29,14 +29,6 @@ public class ChipboxApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        if (findOldDbFile()) {
-            clearOldDbFile()
-            clearOldImages()
-        } else {
-            val listString = filesDir.listFiles().joinToString()
-            Toast.makeText(this, "Found files: $listString", Toast.LENGTH_LONG).show()
-        }
-
         Timber.plant(Timber.DebugTree())
         Timber.d("Starting Application.")
         Timber.d("Build type: %s", BuildConfig.BUILD_TYPE)
@@ -65,30 +57,6 @@ public class ChipboxApplication : Application() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             setupNotifications()
         }
-    }
-
-    private fun findOldDbFile(): Boolean {
-        val directory = filesDir
-        val oldDbFile = File(directory.absolutePath + "/chipbox.db")
-
-        return oldDbFile.exists()
-    }
-
-    private fun clearOldDbFile() {
-        val directory = filesDir
-        val oldDbFile = File(directory.absolutePath + "/chipbox.db")
-
-        oldDbFile.delete()
-    }
-
-    private fun clearOldImages() {
-        val directory = filesDir
-        val imagesFolder = File(directory.absolutePath + "/images")
-
-        val listString = imagesFolder.listFiles().joinToString()
-        Toast.makeText(this, "Found files: $listString", Toast.LENGTH_LONG).show()
-
-        imagesFolder.deleteRecursively()
     }
 
     @TargetApi(Build.VERSION_CODES.O)
