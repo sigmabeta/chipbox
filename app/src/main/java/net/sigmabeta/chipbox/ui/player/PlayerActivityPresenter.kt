@@ -3,14 +3,12 @@ package net.sigmabeta.chipbox.ui.player
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.ui.UiState
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
-    var view: PlayerActivityView? = null
-
+class PlayerActivityPresenter @Inject constructor() : ActivityPresenter<PlayerActivityView>() {
     var playlistVisible = false
 
     override fun onClick(id: Int) {
@@ -35,6 +33,8 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
     }
 
     override fun setup(arguments: Bundle?) {
+        state = UiState.READY
+
         view?.showControlsFragment()
         view?.showPlayerFragment()
     }
@@ -47,24 +47,13 @@ class PlayerActivityPresenter @Inject constructor() : ActivityPresenter() {
         playlistVisible = false
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         if (playlistVisible) {
             view?.showStatusBar()
         } else {
             view?.hideStatusBar()
         }
     }
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is PlayerActivityView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
-
     override fun onReenter() {
     }
 }

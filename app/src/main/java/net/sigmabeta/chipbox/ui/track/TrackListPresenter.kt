@@ -1,180 +1,88 @@
 package net.sigmabeta.chipbox.ui.track
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.backend.Player
+import io.reactivex.Observable
+import io.reactivex.disposables.Disposable
+import io.realm.RealmResults
+import io.realm.rx.CollectionChange
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
-import net.sigmabeta.chipbox.model.domain.Artist
-import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.ui.FragmentPresenter
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
-import java.util.*
+import net.sigmabeta.chipbox.ui.ListPresenter
+import timber.log.Timber
 import javax.inject.Inject
 
 @ActivityScoped
-class TrackListPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
-    var view: TrackListView? = null
+class TrackListPresenter @Inject constructor(val player: Player,
+                                             val updater: UiUpdater) : ListPresenter<TrackListView, Track, TrackViewHolder>() {
+    var artistId: String? = null
 
-    var artistId = Artist.ARTIST_ALL
-
-    var artist: Artist? = null
-
-    var tracks: MutableList<Track>? = null
-
-    var gameMap: HashMap<Long, Game>? = null
-
-    fun onItemClick(position: Long) {
-        tracks?.let {
-            player.play(it, position.toInt())
-        }
-    }
-
-    fun refresh(arguments: Bundle) = setupHelper(arguments)
+    var artistDisposable : Disposable? = null
 
     /**
-     * FragmentPresenter
+     * ListPresenter
      */
 
-    override fun setup(arguments: Bundle?) {
-        setupHelper(arguments)
-    }
-
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
-        if (tracks == null) {
-            setupHelper(arguments)
+    override fun onItemClick(position: Int) {
+        getTrackIdList()?.let {
+            player.play(it.toMutableList(), position)
         }
     }
+
+    // TODO Fix realm track list query problem
+    override fun getLoadOperation(): Observable<CollectionChange<RealmResults<Track>>> {
+        return artistId?.let {
+            repository.getTracksForArtist(it)
+        } ?: let {
+            repository.getTracks()
+        }
+    }
+
+    override fun loadArguments(arguments: Bundle?) {
+        artistId = arguments?.getString(TrackListFragment.ARGUMENT_ARTIST)
+    }
+
+    override fun showReadyState() {
+        super.showReadyState()
+
+        if (artistDisposable == null || artistDisposable?.isDisposed == true) {
+            artistId?.let {
+                Timber.w("Artist id $it")
+                artistDisposable = repository.getArtist(it)
+                        .subscribe(
+                                {
+                                    it.name?.let { name ->
+                                        view?.setActivityTitle(name)
+                                    }
+
+                                    printBenchmark("items Loaded")
+                                },
+                                {
+                                    handleError(it)
+                                }
+                        )
+
+                subscriptions.add(artistDisposable!!)
+            }
+        }
+    }
+
+
+    /**
+     * BasePresenter
+     */
 
     override fun teardown() {
-        artistId = -1
-        tracks = null
-        gameMap = null
+        super.teardown()
+        artistId = null
     }
 
-    override fun updateViewState() {
-        tracks?.let {
-            if (it.size > 0) {
-                showContent(it)
-            } else {
-                showEmptyState()
-            }
-        } ?: let {
-            view?.showLoadingSpinner()
-        }
+    /**
+     * Implementation Details
+     */
 
-        gameMap?.let {
-            view?.setGames(it)
-        }
-    }
-
-    override fun onClick(id: Int) {
-        when (id) {
-            R.id.button_empty_state -> view?.showFilesScreen()
-        }
-    }
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is TrackListView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
-
-    private fun loadGames(tracks: List<Track>) {
-        val subscription = Game.getFromTrackList(tracks)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(
-                        {
-                            logInfo("[SongListPresenter] Loaded ${it.size} games.")
-                            gameMap = it
-                            view?.setGames(it)
-                        }
-                )
-
-        subscriptions.add(subscription)
-    }
-
-    private fun setupHelper(arguments: Bundle?) {
-        artistId = arguments?.getLong(TrackListFragment.ARGUMENT_ARTIST) ?: Artist.ARTIST_ALL
-
-        view?.showLoadingSpinner()
-        view?.hideEmptyState()
-
-        if (artistId == Artist.ARTIST_ALL) {
-            val tracksLoad = Track.getAll()
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(
-                            {
-                                logInfo("[SongListPresenter] Loaded ${it.size} tracks.")
-
-                                tracks = it
-
-                                if (it.size > 0) {
-                                    showContent(it)
-                                    loadGames(it)
-                                } else {
-                                    showEmptyState()
-                                }
-                            },
-                            {
-                                showEmptyState()
-                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                            }
-                    )
-
-            subscriptions.add(tracksLoad)
-        } else {
-            val artistLoad = Artist.get(artistId)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(AndroidSchedulers.mainThread())
-                    .subscribe(
-                            {
-                                this.artist = it
-                                view?.setActivityTitle(it.name ?: "Unknown Artist")
-
-                                val tracks = it.getTracks()
-
-                                // TODO This really, really needs to be async
-                                if (tracks.size > 0) {
-                                    this.tracks = tracks
-                                    showContent(tracks)
-                                    loadGames(tracks)
-                                } else {
-                                    logError("[SongListPresenter] Error: No tracks for artist ${it.id}")
-                                    view?.onTrackLoadError()
-                                }
-                            },
-                            {
-                                view?.onTrackLoadError()
-                                logError("[SongListPresenter] Error: ${it.message}")
-                                view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                            }
-                    )
-
-            subscriptions.add(artistLoad)
-        }
-    }
-
-    private fun showContent(it: MutableList<Track>) {
-        view?.setTracks(it)
-        view?.hideLoadingSpinner()
-        view?.hideEmptyState()
-        view?.showContent()
-    }
-
-    private fun showEmptyState() {
-        view?.hideLoadingSpinner()
-        view?.hideContent()
-        view?.showEmptyState()
-    }
+    private fun getTrackIdList() = list
+            ?.map(Track::id)
+            ?.toMutableList()
 }

@@ -15,6 +15,6 @@ class PrefManager @Inject constructor(val preferences: SharedPreferences) {
 
     companion object {
         private val TAG_PREF_KEY = BuildConfig.APPLICATION_ID + ".pref."
-        val KEY_ONBOARDED = TAG_PREF_KEY + ".onboarded"
+        val KEY_ONBOARDED = TAG_PREF_KEY + ".onboarded.new"
     }
 }

@@ -4,11 +4,11 @@ import android.app.Application
 import net.sigmabeta.chipbox.dagger.component.AppComponent
 import net.sigmabeta.chipbox.dagger.component.DaggerAppComponent
 import net.sigmabeta.chipbox.dagger.module.AppModule
-import net.sigmabeta.chipbox.util.logVerbose
+import timber.log.Timber
 
 object Initializer {
     fun initAppComponent(application: Application): AppComponent {
-        logVerbose("[Initializer] Initializing Dagger AppComponent.")
+        Timber.v("Initializing Dagger AppComponent.")
 
         return DaggerAppComponent.builder()
                 .appModule(AppModule(application))

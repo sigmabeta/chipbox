@@ -2,11 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:icon="@drawable/ic_add_black_24dp"
-        android:id="@+id/drawer_add_folder"
-        android:title="@string/drawer_add_folder"/>
-
-    <item
         android:icon="@drawable/ic_refresh_black_24dp"
         android:id="@+id/drawer_refresh"
         android:title="@string/drawer_refresh"/>

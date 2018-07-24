@@ -4,9 +4,9 @@ import android.view.View
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
-import net.sigmabeta.chipbox.ui.ItemListView
+import net.sigmabeta.chipbox.ui.ListView
 
-class ArtistListAdapter(view: ItemListView<ArtistViewHolder>) : BaseArrayAdapter<Artist, ArtistViewHolder>(view) {
+class ArtistListAdapter(view: ListView<Artist, ArtistViewHolder>) : BaseArrayAdapter<Artist, ArtistViewHolder>(view) {
     override fun getLayoutId(): Int {
         return R.layout.list_item_artist
     }

@@ -1,30 +1,72 @@
 package net.sigmabeta.chipbox.ui
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.support.design.widget.Snackbar
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.Toolbar
 import android.util.Pair
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.ImageView
-import android.widget.Toast
 import com.squareup.picasso.Callback
-import net.sigmabeta.chipbox.dagger.component.FragmentComponent
-import net.sigmabeta.chipbox.util.*
+import net.sigmabeta.chipbox.BuildConfig
+import net.sigmabeta.chipbox.ChipboxApplication
+import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.className
 
-abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListener {
+
+abstract class BaseActivity<out P : ActivityPresenter<in V>, in V : BaseView> : AppCompatActivity(), BaseView, View.OnClickListener {
+    var lastPermRequestId: String? = null
+    var lastPermRequestAction: (() -> Unit)? = null
+
+    override fun showErrorState() {
+//        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun showEmptyState() {
+//        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     fun getPicassoCallback(): Callback {
         return object : Callback {
             override fun onSuccess() {
+                getPresenterImpl().onImageLoadSuccess()
                 startPostponedEnterTransition()
             }
 
             override fun onError() {
+                getPresenterImpl().onImageLoadError()
                 startPostponedEnterTransition()
-                logError("[BaseActivity] Couldn't load image.")
             }
         }
+    }
+
+    fun doWithPermission(permissionId: String, action: () -> Unit) {
+        // If we don't have permission to do the thing yet
+        if (ContextCompat.checkSelfPermission(this, permissionId) != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, permissionId)) {
+                showPermissionExplanation(permissionId, action)
+            } else {
+                requestPermission(permissionId, action)
+            }
+        } else {
+            lastPermRequestId = null
+            lastPermRequestAction = null
+            // Do the thing
+            action.invoke()
+        }
+    }
+
+    override fun requestReSetup() {
+        getPresenterImpl().onCreate(intent.extras, null, this as V)
     }
 
     /**
@@ -34,17 +76,19 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         inject()
+
+        if (savedInstanceState != null && !isChangingConfigurations) {
+            getPresenterImpl().view = this as V
+        }
+
         super.onCreate(savedInstanceState)
 
         setContentView(getLayoutId())
-
-        window.enterTransition = TRANSITION_FADE_IN_BELOW
-        window.reenterTransition = TRANSITION_STAGGERED_FADE_IN_ABOVE
-        window.exitTransition = TRANSITION_STAGGERED_FADE_OUT_UP
-        window.returnTransition = TRANSITION_FADE_OUT_DOWN
-
+        inflateContent()
+        setTransitions()
         configureViews()
-        getPresenter().onCreate(intent.extras, savedInstanceState, this)
+
+        getPresenterImpl().onCreate(intent.extras, savedInstanceState, this as V)
 
         val sharedView = getSharedImage()
 
@@ -59,31 +103,94 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
         }
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            (lastPermRequestId?.hashCode() ?: 0) and 0xFFFF -> {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    lastPermRequestAction?.invoke()
+                } else {
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(this, permissions[0])) {
+                        // User may have accidentally clicked no.
+                        showPermissionExplanation(lastPermRequestId!!, lastPermRequestAction!!)
+                    } else {
+                        // User clicked "don't ask again."
+                        showPermanentDenialError(lastPermRequestId!!)
+                    }
+                }
+                lastPermRequestId = null
+                lastPermRequestAction = null
+
+                return
+            }
+
+            else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        }
+    }
+
     override fun onActivityReenter(resultCode: Int, data: Intent?) {
         super.onActivityReenter(resultCode, data)
-        getPresenter().onReenter()
+        getPresenterImpl().onReenter()
     }
 
     override fun onResume() {
         super.onResume()
-        getPresenter().onResume()
+        getPresenterImpl().onResume(this as V)
     }
 
     override fun onPause() {
         super.onPause()
-        getPresenter().onPause()
+        getPresenterImpl().onPause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        getPresenter().onDestroy(isFinishing)
+        getPresenterImpl().onDestroy(isFinishing, this as V)
     }
 
-    override fun showToastMessage(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    override fun onLowMemory() {
+        super.onLowMemory()
+        if (getTypedApplication().shouldShowDetailedErrors()) {
+            showSnackbar("Memory low.", null, 0)
+        }
     }
 
-    override fun showErrorSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) {
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (getTypedApplication().shouldShowDetailedErrors()) {
+//            showSnackbar("Trimming memory.", null, 0)
+        }
+    }
+
+    override fun onClick(clicked: View) {
+        getPresenterImpl().onClick(clicked.id)
+    }
+
+    override fun showError(message: String, action: View.OnClickListener?, actionLabel: Int) {
+        if (getTypedApplication().shouldShowDetailedErrors()) {
+            showSnackbar(message, action, actionLabel)
+        } else {
+            showSnackbar("An error occurred. Please try again.", action, actionLabel)
+        }
+    }
+
+    fun getFragmentComponent() = getPresenterImpl().fragmentComponent
+
+    fun getShareableNavBar(): Pair<View, String>? {
+        return Pair(window.decorView.findViewById(android.R.id.navigationBarBackground) ?: return null,
+                Window.NAVIGATION_BAR_BACKGROUND_TRANSITION_NAME)
+    }
+
+    fun getShareableStatusBar(): Pair<View, String>? {
+        return Pair(window.decorView.findViewById(android.R.id.statusBarBackground) ?: return null,
+                Window.STATUS_BAR_BACKGROUND_TRANSITION_NAME)
+    }
+
+    protected open fun inflateContent() {}
+
+    protected open fun setTransitions() = Unit
+
+    protected fun showSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) {
         val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_LONG)
 
         if (action != null && actionLabel != null) {
@@ -93,15 +200,19 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
         snackbar.show()
     }
 
-    override fun onClick(clicked: View) {
-        getPresenter().onClick(clicked.id)
+    protected fun showSnackbarPermanent(message: String, action: View.OnClickListener?, actionLabel: Int?) {
+        val snackbar = Snackbar.make(getContentLayout(), message, Snackbar.LENGTH_INDEFINITE)
+
+        if (action != null && actionLabel != null) {
+            snackbar.setAction(actionLabel, action)
+        } else {
+            snackbar.setAction(R.string.error_cta_dismiss) { snackbar.dismiss() }
+        }
+
+        snackbar.show()
     }
 
-    fun getFragmentComponent(): FragmentComponent {
-        return getPresenter().fragmentComponent
-    }
-
-    open fun getShareableViews(): Array<Pair<View, String>>? = null
+    override fun getTypedApplication() = application as ChipboxApplication
 
     /**
      * Must be overridden to request the activity's dependencies
@@ -109,7 +220,7 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
      */
     protected abstract fun inject()
 
-    protected abstract fun getPresenter(): ActivityPresenter
+    protected abstract fun getPresenterImpl(): P
 
     /**
      * Perform any necessary run-time setup of views: RecyclerViews, ClickListeners,
@@ -129,4 +240,55 @@ abstract class BaseActivity : AppCompatActivity(), BaseView, View.OnClickListene
      * getSharedImage() call returns non-null, this is ignored.
      */
     protected abstract fun shouldDelayTransitionForFragment(): Boolean
+
+    protected fun showPermissionExplanation(permissionId: String, action: () -> Unit) {
+        val message = if (permissionId == Manifest.permission.READ_EXTERNAL_STORAGE) {
+            getString(R.string.permission_storage_explanation)
+        } else {
+            getString(R.string.permission_general_explanation)
+        }
+
+        showSnackbar(message,
+                View.OnClickListener { requestPermission(permissionId, action) },
+                R.string.permission_cta)
+    }
+
+    protected fun requestPermission(permissionId: String, action: () -> Unit) {
+        lastPermRequestId = permissionId
+        lastPermRequestAction = action
+
+        ActivityCompat.requestPermissions(this,
+                arrayOf<String>(permissionId),
+                permissionId.hashCode() and 0xFFFF)
+    }
+
+    private fun showPermanentDenialError(lastPermRequestId: String) {
+        showSnackbar(getString(R.string.permission_general_permanent), null, 0)
+    }
+
+    protected fun setupToolbar(showArrow: Boolean) {
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
+
+        if (toolbar != null) {
+            setSupportActionBar(toolbar)
+
+            val actionBar = supportActionBar
+            actionBar?.setDisplayHomeAsUpEnabled(true)
+        }
+
+        if (showArrow) showBackXInToolbar() else showBackXInToolbar()
+    }
+
+    protected open fun showBackArrowInToolbar() {
+        findViewById<Toolbar>(R.id.toolbar)?.setNavigationOnClickListener { v -> onBackPressed() }
+    }
+
+    protected fun showBackXInToolbar() {
+        supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_clear_white_24dp)
+        findViewById<Toolbar>(R.id.toolbar)?.setNavigationOnClickListener { v -> onBackPressed() }
+    }
+
+    companion object {
+        val ACTIVITY_ARGUMENTS = "${BuildConfig.APPLICATION_ID}.${className()}.arguments"
+    }
 }
