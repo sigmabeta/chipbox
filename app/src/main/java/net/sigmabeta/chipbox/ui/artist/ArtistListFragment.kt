@@ -1,133 +1,62 @@
 package net.sigmabeta.chipbox.ui.artist
 
 import android.support.v7.widget.LinearLayoutManager
-import android.view.View
-import android.view.ViewGroup
-import kotlinx.android.synthetic.main.fragment_artist_list.*
-import net.sigmabeta.chipbox.BuildConfig
-import net.sigmabeta.chipbox.R
+import kotlinx.android.synthetic.main.fragment_list.*
+import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.domain.Artist
-import net.sigmabeta.chipbox.ui.*
-import net.sigmabeta.chipbox.ui.main.MainView
+import net.sigmabeta.chipbox.ui.BaseActivity
+import net.sigmabeta.chipbox.ui.ListFragment
 import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
-import net.sigmabeta.chipbox.util.fadeIn
-import net.sigmabeta.chipbox.util.fadeOut
-import net.sigmabeta.chipbox.util.fadeOutPartially
-import net.sigmabeta.chipbox.util.isScrolledToBottom
-import javax.inject.Inject
+import timber.log.Timber
 
-class ArtistListFragment : BaseFragment(), ArtistListView, ItemListView<ArtistViewHolder>, TopLevelFragment {
-    lateinit var presenter: ArtistListPresenter
-        @Inject set
-
-    val adapter = ArtistListAdapter(this)
+class ArtistListFragment : ListFragment<ArtistListPresenter, ArtistListView, Artist, ArtistViewHolder, ArtistListAdapter>(), ArtistListView {
 
     /**
      * ArtistListView
      */
 
-    override fun launchNavActivity(id: Long) {
-        NavigationActivity.launch(activity, TrackListFragment.FRAGMENT_TAG, id)
-    }
-
-    override fun setArtists(artists: MutableList<Artist>) {
-        adapter.dataset = artists
-    }
-
-    override fun showFilesScreen() {
-        val mainActivity = activity
-        if (mainActivity is MainView) {
-            mainActivity.launchFileListActivity()
-        }
-    }
-
-    override fun showLoadingSpinner() = ifVisible {
-        loading_spinner.fadeIn().setDuration(50)
-    }
-
-    override fun hideLoadingSpinner() = ifVisible {
-        loading_spinner.fadeOut()
-    }
-
-    override fun showContent() = ifVisible {
-        list_artists.fadeIn()
-    }
-
-    override fun hideContent() = ifVisible {
-        list_artists.fadeOutPartially()
-    }
-
-    override fun showEmptyState() = ifVisible {
-        layout_empty_state.visibility = View.VISIBLE
-        label_empty_state.fadeIn().setStartDelay(300)
-        button_empty_state.fadeIn().setStartDelay(600)
-    }
-
-    override fun hideEmptyState() = ifVisible {
-        layout_empty_state.fadeOut().withEndAction {
-            label_empty_state.alpha = 0.0f
-            button_empty_state.alpha = 0.0f
-        }
+    override fun launchNavActivity(id: String) {
+        NavigationActivity.launch(activity!!,
+                TrackListFragment.FRAGMENT_TAG,
+                id)
     }
 
     /**
-     * ItemListView
+     * ListFragment
      */
 
-    override fun onItemClick(id: Long, clickedViewHolder: ArtistViewHolder) {
-        presenter.onItemClick(id)
-    }
-
-    /**
-     * TopLevelFragment
-     */
-
-    override fun isScrolledToBottom(): Boolean {
-        return list_artists?.isScrolledToBottom() ?: false
-    }
-
-    override fun refresh() = presenter.refresh()
+    override fun createAdapter() = ArtistListAdapter(this)
 
     /**
      * BaseFragment
      */
 
-    override fun inject() {
+    override fun inject(): Boolean {
         val container = activity
-        if (container is BaseActivity) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {container.getFragmentComponent()?.let {
+                it.inject(this)
+                return true
+            } ?: let {
+                Timber.e("${className()} injection failure: ${container?.className()}'s FragmentComponent not valid.")
+                return false
+            }
+        } else {
+            Timber.e("${className()} injection failure: ${container?.className()} not valid.")
+            return false
         }
     }
 
-    override fun getContentLayout(): ViewGroup {
-        return frame_content
-    }
-
-    override fun getPresenter(): FragmentPresenter {
-        return presenter
-    }
-
-    override fun getLayoutId(): Int {
-        return R.layout.fragment_artist_list
-    }
-
     override fun configureViews() {
+        super.configureViews()
+
         val layoutManager = LinearLayoutManager(activity)
 
-        list_artists.adapter = adapter
-        list_artists.layoutManager = layoutManager
-
-        button_empty_state.setOnClickListener(this)
+        recycler_list.adapter = adapter
+        recycler_list.layoutManager = layoutManager
     }
 
-    override fun getSharedImage(): View? = null
-
-    override fun getFragmentTag() = FRAGMENT_TAG
-
     companion object {
-        val FRAGMENT_TAG = "${BuildConfig.APPLICATION_ID}.artist_list"
-
         fun newInstance(): ArtistListFragment {
             val fragment = ArtistListFragment()
 

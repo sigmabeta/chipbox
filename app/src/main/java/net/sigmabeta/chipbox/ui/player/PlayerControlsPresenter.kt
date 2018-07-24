@@ -2,21 +2,24 @@ package net.sigmabeta.chipbox.ui.player
 
 import android.media.session.PlaybackState
 import android.os.Bundle
+import io.reactivex.android.schedulers.AndroidSchedulers
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.model.events.StateEvent
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
-import rx.android.schedulers.AndroidSchedulers
+import net.sigmabeta.chipbox.ui.UiState
 import javax.inject.Inject
 
 @ActivityScoped
-class PlayerControlsPresenter @Inject constructor(val player: Player) : FragmentPresenter() {
-    var view: PlayerControlsView? = null
-
+class PlayerControlsPresenter @Inject constructor(val player: Player,
+                                                  val playlist: Playlist,
+                                                  val updater: UiUpdater) : FragmentPresenter<PlayerControlsView>() {
     var updatedOnce = false
 
+    // TODO Should this really be in presenter?
     var elevated = false
 
     /**
@@ -40,7 +43,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
             R.id.button_skip_back -> player.skipToPrev()
             R.id.button_shuffle -> toggleShuffle()
             R.id.button_repeat -> toggleRepeat()
-            else -> view?.showToastMessage("Unimplemented.")
+            else -> handleError(NotImplementedError("This button is not implemented yet"))
         }
     }
 
@@ -49,7 +52,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
      */
 
     override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
-        if (player.playingTrack == null && player.playbackQueue.isEmpty()) {
+        if (playlist.playingTrackId == null && playlist.playbackQueue.isEmpty()) {
             view?.finish()
         }
     }
@@ -58,14 +61,23 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
      * BasePresenter
      */
 
-    override fun setup(arguments: Bundle?) = Unit
+    override fun setup(arguments: Bundle?) {
+        if (state == UiState.CANCELED) {
+            state = UiState.READY
+        } else {
+            state = UiState.CANCELED
+        }
+    }
 
-    override fun teardown() = Unit
+    override fun teardown() {
+        updatedOnce = false
+        elevated = false
+    }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         updateHelper()
 
-        val subscription = player.updater.asObservable()
+        val subscription = updater.asFlowable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
@@ -76,18 +88,6 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
         subscriptions.add(subscription)
     }
 
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is PlayerControlsView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-        updatedOnce = false
-        elevated = false
-    }
-
     /**
      * Private Methods
      */
@@ -95,22 +95,22 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
     private fun onPlayPauseClick() {
         when (player.state) {
             PlaybackState.STATE_PLAYING -> player.pause()
-            PlaybackState.STATE_PAUSED -> player.play()
-            PlaybackState.STATE_STOPPED -> player.play()
+            PlaybackState.STATE_PAUSED -> player.start(null)
+            PlaybackState.STATE_STOPPED -> player.start(null)
         }
     }
 
     private fun toggleShuffle() {
-        player.shuffle = !player.shuffle
+        playlist.shuffle = !playlist.shuffle
 
         displayShuffle()
     }
 
     private fun toggleRepeat() {
-        player.repeat = if (player.repeat >= Player.REPEAT_ONE) {
+        playlist.repeat = if (playlist.repeat >= Player.REPEAT_ONE) {
             Player.REPEAT_OFF
         } else {
-            player.repeat + 1
+            playlist.repeat + 1
         }
 
         displayRepeat()
@@ -135,7 +135,7 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
     }
 
     private fun displayShuffle() {
-        if (player.shuffle) {
+        if (playlist.shuffle) {
             view?.setShuffleEnabled()
         } else {
             view?.setShuffleDisabled()
@@ -143,12 +143,12 @@ class PlayerControlsPresenter @Inject constructor(val player: Player) : Fragment
     }
 
     private fun displayRepeat() {
-        when (player.repeat) {
+        when (playlist.repeat) {
             Player.REPEAT_OFF -> view?.setRepeatDisabled()
             Player.REPEAT_ALL -> view?.setRepeatAll()
             Player.REPEAT_ONE -> view?.setRepeatOne()
             Player.REPEAT_INFINITE -> view?.setRepeatInfinite()
-            else -> view?.showErrorSnackbar("Unimplemented state.", null, null)
+            else -> handleError(IllegalStateException("Unimplemented player state."))
         }
     }
 

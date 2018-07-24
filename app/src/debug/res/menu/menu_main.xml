@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:icon="@drawable/ic_refresh_black_24dp"
+        android:id="@+id/drawer_refresh"
+        android:title="@string/drawer_refresh"/>
+
+    <item
+        android:icon="@drawable/ic_settings_black_24dp"
+        android:id="@+id/drawer_settings"
+        android:title="@string/drawer_settings"/>
+
+    <item
+        android:icon="@drawable/ic_help_black_24dp"
+        android:id="@+id/drawer_help"
+        android:title="@string/drawer_help" />
+
+    <item
+        android:icon="@drawable/ic_settings_black_24dp"
+        android:id="@+id/drawer_debug"
+        android:title="@string/drawer_debug"/>
+
+</menu>

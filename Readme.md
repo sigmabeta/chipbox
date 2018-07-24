@@ -13,17 +13,17 @@ $ cd chipbox
 $ ./gradlew assembleDebug
 ```
 
-Chipbox is written using the Kotlin programming language, and uses the game-music-emu library for playback, Dagger for dependency injection, and RxJava for asynchronous operations. 
+Chipbox is 100% written using Kotlin, and uses the game-music-emu and VGMPlay libraries for playback, Dagger for dependency injection, and RxJava for asynchronous operations.
 
-Although the IntelliJ Kotlin plugin is required to be able to modify the codebase, Gradle will get the necessary Kotlin dependencies at build-time independently of the plugin.
-
-A pre-built native binary is included with this repo, for now; the native code is built using CMake, and the plan is to add support for this into the app's Gradle script soon.
+## Supported Music Formats
+- SPC (Super NES)
+- NSFE (NES)
+- GBS (Game Boy)
+- VGM (Genesis / Mega Drive, 32X, Arcade, numerous others)
 
 ## Roadmap
 
-- Enable building native code from Gradle
-- Finish main UI features (only a bare minimum is implemented at this time)
-- Add support for more consoles (currently, only Sega Genesis and Super NES are supported)
+- Add support for more consoles
 - Standalone playback support for Android Wear (playback on a phone can be controlled from Wear)
 - Bespoke UI for Android TV
 - Android Auto control support

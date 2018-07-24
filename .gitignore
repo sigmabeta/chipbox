@@ -40,3 +40,6 @@ build.properties
 app/src/main/jniLibs/
 
 *placeholder*
+
+.gradle/
+app/.externalNativeBuild/

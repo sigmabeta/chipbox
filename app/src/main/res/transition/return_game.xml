@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+
+<transitionSet xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:interpolator="@android:interpolator/decelerate_cubic">
+
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/image_main" />
+        </targets>
+
+        <changeBounds
+            android:duration="@integer/duration_return"
+            />
+        <changeImageTransform
+            android:duration="@integer/duration_return"
+            />
+
+    </transitionSet>
+
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/layout_background" />
+        </targets>
+
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.ChangeBoundsFade"
+            android:duration="@integer/duration_return"
+            app:fadeIn="false"/>
+    </transitionSet>
+
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/list_tracks" />
+        </targets>
+
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.ChangeBoundsFade"
+            android:duration="@integer/duration_return"
+            app:fadeIn="true"/>
+    </transitionSet>
+
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/button_fab" />
+        </targets>
+
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.Pop"
+            android:duration="100"
+            app:enter="false"/>
+    </transitionSet>
+
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/text_title" />
+            <target android:targetId="@id/text_subtitle" />
+        </targets>
+
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.ReflowText"
+            android:duration="@integer/duration_return"
+            app:freezeFrame="true"
+            app:enter="false"/>
+    </transitionSet>
+
+</transitionSet>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<transitionSet xmlns:android="http://schemas.android.com/apk/res/android"
+    android:transitionOrdering="together">
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/layout_background" />
+            <target android:targetId="@id/text_title" />
+            <target android:targetId="@id/text_subtitle" />
+        </targets>
+        <fade android:duration="50"/>
+    </transitionSet>
+</transitionSet>

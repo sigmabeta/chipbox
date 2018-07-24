@@ -1,34 +1,28 @@
 package net.sigmabeta.chipbox.model.domain
 
-import com.raizlabs.android.dbflow.annotation.*
-import com.raizlabs.android.dbflow.sql.language.SQLite
-import com.raizlabs.android.dbflow.structure.BaseModel
-import net.sigmabeta.chipbox.ChipboxDatabase
-import net.sigmabeta.chipbox.util.logError
-import net.sigmabeta.chipbox.util.logInfo
-import net.sigmabeta.chipbox.util.logVerbose
-import rx.Observable
-import java.util.*
 
-@ModelContainer
-@Table(database = ChipboxDatabase::class, allFields = true, indexGroups = arrayOf(IndexGroup(number = 1, name = "titlePlatform")))
-class Game() : BaseModel() {
-    constructor(title: String, platform: Long) : this() {
+import io.realm.RealmList
+import io.realm.RealmObject
+import io.realm.annotations.PrimaryKey
+import net.sigmabeta.chipbox.model.IdRealmObject
+import net.sigmabeta.chipbox.model.domain.ListItem.Companion.CHANGE_ERROR
+
+open class Game() : RealmObject(), IdRealmObject, ListItem {
+    constructor(title: String, platformName: String) : this() {
         this.title = title
-        this.platform = platform
+        this.platformName = platformName
     }
 
-    @PrimaryKey (autoincrement = true) var id: Long? = null
+    @PrimaryKey open var id: String? = null
 
-    @Index(indexGroups = intArrayOf(1)) var title: String? = null
-    @Index(indexGroups = intArrayOf(1)) var platform: Long? = null
+    open var title: String? = null
+    open var platformName: String? = null
 
-    var artLocal: String? = null
-    var artWeb: String? = null
-    var company: String? = null
-    var multipleArtists: Boolean? = null
-
-    @ForeignKey var artist: Artist? = null
+    open var artLocal: String? = null
+    open var artWeb: String? = null
+    open var company: String? = null
+    open var multipleArtists: Boolean? = null
+    open var artist: Artist? = null
         get() {
             if (multipleArtists ?: false) {
                 return Artist("Various Artists")
@@ -37,25 +31,42 @@ class Game() : BaseModel() {
             }
         }
 
-    @ColumnIgnore
-    @JvmField
-    var tracks: MutableList<Track>? = null
+    open var tracks: RealmList<Track>? = null
 
-    @OneToMany(methods = arrayOf(OneToMany.Method.SAVE, OneToMany.Method.DELETE))
-    fun getTracks(): MutableList<Track> {
-        this.tracks?.let {
-            if (!it.isEmpty()) {
-                return it
+    override fun getPrimaryKey() = id
+    override fun setPrimaryKey(id: String) {
+        this.id = id
+    }
+
+
+    override fun isTheSameAs(theOther: ListItem?): Boolean {
+        if (theOther is Game) {
+            if (theOther.id == this.id) {
+                return true
             }
         }
 
-        val tracks = SQLite.select()
-                .from(Track::class.java)
-                .where(Track_Table.gameContainer_id.eq(id))
-                .queryList()
+        return false
+    }
 
-        this.tracks = tracks
-        return tracks
+    override fun hasSameContentAs(theOther: ListItem?): Boolean {
+        if (theOther is Game) {
+            if (this.artist?.name == theOther.artist?.name) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    override fun getChangeType(theOther: ListItem?): Int {
+        if (theOther is Game) {
+            if (this.artist?.name != theOther.artist?.name) {
+                return CHANGE_ARTIST
+            }
+        }
+
+        return CHANGE_ERROR
     }
 
     companion object {
@@ -65,141 +76,6 @@ class Game() : BaseModel() {
 
         val PICASSO_ASSET_ALBUM_ART_BLANK = PICASSO_PREFIX + ASSET_ALBUM_ART_BLANK
 
-        fun get(gameId: Long): Observable<Game> {
-            return Observable.create {
-                logInfo("[Game] Getting game #${gameId}...")
-
-                if (gameId > 0) {
-                    val game = queryDatabase(gameId)
-
-                    if (game != null) {
-                        it.onNext(game)
-                        it.onCompleted()
-                    } else {
-                        it.onError(Exception("Couldn't find game."))
-                    }
-                } else {
-                    it.onError(Exception("Bad game ID."))
-                }
-            }
-        }
-
-        fun getFromPlatform(platform: Long): Observable<MutableList<Game>> {
-            return Observable.create {
-                logInfo("[Game] Reading games list...")
-
-                var games: List<Game>
-                val query = SQLite.select().from(Game::class.java)
-
-                // If -2 passed in, return all games. Else, return games for one platform only.
-                if (platform != Track.PLATFORM_ALL) {
-                    games = query
-                            .where(Game_Table.platform.eq(platform))
-                            .orderBy(Game_Table.title, true)
-                            .queryList()
-                } else {
-                    games = query
-                            .orderBy(Game_Table.title, true)
-                            .queryList()
-                }
-
-                logVerbose("[Game] Found ${games.size} games.")
-
-                it.onNext(games)
-                it.onCompleted()
-            }
-        }
-
-        fun getFromTrackList(tracks: List<Track>): Observable<HashMap<Long, Game>> {
-            return Observable.create {
-                logInfo("[Game] Getting games for currently displayed tracks...")
-                val startTime = System.currentTimeMillis()
-
-                val games = HashMap<Long, Game>()
-
-                tracks.forEach { track ->
-                    track.gameContainer?.toModel()?.id?.let { id ->
-                        if (games[id] != null) {
-                            return@forEach
-                        }
-
-                        val game = Game.queryDatabase(id)
-                        if (game != null) {
-                            games.put(id, game)
-                            return@forEach
-
-                        } else {
-                            it.onError(Exception("Couldn't find game."))
-                            return@create
-                        }
-                    }
-
-                    it.onError(Exception("Bad game ID."))
-                    return@create
-                }
-
-                logVerbose("[Game] Game map size: ${games.size}")
-
-                val endTime = System.currentTimeMillis()
-                val scanDuration = (endTime - startTime) / 1000.0f
-
-                logInfo("[Game] Found games in ${scanDuration} seconds.")
-
-                it.onNext(games)
-                it.onCompleted()
-            }
-        }
-
-        fun get(gameTitle: String?, gamePlatform: Long?, gameMap: HashMap<Long, HashMap<String, Game>>): Game {
-            // Check if this game has already been seen during this scan.
-            gameMap.get(gamePlatform)?.let { platform ->
-                platform.get(gameTitle)?.let { game ->
-                    return game
-                }
-            } ?: let {
-                if (gamePlatform != null) {
-                    gameMap.put(gamePlatform, HashMap<String, Game>())
-                }
-            }
-
-            val game = SQLite.select()
-                    .from(Game::class.java)
-                    .where(Game_Table.title.eq(gameTitle))
-                    .and(Game_Table.platform.eq(gamePlatform))
-                    .querySingle()
-
-            game?.id?.let {
-                if (gameTitle != null) {
-                    gameMap.get(gamePlatform)?.put(gameTitle, game)
-                } else {
-                    logError("[Game] Something really weird happened...?")
-                }
-
-                return game
-            } ?: let {
-                return addToDatabase(gameTitle ?: "Unknown Game", gamePlatform ?: -Track.PLATFORM_UNSUPPORTED)
-            }
-        }
-
-        fun queryDatabase(id: Long): Game? {
-            return SQLite.select()
-                    .from(Game::class.java)
-                    .where(Game_Table.id.eq(id))
-                    .querySingle()
-        }
-
-        fun addLocalImage(gameId: Long, artLocal: String) {
-            SQLite.update(Game::class.java)
-                    .set(Game_Table.artLocal.eq(artLocal))
-                    .where(Game_Table.id.eq(gameId))
-                    .query()
-        }
-
-        private fun addToDatabase(gameTitle: String, gamePlatform: Long): Game {
-            val game = Game(gameTitle, gamePlatform)
-            game.insert()
-
-            return game
-        }
+        val CHANGE_ARTIST = 1
     }
 }
