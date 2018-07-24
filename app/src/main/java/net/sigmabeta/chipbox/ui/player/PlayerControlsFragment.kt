@@ -7,22 +7,23 @@ import android.widget.ImageView
 import kotlinx.android.synthetic.main.fragment_player_controls.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.FragmentPresenter
-import net.sigmabeta.chipbox.util.ACC_DECELERATE
+import net.sigmabeta.chipbox.util.animation.ACC_DECELERATE
 import net.sigmabeta.chipbox.util.convertDpToPx
+import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
 @ActivityScoped
-class PlayerControlsFragment : BaseFragment(), PlayerControlsView {
+class PlayerControlsFragment : BaseFragment<PlayerControlsPresenter, PlayerControlsView>(), PlayerControlsView {
     lateinit var presenter: PlayerControlsPresenter
         @Inject set
 
     override fun finish() {
-        activity.finish()
+        activity!!.finish()
     }
 
     /**
@@ -30,18 +31,22 @@ class PlayerControlsFragment : BaseFragment(), PlayerControlsView {
      */
 
     override fun showPauseButton() {
-        button_play.setImageResource(R.drawable.ic_pause_black_24dp)
+        if (isResumed) {
+            button_play.setImageResource(R.drawable.ic_pause_black_24dp)
+        }
     }
 
     override fun showPlayButton() {
-        button_play.setImageResource(R.drawable.ic_play_arrow_black_24dp)
+        if (isResumed) {
+            button_play.setImageResource(R.drawable.ic_play_arrow_black_24dp)
+        }
     }
 
-    override fun elevate() {
+    override fun elevate() = ifVisible {
         animateControls(frame_content, true)
     }
 
-    override fun unElevate() {
+    override fun unElevate() = ifVisible {
         animateControls(frame_content, false)
     }
 
@@ -54,45 +59,71 @@ class PlayerControlsFragment : BaseFragment(), PlayerControlsView {
     }
 
     override fun setShuffleEnabled() {
-        setViewTint(button_shuffle, R.color.accent)
+        if (isResumed) {
+            setViewTint(button_shuffle, R.color.accent)
+        }
     }
 
     override fun setShuffleDisabled() {
-        setViewTint(button_shuffle, R.color.circle_grey)
+        if (isResumed) {
+            setViewTint(button_shuffle, R.color.circle_grey)
+        }
     }
 
     override fun setRepeatDisabled() {
-        button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
-        setViewTint(button_repeat, R.color.circle_grey)
+        if (isResumed) {
+            button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
+            setViewTint(button_repeat, R.color.circle_grey)
+        }
     }
 
     override fun setRepeatAll() {
-        button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
-        setViewTint(button_repeat, R.color.accent)
+        if (isResumed) {
+            button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
+            setViewTint(button_repeat, R.color.accent)
+        }
     }
 
     override fun setRepeatOne() {
-        button_repeat.setImageResource(R.drawable.ic_repeat_one_black_24dp)
-        setViewTint(button_repeat, R.color.accent)
+        if (isResumed) {
+            button_repeat.setImageResource(R.drawable.ic_repeat_one_black_24dp)
+            setViewTint(button_repeat, R.color.accent)
+        }
     }
 
     override fun setRepeatInfinite() {
-        button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
-        setViewTint(button_repeat, R.color.primary)
+        if (isResumed) {
+            button_repeat.setImageResource(R.drawable.ic_repeat_black_24dp)
+            setViewTint(button_repeat, R.color.primary)
+        }
     }
 
     /**
      * BaseFragment
      */
 
-    override fun inject() {
+    override fun showLoadingState() = Unit
+
+    override fun showContent() = Unit
+
+    override fun inject(): Boolean {
         val container = activity
-        if (container is BaseActivity) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {container.getFragmentComponent()?.let {
+
+
+                it.inject(this)
+                return true
+            } ?: let {
+                Timber.e("${className()} injection failure: ${container?.className()}'s FragmentComponent not valid.")
+                return false
+            }
+        } else {
+            Timber.e("${className()} injection failure: ${container?.className()} not valid.")
+            return false
         }
     }
 
-    override fun getPresenter(): FragmentPresenter = presenter
+    override fun getPresenterImpl() = presenter
 
     override fun getLayoutId() = R.layout.fragment_player_controls
 
@@ -113,7 +144,7 @@ class PlayerControlsFragment : BaseFragment(), PlayerControlsView {
      */
 
     private fun setViewTint(view: ImageView, colorId: Int) {
-        val color = ContextCompat.getColor(activity, colorId)
+        val color = ContextCompat.getColor(activity!!, colorId)
         view.drawable.setTint(color)
     }
 
@@ -136,8 +167,8 @@ class PlayerControlsFragment : BaseFragment(), PlayerControlsView {
 
         val animations = ArrayList<Animator>(2)
 
-        val startElevation = if (elevate) 0.0f else convertDpToPx(16.0f, activity)
-        val endElevation = if (elevate) convertDpToPx(16.0f, activity) else 0.0f
+        val startElevation = if (elevate) 0.0f else convertDpToPx(16.0f, activity!!)
+        val endElevation = if (elevate) convertDpToPx(16.0f, activity!!) else 0.0f
 
         if (startElevation != endElevation) {
             animations.add(ObjectAnimator.ofFloat(view, "elevation", startElevation, endElevation))

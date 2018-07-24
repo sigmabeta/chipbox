@@ -1,22 +1,29 @@
 package net.sigmabeta.chipbox.ui.onboarding
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
-import android.support.v7.app.AppCompatActivity
+import android.os.Build
 import android.view.View
+import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_onboarding.*
 import net.sigmabeta.chipbox.BuildConfig
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.dagger.component.FragmentComponent
+import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.main.MainActivity
 import net.sigmabeta.chipbox.ui.onboarding.library.LibraryFragment
 import net.sigmabeta.chipbox.ui.onboarding.title.TitleFragment
+import java.io.File
 import javax.inject.Inject
 
-class OnboardingActivity : AppCompatActivity(), OnboardingView {
+class OnboardingActivity : BaseActivity<OnboardingPresenter, OnboardingView>(), OnboardingView {
+
+    override fun getPresenterImpl() = presenter
+
+    override fun getSharedImage() = null
+
+    override fun shouldDelayTransitionForFragment() = false
+
     lateinit var presenter: OnboardingPresenter
         @Inject set
 
@@ -43,48 +50,51 @@ class OnboardingActivity : AppCompatActivity(), OnboardingView {
     }
 
     override fun exit(andLaunchMain: Boolean) {
-        finish()
-        if (andLaunchMain) {
-            MainActivity.launch(this)
+        val result = if (andLaunchMain) {
+            Activity.RESULT_OK
+        } else {
+            Activity.RESULT_CANCELED
         }
+
+        setResult(result)
+        finish()
     }
 
     override fun updateCurrentScreen(tag: String) {
         presenter.currentTag = tag
     }
 
-    override fun getFragmentComponent(): FragmentComponent {
-        return presenter.fragmentComponent
-    }
+    override fun showLoadingState() = Unit
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        inject()
-        super.onCreate(savedInstanceState)
+    override fun showContent() = Unit
 
-        presenter.onCreate(intent.extras, savedInstanceState, this)
-    }
-
-    fun inject() = ChipboxApplication.appComponent.inject(this)
+    override fun inject() = getTypedApplication().appComponent.inject(this)
 
     override fun configureViews() {
         setContentView(getLayoutId())
     }
 
-    fun getLayoutId() = R.layout.activity_onboarding
+    override fun getLayoutId() = R.layout.activity_onboarding
 
-    fun getContentLayout() = frame_content
+    override fun getContentLayout() = frame_content
 
-    override fun showToastMessage(message: String) = Unit
-
-    override fun showErrorSnackbar(message: String, action: View.OnClickListener?, actionLabel: Int?) = Unit
-
-    fun startTransition() = Unit
+    override fun onBackPressed() {
+        // From superclass
+        val fragmentManager = supportFragmentManager
+        val isStateSaved = fragmentManager.isStateSaved
+        if (isStateSaved && Build.VERSION.SDK_INT <= Build.VERSION_CODES.N_MR1) {
+            return
+        }
+        if (isStateSaved || !fragmentManager.popBackStackImmediate()) {
+            presenter.onBackPressed()
+        }
+    }
 
     override fun onClick(clicked: View) {
         presenter.onClick(clicked.id)
     }
 
-    private fun showFragment(fragment: BaseFragment, backstack: Boolean) {
+    private fun showFragment(fragment: BaseFragment<*, *>, backstack: Boolean) {
         val transaction = supportFragmentManager.beginTransaction()
 
         if (backstack) {
@@ -108,9 +118,16 @@ class OnboardingActivity : AppCompatActivity(), OnboardingView {
     companion object {
         val ACTIVITY_TAG = "${BuildConfig.APPLICATION_ID}.onboarding"
 
+        val REQUEST_ONBOARDING = 1234
+
         val ARGUMENT_PAGE_TAG = "${ACTIVITY_TAG}.page.tag"
 
-        fun launch(context: Context, tag: String) {
+        fun launchForResult(activity: Activity) {
+            val launcher = Intent(activity, OnboardingActivity::class.java)
+            activity.startActivityForResult(launcher, REQUEST_ONBOARDING)
+        }
+
+        fun launchNoResult(context: Context, tag: String) {
             val launcher = Intent(context, OnboardingActivity::class.java)
 
             launcher.putExtra(ARGUMENT_PAGE_TAG, tag)

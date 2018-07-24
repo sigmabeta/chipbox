@@ -1,28 +1,10 @@
 package net.sigmabeta.chipbox.ui.games
 
 import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.ui.ListView
 
-interface GameListView : BaseView {
-    fun setActivityTitle(titleResource: Int)
+interface GameListView : ListView<Game, GameViewHolder> {
+    fun launchGameActivity(id: String, position: Int)
 
-    fun setGames(games: MutableList<Game>)
-
-    fun launchGameActivity(id: Long)
-
-    fun clearClickedViewHolder()
-
-    fun showFilesScreen()
-
-    fun showLoadingSpinner()
-
-    fun hideLoadingSpinner()
-
-    fun showContent()
-
-    fun hideContent()
-
-    fun showEmptyState()
-
-    fun hideEmptyState()
+    fun setTitle(platformName: String)
 }

@@ -3,9 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="64dp"
-    android:background="?android:attr/selectableItemBackground"
+    android:foreground="?android:attr/selectableItemBackground"
     android:focusable="true"
     android:clickable="true"
+    android:background="@android:color/transparent"
     tools:background="@android:color/white">
 
     <TextView

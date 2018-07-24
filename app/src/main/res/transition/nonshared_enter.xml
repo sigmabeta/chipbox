@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transitionSet xmlns:android="http://schemas.android.com/apk/res/android"
+    android:transitionOrdering="together">
+
+        <fade
+            android:fadingMode="fade_in"
+            android:startDelay="225"
+            android:duration="75" />
+</transitionSet>
+
+

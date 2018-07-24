@@ -1,40 +1,46 @@
 package net.sigmabeta.chipbox.ui.game
 
 import android.os.Bundle
+import io.reactivex.android.schedulers.AndroidSchedulers
 import net.sigmabeta.chipbox.R
-import net.sigmabeta.chipbox.backend.Player
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Playlist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.util.logWarning
-import rx.android.schedulers.AndroidSchedulers
-import rx.schedulers.Schedulers
+import net.sigmabeta.chipbox.model.repository.LibraryScanner
+import net.sigmabeta.chipbox.ui.ChromePresenter
+import net.sigmabeta.chipbox.ui.UiState
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter() {
-    var view: GameView? = null
-
-    var gameId: Long? = null
+class GamePresenter @Inject constructor(player: Player,
+                                        scanner: LibraryScanner,
+                                        playlist: Playlist,
+                                        updater: UiUpdater) : ChromePresenter<GameView>(player, scanner, playlist, updater) {
+    var gameId: String? = null
 
     var game: Game? = null
-    var tracks: MutableList<Track>? = null
+    var tracks: List<Track>? = null
 
-    fun onItemClick(position: Long) {
-        tracks?.let {
-            player.play(it, position.toInt())
+    private var width = -1
+    private var height = -1
+
+    fun onItemClick(position: Int) {
+        getTrackIdList()?.let {
+            player.play(it, position)
         }
     }
 
     override fun onClick(id: Int) {
         when (id) {
             R.id.button_fab -> {
-                tracks?.let { them ->
+                getTrackIdList()?.let { them ->
                     player.play(them, 0)
                 }
             }
@@ -42,12 +48,31 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
     }
 
     override fun setup(arguments: Bundle?) {
-        setupHelper(arguments)
-    }
+        state = UiState.LOADING
 
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) {
-        if (tracks == null) {
-            setupHelper(arguments)
+        gameId = arguments?.getString(GameActivity.ARGUMENT_GAME_ID)
+        width = arguments?.getInt(GameActivity.ARGUMENT_GAME_IMAGE_WIDTH) ?: -1
+        height = arguments?.getInt(GameActivity.ARGUMENT_GAME_IMAGE_HEIGHT) ?: -1
+
+        gameId?.let {
+            val gameSubscription = repository.getGame(it)
+                    .subscribe(
+                            { game ->
+                                if (game != null) {
+                                    this.game = game
+                                    this.tracks = game.tracks?.toMutableList()
+
+                                    state = UiState.READY
+                                } else {
+                                    handleError(RuntimeException("Game not found."))
+                                }
+                            },
+                            {
+                                handleError(it)
+                            }
+                    )
+
+            subscriptions.add(gameSubscription)
         }
     }
 
@@ -57,76 +82,54 @@ class GamePresenter @Inject constructor(val player: Player) : ActivityPresenter(
         gameId = null
         game = null
         tracks = null
+        width = -1
+        height = -1
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
+        super.showReadyState()
+
         game?.let {
-            view?.setGame(it)
+            view?.setGame(it, width, height)
         }
 
         tracks?.let {
             view?.setTracks(it)
         }
 
-        player.playingTrack?.let {
-            displayTrack(it)
-        }
+        displayTrack(player.playlist.playingTrackId)
 
-        val subscription = player.updater.asObservable()
+        val subscription = updater.asFlowable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
                         is TrackEvent -> {
-                            displayTrack(it.track)
+                            displayTrack(it.trackId)
                         }
                         is PositionEvent -> { /* no-op */ }
                         is StateEvent -> { /* no-op */
                         }
-                        else -> logWarning("[GamePresenter] Unhandled ${it}")
+                        else -> Timber.w("Unhandled %s", it.toString())
                     }
                 }
 
         subscriptions.add(subscription)
     }
 
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is GameView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
-
     override fun onReenter() = Unit
 
-    private fun displayTrack(track: Track) {
-        view?.setPlayingTrack(track)
+    private fun getTrackIdList() = tracks?.map(Track::id)?.toMutableList()
+
+    private fun displayTrack(trackId: String?) {
+        if (trackId != null) {
+            val track = repository.getTrackSync(trackId)
+
+            if (track != null) {
+                view?.setPlayingTrack(track)
+            } else {
+                Timber.e("Cannot load track with id %s", trackId)
+            }
+        }
     }
 
-    private fun setupHelper(arguments: Bundle?) {
-        val gameId = arguments?.getLong(GameActivity.ARGUMENT_GAME_ID) ?: -1
-        this.gameId = gameId
-
-        val gameSubscription = Game.get(gameId)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe (
-                        { game ->
-                            this.game = game
-                            view?.setGame(game)
-
-                            val tracks = game.getTracks()
-                            this.tracks = tracks
-                            view?.setTracks(tracks)
-                        },
-                        {
-                            view?.setGame(null)
-                            view?.showErrorSnackbar("Error: ${it.message}", null, null)
-                        }
-                )
-
-        subscriptions.add(gameSubscription)
-    }
 }

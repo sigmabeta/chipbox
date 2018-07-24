@@ -3,14 +3,16 @@ package net.sigmabeta.chipbox.ui.onboarding.title
 import kotlinx.android.synthetic.main.fragment_title.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
+import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
+import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.BaseFragment
-import net.sigmabeta.chipbox.ui.FragmentPresenter
 import net.sigmabeta.chipbox.ui.onboarding.OnboardingView
+import timber.log.Timber
 import javax.inject.Inject
 
 @ActivityScoped
-class TitleFragment : BaseFragment(), TitleView {
+class TitleFragment : BaseFragment<TitlePresenter, TitleView>(), TitleView {
     lateinit var presenter: TitlePresenter
         @Inject set
 
@@ -34,14 +36,26 @@ class TitleFragment : BaseFragment(), TitleView {
      * BaseFragment
      */
 
-    override fun inject() {
+    override fun showLoadingState() = Unit
+
+    override fun showContent() = Unit
+
+    override fun inject(): Boolean {
         val container = activity
-        if (container is OnboardingView) {
-            container.getFragmentComponent().inject(this)
+        if (container is BaseActivity<*, *>) {container.getFragmentComponent()?.let {
+                it.inject(this)
+                return true
+            } ?: let {
+                Timber.e("${className()} injection failure: ${container?.className()}'s FragmentComponent not valid.")
+                return false
+            }
+        } else {
+            Timber.e("${className()} injection failure: ${container?.className()} not valid.")
+            return false
         }
     }
 
-    override fun getPresenter(): FragmentPresenter = presenter
+    override fun getPresenterImpl(): TitlePresenter = presenter
 
     override fun getLayoutId() = R.layout.fragment_title
 

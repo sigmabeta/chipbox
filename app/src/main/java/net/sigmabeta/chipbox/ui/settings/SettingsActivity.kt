@@ -5,16 +5,14 @@ import android.content.Intent
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import io.realm.OrderedCollectionChangeSet
 import kotlinx.android.synthetic.main.activity_settings.*
-import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.audio.Voice
-import net.sigmabeta.chipbox.ui.ActivityPresenter
 import net.sigmabeta.chipbox.ui.BaseActivity
-import net.sigmabeta.chipbox.ui.ItemListView
 import javax.inject.Inject
 
-class SettingsActivity : BaseActivity(), SettingsView, ItemListView<VoiceViewHolder>, AdapterView.OnItemSelectedListener {
+class SettingsActivity : BaseActivity<SettingsPresenter, SettingsView>(), SettingsView, AdapterView.OnItemSelectedListener {
     lateinit var presenter: SettingsPresenter
         @Inject set
 
@@ -28,25 +26,33 @@ class SettingsActivity : BaseActivity(), SettingsView, ItemListView<VoiceViewHol
         adapter.notifyItemChanged(position)
     }
 
-    override fun setVoices(voices: MutableList<Voice>?) {
-        adapter.dataset = voices
+    override fun setList(list: List<Voice>) {
+        adapter.dataset = list
     }
 
     override fun setDropdownValue(index: Int) {
         dropdown_tempo.onItemSelectedListener = null
-        dropdown_tempo.setSelection(index)
-        dropdown_tempo.post {
-            dropdown_tempo.onItemSelectedListener = this
-        }
+        dropdown_tempo.setSelection(index, false)
+        dropdown_tempo.onItemSelectedListener = this
     }
+
+    override fun animateChanges(changeset: OrderedCollectionChangeSet) = Unit
+
+    override fun refreshList() = Unit
 
     /**
-     * ItemListView
+     * ListView
      */
 
-    override fun onItemClick(position: Long, clickedViewHolder: VoiceViewHolder) {
+    override fun onItemClick(position: Int) {
         presenter.onItemClick(position)
     }
+
+    override fun isScrolledToBottom(): Boolean = true
+
+    override fun startRescan() = Unit
+
+    override fun showScanningWaitMessage() = Unit
 
     /**
      * OnItemSelectedListener
@@ -62,9 +68,13 @@ class SettingsActivity : BaseActivity(), SettingsView, ItemListView<VoiceViewHol
      * BaseActivity
      */
 
-    override fun inject() = ChipboxApplication.appComponent.inject(this)
+    override fun showLoadingState() = Unit
 
-    override fun getPresenter(): ActivityPresenter = presenter
+    override fun showContent() = Unit
+
+    override fun inject() = getTypedApplication().appComponent.inject(this)
+
+    override fun getPresenterImpl() = presenter
 
     override fun configureViews() {
         recycler_voices.adapter = adapter
@@ -73,12 +83,13 @@ class SettingsActivity : BaseActivity(), SettingsView, ItemListView<VoiceViewHol
         spinAdapter.setDropDownViewResource(R.layout.dropdown_after_click_tempo)
 
         dropdown_tempo.adapter = spinAdapter
-        dropdown_tempo.onItemSelectedListener = this
+
+        setupToolbar(false)
     }
 
     override fun getLayoutId() = R.layout.activity_settings
 
-    override fun getContentLayout() = linear_content
+    override fun getContentLayout() = layout_background
 
     override fun getSharedImage() = null
 

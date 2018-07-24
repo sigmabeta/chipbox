@@ -1,121 +1,60 @@
 package net.sigmabeta.chipbox.model.domain
 
-import com.raizlabs.android.dbflow.annotation.*
-import com.raizlabs.android.dbflow.sql.language.SQLite
-import com.raizlabs.android.dbflow.structure.BaseModel
-import net.sigmabeta.chipbox.ChipboxDatabase
-import net.sigmabeta.chipbox.util.logInfo
-import net.sigmabeta.chipbox.util.logVerbose
-import rx.Observable
-import java.util.*
 
-@ModelContainer
-@ManyToMany(referencedTable = Track::class)
-@Table(database = ChipboxDatabase::class, allFields = true, indexGroups = arrayOf(IndexGroup(number = 1, name = "name")))
-class Artist() : BaseModel() {
+import io.realm.RealmList
+import io.realm.RealmObject
+import io.realm.annotations.PrimaryKey
+import net.sigmabeta.chipbox.model.IdRealmObject
+import net.sigmabeta.chipbox.model.domain.ListItem.Companion.CHANGE_ERROR
+
+open class Artist() : RealmObject(), IdRealmObject, ListItem {
     constructor(name: String) : this() {
         this.name = name
     }
 
-    @PrimaryKey (autoincrement = true) var id: Long? = null
+    @PrimaryKey open var id: String? = null
 
-    @Index(indexGroups = intArrayOf(1)) var name: String? = null
+    open var name: String? = null
+    open var tracks: RealmList<Track>? = null
 
-    @ColumnIgnore
-    @JvmField
-    var tracks: MutableList<Track>? = null
+    override fun getPrimaryKey() = id
+    override fun setPrimaryKey(id: String) {
+        this.id = id
+    }
 
-    fun getTracks(): MutableList<Track> {
-        this.tracks?.let {
-            if (!it.isEmpty()) {
-                return it
+    override fun isTheSameAs(theOther: ListItem?): Boolean {
+        if (theOther is Artist) {
+            if (theOther.id == this.id) {
+                return true
             }
         }
 
-        val relations = SQLite.select()
-                .from(Artist_Track::class.java)
-                .where(Artist_Track_Table.artist_id.eq(id))
-                .queryList()
+        return false
+    }
 
-        val tracks = ArrayList<Track>(relations.size)
-
-        relations.forEach {
-            tracks.add(it.track)
+    override fun hasSameContentAs(theOther: ListItem?): Boolean {
+        if (theOther is Artist) {
+            if (theOther.tracks?.size == this.tracks?.size) {
+                return true
+            }
         }
 
-        this.tracks = tracks
-        return tracks
+        return false
+    }
+
+    override fun getChangeType(theOther: ListItem?): Int {
+        if (theOther is Artist) {
+            if (theOther.tracks?.size != this.tracks?.size) {
+                return CHANGE_TRACK_COUNT
+            }
+        }
+
+        return CHANGE_ERROR
     }
 
     companion object {
         val ARTIST_ALL = -1L
 
-        fun get(artistId: Long): Observable<Artist> {
-            return Observable.create {
-                logInfo("[Artist] Getting artist #${artistId}...")
-
-                if (artistId > 0) {
-                    val artist = queryDatabase(artistId)
-
-                    if (artist != null) {
-                        it.onNext(artist)
-                        it.onCompleted()
-                    } else {
-                        it.onError(Exception("Couldn't find game."))
-                    }
-                } else {
-                    it.onError(Exception("Bad game ID."))
-                }
-            }
-        }
-
-        fun getAll(): Observable<MutableList<Artist>> {
-            return Observable.create {
-                logInfo("[Artist] Reading artist list...")
-
-                val artists = SQLite.select().from(Artist::class.java)
-                        .where()
-                        .orderBy(Artist_Table.name, true)
-                        .queryList()
-
-                logVerbose("[Artist] Found ${artists.size} artists.")
-
-                it.onNext(artists)
-                it.onCompleted()
-            }
-        }
-
-        fun queryDatabase(id: Long): Artist? {
-            return SQLite.select()
-                    .from(Artist::class.java)
-                    .where(Artist_Table.id.eq(id))
-                    .querySingle()
-        }
-
-        fun get(name: String, artistMap: HashMap<String, Artist>): Artist {
-            // Check if this artist has already been seen during this scan.
-            artistMap.get(name)?.let {
-                return it
-            }
-
-            val artist = SQLite.select()
-                    .from(Artist::class.java)
-                    .where(Artist_Table.name.eq(name))
-                    .querySingle()
-
-            artist?.id?.let {
-                artistMap.put(name, artist)
-                return artist
-            } ?: let {
-                return addToDatabase(name ?: "Unknown Artist")
-            }
-        }
-
-        private fun addToDatabase(name: String): Artist {
-            val artist = Artist(name)
-            artist.insert()
-
-            return artist
-        }
+        val CHANGE_TRACK_COUNT = 1
     }
 }
