@@ -1,23 +1,25 @@
 package net.sigmabeta.chipbox.ui.settings
 
 import android.os.Bundle
-import net.sigmabeta.chipbox.backend.Player
+import io.reactivex.android.schedulers.AndroidSchedulers
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Settings
 import net.sigmabeta.chipbox.model.audio.Voice
 import net.sigmabeta.chipbox.model.events.GameEvent
 import net.sigmabeta.chipbox.model.events.PositionEvent
 import net.sigmabeta.chipbox.model.events.StateEvent
 import net.sigmabeta.chipbox.model.events.TrackEvent
 import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.util.logWarning
-import rx.android.schedulers.AndroidSchedulers
+import net.sigmabeta.chipbox.ui.UiState
+import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresenter() {
-    var view: SettingsView? = null
-
+class SettingsPresenter @Inject constructor(val player: Player,
+                                            val updater: UiUpdater,
+                                            val settings: Settings) : ActivityPresenter<SettingsView>() {
     var voices: MutableList<Voice>? = null
 
     var tempo = 100
@@ -26,16 +28,19 @@ class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresen
      * Public Methods
      */
 
-    fun onItemClick(position: Long) {
+    fun onItemClick(position: Int) {
         voices?.let {
-            val newValue = !it[position.toInt()].enabled
-            it[position.toInt()].enabled = newValue
-            view?.notifyChanged(position.toInt())
+            val newValue = !it[position].enabled
+            it[position].enabled = newValue
+
+            player.muteVoice(position, newValue)
+            view?.notifyChanged(position)
         }
     }
 
     fun onTempoChange(position: Int) {
-        player.tempo = indexToTempoValue(position)
+        val newValue = indexToTempoValue(position)
+        player.setTempo(newValue)
     }
 
     /**
@@ -44,7 +49,7 @@ class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresen
 
     override fun onReenter() = Unit
 
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
+
 
     override fun onTempDestroy() = Unit
 
@@ -52,17 +57,19 @@ class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresen
      * BasePresenter
      */
 
-    override fun setup(arguments: Bundle?) = Unit
+    override fun setup(arguments: Bundle?) {
+        state = UiState.READY
+    }
 
     override fun teardown() {
         voices = null
         tempo = 100
     }
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         updateHelper()
 
-        val subscription = player.updater.asObservable()
+        val subscription = updater.asFlowable()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe {
                     when (it) {
@@ -73,7 +80,7 @@ class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresen
                         }
                         is GameEvent -> { /* no-op */
                         }
-                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
+                        else -> Timber.w("Unhandled %s", it.toString())
                     }
                 }
 
@@ -82,25 +89,20 @@ class SettingsPresenter @Inject constructor(val player: Player) : ActivityPresen
 
     override fun onClick(id: Int) = Unit
 
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is SettingsView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
-
     /**
      * Private Methods
      */
 
     private fun updateHelper() {
-        tempo = player.tempo ?: 100
-        voices = player.voices
+        tempo = settings.tempo ?: 100
 
-        view?.setVoices(voices)
+        voices = settings.voices
+        voices?.let {
+            view?.setList(it)
+        } ?: let {
+            state = UiState.EMPTY
+        }
+
         view?.setDropdownValue(tempoValueToIndex(tempo))
     }
 

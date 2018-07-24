@@ -1,139 +1,34 @@
 package net.sigmabeta.chipbox.ui.navigation
 
-import android.media.session.PlaybackState
 import android.os.Bundle
-import net.sigmabeta.chipbox.backend.Player
-import net.sigmabeta.chipbox.model.domain.Game
-import net.sigmabeta.chipbox.model.domain.Track
-import net.sigmabeta.chipbox.model.events.GameEvent
-import net.sigmabeta.chipbox.model.events.PositionEvent
-import net.sigmabeta.chipbox.model.events.StateEvent
-import net.sigmabeta.chipbox.model.events.TrackEvent
-import net.sigmabeta.chipbox.ui.ActivityPresenter
-import net.sigmabeta.chipbox.ui.BaseView
-import net.sigmabeta.chipbox.util.logWarning
-import rx.android.schedulers.AndroidSchedulers
+import net.sigmabeta.chipbox.backend.UiUpdater
+import net.sigmabeta.chipbox.backend.player.Player
+import net.sigmabeta.chipbox.backend.player.Playlist
+import net.sigmabeta.chipbox.model.repository.LibraryScanner
+import net.sigmabeta.chipbox.ui.ChromePresenter
+import net.sigmabeta.chipbox.ui.UiState
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NavigationPresenter @Inject constructor(val player: Player) : ActivityPresenter() {
-    var view: NavigationView? = null
-
-    // A property is kept in order to be able to track changes in state.
-    var state = player.state
-
-    var game: Game? = null
-
-    fun onNowPlayingClicked() {
-        view?.launchPlayerActivity()
+class NavigationPresenter @Inject constructor(player: Player,
+                                              scanner: LibraryScanner,
+                                              playlist: Playlist,
+                                              updater: UiUpdater) : ChromePresenter<NavigationView>(player, scanner, playlist, updater) {
+    fun onUnsupportedFragment() {
+        handleError(IllegalStateException("Unsupported fragment."))
     }
-
-    fun onPlayFabClicked() {
-        when (player.state) {
-            PlaybackState.STATE_PLAYING -> player.pause()
-
-            PlaybackState.STATE_PAUSED -> player.play()
-
-            PlaybackState.STATE_STOPPED -> player.play()
-        }
-    }
-
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
-
-    override fun onTempDestroy() = Unit
 
     override fun setup(arguments: Bundle?) {
-        val fragmentTag = arguments?.getString(NavigationActivity.ARGUMENT_FRAGMENT_TAG)
-        val fragmentArg = arguments?.getLong(NavigationActivity.ARGUMENT_FRAGMENT_ARG, -1)
+        state = UiState.READY
 
-        if (fragmentTag != null && fragmentArg != null) {
+        val fragmentTag = arguments?.getString(NavigationActivity.ARGUMENT_FRAGMENT_TAG)
+        val fragmentArg = arguments?.getString(NavigationActivity.ARGUMENT_FRAGMENT_ARG_STRING)
+
+        if (fragmentTag != null) {
             view?.showFragment(fragmentTag, fragmentArg)
         }
     }
 
-    override fun teardown() {
-        state = -1
-        game = null
-    }
-
-    override fun updateViewState() {
-        updateHelper()
-
-        val subscription = player.updater.asObservable()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe {
-                    when (it) {
-                        is TrackEvent -> displayTrack(it.track, true)
-                        is PositionEvent -> { /* no-op */ }
-                        is GameEvent -> displayGame(it.game, false)
-                        is StateEvent -> displayState(state, it.state)
-                        else -> logWarning("[PlayerFragmentPresenter] Unhandled ${it}")
-                    }
-                }
-
-        subscriptions.add(subscription)
-    }
-
-    override fun onClick(id: Int) = Unit
-
-    override fun setView(view: BaseView) {
-        if (view is NavigationView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
-    }
-
-    override fun getView(): BaseView? = view
-
-    override fun onReenter() {
-        updateHelper()
-    }
-
-
-    private fun displayState(oldState: Int, newState: Int) {
-        when (newState) {
-            PlaybackState.STATE_PLAYING -> {
-                view?.showPauseButton()
-                view?.showNowPlaying(oldState == PlaybackState.STATE_STOPPED)
-            }
-
-            PlaybackState.STATE_PAUSED -> {
-                view?.showPlayButton()
-                view?.showNowPlaying(oldState == PlaybackState.STATE_STOPPED)
-            }
-
-            PlaybackState.STATE_STOPPED -> {
-                view?.hideNowPlaying(oldState != PlaybackState.STATE_STOPPED)
-            }
-        }
-
-        this.state = newState
-    }
-
-    private fun displayTrack(track: Track, animate: Boolean) {
-        view?.setTrackTitle(track.title.orEmpty(), animate)
-        view?.setArtist(track.artistText.orEmpty(), animate)
-    }
-
-    private fun updateHelper() {
-        player.playingTrack?.let {
-            displayTrack(it, false)
-        }
-
-        player.playingGame?.let {
-            displayGame(it, true)
-        }
-
-        displayState(state, player.state)
-    }
-
-    private fun displayGame(game: Game?, force: Boolean) {
-        if (force || this.game != game) {
-            view?.setGameBoxArt(game?.artLocal, !force)
-        }
-
-        this.game = game
-    }
+    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
 }

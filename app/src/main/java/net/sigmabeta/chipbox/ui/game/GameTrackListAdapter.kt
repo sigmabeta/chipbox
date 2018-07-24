@@ -7,10 +7,10 @@ import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.ui.BaseArrayAdapter
-import net.sigmabeta.chipbox.ui.ItemListView
-import net.sigmabeta.chipbox.util.logError
+import net.sigmabeta.chipbox.ui.ListView
+import timber.log.Timber
 
-class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayAdapter<Track, GameTrackViewHolder>(view) {
+class GameTrackListAdapter(view: ListView<Track ,GameTrackViewHolder>) : BaseArrayAdapter<Track, GameTrackViewHolder>(view) {
     var game: Game? = null
         set (value) {
             field = value
@@ -19,7 +19,7 @@ class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayA
             }
         }
 
-    var playingTrackId: Long? = null
+    var playingTrackId: String? = null
         set (value) {
             field = value
             notifyDataSetChanged()
@@ -27,15 +27,15 @@ class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayA
 
     override fun getLayoutId() = R.layout.list_item_track_game
 
-    override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): GameTrackViewHolder? {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GameTrackViewHolder {
         if (viewType == TYPE_HEADER) {
             val headerView = LayoutInflater.from(parent?.context)?.inflate(getHeaderLayoutId(), parent, false)
 
             if (headerView != null) {
                 return createHeaderViewHolder(headerView)
             } else {
-                logError("[BaseArrayAdapter] Unable to inflate view...")
-                return null
+                Timber.e("Unable to inflate view...")
+                throw IllegalStateException("Unable to inflate view...")
             }
         } else {
             val itemView = LayoutInflater.from(parent?.context)?.inflate(getLayoutId(), parent, false)
@@ -43,8 +43,8 @@ class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayA
             if (itemView != null) {
                 return createViewHolder(itemView)
             } else {
-                logError("[BaseArrayAdapter] Unable to inflate view...")
-                return null
+                Timber.e("Unable to inflate view...")
+                throw IllegalStateException("Unable to inflate view...")
             }
         }
     }
@@ -60,12 +60,12 @@ class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayA
     }
 
     override fun getItemCount(): Int {
-        return (dataset?.size ?: 0) + 1
+        return (datasetInternal?.size ?: 0) + 1
     }
 
     override fun getItem(position: Int): Track? {
         if (position > 0) {
-            return dataset?.get(position - 1)
+            return datasetInternal?.get(position - 1)
         } else {
             return null
         }
@@ -79,7 +79,7 @@ class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayA
         }
     }
 
-    fun createHeaderViewHolder(view: View): GameTrackViewHolder? {
+    fun createHeaderViewHolder(view: View): GameTrackViewHolder {
         return GameHeaderViewHolder(view, this)
     }
 
@@ -92,6 +92,11 @@ class GameTrackListAdapter(view: ItemListView<GameTrackViewHolder>) : BaseArrayA
 
     override fun bind(holder: GameTrackViewHolder, item: Track) {
         holder.bind(item)
+    }
+
+    override fun showFromEmptyList(value: List<Track>) {
+        datasetInternal = value
+        notifyDataSetChanged()
     }
 
     companion object {

@@ -3,16 +3,13 @@ package net.sigmabeta.chipbox.ui.onboarding.title
 import android.os.Bundle
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.dagger.scope.ActivityScoped
-import net.sigmabeta.chipbox.ui.BaseView
 import net.sigmabeta.chipbox.ui.FragmentPresenter
+import net.sigmabeta.chipbox.ui.UiState
 import javax.inject.Inject
 
 
 @ActivityScoped
-class TitlePresenter @Inject constructor(): FragmentPresenter() {
-
-    var view: TitleView? = null
-
+class TitlePresenter @Inject constructor() : FragmentPresenter<TitleView>() {
     /**
      * Public Methods
      */
@@ -23,7 +20,7 @@ class TitlePresenter @Inject constructor(): FragmentPresenter() {
      * FragmentPresenter
      */
 
-    override fun onReCreate(arguments: Bundle?, savedInstanceState: Bundle) = Unit
+
 
     override fun onClick(id: Int) {
         when (id) {
@@ -36,22 +33,14 @@ class TitlePresenter @Inject constructor(): FragmentPresenter() {
      * BasePresenter
      */
 
-    override fun setup(arguments: Bundle?) = Unit
+    override fun setup(arguments: Bundle?) {
+        state = UiState.READY
+    }
 
     override fun teardown() = Unit
 
-    override fun updateViewState() {
+    override fun showReadyState() {
         view?.updateCurrentScreen()
-    }
-
-    override fun getView(): BaseView? = view
-
-    override fun setView(view: BaseView) {
-        if (view is TitleView) this.view = view
-    }
-
-    override fun clearView() {
-        view = null
     }
 
     /**

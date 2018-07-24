@@ -1,24 +1,8 @@
 package net.sigmabeta.chipbox.ui.artist
 
 import net.sigmabeta.chipbox.model.domain.Artist
-import net.sigmabeta.chipbox.ui.BaseView
+import net.sigmabeta.chipbox.ui.ListView
 
-interface ArtistListView : BaseView {
-    fun setArtists(artists: MutableList<Artist>)
-
-    fun launchNavActivity(id: Long)
-
-    fun showFilesScreen()
-
-    fun showLoadingSpinner()
-
-    fun hideLoadingSpinner()
-
-    fun showContent()
-
-    fun hideContent()
-
-    fun showEmptyState()
-
-    fun hideEmptyState()
+interface ArtistListView : ListView<Artist, ArtistViewHolder> {
+    fun launchNavActivity(id: String)
 }
