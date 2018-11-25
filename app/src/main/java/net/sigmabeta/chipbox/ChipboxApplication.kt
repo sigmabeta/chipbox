@@ -37,12 +37,11 @@ public class ChipboxApplication : Application() {
         Timber.d("Device manufacturer: %s", Build.MANUFACTURER)
         Timber.d("Device model: %s", Build.MODEL)
 
-        // TODO load these on demand?
-        System.loadLibrary("gme")
-        System.loadLibrary("vgm")
-
         Realm.init(this)
-        val realmConfig = RealmConfiguration.Builder().build()
+        val realmConfig = RealmConfiguration.Builder()
+                .compactOnLaunch()
+                .build()
+
         Realm.setDefaultConfiguration(realmConfig)
 
         val fabric = Fabric.Builder(this)

@@ -5,12 +5,14 @@ import android.app.ActivityOptions
 import android.app.SharedElementCallback
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.support.design.widget.CoordinatorLayout
 import android.support.design.widget.FloatingActionButton
 import android.support.v7.widget.LinearLayoutManager
 import android.transition.Transition
 import android.util.Pair
 import android.view.View
+import android.view.ViewTreeObserver
 import io.realm.OrderedCollectionChangeSet
 import kotlinx.android.synthetic.main.activity_game.*
 import kotlinx.android.synthetic.main.list_header_game.*
@@ -67,26 +69,41 @@ class GameActivity : ChromeActivity<GamePresenter, GameView>(), GameView, ListVi
         aspectRatio = calculateAspectRatio(width, height)
         val imagePath = game.artLocal
 
-        if (imagePath != null) {
-            image_main.loadImageSetSize(imagePath, width, height, false, getPicassoCallback())
-        } else {
-            image_main.loadImageSetSize(Game.PICASSO_ASSET_ALBUM_ART_BLANK, width, height, false, getPicassoCallback())
-        }
-
-        window.sharedElementEnterTransition.addListener(object : Transition.TransitionListener {
-            override fun onTransitionResume(p0: Transition?) = Unit
-            override fun onTransitionPause(p0: Transition?) = Unit
-            override fun onTransitionCancel(p0: Transition?) = Unit
-            override fun onTransitionStart(p0: Transition?) = Unit
-
-            override fun onTransitionEnd(p0: Transition?) {
-                imagePath?.let {
-                    image_main.loadImageHighQuality(it, false, aspectRatio, getPicassoCallback())
-                } ?: let {
-                    image_main.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, false, aspectRatio, getPicassoCallback())
+        image_main.viewTreeObserver.addOnPreDrawListener(object : ViewTreeObserver.OnPreDrawListener {
+            override fun onPreDraw(): Boolean {
+                image_main.viewTreeObserver.removeOnPreDrawListener(this)
+                if (width > 0 || height > 0) {
+                    if (imagePath != null) {
+                        image_main.loadImageSetSize(imagePath, width, height, false, getPicassoCallback())
+                    } else {
+                        image_main.loadImageSetSize(Game.PICASSO_ASSET_ALBUM_ART_BLANK, width, height, false, getPicassoCallback())
+                    }
+                } else {
+                    if (imagePath != null) {
+                        image_main.loadImageHighQuality(imagePath, true, null)
+                    } else {
+                        image_main.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, true, null)
+                    }
                 }
+                return true
             }
         })
+
+        window.sharedElementEnterTransition.addListener(
+                object : Transition.TransitionListener {
+                    override fun onTransitionResume(p0: Transition?) = Unit
+                    override fun onTransitionPause(p0: Transition?) = Unit
+                    override fun onTransitionCancel(p0: Transition?) = Unit
+                    override fun onTransitionStart(p0: Transition?) = Unit
+
+                    override fun onTransitionEnd(p0: Transition?) {
+                        imagePath?.let {
+                            image_main.loadImageHighQuality(it, false, aspectRatio, getPicassoCallback())
+                        } ?: let {
+                            image_main.loadImageHighQuality(Game.PICASSO_ASSET_ALBUM_ART_BLANK, false, aspectRatio, getPicassoCallback())
+                        }
+                    }
+                })
     }
 
     override fun setPlayingTrack(track: Track) {
@@ -219,13 +236,18 @@ class GameActivity : ChromeActivity<GamePresenter, GameView>(), GameView, ListVi
                    titleText: Pair<View, String>,
                    subtitleText: Pair<View, String>,
                    background: Pair<View, String>) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                launch(activity, gameId)
+                return
+            }
+
             val launcher = Intent(activity, GameActivity::class.java)
 
             launcher.putExtra(ARGUMENT_GAME_ID, gameId)
             launcher.putExtra(ARGUMENT_GAME_IMAGE_WIDTH, imageView.first?.width)
             launcher.putExtra(ARGUMENT_GAME_IMAGE_HEIGHT, imageView.first?.height)
 
-            ReflowText.addExtras(launcher, ReflowableTextView(titleText.first  as CustomTextView))
+            ReflowText.addExtras(launcher, ReflowableTextView(titleText.first as CustomTextView))
             ReflowText.addExtras(launcher, ReflowableTextView(subtitleText.first as CustomTextView))
 
             val sharedViewPairs = removeNullViewPairs(navBar,

@@ -109,8 +109,8 @@ class Reader(val player: Player,
                     Timber.e("Timestamp not cleared: ${audioBuffer.timeStamp}")
                 }
 
-                audioBuffer.timeStamp = backend?.getMillisPlayed() ?: -1
                 backend?.readNextSamples(audioBuffer.buffer)
+                audioBuffer.timeStamp = backend?.getMillisPlayed() ?: -2L
             }
 
             val error = backend?.getLastError()
