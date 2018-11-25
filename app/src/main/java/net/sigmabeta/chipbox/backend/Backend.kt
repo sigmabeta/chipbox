@@ -41,15 +41,15 @@ interface Backend {
     }
 
     companion object {
-        val GME = net.sigmabeta.chipbox.backend.gme.BackendImpl()
-        val VGM = net.sigmabeta.chipbox.backend.vgm.BackendImpl()
+        val GME by lazy { net.sigmabeta.chipbox.backend.gme.BackendImpl() }
+        val VGM by lazy { net.sigmabeta.chipbox.backend.vgm.BackendImpl() }
+        val PSF by lazy { net.sigmabeta.chipbox.backend.psf.BackendImpl() }
 
-        val ID_GME = 0
-        val ID_VGM = 1
-
+        // TODO should this also be lazy?
         val IMPLEMENTATIONS = arrayOf(
                 GME,
-                VGM
+                VGM,
+                PSF
         )
     }
 }
