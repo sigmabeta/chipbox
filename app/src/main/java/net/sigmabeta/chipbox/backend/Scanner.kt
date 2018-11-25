@@ -3,8 +3,6 @@ package net.sigmabeta.chipbox.backend
 interface Scanner {
     fun getBackendId(): Int
 
-    fun getPlatform(path: String): String
-
     fun fileInfoSetup(path: String): String?
 
     fun fileInfoGetTrackCount(): Int
@@ -30,6 +28,7 @@ interface Scanner {
     companion object {
         val GME = net.sigmabeta.chipbox.backend.gme.ScannerImpl()
         val VGM = net.sigmabeta.chipbox.backend.vgm.ScannerImpl()
+        val PSF = net.sigmabeta.chipbox.backend.psf.ScannerImpl()
 
         val EXTENSIONS_MUSIC = hashMapOf<String, Scanner>(
                 Pair<String, Scanner>("spc", GME),
@@ -37,7 +36,9 @@ interface Scanner {
                 Pair<String, Scanner>("vgz", VGM),
                 Pair<String, Scanner>("nsf", GME),
                 Pair<String, Scanner>("nsfe", GME),
-                Pair<String, Scanner>("gbs", GME)
+                Pair<String, Scanner>("gbs", GME),
+                Pair<String, Scanner>("psf", PSF),
+                Pair<String, Scanner>("minipsf", PSF)
         )
     }
 }

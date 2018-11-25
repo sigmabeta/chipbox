@@ -40,6 +40,9 @@ class Player @Inject constructor(val playlist: Playlist,
 
     var focusLossPaused = false
 
+    private var readerCount = 0
+    private var writerCount = 0
+
     private var reader: Reader? = null
     private var writer: Writer? = null
 
@@ -98,7 +101,7 @@ class Player @Inject constructor(val playlist: Playlist,
                     Timber.e("Playback stopped; clearing Reader.")
                     reader = null
                 }
-            }, "reader").start()
+            }, "reader-${readerCount++}").start()
 
             writerThread = Thread({
                 writer = Writer(this,
@@ -109,7 +112,7 @@ class Player @Inject constructor(val playlist: Playlist,
 
                 writer?.loop()
                 writer = null
-            }, "writer")
+            }, "writer-${writerCount++}")
 
             writerThread?.start()
 
@@ -210,6 +213,7 @@ class Player @Inject constructor(val playlist: Playlist,
         state = PlaybackState.STATE_STOPPED
 
         audioManager.abandonAudioFocus(this)
+        reader?.backend?.teardown()
         reader = null
 
         writerThread?.interrupt()
@@ -323,6 +327,6 @@ class Player @Inject constructor(val playlist: Playlist,
         val REPEAT_ONE = 2
         val REPEAT_INFINITE = 3
 
-        val TIMEOUT_BUFFERS_FULL_MS = 5000L
+        val TIMEOUT_BUFFERS_FULL_MS = 10000L
     }
 }
