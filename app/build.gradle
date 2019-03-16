@@ -64,9 +64,9 @@ android {
     signingConfigs {
         release {
             storeFile file("chipbox.jks")
-            storePassword System.getenv("KEYSTORE_PASSWORD")
+            storePassword new String(Base64.decoder.decode(System.getenv("KEYPASS_ENCODED")))
             keyAlias System.getenv("KEY_ALIAS")
-            keyPassword System.getenv("KEY_PASSWORD")
+            keyPassword new String(Base64.decoder.decode(System.getenv("KEYPASS_ENCODED")))
         }
     }
 
