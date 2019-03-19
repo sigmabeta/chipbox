@@ -1,12 +1,16 @@
 package net.sigmabeta.chipbox.backend.gme
 
-import net.sigmabeta.chipbox.backend.Backend
 import net.sigmabeta.chipbox.backend.Scanner
 
 class ScannerImpl : Scanner {
-    override fun getBackendId() = Backend.ID_GME
+    init {
+        if (!BackendImpl.INITIALIZED) {
+            System.loadLibrary(BackendImpl.NAME)
+            BackendImpl.INITIALIZED = true
+        }
+    }
 
-    external override fun getPlatform(path: String): String
+    override fun getBackendId() = BackendImpl.ID
 
     external override fun fileInfoSetup(path: String): String?
 

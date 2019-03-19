@@ -7,6 +7,7 @@ import android.app.ActivityOptions
 import android.app.SharedElementCallback
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.support.v4.content.ContextCompat
 import android.util.Pair
 import android.view.View
@@ -178,6 +179,11 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
                    subtitleText: Pair<View, String>,
                    playButton: Pair<View, String>,
                    background: Pair<View, String>) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                PlayerActivity.launch(activity)
+                return
+            }
+
             val launcher = Intent(activity, PlayerActivity::class.java)
 
             launcher.putExtra(GameActivity.ARGUMENT_GAME_IMAGE_WIDTH, imageView.first?.width)
@@ -196,6 +202,11 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
             val options = ActivityOptions.makeSceneTransitionAnimation(activity, *sharedViewPairs)
 
             activity.startActivity(launcher, options.toBundle())
+        }
+
+        fun launch(context: Context) {
+            val launcher = Intent(context, PlayerActivity::class.java)
+            context.startActivity(launcher)
         }
 
         fun getLauncher(context: Context): Intent {

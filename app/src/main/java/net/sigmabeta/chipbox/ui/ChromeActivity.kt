@@ -250,7 +250,7 @@ abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActi
         when (state) {
             STATE_UNKNOWN -> Unit
             STATE_IDLE -> {
-                layout_bottom_bar.visibility = View.GONE
+                layout_bottom_bar.visibility = View.INVISIBLE
                 layout_bottom_bar.translationY = convertDpToPx(64.0f, this)
 
                 getScrollingContentView()?.setPadding(0, 0, 0, 0)

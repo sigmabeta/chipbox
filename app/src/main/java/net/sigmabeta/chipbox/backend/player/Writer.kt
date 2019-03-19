@@ -40,7 +40,7 @@ class Writer(val player: Player,
         // Begin playback loop
         audioTrack?.play()
 
-        val timeout = 5000L
+        val timeout = 10000L
 
         try {
             while (player.state == PlaybackState.STATE_PLAYING) {
@@ -93,7 +93,7 @@ class Writer(val player: Player,
 
                     if (lastTimestamp < audioBuffer.timeStamp) {
 //                Timber.w("Playing buffer timestamped at %d", audioBuffer.timeStamp)
-                    } else if (audioBuffer.timeStamp > 0) {
+                    } else if (audioBuffer.timeStamp >= 0) {
                         Timber.e("Buffer timestamp timing problem: %d > %d", lastTimestamp, audioBuffer.timeStamp)
                     } else {
                         Timber.e("Buffer timestamp timing problem: %d is negative", audioBuffer.timeStamp)
