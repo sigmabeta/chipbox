@@ -63,10 +63,17 @@ android {
 
     signingConfigs {
         release {
+            String encodedPass = System.getenv("KEYPASS_ENCODED")
+            String decodedPass;
+
+            if (encodedPass != null) {
+                decodedPass = new String(Base64.decoder.decode(encodedPass))
+            }
+
             storeFile file("chipbox.jks")
-            storePassword new String(Base64.decoder.decode(System.getenv("KEYPASS_ENCODED")))
+            storePassword decodedPass
             keyAlias System.getenv("KEY_ALIAS")
-            keyPassword new String(Base64.decoder.decode(System.getenv("KEYPASS_ENCODED")))
+            keyPassword decodedPass
         }
     }
 
