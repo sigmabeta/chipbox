@@ -176,7 +176,7 @@ abstract class ChromeActivity<P : ChromePresenter<V>, V : ChromeView> : BaseActi
         drawerToggle?.syncState()
     }
 
-    override fun onConfigurationChanged(newConfig: Configuration?) {
+    override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
 
         // Persist the drawer's state.

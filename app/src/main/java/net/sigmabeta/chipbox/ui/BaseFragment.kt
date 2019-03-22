@@ -71,7 +71,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         configureViews()
     }
 
-    override fun onAttach(context: Context?) {
+    override fun onAttach(context: Context) {
         super.onAttach(context)
 
         if (context is Activity) {
@@ -79,7 +79,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         }
     }
 
-    override fun onAttach(activity: Activity?) {
+    override fun onAttach(activity: Activity) {
         super.onAttach(activity)
         attachHelper(activity)
     }

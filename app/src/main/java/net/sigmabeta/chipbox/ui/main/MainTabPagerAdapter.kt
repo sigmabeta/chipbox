@@ -21,18 +21,18 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
             R.string.tab_main_tracks
     )
 
-    val fragments = Array<ListFragment<*, *, *, *, *>?>(TAB_TITLES.size, {
+    val fragments = Array<ListFragment<*, *, *, *, *>?>(TAB_TITLES.size) {
         return@Array null
-    })
+    }
 
     override fun getCount() = TAB_TITLES.size
 
-    override fun getItem(position: Int): Fragment? = when (position) {
+    override fun getItem(position: Int): Fragment = when (position) {
         0 -> GameGridFragment.newInstance(null)
         1 -> PlatformListFragment.newInstance()
         2 -> ArtistListFragment.newInstance()
         3 -> TrackListFragment.newInstance(null)
-        else -> null
+        else -> throw NotImplementedError("Invalid fragment position.")
     }
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
