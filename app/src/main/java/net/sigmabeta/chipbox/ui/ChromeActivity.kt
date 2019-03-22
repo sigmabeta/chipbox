@@ -4,13 +4,13 @@ import android.Manifest
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
-import android.support.annotation.CallSuper
-import android.support.v7.app.ActionBarDrawerToggle
 import android.util.Pair
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
+import androidx.annotation.CallSuper
+import androidx.appcompat.app.ActionBarDrawerToggle
 import kotlinx.android.synthetic.main.activity_chrome.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.layout_status.*
