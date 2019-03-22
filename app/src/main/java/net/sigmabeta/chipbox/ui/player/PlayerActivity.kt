@@ -8,10 +8,10 @@ import android.app.SharedElementCallback
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.support.v4.content.ContextCompat
 import android.util.Pair
 import android.view.View
 import android.widget.FrameLayout
+import androidx.core.content.ContextCompat
 import kotlinx.android.synthetic.main.activity_player.*
 import kotlinx.android.synthetic.main.fragment_player.*
 import net.sigmabeta.chipbox.R

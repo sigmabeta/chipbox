@@ -1,8 +1,8 @@
 package net.sigmabeta.chipbox.ui.games
 
 import android.os.Bundle
-import android.support.v7.widget.GridLayoutManager
 import android.util.Pair
+import androidx.recyclerview.widget.GridLayoutManager
 import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R

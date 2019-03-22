@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.ui.track
 
 import android.os.Bundle
-import android.support.v7.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.className
