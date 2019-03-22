@@ -7,12 +7,12 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
 import android.media.session.MediaSession
-import android.os.Build
 import android.os.IBinder
 import android.support.v4.media.session.MediaSessionCompat
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_MEDIA_STOP
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.backend.player.Player
@@ -195,11 +195,7 @@ class PlayerService : Service(), BackendView {
         fun start(context: Context) {
             val launcher = Intent(context, PlayerService::class.java)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(launcher)
-            } else {
-                context.startService(launcher)
-            }
+            ContextCompat.startForegroundService(context, launcher)
         }
     }
 }
