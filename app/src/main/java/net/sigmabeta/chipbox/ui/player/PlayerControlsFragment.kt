@@ -1,9 +1,9 @@
 package net.sigmabeta.chipbox.ui.player
 
 import android.animation.*
-import android.support.v4.content.ContextCompat
 import android.view.View
 import android.widget.ImageView
+import androidx.core.content.ContextCompat
 import kotlinx.android.synthetic.main.fragment_player_controls.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.R
