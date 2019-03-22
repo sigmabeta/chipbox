@@ -137,16 +137,16 @@ android {
 
 dependencies {
     // Contains Lollipop UI View backports.
-    implementation "androidx.appcompat:appcompat:$support_lib_version"
+    implementation "androidx.appcompat:appcompat:1.0.2"
 
     // RecyclerView backports.
-    implementation "androidx.recyclerview:recyclerview:$support_lib_version"
+    implementation "androidx.recyclerview:recyclerview:1.0"
 
     // Contains new Material Design views. Automatically includes support-v4
-    implementation "com.google.android.material:material:$support_lib_version"
+    implementation "com.google.android.material:material:1.1.0-alpha04"
 
     // MediaStyle notifications.
-    implementation "androidx.media:media:$support_lib_version"
+    implementation "androidx.media:media:1.0.1"
 
     // Enable RxJava-style asynrchronous calls
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
