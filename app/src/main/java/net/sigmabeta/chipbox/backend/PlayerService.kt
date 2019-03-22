@@ -9,11 +9,11 @@ import android.media.AudioManager
 import android.media.session.MediaSession
 import android.os.Build
 import android.os.IBinder
-import android.support.v4.media.session.MediaButtonReceiver
 import android.support.v4.media.session.MediaSessionCompat
 import android.view.KeyEvent
 import android.view.KeyEvent.KEYCODE_MEDIA_STOP
 import android.widget.Toast
+import androidx.media.session.MediaButtonReceiver
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.backend.player.Player
 import net.sigmabeta.chipbox.backend.player.Playlist

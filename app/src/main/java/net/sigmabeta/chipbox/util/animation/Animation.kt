@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.util.animation
 
-import android.support.v7.widget.RecyclerView
 import android.util.Pair
 import android.view.View
 import android.view.ViewPropertyAnimator
@@ -8,6 +7,7 @@ import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
 import android.view.animation.DecelerateInterpolator
 import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
 import timber.log.Timber
 import java.util.*
 

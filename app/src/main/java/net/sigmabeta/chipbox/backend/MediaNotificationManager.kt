@@ -8,17 +8,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
-import android.media.MediaMetadata
-import android.media.session.PlaybackState
 import android.os.SystemClock
-import android.support.v4.app.NotificationCompat
-import android.support.v4.app.NotificationCompat.Action
-import android.support.v4.content.ContextCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.KeyEvent
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationCompat.Action
+import androidx.core.content.ContextCompat
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
 import io.reactivex.schedulers.Schedulers
@@ -270,7 +268,7 @@ class MediaNotificationManager(val playerService: PlayerService,
 
         if (actions != null) {
             // If skip to previous action is enabled
-            if ((actions and PlaybackState.ACTION_SKIP_TO_PREVIOUS) != 0L) {
+            if ((actions and PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS) != 0L) {
                 notificationBuilder.addAction(R.drawable.ic_skip_previous_black_24dp,
                         playerService.getString(R.string.notification_label_prev), prevIntent)
 
@@ -288,13 +286,13 @@ class MediaNotificationManager(val playerService: PlayerService,
 
         if (actions != null) {
             // If skip to next action is enabled
-            if ((actions and PlaybackState.ACTION_SKIP_TO_NEXT) != 0L) {
+            if ((actions and PlaybackStateCompat.ACTION_SKIP_TO_NEXT) != 0L) {
                 notificationBuilder.addAction(R.drawable.ic_skip_next_black_24dp,
                         playerService.getString(R.string.notification_label_next), nextIntent)
             }
         }
 
-        val notificationIcon = if (playbackState?.state == PlaybackState.STATE_PLAYING)
+        val notificationIcon = if (playbackState?.state == PlaybackStateCompat.STATE_PLAYING)
             R.drawable.ic_stat_play
         else
             R.drawable.ic_stat_pause
@@ -302,7 +300,7 @@ class MediaNotificationManager(val playerService: PlayerService,
         val stop = getActionIntent(playerService, KeyEvent.KEYCODE_MEDIA_STOP)
 
         Timber.v("Session token: $sessionToken")
-        val mediaStyle = android.support.v4.media.app.NotificationCompat.MediaStyle()
+        val mediaStyle = androidx.media.app.NotificationCompat.MediaStyle()
                 .setShowActionsInCompactView(*intArrayOf(playButtonPosition))
                 .setMediaSession(sessionToken)
                 .setShowCancelButton(true)
@@ -326,7 +324,7 @@ class MediaNotificationManager(val playerService: PlayerService,
         val icon: Int
         val intent: PendingIntent
 
-        if (playbackState?.state == PlaybackState.STATE_PLAYING) {
+        if (playbackState?.state == PlaybackStateCompat.STATE_PLAYING) {
             label = playerService.getString(R.string.notification_label_pause)
             icon = R.drawable.ic_pause_black_24dp
             intent = pauseIntent
@@ -349,7 +347,7 @@ class MediaNotificationManager(val playerService: PlayerService,
         }
 
         // Make sure that the notification can be dismissed by the user when we are not playing:
-        builder.setOngoing(playbackState?.getState() == PlaybackState.STATE_PLAYING)
+        builder.setOngoing(playbackState?.getState() == PlaybackStateCompat.STATE_PLAYING)
     }
 
     private fun updateMetadata(): MediaMetadataCompat {
@@ -367,25 +365,25 @@ class MediaNotificationManager(val playerService: PlayerService,
             return metadataBuilder.build()
         } ?: let {
             return MediaMetadataCompat.Builder()
-                    .putString(MediaMetadata.METADATA_KEY_TITLE, RealmRepository.TITLE_UNKNOWN)
-                    .putString(MediaMetadata.METADATA_KEY_ALBUM, RealmRepository.GAME_UNKNOWN)
-                    .putString(MediaMetadata.METADATA_KEY_ARTIST, RealmRepository.ARTIST_UNKNOWN)
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, RealmRepository.TITLE_UNKNOWN)
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, RealmRepository.GAME_UNKNOWN)
+                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, RealmRepository.ARTIST_UNKNOWN)
                     .build()
         }
     }
 
     private fun getAvailableActions(state: Int, queuePosition: Int?, queueSize: Int?): Long {
-        var actions = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_STOP
+        var actions = PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_STOP
 
-        if (state == PlaybackState.STATE_PLAYING) {
-            actions = actions or PlaybackState.ACTION_PAUSE
+        if (state == PlaybackStateCompat.STATE_PLAYING) {
+            actions = actions or PlaybackStateCompat.ACTION_PAUSE
         }
 
         if (queuePosition != null && queueSize != null) {
-            actions = actions or PlaybackState.ACTION_SKIP_TO_PREVIOUS
+            actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
 
             if (queuePosition < queueSize - 1) {
-                actions = actions or PlaybackState.ACTION_SKIP_TO_NEXT
+                actions = actions or PlaybackStateCompat.ACTION_SKIP_TO_NEXT
             }
         }
 
@@ -423,10 +421,10 @@ class MediaNotificationManager(val playerService: PlayerService,
                 Timber.d("Playback state changed: %s", state)
                 playbackState = state
 
-                if (state.state == PlaybackState.STATE_STOPPED || state.state == PlaybackState.STATE_NONE) {
+                if (state.state == PlaybackStateCompat.STATE_STOPPED || state.state == PlaybackStateCompat.STATE_NONE) {
                     stopNotification()
                 } else {
-                    if (state.state == PlaybackState.STATE_PAUSED) {
+                    if (state.state == PlaybackStateCompat.STATE_PAUSED) {
                         Timber.v("Stopping foregroundness.")
                         playerService.stopForeground(false)
                     }

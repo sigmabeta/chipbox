@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.ui
 
-import android.support.v7.util.DiffUtil
+import androidx.recyclerview.widget.DiffUtil
 import net.sigmabeta.chipbox.model.domain.ListItem
 
 class DiffCallback<out T : ListItem>(val oldList: List<T>?,

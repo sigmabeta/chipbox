@@ -6,9 +6,6 @@ import android.content.Intent
 import android.content.res.Resources
 import android.graphics.*
 import android.os.Build
-import android.support.annotation.ColorInt
-import android.support.annotation.FontRes
-import android.support.v4.content.res.ResourcesCompat
 import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
@@ -19,6 +16,9 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.LinearInterpolator
+import androidx.annotation.ColorInt
+import androidx.annotation.FontRes
+import androidx.core.content.res.ResourcesCompat
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.name
 import timber.log.Timber
