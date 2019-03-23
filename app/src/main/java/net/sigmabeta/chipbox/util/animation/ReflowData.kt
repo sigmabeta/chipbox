@@ -4,8 +4,8 @@ import android.graphics.Point
 import android.graphics.Rect
 import android.os.Parcel
 import android.os.Parcelable
-import android.support.annotation.ColorInt
-import android.support.annotation.FontRes
+import androidx.annotation.ColorInt
+import androidx.annotation.FontRes
 
 /**
  * Holds all data needed to describe a block of text i.e. to be able to re-create the

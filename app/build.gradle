@@ -31,14 +31,14 @@ def getVersionName = { ->
 }
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
     buildToolsVersion '28.0.3'
 
     defaultConfig {
         applicationId "net.sigmabeta.chipbox"
 
         minSdkVersion 21
-        targetSdkVersion 27
+        targetSdkVersion 28
 
         versionName getVersionName()
 
@@ -137,16 +137,16 @@ android {
 
 dependencies {
     // Contains Lollipop UI View backports.
-    implementation "com.android.support:appcompat-v7:$support_lib_version"
+    implementation "androidx.appcompat:appcompat:1.0.2"
 
     // RecyclerView backports.
-    implementation "com.android.support:recyclerview-v7:$support_lib_version"
+    implementation "androidx.recyclerview:recyclerview:1.0"
 
     // Contains new Material Design views. Automatically includes support-v4
-    implementation "com.android.support:design:$support_lib_version"
+    implementation "com.google.android.material:material:1.1.0-alpha04"
 
     // MediaStyle notifications.
-    implementation "com.android.support:support-media-compat:$support_lib_version"
+    implementation "androidx.media:media:1.0.1"
 
     // Enable RxJava-style asynrchronous calls
     implementation 'io.reactivex.rxjava2:rxandroid:2.0.2'
