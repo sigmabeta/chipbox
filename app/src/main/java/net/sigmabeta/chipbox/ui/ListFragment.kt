@@ -1,8 +1,8 @@
 package net.sigmabeta.chipbox.ui
 
-import android.support.annotation.CallSuper
 import android.view.View
 import android.view.View.VISIBLE
+import androidx.annotation.CallSuper
 import io.realm.OrderedCollectionChangeSet
 import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.BuildConfig

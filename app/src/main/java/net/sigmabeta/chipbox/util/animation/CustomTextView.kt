@@ -1,9 +1,9 @@
 package net.sigmabeta.chipbox.util.animation
 
 import android.content.Context
-import android.support.annotation.FontRes
-import android.support.v7.widget.AppCompatTextView
 import android.util.AttributeSet
+import androidx.annotation.FontRes
+import androidx.appcompat.widget.AppCompatTextView
 import net.sigmabeta.chipbox.R
 
 class CustomTextView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = android.R.attr.textViewStyle) : AppCompatTextView(context, attrs, defStyleAttr) {
