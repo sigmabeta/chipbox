@@ -6,13 +6,13 @@ import android.app.SharedElementCallback
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.support.design.widget.CoordinatorLayout
-import android.support.design.widget.FloatingActionButton
-import android.support.v7.widget.LinearLayoutManager
 import android.transition.Transition
 import android.util.Pair
 import android.view.View
 import android.view.ViewTreeObserver
+import androidx.coordinatorlayout.widget.CoordinatorLayout
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.realm.OrderedCollectionChangeSet
 import kotlinx.android.synthetic.main.activity_game.*
 import kotlinx.android.synthetic.main.list_header_game.*

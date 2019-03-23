@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.ui.platform
 
-import android.support.v7.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.domain.Platform
