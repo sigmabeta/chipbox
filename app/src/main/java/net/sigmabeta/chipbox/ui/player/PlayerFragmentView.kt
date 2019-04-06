@@ -15,9 +15,7 @@ interface PlayerFragmentView : BaseView {
 
     fun setTrackLength(trackLength: String, animate: Boolean)
 
-    fun setUnderrunCount(count: String)
-
-    fun setProgress(percentPlayed: Int)
+    fun setSeekProgress(percentPlayed: Int)
 
     fun showPlaylist()
 }
