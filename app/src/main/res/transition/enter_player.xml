@@ -22,6 +22,11 @@
             <target android:targetId="@id/layout_background" />
         </targets>
 
+        <transition
+            class="android.transition.ChangeBounds"
+            android:duration="@integer/duration_enter"
+            app:fadeIn="true"/>
+
     </transitionSet>
 
     <transitionSet>

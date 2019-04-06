@@ -19,6 +19,8 @@ import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.ui.BaseActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.game.GameActivity
+import net.sigmabeta.chipbox.ui.navigation.NavigationActivity
+import net.sigmabeta.chipbox.ui.playlist.PlaylistFragment
 import net.sigmabeta.chipbox.util.animation.*
 import net.sigmabeta.chipbox.util.loadImageHighQuality
 import javax.inject.Inject
@@ -42,7 +44,7 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
     }
 
     override fun showPlaylistScreen() {
-        showSnackbar("Unimplemented screen", null, 0)
+        NavigationActivity.launch(this, PlaylistFragment.FRAGMENT_TAG, "")
     }
 
     override fun hideStatusBar() {
@@ -147,10 +149,6 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
 
     override fun setSeekProgress(percentPlayed: Int) {
         seek_playback_progress.progress = percentPlayed
-    }
-
-    override fun showPlaylist() {
-        onPlaylistFabClicked()
     }
 
     /**

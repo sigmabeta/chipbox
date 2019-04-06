@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.ui.ChromeActivity
 import net.sigmabeta.chipbox.ui.FragmentContainer
 import net.sigmabeta.chipbox.ui.NavigationFragment
 import net.sigmabeta.chipbox.ui.games.GameGridFragment
+import net.sigmabeta.chipbox.ui.playlist.PlaylistFragment
 import net.sigmabeta.chipbox.ui.track.TrackListFragment
 import javax.inject.Inject
 
@@ -29,6 +30,7 @@ class NavigationActivity : ChromeActivity<NavigationPresenter, NavigationView>()
         var fragment: BaseFragment<*, *> = when (fragmentTag) {
             GameGridFragment.FRAGMENT_TAG -> GameGridFragment.newInstance(fragmentArg)
             TrackListFragment.FRAGMENT_TAG -> TrackListFragment.newInstance(fragmentArg)
+            PlaylistFragment.FRAGMENT_TAG -> PlaylistFragment.newInstance()
             else -> {
                 presenter.onUnsupportedFragment()
                 return
