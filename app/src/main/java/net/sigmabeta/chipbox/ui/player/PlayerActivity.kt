@@ -191,7 +191,15 @@ class PlayerActivity : BaseActivity<PlayerActivityPresenter, PlayerActivityView>
 
         setEnterSharedElementCallback(object : SharedElementCallback() {
             override fun onMapSharedElements(names: MutableList<String>, sharedElements: MutableMap<String, View>) {
-                sharedElements["ignored"] = button_fab
+                sharedElements["ignored0"] = button_fab
+                sharedElements["ignored1"] = text_game_title
+                sharedElements["ignored2"] = seek_playback_progress
+                sharedElements["ignored3"] = text_track_elapsed
+                sharedElements["ignored4"] = text_track_length
+                sharedElements["ignored5"] = button_repeat
+                sharedElements["ignored6"] = button_skip_back
+                sharedElements["ignored7"] = button_skip_forward
+                sharedElements["ignored8"] = button_shuffle
             }
 
             override fun onSharedElementStart(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
