@@ -136,6 +136,10 @@ android {
 }
 
 dependencies {
+    // New layout hotness.
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.3'
+
     // Contains Lollipop UI View backports.
     implementation "androidx.appcompat:appcompat:1.0.2"
 

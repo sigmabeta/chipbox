@@ -26,11 +26,6 @@
             <target android:targetId="@id/layout_background" />
         </targets>
 
-        <transition
-            class="net.sigmabeta.chipbox.util.animation.ChangeBoundsFade"
-            android:duration="@integer/duration_enter"
-            app:fadeIn="false"/>
-
     </transitionSet>
 
     <transitionSet>

@@ -15,8 +15,8 @@
     <string name="permission_storage_explanation">Without storage access permission, Chipbox cannot scan or access tracks.</string>
     <string name="permission_general_explanation">Please grant this permission in order to use Chipbox.</string>
     <string name="permission_general_permanent">"Please grant this permission in your device's settings in order to use Chipbox."</string>
-    <!-- Main Screen -->
 
+    <!-- Main Screen -->
     <string name="drawer_add_folder">Add to Library</string>
     <string name="drawer_refresh">Rescan Library</string>
     <string name="drawer_settings">Settings</string>
@@ -34,6 +34,14 @@
     <string name="platform_name_nes">NES</string>
     <string name="platform_name_gameboy">Game Boy</string>
     <string name="platform_name_other">Other</string>
+
+    <!-- Player Screen-->
+    <string name="cont_desc_player_album_art">Album Art</string>
+    <string name="cont_desc_player_repeat">Repeat</string>
+    <string name="cont_desc_player_previous">Previous</string>
+    <string name="cont_desc_player_play">Play</string>
+    <string name="cont_desc_player_next">Next</string>
+    <string name="cont_desc_player_shuffle">Shuffle</string>
 
     <!-- File List Screen-->
     <string name="file_list_title">Add to Library</string>
