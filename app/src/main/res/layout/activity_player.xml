@@ -155,6 +155,7 @@
             android:tint="@android:color/white"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/image_main"
+            app:layout_constraintBottom_toBottomOf="@id/image_main"
             android:elevation="6dp"
             app:borderWidth="2dp"/>
 
