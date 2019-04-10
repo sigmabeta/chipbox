@@ -574,6 +574,11 @@ void loadFileInternal(const char *filename_c_str, jint rate, jlong buffer_size,
 }
 
 void teardownInternal() {
+    usf_shutdown(g_emu_state);
+
+    free(g_emu_state);
+    g_emu_state = nullptr;
+
     free(g_fifo_from_lib.buffer);
     free(g_buffer_as_short_track);
     free(g_buffer_as_float_track);
