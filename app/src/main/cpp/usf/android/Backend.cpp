@@ -360,38 +360,12 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_usf_BackendImpl_setTem
 
 JNIEXPORT jint JNICALL Java_net_sigmabeta_chipbox_backend_usf_BackendImpl_getVoiceCount
         (JNIEnv *env, jobject) {
-    return 24;
+    return 0;
 }
 
 JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_usf_BackendImpl_getVoiceName
         (JNIEnv *env, jobject, jint voice_number) {
-    int spu_number;
-    int channel_number;
-
-    if (voice_number < 24) {
-        spu_number = 1;
-        channel_number = voice_number;
-    } else {
-        spu_number = 2;
-        channel_number = voice_number - 24;
-    }
-
-    channel_number++; /*For 1-indexing*/
-
-    const char *voice_template = "SPU%d Voice %d";
-    int voice_template_len = snprintf(NULL, 0, voice_template, spu_number, channel_number) +
-                             1 /*For null terminator*/;
-
-    const char *voice_name = static_cast<char *>(malloc(voice_template_len));
-    snprintf(const_cast<char *>(voice_name), voice_template_len, voice_template, spu_number,
-             channel_number);
-
-    jstring result = NULL;
-    if (voice_name != NULL) {
-        result = env->NewStringUTF(voice_name);
-    }
-    free((void *) voice_name);
-    return result;
+    return nullptr;
 }
 
 JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_usf_BackendImpl_muteVoice
