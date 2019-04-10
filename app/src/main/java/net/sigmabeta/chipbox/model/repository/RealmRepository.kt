@@ -369,23 +369,28 @@ class RealmRepository(var realm: Realm) : Repository {
                     ?.map(String::trim)
 
             // Remove any artists that no longer pertain to this track.
-            oldArtists?.forEach { oldArtist ->
-                val matchingArtist = newArtists?.first { newArtistName ->
-                    newArtistName == oldArtist.name
-                }
+            if (oldArtists?.size ?: 0 > 0) {
+                oldArtists?.forEach { oldArtist ->
+                    // TODO There's something funky happening here
+                    Timber.v("Old artist $oldArtist")
 
-                if (matchingArtist == null) {
-                    Timber.w("New track missing artist: ${oldArtist.name}")
-                    oldArtist.tracks?.remove(oldTrack)
-                    oldTrack.artists?.remove(oldArtist)
+                    val matchingArtist = newArtists?.firstOrNull { newArtistName ->
+                        newArtistName == oldArtist.name
+                    }
 
-                    actuallyChanged = true
+                    if (matchingArtist == null) {
+                        Timber.w("New track missing artist: ${oldArtist.name}")
+                        oldArtist.tracks?.remove(oldTrack)
+                        oldTrack.artists?.remove(oldArtist)
+
+                        actuallyChanged = true
+                    }
                 }
             }
 
             // Add any new artists to this track.
             newArtists?.forEach { newArtist ->
-                val matchingArtist = oldArtists?.first { oldArtist ->
+                val matchingArtist = oldArtists?.firstOrNull { oldArtist ->
                     newArtist == oldArtist.name
                 }
 
