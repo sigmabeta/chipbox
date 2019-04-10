@@ -65,6 +65,7 @@ if (ANDROID)
             android
             z
             psflib
+            samplerate
             "-Wl,--no-warn-mismatch"
             "-Wl,--whole-archive"
             ${LIBS}
