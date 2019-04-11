@@ -101,7 +101,7 @@
         <SeekBar
             android:id="@+id/seek_playback_progress"
             android:layout_width="0dp"
-            android:layout_height="0dp"
+            android:layout_height="wrap_content"
             android:max="100"
             app:layout_constraintTop_toTopOf="@id/text_track_length"
             app:layout_constraintBottom_toBottomOf="@id/text_track_elapsed"
@@ -115,7 +115,7 @@
             android:layout_marginBottom="@dimen/spacing_large"
             android:textSize="12sp"
             tools:text="Yasunori Shiono"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="@font/roboto_medium"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             style="@style/PlayerText"/>
@@ -126,7 +126,7 @@
             android:layout_marginBottom="@dimen/spacing_small"
             android:layout_marginTop="@dimen/spacing_small"
             android:textSize="12sp"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="@font/roboto_medium"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             tools:text="Lufia II: Rise of the Sinistrals"
@@ -141,7 +141,7 @@
             android:layout_marginBottom="@dimen/spacing_small"
             android:layout_marginEnd="64dp"
             android:textSize="20sp"
-            android:fontFamily="sans-serif-light"
+            android:fontFamily="@font/roboto_condensed"
             tools:text="The Island in the Void"
             style="@style/PlayerText"/>
 
