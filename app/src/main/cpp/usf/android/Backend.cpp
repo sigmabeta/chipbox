@@ -8,7 +8,7 @@
 #include "../../libsamplerate/src/samplerate.h"
 #include "../../usf/usf/usf.h"
 
-#define CHIPBOX_TAG "BackendPsf"
+#define CHIPBOX_TAG "BackendUSF"
 
 #define FLOATS_PER_SAMPLE 2
 #define SHORTS_PER_SAMPLE 2
