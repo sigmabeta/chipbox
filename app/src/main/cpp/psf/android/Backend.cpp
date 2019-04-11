@@ -197,7 +197,7 @@ void JNICALL Java_net_sigmabeta_chipbox_backend_psf_BackendImpl_readNextSamples
 //                            bytes_copied_from_sexypsf);
 
         processFadeOut(g_buffer_as_short_track,
-                       samples_to_read_track,
+                       g_buffer_length_samples_track,
                        g_played_sample_count_track,
                        g_fade_start_threshold_samples_track,
                        g_fade_length_samples_track);
