@@ -167,6 +167,7 @@ class GameActivity : ChromeActivity<GamePresenter, GameView>(), GameView, ListVi
                 sharedElements.mapSharedView("header_text_title", text_title)
                 sharedElements.mapSharedView("subheader_text_subtitle", text_subtitle)
                 sharedElements.mapSharedView("ignored", button_fab)
+                sharedElements.mapSharedView("ignored2", list_tracks)
             }
 
             override fun onSharedElementStart(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
