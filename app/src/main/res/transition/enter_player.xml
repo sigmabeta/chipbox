@@ -11,9 +11,12 @@
             <target android:targetId="@id/button_play" />
         </targets>
 
-        <autoTransition
+        <changeBounds
             android:duration="@integer/duration_enter"
-            android:interpolator="@android:interpolator/decelerate_cubic"  />
+            android:interpolator="@android:interpolator/decelerate_cubic" />
+        <changeImageTransform
+            android:duration="@integer/duration_enter"
+            android:interpolator="@android:interpolator/decelerate_cubic" />
 
     </transitionSet>
 
