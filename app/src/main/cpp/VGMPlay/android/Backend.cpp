@@ -136,7 +136,7 @@ JNIEXPORT jint JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_getVoi
 JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_getVoiceName
         (JNIEnv *env, jobject, jint voice_number) {
     int channel_number = voice_number;
-
+    bool allocated = false;
     const char *voice_name = NULL;
     for (int chip_index = 0; chip_index < g_active_chip_count; ++chip_index) {
         int chip_id = g_active_chip_ids[chip_index];
@@ -147,23 +147,31 @@ JNIEXPORT jstring JNICALL Java_net_sigmabeta_chipbox_backend_vgm_BackendImpl_get
         if (channel_number >= channel_count) {
             channel_number -= channel_count;
         } else {
+            channel_number++; /*For 1-indexing*/
             if (channel_count > 1) {
-                std::ostringstream stream;
-                stream << chip_name << " Voice " << channel_number + 1;
+                const char * voice_template = "%s Voice %d";
+                int voice_template_len = snprintf(NULL, 0, voice_template, chip_name, channel_number) + 1 /*For null terminator*/;
 
-                voice_name = stream.str().c_str();
+                voice_name = static_cast<char *>(malloc(voice_template_len));
+                allocated = true;
+                snprintf(const_cast<char *>(voice_name), voice_template_len, voice_template, chip_name, channel_number);
             } else {
                 voice_name = chip_name;
             }
             break;
         }
+    };
+
+    jstring result = NULL;
+    if (voice_name != NULL) {
+        result = env->NewStringUTF(voice_name);
     }
 
-    if (voice_name != NULL) {
-        return env->NewStringUTF(voice_name);
-    } else {
-        return NULL;
+    if (allocated) {
+        free((void *) voice_name);
     }
+
+    return result;
 }
 
 

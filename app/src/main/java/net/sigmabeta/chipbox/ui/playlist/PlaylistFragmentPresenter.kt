@@ -77,6 +77,8 @@ class PlaylistFragmentPresenter @Inject constructor(val player: Player,
                 }
 
         subscriptions.add(subscription)
+
+        view?.showPlaylistName(null)
     }
 
     private fun displayPositionHelper(animate: Boolean) {

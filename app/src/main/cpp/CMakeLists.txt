@@ -9,3 +9,5 @@ cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 # Shared library defined here
 add_subdirectory(gme)
 add_subdirectory(VGMPlay)
+add_subdirectory(psf)
+add_subdirectory(libsamplerate)

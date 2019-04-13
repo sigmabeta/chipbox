@@ -4,11 +4,11 @@ import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import android.os.Handler
-import android.support.design.widget.Snackbar
-import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import com.google.android.material.snackbar.Snackbar
 import com.squareup.picasso.Callback
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.R
@@ -71,7 +71,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         configureViews()
     }
 
-    override fun onAttach(context: Context?) {
+    override fun onAttach(context: Context) {
         super.onAttach(context)
 
         if (context is Activity) {
@@ -79,7 +79,7 @@ abstract class BaseFragment<out P : FragmentPresenter<in V>, in V : BaseView> : 
         }
     }
 
-    override fun onAttach(activity: Activity?) {
+    override fun onAttach(activity: Activity) {
         super.onAttach(activity)
         attachHelper(activity)
     }
