@@ -1,8 +1,8 @@
 package net.sigmabeta.chipbox.ui.playlist
 
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.helper.ItemTouchHelper
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.className
@@ -18,8 +18,6 @@ class PlaylistFragment : ListFragment<PlaylistFragmentPresenter, PlaylistFragmen
     /**
      * PlaylistFragmentView
      */
-
-
 
     override fun onTrackMoved(originPos: Int, destPos: Int) {
         adapter.notifyItemMoved(originPos, destPos)
@@ -48,6 +46,10 @@ class PlaylistFragment : ListFragment<PlaylistFragmentPresenter, PlaylistFragmen
         }
     }
 
+    override fun showPlaylistName(name: String?) {
+        setActivityTitle(name ?: "Now Playing")
+    }
+
     /**
      * ListFragment
      */
@@ -64,7 +66,7 @@ class PlaylistFragment : ListFragment<PlaylistFragmentPresenter, PlaylistFragmen
                 it.inject(this)
                 return true
             } ?: let {
-                Timber.e("${className()} injection failure: ${container?.className()}'s FragmentComponent not valid.")
+                Timber.e("${className()} injection failure: ${container.className()}'s FragmentComponent not valid.")
                 return false
             }
         } else {
@@ -80,7 +82,6 @@ class PlaylistFragment : ListFragment<PlaylistFragmentPresenter, PlaylistFragmen
 
         recycler_list.adapter = adapter
         recycler_list.layoutManager = layoutManager
-        recycler_list.setPadding(0, getStatusBarHeight(), 0, 0)
 
         touchHelper.attachToRecyclerView(recycler_list)
     }
@@ -91,35 +92,24 @@ class PlaylistFragment : ListFragment<PlaylistFragmentPresenter, PlaylistFragmen
      * Implementation Details
      */
 
-    private fun getStatusBarHeight(): Int {
-        val id = resources.getIdentifier("status_bar_height", "dimen", "android")
-
-        if (id > 0) {
-            return resources.getDimensionPixelSize(id)
-        }
-
-        return 0
-    }
-
     val touchCallback = object : ItemTouchHelper.Callback() {
-        override fun getMovementFlags(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?): Int {
+        override fun getMovementFlags(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
             val dragFlags = ItemTouchHelper.UP or ItemTouchHelper.DOWN
             val swipeFlags = ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
             return makeMovementFlags(dragFlags, swipeFlags)
         }
-
-        override fun onMove(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?, target: RecyclerView.ViewHolder?): Boolean {
-            viewHolder?.adapterPosition?.let { originPos ->
-                target?.adapterPosition?.let { destPos ->
+        
+        override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
+            viewHolder.adapterPosition.let { originPos ->
+                target.adapterPosition.let { destPos ->
                     presenter.onTrackMoved(originPos, destPos)
                     return true
                 }
             }
-            return false
         }
 
-        override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
-            viewHolder?.adapterPosition?.let { position ->
+        override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+            viewHolder.adapterPosition.let { position ->
                 presenter.onTrackRemoved(position)
             }
         }

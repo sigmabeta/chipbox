@@ -11,4 +11,6 @@ interface PlaylistFragmentView : ListView<Track, PlaylistTrackViewHolder> {
     fun updatePosition(position: Int?, oldPlayingPosition: Int): Unit
 
     fun scrollToPosition(position: Int, animate: Boolean)
+
+    fun showPlaylistName(name: String?)
 }

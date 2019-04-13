@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.ui.track
 
 import android.os.Bundle
-import android.support.v7.widget.LinearLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.android.synthetic.main.fragment_list.*
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.className
@@ -36,8 +36,6 @@ class TrackListFragment : ListFragment<TrackListPresenter, TrackListView, Track,
     override fun inject() : Boolean {
         val container = activity
         if (container is BaseActivity<*, *>) {container.getFragmentComponent()?.let {
-
-
                 it.inject(this)
                 return true
             } ?: let {

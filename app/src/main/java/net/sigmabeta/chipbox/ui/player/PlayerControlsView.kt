@@ -7,14 +7,6 @@ interface PlayerControlsView : BaseView {
 
     fun showPlayButton()
 
-    fun elevate()
-
-    fun unElevate()
-
-    fun onPlaylistShown()
-
-    fun onPlaylistHidden()
-
     fun setShuffleEnabled()
 
     fun setShuffleDisabled()

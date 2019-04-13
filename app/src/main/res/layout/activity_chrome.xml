@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v4.widget.DrawerLayout android:id="@+id/layout_drawer"
+<androidx.drawerlayout.widget.DrawerLayout android:id="@+id/layout_drawer"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -20,7 +20,7 @@
 
     </FrameLayout>
 
-    <android.support.design.widget.NavigationView
+    <com.google.android.material.navigation.NavigationView
         android:id="@+id/drawer_navigation"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
@@ -28,4 +28,4 @@
         android:background="@android:color/white"
         app:headerLayout="@layout/header_navigation_main"
         app:menu="@menu/menu_main"/>
-</android.support.v4.widget.DrawerLayout>
+</androidx.drawerlayout.widget.DrawerLayout>

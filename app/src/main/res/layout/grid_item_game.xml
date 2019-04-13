@@ -28,6 +28,7 @@
         android:paddingEnd="@dimen/spacing_medium"
         android:paddingStart="@dimen/spacing_medium"
         android:paddingTop="@dimen/spacing_medium"
+        android:fontFamily="@font/roboto_medium"
         tools:text="Lufia II: Rise of the Sinistrals" />
 
     <net.sigmabeta.chipbox.util.animation.CustomTextView
