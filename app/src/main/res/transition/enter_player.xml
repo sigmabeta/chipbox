@@ -3,8 +3,7 @@
 <!-- Based on Plaid: https://github.com/nickbutcher/plaid -->
 
 <transitionSet xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:interpolator="@android:interpolator/decelerate_cubic" >
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <transitionSet>
         <targets>
@@ -12,8 +11,12 @@
             <target android:targetId="@id/button_play" />
         </targets>
 
-        <autoTransition
-            android:duration="@integer/duration_enter" />
+        <changeBounds
+            android:duration="@integer/duration_enter"
+            android:interpolator="@android:interpolator/decelerate_cubic" />
+        <changeImageTransform
+            android:duration="@integer/duration_enter"
+            android:interpolator="@android:interpolator/decelerate_cubic" />
 
     </transitionSet>
 
@@ -23,9 +26,10 @@
         </targets>
 
         <transition
-            class="net.sigmabeta.chipbox.util.animation.ChangeBoundsFade"
+            class="android.transition.ChangeBounds"
             android:duration="@integer/duration_enter"
-            app:enter="true"/>
+            android:interpolator="@android:interpolator/decelerate_cubic"
+            app:fadeIn="true"/>
 
     </transitionSet>
 
@@ -38,6 +42,7 @@
         <transition
             class="net.sigmabeta.chipbox.util.animation.ReflowText"
             android:duration="@integer/duration_enter"
+            android:interpolator="@android:interpolator/decelerate_cubic"
             app:enter="true"/>
     </transitionSet>
 
@@ -50,7 +55,28 @@
             class="net.sigmabeta.chipbox.util.animation.Pop"
             android:startDelay="@integer/duration_enter"
             android:duration="100"
+            android:interpolator="@android:interpolator/decelerate_cubic"
             app:enter="true"/>
+    </transitionSet>
+
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/text_game_title" />
+            <target android:targetId="@id/seek_playback_progress" />
+            <target android:targetId="@id/text_track_elapsed" />
+            <target android:targetId="@id/text_track_length" />
+            <target android:targetId="@id/button_repeat" />
+            <target android:targetId="@id/button_skip_back" />
+            <target android:targetId="@id/button_skip_forward" />
+            <target android:targetId="@id/button_shuffle" />
+        </targets>
+
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.FadeSlide"
+            android:duration="@integer/duration_enter"
+            android:interpolator="@android:interpolator/decelerate_cubic"
+            app:enter="true"/>
+
     </transitionSet>
 
 

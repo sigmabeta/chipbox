@@ -3,6 +3,13 @@ package net.sigmabeta.chipbox.backend.gme
 import net.sigmabeta.chipbox.backend.Backend
 
 class BackendImpl : Backend {
+    init {
+        if (!INITIALIZED) {
+            System.loadLibrary(NAME)
+            INITIALIZED = true
+        }
+    }
+
     external override fun loadFile(filename: String, track: Int, sampleRate: Int, bufferSize: Long, fadeTimeMs: Long)
 
     external override fun readNextSamples(targetBuffer: ShortArray)
@@ -24,4 +31,11 @@ class BackendImpl : Backend {
     external override fun teardown()
 
     external override fun getLastError(): String?
+
+    companion object {
+        const val NAME = "gme"
+        const val ID = 0
+
+        var INITIALIZED = false
+    }
 }

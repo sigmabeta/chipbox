@@ -20,6 +20,7 @@
         android:layout_marginEnd="64dp"
         android:layout_marginTop="@dimen/spacing_large"
         android:layout_marginBottom="@dimen/spacing_medium"
+        android:fontFamily="@font/roboto_regular"
         tools:text="Lufia II: Rise of the Sinistrals"
         android:layout_alignParentEnd="true"/>
 
