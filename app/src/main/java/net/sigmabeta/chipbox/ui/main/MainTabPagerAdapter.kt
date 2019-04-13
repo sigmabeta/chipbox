@@ -1,10 +1,10 @@
 package net.sigmabeta.chipbox.ui.main
 
 import android.content.Context
-import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentManager
-import android.support.v4.app.FragmentPagerAdapter
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.FragmentPagerAdapter
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.ui.ListFragment
 import net.sigmabeta.chipbox.ui.artist.ArtistListFragment
@@ -21,18 +21,18 @@ class MainTabPagerAdapter(val fragManager: FragmentManager, val context: Context
             R.string.tab_main_tracks
     )
 
-    val fragments = Array<ListFragment<*, *, *, *, *>?>(TAB_TITLES.size, {
+    val fragments = Array<ListFragment<*, *, *, *, *>?>(TAB_TITLES.size) {
         return@Array null
-    })
+    }
 
     override fun getCount() = TAB_TITLES.size
 
-    override fun getItem(position: Int): Fragment? = when (position) {
+    override fun getItem(position: Int): Fragment = when (position) {
         0 -> GameGridFragment.newInstance(null)
         1 -> PlatformListFragment.newInstance()
         2 -> ArtistListFragment.newInstance()
         3 -> TrackListFragment.newInstance(null)
-        else -> null
+        else -> throw NotImplementedError("Invalid fragment position.")
     }
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {

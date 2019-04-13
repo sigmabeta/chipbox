@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.ui
 
 import android.media.session.PlaybackState
 import android.os.Bundle
-import android.support.annotation.CallSuper
+import androidx.annotation.CallSuper
 import io.reactivex.android.schedulers.AndroidSchedulers
 import net.sigmabeta.chipbox.R
 import net.sigmabeta.chipbox.backend.UiUpdater
