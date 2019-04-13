@@ -36,8 +36,6 @@ class TrackListFragment : ListFragment<TrackListPresenter, TrackListView, Track,
     override fun inject() : Boolean {
         val container = activity
         if (container is BaseActivity<*, *>) {container.getFragmentComponent()?.let {
-
-
                 it.inject(this)
                 return true
             } ?: let {

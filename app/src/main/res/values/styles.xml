@@ -195,8 +195,6 @@
     <style name="PlayerText">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_alignParentStart">true</item>
-        <item name="android:layout_alignParentEnd">true</item>
         <item name="android:layout_marginStart">@dimen/spacing_large</item>
         <item name="android:layout_marginEnd">@dimen/spacing_large</item>
         <item name="android:singleLine">true</item>
@@ -205,6 +203,11 @@
     <style name="ChipboxButtonStyle" parent="Widget.AppCompat.Button.Colored">
         <item name="colorButtonNormal">@color/accent</item>
         <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <style name="PlayerControlButton" parent="Widget.AppCompat.Button.Borderless">
+        <item name="android:layout_width">72dp</item>
+        <item name="android:layout_height">72dp</item>
     </style>
 
 </resources>
