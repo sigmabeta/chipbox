@@ -26,7 +26,7 @@
         </targets>
 
         <transition
-            class="net.sigmabeta.chipbox.util.animation.ChangeBoundsFade"
+            class="android.transition.ChangeBounds"
             android:duration="@integer/duration_return"
             app:fadeIn="false"/>
     </transitionSet>
@@ -63,6 +63,18 @@
             class="net.sigmabeta.chipbox.util.animation.ReflowText"
             android:duration="@integer/duration_return"
             app:freezeFrame="true"
+            app:enter="false"/>
+    </transitionSet>
+
+    <transitionSet>
+        <targets>
+            <target android:targetId="@id/list_tracks" />>
+        </targets>
+
+        <transition
+            class="net.sigmabeta.chipbox.util.animation.Fade"
+            android:duration="100"
+            android:interpolator="@android:interpolator/accelerate_cubic"
             app:enter="false"/>
     </transitionSet>
 
