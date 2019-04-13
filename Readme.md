@@ -10,20 +10,28 @@ You can build the app by executing:
 ```
 $ git clone git@github.com:sigmabeta/chipbox.git
 $ cd chipbox
-$ ./gradlew assembleDebug
+$ ./gradlew assemble<platform>Debug
 ```
 
-Chipbox is 100% written using Kotlin, and uses the game-music-emu and VGMPlay libraries for playback, Dagger for dependency injection, and RxJava for asynchronous operations.
+Where `<platform>` is one of the following, depending on the type of device you plan to deploy to:
+
+- `arm` for 32-bit ARM processors
+- `arm_64` for 64-bit ARM processors
+- `x86` for 32-bit x86 processors
+- `x86_64` for 64-bit x86 processors
+
+Chipbox is 100% written using Kotlin (aside from JNI integration), and uses the game-music-emu, VGMPlay, and SexyPSF libraries for playback, Dagger for dependency injection, and RxJava for asynchronous operations.
 
 ## Supported Music Formats
 - SPC (Super NES)
 - NSFE (NES)
 - GBS (Game Boy)
 - VGM (Genesis / Mega Drive, 32X, Arcade, numerous others)
+- PSF (Sony Playstation)
 
 ## Roadmap
 
 - Add support for more consoles
-- Standalone playback support for Android Wear (playback on a phone can be controlled from Wear)
+- Convert JNI code to Kotlin/Native, maybe
 - Bespoke UI for Android TV
 - Android Auto control support
