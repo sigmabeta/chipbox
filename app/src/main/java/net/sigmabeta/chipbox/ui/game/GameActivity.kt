@@ -164,19 +164,30 @@ class GameActivity : ChromeActivity<GamePresenter, GameView>(), GameView, ListVi
 
         setEnterSharedElementCallback(object : SharedElementCallback() {
             override fun onMapSharedElements(names: MutableList<String>, sharedElements: MutableMap<String, View>) {
-                sharedElements["header_text_title"] = text_title
-                sharedElements["subheader_text_subtitle"] = text_subtitle
-                sharedElements["ignored"] = button_fab
+                sharedElements.mapSharedView("header_text_title", text_title)
+                sharedElements.mapSharedView("subheader_text_subtitle", text_subtitle)
+                sharedElements.mapSharedView("ignored", button_fab)
+                sharedElements.mapSharedView("ignored2", list_tracks)
             }
 
             override fun onSharedElementStart(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
-                ReflowText.reflowDataFromIntent(intent, text_title)
-                ReflowText.reflowDataFromIntent(intent, text_subtitle)
+                if (text_title != null) {
+                    ReflowText.reflowDataFromIntent(intent, text_title)
+                }
+
+                if (text_subtitle != null) {
+                    ReflowText.reflowDataFromIntent(intent, text_subtitle)
+                }
             }
 
             override fun onSharedElementEnd(sharedElementNames: List<String>, sharedElements: List<View>, sharedElementSnapshots: List<View>) {
-                ReflowText.reflowDataFromView(ReflowableTextView(text_title))
-                ReflowText.reflowDataFromView(ReflowableTextView(text_subtitle))
+                if (text_title != null) {
+                    ReflowText.reflowDataFromView(ReflowableTextView(text_title))
+                }
+
+                if (text_subtitle != null) {
+                    ReflowText.reflowDataFromView(ReflowableTextView(text_subtitle))
+                }
             }
         })
     }
@@ -210,6 +221,13 @@ class GameActivity : ChromeActivity<GamePresenter, GameView>(), GameView, ListVi
 
         behavior.isAutoHideEnabled = enabled
         layoutParams.behavior = behavior
+    }
+
+    private fun MutableMap<String, View>.mapSharedView(name: String, view: View?) {
+        // Null check in case view scrolled off screen and then activity recreated
+        if (view != null) {
+            this[name] = view
+        }
     }
 
     companion object {
