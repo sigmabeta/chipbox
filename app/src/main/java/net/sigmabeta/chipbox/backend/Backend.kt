@@ -44,12 +44,14 @@ interface Backend {
         val GME by lazy { net.sigmabeta.chipbox.backend.gme.BackendImpl() }
         val VGM by lazy { net.sigmabeta.chipbox.backend.vgm.BackendImpl() }
         val PSF by lazy { net.sigmabeta.chipbox.backend.psf.BackendImpl() }
+        val USF by lazy { net.sigmabeta.chipbox.backend.usf.BackendImpl() }
 
         // TODO should this also be lazy?
         val IMPLEMENTATIONS = arrayOf(
                 GME,
                 VGM,
-                PSF
+                PSF,
+                USF
         )
     }
 }
