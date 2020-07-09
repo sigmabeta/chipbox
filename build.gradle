@@ -8,7 +8,6 @@ buildscript {
 
     repositories {
         jcenter()
-        maven { url 'https://maven.fabric.io/public' }
         google()
     }
 
@@ -20,16 +19,12 @@ buildscript {
 
         // Realm database plugin.
         classpath "io.realm:realm-gradle-plugin:$realm_version"
-
-        // Fabric
-        classpath 'io.fabric.tools:gradle:1.25.4'
     }
 }
 
 allprojects {
     repositories {
         jcenter()
-        maven { url 'https://maven.fabric.io/public' }
         google()
     }
 }

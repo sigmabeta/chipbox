@@ -8,15 +8,11 @@ import android.content.Context
 import android.content.res.Resources
 import android.os.Build
 import android.view.View
-import android.widget.Toast
-import com.crashlytics.android.Crashlytics
-import io.fabric.sdk.android.Fabric
 import io.realm.Realm
 import io.realm.RealmConfiguration
 import net.sigmabeta.chipbox.dagger.Initializer
 import net.sigmabeta.chipbox.dagger.component.AppComponent
 import timber.log.Timber
-import java.io.File
 
 
 public class ChipboxApplication : Application() {
@@ -43,13 +39,6 @@ public class ChipboxApplication : Application() {
                 .build()
 
         Realm.setDefaultConfiguration(realmConfig)
-
-        val fabric = Fabric.Builder(this)
-                .kits(Crashlytics())
-                .debuggable(BuildConfig.DEBUG)
-                .build()
-
-        Fabric.with(fabric)
 
         appComponent = Initializer.initAppComponent(this)
 
