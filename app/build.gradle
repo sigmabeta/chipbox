@@ -2,7 +2,6 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
-apply plugin: 'io.fabric'
 apply plugin: 'realm-android'
 
 
@@ -164,11 +163,6 @@ dependencies {
 
     // Simplified error logging.
     implementation 'com.jakewharton.timber:timber:4.5.1'
-
-    // Crash Reporting
-    implementation('com.crashlytics.sdk.android:crashlytics:2.5.5@aar') {
-        transitive = true;
-    }
 
     // Dependency Injection.
     implementation "com.google.dagger:dagger:${dagger_version}"

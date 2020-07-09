@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.ui
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import com.crashlytics.android.Crashlytics
 import io.reactivex.disposables.CompositeDisposable
 import net.sigmabeta.chipbox.className
 import net.sigmabeta.chipbox.model.repository.Repository
@@ -85,7 +84,6 @@ abstract class BasePresenter<V : BaseView> {
                     + "Please check that all animations (including loading spinners) were cleared.")
             else -> view?.showError(error.message ?: "Unknown error.")
         }
-        Crashlytics.logException(error)
     }
 
     /**
