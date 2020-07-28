@@ -37,7 +37,7 @@ fun readSingleTrackFile(file: File, trackNumber: Int): Track? {
         return null
     }
 
-    val track = getTrack(scanner, path, 0)
+    val track = getTrack(scanner, path, trackNumber, true)
 
     track?.trackNumber = trackNumber
 
@@ -61,7 +61,7 @@ fun readMultipleTrackFile(file: File): List<Track>? {
 
     val tracks = ArrayList<Track>(trackCount)
     for (trackNumber in 0..trackCount - 1) {
-        val track = getTrack(scanner, path, trackNumber)
+        val track = getTrack(scanner, path, trackNumber, false)
         if (track != null) {
             if (track.title.isNullOrEmpty()) {
                 track.title = "${track.gameTitle} Track ${trackNumber + 1}"
@@ -77,8 +77,9 @@ fun readMultipleTrackFile(file: File): List<Track>? {
     return tracks
 }
 
-private fun getTrack(scanner: Scanner, path: String, trackNumber: Int): Track? {
-    scanner.fileInfoSetTrackNumber(trackNumber)
+private fun getTrack(scanner: Scanner, path: String, trackNumber: Int, singleTrack: Boolean): Track? {
+    val readTrackNumber = if (singleTrack) 0 else trackNumber
+    scanner.fileInfoSetTrackNumber(readTrackNumber)
 
     val platform = scanner.getFilePlatform()?.convert() ?: return null
 
@@ -105,10 +106,11 @@ private fun getTrack(scanner: Scanner, path: String, trackNumber: Int): Track? {
         trackLength = TRACK_LENGTH_DEFAULT
     }
 
-    val track = Track(trackNumber,
+    val gameTitle = scanner.getFileGameTitle()?.convert() ?: RealmRepository.GAME_UNKNOWN
+    val track = Track(readTrackNumber,
             path,
-            scanner.getFileTitle()?.convert() ?: RealmRepository.TITLE_UNKNOWN,
-            scanner.getFileGameTitle()?.convert() ?: RealmRepository.GAME_UNKNOWN,
+            scanner.getFileTitle()?.convert() ?: "$gameTitle Track $trackNumber",
+            gameTitle,
             artist,
             platform,
             trackLength,
