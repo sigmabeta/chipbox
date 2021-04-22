@@ -13,6 +13,7 @@ import net.sigmabeta.chipbox.model.domain.Artist
 import net.sigmabeta.chipbox.model.domain.Game
 import net.sigmabeta.chipbox.model.domain.Track
 import net.sigmabeta.chipbox.model.events.FileScanEvent
+import net.sigmabeta.chipbox.model.repository.RealmRepository.Companion.GAME_UNKNOWN
 import net.sigmabeta.chipbox.util.EXTENSIONS_IMAGES
 import net.sigmabeta.chipbox.util.EXTENSIONS_MULTI_TRACK
 import net.sigmabeta.chipbox.util.readMultipleTrackFile
@@ -86,11 +87,11 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
      */
 
     private fun getFolders(): List<File> {
-        val storageFolderFiles = File("/storage").listFiles()
-        val selfPrimaryFiles = File("/storage/self/primary").listFiles()
-        val emulatedLegacyFiles = File("/storage/emulated/legacy").listFiles()
+        val storageFolderFiles = File("/storage").listFiles().orEmpty() as Array<File>
+        val selfPrimaryFiles = File("/storage/self/primary").listFiles().orEmpty()
+        val emulatedLegacyFiles = File("/storage/emulated/legacy").listFiles().orEmpty()
 
-        val mergedArray = storageFolderFiles + selfPrimaryFiles.orEmpty() + emulatedLegacyFiles.orEmpty()
+        val mergedArray = storageFolderFiles + selfPrimaryFiles + emulatedLegacyFiles
 
         return mergedArray.toList()
     }
@@ -160,6 +161,10 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
         val track = readSingleTrackFile(file, trackNumber)
 
         if (track != null) {
+            if (track.title.isNullOrEmpty()) {
+                track.title = "${track.gameTitle ?: GAME_UNKNOWN} Track $trackNumber"
+            }
+
             var game = checkForExistingTrack(filePath, track, emitter)
 
             if (game != null) return game
