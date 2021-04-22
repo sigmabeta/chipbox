@@ -29,9 +29,8 @@ interface Scanner {
         val GME = net.sigmabeta.chipbox.backend.gme.ScannerImpl()
         val VGM = net.sigmabeta.chipbox.backend.vgm.ScannerImpl()
         val PSF = net.sigmabeta.chipbox.backend.psf.ScannerImpl()
-        val USF = net.sigmabeta.chipbox.backend.usf.ScannerImpl()
 
-        val EXTENSIONS_MUSIC = hashMapOf<String, Scanner>(
+        val EXTENSIONS_MUSIC = hashMapOf(
                 Pair<String, Scanner>("spc", GME),
                 Pair<String, Scanner>("vgm", VGM),
                 Pair<String, Scanner>("vgz", VGM),
@@ -39,9 +38,7 @@ interface Scanner {
                 Pair<String, Scanner>("nsfe", GME),
                 Pair<String, Scanner>("gbs", GME),
                 Pair<String, Scanner>("psf", PSF),
-                Pair<String, Scanner>("minipsf", PSF),
-                Pair<String, Scanner>("usf", USF),
-                Pair<String, Scanner>("miniusf", USF)
+                Pair<String, Scanner>("minipsf", PSF)
         )
     }
 }
