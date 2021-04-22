@@ -87,11 +87,11 @@ class LibraryScanner @Inject constructor(val repositoryLazy: Lazy<Repository>,
      */
 
     private fun getFolders(): List<File> {
-        val storageFolderFiles = File("/storage").listFiles()
-        val selfPrimaryFiles = File("/storage/self/primary").listFiles()
-        val emulatedLegacyFiles = File("/storage/emulated/legacy").listFiles()
+        val storageFolderFiles = File("/storage").listFiles().orEmpty() as Array<File>
+        val selfPrimaryFiles = File("/storage/self/primary").listFiles().orEmpty()
+        val emulatedLegacyFiles = File("/storage/emulated/legacy").listFiles().orEmpty()
 
-        val mergedArray = storageFolderFiles + selfPrimaryFiles.orEmpty() + emulatedLegacyFiles.orEmpty()
+        val mergedArray = storageFolderFiles + selfPrimaryFiles + emulatedLegacyFiles
 
         return mergedArray.toList()
     }
