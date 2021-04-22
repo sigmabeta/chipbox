@@ -131,7 +131,7 @@ JNIEXPORT void JNICALL Java_net_sigmabeta_chipbox_backend_gme_BackendImpl_setTem
         (JNIEnv *env, jobject, jdouble tempo) {
     if (g_emu != NULL) {
         gme_set_tempo(g_emu, tempo);
-        gme_set_fade(g_emu, 1000000000);
+        gme_set_fade(g_emu, INT_MAX);
     }
 }
 
