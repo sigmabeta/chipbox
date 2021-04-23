@@ -1,0 +1,23 @@
+apply from: '../../core-android-module.gradle'
+
+apply plugin: 'kotlin-kapt'
+
+dependencies {
+    // Room Libs
+    api "androidx.room:room-runtime:$room_version"
+    implementation "androidx.room:room-ktx:$room_version"
+    implementation "androidx.room:room-rxjava2:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+
+    // RxJava2 libs
+    implementation "io.reactivex.rxjava2:rxjava:$rxjava_version"
+
+    // Junit libs
+    testImplementation "androidx.room:room-testing:$room_version"
+    testImplementation "junit:junit:$junit_version"
+
+    // Dagger (important: include all 3 of these in modules that use Dagger
+//    implementation project(path: ':di')
+    kapt "com.google.dagger:dagger-compiler:$dagger_version"
+    kapt "com.google.dagger:dagger-android-processor:$dagger_version"
+}

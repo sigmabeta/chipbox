@@ -1,1 +1,12 @@
+rootProject.name = 'Chipbox'
+
+// Duh
 include ':app'
+
+// Core Modules
+include ':core:database'
+
+// Common Modules (which may contain dependencies exposed by a feature)
+
+
+// Feature Modules (nothing but :app should depend on these)
