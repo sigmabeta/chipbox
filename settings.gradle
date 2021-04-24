@@ -5,6 +5,7 @@ include ':app'
 
 // Core Modules
 include ':core:database'
+include ':core:models'
 
 // Common Modules (which may contain dependencies exposed by a feature)
 
