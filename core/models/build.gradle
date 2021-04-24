@@ -1,0 +1,5 @@
+apply from: '../../core-kotlin-module.gradle'
+
+dependencies {
+
+}
