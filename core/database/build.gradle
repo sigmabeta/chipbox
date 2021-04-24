@@ -3,6 +3,8 @@ apply from: '../../core-android-module.gradle'
 apply plugin: 'kotlin-kapt'
 
 dependencies {
+    implementation project(path: ':core:models')
+
     // Room Libs
     api "androidx.room:room-runtime:$room_version"
     implementation "androidx.room:room-ktx:$room_version"
