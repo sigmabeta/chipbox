@@ -31,7 +31,6 @@ def getVersionName = { ->
 
 android {
     compileSdkVersion 28
-    buildToolsVersion '28.0.3'
 
     compileOptions {
         sourceCompatibility 1.8
@@ -140,6 +139,8 @@ android {
 }
 
 dependencies {
+    implementation project(path: ':core:activities')
+
     // TODO This shouldn't ultimately be necessary here.
     implementation project(path: ':core:database')
 
@@ -174,8 +175,9 @@ dependencies {
 
     // Dependency Injection.
     implementation "com.google.dagger:dagger:${dagger_version}"
+    implementation "com.google.dagger:dagger-android-support:$dagger_version"
     kapt "com.google.dagger:dagger-compiler:${dagger_version}"
-    compileOnly 'org.glassfish:javax.annotation:10.0-b28'
+    kapt "com.google.dagger:dagger-android-processor:$dagger_version"
 }
 
 // To allow Viewholder caching.
