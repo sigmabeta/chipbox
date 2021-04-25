@@ -4,8 +4,9 @@ rootProject.name = 'Chipbox'
 include ':app'
 
 // Core Modules
+include ':core:activities'
 include ':core:database'
-include ':core:models'
+include ':core:entities'
 
 // Common Modules (which may contain dependencies exposed by a feature)
 
