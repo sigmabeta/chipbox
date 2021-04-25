@@ -18,12 +18,12 @@ import javax.inject.Singleton
 
 @Singleton
 @Component(
-        modules = arrayOf(
-                AppModule::class,
-                AudioModule::class,
-                RepositoryModule::class,
-                PreferenceModule::class
-        )
+        modules = [
+            AppModule::class,
+            AudioModule::class,
+            RepositoryModule::class,
+            PreferenceModule::class
+        ]
 )
 interface AppComponent {
     /**
