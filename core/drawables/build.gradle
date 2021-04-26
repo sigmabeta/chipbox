@@ -1,0 +1,7 @@
+apply from: '../../core-android-module.gradle'
+
+apply plugin: 'kotlin-kapt'
+
+dependencies {
+    implementation project(path: ':core:colors')
+}
