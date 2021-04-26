@@ -5,8 +5,12 @@ include ':app'
 
 // Core Modules
 include ':core:activities'
+include ':core:colors'
 include ':core:database'
+include ':core:drawables'
 include ':core:entities'
+include ':core:strings'
+include ':core:styles'
 
 // Common Modules (which may contain dependencies exposed by a feature)
 
