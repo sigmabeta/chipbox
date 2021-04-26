@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="ChipboxBaseTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+    </style>
+
+    <style name="ChipboxImmersive" parent="ChipboxBaseTheme">
+        <item name="android:navigationBarColor">@color/navbarTranslucent</item>
+        <item name="android:windowTranslucentStatus">true</item>
+    </style>
+
+    <!-- The launcher theme. It sets the main window background to the launch_screen drawable -->
+    <style name="ChipboxImmersive.Launcher">
+        <item name="android:windowBackground">@drawable/launch_screen</item>
+    </style>
+</resources>

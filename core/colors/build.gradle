@@ -1,0 +1,5 @@
+apply from: '../../core-android-module.gradle'
+
+apply plugin: 'kotlin-kapt'
+
+dependencies { }

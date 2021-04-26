@@ -8,14 +8,23 @@ import android.content.Context
 import android.content.res.Resources
 import android.os.Build
 import android.view.View
+import dagger.android.DaggerApplication
+import dagger.android.DispatchingAndroidInjector
+import dagger.android.HasAndroidInjector
 import io.realm.Realm
 import io.realm.RealmConfiguration
 import net.sigmabeta.chipbox.dagger.Initializer
 import net.sigmabeta.chipbox.dagger.component.AppComponent
+import net.sigmabeta.chipbox.di.DaggerRemasterAppComponent
+import net.sigmabeta.chipbox.di.RemasterAppModule
 import timber.log.Timber
+import javax.inject.Inject
 
 
-public class ChipboxApplication : Application() {
+public class ChipboxApplication : DaggerApplication(),  HasAndroidInjector {
+    @Inject
+    lateinit var dispatchingAndroidInjector: DispatchingAndroidInjector<Any>
+
     lateinit var appComponent: AppComponent
 
     /**
@@ -61,6 +70,12 @@ public class ChipboxApplication : Application() {
     }
 
     fun shouldShowDetailedErrors() = BuildConfig.DEBUG
+
+    override fun applicationInjector() = DaggerRemasterAppComponent
+            .factory()
+            .create(RemasterAppModule(this))
+
+    override fun androidInjector() = dispatchingAndroidInjector
 
     companion object {
         val CHANNEL_ID_PLAYBACK = BuildConfig.APPLICATION_ID + ".playback"

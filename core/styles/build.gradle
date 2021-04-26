@@ -1,0 +1,12 @@
+apply from: '../../core-android-module.gradle'
+
+apply plugin: 'kotlin-kapt'
+
+dependencies {
+    implementation project(path: ':core:colors')
+    implementation project(path: ':core:drawables')
+
+    // Android styling dependencies.
+    implementation "androidx.appcompat:appcompat:$appcompat_version"
+    implementation "com.google.android.material:material:$material_version"
+}

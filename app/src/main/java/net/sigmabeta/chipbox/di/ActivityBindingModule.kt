@@ -10,5 +10,5 @@ import net.sigmabeta.chipbox.activities.RemasterActivity
 internal abstract class ActivityBindingModule {
     @ActivityScope
     @ContributesAndroidInjector
-    internal abstract fun contributeMainActivityInjector(): RemasterActivity
+    internal abstract fun contributeRemasterActivityInjector(): RemasterActivity
 }
