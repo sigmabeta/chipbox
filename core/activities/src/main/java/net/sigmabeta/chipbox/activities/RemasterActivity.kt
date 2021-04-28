@@ -1,13 +1,11 @@
 package net.sigmabeta.chipbox.activities
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import dagger.android.AndroidInjection
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.HasAndroidInjector
+import net.sigmabeta.chipbox.features.top.TopFragment
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -33,5 +31,15 @@ class RemasterActivity : AppCompatActivity(), HasAndroidInjector{
         Timber.v("Device screen size: ${widthPixels}x$heightPixels")
         Timber.v("Device screen size (scaled): ${(widthPixels / displayMetrics.density).toInt()}" +
                 "x${(heightPixels / displayMetrics.density).toInt()}")
+
+        if (savedInstanceState == null) {
+            addTopFragment()
+        }
+    }
+
+    private fun addTopFragment() {
+        supportFragmentManager.beginTransaction()
+                .add(R.id.frame_top, TopFragment.newInstance())
+                .commit()
     }
 }
