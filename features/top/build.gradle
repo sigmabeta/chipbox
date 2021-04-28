@@ -1,0 +1,10 @@
+apply from: '../../feature-module.gradle'
+apply plugin: 'kotlin-kapt'
+
+dependencies {
+    // Logging
+    implementation "com.jakewharton.timber:timber:$timber_version"
+
+    // Fragment support
+    implementation "androidx.fragment:fragment-ktx:$fragment_version"
+}

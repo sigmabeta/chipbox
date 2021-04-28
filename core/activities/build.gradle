@@ -1,6 +1,9 @@
 apply from: '../../core-android-module.gradle'
 
 dependencies {
+    // TODO NOOOOPE, not this
+    implementation project(path: ':features:top')
+
     implementation project(path: ':core:strings')
     implementation project(path: ':core:styles')
 
