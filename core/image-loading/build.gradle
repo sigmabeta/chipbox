@@ -1,0 +1,9 @@
+apply from: '../../core-android-module.gradle'
+
+dependencies {
+    // COIL libraries
+    api "io.coil-kt:coil:$coil_version"
+
+    // Jetpack Compose Support
+    api "com.google.accompanist:accompanist-coil:0.8.0"
+}
