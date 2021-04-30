@@ -44,7 +44,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.1.3'
+        classpath 'com.android.tools.build:gradle:7.0.0-alpha15'
 
         // Allows gradle files to be able to build Kotlin.
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
