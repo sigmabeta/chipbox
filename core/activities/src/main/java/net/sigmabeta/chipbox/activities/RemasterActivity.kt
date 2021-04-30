@@ -1,15 +1,16 @@
 package net.sigmabeta.chipbox.activities
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.material.Text
 import dagger.android.AndroidInjection
 import dagger.android.DispatchingAndroidInjector
 import dagger.android.HasAndroidInjector
-import net.sigmabeta.chipbox.features.top.TopFragment
 import timber.log.Timber
 import javax.inject.Inject
 
-class RemasterActivity : AppCompatActivity(), HasAndroidInjector{
+class RemasterActivity : ComponentActivity(), HasAndroidInjector{
     @Inject
     lateinit var androidInjector: DispatchingAndroidInjector<Any>
 
@@ -19,8 +20,6 @@ class RemasterActivity : AppCompatActivity(), HasAndroidInjector{
         setTheme(R.style.ChipboxImmersive)
         AndroidInjection.inject(this)
         super.onCreate(savedInstanceState)
-
-        setContentView(R.layout.activity_remaster)
 
         val displayMetrics = resources.displayMetrics
         val widthPixels = displayMetrics.widthPixels
@@ -32,14 +31,8 @@ class RemasterActivity : AppCompatActivity(), HasAndroidInjector{
         Timber.v("Device screen size (scaled): ${(widthPixels / displayMetrics.density).toInt()}" +
                 "x${(heightPixels / displayMetrics.density).toInt()}")
 
-        if (savedInstanceState == null) {
-            addTopFragment()
+        setContent {
+            Text("Hello Compose")
         }
-    }
-
-    private fun addTopFragment() {
-        supportFragmentManager.beginTransaction()
-                .add(R.id.frame_top, TopFragment.newInstance())
-                .commit()
     }
 }
