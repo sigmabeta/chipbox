@@ -6,9 +6,11 @@ include ':app'
 // Core Modules
 include ':core:activities'
 include ':core:colors'
+include ':core:components'
 include ':core:database'
 include ':core:drawables'
 include ':core:entities'
+include ':core:image-loading'
 include ':core:strings'
 include ':core:styles'
 
