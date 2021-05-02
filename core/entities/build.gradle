@@ -1,4 +1,4 @@
-apply from: '../../core-kotlin-module.gradle'
+apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
 
 dependencies {
     // Room Libs
