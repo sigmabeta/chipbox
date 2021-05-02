@@ -5,6 +5,7 @@ import dagger.android.AndroidInjectionModule
 import dagger.android.AndroidInjector
 import net.sigmabeta.chipbox.ChipboxApplication
 import net.sigmabeta.chipbox.activities.RemasterActivity
+import net.sigmabeta.chipbox.repository.mock.MockRepositoryModule
 import javax.inject.Singleton
 
 @Singleton
@@ -12,7 +13,8 @@ import javax.inject.Singleton
         modules = [
             RemasterAppModule::class,
             AndroidInjectionModule::class,
-            ActivityBindingModule::class
+            ActivityBindingModule::class,
+            MockRepositoryModule::class
         ]
 )
 interface RemasterAppComponent : AndroidInjector<ChipboxApplication> {
