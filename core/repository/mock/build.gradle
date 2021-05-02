@@ -3,4 +3,6 @@ apply from: "$rootProject.projectDir/dagger.gradle"
 
 dependencies {
     api project(path: ':core:repository')
+
+    implementation "com.jakewharton.timber:timber:$timber_version"
 }

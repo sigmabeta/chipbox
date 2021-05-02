@@ -1,9 +1,9 @@
 package net.sigmabeta.chipbox.repository.mock
 
 import java.util.*
-import kotlin.random.Random
+import javax.inject.Inject
 
-class StringGenerator /*@Inject*/ constructor(private val random: Random) {
+class StringGenerator @Inject constructor(private val random: Random) {
     fun generateName() = "${FIRST_NAMES[random.nextInt(FIRST_NAMES.size)]} " +
             LAST_NAMES[random.nextInt(LAST_NAMES.size)]
 
@@ -22,7 +22,6 @@ class StringGenerator /*@Inject*/ constructor(private val random: Random) {
     }
 
     companion object {
-        @OptIn(ExperimentalStdlibApi::class)
         val RANDOM_WORDS = """Lorem ipsum dolor sit amet consectetur adipiscing elit Curabitur 
                 |iaculis neque vel fermentum dictum Pellentesque ac justo ultricies 
                 |hendrerit sem in blandit tellus Nam non congue ante In ultricies 
