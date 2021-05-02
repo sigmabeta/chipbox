@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.core.components
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
@@ -16,15 +17,17 @@ import com.google.accompanist.coil.rememberCoilPainter
 import net.sigmabeta.chipbox.components.R
 
 @Composable
-fun Game(
+fun GameCard(
     title: String,
     artist: String,
     image: String,
-    previewResourceId: Int = 0
+    previewResourceId: Int = 0,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
-            .width(192.dp),
+            .width(192.dp)
+            .clickable(onClick = onClick),
         elevation = 16.dp,
         shape = RoundedCornerShape(8.dp)
     ) {
@@ -67,12 +70,12 @@ fun Game(
 @Preview
 fun PreviewSingleArtist() {
     MaterialTheme {
-        Game(
+        GameCard(
             title = "Neo Turf Masters",
             artist = "Takushi Hiyamuta",
             image = "",
             previewResourceId = R.drawable.neo_turf_masters
-        )
+        ) { }
     }
 }
 
@@ -80,11 +83,11 @@ fun PreviewSingleArtist() {
 @Preview
 fun PreviewVariousArtists() {
     MaterialTheme {
-        Game(
+        GameCard(
             title = "Leading Company",
             artist = "Various Artists",
             image = "",
             previewResourceId = R.drawable.leading_company
-        )
+        ) { }
     }
 }

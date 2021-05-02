@@ -1,7 +1,11 @@
 apply plugin: 'kotlin'
-apply plugin: 'java-library'
 
 dependencies {
     // Kotlin libs
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
