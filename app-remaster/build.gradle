@@ -1,0 +1,91 @@
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+
+apply from: "$rootProject.projectDir/di.gradle"
+
+def getVersionCode = { ->
+    def proc = Runtime.getRuntime().exec("git rev-list --all --count")
+
+    def result = proc.waitFor()
+    if (result != 0) {
+        return 1 // no git revisions
+    }
+
+    // Add a million because of previous versionCode problems.
+    // Multiply by 10 so LSB can represent build type.
+    return (proc.getInputStream().readLines().get(0).toInteger() * 10 ) + 1000000
+}
+
+def getVersionName = { ->
+    def proc = Runtime.getRuntime().exec("git describe --tags")
+
+    def result = proc.waitFor()
+    if (result != 0) {
+        return "git-error"
+    }
+
+    return proc.getInputStream().readLines().get(0)
+}
+
+android {
+    compileSdkVersion 28
+
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
+
+    defaultConfig {
+        applicationId "net.sigmabeta.chipbox"
+
+        minSdkVersion 21
+        targetSdkVersion 28
+
+        versionName getVersionName()
+    }
+
+    signingConfigs {
+        release {
+            String encodedPass = System.getenv("KEYPASS_ENCODED")
+            String decodedPass;
+
+            if (encodedPass != null) {
+                decodedPass = new String(Base64.decoder.decode(encodedPass))
+            }
+
+            storeFile file("chipbox.jks")
+            storePassword decodedPass
+            keyAlias System.getenv("KEY_ALIAS")
+            keyPassword decodedPass
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix '-debug'
+            jniDebuggable true
+        }
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+}
+
+dependencies {
+    implementation project(path: ':core:activities')
+    implementation project(path: ':core:repository:mock')
+
+    // Contains the Kotlin Standard Library
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+    // Simplified error logging.
+    implementation "com.jakewharton.timber:timber:$timber_version"
+}
