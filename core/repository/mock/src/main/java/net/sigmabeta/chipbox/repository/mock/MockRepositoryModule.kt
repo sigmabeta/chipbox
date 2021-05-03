@@ -2,13 +2,16 @@ package net.sigmabeta.chipbox.repository.mock
 
 import dagger.Module
 import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
 import net.sigmabeta.chipbox.repository.Repository
 import java.util.*
 import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
-class MockRepositoryModule {
+@InstallIn(SingletonComponent::class)
+object MockRepositoryModule {
     @Provides
     @Singleton
     @Named("RngSeed")
@@ -30,7 +33,5 @@ class MockRepositoryModule {
         stringGenerator
     )
 
-    companion object {
-        const val SEED_RANDOM_NUMBER_GENERATOR = 123456L
-    }
+    const val SEED_RANDOM_NUMBER_GENERATOR = 123456L
 }
