@@ -1,5 +1,5 @@
 apply from: "$rootProject.projectDir/core-android-module.gradle"
-apply from: "$rootProject.projectDir/dagger.gradle"
+apply from: "$rootProject.projectDir/di.gradle"
 
 dependencies {
     api project(path: ':core:repository')

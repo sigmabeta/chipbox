@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox
 
 import android.annotation.TargetApi
-import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
@@ -16,7 +15,7 @@ import io.realm.RealmConfiguration
 import net.sigmabeta.chipbox.dagger.Initializer
 import net.sigmabeta.chipbox.dagger.component.AppComponent
 import net.sigmabeta.chipbox.di.DaggerRemasterAppComponent
-import net.sigmabeta.chipbox.di.RemasterAppModule
+import net.sigmabeta.chipbox.RemasterAppModule
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -73,7 +72,7 @@ public class ChipboxApplication : DaggerApplication(),  HasAndroidInjector {
 
     override fun applicationInjector() = DaggerRemasterAppComponent
             .factory()
-            .create(RemasterAppModule(this))
+            .create(net.sigmabeta.chipbox.RemasterAppModule(this))
 
     override fun androidInjector() = dispatchingAndroidInjector
 

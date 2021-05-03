@@ -1,4 +1,4 @@
-package com.vgleadsheets.di
+package net.sigmabeta.chipbox
 
 import javax.inject.Scope
 
