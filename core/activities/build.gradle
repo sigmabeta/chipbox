@@ -7,15 +7,14 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion "1.0.0-beta05"
+        kotlinCompilerExtensionVersion "$compose_version"
     }
 }
 
 dependencies {
-    // TODO NOOOOPE, not this
-    implementation project(path: ':features:top')
+    // These must be transitive dependencies so Dagger can inject these screens.
+    api project(path: ':features:top')
 
-    implementation project(path: ':core:repository')
     implementation project(path: ':core:strings')
     implementation project(path: ':core:styles')
 

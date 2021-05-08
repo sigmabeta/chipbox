@@ -18,7 +18,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion "1.0.0-beta05"
+        kotlinCompilerExtensionVersion "$compose_version"
     }
 }
 
@@ -41,6 +41,9 @@ dependencies {
     // Material design icons
     implementation "androidx.compose.material:material-icons-core:$compose_version"
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
+
+    // Navigation
+    implementation "androidx.navigation:navigation-compose:1.0.0-alpha10"
 
     // Compose support in Layout Inspector
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
