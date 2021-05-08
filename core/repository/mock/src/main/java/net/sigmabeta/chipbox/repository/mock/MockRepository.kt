@@ -1,5 +1,9 @@
 package net.sigmabeta.chipbox.repository.mock
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Track
@@ -14,7 +18,8 @@ import kotlin.collections.ArrayList
 class MockRepository constructor(
     private val random: Random,
     private val seed: Long,
-    private val stringGenerator: StringGenerator
+    private val stringGenerator: StringGenerator,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Repository {
     private var possibleTags: Map<String, List<String>>? = null
 
@@ -36,9 +41,9 @@ class MockRepository constructor(
         TODO("Not yet implemented")
     }
 
-    override fun getAllGames(): List<Game> = generateGames()
+    override suspend fun getAllGames(): List<Game> = generateGames()
 
-    private fun generateGames(): List<Game> {
+    private suspend fun generateGames() = withContext(dispatcher) {
         possibleTags = null
         possibleArtists = null
         remainingTracks = null
@@ -59,14 +64,15 @@ class MockRepository constructor(
             games.add(game)
         }
 
+        delay(4000)
+
         Timber.i("Generated ${games.size} games...")
 
         val filteredGames = games
             .distinctBy { it.id }
 
         Timber.i("Returning ${filteredGames.size} games...")
-
-        return filteredGames
+        filteredGames
     }
 
     private fun generateGame(): Game {

@@ -6,5 +6,5 @@ import net.sigmabeta.chipbox.models.Game
 interface Repository {
     fun getAllArtists(): List<Artist>
 
-    fun getAllGames(): List<Game>
+    suspend fun getAllGames(): List<Game>
 }

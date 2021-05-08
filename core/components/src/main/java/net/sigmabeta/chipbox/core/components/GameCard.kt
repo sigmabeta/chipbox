@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.coil.rememberCoilPainter
@@ -26,12 +27,12 @@ fun GameCard(
 ) {
     Card(
         modifier = Modifier
-            .width(192.dp)
-            .clickable(onClick = onClick),
+            .width(256.dp)
+            .padding(8.dp),
         elevation = 16.dp,
         shape = RoundedCornerShape(8.dp)
     ) {
-        Column {
+        Column(Modifier.clickable(onClick = onClick)) {
             Image(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -47,6 +48,8 @@ fun GameCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.subtitle1,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(
                     top = 4.dp,
                     start = 8.dp,
@@ -57,6 +60,8 @@ fun GameCard(
             Text(
                 text = artist,
                 style = MaterialTheme.typography.caption,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(
                     vertical = 4.dp,
                     horizontal = 8.dp

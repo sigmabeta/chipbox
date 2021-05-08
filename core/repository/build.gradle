@@ -2,4 +2,6 @@ apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
 
 dependencies {
     api project(path: ':core:models')
+
+    api "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.4.3"
 }
