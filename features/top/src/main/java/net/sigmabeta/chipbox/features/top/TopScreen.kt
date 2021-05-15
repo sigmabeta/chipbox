@@ -5,15 +5,21 @@ import androidx.compose.material.Card
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltNavGraphViewModel
+import androidx.lifecycle.ViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.insets.navigationBarsPadding
+import dagger.hilt.android.lifecycle.HiltViewModel
 import net.sigmabeta.chipbox.core.components.NavButton
 import net.sigmabeta.chipbox.features.artists.ArtistsScreen
 import net.sigmabeta.chipbox.features.games.GamesScreen
+import net.sigmabeta.chipbox.features.games.GamesViewModel
+import net.sigmabeta.chipbox.repository.Repository
+import javax.inject.Inject
 
 @Composable
 fun TopScreen() {
@@ -51,7 +57,7 @@ fun TopScreen() {
 
 @Composable
 private fun navGraph(): NavGraphBuilder.() -> Unit = {
-    composable("games") { GamesScreen() }
+    composable("games") { GamesScreen(hiltNavGraphViewModel()) }
     composable("artists") { ArtistsScreen() }
 }
 
