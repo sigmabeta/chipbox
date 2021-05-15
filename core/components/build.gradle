@@ -34,6 +34,10 @@ dependencies {
     implementation "androidx.compose.material:material-icons-core:$compose_version"
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
 
+    // TODO Do we need this?
+    // Navigation support
+    implementation "androidx.navigation:navigation-compose:$compose_nav_version"
+
     // Compose support in Layout Inspector
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
     debugImplementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"

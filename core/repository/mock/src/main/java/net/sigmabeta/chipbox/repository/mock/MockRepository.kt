@@ -64,7 +64,7 @@ class MockRepository constructor(
             games.add(game)
         }
 
-        delay(4000)
+//        delay(4000)
 
         Timber.i("Generated ${games.size} games...")
 

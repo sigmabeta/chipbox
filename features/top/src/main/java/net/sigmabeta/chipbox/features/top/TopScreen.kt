@@ -1,35 +1,63 @@
 package net.sigmabeta.chipbox.features.top
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.lazy.GridCells
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyVerticalGrid
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.Card
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.core.components.GameCard
-import net.sigmabeta.chipbox.models.Game
-import timber.log.Timber
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.google.accompanist.insets.navigationBarsPadding
+import net.sigmabeta.chipbox.core.components.NavButton
+import net.sigmabeta.chipbox.features.artists.ArtistsScreen
+import net.sigmabeta.chipbox.features.games.GamesScreen
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TopScreen(topViewModel: TopViewModel) {
-    val games: List<Game> by topViewModel.games.observeAsState(emptyList())
+fun TopScreen() {
+    Column(
+        Modifier
+            .fillMaxHeight()
+            .fillMaxWidth()
+    ) {
+        val navController = rememberNavController()
 
-    LazyVerticalGrid(GridCells.Adaptive(minSize = 192.dp)) {
-        items(games) { game ->
-            GameCard(
-                game.title,
-                game.title.reversed(),
-                "https://randomfox.ca/images/${game.title.hashCode() % 25}.jpg",
-                0,
-            ) {
-                Timber.i("Clicked game: ${game.title}")
-            }
+        NavHost(
+            navController,
+            startDestination = "games",
+            builder = navGraph(),
+            modifier = Modifier
+                .weight(1.0f)
+                .fillMaxWidth()
+        )
+        Card(
+            elevation = 6.dp,
+            modifier = Modifier
+                .wrapContentHeight()
+                .fillMaxWidth()
+        ) {
+            Row(
+                Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth()
+                    .navigationBarsPadding(),
+                content = navButtons(navController)
+            )
         }
     }
 }
+
+@Composable
+private fun navGraph(): NavGraphBuilder.() -> Unit = {
+    composable("games") { GamesScreen() }
+    composable("artists") { ArtistsScreen() }
+}
+
+@Composable
+private fun navButtons(navController: NavHostController): @Composable() (RowScope.() -> Unit) =
+    {
+        NavButton(navController, "games", "Games", Modifier.weight(1.0f))
+        NavButton(navController, "artists", "Artists", Modifier.weight(1.0f))
+    }
