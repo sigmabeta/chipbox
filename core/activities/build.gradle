@@ -18,6 +18,13 @@ dependencies {
     implementation project(path: ':core:strings')
     implementation project(path: ':core:styles')
 
+    // TODO This should be moved to the "styles" module
+    // Material Design Theming
+    implementation "androidx.compose.material:material:$compose_version"
+
+    // Insets
+    implementation "com.google.accompanist:accompanist-insets:$accompanist_version"
+
     // Core AndroidX
     implementation "androidx.core:core-ktx:$core_ktx_version"
     implementation "androidx.appcompat:appcompat:$appcompat_version"

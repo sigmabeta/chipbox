@@ -3,10 +3,6 @@ apply from: "$rootProject.projectDir/di.gradle"
 apply plugin: 'kotlin-kapt'
 
 dependencies {
-    // TODO Features should not depend on other features
-    implementation project(path: ':features:games')
-    implementation project(path: ':features:artists')
-
     implementation project(path: ':core:components')
     implementation project(path: ':core:repository')
 
