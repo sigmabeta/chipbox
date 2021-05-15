@@ -10,7 +10,7 @@
 
     <style name="ChipboxImmersive" parent="ChipboxBaseTheme">
         <item name="android:navigationBarColor">@color/navbarTranslucent</item>
-        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:statusBarColor">@color/navbarTranslucent</item>
     </style>
 
     <!-- The launcher theme. It sets the main window background to the launch_screen drawable -->

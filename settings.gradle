@@ -23,3 +23,5 @@ include ':core:styles'
 
 // Feature Modules (nothing but :app should depend on these)
 include ':features:top'
+include ':features:games'
+include ':features:artists'

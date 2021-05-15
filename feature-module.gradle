@@ -43,7 +43,11 @@ dependencies {
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
 
     // Navigation
-    implementation "androidx.navigation:navigation-compose:1.0.0-alpha10"
+    implementation "androidx.navigation:navigation-compose:$compose_nav_version"
+    implementation "androidx.hilt:hilt-navigation-compose:1.0.0-alpha01"
+
+    // Insets
+    implementation "com.google.accompanist:accompanist-insets:$accompanist_version"
 
     // Compose support in Layout Inspector
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"
