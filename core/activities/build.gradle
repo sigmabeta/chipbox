@@ -12,7 +12,7 @@ android {
 }
 
 dependencies {
-    // These must be transitive dependencies so Dagger can inject these screens.
+    // TODO This module should be merged with top.
     api project(path: ':features:top')
 
     implementation project(path: ':core:strings')
