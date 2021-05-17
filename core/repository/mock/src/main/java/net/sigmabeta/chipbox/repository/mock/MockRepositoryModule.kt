@@ -26,12 +26,14 @@ object MockRepositoryModule {
     fun provideMockRepository(
         random: Random,
         @Named("RngSeed") seed: Long,
-        stringGenerator: StringGenerator
+        stringGenerator: StringGenerator,
+        mockImageUrlGenerator: MockImageUrlGenerator
     ): Repository = MockRepository(
         random,
         seed,
-        stringGenerator
+        stringGenerator,
+        mockImageUrlGenerator
     )
 
-    const val SEED_RANDOM_NUMBER_GENERATOR = 123456L
+    private const val SEED_RANDOM_NUMBER_GENERATOR = 123456L
 }
