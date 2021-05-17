@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.features.games
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
@@ -17,12 +18,17 @@ import timber.log.Timber
 fun GamesScreen(gamesViewModel: GamesViewModel) {
     val games: List<Game> by gamesViewModel.games.observeAsState(emptyList())
 
-    LazyVerticalGrid(GridCells.Adaptive(minSize = 192.dp)) {
-        items(games) { game ->
+    LazyVerticalGrid(
+        GridCells.Adaptive(minSize = 192.dp),
+        contentPadding = PaddingValues(8.dp),
+    ) {
+        items(
+            items = games,
+        ) { game ->
             GameCard(
                 game.title,
-                game.title.reversed(),
-                "https://randomfox.ca/images/${game.title.hashCode() % 25}.jpg",
+                game.artist,
+                game.photoUrl ?: "",
                 0,
             ) {
                 Timber.i("Clicked game: ${game.title}")
