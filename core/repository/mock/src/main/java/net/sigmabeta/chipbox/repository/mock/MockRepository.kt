@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.repository.mock
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
@@ -11,14 +10,13 @@ import net.sigmabeta.chipbox.repository.Repository
 import timber.log.Timber
 import java.io.IOException
 import java.util.*
-import javax.inject.Inject
-import javax.inject.Named
 import kotlin.collections.ArrayList
 
-class MockRepository constructor(
+class MockRepository (
     private val random: Random,
     private val seed: Long,
     private val stringGenerator: StringGenerator,
+    private val mockImageUrlGenerator: MockImageUrlGenerator,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Repository {
     private var possibleTags: Map<String, List<String>>? = null
@@ -72,7 +70,7 @@ class MockRepository constructor(
             .distinctBy { it.id }
 
         Timber.i("Returning ${filteredGames.size} games...")
-        filteredGames
+        filteredGames.sortedBy { it.title }
     }
 
     private fun generateGame(): Game {
@@ -80,7 +78,8 @@ class MockRepository constructor(
         return Game(
             gameId,
             stringGenerator.generateTitle(),
-            null
+            stringGenerator.generateName(),
+            mockImageUrlGenerator.getImageUrl(random.nextInt())
         )
     }
 
