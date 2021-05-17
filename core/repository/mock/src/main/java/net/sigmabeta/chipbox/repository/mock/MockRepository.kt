@@ -79,7 +79,7 @@ class MockRepository (
             gameId,
             stringGenerator.generateTitle(),
             stringGenerator.generateName(),
-            mockImageUrlGenerator.getImageUrl(random.nextInt())
+            mockImageUrlGenerator.getGameImageUrl(random.nextInt())
         )
     }
 
