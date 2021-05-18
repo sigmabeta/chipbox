@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.insets.LocalWindowInsets
 import net.sigmabeta.chipbox.core.components.GameCard
@@ -35,9 +36,15 @@ fun GamesScreen(gamesViewModel: GamesViewModel) {
         items(
             items = games,
         ) { game ->
+            val artist = when {
+                game.variousArtists -> stringResource(id = R.string.caption_various_artists)
+                game.artist == null -> stringResource(id = R.string.caption_unknown_artist)
+                else -> game.artist!! // Tools insist this can be null here, but it can't.
+            }
+
             GameCard(
                 game.title,
-                game.artist,
+                artist,
                 game.photoUrl ?: "",
                 0,
             ) {
