@@ -6,6 +6,6 @@ data class Track(
     val path: String,
     val title: String,
     val gameTitle: String,
-    val artist: String,
+    val artist: String?,
     val platformName: String
 )
