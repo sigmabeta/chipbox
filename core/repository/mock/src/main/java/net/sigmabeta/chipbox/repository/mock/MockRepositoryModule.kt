@@ -35,5 +35,5 @@ object MockRepositoryModule {
         mockImageUrlGenerator
     )
 
-    private const val SEED_RANDOM_NUMBER_GENERATOR = 123456L
+    private const val SEED_RANDOM_NUMBER_GENERATOR = 12345L
 }
