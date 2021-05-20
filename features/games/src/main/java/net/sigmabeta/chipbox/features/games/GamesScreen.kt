@@ -36,10 +36,10 @@ fun GamesScreen(gamesViewModel: GamesViewModel) {
         items(
             items = games,
         ) { game ->
-            val artist = when {
-                game.variousArtists -> stringResource(id = R.string.caption_various_artists)
-                game.artist == null -> stringResource(id = R.string.caption_unknown_artist)
-                else -> game.artist!! // Tools insist this can be null here, but it can't.
+            val artist = when (game.artists?.size ?: 0) {
+                0 -> stringResource(id = R.string.caption_unknown_artist)
+                1 -> game.artists!!.first().name // Tools insist this can be null here, but it can't.
+                else -> stringResource(id = R.string.caption_various_artists)
             }
 
             GameCard(

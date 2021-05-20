@@ -2,4 +2,7 @@
 <resources>
     <string name="cont_desc_game_art">Boxart for game: %1$s</string>
     <string name="cont_desc_game_art_blank">Missing boxart for game: %1$s</string>
+
+    <string name="cont_desc_artist_photo">Photo of artist: $1%s</string>
+    <string name="cont_desc_artist_photo_blank">Missing photo of artist: $1%s</string>
 </resources>
