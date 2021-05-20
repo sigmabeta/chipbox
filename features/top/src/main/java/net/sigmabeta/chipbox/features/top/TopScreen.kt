@@ -58,7 +58,7 @@ fun TopScreen() {
 @Composable
 private fun navGraph(): NavGraphBuilder.() -> Unit = {
     composable("games") { GamesScreen(hiltNavGraphViewModel()) }
-    composable("artists") { ArtistsScreen() }
+    composable("artists") { ArtistsScreen(hiltNavGraphViewModel()) }
 }
 
 @Composable

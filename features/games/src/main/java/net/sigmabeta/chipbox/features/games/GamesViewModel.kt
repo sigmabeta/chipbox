@@ -20,8 +20,6 @@ class GamesViewModel @Inject constructor(
     val games: LiveData<List<Game>> = _games
 
     init {
-        Timber.v("Initializing Viewmodel.")
-
         viewModelScope.launch {
             val games = repository.getAllGames()
             onGamesLoaded(games)

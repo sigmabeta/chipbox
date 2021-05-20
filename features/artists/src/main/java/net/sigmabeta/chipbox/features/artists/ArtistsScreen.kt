@@ -1,21 +1,48 @@
 package net.sigmabeta.chipbox.features.artists
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.material.Text
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.GridCells
+import androidx.compose.foundation.lazy.LazyVerticalGrid
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import com.google.accompanist.insets.statusBarsPadding
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import com.google.accompanist.insets.LocalWindowInsets
+import net.sigmabeta.chipbox.core.components.ArtistCard
+import net.sigmabeta.chipbox.core.components.GameCard
+import net.sigmabeta.chipbox.models.Artist
+import timber.log.Timber
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ArtistsScreen() {
-    Text(
-        "Blue",
-        color = Color.White,
-        modifier = Modifier
-            .wrapContentSize()
-            .background(Color.Blue)
-            .statusBarsPadding()
-    )
+fun ArtistsScreen(artistsViewModel: ArtistsViewModel) {
+    val artists: List<Artist> by artistsViewModel.artists.observeAsState(emptyList())
+    val insets = LocalWindowInsets.current
+
+    LazyVerticalGrid(
+        GridCells.Adaptive(minSize = 192.dp),
+        contentPadding = with(LocalDensity.current) {
+            PaddingValues(
+                insets.navigationBars.left.toDp(),
+                insets.statusBars.top.toDp(),
+                insets.navigationBars.right.toDp(),
+                0.toDp(),
+            )
+        },
+    ) {
+        items(
+            items = artists,
+        ) { artist ->
+            ArtistCard(
+                artist.name,
+                artist.photoUrl ?: "",
+                0,
+            ) {
+                Timber.i("Clicked artist: ${artist.name}")
+            }
+        }
+    }
 }
