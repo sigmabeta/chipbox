@@ -47,10 +47,24 @@ fun GameCard(
 
             Crossfade(targetState = coilPainter.loadState) {
                 when (it) {
-                    ImageLoadState.Empty -> RealImage(title, coilPainter)
-                    ImageLoadState.Loading -> PlaceholderImage()
-                    is ImageLoadState.Error -> PlaceholderImage()
-                    is ImageLoadState.Success -> RealImage(title, coilPainter)
+                    ImageLoadState.Empty -> RealImage(
+                        title,
+                        coilPainter,
+                        R.string.cont_desc_game_art
+                    )
+                    ImageLoadState.Loading -> PlaceholderImage(
+                        R.drawable.img_album_art_blank,
+                        R.string.cont_desc_game_art_blank
+                    )
+                    is ImageLoadState.Error -> PlaceholderImage(
+                        R.drawable.img_album_art_blank,
+                        R.string.cont_desc_game_art_blank
+                    )
+                    is ImageLoadState.Success -> RealImage(
+                        title,
+                        coilPainter,
+                        R.string.cont_desc_game_art
+                    )
                 }
             }
 
@@ -78,32 +92,6 @@ fun GameCard(
             )
         }
     }
-}
-
-@Composable
-private fun RealImage(
-    title: String,
-    coilPainter: LoadPainter<Any>
-) {
-    Image(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1.0f),
-        contentDescription = stringResource(R.string.cont_desc_game_art, title),
-        painter = coilPainter,
-        contentScale = ContentScale.Crop
-    )
-}
-
-@Composable
-private fun PlaceholderImage() {
-    Image(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1.0f),
-        bitmap = ImageBitmap.imageResource(id = R.drawable.img_album_art_blank),
-        contentDescription = stringResource(id = R.string.cont_desc_game_art_blank)
-    )
 }
 
 @Composable
