@@ -49,7 +49,7 @@ fun ArtistCard(
                         coilPainter,
                         R.string.cont_desc_artist_photo
                     )
-                    ImageLoadState.Loading -> PlaceholderImage(
+                    is ImageLoadState.Loading -> PlaceholderImage(
                         R.drawable.img_album_art_blank,
                         R.string.cont_desc_artist_photo_blank
                     )

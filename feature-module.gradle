@@ -44,7 +44,7 @@ dependencies {
 
     // Navigation
     implementation "androidx.navigation:navigation-compose:$compose_nav_version"
-    implementation "androidx.hilt:hilt-navigation-compose:1.0.0-alpha01"
+    implementation "androidx.hilt:hilt-navigation-compose:1.0.0-alpha02"
 
     // Insets
     implementation "com.google.accompanist:accompanist-insets:$accompanist_version"

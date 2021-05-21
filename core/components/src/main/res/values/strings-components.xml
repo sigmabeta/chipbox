@@ -5,4 +5,10 @@
 
     <string name="cont_desc_artist_photo">Photo of artist: $1%s</string>
     <string name="cont_desc_artist_photo_blank">Missing photo of artist: $1%s</string>
+
+    <string name="cont_desc_button_menu">Open Menu</string>
+
+    <string name="label_nav_games">Games</string>
+    <string name="label_nav_artists">Artists</string>
+    <string name="label_nav_playlists">Playlists</string>
 </resources>
