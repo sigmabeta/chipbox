@@ -35,10 +35,6 @@ dependencies {
     implementation "androidx.compose.material:material-icons-core:$compose_version"
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
 
-    // TODO Do we need this?
-    // Navigation support
-    implementation "androidx.navigation:navigation-compose:$compose_nav_version"
-
     // Insets
     implementation "com.google.accompanist:accompanist-insets:$accompanist_version"
 

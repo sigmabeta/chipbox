@@ -8,20 +8,18 @@ import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import com.google.accompanist.insets.WindowInsets
 import net.sigmabeta.chipbox.components.R
 
 @Composable
 fun ChipboxNavBar(
     insets: WindowInsets,
-    navController: NavHostController
+    onNavClick: (destination: String) -> Unit
 ) {
     var selectedId by remember { mutableStateOf(R.string.label_nav_games) }
     BottomAppBar(
@@ -57,10 +55,7 @@ fun ChipboxNavBar(
                 weight
             ) {
                 selectedId = it.labelId
-                navController.navigate(it.destination) {
-                    launchSingleTop = true
-                    popUpTo("games") { }
-                }
+                onNavClick(it.destination)
             }
         }
     }
@@ -80,27 +75,8 @@ fun navButtonList() = listOf(
 
 @Preview
 @Composable
-fun PreviewGamesSelected() {
+fun Preview() {
     ChipboxNavBar(
-        insets = WindowInsets.Empty,
-        navController = NavHostController(LocalContext.current)
-    )
-}
-
-@Preview
-@Composable
-fun PreviewArtistsSelected() {
-    ChipboxNavBar(
-        insets = WindowInsets.Empty,
-        navController = NavHostController(LocalContext.current)
-    )
-}
-
-@Preview
-@Composable
-fun PreviewPlaylistsSelected() {
-    ChipboxNavBar(
-        insets = WindowInsets.Empty,
-        navController = NavHostController(LocalContext.current)
-    )
+        insets = WindowInsets.Empty
+    ) {}
 }

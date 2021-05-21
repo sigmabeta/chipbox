@@ -35,7 +35,12 @@ fun TopScreen() {
 
         val insets = LocalWindowInsets.current
 
-        ChipboxNavBar(insets, navController)
+        ChipboxNavBar(insets) { destination ->
+            navController.navigate(destination) {
+                launchSingleTop = true
+                popUpTo("games") { }
+            }
+        }
     }
 }
 
