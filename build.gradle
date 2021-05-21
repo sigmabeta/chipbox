@@ -37,25 +37,22 @@ buildscript {
         simplestore_version = "0.0.7"
         leakcanary_version = "2.0-beta-3"
         lifecycle_version = "2.3.1"
-        compose_version = "1.0.0-beta06"
-        compose_nav_version = "1.0.0-alpha10"
-        accompanist_version = "0.8.0"
+        compose_version = "1.0.0-beta07"
+        compose_nav_version = "2.4.0-alpha01"
+        accompanist_version = "0.10.0"
         coil_version = "1.2.1"
     }
 
     repositories {
-        jcenter()
         google()
+        mavenCentral()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.0-alpha15'
+        classpath 'com.android.tools.build:gradle:7.0.0-beta02'
 
         // Allows gradle files to be able to build Kotlin.
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-
-        // Realm database plugin.
-        classpath "io.realm:realm-gradle-plugin:$realm_version"
 
         // Hilt DI
         classpath "com.google.dagger:hilt-android-gradle-plugin:$hilt_version"
@@ -64,7 +61,6 @@ buildscript {
 
 allprojects {
     repositories {
-        jcenter()
         google()
         mavenCentral()
     }
