@@ -1,10 +1,15 @@
 package net.sigmabeta.chipbox.features.top
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.*
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltNavGraphViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
@@ -46,7 +51,50 @@ fun TopScreen() {
 
 @Composable
 private fun navGraph(): NavGraphBuilder.() -> Unit = {
-    composable("games") { GamesScreen(hiltViewModel()) }
-    composable("artists") { ArtistsScreen(hiltViewModel()) }
-    composable("playlists") { Text("Todo, lol") }
+    composable("games") {
+        EntryAnimation {
+            GamesScreen(hiltViewModel())
+        }
+    }
+    composable("artists") {
+        EntryAnimation {
+            ArtistsScreen(hiltViewModel())
+        }
+    }
+    composable("playlists") {
+        EntryAnimation {
+            Text(
+                "\n\n\n\n\n\n\nTodo, lol",
+                modifier = Modifier
+                    .fillMaxSize()
+            )
+        }
+    }
+}
+
+// TODO Hacky AF. Once there's a more better API for this, use that.
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun EntryAnimation(content: @Composable () -> Unit) {
+    val visibleState = remember {
+        MutableTransitionState(
+            initialState = false
+        ).apply {
+            targetState = true
+        }
+    }
+
+    AnimatedVisibility(
+        visibleState = visibleState,
+        enter = slideInHorizontally(initialOffsetX = animationOffset()) + fadeIn(),
+        exit = ExitTransition.None
+    )
+    {
+        content()
+    }
+}
+
+@Composable
+private fun animationOffset(): (fullWidth: Int) -> Int = {
+    it / 4
 }

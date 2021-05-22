@@ -37,6 +37,7 @@ fun GameCard(
             val coilPainter = rememberCoilPainter(
                 request = image,
                 previewPlaceholder = previewResourceId,
+                fadeIn = false
             )
 
             Crossfade(targetState = coilPainter.loadState) {
