@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.insets.LocalWindowInsets
 import net.sigmabeta.chipbox.core.components.ChipboxNavBar
@@ -28,6 +30,7 @@ fun TopScreen() {
             .fillMaxWidth()
     ) {
         val navController = rememberNavController()
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
 
         NavHost(
             navController,
@@ -40,10 +43,10 @@ fun TopScreen() {
 
         val insets = LocalWindowInsets.current
 
-        ChipboxNavBar(insets) { destination ->
+        ChipboxNavBar(navBackStackEntry?.destination?.route ?: "", insets) { destination ->
             navController.navigate(destination) {
                 launchSingleTop = true
-                popUpTo("games") { }
+                popUpTo(navController.graph.startDestinationRoute ?: "games") { }
             }
         }
     }
