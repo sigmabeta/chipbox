@@ -43,9 +43,9 @@ fun ChipboxNavBar(
             val selected = it.labelId == selectedId
 
             val weight = if (selected) {
-                Modifier.weight(1.0f)
+                Modifier
             } else {
-                Modifier.weight(0.5f)
+                Modifier.weight(1.0f)
             }
 
             NavButton(

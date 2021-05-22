@@ -2,24 +2,31 @@ package net.sigmabeta.chipbox.core.components
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Button
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.components.R
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun NavButton(
     selected: Boolean,
@@ -28,11 +35,14 @@ fun NavButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+
     Button(
         border = borderStroke(selected),
+        elevation = elevation,
         shape = CircleShape,
         onClick = onClick,
         modifier = modifier
+            .wrapContentSize()
             .background(Color.Transparent)
             .padding(4.dp)
     ) {
@@ -41,9 +51,10 @@ fun NavButton(
             contentDescription = null
         )
 
-        if (selected) {
+        AnimatedVisibility(selected) {
             Text(
                 text = stringResource(labelResource),
+                maxLines = 1,
                 modifier = Modifier.padding(start = 4.dp)
             )
         }
@@ -51,10 +62,29 @@ fun NavButton(
 }
 
 @Composable
-private fun borderStroke(selected: Boolean) = if (selected){
-    BorderStroke(2.dp, MaterialTheme.colors.onPrimary)
-} else {
-    BorderStroke(0.dp, MaterialTheme.colors.primary)
+private fun borderStroke(selected: Boolean) =
+    BorderStroke(
+        animateDpAsState(targetValue = if (selected) 2.dp else 0.dp).value,
+        animateColorAsState(
+            targetValue = if (selected) {
+                MaterialTheme.colors.onPrimary
+            } else {
+                MaterialTheme.colors.primary
+            }
+        ).value
+    )
+
+private val elevation = object : ButtonElevation {
+    @Composable
+    override fun elevation(
+        enabled: Boolean,
+        interactionSource: InteractionSource
+    ): State<Dp> {
+        return object : State<Dp> {
+            override val value: Dp
+                get() = 0.dp
+        }
+    }
 }
 
 @Preview
@@ -63,6 +93,7 @@ fun PreviewNavButtonSelected() {
     Box(
         modifier = Modifier
             .background(MaterialTheme.colors.primary)
+            .fillMaxWidth()
     ) {
         NavButton(
             selected = true,
@@ -79,6 +110,7 @@ fun PreviewNavButtonUnselected() {
     Box(
         modifier = Modifier
             .background(MaterialTheme.colors.primary)
+            .fillMaxWidth()
     ) {
         NavButton(
             selected = false,
@@ -88,3 +120,4 @@ fun PreviewNavButtonUnselected() {
         )
     }
 }
+
