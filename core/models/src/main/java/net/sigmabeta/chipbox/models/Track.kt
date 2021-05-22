@@ -5,8 +5,7 @@ data class Track(
     val number: Int,
     val path: String,
     val title: String,
-    val gameTitle: String,
-    val artists: MutableList<Artist>?,
-    var game: Game?, // TODO make this a val.
+    val artists: List<Artist>?,
+    var game: Game?,
     val platformName: String
 )
