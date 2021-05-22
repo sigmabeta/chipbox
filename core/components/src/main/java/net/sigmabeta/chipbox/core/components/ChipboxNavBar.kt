@@ -18,10 +18,10 @@ import net.sigmabeta.chipbox.components.R
 
 @Composable
 fun ChipboxNavBar(
+    selectedDestination: String,
     insets: WindowInsets,
     onNavClick: (destination: String) -> Unit
 ) {
-    var selectedId by remember { mutableStateOf(R.string.label_nav_games) }
     BottomAppBar(
         contentPadding = with(LocalDensity.current) {
             PaddingValues(
@@ -40,7 +40,7 @@ fun ChipboxNavBar(
         }
 
         navButtonList().forEach {
-            val selected = it.labelId == selectedId
+            val selected = it.destination == selectedDestination
 
             val weight = if (selected) {
                 Modifier
@@ -54,7 +54,6 @@ fun ChipboxNavBar(
                 it.iconId,
                 weight
             ) {
-                selectedId = it.labelId
                 onNavClick(it.destination)
             }
         }
@@ -76,7 +75,12 @@ fun navButtonList() = listOf(
 @Preview
 @Composable
 fun Preview() {
+    var selectedDestination by remember { mutableStateOf("games") }
+
     ChipboxNavBar(
+        selectedDestination = selectedDestination,
         insets = WindowInsets.Empty
-    ) {}
+    ) {
+        selectedDestination = it
+    }
 }
