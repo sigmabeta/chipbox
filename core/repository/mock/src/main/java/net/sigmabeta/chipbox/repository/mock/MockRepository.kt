@@ -8,7 +8,6 @@ import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.repository.Repository
 import timber.log.Timber
-import java.io.IOException
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -19,257 +18,175 @@ class MockRepository(
     private val mockImageUrlGenerator: MockImageUrlGenerator,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Repository {
-    private var possibleTags: Map<String, List<String>>? = null
+    private var games: MutableList<Game> = mutableListOf()
+    private var tracks: MutableList<Track> = mutableListOf()
+    private var artists: MutableList<Artist> = mutableListOf()
 
-    private var possibleArtists: List<Artist>? = null
-
-    private var remainingTracks: List<Track>? = null
-
-    private var games: List<Game>? = null
-    private var tracks: List<Track>? = null
-    private var artists: List<Artist>? = null
-
-    var generateEmptyState = false
-
-    var maxTracks = DEFAULT_MAX_TRACKS
     var maxGames = DEFAULT_MAX_GAMES
-    var maxArtists = DEFAULT_MAX_COMPOSERS
-    var maxTrackssPerGame = DEFAULT_MAX_TRACKS_PER_GAME
-
+    var maxTracksPerGame = DEFAULT_MAX_TRACKS_PER_GAME
 
     override suspend fun getAllArtists(): List<Artist> {
-        if (artists == null) {
+        if (artists.isEmpty()) {
             generateGames()
         }
-        return artists!!
+        return artists.sortedBy { it.name }
     }
 
     override suspend fun getAllGames(): List<Game> {
-        if (games == null) {
+        if (games.isEmpty()) {
             generateGames()
         }
-        return games!!
+        return games.sortedBy { it.title }
+    }
+
+    override suspend fun getAllTracks(): List<Track> {
+        if (tracks.isEmpty()) {
+            generateGames()
+        }
+        return tracks.sortedBy { it.title }
     }
 
     private suspend fun generateGames() {
         withContext(dispatcher) {
-            possibleTags = null
-            possibleArtists = null
-            remainingTracks = null
+            resetData()
 
             random.setSeed(seed)
 
-            if (generateEmptyState) {
-                throw IOException("Arbitrarily failed a network request!")
-            }
-
             val gameCount = random.nextInt(maxGames)
             Timber.i("Generating $gameCount games...")
-            val newGames = ArrayList<Game>(gameCount)
 
             for (gameIndex in 0 until gameCount) {
                 val game = generateGame()
-                newGames.add(game)
+                games.add(game)
             }
 
 //        delay(4000)
 
-            Timber.i("Generated ${newGames.size} games...")
-
-            games = newGames
-                .distinctBy { it.id }
-                .filter { !it.tracks.isNullOrEmpty() }
-                .sortedBy { it.title }
-            tracks = remainingTracks!!
-                .distinctBy { it.id }
-                .filter { it.game != null }
-                .sortedBy { it.title }
-            artists = possibleArtists!!
-                .distinctBy { it.id }
-                .filter { !it.tracks.isNullOrEmpty() }
-                .sortedBy { it.name }
+            Timber.i("Generated ${games.size} games...")
         }
     }
 
     private fun generateGame(): Game {
         val gameId = random.nextLong()
-        val tracks = getTracksForGame()
-        val artists = tracks
-            .map { it.artists }
-            .flatMap { it?.toList() ?: emptyList() }
-            .distinctBy { it.id }
+
+        val artistCount = getArtistCountForGame()
+
+        val artistsForGame = mutableListOf<Artist>()
+
+        for (artistIndex in 0 until artistCount) {
+            val artistToAdd = if (shouldGenerateNewArtist()) {
+                generateArtist()
+            } else {
+                if (artists.isEmpty()) {
+                    generateArtist()
+                } else {
+                    artists.random()
+                }
+            }
+            artistsForGame.add(artistToAdd)
+        }
+
+        val tracks = generateTracksForGame(artistsForGame)
 
         val game = Game(
             gameId,
             stringGenerator.generateTitle(),
-            artists,
+            artistsForGame,
             mockImageUrlGenerator.getGameImageUrl(random.nextInt()),
             tracks
         )
 
-        // TODO Probably switch from generating all games at once to generating games on demand per
-        // TODO game in MockRepository
-        tracks.forEach {
+        game.tracks?.forEach {
             it.game = game
+        }
+
+        game.artists?.forEach {
+            it.games?.add(game)
         }
 
         return game
     }
 
-    private fun getTracksForGame(): List<Track> {
-        if (remainingTracks == null) {
-            generateTracks()
-        }
+    private fun generateTracksForGame(possibleArtists: MutableList<Artist>): List<Track> {
+        val trackCount = random.nextInt(maxTracksPerGame) + 1
+        Timber.d("Generating $trackCount tracks...")
 
-        val availableTracks = remainingTracks!!.toMutableList()
-        val trackCount = random.nextInt(maxTrackssPerGame) + 1
+        val tracks = ArrayList<Track>()
 
-        val tracks = ArrayList<Track>(trackCount)
-
-        val randomNumber = random.nextInt(10)
-        val artistCount = when {
-            randomNumber < 1 -> 0
-            randomNumber < 2 -> 3
-            randomNumber < 4 -> 2
-            else -> 1
-        }
-
-        val artistsForGame = mutableListOf<Artist>()
-
-        for (artistIndex in 0 until artistCount) {
-            artistsForGame.add(possibleArtists!!.random())
-        }
-
-        for (trackIndex in 0 until trackCount) {
-            var removeIndex = -1
-            availableTracks.forEachIndexed { index, track ->
-                if (artistsForGame.isEmpty()) {
-                    if (track.artists == null) {
-                        tracks.add(track)
-                        removeIndex = index
-                        return@forEachIndexed
-                    }
-                }
-
-                if (artistsForGame.size == 1) {
-                    artistsForGame.forEach {
-                        if (track.artists?.first() == it) {
-                            tracks.add(track)
-                            removeIndex = index
-                            return@forEachIndexed
-                        }
-                    }
+        for (trackNumber in 1..trackCount) {
+            val trackArtists = if (shouldTrackHaveOneArtist()) {
+                if (possibleArtists.isEmpty()) {
+                    possibleArtists
                 } else {
-                    artistsForGame.forEach {
-                        if (track.artists?.contains(it) == true) {
-                            tracks.add(track)
-                            removeIndex = index
-                            return@forEachIndexed
-                        }
-                    }
+                    listOf(possibleArtists.random())
                 }
+            } else {
+                possibleArtists
             }
 
-            if (removeIndex >= 0) {
-                availableTracks.removeAt(removeIndex)
-            }
+            val track = generateTrack(trackNumber, trackArtists)
+            tracks.add(track)
         }
 
         return tracks
     }
 
-    private fun generateTracks() {
-        val trackCount = random.nextInt(maxTracks) + 1
-        Timber.d("Generating $trackCount tracks...")
+    private fun shouldTrackHaveOneArtist() = random.nextInt(10) >= 5
 
-        val tracks = ArrayList<Track>()
-        val trackIds = HashSet<Long>(trackCount)
+    private fun shouldGenerateNewArtist() = random.nextInt(10) >= 3
 
-        for (trackIndex in 0 until trackCount) {
-            val track = generateTrack()
-            val newId = track.id
-
-            if (!trackIds.contains(newId)) {
-                tracks.add(track)
-                trackIds.add(newId)
-            }
+    private fun getArtistCountForGame(): Int {
+        val randomNumber = random.nextInt(10)
+        return when {
+            randomNumber < 1 -> 0
+            randomNumber < 2 -> 3
+            randomNumber < 4 -> 2
+            else -> 1
         }
-
-        remainingTracks = tracks
     }
 
-    private fun generateTrack(): Track {
-        val artists = getArtistsForTrack()
+    private fun generateTrack(trackNumber: Int, artists: List<Artist>): Track {
         val track = Track(
             random.nextLong(),
-            random.nextInt(maxTrackssPerGame),
+            trackNumber,
             "",
-            stringGenerator.generateTitle(),
             stringGenerator.generateTitle(),
             artists,
             null,
             stringGenerator.generateTitle()
         )
 
-        artists?.forEach {
+        artists.forEach {
             (it.tracks as MutableList<Track>).add(track)
         }
+
+        tracks.add(track)
 
         return track
     }
 
-    @Suppress("MagicNumber")
-    private fun getArtistsForTrack(): MutableList<Artist>? {
-        if (possibleArtists == null) {
-            generateArtists()
-        }
+    private fun generateArtist(): Artist {
+        val artist = Artist(
+            random.nextLong(),
+            stringGenerator.generateName(),
+            mutableListOf(),
+            mutableListOf(),
+            mockImageUrlGenerator.getArtistImageUrl(random.nextInt())
+        )
 
-        val availableArtists = possibleArtists!!
-        val randomNumber = random.nextInt(10)
-        val artistCount = when {
-            randomNumber < 1 -> return null
-            randomNumber < 2 -> 3
-            randomNumber < 4 -> 2
-            else -> 1
-        }
+        artists.add(artist)
 
-        val artists = ArrayList<Artist>(artistCount)
-
-        for (artistIndex in 0 until artistCount) {
-            val whichArtist = random.nextInt(availableArtists.size - 1)
-            val artist = availableArtists[whichArtist]
-            artists.add(artist)
-        }
-
-        return artists
-            .distinctBy { it.id }
-            .toMutableList()
+        return artist
     }
 
-    private fun generateArtists() {
-        val artistCount = random.nextInt(maxArtists) + 1
-        Timber.i("Generating $artistCount artists...")
-        val artists = ArrayList<Artist>(artistCount)
-
-        for (artistIndex in 0 until artistCount) {
-            val artist = generateArtist()
-            artists.add(artist)
-        }
-
-        possibleArtists = artists.distinctBy { it.id }
+    private fun resetData() {
+        games.clear()
+        tracks.clear()
+        artists.clear()
     }
-
-    private fun generateArtist() = Artist(
-        random.nextLong(),
-        stringGenerator.generateName(),
-        emptyList<Track>().toMutableList(),
-        mockImageUrlGenerator.getArtistImageUrl(random.nextInt())
-    )
 
     companion object {
-        const val DEFAULT_MAX_TRACKS = 2000
         const val DEFAULT_MAX_GAMES = 100
-        const val DEFAULT_MAX_COMPOSERS = 200
         const val DEFAULT_MAX_TRACKS_PER_GAME = 30
 
         const val MAX_WORDS_PER_TITLE = 5
