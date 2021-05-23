@@ -3,14 +3,11 @@ package net.sigmabeta.chipbox.activities
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.compose.material.MaterialTheme
 import androidx.core.view.WindowCompat
 import com.google.accompanist.insets.ProvideWindowInsets
 import dagger.hilt.android.AndroidEntryPoint
-import net.sigmabeta.chipbox.features.top.TopScreen
 import timber.log.Timber
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class RemasterActivity : ComponentActivity() {
