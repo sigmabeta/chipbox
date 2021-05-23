@@ -46,6 +46,13 @@ class MockRepository(
         return tracks.sortedBy { it.title }
     }
 
+    override suspend fun getGame(id: Long): Game? {
+        if (games.isEmpty()) {
+            generateGames()
+        }
+        return games.firstOrNull { it.id == id }
+    }
+
     private suspend fun generateGames() {
         withContext(dispatcher) {
             resetData()

@@ -18,7 +18,7 @@ import timber.log.Timber
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun GamesScreen(gamesViewModel: GamesViewModel) {
+fun GamesScreen(gamesViewModel: GamesViewModel, navigateAction: (Long) -> Unit) {
     val games: List<Game> by gamesViewModel.games.observeAsState(emptyList())
     val insets = LocalWindowInsets.current
 
@@ -46,10 +46,12 @@ fun GamesScreen(gamesViewModel: GamesViewModel) {
                 game.title,
                 artist,
                 game.photoUrl ?: "",
-                0,
+                0
             ) {
                 Timber.i("Clicked game: ${game.title}")
+                navigateAction(game.id)
             }
         }
     }
 }
+

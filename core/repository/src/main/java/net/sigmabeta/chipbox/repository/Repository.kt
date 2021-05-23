@@ -5,9 +5,13 @@ import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Track
 
 interface Repository {
+    // Lists
     suspend fun getAllArtists(): List<Artist>
 
     suspend fun getAllGames(): List<Game>
 
     suspend fun getAllTracks(): List<Track>
+
+    // Individual models
+    suspend fun getGame(id: Long): Game?
 }
