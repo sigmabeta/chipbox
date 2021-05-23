@@ -23,6 +23,9 @@ android {
 }
 
 dependencies {
+    implementation project(path: ':core:components')
+    implementation project(path: ':core:repository')
+
     // Kotlin libs
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     
@@ -48,6 +51,18 @@ dependencies {
 
     // Insets
     implementation "com.google.accompanist:accompanist-insets:$accompanist_version"
+
+    // ViewModel
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
+
+    // Jetpack Compose Integration for ViewModel
+    implementation "androidx.lifecycle:lifecycle-viewmodel-compose:1.0.0-alpha05"
+
+    // Integration with observables
+    implementation "androidx.compose.runtime:runtime-livedata:$compose_version"
+
+    // Logging
+    implementation "com.jakewharton.timber:timber:$timber_version"
 
     // Compose support in Layout Inspector
     debugImplementation "androidx.compose.ui:ui-tooling:$compose_version"

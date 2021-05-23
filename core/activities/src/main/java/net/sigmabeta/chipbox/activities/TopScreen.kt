@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.features.top
+package net.sigmabeta.chipbox.activities
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.MutableTransitionState
