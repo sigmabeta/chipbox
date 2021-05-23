@@ -12,14 +12,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.compose.*
 import com.google.accompanist.insets.LocalWindowInsets
 import net.sigmabeta.chipbox.core.components.ChipboxNavBar
 import net.sigmabeta.chipbox.features.artists.ArtistsScreen
+import net.sigmabeta.chipbox.features.game_detail.GameDetailArguments
+import net.sigmabeta.chipbox.features.game_detail.GameDetailScreen
+import net.sigmabeta.chipbox.features.game_detail.GameDetailViewModel
 import net.sigmabeta.chipbox.features.games.GamesScreen
 
 @Composable
@@ -35,7 +37,7 @@ fun TopScreen() {
         NavHost(
             navController,
             startDestination = "games",
-            builder = navGraph(),
+            builder = navGraph(navController),
             modifier = Modifier
                 .weight(1.0f)
                 .fillMaxWidth()
@@ -53,10 +55,10 @@ fun TopScreen() {
 }
 
 @Composable
-private fun navGraph(): NavGraphBuilder.() -> Unit = {
+private fun navGraph(navController: NavController): NavGraphBuilder.() -> Unit = {
     composable("games") {
         EntryAnimation {
-            GamesScreen(hiltViewModel())
+            GamesScreen(hiltViewModel()) { navController.navigate("game/$it") }
         }
     }
     composable("artists") {
@@ -71,6 +73,17 @@ private fun navGraph(): NavGraphBuilder.() -> Unit = {
                 modifier = Modifier
                     .fillMaxSize()
             )
+        }
+    }
+    composable(
+        "game/{gameId}",
+        arguments = listOf(navArgument("gameId") { type = NavType.LongType })
+    ) {
+        EntryAnimation {
+            val viewModel = hiltViewModel<GameDetailViewModel>()
+            val id = it.arguments?.getLong("gameId")!!
+            viewModel.arguments = GameDetailArguments(id)
+            GameDetailScreen(viewModel)
         }
     }
 }
