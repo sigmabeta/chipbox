@@ -160,6 +160,7 @@ class MockRepository(
             stringGenerator.generateTitle(),
             artists,
             null,
+            random.nextInt(400000).toLong(),
             stringGenerator.generateTitle()
         )
 
