@@ -15,6 +15,7 @@ android {
 dependencies {
     implementation project(":core:image-loading")
     implementation project(":core:drawables")
+    implementation project(":core:models")
 
     // Jetpack Compose
     implementation "androidx.compose.ui:ui:$compose_version"
