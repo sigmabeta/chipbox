@@ -9,7 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.LocalDensity
 import com.google.accompanist.insets.LocalWindowInsets
-import net.sigmabeta.chipbox.core.components.GameCard
+import net.sigmabeta.chipbox.core.components.GameDetailListItem
 import net.sigmabeta.chipbox.core.components.GameTrackListItem
 import net.sigmabeta.chipbox.models.Game
 import timber.log.Timber
@@ -31,13 +31,9 @@ fun GameDetailScreen(gameDetailViewModel: GameDetailViewModel) {
         },
     ) {
         item {
-            GameCard(
-                title = game?.title ?: "Unknown",
-                artist = game?.artists?.first()?.name ?: "Test",
-                image = game?.photoUrl ?: ""
-            ) {
-                Timber.i("Clicked game: ${game?.title}")
-            }
+            GameDetailListItem(
+                game!!
+            )
         }
 
         items(items = game?.tracks ?: emptyList()) {

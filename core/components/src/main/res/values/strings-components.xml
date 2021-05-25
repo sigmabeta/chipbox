@@ -11,4 +11,7 @@
     <string name="label_nav_games">Games</string>
     <string name="label_nav_artists">Artists</string>
     <string name="label_nav_playlists">Playlists</string>
+
+    <string name="caption_track_count">%1$d Tracks</string>
+    <string name="caption_unknown_artist">Unknown Artist</string>
 </resources>
