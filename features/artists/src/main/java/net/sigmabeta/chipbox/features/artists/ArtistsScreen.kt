@@ -12,13 +12,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.insets.LocalWindowInsets
 import net.sigmabeta.chipbox.core.components.ArtistCard
-import net.sigmabeta.chipbox.core.components.GameCard
 import net.sigmabeta.chipbox.models.Artist
 import timber.log.Timber
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ArtistsScreen(artistsViewModel: ArtistsViewModel) {
+fun ArtistsScreen(artistsViewModel: ArtistsViewModel, navigateAction: (Long) -> Unit) {
     val artists: List<Artist> by artistsViewModel.artists.observeAsState(emptyList())
     val insets = LocalWindowInsets.current
 
@@ -42,6 +41,7 @@ fun ArtistsScreen(artistsViewModel: ArtistsViewModel) {
                 0,
             ) {
                 Timber.i("Clicked artist: ${artist.name}")
+                navigateAction(artist.id)
             }
         }
     }

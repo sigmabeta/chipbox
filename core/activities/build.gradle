@@ -12,9 +12,10 @@ android {
 }
 
 dependencies {
-    implementation project(path: ':features:artists')
-    implementation project(path: ':features:games')
-    implementation project(path: ':features:game-detail')
+    api project(path: ':features:artists')
+    api project(path: ':features:artist-detail')
+    api project(path: ':features:games')
+    api project(path: ':features:game-detail')
 
     implementation project(path: ':core:components')
     implementation project(path: ':core:strings')

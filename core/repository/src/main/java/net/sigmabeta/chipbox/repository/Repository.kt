@@ -14,4 +14,6 @@ interface Repository {
 
     // Individual models
     suspend fun getGame(id: Long): Game?
+
+    suspend fun getArtist(id: Long): Artist?
 }
