@@ -18,6 +18,9 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import com.google.accompanist.insets.LocalWindowInsets
 import net.sigmabeta.chipbox.core.components.ChipboxNavBar
+import net.sigmabeta.chipbox.features.artist_detail.ArtistDetailArguments
+import net.sigmabeta.chipbox.features.artist_detail.ArtistDetailScreen
+import net.sigmabeta.chipbox.features.artist_detail.ArtistDetailViewModel
 import net.sigmabeta.chipbox.features.artists.ArtistsScreen
 import net.sigmabeta.chipbox.features.game_detail.GameDetailArguments
 import net.sigmabeta.chipbox.features.game_detail.GameDetailScreen
@@ -63,7 +66,7 @@ private fun navGraph(navController: NavController): NavGraphBuilder.() -> Unit =
     }
     composable("artists") {
         EntryAnimation {
-            ArtistsScreen(hiltViewModel())
+            ArtistsScreen(hiltViewModel()) { navController.navigate("artist/$it") }
         }
     }
     composable("playlists") {
@@ -84,6 +87,17 @@ private fun navGraph(navController: NavController): NavGraphBuilder.() -> Unit =
             val id = it.arguments?.getLong("gameId")!!
             viewModel.arguments = GameDetailArguments(id)
             GameDetailScreen(viewModel)
+        }
+    }
+    composable(
+        "artist/{artistId}",
+        arguments = listOf(navArgument("artistId") { type = NavType.LongType })
+    ) {
+        EntryAnimation {
+            val viewModel = hiltViewModel<ArtistDetailViewModel>()
+            val id = it.arguments?.getLong("artistId")!!
+            viewModel.arguments = ArtistDetailArguments(id)
+            ArtistDetailScreen(viewModel)
         }
     }
 }

@@ -83,11 +83,6 @@ dependencies {
     implementation project(path: ':core:activities')
     implementation project(path: ':core:repository:mock')
 
-    // App needs to depend on all features for Hilt injection to work.
-    implementation project(path: ':features:artists')
-    implementation project(path: ':features:games')
-    implementation project(path: ':features:game-detail')
-
     // Contains the Kotlin Standard Library
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
