@@ -97,7 +97,7 @@ fun PreviewSingleArtist() {
             title = "Neo Turf Masters",
             artist = "Takushi Hiyamuta",
             image = "",
-            previewResourceId = R.drawable.neo_turf_masters
+            previewResourceId = R.drawable.game_tall
         ) { }
     }
 }
@@ -110,7 +110,7 @@ fun PreviewVariousArtists() {
             title = "Leading Company",
             artist = "Various Artists",
             image = "",
-            previewResourceId = R.drawable.leading_company
+            previewResourceId = R.drawable.game_wide
         ) { }
     }
 }

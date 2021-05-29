@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -72,7 +71,7 @@ fun ArtistCard(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
-                .padding(8.dp)
+                .padding(top = 8.dp, start = 8.dp, end = 8.dp)
                 .align(Alignment.CenterHorizontally)
         )
     }
@@ -80,12 +79,24 @@ fun ArtistCard(
 
 @Composable
 @Preview
-fun PreviewArtist() {
+fun PreviewTallArtist() {
     MaterialTheme {
         ArtistCard(
             name = "Takushi Hiyamuta",
             image = "",
-            previewResourceId = R.drawable.sample_artist
+            previewResourceId = R.drawable.artist_tall
+        ) { }
+    }
+}
+
+@Composable
+@Preview
+fun PreviewWideArtist() {
+    MaterialTheme {
+        ArtistCard(
+            name = "Hitoshi Sakimoto",
+            image = "",
+            previewResourceId = R.drawable.artist_wide
         ) { }
     }
 }
