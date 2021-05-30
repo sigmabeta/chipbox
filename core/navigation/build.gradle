@@ -1,0 +1,19 @@
+apply from: "$rootProject.projectDir/core-android-module.gradle"
+
+dependencies {
+    api project(path: ':features:artists')
+    api project(path: ':features:artist-detail')
+    api project(path: ':features:games')
+    api project(path: ':features:game-detail')
+
+    // ViewModel
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version"
+
+    // Jetpack Compose
+    implementation "androidx.compose.ui:ui:$compose_version"
+    implementation "androidx.compose.animation:animation:$compose_version"
+
+    // Navigation
+    implementation "androidx.navigation:navigation-compose:$compose_nav_version"
+    implementation "androidx.hilt:hilt-navigation-compose:1.0.0-alpha02"
+}
