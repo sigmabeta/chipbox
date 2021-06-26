@@ -5,27 +5,35 @@ apply plugin: 'kotlin-kapt'
 apply from: "$rootProject.projectDir/di.gradle"
 
 def getVersionCode = { ->
-    def proc = Runtime.getRuntime().exec("git rev-list --all --count")
+    try {
+        def proc = Runtime.getRuntime().exec("git.exe rev-list --all --count")
 
-    def result = proc.waitFor()
-    if (result != 0) {
-        return 1 // no git revisions
+        def result = proc.waitFor()
+        if (result != 0) {
+            return 1 // no git revisions
+        }
+
+        // Add a million because of previous versionCode problems.
+        // Multiply by 10 so LSB can represent build type.
+        return (proc.getInputStream().readLines().get(0).toInteger() * 10) + 1000000
+    } catch (exception) {
+        return 1
     }
-
-    // Add a million because of previous versionCode problems.
-    // Multiply by 10 so LSB can represent build type.
-    return (proc.getInputStream().readLines().get(0).toInteger() * 10 ) + 1000000
 }
 
 def getVersionName = { ->
-    def proc = Runtime.getRuntime().exec("git describe --tags")
+    try {
+        def proc = Runtime.getRuntime().exec("git.exe describe --tags")
 
-    def result = proc.waitFor()
-    if (result != 0) {
+        def result = proc.waitFor()
+        if (result != 0) {
+            return "git-error"
+        }
+
+        return proc.getInputStream().readLines().get(0)
+    } catch (exception) {
         return "git-error"
     }
-
-    return proc.getInputStream().readLines().get(0)
 }
 
 android {
