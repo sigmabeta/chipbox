@@ -19,11 +19,19 @@ class MockImageUrlGenerator @Inject constructor(
     }
 
     fun getGameImageUrl(seed: Int): String {
+        if (gameImageList.isEmpty()) {
+            return "no images in project assets folder"
+        }
+
         val index = seed.absoluteValue % gameImageList.size
         return gameImageList[index]
     }
 
     fun getArtistImageUrl(seed: Int): String {
+        if (gameImageList.isEmpty()) {
+            return "no images in project assets folder"
+        }
+
         val index = seed.absoluteValue % artistImageList.size
         return artistImageList[index]
     }
