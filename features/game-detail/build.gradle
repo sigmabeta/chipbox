@@ -1,6 +1,5 @@
 apply from: "$rootProject.projectDir/feature-module.gradle"
 apply from: "$rootProject.projectDir/di.gradle"
-apply plugin: 'kotlin-kapt'
 
 dependencies {
 
