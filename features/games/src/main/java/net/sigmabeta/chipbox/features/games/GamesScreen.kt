@@ -49,7 +49,7 @@ fun GamesScreen(gamesViewModel: GamesViewModel, navigateAction: (String) -> Unit
                 0
             ) {
                 Timber.i("Clicked game: ${game.title}")
-                navigateAction("game/$game.id")
+                navigateAction("game/${game.id}")
             }
         }
     }

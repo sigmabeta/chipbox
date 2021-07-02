@@ -1,5 +1,15 @@
 apply from: "$rootProject.projectDir/core-android-module.gradle"
 
+android {
+    buildFeatures {
+        compose true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion "$compose_version"
+    }
+}
+
 dependencies {
     api project(path: ':features:artists')
     api project(path: ':features:artist-detail')

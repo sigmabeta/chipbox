@@ -17,7 +17,7 @@ import timber.log.Timber
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ArtistsScreen(artistsViewModel: ArtistsViewModel, navigateAction: (Long) -> Unit) {
+fun ArtistsScreen(artistsViewModel: ArtistsViewModel, navigateAction: (String) -> Unit) {
     val artists: List<Artist> by artistsViewModel.artists.observeAsState(emptyList())
     val insets = LocalWindowInsets.current
 
@@ -41,7 +41,7 @@ fun ArtistsScreen(artistsViewModel: ArtistsViewModel, navigateAction: (Long) -> 
                 0,
             ) {
                 Timber.i("Clicked artist: ${artist.name}")
-                navigateAction(artist.id)
+                navigateAction("artist/${artist.id}")
             }
         }
     }

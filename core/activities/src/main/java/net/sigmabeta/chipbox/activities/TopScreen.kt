@@ -1,12 +1,13 @@
 package net.sigmabeta.chipbox.activities
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
@@ -38,11 +39,20 @@ fun TopScreen() {
         )
 
         val insets = LocalWindowInsets.current
+        val context = LocalContext.current
 
         ChipboxNavBar(navBackStackEntry?.destination?.route ?: "", insets) { destination ->
-            navController.navigate(destination) {
-                launchSingleTop = true
-                popUpTo(navController.graph.startDestinationRoute ?: "games") { }
+            try {
+                navController.navigate(destination) {
+                    launchSingleTop = true
+                    popUpTo(navController.graph.startDestinationRoute ?: "games") { }
+                }
+            } catch (ex: IllegalArgumentException) {
+                Toast.makeText(
+                    context,
+                    "Couldn't generate a screen for route \"$destination\"",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
@@ -53,50 +63,9 @@ private fun navGraph(navController: NavController): NavGraphBuilder.() -> Unit =
     val destinationList = destinations { navController.navigate(it) }
 
     destinationList.forEach { destination ->
-        composable(destination.name) {
-            ComposableOutput(destination, hiltViewModel())
+        composable(destination.route, destination.arguments) {
+            ComposableOutput(destination, it.arguments)
         }
     }
-//    composable("games") {
-//        EntryAnimation {
-//            GamesScreen(hiltViewModel()) { navController.navigate("game/$it") }
-//        }
-//    }
-//    composable("artists") {
-//        EntryAnimation {
-//            ArtistsScreen(hiltViewModel()) { navController.navigate("artist/$it") }
-//        }
-//    }
-//    composable("playlists") {
-//        EntryAnimation {
-//            Text(
-//                "\n\n\n\n\n\n\nTodo, lol",
-//                modifier = Modifier
-//                    .fillMaxSize()
-//            )
-//        }
-//    }
-//    composable(
-//        "game/{gameId}",
-//        arguments = listOf(navArgument("gameId") { type = NavType.LongType })
-//    ) {
-//        EntryAnimation {
-//            val viewModel = hiltViewModel<GameDetailViewModel>()
-//            val id = it.arguments?.getLong("gameId")!!
-//            viewModel.arguments = GameDetailArguments(id)
-//            GameDetailScreen(viewModel)
-//        }
-//    }
-//    composable(
-//        "artist/{artistId}",
-//        arguments = listOf(navArgument("artistId") { type = NavType.LongType })
-//    ) {
-//        EntryAnimation {
-//            val viewModel = hiltViewModel<ArtistDetailViewModel>()
-//            val id = it.arguments?.getLong("artistId")!!
-//            viewModel.arguments = ArtistDetailArguments(id)
-//            ArtistDetailScreen(viewModel)
-//        }
-//    }
 }
 

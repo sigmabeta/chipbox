@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.navigation
 
+import android.os.Bundle
 import androidx.compose.animation.*
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.runtime.Composable
@@ -10,7 +11,8 @@ import androidx.lifecycle.ViewModel
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun EntryAnimation(
-    content: @Composable (ViewModel) -> Unit,
+    content: @Composable (ViewModel, Bundle?) -> Unit,
+    arguments: Bundle?,
     viewModel: ViewModel
 ) {
     val visibleState = remember {
@@ -27,7 +29,7 @@ fun EntryAnimation(
         exit = ExitTransition.None
     )
     {
-        content(viewModel)
+        content(viewModel, arguments)
     }
 }
 
