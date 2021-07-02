@@ -1,7 +1,5 @@
 apply from: "$rootProject.projectDir/core-android-module.gradle"
 
-apply plugin: 'kotlin-kapt'
-
 android {
     buildFeatures {
         compose true
