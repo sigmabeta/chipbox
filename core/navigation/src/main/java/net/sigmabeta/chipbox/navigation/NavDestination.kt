@@ -1,22 +1,18 @@
 package net.sigmabeta.chipbox.navigation
 
+import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
+import androidx.navigation.compose.NamedNavArgument
 
 open class NavDestination(
-    val name: String,
-    private val id: Long?,
-    private val navigateAction: (String) -> Unit,
-    val content: (@Composable (ViewModel) -> Unit)
-) {
-    fun getRoute(otherDestinationId: Long?) = when {
-        otherDestinationId != null -> "$name/$otherDestinationId"
-        this.id != null -> "$name/$id"
-        else -> name
-    }
-}
+    val route: String,
+    val arguments: List<NamedNavArgument>,
+    val content: (@Composable (ViewModel, Bundle?) -> Unit),
+    val viewModelGenerator: @Composable () -> ViewModel
+)
 
 @Composable
-fun ComposableOutput(navDestination: NavDestination, viewModel: ViewModel) {
-    EntryAnimation(navDestination.content, viewModel)
+fun ComposableOutput(navDestination: NavDestination, arguments: Bundle?) {
+    EntryAnimation(navDestination.content, arguments, navDestination.viewModelGenerator())
 }

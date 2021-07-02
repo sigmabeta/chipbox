@@ -19,7 +19,7 @@ class GameDetailViewModel @Inject constructor(
         set(value) {
             if (value != null) {
                 field = value
-                loadGameDetail(value?.id)
+                loadGameDetail(value.id)
             } else {
                 onLoadError()
             }

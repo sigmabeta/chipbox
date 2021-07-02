@@ -9,6 +9,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.repository.Repository
+import timber.log.Timber
 import javax.inject.Inject
 
 @HiltViewModel
@@ -19,6 +20,7 @@ class ArtistsViewModel @Inject constructor(
     val artists: LiveData<List<Artist>> = _artists
 
     init {
+        Timber.v("Creating ArtistsViewModel")
         viewModelScope.launch {
             val artists = repository.getAllArtists()
             onArtistsLoaded(artists)
