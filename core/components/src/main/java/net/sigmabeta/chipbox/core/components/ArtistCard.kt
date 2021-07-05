@@ -84,7 +84,7 @@ fun PreviewTallArtist() {
         ArtistCard(
             name = "Takushi Hiyamuta",
             image = "",
-            previewResourceId = R.drawable.artist_tall
+            previewResourceId = R.drawable.square_pixels
         ) { }
     }
 }
@@ -96,7 +96,7 @@ fun PreviewWideArtist() {
         ArtistCard(
             name = "Hitoshi Sakimoto",
             image = "",
-            previewResourceId = R.drawable.artist_wide
+            previewResourceId = R.drawable.square_pixels
         ) { }
     }
 }
