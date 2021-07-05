@@ -47,7 +47,7 @@ fun PreviewGameListItem() {
                 "urlol",
                 null
             ),
-            previewResourceId = R.drawable.game_tall
+            previewResourceId = R.drawable.square_pixels
         )
     }
 }
@@ -64,7 +64,7 @@ fun PreviewUnknownArtist() {
                 "urlol",
                 null
             ),
-            previewResourceId = R.drawable.game_wide
+            previewResourceId = R.drawable.square_pixels
         )
     }
 }

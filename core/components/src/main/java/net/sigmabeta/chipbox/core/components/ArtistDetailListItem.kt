@@ -49,7 +49,7 @@ fun PreviewArtistListItem() {
                 null,
                 null
             ),
-            previewResourceId = R.drawable.artist_wide
+            previewResourceId = R.drawable.square_pixels
         )
     }
 }
@@ -86,7 +86,7 @@ fun PreviewTwoTracks() {
                 null,
                 null
             ),
-            previewResourceId = R.drawable.artist_tall
+            previewResourceId = R.drawable.square_pixels
         )
     }
 }
