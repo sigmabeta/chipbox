@@ -18,7 +18,7 @@ dependencies {
     implementation project(path: ':core:strings')
     implementation project(path: ':core:styles')
 
-    // TODO This should be moved to the "styles" module
+    // TODO This should be moved to o,0. module
     // Material Design Theming
     implementation "androidx.compose.material:material:$compose_version"
 
