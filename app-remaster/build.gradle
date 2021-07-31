@@ -37,7 +37,7 @@ def getVersionName = { ->
 }
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 30
 
     compileOptions {
         sourceCompatibility 1.8
@@ -48,7 +48,7 @@ android {
         applicationId "net.sigmabeta.chipbox"
 
         minSdkVersion 21
-        targetSdkVersion 28
+        targetSdkVersion 30
 
         versionName getVersionName()
     }
