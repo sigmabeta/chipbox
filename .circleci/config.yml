@@ -48,17 +48,8 @@ jobs:
         name: Get all Git tags
         command: git fetch --tags
     - run:
-        name: Build Arm
-        command: ./gradlew assembleArmRelease -PdisablePreDex
-    - run:
-        name: Build Arm64
-        command: ./gradlew assembleArm_64Release -PdisablePreDex
-    - run:
-        name: Build x86
-        command: ./gradlew assembleX86Release -PdisablePreDex
-    - run:
-        name: Build x86_64
-        command: ./gradlew assembleX86_64Release -PdisablePreDex
+        name: Build App Remastered
+        command: ./gradlew app-remaster:assembleRelease -PdisablePreDex
     - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
         path: app/build/outputs/
         destination: artifacts
