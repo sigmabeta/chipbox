@@ -13,26 +13,21 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.insets.WindowInsets
+import com.google.accompanist.insets.LocalWindowInsets
 import net.sigmabeta.chipbox.components.R
 
 @Composable
 fun ChipboxNavBar(
     selectedDestination: String,
-    insets: WindowInsets,
-    onNavClick: (destination: String) -> Unit
+    contentPadding: PaddingValues,
+    onNavClick: (destination: String) -> Unit,
+    onMenuClick: () -> Unit
 ) {
     BottomAppBar(
-        contentPadding = with(LocalDensity.current) {
-            PaddingValues(
-                insets.navigationBars.left.toDp(),
-                0.dp,
-                insets.navigationBars.right.toDp() + 4.dp,
-                insets.navigationBars.bottom.toDp(),
-            )
-        }
+        contentPadding = contentPadding,
+        elevation = 0.dp
     ) {
-        IconButton(onClick = { /*TODO*/ }) {
+        IconButton(onClick = onMenuClick) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_menu_24),
                 contentDescription = stringResource(R.string.cont_desc_button_menu)
@@ -76,11 +71,23 @@ fun navButtonList() = listOf(
 @Composable
 fun Preview() {
     var selectedDestination by remember { mutableStateOf("games") }
+    val insets = LocalWindowInsets.current
 
     ChipboxNavBar(
         selectedDestination = selectedDestination,
-        insets = WindowInsets.Empty
-    ) {
-        selectedDestination = it
-    }
+        contentPadding = with(LocalDensity.current) {
+            PaddingValues(
+                insets.navigationBars.left.toDp(),
+                0.dp,
+                insets.navigationBars.right.toDp() + 4.dp,
+                insets.navigationBars.bottom.toDp(),
+            )
+        },
+        onNavClick = {
+            selectedDestination = it
+        },
+        onMenuClick = {
+
+        }
+    )
 }

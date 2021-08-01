@@ -2,12 +2,15 @@ package net.sigmabeta.chipbox.activities
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
@@ -41,20 +44,40 @@ fun TopScreen() {
         val insets = LocalWindowInsets.current
         val context = LocalContext.current
 
-        ChipboxNavBar(navBackStackEntry?.destination?.route ?: "", insets) { destination ->
-            try {
-                navController.navigate(destination) {
-                    launchSingleTop = true
-                    popUpTo(navController.graph.startDestinationRoute ?: "games") { }
+        ChipboxNavBar(
+            navBackStackEntry?.destination?.route ?: "",
+            contentPadding = with(LocalDensity.current) {
+                PaddingValues(
+                    insets.navigationBars.left.toDp(),
+                    0.dp,
+                    insets.navigationBars.right.toDp() + 4.dp,
+                    insets.navigationBars.bottom.toDp(),
+                )
+            },
+            onNavClick = { destination ->
+                try {
+                    navController.navigate(destination) {
+                        launchSingleTop = true
+                        popUpTo(
+                            navController.graph.startDestinationRoute ?: "games"
+                        ) { }
+                    }
+                } catch (ex: IllegalArgumentException) {
+                    Toast.makeText(
+                        context,
+                        "Couldn't generate a screen for route \"$destination\"",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
-            } catch (ex: IllegalArgumentException) {
+            },
+            onMenuClick = {
                 Toast.makeText(
                     context,
-                    "Couldn't generate a screen for route \"$destination\"",
+                    "Open menu.",
                     Toast.LENGTH_SHORT
                 ).show()
             }
-        }
+        )
     }
 }
 
