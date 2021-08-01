@@ -90,6 +90,7 @@ android {
 dependencies {
     implementation project(path: ':core:activities')
     implementation project(path: ':core:repository:mock')
+    implementation project(path: ':core:scanner:mock')
 
     // Contains the Kotlin Standard Library
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
