@@ -16,6 +16,8 @@ include ':core:models'
 include ':core:navigation'
 include ':core:repository'
 include ':core:repository:mock'
+include ':core:scanner'
+include ':core:scanner:mock'
 include ':core:strings'
 include ':core:styles'
 
