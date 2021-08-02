@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import net.sigmabeta.chipbox.repository.mock.MockRepository
 import net.sigmabeta.chipbox.scanner.Scanner
 import javax.inject.Singleton
 
@@ -12,5 +13,5 @@ import javax.inject.Singleton
 object MockScannerModule {
     @Provides
     @Singleton
-    fun provideMockScanner(): Scanner = MockScanner()
+    fun provideMockScanner(mockRepository: MockRepository): Scanner = MockScanner(mockRepository)
 }
