@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -19,6 +21,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.insets.LocalWindowInsets
 import net.sigmabeta.chipbox.core.components.ChipboxNavBar
+import net.sigmabeta.chipbox.core.components.MenuItemDefinition
 import net.sigmabeta.chipbox.navigation.ComposableOutput
 import net.sigmabeta.chipbox.navigation.destinations
 
@@ -44,6 +47,8 @@ fun TopScreen() {
         val insets = LocalWindowInsets.current
         val context = LocalContext.current
 
+        val menuVisible = remember { mutableStateOf(false) }
+
         ChipboxNavBar(
             navBackStackEntry?.destination?.route ?: "",
             contentPadding = with(LocalDensity.current) {
@@ -54,6 +59,20 @@ fun TopScreen() {
                     insets.navigationBars.bottom.toDp(),
                 )
             },
+            menuVisible = menuVisible.value,
+            listOf(
+                MenuItemDefinition(
+                    R.drawable.ic_refresh_24,
+                    R.string.menu_label_scan_for_music
+                ) {
+                    Toast.makeText(
+                        context,
+                        "Scan Library",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    menuVisible.value = false
+                }
+            ),
             onNavClick = { destination ->
                 try {
                     navController.navigate(destination) {
@@ -71,11 +90,7 @@ fun TopScreen() {
                 }
             },
             onMenuClick = {
-                Toast.makeText(
-                    context,
-                    "Open menu.",
-                    Toast.LENGTH_SHORT
-                ).show()
+                menuVisible.value = !menuVisible.value
             }
         )
     }
