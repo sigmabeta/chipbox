@@ -35,7 +35,10 @@ fun BottomMenuItem(
                 .align(CenterVertically)
                 .height(48.dp)
                 .width(48.dp)
-                .padding(10.dp)
+                .padding(
+                    start = 14.dp,
+                    end = 0.dp
+                )
         )
         Text(
             text = stringResource(id = labelId),
@@ -43,7 +46,7 @@ fun BottomMenuItem(
             style = MaterialTheme.typography.body1,
             modifier = Modifier
                 .align(CenterVertically)
-                .padding(start = 8.dp, end = 16.dp)
+                .padding(start = 10.dp, end = 16.dp)
                 .weight(1.0f)
         )
     }

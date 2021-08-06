@@ -8,9 +8,12 @@ import androidx.core.view.WindowCompat
 import com.google.accompanist.insets.ProvideWindowInsets
 import dagger.hilt.android.AndroidEntryPoint
 import timber.log.Timber
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class RemasterActivity : ComponentActivity() {
+    @Inject lateinit var topViewModel: TopViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.ChipboxImmersive)
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -27,7 +30,7 @@ class RemasterActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 ProvideWindowInsets {
-                    TopScreen()
+                    TopScreen(topViewModel)
                 }
             }
         }

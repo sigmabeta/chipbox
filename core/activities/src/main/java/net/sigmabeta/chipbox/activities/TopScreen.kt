@@ -1,14 +1,12 @@
 package net.sigmabeta.chipbox.activities
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -20,13 +18,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.insets.LocalWindowInsets
+import com.google.accompanist.insets.WindowInsets
 import net.sigmabeta.chipbox.core.components.ChipboxNavBar
 import net.sigmabeta.chipbox.core.components.MenuItemDefinition
+import net.sigmabeta.chipbox.models.state.ScannerEvent
+import net.sigmabeta.chipbox.models.state.ScannerState
 import net.sigmabeta.chipbox.navigation.ComposableOutput
 import net.sigmabeta.chipbox.navigation.destinations
 
 @Composable
-fun TopScreen() {
+fun TopScreen(viewModel: TopViewModel) {
     Column(
         Modifier
             .fillMaxHeight()
@@ -49,52 +50,66 @@ fun TopScreen() {
 
         val menuVisible = remember { mutableStateOf(false) }
 
+        val scannerState = viewModel.scannerStates.collectAsState(initial = ScannerState.Unknown).value
+        val lastScannerEvent = viewModel.scannerEvents.collectAsState(initial = ScannerEvent.Unknown).value
+
         ChipboxNavBar(
             navBackStackEntry?.destination?.route ?: "",
-            contentPadding = with(LocalDensity.current) {
-                PaddingValues(
-                    insets.navigationBars.left.toDp(),
-                    0.dp,
-                    insets.navigationBars.right.toDp() + 4.dp,
-                    insets.navigationBars.bottom.toDp(),
-                )
-            },
+            contentPadding = navBarPadding(insets),
             menuVisible = menuVisible.value,
-            listOf(
-                MenuItemDefinition(
-                    R.drawable.ic_refresh_24,
-                    R.string.menu_label_scan_for_music
-                ) {
-                    Toast.makeText(
-                        context,
-                        "Scan Library",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    menuVisible.value = false
-                }
-            ),
-            onNavClick = { destination ->
-                try {
-                    navController.navigate(destination) {
-                        launchSingleTop = true
-                        popUpTo(
-                            navController.graph.startDestinationRoute ?: "games"
-                        ) { }
-                    }
-                } catch (ex: IllegalArgumentException) {
-                    Toast.makeText(
-                        context,
-                        "Couldn't generate a screen for route \"$destination\"",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            },
-            onMenuClick = {
-                menuVisible.value = !menuVisible.value
-            }
+            menuItems = menuItems(viewModel, menuVisible),
+            scannerState,
+            lastScannerEvent,
+            onNavClick = navClickHandler(navController, context),
+            onMenuClick = { menuVisible.value = !menuVisible.value }
         )
     }
 }
+
+fun navClickHandler(navController: NavController, context: Context): (destination: String) -> Unit {
+    return { destination ->
+        try {
+            navController.navigate(destination) {
+                launchSingleTop = true
+                popUpTo(
+                    navController.graph.startDestinationRoute ?: "games"
+                ) { }
+            }
+        } catch (ex: IllegalArgumentException) {
+            Toast.makeText(
+                context,
+                "Couldn't generate a screen for route \"$destination\"",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+}
+
+@Composable
+private fun navBarPadding(insets: WindowInsets) : PaddingValues {
+    with(LocalDensity.current) {
+        return PaddingValues(
+            insets.navigationBars.left.toDp(),
+            0.dp,
+            insets.navigationBars.right.toDp() + 4.dp,
+            insets.navigationBars.bottom.toDp(),
+        )
+    }
+}
+
+@Composable
+private fun menuItems(
+    viewModel: TopViewModel,
+    menuVisible: MutableState<Boolean>
+) = listOf(
+    MenuItemDefinition(
+        R.drawable.ic_refresh_24,
+        R.string.menu_label_scan_for_music
+    ) {
+        viewModel.startScan()
+        menuVisible.value = false
+    }
+)
 
 @Composable
 private fun navGraph(navController: NavController): NavGraphBuilder.() -> Unit = {

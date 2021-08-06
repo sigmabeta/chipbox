@@ -23,12 +23,26 @@ object MockRepositoryModule {
 
     @Provides
     @Singleton
-    fun provideMockRepository(
+    fun provideRepository(
         random: Random,
         @Named("RngSeed") seed: Long,
         stringGenerator: StringGenerator,
         mockImageUrlGenerator: MockImageUrlGenerator
     ): Repository = MockRepository(
+        random,
+        seed,
+        stringGenerator,
+        mockImageUrlGenerator
+    )
+
+    @Provides
+    @Singleton
+    fun provideMockRepository(
+        random: Random,
+        @Named("RngSeed") seed: Long,
+        stringGenerator: StringGenerator,
+        mockImageUrlGenerator: MockImageUrlGenerator
+    ) = MockRepository(
         random,
         seed,
         stringGenerator,

@@ -18,7 +18,9 @@ dependencies {
     implementation project(path: ':core:strings')
     implementation project(path: ':core:styles')
 
-    // TODO This should be moved to o,0. module
+    // TODO For TopViewModel. Should be moved into a module
+    implementation project(path: ':core:scanner')
+
     // Material Design Theming
     implementation "androidx.compose.material:material:$compose_version"
 
