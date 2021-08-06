@@ -8,10 +8,19 @@
 
     <string name="cont_desc_button_menu">Open Menu</string>
 
+    <string name="cont_desc_scan_game">Newly found image for game: $1%s</string>
+    <string name="cont_desc_scan_game_blank">No image found for game: $1%s</string>
+
     <string name="label_nav_games">Games</string>
     <string name="label_nav_artists">Artists</string>
     <string name="label_nav_playlists">Playlists</string>
 
     <string name="caption_track_count">%1$d Tracks</string>
     <string name="caption_unknown_artist">Unknown Artist</string>
+
+    <string name="scan_display_complete">Scan Complete</string>
+    <string name="scan_display_time">Time</string>
+    <string name="scan_display_games">Games Found</string>
+    <string name="scan_display_tracks">Tracks Found</string>
+    <string name="scan_display_errors">Tracks With Errors</string>
 </resources>
