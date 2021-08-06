@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.BottomAppBar
@@ -21,14 +22,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.insets.LocalWindowInsets
 import net.sigmabeta.chipbox.components.R
+import net.sigmabeta.chipbox.models.state.ScannerEvent
+import net.sigmabeta.chipbox.models.state.ScannerState
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun ChipboxNavBar(
     selectedDestination: String,
     contentPadding: PaddingValues,
     menuVisible: Boolean,
     menuItems: List<MenuItemDefinition>,
+    scannerState: ScannerState,
+    lastScannerEvent: ScannerEvent,
     onNavClick: (destination: String) -> Unit,
     onMenuClick: () -> Unit
 ) {
@@ -37,44 +41,76 @@ fun ChipboxNavBar(
             .background(color = MaterialTheme.colors.primary)
             .padding(contentPadding)
     ) {
-        BottomAppBar(
-            elevation = 0.dp
-        ) {
-            IconButton(onClick = onMenuClick) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_menu_24),
-                    contentDescription = stringResource(R.string.cont_desc_button_menu)
-                )
-            }
+        NavMenu(onMenuClick, selectedDestination, onNavClick)
+        ScannerDisplay(scannerState, lastScannerEvent)
+        Menu(menuVisible, menuItems)
+    }
+}
 
-            navButtonList().forEach {
-                val selected = it.destination == selectedDestination
-
-                val weight = if (selected) {
-                    Modifier
-                } else {
-                    Modifier.weight(1.0f)
-                }
-
-                NavButton(
-                    selected,
-                    it.labelId,
-                    it.iconId,
-                    weight
-                ) {
-                    onNavClick(it.destination)
-                }
-            }
+@Composable
+private fun NavMenu(
+    onMenuClick: () -> Unit,
+    selectedDestination: String,
+    onNavClick: (destination: String) -> Unit
+) {
+    BottomAppBar(
+        elevation = 0.dp
+    ) {
+        IconButton(onClick = onMenuClick) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_menu_24),
+                contentDescription = stringResource(R.string.cont_desc_button_menu)
+            )
         }
 
-        AnimatedVisibility(visible = menuVisible) {
-            menuItems.forEach {
-                BottomMenuItem(
-                    iconId = it.iconId,
-                    labelId = it.labelId,
-                    onClick = it.onClick
-                )
+        navButtonList().forEach {
+            val selected = it.destination == selectedDestination
+
+            val weight = if (selected) {
+                Modifier
+            } else {
+                Modifier.weight(1.0f)
             }
+
+            NavButton(
+                selected,
+                it.labelId,
+                it.iconId,
+                weight
+            ) {
+                onNavClick(it.destination)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun ScannerDisplay(scannerState: ScannerState, lastScannerEvent: ScannerEvent) {
+    AnimatedVisibility(
+        visible = !(scannerState == ScannerState.Unknown || scannerState == ScannerState.Idle)
+    ) {
+        when (scannerState) {
+            ScannerState.Unknown, ScannerState.Idle -> Unit
+            is ScannerState.Scanning -> ScanProgressDisplay(lastScannerEvent)
+            is ScannerState.Complete -> ScanCompleteDisplay(scannerState)
+        }
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+private fun ColumnScope.Menu(
+    menuVisible: Boolean,
+    menuItems: List<MenuItemDefinition>
+) {
+    AnimatedVisibility(visible = menuVisible) {
+        menuItems.forEach {
+            BottomMenuItem(
+                iconId = it.iconId,
+                labelId = it.labelId,
+                onClick = it.onClick
+            )
         }
     }
 }
@@ -103,6 +139,8 @@ fun PreviewMenuHidden() {
     var selectedDestination by remember { mutableStateOf("games") }
     val insets = LocalWindowInsets.current
 
+    val menuVisible = remember { mutableStateOf(false) }
+
     ChipboxNavBar(
         selectedDestination = selectedDestination,
         contentPadding = with(LocalDensity.current) {
@@ -113,14 +151,79 @@ fun PreviewMenuHidden() {
                 insets.navigationBars.bottom.toDp(),
             )
         },
-        menuVisible = false,
+        menuVisible = menuVisible.value,
         menuItems = emptyList(),
-        onNavClick = {
-            selectedDestination = it
-        },
-        onMenuClick = {
+        scannerState = ScannerState.Idle,
+        lastScannerEvent = ScannerEvent.Unknown,
+        onNavClick = { selectedDestination = it },
+        onMenuClick = { menuVisible.value = !menuVisible.value }
+    )
+}
 
-        }
+@Preview
+@Composable
+fun PreviewNavWithScanProgress() {
+    var selectedDestination by remember { mutableStateOf("games") }
+    val insets = LocalWindowInsets.current
+
+    val menuVisible = remember { mutableStateOf(false) }
+
+    ChipboxNavBar(
+        selectedDestination = selectedDestination,
+        contentPadding = with(LocalDensity.current) {
+            PaddingValues(
+                insets.navigationBars.left.toDp(),
+                0.dp,
+                insets.navigationBars.right.toDp() + 4.dp,
+                insets.navigationBars.bottom.toDp(),
+            )
+        },
+        menuVisible = menuVisible.value,
+        menuItems = emptyList(),
+        scannerState = ScannerState.Scanning,
+        lastScannerEvent = ScannerEvent.GameFoundEvent(
+            "Knuckles' Chaotix",
+            37,
+            ""
+        ),
+        onNavClick = { selectedDestination = it },
+        onMenuClick = { menuVisible.value = !menuVisible.value }
+    )
+}
+
+@Preview
+@Composable
+fun PreviewNavWithScanComplete() {
+    var selectedDestination by remember { mutableStateOf("games") }
+    val insets = LocalWindowInsets.current
+
+    val menuVisible = remember { mutableStateOf(false) }
+
+    ChipboxNavBar(
+        selectedDestination = selectedDestination,
+        contentPadding = with(LocalDensity.current) {
+            PaddingValues(
+                insets.navigationBars.left.toDp(),
+                0.dp,
+                insets.navigationBars.right.toDp() + 4.dp,
+                insets.navigationBars.bottom.toDp(),
+            )
+        },
+        menuVisible = menuVisible.value,
+        menuItems = emptyList(),
+        scannerState = ScannerState.Complete(
+            172,
+            74,
+            2834,
+            2
+        ),
+        lastScannerEvent = ScannerEvent.GameFoundEvent(
+            "Knuckles' Chaotix",
+            37,
+            ""
+        ),
+        onNavClick = { selectedDestination = it },
+        onMenuClick = { menuVisible.value = !menuVisible.value }
     )
 }
 
@@ -130,6 +233,8 @@ fun PreviewMenuShown() {
     var selectedDestination by remember { mutableStateOf("games") }
     val insets = LocalWindowInsets.current
 
+    val menuVisible = remember { mutableStateOf(true) }
+
     ChipboxNavBar(
         selectedDestination = selectedDestination,
         contentPadding = with(LocalDensity.current) {
@@ -140,19 +245,17 @@ fun PreviewMenuShown() {
                 insets.navigationBars.bottom.toDp(),
             )
         },
-        menuVisible = true,
+        menuVisible = menuVisible.value,
         menuItems = listOf(
             MenuItemDefinition(
                 iconId = R.drawable.ic_refresh_24,
                 labelId = R.string.caption_unknown_artist,
-                onClick = {}
+                onClick = { menuVisible.value = false }
             )
         ),
-        onNavClick = {
-            selectedDestination = it
-        },
-        onMenuClick = {
-
-        }
+        scannerState = ScannerState.Idle,
+        lastScannerEvent = ScannerEvent.Unknown,
+        onNavClick = { selectedDestination = it },
+        onMenuClick = { menuVisible.value = !menuVisible.value }
     )
 }
