@@ -14,12 +14,14 @@ include ':core:entities'
 include ':core:image-loading'
 include ':core:models'
 include ':core:navigation'
+include ':core:readers'
 include ':core:repository'
 include ':core:repository:mock'
 include ':core:scanner'
 include ':core:scanner:mock'
 include ':core:strings'
 include ':core:styles'
+include ':core:utils'
 
 // Common Modules (which may contain dependencies exposed by a feature)
 

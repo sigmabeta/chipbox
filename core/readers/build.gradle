@@ -1,0 +1,6 @@
+apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
+
+dependencies {
+    implementation project(path: ':core:models')
+    implementation project(path: ':core:utils')
+}
