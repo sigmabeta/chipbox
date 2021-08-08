@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.core.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -87,24 +88,29 @@ fun ScanProgressDisplay(
                         bottom = 4.dp
                     )
             ) {
-                Text(
-                    text = lastScannerEvent.name,
-                    color = MaterialTheme.colors.onPrimary,
-                    style = MaterialTheme.typography.subtitle1,
-                    maxLines = 1,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
+                AnimatedContent(targetState = lastScannerEvent) {
+                    Text(
+                        text = lastScannerEvent.name,
+                        color = MaterialTheme.colors.onPrimary,
+                        style = MaterialTheme.typography.subtitle1,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight()
                     )
-                Text(
-                    text = "${lastScannerEvent.trackCount} tracks",
-                    color = MaterialTheme.colors.onPrimary,
-                    style = MaterialTheme.typography.caption,
-                    maxLines = 1,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight()
-                )
+                }
+
+                AnimatedContent(targetState = lastScannerEvent) {
+                    Text(
+                        text = "${lastScannerEvent.trackCount} tracks",
+                        color = MaterialTheme.colors.onPrimary,
+                        style = MaterialTheme.typography.caption,
+                        maxLines = 1,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight()
+                    )
+                }
             }
         }
     }
