@@ -58,10 +58,11 @@ fun TopScreen(viewModel: TopViewModel) {
             contentPadding = navBarPadding(insets),
             menuVisible = menuVisible.value,
             menuItems = menuItems(viewModel, menuVisible),
-            scannerState,
-            lastScannerEvent,
+            scannerState = scannerState,
+            lastScannerEvent = lastScannerEvent,
             onNavClick = navClickHandler(navController, context),
-            onMenuClick = { menuVisible.value = !menuVisible.value }
+            onMenuClick = { menuVisible.value = !menuVisible.value },
+            onScanClearClick = { viewModel.clearScan() }
         )
     }
 }

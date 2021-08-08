@@ -19,7 +19,7 @@ class MockScanner(
     private var currentState: ScannerState = ScannerState.Unknown
     private var lastEvent: ScannerEvent = ScannerEvent.Unknown
 
-    private val coroutineScope = CoroutineScope(dispatcher)
+    private val scannerScope = CoroutineScope(dispatcher)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val eventChannel = BroadcastChannel<ScannerEvent>(BUFFERED)
@@ -39,7 +39,7 @@ class MockScanner(
 
     @OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
     override fun startScan() {
-        coroutineScope.launch {
+        scannerScope.launch {
             currentState = ScannerState.Scanning
             stateChannel.send(ScannerState.Scanning)
 
@@ -64,7 +64,7 @@ class MockScanner(
                 }
             }
 
-            val completeEvent = ScannerState.Complete(
+            val completeState = ScannerState.Complete(
                 duration.inWholeSeconds.toInt(),
                 gamesFound,
                 tracksFound,
@@ -72,8 +72,21 @@ class MockScanner(
             )
 
             lastEvent = ScannerEvent.Unknown
-            currentState = completeEvent
-            stateChannel.send(completeEvent)
+            currentState = completeState
+            stateChannel.send(completeState)
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun clearScan() {
+        scannerScope.launch {
+            val clearedEvent = ScannerEvent.Unknown
+            lastEvent = clearedEvent
+            eventChannel.send(clearedEvent)
+
+            val clearedState = ScannerState.Idle
+            currentState = clearedState
+            stateChannel.send(clearedState)
         }
     }
 }

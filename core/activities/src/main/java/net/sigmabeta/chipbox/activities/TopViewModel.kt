@@ -13,4 +13,8 @@ class TopViewModel @Inject constructor(
     fun startScan() {
         scanner.startScan()
     }
+
+    fun clearScan() {
+        scanner.clearScan()
+    }
 }
