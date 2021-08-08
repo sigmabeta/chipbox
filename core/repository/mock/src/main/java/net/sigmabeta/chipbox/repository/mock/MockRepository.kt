@@ -139,7 +139,7 @@ class MockRepository(
                 possibleArtists
             }
 
-            val track = generateTrack(trackNumber, trackArtists)
+            val track = generateTrack(trackArtists)
             tracks.add(track)
         }
 
@@ -160,10 +160,9 @@ class MockRepository(
         }
     }
 
-    private fun generateTrack(trackNumber: Int, artists: List<Artist>): Track {
+    private fun generateTrack(artists: List<Artist>): Track {
         val track = Track(
             random.nextLong(),
-            trackNumber,
             "",
             stringGenerator.generateTitle(),
             artists,

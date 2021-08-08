@@ -37,7 +37,6 @@ fun PreviewArtistListItem() {
                 mutableListOf(
                     Track(
                         1234L,
-                        1,
                         "",
                         "",
                         null,
@@ -65,7 +64,6 @@ fun PreviewTwoTracks() {
                 mutableListOf(
                     Track(
                         1234L,
-                        1,
                         "",
                         "",
                         null,
@@ -74,7 +72,6 @@ fun PreviewTwoTracks() {
                         ""
                     ), Track(
                         1234L,
-                        1,
                         "",
                         "",
                         null,
