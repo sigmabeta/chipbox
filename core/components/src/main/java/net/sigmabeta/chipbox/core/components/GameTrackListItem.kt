@@ -8,7 +8,6 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -28,18 +27,6 @@ fun GameTrackListItem(
             .clickable(onClick = onClick)
             .background(MaterialTheme.colors.background)
     ) {
-        Text(
-            text = track.number.toString(),
-            textAlign = TextAlign.Right,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.caption,
-            modifier = Modifier
-                .wrapContentHeight()
-                .width(36.dp)
-                .align(Alignment.CenterVertically)
-                .padding(start = 8.dp)
-        )
         Column(
             Modifier
                 .weight(1.0f)
@@ -96,7 +83,6 @@ fun PreviewGameTrackListItem() {
         GameTrackListItem(
             track = Track(
                 0L,
-                144,
                 "",
                 "Fujiyama Oriental Golf Club - Japan",
                 listOf(
