@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.core.components
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.background
@@ -92,8 +93,8 @@ fun ScannerDisplay(
     lastScannerEvent: ScannerEvent,
     onClearClick: () -> Unit
 ) {
-    AnimatedVisibility(
-        visible = !(scannerState == ScannerState.Unknown || scannerState == ScannerState.Idle)
+    AnimatedContent(
+        targetState = scannerState
     ) {
         when (scannerState) {
             ScannerState.Unknown, ScannerState.Idle -> Unit
