@@ -34,7 +34,8 @@ fun ChipboxNavBar(
     scannerState: ScannerState,
     lastScannerEvent: ScannerEvent,
     onNavClick: (destination: String) -> Unit,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    onScanClearClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -42,7 +43,7 @@ fun ChipboxNavBar(
             .padding(contentPadding)
     ) {
         NavMenu(onMenuClick, selectedDestination, onNavClick)
-        ScannerDisplay(scannerState, lastScannerEvent)
+        ScannerDisplay(scannerState, lastScannerEvent, onScanClearClick)
         Menu(menuVisible, menuItems)
     }
 }
@@ -86,14 +87,18 @@ private fun NavMenu(
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun ScannerDisplay(scannerState: ScannerState, lastScannerEvent: ScannerEvent) {
+fun ScannerDisplay(
+    scannerState: ScannerState,
+    lastScannerEvent: ScannerEvent,
+    onClearClick: () -> Unit
+) {
     AnimatedVisibility(
         visible = !(scannerState == ScannerState.Unknown || scannerState == ScannerState.Idle)
     ) {
         when (scannerState) {
             ScannerState.Unknown, ScannerState.Idle -> Unit
             is ScannerState.Scanning -> ScanProgressDisplay(lastScannerEvent)
-            is ScannerState.Complete -> ScanCompleteDisplay(scannerState)
+            is ScannerState.Complete -> ScanCompleteDisplay(scannerState, onClearClick)
         }
     }
 }
@@ -156,7 +161,8 @@ fun PreviewMenuHidden() {
         scannerState = ScannerState.Idle,
         lastScannerEvent = ScannerEvent.Unknown,
         onNavClick = { selectedDestination = it },
-        onMenuClick = { menuVisible.value = !menuVisible.value }
+        onMenuClick = { menuVisible.value = !menuVisible.value },
+        onScanClearClick = {}
     )
 }
 
@@ -187,7 +193,8 @@ fun PreviewNavWithScanProgress() {
             ""
         ),
         onNavClick = { selectedDestination = it },
-        onMenuClick = { menuVisible.value = !menuVisible.value }
+        onMenuClick = { menuVisible.value = !menuVisible.value },
+        onScanClearClick = {}
     )
 }
 
@@ -223,7 +230,8 @@ fun PreviewNavWithScanComplete() {
             ""
         ),
         onNavClick = { selectedDestination = it },
-        onMenuClick = { menuVisible.value = !menuVisible.value }
+        onMenuClick = { menuVisible.value = !menuVisible.value },
+        onScanClearClick = {}
     )
 }
 
@@ -256,6 +264,7 @@ fun PreviewMenuShown() {
         scannerState = ScannerState.Idle,
         lastScannerEvent = ScannerEvent.Unknown,
         onNavClick = { selectedDestination = it },
-        onMenuClick = { menuVisible.value = !menuVisible.value }
+        onMenuClick = { menuVisible.value = !menuVisible.value },
+        onScanClearClick = {}
     )
 }

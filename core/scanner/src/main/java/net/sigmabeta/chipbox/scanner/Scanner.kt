@@ -8,4 +8,5 @@ interface Scanner {
     fun startScan()
     fun state(): Flow<ScannerState>
     fun scanEvents(): Flow<ScannerEvent>
+    fun clearScan()
 }

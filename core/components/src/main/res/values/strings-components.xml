@@ -8,6 +8,9 @@
 
     <string name="cont_desc_button_menu">Open Menu</string>
 
+    <string name="cont_desc_scan_complete">Scan Complete</string>
+    <string name="cont_desc_scan_clear">Clear Scan Summary</string>
+
     <string name="cont_desc_scan_game">Newly found image for game: $1%s</string>
     <string name="cont_desc_scan_game_blank">No image found for game: $1%s</string>
 
