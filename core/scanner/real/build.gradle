@@ -4,7 +4,6 @@ apply from: "$rootProject.projectDir/di.gradle"
 dependencies {
     api project(path: ':core:scanner')
 
+    implementation project(path: ':core:readers')
     implementation project(path: ':core:repository')
-
-    implementation "com.jakewharton.timber:timber:$timber_version"
 }
