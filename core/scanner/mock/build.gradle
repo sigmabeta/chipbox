@@ -5,6 +5,4 @@ dependencies {
     api project(path: ':core:scanner')
 
     implementation project(path: ':core:repository:mock')
-
-    implementation "com.jakewharton.timber:timber:$timber_version"
 }
