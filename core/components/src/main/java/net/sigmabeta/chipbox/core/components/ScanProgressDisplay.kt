@@ -32,7 +32,7 @@ fun ScanProgressDisplay(
 
         val coilPainter = rememberCoilPainter(
             request = lastScannerEvent.imageUrl,
-            previewPlaceholder = previewResourceId,
+            previewPlaceholder = previewResourceId
         )
 
         Row(

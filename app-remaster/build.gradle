@@ -48,7 +48,7 @@ android {
         applicationId "net.sigmabeta.chipbox"
 
         minSdkVersion 21
-        targetSdkVersion 30
+        targetSdkVersion 29
 
         versionName getVersionName()
     }
@@ -91,6 +91,7 @@ dependencies {
     implementation project(path: ':core:activities')
     implementation project(path: ':core:repository:mock')
     implementation project(path: ':core:scanner:mock')
+    implementation project(path: ':core:scanner:real')
 
     // Contains the Kotlin Standard Library
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
