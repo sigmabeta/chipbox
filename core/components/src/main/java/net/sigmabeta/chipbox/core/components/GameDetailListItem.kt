@@ -35,16 +35,16 @@ fun PreviewGameListItem() {
             game = Game(
                 1234L,
                 "Neo Turf Masters",
+                "urlol",
                 listOf(
                     Artist(
                         0L,
                         "Takushi Hiyamuta",
+                        null,
                         mutableListOf(),
-                        mutableListOf(),
-                        ""
+                        mutableListOf()
                     )
                 ),
-                "urlol",
                 null
             ),
             previewResourceId = R.drawable.square_pixels
@@ -60,8 +60,8 @@ fun PreviewUnknownArtist() {
             game = Game(
                 1234L,
                 "Lufia II: Rise of the Sinistrals",
-                null,
                 "urlol",
+                null,
                 null
             ),
             previewResourceId = R.drawable.square_pixels

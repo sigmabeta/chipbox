@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.readers
 
+import net.sigmabeta.chipbox.models.RawTrack
 import net.sigmabeta.chipbox.utils.convert
 import net.sigmabeta.chipbox.utils.convertUtf
 import java.io.File
@@ -47,9 +48,9 @@ object PsfReader : Reader() {
 
         val platform = when (header[3]) {
             0x01.toByte() -> "Sony Playstation"
-            0x02.toByte() -> "Sony Playstation 2"
-            0x11.toByte() -> "Sega Saturn"
-            0x12.toByte() -> "Sega Dreamcast"
+//            0x02.toByte() -> "Sony Playstation 2"
+//            0x11.toByte() -> "Sega Saturn"
+//            0x12.toByte() -> "Sega Dreamcast"
             else -> return null
         }
 
@@ -81,8 +82,7 @@ object PsfReader : Reader() {
                     tagMap[PSF_TAG_KEY_TITLE] ?: TAG_UNKNOWN_TITLE,
                     tagMap[PSF_TAG_KEY_ARTIST] ?: TAG_UNKNOWN_ARTIST,
                     tagMap[PSF_TAG_KEY_GAME] ?: TAG_UNKNOWN_GAME,
-                    getFileTrackLength(tagMap),
-                    tagMap[PSF_TAG_KEY_PLATFORM] ?: TAG_UNKNOWN_PLATFORM
+                    getFileTrackLength(tagMap)
                 )
             )
         } catch (iae: IllegalArgumentException) {

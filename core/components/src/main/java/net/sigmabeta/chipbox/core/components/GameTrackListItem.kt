@@ -89,14 +89,13 @@ fun PreviewGameTrackListItem() {
                     Artist(
                         0L,
                         "Takushi Hiyamuta",
+                        "",
                         mutableListOf(),
-                        mutableListOf(),
-                        ""
+                        mutableListOf()
                     )
                 ),
                 null,
-                214000,
-                ""
+                214000
             )
         ) {}
     }
