@@ -5,6 +5,7 @@ import android.os.Environment
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import net.sigmabeta.chipbox.models.RawGame
 import net.sigmabeta.chipbox.models.RawTrack
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
@@ -17,7 +18,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 class RealScanner(
-    private val realRepository: Repository,
+    private val repository: Repository,
     private val context: Context,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Scanner(dispatcher) {
@@ -93,7 +94,6 @@ class RealScanner(
         }
 
         var imagePath: String? = null
-        var gameName: String? = null
         val gameTracks = mutableListOf<RawTrack>()
 
         for (file in files) {
@@ -108,14 +108,23 @@ class RealScanner(
                     }
 
                     gameTracks += tracks
-                    gameName = tracks.first().game
+                } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
+                    imagePath = getImagePath(file)
                 }
-            } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
-                imagePath = getImagePath(file)
             }
         }
 
         if (gameTracks.size > 0) {
+            val gameName = gameTracks.first().game
+
+            val game = RawGame(
+                gameName,
+                imagePath,
+                gameTracks
+            )
+
+            repository.addGame(game)
+
             // TODO Use "unknown" strings from other file
             // TODO Don't assume every file in this folder is from the same game
             emitEvent(

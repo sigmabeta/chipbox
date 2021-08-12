@@ -63,7 +63,7 @@ class MemoryRepository(
         val artists = tracks.asSequence()
             .map { it.artists }
             .flatten()
-            .distinct()
+            .distinctBy { it.name }
             .toList()
 
         val game = MemoryGame(
