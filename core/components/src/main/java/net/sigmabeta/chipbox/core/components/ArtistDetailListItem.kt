@@ -34,6 +34,7 @@ fun PreviewArtistListItem() {
             artist = Artist(
                 1234L,
                 "Takushi Hiyamuta",
+                null,
                 mutableListOf(
                     Track(
                         1234L,
@@ -41,11 +42,9 @@ fun PreviewArtistListItem() {
                         "",
                         null,
                         null,
-                        12345L,
-                        ""
+                        12345L
                     )
                 ),
-                null,
                 null
             ),
             previewResourceId = R.drawable.square_pixels
@@ -61,6 +60,7 @@ fun PreviewTwoTracks() {
             artist = Artist(
                 1234L,
                 "Hitoshi Sakimoto",
+                null,
                 mutableListOf(
                     Track(
                         1234L,
@@ -68,19 +68,16 @@ fun PreviewTwoTracks() {
                         "",
                         null,
                         null,
-                        12345L,
-                        ""
+                        12345L
                     ), Track(
                         1234L,
                         "",
                         "",
                         null,
                         null,
-                        12345L,
-                        ""
+                        12345L
                     )
                 ),
-                null,
                 null
             ),
             previewResourceId = R.drawable.square_pixels

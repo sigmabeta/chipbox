@@ -5,11 +5,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.models.RawGame
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.repository.mock.models.MockArtist
+import net.sigmabeta.chipbox.repository.mock.models.MockGame
+import net.sigmabeta.chipbox.repository.mock.models.MockTrack
 import timber.log.Timber
 import java.util.*
-import kotlin.collections.ArrayList
 
 class MockRepository(
     private val random: Random,
@@ -18,9 +21,9 @@ class MockRepository(
     private val mockImageUrlGenerator: MockImageUrlGenerator,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Repository {
-    private var games: MutableList<Game> = mutableListOf()
-    private var tracks: MutableList<Track> = mutableListOf()
-    private var artists: MutableList<Artist> = mutableListOf()
+    private var games: MutableList<MockGame> = mutableListOf()
+    private var tracks: MutableList<MockTrack> = mutableListOf()
+    private var artists: MutableList<MockArtist> = mutableListOf()
 
     var maxGames = DEFAULT_MAX_GAMES
     var maxTracksPerGame = DEFAULT_MAX_TRACKS_PER_GAME
@@ -29,28 +32,40 @@ class MockRepository(
         if (artists.isEmpty()) {
             generateGames()
         }
-        return artists.sortedBy { it.name }
+
+        return artists
+            .sortedBy { it.name }
+            .map { it.toArtist(true, true) }
     }
 
     override suspend fun getAllGames(): List<Game> {
         if (games.isEmpty()) {
             generateGames()
         }
-        return games.sortedBy { it.title }
+
+        return games
+            .sortedBy { it.title }
+            .map { it.toGame(true, true) }
     }
 
     override suspend fun getAllTracks(): List<Track> {
         if (tracks.isEmpty()) {
             generateGames()
         }
-        return tracks.sortedBy { it.title }
+
+        return tracks
+            .sortedBy { it.title }
+            .map { it.toTrack(true, true) }
     }
 
     override suspend fun getGame(id: Long): Game? {
         if (games.isEmpty()) {
             generateGames()
         }
-        return games.firstOrNull { it.id == id }
+
+        return games
+            .firstOrNull { it.id == id }
+            ?.toGame(true, true)
     }
 
     override suspend fun getArtist(id: Long): Artist? {
@@ -58,8 +73,12 @@ class MockRepository(
             generateGames()
         }
 
-        return artists.firstOrNull { it.id == id }
+        return artists
+            .firstOrNull { it.id == id }
+            ?.toArtist(true, true)
     }
+
+    override suspend fun addGame(rawGame: RawGame) = Unit
 
     private suspend fun generateGames() {
         withContext(dispatcher) {
@@ -81,12 +100,12 @@ class MockRepository(
         }
     }
 
-    private fun generateGame(): Game {
+    private fun generateGame(): MockGame {
         val gameId = random.nextLong()
 
         val artistCount = getArtistCountForGame()
 
-        val artistsForGame = mutableListOf<Artist>()
+        val artistsForGame = mutableListOf<MockArtist>()
 
         for (artistIndex in 0 until artistCount) {
             val artistToAdd = if (shouldGenerateNewArtist()) {
@@ -103,30 +122,30 @@ class MockRepository(
 
         val tracks = generateTracksForGame(artistsForGame)
 
-        val game = Game(
+        val game = MockGame(
             gameId,
             stringGenerator.generateTitle(),
-            artistsForGame,
             mockImageUrlGenerator.getGameImageUrl(random.nextInt()),
+            artistsForGame,
             tracks
         )
 
-        game.tracks?.forEach {
+        game.tracks.forEach {
             it.game = game
         }
 
-        game.artists?.forEach {
+        game.artists.forEach {
             it.games?.add(game)
         }
 
         return game
     }
 
-    private fun generateTracksForGame(possibleArtists: MutableList<Artist>): List<Track> {
+    private fun generateTracksForGame(possibleArtists: List<MockArtist>): List<MockTrack> {
         val trackCount = random.nextInt(maxTracksPerGame) + 1
         Timber.d("Generating $trackCount tracks...")
 
-        val tracks = ArrayList<Track>()
+        val tracks = mutableListOf<MockTrack>()
 
         for (trackNumber in 1..trackCount) {
             val trackArtists = if (shouldTrackHaveOneArtist()) {
@@ -160,19 +179,18 @@ class MockRepository(
         }
     }
 
-    private fun generateTrack(artists: List<Artist>): Track {
-        val track = Track(
+    private fun generateTrack(artists: List<MockArtist>): MockTrack {
+        val track = MockTrack(
             random.nextLong(),
             "",
             stringGenerator.generateTitle(),
             artists,
             null,
-            random.nextInt(400000).toLong(),
-            stringGenerator.generateTitle()
+            random.nextInt(400000).toLong()
         )
 
         artists.forEach {
-            (it.tracks as MutableList<Track>).add(track)
+            (it.tracks as MutableList<MockTrack>).add(track)
         }
 
         tracks.add(track)
@@ -180,13 +198,13 @@ class MockRepository(
         return track
     }
 
-    private fun generateArtist(): Artist {
-        val artist = Artist(
+    private fun generateArtist(): MockArtist {
+        val artist = MockArtist(
             random.nextLong(),
             stringGenerator.generateName(),
+            mockImageUrlGenerator.getArtistImageUrl(random.nextInt()),
             mutableListOf(),
-            mutableListOf(),
-            mockImageUrlGenerator.getArtistImageUrl(random.nextInt())
+            mutableListOf()
         )
 
         artists.add(artist)
@@ -199,6 +217,36 @@ class MockRepository(
         tracks.clear()
         artists.clear()
     }
+
+    private fun MockTrack.toTrack(withGame: Boolean = false, withArtists: Boolean = false): Track =
+        Track(
+            id,
+            path,
+            title,
+            if (withArtists) artists.map { it.toArtist() } else null,
+            if (withGame) game?.toGame() else null,
+            trackLengthMs
+        )
+
+    private fun MockGame.toGame(withTracks: Boolean = false, withArtists: Boolean = false): Game =
+        Game(
+            id,
+            title,
+            photoUrl,
+            if (withArtists) artists.map { it.toArtist() } else null,
+            if (withTracks) tracks.map { it.toTrack() } else null
+        )
+
+    private fun MockArtist.toArtist(
+        withGames: Boolean = false,
+        withTracks: Boolean = false
+    ): Artist = Artist(
+        id,
+        name,
+        photoUrl,
+        if (withTracks) tracks.map { it.toTrack() } else null,
+        if (withGames) games.map { it.toGame() } else null
+    )
 
     companion object {
         const val DEFAULT_MAX_GAMES = 100

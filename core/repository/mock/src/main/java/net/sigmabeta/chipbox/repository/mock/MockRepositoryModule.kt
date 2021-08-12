@@ -4,7 +4,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import net.sigmabeta.chipbox.repository.Repository
 import java.util.*
 import javax.inject.Named
 import javax.inject.Singleton
@@ -21,19 +20,19 @@ object MockRepositoryModule {
     @Singleton
     internal fun provideRandom(@Named("RngSeed") seed: Long) = Random(seed)
 
-    @Provides
-    @Singleton
-    fun provideRepository(
-        random: Random,
-        @Named("RngSeed") seed: Long,
-        stringGenerator: StringGenerator,
-        mockImageUrlGenerator: MockImageUrlGenerator
-    ): Repository = MockRepository(
-        random,
-        seed,
-        stringGenerator,
-        mockImageUrlGenerator
-    )
+//    @Provides
+//    @Singleton
+//    fun provideRepository(
+//        random: Random,
+//        @Named("RngSeed") seed: Long,
+//        stringGenerator: StringGenerator,
+//        mockImageUrlGenerator: MockImageUrlGenerator
+//    ): Repository = provideMockRepository(
+//        random,
+//        seed,
+//        stringGenerator,
+//        mockImageUrlGenerator
+//    )
 
     @Provides
     @Singleton
