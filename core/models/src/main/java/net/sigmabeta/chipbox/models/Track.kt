@@ -6,6 +6,5 @@ data class Track(
     val title: String,
     val artists: List<Artist>?,
     var game: Game?,
-    val trackLengthMs: Long,
-    val platformName: String
+    val trackLengthMs: Long
 )

@@ -84,8 +84,7 @@ fun PreviewArtistTrackListItem() {
                     null,
                     null
                 ),
-                214000,
-                ""
+                214000
             )
         ) {}
     }
