@@ -1,12 +1,15 @@
 package net.sigmabeta.chipbox.repository.mock
 
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.RawGame
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.mock.models.MockArtist
 import net.sigmabeta.chipbox.repository.mock.models.MockGame
@@ -21,9 +24,16 @@ class MockRepository(
     private val mockImageUrlGenerator: MockImageUrlGenerator,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Repository {
+    private val repositoryScope = CoroutineScope(dispatcher)
+
     private var games: MutableList<MockGame> = mutableListOf()
     private var tracks: MutableList<MockTrack> = mutableListOf()
     private var artists: MutableList<MockArtist> = mutableListOf()
+
+    private val gamesLoadEvents = MutableSharedFlow<Data<List<Game>>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
 
     var maxGames = DEFAULT_MAX_GAMES
     var maxTracksPerGame = DEFAULT_MAX_TRACKS_PER_GAME
@@ -38,7 +48,19 @@ class MockRepository(
             .map { it.toArtist(true, true) }
     }
 
-    override suspend fun getAllGames(): List<Game> {
+    override fun getAllGames(): Flow<Data<List<Game>>> {
+        repositoryScope.launch {
+            gamesLoadEvents.emit(Data.Loading)
+
+            delay(3000L)
+
+            val data = Data.Succeeded(getLatestAllGames())
+            gamesLoadEvents.emit(data)
+        }
+        return gamesLoadEvents.asSharedFlow()
+    }
+
+    suspend fun getLatestAllGames(): List<Game> {
         if (games.isEmpty()) {
             generateGames()
         }

@@ -21,7 +21,7 @@ class MockScanner(
 
         var gamesFound = 0
         var tracksFound = 0
-        val games = mockRepository.getAllGames()
+        val games = mockRepository.getLatestAllGames()
 
         val duration = measureTime {
             games.forEach {

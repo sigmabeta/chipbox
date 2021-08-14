@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.repository
 
+import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.RawGame
@@ -9,7 +10,7 @@ interface Repository {
     // Lists
     suspend fun getAllArtists(): List<Artist>
 
-    suspend fun getAllGames(): List<Game>
+    fun getAllGames(): Flow<Data<List<Game>>>
 
     suspend fun getAllTracks(): List<Track>
 
