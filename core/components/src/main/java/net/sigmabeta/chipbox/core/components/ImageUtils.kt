@@ -1,8 +1,6 @@
 package net.sigmabeta.chipbox.core.components
 
-import androidx.annotation.DimenRes
 import androidx.annotation.DrawableRes
-import androidx.annotation.IdRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.aspectRatio
@@ -13,13 +11,13 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.stringResource
-import com.google.accompanist.imageloading.LoadPainter
+import coil.compose.ImagePainter
 
 
 @Composable
 fun RealImage(
     title: String,
-    coilPainter: LoadPainter<Any>,
+    coilPainter: ImagePainter,
     @StringRes contentDescriptionId: Int
 ) {
     Image(

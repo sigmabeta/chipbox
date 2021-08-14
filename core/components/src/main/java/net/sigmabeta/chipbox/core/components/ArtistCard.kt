@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.core.components
 
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -15,8 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.coil.rememberCoilPainter
-import com.google.accompanist.imageloading.ImageLoadState
+import coil.compose.rememberImagePainter
 import net.sigmabeta.chipbox.components.R
 
 @Composable
@@ -32,37 +30,24 @@ fun ArtistCard(
             .width(192.dp)
             .padding(8.dp)
     ) {
-        val coilPainter = rememberCoilPainter(
-            request = image,
-            previewPlaceholder = previewResourceId,
+        val coilPainter = rememberImagePainter(
+            data = image,
+            builder = {
+                crossfade(true)
+                placeholder(R.drawable.img_album_art_blank)
+                error(R.drawable.img_album_art_blank)
+            }
         )
 
         Card(
             elevation = 4.dp,
             shape = CircleShape
         ) {
-            Crossfade(targetState = coilPainter.loadState) {
-                when (it) {
-                    ImageLoadState.Empty -> RealImage(
-                        name,
-                        coilPainter,
-                        R.string.cont_desc_artist_photo
-                    )
-                    is ImageLoadState.Loading -> PlaceholderImage(
-                        R.drawable.img_album_art_blank,
-                        R.string.cont_desc_artist_photo_blank
-                    )
-                    is ImageLoadState.Error -> PlaceholderImage(
-                        R.drawable.img_album_art_blank,
-                        R.string.cont_desc_artist_photo_blank
-                    )
-                    is ImageLoadState.Success -> RealImage(
-                        name,
-                        coilPainter,
-                        R.string.cont_desc_artist_photo
-                    )
-                }
-            }
+            RealImage(
+                name,
+                coilPainter,
+                R.string.cont_desc_artist_photo
+            )
         }
 
         Text(
@@ -76,6 +61,7 @@ fun ArtistCard(
         )
     }
 }
+
 
 @Composable
 @Preview
