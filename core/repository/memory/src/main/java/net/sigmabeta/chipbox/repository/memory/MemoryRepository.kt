@@ -1,16 +1,22 @@
 package net.sigmabeta.chipbox.repository.memory
 
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import net.sigmabeta.chipbox.models.*
+import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.memory.models.MemoryArtist
 import net.sigmabeta.chipbox.repository.memory.models.MemoryGame
 import net.sigmabeta.chipbox.repository.memory.models.MemoryTrack
 
 class MemoryRepository(
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Repository {
+    private val repositoryScope = CoroutineScope(dispatcher)
+
     private var gamesByTitle = mutableMapOf<String, MemoryGame>()
     private var tracksByTitle = mutableMapOf<String, MemoryTrack>()
     private var artistsByName = mutableMapOf<String, MemoryArtist>()
@@ -21,6 +27,13 @@ class MemoryRepository(
 
     private var lastPrimaryKey = 0L
 
+    private val gamesLoadEvents = MutableSharedFlow<Data<List<Game>>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    private var gamesLoaded = false
+
     override suspend fun getAllArtists(): List<Artist> {
         return artistsByName
             .toList()
@@ -29,12 +42,25 @@ class MemoryRepository(
             .map { it.toArtist(true, true) }
     }
 
-    override suspend fun getAllGames(): List<Game> {
-        return gamesByTitle
-            .toList()
-            .map { it.second }
-            .sortedBy { it.title }
-            .map { it.toGame(true, true) }
+    override fun getAllGames(): Flow<Data<List<Game>>> {
+        if (!gamesLoaded) {
+            gamesLoaded = true
+            repositoryScope.launch {
+                gamesLoadEvents.emit(Data.Loading)
+
+                delay(3000L)
+
+                val games = getLatestAllGames()
+                val data = if (games.isNotEmpty()) {
+                    Data.Succeeded(games)
+                } else {
+                    Data.Empty
+                }
+
+                gamesLoadEvents.emit(data)
+            }
+        }
+        return gamesLoadEvents.asSharedFlow()
     }
 
     override suspend fun getAllTracks(): List<Track> {
@@ -87,7 +113,18 @@ class MemoryRepository(
 
         gamesById[game.id] = game
         gamesByTitle[game.title] = game
+
+        repositoryScope.launch {
+            val data = Data.Succeeded(getLatestAllGames())
+            gamesLoadEvents.emit(data)
+        }
     }
+
+    private fun getLatestAllGames() = gamesByTitle
+        .toList()
+        .map { it.second }
+        .sortedBy { it.title }
+        .map { it.toGame(true, true) }
 
     private fun RawTrack.toMemoryTrack(): MemoryTrack {
         val trackArtists = artist
