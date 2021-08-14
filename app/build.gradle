@@ -72,7 +72,7 @@ android {
                 decodedPass = new String(Base64.decoder.decode(encodedPass))
             }
 
-            storeFile file("chipbox.jks")
+            storeFile file("../chipbox.jks")
             storePassword decodedPass
             keyAlias System.getenv("KEY_ALIAS")
             keyPassword decodedPass
