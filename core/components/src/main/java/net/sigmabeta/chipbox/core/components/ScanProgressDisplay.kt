@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.core.components
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,8 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.coil.rememberCoilPainter
-import com.google.accompanist.imageloading.ImageLoadState
+import coil.compose.rememberImagePainter
 import net.sigmabeta.chipbox.components.R
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 
@@ -30,9 +28,13 @@ fun ScanProgressDisplay(
     ) {
         lastScannerEvent as ScannerEvent.GameFoundEvent
 
-        val coilPainter = rememberCoilPainter(
-            request = lastScannerEvent.imageUrl,
-            previewPlaceholder = previewResourceId
+        val coilPainter = rememberImagePainter(
+            data = lastScannerEvent.imageUrl,
+            builder = {
+                crossfade(true)
+                placeholder(R.drawable.img_album_art_blank)
+                error(R.drawable.img_album_art_blank)
+            }
         )
 
         Row(
@@ -53,29 +55,11 @@ fun ScanProgressDisplay(
                     .fillMaxHeight()
                     .aspectRatio(1.0f)
             ) {
-                // TODO This should really be a composable of its own.
-                Crossfade(targetState = coilPainter.loadState) {
-                    when (it) {
-                        ImageLoadState.Empty -> RealImage(
-                            lastScannerEvent.name,
-                            coilPainter,
-                            R.string.cont_desc_scan_game
-                        )
-                        is ImageLoadState.Loading -> PlaceholderImage(
-                            R.drawable.img_album_art_blank,
-                            R.string.cont_desc_scan_game_blank
-                        )
-                        is ImageLoadState.Error -> PlaceholderImage(
-                            R.drawable.img_album_art_blank,
-                            R.string.cont_desc_scan_game_blank
-                        )
-                        is ImageLoadState.Success -> RealImage(
-                            lastScannerEvent.name,
-                            coilPainter,
-                            R.string.cont_desc_scan_game
-                        )
-                    }
-                }
+                RealImage(
+                    lastScannerEvent.name,
+                    coilPainter,
+                    R.string.cont_desc_scan_game
+                )
             }
 
             Column(
