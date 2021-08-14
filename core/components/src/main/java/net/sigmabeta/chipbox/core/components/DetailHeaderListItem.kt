@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.coil.rememberCoilPainter
+import coil.compose.rememberImagePainter
 import net.sigmabeta.chipbox.components.R
 
 @Composable
@@ -21,10 +21,13 @@ fun DetailHeaderListItem(
     contDescId: Int,
     previewResourceId: Int = 0
 ) {
-    val coilPainter = rememberCoilPainter(
-        request = imageUrl,
-        previewPlaceholder = previewResourceId,
-        fadeIn = false
+    val coilPainter = rememberImagePainter(
+        data = imageUrl,
+        builder = {
+            crossfade(true)
+            placeholder(R.drawable.img_album_art_blank)
+            error(R.drawable.img_album_art_blank)
+        }
     )
 
     Column(
