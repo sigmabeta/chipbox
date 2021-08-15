@@ -5,11 +5,11 @@ import android.os.Environment
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import net.sigmabeta.chipbox.models.RawGame
-import net.sigmabeta.chipbox.models.RawTrack
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
 import net.sigmabeta.chipbox.readers.PsfReader
+import net.sigmabeta.chipbox.repository.RawGame
+import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import timber.log.Timber

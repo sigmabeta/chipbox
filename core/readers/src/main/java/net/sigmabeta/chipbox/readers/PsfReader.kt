@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.readers
 
-import net.sigmabeta.chipbox.models.RawTrack
+import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.utils.convert
 import net.sigmabeta.chipbox.utils.convertUtf
 import java.io.File
@@ -22,7 +22,6 @@ object PsfReader : Reader() {
     private const val TAG_UNKNOWN_TITLE = "Unknown Track Title"
     private const val TAG_UNKNOWN_ARTIST = "Unknown Artist"
     private const val TAG_UNKNOWN_GAME = "Unknown Game"
-    private const val TAG_UNKNOWN_PLATFORM = "Unknown Platform"
 
     override fun readTracksFromFile(path: String): List<RawTrack>? {
         val tagMap: HashMap<String, String> = HashMap()

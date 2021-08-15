@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.repository.memory
+package net.sigmabeta.chipbox.repository.database
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
@@ -12,23 +12,23 @@ import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
-import net.sigmabeta.chipbox.repository.memory.models.MemoryArtist
-import net.sigmabeta.chipbox.repository.memory.models.MemoryGame
-import net.sigmabeta.chipbox.repository.memory.models.MemoryTrack
+import net.sigmabeta.chipbox.repository.database.models.DatabaseArtist
+import net.sigmabeta.chipbox.repository.database.models.DatabaseGame
+import net.sigmabeta.chipbox.repository.database.models.DatabaseTrack
 import java.util.*
 
-class MemoryRepository(
+class DatabaseRepository(
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Repository {
     private val repositoryScope = CoroutineScope(dispatcher)
 
-    private var gamesByTitle = mutableMapOf<String, MemoryGame>()
-    private var tracksByTitle = mutableMapOf<String, MemoryTrack>()
-    private var artistsByName = mutableMapOf<String, MemoryArtist>()
+    private var gamesByTitle = mutableMapOf<String, DatabaseGame>()
+    private var tracksByTitle = mutableMapOf<String, DatabaseTrack>()
+    private var artistsByName = mutableMapOf<String, DatabaseArtist>()
 
-    private var gamesById = mutableMapOf<Long, MemoryGame>()
-    private var tracksById = mutableMapOf<Long, MemoryTrack>()
-    private var artistsById = mutableMapOf<Long, MemoryArtist>()
+    private var gamesById = mutableMapOf<Long, DatabaseGame>()
+    private var tracksById = mutableMapOf<Long, DatabaseTrack>()
+    private var artistsById = mutableMapOf<Long, DatabaseArtist>()
 
     private var lastPrimaryKey = 0L
 
@@ -86,7 +86,7 @@ class MemoryRepository(
 
     override suspend fun addGame(rawGame: RawGame) {
         val tracks = rawGame.tracks
-            .map { it.toMemoryTrack() }
+            .map { it.toDatabaseTrack() }
             .onEach { track -> linkToTrackFromItsArtists(track) }
 
         val artists = tracks.asSequence()
@@ -95,7 +95,7 @@ class MemoryRepository(
             .distinctBy { it.name }
             .toList()
 
-        val game = MemoryGame(
+        val game = DatabaseGame(
             getNextPrimaryKey(),
             rawGame.title,
             rawGame.photoUrl,
@@ -128,13 +128,13 @@ class MemoryRepository(
         .sortedBy { it.title }
         .map { it.toGame(true, true) }
 
-    private fun RawTrack.toMemoryTrack(): MemoryTrack {
+    private fun RawTrack.toDatabaseTrack(): DatabaseTrack {
         val trackArtists = artist
             .split(*DELIMITERS_ARTISTS)
             .map { it.trim() }
             .map { artistName -> getOrAddArtistByName(artistName) }
 
-        return MemoryTrack(
+        return DatabaseTrack(
             getNextPrimaryKey(),
             path,
             title,
@@ -144,7 +144,7 @@ class MemoryRepository(
         )
     }
 
-    private fun MemoryTrack.toTrack(
+    private fun DatabaseTrack.toTrack(
         withGame: Boolean = false,
         withArtists: Boolean = false
     ): Track = Track(
@@ -156,7 +156,10 @@ class MemoryRepository(
         trackLengthMs
     )
 
-    private fun MemoryGame.toGame(withTracks: Boolean = false, withArtists: Boolean = false): Game =
+    private fun DatabaseGame.toGame(
+        withTracks: Boolean = false,
+        withArtists: Boolean = false
+    ): Game =
         Game(
             id,
             title,
@@ -165,7 +168,7 @@ class MemoryRepository(
             if (withTracks) tracks.map { it.toTrack(withArtists = withArtists) } else null
         )
 
-    private fun MemoryArtist.toArtist(
+    private fun DatabaseArtist.toArtist(
         withGames: Boolean = false,
         withTracks: Boolean = false
     ): Artist = Artist(
@@ -176,21 +179,21 @@ class MemoryRepository(
         if (withGames) games.map { it.toGame() } else null
     )
 
-    private fun linkToTrackFromItsArtists(track: MemoryTrack) {
+    private fun linkToTrackFromItsArtists(track: DatabaseTrack) {
         track.artists
             .forEach { artist ->
                 artist.tracks.add(track)
             }
     }
 
-    private fun getOrAddArtistByName(name: String): MemoryArtist {
+    private fun getOrAddArtistByName(name: String): DatabaseArtist {
         var artist = artistsByName[name]
 
         if (artist != null) {
             return artist
         }
 
-        artist = MemoryArtist(
+        artist = DatabaseArtist(
             getNextPrimaryKey(),
             name,
             null,
