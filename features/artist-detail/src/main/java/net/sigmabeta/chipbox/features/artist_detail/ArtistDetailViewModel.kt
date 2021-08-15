@@ -15,6 +15,6 @@ class ArtistDetailViewModel @Inject constructor(
 
     @OptIn(FlowPreview::class)
     fun artistData() = repository
-        .getArtist(arguments?.id!!, withTracks = true)
+        .getArtist(arguments?.id!!, withTracks = true, withGames = true)
         .sample(66L)
 }

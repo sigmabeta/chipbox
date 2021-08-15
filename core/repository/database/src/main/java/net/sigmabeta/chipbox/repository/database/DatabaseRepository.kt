@@ -1,5 +1,8 @@
 package net.sigmabeta.chipbox.repository.database
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -20,7 +23,10 @@ import timber.log.Timber
 
 class DatabaseRepository(
     database: ChipboxDatabase,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Repository {
+    private val repositoryScope = CoroutineScope(dispatcher)
+
     private val artistDao = database.artistDao()
     private val gameDao = database.gameDao()
     private val trackDao = database.trackDao()
@@ -96,16 +102,22 @@ class DatabaseRepository(
         gameArtistDao.insertAll(gameArtistJoins)
     }
 
-    private fun ArtistEntity.toArtist(withTracks: Boolean = false, withGames: Boolean = false) =
+    private suspend fun ArtistEntity.toArtist(
+        withTracks: Boolean = false,
+        withGames: Boolean = false
+    ) =
         Artist(
             id,
             name,
             photoUrl,
-            if (withTracks) getTracksForGame(id) else null,
+            if (withTracks) getTracksForArtist(id) else null,
             if (withGames) getGamesForArtist(id) else null
         )
 
-    private fun GameEntity.toGame(withTracks: Boolean = false, withArtists: Boolean = false) = Game(
+    private suspend fun GameEntity.toGame(
+        withTracks: Boolean = false,
+        withArtists: Boolean = false
+    ) = Game(
         id,
         title,
         photoUrl,
@@ -113,7 +125,10 @@ class DatabaseRepository(
         if (withTracks) getTracksForGame(id) else null
     )
 
-    private fun TrackEntity.toTrack(withGame: Boolean = false, withArtists: Boolean = false) =
+    private suspend fun TrackEntity.toTrack(
+        withGame: Boolean = false,
+        withArtists: Boolean = false
+    ) =
         Track(
             id,
             path,
@@ -123,7 +138,7 @@ class DatabaseRepository(
             if (withArtists) getArtistsForTrack(id) else null,
         )
 
-    private fun RawTrack.toTrackEntityWithArtists(gameId: Long): Pair<TrackEntity, List<ArtistEntity>> {
+    private suspend fun RawTrack.toTrackEntityWithArtists(gameId: Long): Pair<TrackEntity, List<ArtistEntity>> {
         val trackArtists = getArtistsSplit()
 
         val tempTrack = TrackEntity(
@@ -141,7 +156,7 @@ class DatabaseRepository(
         return insertedTrack to trackArtists
     }
 
-    private fun RawTrack.getArtistsSplit() = artist
+    private suspend fun RawTrack.getArtistsSplit() = artist
         .split(*DELIMITERS_ARTISTS)
         .map { it.trim() }
         .map { artistName -> getOrAddArtistByName(artistName) }
@@ -153,7 +168,7 @@ class DatabaseRepository(
         trackArtistDao.insertAll(joins)
     }
 
-    private fun getOrAddArtistByName(name: String): ArtistEntity {
+    private suspend fun getOrAddArtistByName(name: String): ArtistEntity {
         var artist = artistDao.getArtistByNameSync(name)
 
         if (artist != null) {
@@ -170,25 +185,29 @@ class DatabaseRepository(
         return artist.copy(id = id)
     }
 
-    private fun getGameById(id: Long): Game = gameDao
+    private suspend fun getGameById(id: Long): Game = gameDao
         .getGameSync(id)
         .toGame()
 
-    private fun getGamesForArtist(id: Long): List<Game> = gameArtistDao
+    private suspend fun getGamesForArtist(id: Long): List<Game> = gameArtistDao
         .getGamesForArtistSync(id)
         .map { it.toGame() }
 
-    private fun getArtistsForTrack(id: Long): List<Artist> = trackArtistDao
+    private suspend fun getArtistsForTrack(id: Long): List<Artist> = trackArtistDao
         .getArtistsForTrackSync(id)
         .map { it.toArtist() }
 
-    private fun getArtistsForGame(id: Long): List<Artist> = gameArtistDao
+    private suspend fun getArtistsForGame(id: Long): List<Artist> = gameArtistDao
         .getArtistsForGameSync(id)
         .map { it.toArtist() }
 
-    private fun getTracksForGame(id: Long): List<Track> = trackDao
+    private suspend fun getTracksForGame(id: Long): List<Track> = trackDao
         .getTracksForGameSync(id)
-        .map { it.toTrack() }
+        .map { it.toTrack(withArtists = true) }
+
+    private suspend fun getTracksForArtist(id: Long): List<Track> = trackArtistDao
+        .getTracksForArtistSync(id)
+        .map { it.toTrack(withGame = true) }
 
     private fun resetData() {
         artistDao.nukeTable()
@@ -201,7 +220,7 @@ class DatabaseRepository(
 
     private fun <Entity, Model> setupFlow(
         databaseOp: () -> Flow<Entity>,
-        converter: (Entity) -> Model
+        converter: suspend (Entity) -> Model
     ): Flow<Data<Model>> {
         return databaseOp()
             .map { converter(it) }
@@ -229,7 +248,7 @@ class DatabaseRepository(
     private fun <Entity, Model> setupFlowWithId(
         id: Long,
         databaseOp: (Long) -> Flow<Entity>,
-        converter: (Entity) -> Model
+        converter: suspend (Entity) -> Model
     ): Flow<Data<Model>> {
         return databaseOp(id)
             .map { converter(it) }
