@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.models
+package net.sigmabeta.chipbox.repository
 
 data class RawTrack(
     val path: String,

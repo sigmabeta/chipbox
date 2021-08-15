@@ -1,6 +1,10 @@
-apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
+apply from: "$rootProject.projectDir/core-android-module.gradle"
 
 dependencies {
+    // TODO not this. Also make this a plain kotlin module ^^^ when you fix this vvv
+    // For RawModels.
+    api project(path: ':core:repository')
+
     implementation project(path: ':core:models')
     implementation project(path: ':core:utils')
 }

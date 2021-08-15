@@ -89,6 +89,7 @@ android {
 
 dependencies {
     implementation project(path: ':core:activities')
+    implementation project(path: ':core:repository:database')
     implementation project(path: ':core:repository:memory')
     implementation project(path: ':core:repository:mock')
     implementation project(path: ':core:scanner:mock')

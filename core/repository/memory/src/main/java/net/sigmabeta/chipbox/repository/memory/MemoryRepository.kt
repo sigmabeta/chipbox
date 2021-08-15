@@ -5,12 +5,17 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import net.sigmabeta.chipbox.models.*
+import net.sigmabeta.chipbox.models.Artist
+import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.repository.Data
+import net.sigmabeta.chipbox.repository.RawGame
+import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.memory.models.MemoryArtist
 import net.sigmabeta.chipbox.repository.memory.models.MemoryGame
 import net.sigmabeta.chipbox.repository.memory.models.MemoryTrack
+import java.util.*
 
 class MemoryRepository(
     dispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -36,9 +41,8 @@ class MemoryRepository(
 
     override suspend fun getAllArtists(): List<Artist> {
         return artistsByName
-            .toList()
-            .map { it.second }
-            .sortedBy { it.name }
+            .values
+            .sortedBy { it.name.lowercase(Locale.getDefault()) }
             .map { it.toArtist(true, true) }
     }
 
@@ -65,8 +69,7 @@ class MemoryRepository(
 
     override suspend fun getAllTracks(): List<Track> {
         return tracksByTitle
-            .toList()
-            .map { it.second }
+            .values
             .sortedBy { it.title }
             .map { it.toTrack(true, true) }
     }
@@ -121,14 +124,14 @@ class MemoryRepository(
     }
 
     private fun getLatestAllGames() = gamesByTitle
-        .toList()
-        .map { it.second }
+        .values
         .sortedBy { it.title }
         .map { it.toGame(true, true) }
 
     private fun RawTrack.toMemoryTrack(): MemoryTrack {
         val trackArtists = artist
             .split(*DELIMITERS_ARTISTS)
+            .map { it.trim() }
             .map { artistName -> getOrAddArtistByName(artistName) }
 
         return MemoryTrack(
@@ -159,7 +162,7 @@ class MemoryRepository(
             title,
             photoUrl,
             if (withArtists) artists.map { it.toArtist() } else null,
-            if (withTracks) tracks.map { it.toTrack() } else null
+            if (withTracks) tracks.map { it.toTrack(withArtists = withArtists) } else null
         )
 
     private fun MemoryArtist.toArtist(
@@ -169,7 +172,7 @@ class MemoryRepository(
         id,
         name,
         photoUrl,
-        if (withTracks) tracks.map { it.toTrack() } else null,
+        if (withTracks) tracks.map { it.toTrack(withGame = withGames) } else null,
         if (withGames) games.map { it.toGame() } else null
     )
 
