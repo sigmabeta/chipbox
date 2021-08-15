@@ -15,13 +15,13 @@ interface TrackDao {
     fun getTracksForGame(gameId: Long): Flow<List<TrackEntity>>
 
     @Query("SELECT * FROM track WHERE game_id = :gameId ORDER BY title")
-    fun getTracksForGameSync(gameId: Long): List<TrackEntity>
+    suspend fun getTracksForGameSync(gameId: Long): List<TrackEntity>
 
     @Query("SELECT * FROM track WHERE id = :trackId")
     fun getTrack(trackId: Long): Flow<TrackEntity>
 
     @Query("SELECT * FROM track WHERE id = :trackId")
-    fun getTrackSync(trackId: Long): TrackEntity?
+    suspend fun getTrackSync(trackId: Long): TrackEntity?
 
     @Query("SELECT * FROM track WHERE title LIKE :title ORDER BY title")
     fun searchTracksByTitle(title: String): Flow<List<TrackEntity>>

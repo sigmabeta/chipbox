@@ -9,9 +9,8 @@ import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Track
 
 @Composable
-fun ArtistDetailListItem(
+fun ArtistDetailHeaderListItem(
     artist: Artist,
-    previewResourceId: Int = 0
 ) {
     DetailHeaderListItem(
         title = artist.name,
@@ -22,7 +21,6 @@ fun ArtistDetailListItem(
         ),
         imageUrl = artist.photoUrl,
         contDescId = R.string.cont_desc_artist_photo,
-        previewResourceId = previewResourceId
     )
 }
 
@@ -30,7 +28,7 @@ fun ArtistDetailListItem(
 @Composable
 fun PreviewArtistListItem() {
     MaterialTheme {
-        ArtistDetailListItem(
+        ArtistDetailHeaderListItem(
             artist = Artist(
                 1234L,
                 "Takushi Hiyamuta",
@@ -46,8 +44,7 @@ fun PreviewArtistListItem() {
                     )
                 ),
                 null
-            ),
-            previewResourceId = R.drawable.square_pixels
+            )
         )
     }
 }
@@ -56,7 +53,7 @@ fun PreviewArtistListItem() {
 @Composable
 fun PreviewTwoTracks() {
     MaterialTheme {
-        ArtistDetailListItem(
+        ArtistDetailHeaderListItem(
             artist = Artist(
                 1234L,
                 "Hitoshi Sakimoto",
@@ -79,8 +76,7 @@ fun PreviewTwoTracks() {
                     )
                 ),
                 null
-            ),
-            previewResourceId = R.drawable.square_pixels
+            )
         )
     }
 }

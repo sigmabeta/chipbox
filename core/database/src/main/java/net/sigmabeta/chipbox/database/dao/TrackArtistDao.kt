@@ -33,7 +33,7 @@ interface TrackArtistDao {
             COLLATE NOCASE
             """
     )
-    fun getArtistsForTrackSync(trackId: Long): List<ArtistEntity>
+    suspend fun getArtistsForTrackSync(trackId: Long): List<ArtistEntity>
 
     @Query(
         """ 
@@ -44,7 +44,7 @@ interface TrackArtistDao {
             COLLATE NOCASE
             """
     )
-    fun getTracksForArtistSync(artistId: Long): List<TrackEntity>
+    suspend fun getTracksForArtistSync(artistId: Long): List<TrackEntity>
 
     @Query(
         """ 
