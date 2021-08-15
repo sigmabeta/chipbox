@@ -4,5 +4,7 @@ apply from: "$rootProject.projectDir/di.gradle"
 dependencies {
     api project(path: ':core:repository')
 
+    implementation project(path: ':core:database')
+
     implementation "com.jakewharton.timber:timber:$timber_version"
 }
