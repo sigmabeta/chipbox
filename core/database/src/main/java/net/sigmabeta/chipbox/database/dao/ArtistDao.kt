@@ -3,13 +3,23 @@ package net.sigmabeta.chipbox.database.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.entities.ArtistEntity
 
 @Dao
 interface ArtistDao {
     @Query("SELECT * FROM artist WHERE id = :artistId")
-    fun getArtist(artistId: Long): ArtistEntity
+    fun getArtist(artistId: Long): Flow<ArtistEntity>
+
+    @Query("SELECT * FROM artist ORDER BY name COLLATE NOCASE")
+    fun getAll(): Flow<List<ArtistEntity>>
+
+    @Query("SELECT * FROM artist WHERE name LIKE :name ORDER BY name COLLATE NOCASE")
+    fun searchArtistsByName(name: String): Flow<List<ArtistEntity>>
 
     @Insert
-    fun insertAll(artists: List<ArtistEntity>)
+    fun insertAll(artistEntities: List<ArtistEntity>)
+
+    @Query("DELETE FROM artist")
+    fun nukeTable()
 }

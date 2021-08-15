@@ -7,9 +7,9 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
-import net.sigmabeta.chipbox.models.RawGame
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.repository.Data
+import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.mock.models.MockArtist
 import net.sigmabeta.chipbox.repository.mock.models.MockGame
@@ -44,7 +44,7 @@ class MockRepository(
         }
 
         return artists
-            .sortedBy { it.name }
+            .sortedBy { it.name.lowercase(Locale.getDefault()) }
             .map { it.toArtist(true, true) }
     }
 
