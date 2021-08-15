@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.repository.Repository
 import javax.inject.Singleton
 
@@ -12,9 +13,10 @@ import javax.inject.Singleton
 object DatabaseRepositoryModule {
     @Provides
     @Singleton
-    fun provideRepository(): Repository = provideDatabaseRepository()
+    fun provideRepository(database: ChipboxDatabase): Repository =
+        provideDatabaseRepository(database)
 
     @Provides
     @Singleton
-    fun provideDatabaseRepository() = DatabaseRepository()
+    fun provideDatabaseRepository(database: ChipboxDatabase) = DatabaseRepository(database)
 }

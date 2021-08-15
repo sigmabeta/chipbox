@@ -27,7 +27,7 @@ interface TrackDao {
     fun searchTracksByTitle(title: String): Flow<List<TrackEntity>>
 
     @Insert
-    fun insertAll(tracks: List<TrackEntity>)
+    fun insert(track: TrackEntity): Long
 
     @Query("DELETE FROM track")
     fun nukeTable()
