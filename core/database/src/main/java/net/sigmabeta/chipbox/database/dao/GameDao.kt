@@ -11,6 +11,9 @@ interface GameDao {
     @Query("SELECT * FROM game WHERE id = :gameId")
     fun getGame(gameId: Long): Flow<GameEntity>
 
+    @Query("SELECT * FROM game WHERE id = :gameId")
+    fun getGameSync(gameId: Long): GameEntity
+
     @Query("SELECT * FROM game ORDER BY title COLLATE NOCASE")
     fun getAll(): Flow<List<GameEntity>>
 

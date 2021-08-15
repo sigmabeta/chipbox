@@ -30,74 +30,134 @@ class MockRepository(
     private var tracks: MutableList<MockTrack> = mutableListOf()
     private var artists: MutableList<MockArtist> = mutableListOf()
 
+    private val artistsLoadEvents = MutableSharedFlow<Data<List<Artist>>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
     private val gamesLoadEvents = MutableSharedFlow<Data<List<Game>>>(
         replay = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
-    var maxGames = DEFAULT_MAX_GAMES
-    var maxTracksPerGame = DEFAULT_MAX_TRACKS_PER_GAME
+    private val tracksLoadEvents = MutableSharedFlow<Data<List<Track>>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
 
-    override suspend fun getAllArtists(): List<Artist> {
-        if (artists.isEmpty()) {
+    // TODO this is a garbage idea. will result in screens loading the wrong data. oh well lol
+    private val singleArtistLoadEvents = MutableSharedFlow<Data<Artist>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    private val singleGameLoadEvents = MutableSharedFlow<Data<Game>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    private val singleTrackLoadEvents = MutableSharedFlow<Data<Track>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    var maxGames = DEFAULT_MAX_GAMES
+    private var maxTracksPerGame = DEFAULT_MAX_TRACKS_PER_GAME
+
+    suspend fun getLatestAllGames(
+        withTracks: Boolean = false,
+        withArtists: Boolean = false
+    ): List<Game> {
+        if (games.isEmpty()) {
             generateGames()
         }
 
-        return artists
-            .sortedBy { it.name.lowercase(Locale.getDefault()) }
-            .map { it.toArtist(true, true) }
+        return games
+            .sortedBy { it.title }
+            .map { it.toGame(withTracks, withArtists) }
     }
 
-    override fun getAllGames(): Flow<Data<List<Game>>> {
-        repositoryScope.launch {
-            gamesLoadEvents.emit(Data.Loading)
+    override fun getAllArtists(withTracks: Boolean, withGames: Boolean): Flow<Data<List<Artist>>> {
+        if (artists.isEmpty()) {
+            repositoryScope.launch {
+                artistsLoadEvents.emit(Data.Loading)
+                generateGames()
 
-            delay(3000L)
+                val data = artists
+                    .sortedBy { it.name.lowercase(Locale.getDefault()) }
+                    .map { it.toArtist(withGames, withTracks) }
 
-            val data = Data.Succeeded(getLatestAllGames())
-            gamesLoadEvents.emit(data)
+                artistsLoadEvents.emit(Data.Succeeded(data))
+            }
+        }
+
+        return artistsLoadEvents.asSharedFlow()
+    }
+
+    override fun getAllGames(withTracks: Boolean, withArtists: Boolean): Flow<Data<List<Game>>> {
+        if (games.isEmpty()) {
+            repositoryScope.launch {
+                gamesLoadEvents.emit(Data.Loading)
+                gamesLoadEvents.emit(
+                    Data.Succeeded(
+                        getLatestAllGames(withTracks, withArtists)
+                    )
+                )
+            }
         }
         return gamesLoadEvents.asSharedFlow()
     }
 
-    suspend fun getLatestAllGames(): List<Game> {
-        if (games.isEmpty()) {
-            generateGames()
-        }
-
-        return games
-            .sortedBy { it.title }
-            .map { it.toGame(true, true) }
-    }
-
-    override suspend fun getAllTracks(): List<Track> {
+    override fun getAllTracks(withGame: Boolean, withArtists: Boolean): Flow<Data<List<Track>>> {
         if (tracks.isEmpty()) {
-            generateGames()
+            repositoryScope.launch {
+                tracksLoadEvents.emit(Data.Loading)
+                generateGames()
+
+                val data = tracks
+                    .sortedBy { it.title }
+                    .map { it.toTrack(withGame, withArtists) }
+
+                tracksLoadEvents.emit(Data.Succeeded(data))
+            }
         }
 
-        return tracks
-            .sortedBy { it.title }
-            .map { it.toTrack(true, true) }
+        return tracksLoadEvents.asSharedFlow()
     }
 
-    override suspend fun getGame(id: Long): Game? {
+    override fun getGame(id: Long, withTracks: Boolean, withArtists: Boolean): Flow<Data<Game?>> {
         if (games.isEmpty()) {
-            generateGames()
-        }
+            repositoryScope.launch {
+                singleGameLoadEvents.emit(Data.Loading)
 
-        return games
-            .firstOrNull { it.id == id }
-            ?.toGame(true, true)
+                generateGames()
+
+                val data = games
+                    .first { it.id == id }
+                    .toGame(withTracks, withArtists)
+
+                singleGameLoadEvents.emit(Data.Succeeded(data))
+            }
+        }
+        return singleGameLoadEvents.asSharedFlow()
     }
 
-    override suspend fun getArtist(id: Long): Artist? {
-        if (artists.isEmpty()) {
-            generateGames()
-        }
+    override fun getArtist(id: Long, withTracks: Boolean, withGames: Boolean): Flow<Data<Artist?>> {
 
-        return artists
-            .firstOrNull { it.id == id }
-            ?.toArtist(true, true)
+        if (artists.isEmpty()) {
+            repositoryScope.launch {
+                singleArtistLoadEvents.emit(Data.Loading)
+
+                generateGames()
+
+                val data = artists
+                    .first { it.id == id }
+                    .toArtist(withTracks, withGames)
+
+                singleArtistLoadEvents.emit(Data.Succeeded(data))
+            }
+        }
+        return singleArtistLoadEvents.asSharedFlow()
     }
 
     override suspend fun addGame(rawGame: RawGame) = Unit
@@ -245,9 +305,9 @@ class MockRepository(
             id,
             path,
             title,
-            if (withArtists) artists.map { it.toArtist() } else null,
+            trackLengthMs,
             if (withGame) game?.toGame() else null,
-            trackLengthMs
+            if (withArtists) artists.map { it.toArtist() } else null
         )
 
     private fun MockGame.toGame(withTracks: Boolean = false, withArtists: Boolean = false): Game =
