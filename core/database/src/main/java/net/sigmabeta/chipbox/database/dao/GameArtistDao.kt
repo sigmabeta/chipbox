@@ -22,7 +22,18 @@ interface GameArtistDao {
             COLLATE NOCASE
             """
     )
-    fun getArtistsForGame(gameId: Long): List<ArtistEntity>
+    fun getArtistsForGame(gameId: Long): Flow<List<ArtistEntity>>
+
+    @Query(
+        """ 
+            SELECT * FROM artist INNER JOIN game_artist_join 
+            ON artist.id=game_artist_join.artistId
+            WHERE game_artist_join.gameId=:gameId
+            ORDER BY name
+            COLLATE NOCASE
+            """
+    )
+    fun getArtistsForGameSync(gameId: Long): List<ArtistEntity>
 
     @Query(
         """ 

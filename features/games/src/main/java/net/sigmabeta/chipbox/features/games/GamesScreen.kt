@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.features.games
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.GridCells
 import androidx.compose.foundation.lazy.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
@@ -9,6 +10,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
@@ -41,9 +43,9 @@ fun GamesScreen(gamesViewModel: GamesViewModel, navigateAction: (String) -> Unit
             density,
             navigateAction
         )
-        is Data.Failed -> ErrorState(gamesData.message)
-        Data.Empty -> EmptyState()
-        Data.Loading -> LoadingState()
+        is Data.Failed -> GamesErrorState(gamesData.message)
+        Data.Empty -> GamesEmptyState()
+        Data.Loading -> GamesLoadingState()
     }
 }
 
@@ -89,23 +91,26 @@ fun GamesList(
 }
 
 @Composable
-fun ErrorState(message: String) {
+fun GamesErrorState(message: String) {
     Text(
-        text = message
+        text = message,
+        modifier = Modifier.padding(64.dp)
     )
 }
 
 @Composable
-fun EmptyState() {
+fun GamesEmptyState() {
     Text(
-        text = "Empty"
+        text = "Empty",
+        modifier = Modifier.padding(64.dp)
     )
 }
 
 @Composable
-fun LoadingState() {
+fun GamesLoadingState() {
     Text(
-        text = "Loading"
+        text = "Loading",
+        modifier = Modifier.padding(64.dp)
     )
 }
 

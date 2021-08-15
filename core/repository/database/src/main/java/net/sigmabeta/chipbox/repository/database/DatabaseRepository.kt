@@ -16,6 +16,7 @@ import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
+import timber.log.Timber
 
 class DatabaseRepository(
     database: ChipboxDatabase,
@@ -28,14 +29,26 @@ class DatabaseRepository(
     private val trackArtistDao = database.trackArtistDao()
 
 
-    override suspend fun getAllArtists(): List<Artist> {
-        TODO("Not yet implemented")
-    }
+    override fun getAllArtists(
+        withTracks: Boolean,
+        withGames: Boolean
+    ): Flow<Data<List<Artist>>> = setupFlow(
+        { artistDao.getAll() },
+        { list -> list.map { it.toArtist(withTracks, withGames) } }
+    )
 
-    override fun getAllGames(): Flow<Data<List<Game>>> = gameDao
+    override fun getAllGames(withTracks: Boolean, withArtists: Boolean) = setupFlow(
+        { gameDao.getAll() },
+        { list -> list.map { it.toGame(withTracks, withArtists) } }
+    )
+
+    override fun getAllTracks(withGame: Boolean, withArtists: Boolean) = trackDao
         .getAll()
-        .map { list -> list.map { entity -> entity.toGame() } }
-        .catch { Data.Failed<List<Game>>(it.message ?: ERR_UNKNOWN) }
+        .map { list -> list.map { entity -> entity.toTrack(withGame, withArtists) } }
+        .catch {
+            Timber.e("Error: ${it.message}")
+            Data.Failed<List<Game>>(it.message ?: ERR_UNKNOWN)
+        }
         .map {
             if (it.isNotEmpty()) {
                 Data.Succeeded(it)
@@ -44,17 +57,21 @@ class DatabaseRepository(
             }
         }
 
-    override suspend fun getAllTracks(): List<Track> {
-        TODO("Not yet implemented")
-    }
+    override fun getGame(id: Long, withTracks: Boolean, withArtists: Boolean) = setupFlowWithId(
+        id,
+        { gameDao.getGame(id) },
+        { it.toGame(withTracks, withArtists) }
+    )
 
-    override suspend fun getGame(id: Long): Game? {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun getArtist(id: Long): Artist? {
-        TODO("Not yet implemented")
-    }
+    override fun getArtist(
+        id: Long,
+        withTracks: Boolean,
+        withGames: Boolean
+    ): Flow<Data<Artist?>> = setupFlowWithId(
+        id,
+        { artistDao.getArtist(id) },
+        { it.toArtist(withTracks, withGames) }
+    )
 
     override suspend fun addGame(rawGame: RawGame) {
         // Insert game..
@@ -79,13 +96,31 @@ class DatabaseRepository(
         gameArtistDao.insertAll(gameArtistJoins)
     }
 
-    private fun GameEntity.toGame(): Game =
-        Game(
+    private fun ArtistEntity.toArtist(withTracks: Boolean = false, withGames: Boolean = false) =
+        Artist(
             id,
-            title,
+            name,
             photoUrl,
-            null,
-            null
+            if (withTracks) getTracksForGame(id) else null,
+            if (withGames) getGamesForArtist(id) else null
+        )
+
+    private fun GameEntity.toGame(withTracks: Boolean = false, withArtists: Boolean = false) = Game(
+        id,
+        title,
+        photoUrl,
+        if (withArtists) getArtistsForGame(id) else null,
+        if (withTracks) getTracksForGame(id) else null
+    )
+
+    private fun TrackEntity.toTrack(withGame: Boolean = false, withArtists: Boolean = false) =
+        Track(
+            id,
+            path,
+            title,
+            trackLengthMs,
+            if (withGame) getGameById(game_id) else null,
+            if (withArtists) getArtistsForTrack(id) else null,
         )
 
     private fun RawTrack.toTrackEntityWithArtists(gameId: Long): Pair<TrackEntity, List<ArtistEntity>> {
@@ -135,6 +170,26 @@ class DatabaseRepository(
         return artist.copy(id = id)
     }
 
+    private fun getGameById(id: Long): Game = gameDao
+        .getGameSync(id)
+        .toGame()
+
+    private fun getGamesForArtist(id: Long): List<Game> = gameArtistDao
+        .getGamesForArtistSync(id)
+        .map { it.toGame() }
+
+    private fun getArtistsForTrack(id: Long): List<Artist> = trackArtistDao
+        .getArtistsForTrackSync(id)
+        .map { it.toArtist() }
+
+    private fun getArtistsForGame(id: Long): List<Artist> = gameArtistDao
+        .getArtistsForGameSync(id)
+        .map { it.toArtist() }
+
+    private fun getTracksForGame(id: Long): List<Track> = trackDao
+        .getTracksForGameSync(id)
+        .map { it.toTrack() }
+
     private fun resetData() {
         artistDao.nukeTable()
         gameDao.nukeTable()
@@ -142,6 +197,61 @@ class DatabaseRepository(
 
         gameArtistDao.nukeTable()
         trackArtistDao.nukeTable()
+    }
+
+    private fun <Entity, Model> setupFlow(
+        databaseOp: () -> Flow<Entity>,
+        converter: (Entity) -> Model
+    ): Flow<Data<Model>> {
+        return databaseOp()
+            .map { converter(it) }
+            .catch {
+                Timber.e("Error: ${it.message}")
+                Data.Failed<List<Game>>(it.message ?: ERR_UNKNOWN)
+            }
+            .map { model ->
+                if (model is List<*>) {
+                    if (model.isNotEmpty()) {
+                        Data.Succeeded(model)
+                    } else {
+                        Data.Empty
+                    }
+                } else {
+                    if (model != null) {
+                        Data.Succeeded(model)
+                    } else {
+                        Data.Empty
+                    }
+                }
+            }
+    }
+
+    private fun <Entity, Model> setupFlowWithId(
+        id: Long,
+        databaseOp: (Long) -> Flow<Entity>,
+        converter: (Entity) -> Model
+    ): Flow<Data<Model>> {
+        return databaseOp(id)
+            .map { converter(it) }
+            .catch {
+                Timber.e("Error: ${it.message}")
+                Data.Failed<List<Game>>(it.message ?: ERR_UNKNOWN)
+            }
+            .map { model ->
+                if (model is List<*>) {
+                    if (model.isNotEmpty()) {
+                        Data.Succeeded(model)
+                    } else {
+                        Data.Empty
+                    }
+                } else {
+                    if (model != null) {
+                        Data.Succeeded(model)
+                    } else {
+                        Data.Empty
+                    }
+                }
+            }
     }
 
     companion object {

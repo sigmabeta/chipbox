@@ -13,6 +13,6 @@ class GamesViewModel @Inject constructor(
 ): ViewModel() {
     @OptIn(FlowPreview::class)
     fun gamesData() = repository
-        .getAllGames()
+        .getAllGames(withArtists = true)
         .sample(66L)
 }

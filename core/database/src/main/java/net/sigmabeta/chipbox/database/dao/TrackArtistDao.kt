@@ -26,6 +26,17 @@ interface TrackArtistDao {
 
     @Query(
         """ 
+            SELECT * FROM artist INNER JOIN track_artist_join 
+            ON artist.id=track_artist_join.artistId
+            WHERE track_artist_join.trackId=:trackId
+            ORDER BY name
+            COLLATE NOCASE
+            """
+    )
+    fun getArtistsForTrackSync(trackId: Long): List<ArtistEntity>
+
+    @Query(
+        """ 
             SELECT * FROM track INNER JOIN track_artist_join 
             ON track.id=track_artist_join.trackId
             WHERE track_artist_join.artistId=:artistId

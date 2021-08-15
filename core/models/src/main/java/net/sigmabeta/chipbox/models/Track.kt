@@ -4,7 +4,7 @@ data class Track(
     val id: Long,
     val path: String,
     val title: String,
-    val artists: List<Artist>?,
+    val trackLengthMs: Long,
     var game: Game?,
-    val trackLengthMs: Long
+    val artists: List<Artist>?
 )

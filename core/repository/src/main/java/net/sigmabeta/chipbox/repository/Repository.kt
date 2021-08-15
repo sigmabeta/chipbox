@@ -7,16 +7,33 @@ import net.sigmabeta.chipbox.models.Track
 
 interface Repository {
     // Lists
-    suspend fun getAllArtists(): List<Artist>
+    fun getAllArtists(
+        withTracks: Boolean = false,
+        withGames: Boolean = false
+    ): Flow<Data<List<Artist>>>
 
-    fun getAllGames(): Flow<Data<List<Game>>>
+    fun getAllGames(
+        withTracks: Boolean = false,
+        withArtists: Boolean = false
+    ): Flow<Data<List<Game>>>
 
-    suspend fun getAllTracks(): List<Track>
+    fun getAllTracks(
+        withGame: Boolean = false,
+        withArtists: Boolean = false
+    ): Flow<Data<List<Track>>>
 
     // Individual models
-    suspend fun getGame(id: Long): Game?
+    fun getGame(
+        id: Long,
+        withTracks: Boolean = false,
+        withArtists: Boolean = false
+    ): Flow<Data<Game?>>
 
-    suspend fun getArtist(id: Long): Artist?
+    fun getArtist(
+        id: Long,
+        withTracks: Boolean = false,
+        withGames: Boolean = false
+    ): Flow<Data<Artist?>>
 
     suspend fun addGame(rawGame: RawGame)
 }
