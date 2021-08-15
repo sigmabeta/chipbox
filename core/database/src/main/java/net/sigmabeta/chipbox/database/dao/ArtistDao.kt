@@ -11,6 +11,9 @@ interface ArtistDao {
     @Query("SELECT * FROM artist WHERE id = :artistId")
     fun getArtist(artistId: Long): Flow<ArtistEntity>
 
+    @Query("SELECT * FROM artist WHERE name = :name")
+    fun getArtistByNameSync(name: String): ArtistEntity?
+
     @Query("SELECT * FROM artist ORDER BY name COLLATE NOCASE")
     fun getAll(): Flow<List<ArtistEntity>>
 
@@ -18,7 +21,7 @@ interface ArtistDao {
     fun searchArtistsByName(name: String): Flow<List<ArtistEntity>>
 
     @Insert
-    fun insertAll(artistEntities: List<ArtistEntity>)
+    fun insert(artist: ArtistEntity): Long
 
     @Query("DELETE FROM artist")
     fun nukeTable()

@@ -1,10 +1,14 @@
 package net.sigmabeta.chipbox.repository.database
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import net.sigmabeta.chipbox.database.ChipboxDatabase
+import net.sigmabeta.chipbox.entities.ArtistEntity
+import net.sigmabeta.chipbox.entities.GameEntity
+import net.sigmabeta.chipbox.entities.TrackEntity
+import net.sigmabeta.chipbox.entities.joins.GameArtistJoin
+import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Track
@@ -12,217 +16,137 @@ import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
-import net.sigmabeta.chipbox.repository.database.models.DatabaseArtist
-import net.sigmabeta.chipbox.repository.database.models.DatabaseGame
-import net.sigmabeta.chipbox.repository.database.models.DatabaseTrack
-import java.util.*
 
 class DatabaseRepository(
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    database: ChipboxDatabase,
 ) : Repository {
-    private val repositoryScope = CoroutineScope(dispatcher)
+    private val artistDao = database.artistDao()
+    private val gameDao = database.gameDao()
+    private val trackDao = database.trackDao()
 
-    private var gamesByTitle = mutableMapOf<String, DatabaseGame>()
-    private var tracksByTitle = mutableMapOf<String, DatabaseTrack>()
-    private var artistsByName = mutableMapOf<String, DatabaseArtist>()
+    private val gameArtistDao = database.gameArtistDao()
+    private val trackArtistDao = database.trackArtistDao()
 
-    private var gamesById = mutableMapOf<Long, DatabaseGame>()
-    private var tracksById = mutableMapOf<Long, DatabaseTrack>()
-    private var artistsById = mutableMapOf<Long, DatabaseArtist>()
-
-    private var lastPrimaryKey = 0L
-
-    private val gamesLoadEvents = MutableSharedFlow<Data<List<Game>>>(
-        replay = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-
-    private var gamesLoaded = false
 
     override suspend fun getAllArtists(): List<Artist> {
-        return artistsByName
-            .values
-            .sortedBy { it.name.lowercase(Locale.getDefault()) }
-            .map { it.toArtist(true, true) }
+        TODO("Not yet implemented")
     }
 
-    override fun getAllGames(): Flow<Data<List<Game>>> {
-        if (!gamesLoaded) {
-            gamesLoaded = true
-            repositoryScope.launch {
-                gamesLoadEvents.emit(Data.Loading)
-
-                delay(3000L)
-
-                val games = getLatestAllGames()
-                val data = if (games.isNotEmpty()) {
-                    Data.Succeeded(games)
-                } else {
-                    Data.Empty
-                }
-
-                gamesLoadEvents.emit(data)
+    override fun getAllGames(): Flow<Data<List<Game>>> = gameDao
+        .getAll()
+        .map { list -> list.map { entity -> entity.toGame() } }
+        .catch { Data.Failed<List<Game>>(it.message ?: ERR_UNKNOWN) }
+        .map {
+            if (it.isNotEmpty()) {
+                Data.Succeeded(it)
+            } else {
+                Data.Empty
             }
         }
-        return gamesLoadEvents.asSharedFlow()
-    }
 
     override suspend fun getAllTracks(): List<Track> {
-        return tracksByTitle
-            .values
-            .sortedBy { it.title }
-            .map { it.toTrack(true, true) }
+        TODO("Not yet implemented")
     }
 
     override suspend fun getGame(id: Long): Game? {
-        return gamesById[id]
-            ?.toGame(true, true)
+        TODO("Not yet implemented")
     }
 
     override suspend fun getArtist(id: Long): Artist? {
-        return artistsById[id]
-            ?.toArtist(true, true)
+        TODO("Not yet implemented")
     }
 
     override suspend fun addGame(rawGame: RawGame) {
-        val tracks = rawGame.tracks
-            .map { it.toDatabaseTrack() }
-            .onEach { track -> linkToTrackFromItsArtists(track) }
-
-        val artists = tracks.asSequence()
-            .map { it.artists }
-            .flatten()
-            .distinctBy { it.name }
-            .toList()
-
-        val game = DatabaseGame(
-            getNextPrimaryKey(),
+        // Insert game..
+        val game = GameEntity(
             rawGame.title,
-            rawGame.photoUrl,
-            artists,
-            tracks
+            rawGame.photoUrl
         )
 
-        tracks.forEach { track ->
-            track.game = game
+        val gameId = gameDao.insert(game)
 
-            tracksById[track.id] = track
-            tracksByTitle[track.title] = track
-        }
+        // Insert & return tracks & artists.
+        val trackAndArtists = rawGame.tracks
+            .map { it.toTrackEntityWithArtists(gameId) }
 
-        artists.forEach { artist ->
-            artist.games.add(game)
-        }
+        // Link this game to its artists.
+        val gameArtistJoins = trackAndArtists
+            .map { it.second }
+            .flatten()
+            .distinctBy { it.id }
+            .map { artist -> GameArtistJoin(gameId, artist.id) }
 
-        gamesById[game.id] = game
-        gamesByTitle[game.title] = game
-
-        repositoryScope.launch {
-            val data = Data.Succeeded(getLatestAllGames())
-            gamesLoadEvents.emit(data)
-        }
+        gameArtistDao.insertAll(gameArtistJoins)
     }
 
-    private fun getLatestAllGames() = gamesByTitle
-        .values
-        .sortedBy { it.title }
-        .map { it.toGame(true, true) }
-
-    private fun RawTrack.toDatabaseTrack(): DatabaseTrack {
-        val trackArtists = artist
-            .split(*DELIMITERS_ARTISTS)
-            .map { it.trim() }
-            .map { artistName -> getOrAddArtistByName(artistName) }
-
-        return DatabaseTrack(
-            getNextPrimaryKey(),
-            path,
-            title,
-            trackArtists,
-            null,
-            length
-        )
-    }
-
-    private fun DatabaseTrack.toTrack(
-        withGame: Boolean = false,
-        withArtists: Boolean = false
-    ): Track = Track(
-        id,
-        path,
-        title,
-        if (withArtists) artists.map { it.toArtist() } else null,
-        if (withGame) game?.toGame() else null,
-        trackLengthMs
-    )
-
-    private fun DatabaseGame.toGame(
-        withTracks: Boolean = false,
-        withArtists: Boolean = false
-    ): Game =
+    private fun GameEntity.toGame(): Game =
         Game(
             id,
             title,
             photoUrl,
-            if (withArtists) artists.map { it.toArtist() } else null,
-            if (withTracks) tracks.map { it.toTrack(withArtists = withArtists) } else null
+            null,
+            null
         )
 
-    private fun DatabaseArtist.toArtist(
-        withGames: Boolean = false,
-        withTracks: Boolean = false
-    ): Artist = Artist(
-        id,
-        name,
-        photoUrl,
-        if (withTracks) tracks.map { it.toTrack(withGame = withGames) } else null,
-        if (withGames) games.map { it.toGame() } else null
-    )
+    private fun RawTrack.toTrackEntityWithArtists(gameId: Long): Pair<TrackEntity, List<ArtistEntity>> {
+        val trackArtists = getArtistsSplit()
 
-    private fun linkToTrackFromItsArtists(track: DatabaseTrack) {
-        track.artists
-            .forEach { artist ->
-                artist.tracks.add(track)
-            }
+        val tempTrack = TrackEntity(
+            title,
+            path,
+            length,
+            gameId
+        )
+
+        val trackId = trackDao.insert(tempTrack)
+        val insertedTrack = tempTrack.copy(id = trackId)
+
+        insertedTrack.linkToTrackFromItsArtists(trackArtists)
+
+        return insertedTrack to trackArtists
     }
 
-    private fun getOrAddArtistByName(name: String): DatabaseArtist {
-        var artist = artistsByName[name]
+    private fun RawTrack.getArtistsSplit() = artist
+        .split(*DELIMITERS_ARTISTS)
+        .map { it.trim() }
+        .map { artistName -> getOrAddArtistByName(artistName) }
+
+    private fun TrackEntity.linkToTrackFromItsArtists(artists: List<ArtistEntity>) {
+        val joins = artists
+            .map { artist -> TrackArtistJoin(this.id, artist.id) }
+
+        trackArtistDao.insertAll(joins)
+    }
+
+    private fun getOrAddArtistByName(name: String): ArtistEntity {
+        var artist = artistDao.getArtistByNameSync(name)
 
         if (artist != null) {
             return artist
         }
 
-        artist = DatabaseArtist(
-            getNextPrimaryKey(),
+        artist = ArtistEntity(
             name,
-            null,
-            mutableListOf(),
-            mutableListOf()
+            null
         )
 
-        artistsById[artist.id] = artist
-        artistsByName[name] = artist
+        val id = artistDao.insert(artist)
 
-        return artist
+        return artist.copy(id = id)
     }
 
     private fun resetData() {
-        gamesById.clear()
-        tracksById.clear()
-        artistsById.clear()
+        artistDao.nukeTable()
+        gameDao.nukeTable()
+        trackDao.nukeTable()
 
-        gamesByTitle.clear()
-        tracksByTitle.clear()
-        artistsByName.clear()
-    }
-
-    private fun getNextPrimaryKey(): Long {
-        lastPrimaryKey++
-        return lastPrimaryKey
+        gameArtistDao.nukeTable()
+        trackArtistDao.nukeTable()
     }
 
     companion object {
+        const val ERR_UNKNOWN = "Unknown Error"
+
         val DELIMITERS_ARTISTS = arrayOf(", &", ",", " or ", " and ", "&")
     }
 }

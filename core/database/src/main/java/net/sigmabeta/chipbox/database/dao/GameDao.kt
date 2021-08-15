@@ -18,7 +18,7 @@ interface GameDao {
     fun searchGamesByTitle(title: String): Flow<List<GameEntity>>
 
     @Insert
-    fun insertAll(gameEntities: List<GameEntity>)
+    fun insert(game: GameEntity): Long
 
     @Query("DELETE FROM game")
     fun nukeTable()

@@ -85,16 +85,20 @@ class MemoryRepository(
     }
 
     override suspend fun addGame(rawGame: RawGame) {
+        // Get and convert tracks
         val tracks = rawGame.tracks
             .map { it.toMemoryTrack() }
+            // link this track to its artists
             .onEach { track -> linkToTrackFromItsArtists(track) }
 
+        // get all converted artists
         val artists = tracks.asSequence()
             .map { it.artists }
             .flatten()
             .distinctBy { it.name }
             .toList()
 
+        // convert game
         val game = MemoryGame(
             getNextPrimaryKey(),
             rawGame.title,
@@ -103,6 +107,7 @@ class MemoryRepository(
             tracks
         )
 
+        // link each track to this game and add them to repository
         tracks.forEach { track ->
             track.game = game
 
@@ -110,13 +115,16 @@ class MemoryRepository(
             tracksByTitle[track.title] = track
         }
 
+        // link this game to its artist
         artists.forEach { artist ->
             artist.games.add(game)
         }
 
+        // add game to repository
         gamesById[game.id] = game
         gamesByTitle[game.title] = game
 
+        // notify anyone interested that we've added a game
         repositoryScope.launch {
             val data = Data.Succeeded(getLatestAllGames())
             gamesLoadEvents.emit(data)
