@@ -85,6 +85,8 @@ fun PreviewGameTrackListItem() {
                 0L,
                 "",
                 "Fujiyama Oriental Golf Club - Japan",
+                214000,
+                null,
                 listOf(
                     Artist(
                         0L,
@@ -93,9 +95,7 @@ fun PreviewGameTrackListItem() {
                         mutableListOf(),
                         mutableListOf()
                     )
-                ),
-                null,
-                214000
+                )
             )
         ) {}
     }

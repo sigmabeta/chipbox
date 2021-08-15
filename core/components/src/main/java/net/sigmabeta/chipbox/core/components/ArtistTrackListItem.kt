@@ -76,7 +76,7 @@ fun PreviewArtistTrackListItem() {
                 0L,
                 "",
                 "Fujiyama Oriental Golf Club - Japan",
-                null,
+                214000,
                 Game(
                     1234L,
                     "Neo Turf Masters",
@@ -84,7 +84,7 @@ fun PreviewArtistTrackListItem() {
                     null,
                     null
                 ),
-                214000
+                null
             )
         ) {}
     }

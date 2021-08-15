@@ -1,10 +1,13 @@
 package net.sigmabeta.chipbox.repository.memory
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Track
@@ -32,29 +35,76 @@ class MemoryRepository(
 
     private var lastPrimaryKey = 0L
 
+    private val artistsLoadEvents = MutableSharedFlow<Data<List<Artist>>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
     private val gamesLoadEvents = MutableSharedFlow<Data<List<Game>>>(
         replay = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
-    private var gamesLoaded = false
+    private val tracksLoadEvents = MutableSharedFlow<Data<List<Track>>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
 
-    override suspend fun getAllArtists(): List<Artist> {
-        return artistsByName
-            .values
-            .sortedBy { it.name.lowercase(Locale.getDefault()) }
-            .map { it.toArtist(true, true) }
+    // TODO this is a garbage idea. will result in screens loading the wrong data. oh well lol
+    private val singleArtistLoadEvents = MutableSharedFlow<Data<Artist>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    private val singleGameLoadEvents = MutableSharedFlow<Data<Game>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    private val singleTrackLoadEvents = MutableSharedFlow<Data<Track>>(
+        replay = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    // TODO Garbage idea. Wrong data will load on second instance of a screen
+    private var artistsLoaded = false
+    private var gamesLoaded = false
+    private var tracksLoaded = false
+    private var singleGameLoaded = false
+    private var singleArtistLoaded = false
+
+    override fun getAllArtists(
+        withTracks: Boolean,
+        withGames: Boolean
+    ): Flow<Data<List<Artist>>> {
+        if (!artistsLoaded) {
+            artistsLoaded = true
+            repositoryScope.launch {
+                artistsLoadEvents.emit(Data.Loading)
+
+                val artists = artistsByName
+                    .values
+                    .sortedBy { it.name.lowercase(Locale.getDefault()) }
+                    .map { it.toArtist(withGames, withTracks) }
+                val data = if (artists.isNotEmpty()) {
+                    Data.Succeeded(artists)
+                } else {
+                    Data.Empty
+                }
+
+                artistsLoadEvents.emit(data)
+            }
+        }
+        return artistsLoadEvents.asSharedFlow()
     }
 
-    override fun getAllGames(): Flow<Data<List<Game>>> {
+    override fun getAllGames(withTracks: Boolean, withArtists: Boolean): Flow<Data<List<Game>>> {
         if (!gamesLoaded) {
             gamesLoaded = true
             repositoryScope.launch {
                 gamesLoadEvents.emit(Data.Loading)
 
-                delay(3000L)
-
-                val games = getLatestAllGames()
+                val games = getLatestAllGames(withTracks, withArtists)
                 val data = if (games.isNotEmpty()) {
                     Data.Succeeded(games)
                 } else {
@@ -67,21 +117,80 @@ class MemoryRepository(
         return gamesLoadEvents.asSharedFlow()
     }
 
-    override suspend fun getAllTracks(): List<Track> {
-        return tracksByTitle
-            .values
-            .sortedBy { it.title }
-            .map { it.toTrack(true, true) }
+    override fun getAllTracks(
+        withGame: Boolean,
+        withArtists: Boolean
+    ): Flow<Data<List<Track>>> {
+        if (!tracksLoaded) {
+            tracksLoaded = true
+            repositoryScope.launch {
+                tracksLoadEvents.emit(Data.Loading)
+
+                val tracks = tracksByTitle
+                    .values
+                    .sortedBy { it.title }
+                    .map { it.toTrack(withGame, withArtists) }
+
+                val data = if (tracks.isNotEmpty()) {
+                    Data.Succeeded(tracks)
+                } else {
+                    Data.Empty
+                }
+
+                tracksLoadEvents.emit(data)
+            }
+        }
+        return tracksLoadEvents.asSharedFlow()
     }
 
-    override suspend fun getGame(id: Long): Game? {
-        return gamesById[id]
-            ?.toGame(true, true)
+    override fun getGame(
+        id: Long,
+        withTracks: Boolean,
+        withArtists: Boolean
+    ): Flow<Data<Game?>> {
+        if (!singleGameLoaded) {
+            singleGameLoaded = true
+            repositoryScope.launch {
+                singleGameLoadEvents.emit(Data.Loading)
+
+                val game = gamesById[id]
+                    ?.toGame(withTracks, withArtists)
+
+                val data = if (game != null) {
+                    Data.Succeeded(game)
+                } else {
+                    Data.Empty
+                }
+
+                singleGameLoadEvents.emit(data)
+            }
+        }
+        return singleGameLoadEvents.asSharedFlow()
     }
 
-    override suspend fun getArtist(id: Long): Artist? {
-        return artistsById[id]
-            ?.toArtist(true, true)
+    override fun getArtist(
+        id: Long,
+        withTracks: Boolean,
+        withGames: Boolean
+    ): Flow<Data<Artist?>> {
+        if (!singleArtistLoaded) {
+            singleArtistLoaded = true
+            repositoryScope.launch {
+                singleArtistLoadEvents.emit(Data.Loading)
+
+                val artist = artistsById[id]
+                    ?.toArtist(true, true)
+
+                val data = if (artist != null) {
+                    Data.Succeeded(artist)
+                } else {
+                    Data.Empty
+                }
+
+                singleArtistLoadEvents.emit(data)
+            }
+        }
+        return singleArtistLoadEvents.asSharedFlow()
     }
 
     override suspend fun addGame(rawGame: RawGame) {
@@ -126,15 +235,16 @@ class MemoryRepository(
 
         // notify anyone interested that we've added a game
         repositoryScope.launch {
-            val data = Data.Succeeded(getLatestAllGames())
+            val data = Data.Succeeded(getLatestAllGames(true, true))
             gamesLoadEvents.emit(data)
         }
     }
 
-    private fun getLatestAllGames() = gamesByTitle
-        .values
-        .sortedBy { it.title }
-        .map { it.toGame(true, true) }
+    private fun getLatestAllGames(withTracks: Boolean = false, withArtists: Boolean = false) =
+        gamesByTitle
+            .values
+            .sortedBy { it.title }
+            .map { it.toGame(withTracks, withArtists) }
 
     private fun RawTrack.toMemoryTrack(): MemoryTrack {
         val trackArtists = artist
@@ -159,9 +269,9 @@ class MemoryRepository(
         id,
         path,
         title,
-        if (withArtists) artists.map { it.toArtist() } else null,
+        trackLengthMs,
         if (withGame) game?.toGame() else null,
-        trackLengthMs
+        if (withArtists) artists.map { it.toArtist() } else null
     )
 
     private fun MemoryGame.toGame(withTracks: Boolean = false, withArtists: Boolean = false): Game =
