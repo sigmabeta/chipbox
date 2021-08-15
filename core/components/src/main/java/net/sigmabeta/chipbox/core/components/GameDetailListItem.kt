@@ -23,7 +23,6 @@ fun GameDetailListItem(
         ),
         imageUrl = game.photoUrl,
         contDescId = R.string.cont_desc_game_art,
-        previewResourceId = previewResourceId
     )
 }
 
@@ -46,8 +45,7 @@ fun PreviewGameListItem() {
                     )
                 ),
                 null
-            ),
-            previewResourceId = R.drawable.square_pixels
+            )
         )
     }
 }
@@ -63,8 +61,7 @@ fun PreviewUnknownArtist() {
                 "urlol",
                 null,
                 null
-            ),
-            previewResourceId = R.drawable.square_pixels
+            )
         )
     }
 }

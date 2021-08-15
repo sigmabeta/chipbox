@@ -12,7 +12,7 @@ interface ArtistDao {
     fun getArtist(artistId: Long): Flow<ArtistEntity>
 
     @Query("SELECT * FROM artist WHERE name = :name")
-    fun getArtistByNameSync(name: String): ArtistEntity?
+    suspend fun getArtistByNameSync(name: String): ArtistEntity?
 
     @Query("SELECT * FROM artist ORDER BY name COLLATE NOCASE")
     fun getAll(): Flow<List<ArtistEntity>>

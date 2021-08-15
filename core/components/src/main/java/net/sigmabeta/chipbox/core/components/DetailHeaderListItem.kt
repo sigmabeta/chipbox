@@ -1,13 +1,12 @@
 package net.sigmabeta.chipbox.core.components
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberImagePainter
 import net.sigmabeta.chipbox.components.R
@@ -18,8 +17,7 @@ fun DetailHeaderListItem(
     subtitle: String?,
     subsubtitle: String,
     imageUrl: String?,
-    contDescId: Int,
-    previewResourceId: Int = 0
+    contDescId: Int
 ) {
     val coilPainter = rememberImagePainter(
         data = imageUrl,
@@ -45,14 +43,13 @@ fun DetailHeaderListItem(
                     .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                     .wrapContentSize()
             ) {
-                Image(
-                    painter = coilPainter,
-                    contentDescription = stringResource(
-                        id = contDescId,
-                        title
-                    )
+                RealImage(
+                    title = title,
+                    coilPainter = coilPainter,
+                    contDescId
                 )
             }
+
             Column(
                 modifier = Modifier
                     .weight(3.0f)
@@ -108,4 +105,16 @@ fun DetailHeaderListItem(
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun PreviewDetailHeader() {
+    DetailHeaderListItem(
+        title = "Chrono Cross",
+        subtitle = "Yasunori Mitsuda",
+        subsubtitle = "68 Tracks",
+        imageUrl = "",
+        contDescId = 0
+    )
 }

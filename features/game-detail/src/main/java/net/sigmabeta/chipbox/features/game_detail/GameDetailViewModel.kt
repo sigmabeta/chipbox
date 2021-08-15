@@ -15,6 +15,6 @@ class GameDetailViewModel @Inject constructor(
 
     @OptIn(FlowPreview::class)
     fun gameData() = repository
-        .getGame(arguments?.id!!)
+        .getGame(arguments?.id!!, withArtists = true, withTracks = true)
         .sample(66L)
 }
