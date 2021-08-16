@@ -7,7 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
-import net.sigmabeta.chipbox.readers.PsfReader
+import net.sigmabeta.chipbox.readers.getReaderForExtension
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
@@ -101,8 +101,9 @@ class RealScanner(
 
             if (fileExtension.isNotEmpty()) {
                 // Check that the file has an extension we care about before trying to read out of it.
-                if (EXTENSIONS_MUSIC.contains(fileExtension)) {
-                    val tracks = PsfReader.readTracksFromFile(file.path)
+                val reader = getReaderForExtension(fileExtension)
+                if (reader != null) {
+                    val tracks = reader.readTracksFromFile(file.path)
                     if (tracks.isNullOrEmpty()) {
                         return Progress(0, 0, 1)
                     }
@@ -186,7 +187,6 @@ class RealScanner(
     }
 
     companion object {
-        val EXTENSIONS_MUSIC = setOf("psf", "minipsf")
         val EXTENSIONS_IMAGES = setOf("jpg", "png")
     }
 }
