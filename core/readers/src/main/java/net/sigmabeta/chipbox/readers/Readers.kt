@@ -6,3 +6,10 @@ sealed class Reader {
     abstract fun readTracksFromFile(path: String): List<RawTrack>?
 }
 
+fun getReaderForExtension(extension: String): Reader? {
+    return when (extension) {
+        "psf" -> PsfReader
+        "nsfe" -> NsfeReader
+        else -> null
+    }
+}

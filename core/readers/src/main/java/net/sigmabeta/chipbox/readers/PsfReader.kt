@@ -41,7 +41,7 @@ object PsfReader : Reader() {
         wrappedBuffer.order(ByteOrder.LITTLE_ENDIAN)
         wrappedBuffer.get(header)
 
-        if (!isPsfFile(header)) {
+        if (!isPsfFile(header.take(3).toByteArray())) {
             return null
         }
 
@@ -168,6 +168,6 @@ object PsfReader : Reader() {
         return String(tagHeader) == "[TAG]"
     }
 
-    private fun isPsfFile(id: ByteArray) =
-        id[0] == 'P'.code.toByte() && id[1] == 'S'.code.toByte() && id[2] == 'F'.code.toByte()
+    private fun isPsfFile(id: ByteArray) = id.contentEquals("PSF".toByteArray(Charsets.US_ASCII))
+
 }

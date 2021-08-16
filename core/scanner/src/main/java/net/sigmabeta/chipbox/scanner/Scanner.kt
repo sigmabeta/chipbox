@@ -17,7 +17,8 @@ abstract class Scanner(dispatcher: CoroutineDispatcher = Dispatchers.IO) {
             try {
                 scan()
             } catch (ex: Exception) {
-                Timber.e("Scan error: ${ex.message}")
+                Timber.e("Scan error.")
+                ex.printStackTrace()
             }
         }
     }
