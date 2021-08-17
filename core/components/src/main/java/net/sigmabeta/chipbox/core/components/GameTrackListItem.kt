@@ -86,6 +86,7 @@ fun PreviewGameTrackListItem() {
                 "",
                 "Fujiyama Oriental Golf Club - Japan",
                 214000,
+                false,
                 null,
                 listOf(
                     Artist(

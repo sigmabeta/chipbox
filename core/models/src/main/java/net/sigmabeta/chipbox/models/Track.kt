@@ -5,6 +5,7 @@ data class Track(
     val path: String,
     val title: String,
     val trackLengthMs: Long,
-    var game: Game?,
+    val fade: Boolean,
+    val game: Game?,
     val artists: List<Artist>?
 )

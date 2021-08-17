@@ -39,6 +39,7 @@ fun PreviewArtistListItem() {
                         "",
                         "",
                         12345L,
+                        false,
                         null,
                         null
                     )
@@ -64,6 +65,7 @@ fun PreviewTwoTracks() {
                         "",
                         "",
                         12345L,
+                        false,
                         null,
                         null
                     ), Track(
@@ -71,6 +73,7 @@ fun PreviewTwoTracks() {
                         "",
                         "",
                         12345L,
+                        false,
                         null,
                         null
                     )
