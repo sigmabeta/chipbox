@@ -257,6 +257,7 @@ class MemoryRepository(
             path,
             title,
             trackArtists,
+            fade,
             null,
             length
         )
@@ -270,6 +271,7 @@ class MemoryRepository(
         path,
         title,
         trackLengthMs,
+        fade,
         if (withGame) game?.toGame() else null,
         if (withArtists) artists.map { it.toArtist() } else null
     )

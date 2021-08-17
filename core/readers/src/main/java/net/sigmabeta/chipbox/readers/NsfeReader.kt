@@ -40,35 +40,47 @@ object NsfeReader : Reader() {
             val trackNameList = chunks.parseChunkAsStrings("tlbl") ?: return null
             val artistList = chunks.parseChunkAsStrings("taut")
             val lengthChunk = chunks.parseChunkAsByteBuffer("time")
+            val fadeChunk = chunks.parseChunkAsByteBuffer("fade")
+            val plstChunk = chunks.parseChunkAsByteBuffer("plst")
 
             val lengthList = mutableListOf<Long>()
+            val fadeList = mutableListOf<Long>()
 
-            // TODO Support plst chunk
-            // TODO Filter out sound effects
-
-            // TODO Support fade boolean
             trackNameList.forEachIndexed { index, _ ->
-                val length = parseLengthChunk(lengthChunk, index, path)
+                val length = parseTimeChunk(lengthChunk)
+                val fade = parseTimeChunk(fadeChunk)
 
                 lengthList.add(
                     index,
-                    length
+                    length ?: 150_000L
+                )
+
+                fadeList.add(
+                    index,
+                    fade ?: 1L
                 )
             }
 
-            val tracks = mutableListOf<RawTrack>()
+            val tempTracks = mutableListOf<RawTrack>()
+            val plstIndexList = plstChunk
+                ?.array()
+                ?.map { it.toInt() }
+
             trackNameList.forEachIndexed { index, name ->
-                val rawTrack = RawTrack(
-                    path,
-                    name,
-                    (artistList?.get(index) ?: gameArtist),
-                    gameTitle,
-                    lengthList[index]
+                tempTracks.add(
+                    RawTrack(
+                        path,
+                        name,
+                        (artistList?.get(index) ?: gameArtist),
+                        gameTitle,
+                        lengthList[index],
+                        fadeList[index] == 0L
+                    )
                 )
-                Timber.i("Read track: $rawTrack")
-                tracks.add(rawTrack)
             }
-            return tracks
+
+            return plstIndexList
+                ?.map { tempTracks[it] } ?: tempTracks
         } catch (iae: IllegalArgumentException) {
             Timber.e("Illegal argument: ${iae.message}")
             return null
@@ -78,29 +90,25 @@ object NsfeReader : Reader() {
         }
     }
 
-    private fun parseLengthChunk(
-        lengthChunk: ByteBuffer?,
-        index: Int,
-        path: String
+    private fun parseTimeChunk(
+        chunk: ByteBuffer?
     ) = try {
-        lengthChunk?.nextFourBytesAsInt()?.toLong() ?: 150_000L
+        chunk?.nextFourBytesAsInt()?.toLong()
     } catch (ex: BufferUnderflowException) {
-        Timber.e("Failed to get length of track $index in file $path")
-        150_000L
+        null
     }
 
     private fun List<NsfeChunk>.parseChunkAsStrings(chunkName: String): List<String>? {
-        try {
-            return first { it.name == chunkName }
+        return try {
+            first { it.name == chunkName }
                 .content
                 .toString(Charsets.UTF_8)
                 .split(0.toChar())
                 .map { it.trim() }
                 .map { if (!isStringValid(it)) "Unknown" else it }
         } catch (ex: NoSuchElementException) {
-            Timber.e("Could not find chunk: $chunkName")
+            null
         }
-        return null
     }
 
     private fun isStringValid(it: String): Boolean {
@@ -116,16 +124,15 @@ object NsfeReader : Reader() {
     }
 
     private fun List<NsfeChunk>.parseChunkAsByteBuffer(chunkName: String): ByteBuffer? {
-        try {
+        return try {
             val chunk = first { it.name == chunkName }
-            return chunk
+            chunk
                 .content
                 .let { ByteBuffer.wrap(it, 0, chunk.length) }
                 .order(ByteOrder.LITTLE_ENDIAN)
         } catch (ex: NoSuchElementException) {
-            Timber.e("Could not find chunk: $chunkName")
+            null
         }
-        return null
     }
 
     private fun readNsfeChunks(fileAsByteBuffer: ByteBuffer): List<NsfeChunk> {
@@ -160,21 +167,6 @@ object NsfeReader : Reader() {
         fileAsByteBuffer.get(content)
         return NsfeChunk(name, length, content)
     }
-
-    private fun ByteBuffer.nextFourBytesAsInt() = int
-
-    private fun ByteBuffer.nextFourBytesAsString(): String? {
-        val headerArray = ByteArray(4)
-
-        try {
-            get(headerArray)
-        } catch (ex: BufferUnderflowException) {
-            return null
-        }
-
-        return headerArray.toString(Charsets.US_ASCII)
-    }
-
 
     private fun isNsfeFile(header: String) = header.contentEquals("NSFE")
 }

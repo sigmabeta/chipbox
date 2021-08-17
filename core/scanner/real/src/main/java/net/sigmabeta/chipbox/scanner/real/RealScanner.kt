@@ -118,10 +118,20 @@ class RealScanner(
         if (gameTracks.size > 0) {
             val gameName = gameTracks.first().game
 
+            var unknownTracks = 0
+            val checkedTracks = gameTracks.map {
+                if (it.title == "Unknown") {
+                    unknownTracks++
+                    it.copy(title = "Unknown Track $unknownTracks")
+                } else {
+                    it
+                }
+            }
+
             val game = RawGame(
                 gameName,
                 imagePath,
-                gameTracks
+                checkedTracks
             )
 
             repository.addGame(game)
