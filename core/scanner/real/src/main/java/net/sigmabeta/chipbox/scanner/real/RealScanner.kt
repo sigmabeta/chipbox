@@ -140,7 +140,7 @@ class RealScanner(
             // TODO Don't assume every file in this folder is from the same game
             emitEvent(
                 ScannerEvent.GameFoundEvent(
-                    gameName ?: "Unknown",
+                    gameName,
                     gameTracks.size,
                     imagePath ?: "Unknown"
                 )

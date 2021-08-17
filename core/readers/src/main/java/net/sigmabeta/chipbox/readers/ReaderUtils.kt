@@ -17,3 +17,15 @@ internal fun ByteBuffer.nextFourBytesAsString(): String? {
 
     return headerArray.toString(Charsets.US_ASCII)
 }
+
+internal fun String.orValidString(): String {
+    if (this == "<?>") {
+        return "Unknown"
+    }
+
+    if (this.isEmpty()) {
+        return "Unknown"
+    }
+
+    return this
+}
