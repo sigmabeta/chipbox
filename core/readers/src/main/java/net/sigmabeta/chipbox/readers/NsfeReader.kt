@@ -105,22 +105,10 @@ object NsfeReader : Reader() {
                 .toString(Charsets.UTF_8)
                 .split(0.toChar())
                 .map { it.trim() }
-                .map { if (!isStringValid(it)) "Unknown" else it }
+                .map { it.orValidString() }
         } catch (ex: NoSuchElementException) {
             null
         }
-    }
-
-    private fun isStringValid(it: String): Boolean {
-        if (it == "<?>") {
-            return false
-        }
-
-        if (it.isEmpty()) {
-            return false
-        }
-
-        return true
     }
 
     private fun List<NsfeChunk>.parseChunkAsByteBuffer(chunkName: String): ByteBuffer? {
