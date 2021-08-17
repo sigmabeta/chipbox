@@ -77,6 +77,7 @@ fun PreviewArtistTrackListItem() {
                 "",
                 "Fujiyama Oriental Golf Club - Japan",
                 214000,
+                false,
                 Game(
                     1234L,
                     "Neo Turf Masters",

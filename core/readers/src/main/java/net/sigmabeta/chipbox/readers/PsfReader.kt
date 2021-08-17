@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.readers
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.utils.convert
 import net.sigmabeta.chipbox.utils.convertUtf
+import timber.log.Timber
 import java.io.File
 import java.io.UnsupportedEncodingException
 import java.nio.ByteBuffer
@@ -15,13 +16,11 @@ object PsfReader : Reader() {
 
     private const val PSF_TAG_KEY_TITLE = "title"
     private const val PSF_TAG_KEY_GAME = "game"
-    private const val PSF_TAG_KEY_PLATFORM = "platform"
     private const val PSF_TAG_KEY_ARTIST = "artist"
     private const val PSF_TAG_KEY_LENGTH = "length"
+    private const val PSF_TAG_KEY_FADE = "fade"
 
-    private const val TAG_UNKNOWN_TITLE = "Unknown Track Title"
-    private const val TAG_UNKNOWN_ARTIST = "Unknown Artist"
-    private const val TAG_UNKNOWN_GAME = "Unknown Game"
+    private const val TAG_UNKNOWN = "Unknown"
 
     override fun readTracksFromFile(path: String): List<RawTrack>? {
         val tagMap: HashMap<String, String> = HashMap()
@@ -30,64 +29,66 @@ object PsfReader : Reader() {
         val fileAsBytes = file.readBytes()
         val fileSize = file.length().toInt()
 
-        // Not sure why we check this.
-        if (fileSize < 16) {
+        val fileAsByteBuffer = ByteBuffer.wrap(fileAsBytes, 0, fileSize)
+        fileAsByteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+
+        val formatHeader = fileAsByteBuffer.nextFourBytesAsString()
+        if (formatHeader == null) {
+            Timber.e("No header found.")
             return null
         }
 
-        val header = ByteArray(4)
-
-        val wrappedBuffer = ByteBuffer.wrap(fileAsBytes, 0, fileSize)
-        wrappedBuffer.order(ByteOrder.LITTLE_ENDIAN)
-        wrappedBuffer.get(header)
-
-        if (!isPsfFile(header.take(3).toByteArray())) {
+        if (!isPsfFile(formatHeader)) {
+            Timber.e("PSF header missing.")
             return null
         }
 
-        val platform = when (header[3]) {
-            0x01.toByte() -> "Sony Playstation"
-//            0x02.toByte() -> "Sony Playstation 2"
-//            0x11.toByte() -> "Sega Saturn"
-//            0x12.toByte() -> "Sega Dreamcast"
-            else -> return null
+        if (!isSupportedPlatform(formatHeader.toByteArray(Charsets.US_ASCII)[3])) {
+            Timber.e("Unsupported platform.")
+            return null
         }
-
-        tagMap[PSF_TAG_KEY_PLATFORM] = platform
 
         try {
-            // Kotlin syntax kind of confusing. Gets the next Int sized chunk from buffer.
-            val reservedAreaSize = wrappedBuffer.int
-            val programAreaSize = wrappedBuffer.int
+            val reservedAreaSize = fileAsByteBuffer.nextFourBytesAsInt()
+            val programAreaSize = fileAsByteBuffer.nextFourBytesAsInt()
 
             val dataSize = reservedAreaSize + programAreaSize
             val tagsAreaSize = fileSize - dataSize - COMBINED_HEADER_SIZE
 
             // Move the reader to the start of the tag area
-            wrappedBuffer.position(dataSize + FILE_HEADER_SIZE)
+            fileAsByteBuffer.position(dataSize + FILE_HEADER_SIZE)
 
-            if (wrappedBuffer.remaining() < 5) {
+            if (!isPsfTagValid(fileAsByteBuffer)) {
                 return null
             }
 
-            if (!isPsfTagValid(wrappedBuffer)) {
-                return null
-            }
-
-            readAllTags(tagsAreaSize, wrappedBuffer, tagMap)
+            readAllTags(tagsAreaSize, fileAsByteBuffer, tagMap)
             return listOf(
                 RawTrack(
                     path,
-                    tagMap[PSF_TAG_KEY_TITLE] ?: TAG_UNKNOWN_TITLE,
-                    tagMap[PSF_TAG_KEY_ARTIST] ?: TAG_UNKNOWN_ARTIST,
-                    tagMap[PSF_TAG_KEY_GAME] ?: TAG_UNKNOWN_GAME,
-                    getFileTrackLength(tagMap)
+                    tagMap[PSF_TAG_KEY_TITLE] ?: TAG_UNKNOWN,
+                    tagMap[PSF_TAG_KEY_ARTIST] ?: TAG_UNKNOWN,
+                    tagMap[PSF_TAG_KEY_GAME] ?: TAG_UNKNOWN,
+                    tagMap[PSF_TAG_KEY_LENGTH]?.toLengthMillis() ?: 150_000L,
+                    tagMap[PSF_TAG_KEY_FADE]?.toLengthMillis() ?: 0 > 0
                 )
             )
         } catch (iae: IllegalArgumentException) {
+            Timber.e("Illegal argument: ${iae.message}")
             return null
         } catch (e: UnsupportedEncodingException) {
+            Timber.e("Unsupported Encoding: ${e.message}")
             return null
+        }
+    }
+
+    private fun isSupportedPlatform(platformCode: Byte): Boolean {
+        return when (platformCode) {
+            0x01.toByte() -> true // "Sony Playstation"
+            //            0x02.toByte() -> Unit // "Sony Playstation 2"
+            //            0x11.toByte() -> Unit // "Sega Saturn"
+            //            0x12.toByte() -> Unit // "Sega Dreamcast"
+            else -> false
         }
     }
 
@@ -132,9 +133,8 @@ object PsfReader : Reader() {
         }
     }
 
-    private fun getFileTrackLength(tagMap: HashMap<String, String>): Long {
-        val lengthText = tagMap[PSF_TAG_KEY_LENGTH] ?: return 0
-        val splitText = lengthText.split(":")
+    private fun String.toLengthMillis(): Long {
+        val splitText = split(":")
 
         val minutesText: String
         val secondsText: String
@@ -168,6 +168,6 @@ object PsfReader : Reader() {
         return String(tagHeader) == "[TAG]"
     }
 
-    private fun isPsfFile(id: ByteArray) = id.contentEquals("PSF".toByteArray(Charsets.US_ASCII))
+    private fun isPsfFile(header: String) = header.startsWith("PSF")
 
 }
