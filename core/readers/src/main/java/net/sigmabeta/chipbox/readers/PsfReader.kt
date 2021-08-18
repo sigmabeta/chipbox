@@ -4,10 +4,8 @@ import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.utils.convert
 import net.sigmabeta.chipbox.utils.convertUtf
 import timber.log.Timber
-import java.io.File
 import java.io.UnsupportedEncodingException
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 object PsfReader : Reader() {
     private const val FILE_HEADER_SIZE = 16
@@ -20,19 +18,10 @@ object PsfReader : Reader() {
     private const val PSF_TAG_KEY_LENGTH = "length"
     private const val PSF_TAG_KEY_FADE = "fade"
 
-    private const val TAG_UNKNOWN = "Unknown"
-
     override fun readTracksFromFile(path: String): List<RawTrack>? {
-        val tagMap: HashMap<String, String> = HashMap()
-
-        val file = File(path)
-        val fileAsBytes = file.readBytes()
-        val fileSize = file.length().toInt()
-
-        val fileAsByteBuffer = ByteBuffer.wrap(fileAsBytes, 0, fileSize)
-        fileAsByteBuffer.order(ByteOrder.LITTLE_ENDIAN)
-
+        val fileAsByteBuffer = fileAsByteBuffer(path)
         val formatHeader = fileAsByteBuffer.nextFourBytesAsString()
+
         if (formatHeader == null) {
             Timber.e("No header found.")
             return null
@@ -53,7 +42,7 @@ object PsfReader : Reader() {
             val programAreaSize = fileAsByteBuffer.nextFourBytesAsInt()
 
             val dataSize = reservedAreaSize + programAreaSize
-            val tagsAreaSize = fileSize - dataSize - COMBINED_HEADER_SIZE
+            val tagsAreaSize = fileAsByteBuffer.array().size - dataSize - COMBINED_HEADER_SIZE
 
             // Move the reader to the start of the tag area
             fileAsByteBuffer.position(dataSize + FILE_HEADER_SIZE)
@@ -62,6 +51,8 @@ object PsfReader : Reader() {
                 return null
             }
 
+            val tagMap: HashMap<String, String> = HashMap()
+
             readAllTags(tagsAreaSize, fileAsByteBuffer, tagMap)
             return listOf(
                 RawTrack(
@@ -69,7 +60,7 @@ object PsfReader : Reader() {
                     tagMap[PSF_TAG_KEY_TITLE] ?: TAG_UNKNOWN,
                     tagMap[PSF_TAG_KEY_ARTIST] ?: TAG_UNKNOWN,
                     tagMap[PSF_TAG_KEY_GAME] ?: TAG_UNKNOWN,
-                    tagMap[PSF_TAG_KEY_LENGTH]?.toLengthMillis() ?: 150_000L,
+                    tagMap[PSF_TAG_KEY_LENGTH]?.toLengthMillis() ?: LENGTH_UNKNOWN_MS,
                     tagMap[PSF_TAG_KEY_FADE]?.toLengthMillis() ?: 0 > 0
                 )
             )
@@ -131,34 +122,6 @@ object PsfReader : Reader() {
 
             tagMap[tagKey] = tagValue
         }
-    }
-
-    private fun String.toLengthMillis(): Long {
-        val splitText = split(":")
-
-        val minutesText: String
-        val secondsText: String
-
-        when (splitText.size) {
-            1 -> {
-                minutesText = "0"
-                secondsText = splitText[0]
-            }
-            2 -> {
-                minutesText = splitText[0]
-                secondsText = splitText[1]
-            }
-            else -> return 0L
-        }
-
-        val minutesInt = minutesText.toInt()
-        val secondsInt = try {
-            secondsText.toInt() + (minutesInt * 60)
-        } catch (ex: NumberFormatException) {
-            ((secondsText.toFloatOrNull() ?: 0.0f) + (minutesInt * 60)).toInt()
-        }
-
-        return secondsInt * 1000L
     }
 
     private fun isPsfTagValid(wrappedBuffer: ByteBuffer): Boolean {

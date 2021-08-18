@@ -4,19 +4,13 @@ import net.sigmabeta.chipbox.repository.RawTrack
 import timber.log.Timber
 import java.io.File
 import java.io.UnsupportedEncodingException
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 object NsfReader : Reader() {
     @OptIn(ExperimentalStdlibApi::class)
     override fun readTracksFromFile(path: String): List<RawTrack>? {
         try {
-            val file = File(path)
-            val fileAsBytes = file.readBytes()
-            val fileSize = file.length().toInt()
-
-            val fileAsByteBuffer = ByteBuffer.wrap(fileAsBytes, 0, fileSize)
-            fileAsByteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+            val fileAsBytes = File(path).readBytes()
+            val fileAsByteBuffer = fileAsByteBuffer(path)
 
             val formatHeader = fileAsByteBuffer.nextFourBytesAsString()
             if (formatHeader == null) {
@@ -39,10 +33,10 @@ object NsfReader : Reader() {
                 tracks.add(
                     RawTrack(
                         path,
-                        "Unknown",
+                        TAG_UNKNOWN,
                         gameArtist.orValidString(),
                         gameTitle,
-                        150_000L,
+                        LENGTH_UNKNOWN_MS,
                         true
                     )
                 )
@@ -68,7 +62,7 @@ object NsfReader : Reader() {
                 .trim()
         } catch (ex: Exception) {
             Timber.e("Unable to read game title: ${ex.message}")
-            "Unknown"
+            TAG_UNKNOWN
         }
     }
 
@@ -79,7 +73,7 @@ object NsfReader : Reader() {
                 .trim()
         } catch (ex: Exception) {
             Timber.e("Unable to read game title: ${ex.message}")
-            "Unknown"
+            TAG_UNKNOWN
         }
     }
 
