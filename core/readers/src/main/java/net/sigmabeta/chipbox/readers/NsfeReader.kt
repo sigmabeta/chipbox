@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.repository.RawTrack
 import timber.log.Timber
-import java.io.File
 import java.io.UnsupportedEncodingException
 import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
@@ -11,12 +10,7 @@ import java.nio.ByteOrder
 object NsfeReader : Reader() {
     override fun readTracksFromFile(path: String): List<RawTrack>? {
         try {
-            val file = File(path)
-            val fileAsBytes = file.readBytes()
-            val fileSize = file.length().toInt()
-
-            val fileAsByteBuffer = ByteBuffer.wrap(fileAsBytes, 0, fileSize)
-            fileAsByteBuffer.order(ByteOrder.LITTLE_ENDIAN)
+            val fileAsByteBuffer = fileAsByteBuffer(path)
 
             val formatHeader = fileAsByteBuffer.nextFourBytesAsString()
             if (formatHeader == null) {
@@ -52,7 +46,7 @@ object NsfeReader : Reader() {
 
                 lengthList.add(
                     index,
-                    length ?: 150_000L
+                    length ?: LENGTH_UNKNOWN_MS
                 )
 
                 fadeList.add(

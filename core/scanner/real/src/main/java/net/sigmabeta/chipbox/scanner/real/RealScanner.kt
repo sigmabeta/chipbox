@@ -7,6 +7,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
+import net.sigmabeta.chipbox.readers.M3uReader
+import net.sigmabeta.chipbox.readers.TAG_UNKNOWN
 import net.sigmabeta.chipbox.readers.getReaderForExtension
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
@@ -14,6 +16,7 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import timber.log.Timber
 import java.io.File
+import java.util.*
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
@@ -94,8 +97,8 @@ class RealScanner(
         }
 
         var imagePath: String? = null
-        val gameTracks = mutableListOf<RawTrack>()
-
+        val rawFileTracks = mutableListOf<RawTrack>()
+        val m3uTracks = mutableListOf<RawTrack>()
         for (file in files) {
             val fileExtension = file.extension
 
@@ -104,23 +107,40 @@ class RealScanner(
                 val reader = getReaderForExtension(fileExtension)
                 if (reader != null) {
                     val tracks = reader.readTracksFromFile(file.path)
-                    if (tracks.isNullOrEmpty()) {
+
+                    // TODO These shouldn't return
+                    if (tracks == null) {
                         return Progress(0, 0, 1)
                     }
 
-                    gameTracks += tracks
+                    if (tracks.isEmpty()) {
+                        return Progress.EMPTY
+                    }
+
+                    rawFileTracks += tracks
                 } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
                     imagePath = getImagePath(file)
+                } else if (fileExtension.lowercase(Locale.getDefault()) == "m3u") {
+                    val tracks = M3uReader.readTracksFromFile(file.path)
+                    if (tracks != null) {
+                        m3uTracks += tracks
+                    }
                 }
             }
         }
 
-        if (gameTracks.size > 0) {
-            val gameName = gameTracks.first().game
+        if (rawFileTracks.isNotEmpty()) {
+            val reconciledTracks = if (m3uTracks.isNotEmpty()) {
+                reconcile(rawFileTracks, m3uTracks)
+            } else {
+                rawFileTracks
+            }
+
+            val gameName = rawFileTracks.first().game
 
             var unknownTracks = 0
-            val checkedTracks = gameTracks.map {
-                if (it.title == "Unknown") {
+            val checkedTracks = reconciledTracks.map {
+                if (it.title == TAG_UNKNOWN) {
                     unknownTracks++
                     it.copy(title = "Unknown Track $unknownTracks")
                 } else {
@@ -136,25 +156,40 @@ class RealScanner(
 
             repository.addGame(game)
 
-            // TODO Use "unknown" strings from other file
             // TODO Don't assume every file in this folder is from the same game
             emitEvent(
                 ScannerEvent.GameFoundEvent(
                     gameName,
-                    gameTracks.size,
-                    imagePath ?: "Unknown"
+                    rawFileTracks.size,
+                    imagePath ?: TAG_UNKNOWN
                 )
             )
 
             return Progress(
                 1,
-                gameTracks.size,
+                rawFileTracks.size,
                 0
             )
         }
 
         return Progress.EMPTY
     }
+
+    private fun reconcile(rawFileTracks: List<RawTrack>, m3uTracks: List<RawTrack>) =
+        rawFileTracks.zip(m3uTracks) { rawTrack, m3uTrack ->
+            if (rawTrack.path == m3uTrack.path) {
+                RawTrack(
+                    rawTrack.path,
+                    m3uTrack.title,
+                    rawTrack.artist,
+                    rawTrack.artist,
+                    m3uTrack.length,
+                    m3uTrack.fade
+                )
+            } else {
+                rawTrack
+            }
+        }
 
     private fun getImagePath(file: File) = "file://${file.path}"
 
