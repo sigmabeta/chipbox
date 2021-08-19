@@ -15,18 +15,10 @@ object M3uReader : Reader() {
                 .array()
                 .convert()
 
-            val lines = fileAsString
-                .split("\n".toRegex())
-                .map { it.trim() }
-                .filter { it.contains("NSF") }
+            val nsfTracks = fileAsString.searchForNsfTracks(path)
+            val gbsTracks = fileAsString.searchForGbsTracks(path)
 
-            if (lines.isEmpty()) {
-                return emptyList()
-            }
-
-            return lines
-                .map { it.toRawTrack(path) }
-                .filterNotNull()
+            return nsfTracks + gbsTracks
         } catch (iae: IllegalArgumentException) {
             Timber.e("Illegal argument: ${iae.message}")
             return null
@@ -40,7 +32,35 @@ object M3uReader : Reader() {
     }
 }
 
-private fun String.toRawTrack(pathToM3u: String): RawTrack? {
+private fun String.searchForNsfTracks(path: String): List<RawTrack> {
+    val nsfLines = split("\n".toRegex())
+        .map { it.trim() }
+        .filter { it.contains("NSF") }
+
+    if (nsfLines.isEmpty()) {
+        return emptyList()
+    }
+
+    return nsfLines
+        .map { it.toRawNsfTrack(path) }
+        .filterNotNull()
+}
+
+private fun String.searchForGbsTracks(path: String): List<RawTrack> {
+    val nsfLines = split("\n".toRegex())
+        .map { it.trim() }
+        .filter { it.contains("GBS") }
+
+    if (nsfLines.isEmpty()) {
+        return emptyList()
+    }
+
+    return nsfLines
+        .map { it.toRawGbsTrack(path) }
+        .filterNotNull()
+}
+
+private fun String.toRawNsfTrack(pathToM3u: String): RawTrack? {
     val parent = File(pathToM3u).parent
     if (parent == null) {
         Timber.e("File doesn't have a parent, somehow.")
@@ -53,9 +73,34 @@ private fun String.toRawTrack(pathToM3u: String): RawTrack? {
 
     return RawTrack(
         "$parent/$filename",
-        tags[2].filterNot { it == '\\' },
+        tags[2],
         TAG_UNKNOWN,
         TAG_UNKNOWN,
+        tags[3].toLengthMillis(),
+        tags[5].toLengthMillis() > 0
+    )
+}
+
+private fun String.toRawGbsTrack(pathToM3u: String): RawTrack? {
+    val parent = File(pathToM3u).parent
+    if (parent == null) {
+        Timber.e("File doesn't have a parent, somehow.")
+        return null
+    }
+
+    val filename = substringBefore("::")
+
+    val tags = splitByUnescapedCommas()
+
+    val whereGbsFilesHaveAllTheRelevantInfo = tags[2]
+    val actualTags = whereGbsFilesHaveAllTheRelevantInfo
+        .split(" - ")
+
+    return RawTrack(
+        "$parent/$filename",
+        actualTags[0],
+        actualTags[1],
+        actualTags[2],
         tags[3].toLengthMillis(),
         tags[5].toLengthMillis() > 0
     )
@@ -69,3 +114,6 @@ private fun String.toRawTrack(pathToM3u: String): RawTrack? {
  *  */
 private fun String.splitByUnescapedCommas() = substringAfter("::")
     .split(Regex("(?<!\\\\),"))
+    .map {
+        it.filterNot { it == '\\' }
+    }
