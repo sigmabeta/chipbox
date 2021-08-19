@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
+import net.sigmabeta.chipbox.readers.LENGTH_UNKNOWN_MS
 import net.sigmabeta.chipbox.readers.M3uReader
 import net.sigmabeta.chipbox.readers.TAG_UNKNOWN
 import net.sigmabeta.chipbox.readers.getReaderForExtension
@@ -180,16 +181,37 @@ class RealScanner(
             if (rawTrack.path == m3uTrack.path) {
                 RawTrack(
                     rawTrack.path,
-                    m3uTrack.title,
-                    rawTrack.artist,
-                    rawTrack.artist,
-                    m3uTrack.length,
-                    m3uTrack.fade
+                    reconcile(rawTrack.title, m3uTrack.title),
+                    reconcile(rawTrack.artist, m3uTrack.artist),
+                    reconcile(rawTrack.game, m3uTrack.game),
+                    reconcile(m3uTrack.length, rawTrack.length),
+                    reconcile(m3uTrack.fade, rawTrack.fade),
                 )
             } else {
                 rawTrack
             }
         }
+
+    private fun reconcile(priority: String, backup: String): String {
+        if (priority != TAG_UNKNOWN) {
+            return priority
+        }
+        return backup
+    }
+
+    private fun reconcile(priority: Long, backup: Long): Long {
+        if (priority != LENGTH_UNKNOWN_MS) {
+            return priority
+        }
+        return backup
+    }
+
+    private fun reconcile(priority: Boolean, backup: Boolean): Boolean {
+        if (!priority) {
+            return priority
+        }
+        return backup
+    }
 
     private fun getImagePath(file: File) = "file://${file.path}"
 
