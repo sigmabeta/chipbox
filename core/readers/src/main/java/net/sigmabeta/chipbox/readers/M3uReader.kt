@@ -33,6 +33,9 @@ object M3uReader : Reader() {
         } catch (e: UnsupportedEncodingException) {
             Timber.e("Unsupported Encoding: ${e.message}")
             return null
+        } catch (e: Exception) {
+            Timber.e("Malformed m3u file: $path")
+            return null
         }
     }
 }
