@@ -11,6 +11,7 @@ fun getReaderForExtension(extension: String): Reader? {
         "psf" -> PsfReader
         "nsf" -> NsfReader
         "nsfe" -> NsfeReader
+        "gbs" -> GbsReader
         else -> null
     }
 }
