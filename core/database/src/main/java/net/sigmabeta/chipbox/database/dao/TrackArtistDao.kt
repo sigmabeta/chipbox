@@ -40,7 +40,6 @@ interface TrackArtistDao {
             SELECT * FROM track INNER JOIN track_artist_join 
             ON track.id=track_artist_join.trackId
             WHERE track_artist_join.artistId=:artistId
-            ORDER BY title
             COLLATE NOCASE
             """
     )
