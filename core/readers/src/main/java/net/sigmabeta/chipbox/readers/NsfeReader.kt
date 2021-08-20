@@ -36,21 +36,22 @@ object NsfeReader : Reader() {
             val lengthChunk = chunks.parseChunkAsByteBuffer("time")
             val fadeChunk = chunks.parseChunkAsByteBuffer("fade")
             val plstChunk = chunks.parseChunkAsByteBuffer("plst")
+            val infoChunk = chunks.parseChunkAsByteBuffer("info")
 
             val lengthList = mutableListOf<Long>()
             val fadeList = mutableListOf<Long>()
 
-            trackNameList.forEachIndexed { index, _ ->
+            val trackCount = infoChunk?.get(0x08)?.toInt() ?: trackNameList.size
+
+            for (index in 0..trackCount) {
                 val length = parseTimeChunk(lengthChunk)
                 val fade = parseTimeChunk(fadeChunk)
 
                 lengthList.add(
-                    index,
                     length ?: LENGTH_UNKNOWN_MS
                 )
 
                 fadeList.add(
-                    index,
                     fade ?: 1L
                 )
             }
@@ -61,6 +62,15 @@ object NsfeReader : Reader() {
                 ?.map { it.toInt() }
 
             trackNameList.forEachIndexed { index, name ->
+                // If plst chunk exists
+                val trackNumber = if (plstIndexList != null) {
+                    // If the plst doesn't go this high, don't add the track
+                    plstIndexList.getOrNull(index) ?: index
+                } else {
+                    // plst chunk not existing means we use implicit order
+                    index
+                }
+
                 tempTracks.add(
                     RawTrack(
                         path,
@@ -68,6 +78,7 @@ object NsfeReader : Reader() {
                         (artistList?.get(index) ?: gameArtist),
                         gameTitle,
                         lengthList[index],
+                        trackNumber,
                         fadeList[index] == 0L
                     )
                 )

@@ -18,6 +18,7 @@ data class TrackEntity(
     val title: String,
     val path: String,
     val trackLengthMs: Long,
+    val trackNumber: Int,
     val fade: Boolean,
     val game_id: Long,
     @PrimaryKey(autoGenerate = true) val id: Long = 0

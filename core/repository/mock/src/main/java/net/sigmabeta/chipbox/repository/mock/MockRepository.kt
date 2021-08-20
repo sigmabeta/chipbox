@@ -266,10 +266,11 @@ class MockRepository(
             random.nextLong(),
             "",
             stringGenerator.generateTitle(),
-            artists,
+            random.nextInt(400000).toLong(),
+            -1,
             false,
             null,
-            random.nextInt(400000).toLong()
+            artists
         )
 
         artists.forEach {
@@ -307,6 +308,7 @@ class MockRepository(
             path,
             title,
             trackLengthMs,
+            trackNumber,
             fade,
             if (withGame) game?.toGame() else null,
             if (withArtists) artists.map { it.toArtist() } else null

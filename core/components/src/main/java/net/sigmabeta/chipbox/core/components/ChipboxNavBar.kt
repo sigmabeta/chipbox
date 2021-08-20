@@ -100,6 +100,7 @@ fun ScannerDisplay(
             ScannerState.Unknown, ScannerState.Idle -> Unit
             is ScannerState.Scanning -> ScanProgressDisplay(lastScannerEvent)
             is ScannerState.Complete -> ScanCompleteDisplay(scannerState, onClearClick)
+            is ScannerState.Failed -> ScanFailedDisplay(scannerState.path)
         }
     }
 }

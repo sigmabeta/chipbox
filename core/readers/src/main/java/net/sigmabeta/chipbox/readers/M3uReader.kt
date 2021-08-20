@@ -15,8 +15,8 @@ object M3uReader : Reader() {
                 .array()
                 .convert()
 
-            val nsfTracks = fileAsString.searchForNsfTracks(path)
-            val gbsTracks = fileAsString.searchForGbsTracks(path)
+            val nsfTracks = fileAsString.searchForNsfTracks(path).sortedBy { it.trackNumber }
+            val gbsTracks = fileAsString.searchForGbsTracks(path).sortedBy { it.trackNumber }
 
             return nsfTracks + gbsTracks
         } catch (iae: IllegalArgumentException) {
@@ -77,6 +77,7 @@ private fun String.toRawNsfTrack(pathToM3u: String): RawTrack? {
         TAG_UNKNOWN,
         TAG_UNKNOWN,
         tags[3].toLengthMillis(),
+        tags[1].toIntOrNull() ?: -1,
         tags[5].toLengthMillis() > 0
     )
 }
@@ -102,6 +103,7 @@ private fun String.toRawGbsTrack(pathToM3u: String): RawTrack? {
         actualTags[1],
         actualTags[2],
         tags[3].toLengthMillis(),
+        tags[1].toIntOrNull() ?: -1,
         tags[5].toLengthMillis() > 0
     )
 }
