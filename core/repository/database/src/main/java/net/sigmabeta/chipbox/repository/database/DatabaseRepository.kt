@@ -212,6 +212,7 @@ class DatabaseRepository(
     private suspend fun getTracksForArtist(id: Long): List<Track> = trackArtistDao
         .getTracksForArtistSync(id)
         .map { it.toTrack(withGame = true) }
+        .sortedBy { it.game?.title }
 
     private fun resetData() {
         artistDao.nukeTable()
