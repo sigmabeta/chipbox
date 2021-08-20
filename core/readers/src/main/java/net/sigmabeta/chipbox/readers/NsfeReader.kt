@@ -64,7 +64,6 @@ object NsfeReader : Reader() {
             trackNameList.forEachIndexed { index, name ->
                 // If plst chunk exists
                 val trackNumber = if (plstIndexList != null) {
-                    // If the plst doesn't go this high, don't add the track
                     plstIndexList.getOrNull(index) ?: index
                 } else {
                     // plst chunk not existing means we use implicit order
