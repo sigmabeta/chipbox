@@ -17,8 +17,7 @@ abstract class Scanner(dispatcher: CoroutineDispatcher = Dispatchers.IO) {
             try {
                 scan()
             } catch (ex: Exception) {
-                Timber.e("Scan error.")
-                ex.printStackTrace()
+                Timber.e("Scan error. ${ex.stackTraceToString()}")
             }
         }
     }
@@ -64,4 +63,6 @@ abstract class Scanner(dispatcher: CoroutineDispatcher = Dispatchers.IO) {
         lastEvent = event
         eventChannel.emit(event)
     }
+
+    protected fun isFailedAlready() = currentState is ScannerState.Failed
 }

@@ -36,6 +36,7 @@ object GbsReader : Reader() {
                         gameArtist.orValidString(),
                         gameTitle,
                         LENGTH_UNKNOWN_MS,
+                        index,
                         true
                     )
                 )
@@ -58,6 +59,7 @@ object GbsReader : Reader() {
         return try {
             fileAsBytes
                 .decodeToString(0x10, 0x30, true)
+                .substringBefore(0.toChar())
                 .trim()
         } catch (ex: Exception) {
             Timber.e("Unable to read game title: ${ex.message}")
