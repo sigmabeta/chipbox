@@ -56,6 +56,7 @@ class RealScanner(
                 folderProgressUpdates.tracksFailed
             )
         )
+        emitEvent(ScannerEvent.Unknown)
     }
 
     private fun getFolders() = listOf(
@@ -64,29 +65,38 @@ class RealScanner(
 
     private suspend fun scanFolder(folder: File): Progress {
         val folderPath = folder.absolutePath
-        Timber.i("Reading files from library folder: %s", folderPath)
+        val progress = readWithErrorHandling(folderPath) {
+            Timber.i("Reading files from library folder: %s", folderPath)
 
-        // Iterate through every file in the folder.
-        val children = folder.listFiles()
+            // Iterate through every file in the folder.
+            val children = folder.listFiles()
 
-        if (children != null) {
-            children.sort()
+            if (children != null) {
+                children.sort()
 
-            val folderProgresses = children
-                .filter { it.isDirectory }
-                .filter { !it.isHidden }
-                .filter { it?.listFiles()?.isNotEmpty() ?: false }
-                .map { scanFolder(it) }
-                .fold(Progress.EMPTY) { x, y -> x + y }
+                val folderProgresses = children
+                    .filter { it.isDirectory }
+                    .filter { !it.isHidden }
+                    .filter { it?.listFiles()?.isNotEmpty() ?: false }
+                    .map { scanFolder(it) }
+                    .fold(Progress.EMPTY) { x, y -> x + y }
 
-            val childrenProgress = children
-                .filter { !it.isDirectory }
-                .filter { !it.isHidden }
-                .let { scanFiles(it) }
+                val childrenProgress = children
+                    .filter { !it.isDirectory }
+                    .filter { !it.isHidden }
+                    .let { scanFiles(it) }
 
-            return folderProgresses + childrenProgress
-        } else if (!folder.exists()) {
-            Timber.e("Folder does not exist: %s", folderPath)
+                return@readWithErrorHandling folderProgresses + childrenProgress
+            } else if (!folder.exists()) {
+                Timber.e("Folder does not exist: %s", folderPath)
+                return@readWithErrorHandling Progress.ERROR
+            }
+
+            return@readWithErrorHandling null
+        }
+
+        if (progress != null) {
+            return progress
         }
 
         return Progress.EMPTY
@@ -102,31 +112,39 @@ class RealScanner(
         val m3uTracks = mutableListOf<RawTrack>()
         for (file in files) {
             val fileExtension = file.extension
+            if (fileExtension.isEmpty()) {
+                continue
+            }
 
-            if (fileExtension.isNotEmpty()) {
+            val progress = readWithErrorHandling(file.path) {
                 // Check that the file has an extension we care about before trying to read out of it.
                 val reader = getReaderForExtension(fileExtension)
                 if (reader != null) {
-                    val tracks = reader.readTracksFromFile(file.path)
+                    val tracks = reader.readTracksFromFile(it)
 
                     // TODO These shouldn't return
                     if (tracks == null) {
-                        return Progress(0, 0, 1)
+                        return@readWithErrorHandling Progress(0, 0, 1)
                     }
 
                     if (tracks.isEmpty()) {
-                        return Progress.EMPTY
+                        return@readWithErrorHandling Progress.EMPTY
                     }
 
                     rawFileTracks += tracks
                 } else if (EXTENSIONS_IMAGES.contains(fileExtension)) {
                     imagePath = getImagePath(file)
                 } else if (fileExtension.lowercase(Locale.getDefault()) == "m3u") {
-                    val tracks = M3uReader.readTracksFromFile(file.path)
+                    val tracks = M3uReader.readTracksFromFile(it)
                     if (tracks != null) {
                         m3uTracks += tracks
                     }
                 }
+                return@readWithErrorHandling null
+            }
+
+            if (progress != null) {
+                return progress
             }
         }
 
@@ -176,6 +194,22 @@ class RealScanner(
         return Progress.EMPTY
     }
 
+    private suspend inline fun readWithErrorHandling(
+        path: String,
+        operation: (String) -> Progress?
+    ): Progress? {
+        return try {
+            operation(path)
+        } catch (ex: Exception) {
+            if (!isFailedAlready()) {
+                Timber.e("Error reading $path: ${ex.stackTraceToString()}")
+                emitEvent(ScannerEvent.Unknown)
+                emitState(ScannerState.Failed(path.substringAfterLast("/")))
+            }
+            throw ex
+        }
+    }
+
     private fun reconcile(rawFileTracks: List<RawTrack>, m3uTracks: List<RawTrack>) =
         rawFileTracks.zip(m3uTracks) { rawTrack, m3uTrack ->
             if (rawTrack.path == m3uTrack.path) {
@@ -185,6 +219,7 @@ class RealScanner(
                     reconcile(rawTrack.artist, m3uTrack.artist),
                     reconcile(rawTrack.game, m3uTrack.game),
                     reconcile(m3uTrack.length, rawTrack.length),
+                    reconcile(m3uTrack.trackNumber, rawTrack.trackNumber),
                     reconcile(m3uTrack.fade, rawTrack.fade),
                 )
             } else {
@@ -201,6 +236,13 @@ class RealScanner(
 
     private fun reconcile(priority: Long, backup: Long): Long {
         if (priority != LENGTH_UNKNOWN_MS) {
+            return priority
+        }
+        return backup
+    }
+
+    private fun reconcile(priority: Int, backup: Int): Int {
+        if (priority != -1) {
             return priority
         }
         return backup
@@ -250,6 +292,7 @@ class RealScanner(
 
         companion object {
             val EMPTY = Progress(0, 0, 0)
+            val ERROR = Progress(0, 0, 1)
         }
     }
 

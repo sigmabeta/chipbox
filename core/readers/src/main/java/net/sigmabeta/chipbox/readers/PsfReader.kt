@@ -61,6 +61,7 @@ object PsfReader : Reader() {
                     tagMap[PSF_TAG_KEY_ARTIST] ?: TAG_UNKNOWN,
                     tagMap[PSF_TAG_KEY_GAME] ?: TAG_UNKNOWN,
                     tagMap[PSF_TAG_KEY_LENGTH]?.toLengthMillis() ?: LENGTH_UNKNOWN_MS,
+                    -1,
                     tagMap[PSF_TAG_KEY_FADE]?.toLengthMillis() ?: 0 > 0
                 )
             )

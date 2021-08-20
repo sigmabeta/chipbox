@@ -13,4 +13,8 @@ sealed class ScannerState {
         val tracksFound: Int,
         val tracksFailed: Int
     ) : ScannerState()
+
+    data class Failed(
+        val path: String
+    ) : ScannerState()
 }

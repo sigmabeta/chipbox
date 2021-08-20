@@ -134,6 +134,7 @@ class DatabaseRepository(
             path,
             title,
             trackLengthMs,
+            trackNumber,
             fade,
             if (withGame) getGameById(game_id) else null,
             if (withArtists) getArtistsForTrack(id) else null,
@@ -146,6 +147,7 @@ class DatabaseRepository(
             title,
             path,
             length,
+            trackNumber,
             fade,
             gameId
         )

@@ -256,10 +256,11 @@ class MemoryRepository(
             getNextPrimaryKey(),
             path,
             title,
-            trackArtists,
+            length,
+            trackNumber,
             fade,
             null,
-            length
+            trackArtists,
         )
     }
 
@@ -271,6 +272,7 @@ class MemoryRepository(
         path,
         title,
         trackLengthMs,
+        trackNumber,
         fade,
         if (withGame) game?.toGame() else null,
         if (withArtists) artists.map { it.toArtist() } else null

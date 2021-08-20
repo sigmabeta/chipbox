@@ -37,6 +37,7 @@ object NsfReader : Reader() {
                         gameArtist.orValidString(),
                         gameTitle,
                         LENGTH_UNKNOWN_MS,
+                        -1,
                         true
                     )
                 )

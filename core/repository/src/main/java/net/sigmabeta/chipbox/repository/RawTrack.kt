@@ -6,5 +6,6 @@ data class RawTrack(
     val artist: String,
     val game: String,
     val length: Long,
+    val trackNumber: Int,
     val fade: Boolean
 )

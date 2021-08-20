@@ -21,7 +21,6 @@ import net.sigmabeta.chipbox.models.state.ScannerEvent
 @Composable
 fun ScanProgressDisplay(
     lastScannerEvent: ScannerEvent,
-    previewResourceId: Int = R.drawable.square_pixels
 ) {
     AnimatedVisibility(
         visible = lastScannerEvent is ScannerEvent.GameFoundEvent
