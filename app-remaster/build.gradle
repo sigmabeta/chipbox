@@ -91,6 +91,7 @@ dependencies {
     implementation project(path: ':core:activities')
     implementation project(path: ':core:database')
     implementation project(path: ':core:player:controls:di')
+    implementation project(path: ':core:player:status:di')
     implementation project(path: ':core:repository:database')
     implementation project(path: ':core:repository:memory')
     implementation project(path: ':core:repository:mock')
