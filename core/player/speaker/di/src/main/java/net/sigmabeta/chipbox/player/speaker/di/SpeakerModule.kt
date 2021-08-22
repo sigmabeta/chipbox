@@ -1,17 +1,18 @@
-package net.sigmabeta.chipbox.player.generator.real.di
+package net.sigmabeta.chipbox.player.speaker.di
 
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.player.speaker.Speaker
+import net.sigmabeta.chipbox.player.speaker.real.RealSpeaker
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object RealGeneratorModule {
+object SpeakerModule {
     @Provides
     @Singleton
-    internal fun provideRealGenerator(speaker: Speaker) = RealGenerator(speaker)
+    internal fun provideSpeaker(realSpeaker: RealSpeaker): Speaker = realSpeaker
+
 }

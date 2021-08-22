@@ -92,6 +92,7 @@ dependencies {
     implementation project(path: ':core:database')
     implementation project(path: ':core:player:controls:di')
     implementation project(path: ':core:player:generator:di')
+    implementation project(path: ':core:player:speaker:di')
     implementation project(path: ':core:player:status:di')
     implementation project(path: ':core:repository:database')
     implementation project(path: ':core:repository:memory')
