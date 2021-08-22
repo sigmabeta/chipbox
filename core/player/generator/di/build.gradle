@@ -1,2 +1,8 @@
 apply from: "$rootProject.projectDir/core-android-module.gradle"
 apply from: "$rootProject.projectDir/di.gradle"
+
+dependencies {
+    api project(path: ':core:player:generator:fake:di')
+    api project(path: ':core:player:generator:real:di')
+    api project(path: ':core:player:generator')
+}
