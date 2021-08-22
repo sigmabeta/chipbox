@@ -19,4 +19,8 @@ class GameDetailViewModel @Inject constructor(
     fun gameData() = repository
         .getGame(arguments?.id!!, withArtists = true, withTracks = true)
         .sample(66L)
+
+    fun onTrackClick(trackId: Long) {
+        controls.play(trackId)
+    }
 }

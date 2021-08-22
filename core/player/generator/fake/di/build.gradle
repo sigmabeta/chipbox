@@ -4,4 +4,5 @@ apply from: "$rootProject.projectDir/di.gradle"
 dependencies {
     api project(path: ':core:player:generator:fake')
     api project(path: ':core:player:generator')
+    api project(path: ':core:player:speaker')
 }
