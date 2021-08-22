@@ -1,5 +1,6 @@
 apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
 
 dependencies {
+    implementation project(path: ':core:player:speaker')
     implementation project(path: ':core:player:generator')
 }
