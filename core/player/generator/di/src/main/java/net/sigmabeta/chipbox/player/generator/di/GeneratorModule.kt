@@ -17,6 +17,6 @@ object GeneratorModule {
     internal fun provideGenerator(
         fakeGenerator: FakeGenerator,
         realGenerator: RealGenerator
-    ): Generator = realGenerator
+    ): Generator = fakeGenerator
 
 }

@@ -22,7 +22,6 @@ import net.sigmabeta.chipbox.core.components.GameDetailListItem
 import net.sigmabeta.chipbox.core.components.GameTrackListItem
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.repository.Data
-import timber.log.Timber
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -40,7 +39,8 @@ fun GameDetailScreen(gameDetailViewModel: GameDetailViewModel) {
         is Data.Succeeded -> GameContent(
             gamesData.data!!,
             insets,
-            density
+            density,
+            onClick = { gameDetailViewModel.onTrackClick(it) }
         )
         is Data.Failed -> GameErrorState(gamesData.message)
         Data.Empty -> GameEmptyState()
@@ -52,7 +52,8 @@ fun GameDetailScreen(gameDetailViewModel: GameDetailViewModel) {
 fun GameContent(
     game: Game,
     insets: WindowInsets,
-    density: Density
+    density: Density,
+    onClick: (Long) -> Unit
 ) {
     LazyColumn(
         contentPadding = with(density) {
@@ -71,9 +72,7 @@ fun GameContent(
         }
 
         items(items = game.tracks ?: emptyList()) {
-            GameTrackListItem(track = it) {
-                Timber.i("Clicked track: ${it.title}")
-            }
+            GameTrackListItem(track = it, onClick)
         }
     }
 
