@@ -7,6 +7,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
+import net.sigmabeta.chipbox.player.common.AudioBuffer
+import net.sigmabeta.chipbox.player.common.SHORTS_PER_FRAME
+import net.sigmabeta.chipbox.player.common.framesToMillis
+import net.sigmabeta.chipbox.player.common.framesToShorts
+import net.sigmabeta.chipbox.player.common.millisToFrames
+import net.sigmabeta.chipbox.player.common.rateInMillis
+import net.sigmabeta.chipbox.player.common.toShortValue
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import kotlin.math.PI
@@ -26,13 +33,13 @@ class FakeGenerator(
 
     private val sampleRate = 48_000 // aka 48 samples per msec
 
-    private val framesPerMillis = sampleRate / MILLIS_PER_SECOND
+    private val framesPerMillis = sampleRate.rateInMillis()
 
-    private val framesPerBuffer = 1L.millisToFrames()
+    private val framesPerBuffer = 1L.millisToFrames(sampleRate)
 
-    private val trackLengthFrames = trackLengthMs.millisToFrames()
+    private val trackLengthFrames = trackLengthMs.millisToFrames(sampleRate)
 
-    private val sinFrequency = 440.0f / MILLIS_PER_SECOND
+    private val sinFrequency = 440.0.rateInMillis()
 
     override suspend fun play(trackId: Long) {
         ongoingGenerationJob?.cancelAndJoin()
@@ -59,6 +66,7 @@ class FakeGenerator(
             // Check if this coroutine has been cancelled.
             yield()
 
+            val bufferStartFrame = framesPlayed
             // Generate $remainingSamples worth of audio.
             for (currentFrame in 0 until framesPerBuffer) {
                 if (remainingFrames <= 0) {
@@ -68,7 +76,7 @@ class FakeGenerator(
                     continue
                 }
 
-                val currentMillis = framesPlayed.framesToMillis()
+                val currentMillis = framesPlayed.framesToMillis(sampleRate)
                 val sineValueForFrame = sineValueForFrame(currentMillis)
 
                 for (sampleOffset in 0 until SHORTS_PER_FRAME) {
@@ -81,7 +89,14 @@ class FakeGenerator(
 
             // TODO This should block if generator is too far ahead of speaker.
             // Give those samples to the speaker.
-            speaker.play(buffer)
+            speaker.play(
+                AudioBuffer(
+                    bufferStartFrame.framesToMillis(sampleRate),
+                    framesPlayed,
+                    sampleRate,
+                    buffer
+                )
+            )
         }
 
         if (error != null) {
@@ -102,22 +117,5 @@ class FakeGenerator(
         return sin(scalar * sinFrequency * timeMillis)
     }
 
-    private fun Long.millisToFrames() = this * framesPerMillis
-
-    private fun Long.framesToMillis() = this / framesPerMillis.toDouble()
-
-    private fun Long.framesToShorts() = (this * SHORTS_PER_FRAME).toInt()
-
-    private fun Double.toShortValue() = this.toInt().toShort()
-
     private fun Double.scaleByAmplitude(amplitude: Float) = this * amplitude * Short.MAX_VALUE
-
-    companion object {
-        private const val MILLIS_PER_SECOND = 1_000
-        private const val CHANNELS_STEREO = 2
-        private const val BYTES_PER_SHORT = 2
-        private const val BYTES_PER_SAMPLE = BYTES_PER_SHORT
-        private const val BYTES_PER_FRAME = BYTES_PER_SAMPLE * CHANNELS_STEREO
-        private const val SHORTS_PER_FRAME = BYTES_PER_FRAME / BYTES_PER_SAMPLE
-    }
 }
