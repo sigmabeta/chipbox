@@ -1,0 +1,7 @@
+apply from: "$rootProject.projectDir/core-android-module.gradle"
+
+dependencies {
+    api project(path: ':core:player:speaker')
+
+    implementation "com.jakewharton.timber:timber:$timber_version"
+}
