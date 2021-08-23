@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.player.speaker.real.RealSpeaker
+import net.sigmabeta.chipbox.player.speaker.text.TextSpeaker
 import javax.inject.Singleton
 
 @Module
@@ -13,6 +14,9 @@ import javax.inject.Singleton
 object SpeakerModule {
     @Provides
     @Singleton
-    internal fun provideSpeaker(realSpeaker: RealSpeaker): Speaker = realSpeaker
+    internal fun provideSpeaker(
+        textSpeaker: TextSpeaker,
+        realSpeaker: RealSpeaker
+    ): Speaker = textSpeaker
 
 }
