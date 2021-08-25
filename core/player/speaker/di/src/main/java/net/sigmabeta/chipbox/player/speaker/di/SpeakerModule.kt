@@ -17,6 +17,6 @@ object SpeakerModule {
     internal fun provideSpeaker(
         textSpeaker: TextSpeaker,
         realSpeaker: RealSpeaker
-    ): Speaker = textSpeaker
+    ): Speaker = realSpeaker
 
 }

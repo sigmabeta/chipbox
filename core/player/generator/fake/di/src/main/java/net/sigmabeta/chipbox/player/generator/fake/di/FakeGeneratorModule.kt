@@ -4,8 +4,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import net.sigmabeta.chipbox.player.common.Dependencies
 import net.sigmabeta.chipbox.player.generator.fake.FakeGenerator
-import net.sigmabeta.chipbox.player.speaker.Speaker
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -13,6 +14,9 @@ import javax.inject.Singleton
 object FakeGeneratorModule {
     @Provides
     @Singleton
-    internal fun provideFakeGenerator(speaker: Speaker) = FakeGenerator(speaker)
+    internal fun provideFakeGenerator(
+        @Named(Dependencies.DEP_SAMPLE_RATE) sampleRate: Int,
+        @Named(Dependencies.DEP_BUFFER_SIZE) bufferSizeBytes: Int
+    ) = FakeGenerator(sampleRate, bufferSizeBytes)
 
 }
