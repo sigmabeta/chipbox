@@ -2,6 +2,8 @@ apply from: "$rootProject.projectDir/core-android-module.gradle"
 
 dependencies {
     api project(path: ':core:player:speaker')
+    api project(path: ':core:player:generator')
 
     implementation "com.jakewharton.timber:timber:$timber_version"
+    implementation "androidx.media2:media2-common:$media2_version"
 }

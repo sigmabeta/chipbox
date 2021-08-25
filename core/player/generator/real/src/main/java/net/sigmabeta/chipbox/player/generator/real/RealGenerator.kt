@@ -1,10 +1,11 @@
 package net.sigmabeta.chipbox.player.generator.real
 
+import kotlinx.coroutines.flow.Flow
+import net.sigmabeta.chipbox.player.common.AudioBuffer
 import net.sigmabeta.chipbox.player.generator.Generator
-import net.sigmabeta.chipbox.player.speaker.Speaker
 
-class RealGenerator(private val speaker: Speaker) : Generator {
-    override suspend fun play(trackId: Long) {
+class RealGenerator() : Generator {
+    override fun audioStream(): Flow<AudioBuffer> {
         TODO("Not yet implemented")
     }
 }

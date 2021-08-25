@@ -1,5 +1,8 @@
 package net.sigmabeta.chipbox.player.generator
 
+import kotlinx.coroutines.flow.Flow
+import net.sigmabeta.chipbox.player.common.AudioBuffer
+
 interface Generator {
-    suspend fun play(trackId: Long)
+    fun audioStream(): Flow<AudioBuffer>
 }
