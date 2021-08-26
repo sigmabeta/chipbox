@@ -1,23 +1,14 @@
 package net.sigmabeta.chipbox.player.generator.fake
 
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
-import net.sigmabeta.chipbox.player.common.AudioBuffer
-import net.sigmabeta.chipbox.player.common.SHORTS_PER_FRAME
-import net.sigmabeta.chipbox.player.common.framesToMillis
-import net.sigmabeta.chipbox.player.common.framesToShorts
-import net.sigmabeta.chipbox.player.common.millisToFrames
-import net.sigmabeta.chipbox.player.common.rateInMillis
-import net.sigmabeta.chipbox.player.common.toShortValue
+import net.sigmabeta.chipbox.player.common.*
 import net.sigmabeta.chipbox.player.generator.Generator
+import net.sigmabeta.chipbox.player.generator.fake.models.Note
+import net.sigmabeta.chipbox.player.generator.fake.models.NoteRandomizer
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -36,19 +27,15 @@ class FakeGenerator(
 
     private val amplitude = 0.75f
 
-    private val trackLengthMs = 2_000L
+    private lateinit var note: Note
 
-    private val trackLengthFrames = trackLengthMs.millisToFrames(sampleRate)
-
-    private val sinFrequency = 440.0.rateInMillis()
-
-    private val bufferFlow = MutableSharedFlow<AudioBuffer>(
+    private val bufferFlow = MutableSharedFlow<GeneratorEvent>(
         replay = 0,
         onBufferOverflow = BufferOverflow.SUSPEND,
         extraBufferCapacity = 10
     )
 
-    override fun audioStream(): Flow<AudioBuffer> {
+    override fun audioStream(trackId: Long): Flow<GeneratorEvent> {
         if (ongoingGenerationJob != null) {
             throw RuntimeException("Cannot run two generator coroutines at once.")
         }
@@ -56,16 +43,19 @@ class FakeGenerator(
             // Emit loading status
 
             // Load track
+            note = NoteRandomizer.randomNote(trackId)
 
             // Play made-up audio instead of it
-            playTrack(/*track*/)
+            playTrack()
         }
 
         return bufferFlow.asSharedFlow()
     }
 
-    private suspend fun playTrack(/*track: Track*/) {
+    private suspend fun playTrack() {
         var error: String? = null
+
+        val trackLengthFrames = note.durationMillis.millisToFrames(sampleRate)
 
         var buffersCreated = 0
         var framesPlayed = 0L
@@ -104,7 +94,7 @@ class FakeGenerator(
             // TODO This should block if generator is too far ahead of speaker.
             // Emit this buffer.
             bufferFlow.emit(
-                AudioBuffer(
+                GeneratorEvent.Audio(
                     buffersCreated,
                     bufferStartFrame.framesToMillis(sampleRate),
                     framesPlayed,
@@ -115,11 +105,11 @@ class FakeGenerator(
         }
 
         if (error != null) {
-            // Emit Failed status
+            bufferFlow.emit(GeneratorEvent.Error)
+            return
         }
 
-
-        // Emit Finished status
+        bufferFlow.emit(GeneratorEvent.Complete)
     }
 
     private fun sineValueForFrame(timeMillis: Double): Short {
@@ -130,7 +120,7 @@ class FakeGenerator(
 
     private fun getSineValue(timeMillis: Double): Double {
         val scalar = 2 * PI
-        return sin(scalar * sinFrequency * timeMillis)
+        return sin(scalar * note.pitch.frequency.rateInMillis() * timeMillis)
     }
 
     private fun Double.scaleByAmplitude(amplitude: Float) = this * amplitude * Short.MAX_VALUE
