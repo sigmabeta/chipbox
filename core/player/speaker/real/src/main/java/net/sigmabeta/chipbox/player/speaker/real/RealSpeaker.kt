@@ -4,14 +4,9 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import androidx.media.AudioAttributesCompat
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.launch
+import net.sigmabeta.chipbox.player.common.GeneratorEvent
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import timber.log.Timber
@@ -24,35 +19,59 @@ class RealSpeaker(
 ) : Speaker {
     private val speakerScope = CoroutineScope(dispatcher)
 
-    private val ongoingPlaybackJob: Job? = null
+    private var ongoingPlaybackJob: Job? = null
 
     override suspend fun play(trackId: Long) {
         ongoingPlaybackJob?.cancelAndJoin()
-        speakerScope.launch {
+        ongoingPlaybackJob = speakerScope.launch {
             val audioTrack = initializeAudioTrack(sampleRate, bufferSizeBytes)
-            playAudioFromGenerator(audioTrack)
+            playAudioFromGenerator(audioTrack, trackId)
         }
     }
 
-    private suspend fun playAudioFromGenerator(audioTrack: AudioTrack) {
+    private suspend fun playAudioFromGenerator(audioTrack: AudioTrack, trackId: Long) {
         audioTrack.play()
 
         generator
-            .audioStream()
-            .onCompletion { teardown(audioTrack) }
+            .audioStream(trackId)
             .collect {
-                // Samples, not Frames
-                val samplesWritten = audioTrack.write(
-                    it.data,
-                    0,
-                    bufferSizeBytes / 2
-                )
-                logProblems(samplesWritten)
+                when (it) {
+                    GeneratorEvent.Complete -> onPlaybackComplete(audioTrack)
+                    GeneratorEvent.Error -> onPlaybackError(audioTrack)
+                    is GeneratorEvent.Audio -> {
+                        onAudioGenerated(it, audioTrack)
+                        return@collect
+                    }
+                }
+
+                ongoingPlaybackJob?.cancel()
             }
     }
 
+    private fun onPlaybackComplete(audioTrack: AudioTrack) {
+        Timber.d("Generator reports track complete.")
+        teardown(audioTrack)
+    }
+
+    private fun onPlaybackError(audioTrack: AudioTrack) {
+        Timber.e("Generator reports playback error.")
+        teardown(audioTrack)
+    }
+
+    private fun onAudioGenerated(audio: GeneratorEvent.Audio, audioTrack: AudioTrack) {
+        // Samples, not Frames
+        val samplesWritten = audioTrack.write(
+            audio.data,
+            0,
+            bufferSizeBytes / 2
+        )
+        logProblems(samplesWritten)
+    }
+
     private fun teardown(audioTrack: AudioTrack) {
+        Timber.i("Tearing down audiotrack.")
         audioTrack.pause()
+        audioTrack.flush()
         audioTrack.release()
     }
 

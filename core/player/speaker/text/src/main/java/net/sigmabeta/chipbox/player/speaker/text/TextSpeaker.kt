@@ -1,13 +1,8 @@
 package net.sigmabeta.chipbox.player.speaker.text
 
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-import net.sigmabeta.chipbox.player.common.AudioBuffer
+import net.sigmabeta.chipbox.player.common.GeneratorEvent
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.player.common.millisToSeconds
 import net.sigmabeta.chipbox.player.generator.Generator
@@ -28,30 +23,42 @@ class TextSpeaker(
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = speakerScope.launch {
             Timber.w("${Thread.currentThread().name}; Begin playback for id $trackId")
-            playAudioFromGenerator()
+            playAudioFromGenerator(trackId)
             Timber.w("${Thread.currentThread().name}; End playback for id $trackId")
         }
     }
 
-    private suspend fun playAudioFromGenerator() {
+    private suspend fun playAudioFromGenerator(trackId: Long) {
         generator
-            .audioStream()
+            .audioStream(trackId)
             .collect {
-                logBuffer(it)
+                when (it) {
+                    GeneratorEvent.Complete -> onPlaybackComplete()
+                    GeneratorEvent.Error -> onPlaybackError()
+                    is GeneratorEvent.Audio -> logBuffer(it)
+                }
             }
     }
 
-    private fun logBuffer(it: AudioBuffer) {
-        val diff = it.bufferNumber - lastBufferPrinted
-        if (diff != 1) {
-            Timber.e("Last buffer printed was $lastBufferPrinted, this one is ${it.bufferNumber}. Difference is $diff")
-        }
-
-        lastBufferPrinted = it.bufferNumber
-        Timber.i(it.toReadableString())
+    private fun onPlaybackComplete() {
+        Timber.d("Generator reports track complete.")
     }
 
-    private fun AudioBuffer.toReadableString(): String {
+    private fun onPlaybackError() {
+        Timber.e("Generator reports playback error.")
+    }
+
+    private fun logBuffer(audio: GeneratorEvent.Audio) {
+        val diff = audio.bufferNumber - lastBufferPrinted
+        if (diff != 1) {
+            Timber.e("Last buffer printed was $lastBufferPrinted, this one is ${audio.bufferNumber}. Difference is $diff")
+        }
+
+        lastBufferPrinted = audio.bufferNumber
+        Timber.i(audio.toReadableString())
+    }
+
+    private fun GeneratorEvent.Audio.toReadableString(): String {
         val toString = StringBuilder().also {
             val headerRow = "Frame | Time (s) | Sample # |  Left  |  Right |"
 
