@@ -8,7 +8,7 @@ object NoteRandomizer {
 
         return Note(
             Pitch(
-                BaseFreq.values()[random.nextInt(12)],
+                PitchClass.values()[random.nextInt(12)],
                 random.nextInt(4) + 2
             ),
             random.nextInt(5_000) + 2_000L
