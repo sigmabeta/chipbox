@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.player.generator.fake.models
 
-enum class BaseFreq(val frequency: Float) {
+enum class PitchClass(val frequency: Float) {
     C(16.35f),
     CSHARP(17.32f),
     D(18.35f),
