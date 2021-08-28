@@ -36,4 +36,6 @@ interface Repository {
     ): Flow<Data<Artist?>>
 
     suspend fun addGame(rawGame: RawGame)
+
+    fun getTrack(id: Long): Track?
 }

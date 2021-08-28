@@ -5,29 +5,23 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import net.sigmabeta.chipbox.player.common.*
+import net.sigmabeta.chipbox.player.common.BYTES_PER_SAMPLE
+import net.sigmabeta.chipbox.player.common.GeneratorEvent
+import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.player.generator.Generator
-import net.sigmabeta.chipbox.player.generator.fake.models.Note
-import net.sigmabeta.chipbox.player.generator.fake.models.NoteRandomizer
-import kotlin.math.PI
-import kotlin.math.sin
 
 class FakeGenerator(
     private val sampleRate: Int,
-    bufferSizeBytes: Int,
+    private val bufferSizeBytes: Int,
+    private val trackRandomizer: TrackRandomizer,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Generator {
+    private lateinit var emulator: FakeEmulator
+
     private val generatorScope = CoroutineScope(dispatcher)
 
     private var ongoingGenerationJob: Job? = null
 
-    private val samplesPerBuffer = bufferSizeBytes / 2
-
-    private val framesPerBuffer = samplesPerBuffer / 2
-
-    private val amplitude = 0.75f
-
-    private lateinit var note: Note
 
     private val bufferFlow = MutableSharedFlow<GeneratorEvent>(
         replay = 0,
@@ -39,14 +33,22 @@ class FakeGenerator(
         if (ongoingGenerationJob != null) {
             throw RuntimeException("Cannot run two generator coroutines at once.")
         }
-        generatorScope.launch {
+
+        ongoingGenerationJob = generatorScope.launch {
             // Emit loading status
 
             // Load track
-            note = NoteRandomizer.randomNote(trackId)
+            val track = trackRandomizer.generate(trackId)
+                ?: throw IllegalArgumentException("Could not load track with id $trackId")
+
+            emulator = FakeEmulator(
+                track,
+                sampleRate
+            )
 
             // Play made-up audio instead of it
             playTrack()
+            ongoingGenerationJob = null
         }
 
         return bufferFlow.asSharedFlow()
@@ -55,47 +57,31 @@ class FakeGenerator(
     private suspend fun playTrack() {
         var error: String? = null
 
-        val trackLengthFrames = note.durationMillis.millisToFrames(sampleRate)
-
         var buffersCreated = 0
-        var framesPlayed = 0L
-        var remainingFrames = trackLengthFrames - framesPlayed
+        var framesPlayed = 0
 
-        while (remainingFrames > 0) {
+        while (!emulator.trackOver) {
             // Check if this coroutine has been cancelled.
             yield()
 
+            // TODO We should have a pool of buffers we use instead of a new one evrytiem
             // Setup buffers.
-            val buffer = ShortArray(samplesPerBuffer)
-
+            val buffer = createBuffer()
             val bufferStartFrame = framesPlayed
-            // Generate $remainingSamples worth of audio.
-            for (currentFrame in 0 until framesPerBuffer) {
-                if (remainingFrames <= 0) {
-                    for (sampleOffset in 0 until SHORTS_PER_FRAME) {
-                        buffer[(currentFrame.framesToShorts() + sampleOffset)] = 0
-                    }
-                    continue
-                }
 
-                val currentMillis = framesPlayed.framesToMillis(sampleRate)
-                val sineValueForFrame = sineValueForFrame(currentMillis)
+            // Generate the next buffer of audio..
+            framesPlayed += emulator.generateBuffer(buffer)
 
-                for (sampleOffset in 0 until SHORTS_PER_FRAME) {
-                    buffer[(currentFrame.framesToShorts() + sampleOffset)] = sineValueForFrame
-                }
-
-                framesPlayed++
-                remainingFrames = trackLengthFrames - framesPlayed
+            if (framesPlayed == 0) {
+                error = "Failed to generate any audio."
+                break
             }
-
-            buffersCreated++
 
             // TODO This should block if generator is too far ahead of speaker.
             // Emit this buffer.
             bufferFlow.emit(
                 GeneratorEvent.Audio(
-                    buffersCreated,
+                    buffersCreated++,
                     bufferStartFrame.framesToMillis(sampleRate),
                     framesPlayed,
                     sampleRate,
@@ -104,24 +90,18 @@ class FakeGenerator(
             )
         }
 
+        // Report error, if it happened.
         if (error != null) {
             bufferFlow.emit(GeneratorEvent.Error)
             return
         }
 
+        // If no error, report completion.
         bufferFlow.emit(GeneratorEvent.Complete)
     }
 
-    private fun sineValueForFrame(timeMillis: Double): Short {
-        return getSineValue(timeMillis)
-            .scaleByAmplitude(amplitude)
-            .toShortValue()
+    private fun createBuffer(): ShortArray {
+        val samplesPerBuffer = bufferSizeBytes / BYTES_PER_SAMPLE
+        return ShortArray(samplesPerBuffer)
     }
-
-    private fun getSineValue(timeMillis: Double): Double {
-        val scalar = 2 * PI
-        return sin(scalar * note.pitch.frequency.rateInMillis() * timeMillis)
-    }
-
-    private fun Double.scaleByAmplitude(amplitude: Float) = this * amplitude * Short.MAX_VALUE
 }

@@ -72,7 +72,7 @@ class TextSpeaker(
                 val leftSampleIndex = frameCount * 2
                 val rightSampleIndex = leftSampleIndex + 1
 
-                val millisOffset = frameCount.toLong().framesToMillis(sampleRate)
+                val millisOffset = frameCount.framesToMillis(sampleRate)
 
                 it.append(String.format("%4d:", frameCount))
                 it.append(SEPARATOR_DATA_COLUMN)
