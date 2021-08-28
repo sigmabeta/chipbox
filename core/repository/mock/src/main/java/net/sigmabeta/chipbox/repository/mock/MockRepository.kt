@@ -15,7 +15,8 @@ import net.sigmabeta.chipbox.repository.mock.models.MockArtist
 import net.sigmabeta.chipbox.repository.mock.models.MockGame
 import net.sigmabeta.chipbox.repository.mock.models.MockTrack
 import timber.log.Timber
-import java.util.*
+import java.util.Locale
+import java.util.Random
 
 class MockRepository(
     private val random: Random,
@@ -159,6 +160,10 @@ class MockRepository(
         }
         return singleArtistLoadEvents.asSharedFlow()
     }
+
+    override fun getTrack(id: Long) = tracks
+        .firstOrNull { it.id == id }
+        ?.toTrack()
 
     override suspend fun addGame(rawGame: RawGame) = Unit
 
