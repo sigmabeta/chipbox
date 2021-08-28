@@ -8,7 +8,7 @@ sealed class GeneratorEvent {
     data class Audio(
         val bufferNumber: Int,
         val timestampMillis: Double,
-        val timestampFrame: Long,
+        val timestampFrame: Int,
         val sampleRate: Int,
         val data: ShortArray
     ) : GeneratorEvent()

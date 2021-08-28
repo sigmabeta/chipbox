@@ -18,7 +18,7 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.memory.models.MemoryArtist
 import net.sigmabeta.chipbox.repository.memory.models.MemoryGame
 import net.sigmabeta.chipbox.repository.memory.models.MemoryTrack
-import java.util.*
+import java.util.Locale
 
 class MemoryRepository(
     dispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -179,7 +179,7 @@ class MemoryRepository(
                 singleArtistLoadEvents.emit(Data.Loading)
 
                 val artist = artistsById[id]
-                    ?.toArtist(true, true)
+                    ?.toArtist(withGames, withTracks)
 
                 val data = if (artist != null) {
                     Data.Succeeded(artist)
@@ -192,6 +192,9 @@ class MemoryRepository(
         }
         return singleArtistLoadEvents.asSharedFlow()
     }
+
+    override fun getTrack(id: Long) = tracksById[id]
+        ?.toTrack()
 
     override suspend fun addGame(rawGame: RawGame) {
         // Get and convert tracks

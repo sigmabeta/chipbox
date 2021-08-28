@@ -1,8 +1,8 @@
 package net.sigmabeta.chipbox.player.common
 
-fun Long.millisToFrames(sampleRate: Int) = (this * sampleRate.rateInMillis()).toInt()
+fun Double.millisToFrames(sampleRate: Int) = (this * sampleRate.rateInMillis()).toInt()
 
-fun Long.framesToMillis(sampleRate: Int) = this / (sampleRate.rateInMillis())
+fun Int.framesToMillis(sampleRate: Int) = this / (sampleRate.rateInMillis())
 
 fun Int.framesToShorts() = (this * SHORTS_PER_FRAME)
 

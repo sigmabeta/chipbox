@@ -33,7 +33,7 @@ interface GameArtistDao {
             COLLATE NOCASE
             """
     )
-    suspend fun getArtistsForGameSync(gameId: Long): List<ArtistEntity>
+    fun getArtistsForGameSync(gameId: Long): List<ArtistEntity>
 
     @Query(
         """ 
@@ -44,7 +44,7 @@ interface GameArtistDao {
             COLLATE NOCASE
             """
     )
-    suspend fun getGamesForArtistSync(artistId: Long): List<GameEntity>
+    fun getGamesForArtistSync(artistId: Long): List<GameEntity>
 
     @Query(
         """ 

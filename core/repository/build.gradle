@@ -1,9 +1,7 @@
-apply from: "$rootProject.projectDir/core-android-module.gradle"
+apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
 
 dependencies {
     api project(path: ':core:models')
 
     api "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.1"
-
-    api "com.jakewharton.timber:timber:$timber_version"
 }

@@ -7,4 +7,6 @@ dependencies {
 
     implementation project(path: ':core:models')
     implementation project(path: ':core:utils')
+
+    implementation "com.jakewharton.timber:timber:$timber_version"
 }

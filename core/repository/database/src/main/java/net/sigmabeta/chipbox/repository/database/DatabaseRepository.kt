@@ -79,6 +79,11 @@ class DatabaseRepository(
         { it.toArtist(withTracks, withGames) }
     )
 
+    override fun getTrack(id: Long) = trackDao
+        .getTrackSync(id)
+        ?.toTrack()
+
+
     override suspend fun addGame(rawGame: RawGame) {
         // Insert game..
         val game = GameEntity(
@@ -102,7 +107,7 @@ class DatabaseRepository(
         gameArtistDao.insertAll(gameArtistJoins)
     }
 
-    private suspend fun ArtistEntity.toArtist(
+    private fun ArtistEntity.toArtist(
         withTracks: Boolean = false,
         withGames: Boolean = false
     ) =
@@ -114,7 +119,7 @@ class DatabaseRepository(
             if (withGames) getGamesForArtist(id) else null
         )
 
-    private suspend fun GameEntity.toGame(
+    private fun GameEntity.toGame(
         withTracks: Boolean = false,
         withArtists: Boolean = false
     ) = Game(
@@ -125,7 +130,7 @@ class DatabaseRepository(
         if (withTracks) getTracksForGame(id) else null
     )
 
-    private suspend fun TrackEntity.toTrack(
+    private fun TrackEntity.toTrack(
         withGame: Boolean = false,
         withArtists: Boolean = false
     ) =
@@ -189,27 +194,27 @@ class DatabaseRepository(
         return artist.copy(id = id)
     }
 
-    private suspend fun getGameById(id: Long): Game = gameDao
+    private fun getGameById(id: Long): Game = gameDao
         .getGameSync(id)
         .toGame()
 
-    private suspend fun getGamesForArtist(id: Long): List<Game> = gameArtistDao
+    private fun getGamesForArtist(id: Long): List<Game> = gameArtistDao
         .getGamesForArtistSync(id)
         .map { it.toGame() }
 
-    private suspend fun getArtistsForTrack(id: Long): List<Artist> = trackArtistDao
+    private fun getArtistsForTrack(id: Long): List<Artist> = trackArtistDao
         .getArtistsForTrackSync(id)
         .map { it.toArtist() }
 
-    private suspend fun getArtistsForGame(id: Long): List<Artist> = gameArtistDao
+    private fun getArtistsForGame(id: Long): List<Artist> = gameArtistDao
         .getArtistsForGameSync(id)
         .map { it.toArtist() }
 
-    private suspend fun getTracksForGame(id: Long): List<Track> = trackDao
+    private fun getTracksForGame(id: Long): List<Track> = trackDao
         .getTracksForGameSync(id)
         .map { it.toTrack(withArtists = true) }
 
-    private suspend fun getTracksForArtist(id: Long): List<Track> = trackArtistDao
+    private fun getTracksForArtist(id: Long): List<Track> = trackArtistDao
         .getTracksForArtistSync(id)
         .map { it.toTrack(withGame = true) }
         .sortedBy { it.game?.title }
