@@ -31,7 +31,7 @@ class FakeGenerator(
 
     override fun audioStream(trackId: Long): Flow<GeneratorEvent> {
         if (ongoingGenerationJob != null) {
-            throw RuntimeException("Cannot run two generator coroutines at once.")
+            ongoingGenerationJob?.cancel()
         }
 
         ongoingGenerationJob = generatorScope.launch {

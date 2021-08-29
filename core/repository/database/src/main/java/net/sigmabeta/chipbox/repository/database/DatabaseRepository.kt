@@ -1,10 +1,10 @@
 package net.sigmabeta.chipbox.repository.database
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.entities.ArtistEntity
@@ -23,10 +23,8 @@ import timber.log.Timber
 
 class DatabaseRepository(
     database: ChipboxDatabase,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Repository {
-    private val repositoryScope = CoroutineScope(dispatcher)
-
     private val artistDao = database.artistDao()
     private val gameDao = database.gameDao()
     private val trackDao = database.trackDao()
@@ -253,6 +251,7 @@ class DatabaseRepository(
                     }
                 }
             }
+            .flowOn(dispatcher)
     }
 
     private fun <Entity, Model> setupFlowWithId(
@@ -281,6 +280,7 @@ class DatabaseRepository(
                     }
                 }
             }
+            .flowOn(dispatcher)
     }
 
     companion object {
