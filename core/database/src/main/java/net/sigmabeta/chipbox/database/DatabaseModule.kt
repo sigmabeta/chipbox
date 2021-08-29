@@ -20,7 +20,6 @@ object DatabaseModule {
             ChipboxDatabase::class.java,
             "chipbox-room-database"
         )
-        .allowMainThreadQueries()
         .build()
 
 }
