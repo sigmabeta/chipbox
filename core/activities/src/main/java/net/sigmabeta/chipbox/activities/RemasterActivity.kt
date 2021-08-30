@@ -62,20 +62,26 @@ class RemasterActivity : ComponentActivity() {
         when {
             isPermissionGranted() -> topViewModel.storagePermissionGranted()
             shouldExplainPermission() -> topViewModel.showPermissionExplanation()
-            else -> permissionLauncher.launch(PERMISSION)
+            else -> permissionLauncher.launch(getPermissionName())
         }
     }
 
     private fun isPermissionGranted() =
-        ContextCompat.checkSelfPermission(this, PERMISSION) == GRANTED
+        ContextCompat.checkSelfPermission(this, getPermissionName()) == GRANTED
 
     private fun shouldExplainPermission() =
-        ActivityCompat.shouldShowRequestPermissionRationale(this, PERMISSION)
+        ActivityCompat.shouldShowRequestPermissionRationale(this, getPermissionName())
 
+    private fun getPermissionName() = if (BuildConfig.DEBUG) {
+        PERMISSION_WRITE
+    } else {
+        PERMISSION_READ
+    }
 
     companion object {
         // just to shorten some lines above
-        const val PERMISSION = Manifest.permission.READ_EXTERNAL_STORAGE
+        const val PERMISSION_READ = Manifest.permission.READ_EXTERNAL_STORAGE
+        const val PERMISSION_WRITE = Manifest.permission.WRITE_EXTERNAL_STORAGE
         const val GRANTED = PackageManager.PERMISSION_GRANTED
     }
 }

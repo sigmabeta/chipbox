@@ -2,8 +2,8 @@ apply from: "$rootProject.projectDir/core-android-module.gradle"
 apply from: "$rootProject.projectDir/di.gradle"
 
 dependencies {
-    api project(path: ':core:player:speaker:file:di')
-    api project(path: ':core:player:speaker:real:di')
-    api project(path: ':core:player:speaker:text:di')
+    api project(path: ':core:player:speaker:file')
     api project(path: ':core:player:speaker')
+
+    implementation project(path: ':core:player:generator')
 }
