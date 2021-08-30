@@ -17,11 +17,11 @@ object SineSynth : Synth {
         frequency.rateInMillis()        // Frequency in cycles per millis
             .times(timeMillis)          // Time in millis
             .times(SCALE_FACTOR)        // 2 PI
-            .also { sin(it) }           // Sample a sine wave at the radian value calculated above
+            .let { sin(it) }            // Sample a sine wave at the radian value calculated above
             .times(amplitude)           // Set volume
             .times(Short.MAX_VALUE)     // Convert to range of +/- 0 to 32768
             .toShortValue()             // Round to a short integer
 
 
-    const val SCALE_FACTOR = 2 * PI
+    private const val SCALE_FACTOR = 2 * PI
 }

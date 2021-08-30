@@ -15,7 +15,7 @@ class RealSpeaker(
     private val sampleRate: Int,
     private val bufferSizeBytes: Int,
     private val generator: Generator,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.Default
+    dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : Speaker {
     private val speakerScope = CoroutineScope(dispatcher)
 
@@ -25,11 +25,11 @@ class RealSpeaker(
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = speakerScope.launch {
             val audioTrack = initializeAudioTrack(sampleRate, bufferSizeBytes)
-            playAudioFromGenerator(audioTrack, trackId)
+            startPlayback(audioTrack, trackId)
         }
     }
 
-    private suspend fun playAudioFromGenerator(audioTrack: AudioTrack, trackId: Long) {
+    private suspend fun startPlayback(audioTrack: AudioTrack, trackId: Long) {
         audioTrack.play()
 
         generator

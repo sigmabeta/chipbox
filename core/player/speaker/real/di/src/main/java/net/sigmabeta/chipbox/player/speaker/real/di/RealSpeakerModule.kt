@@ -15,7 +15,6 @@ import javax.inject.Named
 @Module
 @InstallIn(SingletonComponent::class)
 object RealSpeakerModule {
-
     @Provides
     @Named(Dependencies.DEP_SAMPLE_RATE)
     internal fun provideSampleRate() =
