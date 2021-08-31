@@ -45,7 +45,10 @@ class FakeEmulator(
                 }
 
                 currentNote = note
-                remainingFramesForCurrentNote = note.durationMillis.millisToFrames(sampleRate)
+                remainingFramesForCurrentNote = note
+                    .duration
+                    .toMsAtTempo(track.tempo)
+                    .millisToFrames(sampleRate)
             }
 
             val currentMillis = framesPlayedForCurrentNote.framesToMillis(sampleRate)
