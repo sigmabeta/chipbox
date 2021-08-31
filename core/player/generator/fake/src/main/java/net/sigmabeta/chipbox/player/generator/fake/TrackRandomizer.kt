@@ -1,9 +1,6 @@
 package net.sigmabeta.chipbox.player.generator.fake
 
-import net.sigmabeta.chipbox.player.generator.fake.models.GeneratedTrack
-import net.sigmabeta.chipbox.player.generator.fake.models.Note
-import net.sigmabeta.chipbox.player.generator.fake.models.Pitch
-import net.sigmabeta.chipbox.player.generator.fake.models.PitchClass
+import net.sigmabeta.chipbox.player.generator.fake.models.*
 import net.sigmabeta.chipbox.repository.Repository
 import kotlin.random.Random
 
@@ -18,17 +15,15 @@ class TrackRandomizer(private val repository: Repository) {
         val random = Random(trackId)
         val notes = mutableListOf<Note>()
 
+        val root = PitchClass.values()[random.nextInt(PitchClass.values().size)]
+        val mode = ScaleMode.values()[random.nextInt(ScaleMode.values().size)]
+        val scale = Scale(root, mode)
+
         while (msGenerated < lengthMs) {
-            val possiblePitchClasses = PitchClass.values()
-            val pitchIndex = random.nextInt(possiblePitchClasses.size)
+            val pitchIndex = random.nextInt(6)
 
             val octave = random.nextInt(3) + 3
-            val pitchClass = possiblePitchClasses[pitchIndex]
-
-            val pitch = Pitch(
-                pitchClass,
-                octave
-            )
+            val pitch = scale.note(pitchIndex, octave)
 
             val duration = random.nextDouble(3_000.0) + 500.0
             val amplitude = random.nextDouble(0.3) + 0.3
