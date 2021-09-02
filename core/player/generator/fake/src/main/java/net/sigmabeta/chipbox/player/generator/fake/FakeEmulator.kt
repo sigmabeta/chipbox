@@ -12,7 +12,7 @@ class FakeEmulator(
     private val track: GeneratedTrack,
     private val sampleRate: Int
 ) {
-    private val notes = ArrayDeque<Note>().apply { addAll(track.notes) }
+    private val notes = ArrayDeque<Note>().apply { addAll(track.measures.flatMap { it.notes }) }
 
     var trackOver = false
 

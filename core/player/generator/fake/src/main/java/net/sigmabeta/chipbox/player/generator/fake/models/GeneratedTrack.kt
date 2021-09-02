@@ -4,7 +4,7 @@ data class GeneratedTrack(
     val trackId: Long,
     val trackLengthMs: Double,
     val scale: Scale,
-//    val timeSignature: TimeSignature,
+    val timeSignature: TimeSignature,
     val tempo: Int,
-    val notes: List<Note>
+    val measures: List<Measure>
 )
