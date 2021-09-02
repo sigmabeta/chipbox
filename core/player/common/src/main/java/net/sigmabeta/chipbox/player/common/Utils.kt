@@ -20,3 +20,7 @@ const val BYTES_PER_SHORT = 2
 const val BYTES_PER_SAMPLE = BYTES_PER_SHORT
 const val BYTES_PER_FRAME = BYTES_PER_SAMPLE * CHANNELS_STEREO
 const val SHORTS_PER_FRAME = BYTES_PER_FRAME / BYTES_PER_SAMPLE
+
+fun Long.isDivisibleBy(divisor: Int): Boolean {
+    return this % divisor == 0L
+}
