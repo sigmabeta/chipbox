@@ -1,5 +1,8 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: "de.mannodermaus.android-junit5"
+
+apply from: "$rootProject.projectDir/dependencies-testing.gradle"
 
 android {
     compileSdkVersion 30

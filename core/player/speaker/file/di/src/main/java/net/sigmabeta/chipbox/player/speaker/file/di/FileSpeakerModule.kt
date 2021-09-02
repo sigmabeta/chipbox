@@ -26,12 +26,10 @@ object FileSpeakerModule {
     @Singleton
     internal fun provideFileSpeaker(
         @Named(Dependencies.DEP_SAMPLE_RATE) sampleRate: Int,
-        @Named(Dependencies.DEP_BUFFER_SIZE) bufferSizeBytes: Int,
         externalStorageDir: File,
         generator: Generator
     ) = FileSpeaker(
         sampleRate,
-        bufferSizeBytes,
         externalStorageDir,
         generator
     )
