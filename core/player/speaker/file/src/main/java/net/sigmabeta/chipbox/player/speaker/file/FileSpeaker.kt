@@ -7,7 +7,6 @@ import net.sigmabeta.chipbox.player.common.CHANNELS_STEREO
 import net.sigmabeta.chipbox.player.common.GeneratorEvent
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.speaker.Speaker
-import timber.log.Timber
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.OutputStream
@@ -17,7 +16,6 @@ import java.nio.ByteOrder
 
 class FileSpeaker(
     private val sampleRate: Int,
-    private val bufferSizeBytes: Int,
     private val externalStorageDir: File,
     private val generator: Generator,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -26,7 +24,7 @@ class FileSpeaker(
 
     private var ongoingPlaybackJob: Job? = null
 
-    private var bytesWritten = 0
+    var bytesWritten = 0
 
     override suspend fun play(trackId: Long) {
         ongoingPlaybackJob?.cancelAndJoin()
@@ -36,6 +34,10 @@ class FileSpeaker(
                 startPlayback(file, trackId)
             }
         }
+
+        println("Play command finished executing.")
+        // TODO Is this a bad idea? For now seems fine.
+        ongoingPlaybackJob?.join()
     }
 
     private suspend fun startPlayback(output: OutputStream, trackId: Long) {
@@ -50,24 +52,25 @@ class FileSpeaker(
                         return@collect
                     }
                 }
-
-                ongoingPlaybackJob?.cancel()
             }
     }
 
     private fun onPlaybackComplete(output: OutputStream) {
-        Timber.d("Generator reports track complete.")
+        println("Generator reports track complete.")
         teardown(output)
     }
 
     private fun onPlaybackError(output: OutputStream) {
-        Timber.e("Generator reports playback error.")
+        println("Generator reports playback error.")
         teardown(output)
     }
 
     private fun onAudioGenerated(audio: GeneratorEvent.Audio, output: OutputStream) {
         try {
             val audioAsBytes = audio.data.toByteArray()
+
+            println("Writing ${audioAsBytes.size} bytes to output...")
+
             output.write(audioAsBytes)
             bytesWritten += audioAsBytes.size
         } catch (ex: Exception) {
@@ -76,10 +79,12 @@ class FileSpeaker(
     }
 
     private fun teardown(output: OutputStream) {
-        Timber.i("Tearing down output file.")
-        output.close()
+        println("Tearing down output file.")
 
+        output.close()
         writeSizeToHeader()
+
+        ongoingPlaybackJob?.cancel()
     }
 
     private fun initializeOutputStream(
@@ -164,7 +169,7 @@ class FileSpeaker(
         seekableFile.seek(0x40)
         seekableFile.writeInt(bytesWritten)
 
-        Timber.i("Wrote $bytesWritten bytes of audio to file.")
+        println("Wrote $bytesWritten bytes of audio to file.")
     }
 
     private fun writeShortLittleEndian(output: OutputStream, short: Short) {
@@ -188,7 +193,7 @@ class FileSpeaker(
     }
 
     private fun logProblems(message: String?) {
-        Timber.e("Error writing to file: $message")
+        println("Error writing to file: $message")
     }
 
     private fun Short.toBytes(): ByteArray {

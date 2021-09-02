@@ -1,5 +1,7 @@
 apply plugin: 'kotlin'
 
+apply from: "$rootProject.projectDir/dependencies-testing.gradle"
+
 dependencies {
     // Kotlin libs
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
