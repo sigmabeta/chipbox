@@ -22,7 +22,7 @@ internal class FileSpeakerTest {
 
     private val generator = FakeGenerator(
         2000,
-        2048,
+        48000,
         TrackRandomizer(repository)
     )
 

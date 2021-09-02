@@ -1,9 +1,6 @@
 package net.sigmabeta.chipbox.player.generator.fake
 
-import net.sigmabeta.chipbox.player.common.SHORTS_PER_FRAME
-import net.sigmabeta.chipbox.player.common.framesToMillis
-import net.sigmabeta.chipbox.player.common.framesToShorts
-import net.sigmabeta.chipbox.player.common.millisToFrames
+import net.sigmabeta.chipbox.player.common.*
 import net.sigmabeta.chipbox.player.generator.fake.models.GeneratedTrack
 import net.sigmabeta.chipbox.player.generator.fake.models.Note
 import net.sigmabeta.chipbox.player.generator.fake.synths.SineSynth
@@ -45,6 +42,8 @@ class FakeEmulator(
                 }
 
                 currentNote = note
+
+                framesPlayedForCurrentNote = 0
                 remainingFramesForCurrentNote = note
                     .duration
                     .toMsAtTempo(track.tempo)
@@ -52,11 +51,18 @@ class FakeEmulator(
             }
 
             val currentMillis = framesPlayedForCurrentNote.framesToMillis(sampleRate)
-            val sample = SineSynth.generate(
+            val rawSample = SineSynth.generate(
                 currentMillis,
                 note.pitch.frequency,
                 note.amplitude
             )
+
+            val adsr = AdsrProcessor.calculateAdsr(
+                framesPlayedForCurrentNote,
+                framesPlayedForCurrentNote + remainingFramesForCurrentNote
+            )
+
+            val sample = (rawSample * adsr).toShortValue()
 
             for (sampleOffset in 0 until SHORTS_PER_FRAME) {
                 buffer[(currentFrame.framesToShorts() + sampleOffset)] = sample
