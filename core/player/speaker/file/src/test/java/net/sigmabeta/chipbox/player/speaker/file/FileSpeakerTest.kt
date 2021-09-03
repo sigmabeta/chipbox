@@ -20,9 +20,11 @@ internal class FileSpeakerTest {
 
     private val repository: Repository = mockk()
 
+    private val sampleRate = 48000
+
     private val generator = FakeGenerator(
-        2000,
-        48000,
+        sampleRate,
+        2048,
         TrackRandomizer(repository)
     )
 
@@ -34,7 +36,7 @@ internal class FileSpeakerTest {
         every { track.trackLengthMs } returns 10_000L
 
         underTest = FileSpeaker(
-            2000,
+            sampleRate,
             File(System.getProperty("user.home")),
             generator,
             Dispatchers.Default
