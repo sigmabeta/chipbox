@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.player.common.BYTES_PER_SAMPLE
 import net.sigmabeta.chipbox.player.common.GeneratorEvent
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.player.generator.Generator
+import net.sigmabeta.chipbox.player.generator.fake.models.GeneratedTrack
 
 class FakeGenerator(
     private val sampleRate: Int,
@@ -22,6 +23,11 @@ class FakeGenerator(
 
     private var ongoingGenerationJob: Job? = null
 
+    private val trackFadeLengthMillis = 6_000.0
+
+    private var framesPlayed = 0
+
+    private lateinit var track: GeneratedTrack
 
     private val bufferFlow = MutableSharedFlow<GeneratorEvent>(
         replay = 0,
@@ -38,7 +44,7 @@ class FakeGenerator(
             // Emit loading status
 
             // Load track
-            val track = trackRandomizer.generate(trackId)
+            track = trackRandomizer.generate(trackId)
                 ?: throw IllegalArgumentException("Could not load track with id $trackId")
 
             emulator = FakeEmulator(
@@ -58,7 +64,6 @@ class FakeGenerator(
         var error: String? = null
 
         var buffersCreated = 0
-        var framesPlayed = 0
 
         while (!emulator.trackOver) {
             // Check if this coroutine has been cancelled.
@@ -72,10 +77,19 @@ class FakeGenerator(
             // Generate the next buffer of audio..
             framesPlayed += emulator.generateBuffer(buffer)
 
-            if (framesPlayed == 0) {
-                error = "Failed to generate any audio."
-                break
-            }
+            // TODO This only reports errors if the *first* buffer generation fails. Do better!
+//            if (framesPlayed == 0) {
+//                error = "Failed to generate any audio."
+//                break
+//            }
+
+            FadeProcessor.fadeIfNecessary(
+                buffer,
+                sampleRate,
+                bufferStartFrame.framesToMillis(sampleRate),
+                track.trackLengthMs - trackFadeLengthMillis,
+                trackFadeLengthMillis
+            )
 
             // TODO This should block if generator is too far ahead of speaker.
             // Emit this buffer.

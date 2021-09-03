@@ -4,7 +4,9 @@ fun Double.millisToFrames(sampleRate: Int) = (this * sampleRate.rateInMillis()).
 
 fun Int.framesToMillis(sampleRate: Int) = this / (sampleRate.rateInMillis())
 
-fun Int.framesToShorts() = (this * SHORTS_PER_FRAME)
+fun Int.framesToSamples() = (this * SHORTS_PER_FRAME)
+
+fun Int.samplesToFrames() = (this / SHORTS_PER_FRAME)
 
 fun Double.toShortValue() = this.toInt().toShort()
 
