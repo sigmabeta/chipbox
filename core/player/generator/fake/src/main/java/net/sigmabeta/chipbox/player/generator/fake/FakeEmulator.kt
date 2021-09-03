@@ -15,6 +15,10 @@ class FakeEmulator(
 
     private var currentNote: Note? = null
 
+    private var framesPlayedTotal = 0
+
+    private var remainingFramesTotal = track.trackLengthMs.millisToFrames(sampleRate)
+
     private var framesPlayedForCurrentNote = 0
 
     private var remainingFramesForCurrentNote = 0
@@ -26,12 +30,11 @@ class FakeEmulator(
     ): Int {
         val framesPerBuffer = buffer.size / SHORTS_PER_FRAME
 
-        var remainingFrames = framesPerBuffer
         var framesPlayed = 0
 
         for (currentFrame in 0 until framesPerBuffer) {
-            if (remainingFrames <= 0) {
-                clearRemainingBufferSpace(buffer, currentFrame)
+            if (remainingFramesTotal <= 0) {
+                trackOver = true
                 continue
             }
 
@@ -72,17 +75,12 @@ class FakeEmulator(
             }
 
             framesPlayed++
+            framesPlayedTotal++
             framesPlayedForCurrentNote++
-            remainingFrames--
+            remainingFramesTotal--
             remainingFramesForCurrentNote--
         }
 
         return framesPlayed
-    }
-
-    private fun clearRemainingBufferSpace(buffer: ShortArray, currentFrame: Int) {
-        for (sampleOffset in 0 until SHORTS_PER_FRAME) {
-            buffer[(currentFrame.framesToShorts() + sampleOffset)] = 0
-        }
     }
 }
