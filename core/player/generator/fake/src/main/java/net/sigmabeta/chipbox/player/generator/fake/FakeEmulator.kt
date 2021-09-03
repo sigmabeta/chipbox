@@ -71,7 +71,7 @@ class FakeEmulator(
             val sample = (rawSample * adsr).toShortValue()
 
             for (sampleOffset in 0 until SHORTS_PER_FRAME) {
-                buffer[(currentFrame.framesToShorts() + sampleOffset)] = sample
+                buffer[(currentFrame.framesToSamples() + sampleOffset)] = sample
             }
 
             framesPlayed++
