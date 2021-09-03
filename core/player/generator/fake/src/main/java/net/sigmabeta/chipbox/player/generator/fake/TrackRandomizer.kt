@@ -64,7 +64,7 @@ class TrackRandomizer(private val repository: Repository) {
             scale,
             timeSignature,
             tempo,
-            generatedMeasures
+            trackMeasures
         )
     }
 
