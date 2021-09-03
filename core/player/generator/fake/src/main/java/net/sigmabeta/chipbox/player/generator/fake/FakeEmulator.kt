@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.player.generator.fake
 import net.sigmabeta.chipbox.player.common.*
 import net.sigmabeta.chipbox.player.generator.fake.models.GeneratedTrack
 import net.sigmabeta.chipbox.player.generator.fake.models.Note
-import net.sigmabeta.chipbox.player.generator.fake.synths.SineSynth
+import net.sigmabeta.chipbox.player.generator.fake.synths.SquareSynth
 
 class FakeEmulator(
     private val track: GeneratedTrack,
@@ -18,6 +18,8 @@ class FakeEmulator(
     private var framesPlayedForCurrentNote = 0
 
     private var remainingFramesForCurrentNote = 0
+
+    private val squareSynth = SquareSynth(0.25)
 
     fun generateBuffer(
         buffer: ShortArray
@@ -51,7 +53,7 @@ class FakeEmulator(
             }
 
             val currentMillis = framesPlayedForCurrentNote.framesToMillis(sampleRate)
-            val rawSample = SineSynth.generate(
+            val rawSample = squareSynth.generate(
                 currentMillis,
                 note.pitch.frequency,
                 note.amplitude
