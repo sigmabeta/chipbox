@@ -105,7 +105,8 @@ class TrackRandomizer(private val repository: Repository) {
         val octave = random.nextInt(2) + 3
         val pitch = scale.note(pitchIndex, octave)
 
-        val possibleDurations = Duration.values()
+        val possibleDurations = Duration
+            .values()
             .filter { it.beats <= maximumDuration }
             .filter { it.beats.fractionalPart() - beatStartPoint == 0.0 }
             .toTypedArray()
@@ -148,6 +149,10 @@ class TrackRandomizer(private val repository: Repository) {
     private fun <Return> Random.nextValue(values: Array<Return>): Return {
         val index = nextInt(values.size)
         return values[index]
+    }
+
+    companion object {
+//        const val PREFER_WHOLE_BEATS = listOf(Duration.WHOLE, Duration.HALF_DOTTED, Duration.)
     }
 }
 

@@ -57,9 +57,10 @@ class FakeEmulator(
                 note.amplitude
             )
 
-            val adsr = AdsrProcessor.calculateAdsr(
+            val adsr = TimeAdsrProcessor.calculateAdsr(
                 framesPlayedForCurrentNote,
-                framesPlayedForCurrentNote + remainingFramesForCurrentNote
+                framesPlayedForCurrentNote + remainingFramesForCurrentNote,
+                sampleRate
             )
 
             val sample = (rawSample * adsr).toShortValue()
