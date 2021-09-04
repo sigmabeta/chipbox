@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.player.speaker.file
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.generator.fake.FakeGenerator
@@ -12,7 +11,6 @@ import net.sigmabeta.chipbox.repository.Repository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.File
-
 
 internal class FileSpeakerTest {
 
@@ -43,8 +41,6 @@ internal class FileSpeakerTest {
         )
     }
 
-
-    @ExperimentalCoroutinesApi
     @Test
     fun `When a play command is issued, a valid WAV file is created`() = runBlocking {
         underTest.play(ID_TRACK_ARBITRARY)
