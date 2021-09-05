@@ -4,6 +4,7 @@ rootProject.name = 'Chipbox'
 //include ':app'
 include ':app-remaster'
 
+
 // Core Modules
 include ':core:activities'
 include ':core:colors'
@@ -49,6 +50,10 @@ include ':core:scanner:real'
 include ':core:strings'
 include ':core:styles'
 include ':core:utils'
+
+// Emulator modules (likely to contain C/C++ code)
+include ':core:player:emulators'
+include ':core:player:emulators:fake'
 
 // Common Modules (which may contain dependencies exposed by a feature)
 

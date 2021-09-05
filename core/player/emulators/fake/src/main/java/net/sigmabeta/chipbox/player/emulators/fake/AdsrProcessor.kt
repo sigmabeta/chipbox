@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.player.generator.fake
+package net.sigmabeta.chipbox.player.emulators.fake
 
 import net.sigmabeta.chipbox.player.common.framesToMillis
 

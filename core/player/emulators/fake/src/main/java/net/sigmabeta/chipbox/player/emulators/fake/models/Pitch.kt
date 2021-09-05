@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.player.generator.fake.models
+package net.sigmabeta.chipbox.player.emulators.fake.models
 
 import kotlin.math.pow
 

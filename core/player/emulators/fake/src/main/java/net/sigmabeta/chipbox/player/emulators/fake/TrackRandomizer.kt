@@ -1,15 +1,15 @@
-package net.sigmabeta.chipbox.player.generator.fake
+package net.sigmabeta.chipbox.player.emulators.fake
 
+import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.isDivisibleBy
-import net.sigmabeta.chipbox.player.generator.fake.models.*
-import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.player.emulators.fake.models.*
 import kotlin.math.floor
 import kotlin.random.Random
 
-class TrackRandomizer(private val repository: Repository) {
+object TrackRandomizer {
 
-    fun generate(trackId: Long): GeneratedTrack? {
-        val track = repository.getTrack(trackId) ?: return null
+    fun generate(track: Track): GeneratedTrack {
+        val trackId = track.id
 
         val lengthMs = track.trackLengthMs.toDouble()
         var msGenerated = 0.0
@@ -151,9 +151,7 @@ class TrackRandomizer(private val repository: Repository) {
         return values[index]
     }
 
-    companion object {
 //        const val PREFER_WHOLE_BEATS = listOf(Duration.WHOLE, Duration.HALF_DOTTED, Duration.)
-    }
 }
 
 
