@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.player.generator.fake.models
+package net.sigmabeta.chipbox.player.emulators.fake.models
 
 enum class ScaleMode(val intervals: List<Interval>) {
     MAJOR_IONIAN(

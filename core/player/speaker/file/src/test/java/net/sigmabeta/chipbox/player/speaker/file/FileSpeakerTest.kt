@@ -6,7 +6,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.generator.fake.FakeGenerator
-import net.sigmabeta.chipbox.player.generator.fake.TrackRandomizer
 import net.sigmabeta.chipbox.repository.Repository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -21,9 +20,8 @@ internal class FileSpeakerTest {
     private val sampleRate = 48000
 
     private val generator = FakeGenerator(
-        sampleRate,
         2048,
-        TrackRandomizer(repository)
+        repository
     )
 
     private lateinit var underTest: FileSpeaker
@@ -31,6 +29,7 @@ internal class FileSpeakerTest {
     @BeforeEach
     fun setUp() {
         every { repository.getTrack(any()) } returns track
+        every { track.id } returns ID_TRACK_ARBITRARY
         every { track.trackLengthMs } returns 10_000L
 
         underTest = FileSpeaker(

@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.player.generator.fake.synths
+package net.sigmabeta.chipbox.player.emulators.fake.synths
 
 import net.sigmabeta.chipbox.player.common.rateInMillis
 import net.sigmabeta.chipbox.player.common.toShortValue
