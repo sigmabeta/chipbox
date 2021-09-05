@@ -5,21 +5,22 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.BYTES_PER_SAMPLE
 import net.sigmabeta.chipbox.player.common.GeneratorEvent
 import net.sigmabeta.chipbox.player.common.framesToMillis
+import net.sigmabeta.chipbox.player.emulators.fake.FakeEmulator
 import net.sigmabeta.chipbox.player.generator.Generator
-import net.sigmabeta.chipbox.player.generator.fake.models.GeneratedTrack
+import net.sigmabeta.chipbox.repository.Repository
 
 class FakeGenerator(
-    private val sampleRate: Int,
     private val bufferSizeBytes: Int,
-    private val trackRandomizer: TrackRandomizer,
+    private val repository: Repository,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Generator {
-    private lateinit var emulator: FakeEmulator
-
     private val generatorScope = CoroutineScope(dispatcher)
+
+    private var sampleRate: Int? = null
 
     private var ongoingGenerationJob: Job? = null
 
@@ -27,7 +28,7 @@ class FakeGenerator(
 
     private var framesPlayed = 0
 
-    private lateinit var track: GeneratedTrack
+    private var track: Track? = null
 
     private val bufferFlow = MutableSharedFlow<GeneratorEvent>(
         replay = 0,
@@ -43,15 +44,19 @@ class FakeGenerator(
         ongoingGenerationJob = generatorScope.launch {
             // Emit loading status
 
-            // Load track
-            track = trackRandomizer.generate(trackId)
-                ?: throw IllegalArgumentException("Could not load track with id $trackId")
+            // Load Track // TODO
+            val loadedTrack = repository.getTrack(trackId)
 
-            emulator = FakeEmulator(
-                track,
-                sampleRate
-            )
+            if (loadedTrack == null) {
+                // emit load error
+                return@launch
+            }
 
+            track = loadedTrack
+
+            FakeEmulator.loadTrack(loadedTrack)
+
+            sampleRate = FakeEmulator.sampleRate
             // Play made-up audio instead of it
             playTrack()
             ongoingGenerationJob = null
@@ -65,7 +70,9 @@ class FakeGenerator(
 
         var buffersCreated = 0
 
-        while (!emulator.trackOver) {
+        val sampleRate = FakeEmulator.sampleRate
+
+        while (!FakeEmulator.trackOver) {
             // Check if this coroutine has been cancelled.
             yield()
 
@@ -75,7 +82,7 @@ class FakeGenerator(
             val bufferStartFrame = framesPlayed
 
             // Generate the next buffer of audio..
-            framesPlayed += emulator.generateBuffer(buffer)
+            framesPlayed += FakeEmulator.generateBuffer(buffer)
 
             // TODO This only reports errors if the *first* buffer generation fails. Do better!
 //            if (framesPlayed == 0) {
@@ -83,11 +90,18 @@ class FakeGenerator(
 //                break
 //            }
 
+            val trackLengthMs = track?.trackLengthMs
+
+            if (trackLengthMs == null) {
+                // Emit error
+                return
+            }
+
             FadeProcessor.fadeIfNecessary(
                 buffer,
                 sampleRate,
                 bufferStartFrame.framesToMillis(sampleRate),
-                track.trackLengthMs - trackFadeLengthMillis,
+                trackLengthMs - trackFadeLengthMillis,
                 trackFadeLengthMillis
             )
 
@@ -104,6 +118,7 @@ class FakeGenerator(
             )
         }
 
+        FakeEmulator.teardown()
         // Report error, if it happened.
         if (error != null) {
             bufferFlow.emit(GeneratorEvent.Error)

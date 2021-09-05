@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.player.generator.fake.models
+package net.sigmabeta.chipbox.player.emulators.fake.models
 
 enum class TimeSignature(val numberOfBeats: Int, val durationOfBeat: Duration) {
     COMMON(4, Duration.QUARTER),

@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.player.generator.fake.models
+package net.sigmabeta.chipbox.player.emulators.fake.models
 
 enum class Duration(val beats: Double) {
     SIXTEENTH(0.25),

@@ -3,4 +3,6 @@ apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
 dependencies {
     api project(path: ':core:player:generator')
     api project(path: ':core:repository')
+
+    api project(path: ':core:player:emulators:fake')
 }

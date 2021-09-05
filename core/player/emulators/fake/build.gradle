@@ -1,0 +1,10 @@
+apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
+
+dependencies {
+    api project(path: ':core:player:common')
+    api project(path: ':core:player:emulators')
+
+    api "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.1"
+
+    implementation project(path: ':core:repository')
+}

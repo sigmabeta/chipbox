@@ -1,23 +1,26 @@
-package net.sigmabeta.chipbox.player.generator.fake
+package net.sigmabeta.chipbox.player.emulators.fake
 
+import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.*
-import net.sigmabeta.chipbox.player.generator.fake.models.GeneratedTrack
-import net.sigmabeta.chipbox.player.generator.fake.models.Note
-import net.sigmabeta.chipbox.player.generator.fake.synths.SquareSynth
+import net.sigmabeta.chipbox.player.emulators.Emulator
+import net.sigmabeta.chipbox.player.emulators.fake.models.GeneratedTrack
+import net.sigmabeta.chipbox.player.emulators.fake.models.Note
+import net.sigmabeta.chipbox.player.emulators.fake.synths.SquareSynth
 
-class FakeEmulator(
-    private val track: GeneratedTrack,
-    private val sampleRate: Int
-) {
-    private val notes = ArrayDeque<Note>().apply { addAll(track.measures.flatMap { it.notes }) }
+object FakeEmulator : Emulator {
+    override var sampleRate = 48000
 
-    var trackOver = false
+    override var trackOver = false
+
+    private var generatedTrack: GeneratedTrack? = null
+
+    private var notes: ArrayDeque<Note>? = null
 
     private var currentNote: Note? = null
 
     private var framesPlayedTotal = 0
 
-    private var remainingFramesTotal = track.trackLengthMs.millisToFrames(sampleRate)
+    private var remainingFramesTotal = -1
 
     private var framesPlayedForCurrentNote = 0
 
@@ -25,11 +28,23 @@ class FakeEmulator(
 
     private val squareSynth = SquareSynth(0.25)
 
-    fun generateBuffer(
+    override fun loadTrack(track: Track) {
+        remainingFramesTotal = track.trackLengthMs.toDouble().millisToFrames(sampleRate)
+
+        val generatedTrack = TrackRandomizer.generate(track)
+
+        this.generatedTrack = generatedTrack
+        notes = ArrayDeque<Note>().apply { addAll(generatedTrack.measures.flatMap { it.notes }) }
+    }
+
+    override fun generateBuffer(
         buffer: ShortArray
     ): Int {
-        val framesPerBuffer = buffer.size / SHORTS_PER_FRAME
+        if (remainingFramesTotal < 0) {
+            return -1
+        }
 
+        val framesPerBuffer = buffer.size / SHORTS_PER_FRAME
         var framesPlayed = 0
 
         for (currentFrame in 0 until framesPerBuffer) {
@@ -40,7 +55,7 @@ class FakeEmulator(
 
             var note = currentNote
             if (note == null || remainingFramesForCurrentNote <= 0) {
-                note = notes.removeFirstOrNull()
+                note = notes?.removeFirstOrNull()
                 if (note == null) {
                     trackOver = true
                     break
@@ -51,7 +66,7 @@ class FakeEmulator(
                 framesPlayedForCurrentNote = 0
                 remainingFramesForCurrentNote = note
                     .duration
-                    .toMsAtTempo(track.tempo)
+                    .toMsAtTempo(generatedTrack?.tempo ?: return -1)
                     .millisToFrames(sampleRate)
             }
 
@@ -82,5 +97,18 @@ class FakeEmulator(
         }
 
         return framesPlayed
+    }
+
+    override fun teardown() {
+        notes = null
+        generatedTrack = null
+        currentNote = null
+
+        remainingFramesTotal = -1
+        remainingFramesForCurrentNote = 0
+
+        framesPlayedTotal = 0
+        framesPlayedForCurrentNote = 0
+
     }
 }
