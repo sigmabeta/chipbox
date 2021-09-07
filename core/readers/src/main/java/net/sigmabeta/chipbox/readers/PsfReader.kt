@@ -77,7 +77,7 @@ object PsfReader : Reader() {
     private fun isSupportedPlatform(platformCode: Byte): Boolean {
         return when (platformCode) {
             0x01.toByte() -> true // "Sony Playstation"
-            //            0x02.toByte() -> Unit // "Sony Playstation 2"
+            0x02.toByte() -> true // "Sony Playstation 2"
             //            0x11.toByte() -> Unit // "Sega Saturn"
             //            0x12.toByte() -> Unit // "Sega Dreamcast"
             else -> false

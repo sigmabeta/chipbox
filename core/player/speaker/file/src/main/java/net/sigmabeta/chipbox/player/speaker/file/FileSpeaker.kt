@@ -45,8 +45,9 @@ class FileSpeaker(
             .audioStream(trackId)
             .collect {
                 when (it) {
+                    GeneratorEvent.Loading -> onPlaybackLoading()
                     GeneratorEvent.Complete -> onPlaybackComplete(output)
-                    GeneratorEvent.Error -> onPlaybackError(output)
+                    is GeneratorEvent.Error -> onPlaybackError(output, it.message)
                     is GeneratorEvent.Audio -> {
                         onAudioGenerated(it, output)
                         return@collect
@@ -55,13 +56,17 @@ class FileSpeaker(
             }
     }
 
+    private fun onPlaybackLoading() {
+        println("Generator reports track loading.")
+    }
+
     private fun onPlaybackComplete(output: OutputStream) {
         println("Generator reports track complete.")
         teardown(output)
     }
 
-    private fun onPlaybackError(output: OutputStream) {
-        println("Generator reports playback error.")
+    private fun onPlaybackError(output: OutputStream, message: String) {
+        println("Generator reports playback error: $message")
         teardown(output)
     }
 

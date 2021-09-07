@@ -36,16 +36,19 @@ class RealSpeaker(
             .audioStream(trackId)
             .collect {
                 when (it) {
+                    GeneratorEvent.Loading -> onPlaybackLoading()
                     GeneratorEvent.Complete -> onPlaybackComplete(audioTrack)
-                    GeneratorEvent.Error -> onPlaybackError(audioTrack)
+                    is GeneratorEvent.Error -> onPlaybackError(audioTrack, it.message)
                     is GeneratorEvent.Audio -> {
                         onAudioGenerated(it, audioTrack)
                         return@collect
                     }
                 }
-
-                ongoingPlaybackJob?.cancel()
             }
+    }
+
+    private fun onPlaybackLoading() {
+        Timber.d("Generator reports track loading.")
     }
 
     private fun onPlaybackComplete(audioTrack: AudioTrack) {
@@ -53,8 +56,8 @@ class RealSpeaker(
         teardown(audioTrack)
     }
 
-    private fun onPlaybackError(audioTrack: AudioTrack) {
-        Timber.e("Generator reports playback error.")
+    private fun onPlaybackError(audioTrack: AudioTrack, message: String) {
+        Timber.e("Generator reports playback error: $message")
         teardown(audioTrack)
     }
 

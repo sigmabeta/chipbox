@@ -9,11 +9,13 @@ abstract class Emulator {
 
     abstract var sampleRate: Int
 
-    abstract fun loadTrackInternal(track: Track)
+    abstract fun loadTrackInternal(path: String)
 
     abstract fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int
 
     abstract fun teardownInternal()
+
+    abstract fun getLastError(): String?
 
     private var framesPlayedTotal = 0
 
@@ -27,7 +29,7 @@ abstract class Emulator {
 
         remainingFramesTotal = track.trackLengthMs.toDouble().millisToFrames(sampleRate)
 
-        loadTrackInternal(track)
+        loadTrackInternal(track.path)
     }
 
     fun generateBuffer(
