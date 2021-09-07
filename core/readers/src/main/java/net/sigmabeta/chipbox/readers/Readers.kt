@@ -9,9 +9,12 @@ sealed class Reader {
 fun getReaderForExtension(extension: String): Reader? {
     return when (extension) {
         "psf" -> PsfReader
-        "nsf" -> NsfReader
-        "nsfe" -> NsfeReader
-        "gbs" -> GbsReader
+        "minipsf" -> PsfReader
+        "psf2" -> PsfReader
+        "minipsf2" -> PsfReader
+//        "nsf" -> NsfReader
+//        "nsfe" -> NsfeReader
+//        "gbs" -> GbsReader
         else -> null
     }
 }

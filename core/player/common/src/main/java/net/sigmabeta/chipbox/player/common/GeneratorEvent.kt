@@ -1,7 +1,11 @@
 package net.sigmabeta.chipbox.player.common
 
 sealed class GeneratorEvent {
-    object Error : GeneratorEvent()
+    data class Error(
+        val message: String
+    ) : GeneratorEvent()
+
+    object Loading : GeneratorEvent()
 
     object Complete : GeneratorEvent()
 

@@ -33,19 +33,24 @@ class TextSpeaker(
             .audioStream(trackId)
             .collect {
                 when (it) {
+                    GeneratorEvent.Loading -> onPlaybackLoading()
                     GeneratorEvent.Complete -> onPlaybackComplete()
-                    GeneratorEvent.Error -> onPlaybackError()
+                    is GeneratorEvent.Error -> onPlaybackError(it.message)
                     is GeneratorEvent.Audio -> logBuffer(it)
                 }
             }
+    }
+
+    private fun onPlaybackLoading() {
+        Timber.d("Generator reports track loading.")
     }
 
     private fun onPlaybackComplete() {
         Timber.d("Generator reports track complete.")
     }
 
-    private fun onPlaybackError() {
-        Timber.e("Generator reports playback error.")
+    private fun onPlaybackError(message: String) {
+        Timber.e("Generator reports playback error: $message")
     }
 
     private fun logBuffer(audio: GeneratorEvent.Audio) {

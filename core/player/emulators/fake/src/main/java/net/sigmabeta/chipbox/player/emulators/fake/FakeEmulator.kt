@@ -22,12 +22,14 @@ object FakeEmulator : Emulator() {
 
     private var remainingFramesForCurrentNote = 0
 
-    override fun loadTrackInternal(track: Track) {
+    fun loadTrackFake(track: Track) {
         val generatedTrack = TrackRandomizer.generate(track)
 
         this.generatedTrack = generatedTrack
         notes = ArrayDeque<Note>().apply { addAll(generatedTrack.measures.flatMap { it.notes }) }
     }
+
+    override fun loadTrackInternal(path: String) = Unit
 
     override fun generateBufferInternal(
         buffer: ShortArray,
@@ -88,4 +90,6 @@ object FakeEmulator : Emulator() {
         remainingFramesForCurrentNote = 0
         framesPlayedForCurrentNote = 0
     }
+
+    override fun getLastError(): String? = null
 }
