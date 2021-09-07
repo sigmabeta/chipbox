@@ -1,6 +1,8 @@
-apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
+apply from: "$rootProject.projectDir/core-android-module.gradle"
 
 dependencies {
+    api project(path: ':core:player:generator')
+
+    implementation project(path: ':core:player:emulators:real')
     implementation project(path: ':core:player:speaker')
-    implementation project(path: ':core:player:generator')
 }

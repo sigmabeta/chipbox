@@ -1,0 +1,20 @@
+apply from: "$rootProject.projectDir/core-android-module.gradle"
+
+android {
+    externalNativeBuild {
+        cmake {
+            // Provides a relative path to your CMake build script.
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
+    }
+
+}
+
+dependencies {
+    api project(path: ':core:player:common')
+    api project(path: ':core:player:emulators')
+
+    api "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.1"
+
+    implementation project(path: ':core:repository')
+}
