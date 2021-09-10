@@ -144,5 +144,5 @@ object TimeAdsrProcessor : AdsrProcessor() {
     private const val MILLIS_ATTACK = 20.0
     private const val MILLIS_DECAY = 40.0
     private const val MILLIS_RELEASE = 50.0
-    private const val MILLIS_SILENCE = 5.0
+    private const val MILLIS_SILENCE = 0.0
 }

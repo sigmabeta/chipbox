@@ -125,6 +125,15 @@ const char *get_last_error() {
     return last_error;
 }
 
+int32_t get_sample_rate() {
+    if (isPs2Track) {
+        return 48000;
+    } else {
+        return 44100;
+    }
+}
+
+
 static void *psf_file_fopen(void *context, const char *uri) {
     try {
         return fopen(uri, "r");

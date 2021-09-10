@@ -17,6 +17,8 @@ void teardown();
 
 const char *get_last_error();
 
+int32_t get_sample_rate();
+
 static void *psf_file_fopen(void *context, const char *uri);
 
 static size_t psf_file_fread(void *buffer, size_t size, size_t count, void *handle);

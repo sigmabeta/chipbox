@@ -5,10 +5,10 @@ import net.sigmabeta.chipbox.player.common.*
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.emulators.fake.models.GeneratedTrack
 import net.sigmabeta.chipbox.player.emulators.fake.models.Note
-import net.sigmabeta.chipbox.player.emulators.fake.synths.SquareSynth
+import net.sigmabeta.chipbox.player.emulators.fake.synths.SineSynth
 
 object FakeEmulator : Emulator() {
-    override var sampleRate = 48000
+    override var sampleRate = 44100
 
     private var generatedTrack: GeneratedTrack? = null
 
@@ -16,13 +16,20 @@ object FakeEmulator : Emulator() {
 
     private var currentNote: Note? = null
 
-    private val squareSynth = SquareSynth(0.25)
+    private val squareSynth = SineSynth
 
     private var framesPlayedForCurrentNote = 0
 
     private var remainingFramesForCurrentNote = 0
 
-    fun loadTrackFake(track: Track) {
+    override fun loadTrack(track: Track) {
+        if (remainingFramesTotal >= 0) {
+            println("Previously loaded emulator not cleared. Clearing...")
+            teardown()
+        }
+
+        remainingFramesTotal = track.trackLengthMs.toDouble().millisToFrames(sampleRate)
+
         val generatedTrack = TrackRandomizer.generate(track)
 
         this.generatedTrack = generatedTrack

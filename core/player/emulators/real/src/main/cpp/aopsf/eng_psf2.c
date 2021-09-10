@@ -413,6 +413,8 @@ int32 psf2_gen(PSX_STATE *psx, int16 *buffer, uint32 samples) {
 
     spu_set_buffer(SPUSTATE, buffer, samples);
 
+    int framesWritten = 0;
+
     while (samples) {
         int samples_to_do = samples_per_frame - samples_into_frame;
         int samples_until_vblank = samples_to_do;
@@ -424,6 +426,7 @@ int32 psf2_gen(PSX_STATE *psx, int16 *buffer, uint32 samples) {
         for (i = 0; i < samples_to_do; i++) {
             spu_advance(SPUSTATE, 1);
             ps2_hw_slice(psx);
+            framesWritten++;
             if (--psx->vblank_samples_until_next == 0)
                 psx->vblank_samples_until_next = samples_per_frame;
         }
@@ -443,7 +446,7 @@ int32 psf2_gen(PSX_STATE *psx, int16 *buffer, uint32 samples) {
     if (psx->stop)
         return AO_FAIL;
 
-    return AO_SUCCESS;
+    return framesWritten;
 }
 
 int32 psf2_stop(PSX_STATE *psx) {

@@ -20,7 +20,6 @@ internal class FileSpeakerTest {
     private val sampleRate = 48000
 
     private val generator = FakeGenerator(
-        2048,
         repository
     )
 
@@ -31,6 +30,7 @@ internal class FileSpeakerTest {
         every { repository.getTrack(any()) } returns track
         every { track.id } returns ID_TRACK_ARBITRARY
         every { track.trackLengthMs } returns 10_000L
+        every { track.path } returns "whatever lol"
 
         underTest = FileSpeaker(
             sampleRate,

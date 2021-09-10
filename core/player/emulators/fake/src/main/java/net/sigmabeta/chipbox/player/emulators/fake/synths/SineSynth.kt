@@ -20,8 +20,8 @@ object SineSynth : Synth {
             .let { sin(it) }            // Sample a sine wave at the radian value calculated above
             .times(amplitude)           // Set volume
             .times(Short.MAX_VALUE)     // Convert to range of +/- 0 to 32768
+            .plus(1)
             .toShortValue()             // Round to a short integer
-
 
     private const val SCALE_FACTOR = 2 * PI
 }

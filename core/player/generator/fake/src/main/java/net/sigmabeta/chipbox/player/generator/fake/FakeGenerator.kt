@@ -8,11 +8,10 @@ import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.repository.Repository
 
 class FakeGenerator(
-    private val bufferSizeBytes: Int,
-    private val repository: Repository,
+    repository: Repository,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : Generator(bufferSizeBytes, repository, dispatcher) {
-    override val sampleRate = FakeEmulator.sampleRate
+) : Generator(repository, dispatcher) {
+    override val emulatorSampleRate = FakeEmulator.sampleRate
 
     override fun loadTrack(loadedTrack: Track) = FakeEmulator.loadTrack(loadedTrack)
 

@@ -12,8 +12,8 @@ import net.sigmabeta.chipbox.player.speaker.Speaker
 import timber.log.Timber
 
 class RealSpeaker(
-    private val sampleRate: Int,
-    private val bufferSizeBytes: Int,
+    private val outputSampleRate: Int,
+    private val outputBufferSizeBytes: Int,
     private val generator: Generator,
     dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : Speaker {
@@ -24,7 +24,7 @@ class RealSpeaker(
     override suspend fun play(trackId: Long) {
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = speakerScope.launch {
-            val audioTrack = initializeAudioTrack(sampleRate, bufferSizeBytes)
+            val audioTrack = initializeAudioTrack(outputSampleRate, outputBufferSizeBytes)
             startPlayback(audioTrack, trackId)
         }
     }
@@ -33,7 +33,7 @@ class RealSpeaker(
         audioTrack.play()
 
         generator
-            .audioStream(trackId)
+            .audioStream(trackId, outputSampleRate, outputBufferSizeBytes)
             .collect {
                 when (it) {
                     GeneratorEvent.Loading -> onPlaybackLoading()
@@ -66,7 +66,7 @@ class RealSpeaker(
         val samplesWritten = audioTrack.write(
             audio.data,
             0,
-            bufferSizeBytes / 2
+            audio.data.size
         )
         logProblems(samplesWritten)
     }
@@ -108,7 +108,7 @@ class RealSpeaker(
     }
 
     private fun logProblems(samplesWritten: Int) {
-        if (samplesWritten == bufferSizeBytes / 2)
+        if (samplesWritten == outputBufferSizeBytes / 2)
             return
 
         val error = when (samplesWritten) {

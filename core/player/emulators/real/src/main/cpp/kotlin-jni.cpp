@@ -40,10 +40,6 @@ Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_teardownInternal(
     teardown();
 }
 
-#ifdef __cplusplus
-}
-#endif
-extern "C"
 JNIEXPORT jstring JNICALL
 Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_getLastError(
         JNIEnv *env,
@@ -53,3 +49,13 @@ Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_getLastError(
     jstring str = env->NewStringUTF(last_error);
     return str;
 }
+
+JNIEXPORT jint JNICALL
+Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_getSampleRateInternal(JNIEnv *env,
+                                                                                   jobject thiz) {
+    return get_sample_rate();
+}
+
+#ifdef __cplusplus
+}
+#endif
