@@ -30,7 +30,7 @@ class TextSpeaker(
 
     private suspend fun playAudioFromGenerator(trackId: Long) {
         generator
-            .audioStream(trackId)
+            .audioStream(trackId, 44100, 2048)
             .collect {
                 when (it) {
                     GeneratorEvent.Loading -> onPlaybackLoading()

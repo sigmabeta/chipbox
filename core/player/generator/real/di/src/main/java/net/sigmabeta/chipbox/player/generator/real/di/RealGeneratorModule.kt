@@ -18,5 +18,5 @@ object RealGeneratorModule {
     internal fun provideRealGenerator(
         @Named(Dependencies.DEP_BUFFER_SIZE) bufferSizeBytes: Int,
         repository: Repository
-    ) = RealGenerator(bufferSizeBytes, repository)
+    ) = RealGenerator(repository)
 }

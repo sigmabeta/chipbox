@@ -6,17 +6,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import net.sigmabeta.chipbox.models.Track
-import net.sigmabeta.chipbox.player.common.BYTES_PER_SAMPLE
 import net.sigmabeta.chipbox.player.common.GeneratorEvent
 import net.sigmabeta.chipbox.player.common.framesToMillis
+import net.sigmabeta.chipbox.player.resampler.JvmResampler
 import net.sigmabeta.chipbox.repository.Repository
 
 abstract class Generator(
-    private val bufferSizeBytes: Int,
     private val repository: Repository,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    abstract val sampleRate: Int
+    abstract val emulatorSampleRate: Int
 
     private val generatorScope = CoroutineScope(dispatcher)
 
@@ -30,6 +29,8 @@ abstract class Generator(
         extraBufferCapacity = 10
     )
 
+    private lateinit var resampler: JvmResampler
+
     abstract fun loadTrack(loadedTrack: Track)
 
     abstract fun generateAudio(buffer: ShortArray): Int
@@ -40,10 +41,16 @@ abstract class Generator(
 
     abstract fun getLastError(): String?
 
-    fun audioStream(trackId: Long): Flow<GeneratorEvent> {
+    fun audioStream(
+        trackId: Long,
+        outputSampleRate: Int,
+        outputBufferSizeBytes: Int
+    ): Flow<GeneratorEvent> {
         if (ongoingGenerationJob != null) {
             ongoingGenerationJob?.cancel()
         }
+
+        println("Output buffer size: $outputBufferSizeBytes bytes")
 
         ongoingGenerationJob = generatorScope.launch {
             bufferFlow.emit(GeneratorEvent.Loading)
@@ -58,6 +65,12 @@ abstract class Generator(
             }
 
             loadTrack(loadedTrack)
+
+            resampler = JvmResampler(
+                outputBufferSizeBytes / 2,
+                emulatorSampleRate,
+                outputSampleRate
+            )
 
             val error = getLastError()
 
@@ -80,17 +93,19 @@ abstract class Generator(
 
         var buffersCreated = 0
 
+        val generatedAudio = createEmulatorBuffer(resampler.inputLengthShorts)
+        val resampledAudio = createEmulatorBuffer(resampler.outputLengthShorts)
+
         while (!isTrackOver()) {
             // Check if this coroutine has been cancelled.
             yield()
 
             // TODO We should have a pool of buffers we use instead of a new one evrytiem
             // Setup buffers.
-            val buffer = createBuffer()
             val bufferStartFrame = framesPlayed
 
             // Generate the next buffer of audio..
-            framesPlayed += generateAudio(buffer)
+            framesPlayed += generateAudio(generatedAudio)
 
             // TODO This only reports errors if the *first* buffer generation fails. Do better!
             if (framesPlayed == 0) {
@@ -99,22 +114,25 @@ abstract class Generator(
             }
 
             FadeProcessor.fadeIfNecessary(
-                buffer,
-                sampleRate,
-                bufferStartFrame.framesToMillis(sampleRate),
+                generatedAudio,
+                emulatorSampleRate,
+                bufferStartFrame.framesToMillis(emulatorSampleRate),
                 track.trackLengthMs - LENGTH_FADE_MILLIS,
                 LENGTH_FADE_MILLIS
             )
+
+            val resampleBuffer = resampler.resample(generatedAudio)
+            resampleBuffer.copyInto(resampledAudio)
 
             // TODO This should block if generator is too far ahead of speaker.
             // Emit this buffer.
             bufferFlow.emit(
                 GeneratorEvent.Audio(
                     buffersCreated++,
-                    bufferStartFrame.framesToMillis(sampleRate),
+                    bufferStartFrame.framesToMillis(emulatorSampleRate),
                     framesPlayed,
-                    sampleRate,
-                    buffer
+                    emulatorSampleRate,
+                    resampledAudio
                 )
             )
         }
@@ -137,9 +155,8 @@ abstract class Generator(
         )
     }
 
-    private fun createBuffer(): ShortArray {
-        val samplesPerBuffer = bufferSizeBytes / BYTES_PER_SAMPLE
-        return ShortArray(samplesPerBuffer)
+    private fun createEmulatorBuffer(sizeShorts: Int): ShortArray {
+        return ShortArray(sizeShorts)
     }
 
     companion object {

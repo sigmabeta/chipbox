@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.player.emulators
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.SHORTS_PER_FRAME
 import net.sigmabeta.chipbox.player.common.millisToFrames
-
 abstract class Emulator {
     var trackOver: Boolean = false
 
@@ -19,9 +18,9 @@ abstract class Emulator {
 
     private var framesPlayedTotal = 0
 
-    private var remainingFramesTotal = -1
+    protected var remainingFramesTotal = -1
 
-    fun loadTrack(track: Track) {
+    open fun loadTrack(track: Track) {
         if (remainingFramesTotal >= 0) {
             println("Previously loaded emulator not cleared. Clearing...")
             teardown()
@@ -53,6 +52,7 @@ abstract class Emulator {
     fun teardown() {
         teardownInternal()
 
+        trackOver = false
         remainingFramesTotal = -1
         framesPlayedTotal = 0
     }
