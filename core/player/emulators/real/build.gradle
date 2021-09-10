@@ -1,4 +1,5 @@
 apply from: "$rootProject.projectDir/core-android-module.gradle"
+apply from: "$rootProject.projectDir/dependencies-testing.gradle"
 
 android {
     externalNativeBuild {
@@ -8,13 +9,12 @@ android {
         }
     }
 
+    ndkPath "/home/sigma/apps/android-ndk-r20b"
 }
 
 dependencies {
     api project(path: ':core:player:common')
     api project(path: ':core:player:emulators')
-
-    api "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.1"
 
     implementation project(path: ':core:repository')
 }
