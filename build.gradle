@@ -4,7 +4,7 @@ buildscript {
     // This pattern is useful for libraries with multiple modular components.
     ext {
         kotlin_version = '1.5.10'
-        kotlin_coroutines_test_version = "1.5.1"
+        kotlin_coroutines_version = "1.5.2"
         realm_version = '5.0.0'
         okhttp_version = '4.2.0'
         retrofit_version = '2.6.1'
