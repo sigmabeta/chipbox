@@ -8,11 +8,10 @@ import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.repository.Repository
 
 class RealGenerator(
-    private val bufferSizeBytes: Int,
-    private val repository: Repository,
+    repository: Repository,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : Generator(bufferSizeBytes, repository, dispatcher) {
-    override val sampleRate = PsfEmulator.sampleRate
+) : Generator(repository, dispatcher) {
+    override val emulatorSampleRate = PsfEmulator.sampleRate
 
     override fun loadTrack(loadedTrack: Track) = PsfEmulator.loadTrack(loadedTrack)
 

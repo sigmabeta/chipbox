@@ -1,8 +1,5 @@
 apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
 
 dependencies {
-    api project(path: ':core:models')
-    api project(path: ':core:player:resampler:real')
-
     api "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.1"
 }
