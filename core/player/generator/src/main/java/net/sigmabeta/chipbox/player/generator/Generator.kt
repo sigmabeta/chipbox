@@ -6,22 +6,25 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import net.sigmabeta.chipbox.models.Track
-import net.sigmabeta.chipbox.player.common.GeneratorEvent
-import net.sigmabeta.chipbox.player.common.framesToMillis
+import net.sigmabeta.chipbox.player.common.*
 import net.sigmabeta.chipbox.player.resampler.JvmResampler
 import net.sigmabeta.chipbox.repository.Repository
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.TimeUnit
 
 abstract class Generator(
     private val repository: Repository,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    abstract val emulatorSampleRate: Int
+    abstract fun getEmulatorSampleRate(): Int
 
     private val generatorScope = CoroutineScope(dispatcher)
 
     private var ongoingGenerationJob: Job? = null
 
     private var framesPlayed = 0
+
+    private var outputBuffers: ArrayBlockingQueue<ShortArray>? = null
 
     private val bufferFlow = MutableSharedFlow<GeneratorEvent>(
         replay = 0,
@@ -68,9 +71,17 @@ abstract class Generator(
 
             resampler = JvmResampler(
                 outputBufferSizeBytes / 2,
-                emulatorSampleRate,
+                getEmulatorSampleRate(),
                 outputSampleRate
             )
+
+            val bufferCount = BUFFER_LENGTH_MILLIS
+                .millisToFrames(outputSampleRate)
+                .framesToSamples()
+                .samplesToBytes()
+                .div(outputBufferSizeBytes)
+
+            setupBuffers(bufferCount)
 
             val error = getLastError()
 
@@ -88,13 +99,25 @@ abstract class Generator(
         return bufferFlow.asSharedFlow()
     }
 
+    fun returnBuffer(audio: ShortArray) {
+        audio.clear()
+        outputBuffers!!.put(audio)
+    }
+
+    private fun setupBuffers(bufferCount: Int) {
+        outputBuffers = ArrayBlockingQueue(bufferCount)
+
+        repeat(bufferCount) {
+            outputBuffers!!.add(ShortArray(resampler.outputLengthShorts))
+        }
+    }
+
     private suspend fun playTrack(track: Track) {
         var error: String? = null
 
         var buffersCreated = 0
 
-        val generatedAudio = createEmulatorBuffer(resampler.inputLengthShorts)
-        val resampledAudio = createEmulatorBuffer(resampler.outputLengthShorts)
+        val generatedAudio = ShortArray(resampler.inputLengthShorts)
 
         while (!isTrackOver()) {
             // Check if this coroutine has been cancelled.
@@ -113,25 +136,29 @@ abstract class Generator(
                 break
             }
 
+            val sampleRate = getEmulatorSampleRate()
+
             FadeProcessor.fadeIfNecessary(
                 generatedAudio,
-                emulatorSampleRate,
-                bufferStartFrame.framesToMillis(emulatorSampleRate),
+                sampleRate,
+                bufferStartFrame.framesToMillis(sampleRate),
                 track.trackLengthMs - LENGTH_FADE_MILLIS,
                 LENGTH_FADE_MILLIS
             )
 
             val resampleBuffer = resampler.resample(generatedAudio)
+
+            val resampledAudio =
+                outputBuffers!!.poll(TIMEOUT_BUFFERS_FULL_MS, TimeUnit.MILLISECONDS)
             resampleBuffer.copyInto(resampledAudio)
 
-            // TODO This should block if generator is too far ahead of speaker.
             // Emit this buffer.
             bufferFlow.emit(
                 GeneratorEvent.Audio(
                     buffersCreated++,
-                    bufferStartFrame.framesToMillis(emulatorSampleRate),
+                    bufferStartFrame.framesToMillis(sampleRate),
                     framesPlayed,
-                    emulatorSampleRate,
+                    sampleRate,
                     resampledAudio
                 )
             )
@@ -155,11 +182,15 @@ abstract class Generator(
         )
     }
 
-    private fun createEmulatorBuffer(sizeShorts: Int): ShortArray {
-        return ShortArray(sizeShorts)
+    private fun ShortArray.clear() {
+        forEachIndexed { index, _ -> set(index, 0) }
     }
 
     companion object {
         private const val LENGTH_FADE_MILLIS = 6_000.0
+
+        private const val BUFFER_LENGTH_MILLIS = 500.0
+
+        private const val TIMEOUT_BUFFERS_FULL_MS = 3000L
     }
 }

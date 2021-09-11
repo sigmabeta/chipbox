@@ -6,8 +6,6 @@ import net.sigmabeta.chipbox.player.common.millisToFrames
 abstract class Emulator {
     var trackOver: Boolean = false
 
-    abstract var sampleRate: Int
-
     abstract fun loadTrackInternal(path: String)
 
     abstract fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int
@@ -15,6 +13,8 @@ abstract class Emulator {
     abstract fun teardownInternal()
 
     abstract fun getLastError(): String?
+
+    abstract fun getSampleRateInternal(): Int
 
     private var framesPlayedTotal = 0
 
@@ -26,9 +26,9 @@ abstract class Emulator {
             teardown()
         }
 
-        remainingFramesTotal = track.trackLengthMs.toDouble().millisToFrames(sampleRate)
-
         loadTrackInternal(track.path)
+        remainingFramesTotal =
+            track.trackLengthMs.toDouble().millisToFrames(getSampleRateInternal())
     }
 
     fun generateBuffer(
