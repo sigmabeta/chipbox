@@ -2,6 +2,6 @@ apply from: "$rootProject.projectDir/core-android-module.gradle"
 apply from: "$rootProject.projectDir/di.gradle"
 
 dependencies {
-    api project(path: ':core:player:emulators:di')
-    api project(path: ':core:player:generator:real')
+    api project(path: ':core:player:emulators:fake:di')
+    api project(path: ':core:player:emulators:psf:di')
 }

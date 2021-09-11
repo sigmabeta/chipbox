@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 JNIEXPORT void JNICALL
-Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_loadTrackInternal(
+Java_net_sigmabeta_chipbox_player_emulators_psf_PsfEmulator_loadTrackInternal(
         JNIEnv *env,
         __unused jobject thiz,
         jstring java_filename
@@ -16,7 +16,7 @@ Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_loadTrackInternal(
 }
 
 JNIEXPORT jint JNICALL
-Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_generateBufferInternal(
+Java_net_sigmabeta_chipbox_player_emulators_psf_PsfEmulator_generateBufferInternal(
         JNIEnv *env,
         jobject thiz,
         jshortArray java_array,
@@ -33,7 +33,7 @@ Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_generateBufferInter
 }
 
 JNIEXPORT void JNICALL
-Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_teardownInternal(
+Java_net_sigmabeta_chipbox_player_emulators_psf_PsfEmulator_teardownInternal(
         JNIEnv *env,
         jobject thiz
 ) {
@@ -41,7 +41,7 @@ Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_teardownInternal(
 }
 
 JNIEXPORT jstring JNICALL
-Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_getLastError(
+Java_net_sigmabeta_chipbox_player_emulators_psf_PsfEmulator_getLastError(
         JNIEnv *env,
         jobject thiz
 ) {
@@ -51,8 +51,8 @@ Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_getLastError(
 }
 
 JNIEXPORT jint JNICALL
-Java_net_sigmabeta_chipbox_player_emulators_real_PsfEmulator_getSampleRateInternal(JNIEnv *env,
-                                                                                   jobject thiz) {
+Java_net_sigmabeta_chipbox_player_emulators_psf_PsfEmulator_getSampleRateInternal(JNIEnv *env,
+                                                                                  jobject thiz) {
     return get_sample_rate();
 }
 
