@@ -11,7 +11,7 @@ class RealGenerator(
     repository: Repository,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Generator(repository, dispatcher) {
-    override val emulatorSampleRate = PsfEmulator.sampleRate
+    override fun getEmulatorSampleRate() = PsfEmulator.getSampleRateInternal()
 
     override fun loadTrack(loadedTrack: Track) = PsfEmulator.loadTrack(loadedTrack)
 

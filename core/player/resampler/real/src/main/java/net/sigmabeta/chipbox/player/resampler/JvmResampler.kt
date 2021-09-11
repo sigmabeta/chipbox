@@ -27,10 +27,10 @@ class JvmResampler(val outputLengthShorts: Int, inputSampleRate: Int, outputSamp
 
         factor = outputSampleRate.toDouble() / inputSampleRate
 
-        println("Resampler: Out buffer size: ${outputLengthShorts * 2} bytes")
-        println("Resampler: In float buffer size: ${inputLengthShorts * 2} bytes")
-
+        println("Resampler: Buffer size in / out: ${inputLengthShorts * 2} bytes / ${outputLengthShorts * 2} bytes")
+        println("Resampler: Sample rate in / out: $inputSampleRate / $outputSampleRate")
         println("Resampler: Factor: $factor")
+
         resampler = Resampler(
             false,
             factor,

@@ -11,7 +11,7 @@ class FakeGenerator(
     repository: Repository,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Generator(repository, dispatcher) {
-    override val emulatorSampleRate = FakeEmulator.sampleRate
+    override fun getEmulatorSampleRate() = FakeEmulator.getSampleRateInternal()
 
     override fun loadTrack(loadedTrack: Track) = FakeEmulator.loadTrack(loadedTrack)
 

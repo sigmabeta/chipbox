@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.player.speaker.real
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import android.os.Process
 import androidx.media.AudioAttributesCompat
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
@@ -30,6 +31,8 @@ class RealSpeaker(
     }
 
     private suspend fun startPlayback(audioTrack: AudioTrack, trackId: Long) {
+        Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
+
         audioTrack.play()
 
         generator
@@ -40,7 +43,7 @@ class RealSpeaker(
                     GeneratorEvent.Complete -> onPlaybackComplete(audioTrack)
                     is GeneratorEvent.Error -> onPlaybackError(audioTrack, it.message)
                     is GeneratorEvent.Audio -> {
-                        onAudioGenerated(it, audioTrack)
+                        onAudioGenerated(it.data, audioTrack)
                         return@collect
                     }
                 }
@@ -61,14 +64,15 @@ class RealSpeaker(
         teardown(audioTrack)
     }
 
-    private fun onAudioGenerated(audio: GeneratorEvent.Audio, audioTrack: AudioTrack) {
+    private fun onAudioGenerated(audio: ShortArray, audioTrack: AudioTrack) {
         // Samples, not Frames
         val samplesWritten = audioTrack.write(
-            audio.data,
+            audio,
             0,
-            audio.data.size
+            audio.size
         )
         logProblems(samplesWritten)
+        generator.returnBuffer(audio)
     }
 
     private fun teardown(audioTrack: AudioTrack) {

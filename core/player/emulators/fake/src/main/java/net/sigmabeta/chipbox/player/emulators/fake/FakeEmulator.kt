@@ -8,7 +8,7 @@ import net.sigmabeta.chipbox.player.emulators.fake.models.Note
 import net.sigmabeta.chipbox.player.emulators.fake.synths.SineSynth
 
 object FakeEmulator : Emulator() {
-    override var sampleRate = 44100
+    override fun getSampleRateInternal() = 44100
 
     private var generatedTrack: GeneratedTrack? = null
 
@@ -28,7 +28,8 @@ object FakeEmulator : Emulator() {
             teardown()
         }
 
-        remainingFramesTotal = track.trackLengthMs.toDouble().millisToFrames(sampleRate)
+        remainingFramesTotal =
+            track.trackLengthMs.toDouble().millisToFrames(getSampleRateInternal())
 
         val generatedTrack = TrackRandomizer.generate(track)
 
@@ -59,10 +60,10 @@ object FakeEmulator : Emulator() {
                 remainingFramesForCurrentNote = note
                     .duration
                     .toMsAtTempo(generatedTrack?.tempo ?: return -1)
-                    .millisToFrames(sampleRate)
+                    .millisToFrames(getSampleRateInternal())
             }
 
-            val currentMillis = framesPlayedForCurrentNote.framesToMillis(sampleRate)
+            val currentMillis = framesPlayedForCurrentNote.framesToMillis(getSampleRateInternal())
             val rawSample = squareSynth.generate(
                 currentMillis,
                 note.pitch.frequency,
@@ -72,7 +73,7 @@ object FakeEmulator : Emulator() {
             val adsr = TimeAdsrProcessor.calculateAdsr(
                 framesPlayedForCurrentNote,
                 framesPlayedForCurrentNote + remainingFramesForCurrentNote,
-                sampleRate
+                getSampleRateInternal()
             )
 
             val sample = (rawSample * adsr).toShortValue()
