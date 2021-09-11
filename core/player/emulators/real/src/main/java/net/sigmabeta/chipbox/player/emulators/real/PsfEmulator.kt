@@ -7,8 +7,6 @@ object PsfEmulator : Emulator() {
         System.loadLibrary("aopsf")
     }
 
-    override var sampleRate = 0
-        get() = getSampleRateInternal()
 
     external override fun loadTrackInternal(path: String)
 
@@ -18,5 +16,5 @@ object PsfEmulator : Emulator() {
 
     external override fun getLastError(): String?
 
-    private external fun getSampleRateInternal(): Int
+    external override fun getSampleRateInternal(): Int
 }
