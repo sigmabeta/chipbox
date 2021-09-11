@@ -56,8 +56,11 @@ include ':core:utils'
 
 // Emulator modules (likely to contain C/C++ code)
 include ':core:player:emulators'
+include ':core:player:emulators:di'
 include ':core:player:emulators:fake'
-include ':core:player:emulators:real'
+include ':core:player:emulators:fake:di'
+include ':core:player:emulators:psf'
+include ':core:player:emulators:psf:di'
 
 // Common Modules (which may contain dependencies exposed by a feature)
 

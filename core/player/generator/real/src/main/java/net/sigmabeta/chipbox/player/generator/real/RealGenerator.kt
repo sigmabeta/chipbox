@@ -3,23 +3,65 @@ package net.sigmabeta.chipbox.player.generator.real
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.models.Track
-import net.sigmabeta.chipbox.player.emulators.real.PsfEmulator
+import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.repository.Repository
+import timber.log.Timber
+import java.io.File
 
 class RealGenerator(
     repository: Repository,
+    private val emulators: List<Emulator>,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Generator(repository, dispatcher) {
-    override fun getEmulatorSampleRate() = PsfEmulator.getSampleRateInternal()
+    private var emulator: Emulator? = null
 
-    override fun loadTrack(loadedTrack: Track) = PsfEmulator.loadTrack(loadedTrack)
+    override fun loadTrack(loadedTrack: Track) {
+        if (emulator != null) {
+            Timber.i("Previous emulator still exists. Tearing down...")
+            teardown()
+        }
 
-    override fun generateAudio(buffer: ShortArray) = PsfEmulator.generateBuffer(buffer)
+        val emulator = getSupportedEmulator(loadedTrack.path)
+            ?: throw IllegalArgumentException("No emulator found for this file type.")
 
-    override fun teardown() = PsfEmulator.teardown()
+        this.emulator = emulator
+        emulator.loadTrack(loadedTrack)
+    }
 
-    override fun isTrackOver() = PsfEmulator.trackOver
+    private fun getSupportedEmulator(path: String): Emulator? {
+        val extension = File(path).extension
+        return emulators.firstOrNull {
+            it.isFileExtensionSupported(extension)
+        }
+    }
 
-    override fun getLastError() = PsfEmulator.getLastError()
+    override fun generateAudio(buffer: ShortArray) = ifNotNull(emulator) { generateBuffer(buffer) }
+
+    override fun getEmulatorSampleRate() = ifNotNull(emulator) { getSampleRateInternal() }
+
+    override fun teardown() = ifNotNull(emulator) { teardown() }
+
+    override fun isTrackOver() = ifNotNull(emulator) { trackOver }
+
+    override fun getLastError() = ifNotNull(emulator) { getLastError() }
+
+    private fun <Return> ifNotNull(
+        emulator: Emulator?,
+        action: Emulator.() -> Return
+    ) = ifNotNull(emulator, null) {
+        action()
+    }
+
+    private fun <Argument, Return> ifNotNull(
+        emulator: Emulator?,
+        argument: Argument,
+        action: Emulator.(Argument) -> Return
+    ): Return {
+        if (emulator == null) {
+            throw IllegalStateException("No emulator loaded.")
+        }
+
+        return emulator.action(argument)
+    }
 }

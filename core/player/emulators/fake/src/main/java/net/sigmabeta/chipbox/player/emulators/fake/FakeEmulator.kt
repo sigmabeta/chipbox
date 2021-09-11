@@ -22,6 +22,10 @@ object FakeEmulator : Emulator() {
 
     private var remainingFramesForCurrentNote = 0
 
+    override val supportedFileExtensions = emptyList<String>()
+
+    override fun isFileExtensionSupported(extension: String) = true
+
     override fun loadTrack(track: Track) {
         if (remainingFramesTotal >= 0) {
             println("Previously loaded emulator not cleared. Clearing...")

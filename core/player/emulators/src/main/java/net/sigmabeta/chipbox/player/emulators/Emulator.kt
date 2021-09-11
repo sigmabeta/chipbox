@@ -16,9 +16,14 @@ abstract class Emulator {
 
     abstract fun getSampleRateInternal(): Int
 
+    abstract val supportedFileExtensions: List<String>
+
     private var framesPlayedTotal = 0
 
     protected var remainingFramesTotal = -1
+
+    open fun isFileExtensionSupported(extension: String) =
+        supportedFileExtensions.contains(extension)
 
     open fun loadTrack(track: Track) {
         if (remainingFramesTotal >= 0) {
