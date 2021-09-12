@@ -87,8 +87,8 @@
 
 #include "../driver.h"
 
-#define debug_printf(...)
-//#define debug_printf sexypsf_dbg_printf
+#define // debug_printf(...)
+//#define // debug_printf sexypsf_dbg_printf
 //extern void sexypsf_dbg_printf(char* fmt, ...);
 
 ////////////////////////////////////////////////////////////////////////
@@ -218,11 +218,11 @@ static s32 SpuShouldGotoExit() {
             if (!shouldCheckSilence && nonSilenceSample < NonSilenceThreshold) {
                 // Check silence for a SilenceThreshold
                 // If the song keeps playing, do not check silence anymore
-                debug_printf("Start to check silence, sampcount: %u, decayend: %u", sampcount,
+                // debug_printf("Start to check silence, sampcount: %u, decayend: %u", sampcount,
                              decayend);
                 shouldCheckSilence = 1;
             } else if (shouldCheckSilence && nonSilenceSample >= NonSilenceThreshold) {
-                debug_printf("Stop to check silence, sampcount: %u, decayend: %u", sampcount,
+                // debug_printf("Stop to check silence, sampcount: %u, decayend: %u", sampcount,
                              decayend);
                 shouldCheckSilence = 0;
             }
@@ -242,7 +242,7 @@ static s32 SpuShouldGotoExit() {
 static void CheckSilenceSamples(u8 *buffer, u32 count) {
     // Calculate silenceSample
     // If non-silenceSamples is larger than a threshold, do not count again...
-    //debug_printf("CheckSilenceSamples: buffer %p, count %u\n", buffer, count);
+    //// debug_printf("CheckSilenceSamples: buffer %p, count %u\n", buffer, count);
 
     u32 zeroCount = 0;
     u32 i;
@@ -253,11 +253,11 @@ static void CheckSilenceSamples(u8 *buffer, u32 count) {
     }
     if (zeroCount > (count / 2)) {
         silenceSamples += (count / 2); // 2 bytes is a sample
-        debug_printf("count: %u, silence samples is added by %u and becomes %u\n", count, count / 2,
+        // debug_printf("count: %u, silence samples is added by %u and becomes %u\n", count, count / 2,
                      silenceSamples);
     } else {
         nonSilenceSample += (count / 2);
-        debug_printf("count: %u, non-silence samples is added by %u and becomes %u\n", count,
+        // debug_printf("count: %u, non-silence samples is added by %u and becomes %u\n", count,
                      count / 2, nonSilenceSample);
     }
 }

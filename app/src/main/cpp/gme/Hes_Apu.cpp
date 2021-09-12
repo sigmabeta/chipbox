@@ -154,12 +154,12 @@ void Hes_Osc::run_until( synth_t& synth_, blip_time_t end_time )
 				{
 					if ( !period )
 					{
-						// TODO: Gekisha Boy assumes that period = 0 silences wave
-						//period = 0x1000 * 2;
-						period = 1;
-						//if ( !(volume_0 | volume_1) )
-						//  debug_printf( "Used period 0\n" );
-					}
+                        // TODO: Gekisha Boy assumes that period = 0 silences wave
+                        //period = 0x1000 * 2;
+                        period = 1;
+                        //if ( !(volume_0 | volume_1) )
+                        //  // debug_printf( "Used period 0\n" );
+                    }
 					
 					// maintain phase when silent
 					blargg_long count = (end_time - time + period - 1) / period;
@@ -285,18 +285,18 @@ void Hes_Apu::write_data( blip_time_t time, int addr, int data )
 			else if ( osc.control & 0x80 )
 			{
 				osc.dac = data;
-			}
-			break;
-		
-		 case 0x807:
-		 	if ( &osc >= &oscs [4] )
-		 		osc.noise = data;
-		 	break;
-		 
-		 case 0x809:
-		 	if ( !(data & 0x80) && (data & 0x03) != 0 )
-		 		debug_printf( "HES LFO not supported\n" );
-		}
+            }
+                break;
+
+            case 0x807:
+                if (&osc >= &oscs[4])
+                    osc.noise = data;
+                break;
+
+            case 0x809:
+                if (!(data & 0x80) && (data & 0x03) != 0)
+                // debug_printf( "HES LFO not supported\n" );
+        }
 	}
 }
 

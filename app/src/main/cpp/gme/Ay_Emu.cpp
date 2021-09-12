@@ -199,27 +199,26 @@ blargg_err_t Ay_Emu::start_track_( int track )
 		unsigned len = get_be16( blocks ); blocks += 2;
 		if ( addr + len > 0x10000 )
 		{
-			set_warning( "Bad data block size" );
-			len = 0x10000 - addr;
-		}
-		check( len );
-		byte const* in = get_data( file, blocks, 0 ); blocks += 2;
-		if ( len > blargg_ulong (file.end - in) )
-		{
-			set_warning( "Missing file data" );
-			len = file.end - in;
-		}
-		//debug_printf( "addr: $%04X, len: $%04X\n", addr, len );
-		if ( addr < ram_start && addr >= 0x400 ) // several tracks use low data
-			debug_printf( "Block addr in ROM\n" );
-		memcpy( mem.ram + addr, in, len );
-		
-		if ( file.end - blocks < 8 )
-		{
-			set_warning( "Missing file data" );
-			break;
-		}
-	}
+            set_warning("Bad data block size");
+            len = 0x10000 - addr;
+        }
+        check(len);
+        byte const *in = get_data(file, blocks, 0);
+        blocks += 2;
+        if (len > blargg_ulong(file.end - in)) {
+            set_warning("Missing file data");
+            len = file.end - in;
+        }
+        //// debug_printf( "addr: $%04X, len: $%04X\n", addr, len );
+        if (addr < ram_start && addr >= 0x400) // several tracks use low data
+            // debug_printf( "Block addr in ROM\n" );
+            memcpy(mem.ram + addr, in, len);
+
+        if (file.end - blocks < 8) {
+            set_warning("Missing file data");
+            break;
+        }
+    }
 	while ( (addr = get_be16( blocks )) != 0 );
 	
 	// copy and configure driver
@@ -232,27 +231,26 @@ blargg_err_t Ay_Emu::start_track_( int track )
 		0x18, 0xFA  // JR LOOP
 	};
 	static byte const active [] = {
-		0xF3,       // DI
-		0xCD, 0, 0, // CALL init
-		0xED, 0x56, // LOOP: IM 1
-		0xFB,       // EI
-		0x76,       // HALT
-		0xCD, 0, 0, // CALL play
-		0x18, 0xF7  // JR LOOP
-	};
-	memcpy( mem.ram, passive, sizeof passive );
-	unsigned play_addr = get_be16( more_data + 4 );
-	//debug_printf( "Play: $%04X\n", play_addr );
-	if ( play_addr )
-	{
-		memcpy( mem.ram, active, sizeof active );
-		mem.ram [ 9] = play_addr;
-		mem.ram [10] = play_addr >> 8;
-	}
-	mem.ram [2] = init;
-	mem.ram [3] = init >> 8;
-	
-	mem.ram [0x38] = 0xFB; // Put EI at interrupt vector (followed by RET)
+            0xF3,       // DI
+            0xCD, 0, 0, // CALL init
+            0xED, 0x56, // LOOP: IM 1
+            0xFB,       // EI
+            0x76,       // HALT
+            0xCD, 0, 0, // CALL play
+            0x18, 0xF7  // JR LOOP
+    };
+    memcpy(mem.ram, passive, sizeof passive);
+    unsigned play_addr = get_be16(more_data + 4);
+    //// debug_printf( "Play: $%04X\n", play_addr );
+    if (play_addr) {
+        memcpy(mem.ram, active, sizeof active);
+        mem.ram[9] = play_addr;
+        mem.ram[10] = play_addr >> 8;
+    }
+    mem.ram[2] = init;
+    mem.ram[3] = init >> 8;
+
+    mem.ram[0x38] = 0xFB; // Put EI at interrupt vector (followed by RET)
 	
 	memcpy( mem.ram + 0x10000, mem.ram, 0x80 ); // some code wraps around (ugh)
 	
@@ -305,26 +303,25 @@ void Ay_Emu::cpu_out_misc( cpu_time_t time, unsigned addr, int data )
 			
 			case 0x80:
 				apu.write( time, apu_addr, cpc_latch );
-				goto enable_cpc;
-			}
-			break;
-		
-		case 0xF4:
-			cpc_latch = data;
-			goto enable_cpc;
-		}
-	}
-	
-	debug_printf( "Unmapped OUT: $%04X <- $%02X\n", addr, data );
-	return;
-	
-enable_cpc:
-	if ( !cpc_mode )
-	{
-		cpc_mode = true;
-		change_clock_rate( cpc_clock );
-		set_tempo( tempo() );
-	}
+                    goto enable_cpc;
+            }
+                break;
+
+            case 0xF4:
+                cpc_latch = data;
+                goto enable_cpc;
+        }
+    }
+
+    // debug_printf( "Unmapped OUT: $%04X <- $%02X\n", addr, data );
+    return;
+
+    enable_cpc:
+    if (!cpc_mode) {
+        cpc_mode = true;
+        change_clock_rate(cpc_clock);
+        set_tempo(tempo());
+    }
 }
 
 void ay_cpu_out( Ay_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
@@ -350,14 +347,13 @@ void ay_cpu_out( Ay_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 	}
 }
 
-int ay_cpu_in( Ay_Cpu*, unsigned addr )
-{
-	// keyboard read and other things
-	if ( (addr & 0xFF) == 0xFE )
-		return 0xFF; // other values break some beeper tunes
-	
-	debug_printf( "Unmapped IN : $%04X\n", addr );
-	return 0xFF;
+int ay_cpu_in( Ay_Cpu*, unsigned addr ) {
+    // keyboard read and other things
+    if ((addr & 0xFF) == 0xFE)
+        return 0xFF; // other values break some beeper tunes
+
+    // debug_printf( "Unmapped IN : $%04X\n", addr );
+    return 0xFF;
 }
 
 blargg_err_t Ay_Emu::run_clocks( blip_time_t& duration, int )

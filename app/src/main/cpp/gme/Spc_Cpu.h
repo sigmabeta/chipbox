@@ -14,20 +14,20 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 //// Memory access
 
 #if SPC_MORE_ACCURACY
-	#define SUSPICIOUS_OPCODE( name ) ((void) 0)
+#define SUSPICIOUS_OPCODE( name ) ((void) 0)
 #else
-	#define SUSPICIOUS_OPCODE( name ) debug_printf( "SPC: suspicious opcode: " name "\n" )
+#define SUSPICIOUS_OPCODE(name) // debug_printf( "SPC: suspicious opcode: " name "\n" )
 #endif
 
-#define CPU_READ( time, offset, addr )\
-	cpu_read( addr, time + offset )
+#define CPU_READ(time, offset, addr)\
+    cpu_read( addr, time + offset )
 
-#define CPU_WRITE( time, offset, addr, data )\
-	cpu_write( data, addr, time + offset )
+#define CPU_WRITE(time, offset, addr, data)\
+    cpu_write( data, addr, time + offset )
 
 #if SPC_MORE_ACCURACY
-	#define CPU_READ_TIMER( time, offset, addr, out )\
-		{ out = CPU_READ( time, offset, addr ); }
+#define CPU_READ_TIMER( time, offset, addr, out )\
+        { out = CPU_READ( time, offset, addr ); }
 
 #else
 	// timers are by far the most common thing read from dp
@@ -1174,47 +1174,58 @@ loop:
 	
 // 17. OTHER COMMANDS
 
-	case 0x00: // NOP
-		goto loop;
-	
-	case 0xFF:{// STOP
-		// handle PC wrap-around
-		unsigned addr = GET_PC() - 1;
-		if ( addr >= 0x10000 )
-		{
-			addr &= 0xFFFF;
-			SET_PC( addr );
-			debug_printf( "SPC: PC wrapped around\n" );
-			goto loop;
-		}
-	}
-	// fall through
-	case 0xEF: // SLEEP
-		SUSPICIOUS_OPCODE( "STOP/SLEEP" );
-		--pc;
-		rel_time = 0;
-		m.cpu_error = "SPC emulation error";
-		goto stop;
-	} // switch
-	
-	assert( 0 ); // catch any unhandled instructions
-}   
+case 0x00: // NOP
+goto
+loop;
+
+case 0xFF:{// STOP
+// handle PC wrap-around
+unsigned addr = GET_PC() - 1;
+if ( addr >= 0x10000 )
+{
+addr &= 0xFFFF;
+SET_PC(addr);
+// debug_printf( "SPC: PC wrapped around\n" );
+goto
+loop;
+}
+}
+// fall through
+case 0xEF: // SLEEP
+SUSPICIOUS_OPCODE("STOP/SLEEP");
+--
+pc;
+rel_time = 0;
+m.
+cpu_error = "SPC emulation error";
+goto
+stop;
+} // switch
+
+assert( 0 ); // catch any unhandled instructions
+}
 out_of_time:
-	rel_time -= m.cycle_table [*pc]; // undo partial execution of opcode
+rel_time -= m.cycle_table [*pc]; // undo partial execution of opcode
 stop:
-	
-	// Uncache registers
-	if ( GET_PC() >= 0x10000 )
-		debug_printf( "SPC: PC wrapped around\n" );
-	m.cpu_regs.pc = (uint16_t) GET_PC();
-	m.cpu_regs.sp = ( uint8_t) GET_SP();
-	m.cpu_regs.a  = ( uint8_t) a;
-	m.cpu_regs.x  = ( uint8_t) x;
-	m.cpu_regs.y  = ( uint8_t) y;
-	{
-		int temp;
-		GET_PSW( temp );
-		m.cpu_regs.psw = (uint8_t) temp;
-	}
+
+// Uncache registers
+if ( GET_PC() >= 0x10000 )
+// debug_printf( "SPC: PC wrapped around\n" );
+m.cpu_regs.
+pc = (uint16_t)GET_PC();
+m.cpu_regs.
+sp = (uint8_t)GET_SP();
+m.cpu_regs.
+a = (uint8_t) a;
+m.cpu_regs.
+x = (uint8_t) x;
+m.cpu_regs.
+y = (uint8_t) y;
+{
+int temp;
+GET_PSW(temp);
+m.cpu_regs.
+psw = (uint8_t) temp;
+}
 }
 SPC_CPU_RUN_FUNC_END

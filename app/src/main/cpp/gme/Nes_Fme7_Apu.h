@@ -97,11 +97,11 @@ inline void Nes_Fme7_Apu::write_data( blip_time_t time, int data )
 {
 	if ( (unsigned) latch >= reg_count )
 	{
-		#ifdef debug_printf
-			debug_printf( "FME7 write to %02X (past end of sound registers)\n", (int) latch );
-		#endif
-		return;
-	}
+#ifdef // debug_printf
+        // debug_printf( "FME7 write to %02X (past end of sound registers)\n", (int) latch );
+#endif
+        return;
+    }
 	
 	run_until( time );
 	regs [latch] = data;

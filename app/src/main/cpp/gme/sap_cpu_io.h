@@ -19,8 +19,8 @@ void Sap_Emu::cpu_write( sap_addr_t addr, int data )
 	
 	int Sap_Emu::cpu_read( sap_addr_t addr )
 	{
-		if ( (addr & 0xF900) == 0xD000 )
-			debug_printf( "Unmapped read $%04X\n", addr );
-		return mem.ram [addr];
+		if ((addr & 0xF900) == 0xD000)
+            // debug_printf( "Unmapped read $%04X\n", addr );
+            return mem.ram[addr];
 	}
 #endif
