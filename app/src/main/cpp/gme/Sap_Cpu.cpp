@@ -889,24 +889,25 @@ imm##op:
 			goto loop;
 		}
 	delayed_cli:
-		debug_printf( "Delayed CLI not emulated\n" );
-		goto loop;
+        // debug_printf( "Delayed CLI not emulated\n" );
+        goto loop;
 	}
 	
 	case 0x78: // SEI
 		if ( status & st_i )
 			goto loop;
 		status |= st_i;
-	handle_sei: {
-		this->r.status = status; // update externally-visible I flag
-		blargg_long delta = s.base - end_time_;
-		s.base = end_time_;
-		s_time += delta;
-		if ( s_time < 0 )
-			goto loop;
-		debug_printf( "Delayed SEI not emulated\n" );
-		goto loop;
-	}
+	handle_sei:
+    {
+        this->r.status = status; // update externally-visible I flag
+        blargg_long delta = s.base - end_time_;
+        s.base = end_time_;
+        s_time += delta;
+        if (s_time < 0)
+            goto loop;
+        // debug_printf( "Delayed SEI not emulated\n" );
+        goto loop;
+    }
 	
 // Unofficial
 	
@@ -935,27 +936,27 @@ imm##op:
 		assert( (unsigned) opcode <= 0xFF );
 		illegal_encountered = true;
 		pc--;
-		goto stop;
-	}
-	assert( false );
-	
-	int result_;
-handle_brk:
-	if ( (pc - 1) >= idle_addr )
-		goto idle_done;
-	pc++;
-	result_ = 4;
-	debug_printf( "BRK executed\n" );
-	
-interrupt:
-	{
-		s_time += 7;
-		
-		WRITE_LOW( 0x100 | (sp - 1), pc >> 8 );
-		WRITE_LOW( 0x100 | (sp - 2), pc );
-		pc = GET_LE16( &READ_PROG( 0xFFFA ) + result_ );
-		
-		sp = (sp - 3) | 0x100;
+            goto stop;
+    }
+    assert(false);
+
+    int result_;
+    handle_brk:
+    if ((pc - 1) >= idle_addr)
+        goto idle_done;
+    pc++;
+    result_ = 4;
+    // debug_printf( "BRK executed\n" );
+
+    interrupt:
+    {
+        s_time += 7;
+
+        WRITE_LOW(0x100 | (sp - 1), pc >> 8);
+        WRITE_LOW(0x100 | (sp - 2), pc);
+        pc = GET_LE16(&READ_PROG(0xFFFA) + result_);
+
+        sp = (sp - 3) | 0x100;
 		fuint8 temp;
 		CALC_STATUS( temp );
 		temp |= st_r;

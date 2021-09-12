@@ -123,9 +123,9 @@ void Ay_Apu::write_data_( int addr, int data )
 	
 	if ( (unsigned) addr >= 14 )
 	{
-		#ifdef debug_printf
-			debug_printf( "Wrote to I/O port %02X\n", (int) addr );
-		#endif
+#ifdef // debug_printf
+		// debug_printf( "Wrote to I/O port %02X\n", (int) addr );
+#endif
 	}
 	
 	// envelope mode
@@ -213,14 +213,13 @@ void Ay_Apu::run_until( blip_time_t final_end_time )
 		{
 			volume = env.wave [osc_env_pos] >> half_vol;
 			// use envelope only if it's a repeating wave or a ramp that hasn't finished
-			if ( !(regs [13] & 1) || osc_env_pos < -32 )
-			{
+			if ( !(regs [13] & 1) || osc_env_pos < -32 ) {
 				end_time = start_time + env.delay;
-				if ( end_time >= final_end_time )
+				if (end_time >= final_end_time)
 					end_time = final_end_time;
-				
+
 				//if ( !(regs [12] | regs [11]) )
-				//  debug_printf( "Used envelope period 0\n" );
+				//  // debug_printf( "Used envelope period 0\n" );
 			}
 			else if ( !volume )
 			{
@@ -245,12 +244,11 @@ void Ay_Apu::run_until( blip_time_t final_end_time )
 		// noise time
 		blip_time_t ntime = final_end_time;
 		blargg_ulong noise_lfsr = 1;
-		if ( !(osc_mode & noise_off) )
-		{
+		if ( !(osc_mode & noise_off) ) {
 			ntime = start_time + old_noise_delay;
 			noise_lfsr = old_noise_lfsr;
 			//if ( (regs [6] & 0x1F) == 0 )
-			//  debug_printf( "Used noise period 0\n" );
+			//  // debug_printf( "Used noise period 0\n" );
 		}
 		
 		// The following efficiently handles several cases (least demanding first):

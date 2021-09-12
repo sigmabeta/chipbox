@@ -150,12 +150,12 @@ void Gbs_Emu::set_bank( int n )
 	blargg_long addr = rom.mask_addr( n * (blargg_long) bank_size );
 	if ( addr == 0 && rom.size() > bank_size )
 	{
-		// TODO: what is the correct behavior? Current Game & Watch Gallery
-		// rip requires that this have no effect or set to bank 1.
-		//debug_printf( "Selected ROM bank 0\n" );
-		return;
-		//n = 1;
-	}
+        // TODO: what is the correct behavior? Current Game & Watch Gallery
+        // rip requires that this have no effect or set to bank 1.
+        //// debug_printf( "Selected ROM bank 0\n" );
+        return;
+        //n = 1;
+    }
 	cpu::map_code( bank_size, bank_size, rom.at_addr( addr ) );
 }
 
@@ -264,19 +264,17 @@ blargg_err_t Gbs_Emu::run_clocks( blip_time_t& duration, int )
 				GME_FRAME_HOOK( this );
 				// TODO: handle timer rates different than 60 Hz
 			}
-			else if ( cpu::r.pc > 0xFFFF )
-			{
-				debug_printf( "PC wrapped around\n" );
-				cpu::r.pc &= 0xFFFF;
-			}
-			else
-			{
-				set_warning( "Emulation error (illegal/unsupported instruction)" );
-				debug_printf( "Bad opcode $%.2x at $%.4x\n",
-						(int) *cpu::get_code( cpu::r.pc ), (int) cpu::r.pc );
-				cpu::r.pc = (cpu::r.pc + 1) & 0xFFFF;
-				cpu_time += 6;
-			}
+			else if ( cpu::r.pc > 0xFFFF ) {
+                // debug_printf( "PC wrapped around\n" );
+                cpu::r.pc &= 0xFFFF;
+            }
+			else {
+                set_warning("Emulation error (illegal/unsupported instruction)");
+                // debug_printf( "Bad opcode $%.2x at $%.4x\n",
+                (int) *cpu::get_code(cpu::r.pc), (int) cpu::r.pc );
+                cpu::r.pc = (cpu::r.pc + 1) & 0xFFFF;
+                cpu_time += 6;
+            }
 		}
 	}
 	

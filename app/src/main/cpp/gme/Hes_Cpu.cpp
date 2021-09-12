@@ -148,7 +148,7 @@ loop:
 		/*
 		static long count;
 		if ( count == 1844 ) Debugger();
-		if ( s.base != correct ) debug_printf( "%ld\n", count );
+		if ( s.base != correct ) // debug_printf( "%ld\n", count );
 		count++;
 		*/
 	}
@@ -740,9 +740,9 @@ possibly_out_of_time:
 	
 	ARITH_ADDR_MODES( 0x65 ) // ADC
 	adc_imm: {
-		if ( status & st_d )
-			debug_printf( "Decimal mode not supported\n" );
-		fint16 carry = c >> 8 & 1;
+        if (status & st_d)
+            // debug_printf( "Decimal mode not supported\n" );
+            fint16 carry = c >> 8 & 1;
 		fint16 ov = (a ^ 0x80) + carry + (BOOST::int8_t) data; // sign-extend
 		status &= ~st_v;
 		status |= ov >> 2 & 0x40;
@@ -1084,25 +1084,26 @@ possibly_out_of_time:
 			irq_time_ = s.base; // TODO: remove, as only to satisfy debug check in loop
 			goto loop;
 		}
-	delayed_cli:
-		debug_printf( "Delayed CLI not supported\n" ); // TODO: implement
-		goto loop;
+        delayed_cli:
+        // debug_printf( "Delayed CLI not supported\n" ); // TODO: implement
+        goto loop;
 	}
 	
 	case 0x78: // SEI
 		if ( status & st_i )
 			goto loop;
 		status |= st_i;
-	handle_sei: {
-		this->r.status = status; // update externally-visible I flag
-		blargg_long delta = s.base - end_time_;
-		s.base = end_time_;
-		s_time += delta;
-		if ( s_time < 0 )
-			goto loop;
-		debug_printf( "Delayed SEI not supported\n" ); // TODO: implement
-		goto loop;
-	}
+	handle_sei:
+    {
+        this->r.status = status; // update externally-visible I flag
+        blargg_long delta = s.base - end_time_;
+        s.base = end_time_;
+        s_time += delta;
+        if (s_time < 0)
+            goto loop;
+        // debug_printf( "Delayed SEI not supported\n" ); // TODO: implement
+        goto loop;
+    }
 	
 // Special
 	
@@ -1144,23 +1145,23 @@ possibly_out_of_time:
 	case 0xEA: // NOP
 		goto loop;
 
-	case 0x54: // CSL
-		debug_printf( "CSL not supported\n" );
-		illegal_encountered = true;
+        case 0x54: // CSL
+            // debug_printf( "CSL not supported\n" );
+            illegal_encountered = true;
 		goto loop;
 	
 	case 0xD4: // CSH
 		goto loop;
 	
 	case 0xF4: { // SET
-		//fuint16 operand = GET_MSB();
-		debug_printf( "SET not handled\n" );
-		//switch ( data )
-		//{
-		//}
-		illegal_encountered = true;
-		goto loop;
-	}
+        //fuint16 operand = GET_MSB();
+        // debug_printf( "SET not handled\n" );
+        //switch ( data )
+        //{
+        //}
+        illegal_encountered = true;
+        goto loop;
+    }
 	
 // Block transfer
 
@@ -1223,20 +1224,19 @@ possibly_out_of_time:
 			out &= 0xFFFF;
 			if ( out_alt )
 				out_inc = -out_inc;
-		}
-		while ( --count );
-		CACHE_TIME();
-		goto loop;
-	}
+        } while (--count);
+        CACHE_TIME();
+        goto loop;
+    }
 
 // Illegal
 
-	default:
-		assert( (unsigned) opcode <= 0xFF );
-		debug_printf( "Illegal opcode $%02X at $%04X\n", (int) opcode, (int) pc - 1 );
-		illegal_encountered = true;
-		goto loop;
-	}
+        default:
+            assert((unsigned) opcode <= 0xFF);
+            // debug_printf( "Illegal opcode $%02X at $%04X\n", (int) opcode, (int) pc - 1 );
+            illegal_encountered = true;
+            goto loop;
+    }
 	assert( false );
 	
 	int result_;

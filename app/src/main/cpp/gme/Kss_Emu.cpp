@@ -220,29 +220,28 @@ blargg_err_t Kss_Emu::start_track_( int track )
 	memcpy( ram + load_addr, rom.begin() + header_.extra_header, load_size );
 	
 	rom.set_addr( -load_size - header_.extra_header );
-	
-	// check available bank data
-	blargg_long const bank_size = this->bank_size();
-	int max_banks = (rom.file_size() - load_size + bank_size - 1) / bank_size;
-	bank_count = header_.bank_mode & 0x7F;
-	if ( bank_count > max_banks )
-	{
-		bank_count = max_banks;
-		set_warning( "Bank data missing" );
-	}
-	//debug_printf( "load_size : $%X\n", load_size );
-	//debug_printf( "bank_size : $%X\n", bank_size );
-	//debug_printf( "bank_count: %d (%d claimed)\n", bank_count, header_.bank_mode & 0x7F );
-	
-	ram [idle_addr] = 0xFF;
-	cpu::reset( unmapped_write, unmapped_read );
-	cpu::map_mem( 0, mem_size, ram, ram );
-	
-	ay.reset();
-	scc.reset();
-	if ( sn )
-		sn->reset();
-	r.sp = 0xF380;
+
+    // check available bank data
+    blargg_long const bank_size = this->bank_size();
+    int max_banks = (rom.file_size() - load_size + bank_size - 1) / bank_size;
+    bank_count = header_.bank_mode & 0x7F;
+    if (bank_count > max_banks) {
+        bank_count = max_banks;
+        set_warning("Bank data missing");
+    }
+    //// debug_printf( "load_size : $%X\n", load_size );
+    //// debug_printf( "bank_size : $%X\n", bank_size );
+    //// debug_printf( "bank_count: %d (%d claimed)\n", bank_count, header_.bank_mode & 0x7F );
+
+    ram[idle_addr] = 0xFF;
+    cpu::reset(unmapped_write, unmapped_read);
+    cpu::map_mem(0, mem_size, ram, ram);
+
+    ay.reset();
+    scc.reset();
+    if (sn)
+        sn->reset();
+    r.sp = 0xF380;
 	ram [--r.sp] = idle_addr >> 8;
 	ram [--r.sp] = idle_addr & 0xFF;
 	r.b.a = track;
@@ -291,17 +290,16 @@ void Kss_Emu::cpu_write( unsigned addr, int data )
 	case 0xB000:
 		set_bank( 1, data );
 		return;
-	}
-	
-	int scc_addr = (addr & 0xDFFF) ^ 0x9800;
-	if ( scc_addr < scc.reg_count )
-	{
-		scc_accessed = true;
-		scc.write( time(), scc_addr, data );
-		return;
-	}
-	
-	debug_printf( "LD ($%04X),$%02X\n", addr, data );
+    }
+
+    int scc_addr = (addr & 0xDFFF) ^0x9800;
+    if (scc_addr < scc.reg_count) {
+        scc_accessed = true;
+        scc.write(time(), scc_addr, data);
+        return;
+    }
+
+    // debug_printf( "LD ($%04X),$%02X\n", addr, data );
 }
 
 void kss_cpu_write( Kss_Cpu* cpu, unsigned addr, int data )
@@ -347,29 +345,28 @@ void kss_cpu_out( Kss_Cpu* cpu, cpu_time_t time, unsigned addr, int data )
 	case 0xFE:
 		emu.set_bank( 0, data );
 		return;
-	
-	#ifndef NDEBUG
-	case 0xF1: // FM data
-		if ( data )
-			break; // trap non-zero data
-	case 0xF0: // FM addr
-	case 0xA8: // PPI
-		return;
-	#endif
-	}
-	
-	debug_printf( "OUT $%04X,$%02X\n", addr, data );
+
+#ifndef NDEBUG
+        case 0xF1: // FM data
+            if (data)
+                break; // trap non-zero data
+        case 0xF0: // FM addr
+        case 0xA8: // PPI
+            return;
+#endif
+    }
+
+    // debug_printf( "OUT $%04X,$%02X\n", addr, data );
 }
 
-int kss_cpu_in( Kss_Cpu*, cpu_time_t, unsigned addr )
-{
-	//Kss_Emu& emu = STATIC_CAST(Kss_Emu&,*cpu);
-	//switch ( addr & 0xFF )
-	//{
-	//}
-	
-	debug_printf( "IN $%04X\n", addr );
-	return 0;
+int kss_cpu_in( Kss_Cpu*, cpu_time_t, unsigned addr ) {
+    //Kss_Emu& emu = STATIC_CAST(Kss_Emu&,*cpu);
+    //switch ( addr & 0xFF )
+    //{
+    //}
+
+    // debug_printf( "IN $%04X\n", addr );
+    return 0;
 }
 
 // Emulation

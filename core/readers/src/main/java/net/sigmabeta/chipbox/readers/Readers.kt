@@ -12,9 +12,9 @@ fun getReaderForExtension(extension: String): Reader? {
         "minipsf" -> PsfReader
         "psf2" -> PsfReader
         "minipsf2" -> PsfReader
-//        "nsf" -> NsfReader
-//        "nsfe" -> NsfeReader
-//        "gbs" -> GbsReader
+        "nsf" -> NsfReader
+        "nsfe" -> NsfeReader
+        "gbs" -> GbsReader
         else -> null
     }
 }

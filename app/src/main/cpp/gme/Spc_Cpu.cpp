@@ -166,17 +166,17 @@ inline void Snes_Spc::dsp_write( int data, rel_time_t time )
 				m.skipped_koff |= data;
 				m.skipped_kon &= ~data;
 			}
-		}
-	#endif
-	
-	#ifdef SPC_DSP_WRITE_HOOK
-		SPC_DSP_WRITE_HOOK( m.spc_time + time, REGS [r_dspaddr], (uint8_t) data );
-	#endif
-	
-	if ( REGS [r_dspaddr] <= 0x7F )
-		dsp.write( REGS [r_dspaddr], data );
-	else if ( !SPC_MORE_ACCURACY )
-		debug_printf( "SPC wrote to DSP register > $7F\n" );
+        }
+#endif
+
+#ifdef SPC_DSP_WRITE_HOOK
+    SPC_DSP_WRITE_HOOK( m.spc_time + time, REGS [r_dspaddr], (uint8_t) data );
+#endif
+
+    if (REGS[r_dspaddr] <= 0x7F)
+        dsp.write(REGS[r_dspaddr], data);
+    else if (!SPC_MORE_ACCURACY)
+    // debug_printf( "SPC wrote to DSP register > $7F\n" );
 }
 
 
@@ -297,31 +297,31 @@ void Snes_Spc::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 		{
 			t = run_timer( t, time );
 			#if SPC_MORE_ACCURACY
-				// Insane behavior when target is written just after counter is
-				// clocked and counter matches new period and new period isn't 1, 2, 4, or 8
-				if ( t->divider == (period & 0xFF) &&
-						t->next_time == time + TIMER_MUL( t, 1 ) &&
-						((period - 1) | ~0x0F) & period )
-				{
-					//debug_printf( "SPC pathological timer target write\n" );
-					
-					// If the period is 3, 5, or 9, there's a probability this behavior won't occur,
-					// based on the previous period
-					int prob = 0xFF;
-					int old_period = t->period & 0xFF;
-					if ( period == 3 ) prob = glitch_probs [0] [old_period];
-					if ( period == 5 ) prob = glitch_probs [1] [old_period];
-					if ( period == 9 ) prob = glitch_probs [2] [old_period];
-					
-					// The glitch suppresses incrementing of one of the counter bits, based on
-					// the lowest set bit in the new period
-					int b = 1;
-					while ( !(period & b) )
-						b <<= 1;
-					
-					if ( (rand() >> 4 & 0xFF) <= prob )
-						t->divider = (t->divider - b) & 0xFF;
-				}
+            // Insane behavior when target is written just after counter is
+            // clocked and counter matches new period and new period isn't 1, 2, 4, or 8
+            if ( t->divider == (period & 0xFF) &&
+                    t->next_time == time + TIMER_MUL( t, 1 ) &&
+                    ((period - 1) | ~0x0F) & period )
+            {
+                //// debug_printf( "SPC pathological timer target write\n" );
+
+                // If the period is 3, 5, or 9, there's a probability this behavior won't occur,
+                // based on the previous period
+                int prob = 0xFF;
+                int old_period = t->period & 0xFF;
+                if ( period == 3 ) prob = glitch_probs [0] [old_period];
+                if ( period == 5 ) prob = glitch_probs [1] [old_period];
+                if ( period == 9 ) prob = glitch_probs [2] [old_period];
+
+                // The glitch suppresses incrementing of one of the counter bits, based on
+                // the lowest set bit in the new period
+                int b = 1;
+                while ( !(period & b) )
+                    b <<= 1;
+
+                if ( (rand() >> 4 & 0xFF) <= prob )
+                    t->divider = (t->divider - b) & 0xFF;
+            }
 			#endif
 			t->period = period;
 		}
@@ -331,11 +331,11 @@ void Snes_Spc::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 	case r_t0out:
 	case r_t1out:
 	case r_t2out:
-		if ( !SPC_MORE_ACCURACY )
-			debug_printf( "SPC wrote to counter %d\n", (int) addr - r_t0out );
-		
-		if ( data < no_read_before_write  / 2 )
-			run_timer( &m.timers [addr - r_t0out], time - 1 )->counter = 0;
+        if (!SPC_MORE_ACCURACY)
+            // debug_printf( "SPC wrote to counter %d\n", (int) addr - r_t0out );
+
+            if (data < no_read_before_write / 2)
+                run_timer(&m.timers[addr - r_t0out], time - 1)->counter = 0;
 		break;
 	
 	// Registers that act like RAM
@@ -345,9 +345,9 @@ void Snes_Spc::cpu_write_smp_reg_( int data, rel_time_t time, int addr )
 		break;
 	
 	case r_test:
-		if ( (uint8_t) data != 0x0A )
-			debug_printf( "SPC wrote to test register\n" );
-		break;
+        if ((uint8_t) data != 0x0A)
+            // debug_printf( "SPC wrote to test register\n" );
+            break;
 	
 	case r_control:
 		// port clears

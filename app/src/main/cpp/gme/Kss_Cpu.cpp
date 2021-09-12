@@ -1279,38 +1279,41 @@ possibly_out_of_time:
 				pc -= 2;
 				s_time += 5;
 			}
-			
-			WRITE( addr, temp );
-			goto loop;
-		}
-		
-		case 0x47: // LD I,A
-			r.i = rg.a;
-			goto loop;
-		
-		case 0x4F: // LD R,A
-			SET_R( rg.a );
-			debug_printf( "LD R,A not supported\n" );
-			warning = true;
-			goto loop;
-		
-		case 0x57: // LD A,I
-			rg.a = r.i;
-			goto ld_ai_common;
-		
-		case 0x5F: // LD A,R
-			rg.a = GET_R();
-			debug_printf( "LD A,R not supported\n" );
-			warning = true;
-		ld_ai_common:
-			flags = (flags & C01) | SZ28( rg.a ) | (r.iff2 << 2 & V04);
-			goto loop;
-		
-		CASE8( 45, 4D, 55, 5D, 65, 6D, 75, 7D ): // RETI/RETN
-			r.iff1 = r.iff2;
-			goto ret_taken;
-		
-		case 0x46: case 0x4E: case 0x66: case 0x6E: // IM 0
+
+            WRITE(addr, temp);
+            goto loop;
+        }
+
+            case 0x47: // LD I,A
+                r.i = rg.a;
+                goto loop;
+
+            case 0x4F: // LD R,A
+                SET_R(rg.a);
+                // debug_printf( "LD R,A not supported\n" );
+                warning = true;
+                goto loop;
+
+            case 0x57: // LD A,I
+                rg.a = r.i;
+                goto ld_ai_common;
+
+            case 0x5F: // LD A,R
+                rg.a = GET_R();
+                // debug_printf( "LD A,R not supported\n" );
+                warning = true;
+            ld_ai_common:
+                flags = (flags & C01) | SZ28(rg.a) | (r.iff2 << 2 & V04);
+                goto loop;
+
+            CASE8(45, 4D, 55, 5D, 65, 6D, 75, 7D): // RETI/RETN
+                r.iff1 = r.iff2;
+                goto ret_taken;
+
+            case 0x46:
+            case 0x4E:
+            case 0x66:
+            case 0x6E: // IM 0
 			r.im = 0;
 			goto loop;
 		
@@ -1321,10 +1324,10 @@ possibly_out_of_time:
 		case 0x5E: case 0x7E: // IM 2
 			r.im = 2;
 			goto loop;
-		
-		default:
-			debug_printf( "Opcode $ED $%02X not supported\n", data );
-			warning = true;
+
+            default:
+                // debug_printf( "Opcode $ED $%02X not supported\n", data );
+                warning = true;
 			goto loop;
 		}
 		assert( false );
@@ -1582,10 +1585,10 @@ possibly_out_of_time:
 				WRITE( data, temp );
 				goto loop;
 			}
-			
-			default:
-				debug_printf( "Opcode $%02X $CB $%02X not supported\n", opcode, data2 );
-				warning = true;
+
+                default:
+                    // debug_printf( "Opcode $%02X $CB $%02X not supported\n", opcode, data2 );
+                    warning = true;
 				goto loop;
 			}
 			assert( false );
@@ -1671,27 +1674,27 @@ possibly_out_of_time:
 			ixy = temp;
 			goto set_ixy;
 		}
-		
-		default:
-			debug_printf( "Unnecessary DD/FD prefix encountered\n" );
-			warning = true;
-			pc--;
-			goto loop;
-		}
-		assert( false );
-	}
-	
-	}
-	debug_printf( "Unhandled main opcode: $%02X\n", opcode );
-	assert( false );
-	
-hit_idle_addr:
-	s_time -= 11;
-	goto out_of_time;
-halt:
-	s_time &= 3; // increment by multiple of 4
-out_of_time:
-	pc--;
+
+            default:
+                // debug_printf( "Unnecessary DD/FD prefix encountered\n" );
+                warning = true;
+                pc--;
+                goto loop;
+        }
+        assert(false);
+    }
+
+    }
+    // debug_printf( "Unhandled main opcode: $%02X\n", opcode );
+    assert(false);
+
+    hit_idle_addr:
+    s_time -= 11;
+    goto out_of_time;
+    halt:
+    s_time &= 3; // increment by multiple of 4
+    out_of_time:
+    pc--;
 	
 	s.time = s_time;
 	rg.flags = flags;

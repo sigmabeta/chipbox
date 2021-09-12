@@ -375,17 +375,16 @@ int Nes_Apu::read_status( nes_time_t time )
 	for ( int i = 0; i < osc_count; i++ )
 		if ( oscs [i]->length_counter )
 			result |= 1 << i;
-	
-	run_until_( time );
-	
-	if ( irq_flag )
-	{
-		result |= 0x40;
-		irq_flag = false;
-		irq_changed();
-	}
-	
-	//debug_printf( "%6d/%d Read $4015->$%02X\n", frame_delay, frame, result );
-	
-	return result;
+
+    run_until_(time);
+
+    if (irq_flag) {
+        result |= 0x40;
+        irq_flag = false;
+        irq_changed();
+    }
+
+    //// debug_printf( "%6d/%d Read $4015->$%02X\n", frame_delay, frame, result );
+
+    return result;
 }

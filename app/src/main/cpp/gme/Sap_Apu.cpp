@@ -59,14 +59,14 @@ Sap_Apu_Impl::Sap_Apu_Impl()
 	
 	if ( 0 ) // comment out to recauculate poly5 constant
 	{
-		byte poly5 [4];
-		gen_poly( POLY_MASK(  5, 2, 0 ), sizeof poly5,  poly5  );
-		blargg_ulong n = poly5 [3] * 0x1000000L + poly5 [2] * 0x10000L + 
-				poly5 [1] * 0x100L + poly5 [0];
+		byte poly5[4];
+		gen_poly(POLY_MASK(5, 2, 0), sizeof poly5, poly5);
+		blargg_ulong n = poly5[3] * 0x1000000L + poly5[2] * 0x10000L +
+						 poly5[1] * 0x100L + poly5[0];
 		blargg_ulong rev = n & 1;
-		for ( int i = 1; i < poly5_len; i++ )
+		for (int i = 1; i < poly5_len; i++)
 			rev |= (n >> i & 1) << (poly5_len - i);
-		debug_printf( "poly5: 0x%08lX\n", rev );
+		// debug_printf( "poly5: 0x%08lX\n", rev );
 	}
 }
 
@@ -107,14 +107,13 @@ inline void Sap_Apu::calc_periods()
 		if ( this->control & fast_bits [i] )
 		{
 			period = osc_reload + 4;
-			if ( i & 1 )
-			{
-				period = osc_reload * 0x100L + osc [-1].regs [0] + 7;
-				if ( !(this->control & fast_bits [i - 1]) )
+			if ( i & 1 ) {
+				period = osc_reload * 0x100L + osc[-1].regs[0] + 7;
+				if (!(this->control & fast_bits[i - 1]))
 					period = (period - 6) * divider;
-				
-				if ( (osc [-1].regs [1] & 0x1F) > 0x10 )
-					debug_printf( "Use of slave channel in 16-bit mode not supported\n" );
+
+				if ((osc[-1].regs[1] & 0x1F) > 0x10)
+				// debug_printf( "Use of slave channel in 16-bit mode not supported\n" );
 			}
 		}
 		osc->period = period;

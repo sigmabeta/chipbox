@@ -334,19 +334,17 @@ blargg_err_t Sap_Emu::start_track_( int track )
 	byte const* in = info.rom_data;
 	while ( file_end - in >= 5 )
 	{
-		unsigned start = get_le16( in );
-		unsigned end   = get_le16( in + 2 );
-		//debug_printf( "Block $%04X-$%04X\n", start, end );
-		in += 4;
-		if ( end < start )
-		{
-			set_warning( "Invalid file data block" );
-			break;
-		}
-		long len = end - start + 1;
-		if ( len > file_end - in )
-		{
-			set_warning( "Invalid file data block" );
+        unsigned start = get_le16(in);
+        unsigned end = get_le16(in + 2);
+        //// debug_printf( "Block $%04X-$%04X\n", start, end );
+        in += 4;
+        if (end < start) {
+            set_warning("Invalid file data block");
+            break;
+        }
+        long len = end - start + 1;
+        if (len > file_end - in) {
+            set_warning("Invalid file data block");
 			break;
 		}
 		
@@ -380,17 +378,16 @@ void Sap_Emu::cpu_write_( sap_addr_t addr, int data )
 		apu.write_data( time() & time_mask, addr, data );
 		return;
 	}
-	
-	if ( (addr ^ (Sap_Apu::start_addr + 0x10)) <= (Sap_Apu::end_addr - Sap_Apu::start_addr) &&
-			info.stereo )
-	{
-		GME_APU_HOOK( this, addr - 0x10 - Sap_Apu::start_addr + 10, data );
-		apu2.write_data( time() & time_mask, addr ^ 0x10, data );
-		return;
-	}
 
-	if ( (addr & ~0x0010) != 0xD20F || data != 0x03 )
-		debug_printf( "Unmapped write $%04X <- $%02X\n", addr, data );
+    if ((addr ^ (Sap_Apu::start_addr + 0x10)) <= (Sap_Apu::end_addr - Sap_Apu::start_addr) &&
+        info.stereo) {
+        GME_APU_HOOK(this, addr - 0x10 - Sap_Apu::start_addr + 10, data);
+        apu2.write_data(time() & time_mask, addr ^ 0x10, data);
+        return;
+    }
+
+    if ((addr & ~0x0010) != 0xD20F || data != 0x03)
+    // debug_printf( "Unmapped write $%04X <- $%02X\n", addr, data );
 }
 
 inline void Sap_Emu::call_play()
