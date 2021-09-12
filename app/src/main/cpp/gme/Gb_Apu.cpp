@@ -271,8 +271,8 @@ void Gb_Apu::write_register( blip_time_t time, unsigned addr, int data )
 			}
 			else
 			{
-				//debug_printf( "APU powered on\n" );
-			}
+                //// debug_printf( "APU powered on\n" );
+            }
 		}
 	}
 	else if ( addr >= 0xFF30 )

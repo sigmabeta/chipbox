@@ -113,18 +113,15 @@ long Stereo_Buffer::read_samples( blip_sample_t* out, long count )
 		count = avail;
 	if ( count )
 	{
-		int bufs_used = stereo_added | was_stereo;
-		//debug_printf( "%X\n", bufs_used );
-		if ( bufs_used <= 1 )
-		{
-			mix_mono( out, count );
-			bufs [0].remove_samples( count );
-			bufs [1].remove_silence( count );
-			bufs [2].remove_silence( count );
-		}
-		else if ( bufs_used & 1 )
-		{
-			mix_stereo( out, count );
+        int bufs_used = stereo_added | was_stereo;
+        //// debug_printf( "%X\n", bufs_used );
+        if (bufs_used <= 1) {
+            mix_mono(out, count);
+            bufs[0].remove_samples(count);
+            bufs[1].remove_silence(count);
+            bufs[2].remove_silence(count);
+        } else if (bufs_used & 1) {
+            mix_stereo(out, count);
 			bufs [0].remove_samples( count );
 			bufs [1].remove_samples( count );
 			bufs [2].remove_samples( count );

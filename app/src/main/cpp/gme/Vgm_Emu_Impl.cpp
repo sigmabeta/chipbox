@@ -236,25 +236,22 @@ blip_time_t Vgm_Emu_Impl::run_commands( vgm_time_t end_time )
 
 int Vgm_Emu_Impl::play_frame( blip_time_t blip_time, int sample_count, sample_t* buf )
 {
-	// to do: timing is working mostly by luck
-	
-	int min_pairs = sample_count >> 1;
-	int vgm_time = ((long) min_pairs << fm_time_bits) / fm_time_factor - 1;
-	assert( to_fm_time( vgm_time ) <= min_pairs );
-	int pairs = min_pairs;
-	while ( (pairs = to_fm_time( vgm_time )) < min_pairs )
-		vgm_time++;
-	//debug_printf( "pairs: %d, min_pairs: %d\n", pairs, min_pairs );
-	
-	if ( ym2612.enabled() )
-	{
-		ym2612.begin_frame( buf );
-		memset( buf, 0, pairs * stereo * sizeof *buf );
-	}
-	else if ( ym2413.enabled() )
-	{
-		ym2413.begin_frame( buf );
-	}
+    // to do: timing is working mostly by luck
+
+    int min_pairs = sample_count >> 1;
+    int vgm_time = ((long) min_pairs << fm_time_bits) / fm_time_factor - 1;
+    assert(to_fm_time(vgm_time) <= min_pairs);
+    int pairs = min_pairs;
+    while ((pairs = to_fm_time(vgm_time)) < min_pairs)
+        vgm_time++;
+    //// debug_printf( "pairs: %d, min_pairs: %d\n", pairs, min_pairs );
+
+    if (ym2612.enabled()) {
+        ym2612.begin_frame(buf);
+        memset(buf, 0, pairs * stereo * sizeof *buf);
+    } else if (ym2413.enabled()) {
+        ym2413.begin_frame(buf);
+    }
 	
 	run_commands( vgm_time );
 	ym2612.run_until( pairs );

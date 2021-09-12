@@ -435,17 +435,17 @@ void Nsf_Emu::cpu_write_misc( nes_addr_t addr, int data )
 	
 	#ifndef NDEBUG
 	{
-		// some games write to $8000 and $8001 repeatedly
-		if ( addr == 0x8000 || addr == 0x8001 ) return;
-		
-		// probably namco sound mistakenly turned on in mck
-		if ( addr == 0x4800 || addr == 0xF800 ) return;
-		
-		// memory mapper?
-		if ( addr == 0xFFF8 ) return;
-		
-		debug_printf( "write_unmapped( 0x%04X, 0x%02X )\n", (unsigned) addr, (unsigned) data );
-	}
+        // some games write to $8000 and $8001 repeatedly
+        if (addr == 0x8000 || addr == 0x8001) return;
+
+        // probably namco sound mistakenly turned on in mck
+        if (addr == 0x4800 || addr == 0xF800) return;
+
+        // memory mapper?
+        if (addr == 0xFFF8) return;
+
+        // debug_printf( "write_unmapped( 0x%04X, 0x%02X )\n", (unsigned) addr, (unsigned) data );
+    }
 	#endif
 }
 

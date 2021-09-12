@@ -921,17 +921,16 @@ imm##op:
 			goto loop;
 		status &= ~st_i;
 	handle_cli: {
-		//debug_printf( "CLI at %d\n", TIME );
-		this->r.status = status; // update externally-visible I flag
-		blargg_long delta = s.base - irq_time_;
-		if ( delta <= 0 )
-		{
-			if ( TIME < irq_time_ )
-				goto loop;
-			goto delayed_cli;
-		}
-		s.base = irq_time_;
-		s_time += delta;
+        //// debug_printf( "CLI at %d\n", TIME );
+        this->r.status = status; // update externally-visible I flag
+        blargg_long delta = s.base - irq_time_;
+        if (delta <= 0) {
+            if (TIME < irq_time_)
+                goto loop;
+            goto delayed_cli;
+        }
+        s.base = irq_time_;
+        s_time += delta;
 		if ( s_time < 0 )
 			goto loop;
 		
@@ -943,26 +942,27 @@ imm##op:
 		}
 		
 		// TODO: implement
-	delayed_cli:
-		debug_printf( "Delayed CLI not emulated\n" );
-		goto loop;
+        delayed_cli:
+        // debug_printf( "Delayed CLI not emulated\n" );
+        goto loop;
 	}
 	
 	case 0x78: // SEI
 		if ( status & st_i )
 			goto loop;
 		status |= st_i;
-	handle_sei: {
-		this->r.status = status; // update externally-visible I flag
-		blargg_long delta = s.base - end_time_;
-		s.base = end_time_;
-		s_time += delta;
-		if ( s_time < 0 )
-			goto loop;
-		
-		debug_printf( "Delayed SEI not emulated\n" );
-		goto loop;
-	}
+	handle_sei:
+    {
+        this->r.status = status; // update externally-visible I flag
+        blargg_long delta = s.base - end_time_;
+        s.base = end_time_;
+        s_time += delta;
+        if (s_time < 0)
+            goto loop;
+
+        // debug_printf( "Delayed SEI not emulated\n" );
+        goto loop;
+    }
 	
 // Unofficial
 	

@@ -129,23 +129,22 @@ blargg_err_t Nsfe_Info::load( Data_Reader& in, Nsf_Emu* nsf_emu )
 	int phase = 0;
 	while ( phase != 3 )
 	{
-		// read size and tag
-		byte block_header [2] [4];
-		RETURN_ERR( in.read( block_header, sizeof block_header ) );
-		blargg_long size = get_le32( block_header [0] );
-		blargg_long tag  = get_le32( block_header [1] );
-		
-		//debug_printf( "tag: %c%c%c%c\n", char(tag), char(tag>>8), char(tag>>16), char(tag>>24) );
-		
-		switch ( tag )
-		{
-			case BLARGG_4CHAR('O','F','N','I'): {
-				check( phase == 0 );
-				if ( size < 8 )
-					return "Corrupt file";
-				
-				nsfe_info_t finfo;
-				finfo.track_count = 1;
+        // read size and tag
+        byte block_header[2][4];
+        RETURN_ERR(in.read(block_header, sizeof block_header));
+        blargg_long size = get_le32(block_header[0]);
+        blargg_long tag = get_le32(block_header[1]);
+
+        //// debug_printf( "tag: %c%c%c%c\n", char(tag), char(tag>>8), char(tag>>16), char(tag>>24) );
+
+        switch (tag) {
+            case BLARGG_4CHAR('O', 'F', 'N', 'I'): {
+                check(phase == 0);
+                if (size < 8)
+                    return "Corrupt file";
+
+                nsfe_info_t finfo;
+                finfo.track_count = 1;
 				finfo.first_track = 0;
 				
 				RETURN_ERR( in.read( &finfo, min( size, (blargg_long) nsfe_info_size ) ) );

@@ -273,13 +273,13 @@ void Hes_Emu::cpu_write_vdp( int addr, int data )
 		}
 		else
 		{
-			debug_printf( "VDP not supported: $%02X <- $%02X\n", vdp.latch, data );
-		}
+            // debug_printf( "VDP not supported: $%02X <- $%02X\n", vdp.latch, data );
+        }
 		break;
-	
-	case 3:
-		debug_printf( "VDP MSB not supported: $%02X <- $%02X\n", vdp.latch, data );
-		break;
+
+        case 3:
+            // debug_printf( "VDP MSB not supported: $%02X <- $%02X\n", vdp.latch, data );
+            break;
 	}
 }
 
@@ -324,9 +324,9 @@ void Hes_Emu::cpu_write_( hes_addr_t addr, int data )
 	case 0x1402:
 		run_until( time );
 		irq.disables = data;
-		if ( (data & 0xF8) && (data & 0xF8) != 0xF8 ) // flag questionable values
-			debug_printf( "Int mask: $%02X\n", data );
-		break;
+            if ((data & 0xF8) && (data & 0xF8) != 0xF8) // flag questionable values
+                // debug_printf( "Int mask: $%02X\n", data );
+                break;
 	
 	case 0x1403:
 		run_until( time );
@@ -342,10 +342,10 @@ void Hes_Emu::cpu_write_( hes_addr_t addr, int data )
 	case 0x0404:
 	case 0x0405:
 		return;
-		
-	default:
-		debug_printf( "unmapped write $%04X <- $%02X\n", addr, data );
-		return;
+
+        default:
+            // debug_printf( "unmapped write $%04X <- $%02X\n", addr, data );
+            return;
 #endif
 	}
 	
@@ -365,27 +365,26 @@ int Hes_Emu::cpu_read_( hes_addr_t addr )
 		run_until( time );
 		irq_changed();
 		return 0x20;
-		
-	case 0x0002:
-	case 0x0003:
-		debug_printf( "VDP read not supported: %d\n", addr );
-		return 0;
-	
-	case 0x0C01:
-		//return timer.enabled; // TODO: remove?
-	case 0x0C00:
-		run_until( time );
-		debug_printf( "Timer count read\n" );
-		return (unsigned) (timer.count - 1) / timer_base;
-	
-	case 0x1402:
-		return irq.disables;
-	
-	case 0x1403:
-		{
-			int status = 0;
-			if ( irq.timer <= time ) status |= timer_mask;
-			if ( irq.vdp   <= time ) status |= vdp_mask;
+
+        case 0x0002:
+        case 0x0003:
+            // debug_printf( "VDP read not supported: %d\n", addr );
+            return 0;
+
+        case 0x0C01:
+            //return timer.enabled; // TODO: remove?
+        case 0x0C00:
+            run_until(time);
+            // debug_printf( "Timer count read\n" );
+            return (unsigned) (timer.count - 1) / timer_base;
+
+        case 0x1402:
+            return irq.disables;
+
+        case 0x1403: {
+            int status = 0;
+            if (irq.timer <= time) status |= timer_mask;
+            if (irq.vdp <= time) status |= vdp_mask;
 			return status;
 		}
 		
@@ -394,10 +393,10 @@ int Hes_Emu::cpu_read_( hes_addr_t addr )
 		case 0x180C: // CD-ROM
 		case 0x180D:
 			break;
-		
-		default:
-			debug_printf( "unmapped read  $%04X\n", addr );
-	#endif
+
+        default:
+            // debug_printf( "unmapped read  $%04X\n", addr );
+#endif
 	}
 	
 	return unmapped;

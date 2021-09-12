@@ -3,5 +3,6 @@ apply from: "$rootProject.projectDir/di.gradle"
 
 dependencies {
     api project(path: ':core:player:emulators:fake:di')
+    api project(path: ':core:player:emulators:gme:di')
     api project(path: ':core:player:emulators:psf:di')
 }
