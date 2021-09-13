@@ -7,7 +7,20 @@ object GmeEmulator : Emulator() {
         System.loadLibrary("gme")
     }
 
-    external override fun loadTrackInternal(path: String)
+    override val supportedFileExtensions = listOf(
+        "gbs",
+        "nsf",
+        "nsfe",
+        "spc"
+    )
+
+    private var trackNumber: Int = 0
+
+    override fun setTrackNumber(number: Int) {
+        this.trackNumber = number
+    }
+
+    override fun loadTrackInternal(path: String) = loadTrackInternalWithNumber(path, trackNumber)
 
     external override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int
 
@@ -17,10 +30,5 @@ object GmeEmulator : Emulator() {
 
     external override fun getSampleRateInternal(): Int
 
-    override val supportedFileExtensions = listOf(
-        "gbs",
-        "nsf",
-        "nsfe",
-        "spc"
-    )
+    private external fun loadTrackInternalWithNumber(path: String, trackNumber: Int)
 }

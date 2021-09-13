@@ -7,10 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
-import net.sigmabeta.chipbox.readers.LENGTH_UNKNOWN_MS
-import net.sigmabeta.chipbox.readers.M3uReader
-import net.sigmabeta.chipbox.readers.TAG_UNKNOWN
-import net.sigmabeta.chipbox.readers.getReaderForExtension
+import net.sigmabeta.chipbox.readers.*
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
@@ -180,7 +177,7 @@ class RealScanner(
                 ScannerEvent.GameFoundEvent(
                     gameName,
                     rawFileTracks.size,
-                    imagePath ?: TAG_UNKNOWN
+                    imagePath.orUnknown()
                 )
             )
 
