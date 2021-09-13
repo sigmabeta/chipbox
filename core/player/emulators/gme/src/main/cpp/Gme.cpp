@@ -1,5 +1,6 @@
 #include "Gme.h"
 #include "gme/Music_Emu.h"
+#include "gme/Spc_Emu.h"
 
 const char *last_error;
 
@@ -7,7 +8,7 @@ Music_Emu *g_emu;
 
 const char *g_last_error;
 
-void loadFile(const char *filename_c_str) {
+void loadFile(const char *filename_c_str, int32_t track_number) {
     if (g_emu) {
         delete g_emu;
         g_emu = nullptr;
@@ -37,16 +38,25 @@ void loadFile(const char *filename_c_str) {
         return;
     }
 
-    g_emu->set_sample_rate(44100);
+    // Other than SPC, these consoles all want to be told what rate to sample at.
+    if (strcmp(file_type->system, "Super Nintendo") == 0) {
+        g_last_error = g_emu->set_sample_rate(Spc_Emu::native_sample_rate);
+    } else {
+        g_last_error = g_emu->set_sample_rate(44100);
+    }
+
+    if (g_last_error) {
+        return;
+    }
+
     g_last_error = g_emu->load_file(filename_c_str);
 
     if (g_last_error) {
         return;
     }
 
-
-    // TODO This needs to be passed in.
-    g_last_error = g_emu->start_track(0);
+    gme_set_autoload_playback_limit(g_emu, false);
+    g_last_error = g_emu->start_track(track_number);
 
     if (g_last_error) {
         return;

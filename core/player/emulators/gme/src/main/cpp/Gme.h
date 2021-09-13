@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-void loadFile(const char *);
+void loadFile(const char *, int32_t);
 
 int32_t generateBuffer(int16_t *, int32_t);
 

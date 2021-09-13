@@ -12,7 +12,7 @@ object NsfReader : Reader() {
             val fileAsBytes = File(path).readBytes()
             val fileAsByteBuffer = fileAsByteBuffer(path)
 
-            val formatHeader = fileAsByteBuffer.nextFourBytesAsString()
+            val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
             if (formatHeader == null) {
                 Timber.e("No header found.")
                 return null
@@ -34,7 +34,7 @@ object NsfReader : Reader() {
                     RawTrack(
                         path,
                         TAG_UNKNOWN,
-                        gameArtist.orValidString(),
+                        gameArtist.orUnknown(),
                         gameTitle,
                         LENGTH_UNKNOWN_MS,
                         -1,
