@@ -20,7 +20,7 @@ object PsfReader : Reader() {
 
     override fun readTracksFromFile(path: String): List<RawTrack>? {
         val fileAsByteBuffer = fileAsByteBuffer(path)
-        val formatHeader = fileAsByteBuffer.nextFourBytesAsString()
+        val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
 
         if (formatHeader == null) {
             Timber.e("No header found.")
@@ -57,9 +57,9 @@ object PsfReader : Reader() {
             return listOf(
                 RawTrack(
                     path,
-                    tagMap[PSF_TAG_KEY_TITLE] ?: TAG_UNKNOWN,
-                    tagMap[PSF_TAG_KEY_ARTIST] ?: TAG_UNKNOWN,
-                    tagMap[PSF_TAG_KEY_GAME] ?: TAG_UNKNOWN,
+                    tagMap[PSF_TAG_KEY_TITLE].orUnknown(),
+                    tagMap[PSF_TAG_KEY_ARTIST].orUnknown(),
+                    tagMap[PSF_TAG_KEY_GAME].orUnknown(),
                     tagMap[PSF_TAG_KEY_LENGTH]?.toLengthMillis() ?: LENGTH_UNKNOWN_MS,
                     -1,
                     tagMap[PSF_TAG_KEY_FADE]?.toLengthMillis() ?: 0 > 0
@@ -78,6 +78,7 @@ object PsfReader : Reader() {
         return when (platformCode) {
             0x01.toByte() -> true // "Sony Playstation"
             0x02.toByte() -> true // "Sony Playstation 2"
+            0x22.toByte() -> true // "GBA"
             //            0x11.toByte() -> Unit // "Sega Saturn"
             //            0x12.toByte() -> Unit // "Sega Dreamcast"
             else -> false

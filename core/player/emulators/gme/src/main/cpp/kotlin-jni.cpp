@@ -6,13 +6,14 @@ extern "C" {
 #endif
 
 JNIEXPORT void JNICALL
-Java_net_sigmabeta_chipbox_player_emulators_gme_GmeEmulator_loadTrackInternal(
+Java_net_sigmabeta_chipbox_player_emulators_gme_GmeEmulator_loadTrackInternalWithNumber(
         JNIEnv *env,
         __unused jobject thiz,
-        jstring java_filename
+        jstring java_filename,
+        jint trackNumber
 ) {
     const char *filename_c_str = env->GetStringUTFChars(java_filename, NULL);
-    loadFile(filename_c_str);
+    loadFile(filename_c_str, trackNumber);
 }
 
 JNIEXPORT jint JNICALL

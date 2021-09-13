@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.readers
 
 import java.io.File
+import java.math.BigInteger
 import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -8,8 +9,8 @@ import java.nio.ByteOrder
 
 internal fun ByteBuffer.nextFourBytesAsInt() = int
 
-internal fun ByteBuffer.nextFourBytesAsString(): String? {
-    val headerArray = ByteArray(4)
+internal fun ByteBuffer.nextBytes(numberOfBytes: Int): ByteArray? {
+    val headerArray = ByteArray(numberOfBytes)
 
     try {
         get(headerArray)
@@ -17,10 +18,27 @@ internal fun ByteBuffer.nextFourBytesAsString(): String? {
         return null
     }
 
-    return headerArray.toString(Charsets.US_ASCII)
+    return headerArray
 }
 
-internal fun String.orValidString(): String {
+internal fun ByteBuffer.nextBytesAsString(numberOfBytes: Int) = nextBytes(numberOfBytes)
+    ?.toString(Charsets.UTF_8)
+    ?.substringBefore(0.toChar())
+    ?.trim()
+
+
+internal fun ByteBuffer.nextBytesAsInt(numberOfBytes: Int): Int {
+    val lengthSecondsBytes = nextBytes(numberOfBytes)
+
+    val bigInteger = BigInteger(lengthSecondsBytes)
+    return bigInteger.toInt()
+}
+
+fun String?.orUnknown(): String {
+    if (this == null) {
+        return TAG_UNKNOWN
+    }
+
     if (this == "<?>") {
         return TAG_UNKNOWN
     }

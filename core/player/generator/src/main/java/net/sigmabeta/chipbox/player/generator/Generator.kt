@@ -136,6 +136,12 @@ abstract class Generator(
                 break
             }
 
+            error = getLastError()
+
+            if (error != null) {
+                break
+            }
+
             val sampleRate = getEmulatorSampleRate()
 
             FadeProcessor.fadeIfNecessary(
@@ -150,6 +156,8 @@ abstract class Generator(
 
             val resampledAudio =
                 outputBuffers!!.poll(TIMEOUT_BUFFERS_FULL_MS, TimeUnit.MILLISECONDS)
+
+            yield()
             resampleBuffer.copyInto(resampledAudio)
 
             // Emit this buffer.

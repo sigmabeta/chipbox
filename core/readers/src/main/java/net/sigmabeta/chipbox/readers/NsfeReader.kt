@@ -12,7 +12,7 @@ object NsfeReader : Reader() {
         try {
             val fileAsByteBuffer = fileAsByteBuffer(path)
 
-            val formatHeader = fileAsByteBuffer.nextFourBytesAsString()
+            val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
             if (formatHeader == null) {
                 Timber.e("No header found.")
                 return null
@@ -109,7 +109,7 @@ object NsfeReader : Reader() {
                 .toString(Charsets.UTF_8)
                 .split(0.toChar())
                 .map { it.trim() }
-                .map { it.orValidString() }
+                .map { it.orUnknown() }
         } catch (ex: NoSuchElementException) {
             null
         }
@@ -148,7 +148,7 @@ object NsfeReader : Reader() {
 
     private fun readNextChunk(fileAsByteBuffer: ByteBuffer): NsfeChunk? {
         val length = fileAsByteBuffer.nextFourBytesAsInt()
-        val name = fileAsByteBuffer.nextFourBytesAsString()
+        val name = fileAsByteBuffer.nextBytesAsString(4)
         val content = ByteArray(length)
 
         if (name == null) {

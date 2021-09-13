@@ -25,12 +25,15 @@ abstract class Emulator {
     open fun isFileExtensionSupported(extension: String) =
         supportedFileExtensions.contains(extension)
 
+    open fun setTrackNumber(number: Int) = Unit
+
     open fun loadTrack(track: Track) {
         if (remainingFramesTotal >= 0) {
             println("Previously loaded emulator not cleared. Clearing...")
             teardown()
         }
 
+        setTrackNumber(track.trackNumber)
         loadTrackInternal(track.path)
         remainingFramesTotal =
             track.trackLengthMs.toDouble().millisToFrames(getSampleRateInternal())
