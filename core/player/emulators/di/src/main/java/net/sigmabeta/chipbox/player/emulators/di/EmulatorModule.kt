@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import net.sigmabeta.chipbox.player.emulators.EmulatorProvider
 import net.sigmabeta.chipbox.player.emulators.fake.FakeEmulator
+import net.sigmabeta.chipbox.player.emulators.gba.GbaEmulator
 import net.sigmabeta.chipbox.player.emulators.gme.GmeEmulator
 import net.sigmabeta.chipbox.player.emulators.psf.PsfEmulator
 import javax.inject.Singleton
@@ -17,6 +18,7 @@ object EmulatorModule {
     @Singleton
     internal fun provideEmulatorProvider() = EmulatorProvider(
         listOf(
+            GbaEmulator,
             GmeEmulator,
             PsfEmulator,
             FakeEmulator
