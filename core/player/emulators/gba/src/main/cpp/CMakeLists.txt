@@ -1253,6 +1253,7 @@ set(libgba_SRCS
 		Gba.cpp
 		psflib/psf2fs.c
 		psflib/psflib.c
+		common/common.cpp
 		src/util/memory.c
 		)
 
