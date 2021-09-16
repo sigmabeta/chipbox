@@ -9,13 +9,13 @@ gsf_loader_state m_rom;
 struct gsf_running_state m_output;
 
 void loadFile(const char *filename_c_str) {
-    shutdown();
+    teardown();
 
     if ( !m_rom.data )
     {
         int ret = psf_load(
                 filename_c_str,
-                &gsf_file_system,
+                &psf_file_system,
                 0x22,
                 gsf_loader,
                 &m_rom,
@@ -105,8 +105,14 @@ int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_frames) {
 }
 
 void teardown() {
-    shutdown();
+    if (m_core) {
+        m_core->deinit(m_core);
+        m_core = NULL;
+    }
 
+    delete m_rom.data;
+    m_rom.data = nullptr;
+    m_rom.data_size = 0;
 }
 
 const char *get_last_error() {
@@ -114,9 +120,8 @@ const char *get_last_error() {
 }
 
 int32_t get_sample_rate() {
-    return 44100;
+    return 32768;
 }
-
 
 inline unsigned get_le32( void const* p )
 {
@@ -198,19 +203,6 @@ int gsf_loader(void * context, const uint8_t * exe, size_t exe_size,
     return 0;
 }
 
-void shutdown()
-{
-    if ( m_core )
-    {
-        m_core->deinit(m_core);
-        m_core = NULL;
-    }
-
-    delete m_rom.data;
-    m_rom.data = nullptr;
-    m_rom.data_size = 0;
-}
-
 static void _gsf_postAudioBuffer(struct mAVStream * stream, blip_t * left, blip_t * right)
 {
     struct gsf_running_state * state = (struct gsf_running_state *) stream;
@@ -219,57 +211,3 @@ static void _gsf_postAudioBuffer(struct mAVStream * stream, blip_t * left, blip_
     state->samples_available += m_output.buffer_size_samples;
 }
 
-
-
-
-
-
-static void *gsf_file_fopen(void *context, const char *uri) {
-    try {
-        return fopen(uri, "r");
-    }
-    catch (...) {
-        return NULL;
-    }
-}
-
-static size_t gsf_file_fread(void *buffer, size_t size, size_t count, void *handle) {
-    try {
-        auto file = (FILE *) handle;
-        return fread(buffer, size, count, file);
-    }
-    catch (...) {
-        return 0;
-    }
-}
-
-static int gsf_file_fseek(void *handle, int64_t offset, int whence) {
-    try {
-        auto file = (FILE *) handle;
-        return fseek(file, offset, whence);
-    }
-    catch (...) {
-        return -1;
-    }
-}
-
-static int gsf_file_fclose(void *handle) {
-    try {
-        auto file = (FILE *) handle;
-        fclose(file);
-        return 0;
-    }
-    catch (...) {
-        return -1;
-    }
-}
-
-static long gsf_file_ftell(void *handle) {
-    try {
-        auto file = (FILE *) handle;
-        return ftell(file);
-    }
-    catch (...) {
-        return -1;
-    }
-}

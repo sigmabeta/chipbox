@@ -1,5 +1,5 @@
 #include "Psf.h"
-#include "aopsf/psf2fs.h"
+#include "common/common.h"
 
 uint8_t *pEmu;
 
@@ -130,57 +130,6 @@ int32_t get_sample_rate() {
         return 48000;
     } else {
         return 44100;
-    }
-}
-
-
-static void *psf_file_fopen(void *context, const char *uri) {
-    try {
-        return fopen(uri, "r");
-    }
-    catch (...) {
-        return NULL;
-    }
-}
-
-static size_t psf_file_fread(void *buffer, size_t size, size_t count, void *handle) {
-    try {
-        auto file = (FILE *) handle;
-        return fread(buffer, size, count, file);
-    }
-    catch (...) {
-        return 0;
-    }
-}
-
-static int psf_file_fseek(void *handle, int64_t offset, int whence) {
-    try {
-        auto file = (FILE *) handle;
-        return fseek(file, offset, whence);
-    }
-    catch (...) {
-        return -1;
-    }
-}
-
-static int psf_file_fclose(void *handle) {
-    try {
-        auto file = (FILE *) handle;
-        fclose(file);
-        return 0;
-    }
-    catch (...) {
-        return -1;
-    }
-}
-
-static long psf_file_ftell(void *handle) {
-    try {
-        auto file = (FILE *) handle;
-        return ftell(file);
-    }
-    catch (...) {
-        return -1;
     }
 }
 

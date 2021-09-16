@@ -18,8 +18,9 @@ set(libaopsf_SRCS
         aopsf/r3000dis.c
         aopsf/spu/spu.c
         aopsf/spu/spucore.c
-        aopsf/psf2fs.c
-        aopsf/psflib.c
+        common/common.cpp
+        psflib/psf2fs.c
+        psflib/psflib.c
         )
 
 # Appears to just be a flag telling the code we want it to compile...?
