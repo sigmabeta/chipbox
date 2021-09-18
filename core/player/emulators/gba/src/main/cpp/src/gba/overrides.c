@@ -357,9 +357,11 @@ void GBAOverrideApply(struct GBA* gba, const struct GBACartridgeOverride* overri
 			GBAHardwareInitTilt(&gba->memory.hw);
 		}
 
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 		if (override->hardware & HW_EREADER) {
 			GBACartEReaderInit(&gba->memory.ereader);
 		}
+#endif
 
 		if (override->hardware & HW_GB_PLAYER_DETECTION) {
 			gba->memory.hw.devices |= HW_GB_PLAYER_DETECTION;

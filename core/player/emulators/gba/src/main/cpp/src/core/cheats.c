@@ -480,6 +480,7 @@ bool mCheatParseEZFChtFile(struct mCheatDevice* device, struct VFile* vf) {
 			continue;
 		}
 
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 		if (cheat[0] == '[') {
 			if (strncmp(cheat, "[GameInfo]", 10) == 0) {
 				break;
@@ -494,15 +495,18 @@ bool mCheatParseEZFChtFile(struct mCheatDevice* device, struct VFile* vf) {
 			cheatNameLength = strlen(cheatName);
 			continue;
 		}
+#endif
 
 		char* eq = strchr(cheat, '=');
 		if (!eq) {
 			continue;
 		}
-		if (strncmp(cheat, "ON", eq - cheat) != 0) {
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
+        if (strncmp(cheat, "ON", eq - cheat) != 0) {
 			char* subname = gbkToUtf8(cheat, eq - cheat);
 			snprintf(&cheatName[cheatNameLength], sizeof(cheatName) - cheatNameLength - 1, ": %s", subname);
 		}
+#endif
 		set = device->createSet(device, cheatName);
 		set->enabled = false;
 		mCheatAddSet(device, set);

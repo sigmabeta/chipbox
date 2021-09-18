@@ -150,7 +150,9 @@ struct GBACore {
 	struct mCPUComponent* components[CPU_COMPONENT_MAX];
 	const struct Configuration* overrides;
 	struct mDebuggerPlatform* debuggerPlatform;
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 	struct mCheatDevice* cheatDevice;
+#endif
 	struct GBAAudioMixer* audioMixer;
 };
 
@@ -172,7 +174,9 @@ static bool _GBACoreInit(struct mCore* core) {
 	core->videoLogger = NULL;
 	gbacore->overrides = NULL;
 	gbacore->debuggerPlatform = NULL;
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 	gbacore->cheatDevice = NULL;
+#endif
 #ifndef MINIMAL_CORE
 	gbacore->logContext = NULL;
 #endif
@@ -189,7 +193,9 @@ static bool _GBACoreInit(struct mCore* core) {
 	GBAVideoDummyRendererCreate(&gbacore->dummyRenderer);
 	GBAVideoAssociateRenderer(&gba->video, &gbacore->dummyRenderer);
 
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 	GBAVideoSoftwareRendererCreate(&gbacore->renderer);
+#endif
 	gbacore->renderer.outputBuffer = NULL;
 
 #ifdef BUILD_GLES3
@@ -198,7 +204,9 @@ static bool _GBACoreInit(struct mCore* core) {
 #endif
 
 #ifndef DISABLE_THREADING
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 	mVideoThreadProxyCreate(&gbacore->threadProxy);
+#endif
 #endif
 #ifndef MINIMAL_CORE
 	gbacore->vlProxy.logger = NULL;
@@ -231,9 +239,11 @@ static void _GBACoreDeinit(struct mCore* core) {
 
 	struct GBACore* gbacore = (struct GBACore*) core;
 	free(gbacore->debuggerPlatform);
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 	if (gbacore->cheatDevice) {
 		mCheatDeviceDestroy(gbacore->cheatDevice);
 	}
+#endif
 	free(gbacore->audioMixer);
 	mCoreConfigFreeOpts(&core->opts);
 	free(core);
@@ -538,12 +548,14 @@ static bool _GBACoreLoadPatch(struct mCore* core, struct VFile* vf) {
 static void _GBACoreUnloadROM(struct mCore* core) {
 	struct GBACore* gbacore = (struct GBACore*) core;
 	struct ARMCore* cpu = core->cpu;
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 	if (gbacore->cheatDevice) {
 		ARMHotplugDetach(cpu, CPU_COMPONENT_CHEAT_DEVICE);
 		cpu->components[CPU_COMPONENT_CHEAT_DEVICE] = NULL;
 		mCheatDeviceDestroy(gbacore->cheatDevice);
 		gbacore->cheatDevice = NULL;
 	}
+#endif
 	return GBAUnloadROM(core->board);
 }
 
@@ -561,6 +573,7 @@ static void _GBACoreReset(struct mCore* core) {
 	struct GBACore* gbacore = (struct GBACore*) core;
 	struct GBA* gba = (struct GBA*) core->board;
 	int fakeBool;
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 	if (gbacore->renderer.outputBuffer
 #ifdef BUILD_GLES3
 	    || gbacore->glRenderer.outputTex != (unsigned) -1
@@ -596,8 +609,8 @@ static void _GBACoreReset(struct mCore* core) {
 			GBAVideoAssociateRenderer(&gba->video, renderer);
 		}
 	}
+#endif
 
-#ifndef MINIMAL_CORE
 	int useAudioMixer;
 	if (!gbacore->audioMixer && mCoreConfigGetIntValue(&core->config, "gba.audioHle", &useAudioMixer) && useAudioMixer) {
 		gbacore->audioMixer = malloc(sizeof(*gbacore->audioMixer));
@@ -605,7 +618,6 @@ static void _GBACoreReset(struct mCore* core) {
 		((struct ARMCore*) core->cpu)->components[CPU_COMPONENT_AUDIO_MIXER] = &gbacore->audioMixer->d;
 		ARMHotplugAttach(core->cpu, CPU_COMPONENT_AUDIO_MIXER);
 	}
-#endif
 
 	bool forceGbp = false;
 	if (mCoreConfigGetIntValue(&core->config, "gba.forceGbp", &fakeBool)) {
@@ -984,6 +996,7 @@ static bool _GBACoreLookupIdentifier(struct mCore* core, const char* name, int32
 #endif
 
 static struct mCheatDevice* _GBACoreCheatDevice(struct mCore* core) {
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 	struct GBACore* gbacore = (struct GBACore*) core;
 	if (!gbacore->cheatDevice) {
 		gbacore->cheatDevice = GBACheatDeviceCreate();
@@ -992,6 +1005,9 @@ static struct mCheatDevice* _GBACoreCheatDevice(struct mCore* core) {
 		gbacore->cheatDevice->p = core;
 	}
 	return gbacore->cheatDevice;
+#else
+	return NULL;
+#endif
 }
 
 static size_t _GBACoreSavedataClone(struct mCore* core, void** sram) {

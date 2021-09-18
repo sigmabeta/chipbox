@@ -46,6 +46,11 @@ class JvmResampler(val outputLengthShorts: Int, inputSampleRate: Int, outputSamp
         inputFloatsLeft.clear()
         inputFloatsRight.clear()
 
+        outputFloatsLeft.clear()
+        outputFloatsRight.clear()
+
+        output.clear()
+
         splitInputs(audio, inputFloatsLeft, inputFloatsRight)
 
         resampleOneChannel(inputFloatsLeft, outputFloatsLeft)
@@ -60,12 +65,14 @@ class JvmResampler(val outputLengthShorts: Int, inputSampleRate: Int, outputSamp
         left: FloatArray,
         right: FloatArray
     ) {
-        audio.forEachIndexed { index, valueAsShort ->
-            if (index.isDivisibleBy(2)) {
-                left[index / 2] = valueAsShort / Short.MAX_VALUE.toFloat()
-            } else {
-                right[index / 2] = valueAsShort / Short.MAX_VALUE.toFloat()
-            }
+        for (index in left.indices) {
+            val inputIndex = index * 2
+
+            val leftAsShort = audio[inputIndex]
+            val rightAsShort = audio[inputIndex + 1]
+
+            left[index] = leftAsShort / Short.MAX_VALUE.toFloat()
+            right[index] = rightAsShort / Short.MAX_VALUE.toFloat()
         }
     }
 
@@ -74,12 +81,11 @@ class JvmResampler(val outputLengthShorts: Int, inputSampleRate: Int, outputSamp
         left: FloatArray,
         right: FloatArray
     ) {
-        output.forEachIndexed { index, valueAsShort ->
-            if (index.isDivisibleBy(2)) {
-                output[index] = (left[index / 2] * Short.MAX_VALUE).toInt().toShort()
-            } else {
-                output[index] = (right[index / 2] * Short.MAX_VALUE).toInt().toShort()
-            }
+        for (index in left.indices) {
+            val outputIndex = index * 2
+
+            output[outputIndex] = (left[index] * Short.MAX_VALUE).toInt().toShort()
+            output[outputIndex + 1] = (right[index] * Short.MAX_VALUE).toInt().toShort()
         }
     }
 
@@ -100,14 +106,21 @@ class JvmResampler(val outputLengthShorts: Int, inputSampleRate: Int, outputSamp
             outputFloats.size
         )
 
-        outputFloats.forEachIndexed { index, outputFloat ->
+        for (index in outputFloats.indices) {
+            val outputFloat = outputFloats[index]
             output[index] = (outputFloat * Short.MAX_VALUE).toInt().toShort()
         }
     }
 
     private fun FloatArray.clear() {
-        forEachIndexed { index, _ ->
+        for (index in indices) {
             set(index, 0.0f)
+        }
+    }
+
+    private fun ShortArray.clear() {
+        for (index in indices) {
+            set(index, 0)
         }
     }
 }
