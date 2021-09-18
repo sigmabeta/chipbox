@@ -801,6 +801,7 @@ void GBABreakpoint(struct ARMCore* cpu, int immediate) {
 		break;
 #endif
 	case CPU_COMPONENT_CHEAT_DEVICE:
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 		if (gba->cpu->components[CPU_COMPONENT_CHEAT_DEVICE]) {
 			struct mCheatDevice* device = (struct mCheatDevice*) gba->cpu->components[CPU_COMPONENT_CHEAT_DEVICE];
 			struct GBACheatHook* hook = 0;
@@ -816,6 +817,7 @@ void GBABreakpoint(struct ARMCore* cpu, int immediate) {
 				ARMRunFake(cpu, hook->patchedOpcode);
 			}
 		}
+#endif
 		break;
 	default:
 		break;
@@ -842,6 +844,7 @@ void GBAFrameEnded(struct GBA* gba) {
 	int wasDirty = gba->memory.savedata.dirty;
 	GBASavedataClean(&gba->memory.savedata, gba->video.frameCounter);
 
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 	if (gba->cpu->components && gba->cpu->components[CPU_COMPONENT_CHEAT_DEVICE]) {
 		struct mCheatDevice* device = (struct mCheatDevice*) gba->cpu->components[CPU_COMPONENT_CHEAT_DEVICE];
 		size_t i;
@@ -859,6 +862,7 @@ void GBAFrameEnded(struct GBA* gba) {
 		gba->video.renderer->getPixels(gba->video.renderer, &stride, (const void**) &pixels);
 		gba->stream->postVideoFrame(gba->stream, pixels, stride);
 	}
+#endif
 
 	if (gba->memory.hw.devices & (HW_GB_PLAYER | HW_GB_PLAYER_DETECTION)) {
 		GBASIOPlayerUpdate(gba);

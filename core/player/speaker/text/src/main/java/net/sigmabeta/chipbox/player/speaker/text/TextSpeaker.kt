@@ -61,6 +61,8 @@ class TextSpeaker(
 
         lastBufferPrinted = audio.bufferNumber
         Timber.i(audio.toReadableString())
+
+        generator.returnBuffer(audio.data)
     }
 
     private fun GeneratorEvent.Audio.toReadableString(): String {
