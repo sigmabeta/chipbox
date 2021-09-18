@@ -1269,6 +1269,7 @@ add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN)
 # define multiple libraries by adding multiple add_library() commands,
 # and CMake builds them for you. When you build your app, Gradle
 # automatically packages shared libraries with your APK.
+add_definitions(-DMINIMAL_CORE=3)
 
 add_library( # Specifies the name of the library.
 		${library_name}

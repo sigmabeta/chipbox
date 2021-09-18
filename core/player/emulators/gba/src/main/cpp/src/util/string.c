@@ -272,6 +272,7 @@ char* utf16to8(const uint16_t* utf16, size_t length) {
 	return newUTF8;
 }
 
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 extern const uint16_t gbkUnicodeTable[];
 
 char* gbkToUtf8(const char* gbk, size_t length) {
@@ -340,6 +341,7 @@ char* gbkToUtf8(const char* gbk, size_t length) {
 	newUTF8[utf8Length] = '\0';
 	return newUTF8;
 }
+#endif
 
 int hexDigit(char digit) {
 	switch (digit) {

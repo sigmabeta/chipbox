@@ -34,8 +34,8 @@ struct gsf_loader_state
 struct gsf_running_state
 {
     struct mAVStream stream;
-    int samples_available;
-    int buffer_size_samples;
+    int frames_available;
+    int buffer_size_frames;
     int16_t * samples;
 };
 

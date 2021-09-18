@@ -490,6 +490,7 @@ bool mCoreExtractExtdata(struct mCore* core, struct VFile* vf, struct mStateExtd
 }
 
 bool mCoreLoadStateNamed(struct mCore* core, struct VFile* vf, int flags) {
+#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 	struct mStateExtdata extdata;
 	mStateExtdataInit(&extdata);
 	void* state = mCoreExtractState(core, vf, &extdata);
@@ -539,5 +540,8 @@ bool mCoreLoadStateNamed(struct mCore* core, struct VFile* vf, int flags) {
 	}
 	mStateExtdataDeinit(&extdata);
 	return success;
+#else
+	return true;
+#endif
 }
 
