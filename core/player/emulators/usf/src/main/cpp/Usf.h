@@ -7,6 +7,8 @@
 
 #include "common/common.h"
 
+#include "lazyusf2/usf/usf.h"
+
 void loadFile(const char *);
 
 int32_t generateBuffer(int16_t *, int32_t);

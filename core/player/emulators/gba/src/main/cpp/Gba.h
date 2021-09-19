@@ -1,5 +1,5 @@
 #ifndef CHIPBOX_USF_H
-#define CHIPBOX_GBA_H
+#define CHIPBOX_USF_H
 
 #include <array>
 #include <stdio.h>
