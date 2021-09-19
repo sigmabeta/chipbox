@@ -486,7 +486,7 @@ find_feature(ENABLE_PYTHON "PythonLibs")
 
 # Features
 #add_subdirectory(src/debugger)
-add_subdirectory(src/feature)
+#add_subdirectory(src/feature)
 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6")
 
