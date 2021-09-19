@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.player.emulators.fake.FakeEmulator
 import net.sigmabeta.chipbox.player.emulators.gba.GbaEmulator
 import net.sigmabeta.chipbox.player.emulators.gme.GmeEmulator
 import net.sigmabeta.chipbox.player.emulators.psf.PsfEmulator
+import net.sigmabeta.chipbox.player.emulators.usf.UsfEmulator
 import javax.inject.Singleton
 
 @Module
@@ -21,6 +22,7 @@ object EmulatorModule {
             GbaEmulator,
             GmeEmulator,
             PsfEmulator,
+            UsfEmulator,
             FakeEmulator
         )
     )

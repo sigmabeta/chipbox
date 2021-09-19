@@ -78,6 +78,7 @@ object PsfReader : Reader() {
         return when (platformCode) {
             0x01.toByte() -> true // "Sony Playstation"
             0x02.toByte() -> true // "Sony Playstation 2"
+            0x21.toByte() -> true // "Nintendo 64"
             0x22.toByte() -> true // "GBA"
             //            0x11.toByte() -> Unit // "Sega Saturn"
             //            0x12.toByte() -> Unit // "Sega Dreamcast"

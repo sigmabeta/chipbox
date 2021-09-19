@@ -1,4 +1,4 @@
-#ifndef CHIPBOX_GBA_H
+#ifndef CHIPBOX_USF_H
 #define CHIPBOX_GBA_H
 
 #include <array>
@@ -43,4 +43,4 @@ int gsf_loader(void *, const uint8_t *, size_t, const uint8_t * , size_t );
 
 static void _gsf_postAudioBuffer(struct mAVStream *, blip_t *, blip_t *);
 
-#endif //CHIPBOX_GBA_H
+#endif //CHIPBOX_USF_H

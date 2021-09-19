@@ -65,6 +65,8 @@ include ':core:player:emulators:gme'
 include ':core:player:emulators:gme:di'
 include ':core:player:emulators:psf'
 include ':core:player:emulators:psf:di'
+include ':core:player:emulators:usf'
+include ':core:player:emulators:usf:di'
 
 // Common Modules (which may contain dependencies exposed by a feature)
 

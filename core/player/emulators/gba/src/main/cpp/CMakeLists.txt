@@ -486,7 +486,7 @@ find_feature(ENABLE_PYTHON "PythonLibs")
 
 # Features
 #add_subdirectory(src/debugger)
-add_subdirectory(src/feature)
+#add_subdirectory(src/feature)
 
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libc6")
 
@@ -1250,7 +1250,7 @@ set(library_name gba)
 # List of source files that make up gba
 set(libgba_SRCS
 		kotlin-jni.cpp
-		Gba.cpp
+		Usf.cpp
 		psflib/psf2fs.c
 		psflib/psflib.c
 		common/common.cpp
