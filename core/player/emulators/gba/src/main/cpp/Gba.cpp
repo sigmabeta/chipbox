@@ -68,8 +68,6 @@ void loadFile(const char *filename_c_str) {
     opts.volume = 0x100;
     opts.sampleRate = sample_rate;
 
-    mCoreConfigSetIntValue(&core->config, "gba.audioHle", 1);
-
     core->loadROM(core, rom);
     core->reset(core);
 

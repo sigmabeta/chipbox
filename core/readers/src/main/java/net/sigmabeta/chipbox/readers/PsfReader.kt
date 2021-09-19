@@ -79,8 +79,8 @@ object PsfReader : Reader() {
             0x01.toByte() -> true // "Sony Playstation"
             0x02.toByte() -> true // "Sony Playstation 2"
             0x22.toByte() -> true // "GBA"
-            //            0x11.toByte() -> Unit // "Sega Saturn"
-            //            0x12.toByte() -> Unit // "Sega Dreamcast"
+            0x11.toByte() -> true // "Sega Saturn"
+            0x12.toByte() -> true // "Sega Dreamcast"
             else -> false
         }
     }

@@ -6,4 +6,5 @@ dependencies {
     api project(path: ':core:player:emulators:gba:di')
     api project(path: ':core:player:emulators:gme:di')
     api project(path: ':core:player:emulators:psf:di')
+    api project(path: ':core:player:emulators:ssf:di')
 }
