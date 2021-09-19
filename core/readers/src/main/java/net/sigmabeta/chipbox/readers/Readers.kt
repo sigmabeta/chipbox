@@ -10,10 +10,14 @@ fun getReaderForExtension(extension: String): Reader? {
     return when (extension) {
 //        "psf" -> PsfReader
 //        "minipsf" -> PsfReader
-        "gsf" -> PsfReader
-        "minigsf" -> PsfReader
+//        "gsf" -> PsfReader
+//        "minigsf" -> PsfReader
 //        "psf2" -> PsfReader
 //        "minipsf2" -> PsfReader
+        "ssf" -> PsfReader
+        "minissf" -> PsfReader
+        "dsf" -> PsfReader
+        "minidsf" -> PsfReader
 //        "nsf" -> NsfReader
 //        "nsfe" -> NsfeReader
 //        "gbs" -> GbsReader
