@@ -3,8 +3,6 @@
 #include <byteswap.h>
 #include <android/log.h>
 
-#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "SSF", __VA_ARGS__);
-
 const char *last_error;
 
 int16_t *output_buffer;
@@ -40,16 +38,12 @@ void loadFile(const char *filename_c_str) {
             return;
     }
 
-    printf("SSF version: %02x", xsf_version);
-
     sdsf_loader_state * sdsfinfo = (sdsf_loader_state*)malloc(sizeof(sdsf_loader_state));
 
     if (sega_init()) {
         last_error = "Sega emulator static initialization failed";
         return;
     }
-
-    printf("Sega_init() success.");
 
     sdsf_loader_state state;
 
@@ -73,36 +67,14 @@ void loadFile(const char *filename_c_str) {
         return;
     }
 
-    printf("Psf_load success.");
 
     uint32_t sega_state_size = sega_get_state_size(xsf_version - 0x10);
     void * sega_state = static_cast<uint8_t *>(malloc(sega_state_size));
 
-    printf("Sega_state size: 0x%04x bytes", sega_state_size);
 
     sega_clear_state(sega_state, xsf_version - 0x10);
-    printf("Sega_clear_state success.");
 
-    sega_enable_dry(sega_state, 1);
-    printf("Sega_enable_dry success.");
-
-    sega_enable_dsp(sega_state, 0);
-    printf("Sega_enable_dsp success.");
-
-    sega_enable_dsp_dynarec( sega_state, 1);
-    printf("Sega_enable_dynarec success.");
-
-    void *yam;
-
-    if (xsf_version == 0x12) {
-        void *dcsound = sega_get_dcsound_state(sega_state);
-        yam = dcsound_get_yam_state(dcsound);
-    } else {
-        void *satsound = sega_get_satsound_state(sega_state);
-        yam = satsound_get_yam_state(satsound);
-    }
-    if (yam) yam_prepare_dynacode(yam);
-
+    sega_enable_dsp_dynarec( sega_state, 0);
 
     uint32_t start = *(uint32_t*) state.data;
     uint32_t length = state.data_size;
@@ -120,12 +92,9 @@ void loadFile(const char *filename_c_str) {
     }
 
     sdsfinfo->emu = sega_state;
-    sdsfinfo->yam = yam;
     sdsfinfo->version = xsf_version;
 
     sdsf_state = sdsfinfo;
-
-    printf("Sega_upload_program success.");
 }
 
 int32_t generateBuffer(int16_t *target_array, int32_t output_size_frames) {
@@ -156,17 +125,11 @@ int32_t generateBuffer(int16_t *target_array, int32_t output_size_frames) {
 
 void teardown() {
     if (sdsf_state != nullptr) {
-        if (sdsf_state->yam != nullptr) {
-            yam_unprepare_dynacode(sdsf_state->yam);
-        }
-
-        free(sdsf_state->yam);
         free(sdsf_state->emu);
         free(sdsf_state);
 
         sdsf_state = nullptr;
     }
-
 
     if (output_buffer != nullptr) {
         delete output_buffer;
@@ -192,21 +155,21 @@ static int sdsf_load(
         const uint8_t *reserved,
         size_t reserved_size
 ) {
-    if ( exe_size < 4 ) return -1;
+    if (exe_size < 4) return -1;
 
-    struct sdsf_loader_state * state = ( struct sdsf_loader_state * ) context;
+    auto *state = (struct sdsf_loader_state *) context;
 
-    uint8_t * dst = state->data;
+    uint8_t *dst = state->data;
 
-    if ( state->data_size < 4 ) {
-        state->data = dst = ( uint8_t * ) malloc( exe_size );
+    if (state->data_size < 4) {
+        state->data = dst = (uint8_t *) malloc(exe_size);
         state->data_size = exe_size;
-        memcpy( dst, exe, exe_size );
+        memcpy(dst, exe, exe_size);
         return 0;
     }
 
-    uint32_t dst_start = get_le32( dst );
-    uint32_t src_start = get_le32( exe );
+    uint32_t dst_start = get_le32(dst);
+    uint32_t src_start = get_le32(exe);
 
     dst_start &= 0x7fffff;
     src_start &= 0x7fffff;
@@ -214,29 +177,27 @@ static int sdsf_load(
     uint32_t dst_len = state->data_size - 4;
     uint32_t src_len = exe_size - 4;
 
-    if ( dst_len > 0x800000 ) dst_len = 0x800000;
-    if ( src_len > 0x800000 ) src_len = 0x800000;
+    if (dst_len > 0x800000) dst_len = 0x800000;
+    if (src_len > 0x800000) src_len = 0x800000;
 
-    if ( src_start < dst_start )
-    {
+    if (src_start < dst_start) {
         uint32_t diff = dst_start - src_start;
         state->data_size = dst_len + 4 + diff;
-        state->data = dst = ( uint8_t * ) realloc( dst, state->data_size );
-        memmove( dst + 4 + diff, dst + 4, dst_len );
-        memset( dst + 4, 0, diff );
+        state->data = dst = (uint8_t *) realloc(dst, state->data_size);
+        memmove(dst + 4 + diff, dst + 4, dst_len);
+        memset(dst + 4, 0, diff);
         dst_len += diff;
         dst_start = src_start;
-        set_le32( dst, dst_start );
+        set_le32(dst, dst_start);
     }
-    if ( ( src_start + src_len ) > ( dst_start + dst_len ) )
-    {
-        uint32_t diff = ( src_start + src_len ) - ( dst_start + dst_len );
+    if ((src_start + src_len) > (dst_start + dst_len)) {
+        uint32_t diff = (src_start + src_len) - (dst_start + dst_len);
         state->data_size = dst_len + 4 + diff;
-        state->data = dst = ( uint8_t * ) realloc( dst, state->data_size );
-        memset( dst + 4 + dst_len, 0, diff );
+        state->data = dst = (uint8_t *) realloc(dst, state->data_size);
+        memset(dst + 4 + dst_len, 0, diff);
     }
 
-    memcpy( dst + 4 + ( src_start - dst_start ), exe + 4, src_len );
+    memcpy(dst + 4 + (src_start - dst_start), exe + 4, src_len);
 
     return 0;
 }
