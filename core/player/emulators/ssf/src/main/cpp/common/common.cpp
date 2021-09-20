@@ -49,3 +49,18 @@ long psf_file_ftell(void *handle) {
         return -1;
     }
 }
+
+uint32_t get_le32(void const *p) {
+    return (unsigned) ((unsigned char const *) p)[3] << 24 |
+           (unsigned) ((unsigned char const *) p)[2] << 16 |
+           (unsigned) ((unsigned char const *) p)[1] << 8 |
+           (unsigned) ((unsigned char const *) p)[0];
+}
+
+void set_le32( void* p, uint32_t n )
+{
+    ((unsigned char*) p) [0] = (unsigned char) n;
+    ((unsigned char*) p) [1] = (unsigned char) (n >> 8);
+    ((unsigned char*) p) [2] = (unsigned char) (n >> 16);
+    ((unsigned char*) p) [3] = (unsigned char) (n >> 24);
+}

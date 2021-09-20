@@ -29,10 +29,12 @@ static int sdsf_load(
         size_t reserved_size
 );
 
-struct sdsf_load_state {
-    uint8_t *state = 0;
-    uint32_t state_size = 0;
+struct sdsf_loader_state
+{
+    void *emu;
+    void *yam;
+    size_t version;
+    uint8_t * data;
+    size_t data_size;
 };
-
-
 #endif //CHIPBOX_SSF_H

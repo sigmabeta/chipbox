@@ -7,14 +7,13 @@
 
 const char *last_error;
 
-uint8_t *sega_state;
-uint16_t sega_state_size;
-
 int16_t *output_buffer;
 uint32_t output_buffer_size_samples;
 uint32_t output_buffer_size_frames;
 
 int xsf_version;
+
+sdsf_loader_state * sdsf_state;
 
 void loadFile(const char *filename_c_str) {
     teardown();
@@ -43,6 +42,8 @@ void loadFile(const char *filename_c_str) {
 
     printf("SSF version: %02x", xsf_version);
 
+    sdsf_loader_state * sdsfinfo = (sdsf_loader_state*)malloc(sizeof(sdsf_loader_state));
+
     if (sega_init()) {
         last_error = "Sega emulator static initialization failed";
         return;
@@ -50,33 +51,16 @@ void loadFile(const char *filename_c_str) {
 
     printf("Sega_init() success.");
 
-    sega_state_size = sega_get_state_size(xsf_version - 0x10);
-    sega_state = static_cast<uint8_t *>(malloc(sega_state_size));
+    sdsf_loader_state state;
 
-    memset(sega_state, 0, sega_state_size);
-
-    printf("Sega_state size: 0x%04x bytes", sega_state_size);
-
-    sega_clear_state(sega_state, xsf_version - 0x10);
-    printf("Sega_clear_state success.");
-
-    sega_enable_dry(sega_state, 0);
-    printf("Sega_enable_dry success.");
-
-    sega_enable_dsp(sega_state, 1);
-    printf("Sega_enable_dsp success.");
-
-    sega_enable_dsp_dynarec( sega_state, false );
-    printf("Sega_enable_dynarec success.");
-
-    sdsf_load_state load_context;
+    memset( &state, 0, sizeof(state) );
 
     int ret = psf_load(
             filename_c_str,
             &psf_file_system,
             xsf_version,
             sdsf_load,
-            &load_context,
+            &state,
             0,
             0,
             0,
@@ -85,26 +69,61 @@ void loadFile(const char *filename_c_str) {
     );
 
     if (ret != xsf_version) {
-        last_error = "Sega emulator static initialization failed";
+        last_error = "Failed to load PSF file.";
         return;
     }
 
     printf("Psf_load success.");
 
-    uint32_t start = bswap_32(*load_context.state);
-    uint32_t length = load_context.state_size;
-    uint32_t max_length = (xsf_version == 0x12) ? 0x800000 : 0x80000;
+    uint32_t sega_state_size = sega_get_state_size(xsf_version - 0x10);
+    void * sega_state = static_cast<uint8_t *>(malloc(sega_state_size));
+
+    printf("Sega_state size: 0x%04x bytes", sega_state_size);
+
+    sega_clear_state(sega_state, xsf_version - 0x10);
+    printf("Sega_clear_state success.");
+
+    sega_enable_dry(sega_state, 1);
+    printf("Sega_enable_dry success.");
+
+    sega_enable_dsp(sega_state, 0);
+    printf("Sega_enable_dsp success.");
+
+    sega_enable_dsp_dynarec( sega_state, 1);
+    printf("Sega_enable_dynarec success.");
+
+    void *yam;
+
+    if (xsf_version == 0x12) {
+        void *dcsound = sega_get_dcsound_state(sega_state);
+        yam = dcsound_get_yam_state(dcsound);
+    } else {
+        void *satsound = sega_get_satsound_state(sega_state);
+        yam = satsound_get_yam_state(satsound);
+    }
+    if (yam) yam_prepare_dynacode(yam);
+
+
+    uint32_t start = *(uint32_t*) state.data;
+    uint32_t length = state.data_size;
+    const uint32_t max_length = ( xsf_version == 0x12 ) ? 0x800000 : 0x80000;
 
     if (start + (length - 4) > max_length) {
         length = max_length - start + 4;
     }
 
-    bool upload_success = sega_upload_program(sega_state, load_context.state, length);
+    int upload_status = sega_upload_program(sega_state, state.data, length);
 
-    if (!upload_success) {
+    if (upload_status == -1) {
         last_error = "Failed to upload program.";
         return;
     }
+
+    sdsfinfo->emu = sega_state;
+    sdsfinfo->yam = yam;
+    sdsfinfo->version = xsf_version;
+
+    sdsf_state = sdsfinfo;
 
     printf("Sega_upload_program success.");
 }
@@ -119,13 +138,11 @@ int32_t generateBuffer(int16_t *target_array, int32_t output_size_frames) {
     }
 
     int32_t cycles_executed = sega_execute(
-            sega_state,
+            sdsf_state->emu,
             0x7FFFFFFF,
             output_buffer,
             &output_buffer_size_frames
     );
-
-    printf("Sega_execute success.");
 
     if (cycles_executed < 0) {
         last_error = "Failed to generate any audio.";
@@ -138,13 +155,18 @@ int32_t generateBuffer(int16_t *target_array, int32_t output_size_frames) {
 }
 
 void teardown() {
-    if (sega_state != nullptr) {
-        sega_clear_state(sega_state, xsf_version - 0x10);
-        delete sega_state;
+    if (sdsf_state != nullptr) {
+        if (sdsf_state->yam != nullptr) {
+            yam_unprepare_dynacode(sdsf_state->yam);
+        }
 
-        sega_state = nullptr;
-        sega_state_size = 0;
+        free(sdsf_state->yam);
+        free(sdsf_state->emu);
+        free(sdsf_state);
+
+        sdsf_state = nullptr;
     }
+
 
     if (output_buffer != nullptr) {
         delete output_buffer;
@@ -170,51 +192,51 @@ static int sdsf_load(
         const uint8_t *reserved,
         size_t reserved_size
 ) {
-    if (exe_size < 4) return -1;
+    if ( exe_size < 4 ) return -1;
 
-    auto *load_context = (sdsf_load_state *) context;
+    struct sdsf_loader_state * state = ( struct sdsf_loader_state * ) context;
 
-    uint8_t *dst = load_context->state;
+    uint8_t * dst = state->data;
 
-    if (load_context->state_size < 4) {
-        load_context->state_size = exe_size;
-        load_context->state = static_cast<uint8_t *>(malloc(exe_size));
-
-        memset(load_context->state, 0, load_context->state_size);
-        memcpy(load_context->state, exe, exe_size);
+    if ( state->data_size < 4 ) {
+        state->data = dst = ( uint8_t * ) malloc( exe_size );
+        state->data_size = exe_size;
+        memcpy( dst, exe, exe_size );
         return 0;
     }
 
-    uint32_t dst_start = bswap_32(*dst);
-    uint32_t src_start = bswap_32(*exe);
+    uint32_t dst_start = get_le32( dst );
+    uint32_t src_start = get_le32( exe );
 
-    dst_start &= 0x7FFFFF;
-    src_start &= 0x7FFFFF;
+    dst_start &= 0x7fffff;
+    src_start &= 0x7fffff;
 
-    uint32_t dst_len = load_context->state_size - 4;
+    uint32_t dst_len = state->data_size - 4;
     uint32_t src_len = exe_size - 4;
 
-    if (dst_len > 0x800000) dst_len = 0x800000;
-    if (src_len > 0x800000) src_len = 0x800000;
+    if ( dst_len > 0x800000 ) dst_len = 0x800000;
+    if ( src_len > 0x800000 ) src_len = 0x800000;
 
-    if (src_start < dst_start) {
+    if ( src_start < dst_start )
+    {
         uint32_t diff = dst_start - src_start;
-        load_context->state_size = dst_len + 4 + diff;
-        load_context->state = static_cast<uint8_t *>(malloc(exe_size));
-        memmove(dst + 4 + diff, dst + 4, dst_len);
-        memset(dst + 4, 0, diff);
+        state->data_size = dst_len + 4 + diff;
+        state->data = dst = ( uint8_t * ) realloc( dst, state->data_size );
+        memmove( dst + 4 + diff, dst + 4, dst_len );
+        memset( dst + 4, 0, diff );
         dst_len += diff;
         dst_start = src_start;
-        *dst = bswap_32(dst_start);
+        set_le32( dst, dst_start );
+    }
+    if ( ( src_start + src_len ) > ( dst_start + dst_len ) )
+    {
+        uint32_t diff = ( src_start + src_len ) - ( dst_start + dst_len );
+        state->data_size = dst_len + 4 + diff;
+        state->data = dst = ( uint8_t * ) realloc( dst, state->data_size );
+        memset( dst + 4 + dst_len, 0, diff );
     }
 
-    if ((src_start + src_len) > (dst_start + dst_len)) {
-        uint32_t diff = (src_start + src_len) - (dst_start + dst_len);
-        load_context->state_size = dst_len + 4 + diff;
-        memset(load_context + 4 + dst_len, 0, diff);
-    }
-
-    memcpy(dst + 4 + (src_start - dst_start), exe + 4, src_len);
+    memcpy( dst + 4 + ( src_start - dst_start ), exe + 4, src_len );
 
     return 0;
 }
