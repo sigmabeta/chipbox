@@ -1,111 +1,57 @@
 #include "Usf.h"
 
-char *last_error;
+const char *last_error;
+
+usf_loader_state * m_state;
 
 void loadFile(const char *filename_c_str) {
-//    teardown();
-//
-//    if (!m_rom.data) {
-//        int ret = psf_load(
-//                filename_c_str,
-//                &psf_file_system,
-//                0x22,
-//                gsf_loader,
-//                &m_rom,
-//                0,
-//                0,
-//                0,
-//                0,
-//                0
-//        );
-//
-//        if (ret < 0) {
-//            last_error = "Invalid GSF";
-//            return;
-//        }
-//
-//        if (m_rom.data_size > UINT_MAX) {
-//            last_error = "Invalid GSF";
-//            return;
-//        }
-//    }
-//
-//    struct VFile *rom = VFileFromConstMemory(m_rom.data, m_rom.data_size);
-//    if (!rom) {
-//        last_error = "Bad allocation.";
-//        return;
-//    }
-//
-//    struct mCore *core = mCoreFindVF(rom);
-//    if (!core) {
-//        rom->close(rom);
-//        last_error = "Invalid GSF";
-//        return;
-//    }
-//
-//    memset(&m_output, 0, sizeof(m_output));
-//    m_output.stream.postAudioBuffer = _gsf_postAudioBuffer;
-//
-//    core->init(core);
-//    core->setAVStream(core, &m_output.stream);
-//    mCoreInitConfig(core, NULL);
-//
-//    unsigned int sample_rate = 44100;
-//
-//    int32_t core_frequency = core->frequency(core);
-//    blip_set_rates(core->getAudioChannel(core, 0), core_frequency, sample_rate);
-//    blip_set_rates(core->getAudioChannel(core, 1), core_frequency, sample_rate);
-//
-//    struct mCoreOptions opts = {};
-//    opts.useBios = false;
-//    opts.skipBios = true;
-//    opts.volume = 0x100;
-//    opts.sampleRate = sample_rate;
-//
-//    mCoreConfigSetIntValue(&core->config, "gba.audioHle", 1);
-//
-//    core->loadROM(core, rom);
-//    core->reset(core);
-//
-//    m_core = core;
+    teardown();
+
+    m_state = new usf_loader_state;
+    m_state->emu_state = malloc( usf_get_state_size() );
+
+    if (!m_state->emu_state) {
+        last_error = "Bad allocation.";
+        return;
+    }
+
+    usf_clear( m_state->emu_state );
+    usf_set_hle_audio( m_state->emu_state, false);
+
+    int ret = psf_load(
+            filename_c_str,
+            &psf_file_system,
+            0x21,
+            usf_loader,
+            m_state,
+            usf_info,
+            m_state,
+            0,
+            0,
+            0
+    );
+
+    if (ret < 0) {
+        last_error = "Invalid USF";
+        return;
+    }
+
+    usf_set_compare( m_state->emu_state, m_state->enable_compare );
+    usf_set_fifo_full( m_state->emu_state, m_state->enable_fifo_full );
 }
 
 int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_frames) {
-//    uint16_t samples_written = 0;
-//
-//    if (m_output.buffer_size_frames != buffer_size_frames) {
-//        delete m_output.samples;
-//        m_core->setAudioBufferSize(m_core, buffer_size_frames);
-//
-//        m_output.buffer_size_frames = buffer_size_frames;
-//        m_output.samples = static_cast<int16_t *>(malloc(buffer_size_frames * 4));
-//    }
-//
-//    m_output.frames_available = 0;
-//    while (!m_output.frames_available) {
-////        printf("Running frame");
-//        m_core->runFrame(m_core);
-//    }
-//    printf("Frames available: %d / %d", m_output.frames_available, buffer_size_frames);
-//
-//    samples_written = m_output.frames_available;
-//
-//    memcpy(target_array, m_output.samples, buffer_size_frames * 4);
-//
-//    int framesWritten = samples_written / 2;
-//    return framesWritten;
-return 0;
+    last_error = usf_render(m_state->emu_state, target_array, buffer_size_frames, nullptr);
+    return buffer_size_frames;
 }
 
 void teardown() {
-//    if (m_core) {
-//        m_core->deinit(m_core);
-//        m_core = NULL;
-//    }
-//
-//    delete m_rom.data;
-//    m_rom.data = nullptr;
-//    m_rom.data_size = 0;
+    if ( m_state )
+    {
+        usf_shutdown( m_state->emu_state );
+        delete m_state;
+        m_state = nullptr;
+    }
 }
 
 const char *get_last_error() {
@@ -113,5 +59,28 @@ const char *get_last_error() {
 }
 
 int32_t get_sample_rate() {
-    return 44100;
+    int32_t sample_rate;
+    usf_render(m_state->emu_state, nullptr, 0, &sample_rate);
+    return sample_rate;
+}
+
+int usf_loader(void * context, const uint8_t * exe, size_t exe_size,
+               const uint8_t * reserved, size_t reserved_size)
+{
+    auto * state = ( struct usf_loader_state * ) context;
+    if ( exe_size > 0 ) return -1;
+
+    return usf_upload_section( state->emu_state, reserved, reserved_size );
+}
+
+int usf_info(void * context, const char * name, const char * value)
+{
+    auto * state = ( struct usf_loader_state * ) context;
+
+    if ( strcasecmp( name, "_enablecompare" ) == 0 && strlen( value ) )
+        state->enable_compare = 1;
+    else if ( strcasecmp( name, "_enablefifofull" ) == 0 && strlen( value ) )
+        state->enable_fifo_full = 1;
+
+    return 0;
 }

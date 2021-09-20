@@ -70,7 +70,6 @@ set(libusf_SRCS
 # Appears to just be a flag telling the code we want it to compile...?
 add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN)
 
-
 set(INCLUDE_FOLDER lazyusf2)
 
 # Specifies a library name, specifies whether the library is STATIC or
