@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *   Mupen64plus - dbg_decoder.h                                           *
- *   Mupen64Plus homepage: http://code.google.com/p/mupen64plus/           *
+ *   Mupen64Plus homepage: https://mupen64plus.org/                        *
  *   Copyright (C) 2010 Marshall B. Rogers <mbr@64.vg>                     *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -22,16 +22,14 @@
 #ifndef __DECODER_H__
 #define __DECODER_H__
 
-#include "dbg_types.h"
-
 #if defined(WIN32)
 typedef unsigned int uint32_t;
 typedef unsigned char bool;
 #define false 0
 #define true 1
 #else
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 #endif
 
 /* Disassembler lookup handler */
@@ -44,17 +42,17 @@ struct r4k_dis_t
     r4k_lookup_func  lookup_sym;
     void *           lookup_sym_d;
     r4k_lookup_func  lookup_rel_hi16;
-    void *           lookup_rel_hi16_d;   
+    void *           lookup_rel_hi16_d;
     r4k_lookup_func  lookup_rel_lo16;
     void *           lookup_rel_lo16_d;
-    
+
     /* Private */
     char * dest;
     int length;
 }
 R4kDis;
 
-extern void r4300_decode_op ( uint32, char *, char *, int );
+extern void r4300_decode_op (uint32_t, char *, char *, uint32_t);
 
 
 #endif /* __DECODER_H__ */

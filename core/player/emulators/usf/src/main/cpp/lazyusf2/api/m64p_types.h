@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *   Mupen64plus-core - m64p_types.h                                       *
- *   Mupen64Plus homepage: http://code.google.com/p/mupen64plus/           *
+ *   Mupen64Plus homepage: https://mupen64plus.org/                        *
  *   Copyright (C) 2012 CasualJames                                        *
  *   Copyright (C) 2009 Richard Goedeken                                   *
  *                                                                         *
@@ -28,6 +28,7 @@
 /* ----------------------------------------- */
 
 /* necessary headers */
+#include <stdint.h>
 #if defined(WIN32)
   #include <windows.h>
 #endif
@@ -50,6 +51,11 @@
 /* ----------------------------------------- */
 
 typedef void * m64p_handle;
+
+/* Generic function pointer returned from osal_dynlib_getproc (and the like)
+ * Don't use it directly, cast to proper type before using it.
+ */
+typedef void (*m64p_function)(void);
 
 typedef void (*m64p_frame_callback)(unsigned int FrameIndex);
 typedef void (*m64p_input_callback)(void);
@@ -155,13 +161,55 @@ typedef enum {
   M64CMD_CORE_STATE_SET,
   M64CMD_READ_SCREEN,
   M64CMD_RESET,
-  M64CMD_ADVANCE_FRAME
+  M64CMD_ADVANCE_FRAME,
+  M64CMD_SET_MEDIA_LOADER,
+  M64CMD_NETPLAY_INIT,
+  M64CMD_NETPLAY_CONTROL_PLAYER,
+  M64CMD_NETPLAY_GET_VERSION,
+  M64CMD_NETPLAY_CLOSE,
+  M64CMD_PIF_OPEN,
+  M64CMD_ROM_SET_SETTINGS
 } m64p_command;
 
 typedef struct {
-  unsigned int address;
-  int          value;
+  uint32_t address;
+  int      value;
 } m64p_cheat_code;
+
+typedef struct {
+  /* Frontend-defined callback data. */
+  void* cb_data;
+
+  /* Allow the frontend to specify the GB cart ROM file to load
+   * cb_data: points to frontend-defined callback data.
+   * controller_num: (0-3) tell the frontend which controller is about to load a GB cart
+   * Returns a NULL-terminated string owned by the core specifying the GB cart ROM filename to load.
+   * Empty or NULL string results in no GB cart being loaded (eg. empty transferpak).
+   */
+  char* (*get_gb_cart_rom)(void* cb_data, int controller_num);
+
+  /* Allow the frontend to specify the GB cart RAM file to load
+   * cb_data: points to frontend-defined callback data.
+   * controller_num: (0-3) tell the frontend which controller is about to load a GB cart
+   * Returns a NULL-terminated string owned by the core specifying the GB cart RAM filename to load
+   * Empty or NULL string results in the core generating a default save file with empty content.
+   */
+  char* (*get_gb_cart_ram)(void* cb_data, int controller_num);
+
+  /* Allow the frontend to specify the DD IPL ROM file to load
+   * cb_data: points to frontend-defined callback data.
+   * Returns a NULL-terminated string owned by the core specifying the DD IPL ROM filename to load
+   * Empty or NULL string results in disabled 64DD.
+   */
+  char* (*get_dd_rom)(void* cb_data);
+
+  /* Allow the frontend to specify the DD disk file to load
+   * cb_data: points to frontend-defined callback data.
+   * Returns a NULL-terminated string owned by the core specifying the DD disk filename to load
+   * Empty or NULL string results in no DD disk being loaded (eg. empty disk drive).
+   */
+  char* (*get_dd_disk)(void* cb_data);
+} m64p_media_loader;
 
 /* ----------------------------------------- */
 /* Structures to hold ROM image information  */
@@ -174,23 +222,36 @@ typedef enum
     SYSTEM_MPAL
 } m64p_system_type;
 
+typedef enum
+{
+    SAVETYPE_EEPROM_4K       = 0,
+    SAVETYPE_EEPROM_4KB      = 0, // Preserve inaccurate/misleading name
+    SAVETYPE_EEPROM_16K      = 1,
+    SAVETYPE_EEPROM_16KB     = 1, // Preserve inaccurate/misleading name
+    SAVETYPE_SRAM            = 2,
+    SAVETYPE_FLASH_RAM       = 3,
+    SAVETYPE_CONTROLLER_PAK  = 4,
+    SAVETYPE_CONTROLLER_PACK = 4, // Preserve inaccurate/off-brand name
+    SAVETYPE_NONE            = 5,
+} m64p_rom_save_type;
+
 typedef struct
 {
-   unsigned char init_PI_BSB_DOM1_LAT_REG;  /* 0x00 */
-   unsigned char init_PI_BSB_DOM1_PGS_REG;  /* 0x01 */
-   unsigned char init_PI_BSB_DOM1_PWD_REG;  /* 0x02 */
-   unsigned char init_PI_BSB_DOM1_PGS_REG2; /* 0x03 */
-   unsigned int ClockRate;                  /* 0x04 */
-   unsigned int PC;                         /* 0x08 */
-   unsigned int Release;                    /* 0x0C */
-   unsigned int CRC1;                       /* 0x10 */
-   unsigned int CRC2;                       /* 0x14 */
-   unsigned int Unknown[2];                 /* 0x18 */
-   unsigned char Name[20];                  /* 0x20 */
-   unsigned int unknown;                    /* 0x34 */
-   unsigned int Manufacturer_ID;            /* 0x38 */
-   unsigned short Cartridge_ID;             /* 0x3C - Game serial number  */
-   unsigned short Country_code;             /* 0x3E */
+   uint8_t  init_PI_BSB_DOM1_LAT_REG;  /* 0x00 */
+   uint8_t  init_PI_BSB_DOM1_PGS_REG;  /* 0x01 */
+   uint8_t  init_PI_BSB_DOM1_PWD_REG;  /* 0x02 */
+   uint8_t  init_PI_BSB_DOM1_PGS_REG2; /* 0x03 */
+   uint32_t ClockRate;                 /* 0x04 */
+   uint32_t PC;                        /* 0x08 */
+   uint32_t Release;                   /* 0x0C */
+   uint32_t CRC1;                      /* 0x10 */
+   uint32_t CRC2;                      /* 0x14 */
+   uint32_t Unknown[2];                /* 0x18 */
+   uint8_t  Name[20];                  /* 0x20 */
+   uint32_t unknown;                   /* 0x34 */
+   uint32_t Manufacturer_ID;           /* 0x38 */
+   uint16_t Cartridge_ID;              /* 0x3C - Game serial number  */
+   uint16_t Country_code;              /* 0x3E */
 } m64p_rom_header;
 
 typedef struct
@@ -201,6 +262,12 @@ typedef struct
    unsigned char status;  /* Rom status on a scale from 0-5. */
    unsigned char players; /* Local players 0-4, 2/3/4 way Netplay indicated by 5/6/7. */
    unsigned char rumble;  /* 0 - No, 1 - Yes boolean for rumble support. */
+   unsigned char transferpak; /* 0 - No, 1 - Yes boolean for transfer pak support. */
+   unsigned char mempak; /* 0 - No, 1 - Yes boolean for memory pak support. */
+   unsigned char biopak; /* 0 - No, 1 - Yes boolean for bio pak support. */
+   unsigned char disableextramem; /* 0 - No, 1 - Yes boolean for disabling 4MB expansion RAM pack */
+   unsigned int countperop; /* Number of CPU cycles per instruction. */
+   unsigned int sidmaduration; /* Default SI DMA duration */
 } m64p_rom_settings;
 
 /* ----------------------------------------- */
@@ -310,8 +377,8 @@ typedef enum {
 #define BPT_TOGGLE_FLAG(a, b) a.flags = (a.flags ^ b);
 
 typedef struct {
-  unsigned int address;
-  unsigned int endaddr;
+  uint32_t     address;
+  uint32_t     endaddr;
   unsigned int flags;
 } m64p_breakpoint;
 
@@ -348,17 +415,20 @@ typedef enum {
 
 typedef struct {
   unsigned int Functions;
-  m64p_error (*VidExtFuncInit)(void);
-  m64p_error (*VidExtFuncQuit)(void);
-  m64p_error (*VidExtFuncListModes)(m64p_2d_size *, int *);
-  m64p_error (*VidExtFuncSetMode)(int, int, int, int, int);
-  void *     (*VidExtFuncGLGetProc)(const char*);
-  m64p_error (*VidExtFuncGLSetAttr)(m64p_GLattr, int);
-  m64p_error (*VidExtFuncGLGetAttr)(m64p_GLattr, int *);
-  m64p_error (*VidExtFuncGLSwapBuf)(void);
-  m64p_error (*VidExtFuncSetCaption)(const char *);
-  m64p_error (*VidExtFuncToggleFS)(void);
-  m64p_error (*VidExtFuncResizeWindow)(int, int);
+  m64p_error    (*VidExtFuncInit)(void);
+  m64p_error    (*VidExtFuncQuit)(void);
+  m64p_error    (*VidExtFuncListModes)(m64p_2d_size *, int *);
+  m64p_error    (*VidExtFuncListRates)(m64p_2d_size, int *, int *);
+  m64p_error    (*VidExtFuncSetMode)(int, int, int, int, int);
+  m64p_error    (*VidExtFuncSetModeWithRate)(int, int, int, int, int, int);
+  m64p_function (*VidExtFuncGLGetProc)(const char*);
+  m64p_error    (*VidExtFuncGLSetAttr)(m64p_GLattr, int);
+  m64p_error    (*VidExtFuncGLGetAttr)(m64p_GLattr, int *);
+  m64p_error    (*VidExtFuncGLSwapBuf)(void);
+  m64p_error    (*VidExtFuncSetCaption)(const char *);
+  m64p_error    (*VidExtFuncToggleFS)(void);
+  m64p_error    (*VidExtFuncResizeWindow)(int, int);
+  uint32_t      (*VidExtFuncGLGetDefaultFramebuffer)(void);
 } m64p_video_extension_functions;
 
 #endif /* define M64P_TYPES_H */

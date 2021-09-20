@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *   Mupen64plus-core - api/callbacks.c                                    *
- *   Mupen64Plus homepage: http://code.google.com/p/mupen64plus/           *
+ *   Mupen64Plus homepage: https://mupen64plus.org/                        *
  *   Copyright (C) 2009 Richard Goedeken                                   *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -23,56 +23,57 @@
  * front-end application
  */
 
-#include <stdlib.h>
-#include <stdio.h>
 #include <stdarg.h>
-#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "usf/usf.h"
-
-#include "usf/usf_internal.h"
-
-#include "m64p_types.h"
+#include "api/m64p_frontend.h"
 #include "callbacks.h"
+#include "m64p_types.h"
 
-void DebugMessage(usf_state_t * state, int level, const char *message, ...)
+/* local variables */
+static ptr_DebugCallback pDebugFunc = NULL;
+static ptr_StateCallback pStateFunc = NULL;
+static void *            DebugContext = NULL;
+static void *            StateContext = NULL;
+
+/* global Functions for use by the Core */
+m64p_error SetDebugCallback(ptr_DebugCallback pFunc, void *Context)
 {
+    pDebugFunc = pFunc;
+    DebugContext = Context;
+    return M64ERR_SUCCESS;
+}
+
+m64p_error SetStateCallback(ptr_StateCallback pFunc, void *Context)
+{
+    pStateFunc = pFunc;
+    StateContext = Context;
+    return M64ERR_SUCCESS;
+}
+
+void DebugMessage(int level, const char *message, ...)
+{
+  char msgbuf[512];
   va_list args;
-  size_t len;
 
-  if (
-#ifdef DEBUG_INFO
-      1 ||
-#endif
-      level > 1 )
-  {
-#ifdef DEBUG_INFO
-      if (state->debug_log)
-      {
-        char buffer[1024];
-        va_start(args, message);
-        vsprintf(buffer, message, args);
-        va_end(args);
-        fprintf(state->debug_log, "%s\n", buffer);
-      }
-      if ( level > 1 )
-#endif
-    return;
-  }
-
-  len = strlen( state->error_message );
-
-  if ( len )
-    state->error_message[ len++ ] = '\n';
+  if (pDebugFunc == NULL)
+      return;
 
   va_start(args, message);
-#if _MSC_VER >= 1300
-  vsprintf_s(state->error_message + len, 16384 - len, message, args);
-#else
-  vsprintf(state->error_message + len, message, args);
-#endif
-  va_end(args);
+  vsnprintf(msgbuf, 512, message, args);
 
-  state->last_error = state->error_message;
-  state->stop = 1;
+  (*pDebugFunc)(DebugContext, level, msgbuf);
+
+  va_end(args);
 }
+
+void StateChanged(m64p_core_param param_type, int new_value)
+{
+    if (pStateFunc == NULL)
+        return;
+
+    (*pStateFunc)(StateContext, param_type, new_value);
+}
+
+

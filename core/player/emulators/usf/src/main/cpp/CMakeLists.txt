@@ -14,34 +14,35 @@ set(libusf_SRCS
         common/common.cpp
         psflib/psf2fs.c
         psflib/psflib.c
-        lazyusf2/ai/ai_controller.c
         lazyusf2/api/callbacks.c
         lazyusf2/debugger/dbg_decoder.c
+        lazyusf2/device/cart/cart_rom.c
+        lazyusf2/device/controllers/game_controller.c
+        lazyusf2/device/memory/memory.c
+        lazyusf2/device/pif//pif.c
+        lazyusf2/device/pif/cic.c
+        lazyusf2/device/pif/n64_cic_nus_6105.c
+        lazyusf2/device/r4300/cached_interp.c
+        lazyusf2/device/r4300/cp0.c
+        lazyusf2/device/r4300/cp1.c
+        lazyusf2/device/r4300/interrupt.c
+        lazyusf2/device/r4300/pure_interp.c
+        lazyusf2/device/r4300/r4300_core.c
+        lazyusf2/device/r4300/recomp.c
+        lazyusf2/device/r4300/tlb.c
+        lazyusf2/device/rcp/ai/ai_controller.c
+        lazyusf2/device/rcp/mi/mi_controller.c
+        lazyusf2/device/rcp/pi/pi_controller.c
+        lazyusf2/device/rcp/rdp/rdp_core.c
+        lazyusf2/device/rcp/ri/ri_controller.c
+        lazyusf2/device/rcp/rsp/rsp_core.c
+        lazyusf2/device/rcp/si/si_controller.c
+        lazyusf2/device/rcp/vi/vi_controller.c
+        lazyusf2/device/rdram/rdram.c
         lazyusf2/main/main.c
         lazyusf2/main/rom.c
         lazyusf2/main/savestates.c
         lazyusf2/main/util.c
-        lazyusf2/memory/memory.c
-        lazyusf2/pi/cart_rom.c
-        lazyusf2/pi/pi_controller.c
-        lazyusf2/r4300/cached_interp.c
-        lazyusf2/r4300/cp0.c
-        lazyusf2/r4300/cp1.c
-        lazyusf2/r4300/empty_dynarec.c
-        lazyusf2/r4300/exception.c
-        lazyusf2/r4300/interupt.c
-        lazyusf2/r4300/mi_controller.c
-        lazyusf2/r4300/pure_interp.c
-        lazyusf2/r4300/r4300.c
-        lazyusf2/r4300/r4300_core.c
-        lazyusf2/r4300/recomp.c
-        lazyusf2/r4300/reset.c
-        lazyusf2/r4300/tlb.c
-        lazyusf2/rdp/rdp_core.c
-        lazyusf2/ri/rdram.c
-        lazyusf2/ri/rdram_detection_hack.c
-        lazyusf2/ri/ri_controller.c
-        lazyusf2/rsp/rsp_core.c
         lazyusf2/rsp_hle/alist.c
         lazyusf2/rsp_hle/alist_audio.c
         lazyusf2/rsp_hle/alist_naudio.c
@@ -54,17 +55,10 @@ set(libusf_SRCS
         lazyusf2/rsp_hle/mp3.c
         lazyusf2/rsp_hle/musyx.c
         lazyusf2/rsp_hle/plugin.c
-        lazyusf2/rsp_lle/rsp.c
-        lazyusf2/si/cic.c
-        lazyusf2/si/game_controller.c
-        lazyusf2/si/n64_cic_nus_6105.c
-        lazyusf2/si/pif.c
-        lazyusf2/si/si_controller.c
-        lazyusf2/usf/usf.c
         lazyusf2/usf/barray.c
         lazyusf2/usf/resampler.c
         lazyusf2/usf/usf.c
-        lazyusf2/vi/vi_controller.c
+        lazyusf2/usf/usf.c
         )
 
 # Appears to just be a flag telling the code we want it to compile...?
