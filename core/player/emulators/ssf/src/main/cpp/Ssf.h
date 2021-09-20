@@ -32,7 +32,6 @@ static int sdsf_load(
 struct sdsf_loader_state
 {
     void *emu;
-    void *yam;
     size_t version;
     uint8_t * data;
     size_t data_size;
