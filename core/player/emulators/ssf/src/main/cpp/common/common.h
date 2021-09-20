@@ -25,4 +25,8 @@ const psf_file_callbacks psf_file_system =
                 psf_file_ftell
         };
 
+uint32_t get_le32(void const *p);
+
+void set_le32( void* p, uint32_t n );
+
 #endif //CHIPBOX_COMMON_H
