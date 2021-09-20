@@ -59,7 +59,7 @@
 #include "osal/preproc.h"
 
 #define XXH_INLINE_ALL
-#include <xxhash.h>
+#include "../../xxhash/xxhash.h"
 
 #include <inttypes.h>
 #include <stdint.h>

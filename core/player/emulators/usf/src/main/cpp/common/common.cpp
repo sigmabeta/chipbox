@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "common.h"
 
 void *psf_file_fopen(void *context, const char *uri) {
@@ -49,3 +53,18 @@ long psf_file_ftell(void *handle) {
         return -1;
     }
 }
+
+double now_ms_dbl() {
+    struct timespec res;
+    clock_gettime(CLOCK_REALTIME, &res);
+    return 1000.0 * res.tv_sec + (double) res.tv_nsec / 1e6;
+}
+
+uint32_t now_ms_int() {
+    struct timespec res;
+    clock_gettime(CLOCK_REALTIME, &res);
+    return 1000L * res.tv_sec + res.tv_nsec / 1e6;
+}
+#ifdef __cplusplus
+}
+#endif

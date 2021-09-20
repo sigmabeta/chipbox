@@ -59,10 +59,38 @@ set(libusf_SRCS
         lazyusf2/usf/resampler.c
         lazyusf2/usf/usf.c
         lazyusf2/usf/usf.c
+        lazyusf2/xxhash/xxhash.c
+        lazyusf2/minizip/ioapi.c
+        lazyusf2/minizip/unzip.c
+        lazyusf2/minizip/zip.c
+        lazyusf2/osal/files_unix.c
+        lazyusf2/device/controllers/paks/mempak.c
+        lazyusf2/device/controllers/paks/biopak.c
+        lazyusf2/device/controllers/paks/rumblepak.c
+        lazyusf2/device/controllers/paks/transferpak.c
+        lazyusf2/device/gb/m64282fp.c
+        lazyusf2/device/gb/gb_cart.c
+        lazyusf2/device/dd/disk.c
+        lazyusf2/device/dd/dd_controller.c
+        lazyusf2/device/gb/mbc3_rtc.c
+        lazyusf2/device/rcp/rdp/fb.c
+        lazyusf2/device/cart/flashram.c
+        lazyusf2/api/config.c
+        lazyusf2/backends/file_storage.c
+        lazyusf2/device/cart/af_rtc.c
+        lazyusf2/device/cart/cart.c
+        lazyusf2/device/cart/cart_rom.c
+        lazyusf2/device/cart/eeprom.c
+        lazyusf2/device/cart/flashram.c
+        lazyusf2/device/cart/is_viewer.c
+        lazyusf2/device/cart/sram.c
+        lazyusf2/api/common.c
+        lazyusf2/backends/api/video_capture_backend.c
+
         )
 
 # Appears to just be a flag telling the code we want it to compile...?
-add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN)
+add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN -DUSE_FILE32API)
 
 set(INCLUDE_FOLDER lazyusf2)
 

@@ -23,7 +23,6 @@
 #ifndef __ROM_H__
 #define __ROM_H__
 
-#include <md5.h>
 #include <stdint.h>
 
 #include "api/m64p_types.h"
@@ -98,8 +97,6 @@ enum
 typedef struct
 {
    char* goodname;
-   md5_byte_t md5[16];
-   md5_byte_t* refmd5;
    char *cheats;
    unsigned int crc1;
    unsigned int crc2;
@@ -147,12 +144,6 @@ typedef struct
     romdatabase_search* list;
 } _romdatabase;
 
-void romdatabase_open(void);
-void romdatabase_close(void);
-/* Should be used by current cheat system (isn't), when cheat system is
- * migrated to md5s, will be fully depreciated.
- */
-romdatabase_entry* ini_search_by_crc(unsigned int crc1, unsigned int crc2);
 
 #endif /* __ROM_H__ */
 

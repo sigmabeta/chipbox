@@ -3,6 +3,7 @@
 
 #include "../psflib/psflib.h"
 #include "../psflib/psf2fs.h"
+#include <time.h>
 
 void *psf_file_fopen(void *context, const char *uri);
 
@@ -24,5 +25,9 @@ const psf_file_callbacks psf_file_system =
                 psf_file_fclose,
                 psf_file_ftell
         };
+
+double now_ms_dbl();
+
+uint32_t now_ms_int();
 
 #endif //CHIPBOX_COMMON_H

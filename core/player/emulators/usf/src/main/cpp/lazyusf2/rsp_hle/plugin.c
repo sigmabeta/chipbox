@@ -28,7 +28,7 @@
 #include "usf/usf.h"
 #include "usf/usf_internal.h"
 
-#include "r4300/interupt.h"
+#include "../device/r4300/interrupt.h"
 
 #include "hle.h"
 
@@ -101,7 +101,7 @@ void HleCheckInterrupts(void* user_defined)
 void HleProcessDlistList(void* user_defined)
 {
     usf_state_t * state = (usf_state_t *) user_defined;
-    state->g_r4300.mi.regs[MI_INTR_REG] |= MI_INTR_DP;
+    state->g_r4300.mi->regs[MI_INTR_REG] |= MI_INTR_DP;
 }
 
 void HleProcessAlistList(void* user_defined)

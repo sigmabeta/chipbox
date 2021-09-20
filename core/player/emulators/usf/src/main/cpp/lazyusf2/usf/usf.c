@@ -11,8 +11,8 @@
 
 #include "api/callbacks.h"
 #include "main/savestates.h"
-#include "r4300/cached_interp.h"
-#include "r4300/r4300.h"
+#include "../device/r4300/cached_interp.h"
+#include "../device/r4300/r4300_core.h"
 
 #include "resampler.h"
 
@@ -204,9 +204,9 @@ static int usf_startup(usf_state_t * state)
         state->save_state_size = 0x40275c;
 	}
 
-    open_rom(state);
+    open_rom(state->g_rom, state->g_rom_size);
 
-    if (main_start(state) != M64ERR_SUCCESS)
+    if (main_run() != M64ERR_SUCCESS)
     {
         DebugMessage(state, 1, "Invalid Project64 Save State\n");
         return -1;
@@ -327,7 +327,7 @@ const char * usf_render(void * state, int16_t * buffer, size_t count, int32_t * 
 
     USF_STATE->stop = 0;
 
-    main_run(USF_STATE);
+    main_run();
 
     if ( sample_rate )
         *sample_rate = USF_STATE->SampleRate;
@@ -413,7 +413,7 @@ void usf_restart(void * state)
 {
     if ( USF_STATE->MemoryState )
     {
-        r4300_end(USF_STATE);
+        r4300_stop(USF_STATE);
         if (USF_STATE->enable_trimming_mode)
         {
             bit_array_destroy(USF_STATE->barray_rom);
@@ -434,7 +434,7 @@ void usf_restart(void * state)
 
 void usf_shutdown(void * state)
 {
-    r4300_end(USF_STATE);
+    r4300_stop(USF_STATE);
     if (USF_STATE->enable_trimming_mode)
     {
         if (USF_STATE->barray_rom)
@@ -450,7 +450,7 @@ void usf_shutdown(void * state)
     USF_STATE->MemoryState = 0;
     free(USF_STATE->save_state);
     USF_STATE->save_state = 0;
-    close_rom(USF_STATE);
+    close_rom();
 #ifdef DEBUG_INFO
     if (USF_STATE->debug_log)
       fclose(USF_STATE->debug_log);

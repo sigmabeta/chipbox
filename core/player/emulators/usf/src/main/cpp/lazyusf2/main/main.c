@@ -28,14 +28,13 @@
  * if you want to implement an interface, you should look here
  */
 
-#include <SDL.h>
 #include <assert.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include "../../common/common.h"
 #define M64P_CORE_PROTOTYPES 1
 #include "api/callbacks.h"
 #include "api/config.h"
@@ -74,7 +73,6 @@
 #endif
 #include "rom.h"
 #include "savestates.h"
-#include "screenshot.h"
 #include "util.h"
 #include "netplay.h"
 
@@ -118,7 +116,6 @@ int g_gs_vi_counter = 0;
 
 /** static (local) variables **/
 static int   l_CurrentFrame = 0;         // frame counter
-static int   l_TakeScreenshot = 0;       // Tell OSD Rendering callback to take a screenshot just before drawing the OSD
 static int   l_SpeedFactor = 100;        // percentage of nominal game speed at which emulator is running
 static int   l_FrameAdvance = 0;         // variable to check if we pause on next frame
 static int   l_MainSpeedLimit = 1;       // insert delay during vi_interrupt to keep speed at real-time
@@ -301,7 +298,6 @@ static void main_check_inputs(void)
 #ifdef WITH_LIRC
     lircCheckInput();
 #endif
-    SDL_PumpEvents();
 }
 
 /*********************************************************************************************************
@@ -347,7 +343,6 @@ int main_set_core_defaults(void)
     ConfigSetDefaultBool(g_CoreConfig, "AutoStateSlotIncrement", 0, "Increment the save state slot after each save operation");
     ConfigSetDefaultInt(g_CoreConfig, "CurrentStateSlot", 0, "Save state slot (0-9) to use when saving/loading the emulator state");
     ConfigSetDefaultBool(g_CoreConfig, "EnableDebugger", 0, "Activate the R4300 debugger when ROM execution begins, if core was built with Debugger support");
-    ConfigSetDefaultString(g_CoreConfig, "ScreenshotPath", "", "Path to directory where screenshots are saved. If this is blank, the default value of ${UserDataPath}/screenshot will be used");
     ConfigSetDefaultString(g_CoreConfig, "SaveStatePath", "", "Path to directory where emulator save states (snapshots) are saved. If this is blank, the default value of ${UserDataPath}/save will be used");
     ConfigSetDefaultString(g_CoreConfig, "SaveSRAMPath", "", "Path to directory where SRAM/EEPROM data (in-game saves) are stored. If this is blank, the default value of ${UserDataPath}/save will be used");
     ConfigSetDefaultString(g_CoreConfig, "SharedDataPath", "", "Path to a directory to search when looking for shared data files");
@@ -534,7 +529,6 @@ static void main_draw_volume_osd(void)
    LIRC command, or 'testshots' command-line option timer */
 void main_take_next_screenshot(void)
 {
-    l_TakeScreenshot = l_CurrentFrame + 1;
 }
 
 void main_state_set_slot(int slot)
@@ -810,17 +804,6 @@ static void video_plugin_render_callback(int bScreenRedrawn)
 {
     int bOSD = ConfigGetParamBool(g_CoreConfig, "OnScreenDisplay");
 
-    // if the flag is set to take a screenshot, then grab it now
-    if (l_TakeScreenshot != 0)
-    {
-        // if the OSD is enabled, and the screen has not been recently redrawn, then we cannot take a screenshot now because
-        // it contains the OSD text.  Wait until the next redraw
-        if (!bOSD || bScreenRedrawn)
-        {
-            TakeScreenshot(l_TakeScreenshot - 1);  // current frame number +1 is in l_TakeScreenshot
-            l_TakeScreenshot = 0; // reset flag
-        }
-    }
 
     // if the OSD is enabled, then draw it now
     if (bOSD)
@@ -857,7 +840,7 @@ static void apply_speed_limiter(void)
     static int lastSpeedFactor = 100;
     static unsigned int StartFPSTime = 0;
     static const double defaultSpeedFactor = 100.0;
-    unsigned int CurrentFPSTime = SDL_GetTicks();
+    uint32_t CurrentFPSTime = now_ms_int();
 
     // calculate frame duration based upon ROM setting (50/60hz) and mupen64plus speed adjustment
     const double VILimitMilliseconds = 1000.0 / g_dev.vi.expected_refresh_rate;
@@ -905,9 +888,7 @@ static void apply_speed_limiter(void)
     if(l_MainSpeedLimit && sleepTime > 0 && sleepTime < maxSleepNeeded*SpeedFactorMultiple)
     {
         while(sleepTime >= 0) {
-            SDL_Delay((unsigned int) sleepTime);
-
-            CurrentFPSTime = SDL_GetTicks();
+            CurrentFPSTime = now_ms_dbl();
             elapsedRealTime = CurrentFPSTime - StartFPSTime;
             sleepTime = totalElapsedGameTime - elapsedRealTime;
         }
@@ -944,7 +925,7 @@ static void pause_loop(void)
         VidExt_GL_SwapBuffers();
         while(g_rom_pause)
         {
-            SDL_Delay(10);
+            usleep(10000);
             main_check_inputs();
         }
     }
@@ -1885,35 +1866,4 @@ void main_stop(void)
         debugger_step();
     }
 #endif
-}
-
-m64p_error open_pif(const unsigned char* pifimage, unsigned int size)
-{
-    md5_byte_t pif_ntsc_md5[] = {0x49, 0x21, 0xD5, 0xF2, 0x16, 0x5D, 0xEE, 0x6E, 0x24, 0x96, 0xF4, 0x38, 0x8C, 0x4C, 0x81, 0xDA};
-    md5_byte_t pif_pal_md5[]  = {0x2B, 0x6E, 0xEC, 0x58, 0x6F, 0xAA, 0x43, 0xF3, 0x46, 0x23, 0x33, 0xB8, 0x44, 0x83, 0x45, 0x54};
-
-    uint32_t *dst32 = mem_base_u32(g_mem_base, MM_PIF_MEM);
-    uint32_t *src32 = (uint32_t*) pifimage;
-    md5_state_t state;
-    md5_byte_t digest[16];
-
-    md5_init(&state);
-    md5_append(&state, (const md5_byte_t*)pifimage, size);
-    md5_finish(&state, digest);
-
-    if (memcmp(digest, pif_ntsc_md5, 16) == 0)
-        DebugMessage(M64MSG_INFO, "Using NTSC PIF ROM");
-    else if (memcmp(digest, pif_pal_md5, 16) == 0)
-        DebugMessage(M64MSG_INFO, "Using PAL PIF ROM");
-    else
-    {
-        DebugMessage(M64MSG_ERROR, "Invalid PIF ROM");
-        return M64ERR_INPUT_INVALID;
-    }
-
-    for (unsigned int i = 0; i < size; i += 4)
-        *dst32++ = big32(*src32++);
-
-    g_start_address = UINT32_C(0xbfc00000);
-    return M64ERR_SUCCESS;
 }

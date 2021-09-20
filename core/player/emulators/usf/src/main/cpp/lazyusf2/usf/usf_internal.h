@@ -6,21 +6,20 @@
 #include "main/main.h"
 #include "main/rom.h"
 
-#include "ai/ai_controller.h"
-#include "memory/memory.h"
-#include "pi/pi_controller.h"
+#include "../device/rcp/ai/ai_controller.h"
+#include "../device/memory/memory.h"
+#include "../device/rcp/pi/pi_controller.h"
 
-#include "r4300/r4300_core.h"
-#include "r4300/ops.h"
-#include "r4300/cp0.h"
+#include "../device/r4300/r4300_core.h"
+#include "../device/r4300/cp0.h"
 
-#include "rdp/rdp_core.h"
-#include "ri/ri_controller.h"
-#include "rsp/rsp_core.h"
-#include "si/si_controller.h"
-#include "vi/vi_controller.h"
+#include "../device/rcp/rdp/rdp_core.h"
+#include "../device/rcp/ri/ri_controller.h"
+#include "../device/rcp/rsp/rsp_core.h"
+#include "../device/rcp/si/si_controller.h"
+#include "../device/rcp/vi/vi_controller.h"
 
-#include "rsp_hle/hle.h"
+#include "../rsp_hle/hle.h"
 
 #include <stdio.h>
 
@@ -60,38 +59,6 @@ typedef struct _jump_table
 } jump_table;
 #endif
 
-#ifndef INTERUPT_STRUCTS
-#define INTERUPT_STRUCTS
-#define POOL_CAPACITY 16
-
-struct interrupt_event
-{
-    int type;
-    unsigned int count;
-};
-
-
-struct node
-{
-    struct interrupt_event data;
-    struct node *next;
-};
-
-struct pool
-{
-    struct node nodes[POOL_CAPACITY];
-    struct node* stack[POOL_CAPACITY];
-    size_t index;
-};
-
-
-struct interrupt_queue
-{
-    struct pool pool;
-    struct node* first;
-};
-#endif
-
 #ifndef TLB_STRUCTS
 #define TLB_STRUCTS
 typedef struct _tlb
@@ -124,14 +91,14 @@ typedef struct _tlb
 #define PRECOMP_STRUCTS
 
 #if defined(__x86_64__)
-#include "r4300/x86_64/assemble_struct.h"
+#include "../device/r4300/x86_64/assemble_struct.h"
 #else
-#include "r4300/x86/assemble_struct.h"
+#include "../device/r4300/x86/assemble_struct.h"
 #endif
 
 typedef struct _precomp_instr
 {
-	void (osal_fastcall *ops)(usf_state_t * state);
+	void (*ops)(usf_state_t * state);
     union
     {
         struct
@@ -167,7 +134,6 @@ typedef struct _precomp_instr
     } f;
     unsigned int addr; /* word-aligned instruction address in r4300 address space */
     unsigned int local_addr; /* byte offset to start of corresponding x86_64 instructions, from start of code block */
-    reg_cache_struct reg_cache_infos;
 } precomp_instr;
 
 typedef struct _precomp_block
@@ -314,14 +280,14 @@ struct usf_state
     unsigned long long cpu_dword, *rdword;
     uint32_t EmptySpace[0x10000/4];
     
-    void (osal_fastcall *readmem[0x10000])(usf_state_t *);
-	void (osal_fastcall *readmemb[0x10000])(usf_state_t *);
-	void (osal_fastcall *readmemh[0x10000])(usf_state_t *);
-	void (osal_fastcall *readmemd[0x10000])(usf_state_t *);
-	void (osal_fastcall *writemem[0x10000])(usf_state_t *);
-	void (osal_fastcall *writememb[0x10000])(usf_state_t *);
-	void (osal_fastcall *writememh[0x10000])(usf_state_t *);
-	void (osal_fastcall *writememd[0x10000])(usf_state_t *);
+    void (*readmem[0x10000])(usf_state_t *);
+	void (*readmemb[0x10000])(usf_state_t *);
+	void (*readmemh[0x10000])(usf_state_t *);
+	void (*readmemd[0x10000])(usf_state_t *);
+	void (*writemem[0x10000])(usf_state_t *);
+	void (*writememb[0x10000])(usf_state_t *);
+	void (*writememh[0x10000])(usf_state_t *);
+	void (*writememd[0x10000])(usf_state_t *);
 
     // main/rom.c
     unsigned char* g_rom/* = NULL*/;
@@ -343,8 +309,6 @@ struct usf_state
     precomp_instr *PC;
     long long int local_rs;
     unsigned int delay_slot, skip_jump/* = 0*/, dyna_interp/* = 0*/, last_addr;
-    
-    cpu_instruction_table current_instruction_table;
     
     // r4300/reset.c
     int reset_hard_job/* = 0*/;
