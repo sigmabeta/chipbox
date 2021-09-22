@@ -1,7 +1,5 @@
 #include "Ssf.h"
 #include "common/common.h"
-#include <byteswap.h>
-#include <android/log.h>
 
 const char *last_error;
 
