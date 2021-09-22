@@ -14,10 +14,12 @@ fun getReaderForExtension(extension: String): Reader? {
 //        "minigsf" -> PsfReader
 //        "psf2" -> PsfReader
 //        "minipsf2" -> PsfReader
-        "ssf" -> PsfReader
-        "minissf" -> PsfReader
-        "dsf" -> PsfReader
-        "minidsf" -> PsfReader
+        "2sf" -> PsfReader
+        "mini2sf" -> PsfReader
+//        "ssf" -> PsfReader
+//        "minissf" -> PsfReader
+//        "dsf" -> PsfReader
+//        "minidsf" -> PsfReader
 //        "nsf" -> NsfReader
 //        "nsfe" -> NsfeReader
 //        "gbs" -> GbsReader

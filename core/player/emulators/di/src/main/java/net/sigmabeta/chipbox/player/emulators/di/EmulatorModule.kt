@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.player.emulators.gba.GbaEmulator
 import net.sigmabeta.chipbox.player.emulators.gme.GmeEmulator
 import net.sigmabeta.chipbox.player.emulators.psf.PsfEmulator
 import net.sigmabeta.chipbox.player.emulators.ssf.SsfEmulator
+import net.sigmabeta.chipbox.player.emulators.twosf.TwosfEmulator
 import javax.inject.Singleton
 
 @Module
@@ -19,6 +20,7 @@ object EmulatorModule {
     @Singleton
     internal fun provideEmulatorProvider() = EmulatorProvider(
         listOf(
+            TwosfEmulator,
             GbaEmulator,
             GmeEmulator,
             PsfEmulator,

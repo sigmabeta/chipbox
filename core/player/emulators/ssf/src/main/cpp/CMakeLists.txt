@@ -54,7 +54,4 @@ target_link_libraries(
 
         # PSFLib wants to know how to unzip stuff.
         z
-
-        # For logging.
-        log
 )
