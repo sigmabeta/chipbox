@@ -1,8 +1,13 @@
 #ifndef CHIPBOX_COMMON_H
 #define CHIPBOX_COMMON_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "../psflib/psflib.h"
 #include "../psflib/psf2fs.h"
+
 
 void *psf_file_fopen(void *context, const char *uri);
 
@@ -27,6 +32,9 @@ const psf_file_callbacks psf_file_system =
 
 uint32_t get_le32(void const *p);
 
-void set_le32( void* p, uint32_t n );
+void set_le32(void *p, uint32_t n);
 
+#ifdef __cplusplus
+};
+#endif
 #endif //CHIPBOX_COMMON_H

@@ -12,43 +12,7 @@
 #include "desmume/state.h"
 #include "desmume/barray.h"
 
-#include "../../psflib/psflib.h"
-
-
-static void * stdio_fopen( const char * path )
-{
-	return fopen( path, "rb" );
-}
-
-static size_t stdio_fread( void *p, size_t size, size_t count, void *f )
-{
-	return fread( p, size, count, (FILE*) f );
-}
-
-static int stdio_fseek( void * f, int64_t offset, int whence )
-{
-	return fseek( (FILE*) f, offset, whence );
-}
-
-static int stdio_fclose( void * f )
-{
-	return fclose( (FILE*) f );
-}
-
-static long stdio_ftell( void * f )
-{
-	return ftell( (FILE*) f );
-}
-
-static psf_file_callbacks stdio_callbacks =
-		{
-				"\\/:",
-				stdio_fopen,
-				stdio_fread,
-				stdio_fseek,
-				stdio_fclose,
-				stdio_ftell
-		};
+#include "../../common/common.h"
 
 struct twosf_loader_state
 {
@@ -63,23 +27,6 @@ struct twosf_loader_state
 	int arm9_clockdown_level;
 	int arm7_clockdown_level;
 };
-
-unsigned get_le32( void const* p )
-{
-	return  (unsigned) ((unsigned char const*) p) [3] << 24 |
-			(unsigned) ((unsigned char const*) p) [2] << 16 |
-			(unsigned) ((unsigned char const*) p) [1] <<  8 |
-			(unsigned) ((unsigned char const*) p) [0];
-}
-
-void set_le32( void* p, u32 word )
-{
-	unsigned char * _p = (unsigned char *)p;
-	_p[0] = word;
-	_p[1] = word >> 8;
-	_p[2] = word >> 16;
-	_p[3] = word >> 24;
-}
 
 static int load_twosf_map(struct twosf_loader_state *state, int issave, const unsigned char *udata, unsigned usize)
 {
@@ -343,105 +290,83 @@ void add_block_zero(u8 ** start_ptr, u8 ** current_ptr, u8 ** end_ptr, u32 size)
 	*current_ptr += size;
 }
 
+NDS_state * core;
+struct twosf_loader_state state;
+
 //int xsf_start(void *pfile, unsigned bytes)
 int xsf_start(char *filename)
 {
-	void * array_combined = NULL;
-	NDS_state * core = ( NDS_state * ) calloc(1, sizeof(NDS_state));
-	s16 buffer[2048];
+	core = ( NDS_state * ) calloc(1, sizeof(NDS_state));
 
-	int total_rendered = 0;
-	size_t last_bits_set = 0;
-	size_t current_bits_set;
-	int blocks_without_coverage = 0;
-	struct twosf_loader_state state;
 	memset( &state, 0, sizeof(state) );
 	state.initial_frames = -1;
 
-	if ( psf_load( filename, &stdio_callbacks, 0x24, twosf_loader, &state, twosf_info, &state, 1, 0, 0 ) <= 0 )
-	{
+	int result = psf_load(
+			filename,
+			&psf_file_system,
+			0x24,
+			twosf_loader,
+			&state,
+			twosf_info,
+			&state,
+			1,
+			0,
+			0
+	);
+
+	if (result <= 0) {
 		if (state.rom) free(state.rom);
 		if (state.state) free(state.state);
-		fprintf(stderr, "Invalid 2SF file: %s\n", filename);
-		return 1;
+
+		return -1;
 	}
 
-	if ( state_init(core) )
-	{
+	if (state_init(core)) {
 		state_deinit(core);
 		if (state.rom) free(state.rom);
 		if (state.state) free(state.state);
-		fprintf(stderr, "Out of memory!\n");
-		return 1;
+
+		return -2;
 	}
 
 	core->dwInterpolation = 0;
 	core->dwChannelMute = 0;
 
-	if (!state.arm7_clockdown_level)
+	if (!state.arm7_clockdown_level) {
 		state.arm7_clockdown_level = state.clockdown;
-	if (!state.arm9_clockdown_level)
+	}
+
+	if (!state.arm9_clockdown_level) {
 		state.arm9_clockdown_level = state.clockdown;
+	}
 
 	core->initial_frames = state.initial_frames;
 	core->sync_type = state.sync_type;
 	core->arm7_clockdown_level = state.arm7_clockdown_level;
 	core->arm9_clockdown_level = state.arm9_clockdown_level;
 
-	if ( state.rom )
-		state_setrom( core, state.rom, (u32) state.rom_size, 1 );
+	if (state.rom) {
+		state_setrom(core, state.rom, (u32) state.rom_size, 1);
+	}
 
 	state_loadstate(core, state.state, (u32) state.state_size );
 
-	if (state.state) free(state.state);
-
-	fprintf(stderr, "Clocking %s...", filename);
-
-	int i, j;
-
-	for (;;)
-	{
-		for (j = 0; j < 44100 * 5; j += 1024)
-		{
-			state_render(core, (s16*)buffer, 1024);
-		}
-		total_rendered += j;
-		current_bits_set = bit_array_count(core->array_rom_coverage);
-		if (current_bits_set > last_bits_set)
-		{
-			last_bits_set = current_bits_set;
-			blocks_without_coverage = 0;
-		}
-		else
-		{
-			blocks_without_coverage++;
-			if (blocks_without_coverage >= 6)
-			{
-				break;
-			}
-		}
+	if (state.state) {
+		free(state.state);
 	}
 
-	if ( !array_combined )
-	{
-		array_combined = bit_array_dup( core->array_rom_coverage );
-	}
-	else
-	{
-		bit_array_merge( array_combined, core->array_rom_coverage, 0 );
-	}
-
-	state_deinit(core);
-	if (state.rom) free(state.rom);
-
-	fprintf(stderr, "ran for %d samples, covering %zu words\n", total_rendered, last_bits_set);
+	return 0;
 }
 
 int xsf_gen(void *pbuffer, unsigned samples)
 {
-	return 0;
+	state_render(core, (s16*)pbuffer, samples);
+
+	return samples;
 }
 
 void xsf_term(void)
 {
+	state_deinit(core);
+	if (state.rom) free(state.rom);
 }
