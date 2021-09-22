@@ -1,5 +1,9 @@
 #include "common.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void *psf_file_fopen(void *context, const char *uri) {
     try {
         return fopen(uri, "r");
@@ -64,3 +68,7 @@ void set_le32( void* p, uint32_t n )
     ((unsigned char*) p) [2] = (unsigned char) (n >> 16);
     ((unsigned char*) p) [3] = (unsigned char) (n >> 24);
 }
+
+#ifdef __cplusplus
+};
+#endif
