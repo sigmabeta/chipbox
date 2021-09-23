@@ -8,8 +8,6 @@ android {
             path = file("src/main/cpp/CMakeLists.txt")
         }
     }
-
-    ndkPath "/home/sigma/apps/android-ndk-r20b"
 }
 
 dependencies {
