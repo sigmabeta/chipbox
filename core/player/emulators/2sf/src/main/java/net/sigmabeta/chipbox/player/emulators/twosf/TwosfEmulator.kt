@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.player.emulators.twosf
 import net.sigmabeta.chipbox.player.emulators.Emulator
 
 object TwosfEmulator : Emulator() {
-    init {
+    override fun loadNativeLib() {
         System.loadLibrary("twosf")
     }
 
