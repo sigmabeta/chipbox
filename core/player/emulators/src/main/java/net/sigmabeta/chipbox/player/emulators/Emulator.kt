@@ -6,6 +6,10 @@ import net.sigmabeta.chipbox.player.common.millisToFrames
 abstract class Emulator {
     var trackOver: Boolean = false
 
+    var nativeLibLoaded = false
+
+    abstract fun loadNativeLib()
+
     abstract fun loadTrackInternal(path: String)
 
     abstract fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int
