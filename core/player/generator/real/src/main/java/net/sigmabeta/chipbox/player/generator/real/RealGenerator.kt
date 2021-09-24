@@ -25,6 +25,11 @@ class RealGenerator(
         val emulator = getSupportedEmulator(loadedTrack.path)
             ?: throw IllegalArgumentException("No emulator found for this file type.")
 
+        if (!emulator.nativeLibLoaded) {
+            emulator.loadNativeLib()
+            emulator.nativeLibLoaded = true
+        }
+
         this.emulator = emulator
         emulator.loadTrack(loadedTrack)
     }

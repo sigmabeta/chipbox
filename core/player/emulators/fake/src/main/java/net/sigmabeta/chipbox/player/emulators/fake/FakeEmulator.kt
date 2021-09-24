@@ -26,6 +26,8 @@ object FakeEmulator : Emulator() {
 
     override fun isFileExtensionSupported(extension: String) = true
 
+    override fun loadNativeLib()  = Unit
+
     override fun loadTrack(track: Track) {
         if (remainingFramesTotal >= 0) {
             println("Previously loaded emulator not cleared. Clearing...")

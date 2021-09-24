@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.player.emulators.ssf
 import net.sigmabeta.chipbox.player.emulators.Emulator
 
 object SsfEmulator : Emulator() {
-    init {
+    override fun loadNativeLib() {
         System.loadLibrary("ssf")
     }
 

@@ -123,18 +123,18 @@ abstract class Generator(
             // Check if this coroutine has been cancelled.
             yield()
 
-            // TODO We should have a pool of buffers we use instead of a new one evrytiem
             // Setup buffers.
             val bufferStartFrame = framesPlayed
 
             // Generate the next buffer of audio..
-            framesPlayed += generateAudio(generatedAudio)
+            val framesGenerated = generateAudio(generatedAudio)
 
-            // TODO This only reports errors if the *first* buffer generation fails. Do better!
-            if (framesPlayed == 0) {
+            if (framesGenerated == 0) {
                 error = "Failed to generate any audio."
                 break
             }
+
+            framesPlayed += framesGenerated
 
             error = getLastError()
 
