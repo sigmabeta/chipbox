@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.player.emulators.psf
 import net.sigmabeta.chipbox.player.emulators.Emulator
 
 object PsfEmulator : Emulator() {
-    init {
+    override fun loadNativeLib() {
         System.loadLibrary("aopsf")
     }
 

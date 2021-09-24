@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.player.emulators.gme
 import net.sigmabeta.chipbox.player.emulators.Emulator
 
 object GmeEmulator : Emulator() {
-    init {
+    override fun loadNativeLib() {
         System.loadLibrary("gme")
     }
 

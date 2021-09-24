@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.player.emulators.gba
 import net.sigmabeta.chipbox.player.emulators.Emulator
 
 object GbaEmulator : Emulator() {
-    init {
+    override fun loadNativeLib() {
         System.loadLibrary("gba")
     }
 
