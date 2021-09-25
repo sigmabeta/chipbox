@@ -233,67 +233,9 @@ static int twosf_info(void * context, const char * name, const char * value)
 	return 0;
 }
 
-void add_le32(u8 ** start_ptr, u8 ** current_ptr, u8 ** end_ptr, u32 word)
-{
-	if (*end_ptr - *current_ptr < 4)
-	{
-		size_t current_offset = *current_ptr - *start_ptr;
-		size_t current_size = *end_ptr - *start_ptr;
-		u8 * new_block = (u8 *) realloc( *start_ptr, current_size + 1024 );
-		if (!new_block) return;
-		*start_ptr = new_block;
-		*current_ptr = new_block + current_offset;
-		*end_ptr = new_block + current_size + 1024;
-	}
-
-	(*current_ptr)[0] = word;
-	(*current_ptr)[1] = word >> 8;
-	(*current_ptr)[2] = word >> 16;
-	(*current_ptr)[3] = word >> 24;
-
-	*current_ptr += 4;
-}
-
-void add_block(u8 ** start_ptr, u8 ** current_ptr, u8 ** end_ptr, const u8 * block, u32 size)
-{
-	if (*end_ptr - *current_ptr < size)
-	{
-		size_t current_offset = *current_ptr - *start_ptr;
-		size_t current_size = *end_ptr - *start_ptr;
-		u8 * new_block = (u8 *) realloc( *start_ptr, current_offset + size + 1024 );
-		if (!new_block) return;
-		*start_ptr = new_block;
-		*current_ptr = new_block + current_offset;
-		*end_ptr = new_block + current_offset + size + 1024;
-	}
-
-	memcpy(*current_ptr, block, size);
-
-	*current_ptr += size;
-}
-
-void add_block_zero(u8 ** start_ptr, u8 ** current_ptr, u8 ** end_ptr, u32 size)
-{
-	if (*end_ptr - *current_ptr < size)
-	{
-		size_t current_offset = *current_ptr - *start_ptr;
-		size_t current_size = *end_ptr - *start_ptr;
-		u8 * new_block = (u8 *) realloc( *start_ptr, current_offset + size + 1024 );
-		if (!new_block) return;
-		*start_ptr = new_block;
-		*current_ptr = new_block + current_offset;
-		*end_ptr = new_block + current_offset + size + 1024;
-	}
-
-	memset(*current_ptr, 0, size);
-
-	*current_ptr += size;
-}
-
 NDS_state * core;
 struct twosf_loader_state state;
 
-//int xsf_start(void *pfile, unsigned bytes)
 int xsf_start(char *filename)
 {
 	core = ( NDS_state * ) calloc(1, sizeof(NDS_state));
@@ -351,10 +293,6 @@ int xsf_start(char *filename)
 
 	state_loadstate(core, state.state, (u32) state.state_size );
 
-	if (state.state) {
-		free(state.state);
-	}
-
 	return 0;
 }
 
@@ -365,8 +303,14 @@ int xsf_gen(void *pbuffer, unsigned samples)
 	return samples;
 }
 
-void xsf_term(void)
-{
-	state_deinit(core);
-	if (state.rom) free(state.rom);
+void xsf_term(void) {
+    if (core) {
+        state_deinit(core);
+        core = NULL;
+    }
+
+    if (state.rom) {
+        free(state.rom);
+		state.rom = NULL;
+    }
 }
