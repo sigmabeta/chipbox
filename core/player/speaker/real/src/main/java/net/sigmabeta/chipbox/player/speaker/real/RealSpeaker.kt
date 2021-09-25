@@ -23,31 +23,43 @@ class RealSpeaker(
     private var ongoingPlaybackJob: Job? = null
 
     override suspend fun play(trackId: Long) {
-        ongoingPlaybackJob?.cancelAndJoin()
-        ongoingPlaybackJob = speakerScope.launch {
-            val audioTrack = initializeAudioTrack(outputSampleRate, outputBufferSizeBytes)
-            startPlayback(audioTrack, trackId)
-        }
+        startPlayback(trackId)
     }
 
-    private suspend fun startPlayback(audioTrack: AudioTrack, trackId: Long) {
-        Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
+    private suspend fun startPlayback(trackId: Long) {
+        if (ongoingPlaybackJob == null) {
+            ongoingPlaybackJob = speakerScope.launch {
+                val audioTrack = initializeAudioTrack(outputSampleRate, outputBufferSizeBytes)
+                Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
 
-        audioTrack.play()
+                audioTrack.play()
 
-        generator
-            .audioStream(trackId, outputSampleRate, outputBufferSizeBytes)
-            .collect {
-                when (it) {
-                    GeneratorEvent.Loading -> onPlaybackLoading()
-                    GeneratorEvent.Complete -> onPlaybackComplete(audioTrack)
-                    is GeneratorEvent.Error -> onPlaybackError(audioTrack, it.message)
-                    is GeneratorEvent.Audio -> {
-                        onAudioGenerated(it.data, audioTrack)
-                        return@collect
-                    }
-                }
+                generator
+                        .audioStream()
+                        .collect {
+                            when (it) {
+                                GeneratorEvent.Loading -> onPlaybackLoading()
+                                GeneratorEvent.Complete -> onPlaybackComplete(audioTrack)
+                                is GeneratorEvent.Error -> onPlaybackError(audioTrack, it.message)
+                                is GeneratorEvent.Audio -> {
+                                    onAudioGenerated(it.data, audioTrack)
+                                    return@collect
+                                }
+                            }
+                        }
             }
+        }
+
+        generator.startTrack(
+                trackId,
+                outputSampleRate,
+                outputBufferSizeBytes
+        )
+    }
+
+    private fun stopPlayback() {
+        ongoingPlaybackJob?.cancel()
+        ongoingPlaybackJob = null
     }
 
     private fun onPlaybackLoading() {
@@ -57,11 +69,13 @@ class RealSpeaker(
     private fun onPlaybackComplete(audioTrack: AudioTrack) {
         Timber.d("Generator reports track complete.")
         teardown(audioTrack)
+        stopPlayback()
     }
 
     private fun onPlaybackError(audioTrack: AudioTrack, message: String) {
         Timber.e("Generator reports playback error: $message")
         teardown(audioTrack)
+        stopPlayback()
     }
 
     private fun onAudioGenerated(audio: ShortArray, audioTrack: AudioTrack) {
