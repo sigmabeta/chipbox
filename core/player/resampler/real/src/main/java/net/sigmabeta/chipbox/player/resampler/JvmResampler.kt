@@ -3,7 +3,11 @@ package net.sigmabeta.chipbox.player.resampler
 import com.laszlosystems.libresample4j.Resampler
 import net.sigmabeta.chipbox.player.common.isDivisibleBy
 
-class JvmResampler(val outputLengthShorts: Int, inputSampleRate: Int, outputSampleRate: Int) {
+class JvmResampler(
+        val outputLengthShorts: Int,
+        inputSampleRate: Int,
+        val outputSampleRate: Int
+) {
     private val resampler: Resampler
 
     private val factor: Double

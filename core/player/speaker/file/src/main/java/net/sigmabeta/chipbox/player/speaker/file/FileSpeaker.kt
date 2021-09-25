@@ -42,7 +42,7 @@ class FileSpeaker(
 
     private suspend fun startPlayback(output: OutputStream, trackId: Long) {
         generator
-            .audioStream(trackId, sampleRate, 4096)
+            .audioStream()
             .collect {
                 when (it) {
                     GeneratorEvent.Loading -> onPlaybackLoading()
