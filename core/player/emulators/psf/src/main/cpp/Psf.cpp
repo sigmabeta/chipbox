@@ -110,15 +110,21 @@ int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_shorts) {
 }
 
 void teardown() {
-    if (isPs2Track) {
-        psf2_stop((PSX_STATE *) pEmu);
-        if (psf2fs) psf2fs_delete(psf2fs);
-        psf2fs = nullptr;
-    } else {
-        psf_stop((PSX_STATE *) pEmu);
-    }
+    if (pEmu) {
+        if (isPs2Track) {
+            psf2_stop((PSX_STATE *) pEmu);
 
-    delete pEmu;
+            if (psf2fs) {
+                psf2fs_delete(psf2fs);
+                psf2fs = nullptr;
+            }
+        } else {
+            psf_stop((PSX_STATE *) pEmu);
+        }
+
+        delete pEmu;
+        pEmu = nullptr;
+    }
 }
 
 const char *get_last_error() {
