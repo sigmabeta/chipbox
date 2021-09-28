@@ -18,17 +18,23 @@ class RealGenerator(
 
     override fun loadTrack(loadedTrack: Track) {
         if (emulator != null) {
-            Timber.i("Previous emulator still exists. Tearing down...")
             teardown()
         }
+
+        println("Looking for supported emulator...")
 
         val emulator = getSupportedEmulator(loadedTrack.path)
             ?: throw IllegalArgumentException("No emulator found for this file type.")
 
+        println("Found for supported emulator: ${emulator.javaClass.simpleName}")
+
         if (!emulator.nativeLibLoaded) {
             emulator.loadNativeLib()
             emulator.nativeLibLoaded = true
+            println("Loading native lib for supported emulator: ${emulator.javaClass.simpleName}")
         }
+
+        println("Loading track into emulator: ${emulator.javaClass.simpleName}")
 
         this.emulator = emulator
         emulator.loadTrack(loadedTrack)

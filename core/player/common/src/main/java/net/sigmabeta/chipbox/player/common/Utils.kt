@@ -10,6 +10,8 @@ fun Int.samplesToFrames() = (this / SHORTS_PER_FRAME)
 
 fun Int.samplesToBytes() = (this * BYTES_PER_SAMPLE)
 
+fun Int.bytesToSamples() = (this / BYTES_PER_SAMPLE)
+
 fun Double.toShortValue() = this.toInt().toShort()
 
 fun Int.rateInMillis() = this / MILLIS_PER_SECOND
