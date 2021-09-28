@@ -41,6 +41,8 @@ abstract class Emulator {
         loadTrackInternal(track.path)
         remainingFramesTotal =
             track.trackLengthMs.toDouble().millisToFrames(getSampleRateInternal())
+
+        println("${this.javaClass.simpleName} loaded track ${track.title}")
     }
 
     fun generateBuffer(

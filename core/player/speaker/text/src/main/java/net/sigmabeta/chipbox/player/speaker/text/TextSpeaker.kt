@@ -18,17 +18,25 @@ class TextSpeaker(
     private var ongoingPlaybackJob: Job? = null
 
     private var lastBufferPrinted = 0
+
     override suspend fun play(trackId: Long) {
         Timber.w("${Thread.currentThread().name}; Received play command for id $trackId")
-        ongoingPlaybackJob?.cancelAndJoin()
-        ongoingPlaybackJob = speakerScope.launch {
-            Timber.w("${Thread.currentThread().name}; Begin playback for id $trackId")
-            playAudioFromGenerator(trackId)
-            Timber.w("${Thread.currentThread().name}; End playback for id $trackId")
+        if (ongoingPlaybackJob == null) {
+            ongoingPlaybackJob = speakerScope.launch {
+                Timber.w("${Thread.currentThread().name}; Begin playback for id $trackId")
+
+                playAudioFromGenerator()
+
+                Timber.w("${Thread.currentThread().name}; End playback for id $trackId")
+            }
         }
+
+        generator.startTrack(
+                trackId
+        )
     }
 
-    private suspend fun playAudioFromGenerator(trackId: Long) {
+    private suspend fun playAudioFromGenerator() {
         generator
             .audioStream()
             .collect {
@@ -67,7 +75,7 @@ class TextSpeaker(
 
     private fun GeneratorEvent.Audio.toReadableString(): String {
         val toString = StringBuilder().also {
-            val headerRow = "Frame | Time (s) | Sample # |  Left  |  Right |"
+            val headerRow = "Frame | Time (s) |  Left  |  Right |"
 
             it.append("${Thread.currentThread().name}; Outputting frames from buffer #$bufferNumber:")
             it.append("\n")
@@ -85,9 +93,6 @@ class TextSpeaker(
                 it.append(SEPARATOR_DATA_COLUMN)
 
                 it.append(String.format("%8f", (timestampMillis + millisOffset).millisToSeconds()))
-                it.append(SEPARATOR_DATA_COLUMN)
-
-                it.append(String.format("%8d", leftSampleIndex))
                 it.append(SEPARATOR_DATA_COLUMN)
 
                 it.append(String.format("%6d", data[leftSampleIndex]))

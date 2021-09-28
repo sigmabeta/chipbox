@@ -15,7 +15,6 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class FileSpeaker(
-    private val sampleRate: Int,
     private val externalStorageDir: File,
     private val generator: Generator,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -29,7 +28,7 @@ class FileSpeaker(
     override suspend fun play(trackId: Long) {
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = speakerScope.launch {
-            val file = initializeOutputStream(sampleRate, externalStorageDir)
+            val file = initializeOutputStream(externalStorageDir)
             if (file != null) {
                 startPlayback(file, trackId)
             }
@@ -94,7 +93,7 @@ class FileSpeaker(
     }
 
     private fun initializeOutputStream(
-        sampleRate: Int,
+//        sampleRate: Int,
         externalStorageDir: File
     ): OutputStream? {
         return try {
@@ -102,7 +101,7 @@ class FileSpeaker(
             val fileOutput = outputFile.outputStream()
             val bufferedOutput = BufferedOutputStream(fileOutput)
 
-            writeHeader(bufferedOutput, sampleRate)
+//            writeHeader(bufferedOutput, sampleRate)
             bufferedOutput
 
         } catch (ex: Exception) {

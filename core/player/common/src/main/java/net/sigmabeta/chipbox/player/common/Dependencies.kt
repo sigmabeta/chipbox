@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.player.common
 
 object Dependencies {
-    const val DEP_SAMPLE_RATE = "sampleRate"
-    const val DEP_BUFFER_SIZE = "bufferSizeBytes"
+    const val BUFFER_SIZE_BYTES_DEFAULT = 8192
 }
