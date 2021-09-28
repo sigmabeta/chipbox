@@ -6,9 +6,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.*
-import net.sigmabeta.chipbox.player.resampler.JvmResampler
 import net.sigmabeta.chipbox.repository.Repository
-import java.lang.IllegalStateException
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
 
@@ -34,8 +32,6 @@ abstract class Generator(
             extraBufferCapacity = 10
     )
 
-    private lateinit var resampler: JvmResampler
-
     protected abstract fun loadTrack(loadedTrack: Track)
 
     protected abstract fun generateAudio(buffer: ShortArray): Int
@@ -57,50 +53,13 @@ abstract class Generator(
 
     fun startTrack(
             trackId: Long,
-            outputSampleRate: Int,
-            outputBufferSizeBytes: Int
     ) {
+        newTrackId = trackId
+
         if (ongoingGenerationJob == null) {
             ongoingGenerationJob = generatorScope.launch {
-                val trackToPlay = getTrackToPlay(trackId)
-
-                if (trackToPlay == null) {
-                    val error = "Could not find track with id $trackId."
-                    emitError(error)
-                    cancel(error)
-                    return@launch
-                }
-
-                bufferFlow.emit(GeneratorEvent.Loading)
-
-                loadTrack(trackToPlay)
-
-                resampler = JvmResampler(
-                        outputBufferSizeBytes / 2,
-                        getEmulatorSampleRate(),
-                        outputSampleRate
-                )
-
-                val bufferCount = BUFFER_LENGTH_MILLIS
-                        .millisToFrames(outputSampleRate)
-                        .framesToSamples()
-                        .samplesToBytes()
-                        .div(outputBufferSizeBytes)
-
-                setupBuffers(bufferCount)
-
-                val error = getLastError()
-
-                if (error != null) {
-                    emitError(error)
-                    cancel(error)
-                    return@launch
-                }
-
                 playTrack()
             }
-        } else {
-            newTrackId = trackId
         }
     }
 
@@ -116,42 +75,64 @@ abstract class Generator(
         return loadedTrack
     }
 
-    private fun setupBuffers(bufferCount: Int) {
+    private fun setupBuffers(sampleRate: Int) {
+        val bufferCount = BUFFER_LENGTH_MILLIS
+                .millisToFrames(sampleRate)
+                .framesToSamples()
+                .samplesToBytes()
+                .div(Dependencies.BUFFER_SIZE_BYTES_DEFAULT)
+
         outputBuffers = ArrayBlockingQueue(bufferCount)
 
+        val bufferSizeShorts = Dependencies.BUFFER_SIZE_BYTES_DEFAULT.bytesToSamples()
         repeat(bufferCount) {
-            outputBuffers!!.add(ShortArray(resampler.outputLengthShorts))
+            outputBuffers!!.add(ShortArray(bufferSizeShorts))
         }
     }
 
     private suspend fun playTrack() {
-        var error: String? = null
-        var track = currentTrack ?: throw IllegalStateException("No track loaded.")
+        var error: String?
+        var track: Track? = null
         var buffersCreated = 0
 
-        var generatedAudio = ShortArray(resampler.inputLengthShorts)
+        var sampleRate: Int? = null
 
-        while (!isTrackOver()) {
-            // Check if this coroutine has been cancelled.
-            yield()
-
-            newTrackId?.let {
-                val newTrack = getTrackToPlay(it)
-                if (newTrack == null ) {
+        do {
+            val trackId = newTrackId
+            if (trackId != null) {
+                val newTrack = getTrackToPlay(trackId)
+                if (newTrack == null) {
                     emitError("Failed to load track.")
                     return
                 }
 
                 track = newTrack
+
+                bufferFlow.emit(GeneratorEvent.Loading)
+
                 loadTrack(newTrack)
 
-                generatedAudio = setupResampler()
+                sampleRate = getEmulatorSampleRate()
+
+                setupBuffers(sampleRate)
+
+                error = getLastError()
+                if (error != null) {
+                    break
+                }
+                println("New track setup complete!")
+            }
+
+            if (sampleRate == null) {
+                error = "Invalid sample rate."
+                break
             }
 
             // Setup buffers.
             val bufferStartFrame = framesPlayed
 
             // Generate the next buffer of audio..
+            val generatedAudio = outputBuffers!!.poll(TIMEOUT_BUFFERS_FULL_MS, TimeUnit.MILLISECONDS)
             val framesGenerated = generateAudio(generatedAudio)
 
             if (framesGenerated == 0) {
@@ -167,37 +148,28 @@ abstract class Generator(
                 break
             }
 
-            val sampleRate = getEmulatorSampleRate()
-
             FadeProcessor.fadeIfNecessary(
                     generatedAudio,
                     sampleRate,
                     bufferStartFrame.framesToMillis(sampleRate),
-                    track.trackLengthMs - LENGTH_FADE_MILLIS,
+                    track!!.trackLengthMs - LENGTH_FADE_MILLIS,
                     LENGTH_FADE_MILLIS
             )
 
-            val resampleBuffer = resampler.resample(generatedAudio)
-
-            val resampledAudio =
-                    outputBuffers!!.poll(TIMEOUT_BUFFERS_FULL_MS, TimeUnit.MILLISECONDS)
-
-            yield()
-            resampleBuffer.copyInto(resampledAudio)
-
             // Emit this buffer.
-            bufferFlow.emit(
+            bufferFlow.tryEmit(
                     GeneratorEvent.Audio(
                             buffersCreated++,
                             bufferStartFrame.framesToMillis(sampleRate),
                             framesPlayed,
                             sampleRate,
-                            resampledAudio
+                            generatedAudio
                     )
             )
-        }
 
-        teardown()
+            // Check if this coroutine has been cancelled.
+            yield()
+        } while (!isTrackOver())
 
         // Report error, if it happened.
         if (error != null) {
@@ -205,20 +177,13 @@ abstract class Generator(
             return
         }
 
+        teardown()
+
         // If no error, report completion.
+        println("Playback complete!")
         bufferFlow.emit(GeneratorEvent.Complete)
 
         ongoingGenerationJob = null
-    }
-
-    private fun setupResampler(): ShortArray{
-        resampler = JvmResampler(
-                resampler.outputLengthShorts,
-                getEmulatorSampleRate(),
-                resampler.outputSampleRate
-        )
-
-        return ShortArray(resampler.inputLengthShorts)
     }
 
     private fun teardownHelper() {
