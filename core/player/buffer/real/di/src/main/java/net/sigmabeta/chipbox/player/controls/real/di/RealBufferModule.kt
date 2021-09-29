@@ -7,7 +7,6 @@ import dagger.hilt.components.SingletonComponent
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager
-import javax.inject.Named
 import javax.inject.Singleton
 
 @Module

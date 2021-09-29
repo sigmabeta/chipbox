@@ -18,7 +18,7 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.memory.models.MemoryArtist
 import net.sigmabeta.chipbox.repository.memory.models.MemoryGame
 import net.sigmabeta.chipbox.repository.memory.models.MemoryTrack
-import java.util.Locale
+import java.util.*
 
 class MemoryRepository(
     dispatcher: CoroutineDispatcher = Dispatchers.IO

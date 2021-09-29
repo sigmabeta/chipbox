@@ -7,7 +7,6 @@ import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.repository.Repository
-import timber.log.Timber
 import java.io.File
 
 class RealGenerator(

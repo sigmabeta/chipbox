@@ -15,8 +15,7 @@ import net.sigmabeta.chipbox.repository.mock.models.MockArtist
 import net.sigmabeta.chipbox.repository.mock.models.MockGame
 import net.sigmabeta.chipbox.repository.mock.models.MockTrack
 import timber.log.Timber
-import java.util.Locale
-import java.util.Random
+import java.util.*
 
 class MockRepository(
     private val random: Random,

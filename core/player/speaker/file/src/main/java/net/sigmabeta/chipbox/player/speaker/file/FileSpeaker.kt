@@ -1,13 +1,11 @@
 package net.sigmabeta.chipbox.player.speaker.file
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.common.BYTES_PER_SAMPLE
 import net.sigmabeta.chipbox.player.common.CHANNELS_STEREO
-import net.sigmabeta.chipbox.player.common.GeneratorEvent
-import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import java.io.BufferedOutputStream
 import java.io.File

@@ -10,7 +10,6 @@ import dagger.hilt.components.SingletonComponent
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
 import java.io.File
-import javax.inject.Named
 import javax.inject.Singleton
 
 @Module

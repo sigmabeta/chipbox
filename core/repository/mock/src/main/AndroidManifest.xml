@@ -1,2 +1,1 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="net.sigmabeta.chipbox.repository.mock"/>
+<manifest package="net.sigmabeta.chipbox.repository.mock" />

@@ -1,9 +1,9 @@
 package net.sigmabeta.chipbox.player.speaker.text
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
-import net.sigmabeta.chipbox.player.common.GeneratorEvent
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.player.speaker.Speaker
 

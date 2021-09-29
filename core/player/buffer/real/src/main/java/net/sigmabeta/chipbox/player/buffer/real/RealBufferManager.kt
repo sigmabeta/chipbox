@@ -5,7 +5,6 @@ import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.common.*
-import java.lang.IllegalStateException
 
 class RealBufferManager: ProducerBufferManager, ConsumerBufferManager {
     private var emptyArrays: Channel<ShortArray>? = null
