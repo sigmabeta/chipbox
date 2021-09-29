@@ -1,17 +1,15 @@
 package net.sigmabeta.chipbox.player.generator
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import net.sigmabeta.chipbox.models.Track
-import net.sigmabeta.chipbox.player.common.*
+import net.sigmabeta.chipbox.player.buffer.AudioBuffer
+import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
+import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.repository.Repository
-import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.TimeUnit
 
 abstract class Generator(
         private val repository: Repository,
+        private val bufferManager: ProducerBufferManager,
         dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     private val generatorScope = CoroutineScope(dispatcher)
@@ -23,14 +21,6 @@ abstract class Generator(
     private var newTrackId: Long? = null
 
     private var currentTrack: Track? = null
-
-    private var outputBuffers: ArrayBlockingQueue<ShortArray>? = null
-
-    private val bufferFlow = MutableSharedFlow<GeneratorEvent>(
-            replay = 0,
-            onBufferOverflow = BufferOverflow.SUSPEND,
-            extraBufferCapacity = 10
-    )
 
     protected abstract fun loadTrack(loadedTrack: Track)
 
@@ -44,12 +34,7 @@ abstract class Generator(
 
     abstract fun getLastError(): String?
 
-    fun audioStream() = bufferFlow.asSharedFlow()
-
-    fun returnBuffer(audio: ShortArray) {
-        audio.clear()
-        outputBuffers!!.put(audio)
-    }
+//    fun audioStream() = bufferFlow.asSharedFlow()
 
     fun startTrack(
             trackId: Long,
@@ -75,21 +60,6 @@ abstract class Generator(
         return loadedTrack
     }
 
-    private fun setupBuffers(sampleRate: Int) {
-        val bufferCount = BUFFER_LENGTH_MILLIS
-                .millisToFrames(sampleRate)
-                .framesToSamples()
-                .samplesToBytes()
-                .div(Dependencies.BUFFER_SIZE_BYTES_DEFAULT)
-
-        outputBuffers = ArrayBlockingQueue(bufferCount)
-
-        val bufferSizeShorts = Dependencies.BUFFER_SIZE_BYTES_DEFAULT.bytesToSamples()
-        repeat(bufferCount) {
-            outputBuffers!!.add(ShortArray(bufferSizeShorts))
-        }
-    }
-
     private suspend fun playTrack() {
         var error: String?
         var track: Track? = null
@@ -108,13 +78,13 @@ abstract class Generator(
 
                 track = newTrack
 
-                bufferFlow.emit(GeneratorEvent.Loading)
+//                bufferFlow.emit(GeneratorEvent.Loading)
 
                 loadTrack(newTrack)
 
                 sampleRate = getEmulatorSampleRate()
 
-                setupBuffers(sampleRate)
+                bufferManager.setSampleRate(sampleRate)
 
                 error = getLastError()
                 if (error != null) {
@@ -132,7 +102,7 @@ abstract class Generator(
             val bufferStartFrame = framesPlayed
 
             // Generate the next buffer of audio..
-            val generatedAudio = outputBuffers!!.poll(TIMEOUT_BUFFERS_FULL_MS, TimeUnit.MILLISECONDS)
+            val generatedAudio = bufferManager.getNextEmptyBuffer()
             val framesGenerated = generateAudio(generatedAudio)
 
             if (framesGenerated == 0) {
@@ -156,16 +126,22 @@ abstract class Generator(
                     LENGTH_FADE_MILLIS
             )
 
-            // Emit this buffer.
-            bufferFlow.tryEmit(
-                    GeneratorEvent.Audio(
-                            buffersCreated++,
-                            bufferStartFrame.framesToMillis(sampleRate),
-                            framesPlayed,
+            bufferManager.sendAudioBuffer(
+                    AudioBuffer(
                             sampleRate,
                             generatedAudio
                     )
             )
+            // Emit this buffer.
+//            bufferFlow.tryEmit(
+//                    GeneratorEvent.Audio(
+//                            buffersCreated++,
+//                            bufferStartFrame.framesToMillis(sampleRate),
+//                            framesPlayed,
+//                            sampleRate,
+//                            generatedAudio
+//                    )
+//            )
 
             // Check if this coroutine has been cancelled.
             yield()
@@ -181,7 +157,7 @@ abstract class Generator(
 
         // If no error, report completion.
         println("Playback complete!")
-        bufferFlow.emit(GeneratorEvent.Complete)
+//        bufferFlow.emit(GeneratorEvent.Complete)
 
         ongoingGenerationJob = null
     }
@@ -193,9 +169,9 @@ abstract class Generator(
     }
 
     private suspend fun emitError(error: String) {
-        bufferFlow.emit(
-                GeneratorEvent.Error(error)
-        )
+//        bufferFlow.emit(
+//                GeneratorEvent.Error(error)
+//        )
     }
 
     private fun ShortArray.clear() {
