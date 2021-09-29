@@ -7,8 +7,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import net.sigmabeta.chipbox.player.common.Dependencies
-import net.sigmabeta.chipbox.player.generator.Generator
+import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
 import java.io.File
 import javax.inject.Named
@@ -18,18 +17,17 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object FileSpeakerModule {
     @Provides
-    fun provideFileLocation(@ApplicationContext context: Context) =
+    internal fun provideFileLocation(@ApplicationContext context: Context) =
         Environment.getExternalStorageDirectory()
-
 
     @Provides
     @Singleton
     internal fun provideFileSpeaker(
         externalStorageDir: File,
-        generator: Generator
+        bufferManager: ConsumerBufferManager
     ) = FileSpeaker(
         externalStorageDir,
-        generator
+        bufferManager
     )
 
 }

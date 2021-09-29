@@ -34,3 +34,7 @@ fun Long.isDivisibleBy(divisor: Int): Boolean {
 fun Int.isDivisibleBy(divisor: Int): Boolean {
     return this % divisor == 0
 }
+
+fun ShortArray.clear() {
+    forEachIndexed { index, _ -> set(index, 0) }
+}

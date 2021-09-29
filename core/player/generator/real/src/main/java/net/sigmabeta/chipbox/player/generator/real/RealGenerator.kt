@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.player.generator.real
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.repository.Repository
@@ -11,9 +12,10 @@ import java.io.File
 
 class RealGenerator(
     repository: Repository,
+    bufferManager: ProducerBufferManager,
     private val emulators: List<Emulator>,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : Generator(repository, dispatcher) {
+) : Generator(repository, bufferManager, dispatcher) {
     private var emulator: Emulator? = null
 
     override fun loadTrack(loadedTrack: Track) {

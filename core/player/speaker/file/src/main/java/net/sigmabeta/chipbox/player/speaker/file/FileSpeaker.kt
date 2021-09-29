@@ -2,6 +2,8 @@ package net.sigmabeta.chipbox.player.speaker.file
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
+import net.sigmabeta.chipbox.player.buffer.AudioBuffer
+import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.common.BYTES_PER_SAMPLE
 import net.sigmabeta.chipbox.player.common.CHANNELS_STEREO
 import net.sigmabeta.chipbox.player.common.GeneratorEvent
@@ -15,85 +17,49 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class FileSpeaker(
-    private val externalStorageDir: File,
-    private val generator: Generator,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : Speaker {
-    private val speakerScope = CoroutineScope(dispatcher)
+        private val externalStorageDir: File,
+        bufferManager: ConsumerBufferManager,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO
+) : Speaker(bufferManager, dispatcher) {
+    private var bytesWritten = 0
 
-    private var ongoingPlaybackJob: Job? = null
+    private var file: OutputStream? = null
 
-    var bytesWritten = 0
+    private var trackSampleRate: Int = 0
 
-    override suspend fun play(trackId: Long) {
-        ongoingPlaybackJob?.cancelAndJoin()
-        ongoingPlaybackJob = speakerScope.launch {
-            val file = initializeOutputStream(externalStorageDir)
-            if (file != null) {
-                startPlayback(file, trackId)
-            }
+    override fun onAudioReceived(audio: AudioBuffer) {
+        if (file == null || trackSampleRate != audio.sampleRate) {
+            teardown()
+
+            file = initializeOutputStream(audio.sampleRate, externalStorageDir)
+            trackSampleRate = audio.sampleRate
         }
 
-        println("Play command finished executing.")
-        // TODO Is this a bad idea? For now seems fine.
-        ongoingPlaybackJob?.join()
-    }
-
-    private suspend fun startPlayback(output: OutputStream, trackId: Long) {
-        generator
-            .audioStream()
-            .collect {
-                when (it) {
-                    GeneratorEvent.Loading -> onPlaybackLoading()
-                    GeneratorEvent.Complete -> onPlaybackComplete(output)
-                    is GeneratorEvent.Error -> onPlaybackError(output, it.message)
-                    is GeneratorEvent.Audio -> {
-                        onAudioGenerated(it, output)
-                        return@collect
-                    }
-                }
-            }
-    }
-
-    private fun onPlaybackLoading() {
-        println("Generator reports track loading.")
-    }
-
-    private fun onPlaybackComplete(output: OutputStream) {
-        println("Generator reports track complete.")
-        teardown(output)
-    }
-
-    private fun onPlaybackError(output: OutputStream, message: String) {
-        println("Generator reports playback error: $message")
-        teardown(output)
-    }
-
-    private fun onAudioGenerated(audio: GeneratorEvent.Audio, output: OutputStream) {
         try {
             val audioAsBytes = audio.data.toByteArray()
 
             println("Writing ${audioAsBytes.size} bytes to output...")
 
-            output.write(audioAsBytes)
+            file?.write(audioAsBytes)
             bytesWritten += audioAsBytes.size
-            generator.returnBuffer(audio.data)
         } catch (ex: Exception) {
             logProblems(ex.message)
         }
     }
 
-    private fun teardown(output: OutputStream) {
+    override fun teardown() {
         println("Tearing down output file.")
 
-        output.close()
-        writeSizeToHeader()
+        file?.close()
 
-        ongoingPlaybackJob?.cancel()
+        if (bytesWritten > 0) {
+            writeSizeToHeader()
+            bytesWritten = 0
+        }
     }
 
     private fun initializeOutputStream(
-//        sampleRate: Int,
+        sampleRate: Int,
         externalStorageDir: File
     ): OutputStream? {
         return try {
@@ -101,7 +67,7 @@ class FileSpeaker(
             val fileOutput = outputFile.outputStream()
             val bufferedOutput = BufferedOutputStream(fileOutput)
 
-//            writeHeader(bufferedOutput, sampleRate)
+            writeHeader(bufferedOutput, sampleRate)
             bufferedOutput
 
         } catch (ex: Exception) {

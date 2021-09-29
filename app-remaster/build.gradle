@@ -90,6 +90,7 @@ android {
 dependencies {
     implementation project(path: ':core:activities')
     implementation project(path: ':core:database')
+    implementation project(path: ':core:player:buffer:di')
     implementation project(path: ':core:player:controls:di')
     implementation project(path: ':core:player:emulators:di')
     implementation project(path: ':core:player:generator:di')

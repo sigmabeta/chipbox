@@ -5,104 +5,44 @@ import android.media.AudioFormat
 import android.media.AudioTrack
 import android.os.Process
 import androidx.media.AudioAttributesCompat
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.flow.onEmpty
-import net.sigmabeta.chipbox.player.common.Dependencies
-import net.sigmabeta.chipbox.player.common.GeneratorEvent
-import net.sigmabeta.chipbox.player.generator.Generator
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import net.sigmabeta.chipbox.player.buffer.AudioBuffer
+import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import timber.log.Timber
 
 class RealSpeaker(
-    private val generator: Generator,
-    dispatcher: CoroutineDispatcher = Dispatchers.Default
-) : Speaker {
-    private val speakerScope = CoroutineScope(dispatcher)
-
-    private var ongoingPlaybackJob: Job? = null
-
+        bufferManager: ConsumerBufferManager,
+        dispatcher: CoroutineDispatcher = Dispatchers.Default
+) : Speaker(bufferManager, dispatcher) {
     private var audioTrack: AudioTrack? = null
 
-    override suspend fun play(trackId: Long) {
-        startPlayback(trackId)
-    }
-
-    private fun startPlayback(trackId: Long) {
-        if (ongoingPlaybackJob == null) {
-            ongoingPlaybackJob = speakerScope.launch {
-                Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
-                generator
-                        .audioStream()
-                        .onCompletion { Timber.i("Flow complete.") }
-                        .onEmpty { Timber.i("Flow empty.") }
-                        .collect {
-                            when (it) {
-                                GeneratorEvent.Loading -> onPlaybackLoading()
-                                GeneratorEvent.Complete -> onPlaybackComplete()
-                                is GeneratorEvent.Error -> onPlaybackError(it.message)
-                                is GeneratorEvent.Audio -> onAudioGenerated(it)
-                            }
-                        }
-
-                Timber.w("Playback job ending.")
-                ongoingPlaybackJob = null
-            }
-        }
-
-        generator.startTrack(
-                trackId
-        )
-    }
-
-    private fun stopPlayback() {
-        ongoingPlaybackJob?.cancel()
-        ongoingPlaybackJob = null
-    }
-
-    private fun onPlaybackLoading() {
-        Timber.d("Generator reports track loading.")
-    }
-
-    private fun onPlaybackComplete() {
-        Timber.d("Generator reports track complete.")
-        teardown()
-        stopPlayback()
-    }
-
-    private fun onPlaybackError(message: String) {
-        Timber.e("Generator reports playback error: $message")
-        teardown()
-        stopPlayback()
-    }
-
-    private fun onAudioGenerated(event: GeneratorEvent.Audio) {
-        if (event.sampleRate != audioTrack?.sampleRate) {
-            Timber.d("New sample rate: ${event.sampleRate}")
-            audioTrack = initializeAudioTrack(event.sampleRate)
+    override fun onAudioReceived(audio: AudioBuffer) {
+        if (audio.sampleRate != audioTrack?.sampleRate) {
+            Timber.d("New sample rate: ${audio.sampleRate}")
+            audioTrack = initializeAudioTrack(audio.sampleRate)
             Timber.d("Audiotrack setup complete!")
 
             audioTrack!!.play()
         }
 
-        val audio = event.data
-
         // Samples, not Frames
         val samplesWritten = audioTrack!!.write(
-            audio,
-            0,
-            audio.size
+                audio.data,
+                0,
+                audio.data.size
         )
 
         logProblems(samplesWritten)
-        generator.returnBuffer(audio)
     }
 
     private fun initializeAudioTrack(
-        sampleRate: Int,
+            sampleRate: Int,
     ): AudioTrack {
         teardown()
+        Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
+
         val bufferSizeBytes = AudioTrack.getMinBufferSize(
                 sampleRate,
                 AudioFormat.CHANNEL_OUT_STEREO,
@@ -134,7 +74,7 @@ class RealSpeaker(
         }.build()
     }
 
-    private fun teardown() {
+    override fun teardown() {
         if (audioTrack != null) {
             Timber.i("Tearing down audiotrack.")
         }
@@ -145,17 +85,16 @@ class RealSpeaker(
     }
 
     private fun logProblems(samplesWritten: Int) {
-        if (samplesWritten == Dependencies.BUFFER_SIZE_BYTES_DEFAULT / 2)
-            return
-
         val error = when (samplesWritten) {
             AudioTrack.ERROR_INVALID_OPERATION -> "Invalid AudioTrack operation."
             AudioTrack.ERROR_BAD_VALUE -> "Invalid AudioTrack value."
             AudioTrack.ERROR -> "Unknown AudioTrack error."
-            else -> "Wrote fewer bytes than expected: $samplesWritten"
+            else -> null
         }
 
-        Timber.e(error)
+        if (error != null) {
+            Timber.e(error)
+        }
     }
 }
 

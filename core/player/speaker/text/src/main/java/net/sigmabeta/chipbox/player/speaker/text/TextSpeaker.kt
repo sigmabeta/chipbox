@@ -1,83 +1,31 @@
 package net.sigmabeta.chipbox.player.speaker.text
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
+import net.sigmabeta.chipbox.player.buffer.AudioBuffer
+import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.common.GeneratorEvent
 import net.sigmabeta.chipbox.player.common.framesToMillis
-import net.sigmabeta.chipbox.player.common.millisToSeconds
-import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.speaker.Speaker
-import timber.log.Timber
 
 class TextSpeaker(
-    private val generator: Generator,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : Speaker {
-    private val speakerScope = CoroutineScope(dispatcher)
-
-    private var ongoingPlaybackJob: Job? = null
-
-    private var lastBufferPrinted = 0
-
-    override suspend fun play(trackId: Long) {
-        Timber.w("${Thread.currentThread().name}; Received play command for id $trackId")
-        if (ongoingPlaybackJob == null) {
-            ongoingPlaybackJob = speakerScope.launch {
-                Timber.w("${Thread.currentThread().name}; Begin playback for id $trackId")
-
-                playAudioFromGenerator()
-
-                Timber.w("${Thread.currentThread().name}; End playback for id $trackId")
-            }
-        }
-
-        generator.startTrack(
-                trackId
-        )
+        bufferManager: ConsumerBufferManager,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO
+) : Speaker(bufferManager, dispatcher)  {
+    override fun onAudioReceived(audio: AudioBuffer) {
+        logBuffer(audio)
     }
 
-    private suspend fun playAudioFromGenerator() {
-        generator
-            .audioStream()
-            .collect {
-                when (it) {
-                    GeneratorEvent.Loading -> onPlaybackLoading()
-                    GeneratorEvent.Complete -> onPlaybackComplete()
-                    is GeneratorEvent.Error -> onPlaybackError(it.message)
-                    is GeneratorEvent.Audio -> logBuffer(it)
-                }
-            }
+    override fun teardown() = Unit
+
+    private fun logBuffer(audio: AudioBuffer) {
+        println(audio.toReadableString())
     }
 
-    private fun onPlaybackLoading() {
-        Timber.d("Generator reports track loading.")
-    }
-
-    private fun onPlaybackComplete() {
-        Timber.d("Generator reports track complete.")
-    }
-
-    private fun onPlaybackError(message: String) {
-        Timber.e("Generator reports playback error: $message")
-    }
-
-    private fun logBuffer(audio: GeneratorEvent.Audio) {
-        val diff = audio.bufferNumber - lastBufferPrinted
-        if (diff != 1) {
-            Timber.e("Last buffer printed was $lastBufferPrinted, this one is ${audio.bufferNumber}. Difference is $diff")
-        }
-
-        lastBufferPrinted = audio.bufferNumber
-        Timber.i(audio.toReadableString())
-
-        generator.returnBuffer(audio.data)
-    }
-
-    private fun GeneratorEvent.Audio.toReadableString(): String {
+    private fun AudioBuffer.toReadableString(): String {
         val toString = StringBuilder().also {
-            val headerRow = "Frame | Time (s) |  Left  |  Right |"
+            val headerRow = "Frame |  Left  |  Right |"
 
-            it.append("${Thread.currentThread().name}; Outputting frames from buffer #$bufferNumber:")
+            it.append("${Thread.currentThread().name}; Outputting frames from buffer:")
             it.append("\n")
             it.append(headerRow)
             it.append("\n")
@@ -92,9 +40,6 @@ class TextSpeaker(
                 it.append(String.format("%4d:", frameCount))
                 it.append(SEPARATOR_DATA_COLUMN)
 
-                it.append(String.format("%8f", (timestampMillis + millisOffset).millisToSeconds()))
-                it.append(SEPARATOR_DATA_COLUMN)
-
                 it.append(String.format("%6d", data[leftSampleIndex]))
                 it.append(SEPARATOR_DATA_COLUMN)
 
@@ -104,7 +49,7 @@ class TextSpeaker(
                 it.append("\n")
             }
 
-            it.append("${Thread.currentThread().name}; End buffer #$bufferNumber")
+            it.append("${Thread.currentThread().name}; End buffer.")
         }.toString()
         return toString
     }
