@@ -5,6 +5,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import net.sigmabeta.chipbox.player.controls.real.RealControls
+import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import javax.inject.Singleton
 
@@ -13,6 +14,12 @@ import javax.inject.Singleton
 object RealControlsModule {
     @Provides
     @Singleton
-    internal fun provideRealControls(speaker: Speaker) = RealControls(speaker)
+    internal fun provideRealControls(
+            generator: Generator,
+            speaker: Speaker
+    ) = RealControls(
+            generator,
+            speaker
+    )
 
 }

@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.emulators.EmulatorProvider
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.repository.Repository
@@ -16,6 +17,7 @@ object RealGeneratorModule {
     @Singleton
     internal fun provideRealGenerator(
         emulatorProvider: EmulatorProvider,
+        bufferManager: ProducerBufferManager,
         repository: Repository
-    ) = RealGenerator(repository, emulatorProvider.emulators)
+    ) = RealGenerator(repository, bufferManager, emulatorProvider.emulators)
 }

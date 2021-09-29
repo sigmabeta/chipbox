@@ -4,6 +4,7 @@ dependencies {
     api project(path: ':core:player:common')
     api project(path: ':core:repository')
 
-    api "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlin_coroutines_version"
+    api project(path: ':core:player:buffer')
 
+    api "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlin_coroutines_version"
 }

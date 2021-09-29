@@ -3,8 +3,6 @@ apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
 dependencies {
     api project(path: ':core:player:speaker')
 
-    implementation project(path: ':core:player:generator')
-
     testImplementation 'org.junit.jupiter:junit-jupiter'
 
     // Unit tests will, at least for now, depend on the fake generator
