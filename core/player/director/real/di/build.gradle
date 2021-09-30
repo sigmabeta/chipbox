@@ -1,0 +1,9 @@
+apply from: "$rootProject.projectDir/core-android-module.gradle"
+apply from: "$rootProject.projectDir/di.gradle"
+
+dependencies {
+    api project(path: ':core:player:director:real')
+
+    implementation project(path: ':core:player:generator')
+    implementation project(path: ':core:player:speaker')
+}

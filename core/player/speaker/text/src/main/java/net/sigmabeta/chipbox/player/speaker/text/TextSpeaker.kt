@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.player.speaker.text
 import kotlinx.coroutines.*
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
-import net.sigmabeta.chipbox.player.common.GeneratorEvent
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.player.speaker.Speaker
 
@@ -34,8 +33,6 @@ class TextSpeaker(
             for (frameCount in 0 until data.size / 2) {
                 val leftSampleIndex = frameCount * 2
                 val rightSampleIndex = leftSampleIndex + 1
-
-                val millisOffset = frameCount.framesToMillis(sampleRate)
 
                 it.append(String.format("%4d:", frameCount))
                 it.append(SEPARATOR_DATA_COLUMN)

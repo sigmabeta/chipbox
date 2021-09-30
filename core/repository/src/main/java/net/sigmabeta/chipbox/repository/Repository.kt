@@ -22,6 +22,12 @@ interface Repository {
         withArtists: Boolean = false
     ): Flow<Data<List<Track>>>
 
+    fun getTracksForGame(
+        id: Long,
+        withGame: Boolean = false,
+        withArtists: Boolean = false
+    ): List<Track>
+
     // Individual models
     fun getGame(
         id: Long,
