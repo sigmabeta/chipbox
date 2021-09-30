@@ -1,0 +1,10 @@
+apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
+
+dependencies {
+    api project(path: ':core:player:director')
+
+    implementation project(path: ':core:player:common')
+    implementation project(path: ':core:player:generator')
+    implementation project(path: ':core:player:speaker')
+    implementation project(path: ':core:repository')
+}

@@ -24,13 +24,14 @@ import java.util.concurrent.TimeUnit
 @Composable
 fun GameTrackListItem(
     track: Track,
-    onClick: (Long) -> Unit
+    position: Int,
+    onClick: (Int) -> Unit
 ) {
     Row(
         Modifier
             .height(60.dp)
             .fillMaxWidth()
-            .clickable { onClick(track.id) }
+            .clickable { onClick(position) }
             .background(MaterialTheme.colors.background)
     ) {
         Column(
@@ -104,7 +105,8 @@ fun PreviewGameTrackListItem() {
                         mutableListOf()
                     )
                 )
-            )
+            ),
+            position = 17
         ) {}
     }
 }

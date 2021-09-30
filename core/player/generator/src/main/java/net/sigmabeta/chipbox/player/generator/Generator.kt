@@ -22,6 +22,8 @@ abstract class Generator(
 
     private var currentTrack: Track? = null
 
+    private var sampleRate: Int? = null
+
     protected abstract fun loadTrack(loadedTrack: Track)
 
     protected abstract fun generateAudio(buffer: ShortArray): Int
@@ -40,7 +42,10 @@ abstract class Generator(
             trackId: Long,
     ) {
         newTrackId = trackId
+        play()
+    }
 
+    fun play() {
         if (ongoingGenerationJob == null) {
             ongoingGenerationJob = generatorScope.launch {
                 playTrack()
@@ -48,49 +53,31 @@ abstract class Generator(
         }
     }
 
-    private fun getTrackToPlay(trackId: Long): Track? {
-        if (currentTrack != null) {
-            teardownHelper()
-        }
+    fun pause() {
+        ongoingGenerationJob?.cancel()
+        ongoingGenerationJob = null
+    }
 
-        val loadedTrack = repository.getTrack(trackId)
-        currentTrack = loadedTrack
-        newTrackId = null
+    suspend fun stop() {
+        ongoingGenerationJob?.cancelAndJoin()
+        ongoingGenerationJob = null
 
-        return loadedTrack
+        teardown()
     }
 
     private suspend fun playTrack() {
         var error: String?
-        var track: Track? = null
-        var buffersCreated = 0
-
-        var sampleRate: Int? = null
 
         do {
-            val trackId = newTrackId
-            if (trackId != null) {
-                val newTrack = getTrackToPlay(trackId)
-                if (newTrack == null) {
-                    emitError("Failed to load track.")
-                    return
-                }
+            error = loadNextTrack(newTrackId)
 
-                track = newTrack
+            if (error != null) {
+                break
+            }
 
-//                bufferFlow.emit(GeneratorEvent.Loading)
-
-                loadTrack(newTrack)
-
-                sampleRate = getEmulatorSampleRate()
-
-                bufferManager.setSampleRate(sampleRate)
-
-                error = getLastError()
-                if (error != null) {
-                    break
-                }
-                println("New track setup complete!")
+            if (currentTrack == null) {
+                error = "No track loaded."
+                break
             }
 
             if (sampleRate == null) {
@@ -98,7 +85,6 @@ abstract class Generator(
                 break
             }
 
-            // Setup buffers.
             val bufferStartFrame = framesPlayed
 
             // Generate the next buffer of audio..
@@ -120,15 +106,15 @@ abstract class Generator(
 
             FadeProcessor.fadeIfNecessary(
                     generatedAudio,
-                    sampleRate,
-                    bufferStartFrame.framesToMillis(sampleRate),
-                    track!!.trackLengthMs - LENGTH_FADE_MILLIS,
+                    sampleRate!!,
+                    bufferStartFrame.framesToMillis(sampleRate!!),
+                currentTrack!!.trackLengthMs - LENGTH_FADE_MILLIS,
                     LENGTH_FADE_MILLIS
             )
 
             bufferManager.sendAudioBuffer(
                     AudioBuffer(
-                            sampleRate,
+                            sampleRate!!,
                             generatedAudio
                     )
             )
@@ -150,21 +136,40 @@ abstract class Generator(
         // Report error, if it happened.
         if (error != null) {
             emitError(error)
-            return
+        } else {
+            //        bufferFlow.emit(GeneratorEvent.Complete)
         }
 
         teardown()
+    }
 
-        // If no error, report completion.
-        println("Playback complete!")
-//        bufferFlow.emit(GeneratorEvent.Complete)
+    private suspend fun loadNextTrack(trackId: Long?): String? {
+        newTrackId = null
+        if (trackId == null) {
+            return null
+        }
 
-        ongoingGenerationJob = null
+        if (currentTrack != null) {
+            teardownHelper()
+        }
+
+        val newTrack = repository.getTrack(trackId) ?: return "Failed to load track."
+        currentTrack = newTrack
+
+//                bufferFlow.emit(GeneratorEvent.Loading)
+
+        loadTrack(newTrack)
+
+        sampleRate = getEmulatorSampleRate()
+        bufferManager.setSampleRate(sampleRate!!)
+
+        return getLastError()
     }
 
     private fun teardownHelper() {
         teardown()
         currentTrack = null
+        ongoingGenerationJob = null
         framesPlayed = 0
     }
 
@@ -180,9 +185,5 @@ abstract class Generator(
 
     companion object {
         private const val LENGTH_FADE_MILLIS = 6_000.0
-
-        private const val BUFFER_LENGTH_MILLIS = 500.0
-
-        private const val TIMEOUT_BUFFERS_FULL_MS = 3000L
     }
 }
