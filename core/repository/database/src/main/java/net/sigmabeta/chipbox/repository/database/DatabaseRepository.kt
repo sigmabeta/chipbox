@@ -61,6 +61,10 @@ class DatabaseRepository(
             }
         }
 
+    override fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean) = trackDao
+        .getTracksForGameSync(id)
+        .map { entity -> entity.toTrack(withGame, withArtists) }
+
     override fun getGame(id: Long, withTracks: Boolean, withArtists: Boolean) = setupFlowWithId(
         id,
         { gameDao.getGame(id) },

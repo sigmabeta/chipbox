@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -53,7 +54,7 @@ fun GameContent(
     game: Game,
     insets: WindowInsets,
     density: Density,
-    onClick: (Long) -> Unit
+    onClick: (Int) -> Unit
 ) {
     LazyColumn(
         contentPadding = with(density) {
@@ -71,8 +72,11 @@ fun GameContent(
             )
         }
 
-        items(items = game.tracks ?: emptyList()) {
-            GameTrackListItem(track = it, onClick)
+        itemsIndexed(
+            items = game.tracks ?: emptyList(),
+            key = { index, track -> track.id }
+        ) { index, track ->
+            GameTrackListItem(track = track, position = index, onClick)
         }
     }
 

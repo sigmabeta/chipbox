@@ -16,6 +16,18 @@ abstract class Speaker(
         startPlayback()
     }
 
+    fun pause() {
+        ongoingPlaybackJob?.cancel()
+        ongoingPlaybackJob = null
+    }
+
+    suspend fun stop() {
+        ongoingPlaybackJob?.cancelAndJoin()
+        ongoingPlaybackJob = null
+
+        teardown()
+    }
+
     abstract fun onAudioReceived(audio: AudioBuffer)
 
     abstract fun teardown()
@@ -23,7 +35,6 @@ abstract class Speaker(
     private fun startPlayback() {
         if (ongoingPlaybackJob == null) {
             ongoingPlaybackJob = speakerScope.launch {
-                delay(50)
 
                 while (true) {
                     yield()

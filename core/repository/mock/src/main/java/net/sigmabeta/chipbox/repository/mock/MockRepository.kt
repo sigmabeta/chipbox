@@ -126,6 +126,10 @@ class MockRepository(
         return tracksLoadEvents.asSharedFlow()
     }
 
+    override fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> {
+        TODO("Not yet implemented")
+    }
+
     override fun getGame(id: Long, withTracks: Boolean, withArtists: Boolean): Flow<Data<Game?>> {
         if (games.isEmpty()) {
             repositoryScope.launch {
