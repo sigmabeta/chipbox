@@ -82,6 +82,8 @@ class RealSpeaker(
         audioTrack?.pause()
         audioTrack?.flush()
         audioTrack?.release()
+
+        audioTrack = null
     }
 
     private fun logProblems(samplesWritten: Int) {
@@ -94,6 +96,7 @@ class RealSpeaker(
 
         if (error != null) {
             Timber.e(error)
+            emitError(error)
         }
     }
 }

@@ -5,7 +5,9 @@ sealed class GeneratorEvent {
         val message: String
     ) : GeneratorEvent()
 
-    object Loading : GeneratorEvent()
+    object Buffering : GeneratorEvent()
+
+    object Emitting : GeneratorEvent()
 
     object Complete : GeneratorEvent()
 }

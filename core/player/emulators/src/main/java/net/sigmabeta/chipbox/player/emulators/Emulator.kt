@@ -24,7 +24,7 @@ abstract class Emulator {
 
     private var framesPlayedTotal = 0
 
-    protected var remainingFramesTotal = -1
+    protected var remainingFramesTotal = Int.MAX_VALUE
 
     open fun isFileExtensionSupported(extension: String) =
         supportedFileExtensions.contains(extension)
@@ -33,7 +33,6 @@ abstract class Emulator {
 
     open fun loadTrack(track: Track) {
         if (remainingFramesTotal >= 0) {
-            println("Previously loaded emulator not cleared. Clearing...")
             teardown()
         }
 
@@ -41,8 +40,6 @@ abstract class Emulator {
         loadTrackInternal(track.path)
         remainingFramesTotal =
             track.trackLengthMs.toDouble().millisToFrames(getSampleRateInternal())
-
-        println("${this.javaClass.simpleName} loaded track ${track.title}")
     }
 
     fun generateBuffer(
@@ -67,7 +64,7 @@ abstract class Emulator {
         teardownInternal()
 
         trackOver = false
-        remainingFramesTotal = -1
+        remainingFramesTotal = Int.MAX_VALUE
         framesPlayedTotal = 0
     }
 }
