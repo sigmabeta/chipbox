@@ -1,6 +1,10 @@
 package net.sigmabeta.chipbox.player.generator
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
@@ -18,11 +22,17 @@ abstract class Generator(
 
     private var framesPlayed = 0
 
-    private var newTrackId: Long? = null
+    private var nextTrackIdChannel = Channel<Long>(1)
 
     private var currentTrack: Track? = null
 
     private var sampleRate: Int? = null
+
+    private val eventSink = MutableSharedFlow<GeneratorEvent>(
+        replay = 0,
+        onBufferOverflow = BufferOverflow.SUSPEND,
+        extraBufferCapacity = 10
+    )
 
     protected abstract fun loadTrack(loadedTrack: Track)
 
@@ -36,20 +46,22 @@ abstract class Generator(
 
     abstract fun getLastError(): String?
 
-//    fun audioStream() = bufferFlow.asSharedFlow()
+    fun events() = eventSink.asSharedFlow()
 
-    fun startTrack(
+    suspend fun startTrack(
             trackId: Long,
     ) {
-        newTrackId = trackId
+        nextTrackIdChannel.send(trackId)
         play()
     }
 
     fun play() {
         if (ongoingGenerationJob == null) {
             ongoingGenerationJob = generatorScope.launch {
-                playTrack()
+                loop()
             }
+        } else {
+            println("Already looping.")
         }
     }
 
@@ -62,14 +74,28 @@ abstract class Generator(
         ongoingGenerationJob?.cancelAndJoin()
         ongoingGenerationJob = null
 
-        teardown()
+        teardownHelper()
     }
 
-    private suspend fun playTrack() {
+    private suspend fun loop() {
         var error: String?
+        var nextTrackId: Long? = nextTrackIdChannel.receive()
 
-        do {
-            error = loadNextTrack(newTrackId)
+        while (true) {
+            // When track is over, block waiting for the next one.
+            if (nextTrackId == null && isTrackOver()) {
+                eventSink.emit(GeneratorEvent.Complete)
+                nextTrackId = nextTrackIdChannel.receive()
+            } else {
+                // See if we have another one queued up, but don't block.
+                val result = nextTrackIdChannel.tryReceive()
+                if (result.isSuccess) {
+                    nextTrackId = result.getOrThrow()
+                }
+            }
+
+            error = loadNextTrack(nextTrackId)
+            nextTrackId = null
 
             if (error != null) {
                 break
@@ -113,51 +139,46 @@ abstract class Generator(
             )
 
             bufferManager.sendAudioBuffer(
-                    AudioBuffer(
-                            sampleRate!!,
-                            generatedAudio
-                    )
+                AudioBuffer(
+                    currentTrack!!.id,
+                    sampleRate!!,
+                    generatedAudio
+                )
             )
+
             // Emit this buffer.
-//            bufferFlow.tryEmit(
-//                    GeneratorEvent.Audio(
-//                            buffersCreated++,
-//                            bufferStartFrame.framesToMillis(sampleRate),
-//                            framesPlayed,
-//                            sampleRate,
-//                            generatedAudio
-//                    )
-//            )
+            eventSink.emit(GeneratorEvent.Emitting)
 
             // Check if this coroutine has been cancelled.
             yield()
-        } while (!isTrackOver())
+        }
 
         // Report error, if it happened.
         if (error != null) {
-            emitError(error)
-        } else {
-            //        bufferFlow.emit(GeneratorEvent.Complete)
+            eventSink.emit(
+                GeneratorEvent.Error(error)
+            )
         }
 
-        teardown()
+        teardownHelper()
     }
 
     private suspend fun loadNextTrack(trackId: Long?): String? {
-        newTrackId = null
         if (trackId == null) {
             return null
         }
 
+        eventSink.emit(GeneratorEvent.Buffering)
+
         if (currentTrack != null) {
-            teardownHelper()
+            teardown()
+            framesPlayed = 0
         }
 
         val newTrack = repository.getTrack(trackId) ?: return "Failed to load track."
         currentTrack = newTrack
 
-//                bufferFlow.emit(GeneratorEvent.Loading)
-
+        println("Loading track ${newTrack.title} into emulator.")
         loadTrack(newTrack)
 
         sampleRate = getEmulatorSampleRate()
@@ -167,16 +188,11 @@ abstract class Generator(
     }
 
     private fun teardownHelper() {
+        println("Tearing down track ${currentTrack?.title}...")
         teardown()
         currentTrack = null
         ongoingGenerationJob = null
         framesPlayed = 0
-    }
-
-    private suspend fun emitError(error: String) {
-//        bufferFlow.emit(
-//                GeneratorEvent.Error(error)
-//        )
     }
 
     private fun ShortArray.clear() {

@@ -37,7 +37,11 @@ class RealBufferManager: ProducerBufferManager, ConsumerBufferManager {
         fullBuffers?.send(audioBuffer)
     }
 
-    override suspend fun getNextAudioBuffer(): AudioBuffer {
+    override fun checkForNextAudioBuffer(): AudioBuffer? {
+        return fullBuffers?.tryReceive()?.getOrNull()
+    }
+
+    override suspend fun waitForNextAudioBuffer(): AudioBuffer {
         return fullBuffers?.receive() ?: throw  IllegalStateException("Set up buffers first!")
     }
 
