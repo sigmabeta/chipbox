@@ -75,7 +75,6 @@ void loadFile(const char *filename_c_str) {
 }
 
 int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_frames) {
-    uint16_t samples_written = 0;
 
     if (m_output.buffer_size_frames != buffer_size_frames) {
         delete m_output.samples;
@@ -92,12 +91,11 @@ int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_frames) {
     }
     printf("Frames available: %d / %d", m_output.frames_available, buffer_size_frames);
 
-    samples_written = m_output.frames_available;
+    int frames_written = m_output.frames_available;
 
     memcpy(target_array, m_output.samples, buffer_size_frames * 4);
 
-    int framesWritten = samples_written / 2;
-    return framesWritten;
+    return frames_written;
 }
 
 void teardown() {
