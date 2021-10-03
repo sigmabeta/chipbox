@@ -63,9 +63,9 @@ void loadFile(const char *filename_c_str, int32_t track_number) {
     }
 }
 
-int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_shorts) {
-    g_last_error = gme_play(g_emu, buffer_size_shorts * 2, target_array);
-    return buffer_size_shorts / 2;
+int32_t generateBuffer(int16_t *target_array, int32_t frames_per_buffer) {
+    g_last_error = gme_play(g_emu, frames_per_buffer * 2, target_array);
+    return frames_per_buffer;
 }
 
 void teardown() {
