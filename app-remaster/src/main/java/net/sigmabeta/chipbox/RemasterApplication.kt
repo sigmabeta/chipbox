@@ -9,6 +9,7 @@ import android.content.res.Resources
 import android.os.Build
 import android.view.View
 import dagger.hilt.android.HiltAndroidApp
+import net.sigmabeta.chipbox.services.NotificationGenerator
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -40,7 +41,11 @@ class RemasterApplication : Application() {
         val description = "Displays media controls."
         val importance = NotificationManager.IMPORTANCE_LOW
 
-        val channel = NotificationChannel(CHANNEL_ID_PLAYBACK, name, importance)
+        val channel = NotificationChannel(
+            NotificationGenerator.CHANNEL_ID_PLAYBACK,
+            name,
+            importance
+        )
         channel.description = description
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -48,10 +53,6 @@ class RemasterApplication : Application() {
     }
 
     fun shouldShowDetailedErrors() = BuildConfig.DEBUG
-
-    companion object {
-        val CHANNEL_ID_PLAYBACK = BuildConfig.APPLICATION_ID + ".playback"
-    }
 }
 
 fun Any.className() = this.javaClass.simpleName
