@@ -8,5 +8,6 @@ dependencies {
     implementation project(":core:colors")
     implementation project(":core:drawables")
     implementation project(":core:player:director")
+    implementation project(":core:repository")
     implementation project(":core:strings")
 }
