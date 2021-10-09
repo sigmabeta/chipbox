@@ -7,11 +7,9 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 
-class NotificationGenerator @Inject constructor(
-    @ApplicationContext private val context: Context
+class NotificationGenerator(
+    private val context: Context
 ) {
     fun generate(mediaSession: MediaSessionCompat): Notification {
         // Get the session's metadata

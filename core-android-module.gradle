@@ -5,7 +5,7 @@ apply plugin: "de.mannodermaus.android-junit5"
 apply from: "$rootProject.projectDir/dependencies-testing.gradle"
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
 
     defaultConfig {
         minSdkVersion 23

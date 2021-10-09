@@ -37,7 +37,7 @@ def getVersionName = { ->
 }
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
 
     compileOptions {
         sourceCompatibility 1.8
