@@ -5,23 +5,23 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
 import android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY
+import android.os.Bundle
 import android.support.v4.media.session.MediaSessionCompat
 import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
 import androidx.media.AudioManagerCompat
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.services.NotificationGenerator.Companion.NOTIFICATION_ID
-import javax.inject.Inject
 
-class ChipboxServiceCallback @Inject constructor(
+class ChipboxSessionCallback(
+    private val service: ChipboxPlaybackService,
     private val director: Director,
     private val notificationGenerator: NotificationGenerator
 ) : MediaSessionCompat.Callback() {
-    lateinit var service: ChipboxPlaybackService
+
+    lateinit var mediaSession: MediaSessionCompat
 
     private val intentFilter = IntentFilter(ACTION_AUDIO_BECOMING_NOISY)
-
-    private lateinit var mediaSession: MediaSessionCompat
 
     private lateinit var focusListener: AudioManager.OnAudioFocusChangeListener
 
@@ -95,6 +95,8 @@ class ChipboxServiceCallback @Inject constructor(
 
     override fun onPause() {
         // Update metadata and state
+        // TODO
+
         // pause the director (custom call)
         director.pause()
 
@@ -103,5 +105,13 @@ class ChipboxServiceCallback @Inject constructor(
 
         // Take the service out of the foreground, retain the notification
         service.stopForeground(false)
+    }
+
+    override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
+        super.onPlayFromMediaId(mediaId, extras)
+        if (mediaId != null) {
+            println("Received command to play $mediaId")
+            IdToCommandParser.parse(director, mediaId)
+        }
     }
 }
