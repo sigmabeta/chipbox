@@ -2,11 +2,11 @@ apply from: "$rootProject.projectDir/core-android-module.gradle"
 apply from: "$rootProject.projectDir/di.gradle"
 
 dependencies {
-    // MediaStyle notifications.
-    api "androidx.media:media:1.4.2"
+    api "androidx.media2:media2-common:$media2_version"
 
     implementation project(":core:colors")
     implementation project(":core:drawables")
+    implementation project(":core:player:common")
     implementation project(":core:player:director")
     implementation project(":core:repository")
     implementation project(":core:strings")

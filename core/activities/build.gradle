@@ -15,11 +15,15 @@ dependencies {
     api project(path: ':core:navigation')
 
     implementation project(path: ':core:components')
+    implementation project(path: ':core:services')
     implementation project(path: ':core:strings')
     implementation project(path: ':core:styles')
 
     // TODO For TopViewModel. Should be moved into a module
     implementation project(path: ':core:scanner')
+
+    // Interacting with the player service.
+    implementation "androidx.media2:media2-common:$media2_version"
 
     // Material Design Theming
     implementation "androidx.compose.material:material:$compose_version"
