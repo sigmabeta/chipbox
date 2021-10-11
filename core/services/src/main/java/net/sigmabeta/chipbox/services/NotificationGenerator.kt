@@ -15,14 +15,18 @@ class NotificationGenerator(
         // Get the session's metadata
         val controller = mediaSession.controller
         val mediaMetadata = controller.metadata
-        val description = mediaMetadata.description
+        val description = mediaMetadata?.description
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID_PLAYBACK).apply {
             // Add the metadata for the currently playing track
-            setContentTitle(description.title)
-            setContentText(description.subtitle)
-            setSubText(description.description)
-            setLargeIcon(description.iconBitmap)
+            if (description != null) {
+                setContentTitle(description.title)
+                setContentText(description.subtitle)
+                setSubText(description.description)
+                setLargeIcon(description.iconBitmap)
+            } else {
+                setContentTitle("Loading...")
+            }
 
             // Enable launching the player by clicking the notification
             setContentIntent(controller.sessionActivity)
@@ -47,17 +51,7 @@ class NotificationGenerator(
             setSmallIcon(notificationIcon)
             color = ContextCompat.getColor(context, R.color.colorPrimaryDark)
 
-            // Add a pause button
-            addAction(
-                NotificationCompat.Action(
-                    R.drawable.ic_pause_24,
-                    context.getString(R.string.action_pause),
-                    MediaButtonReceiver.buildMediaButtonPendingIntent(
-                        context,
-                        PlaybackStateCompat.ACTION_PLAY_PAUSE
-                    )
-                )
-            )
+            addActions(playbackState.actions)
 
             // Take advantage of MediaStyle features
             val mediaStyle = androidx.media.app.NotificationCompat.MediaStyle()
@@ -71,8 +65,60 @@ class NotificationGenerator(
         return builder.build()
     }
 
+
+    private fun NotificationCompat.Builder.addActions(actions: Long) {
+        addActionIfAvailable(
+            actions,
+            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
+            R.drawable.ic_previous_24,
+            R.string.action_previous
+        )
+
+        addActionIfAvailable(
+            actions,
+            PlaybackStateCompat.ACTION_PLAY,
+            R.drawable.ic_play_24,
+            R.string.action_play
+        )
+
+        addActionIfAvailable(
+            actions,
+            PlaybackStateCompat.ACTION_PAUSE,
+            R.drawable.ic_pause_24,
+            R.string.action_pause
+        )
+
+        addActionIfAvailable(
+            actions,
+            PlaybackStateCompat.ACTION_SKIP_TO_NEXT,
+            R.drawable.ic_next_24,
+            R.string.action_next
+        )
+    }
+
+    private fun NotificationCompat.Builder.addActionIfAvailable(
+        actions: Long,
+        actionId: Long,
+        drawableId: Int,
+        labelId: Int
+    ) {
+        if (actions and actionId != 0L) {
+            addAction(
+                NotificationCompat.Action(
+                    drawableId,
+                    context.getString(labelId),
+                    MediaButtonReceiver.buildMediaButtonPendingIntent(
+                        context,
+                        actionId
+                    )
+                )
+            )
+        }
+    }
+
     companion object {
         val CHANNEL_ID_PLAYBACK = BuildConfig.LIBRARY_PACKAGE_NAME + ".playback"
         val NOTIFICATION_ID = 5678
     }
 }
+

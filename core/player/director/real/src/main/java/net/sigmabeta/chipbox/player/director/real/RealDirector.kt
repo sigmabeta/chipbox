@@ -1,10 +1,13 @@
 package net.sigmabeta.chipbox.player.director.real
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collect
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
+import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.generator.Generator
@@ -23,46 +26,68 @@ class RealDirector(
 
     private var currentSession: Session? = null
 
-    private var currentSetlist: List<Track>? = null
+    private var currentSetlist: List<Long>? = null
 
-    private var currentState: PlayerState = PlayerState.STOPPED
+    private var currentState: ChipboxPlaybackState = ChipboxPlaybackState(
+        PlayerState.IDLE,
+        0,
+        0,
+        1.0f,
+        false,
+        null
+    )
+
+    private val metadataStateMutable = MutableSharedFlow<Track>()
+
+    private val playbackStateMutable = MutableSharedFlow<ChipboxPlaybackState>()
 
     init {
         directorScope.launch {
-            generator.events().collect { currentState = reduce(currentState, it) }
+            generator.events().collect {
+                currentState = reduce(currentState, it)
+                playbackStateMutable.emit(currentState)
+            }
         }
 
         directorScope.launch {
-            speaker.events().collect { currentState = reduce(currentState, it) }
+            speaker.events().collect {
+                currentState = reduce(currentState, it)
+                playbackStateMutable.emit(currentState)
+            }
         }
     }
 
     override fun start(session: Session) {
         directorScope.launch {
-            currentSession = session
-            currentSetlist = getSetlistForSession(session)
+            val setlistForSession = getSetlistForSession(session)
 
-            val firstTrackId = currentSetlist
-                ?.get(session.startingPosition)
-                ?.id
+            currentSession = session
+            currentSetlist = setlistForSession
+
+            val firstTrackId = when {
+                session.startingTrackId != null -> session.startingTrackId
+                session.currentPosition != null -> setlistForSession[session.currentPosition!!]
+                session.startingPosition != null -> setlistForSession[session.startingPosition!!]
+                else -> {
+                    emitError("Unable to find a track id to play.")
+                    return@launch
+                }
+            }
 
             if (firstTrackId != null) {
-                currentSession = session.copy(
-                    currentPosition = session.startingPosition
-                )
+                val startingPosition = session.startingPosition
+                    ?: setlistForSession.indexOfFirst { it == firstTrackId }
 
-                startTrack(
-                    firstTrackId
+                currentSession = session.copy(
+                    currentPosition = startingPosition
                 )
-            } else {
-                emitError("Couldn't find that track in the setlist.")
+                startTrack(firstTrackId)
             }
         }
     }
 
     override fun play() {
         generator.play()
-        speaker.play()
     }
 
     override fun pause() {
@@ -70,7 +95,7 @@ class RealDirector(
         speaker.pause()
 
         println("Playback paused.")
-        currentState = PlayerState.PAUSED
+        currentState = currentState.copy(state = PlayerState.PAUSED)
     }
 
     override fun stop() {
@@ -78,6 +103,23 @@ class RealDirector(
             speaker.stop()
             generator.stop()
         }
+    }
+
+    override fun metadataState() = metadataStateMutable.asSharedFlow()
+
+    override fun playbackState() = playbackStateMutable.asSharedFlow()
+
+    override fun pauseTemporarily() {
+        speaker.pause()
+    }
+
+    override fun duck() {
+        TODO("Not yet implemented")
+    }
+
+    override fun resumeFocus() {
+//        speaker.unduck()
+        speaker.play()
     }
 
     private suspend fun startTrack(trackId: Long) {
@@ -99,20 +141,26 @@ class RealDirector(
                 return@launch
             }
 
-            val nextTrackPosition = session.currentPosition + 1
-            if (nextTrackPosition >= setlist.size) {
+            if (isCurrentTrackLastInSetlist(session, setlist)) {
                 // TODO This should also have a reducer.
                 println("Generator requested next track, but no more exist.")
-                currentState = PlayerState.ENDING
+                currentState = currentState.copy(state = PlayerState.ENDING)
                 generator.stop()
                 return@launch
             }
 
-            currentSession = session.copy(currentPosition = nextTrackPosition)
-            val nextTrackId = setlist[nextTrackPosition].id
+            val nextTrackPosition = (session.currentPosition ?: -1) + 1
 
-            startTrack(nextTrackId)
+            currentSession = session.copy(currentPosition = nextTrackPosition)
+            val nextTrack = setlist[nextTrackPosition]
+
+            startTrack(nextTrack)
         }
+    }
+
+    private fun isCurrentTrackLastInSetlist(session: Session, setlist: List<Long>): Boolean {
+        val nextTrackPosition = (session.currentPosition ?: -1) + 1
+        return nextTrackPosition >= setlist.size
     }
 
     private fun getSetlistForSession(session: Session) = when (session.type) {
@@ -122,76 +170,139 @@ class RealDirector(
 
     private fun getTrackListForGame(gameId: Long) = repository
         .getTracksForGame(gameId)
+        .map { it.id }
 
-    private fun getTrackListForArtist(artistId: Long): List<Track> {
+    private fun getTrackListForArtist(artistId: Long): List<Long> {
         TODO("Not yet implemented")
     }
 
-    private fun reduce(oldState: PlayerState, event: GeneratorEvent) = when (event) {
-            GeneratorEvent.Complete -> {
-                nextTrack()
-                oldState
-            }
-            is GeneratorEvent.Error -> {
-                nextTrack()
-                emitError(event.message)
-                oldState
-            }
-            GeneratorEvent.Buffering -> PlayerState.BUFFERING
-            GeneratorEvent.Emitting -> {
-                if (oldState == PlayerState.BUFFERING) {
-                    speaker.play()
-                }
-                oldState
-            }
+    private suspend fun reduce(oldState: ChipboxPlaybackState, event: GeneratorEvent) = when (event) {
+        is GeneratorEvent.Error -> handleGeneratorError(event, oldState)
+        is GeneratorEvent.Loading -> handleGeneratorLoading(oldState, event)
+        GeneratorEvent.Emitting -> handleGeneratorEmitting(oldState, event)
+        GeneratorEvent.TrackChange -> handleGeneratorTrackChange(oldState)
+    }
+
+    private suspend fun handleGeneratorLoading(oldState: ChipboxPlaybackState, event: GeneratorEvent.Loading): ChipboxPlaybackState {
+        val session = currentSession
+        val setlist = currentSetlist
+
+        if (session == null) {
+            emitError("Invalid session.")
+            return oldState.copy(
+                state = PlayerState.ERROR,
+                errorMessage = "Unable to determine if next track available."
+            )
         }
 
-
-    private fun reduce(oldState: PlayerState, event: SpeakerEvent) = when (event) {
-            SpeakerEvent.Buffering -> handleSpeakerBuffering(oldState)
-            SpeakerEvent.Playing -> handleSpeakerPlaying(oldState)
-            is SpeakerEvent.TrackChange -> updatePlayerMetadata(oldState, event.trackId)
-            is SpeakerEvent.Error -> {
-                emitError(event.message)
-                directorScope.launch {
-                    speaker.stop()
-                    generator.stop()
-                }
-
-                PlayerState.STOPPED
-            }
+        if (setlist == null) {
+            emitError("Invalid setlist.")
+            return oldState.copy(
+                state = PlayerState.ERROR,
+                errorMessage = "Unable to determine if next track available."
+            )
         }
 
-    private fun handleSpeakerBuffering(oldState: PlayerState): PlayerState {
-        if (oldState == PlayerState.PLAYING) {
+        if (oldState.state == PlayerState.PLAYING) {
+            return oldState.copy(
+                state = PlayerState.PRELOADING,
+                skipForwardAllowed = isCurrentTrackLastInSetlist(session, setlist)
+            )
+
+        }
+
+        val newTrack = getTrack(event.trackId) ?: return oldState.copy(state = PlayerState.ERROR)
+        metadataStateMutable.emit(newTrack)
+
+        return oldState.copy(
+            state = PlayerState.BUFFERING,
+            skipForwardAllowed = isCurrentTrackLastInSetlist(session, setlist)
+        )
+    }
+
+    private fun getTrack(id: Long) =
+        repository.getTrack(id, withArtists = true)
+
+    private fun handleGeneratorEmitting(oldState: ChipboxPlaybackState, event: GeneratorEvent): ChipboxPlaybackState {
+        if (oldState.state == PlayerState.BUFFERING) {
+            speaker.play()
+        }
+
+        return oldState
+    }
+
+    private fun handleGeneratorTrackChange(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
+        nextTrack()
+        return oldState
+    }
+
+    private fun handleGeneratorError(event: GeneratorEvent.Error, oldState: ChipboxPlaybackState): ChipboxPlaybackState {
+        emitError(event.message)
+
+        directorScope.launch {
+            speaker.stop()
+            generator.stop()
+        }
+
+        return oldState.copy(state = PlayerState.ERROR, errorMessage = event.message)
+    }
+
+    private suspend fun reduce(oldState: ChipboxPlaybackState, event: SpeakerEvent) = when (event) {
+        SpeakerEvent.Buffering -> handleSpeakerBuffering(oldState)
+        SpeakerEvent.Playing -> handleSpeakerPlaying(oldState)
+        is SpeakerEvent.TrackChange -> updatePlayerMetadata(oldState, event.trackId)
+        is SpeakerEvent.Error -> handleSpeakerError(event, oldState)
+    }
+
+    private fun handleSpeakerBuffering(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
+        if (oldState.state == PlayerState.PLAYING) {
             println("Buffer underrun.")
             return oldState
         }
 
-        if (oldState == PlayerState.ENDING) {
+        if (oldState.state == PlayerState.ENDING) {
             println("Setlist complete.")
             stop()
-            return PlayerState.STOPPED
+            return oldState.copy(state = PlayerState.STOPPED)
         }
 
         emitError("SpeakerEvent.BUFFERING not expected in state $oldState.")
         return oldState
     }
 
-    private fun handleSpeakerPlaying(oldState: PlayerState): PlayerState {
-        if (oldState == PlayerState.BUFFERING) {
+    private fun handleSpeakerPlaying(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
+        if (oldState.state == PlayerState.BUFFERING) {
             println("Underrun resolved.")
         }
 
-        if (oldState == PlayerState.ENDING) {
+        if (oldState.state == PlayerState.ENDING) {
             return oldState
         }
 
-        return PlayerState.PLAYING
+        if (oldState.state == PlayerState.PRELOADING) {
+            return oldState
+        }
+
+        return oldState.copy(state = PlayerState.PLAYING)
     }
 
-    private fun updatePlayerMetadata(oldState: PlayerState, newTrackId: Long): PlayerState {
+    private suspend fun updatePlayerMetadata(oldState: ChipboxPlaybackState, newTrackId: Long): ChipboxPlaybackState {
+        val newTrack = repository.getTrack(newTrackId) ?: return oldState.copy(state = PlayerState.ERROR)
+        if (oldState.state == PlayerState.PRELOADING) {
+            metadataStateMutable.emit(newTrack)
+        }
         return oldState
+    }
+
+    private fun handleSpeakerError(event: SpeakerEvent.Error, oldState: ChipboxPlaybackState): ChipboxPlaybackState {
+        emitError(event.message)
+
+        directorScope.launch {
+            speaker.stop()
+            generator.stop()
+        }
+
+        return oldState.copy(state = PlayerState.ERROR, errorMessage = event.message)
     }
 
     private fun emitError(message: String) {

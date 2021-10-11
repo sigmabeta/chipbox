@@ -27,8 +27,7 @@ class GameDetailViewModel @Inject constructor(
             Session(
                 SessionType.GAME,
                 arguments?.id!!,
-                position,
-                -1
+                startingPosition = position
             )
         )
     }

@@ -19,8 +19,7 @@ object IdToCommandParser {
                 Session(
                     SessionType.GAME,
                     parentId.toLong(),
-                    0,
-                    -1
+                    startingTrackId = trackId.toLong()
                 )
             )
             else -> TODO()
