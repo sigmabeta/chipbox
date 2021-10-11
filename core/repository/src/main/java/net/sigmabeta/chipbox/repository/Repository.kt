@@ -43,5 +43,9 @@ interface Repository {
 
     suspend fun addGame(rawGame: RawGame)
 
-    fun getTrack(id: Long): Track?
+    fun getTrack(
+        id: Long,
+        withGame: Boolean = false,
+        withArtists: Boolean = false
+    ): Track?
 }

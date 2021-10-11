@@ -197,8 +197,11 @@ class MemoryRepository(
         return singleArtistLoadEvents.asSharedFlow()
     }
 
-    override fun getTrack(id: Long) = tracksById[id]
-        ?.toTrack()
+    override fun getTrack(
+        id: Long,
+        withGame: Boolean,
+        withArtists: Boolean
+    ) = tracksById[id]?.toTrack(withGame, withArtists)
 
     override suspend fun addGame(rawGame: RawGame) {
         // Get and convert tracks

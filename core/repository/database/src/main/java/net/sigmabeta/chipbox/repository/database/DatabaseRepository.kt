@@ -81,9 +81,13 @@ class DatabaseRepository(
         { it.toArtist(withTracks, withGames) }
     )
 
-    override fun getTrack(id: Long) = trackDao
+    override fun getTrack(
+        id: Long,
+        withGame: Boolean,
+        withArtists: Boolean
+    ) = trackDao
         .getTrackSync(id)
-        ?.toTrack()
+        ?.toTrack(withGame, withArtists)
 
 
     override suspend fun addGame(rawGame: RawGame) {

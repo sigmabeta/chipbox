@@ -21,7 +21,6 @@ abstract class Speaker(
         extraBufferCapacity = 10
     )
 
-
     fun events() = eventSink.asSharedFlow()
 
     fun play() {
