@@ -165,9 +165,13 @@ class MockRepository(
         return singleArtistLoadEvents.asSharedFlow()
     }
 
-    override fun getTrack(id: Long) = tracks
+    override fun getTrack(
+        id: Long,
+        withGame: Boolean,
+        withArtists: Boolean
+    ) = tracks
         .firstOrNull { it.id == id }
-        ?.toTrack()
+        ?.toTrack(withGame, withArtists)
 
     override suspend fun addGame(rawGame: RawGame) = Unit
 

@@ -4,6 +4,8 @@ apply from: "$rootProject.projectDir/di.gradle"
 dependencies {
     api "androidx.media2:media2-common:$media2_version"
 
+    implementation "com.jakewharton.timber:timber:$timber_version"
+
     implementation project(":core:colors")
     implementation project(":core:drawables")
     implementation project(":core:player:common")

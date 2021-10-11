@@ -84,7 +84,7 @@ abstract class Generator(
         while (true) {
             // When track is over, block waiting for the next one.
             if (nextTrackId == null && isTrackOver()) {
-                eventSink.emit(GeneratorEvent.Complete)
+                eventSink.emit(GeneratorEvent.TrackChange)
                 nextTrackId = nextTrackIdChannel.receive()
             } else {
                 // See if we have another one queued up, but don't block.
@@ -168,7 +168,7 @@ abstract class Generator(
             return null
         }
 
-        eventSink.emit(GeneratorEvent.Buffering)
+        eventSink.emit(GeneratorEvent.Loading(trackId))
 
         if (currentTrack != null) {
             teardown()

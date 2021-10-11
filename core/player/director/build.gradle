@@ -3,5 +3,6 @@ apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
 dependencies {
     api "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlin_coroutines_version"
 
+    implementation project(path: ':core:models')
     implementation project(path: ':core:player:common')
 }
