@@ -27,11 +27,6 @@ abstract class Speaker(
         startPlayback()
     }
 
-    fun pause() {
-        ongoingPlaybackJob?.cancel()
-        ongoingPlaybackJob = null
-    }
-
     suspend fun stop() {
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = null
