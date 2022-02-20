@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.services.LibraryBrowser.Companion.ID_ARTISTS
 import net.sigmabeta.chipbox.services.LibraryBrowser.Companion.ID_GAMES
+import timber.log.Timber
 
 internal fun Game.toMediaItem() = MediaBrowserCompat.MediaItem(
     MediaDescriptionCompat.Builder()
@@ -50,7 +51,7 @@ internal fun Track.toMetadataBuilder(): MediaMetadataCompat.Builder {
 }
 
 
-internal fun ChipboxPlaybackState.toPlaybackStateBuilder(): PlaybackStateCompat.Builder {
+internal fun ChipboxPlaybackState.toAndroidXPlaybackState(): PlaybackStateCompat {
     val builder = PlaybackStateCompat.Builder()
 
     if (state == PlayerState.ERROR) {
@@ -58,12 +59,13 @@ internal fun ChipboxPlaybackState.toPlaybackStateBuilder(): PlaybackStateCompat.
     }
 
     return builder
-        .setState(state.toAndroidPlayerState(), position, playbackSpeed)
+        .setState(state.toAndroidXPlayerState(), position, playbackSpeed)
         .setActions(availableActions())
         .setBufferedPosition(bufferPosition)
+        .build()
 }
 
-private fun PlayerState.toAndroidPlayerState() = when (this) {
+private fun PlayerState.toAndroidXPlayerState() = when (this) {
     PlayerState.IDLE -> PlaybackStateCompat.STATE_NONE
     PlayerState.STOPPED -> PlaybackStateCompat.STATE_STOPPED
     PlayerState.BUFFERING -> PlaybackStateCompat.STATE_BUFFERING
@@ -79,10 +81,12 @@ private fun PlayerState.toAndroidPlayerState() = when (this) {
 private fun ChipboxPlaybackState.availableActions(): Long {
     var actions = 0L
 
-    if (state == PlayerState.PLAYING) {
-        actions = PlaybackStateCompat.ACTION_STOP or PlaybackStateCompat.ACTION_PAUSE
-    } else {
-        actions = actions or PlaybackStateCompat.ACTION_PLAY
+    Timber.w("Generating available actions for state: $state")
+    actions = when (state) {
+        PlayerState.PLAYING, PlayerState.PRELOADING, PlayerState.BUFFERING -> PlaybackStateCompat.ACTION_STOP or PlaybackStateCompat.ACTION_PAUSE
+        PlayerState.PAUSED -> PlaybackStateCompat.ACTION_STOP or PlaybackStateCompat.ACTION_PLAY
+        PlayerState.STOPPED -> PlaybackStateCompat.ACTION_PLAY
+        else -> return actions
     }
 
     if (skipForwardAllowed) {
@@ -98,6 +102,7 @@ private fun Track.getArtistText(): String {
     return when (artists?.size) {
         null, 0 -> "Unknown Artist"
         1 -> artists!!.first().name
+        2, 3 -> artists!!.joinToString(", ") { it.name }
         else -> "Various Artists" // TODO String resources
     }
 }

@@ -1,9 +1,8 @@
 package net.sigmabeta.chipbox.player.director
 
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.common.Session
 
 interface Director {
     // Controls
@@ -26,7 +25,7 @@ interface Director {
 
     fun pauseTemporarily()
 
-    fun duck() // Quack
+    fun duck() // 🦆
 
     fun resumeFocus()
 }
