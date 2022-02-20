@@ -91,12 +91,19 @@ class RemasterActivity : ComponentActivity() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             // TODO Push playback state to a flow observed inside Jetpack Compose
         }
+
+        override fun onSessionDestroyed() {
+            mediaBrowser.disconnect()
+            Timber.e("Session destroyed in Activity.")
+            // maybe schedule a reconnection using a new MediaBrowser instance
+        }
     }
 
     private val connectionCallbacks = object : MediaBrowserCompat.ConnectionCallback() {
         override fun onConnected() {
             // Get the token for the MediaSession
             mediaBrowser.sessionToken.also { token ->
+                Timber.v("Connected to session with Token: $token")
 
                 // Create a MediaControllerCompat
                 val mediaController = MediaControllerCompat(
