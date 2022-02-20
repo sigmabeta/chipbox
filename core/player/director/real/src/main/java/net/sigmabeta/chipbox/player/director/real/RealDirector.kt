@@ -1,9 +1,13 @@
 package net.sigmabeta.chipbox.player.director.real
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
@@ -36,6 +40,12 @@ class RealDirector(
         false,
         null
     )
+        set(value) {
+            field = value
+            directorScope.launch {
+                playbackStateMutable.emit(currentState)
+            }
+        }
 
     private val metadataStateMutable = MutableSharedFlow<Track>()
 
@@ -43,17 +53,23 @@ class RealDirector(
 
     init {
         directorScope.launch {
-            generator.events().collect {
-                currentState = reduce(currentState, it)
-                playbackStateMutable.emit(currentState)
-            }
+            generator
+                .events()
+                .distinctUntilChanged()
+                .collect {
+                    println("Received GeneratorEvent: $it")
+                    currentState = reduce(currentState, it)
+                }
         }
 
         directorScope.launch {
-            speaker.events().collect {
-                currentState = reduce(currentState, it)
-                playbackStateMutable.emit(currentState)
-            }
+            speaker
+                .events()
+                .distinctUntilChanged()
+                .collect {
+                    println("Received SpeakerEvent: $it")
+                    currentState = reduce(currentState, it)
+                }
         }
     }
 
@@ -87,21 +103,27 @@ class RealDirector(
     }
 
     override fun play() {
+        if (currentState.state == PlayerState.PAUSED) {
+            speaker.play()
+            currentState = currentState.copy(state = PlayerState.PLAYING)
+        }
         generator.play()
     }
 
     override fun pause() {
-        generator.pause()
-        speaker.pause()
+        directorScope.launch {
+            speaker.stop()
 
-        println("Playback paused.")
-        currentState = currentState.copy(state = PlayerState.PAUSED)
+            currentState = currentState.copy(state = PlayerState.PAUSED)
+        }
     }
 
     override fun stop() {
         directorScope.launch {
             speaker.stop()
             generator.stop()
+
+            currentState = currentState.copy(state = PlayerState.STOPPED)
         }
     }
 
@@ -110,15 +132,21 @@ class RealDirector(
     override fun playbackState() = playbackStateMutable.asSharedFlow()
 
     override fun pauseTemporarily() {
-        speaker.pause()
+        directorScope.launch {
+            speaker.stop()
+        }
     }
 
+    /**
+     * 🦆
+     */
     override fun duck() {
         TODO("Not yet implemented")
     }
 
     override fun resumeFocus() {
-//        speaker.unduck()
+        // 🚫🦆
+        // speaker.unduck()
         speaker.play()
     }
 
@@ -220,9 +248,6 @@ class RealDirector(
         )
     }
 
-    private fun getTrack(id: Long) =
-        repository.getTrack(id, withArtists = true)
-
     private fun handleGeneratorEmitting(oldState: ChipboxPlaybackState, event: GeneratorEvent): ChipboxPlaybackState {
         if (oldState.state == PlayerState.BUFFERING) {
             speaker.play()
@@ -266,7 +291,7 @@ class RealDirector(
             return oldState.copy(state = PlayerState.STOPPED)
         }
 
-        emitError("SpeakerEvent.BUFFERING not expected in state $oldState.")
+//        emitError("SpeakerEvent.BUFFERING not expected in state $oldState.")
         return oldState
     }
 
@@ -287,7 +312,7 @@ class RealDirector(
     }
 
     private suspend fun updatePlayerMetadata(oldState: ChipboxPlaybackState, newTrackId: Long): ChipboxPlaybackState {
-        val newTrack = repository.getTrack(newTrackId) ?: return oldState.copy(state = PlayerState.ERROR)
+        val newTrack = getTrack(newTrackId) ?: return oldState.copy(state = PlayerState.ERROR)
         if (oldState.state == PlayerState.PRELOADING) {
             metadataStateMutable.emit(newTrack)
         }
@@ -304,6 +329,9 @@ class RealDirector(
 
         return oldState.copy(state = PlayerState.ERROR, errorMessage = event.message)
     }
+
+    private fun getTrack(id: Long) =
+        repository.getTrack(id, withArtists = true, withGame = true)
 
     private fun emitError(message: String) {
         println("Error: $message")

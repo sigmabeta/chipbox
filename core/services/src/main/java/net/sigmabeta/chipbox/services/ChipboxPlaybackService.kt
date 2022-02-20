@@ -1,10 +1,13 @@
 package net.sigmabeta.chipbox.services
 
+import android.content.Intent
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.media.MediaBrowserServiceCompat
+import androidx.media.session.MediaButtonReceiver
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,23 +30,37 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
 
 //    private var mediaController: MediaControllerCompat? = null
 
-    private lateinit var stateBuilder: PlaybackStateCompat.Builder
-
     override fun onCreate() {
         super.onCreate()
 
         Timber.i("Starting service...")
 
         val notificationGenerator = NotificationGenerator(this)
-        val callback = ChipboxSessionCallback(this, serviceScope, director, notificationGenerator)
+        val systemNotifService = NotificationManagerCompat.from(this)
+
+        val callback = ChipboxSessionCallback(
+            this,
+            serviceScope,
+            director,
+            notificationGenerator,
+            systemNotifService
+        )
 
         mediaSession = createMediaSession(callback)
 //        mediaController = MediaControllerCompat(this, mediaSession!!)
 //        mediaController?.registerCallback(
 //            object : MediaControllerCompat.Callback() {
-//
+//                override fun onSessionDestroyed() {
+//                    Timber.e("Session destroyed in Activity.")
+//                     maybe schedule a reconnection using a new MediaBrowser instance
+//                }
 //            }
 //        )
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        MediaButtonReceiver.handleIntent(mediaSession, intent)
+        return super.onStartCommand(intent, flags, startId)
     }
 
     override fun onDestroy() {
@@ -68,7 +85,7 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
         parentMediaId: String,
         result: Result<List<MediaBrowserCompat.MediaItem>>
     ) {
-        Timber.v("onLoadChildren for $parentMediaId")
+//        Timber.v("onLoadChildren for $parentMediaId")
 
         //  Browsing not allowed
         if (ID_ROOT_EMPTY == parentMediaId) {
@@ -79,7 +96,7 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
 
         if (parentMediaId == ID_ROOT_FULL) {
             val topLevelMenuItems = browser.getTopLevelMenuItems()
-            Timber.d("Sending top level menu items: ${topLevelMenuItems.size}")
+            Timber.d("Sending top level menu items: ${topLevelMenuItems}")
             result.sendResult(topLevelMenuItems)
             return
         }
@@ -95,21 +112,21 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
         callback: ChipboxSessionCallback
     ) = MediaSessionCompat(baseContext, LOG_TAG).apply {
         // Set an initial PlaybackState with ACTION_PLAY, so media buttons can start the player
-        stateBuilder = PlaybackStateCompat
+        val state = PlaybackStateCompat
             .Builder()
             .setActions(
                 PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE
-            )
+            ).build()
 
-        val state = stateBuilder.build()
         setPlaybackState(state)
 
-        // MySessionCallback() has methods that handle callbacks from a media controller
         setCallback(callback)
         callback.mediaSession = this
 
         // Set the session's token so that client activities can communicate with it.
-        val mscToken = this.sessionToken
+        val mscToken = sessionToken
+        Timber.v("Creating session with Token: $sessionToken active: $isActive")
+
         this@ChipboxPlaybackService.sessionToken = mscToken
     }
 

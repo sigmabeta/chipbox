@@ -6,7 +6,7 @@ import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService.Companion.ID_ROOT
 
 object IdToCommandParser {
-    fun parse(director: Director, mediaId: String) {
+    fun handleCommand(director: Director, mediaId: String) {
         val details = mediaId.substringAfter(ID_ROOT)
         val detailSplit = details.split(".")
 
