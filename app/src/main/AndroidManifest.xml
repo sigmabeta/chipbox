@@ -1,76 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="net.sigmabeta.chipbox">
-
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-
-    <!-- For Crashlytics -->
-    <uses-permission android:name="android.permission.INTERNET"/>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
         android:name=".ChipboxApplication"
-        android:allowBackup="false"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name">
-
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
-            android:name=".ui.onboarding.OnboardingActivity"
-            android:theme="@style/ThemeOnboard"/>
-
-        <activity
-            android:name=".ui.main.MainActivity"
-            android:theme="@style/Launcher">
-
+            android:name=".MainActivity"
+            android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".ui.navigation.NavigationActivity"
-            android:theme="@style/ThemeDrawer"/>
-
-        <activity
-            android:name=".ui.player.PlayerActivity"
-            android:theme="@style/ThemePlayer"
-            android:launchMode="singleTask"/>
-
-        <activity
-            android:name=".ui.game.GameActivity"
-            android:theme="@style/ThemeGame"/>
-
-        <activity
-            android:name=".ui.settings.SettingsActivity"
-            android:theme="@style/ThemeNoDrawer"
-            android:label="@string/title_settings"
-            android:screenOrientation="portrait"/>
-
-        <service
-            android:name=".backend.PlayerService"
-            android:enabled="true"
-            android:exported="false">
-
-            <intent-filter>
-                <action android:name="android.intent.action.MEDIA_BUTTON" />
-            </intent-filter>
-        </service>
-
-        <service android:name=".backend.ScanService" />
-
-        <receiver android:name="androidx.media.session.MediaButtonReceiver" >
-            <intent-filter>
-                <action android:name="android.intent.action.MEDIA_BUTTON" />
-            </intent-filter>
-        </receiver>
-
-        <meta-data
-            android:name="io.fabric.ApiKey"
-            android:value="1311766f43b29e9268a0a60a9e23fe2d3f722bcd"/>
-
     </application>
 
 </manifest>
