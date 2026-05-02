@@ -11,7 +11,7 @@ import net.sigmabeta.chipbox.player.speaker.real.RealSpeaker
 @InstallIn(SingletonComponent::class)
 object RealSpeakerModule {
     @Provides
-    internal fun provideRealSpeaker(
+    fun provideRealSpeaker(
             bufferManager: ConsumerBufferManager
     ) = RealSpeaker(bufferManager)
 }

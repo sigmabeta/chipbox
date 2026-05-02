@@ -23,6 +23,7 @@ import net.sigmabeta.chipbox.core.components.ChipboxNavBar
 import net.sigmabeta.chipbox.core.components.MenuItemDefinition
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
+import net.sigmabeta.chipbox.drawables.R as DrawablesR
 import net.sigmabeta.chipbox.navigation.ComposableOutput
 import net.sigmabeta.chipbox.navigation.destinations
 
@@ -104,7 +105,7 @@ private fun menuItems(
     menuVisible: MutableState<Boolean>
 ) = listOf(
     MenuItemDefinition(
-        R.drawable.ic_refresh_24,
+        DrawablesR.drawable.ic_refresh_24,
         R.string.menu_label_scan_for_music
     ) {
         viewModel.startScan()

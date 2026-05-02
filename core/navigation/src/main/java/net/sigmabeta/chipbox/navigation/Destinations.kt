@@ -2,8 +2,8 @@ package net.sigmabeta.chipbox.navigation
 
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
-import androidx.navigation.compose.NamedNavArgument
-import androidx.navigation.compose.navArgument
+import androidx.navigation.NamedNavArgument
+import androidx.navigation.navArgument
 import net.sigmabeta.chipbox.features.artist_detail.ArtistDetailArguments
 import net.sigmabeta.chipbox.features.artist_detail.ArtistDetailScreen
 import net.sigmabeta.chipbox.features.artist_detail.ArtistDetailViewModel

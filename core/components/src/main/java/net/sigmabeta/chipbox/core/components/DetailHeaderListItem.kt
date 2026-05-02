@@ -9,7 +9,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberImagePainter
-import net.sigmabeta.chipbox.components.R
+import net.sigmabeta.chipbox.drawables.R
 
 @Composable
 fun DetailHeaderListItem(

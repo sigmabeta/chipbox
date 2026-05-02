@@ -1,5 +1,0 @@
-apply from: "$rootProject.projectDir/core-kotlin-module.gradle"
-
-dependencies {
-    implementation project(path: ':core:player:status')
-}

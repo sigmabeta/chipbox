@@ -17,12 +17,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object FileSpeakerModule {
     @Provides
-    internal fun provideFileLocation(@ApplicationContext context: Context) =
+    fun provideFileLocation(@ApplicationContext context: Context) =
         Environment.getExternalStorageDirectory()
 
     @Provides
     @Singleton
-    internal fun provideFileSpeaker(
+    fun provideFileSpeaker(
         externalStorageDir: File,
         bufferManager: ConsumerBufferManager
     ) = FileSpeaker(

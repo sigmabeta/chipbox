@@ -1,3 +1,0 @@
-apply from: "$rootProject.projectDir/core-android-module.gradle"
-
-dependencies { }

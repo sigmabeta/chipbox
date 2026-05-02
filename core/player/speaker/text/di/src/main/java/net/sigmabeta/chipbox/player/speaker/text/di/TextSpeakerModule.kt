@@ -13,7 +13,7 @@ import javax.inject.Singleton
 object TextSpeakerModule {
     @Provides
     @Singleton
-    internal fun provideTextSpeaker(
+    fun provideTextSpeaker(
             consumerBufferManager: ConsumerBufferManager,
     ) = TextSpeaker(
             consumerBufferManager

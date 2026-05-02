@@ -12,5 +12,5 @@ import javax.inject.Singleton
 object SsfEmulatorModule {
     @Provides
     @Singleton
-    internal fun provideSsfEmulator() = SsfEmulator
+    fun provideSsfEmulator() = SsfEmulator
 }

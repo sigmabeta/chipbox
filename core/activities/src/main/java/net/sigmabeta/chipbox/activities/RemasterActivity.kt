@@ -20,6 +20,7 @@ import androidx.core.view.WindowCompat
 import com.google.accompanist.insets.ProvideWindowInsets
 import dagger.hilt.android.AndroidEntryPoint
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService
+import net.sigmabeta.chipbox.styles.R as StylesR
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -33,7 +34,7 @@ class RemasterActivity : ComponentActivity() {
     private lateinit var mediaBrowser: MediaBrowserCompat
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        setTheme(R.style.ChipboxImmersive)
+        setTheme(StylesR.style.ChipboxImmersive)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         super.onCreate(savedInstanceState)
 

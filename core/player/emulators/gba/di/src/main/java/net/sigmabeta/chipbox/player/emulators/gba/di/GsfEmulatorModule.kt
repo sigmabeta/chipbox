@@ -12,5 +12,5 @@ import javax.inject.Singleton
 object GbaEmulatorModule {
     @Provides
     @Singleton
-    internal fun provideGbaEmulator() = GbaEmulator
+    fun provideGbaEmulator() = GbaEmulator
 }

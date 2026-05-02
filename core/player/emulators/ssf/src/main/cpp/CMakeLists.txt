@@ -33,6 +33,8 @@ add_definitions(
         -DHAVE_MPROTECT
 )
 
+add_compile_options(-Wno-int-conversion)
+
 # Specifies a library name, specifies whether the library is STATIC or
 # SHARED, and provides relative paths to the source code. You can
 # define multiple libraries by adding multiple add_library() commands,

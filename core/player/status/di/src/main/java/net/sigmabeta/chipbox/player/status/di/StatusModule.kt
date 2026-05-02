@@ -13,7 +13,7 @@ import javax.inject.Singleton
 object StatusModule {
     @Provides
     @Singleton
-    internal fun provideStatusProvider(realStatusProvider: RealStatusProvider): StatusProvider =
+    fun provideStatusProvider(realStatusProvider: RealStatusProvider): StatusProvider =
         realStatusProvider
 
 }

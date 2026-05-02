@@ -14,11 +14,11 @@ object MockRepositoryModule {
     @Provides
     @Singleton
     @Named("RngSeed")
-    internal fun provideSeed() = SEED_RANDOM_NUMBER_GENERATOR
+    fun provideSeed() = SEED_RANDOM_NUMBER_GENERATOR
 
     @Provides
     @Singleton
-    internal fun provideRandom(@Named("RngSeed") seed: Long) = Random(seed)
+    fun provideRandom(@Named("RngSeed") seed: Long) = Random(seed)
 
 //    @Provides
 //    @Singleton

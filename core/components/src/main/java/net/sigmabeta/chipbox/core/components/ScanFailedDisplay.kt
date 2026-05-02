@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.components.R
+import net.sigmabeta.chipbox.drawables.R
 
 @Composable
 fun ScanFailedDisplay(path: String) {
