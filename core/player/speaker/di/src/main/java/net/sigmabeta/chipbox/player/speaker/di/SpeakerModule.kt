@@ -15,7 +15,7 @@ import javax.inject.Singleton
 object SpeakerModule {
     @Provides
     @Singleton
-    internal fun provideSpeaker(
+    fun provideSpeaker(
         fileSpeaker: FileSpeaker,
         realSpeaker: RealSpeaker,
         textSpeaker: TextSpeaker

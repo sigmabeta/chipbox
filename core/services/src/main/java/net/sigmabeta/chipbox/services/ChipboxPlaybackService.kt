@@ -137,7 +137,7 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
 
     companion object {
         private const val ID_ROOT_INFIX = ".media."
-        const val ID_ROOT = BuildConfig.LIBRARY_PACKAGE_NAME + ID_ROOT_INFIX
+        const val ID_ROOT = "net.sigmabeta.chipbox.services" + ID_ROOT_INFIX
 
         private const val ID_ROOT_FULL = ID_ROOT + "full"
         private const val ID_ROOT_EMPTY = ID_ROOT + "empty"

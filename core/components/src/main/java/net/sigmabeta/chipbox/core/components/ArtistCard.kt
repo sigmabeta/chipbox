@@ -16,6 +16,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberImagePainter
 import net.sigmabeta.chipbox.components.R
+import net.sigmabeta.chipbox.drawables.R as DrawablesR
 
 @Composable
 fun ArtistCard(
@@ -34,8 +35,8 @@ fun ArtistCard(
             data = image,
             builder = {
                 crossfade(true)
-                placeholder(R.drawable.img_album_art_blank)
-                error(R.drawable.img_album_art_blank)
+                placeholder(DrawablesR.drawable.img_album_art_blank)
+                error(DrawablesR.drawable.img_album_art_blank)
             }
         )
 

@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.components.R
+import net.sigmabeta.chipbox.drawables.R as DrawablesR
 
 @Composable
 fun ScanCompleteHeader(onClearClick: () -> Unit) {
@@ -25,7 +26,7 @@ fun ScanCompleteHeader(onClearClick: () -> Unit) {
             .wrapContentHeight()
     ) {
         Image(
-            painter = painterResource(id = R.drawable.ic_check_24),
+            painter = painterResource(id = DrawablesR.drawable.ic_check_24),
             contentDescription = stringResource(id = R.string.cont_desc_scan_complete),
             modifier = Modifier
                 .height(64.dp)
@@ -49,7 +50,7 @@ fun ScanCompleteHeader(onClearClick: () -> Unit) {
         )
         
         Image(
-            painter = painterResource(id = R.drawable.ic_clear_24),
+            painter = painterResource(id = DrawablesR.drawable.ic_clear_24),
             contentDescription = stringResource(id = R.string.cont_desc_scan_clear),
             modifier = Modifier
                 .padding(start = 8.dp, end = 4.dp, top = 6.dp, bottom = 6.dp)

@@ -12,5 +12,5 @@ import javax.inject.Singleton
 object GmeEmulatorModule {
     @Provides
     @Singleton
-    internal fun provideGmeEmulator() = GmeEmulator
+    fun provideGmeEmulator() = GmeEmulator
 }

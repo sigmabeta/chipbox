@@ -12,5 +12,5 @@ import javax.inject.Singleton
 object FakeEmulatorModule {
     @Provides
     @Singleton
-    internal fun provideFakeEmulator() = FakeEmulator
+    fun provideFakeEmulator() = FakeEmulator
 }

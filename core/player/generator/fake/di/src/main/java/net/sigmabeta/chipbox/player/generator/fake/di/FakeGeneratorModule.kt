@@ -14,7 +14,7 @@ import javax.inject.Singleton
 object FakeGeneratorModule {
     @Provides
     @Singleton
-    internal fun provideFakeGenerator(
+    fun provideFakeGenerator(
         repository: Repository,
         bufferManager: ProducerBufferManager
     ) = FakeGenerator(repository, bufferManager)

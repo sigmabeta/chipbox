@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.insets.LocalWindowInsets
 import net.sigmabeta.chipbox.components.R
+import net.sigmabeta.chipbox.drawables.R as DrawablesR
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
 
@@ -60,7 +61,7 @@ private fun NavMenu(
     ) {
         IconButton(onClick = onMenuClick) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_menu_24),
+                painter = painterResource(id = DrawablesR.drawable.ic_menu_24),
                 contentDescription = stringResource(R.string.cont_desc_button_menu)
             )
         }
@@ -135,9 +136,9 @@ data class NavButtonDefinition(
 )
 
 fun navButtonList() = listOf(
-    NavButtonDefinition("games", R.string.label_nav_games, R.drawable.ic_album_24),
-    NavButtonDefinition("artists", R.string.label_nav_artists, R.drawable.ic_artist_24),
-    NavButtonDefinition("playlists", R.string.label_nav_playlists, R.drawable.ic_list_24)
+    NavButtonDefinition("games", R.string.label_nav_games, DrawablesR.drawable.ic_album_24),
+    NavButtonDefinition("artists", R.string.label_nav_artists, DrawablesR.drawable.ic_artist_24),
+    NavButtonDefinition("playlists", R.string.label_nav_playlists, DrawablesR.drawable.ic_list_24)
 )
 
 @Preview
@@ -258,7 +259,7 @@ fun PreviewMenuShown() {
         menuVisible = menuVisible.value,
         menuItems = listOf(
             MenuItemDefinition(
-                iconId = R.drawable.ic_refresh_24,
+                iconId = DrawablesR.drawable.ic_refresh_24,
                 labelId = R.string.caption_unknown_artist,
                 onClick = { menuVisible.value = false }
             )

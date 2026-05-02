@@ -12,6 +12,6 @@ import javax.inject.Singleton
 object RealStatusModule {
     @Provides
     @Singleton
-    internal fun provideRealControls() = RealStatusProvider()
+    fun provideRealControls() = RealStatusProvider()
 
 }

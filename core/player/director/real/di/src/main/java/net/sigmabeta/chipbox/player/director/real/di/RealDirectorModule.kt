@@ -16,7 +16,7 @@ import javax.inject.Singleton
 object RealDirectorModule {
     @Provides
     @Singleton
-    internal fun provideRealDirector(
+    fun provideRealDirector(
             generator: Generator,
             speaker: Speaker,
             repository: Repository

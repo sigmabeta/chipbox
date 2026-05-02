@@ -7,6 +7,9 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
+import net.sigmabeta.chipbox.colors.R as ColorsR
+import net.sigmabeta.chipbox.drawables.R as DrawablesR
+import net.sigmabeta.chipbox.strings.R as StringsR
 import timber.log.Timber
 
 class NotificationGenerator(
@@ -46,11 +49,11 @@ class NotificationGenerator(
             // Add an app icon and set its accent color
             val playbackState = controller.playbackState
             val notificationIcon = if (playbackState?.state == PlaybackStateCompat.STATE_PLAYING)
-                R.drawable.ic_stat_play
+                DrawablesR.drawable.ic_stat_play
             else
-                R.drawable.ic_stat_pause
+                DrawablesR.drawable.ic_stat_pause
             setSmallIcon(notificationIcon)
-            color = ContextCompat.getColor(context, R.color.colorPrimaryDark)
+            color = ContextCompat.getColor(context, ColorsR.color.colorPrimaryDark)
 
             val actionsAdded = addActions(playbackState.actions)
 
@@ -78,31 +81,31 @@ class NotificationGenerator(
         if (addActionIfAvailable(
                 actions,
                 PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS,
-                R.drawable.ic_previous_24,
-                R.string.action_previous
+                DrawablesR.drawable.ic_previous_24,
+                StringsR.string.action_previous
             )) addedActions++
 
         if (addActionIfAvailable(
                 actions,
                 PlaybackStateCompat.ACTION_PLAY,
-                R.drawable.ic_play_24,
-                R.string.action_play
+                DrawablesR.drawable.ic_play_24,
+                StringsR.string.action_play
             )) addedActions++
 
 
         if (addActionIfAvailable(
                 actions,
                 PlaybackStateCompat.ACTION_PAUSE,
-                R.drawable.ic_pause_24,
-                R.string.action_pause
+                DrawablesR.drawable.ic_pause_24,
+                StringsR.string.action_pause
             )) addedActions++
 
 
         if (addActionIfAvailable(
                 actions,
                 PlaybackStateCompat.ACTION_SKIP_TO_NEXT,
-                R.drawable.ic_next_24,
-                R.string.action_next
+                DrawablesR.drawable.ic_next_24,
+                StringsR.string.action_next
             )) addedActions++
 
         return addedActions
@@ -131,7 +134,7 @@ class NotificationGenerator(
     }
 
     companion object {
-        val CHANNEL_ID_PLAYBACK = BuildConfig.LIBRARY_PACKAGE_NAME + ".playback"
+        val CHANNEL_ID_PLAYBACK = "net.sigmabeta.chipbox.services.playback"
         val NOTIFICATION_ID = 5678
     }
 }

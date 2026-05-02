@@ -15,14 +15,14 @@ import javax.inject.Singleton
 object RealBufferModule {
     @Provides
     @Singleton
-    internal fun provideRealBufferManager() = RealBufferManager()
+    fun provideRealBufferManager() = RealBufferManager()
 
     @Provides
     @Singleton
-    internal fun provideConsumerBufferManager(bufferManager: RealBufferManager): ConsumerBufferManager = bufferManager
+    fun provideConsumerBufferManager(bufferManager: RealBufferManager): ConsumerBufferManager = bufferManager
 
     @Provides
     @Singleton
-    internal fun provideProducerBufferManager(bufferManager: RealBufferManager): ProducerBufferManager = bufferManager
+    fun provideProducerBufferManager(bufferManager: RealBufferManager): ProducerBufferManager = bufferManager
 
 }

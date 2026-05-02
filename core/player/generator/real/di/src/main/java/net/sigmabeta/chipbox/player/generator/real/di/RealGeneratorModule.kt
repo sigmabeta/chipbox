@@ -15,7 +15,7 @@ import javax.inject.Singleton
 object RealGeneratorModule {
     @Provides
     @Singleton
-    internal fun provideRealGenerator(
+    fun provideRealGenerator(
         emulatorProvider: EmulatorProvider,
         bufferManager: ProducerBufferManager,
         repository: Repository

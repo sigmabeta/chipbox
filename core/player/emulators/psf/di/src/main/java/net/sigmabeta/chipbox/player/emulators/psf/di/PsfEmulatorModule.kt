@@ -12,5 +12,5 @@ import javax.inject.Singleton
 object PsfEmulatorModule {
     @Provides
     @Singleton
-    internal fun providePsfEmulator() = PsfEmulator
+    fun providePsfEmulator() = PsfEmulator
 }

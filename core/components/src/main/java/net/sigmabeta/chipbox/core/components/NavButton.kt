@@ -25,6 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.components.R
+import net.sigmabeta.chipbox.drawables.R as DrawablesR
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -98,7 +99,7 @@ fun PreviewNavButtonSelected() {
         NavButton(
             selected = true,
             labelResource = R.string.label_nav_games,
-            iconResource = R.drawable.ic_album_24,
+            iconResource = DrawablesR.drawable.ic_album_24,
             onClick = { }
         )
     }
@@ -115,7 +116,7 @@ fun PreviewNavButtonUnselected() {
         NavButton(
             selected = false,
             labelResource = R.string.label_nav_artists,
-            iconResource = R.drawable.ic_artist_24,
+            iconResource = DrawablesR.drawable.ic_artist_24,
             onClick = { }
         )
     }

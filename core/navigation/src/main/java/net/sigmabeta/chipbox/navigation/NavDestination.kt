@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.navigation
 import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
-import androidx.navigation.compose.NamedNavArgument
+import androidx.navigation.NamedNavArgument
 
 open class NavDestination(
     val route: String,

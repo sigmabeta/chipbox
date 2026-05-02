@@ -20,6 +20,7 @@
 
     <string name="caption_track_count">%1$d Tracks</string>
     <string name="caption_unknown_artist">Unknown Artist</string>
+    <string name="caption_various_artists">Various Artists</string>
 
     <string name="scan_display_complete">Scan Complete</string>
     <string name="scan_display_time">Time</string>

@@ -18,7 +18,7 @@ import javax.inject.Singleton
 object EmulatorModule {
     @Provides
     @Singleton
-    internal fun provideEmulatorProvider() = EmulatorProvider(
+    fun provideEmulatorProvider() = EmulatorProvider(
         listOf(
             TwosfEmulator,
             GbaEmulator,

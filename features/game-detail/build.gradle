@@ -1,7 +1,0 @@
-apply from: "$rootProject.projectDir/feature-module.gradle"
-apply from: "$rootProject.projectDir/di.gradle"
-
-dependencies {
-    implementation project(path: ':core:player:common')
-    implementation project(path: ':core:player:director')
-}
