@@ -6,9 +6,9 @@ import java.io.UnsupportedEncodingException
 import java.nio.ByteBuffer
 
 object SpcReader : Reader() {
-    override fun readTracksFromFile(path: String): List<RawTrack>? {
+    override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
-            val fileAsByteBuffer = fileAsByteBuffer(path)
+            val fileAsByteBuffer = bytesAsByteBuffer(bytes)
             val formatHeader = fileAsByteBuffer.nextBytesAsString(33)
             if (formatHeader == null) {
                 Timber.e("No header found.")
@@ -29,7 +29,7 @@ object SpcReader : Reader() {
 
             return listOf(
                 RawTrack(
-                    path,
+                    identifier,
                     spcMainTag.songTitle,
                     spcMainTag.artistName,
                     spcMainTag.gameTitle,
@@ -45,7 +45,7 @@ object SpcReader : Reader() {
             Timber.e("Unsupported Encoding: ${e.message}")
             return null
         } catch (e: Exception) {
-            Timber.e("Error reading $path: ${e.message}")
+            Timber.e("Error reading $identifier: ${e.message}")
             e.printStackTrace()
             return null
         }

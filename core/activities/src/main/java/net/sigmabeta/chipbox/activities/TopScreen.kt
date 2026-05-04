@@ -51,8 +51,10 @@ fun TopScreen(viewModel: TopViewModel) {
 
         val menuVisible = remember { mutableStateOf(false) }
 
-        val scannerState = viewModel.scannerStates.collectAsState(initial = ScannerState.Unknown).value
-        val lastScannerEvent = viewModel.scannerEvents.collectAsState(initial = ScannerEvent.Unknown).value
+        val scannerState =
+            viewModel.scannerStates.collectAsState(initial = ScannerState.Unknown).value
+        val lastScannerEvent =
+            viewModel.scannerEvents.collectAsState(initial = ScannerEvent.Unknown).value
 
         ChipboxNavBar(
             navBackStackEntry?.destination?.route ?: "",
@@ -88,7 +90,7 @@ fun navClickHandler(navController: NavController, context: Context): (destinatio
 }
 
 @Composable
-private fun navBarPadding(insets: WindowInsets) : PaddingValues {
+private fun navBarPadding(insets: WindowInsets): PaddingValues {
     with(LocalDensity.current) {
         return PaddingValues(
             insets.navigationBars.left.toDp(),

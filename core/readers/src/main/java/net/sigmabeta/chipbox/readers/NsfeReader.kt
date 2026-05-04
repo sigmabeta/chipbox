@@ -8,9 +8,9 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 object NsfeReader : Reader() {
-    override fun readTracksFromFile(path: String): List<RawTrack>? {
+    override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
-            val fileAsByteBuffer = fileAsByteBuffer(path)
+            val fileAsByteBuffer = bytesAsByteBuffer(bytes)
 
             val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
             if (formatHeader == null) {
@@ -72,7 +72,7 @@ object NsfeReader : Reader() {
 
                 tempTracks.add(
                     RawTrack(
-                        path,
+                        identifier,
                         name,
                         (artistList?.get(index) ?: gameArtist),
                         gameTitle,

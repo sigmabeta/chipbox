@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
@@ -17,6 +18,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.insets.ProvideWindowInsets
 import dagger.hilt.android.AndroidEntryPoint
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService
@@ -43,7 +45,8 @@ class RemasterActivity : ComponentActivity() {
         val heightPixels = displayMetrics.heightPixels
 
         // TODO Don't request on launch
-        setupPermissions()
+//        setupPermissions()
+        openDirectory()
 
         Timber.v("Device screen DPI: ${displayMetrics.densityDpi}")
         Timber.v("Device screen scaling factor: ${displayMetrics.density}")
@@ -152,6 +155,18 @@ class RemasterActivity : ComponentActivity() {
             shouldExplainPermission() -> topViewModel.showPermissionExplanation()
             else -> permissionLauncher.launch(getPermissionName())
         }
+    }
+
+    private fun openDirectory() {
+        val directoryLauncher = registerForActivityResult(
+            ActivityResultContracts.OpenDocumentTree()
+        ) { uri: Uri? ->
+            if (uri != null) {
+                topViewModel.directoryPermissionGranted(uri)
+            }
+        }
+
+        directoryLauncher.launch(null)
     }
 
     private fun isPermissionGranted() =

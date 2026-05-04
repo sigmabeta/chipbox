@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.sage.appcomm.ActionSink
-import net.sigmabeta.sage.appcomm.VglsAction
+import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.SectionHeaderListModel
 import net.sigmabeta.sage.components.SingleTextListModel
@@ -38,7 +38,7 @@ fun ListItemContent(
             style = MaterialTheme.typography.bodyMedium,
             modifier = modifier
                 .fillMaxWidth()
-                .clickable(enabled = model.clickAction !is VglsAction.Noop) {
+                .clickable(enabled = model.clickAction !is SageAction.Noop) {
                     sink.sendAction(model.clickAction)
                 }
                 .padding(padding)

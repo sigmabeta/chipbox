@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.readers
 
-import java.io.File
 import java.math.BigInteger
 import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
@@ -50,16 +49,8 @@ fun String?.orUnknown(): String {
     return this
 }
 
-internal fun fileAsByteBuffer(path: String): ByteBuffer {
-    val file = File(path)
-    val buffer = ByteBuffer.wrap(
-        file.readBytes(),
-        0,
-        file.length().toInt()
-    )
-
-    return buffer.order(ByteOrder.LITTLE_ENDIAN)
-}
+internal fun bytesAsByteBuffer(bytes: ByteArray): ByteBuffer =
+    ByteBuffer.wrap(bytes, 0, bytes.size).order(ByteOrder.LITTLE_ENDIAN)
 
 internal fun String.toLengthMillis(): Long {
     val splitText = split(":")

@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import net.sigmabeta.sage.appcomm.VglsAction
+import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.chipbox.feature.welcome.WelcomeViewModelBrain
 import net.sigmabeta.chipbox.ui.ChipboxApp
 
@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         if (savedInstanceState == null) {
-            brain.sendAction(VglsAction.InitNoArgs)
+            brain.sendAction(SageAction.InitNoArgs)
         }
 
         setContent { ChipboxApp(brain) }

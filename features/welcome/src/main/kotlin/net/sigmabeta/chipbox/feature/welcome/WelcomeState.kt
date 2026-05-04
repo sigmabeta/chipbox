@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.feature.welcome
 
-import net.sigmabeta.sage.appcomm.VglsAction
+import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.SectionHeaderListModel
 import net.sigmabeta.sage.components.SingleTextListModel
@@ -20,12 +20,12 @@ data class WelcomeState(
         SectionHeaderListModel(title = "About"),
         SingleTextListModel(
             name = "Welcome to Chipbox — now running on SAGE.",
-            clickAction = VglsAction.Noop,
+            clickAction = SageAction.Noop,
             dataId = 1L,
         ),
         SingleTextListModel(
             name = "Bare scaffold; music playback not yet implemented.",
-            clickAction = VglsAction.Noop,
+            clickAction = SageAction.Noop,
             dataId = 2L,
         ),
     )

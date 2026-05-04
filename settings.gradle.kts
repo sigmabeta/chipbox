@@ -34,16 +34,18 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 rootProject.name = "Chipbox"
 
-include(":app", ":features:welcome")
-
 include(
-    ":features:artists",
-    ":features:artist-detail",
-    ":features:games",
-    ":features:game-detail",
-)
+    // SAGE-aware modules
+    ":app",
 
-include(
+    ":features:welcome",
+
+    ":cbox:android:contentsource:file",
+    ":cbox:android:contentsource:file:di",
+
+    ":cbox:common:contentsource",
+
+    // Legacy Modules
     ":core:activities",
     ":core:colors",
     ":core:components",
@@ -106,6 +108,11 @@ include(
     ":core:repository:mock",
     ":core:scanner:mock",
     ":core:scanner:real",
+
+    ":features:artists",
+    ":features:artist-detail",
+    ":features:games",
+    ":features:game-detail",
 )
 
 // 2sf starts with a digit — map to a valid project name
