@@ -2,7 +2,8 @@
 
     <application>
         <service android:name=".ChipboxPlaybackService"
-            android:exported="true">
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>

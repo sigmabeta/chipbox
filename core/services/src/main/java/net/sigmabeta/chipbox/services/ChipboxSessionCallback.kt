@@ -7,6 +7,8 @@ import android.media.AudioManager
 import android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY
 import android.os.Bundle
 import android.support.v4.media.session.MediaSessionCompat
+import android.content.pm.ServiceInfo
+import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
@@ -155,10 +157,11 @@ class ChipboxSessionCallback(
 
         // Put the service in the foreground, post notification
         val notification = notificationGenerator.generate(mediaSession)
-        service.startForeground(
-            NOTIFICATION_ID,
-            notification
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            service.startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        } else {
+            service.startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     private fun handlePausedState() {

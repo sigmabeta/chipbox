@@ -4,4 +4,5 @@ plugins {
 
 dependencies {
     api(libs.sage.common.coroutines)
+    implementation(libs.hilt.core)
 }

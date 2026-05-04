@@ -2,8 +2,6 @@
 #include "gme/Music_Emu.h"
 #include "gme/Spc_Emu.h"
 
-const char *last_error;
-
 Music_Emu *g_emu;
 
 const char *g_last_error;
@@ -65,6 +63,9 @@ void loadFile(const char *filename_c_str, int32_t track_number) {
 
 int32_t generateBuffer(int16_t *target_array, int32_t frames_per_buffer) {
     g_last_error = gme_play(g_emu, frames_per_buffer * 2, target_array);
+    if (g_last_error) {
+        return 0;
+    }
     return frames_per_buffer;
 }
 
@@ -76,7 +77,7 @@ void teardown() {
 }
 
 const char *get_last_error() {
-    return last_error;
+    return g_last_error;
 }
 
 int32_t get_sample_rate() {

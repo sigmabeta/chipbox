@@ -57,6 +57,7 @@ object PsfReader : Reader() {
             return listOf(
                 RawTrack(
                     identifier,
+                    "",
                     tagMap[PSF_TAG_KEY_TITLE].orUnknown(),
                     tagMap[PSF_TAG_KEY_ARTIST].orUnknown(),
                     tagMap[PSF_TAG_KEY_GAME].orUnknown(),

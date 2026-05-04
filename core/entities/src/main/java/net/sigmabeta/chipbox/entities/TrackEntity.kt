@@ -17,6 +17,7 @@ import androidx.room.PrimaryKey
 data class TrackEntity(
     val title: String,
     val path: String,
+    val source: String,
     val trackLengthMs: Long,
     val trackNumber: Int,
     val fade: Boolean,

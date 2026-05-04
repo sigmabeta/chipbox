@@ -319,6 +319,7 @@ class MockRepository(
         Track(
             id,
             path,
+            "",
             title,
             trackLengthMs,
             trackNumber,

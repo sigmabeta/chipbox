@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.services
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
@@ -15,6 +17,16 @@ import timber.log.Timber
 class NotificationGenerator(
     private val context: Context
 ) {
+    init {
+        val channel = NotificationChannel(
+            CHANNEL_ID_PLAYBACK,
+            context.getString(StringsR.string.notification_channel_playback),
+            NotificationManager.IMPORTANCE_LOW
+        )
+        context.getSystemService(NotificationManager::class.java)
+            .createNotificationChannel(channel)
+    }
+
     fun generate(mediaSession: MediaSessionCompat): Notification {
         // Get the session's metadata
         val controller = mediaSession.controller

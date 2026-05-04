@@ -280,6 +280,7 @@ class MemoryRepository(
     ): Track = Track(
         id,
         path,
+        "",
         title,
         trackLengthMs,
         trackNumber,

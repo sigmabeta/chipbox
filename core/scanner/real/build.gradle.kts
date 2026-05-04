@@ -16,4 +16,5 @@ dependencies {
     implementation(projects.core.readers)
     implementation(projects.core.repository)
     implementation(projects.cbox.android.contentsource.file)
+    implementation(libs.sage.common.logging)
 }

@@ -26,10 +26,11 @@ object GbsReader : Reader() {
 
             val tracks = mutableListOf<RawTrack>()
 
-            for (index in 1..numberOfTracks) {
+            for (index in 0 until numberOfTracks) {
                 tracks.add(
                     RawTrack(
                         identifier,
+                        "",
                         TAG_UNKNOWN,
                         gameArtist.orUnknown(),
                         gameTitle,

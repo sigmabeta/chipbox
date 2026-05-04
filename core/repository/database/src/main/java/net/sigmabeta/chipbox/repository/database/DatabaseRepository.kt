@@ -143,6 +143,7 @@ class DatabaseRepository(
         Track(
             id,
             path,
+            source,
             title,
             trackLengthMs,
             trackNumber,
@@ -157,6 +158,7 @@ class DatabaseRepository(
         val tempTrack = TrackEntity(
             title,
             path,
+            source,
             length,
             trackNumber,
             fade,

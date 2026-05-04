@@ -32,6 +32,7 @@ class RemasterActivity : ComponentActivity() {
     lateinit var topViewModel: TopViewModel
 
     lateinit var permissionLauncher: ActivityResultLauncher<String>
+    private lateinit var directoryLauncher: ActivityResultLauncher<Uri?>
 
     private lateinit var mediaBrowser: MediaBrowserCompat
 
@@ -44,9 +45,15 @@ class RemasterActivity : ComponentActivity() {
         val widthPixels = displayMetrics.widthPixels
         val heightPixels = displayMetrics.heightPixels
 
-        // TODO Don't request on launch
+        directoryLauncher = registerForActivityResult(
+            ActivityResultContracts.OpenDocumentTree()
+        ) { uri: Uri? ->
+            if (uri != null) {
+                topViewModel.directoryPermissionGranted(uri)
+            }
+        }
+
 //        setupPermissions()
-        openDirectory()
 
         Timber.v("Device screen DPI: ${displayMetrics.densityDpi}")
         Timber.v("Device screen scaling factor: ${displayMetrics.density}")
@@ -62,7 +69,7 @@ class RemasterActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 ProvideWindowInsets {
-                    TopScreen(topViewModel)
+                    TopScreen(topViewModel) { directoryLauncher.launch(null) }
                 }
             }
         }
@@ -155,18 +162,6 @@ class RemasterActivity : ComponentActivity() {
             shouldExplainPermission() -> topViewModel.showPermissionExplanation()
             else -> permissionLauncher.launch(getPermissionName())
         }
-    }
-
-    private fun openDirectory() {
-        val directoryLauncher = registerForActivityResult(
-            ActivityResultContracts.OpenDocumentTree()
-        ) { uri: Uri? ->
-            if (uri != null) {
-                topViewModel.directoryPermissionGranted(uri)
-            }
-        }
-
-        directoryLauncher.launch(null)
     }
 
     private fun isPermissionGranted() =

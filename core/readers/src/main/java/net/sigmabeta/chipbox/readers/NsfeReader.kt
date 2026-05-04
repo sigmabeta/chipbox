@@ -24,7 +24,6 @@ object NsfeReader : Reader() {
             }
 
             val chunks = readNsfeChunks(fileAsByteBuffer)
-
             val gameMetadata = chunks.parseChunkAsStrings("auth") ?: return null
 
             val gameTitle = gameMetadata[0]
@@ -36,14 +35,14 @@ object NsfeReader : Reader() {
             val lengthChunk = chunks.parseChunkAsByteBuffer("time")
             val fadeChunk = chunks.parseChunkAsByteBuffer("fade")
             val plstChunk = chunks.parseChunkAsByteBuffer("plst")
-            val infoChunk = chunks.parseChunkAsByteBuffer("info")
+            val infoChunk = chunks.parseChunkAsByteBuffer("INFO")
 
             val lengthList = mutableListOf<Long>()
             val fadeList = mutableListOf<Long>()
 
-            val trackCount = infoChunk?.get(0x08)?.toInt() ?: trackNameList.size
+            val trackCount = infoChunk?.get(0x08)?.toInt()?.and(0xFF) ?: trackNameList.size
 
-            for (index in 0..trackCount) {
+            for (index in 0 until trackCount) {
                 val length = parseTimeChunk(lengthChunk)
                 val fade = parseTimeChunk(fadeChunk)
 
@@ -59,32 +58,33 @@ object NsfeReader : Reader() {
             val tempTracks = mutableListOf<RawTrack>()
             val plstIndexList = plstChunk
                 ?.array()
-                ?.map { it.toInt() }
+                ?.map { it.toInt() and 0xFF }
 
-            trackNameList.forEachIndexed { index, name ->
-                // If plst chunk exists
-                val trackNumber = if (plstIndexList != null) {
-                    plstIndexList.getOrNull(index) ?: index
-                } else {
-                    // plst chunk not existing means we use implicit order
-                    index
-                }
-
+            // tempTracks is indexed by subtune number, matching tlbl and time chunks
+            trackNameList.take(trackCount).forEachIndexed { index, name ->
                 tempTracks.add(
                     RawTrack(
                         identifier,
+                        "",
                         name,
                         (artistList?.get(index) ?: gameArtist),
                         gameTitle,
                         lengthList[index],
-                        trackNumber,
+                        index,
                         fadeList[index] == 0L
                     )
                 )
             }
 
-            return plstIndexList
-                ?.map { tempTracks[it] } ?: tempTracks
+            // GME's start_track_(N) remaps N via playlist[N] internally, so trackNumber
+            // must be the playlist position, not the subtune index.
+            return if (plstIndexList != null) {
+                plstIndexList.mapIndexed { playlistPos, subtuneIndex ->
+                    tempTracks[subtuneIndex].copy(trackNumber = playlistPos)
+                }
+            } else {
+                tempTracks
+            }
         } catch (iae: IllegalArgumentException) {
             Timber.e("Illegal argument: ${iae.message}")
             return null

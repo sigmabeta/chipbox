@@ -3,10 +3,14 @@ package net.sigmabeta.chipbox.player.emulators
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.SHORTS_PER_FRAME
 import net.sigmabeta.chipbox.player.common.millisToFrames
+import net.sigmabeta.sage.logging.BluntHatchet
+import net.sigmabeta.sage.logging.Hatchet
 abstract class Emulator {
     var trackOver: Boolean = false
 
     var nativeLibLoaded = false
+
+    var hatchet: Hatchet = BluntHatchet()
 
     abstract fun loadNativeLib()
 
@@ -32,6 +36,7 @@ abstract class Emulator {
     open fun setTrackNumber(number: Int) = Unit
 
     open fun loadTrack(track: Track) {
+        hatchet.d("Loading track: ${track.title} (#${track.trackNumber}) from ${track.path}")
         if (remainingFramesTotal >= 0) {
             teardown()
         }
@@ -46,6 +51,7 @@ abstract class Emulator {
         buffer: ShortArray
     ): Int {
         if (remainingFramesTotal < 0) {
+            hatchet.d("Track is over.")
             trackOver = true
             return -1
         }
@@ -61,6 +67,7 @@ abstract class Emulator {
     }
 
     fun teardown() {
+        hatchet.d("Tearing down emulator.")
         teardownInternal()
 
         trackOver = false
