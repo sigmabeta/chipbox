@@ -77,7 +77,9 @@ object GbsReader : Reader() {
         }
     }
 
-    private fun isGbsFile(header: String) = header.startsWith("GBS")
+    private fun isGbsFile(header: String) = header.startsWith(HEADER_MAGIC)
+
+    private const val HEADER_MAGIC = "GBS"
 }
 
 /**

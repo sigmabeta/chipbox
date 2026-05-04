@@ -77,5 +77,7 @@ object NsfReader : Reader() {
         }
     }
 
-    private fun isNsfFile(header: String) = header.contentEquals("NESM")
+    private fun isNsfFile(header: String) = header.contentEquals(HEADER_MAGIC)
+
+    private const val HEADER_MAGIC = "NESM"
 }

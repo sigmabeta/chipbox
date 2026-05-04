@@ -17,6 +17,8 @@ object PsfReader : Reader() {
     private const val PSF_TAG_KEY_ARTIST = "artist"
     private const val PSF_TAG_KEY_LENGTH = "length"
     private const val PSF_TAG_KEY_FADE = "fade"
+    private const val PSF_TAG_HEADER = "[TAG]"
+    private const val PSF_UTF8_FLAG = "utf8=1"
 
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         val fileAsByteBuffer = bytesAsByteBuffer(bytes)
@@ -97,7 +99,7 @@ object PsfReader : Reader() {
 
         var tags = tagData.convert().trim { it <= ' ' }
 
-        if (tags.contains("utf8=1")) {
+        if (tags.contains(PSF_UTF8_FLAG)) {
             tags = tagData.convertUtf().trim { it <= ' ' }
         }
 
@@ -132,7 +134,7 @@ object PsfReader : Reader() {
         val tagHeader = ByteArray(5)
         wrappedBuffer.get(tagHeader)
 
-        return String(tagHeader) == "[TAG]"
+        return String(tagHeader) == PSF_TAG_HEADER
     }
 
     private fun isPsfFile(header: String) = header.startsWith("PSF")
