@@ -38,7 +38,7 @@ fun String?.orUnknown(): String {
         return TAG_UNKNOWN
     }
 
-    if (this == "<?>") {
+    if (this == TAG_PSF_PLACEHOLDER) {
         return TAG_UNKNOWN
     }
 
@@ -86,3 +86,4 @@ internal fun String.toLengthMillis(): Long {
 
 const val LENGTH_UNKNOWN_MS = -1L
 const val TAG_UNKNOWN = "Unknown"
+private const val TAG_PSF_PLACEHOLDER = "<?>"

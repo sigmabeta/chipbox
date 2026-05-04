@@ -24,18 +24,18 @@ object NsfeReader : Reader() {
             }
 
             val chunks = readNsfeChunks(fileAsByteBuffer)
-            val gameMetadata = chunks.parseChunkAsStrings("auth") ?: return null
+            val gameMetadata = chunks.parseChunkAsStrings(CHUNK_AUTH) ?: return null
 
             val gameTitle = gameMetadata[0]
             val gameArtist = gameMetadata[1]
 
             // TODO Use the track count in the header instead of this.
-            val trackNameList = chunks.parseChunkAsStrings("tlbl") ?: return null
-            val artistList = chunks.parseChunkAsStrings("taut")
-            val lengthChunk = chunks.parseChunkAsByteBuffer("time")
-            val fadeChunk = chunks.parseChunkAsByteBuffer("fade")
-            val plstChunk = chunks.parseChunkAsByteBuffer("plst")
-            val infoChunk = chunks.parseChunkAsByteBuffer("INFO")
+            val trackNameList = chunks.parseChunkAsStrings(CHUNK_TLBL) ?: return null
+            val artistList = chunks.parseChunkAsStrings(CHUNK_TAUT)
+            val lengthChunk = chunks.parseChunkAsByteBuffer(CHUNK_TIME)
+            val fadeChunk = chunks.parseChunkAsByteBuffer(CHUNK_FADE)
+            val plstChunk = chunks.parseChunkAsByteBuffer(CHUNK_PLST)
+            val infoChunk = chunks.parseChunkAsByteBuffer(CHUNK_INFO)
 
             val lengthList = mutableListOf<Long>()
             val fadeList = mutableListOf<Long>()
@@ -135,7 +135,7 @@ object NsfeReader : Reader() {
 
                 chunks.add(chunk)
 
-                if (chunk.name == "NEND") {
+                if (chunk.name == CHUNK_NEND) {
                     break
                 }
             } catch (ex: BufferUnderflowException) {
@@ -160,7 +160,17 @@ object NsfeReader : Reader() {
         return NsfeChunk(name, length, content)
     }
 
-    private fun isNsfeFile(header: String) = header.contentEquals("NSFE")
+    private fun isNsfeFile(header: String) = header.contentEquals(HEADER_MAGIC)
+
+    private const val HEADER_MAGIC = "NSFE"
+    private const val CHUNK_AUTH = "auth"
+    private const val CHUNK_TLBL = "tlbl"
+    private const val CHUNK_TAUT = "taut"
+    private const val CHUNK_TIME = "time"
+    private const val CHUNK_FADE = "fade"
+    private const val CHUNK_PLST = "plst"
+    private const val CHUNK_INFO = "INFO"
+    private const val CHUNK_NEND = "NEND"
 }
 
 data class NsfeChunk(

@@ -101,8 +101,9 @@ object SpcReader : Reader() {
 
 
     private fun isSpcFile(header: String) =
-        header.contentEquals("SNES-SPC700 Sound File Data v0.30")
+        header.contentEquals(HEADER_MAGIC)
 
+    private const val HEADER_MAGIC = "SNES-SPC700 Sound File Data v0.30"
     private const val SHOULD_LOG_EXTRA_INFO = false
 
     private const val LENGTH_SPC_REGISTERS = 9
