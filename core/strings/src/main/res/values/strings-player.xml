@@ -5,4 +5,5 @@
     <string name="action_pause">Pause</string>
     <string name="action_stop">Stop</string>
     <string name="action_next">Next Track</string>
+    <string name="notification_channel_playback">Playback</string>
 </resources>

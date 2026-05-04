@@ -2,20 +2,24 @@ package net.sigmabeta.chipbox.player.generator.fake
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.emulators.fake.FakeEmulator
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.sage.logging.Hatchet
 
 class FakeGenerator(
     repository: Repository,
+    contentSourceRegistry: ContentSourceRegistry,
     bufferManager: ProducerBufferManager,
+    hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : Generator(repository, bufferManager, dispatcher) {
+) : Generator(repository, contentSourceRegistry, bufferManager, hatchet, dispatcher) {
     override fun getEmulatorSampleRate() = FakeEmulator.getSampleRateInternal()
 
-    override fun loadTrack(loadedTrack: Track) = FakeEmulator.loadTrack(loadedTrack)
+    override fun loadTrack(loadedTrack: Track, bytes: ByteArray) = FakeEmulator.loadTrack(loadedTrack)
 
     override fun generateAudio(buffer: ShortArray) = FakeEmulator.generateBuffer(buffer)
 

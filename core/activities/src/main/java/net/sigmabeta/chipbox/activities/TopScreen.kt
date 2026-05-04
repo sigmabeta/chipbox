@@ -28,7 +28,7 @@ import net.sigmabeta.chipbox.navigation.ComposableOutput
 import net.sigmabeta.chipbox.navigation.destinations
 
 @Composable
-fun TopScreen(viewModel: TopViewModel) {
+fun TopScreen(viewModel: TopViewModel, onAddFolderClick: () -> Unit) {
     Column(
         Modifier
             .fillMaxHeight()
@@ -60,7 +60,7 @@ fun TopScreen(viewModel: TopViewModel) {
             navBackStackEntry?.destination?.route ?: "",
             contentPadding = navBarPadding(insets),
             menuVisible = menuVisible.value,
-            menuItems = menuItems(viewModel, menuVisible),
+            menuItems = menuItems(viewModel, menuVisible, onAddFolderClick),
             scannerState = scannerState,
             lastScannerEvent = lastScannerEvent,
             onNavClick = navClickHandler(navController, context),
@@ -104,8 +104,16 @@ private fun navBarPadding(insets: WindowInsets): PaddingValues {
 @Composable
 private fun menuItems(
     viewModel: TopViewModel,
-    menuVisible: MutableState<Boolean>
+    menuVisible: MutableState<Boolean>,
+    onAddFolderClick: () -> Unit,
 ) = listOf(
+    MenuItemDefinition(
+        DrawablesR.drawable.ic_folder_black_24dp,
+        R.string.menu_label_add_folder
+    ) {
+        menuVisible.value = false
+        onAddFolderClick()
+    },
     MenuItemDefinition(
         DrawablesR.drawable.ic_refresh_24,
         R.string.menu_label_scan_for_music

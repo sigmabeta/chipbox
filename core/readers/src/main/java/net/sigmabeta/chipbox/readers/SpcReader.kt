@@ -30,6 +30,7 @@ object SpcReader : Reader() {
             return listOf(
                 RawTrack(
                     identifier,
+                    "",
                     spcMainTag.songTitle,
                     spcMainTag.artistName,
                     spcMainTag.gameTitle,

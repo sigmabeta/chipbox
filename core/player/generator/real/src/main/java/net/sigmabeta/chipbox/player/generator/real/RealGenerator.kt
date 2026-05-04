@@ -1,46 +1,56 @@
 package net.sigmabeta.chipbox.player.generator.real
 
+import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.repository.Repository
-import timber.log.Timber
+import net.sigmabeta.sage.logging.Hatchet
 import java.io.File
 
 class RealGenerator(
     repository: Repository,
+    contentSourceRegistry: ContentSourceRegistry,
     bufferManager: ProducerBufferManager,
     private val emulators: List<Emulator>,
+    private val context: Context,
+    hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : Generator(repository, bufferManager, dispatcher) {
+) : Generator(repository, contentSourceRegistry, bufferManager, hatchet, dispatcher) {
     private var emulator: Emulator? = null
 
-    override fun loadTrack(loadedTrack: Track) {
+    override fun loadTrack(loadedTrack: Track, bytes: ByteArray) {
         if (emulator != null) {
             teardown()
         }
 
-        val emulator = getSupportedEmulator(loadedTrack.path)
-            ?: throw IllegalArgumentException("No emulator found for this file type.")
+        val ext = loadedTrack.path.substringAfterLast('.', "").lowercase()
+        hatchet.d("Loading track: ${loadedTrack.title} (.$ext)")
+
+        val emulator = emulators.firstOrNull { it.isFileExtensionSupported(ext) }
+            ?: throw IllegalArgumentException("No emulator found for extension '$ext'.")
 
         if (!emulator.nativeLibLoaded) {
+            hatchet.i("Loading native lib for ${emulator::class.simpleName}.")
             emulator.loadNativeLib()
             emulator.nativeLibLoaded = true
-            println("Loading native lib for supported emulator: ${emulator.javaClass.simpleName}")
         }
 
+        val staged = stageToCache(loadedTrack.id, ext, bytes)
+        emulator.hatchet = hatchet
         this.emulator = emulator
-        emulator.loadTrack(loadedTrack)
+        emulator.loadTrack(loadedTrack.copy(path = staged.absolutePath))
     }
 
-    private fun getSupportedEmulator(path: String): Emulator? {
-        val extension = File(path).extension
-        return emulators.firstOrNull {
-            it.isFileExtensionSupported(extension)
-        }
+    private fun stageToCache(trackId: Long, ext: String, bytes: ByteArray): File {
+        val dir = File(context.cacheDir, "playback").apply { mkdirs() }
+        val file = File(dir, "track-$trackId.$ext").apply { writeBytes(bytes) }
+        hatchet.v("Staged track $trackId to ${file.absolutePath}.")
+        return file
     }
 
     override fun generateAudio(buffer: ShortArray) = ifNotNull(emulator) { generateBuffer(buffer) }

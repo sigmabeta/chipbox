@@ -20,7 +20,10 @@ object GmeEmulator : Emulator() {
         this.trackNumber = number
     }
 
-    override fun loadTrackInternal(path: String) = loadTrackInternalWithNumber(path, trackNumber)
+    override fun loadTrackInternal(path: String) {
+        hatchet.d("Starting GME track $trackNumber from $path")
+        loadTrackInternalWithNumber(path, trackNumber)
+    }
 
     external override fun generateBufferInternal(buffer: ShortArray, framesPerBuffer: Int): Int
 

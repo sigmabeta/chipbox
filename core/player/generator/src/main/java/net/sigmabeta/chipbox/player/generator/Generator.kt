@@ -5,15 +5,19 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.sage.logging.Hatchet
 
 abstract class Generator(
         private val repository: Repository,
+        private val contentSourceRegistry: ContentSourceRegistry,
         private val bufferManager: ProducerBufferManager,
+        protected val hatchet: Hatchet,
         dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     private val generatorScope = CoroutineScope(dispatcher)
@@ -34,7 +38,7 @@ abstract class Generator(
         extraBufferCapacity = 10
     )
 
-    protected abstract fun loadTrack(loadedTrack: Track)
+    protected abstract fun loadTrack(loadedTrack: Track, bytes: ByteArray)
 
     protected abstract fun generateAudio(buffer: ShortArray): Int
 
@@ -61,7 +65,7 @@ abstract class Generator(
                 loop()
             }
         } else {
-            println("Already looping.")
+            hatchet.d("Already looping.")
         }
     }
 
@@ -176,10 +180,13 @@ abstract class Generator(
         }
 
         val newTrack = repository.getTrack(trackId) ?: return "Failed to load track."
-        currentTrack = newTrack
+        val source = contentSourceRegistry.get(newTrack.source)
+            ?: return "No content source registered for '${newTrack.source}'."
+        val bytes = source.openBytes(newTrack.path)
+            ?: return "Failed to read bytes for ${newTrack.title}."
 
-        println("Loading track ${newTrack.title} into emulator.")
-        loadTrack(newTrack)
+        currentTrack = newTrack
+        loadTrack(newTrack, bytes)
 
         sampleRate = getEmulatorSampleRate()
         bufferManager.setSampleRate(sampleRate!!)
@@ -188,7 +195,7 @@ abstract class Generator(
     }
 
     private fun teardownHelper() {
-        println("Tearing down track ${currentTrack?.title}...")
+        hatchet.d("Tearing down track ${currentTrack?.title}...")
         teardown()
         currentTrack = null
         ongoingGenerationJob = null

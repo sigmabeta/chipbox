@@ -113,12 +113,14 @@ private fun ColumnScope.Menu(
     menuItems: List<MenuItemDefinition>
 ) {
     AnimatedVisibility(visible = menuVisible) {
-        menuItems.forEach {
-            BottomMenuItem(
-                iconId = it.iconId,
-                labelId = it.labelId,
-                onClick = it.onClick
-            )
+        Column {
+            menuItems.forEach {
+                BottomMenuItem(
+                    iconId = it.iconId,
+                    labelId = it.labelId,
+                    onClick = it.onClick
+                )
+            }
         }
     }
 }
@@ -261,6 +263,11 @@ fun PreviewMenuShown() {
             MenuItemDefinition(
                 iconId = DrawablesR.drawable.ic_refresh_24,
                 labelId = R.string.caption_unknown_artist,
+                onClick = { menuVisible.value = false }
+            ),
+            MenuItemDefinition(
+                iconId = DrawablesR.drawable.ic_list_24,
+                labelId = R.string.cont_desc_artist_photo_blank,
                 onClick = { menuVisible.value = false }
             )
         ),

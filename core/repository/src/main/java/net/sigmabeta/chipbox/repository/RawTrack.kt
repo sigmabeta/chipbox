@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.repository
 
 data class RawTrack(
     val path: String,
+    val source: String,
     val title: String,
     val artist: String,
     val game: String,

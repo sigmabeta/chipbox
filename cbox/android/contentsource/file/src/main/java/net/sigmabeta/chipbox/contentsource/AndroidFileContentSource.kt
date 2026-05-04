@@ -23,6 +23,11 @@ class AndroidFileContentSource(
     private val hatchet: Hatchet,
 ) : ContentSource {
 
+    override val sourceId: String = SOURCE_ID
+
+    override suspend fun openBytes(identifier: String): ByteArray? =
+        openInputStream(Uri.parse(identifier))?.use { it.readBytes() }
+
     private val _libraryLocations = MutableStateFlow<List<LibraryLocation>>(emptyList())
     val libraryLocations: StateFlow<List<LibraryLocation>> = _libraryLocations.asStateFlow()
 
@@ -100,5 +105,9 @@ class AndroidFileContentSource(
             arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME),
             null, null, null,
         )?.use { if (it.moveToFirst()) it.getString(0) else null }
+    }
+
+    companion object {
+        const val SOURCE_ID = "android-file"
     }
 }

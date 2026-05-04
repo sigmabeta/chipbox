@@ -14,37 +14,47 @@ import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
-import timber.log.Timber
+import net.sigmabeta.sage.logging.Hatchet
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 class RealScanner(
     private val repository: Repository,
     private val contentSource: AndroidFileContentSource,
+    private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : Scanner(dispatcher) {
 
     @OptIn(ExperimentalTime::class)
     override suspend fun CoroutineScope.scan() {
+        hatchet.i("Starting library scan.")
         emitState(ScannerState.Scanning)
 
         val locations = contentSource.libraryLocations.value
         if (locations.isEmpty()) {
-            Timber.w("No library locations configured.")
+            hatchet.w("No library locations configured — aborting scan.")
             emitState(ScannerState.Complete(0, 0, 0, 0))
             emitEvent(ScannerEvent.Unknown)
             return
         }
 
+        hatchet.d("Scanning ${locations.size} library location(s): ${locations.map { it.uri }}")
+
         var total = Progress.EMPTY
         val duration = measureTime {
             val files = contentSource.scanLibraryFiles().toList()
             val groups = files.groupBy { it.parentDocumentId }
-            for ((_, group) in groups) {
+            hatchet.d("Found ${files.size} file(s) across ${groups.size} folder(s).")
+            for ((folderId, group) in groups) {
+                hatchet.d("Scanning folder $folderId (${group.size} file(s)).")
                 total += scanGroup(group.sortedBy { it.name })
             }
         }
 
+        hatchet.i(
+            "Scan complete in ${duration.inWholeSeconds}s — " +
+                "${total.gamesFound} game(s), ${total.tracksFound} track(s), ${total.tracksFailed} failure(s)."
+        )
         emitState(
             ScannerState.Complete(
                 duration.inWholeSeconds.toInt(),
@@ -70,18 +80,29 @@ class RealScanner(
                 continue
             }
 
-            val reader = getReaderForExtension(ext) ?: continue
+            val reader = getReaderForExtension(ext) ?: run {
+                hatchet.v("No reader for extension '$ext' — skipping ${file.name}.")
+                continue
+            }
 
+            hatchet.d("Reading ${file.name}.")
             val tracks = readWithErrorHandling(file) {
                 val bytes = contentSource.openInputStream(file.uri)?.use { it.readBytes() }
                     ?: return@readWithErrorHandling null
                 reader.readTracksFromFile(bytes, file.uri.toString())
+                    ?.map { it.copy(source = contentSource.sourceId) }
             }
 
             when {
-                tracks == null -> failed++
-                tracks.isEmpty() -> Unit
-                else -> rawTracks += tracks
+                tracks == null -> {
+                    hatchet.w("Failed to read ${file.name}.")
+                    failed++
+                }
+                tracks.isEmpty() -> hatchet.d("${file.name} yielded no tracks.")
+                else -> {
+                    hatchet.d("${file.name} yielded ${tracks.size} track(s).")
+                    rawTracks += tracks
+                }
             }
         }
 
@@ -100,6 +121,8 @@ class RealScanner(
         }
 
         val gameName = rawTracks.first().game
+        hatchet.i("Adding game \"$gameName\" with ${checked.size} track(s).")
+        checked.forEach { hatchet.v("  Track ${it.trackNumber}: \"${it.title}\" (${it.length}ms)") }
         repository.addGame(RawGame(gameName, imagePath, checked))
         emitEvent(ScannerEvent.GameFoundEvent(gameName, rawTracks.size, imagePath.orUnknown()))
         return Progress(1, rawTracks.size, failed)
@@ -112,7 +135,7 @@ class RealScanner(
         op()
     } catch (ex: Exception) {
         if (!isFailedAlready()) {
-            Timber.e("Error reading ${file.name}: ${ex.stackTraceToString()}")
+            hatchet.e("Error reading ${file.name}: ${ex.stackTraceToString()}")
             emitEvent(ScannerEvent.Unknown)
             emitState(ScannerState.Failed(file.name))
         }
