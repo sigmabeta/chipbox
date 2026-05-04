@@ -1,8 +1,65 @@
 package net.sigmabeta.chipbox.readers
 
-import net.sigmabeta.chipbox.repository.RawTrack
+import net.sigmabeta.chipbox.utils.convert
+import timber.log.Timber
 
-object M3uReader : Reader() {
-    // TODO: m3u resolution requires sibling-URI lookup that isn't wired for SAF yet.
-    override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? = null
+const val EXTENSION_M3U = "m3u"
+
+data class M3uEntry(
+    val filename: String,
+    val trackNumber: Int,  // 0-based
+    val title: String,
+    val artist: String?,   // non-null only in GBS-style compound tags ("Title - Artist - Game")
+    val game: String?,     // non-null only in GBS-style compound tags
+    val lengthMs: Long,
+    val hasFade: Boolean,
+)
+
+object M3uReader {
+    fun parse(bytes: ByteArray): List<M3uEntry> {
+        return try {
+            bytes.convert()
+                .split("\n")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() && !it.startsWith("#") && it.contains("::") }
+                .mapNotNull { it.toM3uEntry() }
+        } catch (ex: Exception) {
+            Timber.e("Failed to parse m3u: ${ex.message}")
+            emptyList()
+        }
+    }
 }
+
+private fun String.toM3uEntry(): M3uEntry? {
+    val filename = substringBefore("::")
+    val tags = substringAfter("::").splitByUnescapedCommas()
+
+    // tags[1] is the 1-based subtune index; subtract 1 to match our readers' 0-based trackNumber.
+    val trackNumber = (tags.getOrNull(1)?.toIntOrNull() ?: return null) - 1
+    if (trackNumber < 0) return null
+
+    val rawMeta = tags.getOrNull(2) ?: TAG_UNKNOWN
+    val metaParts = rawMeta.split(" - ")
+    val title: String
+    val artist: String?
+    val game: String?
+    if (metaParts.size >= 3) {
+        // GBS-style compound: "Title - Artist - Game"
+        title = metaParts[0].orUnknown()
+        artist = metaParts[1].orUnknown()
+        game = metaParts[2].orUnknown()
+    } else {
+        title = rawMeta.orUnknown()
+        artist = null
+        game = null
+    }
+
+    val lengthMs = tags.getOrNull(3)?.toLengthMillis() ?: LENGTH_UNKNOWN_MS
+    val hasFade = (tags.getOrNull(5)?.toLengthMillis() ?: 0L) > 0L
+
+    return M3uEntry(filename, trackNumber, title, artist, game, lengthMs, hasFade)
+}
+
+/** Splits on commas not preceded by a backslash, then strips escape characters. */
+private fun String.splitByUnescapedCommas() = split(Regex("(?<!\\\\),"))
+    .map { it.filterNot { c -> c == '\\' } }

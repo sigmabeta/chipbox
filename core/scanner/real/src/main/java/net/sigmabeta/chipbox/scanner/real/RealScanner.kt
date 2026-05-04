@@ -8,6 +8,9 @@ import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibraryFile
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
+import net.sigmabeta.chipbox.readers.EXTENSION_M3U
+import net.sigmabeta.chipbox.readers.LENGTH_UNKNOWN_MS
+import net.sigmabeta.chipbox.readers.M3uReader
 import net.sigmabeta.chipbox.readers.getReaderForExtension
 import net.sigmabeta.chipbox.readers.orUnknown
 import net.sigmabeta.chipbox.repository.RawGame
@@ -68,7 +71,8 @@ class RealScanner(
 
     private suspend fun scanGroup(files: List<LibraryFile>): Progress {
         var imagePath: String? = null
-        val rawTracks = mutableListOf<RawTrack>()
+        val tracksByFilename = LinkedHashMap<String, MutableList<RawTrack>>()
+        val m3uFiles = mutableListOf<LibraryFile>()
         var failed = 0
 
         for (file in files) {
@@ -77,6 +81,11 @@ class RealScanner(
 
             if (EXTENSIONS_IMAGES.contains(ext)) {
                 if (imagePath == null) imagePath = file.uri.toString()
+                continue
+            }
+
+            if (ext == EXTENSION_M3U) {
+                m3uFiles += file
                 continue
             }
 
@@ -101,10 +110,39 @@ class RealScanner(
                 tracks.isEmpty() -> hatchet.d("${file.name} yielded no tracks.")
                 else -> {
                     hatchet.d("${file.name} yielded ${tracks.size} track(s).")
-                    rawTracks += tracks
+                    tracksByFilename[file.name] = tracks.toMutableList()
                 }
             }
         }
+
+        for (m3uFile in m3uFiles) {
+            hatchet.d("Applying m3u overlay from ${m3uFile.name}.")
+            val bytes = contentSource.openInputStream(m3uFile.uri)?.use { it.readBytes() }
+            if (bytes == null) {
+                hatchet.w("Failed to open ${m3uFile.name}.")
+                continue
+            }
+            for (entry in M3uReader.parse(bytes)) {
+                val siblings = tracksByFilename[entry.filename] ?: run {
+                    hatchet.v("m3u references '${entry.filename}' which was not scanned — skipping.")
+                    continue
+                }
+                val index = siblings.indexOfFirst { it.trackNumber == entry.trackNumber }
+                if (index < 0) {
+                    hatchet.v("m3u references track ${entry.trackNumber} in '${entry.filename}' which doesn't exist — skipping.")
+                    continue
+                }
+                siblings[index] = siblings[index].copy(
+                    title = entry.title,
+                    artist = entry.artist ?: siblings[index].artist,
+                    game = entry.game ?: siblings[index].game,
+                    length = if (entry.lengthMs != LENGTH_UNKNOWN_MS) entry.lengthMs else siblings[index].length,
+                    fade = entry.hasFade,
+                )
+            }
+        }
+
+        val rawTracks = tracksByFilename.values.flatten()
 
         if (rawTracks.isEmpty()) {
             return if (failed > 0) Progress(0, 0, failed) else Progress.EMPTY
