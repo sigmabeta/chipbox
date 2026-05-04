@@ -18,8 +18,8 @@ object PsfReader : Reader() {
     private const val PSF_TAG_KEY_LENGTH = "length"
     private const val PSF_TAG_KEY_FADE = "fade"
 
-    override fun readTracksFromFile(path: String): List<RawTrack>? {
-        val fileAsByteBuffer = fileAsByteBuffer(path)
+    override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
+        val fileAsByteBuffer = bytesAsByteBuffer(bytes)
         val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
 
         if (formatHeader == null) {
@@ -56,7 +56,7 @@ object PsfReader : Reader() {
             readAllTags(tagsAreaSize, fileAsByteBuffer, tagMap)
             return listOf(
                 RawTrack(
-                    path,
+                    identifier,
                     tagMap[PSF_TAG_KEY_TITLE].orUnknown(),
                     tagMap[PSF_TAG_KEY_ARTIST].orUnknown(),
                     tagMap[PSF_TAG_KEY_GAME].orUnknown(),

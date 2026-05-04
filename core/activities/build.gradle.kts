@@ -36,4 +36,7 @@ dependencies {
     implementation("androidx.compose.runtime:runtime-livedata:1.4.3")
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.hilt.navigation.compose)
+
+    // Just for now!!
+    implementation(projects.cbox.android.contentsource.file.di)
 }

@@ -9,11 +9,11 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import net.sigmabeta.sage.analytics.Analytics
 import net.sigmabeta.sage.android.logging.AndroidHatchet
-import net.sigmabeta.sage.list.VglsScheduler
+import net.sigmabeta.sage.list.SageScheduler
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.chipbox.feature.welcome.WelcomeViewModelBrain
 import net.sigmabeta.sage.ui.StringProvider
-import net.sigmabeta.sage.ui.StringResources
+import net.sigmabeta.sage.ui.strings.AndroidStringProvider
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -21,7 +21,7 @@ object ChipboxModule {
     @Provides
     @Singleton
     fun provideStringProvider(@ApplicationContext context: Context): StringProvider =
-        StringResources(context.resources)
+        AndroidStringProvider(context.resources) { 0 }
 
     @Provides
     @Singleton
@@ -29,14 +29,14 @@ object ChipboxModule {
 
     @Provides
     @Singleton
-    fun provideScheduler(impl: SchedulerImpl): VglsScheduler = impl
+    fun provideScheduler(impl: SchedulerImpl): SageScheduler = impl
 
     @Provides
     fun provideWelcomeBrain(
         stringProvider: StringProvider,
         analytics: Analytics,
         hatchet: Hatchet,
-        scheduler: VglsScheduler,
+        scheduler: SageScheduler,
     ): WelcomeViewModelBrain = WelcomeViewModelBrain(
         stringProvider,
         analytics,

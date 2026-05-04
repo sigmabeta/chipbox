@@ -15,4 +15,5 @@ dependencies {
     api(projects.core.scanner)
     implementation(projects.core.readers)
     implementation(projects.core.repository)
+    implementation(projects.cbox.android.contentsource.file)
 }

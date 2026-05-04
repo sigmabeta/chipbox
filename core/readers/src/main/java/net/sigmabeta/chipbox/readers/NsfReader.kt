@@ -2,15 +2,13 @@ package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.repository.RawTrack
 import timber.log.Timber
-import java.io.File
 import java.io.UnsupportedEncodingException
 
 object NsfReader : Reader() {
     @OptIn(ExperimentalStdlibApi::class)
-    override fun readTracksFromFile(path: String): List<RawTrack>? {
+    override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
-            val fileAsBytes = File(path).readBytes()
-            val fileAsByteBuffer = fileAsByteBuffer(path)
+            val fileAsByteBuffer = bytesAsByteBuffer(bytes)
 
             val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
             if (formatHeader == null) {
@@ -23,16 +21,16 @@ object NsfReader : Reader() {
                 return null
             }
 
-            val numberOfTracks = getNumberOfTracks(fileAsBytes)
-            val gameTitle = getGameTitle(fileAsBytes)
-            val gameArtist = getGameArtist(fileAsBytes)
+            val numberOfTracks = getNumberOfTracks(bytes)
+            val gameTitle = getGameTitle(bytes)
+            val gameArtist = getGameArtist(bytes)
 
             val tracks = mutableListOf<RawTrack>()
 
             for (index in 1..numberOfTracks) {
                 tracks.add(
                     RawTrack(
-                        path,
+                        identifier,
                         TAG_UNKNOWN,
                         gameArtist.orUnknown(),
                         gameTitle,
