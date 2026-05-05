@@ -44,6 +44,7 @@ include(
     ":cbox:android:contentsource:file:di",
 
     ":cbox:common:contentsource",
+    ":cbox:common:entities",
     ":cbox:common:models",
     ":cbox:common:readers",
     ":cbox:common:utils",
@@ -54,7 +55,6 @@ include(
     ":core:components",
     ":core:database",
     ":core:drawables",
-    ":core:entities",
     ":core:image-loading",
     ":core:navigation",
     ":core:repository",

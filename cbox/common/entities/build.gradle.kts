@@ -1,5 +1,5 @@
 plugins {
-    id("sage.jvm")
+    alias(libs.plugins.sage.jvm)
 }
 
 dependencies {
