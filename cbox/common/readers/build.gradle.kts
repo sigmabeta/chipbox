@@ -6,5 +6,5 @@ dependencies {
     api(projects.core.repository)
 
     implementation(projects.cbox.common.models)
-    implementation(projects.core.utils)
+    implementation(projects.cbox.common.utils)
 }
