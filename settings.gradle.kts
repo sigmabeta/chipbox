@@ -43,6 +43,8 @@ include(
     ":cbox:android:colors",
     ":cbox:android:drawables",
     ":cbox:android:image-loading",
+    ":cbox:android:strings",
+    ":cbox:android:styles",
     ":cbox:android:contentsource:file",
     ":cbox:android:contentsource:file:di",
 
@@ -60,8 +62,6 @@ include(
     ":core:navigation",
     ":core:scanner",
     ":core:services",
-    ":core:strings",
-    ":core:styles",
     ":core:player:buffer",
     ":core:player:buffer:di",
     ":core:player:buffer:real",

@@ -19,6 +19,6 @@ dependencies {
     implementation(projects.core.player.common)
     implementation(projects.core.player.director)
     implementation(projects.cbox.common.repository)
-    implementation(projects.core.strings)
+    implementation(projects.cbox.android.strings)
     implementation("com.jakewharton.timber:timber:5.0.1")
 }
