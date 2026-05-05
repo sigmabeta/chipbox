@@ -4,5 +4,5 @@ plugins {
 
 dependencies {
     api(projects.cbox.common.repository)
-    implementation(projects.core.database)
+    implementation(projects.cbox.android.database)
 }

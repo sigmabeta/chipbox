@@ -41,6 +41,8 @@ include(
     ":features:welcome",
 
     ":cbox:android:colors",
+    ":cbox:android:database",
+    ":cbox:android:database:di",
     ":cbox:android:drawables",
     ":cbox:android:image-loading",
     ":cbox:android:strings",
@@ -67,7 +69,6 @@ include(
     // Legacy Modules
     ":core:activities",
     ":core:components",
-    ":core:database",
     ":core:navigation",
     ":core:services",
     ":core:player:buffer",
