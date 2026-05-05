@@ -1,6 +1,5 @@
 plugins {
-    id("sage.android")
-    alias(libs.plugins.hilt)
+    alias(libs.plugins.sage.android)
     alias(libs.plugins.ksp)
 }
 
@@ -9,9 +8,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.hilt)
-    ksp(libs.hilt.compiler)
-
     api(projects.cbox.common.entities)
 
     api(libs.room.runtime)
