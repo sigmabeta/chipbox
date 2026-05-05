@@ -12,7 +12,7 @@ dependencies {
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
 
-    api(projects.core.entities)
+    api(projects.cbox.common.entities)
 
     api(libs.room.runtime)
     implementation(libs.room.ktx)
