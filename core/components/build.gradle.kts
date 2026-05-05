@@ -11,7 +11,7 @@ dependencies {
     implementation(projects.cbox.android.imageLoading)
     implementation(projects.cbox.android.drawables)
     implementation(projects.cbox.common.models)
-    implementation(projects.core.strings)
+    implementation(projects.cbox.android.strings)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation("androidx.compose.ui:ui")

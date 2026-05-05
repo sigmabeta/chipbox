@@ -1,9 +1,9 @@
 plugins {
-    id("sage.android")
+    alias(libs.plugins.sage.android)
 }
 
 android {
-    namespace = "net.sigmabeta.chipbox.styles"
+    namespace = "net.sigmabeta.chipbox.strings"
 }
 
 dependencies {

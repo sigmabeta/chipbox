@@ -21,8 +21,8 @@ dependencies {
     implementation(projects.core.components)
     implementation(projects.cbox.android.drawables)
     implementation(projects.core.services)
-    implementation(projects.core.strings)
-    implementation(projects.core.styles)
+    implementation(projects.cbox.android.strings)
+    implementation(projects.cbox.android.styles)
     implementation(projects.core.scanner)
 
     implementation("androidx.media2:media2-common:1.3.0")
