@@ -126,7 +126,7 @@ class RealDirector(
 
     override fun pause() {
         directorScope.launch {
-            speaker.stop()
+            speaker.pause()
 
             currentState = currentState.copy(state = PlayerState.PAUSED)
         }
@@ -147,7 +147,7 @@ class RealDirector(
 
     override fun pauseTemporarily() {
         directorScope.launch {
-            speaker.stop()
+            speaker.pause()
         }
     }
 

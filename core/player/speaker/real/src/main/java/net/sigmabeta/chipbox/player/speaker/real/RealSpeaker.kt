@@ -82,6 +82,14 @@ class RealSpeaker(
         }.build()
     }
 
+    override fun onPaused() {
+        audioTrack?.pause()
+    }
+
+    override fun onResumed() {
+        audioTrack?.play()
+    }
+
     override fun teardown() {
         if (audioTrack != null) {
             Timber.i("Tearing down audiotrack.")

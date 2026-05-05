@@ -49,12 +49,23 @@ abstract class Speaker(
         startPlayback()
     }
 
+    suspend fun pause() {
+        ongoingPlaybackJob?.cancelAndJoin()
+        ongoingPlaybackJob = null
+
+        onPaused()
+    }
+
     suspend fun stop() {
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = null
 
         teardown()
     }
+
+    protected open fun onPaused() = Unit
+
+    protected open fun onResumed() = Unit
 
     /** Called on the speaker coroutine for each buffer pulled from the queue. Must complete
      *  synchronously — `audio.data` is recycled as soon as this returns. */
@@ -73,6 +84,7 @@ abstract class Speaker(
     private fun startPlayback() {
         if (ongoingPlaybackJob == null) {
             ongoingPlaybackJob = speakerScope.launch {
+                onResumed()
                 var playingTrackId: Long? = null
 
                 while (true) {
