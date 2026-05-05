@@ -122,7 +122,7 @@ void teardown() {
             psf_stop((PSX_STATE *) pEmu);
         }
 
-        delete pEmu;
+        free(pEmu);
         pEmu = nullptr;
     }
 }

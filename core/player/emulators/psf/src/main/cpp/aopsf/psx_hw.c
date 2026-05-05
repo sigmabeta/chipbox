@@ -1556,7 +1556,7 @@ void psx_bios_hle(PSX_STATE *psx, uint32 pc) {
                     // find a free block that's big enough
                     while ((size > LE32(psx->psx_ram[(chunk + BLK_SIZE) / 4])) ||
                            (LE32(psx->psx_ram[(chunk + BLK_STAT) / 4]) == 1)) {
-                        chunk = LE32(psx->psx_ram[(chunk + BLK_FD)]);
+                        chunk = LE32(psx->psx_ram[(chunk + BLK_FD) / 4]);
                     }
 
                     // split free block
@@ -1607,7 +1607,7 @@ void psx_bios_hle(PSX_STATE *psx, uint32 pc) {
                     while (fd && LE32(psx->psx_ram[(fd + BLK_STAT) / 4]) != 1) {
                         size += LE32(psx->psx_ram[(fd + BLK_SIZE) / 4]) + 16; // include header
                         lastfd = fd;
-                        fd = LE32(psx->psx_ram[(fd + BLK_FD)]);
+                        fd = LE32(psx->psx_ram[(fd + BLK_FD) / 4]);
                     }
 
                     psx->psx_ram[(chunk + BLK_SIZE) / 4] = LE32(size);
