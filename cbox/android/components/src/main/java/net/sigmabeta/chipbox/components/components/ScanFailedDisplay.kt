@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.core.components
+package net.sigmabeta.chipbox.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*

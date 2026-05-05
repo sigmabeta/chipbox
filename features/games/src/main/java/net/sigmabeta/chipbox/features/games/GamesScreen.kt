@@ -21,7 +21,7 @@ import androidx.lifecycle.flowWithLifecycle
 import com.google.accompanist.insets.LocalWindowInsets
 import com.google.accompanist.insets.WindowInsets
 import net.sigmabeta.chipbox.components.R as ComponentsR
-import net.sigmabeta.chipbox.core.components.GameCard
+import net.sigmabeta.chipbox.components.GameCard
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.repository.Data
 import timber.log.Timber
