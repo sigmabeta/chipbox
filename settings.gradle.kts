@@ -48,6 +48,8 @@ include(
     ":cbox:android:strings",
     ":cbox:android:styles",
     ":cbox:android:contentsource:file",
+    ":cbox:android:scanner:real",
+    ":cbox:android:scanner:real:di",
     ":cbox:android:contentsource:file:di",
 
     ":cbox:common:contentsource",
@@ -112,7 +114,6 @@ include(
     ":core:player:status:di",
     ":core:player:status:real",
     ":core:player:status:real:di",
-    ":core:scanner:real",
 
     ":features:artists",
     ":features:artist-detail",
