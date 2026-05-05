@@ -16,7 +16,7 @@ dependencies {
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
 
-    api(projects.core.navigation)
+    api(projects.cbox.android.navigation)
 
     implementation(projects.cbox.android.components)
     implementation(projects.cbox.android.drawables)
