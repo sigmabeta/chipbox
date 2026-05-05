@@ -6,6 +6,8 @@ sealed class Reader {
     abstract fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>?
 }
 
+fun isPsfFamily(extension: String): Boolean = extension in PSF_FAMILY_EXTENSIONS
+
 fun getReaderForExtension(extension: String): Reader? {
     return when (extension) {
         EXT_PSF -> PsfReader
@@ -44,3 +46,9 @@ private const val EXT_NSF = "nsf"
 private const val EXT_NSFE = "nsfe"
 private const val EXT_GBS = "gbs"
 private const val EXT_SPC = "spc"
+
+private val PSF_FAMILY_EXTENSIONS = setOf(
+    EXT_PSF, EXT_MINIPSF, EXT_GSF, EXT_MINIGSF,
+    EXT_PSF2, EXT_MINIPSF2, EXT_2SF, EXT_MINI2SF,
+    EXT_SSF, EXT_MINISSF, EXT_DSF, EXT_MINIDSF,
+)

@@ -19,6 +19,8 @@ import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.models.decodeChainFiles
+import net.sigmabeta.chipbox.models.encodeChainFiles
 import timber.log.Timber
 
 class DatabaseRepository(
@@ -150,6 +152,7 @@ class DatabaseRepository(
             fade,
             if (withGame) getGameById(game_id) else null,
             if (withArtists) getArtistsForTrack(id) else null,
+            decodeChainFiles(chainFiles),
         )
 
     private suspend fun RawTrack.toTrackEntityWithArtists(gameId: Long): Pair<TrackEntity, List<ArtistEntity>> {
@@ -162,7 +165,8 @@ class DatabaseRepository(
             length,
             trackNumber,
             fade,
-            gameId
+            gameId,
+            encodeChainFiles(chainFiles),
         )
 
         val trackId = trackDao.insert(tempTrack)

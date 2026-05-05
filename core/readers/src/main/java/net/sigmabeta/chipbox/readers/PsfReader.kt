@@ -7,6 +7,11 @@ import timber.log.Timber
 import java.io.UnsupportedEncodingException
 import java.nio.ByteBuffer
 
+data class PsfTagInfo(
+    val tags: Map<String, String>,
+    val libReferences: List<String>,  // ordered: _lib, _lib2, _lib3, ...
+)
+
 object PsfReader : Reader() {
     private const val FILE_HEADER_SIZE = 16
     private const val TAG_HEADER_SIZE = 5
@@ -17,10 +22,14 @@ object PsfReader : Reader() {
     private const val PSF_TAG_KEY_ARTIST = "artist"
     private const val PSF_TAG_KEY_LENGTH = "length"
     private const val PSF_TAG_KEY_FADE = "fade"
+    private const val PSF_TAG_KEY_LIB = "_lib"
     private const val PSF_TAG_HEADER = "[TAG]"
     private const val PSF_UTF8_FLAG = "utf8=1"
 
-    override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
+    override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? =
+        readTagInfo(bytes)?.let { listOf(buildRawTrack(it.tags, identifier)) }
+
+    fun readTagInfo(bytes: ByteArray): PsfTagInfo? {
         val fileAsByteBuffer = bytesAsByteBuffer(bytes)
         val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
 
@@ -39,43 +48,49 @@ object PsfReader : Reader() {
             return null
         }
 
-        try {
+        return try {
             val reservedAreaSize = fileAsByteBuffer.nextFourBytesAsInt()
             val programAreaSize = fileAsByteBuffer.nextFourBytesAsInt()
 
             val dataSize = reservedAreaSize + programAreaSize
             val tagsAreaSize = fileAsByteBuffer.array().size - dataSize - COMBINED_HEADER_SIZE
 
-            // Move the reader to the start of the tag area
             fileAsByteBuffer.position(dataSize + FILE_HEADER_SIZE)
 
             if (!isPsfTagValid(fileAsByteBuffer)) {
                 return null
             }
 
-            val tagMap: HashMap<String, String> = HashMap()
-
+            val tagMap = HashMap<String, String>()
             readAllTags(tagsAreaSize, fileAsByteBuffer, tagMap)
-            return listOf(
-                RawTrack(
-                    identifier,
-                    "",
-                    tagMap[PSF_TAG_KEY_TITLE].orUnknown(),
-                    tagMap[PSF_TAG_KEY_ARTIST].orUnknown(),
-                    tagMap[PSF_TAG_KEY_GAME].orUnknown(),
-                    tagMap[PSF_TAG_KEY_LENGTH]?.toLengthMillis() ?: LENGTH_UNKNOWN_MS,
-                    -1,
-                    tagMap[PSF_TAG_KEY_FADE]?.toLengthMillis() ?: 0 > 0
-                )
-            )
+
+            val libRefs = tagMap.keys
+                .filter { it == PSF_TAG_KEY_LIB || (it.startsWith("_lib") && it.removePrefix("_lib").all { c -> c.isDigit() }) }
+                .sortedBy { libKeyToIndex(it) }
+                .mapNotNull { tagMap[it] }
+
+            PsfTagInfo(tagMap, libRefs)
         } catch (iae: IllegalArgumentException) {
             Timber.e("Illegal argument: ${iae.message}")
-            return null
+            null
         } catch (e: UnsupportedEncodingException) {
             Timber.e("Unsupported Encoding: ${e.message}")
-            return null
+            null
         }
     }
+
+    fun buildRawTrack(tags: Map<String, String>, identifier: String) = RawTrack(
+        identifier,
+        "",
+        tags[PSF_TAG_KEY_TITLE].orUnknown(),
+        tags[PSF_TAG_KEY_ARTIST].orUnknown(),
+        tags[PSF_TAG_KEY_GAME].orUnknown(),
+        tags[PSF_TAG_KEY_LENGTH]?.toLengthMillis() ?: LENGTH_UNKNOWN_MS,
+        -1,
+        tags[PSF_TAG_KEY_FADE]?.toLengthMillis() ?: 0 > 0
+    )
+
+    private fun libKeyToIndex(key: String): Int = key.removePrefix("_lib").toIntOrNull() ?: 1
 
     private fun isSupportedPlatform(platformCode: Byte): Boolean {
         return when (platformCode) {

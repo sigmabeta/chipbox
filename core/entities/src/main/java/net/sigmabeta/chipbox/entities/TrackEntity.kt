@@ -22,5 +22,6 @@ data class TrackEntity(
     val trackNumber: Int,
     val fade: Boolean,
     val game_id: Long,
-    @PrimaryKey(autoGenerate = true) val id: Long = 0
+    val chainFiles: String = "",
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
 )

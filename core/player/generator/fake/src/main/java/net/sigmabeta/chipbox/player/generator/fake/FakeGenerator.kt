@@ -19,7 +19,7 @@ class FakeGenerator(
 ) : Generator(repository, contentSourceRegistry, bufferManager, hatchet, dispatcher) {
     override fun getEmulatorSampleRate() = FakeEmulator.getSampleRateInternal()
 
-    override fun loadTrack(loadedTrack: Track, bytes: ByteArray) = FakeEmulator.loadTrack(loadedTrack)
+    override suspend fun loadTrack(loadedTrack: Track, bytes: ByteArray) = FakeEmulator.loadTrack(loadedTrack)
 
     override fun generateAudio(buffer: ShortArray) = FakeEmulator.generateBuffer(buffer)
 

@@ -15,7 +15,7 @@ import net.sigmabeta.sage.logging.Hatchet
 
 abstract class Generator(
         private val repository: Repository,
-        private val contentSourceRegistry: ContentSourceRegistry,
+        protected val contentSourceRegistry: ContentSourceRegistry,
         private val bufferManager: ProducerBufferManager,
         protected val hatchet: Hatchet,
         dispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -38,7 +38,7 @@ abstract class Generator(
         extraBufferCapacity = 10
     )
 
-    protected abstract fun loadTrack(loadedTrack: Track, bytes: ByteArray)
+    protected abstract suspend fun loadTrack(loadedTrack: Track, bytes: ByteArray)
 
     protected abstract fun generateAudio(buffer: ShortArray): Int
 
