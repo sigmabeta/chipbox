@@ -40,6 +40,7 @@ include(
 
     ":features:welcome",
 
+    ":cbox:android:colors",
     ":cbox:android:contentsource:file",
     ":cbox:android:contentsource:file:di",
 
@@ -52,7 +53,6 @@ include(
 
     // Legacy Modules
     ":core:activities",
-    ":core:colors",
     ":core:components",
     ":core:database",
     ":core:drawables",
