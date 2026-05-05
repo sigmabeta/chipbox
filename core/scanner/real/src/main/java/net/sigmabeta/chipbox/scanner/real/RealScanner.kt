@@ -11,8 +11,12 @@ import net.sigmabeta.chipbox.models.state.ScannerState
 import net.sigmabeta.chipbox.readers.EXTENSION_M3U
 import net.sigmabeta.chipbox.readers.LENGTH_UNKNOWN_MS
 import net.sigmabeta.chipbox.readers.M3uReader
+import net.sigmabeta.chipbox.readers.PsfReader
+import net.sigmabeta.chipbox.readers.PsfTagInfo
 import net.sigmabeta.chipbox.readers.getReaderForExtension
+import net.sigmabeta.chipbox.readers.isPsfFamily
 import net.sigmabeta.chipbox.readers.orUnknown
+import net.sigmabeta.chipbox.models.ChainFile
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
@@ -75,6 +79,10 @@ class RealScanner(
         val m3uFiles = mutableListOf<LibraryFile>()
         var failed = 0
 
+        val byFilename: Map<String, LibraryFile> = files.associateBy { it.name.lowercase() }
+        // plain HashMap: scanGroup is sequential suspend, no concurrent access
+        val tagInfoCache = HashMap<String, PsfTagInfo?>()
+
         for (file in files) {
             val ext = file.extension
             if (ext.isEmpty()) continue
@@ -86,6 +94,35 @@ class RealScanner(
 
             if (ext == EXTENSION_M3U) {
                 m3uFiles += file
+                continue
+            }
+
+            if (isPsfFamily(ext)) {
+                hatchet.d("Reading ${file.name} (PSF family).")
+                val track = readWithErrorHandling(file) {
+                    val bytes = contentSource.openInputStream(file.uri)?.use { it.readBytes() }
+                        ?: return@readWithErrorHandling null
+                    val tagInfo = PsfReader.readTagInfo(bytes) ?: return@readWithErrorHandling null
+                    tagInfoCache[file.name.lowercase()] = tagInfo
+                    val chain = mutableListOf<ChainFile>()
+                    val chainTags = resolvePsfChain(
+                        tagInfo, byFilename, tagInfoCache,
+                        mutableSetOf(file.name.lowercase()), 0, chain,
+                    )
+                    val mergedTags = chainTags + tagInfo.tags
+                    PsfReader.buildRawTrack(mergedTags, file.uri.toString())
+                        .copy(source = contentSource.sourceId, chainFiles = chain)
+                }
+                when (track) {
+                    null -> {
+                        hatchet.w("Failed to read ${file.name}.")
+                        failed++
+                    }
+                    else -> {
+                        hatchet.d("${file.name} yielded 1 track.")
+                        tracksByFilename[file.name] = mutableListOf(track)
+                    }
+                }
                 continue
             }
 
@@ -166,6 +203,51 @@ class RealScanner(
         return Progress(1, rawTracks.size, failed)
     }
 
+    private suspend fun resolvePsfChain(
+        tagInfo: PsfTagInfo,
+        byFilename: Map<String, LibraryFile>,
+        tagInfoCache: HashMap<String, PsfTagInfo?>,
+        visited: MutableSet<String>,
+        depth: Int,
+        chainOut: MutableList<ChainFile>,
+    ): Map<String, String> {
+        val merged = mutableMapOf<String, String>()
+        for (libRef in tagInfo.libReferences) {
+            val refLower = libRef.lowercase()
+            if (refLower in visited) {
+                hatchet.w("PSF _lib cycle at '$libRef' — skipping.")
+                continue
+            }
+            if (depth >= MAX_LIB_DEPTH) {
+                hatchet.w("PSF _lib chain depth limit exceeded at '$libRef' — skipping.")
+                continue
+            }
+            val libFile = byFilename[refLower] ?: run {
+                hatchet.v("PSF _lib '$libRef' not found in folder — skipping.")
+                continue
+            }
+            val libTagInfo = if (tagInfoCache.containsKey(refLower)) {
+                tagInfoCache[refLower]
+            } else {
+                val parsed = contentSource.openInputStream(libFile.uri)?.use { it.readBytes() }
+                    ?.let { PsfReader.readTagInfo(it) }
+                tagInfoCache[refLower] = parsed
+                parsed
+            }
+            if (libTagInfo != null) {
+                if (chainOut.none { it.filename.equals(libFile.name, ignoreCase = true) }) {
+                    chainOut += ChainFile(libFile.name, libFile.uri.toString())
+                }
+                visited.add(refLower)
+                val libChain = resolvePsfChain(libTagInfo, byFilename, tagInfoCache, visited, depth + 1, chainOut)
+                visited.remove(refLower)
+                merged.putAll(libChain)
+                merged.putAll(libTagInfo.tags)
+            }
+        }
+        return merged
+    }
+
     private suspend inline fun <T> readWithErrorHandling(
         file: LibraryFile,
         op: () -> T?,
@@ -199,5 +281,6 @@ class RealScanner(
     companion object {
         val EXTENSIONS_IMAGES = setOf("jpg", "png")
         private const val TAG_UNKNOWN = "Unknown"
+        private const val MAX_LIB_DEPTH = 8
     }
 }

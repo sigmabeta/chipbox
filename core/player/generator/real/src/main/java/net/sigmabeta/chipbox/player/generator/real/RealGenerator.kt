@@ -23,7 +23,7 @@ class RealGenerator(
 ) : Generator(repository, contentSourceRegistry, bufferManager, hatchet, dispatcher) {
     private var emulator: Emulator? = null
 
-    override fun loadTrack(loadedTrack: Track, bytes: ByteArray) {
+    override suspend fun loadTrack(loadedTrack: Track, bytes: ByteArray) {
         if (emulator != null) {
             teardown()
         }
@@ -40,17 +40,38 @@ class RealGenerator(
             emulator.nativeLibLoaded = true
         }
 
-        val staged = stageToCache(loadedTrack.id, ext, bytes)
+        val staged = stageToCache(loadedTrack, ext, bytes)
         emulator.hatchet = hatchet
         this.emulator = emulator
         emulator.loadTrack(loadedTrack.copy(path = staged.absolutePath))
     }
 
-    private fun stageToCache(trackId: Long, ext: String, bytes: ByteArray): File {
-        val dir = File(context.cacheDir, "playback").apply { mkdirs() }
-        val file = File(dir, "track-$trackId.$ext").apply { writeBytes(bytes) }
-        hatchet.v("Staged track $trackId to ${file.absolutePath}.")
-        return file
+    private suspend fun stageToCache(track: Track, ext: String, mainBytes: ByteArray): File {
+        val dir = File(context.cacheDir, "playback/track-${track.id}").apply {
+            deleteRecursively()
+            mkdirs()
+        }
+        val mainFile = File(dir, "main.$ext").apply { writeBytes(mainBytes) }
+
+        if (track.chainFiles.isNotEmpty()) {
+            val source = contentSourceRegistry.get(track.source)
+            if (source == null) {
+                hatchet.w("No content source '${track.source}' — chain files for track ${track.id} skipped.")
+            } else {
+                for (chain in track.chainFiles) {
+                    val chainBytes = source.openBytes(chain.uri)
+                    if (chainBytes == null) {
+                        hatchet.w("Failed to read chain file ${chain.filename} — playback may fail.")
+                        continue
+                    }
+                    File(dir, chain.filename).writeBytes(chainBytes)
+                    hatchet.v("Staged chain file ${chain.filename} (${chainBytes.size} bytes).")
+                }
+            }
+        }
+
+        hatchet.v("Staged track ${track.id} to ${mainFile.absolutePath} (+${track.chainFiles.size} chain file(s)).")
+        return mainFile
     }
 
     override fun generateAudio(buffer: ShortArray) = ifNotNull(emulator) { generateBuffer(buffer) }

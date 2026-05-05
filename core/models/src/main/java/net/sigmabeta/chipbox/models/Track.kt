@@ -9,5 +9,6 @@ data class Track(
     val trackNumber: Int,
     val fade: Boolean,
     val game: Game?,
-    val artists: List<Artist>?
+    val artists: List<Artist>?,
+    val chainFiles: List<ChainFile> = emptyList(),
 )
