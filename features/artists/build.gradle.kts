@@ -15,7 +15,7 @@ dependencies {
 
     implementation(projects.core.components)
     implementation(projects.cbox.common.models)
-    implementation(projects.core.repository)
+    implementation(projects.cbox.common.repository)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation("androidx.compose.ui:ui")

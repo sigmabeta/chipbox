@@ -15,7 +15,7 @@ dependencies {
 
     implementation(projects.core.components)
     implementation(projects.cbox.common.models)
-    implementation(projects.core.repository)
+    implementation(projects.cbox.common.repository)
     implementation(projects.core.player.common)
     implementation(projects.core.player.director)
 

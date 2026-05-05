@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    api(projects.core.repository)
+    api(projects.cbox.common.repository)
 
     implementation(projects.cbox.common.models)
     implementation(projects.cbox.common.utils)

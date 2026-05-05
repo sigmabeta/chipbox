@@ -18,7 +18,7 @@ dependencies {
     implementation(projects.core.drawables)
     implementation(projects.core.player.common)
     implementation(projects.core.player.director)
-    implementation(projects.core.repository)
+    implementation(projects.cbox.common.repository)
     implementation(projects.core.strings)
     implementation("com.jakewharton.timber:timber:5.0.1")
 }

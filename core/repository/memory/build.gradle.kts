@@ -12,5 +12,5 @@ dependencies {
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
 
-    api(projects.core.repository)
+    api(projects.cbox.common.repository)
 }

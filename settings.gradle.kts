@@ -47,6 +47,7 @@ include(
     ":cbox:common:entities",
     ":cbox:common:models",
     ":cbox:common:readers",
+    ":cbox:common:repository",
     ":cbox:common:utils",
 
     // Legacy Modules
@@ -57,7 +58,6 @@ include(
     ":core:drawables",
     ":core:image-loading",
     ":core:navigation",
-    ":core:repository",
     ":core:scanner",
     ":core:services",
     ":core:strings",
