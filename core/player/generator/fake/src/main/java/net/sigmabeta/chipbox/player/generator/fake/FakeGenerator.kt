@@ -10,6 +10,11 @@ import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.logging.Hatchet
 
+/**
+ * Development-only [Generator] that bypasses all native emulators in favor of the in-process
+ * [FakeEmulator] (sine/square synth driven by procedurally generated tracks). Useful for
+ * exercising the pipeline without dragging in JNI dependencies.
+ */
 class FakeGenerator(
     repository: Repository,
     contentSourceRegistry: ContentSourceRegistry,

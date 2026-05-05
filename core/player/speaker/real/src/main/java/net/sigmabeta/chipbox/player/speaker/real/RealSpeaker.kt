@@ -12,6 +12,14 @@ import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import timber.log.Timber
 
+/**
+ * Production [Speaker] that writes PCM to an Android [AudioTrack].
+ *
+ * The track is lazily (re)created whenever an incoming buffer's sample rate differs from the
+ * current track's — emulators within a setlist may use different rates, so the speaker can't
+ * commit to a single configuration up front. The consume coroutine is also bumped to
+ * [Process.THREAD_PRIORITY_URGENT_AUDIO] when (re)initializing to avoid underruns under load.
+ */
 class RealSpeaker(
         bufferManager: ConsumerBufferManager,
         dispatcher: CoroutineDispatcher = Dispatchers.Default

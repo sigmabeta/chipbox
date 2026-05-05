@@ -1,11 +1,16 @@
 package net.sigmabeta.chipbox.player.speaker.text
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
-import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.player.speaker.Speaker
 
+/**
+ * Debug-only [Speaker] that prints each incoming buffer to stdout as a `Frame | Left | Right`
+ * table. Useful for verifying that the producer side is generating sensible samples without
+ * needing audio hardware.
+ */
 class TextSpeaker(
         bufferManager: ConsumerBufferManager,
         dispatcher: CoroutineDispatcher = Dispatchers.IO

@@ -4,9 +4,26 @@ import kotlinx.coroutines.channels.Channel
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
-import net.sigmabeta.chipbox.player.common.*
-import java.lang.IllegalStateException
+import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager.Companion.BUFFER_LENGTH_MILLIS
+import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager.Companion.BUFFER_SIZE_BYTES_DEFAULT
+import net.sigmabeta.chipbox.player.common.bytesToSamples
+import net.sigmabeta.chipbox.player.common.clear
+import net.sigmabeta.chipbox.player.common.framesToSamples
+import net.sigmabeta.chipbox.player.common.millisToFrames
+import net.sigmabeta.chipbox.player.common.samplesToBytes
 
+/**
+ * Production buffer manager. Backs the queue with two bounded coroutine [Channel]s — one of
+ * empty arrays for the producer to fill, one of full [AudioBuffer]s for the consumer to drain.
+ *
+ * Pool size is chosen so the queue holds [BUFFER_LENGTH_MILLIS] worth of audio at the active
+ * sample rate, divided into [BUFFER_SIZE_BYTES_DEFAULT]-byte chunks. That gives the consumer
+ * roughly half a second of headroom against producer hiccups.
+ *
+ * The single object implements both [ProducerBufferManager] and [ConsumerBufferManager]; each
+ * side is injected with the narrower interface so neither can call operations meant for the
+ * other.
+ */
 class RealBufferManager: ProducerBufferManager, ConsumerBufferManager {
     private var emptyArrays: Channel<ShortArray>? = null
 
