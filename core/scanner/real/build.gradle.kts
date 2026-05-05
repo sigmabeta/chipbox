@@ -12,7 +12,7 @@ dependencies {
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
 
-    api(projects.core.scanner)
+    api(projects.cbox.common.scanner)
     implementation(projects.cbox.common.readers)
     implementation(projects.cbox.common.repository)
     implementation(projects.cbox.android.contentsource.file)

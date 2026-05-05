@@ -12,6 +12,6 @@ dependencies {
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
 
-    api(projects.core.scanner)
+    api(projects.cbox.common.scanner)
     implementation(projects.core.repository.mock)
 }
