@@ -1,7 +1,5 @@
 plugins {
-    id("sage.android")
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.sage.android)
 }
 
 android {
@@ -9,9 +7,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.hilt)
-    ksp(libs.hilt.compiler)
-
     api(projects.cbox.common.scanner)
     implementation(projects.cbox.common.readers)
     implementation(projects.cbox.common.repository)

@@ -58,7 +58,7 @@ dependencies {
     implementation(projects.cbox.common.repository.memory.di)
     implementation(projects.cbox.common.repository.mock.di)
     implementation(projects.cbox.common.scanner.mock.di)
-    implementation(projects.core.scanner.real)
+    implementation(projects.cbox.android.scanner.real.di)
 
     implementation(libs.sage.common.list)
     implementation(libs.sage.common.appcomm)
