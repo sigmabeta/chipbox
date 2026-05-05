@@ -20,7 +20,7 @@ internal fun Game.toMediaItem() = MediaBrowserCompat.MediaItem(
     MediaDescriptionCompat.Builder()
         .setTitle(title)
         .setMediaId(ID_GAMES + id)
-        .setIconUri(Uri.parse(photoUrl ?: ""))
+        .apply { photoUrl?.toRemoteUri()?.let { setIconUri(it) } }
         .build(),
     MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
 )
@@ -29,7 +29,7 @@ internal fun Artist.toMediaItem() = MediaBrowserCompat.MediaItem(
     MediaDescriptionCompat.Builder()
         .setTitle(name)
         .setMediaId(ID_ARTISTS + id)
-        .setIconUri(Uri.parse(photoUrl ?: ""))
+        .apply { photoUrl?.toRemoteUri()?.let { setIconUri(it) } }
         .build(),
     MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
 )
@@ -38,10 +38,18 @@ internal fun Track.toMediaItem(parentId: String) = MediaBrowserCompat.MediaItem(
     MediaDescriptionCompat.Builder()
         .setTitle(title)
         .setMediaId("$parentId.$id")
-        .setIconUri(Uri.parse(game?.photoUrl ?: ""))
+        .apply { game?.photoUrl?.toRemoteUri()?.let { setIconUri(it) } }
         .build(),
     MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
 )
+
+// SAF content:// and file:// URIs are process-local grants — other apps can't open them.
+// Only expose URIs with schemes that are universally accessible (http/https).
+// TODO: replace with a ContentProvider that proxies SAF artwork access.
+private fun String.toRemoteUri(): Uri? {
+    val uri = Uri.parse(this)
+    return if (uri.scheme == "http" || uri.scheme == "https") uri else null
+}
 
 internal fun Track.toMetadataBuilder(): MediaMetadataCompat.Builder {
     return MediaMetadataCompat.Builder()
