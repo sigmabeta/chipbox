@@ -1,12 +1,34 @@
 package net.sigmabeta.chipbox.player.speaker
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 
+/**
+ * Consumer side of the playback pipeline. Pulls [AudioBuffer]s off the [bufferManager] and
+ * hands them to a subclass-supplied sink — speakers ([net.sigmabeta.chipbox.player.speaker.real.RealSpeaker]
+ * via Android `AudioTrack`), a WAV file ([net.sigmabeta.chipbox.player.speaker.file.FileSpeaker]),
+ * or stdout ([net.sigmabeta.chipbox.player.speaker.text.TextSpeaker]).
+ *
+ * ### Threading
+ * The consume loop runs as a single coroutine on [dispatcher]. The loop never terminates on its
+ * own; it's stopped via [stop], which cancels the coroutine and tears down the sink.
+ *
+ * ### Buffer recycling
+ * Each consumed [AudioBuffer]'s `data` array is returned to the buffer manager via
+ * [ConsumerBufferManager.recycleShortArray] so the producer can reuse it. Subclasses must
+ * finish reading from `audio.data` before [onAudioReceived] returns — the array becomes
+ * available to the producer immediately afterward.
+ */
 abstract class Speaker(
         private val bufferManager: ConsumerBufferManager,
         dispatcher: CoroutineDispatcher = Dispatchers.Default
@@ -34,8 +56,12 @@ abstract class Speaker(
         teardown()
     }
 
+    /** Called on the speaker coroutine for each buffer pulled from the queue. Must complete
+     *  synchronously — `audio.data` is recycled as soon as this returns. */
     abstract fun onAudioReceived(audio: AudioBuffer)
 
+    /** Release any sink-specific resources (audio track, file handle, etc). Called from
+     *  [stop] after the consume loop is cancelled. */
     abstract fun teardown()
 
     protected fun emitError(error: String) {

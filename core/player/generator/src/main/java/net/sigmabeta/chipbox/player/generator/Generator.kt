@@ -1,10 +1,17 @@
 package net.sigmabeta.chipbox.player.generator
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
@@ -13,6 +20,28 @@ import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.logging.Hatchet
 
+/**
+ * Producer side of the playback pipeline. Resolves a track id to bytes via the [Repository] +
+ * [ContentSourceRegistry], hands those bytes to a subclass-supplied emulator, and pushes the
+ * decoded PCM into the [bufferManager] for a downstream Speaker to consume.
+ *
+ * Subclasses pick the emulator. [net.sigmabeta.chipbox.player.generator.real.RealGenerator]
+ * dispatches based on file extension across the available native emulators (GME, GBA, PSF, etc);
+ * [net.sigmabeta.chipbox.player.generator.fake.FakeGenerator] always uses the in-process
+ * sine/square synthesizer.
+ *
+ * ### Threading
+ * The generation loop runs as a single coroutine on [dispatcher] (default [Dispatchers.IO]).
+ * [play], [pause], and [stop] manipulate that job; calls from any thread are safe but
+ * non-atomic with respect to each other. Subclass abstract methods are only ever invoked from
+ * inside the loop.
+ *
+ * ### Track transitions
+ * [startTrack] queues the next track id on a 1-slot channel and starts the loop if it isn't
+ * running. The loop drains the channel between buffers, so a queued track takes effect at the
+ * next buffer boundary rather than mid-buffer. When a track ends naturally, the loop emits
+ * [GeneratorEvent.TrackChange] and blocks on the channel until the director sends the next id.
+ */
 abstract class Generator(
         private val repository: Repository,
         protected val contentSourceRegistry: ContentSourceRegistry,
@@ -38,16 +67,26 @@ abstract class Generator(
         extraBufferCapacity = 10
     )
 
+    /** Hand the loaded track + its raw file bytes to the underlying emulator so subsequent
+     *  [generateAudio] calls produce its samples. Called once per track from the loop. */
     protected abstract suspend fun loadTrack(loadedTrack: Track, bytes: ByteArray)
 
+    /** Fill [buffer] with up to its capacity worth of stereo 16-bit PCM samples. Returns the
+     *  number of frames actually generated; 0 is treated as fatal by the loop. */
     protected abstract fun generateAudio(buffer: ShortArray): Int
 
+    /** Release any per-track emulator resources. May be called multiple times. */
     protected abstract fun teardown()
 
+    /** True once the emulator has reached its configured track length. */
     protected abstract fun isTrackOver(): Boolean
 
+    /** The emulator's native output sample rate for the loaded track, in Hz. Used to size the
+     *  buffer pool and drive the fade processor. */
     protected abstract fun getEmulatorSampleRate(): Int
 
+    /** Most-recent error from the emulator, or null. Polled after every buffer; non-null
+     *  terminates the loop. */
     abstract fun getLastError(): String?
 
     fun events() = eventSink.asSharedFlow()

@@ -12,6 +12,20 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.File
 
+/**
+ * Production [Generator] that picks a native [Emulator] by file extension.
+ *
+ * Every emulator the app knows about is injected as a list; the first one whose
+ * [Emulator.isFileExtensionSupported] returns true wins. Native libraries are loaded lazily on
+ * first use of a given emulator and remain loaded for the process lifetime.
+ *
+ * ### Cache staging
+ * Native emulators expect a real filesystem path. Track bytes (which may come from any
+ * [net.sigmabeta.chipbox.contentsource.ContentSource], including content URIs we can't seek
+ * into directly) are written to `cacheDir/playback/track-{id}/main.{ext}` before the emulator
+ * is pointed at them. PSF-style multi-file formats also have their auxiliary "chain files"
+ * staged into the same directory so the native code can resolve them by relative path.
+ */
 class RealGenerator(
     repository: Repository,
     contentSourceRegistry: ContentSourceRegistry,

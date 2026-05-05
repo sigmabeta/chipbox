@@ -1,5 +1,13 @@
 package net.sigmabeta.chipbox.player.common
 
+// Audio-math conversions used throughout the playback stack.
+//
+// "Frame" = one time slice across all channels (L+R for stereo).
+// "Sample" = one channel's value within a frame (a single Short).
+// "Byte" = raw storage; one Short = BYTES_PER_SAMPLE bytes.
+//
+// Sample rate is always Hz (samples-per-second-per-channel = frames-per-second).
+
 fun Double.millisToFrames(sampleRate: Int) = (this * sampleRate.rateInMillis()).toInt()
 
 fun Int.framesToMillis(sampleRate: Int) = this / (sampleRate.rateInMillis())

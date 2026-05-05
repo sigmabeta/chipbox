@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.player.speaker.file
 
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.common.BYTES_PER_SAMPLE
@@ -14,6 +14,14 @@ import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
+/**
+ * [Speaker] that writes incoming PCM to a WAV file under [externalStorageDir]. Used for
+ * exporting an emulator's output rather than playing it back — same pipeline, different sink.
+ *
+ * The WAV header is written up front with placeholder size fields; the real RIFF / data chunk
+ * sizes are patched into the header in [teardown] once the total byte count is known. The file
+ * is reopened on any sample-rate change, since the WAV format encodes a single rate per file.
+ */
 class FileSpeaker(
         private val externalStorageDir: File,
         bufferManager: ConsumerBufferManager,

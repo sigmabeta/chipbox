@@ -5,7 +5,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.models.Track
@@ -20,6 +19,21 @@ import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.player.speaker.SpeakerEvent
 import net.sigmabeta.chipbox.repository.Repository
 
+/**
+ * Production [Director] implementation.
+ *
+ * On construction, two coroutines are launched on [directorScope] that subscribe to
+ * [Generator.events] and [Speaker.events] for the lifetime of this object. Each event is fed
+ * through a `reduce(state, event)` function (one overload per event type) that returns the next
+ * [ChipboxPlaybackState]. Assigning to [currentState] re-emits the new value to observers via
+ * the property's setter.
+ *
+ * Setlist resolution is driven by [Session.type]: a `GAME` session pulls every track for the
+ * given game from the repository; an `ARTIST` session is not yet implemented. The director
+ * also decides when to advance tracks — the generator emits [GeneratorEvent.TrackChange] when
+ * its current track ends, and the director responds by feeding it the next track id from the
+ * setlist (or transitioning to [PlayerState.ENDING] if the setlist is exhausted).
+ */
 class RealDirector(
     private val generator: Generator,
     private val speaker: Speaker,
