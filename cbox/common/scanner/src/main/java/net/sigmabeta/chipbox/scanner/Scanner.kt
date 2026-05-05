@@ -7,9 +7,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.onStart
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
-import timber.log.Timber
+import net.sigmabeta.sage.logging.Hatchet
 
-abstract class Scanner(dispatcher: CoroutineDispatcher = Dispatchers.IO) {
+abstract class Scanner(
+    dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val hatchet: Hatchet = BluntHatchet(),
+) {
     abstract suspend fun CoroutineScope.scan()
 
     fun startScan() {
@@ -17,7 +20,7 @@ abstract class Scanner(dispatcher: CoroutineDispatcher = Dispatchers.IO) {
             try {
                 scan()
             } catch (ex: Exception) {
-                Timber.e("Scan error. ${ex.stackTraceToString()}")
+                hatchet.e("Scan error. ${ex.stackTraceToString()}")
             }
         }
     }

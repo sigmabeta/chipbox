@@ -23,7 +23,7 @@ dependencies {
     implementation(projects.core.services)
     implementation(projects.cbox.android.strings)
     implementation(projects.cbox.android.styles)
-    implementation(projects.core.scanner)
+    implementation(projects.cbox.common.scanner)
 
     implementation("androidx.media2:media2-common:1.3.0")
     implementation("com.google.accompanist:accompanist-insets:0.23.1")

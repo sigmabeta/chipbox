@@ -53,6 +53,7 @@ include(
     ":cbox:common:models",
     ":cbox:common:readers",
     ":cbox:common:repository",
+    ":cbox:common:scanner",
     ":cbox:common:utils",
 
     // Legacy Modules
@@ -60,7 +61,6 @@ include(
     ":core:components",
     ":core:database",
     ":core:navigation",
-    ":core:scanner",
     ":core:services",
     ":core:player:buffer",
     ":core:player:buffer:di",
