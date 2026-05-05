@@ -3,6 +3,6 @@ plugins {
 }
 
 dependencies {
-    api(projects.core.models)
+    api(projects.cbox.common.models)
     api(libs.kotlinx.coroutines.core)
 }

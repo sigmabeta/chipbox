@@ -7,7 +7,7 @@ android {
 }
 
 dependencies {
-    api(projects.core.models)
+    api(projects.cbox.common.models)
     api(libs.kotlinx.coroutines.core)
     api("com.jakewharton.timber:timber:5.0.1")
 }

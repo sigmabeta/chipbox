@@ -44,6 +44,7 @@ include(
     ":cbox:android:contentsource:file:di",
 
     ":cbox:common:contentsource",
+    ":cbox:common:models",
     ":cbox:common:readers",
 
     // Legacy Modules
@@ -54,7 +55,6 @@ include(
     ":core:drawables",
     ":core:entities",
     ":core:image-loading",
-    ":core:models",
     ":core:navigation",
     ":core:repository",
     ":core:scanner",
