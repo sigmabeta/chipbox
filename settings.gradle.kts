@@ -41,6 +41,8 @@ include(
     ":features:welcome",
 
     ":cbox:android:colors",
+    ":cbox:android:drawables",
+    ":cbox:android:image-loading",
     ":cbox:android:contentsource:file",
     ":cbox:android:contentsource:file:di",
 
@@ -55,8 +57,6 @@ include(
     ":core:activities",
     ":core:components",
     ":core:database",
-    ":core:drawables",
-    ":core:image-loading",
     ":core:navigation",
     ":core:scanner",
     ":core:services",

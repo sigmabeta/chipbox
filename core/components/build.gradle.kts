@@ -8,8 +8,8 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.imageLoading)
-    implementation(projects.core.drawables)
+    implementation(projects.cbox.android.imageLoading)
+    implementation(projects.cbox.android.drawables)
     implementation(projects.cbox.common.models)
     implementation(projects.core.strings)
 

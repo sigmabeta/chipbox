@@ -8,7 +8,7 @@ android {
 
 dependencies {
     implementation(projects.cbox.android.colors)
-    implementation(projects.core.drawables)
+    implementation(projects.cbox.android.drawables)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
 }

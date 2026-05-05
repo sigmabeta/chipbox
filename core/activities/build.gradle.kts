@@ -19,7 +19,7 @@ dependencies {
     api(projects.core.navigation)
 
     implementation(projects.core.components)
-    implementation(projects.core.drawables)
+    implementation(projects.cbox.android.drawables)
     implementation(projects.core.services)
     implementation(projects.core.strings)
     implementation(projects.core.styles)
