@@ -29,9 +29,14 @@ class RealBufferManager: ProducerBufferManager, ConsumerBufferManager {
 
     private var fullBuffers: Channel<AudioBuffer>? = null
 
+    private var currentSampleRate: Int? = null
+
     // TODO Inject a scope and do this setup in init() with a static sample rate,
     //      then make buffers nonnull.
     override suspend fun setSampleRate(sampleRate: Int) {
+        if (sampleRate == currentSampleRate) return
+        currentSampleRate = sampleRate
+
         val bufferSizeShorts = BUFFER_SIZE_BYTES_DEFAULT.bytesToSamples()
         val bufferCount = BUFFER_LENGTH_MILLIS
                 .millisToFrames(sampleRate)
