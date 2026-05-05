@@ -47,7 +47,7 @@ dependencies {
 
     implementation(projects.core.activities)
     implementation(projects.core.database)
-    implementation(projects.core.services)
+    implementation(projects.cbox.android.services)
     implementation(projects.core.player.buffer.di)
     implementation(projects.core.player.director.di)
     implementation(projects.core.player.emulators.di)

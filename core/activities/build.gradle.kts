@@ -20,7 +20,7 @@ dependencies {
 
     implementation(projects.cbox.android.components)
     implementation(projects.cbox.android.drawables)
-    implementation(projects.core.services)
+    implementation(projects.cbox.android.services)
     implementation(projects.cbox.android.strings)
     implementation(projects.cbox.android.styles)
     implementation(projects.cbox.common.scanner)

@@ -50,6 +50,7 @@ include(
     ":cbox:android:styles",
     ":cbox:android:contentsource:file",
     ":cbox:android:scanner:real",
+    ":cbox:android:services",
     ":cbox:android:scanner:real:di",
     ":cbox:android:contentsource:file:di",
 
@@ -72,7 +73,6 @@ include(
     // Legacy Modules
     ":core:activities",
     ":core:navigation",
-    ":core:services",
     ":core:player:buffer",
     ":core:player:buffer:di",
     ":core:player:buffer:real",
