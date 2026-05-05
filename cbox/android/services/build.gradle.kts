@@ -1,7 +1,6 @@
 plugins {
-    id("sage.android")
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.di.android)
 }
 
 android {
@@ -9,9 +8,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.hilt)
-    ksp(libs.hilt.compiler)
-
     api("androidx.media2:media2-common:1.3.0")
 
     implementation(projects.cbox.android.colors)
@@ -20,5 +16,4 @@ dependencies {
     implementation(projects.core.player.director)
     implementation(projects.cbox.common.repository)
     implementation(projects.cbox.android.strings)
-    implementation("com.jakewharton.timber:timber:5.0.1")
 }
