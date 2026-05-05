@@ -13,7 +13,7 @@ dependencies {
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
 
-    implementation(projects.core.components)
+    implementation(projects.cbox.android.components)
     implementation(projects.cbox.common.models)
     implementation(projects.cbox.common.repository)
     implementation(projects.core.player.common)

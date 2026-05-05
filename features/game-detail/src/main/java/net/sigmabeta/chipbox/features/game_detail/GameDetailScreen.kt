@@ -19,8 +19,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import com.google.accompanist.insets.LocalWindowInsets
 import com.google.accompanist.insets.WindowInsets
-import net.sigmabeta.chipbox.core.components.GameDetailListItem
-import net.sigmabeta.chipbox.core.components.GameTrackListItem
+import net.sigmabeta.chipbox.components.GameDetailListItem
+import net.sigmabeta.chipbox.components.GameTrackListItem
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.repository.Data
 

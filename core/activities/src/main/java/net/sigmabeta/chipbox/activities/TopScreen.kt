@@ -19,8 +19,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.insets.LocalWindowInsets
 import com.google.accompanist.insets.WindowInsets
-import net.sigmabeta.chipbox.core.components.ChipboxNavBar
-import net.sigmabeta.chipbox.core.components.MenuItemDefinition
+import net.sigmabeta.chipbox.components.ChipboxNavBar
+import net.sigmabeta.chipbox.components.MenuItemDefinition
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
 import net.sigmabeta.chipbox.drawables.R as DrawablesR

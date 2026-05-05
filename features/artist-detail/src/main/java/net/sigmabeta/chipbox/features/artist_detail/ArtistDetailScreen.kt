@@ -18,8 +18,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.flowWithLifecycle
 import com.google.accompanist.insets.LocalWindowInsets
 import com.google.accompanist.insets.WindowInsets
-import net.sigmabeta.chipbox.core.components.ArtistDetailHeaderListItem
-import net.sigmabeta.chipbox.core.components.ArtistTrackListItem
+import net.sigmabeta.chipbox.components.ArtistDetailHeaderListItem
+import net.sigmabeta.chipbox.components.ArtistTrackListItem
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.repository.Data
 import timber.log.Timber

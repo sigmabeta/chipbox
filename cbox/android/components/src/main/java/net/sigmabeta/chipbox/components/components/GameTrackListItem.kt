@@ -1,8 +1,14 @@
-package net.sigmabeta.chipbox.core.components
+package net.sigmabeta.chipbox.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -11,19 +17,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Track
+import java.util.concurrent.TimeUnit
 
 @Composable
-fun ArtistTrackListItem(
+fun GameTrackListItem(
     track: Track,
-    onClick: () -> Unit
+    position: Int,
+    onClick: (Int) -> Unit
 ) {
     Row(
         Modifier
             .height(60.dp)
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable { onClick(position) }
             .background(MaterialTheme.colors.background)
     ) {
         Column(
@@ -45,7 +53,7 @@ fun ArtistTrackListItem(
                     .padding(top = 8.dp)
             )
             Text(
-                text = track.game?.title ?: "Unknown Game",
+                text = track.artists?.joinToString { it.name } ?: "Unknown Artist",
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.caption,
@@ -67,11 +75,19 @@ fun ArtistTrackListItem(
     }
 }
 
+fun getTimeStringFromMillis(millis: Long): String {
+    val minutes = TimeUnit.MILLISECONDS.toMinutes(millis)
+    val totalSeconds = TimeUnit.MILLISECONDS.toSeconds(millis)
+    val displaySeconds = totalSeconds - TimeUnit.MINUTES.toSeconds(minutes)
+
+    return "%d:%02d".format(minutes, displaySeconds)
+}
+
 @Composable
 @Preview
-fun PreviewArtistTrackListItem() {
+fun PreviewGameTrackListItem() {
     MaterialTheme {
-        ArtistTrackListItem(
+        GameTrackListItem(
             track = Track(
                 0L,
                 "",
@@ -80,15 +96,18 @@ fun PreviewArtistTrackListItem() {
                 214000,
                 -1,
                 false,
-                Game(
-                    1234L,
-                    "Neo Turf Masters",
-                    null,
-                    null,
-                    null
-                ),
-                null
-            )
+                null,
+                listOf(
+                    Artist(
+                        0L,
+                        "Takushi Hiyamuta",
+                        "",
+                        mutableListOf(),
+                        mutableListOf()
+                    )
+                )
+            ),
+            position = 17
         ) {}
     }
 }

@@ -1,6 +1,6 @@
 plugins {
-    id("sage.android")
-    id("sage.compose.android")
+    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.compose.android)
 }
 
 android {
