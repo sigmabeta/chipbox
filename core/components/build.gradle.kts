@@ -10,7 +10,7 @@ android {
 dependencies {
     implementation(projects.core.imageLoading)
     implementation(projects.core.drawables)
-    implementation(projects.core.models)
+    implementation(projects.cbox.common.models)
     implementation(projects.core.strings)
 
     implementation(platform(libs.androidx.compose.bom))

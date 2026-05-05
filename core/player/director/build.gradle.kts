@@ -4,6 +4,6 @@ plugins {
 
 dependencies {
     api(libs.kotlinx.coroutines.core)
-    implementation(projects.core.models)
+    implementation(projects.cbox.common.models)
     implementation(projects.core.player.common)
 }

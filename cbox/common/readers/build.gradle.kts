@@ -5,6 +5,6 @@ plugins {
 dependencies {
     api(projects.core.repository)
 
-    implementation(projects.core.models)
+    implementation(projects.cbox.common.models)
     implementation(projects.core.utils)
 }

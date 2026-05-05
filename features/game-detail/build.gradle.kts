@@ -14,7 +14,7 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     implementation(projects.core.components)
-    implementation(projects.core.models)
+    implementation(projects.cbox.common.models)
     implementation(projects.core.repository)
     implementation(projects.core.player.common)
     implementation(projects.core.player.director)
