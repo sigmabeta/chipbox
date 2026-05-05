@@ -53,7 +53,15 @@ include(
     ":cbox:common:models",
     ":cbox:common:readers",
     ":cbox:common:repository",
+    ":cbox:common:repository:database",
+    ":cbox:common:repository:database:di",
+    ":cbox:common:repository:memory",
+    ":cbox:common:repository:memory:di",
+    ":cbox:common:repository:mock",
+    ":cbox:common:repository:mock:di",
     ":cbox:common:scanner",
+    ":cbox:common:scanner:mock",
+    ":cbox:common:scanner:mock:di",
     ":cbox:common:utils",
 
     // Legacy Modules
@@ -103,10 +111,6 @@ include(
     ":core:player:status:di",
     ":core:player:status:real",
     ":core:player:status:real:di",
-    ":core:repository:database",
-    ":core:repository:memory",
-    ":core:repository:mock",
-    ":core:scanner:mock",
     ":core:scanner:real",
 
     ":features:artists",
