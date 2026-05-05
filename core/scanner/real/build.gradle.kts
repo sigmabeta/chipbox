@@ -14,7 +14,7 @@ dependencies {
 
     api(projects.core.scanner)
     implementation(projects.cbox.common.readers)
-    implementation(projects.core.repository)
+    implementation(projects.cbox.common.repository)
     implementation(projects.cbox.android.contentsource.file)
     implementation(libs.sage.common.logging)
 }
