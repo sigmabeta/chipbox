@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.player.generator
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -121,89 +122,96 @@ abstract class Generator(
     }
 
     private suspend fun loop() {
-        var error: String?
-        var nextTrackId: Long? = nextTrackIdChannel.receive()
+        try {
+            var error: String?
+            var nextTrackId: Long? = nextTrackIdChannel.receive()
 
-        while (true) {
-            // When track is over, block waiting for the next one.
-            if (nextTrackId == null && isTrackOver()) {
-                eventSink.emit(GeneratorEvent.TrackChange)
-                nextTrackId = nextTrackIdChannel.receive()
-            } else {
-                // See if we have another one queued up, but don't block.
-                val result = nextTrackIdChannel.tryReceive()
-                if (result.isSuccess) {
-                    nextTrackId = result.getOrThrow()
+            while (true) {
+                // When track is over, block waiting for the next one.
+                if (nextTrackId == null && isTrackOver()) {
+                    eventSink.emit(GeneratorEvent.TrackChange)
+                    nextTrackId = nextTrackIdChannel.receive()
+                } else {
+                    // See if we have another one queued up, but don't block.
+                    val result = nextTrackIdChannel.tryReceive()
+                    if (result.isSuccess) {
+                        nextTrackId = result.getOrThrow()
+                    }
                 }
-            }
 
-            error = loadNextTrack(nextTrackId)
-            nextTrackId = null
+                error = loadNextTrack(nextTrackId)
+                nextTrackId = null
 
-            if (error != null) {
-                break
-            }
+                if (error != null) {
+                    break
+                }
 
-            if (currentTrack == null) {
-                error = "No track loaded."
-                break
-            }
+                if (currentTrack == null) {
+                    error = "No track loaded."
+                    break
+                }
 
-            if (sampleRate == null) {
-                error = "Invalid sample rate."
-                break
-            }
+                if (sampleRate == null) {
+                    error = "Invalid sample rate."
+                    break
+                }
 
-            val bufferStartFrame = framesPlayed
+                val bufferStartFrame = framesPlayed
 
-            // Generate the next buffer of audio..
-            val generatedAudio = bufferManager.getNextEmptyBuffer()
-            val framesGenerated = generateAudio(generatedAudio)
+                // Generate the next buffer of audio..
+                val generatedAudio = bufferManager.getNextEmptyBuffer()
+                val framesGenerated = generateAudio(generatedAudio)
 
-            if (framesGenerated == 0) {
-                error = "Failed to generate any audio."
-                break
-            }
+                if (framesGenerated == 0) {
+                    error = "Failed to generate any audio."
+                    break
+                }
 
-            framesPlayed += framesGenerated
+                framesPlayed += framesGenerated
 
-            error = getLastError()
+                error = getLastError()
 
-            if (error != null) {
-                break
-            }
+                if (error != null) {
+                    break
+                }
 
-            FadeProcessor.fadeIfNecessary(
+                FadeProcessor.fadeIfNecessary(
                     generatedAudio,
                     sampleRate!!,
                     bufferStartFrame.framesToMillis(sampleRate!!),
-                currentTrack!!.trackLengthMs - LENGTH_FADE_MILLIS,
+                    currentTrack!!.trackLengthMs - LENGTH_FADE_MILLIS,
                     LENGTH_FADE_MILLIS
-            )
-
-            bufferManager.sendAudioBuffer(
-                AudioBuffer(
-                    currentTrack!!.id,
-                    sampleRate!!,
-                    generatedAudio
                 )
-            )
 
-            // Emit this buffer.
-            eventSink.emit(GeneratorEvent.Emitting)
+                bufferManager.sendAudioBuffer(
+                    AudioBuffer(
+                        currentTrack!!.id,
+                        sampleRate!!,
+                        generatedAudio
+                    )
+                )
 
-            // Check if this coroutine has been cancelled.
-            yield()
+                // Emit this buffer.
+                eventSink.emit(GeneratorEvent.Emitting)
+
+                // Check if this coroutine has been cancelled.
+                yield()
+            }
+
+            // Report error, if it happened.
+            if (error != null) {
+                eventSink.emit(
+                    GeneratorEvent.Error(error)
+                )
+            }
+
+            teardownHelper()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            eventSink.emit(GeneratorEvent.Error(e.message ?: "Unknown error"))
+            teardownHelper()
         }
-
-        // Report error, if it happened.
-        if (error != null) {
-            eventSink.emit(
-                GeneratorEvent.Error(error)
-            )
-        }
-
-        teardownHelper()
     }
 
     private suspend fun loadNextTrack(trackId: Long?): String? {
