@@ -14,7 +14,7 @@ dependencies {
 
     api("androidx.media2:media2-common:1.3.0")
 
-    implementation(projects.core.colors)
+    implementation(projects.cbox.android.colors)
     implementation(projects.core.drawables)
     implementation(projects.core.player.common)
     implementation(projects.core.player.director)

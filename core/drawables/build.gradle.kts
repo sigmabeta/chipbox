@@ -7,5 +7,5 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.colors)
+    implementation(projects.cbox.android.colors)
 }
