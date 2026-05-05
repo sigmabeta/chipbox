@@ -46,6 +46,7 @@ include(
     ":cbox:common:contentsource",
     ":cbox:common:models",
     ":cbox:common:readers",
+    ":cbox:common:utils",
 
     // Legacy Modules
     ":core:activities",
@@ -61,7 +62,6 @@ include(
     ":core:services",
     ":core:strings",
     ":core:styles",
-    ":core:utils",
     ":core:player:buffer",
     ":core:player:buffer:di",
     ":core:player:buffer:real",
