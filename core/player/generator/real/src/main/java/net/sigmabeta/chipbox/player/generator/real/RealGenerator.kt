@@ -74,10 +74,7 @@ class RealGenerator(
             } else {
                 for (chain in track.chainFiles) {
                     val chainBytes = source.openBytes(chain.uri)
-                    if (chainBytes == null) {
-                        hatchet.w("Failed to read chain file ${chain.filename} — playback may fail.")
-                        continue
-                    }
+                        ?: error("Failed to read chain file '${chain.filename}' for track ${track.id}.")
                     File(dir, chain.filename).writeBytes(chainBytes)
                     hatchet.v("Staged chain file ${chain.filename} (${chainBytes.size} bytes).")
                 }
