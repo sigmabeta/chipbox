@@ -45,7 +45,7 @@ kotlin {
 dependencies {
     implementation(projects.features.welcome)
 
-    implementation(projects.core.activities)
+    implementation(projects.cbox.android.activities)
     implementation(projects.core.database)
     implementation(projects.cbox.android.services)
     implementation(projects.core.player.buffer.di)

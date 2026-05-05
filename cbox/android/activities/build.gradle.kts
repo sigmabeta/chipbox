@@ -1,8 +1,7 @@
 plugins {
-    id("sage.android")
-    id("sage.compose.android")
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.compose.android)
+    alias(libs.plugins.sage.di.android)
 }
 
 android {
@@ -13,9 +12,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.hilt)
-    ksp(libs.hilt.compiler)
-
     api(projects.cbox.android.navigation)
 
     implementation(projects.cbox.android.components)

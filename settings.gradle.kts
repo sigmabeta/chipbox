@@ -40,6 +40,7 @@ include(
 
     ":features:welcome",
 
+    ":cbox:android:activities",
     ":cbox:android:colors",
     ":cbox:android:components",
     ":cbox:android:database",
@@ -72,7 +73,6 @@ include(
     ":cbox:common:utils",
 
     // Legacy Modules
-    ":core:activities",
     ":core:player:buffer",
     ":core:player:buffer:di",
     ":core:player:buffer:real",
