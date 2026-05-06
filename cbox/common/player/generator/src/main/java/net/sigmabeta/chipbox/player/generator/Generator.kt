@@ -9,6 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -66,6 +67,11 @@ abstract class Generator(
 
     private var lastSilenceTrackId: Long? = null
 
+    private var consecutiveSlowBuffers = 0
+
+    @Volatile
+    private var bufferStartNs: Long = 0L
+
     private val eventSink = MutableSharedFlow<GeneratorEvent>(
         replay = 0,
         onBufferOverflow = BufferOverflow.SUSPEND,
@@ -111,7 +117,12 @@ abstract class Generator(
     fun play() {
         if (ongoingGenerationJob == null) {
             ongoingGenerationJob = generatorScope.launch {
-                loop()
+                val watchdog = launch { runStallWatchdog() }
+                try {
+                    loop()
+                } finally {
+                    watchdog.cancel()
+                }
             }
         } else {
             hatchet.d("Already looping.")
@@ -169,7 +180,14 @@ abstract class Generator(
 
                 // Generate the next buffer of audio..
                 val generatedAudio = bufferManager.getNextEmptyBuffer()
-                val framesGenerated = generateAudio(generatedAudio)
+                val startNs = System.nanoTime()
+                bufferStartNs = startNs
+                val framesGenerated = try {
+                    generateAudio(generatedAudio)
+                } finally {
+                    bufferStartNs = 0L
+                }
+                val elapsedNs = System.nanoTime() - startNs
 
                 if (framesGenerated <= 0 && !isTrackOver()) {
                     error = "Emulator returned $framesGenerated frames."
@@ -181,6 +199,11 @@ abstract class Generator(
                 getDiagnostics()?.let { hatchet.w("Emulator diagnostics: $it") }
 
                 logSilenceTransition(generatedAudio, framesGenerated)
+
+                error = checkBufferRealTimeRatio(framesGenerated, elapsedNs)
+                if (error != null) {
+                    break
+                }
 
                 error = getLastError()
 
@@ -237,6 +260,7 @@ abstract class Generator(
         if (currentTrack != null) {
             teardown()
             framesPlayed = 0
+            consecutiveSlowBuffers = 0
         }
 
         val newTrack = repository.getTrack(trackId) ?: return "Failed to load track."
@@ -262,6 +286,71 @@ abstract class Generator(
         framesPlayed = 0
         lastSilenceState = null
         lastSilenceTrackId = null
+        consecutiveSlowBuffers = 0
+        bufferStartNs = 0L
+    }
+
+    /**
+     * Compares wall-clock time against audio time for the most recent buffer. Returns a non-null
+     * error message after [WATCHDOG_CONSECUTIVE_SLOW_LIMIT] consecutive buffers have run slower
+     * than [WATCHDOG_RATIO_THRESHOLD] of real-time, indicating the emulator is stuck in a runaway
+     * loop that produces samples but can't keep up with playback.
+     */
+    private fun checkBufferRealTimeRatio(framesGenerated: Int, elapsedNs: Long): String? {
+        val rate = sampleRate ?: return null
+        if (framesGenerated <= 0 || rate <= 0 || elapsedNs <= 0L) {
+            return null
+        }
+        val elapsedMs = elapsedNs / 1_000_000.0
+        val expectedMs = framesGenerated * 1000.0 / rate
+        if (expectedMs <= 0.0) {
+            return null
+        }
+        val ratio = elapsedMs / expectedMs
+        if (ratio < WATCHDOG_RATIO_THRESHOLD) {
+            consecutiveSlowBuffers = 0
+            return null
+        }
+        consecutiveSlowBuffers++
+        hatchet.w(
+            "Slow buffer: ${elapsedMs.toInt()}ms wall for ${expectedMs.toInt()}ms audio " +
+                "(${"%.1f".format(ratio)}x real-time); consecutive=$consecutiveSlowBuffers"
+        )
+        if (consecutiveSlowBuffers >= WATCHDOG_CONSECUTIVE_SLOW_LIMIT) {
+            return "Generator running too slow: $consecutiveSlowBuffers consecutive buffers " +
+                "exceeded ${WATCHDOG_RATIO_THRESHOLD}x real-time (last ${"%.1f".format(ratio)}x, " +
+                "${elapsedMs.toInt()}ms)."
+        }
+        return null
+    }
+
+    /**
+     * Side-channel observer for the current [generateAudio] call. Cannot interrupt synchronous
+     * JNI work, but logs a warning when a single buffer has been generating for longer than
+     * [WATCHDOG_STALL_WARN_THRESHOLD_MS] so a stuck native emulator is visible in logs without
+     * needing the call to return first.
+     */
+    private suspend fun runStallWatchdog() {
+        var lastWarnedAtNs = 0L
+        while (true) {
+            delay(WATCHDOG_STALL_POLL_INTERVAL_MS)
+            val startedAt = bufferStartNs
+            if (startedAt == 0L) {
+                lastWarnedAtNs = 0L
+                continue
+            }
+            val now = System.nanoTime()
+            val elapsedMs = (now - startedAt) / 1_000_000L
+            if (elapsedMs >= WATCHDOG_STALL_WARN_THRESHOLD_MS &&
+                (now - lastWarnedAtNs) / 1_000_000L >= WATCHDOG_STALL_POLL_INTERVAL_MS
+            ) {
+                hatchet.w(
+                    "Generator stalled in generateAudio for ${elapsedMs}ms " +
+                        "(track=${currentTrack?.title})"
+                )
+                lastWarnedAtNs = now
+            }
+        }
     }
 
     private fun logSilenceTransition(buffer: ShortArray, framesGenerated: Int) {
@@ -287,5 +376,10 @@ abstract class Generator(
 
     companion object {
         private const val LENGTH_FADE_MILLIS = 6_000.0
+
+        private const val WATCHDOG_RATIO_THRESHOLD = 5.0
+        private const val WATCHDOG_CONSECUTIVE_SLOW_LIMIT = 3
+        private const val WATCHDOG_STALL_POLL_INTERVAL_MS = 2_000L
+        private const val WATCHDOG_STALL_WARN_THRESHOLD_MS = 5_000L
     }
 }
