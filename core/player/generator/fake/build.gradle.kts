@@ -4,5 +4,5 @@ plugins {
 
 dependencies {
     api(projects.core.player.generator)
-    implementation(projects.core.player.emulators.fake)
+    implementation(projects.cbox.common.player.emulators.fake)
 }
