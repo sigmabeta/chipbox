@@ -14,7 +14,10 @@ import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.services.LibraryBrowser.Companion.ID_ARTISTS
 import net.sigmabeta.chipbox.services.LibraryBrowser.Companion.ID_GAMES
-import timber.log.Timber
+import net.sigmabeta.sage.logging.BluntHatchet
+import net.sigmabeta.sage.logging.Hatchet
+
+private val hatchet: Hatchet = BluntHatchet()
 
 internal fun Game.toMediaItem() = MediaBrowserCompat.MediaItem(
     MediaDescriptionCompat.Builder()
@@ -89,7 +92,7 @@ private fun PlayerState.toAndroidXPlayerState() = when (this) {
 private fun ChipboxPlaybackState.availableActions(): Long {
     var actions = 0L
 
-    Timber.w("Generating available actions for state: $state")
+    hatchet.w("Generating available actions for state: $state")
     actions = when (state) {
         PlayerState.PLAYING, PlayerState.PRELOADING, PlayerState.BUFFERING -> PlaybackStateCompat.ACTION_STOP or PlaybackStateCompat.ACTION_PAUSE
         PlayerState.PAUSED -> PlaybackStateCompat.ACTION_STOP or PlaybackStateCompat.ACTION_PLAY

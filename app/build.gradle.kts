@@ -46,7 +46,8 @@ dependencies {
     implementation(projects.features.welcome)
 
     implementation(projects.cbox.android.activities)
-    implementation(projects.core.database)
+    implementation(projects.cbox.android.database)
+    implementation(projects.cbox.android.database.di)
     implementation(projects.cbox.android.services)
     implementation(projects.core.player.buffer.di)
     implementation(projects.core.player.director.di)
@@ -54,10 +55,10 @@ dependencies {
     implementation(projects.core.player.generator.di)
     implementation(projects.core.player.speaker.di)
     implementation(projects.core.player.status.di)
-    implementation(projects.cbox.common.repository.database.di)
+    implementation(projects.cbox.android.repository.database.di)
     implementation(projects.cbox.common.repository.memory.di)
-    implementation(projects.cbox.common.repository.mock.di)
-    implementation(projects.cbox.common.scanner.mock.di)
+    implementation(projects.cbox.android.repository.mock.di)
+    implementation(projects.cbox.android.scanner.mock.di)
     implementation(projects.cbox.android.scanner.real.di)
 
     implementation(libs.sage.common.list)
@@ -68,11 +69,13 @@ dependencies {
     implementation(libs.sage.common.ui.components)
     implementation(libs.sage.common.ui.strings)
 
+    implementation(libs.sage.android.coroutines)
+    implementation(libs.sage.android.logging)
     implementation(libs.sage.android.ui.list)
     implementation(libs.sage.android.ui.strings)
     implementation(libs.sage.android.ui.themes)
-    implementation(libs.sage.android.logging)
-    implementation(libs.sage.android.coroutines)
+
+
     implementation(libs.sage.fake.analytics)
 
     implementation(platform(libs.androidx.compose.bom))

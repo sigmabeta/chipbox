@@ -3,9 +3,12 @@ package net.sigmabeta.chipbox.readers
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.utils.convert
 import net.sigmabeta.chipbox.utils.convertUtf
-import timber.log.Timber
+import net.sigmabeta.sage.logging.BluntHatchet
+import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
 import java.nio.ByteBuffer
+
+private val hatchet: Hatchet = BluntHatchet()
 
 data class PsfTagInfo(
     val tags: Map<String, String>,
@@ -34,17 +37,17 @@ object PsfReader : Reader() {
         val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
 
         if (formatHeader == null) {
-            Timber.e("No header found.")
+            hatchet.e("No header found.")
             return null
         }
 
         if (!isPsfFile(formatHeader)) {
-            Timber.e("PSF header missing.")
+            hatchet.e("PSF header missing.")
             return null
         }
 
         if (!isSupportedPlatform(formatHeader.toByteArray(Charsets.US_ASCII)[3])) {
-            Timber.e("Unsupported platform.")
+            hatchet.e("Unsupported platform.")
             return null
         }
 
@@ -71,10 +74,10 @@ object PsfReader : Reader() {
 
             PsfTagInfo(tagMap, libRefs)
         } catch (iae: IllegalArgumentException) {
-            Timber.e("Illegal argument: ${iae.message}")
+            hatchet.e("Illegal argument: ${iae.message}")
             null
         } catch (e: UnsupportedEncodingException) {
-            Timber.e("Unsupported Encoding: ${e.message}")
+            hatchet.e("Unsupported Encoding: ${e.message}")
             null
         }
     }

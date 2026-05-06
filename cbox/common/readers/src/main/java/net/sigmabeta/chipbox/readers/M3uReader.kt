@@ -1,7 +1,10 @@
 package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.utils.convert
-import timber.log.Timber
+import net.sigmabeta.sage.logging.BluntHatchet
+import net.sigmabeta.sage.logging.Hatchet
+
+private val hatchet: Hatchet = BluntHatchet()
 
 const val EXTENSION_M3U = "m3u"
 
@@ -24,7 +27,7 @@ object M3uReader {
                 .filter { it.isNotEmpty() && !it.startsWith("#") && it.contains("::") }
                 .mapNotNull { it.toM3uEntry() }
         } catch (ex: Exception) {
-            Timber.e("Failed to parse m3u: ${ex.message}")
+            hatchet.e("Failed to parse m3u: ${ex.message}")
             emptyList()
         }
     }

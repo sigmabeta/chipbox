@@ -7,4 +7,5 @@ dependencies {
 
     implementation(projects.cbox.common.models)
     implementation(projects.cbox.common.utils)
+    implementation(libs.sage.common.logging)
 }

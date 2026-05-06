@@ -1,8 +1,11 @@
 package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.repository.RawTrack
-import timber.log.Timber
+import net.sigmabeta.sage.logging.BluntHatchet
+import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
+
+private val hatchet: Hatchet = BluntHatchet()
 
 object NsfReader : Reader() {
     @OptIn(ExperimentalStdlibApi::class)
@@ -12,12 +15,12 @@ object NsfReader : Reader() {
 
             val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
             if (formatHeader == null) {
-                Timber.e("No header found.")
+                hatchet.e("No header found.")
                 return null
             }
 
             if (!isNsfFile(formatHeader)) {
-                Timber.e("NSF header missing.")
+                hatchet.e("NSF header missing.")
                 return null
             }
 
@@ -43,10 +46,10 @@ object NsfReader : Reader() {
             }
             return tracks
         } catch (iae: IllegalArgumentException) {
-            Timber.e("Illegal argument: ${iae.message}")
+            hatchet.e("Illegal argument: ${iae.message}")
             return null
         } catch (e: UnsupportedEncodingException) {
-            Timber.e("Unsupported Encoding: ${e.message}")
+            hatchet.e("Unsupported Encoding: ${e.message}")
             return null
         }
     }
@@ -61,7 +64,7 @@ object NsfReader : Reader() {
                 .decodeToString(0x0E, 0x2E, true)
                 .trim()
         } catch (ex: Exception) {
-            Timber.e("Unable to read game title: ${ex.message}")
+            hatchet.e("Unable to read game title: ${ex.message}")
             TAG_UNKNOWN
         }
     }
@@ -72,7 +75,7 @@ object NsfReader : Reader() {
                 .decodeToString(0x2E, 0x4E, true)
                 .trim()
         } catch (ex: Exception) {
-            Timber.e("Unable to read game title: ${ex.message}")
+            hatchet.e("Unable to read game title: ${ex.message}")
             TAG_UNKNOWN
         }
     }

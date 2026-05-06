@@ -9,13 +9,14 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
+import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.chipbox.colors.R as ColorsR
 import net.sigmabeta.chipbox.drawables.R as DrawablesR
 import net.sigmabeta.chipbox.strings.R as StringsR
-import timber.log.Timber
 
 class NotificationGenerator(
-    private val context: Context
+    private val context: Context,
+    private val hatchet: Hatchet,
 ) {
     init {
         val channel = NotificationChannel(
@@ -71,7 +72,7 @@ class NotificationGenerator(
 
             // Take advantage of MediaStyle features
             val sessionToken = mediaSession.sessionToken
-            Timber.v("Notifying with Token: $sessionToken  active: ${mediaSession.isActive}")
+            hatchet.v("Notifying with Token: $sessionToken  active: ${mediaSession.isActive}")
             val mediaStyle = androidx.media.app.NotificationCompat.MediaStyle()
                 .setMediaSession(sessionToken)
                 .setShowCancelButton(true)

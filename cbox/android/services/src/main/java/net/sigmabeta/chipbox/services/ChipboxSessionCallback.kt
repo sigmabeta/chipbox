@@ -3,18 +3,17 @@ package net.sigmabeta.chipbox.services
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ServiceInfo
 import android.media.AudioManager
 import android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY
+import android.os.Build
 import android.os.Bundle
 import android.support.v4.media.session.MediaSessionCompat
-import android.content.pm.ServiceInfo
-import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
 import androidx.media.AudioManagerCompat
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.Director
@@ -22,14 +21,15 @@ import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.services.NotificationGenerator.Companion.NOTIFICATION_ID
 import net.sigmabeta.chipbox.services.transformers.toAndroidXPlaybackState
 import net.sigmabeta.chipbox.services.transformers.toMetadataBuilder
-import timber.log.Timber
+import net.sigmabeta.sage.logging.Hatchet
 
 class ChipboxSessionCallback(
     private val service: ChipboxPlaybackService,
     private val serviceScope: CoroutineScope,
     private val director: Director,
     private val notificationGenerator: NotificationGenerator,
-    private val systemNotifService: NotificationManagerCompat
+    private val systemNotifService: NotificationManagerCompat,
+    private val hatchet: Hatchet,
 ) : MediaSessionCompat.Callback() {
     init {
         collectDirectorState()
@@ -47,7 +47,7 @@ class ChipboxSessionCallback(
 
     override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) {
         super.onPlayFromMediaId(mediaId, extras)
-        Timber.d("Received command to play $mediaId.")
+        hatchet.d("Received command to play $mediaId.")
 
         if (mediaId != null) {
             IdToCommandParser.handleCommand(director, mediaId)
@@ -56,29 +56,29 @@ class ChipboxSessionCallback(
     }
 
     override fun onPlay() {
-        Timber.d("Received 'play' command.")
+        hatchet.d("Received 'play' command.")
         playHelper()
     }
 
     override fun onPause() {
-        Timber.d("Received 'pause' command.")
+        hatchet.d("Received 'pause' command.")
         director.pause()
     }
 
     override fun onStop() {
-        Timber.d("Received 'stop' command.")
+        hatchet.d("Received 'stop' command.")
         director.stop()
     }
 
     private fun playHelper() {
         val result = requestAudioFocus()
         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-            Timber.v("Focus request granted, starting service...")
+            hatchet.v("Focus request granted, starting service...")
 
             // start the director (custom call)
             director.play()
         } else {
-            Timber.e("Failed to get Audiofocus: $result")
+            hatchet.e("Failed to get Audiofocus: $result")
         }
     }
 
@@ -141,7 +141,7 @@ class ChipboxSessionCallback(
             PlayerState.STOPPED -> handleStoppedState()
             PlayerState.PAUSED -> handlePausedState()
             PlayerState.PLAYING -> handlePlayingState()
-            else -> Timber.v("Unhandled playback state: ${cps.state}")
+            else -> hatchet.v("Unhandled playback state: ${cps.state}")
         }
     }
 

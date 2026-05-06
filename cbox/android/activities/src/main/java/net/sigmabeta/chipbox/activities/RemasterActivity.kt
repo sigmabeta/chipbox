@@ -18,18 +18,20 @@ import androidx.compose.material.MaterialTheme
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.insets.ProvideWindowInsets
 import dagger.hilt.android.AndroidEntryPoint
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService
-import net.sigmabeta.chipbox.styles.R as StylesR
-import timber.log.Timber
+import net.sigmabeta.sage.logging.Hatchet
 import javax.inject.Inject
+import net.sigmabeta.chipbox.styles.R as StylesR
 
 @AndroidEntryPoint
 class RemasterActivity : ComponentActivity() {
     @Inject
     lateinit var topViewModel: TopViewModel
+
+    @Inject
+    lateinit var hatchet: Hatchet
 
     lateinit var permissionLauncher: ActivityResultLauncher<String>
     private lateinit var directoryLauncher: ActivityResultLauncher<Uri?>
@@ -55,9 +57,9 @@ class RemasterActivity : ComponentActivity() {
 
 //        setupPermissions()
 
-        Timber.v("Device screen DPI: ${displayMetrics.densityDpi}")
-        Timber.v("Device screen scaling factor: ${displayMetrics.density}")
-        Timber.v("Device screen size: ${widthPixels}x$heightPixels")
+        hatchet.v("Device screen DPI: ${displayMetrics.densityDpi}")
+        hatchet.v("Device screen scaling factor: ${displayMetrics.density}")
+        hatchet.v("Device screen size: ${widthPixels}x$heightPixels")
 
         mediaBrowser = MediaBrowserCompat(
             this,
@@ -105,7 +107,7 @@ class RemasterActivity : ComponentActivity() {
 
         override fun onSessionDestroyed() {
             mediaBrowser.disconnect()
-            Timber.e("Session destroyed in Activity.")
+            hatchet.e("Session destroyed in Activity.")
             // maybe schedule a reconnection using a new MediaBrowser instance
         }
     }
@@ -114,7 +116,7 @@ class RemasterActivity : ComponentActivity() {
         override fun onConnected() {
             // Get the token for the MediaSession
             mediaBrowser.sessionToken.also { token ->
-                Timber.v("Connected to session with Token: $token")
+                hatchet.v("Connected to session with Token: $token")
 
                 // Create a MediaControllerCompat
                 val mediaController = MediaControllerCompat(

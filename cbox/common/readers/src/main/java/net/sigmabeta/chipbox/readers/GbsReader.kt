@@ -1,8 +1,11 @@
 package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.repository.RawTrack
-import timber.log.Timber
+import net.sigmabeta.sage.logging.BluntHatchet
+import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
+
+private val hatchet: Hatchet = BluntHatchet()
 
 object GbsReader : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
@@ -11,12 +14,12 @@ object GbsReader : Reader() {
 
             val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
             if (formatHeader == null) {
-                Timber.e("No header found.")
+                hatchet.e("No header found.")
                 return null
             }
 
             if (!isGbsFile(formatHeader)) {
-                Timber.e("GBS header missing.")
+                hatchet.e("GBS header missing.")
                 return null
             }
 
@@ -42,10 +45,10 @@ object GbsReader : Reader() {
             }
             return tracks
         } catch (iae: IllegalArgumentException) {
-            Timber.e("Illegal argument: ${iae.message}")
+            hatchet.e("Illegal argument: ${iae.message}")
             return null
         } catch (e: UnsupportedEncodingException) {
-            Timber.e("Unsupported Encoding: ${e.message}")
+            hatchet.e("Unsupported Encoding: ${e.message}")
             return null
         }
     }
@@ -61,7 +64,7 @@ object GbsReader : Reader() {
                 .substringBefore(0.toChar())
                 .trim()
         } catch (ex: Exception) {
-            Timber.e("Unable to read game title: ${ex.message}")
+            hatchet.e("Unable to read game title: ${ex.message}")
             TAG_UNKNOWN
         }
     }
@@ -72,7 +75,7 @@ object GbsReader : Reader() {
                 .decodeToString(0x30, 0x50, true)
                 .trim()
         } catch (ex: Exception) {
-            Timber.e("Unable to read game title: ${ex.message}")
+            hatchet.e("Unable to read game title: ${ex.message}")
             TAG_UNKNOWN
         }
     }

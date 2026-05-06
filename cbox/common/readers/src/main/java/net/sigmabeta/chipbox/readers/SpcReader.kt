@@ -1,9 +1,12 @@
 package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.repository.RawTrack
-import timber.log.Timber
+import net.sigmabeta.sage.logging.BluntHatchet
+import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
 import java.nio.ByteBuffer
+
+private val hatchet: Hatchet = BluntHatchet()
 
 object SpcReader : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
@@ -11,12 +14,12 @@ object SpcReader : Reader() {
             val fileAsByteBuffer = bytesAsByteBuffer(bytes)
             val formatHeader = fileAsByteBuffer.nextBytesAsString(33)
             if (formatHeader == null) {
-                Timber.e("No header found.")
+                hatchet.e("No header found.")
                 return null
             }
 
             if (!isSpcFile(formatHeader)) {
-                Timber.e("SPC header missing.")
+                hatchet.e("SPC header missing.")
                 return null
             }
 
@@ -40,13 +43,13 @@ object SpcReader : Reader() {
                 )
             )
         } catch (iae: IllegalArgumentException) {
-            Timber.e("Illegal argument: ${iae.message}")
+            hatchet.e("Illegal argument: ${iae.message}")
             return null
         } catch (e: UnsupportedEncodingException) {
-            Timber.e("Unsupported Encoding: ${e.message}")
+            hatchet.e("Unsupported Encoding: ${e.message}")
             return null
         } catch (e: Exception) {
-            Timber.e("Error reading $identifier: ${e.message}")
+            hatchet.e("Error reading $identifier: ${e.message}")
             e.printStackTrace()
             return null
         }
@@ -59,7 +62,7 @@ object SpcReader : Reader() {
             ?.equals(0x1A.toByte()) ?: false
 
         if (!hasHeaderInfo) {
-            Timber.e("File has no metadata.")
+            hatchet.e("File has no metadata.")
             return null
         }
 
@@ -76,11 +79,11 @@ object SpcReader : Reader() {
         val artistName = fileAsByteBuffer.nextBytesAsString(LENGTH_TAG_STANDARD)
 
         if (SHOULD_LOG_EXTRA_INFO) {
-            Timber.i("SPC Minor Ver: $minorVersion")
-            Timber.i("SPC Registers: $spcRegistersIgnored")
-            Timber.i("Dumper: $dumperName")
-            Timber.i("Dump Date: $comments")
-            Timber.i("Comments: $dumpDate")
+            hatchet.i("SPC Minor Ver: $minorVersion")
+            hatchet.i("SPC Registers: $spcRegistersIgnored")
+            hatchet.i("Dumper: $dumperName")
+            hatchet.i("Dump Date: $comments")
+            hatchet.i("Comments: $dumpDate")
         }
 
         // SPC lengths are stored as string-encoded numbers?!?!? Apparently this is supposed to not
