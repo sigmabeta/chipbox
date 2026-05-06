@@ -12,7 +12,7 @@ dependencies {
 
     implementation(projects.cbox.android.colors)
     implementation(projects.cbox.android.drawables)
-    implementation(projects.core.player.common)
+    implementation(projects.cbox.common.player.common)
     implementation(projects.core.player.director)
     implementation(projects.cbox.common.repository)
     implementation(projects.cbox.android.strings)

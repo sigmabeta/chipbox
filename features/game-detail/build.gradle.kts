@@ -16,7 +16,7 @@ dependencies {
     implementation(projects.cbox.android.components)
     implementation(projects.cbox.common.models)
     implementation(projects.cbox.common.repository)
-    implementation(projects.core.player.common)
+    implementation(projects.cbox.common.player.common)
     implementation(projects.core.player.director)
 
     implementation(platform(libs.androidx.compose.bom))
