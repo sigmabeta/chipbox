@@ -12,6 +12,6 @@ dependencies {
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
 
-    api(projects.core.player.emulators.di)
+    api(projects.cbox.android.player.emulators.di)
     api(projects.core.player.generator.real)
 }

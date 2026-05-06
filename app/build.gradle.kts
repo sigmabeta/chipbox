@@ -51,7 +51,7 @@ dependencies {
     implementation(projects.cbox.android.services)
     implementation(projects.cbox.common.player.buffer.di)
     implementation(projects.core.player.director.di)
-    implementation(projects.core.player.emulators.di)
+    implementation(projects.cbox.android.player.emulators.di)
     implementation(projects.core.player.generator.di)
     implementation(projects.core.player.speaker.di)
     implementation(projects.cbox.common.player.status.di)

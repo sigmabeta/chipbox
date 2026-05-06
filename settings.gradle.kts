@@ -83,7 +83,7 @@ include(
     ":core:player:director:real",
     ":core:player:director:real:di",
     ":cbox:common:player:emulators",
-    ":core:player:emulators:di",
+    ":cbox:android:player:emulators:di",
     ":cbox:android:player:emulators:twosf",
     ":cbox:android:player:emulators:twosf:di",
     ":cbox:common:player:emulators:fake",
