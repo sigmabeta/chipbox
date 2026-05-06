@@ -6,17 +6,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibraryFile
+import net.sigmabeta.chipbox.models.ChainFile
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
 import net.sigmabeta.chipbox.readers.EXTENSION_M3U
 import net.sigmabeta.chipbox.readers.LENGTH_UNKNOWN_MS
-import net.sigmabeta.chipbox.readers.M3uReader
-import net.sigmabeta.chipbox.readers.PsfReader
 import net.sigmabeta.chipbox.readers.PsfTagInfo
-import net.sigmabeta.chipbox.readers.getReaderForExtension
+import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.readers.isPsfFamily
 import net.sigmabeta.chipbox.readers.orUnknown
-import net.sigmabeta.chipbox.models.ChainFile
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
@@ -28,6 +26,7 @@ import kotlin.time.measureTime
 class RealScanner(
     private val repository: Repository,
     private val contentSource: AndroidFileContentSource,
+    private val readers: Readers,
     private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : Scanner(dispatcher) {
@@ -101,8 +100,12 @@ class RealScanner(
                 hatchet.d("Reading ${file.name} (PSF family).")
                 val track = readWithErrorHandling(file) {
                     val bytes = contentSource.openInputStream(file.uri)?.use { it.readBytes() }
+                    if (bytes == null) {
+                        hatchet.w("Failed to read ${file.name}: could not open input stream for ${file.uri}.")
+                        return@readWithErrorHandling null
+                    }
+                    val tagInfo = readers.psf.readTagInfo(bytes)
                         ?: return@readWithErrorHandling null
-                    val tagInfo = PsfReader.readTagInfo(bytes) ?: return@readWithErrorHandling null
                     tagInfoCache[file.name.lowercase()] = tagInfo
                     val chain = mutableListOf<ChainFile>()
                     val chainTags = resolvePsfChain(
@@ -110,14 +113,11 @@ class RealScanner(
                         mutableSetOf(file.name.lowercase()), 0, chain,
                     )
                     val mergedTags = chainTags + tagInfo.tags
-                    PsfReader.buildRawTrack(mergedTags, file.uri.toString())
+                    readers.psf.buildRawTrack(mergedTags, file.uri.toString())
                         .copy(source = contentSource.sourceId, chainFiles = chain)
                 }
                 when (track) {
-                    null -> {
-                        hatchet.w("Failed to read ${file.name}.")
-                        failed++
-                    }
+                    null -> failed++
                     else -> {
                         hatchet.d("${file.name} yielded 1 track.")
                         tracksByFilename[file.name] = mutableListOf(track)
@@ -126,7 +126,7 @@ class RealScanner(
                 continue
             }
 
-            val reader = getReaderForExtension(ext) ?: run {
+            val reader = readers.forExtension(ext) ?: run {
                 hatchet.v("No reader for extension '$ext' — skipping ${file.name}.")
                 continue
             }
@@ -159,7 +159,7 @@ class RealScanner(
                 hatchet.w("Failed to open ${m3uFile.name}.")
                 continue
             }
-            for (entry in M3uReader.parse(bytes)) {
+            for (entry in readers.m3u.parse(bytes)) {
                 val siblings = tracksByFilename[entry.filename] ?: run {
                     hatchet.v("m3u references '${entry.filename}' which was not scanned — skipping.")
                     continue
@@ -230,7 +230,7 @@ class RealScanner(
                 tagInfoCache[refLower]
             } else {
                 val parsed = contentSource.openInputStream(libFile.uri)?.use { it.readBytes() }
-                    ?.let { PsfReader.readTagInfo(it) }
+                    ?.let { readers.psf.readTagInfo(it) }
                 tagInfoCache[refLower] = parsed
                 parsed
             }

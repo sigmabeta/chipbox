@@ -1,25 +1,22 @@
 package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.repository.RawTrack
-import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
 import java.nio.ByteBuffer
 
-private val hatchet: Hatchet = BluntHatchet()
-
-object SpcReader : Reader() {
+class SpcReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
             val fileAsByteBuffer = bytesAsByteBuffer(bytes)
             val formatHeader = fileAsByteBuffer.nextBytesAsString(33)
             if (formatHeader == null) {
-                hatchet.e("No header found.")
+                hatchet.w("SPC parse failed: file too small to contain header (${bytes.size} bytes).")
                 return null
             }
 
             if (!isSpcFile(formatHeader)) {
-                hatchet.e("SPC header missing.")
+                hatchet.w("SPC parse failed: header missing (got '$formatHeader').")
                 return null
             }
 
@@ -43,14 +40,13 @@ object SpcReader : Reader() {
                 )
             )
         } catch (iae: IllegalArgumentException) {
-            hatchet.e("Illegal argument: ${iae.message}")
+            hatchet.w("SPC parse failed: illegal argument — ${iae.message}")
             return null
         } catch (e: UnsupportedEncodingException) {
-            hatchet.e("Unsupported Encoding: ${e.message}")
+            hatchet.w("SPC parse failed: unsupported encoding — ${e.message}")
             return null
         } catch (e: Exception) {
-            hatchet.e("Error reading $identifier: ${e.message}")
-            e.printStackTrace()
+            hatchet.w("SPC parse failed for $identifier: ${e.message}")
             return null
         }
     }
@@ -62,7 +58,7 @@ object SpcReader : Reader() {
             ?.equals(0x1A.toByte()) ?: false
 
         if (!hasHeaderInfo) {
-            hatchet.e("File has no metadata.")
+            hatchet.w("SPC: file has no metadata.")
             return null
         }
 
@@ -106,15 +102,17 @@ object SpcReader : Reader() {
     private fun isSpcFile(header: String) =
         header.contentEquals(HEADER_MAGIC)
 
-    private const val HEADER_MAGIC = "SNES-SPC700 Sound File Data v0.30"
-    private const val SHOULD_LOG_EXTRA_INFO = false
+    companion object {
+        private const val HEADER_MAGIC = "SNES-SPC700 Sound File Data v0.30"
+        private const val SHOULD_LOG_EXTRA_INFO = false
 
-    private const val LENGTH_SPC_REGISTERS = 9
-    private const val LENGTH_TAG_STANDARD = 32
-    private const val LENGTH_TAG_DUMPER_NAME = 16
-    private const val LENGTH_TAG_DUMP_DATE = 11
-    private const val LENGTH_TAG_TRACK_LENGTH = 3
-    private const val LENGTH_TAG_FADE_LENGTH = 5
+        private const val LENGTH_SPC_REGISTERS = 9
+        private const val LENGTH_TAG_STANDARD = 32
+        private const val LENGTH_TAG_DUMPER_NAME = 16
+        private const val LENGTH_TAG_DUMP_DATE = 11
+        private const val LENGTH_TAG_TRACK_LENGTH = 3
+        private const val LENGTH_TAG_FADE_LENGTH = 5
+    }
 }
 
 data class SpcMainTag(
