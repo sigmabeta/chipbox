@@ -16,6 +16,8 @@ void teardown();
 
 const char *get_last_error();
 
+const char *get_diagnostics();
+
 int32_t get_sample_rate();
 
 int psf1_load(

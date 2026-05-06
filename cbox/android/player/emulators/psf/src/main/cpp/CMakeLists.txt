@@ -47,4 +47,7 @@ target_link_libraries(
 
         # PSFLib wants to know how to unzip stuff.
         z
+
+        # __android_log_print, used by debug probes in psx_hw.c and spu/spu.c.
+        log
 )

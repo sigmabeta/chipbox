@@ -22,5 +22,7 @@ object PsfEmulator : Emulator() {
 
     external override fun getLastError(): String?
 
+    external override fun getDiagnostics(): String?
+
     external override fun getSampleRateInternal(): Int
 }

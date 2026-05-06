@@ -62,6 +62,10 @@ abstract class Generator(
 
     private var sampleRate: Int? = null
 
+    private var lastSilenceState: Boolean? = null
+
+    private var lastSilenceTrackId: Long? = null
+
     private val eventSink = MutableSharedFlow<GeneratorEvent>(
         replay = 0,
         onBufferOverflow = BufferOverflow.SUSPEND,
@@ -89,6 +93,11 @@ abstract class Generator(
     /** Most-recent error from the emulator, or null. Polled after every buffer; non-null
      *  terminates the loop. */
     abstract fun getLastError(): String?
+
+    /** Non-fatal diagnostics from the emulator (IOP HLE warnings, etc.) accumulated during
+     *  the most recent [generateAudio] call. Default null; subclasses opt in. Polled after
+     *  every buffer for logging only — does not terminate the loop. */
+    open fun getDiagnostics(): String? = null
 
     fun events() = eventSink.asSharedFlow()
 
@@ -162,12 +171,16 @@ abstract class Generator(
                 val generatedAudio = bufferManager.getNextEmptyBuffer()
                 val framesGenerated = generateAudio(generatedAudio)
 
-                if (framesGenerated == 0) {
-                    error = "Failed to generate any audio."
+                if (framesGenerated <= 0 && !isTrackOver()) {
+                    error = "Emulator returned $framesGenerated frames."
                     break
                 }
 
                 framesPlayed += framesGenerated
+
+                getDiagnostics()?.let { hatchet.w("Emulator diagnostics: $it") }
+
+                logSilenceTransition(generatedAudio, framesGenerated)
 
                 error = getLastError()
 
@@ -247,6 +260,25 @@ abstract class Generator(
         currentTrack = null
         ongoingGenerationJob = null
         framesPlayed = 0
+        lastSilenceState = null
+        lastSilenceTrackId = null
+    }
+
+    private fun logSilenceTransition(buffer: ShortArray, framesGenerated: Int) {
+        if (framesGenerated <= 0) return
+        val track = currentTrack ?: return
+
+        val silent = buffer.all { it == 0.toShort() }
+        val previousState = lastSilenceState
+        val previousTrackId = lastSilenceTrackId
+        if (track.id != previousTrackId) {
+            val state = if (silent) "silent" else "audible"
+            hatchet.d("Track ${track.title}: first buffer is $state.")
+        } else if (silent != previousState) {
+            hatchet.w(if (silent) "Audio went silent." else "Audio is audible again.")
+        }
+        lastSilenceState = silent
+        lastSilenceTrackId = track.id
     }
 
     private fun ShortArray.clear() {

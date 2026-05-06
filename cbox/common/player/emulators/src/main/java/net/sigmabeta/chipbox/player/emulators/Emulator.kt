@@ -57,6 +57,10 @@ abstract class Emulator {
     /** Most-recent error from the native side, or null. */
     abstract fun getLastError(): String?
 
+    /** Non-fatal diagnostics accumulated during the most recent [generateBuffer] call (e.g.
+     *  IOP HLE warnings from PSF2). Default null; subclasses opt in. */
+    open fun getDiagnostics(): String? = null
+
     /** Native output sample rate for the loaded track, in Hz. */
     abstract fun getSampleRateInternal(): Int
 

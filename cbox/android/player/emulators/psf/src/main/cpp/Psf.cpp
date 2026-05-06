@@ -153,6 +153,11 @@ const char *get_last_error() {
     return last_error;
 }
 
+const char *get_diagnostics() {
+    if (!pEmu) return nullptr;
+    return psx_get_last_error((PSX_STATE *) pEmu);
+}
+
 int32_t get_sample_rate() {
     if (isPs2Track) {
         return 48000;

@@ -47,6 +47,7 @@
 */
 
 #include <stdio.h>
+#include <android/log.h>
 #include "cpuintrf.h"
 #include "psx.h"
 #include "spu/spu.h"
@@ -907,7 +908,7 @@ void psx_hw_slice(PSX_STATE *psx) {
 
                     if (!psx->Event[i].func) continue;
 
-                    call_irq_routine(psx, psx->Event[i].func, 0);
+                    call_irq_routine(psx, psx->Event[i].func, 0, "Event[counter]");
                 }
             }
             if (psx->dma_icr & (1 << (16 + 4))) {
@@ -961,7 +962,8 @@ void ps2_hw_frame(PSX_STATE *psx) {
 #define C0_EXCEPTIONHANDLER_SIZE    (0x1000)
 
 // heap block struct offsets
-static void call_irq_routine(PSX_STATE *psx, uint32 routine, uint32 parameter) {
+static void call_irq_routine(PSX_STATE *psx, uint32 routine, uint32 parameter,
+                              const char *source) {
     int j, oldICount;
     union cpuinfo mipsinfo;
 
@@ -1005,8 +1007,110 @@ static void call_irq_routine(PSX_STATE *psx, uint32 routine, uint32 parameter) {
 
     psx->softcall_target = 0;
     oldICount = mips_get_icount(&psx->mipscpu);
-    while (!psx->softcall_target) {
-        mips_execute(&psx->mipscpu, 10);
+    {
+        // Real IRQ handlers complete in well under 10k cycles (1k iterations of
+        // 10-cycle bursts). Diagnostic threshold logs at 100k iterations; hard
+        // cap at 1M (~10M IOP cycles, ~1000x normal) breaks out so a wild PC
+        // doesn't permanently wedge the generator coroutine. Pre-handler
+        // registers are restored below regardless of how we exit.
+        uint32 iter = 0;
+        int logged = 0;
+        while (!psx->softcall_target) {
+            mips_execute(&psx->mipscpu, 10);
+            iter++;
+            if (!logged && iter >= 100000) {
+                union cpuinfo pcinfo, rainfo;
+                mips_get_info(&psx->mipscpu, CPUINFO_INT_PC, &pcinfo);
+                mips_get_info(&psx->mipscpu, CPUINFO_INT_REGISTER + MIPS_R31, &rainfo);
+                __android_log_print(ANDROID_LOG_WARN, "PsfProbe",
+                    "IRQ runaway: source=%s routine=0x%08x param=0x%08x "
+                    "PC=0x%08x RA=0x%08x iter=%u",
+                    source ? source : "?", routine, parameter,
+                    (uint32) pcinfo.i, (uint32) rainfo.i, iter);
+                // First time we see this runaway, dump enough context to
+                // disassemble offline: 32 words of the handler, 32 of the
+                // first jal target inside it, current GPRs, and the global
+                // load at 0x000874cc that the handler reads.
+                {
+                    static int dumped_routine = -1;
+                    if ((int)routine != dumped_routine) {
+                        char dump[512];
+                        int off, k;
+                        uint32 base;
+                        uint32 jal_target = 0;
+
+                        // 32 handler words + spot the first jal
+                        off = 0;
+                        base = routine & 0x1FFFFF;
+                        for (k = 0; k < 32 && off < (int)sizeof(dump) - 16; k++) {
+                            uint32 w = LE32(psx->psx_ram[(base / 4) + k]);
+                            off += snprintf(dump + off, sizeof(dump) - off, "%08x ", w);
+                            if (jal_target == 0 && (w >> 26) == 0x03) {
+                                // jal: target = (imm26 << 2), upper bits from PC
+                                jal_target = ((routine + k * 4 + 4) & 0xF0000000)
+                                             | ((w & 0x03FFFFFF) << 2);
+                            }
+                        }
+                        __android_log_print(ANDROID_LOG_WARN, "PsfProbe",
+                            "Handler 0x%08x[0..31]: %s", routine, dump);
+
+                        // 32 words of the first jal target (the subroutine)
+                        if (jal_target && (jal_target & 0x1FFFFF) < 0x200000 - 128) {
+                            off = 0;
+                            base = jal_target & 0x1FFFFF;
+                            for (k = 0; k < 32 && off < (int)sizeof(dump) - 16; k++) {
+                                uint32 w = LE32(psx->psx_ram[(base / 4) + k]);
+                                off += snprintf(dump + off, sizeof(dump) - off,
+                                                "%08x ", w);
+                            }
+                            __android_log_print(ANDROID_LOG_WARN, "PsfProbe",
+                                "Subroutine 0x%08x[0..31]: %s", jal_target, dump);
+                        }
+
+                        // Current GPRs — find which register held the wild PC
+                        {
+                            static const char *names[32] = {
+                                "zr","at","v0","v1","a0","a1","a2","a3",
+                                "t0","t1","t2","t3","t4","t5","t6","t7",
+                                "s0","s1","s2","s3","s4","s5","s6","s7",
+                                "t8","t9","k0","k1","gp","sp","fp","ra"
+                            };
+                            int r;
+                            off = 0;
+                            for (r = 0; r < 32 && off < (int)sizeof(dump) - 24; r++) {
+                                union cpuinfo gpr;
+                                mips_get_info(&psx->mipscpu,
+                                              CPUINFO_INT_REGISTER + MIPS_R0 + r, &gpr);
+                                off += snprintf(dump + off, sizeof(dump) - off,
+                                                "%s=%08x ", names[r], (uint32) gpr.i);
+                            }
+                            __android_log_print(ANDROID_LOG_WARN, "PsfProbe",
+                                "GPRs at runaway: %s", dump);
+                        }
+
+                        // Value of the global the handler reads
+                        {
+                            uint32 g = LE32(psx->psx_ram[0x874cc / 4]);
+                            __android_log_print(ANDROID_LOG_WARN, "PsfProbe",
+                                "Global mem[0x000874cc] = 0x%08x", g);
+                        }
+
+                        dumped_routine = (int)routine;
+                    }
+                }
+                logged = 1;
+            }
+            if (iter >= 1000000) {
+                __android_log_print(ANDROID_LOG_ERROR, "PsfProbe",
+                    "IRQ bailed out after %u iterations; source=%s handler=0x%08x.",
+                    iter, source ? source : "?", routine);
+                break;
+            }
+        }
+        if (logged && psx->softcall_target) {
+            __android_log_print(ANDROID_LOG_INFO, "PsfProbe",
+                "IRQ runaway recovered after %u iterations.", iter);
+        }
     }
     mips_set_icount(&psx->mipscpu, oldICount);
 
@@ -1712,7 +1816,7 @@ void psx_bios_hle(PSX_STATE *psx, uint32 pc) {
 
                             if (!psx->Event[i].func) continue;
 
-                            call_irq_routine(psx, psx->Event[i].func, 0);
+                            call_irq_routine(psx, psx->Event[i].func, 0, "Event[exception]");
                         }
                     }
                 }
@@ -1960,7 +2064,7 @@ void psx_hw_runcounters(PSX_STATE *psx) {
                 spu_interrupt_dma4(SPUSTATE);
 
                 if (psx->dma4_cb) {
-                    call_irq_routine(psx, psx->dma4_cb, psx->dma4_flag);
+                    call_irq_routine(psx, psx->dma4_cb, psx->dma4_flag, "DMA4");
                 }
             }
         }
@@ -1972,7 +2076,7 @@ void psx_hw_runcounters(PSX_STATE *psx) {
                 spu_interrupt_dma7(SPUSTATE);
 
                 if (psx->dma7_cb) {
-                    call_irq_routine(psx, psx->dma7_cb, psx->dma7_flag);
+                    call_irq_routine(psx, psx->dma7_cb, psx->dma7_flag, "DMA7");
                 }
             }
         }
@@ -2004,7 +2108,7 @@ void psx_hw_runcounters(PSX_STATE *psx) {
 
                         //					printlog(psx, "Timer %d: handler = %08x, param = %08x\n", i, iop_timers[i].handler, iop_timers[i].hparam);
                         call_irq_routine(psx, psx->iop_timers[i].handler,
-                                         psx->iop_timers[i].hparam);
+                                         psx->iop_timers[i].hparam, "IOPTimer");
 
                         psx->timerexp = 1;
                     }
@@ -3464,6 +3568,7 @@ void psx_iop_call(PSX_STATE *psx, uint32 pc, uint32 callnum) {
     } else if (!strcmp(name, "modload")) {
         uint8 *tempmem;
         uint32 newAlloc;
+        uint32 load_result;
 
         switch (callnum) {
             case 7:    // LoadStartModule
@@ -3484,11 +3589,21 @@ void psx_iop_call(PSX_STATE *psx, uint32 pc, uint32 callnum) {
                 psf2_set_loadaddr(psx, newAlloc + 2048);
 
                 tempmem = (uint8 *) psx->elf_scratch;
-                if (psf2_load_file(psx, mname, tempmem, 2 * 1024 * 1024) != 0xffffffff) {
+                load_result = psf2_load_file(psx, mname, tempmem, 2 * 1024 * 1024);
+                if (load_result == 0xffffffff) {
+                    __android_log_print(ANDROID_LOG_WARN, "PsfProbe",
+                                        "IOP LoadStartModule FAILED to read: %s", mname);
+                }
+                if (load_result != 0xffffffff) {
                     uint32 start;
                     int i;
 
                     start = psf2_load_elf(psx, tempmem, 2 * 1024 * 1024);
+
+                    if (start == 0xffffffff) {
+                        __android_log_print(ANDROID_LOG_WARN, "PsfProbe",
+                                            "IOP LoadStartModule FAILED to ELF-load: %s", mname);
+                    }
 
                     if (start != 0xffffffff) {
                         uint32 args[20], numargs = 1, argofs;
