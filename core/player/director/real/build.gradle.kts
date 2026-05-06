@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    api(projects.core.player.director)
+    api(projects.cbox.common.player.director)
     implementation(projects.cbox.common.player.common)
     implementation(projects.core.player.generator)
     implementation(projects.core.player.speaker)

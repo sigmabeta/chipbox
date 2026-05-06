@@ -17,7 +17,7 @@ dependencies {
     implementation(projects.cbox.common.models)
     implementation(projects.cbox.common.repository)
     implementation(projects.cbox.common.player.common)
-    implementation(projects.core.player.director)
+    implementation(projects.cbox.common.player.director)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation("androidx.compose.ui:ui")
