@@ -1,5 +1,5 @@
 plugins {
-    id("sage.android")
+    alias(libs.plugins.sage.android)
 }
 
 android {
@@ -7,7 +7,8 @@ android {
 }
 
 dependencies {
-    api(projects.core.player.generator)
+    api(projects.cbox.common.player.generator)
     api(projects.cbox.common.player.emulators)
+
     implementation(projects.cbox.common.player.speaker)
 }

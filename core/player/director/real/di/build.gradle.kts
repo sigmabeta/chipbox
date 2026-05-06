@@ -13,6 +13,6 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     api(projects.core.player.director.real)
-    implementation(projects.core.player.generator)
+    implementation(projects.cbox.common.player.generator)
     implementation(projects.cbox.common.player.speaker)
 }
