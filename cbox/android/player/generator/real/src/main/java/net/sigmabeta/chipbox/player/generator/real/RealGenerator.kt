@@ -95,6 +95,8 @@ class RealGenerator(
 
     override fun getLastError() = ifNotNull(emulator) { getLastError() }
 
+    override fun getDiagnostics() = ifNotNull(emulator) { getDiagnostics() }
+
     private fun <Return> ifNotNull(
         emulator: Emulator?,
         action: Emulator.() -> Return

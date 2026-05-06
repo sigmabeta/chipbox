@@ -50,6 +50,16 @@ Java_net_sigmabeta_chipbox_player_emulators_psf_PsfEmulator_getLastError(
     return str;
 }
 
+JNIEXPORT jstring JNICALL
+Java_net_sigmabeta_chipbox_player_emulators_psf_PsfEmulator_getDiagnostics(
+        JNIEnv *env,
+        jobject thiz
+) {
+    const char *diagnostics = get_diagnostics();
+    if (!diagnostics) return nullptr;
+    return env->NewStringUTF(diagnostics);
+}
+
 JNIEXPORT jint JNICALL
 Java_net_sigmabeta_chipbox_player_emulators_psf_PsfEmulator_getSampleRateInternal(JNIEnv *env,
                                                                                   jobject thiz) {

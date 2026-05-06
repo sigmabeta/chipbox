@@ -358,7 +358,8 @@ uint32 psf2_get_loadaddr(PSX_STATE *);
 
 void psf2_set_loadaddr(PSX_STATE *, uint32 new);
 
-static void call_irq_routine(PSX_STATE *, uint32 routine, uint32 parameter);
+static void call_irq_routine(PSX_STATE *, uint32 routine, uint32 parameter,
+                              const char *source);
 
 extern void psx_bios_hle(PSX_STATE *, uint32 pc);
 
