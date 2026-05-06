@@ -10,19 +10,26 @@ const char *last_error;
 void *psf2fs;
 
 void loadFile(const char *filename_c_str) {
-//    if (started)
-//    {
-//        if (psf_version == 2) psf2_stop((PSX_STATE *)psx_state.get_ptr());
-//        else psf_stop((PSX_STATE *)psx_state.get_ptr());
-//    }
+    last_error = nullptr;
+    isPs2Track = false;
 
     char psf_version = psf_load(filename_c_str, &psf_file_system, 0, 0, 0, 0, 0, 0, 0, 0);
 
-    if (psf_version < 0) last_error = "Not a PSF file";
-    if (psf_version != 1 && psf_version != 2) last_error = "Not a PSF1 or PSF2 file";
+    if (psf_version < 0) {
+        last_error = "Not a PSF file";
+        return;
+    }
+    if (psf_version != 1 && psf_version != 2) {
+        last_error = "Not a PSF1 or PSF2 file";
+        return;
+    }
+
     uint64_t psx_state_size = psx_get_state_size(psf_version);
     uint8_t *psx_state = static_cast<uint8_t *>(malloc(psx_state_size));
-
+    if (!psx_state) {
+        last_error = "Failed to allocate PSX state.";
+        return;
+    }
     memset(psx_state, 0, psx_state_size);
 
     pEmu = psx_state;
@@ -47,7 +54,12 @@ void loadFile(const char *filename_c_str) {
                 0
         );
 
-        if (ret < 0) last_error = "Invalid PSF1 file";
+        if (ret < 0) {
+            last_error = "Invalid PSF1 file";
+            free(pEmu);
+            pEmu = nullptr;
+            return;
+        }
 
         if (state.refresh) {
             psx_set_refresh((PSX_STATE *) pEmu, state.refresh);
@@ -59,7 +71,12 @@ void loadFile(const char *filename_c_str) {
         if (psf2fs) psf2fs_delete(psf2fs);
 
         psf2fs = psf2fs_create();
-        if (!psf2fs) last_error = "Failed to allocate PS2 FS.";
+        if (!psf2fs) {
+            last_error = "Failed to allocate PS2 FS.";
+            free(pEmu);
+            pEmu = nullptr;
+            return;
+        }
 
         psf1_load_state state;
 
@@ -77,7 +94,14 @@ void loadFile(const char *filename_c_str) {
                 0,
                 0);
 
-        if (ret < 0) last_error = "Invalid PSF2 file";
+        if (ret < 0) {
+            last_error = "Invalid PSF2 file";
+            psf2fs_delete(psf2fs);
+            psf2fs = nullptr;
+            free(pEmu);
+            pEmu = nullptr;
+            return;
+        }
 
         if (state.refresh)
             psx_set_refresh((PSX_STATE *) pEmu, state.refresh);
@@ -90,6 +114,10 @@ void loadFile(const char *filename_c_str) {
 }
 
 int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_shorts) {
+    if (!pEmu) {
+        last_error = "Cannot generate audio: emulator not loaded.";
+        return 0;
+    }
 
     int32_t written = 0;
 
@@ -99,12 +127,6 @@ int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_shorts) {
         written = psf2_gen((PSX_STATE *) pEmu, target_array, samples);
     else
         written = psf_gen((PSX_STATE *) pEmu, target_array, samples);
-
-//    const char *errmsg = psx_get_last_error((PSX_STATE *) psx_state.get_ptr());
-//    if (errmsg) console::print(errmsg);
-//    if (err != AO_SUCCESS) console::print("Execution halted with an error.");
-//    if (!written) throw exception_io_data();
-//    if (err != AO_SUCCESS) eof = true;
 
     return written;
 }

@@ -43,3 +43,4 @@ app/src/main/jniLibs/
 
 .gradle/
 app/.externalNativeBuild/
+.kotlin/
