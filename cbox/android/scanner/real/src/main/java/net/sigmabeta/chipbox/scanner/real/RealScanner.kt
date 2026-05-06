@@ -234,10 +234,10 @@ class RealScanner(
                 tagInfoCache[refLower] = parsed
                 parsed
             }
+            if (chainOut.none { it.filename.equals(libFile.name, ignoreCase = true) }) {
+                chainOut += ChainFile(libFile.name, libFile.uri.toString())
+            }
             if (libTagInfo != null) {
-                if (chainOut.none { it.filename.equals(libFile.name, ignoreCase = true) }) {
-                    chainOut += ChainFile(libFile.name, libFile.uri.toString())
-                }
                 visited.add(refLower)
                 val libChain = resolvePsfChain(libTagInfo, byFilename, tagInfoCache, visited, depth + 1, chainOut)
                 visited.remove(refLower)
