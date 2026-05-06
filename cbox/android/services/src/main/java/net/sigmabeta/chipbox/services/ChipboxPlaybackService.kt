@@ -129,7 +129,7 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
 
         // Set the session's token so that client activities can communicate with it.
         val mscToken = sessionToken
-        hatchet.v("Creating session with Token: $sessionToken active: $isActive")
+        hatchet.v("Creating session with Token: ${sessionToken.hashCode()} active: $isActive")
 
         this@ChipboxPlaybackService.sessionToken = mscToken
     }
