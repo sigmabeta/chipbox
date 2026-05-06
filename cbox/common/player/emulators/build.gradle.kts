@@ -1,10 +1,10 @@
 plugins {
-    id("sage.jvm")
+    alias(libs.plugins.sage.jvm)
 }
 
 dependencies {
+    api(projects.cbox.common.models)
     api(projects.cbox.common.player.common)
-    api(projects.core.player.emulators)
     api(libs.kotlinx.coroutines.core)
-    implementation(projects.cbox.common.repository)
+    api(libs.sage.common.logging)
 }

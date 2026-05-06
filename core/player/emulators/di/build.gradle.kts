@@ -12,7 +12,7 @@ dependencies {
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
 
-    api(projects.core.player.emulators.fake.di)
+    api(projects.cbox.common.player.emulators.fake.di)
     api(projects.core.player.emulators.twosf.di)
     api(projects.core.player.emulators.gba.di)
     api(projects.core.player.emulators.gme.di)
