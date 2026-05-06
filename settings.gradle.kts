@@ -84,18 +84,18 @@ include(
     ":core:player:director:real:di",
     ":cbox:common:player:emulators",
     ":core:player:emulators:di",
-    ":core:player:emulators:twosf",
-    ":core:player:emulators:twosf:di",
+    ":cbox:android:player:emulators:twosf",
+    ":cbox:android:player:emulators:twosf:di",
     ":cbox:common:player:emulators:fake",
     ":cbox:common:player:emulators:fake:di",
-    ":core:player:emulators:gba",
-    ":core:player:emulators:gba:di",
-    ":core:player:emulators:gme",
-    ":core:player:emulators:gme:di",
-    ":core:player:emulators:psf",
-    ":core:player:emulators:psf:di",
-    ":core:player:emulators:ssf",
-    ":core:player:emulators:ssf:di",
+    ":cbox:android:player:emulators:gba",
+    ":cbox:android:player:emulators:gba:di",
+    ":cbox:android:player:emulators:gme",
+    ":cbox:android:player:emulators:gme:di",
+    ":cbox:android:player:emulators:psf",
+    ":cbox:android:player:emulators:psf:di",
+    ":cbox:android:player:emulators:ssf",
+    ":cbox:android:player:emulators:ssf:di",
     ":core:player:generator",
     ":core:player:generator:di",
     ":core:player:generator:fake",
@@ -122,5 +122,5 @@ include(
 )
 
 // 2sf starts with a digit — map to a valid project name
-project(":core:player:emulators:twosf").projectDir = file("core/player/emulators/2sf")
-project(":core:player:emulators:twosf:di").projectDir = file("core/player/emulators/2sf/di")
+project(":cbox:android:player:emulators:twosf").projectDir = file("cbox/android/player/emulators/2sf")
+project(":cbox:android:player:emulators:twosf:di").projectDir = file("cbox/android/player/emulators/2sf/di")

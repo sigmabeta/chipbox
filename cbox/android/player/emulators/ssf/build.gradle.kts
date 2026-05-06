@@ -1,5 +1,5 @@
 plugins {
-    id("sage.android")
+    alias(libs.plugins.sage.android)
 }
 
 android {
