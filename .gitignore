@@ -44,3 +44,8 @@ app/src/main/jniLibs/
 .gradle/
 app/.externalNativeBuild/
 .kotlin/
+
+# Node artifacts (stray, not part of this Android project)
+package.json
+package-lock.json
+node_modules/
