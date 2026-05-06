@@ -9,5 +9,5 @@ android {
 dependencies {
     api(projects.core.player.generator)
     api(projects.cbox.common.player.emulators)
-    implementation(projects.core.player.speaker)
+    implementation(projects.cbox.common.player.speaker)
 }
