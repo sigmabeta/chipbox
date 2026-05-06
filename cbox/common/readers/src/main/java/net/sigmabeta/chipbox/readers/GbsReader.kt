@@ -1,25 +1,22 @@
 package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.repository.RawTrack
-import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
 
-private val hatchet: Hatchet = BluntHatchet()
-
-object GbsReader : Reader() {
+class GbsReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
             val fileAsByteBuffer = bytesAsByteBuffer(bytes)
 
             val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
             if (formatHeader == null) {
-                hatchet.e("No header found.")
+                hatchet.w("GBS parse failed: file too small to contain header (${bytes.size} bytes).")
                 return null
             }
 
             if (!isGbsFile(formatHeader)) {
-                hatchet.e("GBS header missing.")
+                hatchet.w("GBS parse failed: header doesn't start with 'GBS' (got '$formatHeader').")
                 return null
             }
 
@@ -45,10 +42,10 @@ object GbsReader : Reader() {
             }
             return tracks
         } catch (iae: IllegalArgumentException) {
-            hatchet.e("Illegal argument: ${iae.message}")
+            hatchet.w("GBS parse failed: illegal argument — ${iae.message}")
             return null
         } catch (e: UnsupportedEncodingException) {
-            hatchet.e("Unsupported Encoding: ${e.message}")
+            hatchet.w("GBS parse failed: unsupported encoding — ${e.message}")
             return null
         }
     }
@@ -64,7 +61,7 @@ object GbsReader : Reader() {
                 .substringBefore(0.toChar())
                 .trim()
         } catch (ex: Exception) {
-            hatchet.e("Unable to read game title: ${ex.message}")
+            hatchet.w("GBS: unable to read game title — ${ex.message}")
             TAG_UNKNOWN
         }
     }
@@ -75,14 +72,16 @@ object GbsReader : Reader() {
                 .decodeToString(0x30, 0x50, true)
                 .trim()
         } catch (ex: Exception) {
-            hatchet.e("Unable to read game title: ${ex.message}")
+            hatchet.w("GBS: unable to read artist — ${ex.message}")
             TAG_UNKNOWN
         }
     }
 
     private fun isGbsFile(header: String) = header.startsWith(HEADER_MAGIC)
 
-    private const val HEADER_MAGIC = "GBS"
+    companion object {
+        private const val HEADER_MAGIC = "GBS"
+    }
 }
 
 /**

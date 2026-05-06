@@ -3,31 +3,17 @@ package net.sigmabeta.chipbox.readers
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.utils.convert
 import net.sigmabeta.chipbox.utils.convertUtf
-import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
+import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
-
-private val hatchet: Hatchet = BluntHatchet()
 
 data class PsfTagInfo(
     val tags: Map<String, String>,
     val libReferences: List<String>,  // ordered: _lib, _lib2, _lib3, ...
 )
 
-object PsfReader : Reader() {
-    private const val FILE_HEADER_SIZE = 16
-    private const val TAG_HEADER_SIZE = 5
-    private const val COMBINED_HEADER_SIZE = FILE_HEADER_SIZE + TAG_HEADER_SIZE
-
-    private const val PSF_TAG_KEY_TITLE = "title"
-    private const val PSF_TAG_KEY_GAME = "game"
-    private const val PSF_TAG_KEY_ARTIST = "artist"
-    private const val PSF_TAG_KEY_LENGTH = "length"
-    private const val PSF_TAG_KEY_FADE = "fade"
-    private const val PSF_TAG_KEY_LIB = "_lib"
-    private const val PSF_TAG_HEADER = "[TAG]"
-    private const val PSF_UTF8_FLAG = "utf8=1"
+class PsfReader(private val hatchet: Hatchet) : Reader() {
 
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? =
         readTagInfo(bytes)?.let { listOf(buildRawTrack(it.tags, identifier)) }
@@ -37,17 +23,18 @@ object PsfReader : Reader() {
         val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
 
         if (formatHeader == null) {
-            hatchet.e("No header found.")
+            hatchet.w("PSF parse failed: file too small to contain header (${bytes.size} bytes).")
             return null
         }
 
         if (!isPsfFile(formatHeader)) {
-            hatchet.e("PSF header missing.")
+            hatchet.w("PSF parse failed: header doesn't start with 'PSF' (got '$formatHeader', ${bytes.size} bytes).")
             return null
         }
 
-        if (!isSupportedPlatform(formatHeader.toByteArray(Charsets.US_ASCII)[3])) {
-            hatchet.e("Unsupported platform.")
+        val platformCode = formatHeader.toByteArray(Charsets.US_ASCII)[3]
+        if (!isSupportedPlatform(platformCode)) {
+            hatchet.w("PSF parse failed: unsupported platform code 0x%02X.".format(platformCode))
             return null
         }
 
@@ -58,9 +45,27 @@ object PsfReader : Reader() {
             val dataSize = reservedAreaSize + programAreaSize
             val tagsAreaSize = fileAsByteBuffer.array().size - dataSize - COMBINED_HEADER_SIZE
 
-            fileAsByteBuffer.position(dataSize + FILE_HEADER_SIZE)
+            val tagSectionStart = dataSize + FILE_HEADER_SIZE
+            if (tagSectionStart > bytes.size) {
+                hatchet.w(
+                    "PSF parse failed: declared data section (reserved=$reservedAreaSize, " +
+                        "program=$programAreaSize) extends past file end (${bytes.size} bytes)."
+                )
+                return null
+            }
+
+            if (tagsAreaSize <= 0) {
+                hatchet.w(
+                    "PSF parse failed: no tag section " +
+                        "(file=${bytes.size}b, reserved=${reservedAreaSize}b, program=${programAreaSize}b)."
+                )
+                return null
+            }
+
+            fileAsByteBuffer.position(tagSectionStart)
 
             if (!isPsfTagValid(fileAsByteBuffer)) {
+                hatchet.w("PSF parse failed: missing '[TAG]' marker at offset $tagSectionStart.")
                 return null
             }
 
@@ -74,10 +79,13 @@ object PsfReader : Reader() {
 
             PsfTagInfo(tagMap, libRefs)
         } catch (iae: IllegalArgumentException) {
-            hatchet.e("Illegal argument: ${iae.message}")
+            hatchet.w("PSF parse failed: illegal argument — ${iae.message}")
             null
         } catch (e: UnsupportedEncodingException) {
-            hatchet.e("Unsupported Encoding: ${e.message}")
+            hatchet.w("PSF parse failed: unsupported encoding — ${e.message}")
+            null
+        } catch (e: BufferUnderflowException) {
+            hatchet.w("PSF parse failed: buffer underflow (truncated file, ${bytes.size} bytes).")
             null
         }
     }
@@ -157,4 +165,18 @@ object PsfReader : Reader() {
 
     private fun isPsfFile(header: String) = header.startsWith("PSF")
 
+    companion object {
+        private const val FILE_HEADER_SIZE = 16
+        private const val TAG_HEADER_SIZE = 5
+        private const val COMBINED_HEADER_SIZE = FILE_HEADER_SIZE + TAG_HEADER_SIZE
+
+        private const val PSF_TAG_KEY_TITLE = "title"
+        private const val PSF_TAG_KEY_GAME = "game"
+        private const val PSF_TAG_KEY_ARTIST = "artist"
+        private const val PSF_TAG_KEY_LENGTH = "length"
+        private const val PSF_TAG_KEY_FADE = "fade"
+        private const val PSF_TAG_KEY_LIB = "_lib"
+        private const val PSF_TAG_HEADER = "[TAG]"
+        private const val PSF_UTF8_FLAG = "utf8=1"
+    }
 }

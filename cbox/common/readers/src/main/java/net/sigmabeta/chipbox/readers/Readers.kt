@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.repository.RawTrack
+import net.sigmabeta.sage.logging.Hatchet
 
 sealed class Reader {
     abstract fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>?
@@ -8,24 +9,26 @@ sealed class Reader {
 
 fun isPsfFamily(extension: String): Boolean = extension in PSF_FAMILY_EXTENSIONS
 
-fun getReaderForExtension(extension: String): Reader? {
-    return when (extension) {
-        EXT_PSF -> PsfReader
-        EXT_MINIPSF -> PsfReader
-        EXT_GSF -> PsfReader
-        EXT_MINIGSF -> PsfReader
-        EXT_PSF2 -> PsfReader
-        EXT_MINIPSF2 -> PsfReader
-        EXT_2SF -> PsfReader
-        EXT_MINI2SF -> PsfReader
-        EXT_SSF -> PsfReader
-        EXT_MINISSF -> PsfReader
-        EXT_DSF -> PsfReader
-        EXT_MINIDSF -> PsfReader
-        EXT_NSF -> NsfReader
-        EXT_NSFE -> NsfeReader
-        EXT_GBS -> GbsReader
-        EXT_SPC -> SpcReader
+class Readers(hatchet: Hatchet) {
+    val psf = PsfReader(hatchet)
+    val nsf = NsfReader(hatchet)
+    val nsfe = NsfeReader(hatchet)
+    val gbs = GbsReader(hatchet)
+    val spc = SpcReader(hatchet)
+    val m3u = M3uReader(hatchet)
+
+    fun forExtension(extension: String): Reader? = when (extension) {
+        EXT_PSF, EXT_MINIPSF,
+        EXT_GSF, EXT_MINIGSF,
+        EXT_PSF2, EXT_MINIPSF2,
+        EXT_2SF, EXT_MINI2SF,
+        EXT_SSF, EXT_MINISSF,
+        EXT_DSF, EXT_MINIDSF -> psf
+
+        EXT_NSF -> nsf
+        EXT_NSFE -> nsfe
+        EXT_GBS -> gbs
+        EXT_SPC -> spc
         else -> null
     }
 }

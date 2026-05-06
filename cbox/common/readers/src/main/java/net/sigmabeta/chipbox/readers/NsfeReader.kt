@@ -1,28 +1,25 @@
 package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.repository.RawTrack
-import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
 import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-private val hatchet: Hatchet = BluntHatchet()
-
-object NsfeReader : Reader() {
+class NsfeReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
             val fileAsByteBuffer = bytesAsByteBuffer(bytes)
 
             val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
             if (formatHeader == null) {
-                hatchet.e("No header found.")
+                hatchet.w("NSFE parse failed: file too small to contain header (${bytes.size} bytes).")
                 return null
             }
 
             if (!isNsfeFile(formatHeader)) {
-                hatchet.e("NSFE header missing.")
+                hatchet.w("NSFE parse failed: header doesn't start with 'NSFE' (got '$formatHeader').")
                 return null
             }
 
@@ -89,10 +86,10 @@ object NsfeReader : Reader() {
                 tempTracks
             }
         } catch (iae: IllegalArgumentException) {
-            hatchet.e("Illegal argument: ${iae.message}")
+            hatchet.w("NSFE parse failed: illegal argument — ${iae.message}")
             return null
         } catch (e: UnsupportedEncodingException) {
-            hatchet.e("Unsupported Encoding: ${e.message}")
+            hatchet.w("NSFE parse failed: unsupported encoding — ${e.message}")
             return null
         }
     }
@@ -142,7 +139,7 @@ object NsfeReader : Reader() {
                     break
                 }
             } catch (ex: BufferUnderflowException) {
-                hatchet.e("Buffer underflow reading chunk.")
+                hatchet.w("NSFE parse failed: buffer underflow reading chunk.")
                 return chunks
             }
         }
@@ -155,7 +152,7 @@ object NsfeReader : Reader() {
         val content = ByteArray(length)
 
         if (name == null) {
-            hatchet.e("Chunk is not well-formed.")
+            hatchet.w("NSFE parse failed: chunk is not well-formed.")
             return null
         }
 
@@ -165,15 +162,17 @@ object NsfeReader : Reader() {
 
     private fun isNsfeFile(header: String) = header.contentEquals(HEADER_MAGIC)
 
-    private const val HEADER_MAGIC = "NSFE"
-    private const val CHUNK_AUTH = "auth"
-    private const val CHUNK_TLBL = "tlbl"
-    private const val CHUNK_TAUT = "taut"
-    private const val CHUNK_TIME = "time"
-    private const val CHUNK_FADE = "fade"
-    private const val CHUNK_PLST = "plst"
-    private const val CHUNK_INFO = "INFO"
-    private const val CHUNK_NEND = "NEND"
+    companion object {
+        private const val HEADER_MAGIC = "NSFE"
+        private const val CHUNK_AUTH = "auth"
+        private const val CHUNK_TLBL = "tlbl"
+        private const val CHUNK_TAUT = "taut"
+        private const val CHUNK_TIME = "time"
+        private const val CHUNK_FADE = "fade"
+        private const val CHUNK_PLST = "plst"
+        private const val CHUNK_INFO = "INFO"
+        private const val CHUNK_NEND = "NEND"
+    }
 }
 
 data class NsfeChunk(
