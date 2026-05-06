@@ -8,8 +8,8 @@ android {
 
 dependencies {
     api(projects.cbox.common.scanner)
+    api(projects.cbox.common.repository)
+    api(projects.cbox.android.contentsource.file)
     implementation(projects.cbox.common.readers)
-    implementation(projects.cbox.common.repository)
-    implementation(projects.cbox.android.contentsource.file)
     implementation(libs.sage.common.logging)
 }

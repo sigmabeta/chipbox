@@ -1,11 +1,14 @@
 package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.repository.RawTrack
-import timber.log.Timber
+import net.sigmabeta.sage.logging.BluntHatchet
+import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
 import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+
+private val hatchet: Hatchet = BluntHatchet()
 
 object NsfeReader : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
@@ -14,12 +17,12 @@ object NsfeReader : Reader() {
 
             val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
             if (formatHeader == null) {
-                Timber.e("No header found.")
+                hatchet.e("No header found.")
                 return null
             }
 
             if (!isNsfeFile(formatHeader)) {
-                Timber.e("NSFE header missing.")
+                hatchet.e("NSFE header missing.")
                 return null
             }
 
@@ -86,10 +89,10 @@ object NsfeReader : Reader() {
                 tempTracks
             }
         } catch (iae: IllegalArgumentException) {
-            Timber.e("Illegal argument: ${iae.message}")
+            hatchet.e("Illegal argument: ${iae.message}")
             return null
         } catch (e: UnsupportedEncodingException) {
-            Timber.e("Unsupported Encoding: ${e.message}")
+            hatchet.e("Unsupported Encoding: ${e.message}")
             return null
         }
     }
@@ -139,7 +142,7 @@ object NsfeReader : Reader() {
                     break
                 }
             } catch (ex: BufferUnderflowException) {
-                Timber.e("Buffer underflow reading chunk.")
+                hatchet.e("Buffer underflow reading chunk.")
                 return chunks
             }
         }
@@ -152,7 +155,7 @@ object NsfeReader : Reader() {
         val content = ByteArray(length)
 
         if (name == null) {
-            Timber.e("Chunk is not well-formed.")
+            hatchet.e("Chunk is not well-formed.")
             return null
         }
 

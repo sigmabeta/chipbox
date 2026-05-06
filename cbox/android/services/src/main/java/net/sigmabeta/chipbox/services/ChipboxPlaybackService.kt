@@ -13,7 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.player.director.Director
-import timber.log.Timber
+import net.sigmabeta.sage.logging.Hatchet
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -24,6 +24,9 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
     @Inject
     lateinit var director: Director
 
+    @Inject
+    lateinit var hatchet: Hatchet
+
     private val serviceScope = CoroutineScope(Dispatchers.Default)
 
     private var mediaSession: MediaSessionCompat? = null
@@ -33,9 +36,9 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
     override fun onCreate() {
         super.onCreate()
 
-        Timber.i("Starting service...")
+        hatchet.i("Starting service...")
 
-        val notificationGenerator = NotificationGenerator(this)
+        val notificationGenerator = NotificationGenerator(this, hatchet)
         val systemNotifService = NotificationManagerCompat.from(this)
 
         val callback = ChipboxSessionCallback(
@@ -43,7 +46,8 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
             serviceScope,
             director,
             notificationGenerator,
-            systemNotifService
+            systemNotifService,
+            hatchet,
         )
 
         mediaSession = createMediaSession(callback)
@@ -65,7 +69,7 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Timber.i("Destroying service...")
+        hatchet.i("Destroying service...")
     }
 
     override fun onGetRoot(
@@ -73,7 +77,7 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
         clientUid: Int,
         rootHints: Bundle?
     ): BrowserRoot? {
-        Timber.v("onGetRoot for $clientPackageName")
+        hatchet.v("onGetRoot for $clientPackageName")
         return when (allowBrowsing(clientPackageName, clientUid)) {
             AccessLevel.FULL -> BrowserRoot(ID_ROOT_FULL, null)
             AccessLevel.NO_BROWSE -> BrowserRoot(ID_ROOT_EMPTY, null)
@@ -89,14 +93,14 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
 
         //  Browsing not allowed
         if (ID_ROOT_EMPTY == parentMediaId) {
-            Timber.w("App not permitted to browse library.")
+            hatchet.w("App not permitted to browse library.")
             result.sendResult(null)
             return
         }
 
         if (parentMediaId == ID_ROOT_FULL) {
             val topLevelMenuItems = browser.getTopLevelMenuItems()
-            Timber.d("Sending top level menu items: ${topLevelMenuItems}")
+            hatchet.d("Sending top level menu items: ${topLevelMenuItems}")
             result.sendResult(topLevelMenuItems)
             return
         }
@@ -125,7 +129,7 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
 
         // Set the session's token so that client activities can communicate with it.
         val mscToken = sessionToken
-        Timber.v("Creating session with Token: $sessionToken active: $isActive")
+        hatchet.v("Creating session with Token: $sessionToken active: $isActive")
 
         this@ChipboxPlaybackService.sessionToken = mscToken
     }
