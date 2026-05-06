@@ -14,5 +14,5 @@ dependencies {
 
     api(projects.core.player.director.real)
     implementation(projects.core.player.generator)
-    implementation(projects.core.player.speaker)
+    implementation(projects.cbox.common.player.speaker)
 }

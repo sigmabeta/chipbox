@@ -14,6 +14,6 @@ dependencies {
 
     api(projects.core.player.generator.fake)
     api(projects.core.player.generator)
-    api(projects.core.player.speaker)
+    api(projects.cbox.common.player.speaker)
     implementation(projects.cbox.common.player.common)
 }
