@@ -4,5 +4,5 @@ plugins {
 
 dependencies {
     api(projects.core.player.buffer)
-    implementation(projects.core.player.common)
+    implementation(projects.cbox.common.player.common)
 }

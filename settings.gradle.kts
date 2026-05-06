@@ -77,7 +77,7 @@ include(
     ":core:player:buffer:di",
     ":core:player:buffer:real",
     ":core:player:buffer:real:di",
-    ":core:player:common",
+    ":cbox:common:player:common",
     ":core:player:director",
     ":core:player:director:di",
     ":core:player:director:real",

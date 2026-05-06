@@ -4,7 +4,7 @@ plugins {
 
 dependencies {
     api(projects.cbox.common.models)
-    api(projects.core.player.common)
+    api(projects.cbox.common.player.common)
     api(libs.kotlinx.coroutines.core)
     api(libs.sage.common.logging)
 }

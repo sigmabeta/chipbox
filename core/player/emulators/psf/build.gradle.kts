@@ -13,7 +13,7 @@ android {
 }
 
 dependencies {
-    api(projects.core.player.common)
+    api(projects.cbox.common.player.common)
     api(projects.core.player.emulators)
     implementation(projects.cbox.common.repository)
 }
