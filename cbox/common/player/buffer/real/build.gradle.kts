@@ -1,8 +1,9 @@
 plugins {
-    id("sage.jvm")
+    alias(libs.plugins.sage.jvm)
 }
 
 dependencies {
-    api(projects.core.player.buffer)
+    api(projects.cbox.common.player.buffer)
+
     implementation(projects.cbox.common.player.common)
 }

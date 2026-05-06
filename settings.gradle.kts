@@ -73,10 +73,10 @@ include(
     ":cbox:common:utils",
 
     // Legacy Modules
-    ":core:player:buffer",
-    ":core:player:buffer:di",
-    ":core:player:buffer:real",
-    ":core:player:buffer:real:di",
+    ":cbox:common:player:buffer",
+    ":cbox:common:player:buffer:di",
+    ":cbox:common:player:buffer:real",
+    ":cbox:common:player:buffer:real:di",
     ":cbox:common:player:common",
     ":core:player:director",
     ":core:player:director:di",
