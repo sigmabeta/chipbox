@@ -72,7 +72,7 @@ class NotificationGenerator(
 
             // Take advantage of MediaStyle features
             val sessionToken = mediaSession.sessionToken
-            hatchet.v("Notifying with Token: ${sessionToken.token}  active: ${mediaSession.isActive}")
+            hatchet.v("Notifying with Token: ${sessionToken.hashCode()}  active: ${mediaSession.isActive}")
             val mediaStyle = androidx.media.app.NotificationCompat.MediaStyle()
                 .setMediaSession(sessionToken)
                 .setShowCancelButton(true)

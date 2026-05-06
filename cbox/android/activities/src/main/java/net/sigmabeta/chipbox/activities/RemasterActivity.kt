@@ -116,7 +116,7 @@ class RemasterActivity : ComponentActivity() {
         override fun onConnected() {
             // Get the token for the MediaSession
             mediaBrowser.sessionToken.also { token ->
-                hatchet.v("Connected to session with Token: $token")
+                hatchet.v("Connected to session with Token: ${token.hashCode()}")
 
                 // Create a MediaControllerCompat
                 val mediaController = MediaControllerCompat(
