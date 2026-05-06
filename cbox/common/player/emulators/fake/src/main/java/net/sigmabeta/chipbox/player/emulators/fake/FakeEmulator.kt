@@ -1,7 +1,11 @@
 package net.sigmabeta.chipbox.player.emulators.fake
 
 import net.sigmabeta.chipbox.models.Track
-import net.sigmabeta.chipbox.player.common.*
+import net.sigmabeta.chipbox.player.common.SHORTS_PER_FRAME
+import net.sigmabeta.chipbox.player.common.framesToMillis
+import net.sigmabeta.chipbox.player.common.framesToSamples
+import net.sigmabeta.chipbox.player.common.millisToFrames
+import net.sigmabeta.chipbox.player.common.toShortValue
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.emulators.fake.models.GeneratedTrack
 import net.sigmabeta.chipbox.player.emulators.fake.models.Note
@@ -30,14 +34,14 @@ object FakeEmulator : Emulator() {
 
     override fun loadTrack(track: Track) {
         if (remainingFramesTotal >= 0) {
-            println("Previously loaded emulator not cleared. Clearing...")
+            hatchet.w("Previously loaded emulator not cleared. Clearing...")
             teardown()
         }
 
         remainingFramesTotal =
             track.trackLengthMs.toDouble().millisToFrames(getSampleRateInternal())
 
-        val generatedTrack = TrackRandomizer.generate(track)
+        val generatedTrack = TrackRandomizer.generate(track, hatchet)
 
         this.generatedTrack = generatedTrack
         notes = ArrayDeque<Note>().apply { addAll(generatedTrack.measures.flatMap { it.notes }) }
@@ -59,7 +63,7 @@ object FakeEmulator : Emulator() {
                     return framesPlayed
                 }
 
-                println("Begin playback of $note")
+                hatchet.d("Begin playback of $note")
                 currentNote = note
 
                 framesPlayedForCurrentNote = 0
