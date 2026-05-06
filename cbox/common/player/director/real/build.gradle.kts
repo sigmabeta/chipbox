@@ -1,9 +1,10 @@
 plugins {
-    id("sage.jvm")
+    alias(libs.plugins.sage.jvm)
 }
 
 dependencies {
     api(projects.cbox.common.player.director)
+
     implementation(projects.cbox.common.player.common)
     implementation(projects.cbox.common.player.generator)
     implementation(projects.cbox.common.player.speaker)
