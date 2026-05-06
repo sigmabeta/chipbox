@@ -1,7 +1,6 @@
 plugins {
-    id("sage.android")
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.di.android)
 }
 
 android {
@@ -9,10 +8,8 @@ android {
 }
 
 dependencies {
-    implementation(libs.hilt)
-    ksp(libs.hilt.compiler)
+    api(projects.cbox.common.player.director.real)
 
-    api(projects.core.player.director.real)
     implementation(projects.cbox.common.player.generator)
     implementation(projects.cbox.common.player.speaker)
 }
