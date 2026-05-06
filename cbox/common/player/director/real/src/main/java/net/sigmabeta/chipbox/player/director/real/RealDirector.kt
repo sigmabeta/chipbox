@@ -18,6 +18,7 @@ import net.sigmabeta.chipbox.player.generator.GeneratorEvent
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.player.speaker.SpeakerEvent
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.sage.logging.Hatchet
 
 /**
  * Production [Director] implementation.
@@ -38,6 +39,7 @@ class RealDirector(
     private val generator: Generator,
     private val speaker: Speaker,
     private val repository: Repository,
+    private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : Director {
     private val directorScope = CoroutineScope(dispatcher)
@@ -71,7 +73,7 @@ class RealDirector(
                 .events()
                 .distinctUntilChanged()
                 .collect {
-                    println("Received GeneratorEvent: $it")
+                    hatchet.d("Received GeneratorEvent: $it")
                     currentState = reduce(currentState, it)
                 }
         }
@@ -81,7 +83,7 @@ class RealDirector(
                 .events()
                 .distinctUntilChanged()
                 .collect {
-                    println("Received SpeakerEvent: $it")
+                    hatchet.d("Received SpeakerEvent: $it")
                     currentState = reduce(currentState, it)
                 }
         }
@@ -185,7 +187,7 @@ class RealDirector(
 
             if (isCurrentTrackLastInSetlist(session, setlist)) {
                 // TODO This should also have a reducer.
-                println("Generator requested next track, but no more exist.")
+                hatchet.d("Generator requested next track, but no more exist.")
                 currentState = currentState.copy(state = PlayerState.ENDING)
                 generator.stop()
                 return@launch
@@ -295,12 +297,12 @@ class RealDirector(
 
     private fun handleSpeakerBuffering(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
         if (oldState.state == PlayerState.PLAYING) {
-            println("Buffer underrun.")
+            hatchet.w("Buffer underrun.")
             return oldState
         }
 
         if (oldState.state == PlayerState.ENDING) {
-            println("Setlist complete.")
+            hatchet.i("Setlist complete.")
             stop()
             return oldState.copy(state = PlayerState.STOPPED)
         }
@@ -311,7 +313,7 @@ class RealDirector(
 
     private fun handleSpeakerPlaying(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
         if (oldState.state == PlayerState.BUFFERING) {
-            println("Underrun resolved.")
+            hatchet.i("Underrun resolved.")
         }
 
         if (oldState.state == PlayerState.ENDING) {
@@ -348,6 +350,6 @@ class RealDirector(
         repository.getTrack(id, withArtists = true, withGame = true)
 
     private fun emitError(message: String) {
-        println("Error: $message")
+        hatchet.e("Error: $message")
     }
 }

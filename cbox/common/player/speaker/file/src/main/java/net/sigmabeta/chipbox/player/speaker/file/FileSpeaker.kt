@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.common.BYTES_PER_SAMPLE
 import net.sigmabeta.chipbox.player.common.CHANNELS_STEREO
 import net.sigmabeta.chipbox.player.speaker.Speaker
+import net.sigmabeta.sage.logging.Hatchet
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.OutputStream
@@ -24,6 +25,7 @@ import java.nio.ByteOrder
  */
 class FileSpeaker(
         private val externalStorageDir: File,
+        private val hatchet: Hatchet,
         bufferManager: ConsumerBufferManager,
         dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Speaker(bufferManager, dispatcher) {
@@ -44,7 +46,7 @@ class FileSpeaker(
         try {
             val audioAsBytes = audio.data.toByteArray()
 
-            println("Writing ${audioAsBytes.size} bytes to output...")
+            hatchet.d("Writing ${audioAsBytes.size} bytes to output...")
 
             file?.write(audioAsBytes)
             bytesWritten += audioAsBytes.size
@@ -54,7 +56,7 @@ class FileSpeaker(
     }
 
     override fun teardown() {
-        println("Tearing down output file.")
+        hatchet.d("Tearing down output file.")
 
         file?.close()
 
@@ -146,7 +148,7 @@ class FileSpeaker(
         seekableFile.seek(0x40)
         seekableFile.writeInt(bytesWritten)
 
-        println("Wrote $bytesWritten bytes of audio to file.")
+        hatchet.d("Wrote $bytesWritten bytes of audio to file.")
     }
 
     private fun writeShortLittleEndian(output: OutputStream, short: Short) {
@@ -170,7 +172,7 @@ class FileSpeaker(
     }
 
     private fun logProblems(message: String?) {
-        println("Error writing to file: $message")
+        hatchet.e("Error writing to file: $message")
     }
 
     private fun Short.toBytes(): ByteArray {

@@ -9,8 +9,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
+import net.sigmabeta.sage.logging.Hatchet
 import java.io.File
-import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -24,9 +24,11 @@ object FileSpeakerModule {
     @Singleton
     fun provideFileSpeaker(
         externalStorageDir: File,
+        hatchet: Hatchet,
         bufferManager: ConsumerBufferManager
     ) = FileSpeaker(
         externalStorageDir,
+        hatchet,
         bufferManager
     )
 

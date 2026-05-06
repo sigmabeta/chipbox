@@ -2,13 +2,21 @@ package net.sigmabeta.chipbox.player.emulators.fake
 
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.isDivisibleBy
-import net.sigmabeta.chipbox.player.emulators.fake.models.*
+import net.sigmabeta.chipbox.player.emulators.fake.models.Duration
+import net.sigmabeta.chipbox.player.emulators.fake.models.GeneratedTrack
+import net.sigmabeta.chipbox.player.emulators.fake.models.Measure
+import net.sigmabeta.chipbox.player.emulators.fake.models.Note
+import net.sigmabeta.chipbox.player.emulators.fake.models.PitchClass
+import net.sigmabeta.chipbox.player.emulators.fake.models.Scale
+import net.sigmabeta.chipbox.player.emulators.fake.models.ScaleMode
+import net.sigmabeta.chipbox.player.emulators.fake.models.TimeSignature
+import net.sigmabeta.sage.logging.Hatchet
 import kotlin.math.floor
 import kotlin.random.Random
 
 object TrackRandomizer {
 
-    fun generate(track: Track): GeneratedTrack {
+    fun generate(track: Track, hatchet: Hatchet): GeneratedTrack {
         val trackId = track.id
 
         val lengthMs = track.trackLengthMs.toDouble()
@@ -29,9 +37,9 @@ object TrackRandomizer {
 
         val measuresInLoop = random.nextValue(arrayOf(8, 16, 32))
         while (measuresGenerated < measuresInLoop) {
-            val measure = generateMeasure(random, timeSignature, scale)
+            val measure = generateMeasure(random, timeSignature, scale, hatchet)
             generatedMeasures.add(measure)
-            println("Generated $measure")
+            hatchet.d("Generated $measure")
             measuresGenerated++
         }
 
@@ -45,14 +53,14 @@ object TrackRandomizer {
                     .sum()
                 msGenerated += measureDuration
 
-                println("Adding measure with length $measureDuration")
-                println("Total song generated: $msGenerated / $lengthMs")
+                hatchet.d("Adding measure with length $measureDuration")
+                hatchet.d("Total song generated: $msGenerated / $lengthMs")
                 if (msGenerated >= lengthMs) {
                     break
                 }
             }
 
-            println("Looping for the $loops time")
+            hatchet.d("Looping for the $loops time")
             loops++
 
             if (msGenerated >= lengthMs) break
@@ -71,7 +79,8 @@ object TrackRandomizer {
     private fun generateMeasure(
         random: Random,
         timeSignature: TimeSignature,
-        scale: Scale
+        scale: Scale,
+        hatchet: Hatchet
     ): Measure {
         var beatsGenerated = 0.0
         val notes = mutableListOf<Note>()
@@ -83,7 +92,7 @@ object TrackRandomizer {
             val note = generateNote(random, scale, beatStartPoint, maximumDuration)
             notes.add(note)
 
-            println("Generated $note")
+            hatchet.d("Generated $note")
 
             beatsGenerated += note
                 .duration

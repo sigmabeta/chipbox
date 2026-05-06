@@ -5,13 +5,15 @@ import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.speaker.Speaker
+import net.sigmabeta.sage.logging.Hatchet
 
 /**
- * Debug-only [Speaker] that prints each incoming buffer to stdout as a `Frame | Left | Right`
- * table. Useful for verifying that the producer side is generating sensible samples without
+ * Debug-only [Speaker] that prints each incoming buffer as a `Frame | Left | Right` table via
+ * [Hatchet]. Useful for verifying that the producer side is generating sensible samples without
  * needing audio hardware.
  */
 class TextSpeaker(
+    private val hatchet: Hatchet,
         bufferManager: ConsumerBufferManager,
         dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Speaker(bufferManager, dispatcher)  {
@@ -22,7 +24,7 @@ class TextSpeaker(
     override fun teardown() = Unit
 
     private fun logBuffer(audio: AudioBuffer) {
-        println(audio.toReadableString())
+        hatchet.d(audio.toReadableString())
     }
 
     private fun AudioBuffer.toReadableString(): String {
