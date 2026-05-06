@@ -1,9 +1,9 @@
 plugins {
-    id("sage.android")
+    alias(libs.plugins.sage.android)
 }
 
 android {
-    namespace = "net.sigmabeta.chipbox.player.emulators.twosf"
+    namespace = "net.sigmabeta.chipbox.player.emulators.psf"
 
     externalNativeBuild {
         cmake {
