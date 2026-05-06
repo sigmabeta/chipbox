@@ -1,7 +1,6 @@
 plugins {
-    id("sage.android")
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.di.android)
 }
 
 android {
@@ -9,9 +8,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.hilt)
-    ksp(libs.hilt.compiler)
-
     api(projects.cbox.common.player.emulators.fake.di)
     api(projects.cbox.android.player.emulators.twosf.di)
     api(projects.cbox.android.player.emulators.gba.di)
