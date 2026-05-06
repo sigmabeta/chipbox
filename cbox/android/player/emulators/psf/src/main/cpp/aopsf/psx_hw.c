@@ -1768,7 +1768,7 @@ void psx_bios_hle(PSX_STATE *psx, uint32 pc) {
 						printlog(psx, "HLEBIOS: WaitEvent(%d) PC=%x\n", eventId, mipsinfo.i);
 #endif
 
-                    if (psx->Event[eventId].isValid) {
+                    if (eventId < MAX_EVENT && psx->Event[eventId].isValid) {
                         if (psx->Event[eventId].enabled) {
                             if (!psx->Event[eventId].fired) {
                                 psx->WAI = 1;
@@ -1790,7 +1790,7 @@ void psx_bios_hle(PSX_STATE *psx, uint32 pc) {
                     printlog(psx, "HLEBIOS: TestEvent(%d)\n", eventId);
 #endif
 
-                    if (psx->Event[eventId].isValid) {
+                    if (eventId < MAX_EVENT && psx->Event[eventId].isValid) {
                         mipsinfo.i = psx->Event[eventId].fired;
                     } else {
                         mipsinfo.i = 0;
@@ -1812,7 +1812,7 @@ void psx_bios_hle(PSX_STATE *psx, uint32 pc) {
                     printlog(psx, "HLEBIOS: EnableEvent(%d)\n", eventId);
 #endif
 
-                    if (psx->Event[eventId].isValid) {
+                    if (eventId < MAX_EVENT && psx->Event[eventId].isValid) {
                         psx->Event[eventId].enabled = 1;
                         psx->Event[eventId].fired = 0;
                     }
@@ -1831,7 +1831,7 @@ void psx_bios_hle(PSX_STATE *psx, uint32 pc) {
                     printlog(psx, "HLEBIOS: DisableEvent(%d)\n", eventId);
 #endif
 
-                    if (psx->Event[eventId].isValid) {
+                    if (eventId < MAX_EVENT && psx->Event[eventId].isValid) {
                         psx->Event[eventId].enabled = 0;
                     }
 
