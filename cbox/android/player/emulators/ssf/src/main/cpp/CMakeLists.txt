@@ -2,7 +2,13 @@
 # This ensures that a certain set of CMake features is available to
 # your build.
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.22)
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Name the library.
 set(library_name ssf)
@@ -32,8 +38,6 @@ add_definitions(
         -DLSB_FIRST
         -DHAVE_MPROTECT
 )
-
-add_compile_options(-Wno-int-conversion)
 
 # Specifies a library name, specifies whether the library is STATIC or
 # SHARED, and provides relative paths to the source code. You can
