@@ -16,6 +16,8 @@ dependencies {
 
     implementation(projects.cbox.android.images)
     implementation(projects.cbox.android.strings)
+    implementation(projects.cbox.android.ui.fonts)
+    implementation(projects.cbox.android.ui.theme)
 
     implementation(libs.kotlin.reflect)
     implementation(libs.material)

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="ChipboxBaseTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="bottomSheetDialogTheme">@style/ChipboxBottomSheetDialog</item>
+    </style>
+
+    <style name="ChipboxBottomSheet" parent="Widget.MaterialComponents.BottomSheet.Modal">
+        <item name="behavior_hideable">true</item>
+    </style>
+
+    <style name="ChipboxBottomSheetDialog" parent="ThemeOverlay.MaterialComponents.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/ChipboxBottomSheet</item>
+    </style>
+</resources>
