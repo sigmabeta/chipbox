@@ -1,3 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="accy_ocl_checkbox">Toggle setting</string>
+    <string name="accy_ocl_dropdown">Change setting</string>
+    <string name="accy_ocl_rating">See more songs</string>
+    <string name="accy_ocl_single_line">Perform action: %1$s</string>
+    <string name="accy_ocl_value">See details</string>
+
+    <string name="accy_st_desc_loading">Loading</string>
+    <string name="accy_st_desc_checked">Enabled</string>
+    <string name="accy_st_desc_unchecked">Disabled</string>
 </resources>
