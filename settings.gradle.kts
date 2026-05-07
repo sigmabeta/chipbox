@@ -86,6 +86,7 @@ include(
     ":cbox:android:styles",
     ":cbox:android:ui:components",
     ":cbox:android:ui:fonts",
+    ":cbox:android:ui:theme",
 
     ":cbox:common:contentsource",
     ":cbox:common:entities",
@@ -114,6 +115,7 @@ include(
     ":cbox:common:repository:memory",
     ":cbox:common:repository:memory:di",
     ":cbox:common:scanner",
+    ":cbox:common:settings",
     ":cbox:common:strings",
     ":cbox:common:utils",
 

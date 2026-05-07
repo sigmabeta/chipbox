@@ -1,7 +1,9 @@
 plugins {
     alias(libs.plugins.sage.android)
 }
+
 dependencies {
+
 }
 
 android {
