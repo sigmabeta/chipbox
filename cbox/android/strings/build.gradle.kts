@@ -7,6 +7,8 @@ android {
 }
 
 dependencies {
+    api(projects.cbox.common.strings)
+
     implementation(projects.cbox.android.colors)
     implementation(projects.cbox.android.drawables)
     implementation(libs.androidx.appcompat)

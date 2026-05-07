@@ -60,6 +60,7 @@ dependencies {
     implementation(projects.cbox.android.repository.mock.di)
     implementation(projects.cbox.android.scanner.mock.di)
     implementation(projects.cbox.android.scanner.real.di)
+    implementation(projects.cbox.android.ui.components)
 
     implementation(libs.sage.common.list)
     implementation(libs.sage.common.appcomm)

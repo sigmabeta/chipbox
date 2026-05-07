@@ -10,4 +10,5 @@ dependencies {
     api(projects.cbox.common.repository)
 
     implementation(libs.sage.common.logging)
+    api(libs.sage.common.ui.strings)
 }

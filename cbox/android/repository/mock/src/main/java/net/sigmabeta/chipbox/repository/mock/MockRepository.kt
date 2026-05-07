@@ -19,6 +19,7 @@ import net.sigmabeta.chipbox.repository.mock.models.MockArtist
 import net.sigmabeta.chipbox.repository.mock.models.MockGame
 import net.sigmabeta.chipbox.repository.mock.models.MockTrack
 import net.sigmabeta.sage.logging.Hatchet
+import net.sigmabeta.sage.ui.StringGenerator
 import java.util.Locale
 import java.util.Random
 
@@ -356,7 +357,5 @@ class MockRepository(
     companion object {
         const val DEFAULT_MAX_GAMES = 100
         const val DEFAULT_MAX_TRACKS_PER_GAME = 30
-
-        const val MAX_WORDS_PER_TITLE = 5
     }
 }
