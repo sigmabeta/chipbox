@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 
 @Composable
 fun Flasher(
@@ -50,7 +50,7 @@ fun Flasher(
 @Preview
 @Composable
 private fun LightCircle() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -64,7 +64,7 @@ private fun LightCircle() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun DarkCircle() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background

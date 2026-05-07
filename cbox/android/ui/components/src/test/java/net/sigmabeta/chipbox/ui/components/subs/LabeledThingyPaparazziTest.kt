@@ -20,7 +20,7 @@ import net.sigmabeta.chipbox.ui.components.LabelDropdownListItem
 import net.sigmabeta.chipbox.ui.components.LabelNoThingyItem
 import net.sigmabeta.chipbox.ui.components.LabelRatingListItem
 import net.sigmabeta.chipbox.ui.components.LabelValueListItem
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.CheckableListModel
@@ -39,7 +39,7 @@ class LabeledThingyPaparazziTest {
     @Test
     fun light() {
         paparazzi.snapshot {
-            ChipboxTheme {
+            ChipboxPreview {
                 Box(
                     modifier = Modifier.background(MaterialTheme.colorScheme.background),
                 ) {

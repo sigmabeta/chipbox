@@ -19,8 +19,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -28,8 +26,8 @@ import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
 import net.sigmabeta.chipbox.ui.components.subs.CrossfadeImage
 import net.sigmabeta.chipbox.ui.components.subs.ElevatedCircle
 import net.sigmabeta.chipbox.ui.components.utils.ImageSize
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxThemeMenu
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreviewMenu
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.ImageNameCaptionListModel
@@ -149,7 +147,7 @@ private fun ImageNameCaptionListItem(
 @Preview
 @Composable
 private fun Light() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -163,7 +161,7 @@ private fun Light() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun Dark() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -177,7 +175,7 @@ private fun Dark() {
 @Preview
 @Composable
 private fun Menu() {
-    ChipboxThemeMenu {
+    ChipboxPreviewMenu {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background

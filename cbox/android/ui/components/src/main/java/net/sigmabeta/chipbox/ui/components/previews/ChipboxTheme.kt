@@ -5,10 +5,10 @@ import net.sigmabeta.chipbox.ui.theme.AppTheme
 import net.sigmabeta.chipbox.ui.theme.AppThemeMenu
 
 @Composable
-fun ChipboxTheme(
+fun ChipboxPreview(
     forceDark: Boolean = false,
     content: @Composable () -> Unit,
 ) = AppTheme(forceDark = forceDark, content = content)
 
 @Composable
-fun ChipboxThemeMenu(content: @Composable () -> Unit) = AppThemeMenu(content = content)
+fun ChipboxPreviewMenu(content: @Composable () -> Unit) = AppThemeMenu(content = content)

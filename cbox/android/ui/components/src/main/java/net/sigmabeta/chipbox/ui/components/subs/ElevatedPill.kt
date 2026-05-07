@@ -16,7 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 
 @Composable
 fun ElevatedPill(
@@ -42,7 +42,7 @@ fun ElevatedPill(
 @Preview
 @Composable
 private fun Light() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier
                 .background(color = MaterialTheme.colorScheme.background)
@@ -56,7 +56,7 @@ private fun Light() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun Dark() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier
                 .background(color = MaterialTheme.colorScheme.background)

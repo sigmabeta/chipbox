@@ -16,7 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -37,7 +36,7 @@ import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.ImageNameListModel
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.sage.ui.vector
 
 @Composable
@@ -194,7 +193,7 @@ private fun FakeImage(
 @Preview
 @Composable
 private fun Light() {
-    ChipboxTheme {
+    ChipboxPreview {
         Sample()
     }
 }
@@ -202,7 +201,7 @@ private fun Light() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun Dark() {
-    ChipboxTheme {
+    ChipboxPreview {
         Sample()
     }
 }

@@ -16,13 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.dimensionResource
 import net.sigmabeta.chipbox.ui.components.R
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
 
 @Composable
 fun FullscreenBlack(
     content: @Composable BoxScope.() -> Unit
 ) {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -39,7 +38,7 @@ fun FullScreenOf(
     count: Int = 20,
     content: @Composable (ColumnScope.(PaddingValues) -> Unit),
 ) {
-    ChipboxTheme(forceDark = darkTheme) {
+    ChipboxPreview(forceDark = darkTheme) {
         Column(
             modifier = Modifier
                 .fillMaxSize()

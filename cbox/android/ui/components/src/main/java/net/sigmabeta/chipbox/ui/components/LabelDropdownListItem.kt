@@ -18,8 +18,8 @@ import net.sigmabeta.chipbox.ui.components.subs.Dropdown
 import net.sigmabeta.chipbox.ui.components.subs.LabeledThingy
 import net.sigmabeta.chipbox.strings.ChipboxStringId
 import net.sigmabeta.chipbox.strings.id
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxThemeMenu
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreviewMenu
 import kotlinx.collections.immutable.toImmutableList
 import net.sigmabeta.sage.components.DropdownSettingListModel
 
@@ -50,7 +50,7 @@ fun LabelDropdownListItem(
 @Preview
 @Composable
 private fun Light() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -64,7 +64,7 @@ private fun Light() {
 @Preview
 @Composable
 private fun LightExpanded() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -78,7 +78,7 @@ private fun LightExpanded() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun Dark() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -92,7 +92,7 @@ private fun Dark() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun DarkExpanded() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -106,7 +106,7 @@ private fun DarkExpanded() {
 @Preview
 @Composable
 private fun Menu() {
-    ChipboxThemeMenu {
+    ChipboxPreviewMenu {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -120,7 +120,7 @@ private fun Menu() {
 @Preview
 @Composable
 private fun MenuExpanded() {
-    ChipboxThemeMenu {
+    ChipboxPreviewMenu {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
