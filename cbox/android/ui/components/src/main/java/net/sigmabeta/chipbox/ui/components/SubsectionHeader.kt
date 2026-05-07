@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.sage.components.SubsectionHeaderListModel
 
 @OptIn(ExperimentalTextApi::class)
@@ -55,7 +55,7 @@ fun SubsectionHeader(
 @Preview
 @Composable
 private fun Light() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier
                 .background(color = MaterialTheme.colorScheme.primaryContainer)
@@ -68,7 +68,7 @@ private fun Light() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun Dark() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier
                 .background(color = MaterialTheme.colorScheme.primaryContainer)

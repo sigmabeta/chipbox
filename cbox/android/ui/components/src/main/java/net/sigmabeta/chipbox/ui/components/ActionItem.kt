@@ -21,13 +21,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
-import net.sigmabeta.chipbox.ui.components.R
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.ui.Icon
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxThemeMenu
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreviewMenu
 import net.sigmabeta.sage.ui.vector
 
 @Composable
@@ -77,7 +76,7 @@ fun ActionItem(
 @Preview
 @Composable
 private fun Selected() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -91,7 +90,7 @@ private fun Selected() {
 @Preview
 @Composable
 private fun NotMenu() {
-    ChipboxThemeMenu {
+    ChipboxPreviewMenu {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background

@@ -9,8 +9,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxThemeMenu
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreviewMenu
 import net.sigmabeta.sage.ui.vector
 
 @Composable
@@ -41,7 +41,7 @@ fun Rating(
 @Preview
 @Composable
 private fun Light() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -55,7 +55,7 @@ private fun Light() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun Dark() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -69,7 +69,7 @@ private fun Dark() {
 @Preview
 @Composable
 private fun Menu() {
-    ChipboxThemeMenu {
+    ChipboxPreviewMenu {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background

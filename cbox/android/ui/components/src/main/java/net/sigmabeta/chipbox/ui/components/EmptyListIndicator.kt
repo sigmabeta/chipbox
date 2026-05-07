@@ -30,7 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.ErrorStateListModel
 import net.sigmabeta.sage.ui.Icon
@@ -199,7 +199,7 @@ private fun DebugTextSmall(debugText: String, color: Color) {
 @Preview
 @Composable
 private fun Light() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -213,7 +213,7 @@ private fun Light() {
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun Dark() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -227,7 +227,7 @@ private fun Dark() {
 @Preview
 @Composable
 private fun LightError() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -241,7 +241,7 @@ private fun LightError() {
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun DarkError() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background

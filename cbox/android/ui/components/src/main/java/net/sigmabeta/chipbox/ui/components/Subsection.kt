@@ -18,7 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import kotlinx.collections.immutable.toImmutableList
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
@@ -84,7 +84,7 @@ fun Subsection(
 @Preview
 @Composable
 private fun LightWide() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier
                 .background(
@@ -100,7 +100,7 @@ private fun LightWide() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun DarkWide() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier
                 .background(
@@ -116,7 +116,7 @@ private fun DarkWide() {
 @Preview
 @Composable
 private fun LightSquare() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier
                 .background(
@@ -132,7 +132,7 @@ private fun LightSquare() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun DarkSquare() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier
                 .background(

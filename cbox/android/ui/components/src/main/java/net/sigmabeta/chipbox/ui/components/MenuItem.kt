@@ -23,7 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxTheme
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.MenuItemListModel
@@ -85,7 +85,7 @@ fun MenuItem(
 @Preview
 @Composable
 private fun Selected() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -99,7 +99,7 @@ private fun Selected() {
 @Preview
 @Composable
 private fun NotSelected() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -113,7 +113,7 @@ private fun NotSelected() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun SelectedDark() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
@@ -127,7 +127,7 @@ private fun SelectedDark() {
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun NotSelectedDark() {
-    ChipboxTheme {
+    ChipboxPreview {
         Box(
             modifier = Modifier.background(
                 color = MaterialTheme.colorScheme.background
