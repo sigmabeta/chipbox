@@ -32,7 +32,7 @@ private class ChipboxFontProvider : PreviewParameterProvider<ChipboxFont> {
 @Composable
 private fun FontPreviewContent(font: ChipboxFont) {
     val fontFamily = font.toFontFamily()
-    AppTheme(brandFont = fontFamily, plainFont = fontFamily) {
+    AppTheme(brandFont = fontFamily, plainFont = fontFamily, fontScale = font.scaleFactor) {
         Surface {
             Column(
                 modifier = Modifier
