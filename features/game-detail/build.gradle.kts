@@ -13,11 +13,11 @@ dependencies {
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
 
-    implementation(projects.cbox.android.components)
-    implementation(projects.cbox.common.models)
-    implementation(projects.cbox.common.repository)
-    implementation(projects.cbox.common.player.common)
-    implementation(projects.cbox.common.player.director)
+    implementation(projects.cbox.android.components.api)
+    implementation(projects.cbox.common.models.api)
+    implementation(projects.cbox.common.repository.api)
+    implementation(projects.cbox.common.player.common.api)
+    implementation(projects.cbox.common.player.director.api)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation("androidx.compose.ui:ui")

@@ -1,13 +1,9 @@
 plugins {
-    alias(libs.plugins.sage.android)
-    alias(libs.plugins.sage.di.android)
-}
-
-android {
-    namespace = "net.sigmabeta.chipbox.player.status.di"
+    alias(libs.plugins.sage.jvm)
+    alias(libs.plugins.sage.di.jvm)
 }
 
 dependencies {
-    api(projects.cbox.common.player.status.real.di)
-    api(projects.cbox.common.player.status)
+    api(projects.cbox.common.player.status.api)
+    api(projects.cbox.common.player.status.real)
 }

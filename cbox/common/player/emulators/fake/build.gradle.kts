@@ -3,9 +3,8 @@ plugins {
 }
 
 dependencies {
-    api(projects.cbox.common.player.common)
-    api(projects.cbox.common.player.emulators)
+    api(projects.cbox.common.player.emulators.api)
     api(libs.kotlinx.coroutines.core)
 
-    implementation(projects.cbox.common.repository)
+    implementation(projects.cbox.common.repository.api)
 }

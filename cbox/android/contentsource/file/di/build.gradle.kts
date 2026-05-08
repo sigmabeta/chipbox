@@ -3,10 +3,11 @@ plugins {
     alias(libs.plugins.sage.di.android)
 }
 
-dependencies {
-    api(projects.cbox.android.contentsource.file)
-}
-
 android {
     namespace = "net.sigmabeta.chipbox.contentsource.file.di"
+}
+
+dependencies {
+    api(projects.cbox.android.contentsource.file.api)
+    api(projects.cbox.android.contentsource.file.real)
 }

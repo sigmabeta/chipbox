@@ -8,5 +8,6 @@ android {
 }
 
 dependencies {
-    api(projects.cbox.android.player.emulators.gba)
+    api(projects.cbox.android.player.emulators.gba.api)
+    api(projects.cbox.android.player.emulators.gba.real)
 }

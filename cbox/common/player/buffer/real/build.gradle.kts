@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    api(projects.cbox.common.player.buffer)
+    api(projects.cbox.common.player.buffer.api)
 
-    implementation(projects.cbox.common.player.common)
+    implementation(projects.cbox.common.player.common.api)
 }

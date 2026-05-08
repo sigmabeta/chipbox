@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    api(projects.cbox.common.player.generator)
+    api(projects.cbox.common.player.generator.api)
 
     implementation(projects.cbox.common.player.emulators.fake)
 }

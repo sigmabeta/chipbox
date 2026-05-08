@@ -7,9 +7,10 @@ android {
 }
 
 dependencies {
-    api(projects.cbox.common.scanner)
-    api(projects.cbox.common.repository)
-    api(projects.cbox.android.contentsource.file)
-    api(projects.cbox.common.readers)
+    api(projects.cbox.common.scanner.api)
+    api(projects.cbox.common.repository.api)
+    api(projects.cbox.android.contentsource.file.all)
+    api(projects.cbox.common.readers.api)
+
     implementation(libs.sage.common.logging)
 }
