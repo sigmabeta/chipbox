@@ -3075,7 +3075,7 @@ void EMU_CALL yam_prepare_dynacode(void *state) {
   DWORD i;
   VirtualProtect( &YAMSTATE->dynacode, sizeof(YAMSTATE->dynacode), PAGE_EXECUTE_READWRITE, &i );
 #elif defined(HAVE_MPROTECT)
-  unsigned long startaddr = &YAMSTATE->dynacode;
+  unsigned long startaddr = (unsigned long) &YAMSTATE->dynacode;
   unsigned long length    = sizeof(YAMSTATE->dynacode);
   int           psize     = getpagesize();
   unsigned long addr      = ( startaddr & ~(psize - 1) );
@@ -3090,7 +3090,7 @@ void EMU_CALL yam_unprepare_dynacode(void *state) {
   DWORD i;
   VirtualProtect( &YAMSTATE->dynacode, sizeof(YAMSTATE->dynacode), PAGE_READWRITE, &i );
 #elif defined(HAVE_MPROTECT)
-  unsigned long startaddr = &YAMSTATE->dynacode;
+  unsigned long startaddr = (unsigned long) &YAMSTATE->dynacode;
   unsigned long length    = sizeof(YAMSTATE->dynacode);
   int           psize     = getpagesize();
   unsigned long addr      = ( startaddr & ~(psize - 1) );
