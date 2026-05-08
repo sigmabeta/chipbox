@@ -10,11 +10,12 @@
 
     <application
         android:name=".ChipboxApplication"
-        android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
+
         <activity
-            android:name=".activities.RemasterActivity"
+            android:name=".MainActivity"
+            android:label="Chipbox"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
