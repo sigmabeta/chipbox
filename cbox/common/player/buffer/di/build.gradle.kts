@@ -1,12 +1,9 @@
 plugins {
-    alias(libs.plugins.sage.android)
-    alias(libs.plugins.sage.di.android)
-}
-
-android {
-    namespace = "net.sigmabeta.chipbox.player.buffer.di"
+    alias(libs.plugins.sage.jvm)
+    alias(libs.plugins.sage.di.jvm)
 }
 
 dependencies {
-    api(projects.cbox.common.player.buffer.real.di)
+    api(projects.cbox.common.player.buffer.api)
+    api(projects.cbox.common.player.buffer.real)
 }

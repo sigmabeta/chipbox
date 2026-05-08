@@ -8,5 +8,6 @@ android {
 }
 
 dependencies {
-    api(projects.cbox.android.player.emulators.gme)
+    api(projects.cbox.android.player.emulators.gme.api)
+    api(projects.cbox.android.player.emulators.gme.real)
 }

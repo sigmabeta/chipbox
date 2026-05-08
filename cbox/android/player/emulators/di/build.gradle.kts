@@ -8,7 +8,7 @@ android {
 }
 
 dependencies {
-    api(projects.cbox.common.player.emulators.fake.di)
+    api(projects.cbox.common.player.emulators.di)
     api(projects.cbox.android.player.emulators.twosf.di)
     api(projects.cbox.android.player.emulators.gba.di)
     api(projects.cbox.android.player.emulators.gme.di)

@@ -8,5 +8,6 @@ android {
 }
 
 dependencies {
-    api(projects.cbox.android.player.emulators.ssf)
+    api(projects.cbox.android.player.emulators.ssf.api)
+    api(projects.cbox.android.player.emulators.ssf.real)
 }

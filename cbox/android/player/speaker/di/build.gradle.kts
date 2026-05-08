@@ -8,8 +8,7 @@ android {
 }
 
 dependencies {
-    api(projects.cbox.android.player.speaker.file.di)
-    api(projects.cbox.android.player.speaker.real.di)
-    api(projects.cbox.android.player.speaker.text.di)
-    api(projects.cbox.common.player.speaker)
+    api(projects.cbox.android.player.speaker.real)
+    api(projects.cbox.common.player.speaker.fake)
+    api(projects.cbox.common.player.speaker.api)
 }

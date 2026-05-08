@@ -1,0 +1,28 @@
+plugins {
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.compose.android)
+}
+
+android {
+    namespace = "net.sigmabeta.chipbox.ui.components"
+}
+
+dependencies {
+    api(libs.sage.common.ui.components)
+
+    implementation(libs.sage.common.appcomm)
+    implementation(libs.sage.common.images)
+
+    implementation(libs.sage.android.bitmaps)
+    implementation(libs.sage.android.perf)
+    implementation(libs.sage.android.ui.icons)
+
+    implementation(projects.cbox.android.images.api)
+    implementation(projects.cbox.android.strings.api)
+    implementation(projects.cbox.android.ui.fonts.api)
+    implementation(projects.cbox.android.ui.theme.api)
+
+    implementation(libs.kotlin.reflect)
+    implementation(libs.material)
+}

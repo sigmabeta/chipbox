@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.cbox.common.player.status)
+    api(projects.cbox.common.player.status.api)
 }
