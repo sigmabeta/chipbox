@@ -1,12 +1,12 @@
 package net.sigmabeta.chipbox.services.transformers
 
 import android.media.MediaMetadata
-import android.net.Uri
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v4.media.session.PlaybackStateCompat.ERROR_CODE_APP_ERROR
+import net.sigmabeta.chipbox.artwork.ArtworkUris
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Track
@@ -23,7 +23,7 @@ internal fun Game.toMediaItem() = MediaBrowserCompat.MediaItem(
     MediaDescriptionCompat.Builder()
         .setTitle(title)
         .setMediaId(ID_GAMES + id)
-        .apply { photoUrl?.toRemoteUri()?.let { setIconUri(it) } }
+        .apply { iconUri()?.let { setIconUri(it) } }
         .build(),
     MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
 )
@@ -32,33 +32,39 @@ internal fun Artist.toMediaItem() = MediaBrowserCompat.MediaItem(
     MediaDescriptionCompat.Builder()
         .setTitle(name)
         .setMediaId(ID_ARTISTS + id)
-        .apply { photoUrl?.toRemoteUri()?.let { setIconUri(it) } }
+        .apply { iconUri()?.let { setIconUri(it) } }
         .build(),
     MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
 )
 
-internal fun Track.toMediaItem(parentId: String) = MediaBrowserCompat.MediaItem(
+internal fun Track.toMediaItem(
+    parentId: String,
+    game: Game? = this.game,
+) = MediaBrowserCompat.MediaItem(
     MediaDescriptionCompat.Builder()
         .setTitle(title)
+        .setSubtitle(getArtistText())
         .setMediaId("$parentId.$id")
-        .apply { game?.photoUrl?.toRemoteUri()?.let { setIconUri(it) } }
+        .apply { game?.iconUri()?.let { setIconUri(it) } }
         .build(),
     MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
 )
 
-// SAF content:// and file:// URIs are process-local grants — other apps can't open them.
-// Only expose URIs with schemes that are universally accessible (http/https).
-// TODO: replace with a ContentProvider that proxies SAF artwork access.
-private fun String.toRemoteUri(): Uri? {
-    val uri = Uri.parse(this)
-    return if (uri.scheme == "http" || uri.scheme == "https") uri else null
-}
+private fun Game.iconUri() = if (photoUrl != null) ArtworkUris.forGame(id) else null
+
+private fun Artist.iconUri() = if (photoUrl != null) ArtworkUris.forArtist(id) else null
 
 internal fun Track.toMetadataBuilder(): MediaMetadataCompat.Builder {
-    return MediaMetadataCompat.Builder()
+    val builder = MediaMetadataCompat.Builder()
         .putString(MediaMetadata.METADATA_KEY_TITLE, title)
         .putString(MediaMetadata.METADATA_KEY_ALBUM, game?.title)
         .putString(MediaMetadata.METADATA_KEY_ARTIST, getArtistText())
+    val artUri = game?.iconUri()?.toString()
+    if (artUri != null) {
+        builder.putString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI, artUri)
+        builder.putString(MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI, artUri)
+    }
+    return builder
 }
 
 

@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <provider
+            android:name="net.sigmabeta.chipbox.artwork.ArtworkProvider"
+            android:authorities="net.sigmabeta.chipbox.artwork"
+            android:exported="true"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>

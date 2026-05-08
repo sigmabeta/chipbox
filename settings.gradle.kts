@@ -41,6 +41,7 @@ include(
     ":features:welcome",
 
     ":cbox:android:activities:api",
+    ":cbox:android:artworkprovider:api",
     ":cbox:android:colors:api",
     ":cbox:android:components:api",
     ":cbox:android:contentsource:file:all",
