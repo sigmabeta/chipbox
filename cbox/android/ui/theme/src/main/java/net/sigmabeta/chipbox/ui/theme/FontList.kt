@@ -65,7 +65,7 @@ private fun FontPreviewContentStaticText() {
                 FontSampleStaticText(null)
                 fonts.forEach {
                     val fontFamily = it.toFontFamily()
-                    FontSampleStaticText(fontFamily)
+                    FontSampleStaticText(fontFamily, it.scaleFactor)
                 }
             }
         }
@@ -79,7 +79,7 @@ private fun FontSample(
 ) {
     val brandFont = fontFamily ?: ChipboxTypefaceTokens.Brand
     val plainFont = fontFamily ?: ChipboxTypefaceTokens.Plain
-    AppTheme(brandFont = brandFont, plainFont = plainFont) {
+    AppTheme(brandFont = brandFont, plainFont = plainFont, fontScale = font?.scaleFactor ?: 1.0f) {
         Text(
             text = font?.fontName ?: "Default Material",
             style = MaterialTheme.typography.titleLarge,
@@ -97,10 +97,11 @@ private fun FontSample(
 @Composable
 private fun FontSampleStaticText(
     fontFamily: FontFamily?,
+    scaleFactor: Float = 1.0f,
 ) {
     val brandFont = fontFamily ?: ChipboxTypefaceTokens.Brand
     val plainFont = fontFamily ?: ChipboxTypefaceTokens.Plain
-    AppTheme(brandFont = brandFont, plainFont = plainFont) {
+    AppTheme(brandFont = brandFont, plainFont = plainFont, fontScale = scaleFactor) {
         Text(
             text = "Lorem Ipsum Tertium Est",
             style = MaterialTheme.typography.titleLarge,

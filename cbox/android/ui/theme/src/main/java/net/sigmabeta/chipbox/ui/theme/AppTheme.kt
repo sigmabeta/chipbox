@@ -10,13 +10,14 @@ import net.sigmabeta.sage.ui.themes.SageMaterialMenu
 fun AppTheme(
     brandFont: FontFamily = ChipboxTypefaceTokens.Brand,
     plainFont: FontFamily = ChipboxTypefaceTokens.Plain,
+    fontScale: Float = 1.0f,
     forceDark: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     SageMaterial(
         lightColors = ChipboxLight,
         darkColors = ChipboxDark,
-        typography = buildChipboxTypography(brandFont, plainFont),
+        typography = buildChipboxTypography(brandFont, plainFont, fontScale),
         forceDark = forceDark,
         content = content,
     )
@@ -26,11 +27,12 @@ fun AppTheme(
 fun AppThemeMenu(
     brandFont: FontFamily = ChipboxTypefaceTokens.Brand,
     plainFont: FontFamily = ChipboxTypefaceTokens.Plain,
+    fontScale: Float = 1.0f,
     content: @Composable () -> Unit,
 ) {
     SageMaterialMenu(
         menuColors = ChipboxMenu,
-        typography = buildChipboxTypography(brandFont, plainFont),
+        typography = buildChipboxTypography(brandFont, plainFont, fontScale),
         content = content,
     )
 }
