@@ -60,8 +60,7 @@ class LibraryBrowser @Inject constructor(
         .map { it as Data.Succeeded }
         .map { it.data }
         .first()!!
-        .tracks!!
-        .map { it.toMediaItem(parentMediaId) }
+        .let { game -> game.tracks!!.map { it.toMediaItem(parentMediaId, game) } }
 
     private suspend fun browseToArtist(parentMediaId: String, artistId: Long) = repository
         .getArtist(artistId, true)

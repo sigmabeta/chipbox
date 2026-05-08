@@ -46,6 +46,7 @@ dependencies {
     implementation(projects.features.welcome)
 
     implementation(projects.cbox.android.activities.api)
+    implementation(projects.cbox.android.artworkprovider.api)
     implementation(projects.cbox.android.database.all)
     implementation(projects.cbox.android.database.di)
     implementation(projects.cbox.android.services.api)
