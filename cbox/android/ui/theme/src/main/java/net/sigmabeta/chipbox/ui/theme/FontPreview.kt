@@ -39,7 +39,7 @@ private fun FontPreviewContent(font: ChipboxFont) {
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = "— titleLarge —",
