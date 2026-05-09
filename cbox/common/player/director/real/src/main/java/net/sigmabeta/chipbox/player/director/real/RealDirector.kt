@@ -143,6 +143,13 @@ class RealDirector(
         }
     }
 
+    override fun seek(positionMs: Long) {
+        directorScope.launch {
+            generator.seek(positionMs)
+            speaker.seek()
+        }
+    }
+
     override fun metadataState() = metadataStateMutable.asSharedFlow()
 
     override fun playbackState() = playbackStateMutable.asSharedFlow()

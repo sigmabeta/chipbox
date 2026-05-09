@@ -72,6 +72,16 @@ class RealBufferManager: ProducerBufferManager, ConsumerBufferManager {
         emptyArrays?.send(data)
     }
 
+    override suspend fun drain() {
+        val full = fullBuffers ?: return
+        while (true) {
+            val result = full.tryReceive()
+            val buffer = result.getOrNull() ?: break
+            buffer.data.clear()
+            emptyArrays?.send(buffer.data)
+        }
+    }
+
     override suspend fun getNextEmptyBuffer(): ShortArray {
         return emptyArrays?.receive() ?: throw  IllegalStateException("Set up buffers first!")
     }

@@ -99,6 +99,13 @@ class RealSpeaker(
         audioTrack = null
     }
 
+    override fun flushSink() {
+        val track = audioTrack ?: return
+        track.pause()
+        track.flush()
+        track.play()
+    }
+
     private fun logProblems(samplesWritten: Int) {
         val error = when (samplesWritten) {
             AudioTrack.ERROR_INVALID_OPERATION -> "Invalid AudioTrack operation."

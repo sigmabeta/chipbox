@@ -18,4 +18,8 @@ interface ConsumerBufferManager {
     /** Return a consumed buffer's backing array to the empty pool. The implementation zeroes
      *  the array before reuse so the producer always sees clean memory. */
     suspend fun recycleShortArray(data: ShortArray)
+
+    /** Discard every queued [AudioBuffer], recycling each backing array. Used during seek so
+     *  pre-seek audio doesn't continue playing into the post-seek position. */
+    suspend fun drain()
 }

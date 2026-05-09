@@ -9,7 +9,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
@@ -18,25 +17,25 @@ import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
+import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.logging.Hatchet
 
 /**
  * Producer side of the playback pipeline. Resolves a track id to bytes via the [Repository] +
- * [ContentSourceRegistry], hands those bytes to a subclass-supplied emulator, and pushes the
- * decoded PCM into the [bufferManager] for a downstream Speaker to consume.
+ * [ContentSourceRegistry], hands those bytes to a subclass-supplied [PcmTrackSource.Factory],
+ * and pushes the decoded PCM into the [bufferManager] for a downstream Speaker to consume.
  *
- * Subclasses pick the emulator. [net.sigmabeta.chipbox.player.generator.real.RealGenerator]
- * dispatches based on file extension across the available native emulators (GME, GBA, PSF, etc);
- * [net.sigmabeta.chipbox.player.generator.fake.FakeGenerator] always uses the in-process
- * sine/square synthesizer.
+ * Subclasses pick the [PcmTrackSource.Factory].
+ * [net.sigmabeta.chipbox.player.generator.real.RealGenerator] dispatches across the available
+ * native emulators with a render-ahead cache;
+ * [net.sigmabeta.chipbox.player.generator.fake.FakeGenerator] uses an in-process synth.
  *
  * ### Threading
  * The generation loop runs as a single coroutine on [dispatcher] (default [Dispatchers.IO]).
- * [play], [pause], and [stop] manipulate that job; calls from any thread are safe but
- * non-atomic with respect to each other. Subclass abstract methods are only ever invoked from
- * inside the loop.
+ * [play], [pause], [stop], and [seek] manipulate that job; calls from any thread are safe but
+ * non-atomic with respect to each other.
  *
  * ### Track transitions
  * [startTrack] queues the next track id on a 1-slot channel and starts the loop if it isn't
@@ -45,21 +44,23 @@ import net.sigmabeta.sage.logging.Hatchet
  * [GeneratorEvent.TrackChange] and blocks on the channel until the director sends the next id.
  */
 abstract class Generator(
-        private val repository: Repository,
-        protected val contentSourceRegistry: ContentSourceRegistry,
-        private val bufferManager: ProducerBufferManager,
-        protected val hatchet: Hatchet,
-        dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val repository: Repository,
+    protected val contentSourceRegistry: ContentSourceRegistry,
+    private val bufferManager: ProducerBufferManager,
+    protected val hatchet: Hatchet,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     private val generatorScope = CoroutineScope(dispatcher)
 
     private var ongoingGenerationJob: Job? = null
 
-    private var framesPlayed = 0
+    private var framesPlayed: Int = 0
 
     private var nextTrackIdChannel = Channel<Long>(1)
 
     private var currentTrack: Track? = null
+
+    private var currentSource: PcmTrackSource? = null
 
     private var sampleRate: Int? = null
 
@@ -67,49 +68,18 @@ abstract class Generator(
 
     private var lastSilenceTrackId: Long? = null
 
-    private var consecutiveSlowBuffers = 0
-
-    @Volatile
-    private var bufferStartNs: Long = 0L
-
     private val eventSink = MutableSharedFlow<GeneratorEvent>(
         replay = 0,
         onBufferOverflow = BufferOverflow.SUSPEND,
         extraBufferCapacity = 10
     )
 
-    /** Hand the loaded track + its raw file bytes to the underlying emulator so subsequent
-     *  [generateAudio] calls produce its samples. Called once per track from the loop. */
-    protected abstract suspend fun loadTrack(loadedTrack: Track, bytes: ByteArray)
-
-    /** Fill [buffer] with up to its capacity worth of stereo 16-bit PCM samples. Returns the
-     *  number of frames actually generated; 0 is treated as fatal by the loop. */
-    protected abstract fun generateAudio(buffer: ShortArray): Int
-
-    /** Release any per-track emulator resources. May be called multiple times. */
-    protected abstract fun teardown()
-
-    /** True once the emulator has reached its configured track length. */
-    protected abstract fun isTrackOver(): Boolean
-
-    /** The emulator's native output sample rate for the loaded track, in Hz. Used to size the
-     *  buffer pool and drive the fade processor. */
-    protected abstract fun getEmulatorSampleRate(): Int
-
-    /** Most-recent error from the emulator, or null. Polled after every buffer; non-null
-     *  terminates the loop. */
-    abstract fun getLastError(): String?
-
-    /** Non-fatal diagnostics from the emulator (IOP HLE warnings, etc.) accumulated during
-     *  the most recent [generateAudio] call. Default null; subclasses opt in. Polled after
-     *  every buffer for logging only — does not terminate the loop. */
-    open fun getDiagnostics(): String? = null
+    /** Subclass-supplied factory that decides which [PcmTrackSource] backs each track. */
+    protected abstract val pcmSourceFactory: PcmTrackSource.Factory
 
     fun events() = eventSink.asSharedFlow()
 
-    suspend fun startTrack(
-            trackId: Long,
-    ) {
+    suspend fun startTrack(trackId: Long) {
         nextTrackIdChannel.send(trackId)
         play()
     }
@@ -117,12 +87,7 @@ abstract class Generator(
     fun play() {
         if (ongoingGenerationJob == null) {
             ongoingGenerationJob = generatorScope.launch {
-                val watchdog = launch { runStallWatchdog() }
-                try {
-                    loop()
-                } finally {
-                    watchdog.cancel()
-                }
+                loop()
             }
         } else {
             hatchet.d("Already looping.")
@@ -141,6 +106,21 @@ abstract class Generator(
         teardownHelper()
     }
 
+    /**
+     * Reposition playback within the current track. Effective at the next buffer boundary.
+     * The audio currently queued in the buffer manager is not flushed by this call — the
+     * caller (typically [net.sigmabeta.chipbox.player.director.Director]) is responsible for
+     * draining the queue and flushing the speaker so the seek isn't preceded by stale frames.
+     */
+    suspend fun seek(positionMs: Long) {
+        val source = currentSource ?: return
+        val rate = sampleRate ?: return
+        val targetFrame = (positionMs * rate / MILLIS_PER_SECOND).coerceAtLeast(0L)
+        source.seek(targetFrame)
+        framesPlayed = targetFrame.toInt()
+        hatchet.d("Seek to ${positionMs}ms (frame $targetFrame).")
+    }
+
     private suspend fun loop() {
         try {
             var error: String?
@@ -148,7 +128,7 @@ abstract class Generator(
 
             while (true) {
                 // When track is over, block waiting for the next one.
-                if (nextTrackId == null && isTrackOver()) {
+                if (nextTrackId == null && currentSource?.isOver == true) {
                     eventSink.emit(GeneratorEvent.TrackChange)
                     nextTrackId = nextTrackIdChannel.receive()
                 } else {
@@ -166,55 +146,44 @@ abstract class Generator(
                     break
                 }
 
-                if (currentTrack == null) {
+                val source = currentSource
+                if (source == null || currentTrack == null) {
                     error = "No track loaded."
                     break
                 }
 
-                if (sampleRate == null) {
+                val rate = sampleRate
+                if (rate == null) {
                     error = "Invalid sample rate."
                     break
                 }
 
                 val bufferStartFrame = framesPlayed
 
-                // Generate the next buffer of audio..
                 val generatedAudio = bufferManager.getNextEmptyBuffer()
-                val startNs = System.nanoTime()
-                bufferStartNs = startNs
-                val framesGenerated = try {
-                    generateAudio(generatedAudio)
-                } finally {
-                    bufferStartNs = 0L
-                }
-                val elapsedNs = System.nanoTime() - startNs
+                val framesGenerated = source.readFrames(generatedAudio)
 
-                if (framesGenerated <= 0 && !isTrackOver()) {
-                    error = "Emulator returned $framesGenerated frames."
+                if (framesGenerated <= 0 && !source.isOver) {
+                    error = source.getLastError()
+                        ?: "Source returned $framesGenerated frames."
                     break
                 }
 
                 framesPlayed += framesGenerated
 
-                getDiagnostics()?.let { hatchet.w("Emulator diagnostics: $it") }
+                source.getDiagnostics()?.let { hatchet.w("Source diagnostics: $it") }
 
                 logSilenceTransition(generatedAudio, framesGenerated)
 
-                error = checkBufferRealTimeRatio(framesGenerated, elapsedNs)
-                if (error != null) {
-                    break
-                }
-
-                error = getLastError()
-
+                error = source.getLastError()
                 if (error != null) {
                     break
                 }
 
                 FadeProcessor.fadeIfNecessary(
                     generatedAudio,
-                    sampleRate!!,
-                    bufferStartFrame.framesToMillis(sampleRate!!),
+                    rate,
+                    bufferStartFrame.framesToMillis(rate),
                     currentTrack!!.trackLengthMs - LENGTH_FADE_MILLIS,
                     LENGTH_FADE_MILLIS
                 )
@@ -222,23 +191,18 @@ abstract class Generator(
                 bufferManager.sendAudioBuffer(
                     AudioBuffer(
                         currentTrack!!.id,
-                        sampleRate!!,
+                        rate,
                         generatedAudio
                     )
                 )
 
-                // Emit this buffer.
                 eventSink.emit(GeneratorEvent.Emitting)
 
-                // Check if this coroutine has been cancelled.
                 yield()
             }
 
-            // Report error, if it happened.
             if (error != null) {
-                eventSink.emit(
-                    GeneratorEvent.Error(error)
-                )
+                eventSink.emit(GeneratorEvent.Error(error))
             }
 
             teardownHelper()
@@ -257,10 +221,14 @@ abstract class Generator(
 
         eventSink.emit(GeneratorEvent.Loading(trackId))
 
-        if (currentTrack != null) {
-            teardown()
+        if (currentSource != null) {
+            try {
+                currentSource?.close()
+            } catch (t: Throwable) {
+                hatchet.w("Error closing previous source: ${t.message}")
+            }
+            currentSource = null
             framesPlayed = 0
-            consecutiveSlowBuffers = 0
         }
 
         val newTrack = repository.getTrack(trackId) ?: return "Failed to load track."
@@ -270,87 +238,33 @@ abstract class Generator(
             ?: return "Failed to read bytes for ${newTrack.title}."
 
         currentTrack = newTrack
-        loadTrack(newTrack, bytes)
+        val pcmSource = pcmSourceFactory.open(newTrack, bytes)
+        currentSource = pcmSource
 
-        sampleRate = getEmulatorSampleRate()
-        bufferManager.setSampleRate(sampleRate!!)
+        sampleRate = pcmSource.sampleRate
+        bufferManager.setSampleRate(pcmSource.sampleRate)
 
-        return getLastError()
+        return pcmSource.getLastError()
     }
 
     private fun teardownHelper() {
         hatchet.d("Tearing down track ${currentTrack?.title}...")
-        teardown()
+        val source = currentSource
+        currentSource = null
+        if (source != null) {
+            generatorScope.launch {
+                try {
+                    source.close()
+                } catch (t: Throwable) {
+                    hatchet.w("Error closing PCM source: ${t.message}")
+                }
+            }
+        }
         currentTrack = null
         ongoingGenerationJob = null
         framesPlayed = 0
         lastSilenceState = null
         lastSilenceTrackId = null
-        consecutiveSlowBuffers = 0
-        bufferStartNs = 0L
-    }
-
-    /**
-     * Compares wall-clock time against audio time for the most recent buffer. Returns a non-null
-     * error message after [WATCHDOG_CONSECUTIVE_SLOW_LIMIT] consecutive buffers have run slower
-     * than [WATCHDOG_RATIO_THRESHOLD] of real-time, indicating the emulator is stuck in a runaway
-     * loop that produces samples but can't keep up with playback.
-     */
-    private fun checkBufferRealTimeRatio(framesGenerated: Int, elapsedNs: Long): String? {
-        val rate = sampleRate ?: return null
-        if (framesGenerated <= 0 || rate <= 0 || elapsedNs <= 0L) {
-            return null
-        }
-        val elapsedMs = elapsedNs / 1_000_000.0
-        val expectedMs = framesGenerated * 1000.0 / rate
-        if (expectedMs <= 0.0) {
-            return null
-        }
-        val ratio = elapsedMs / expectedMs
-        if (ratio < WATCHDOG_RATIO_THRESHOLD) {
-            consecutiveSlowBuffers = 0
-            return null
-        }
-        consecutiveSlowBuffers++
-        hatchet.w(
-            "Slow buffer: ${elapsedMs.toInt()}ms wall for ${expectedMs.toInt()}ms audio " +
-                "(${"%.1f".format(ratio)}x real-time); consecutive=$consecutiveSlowBuffers"
-        )
-        if (consecutiveSlowBuffers >= WATCHDOG_CONSECUTIVE_SLOW_LIMIT) {
-            return "Generator running too slow: $consecutiveSlowBuffers consecutive buffers " +
-                "exceeded ${WATCHDOG_RATIO_THRESHOLD}x real-time (last ${"%.1f".format(ratio)}x, " +
-                "${elapsedMs.toInt()}ms)."
-        }
-        return null
-    }
-
-    /**
-     * Side-channel observer for the current [generateAudio] call. Cannot interrupt synchronous
-     * JNI work, but logs a warning when a single buffer has been generating for longer than
-     * [WATCHDOG_STALL_WARN_THRESHOLD_MS] so a stuck native emulator is visible in logs without
-     * needing the call to return first.
-     */
-    private suspend fun runStallWatchdog() {
-        var lastWarnedAtNs = 0L
-        while (true) {
-            delay(WATCHDOG_STALL_POLL_INTERVAL_MS)
-            val startedAt = bufferStartNs
-            if (startedAt == 0L) {
-                lastWarnedAtNs = 0L
-                continue
-            }
-            val now = System.nanoTime()
-            val elapsedMs = (now - startedAt) / 1_000_000L
-            if (elapsedMs >= WATCHDOG_STALL_WARN_THRESHOLD_MS &&
-                (now - lastWarnedAtNs) / 1_000_000L >= WATCHDOG_STALL_POLL_INTERVAL_MS
-            ) {
-                hatchet.w(
-                    "Generator stalled in generateAudio for ${elapsedMs}ms " +
-                        "(track=${currentTrack?.title})"
-                )
-                lastWarnedAtNs = now
-            }
-        }
     }
 
     private fun logSilenceTransition(buffer: ShortArray, framesGenerated: Int) {
@@ -370,16 +284,8 @@ abstract class Generator(
         lastSilenceTrackId = track.id
     }
 
-    private fun ShortArray.clear() {
-        forEachIndexed { index, _ -> set(index, 0) }
-    }
-
     companion object {
         private const val LENGTH_FADE_MILLIS = 6_000.0
-
-        private const val WATCHDOG_RATIO_THRESHOLD = 5.0
-        private const val WATCHDOG_CONSECUTIVE_SLOW_LIMIT = 3
-        private const val WATCHDOG_STALL_POLL_INTERVAL_MS = 2_000L
-        private const val WATCHDOG_STALL_WARN_THRESHOLD_MS = 5_000L
+        private const val MILLIS_PER_SECOND = 1_000L
     }
 }
