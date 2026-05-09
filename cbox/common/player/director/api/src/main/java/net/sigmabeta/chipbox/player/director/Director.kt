@@ -33,6 +33,13 @@ interface Director {
     /** Tear down both speaker and generator. The session is effectively over. */
     fun stop()
 
+    /**
+     * Reposition playback within the current track. Free for tracks served from the PCM cache
+     * (instant cursor move); briefly buffers when seeking past the writer's watermark for
+     * tracks still being rendered.
+     */
+    fun seek(positionMs: Long)
+
     // State Updates
 
     /** Hot stream of the currently-playing [Track], emitted whenever the active track changes. */

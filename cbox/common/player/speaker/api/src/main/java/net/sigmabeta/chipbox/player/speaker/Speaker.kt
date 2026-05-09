@@ -75,6 +75,24 @@ abstract class Speaker(
      *  [stop] after the consume loop is cancelled. */
     abstract fun teardown()
 
+    /** Discard any audio buffered inside the sink itself (e.g. AudioTrack's hardware buffer)
+     *  so a seek isn't preceded by stale frames already on the way to the speaker. Subclasses
+     *  that don't buffer downstream audio (test/debug sinks) should leave this as a no-op. */
+    open fun flushSink() = Unit
+
+    /**
+     * Cancel the consume loop, drain queued buffers, flush the sink, and restart consumption.
+     * Used by the director during seek so the next buffer the consumer sees is from the
+     * post-seek position. Pre-seek audio that was already in flight is discarded.
+     */
+    suspend fun seek() {
+        ongoingPlaybackJob?.cancelAndJoin()
+        ongoingPlaybackJob = null
+        bufferManager.drain()
+        flushSink()
+        startPlayback()
+    }
+
     protected fun emitError(error: String) {
         eventSink.tryEmit(
             SpeakerEvent.Error(error)
