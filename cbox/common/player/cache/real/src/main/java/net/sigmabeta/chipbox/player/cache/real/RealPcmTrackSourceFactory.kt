@@ -17,9 +17,10 @@ import java.io.File
  * deliberately the only place where cache identity is decided, so changes to chain-file
  * resolution stay in lockstep with cache invalidation.
  *
- * Owns input staging: native emulators expect a real filesystem path, so source bytes plus
- * any chain files are written into a per-track directory under [stagingDir] before the
- * emulator is constructed. The directory is cleaned up when the source closes.
+ * Stages input via [stageTrack] (shared with [UncachedPcmTrackSourceFactory]): native emulators
+ * expect a real filesystem path, so source bytes plus any chain files are written into a
+ * per-track directory under [stagingDir] before the emulator is constructed. The directory is
+ * cleaned up when the source closes.
  */
 class RealPcmTrackSourceFactory(
     private val emulators: List<Emulator>,
@@ -46,7 +47,14 @@ class RealPcmTrackSourceFactory(
         val sourceHash = hasher.hash(track, bytes)
 
         val stagingTrackDir = File(stagingDir, "track-${track.id}")
-        val stagedFile = stage(track, ext, bytes, stagingTrackDir)
+        val stagedFile = stageTrack(
+            track = track,
+            ext = ext,
+            mainBytes = bytes,
+            stagingTrackDir = stagingTrackDir,
+            contentSourceRegistry = contentSourceRegistry,
+            hatchet = hatchet,
+        )
 
         val emulatorSource = EmulatorPcmSource(
             emulator = emulator,
@@ -97,37 +105,4 @@ class RealPcmTrackSourceFactory(
         )
     }
 
-    private suspend fun stage(
-        track: Track,
-        ext: String,
-        mainBytes: ByteArray,
-        stagingTrackDir: File,
-    ): File {
-        val dir = stagingTrackDir.apply {
-            deleteRecursively()
-            mkdirs()
-        }
-        val mainFile = File(dir, "main.$ext").apply { writeBytes(mainBytes) }
-
-        if (track.chainFiles.isNotEmpty()) {
-            val source = contentSourceRegistry.get(track.source)
-            if (source == null) {
-                hatchet.w(
-                    "No content source '${track.source}' — chain files for track ${track.id} skipped."
-                )
-            } else {
-                for (chain in track.chainFiles) {
-                    val chainBytes = source.openBytes(chain.uri)
-                        ?: error("Failed to read chain file '${chain.filename}' for track ${track.id}.")
-                    File(dir, chain.filename).writeBytes(chainBytes)
-                    hatchet.v("Staged chain file ${chain.filename} (${chainBytes.size} bytes).")
-                }
-            }
-        }
-
-        hatchet.v(
-            "Staged track ${track.id} to ${mainFile.absolutePath} (+${track.chainFiles.size} chain file(s))."
-        )
-        return mainFile
-    }
 }
