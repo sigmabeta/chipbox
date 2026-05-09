@@ -4,5 +4,6 @@ plugins {
 
 dependencies {
     api(projects.cbox.common.player.speaker.api)
-    api(libs.sage.common.logging)
+
+    implementation(libs.sage.common.logging)
 }

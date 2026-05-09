@@ -9,6 +9,4 @@ android {
 dependencies {
     api(projects.cbox.common.repository.api)
     api(libs.sage.common.ui.strings)
-
-    implementation(libs.sage.common.logging)
 }
