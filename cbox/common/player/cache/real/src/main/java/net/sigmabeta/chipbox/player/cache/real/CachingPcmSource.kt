@@ -5,7 +5,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -70,12 +69,10 @@ internal class CachingPcmSource(
     private val readHandle: RandomAccessFile = RandomAccessFile(writer.tempPath, "r")
 
     private val writerJob: Job = writerScope.launch {
+        val startNanos = System.nanoTime()
         val scratch = ShortArray(WRITER_BUFFER_FRAMES * 2)
         try {
             while (true) {
-                while (writer.framesWritten - cursor > MAX_FRAMES_AHEAD) {
-                    delay(WRITER_THROTTLE_DELAY_MS)
-                }
                 val framesGenerated = emulatorSource.readFrames(scratch)
                 if (framesGenerated <= 0) {
                     if (emulatorSource.isTrackOver()) break
@@ -93,7 +90,7 @@ internal class CachingPcmSource(
                 writer.complete(track.id, track.trackLengthMs)
                 writerComplete = true
                 watermark.value = writer.framesWritten
-                hatchet.d("Cache write complete for track ${track.id}: ${writer.framesWritten} frames.")
+                logWriteComplete(startNanos)
                 runCatching { onWriteComplete() }.onFailure {
                     hatchet.w("onWriteComplete callback failed: ${it.message}")
                 }
@@ -157,6 +154,18 @@ internal class CachingPcmSource(
         cursor = framePosition.coerceAtLeast(0L)
     }
 
+    private fun logWriteComplete(startNanos: Long) {
+        val frames = writer.framesWritten
+        val wallSec = (System.nanoTime() - startNanos) / 1_000_000_000.0
+        val audioSec = if (sampleRate > 0) frames.toDouble() / sampleRate else 0.0
+        val ratio = if (wallSec > 0) audioSec / wallSec else 0.0
+        hatchet.i(
+            "Cache write complete for ${track.title}: $frames frames " +
+                "(${"%.1f".format(audioSec)}s audio) in ${"%.2f".format(wallSec)}s " +
+                "(${"%.1f".format(ratio)}x realtime)."
+        )
+    }
+
     override fun getLastError(): String? = lastError ?: writerError
 
     override fun getDiagnostics(): String? = emulatorSource.getDiagnostics()
@@ -187,11 +196,6 @@ internal class CachingPcmSource(
         /** ~93 ms @ 44.1 kHz; same shape as the existing buffer manager so writer throughput
          *  isn't bottlenecked by tiny native calls. */
         private const val WRITER_BUFFER_FRAMES = 4096
-
-        /** Don't run more than ~30 seconds @ 44.1 kHz ahead of the reader; bounds RAM/IO. */
-        private const val MAX_FRAMES_AHEAD = 1_323_000L
-
-        private const val WRITER_THROTTLE_DELAY_MS = 50L
 
         /** If the writer fails to produce a frame within this window, surface as an error. */
         private const val READ_WAIT_TIMEOUT_MS = 5_000L
