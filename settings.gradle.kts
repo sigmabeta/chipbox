@@ -77,7 +77,6 @@ include(
     ":cbox:android:player:emulators:twosf:api",
     ":cbox:android:player:emulators:twosf:di",
     ":cbox:android:player:emulators:twosf:real",
-    ":cbox:android:player:cache:di",
     ":cbox:android:player:generator:di",
     ":cbox:android:player:generator:real",
     ":cbox:android:player:speaker:di",

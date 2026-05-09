@@ -15,6 +15,7 @@ dependencies {
     api(projects.cbox.android.navigation.api)
 
     implementation(projects.cbox.android.components.api)
+    implementation(projects.cbox.android.contentsource.file.real)
     implementation(projects.cbox.android.drawables.api)
     implementation(projects.cbox.android.services.api)
     implementation(projects.cbox.android.strings.api)
@@ -32,7 +33,4 @@ dependencies {
     implementation("androidx.compose.runtime:runtime-livedata:1.4.3")
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.hilt.navigation.compose)
-
-    // Just for now!!
-    implementation(projects.cbox.android.contentsource.file.di)
 }

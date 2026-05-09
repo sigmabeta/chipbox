@@ -50,9 +50,16 @@ dependencies {
     implementation(projects.cbox.android.database.all)
     implementation(projects.cbox.android.database.di)
     implementation(projects.cbox.android.services.api)
+    implementation(projects.cbox.android.contentsource.file.di)
     implementation(projects.cbox.common.player.buffer.di)
     implementation(projects.cbox.common.player.director.di)
+    implementation(projects.cbox.common.player.emulators.di)
     implementation(projects.cbox.android.player.emulators.di)
+    implementation(projects.cbox.android.player.emulators.gba.di)
+    implementation(projects.cbox.android.player.emulators.gme.di)
+    implementation(projects.cbox.android.player.emulators.psf.di)
+    implementation(projects.cbox.android.player.emulators.ssf.di)
+    implementation(projects.cbox.android.player.emulators.twosf.di)
     implementation(projects.cbox.android.player.generator.di)
     implementation(projects.cbox.android.player.speaker.di)
     implementation(projects.cbox.common.player.status.di)
@@ -86,6 +93,4 @@ dependencies {
 
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
-
-    implementation(libs.kotlinx.collections.immutable)
 }
