@@ -162,13 +162,14 @@ private fun EmptyListIndicator(
 
 @Composable
 private fun DebugText(debugText: String, color: Color) {
+    val baseStyle = MaterialTheme.typography.bodySmall
+    val style = remember(baseStyle) {
+        baseStyle.copy(fontSize = 10.sp, fontFamily = FontFamily.Monospace)
+    }
     Text(
         text = debugText,
         textAlign = TextAlign.Center,
-        style = MaterialTheme.typography.bodySmall.copy(
-            fontSize = 10.sp,
-            fontFamily = FontFamily.Monospace
-        ),
+        style = style,
         color = color,
         modifier = Modifier
             .padding(horizontal = 32.dp)
@@ -180,13 +181,14 @@ private fun DebugText(debugText: String, color: Color) {
 @Composable
 @Suppress("MagicNumber")
 private fun DebugTextSmall(debugText: String, color: Color) {
+    val baseStyle = MaterialTheme.typography.bodySmall
+    val style = remember(baseStyle) {
+        baseStyle.copy(fontSize = 6.sp, fontFamily = FontFamily.Monospace)
+    }
     Text(
         text = debugText,
         textAlign = TextAlign.Center,
-        style = MaterialTheme.typography.bodySmall.copy(
-            fontSize = 6.sp,
-            fontFamily = FontFamily.Monospace
-        ),
+        style = style,
         color = color,
         modifier = Modifier
             .padding(horizontal = 32.dp)

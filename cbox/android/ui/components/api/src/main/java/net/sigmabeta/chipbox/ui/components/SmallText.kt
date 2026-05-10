@@ -36,7 +36,6 @@ fun SmallText(
     modifier: Modifier,
     padding: PaddingValues,
 ) {
-    val shape = RoundedCornerShape(8.dp)
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -45,25 +44,25 @@ fun SmallText(
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outline,
-                shape = shape
+                shape = SmallTextShape
             )
-            .clip(shape)
+            .clip(SmallTextShape)
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .clickable { actionSink.sendAction(model.clickAction) }
             .padding(horizontal = 16.dp)
             .padding(vertical = 8.dp),
     ) {
-        val color = MaterialTheme.colorScheme.onSurfaceVariant
-
         Text(
             text = model.name,
             style = MaterialTheme.typography.labelLarge,
-            color = color,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
     }
 }
+
+private val SmallTextShape = RoundedCornerShape(8.dp)
 
 @Preview
 @Composable

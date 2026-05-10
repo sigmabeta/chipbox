@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.DeviceFontFamilyName
@@ -26,20 +27,18 @@ fun SubsectionHeader(
     model: SubsectionHeaderListModel,
     modifier: Modifier,
 ) {
+    val title = remember(model.title) { model.title.uppercase() }
+    val baseStyle = MaterialTheme.typography.bodyMedium
+    val style = remember(baseStyle) { baseStyle.copy(fontFamily = SubsectionHeaderFontFamily) }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
     ) {
-        val color = MaterialTheme.colorScheme.onPrimaryContainer
-
         Text(
-            text = model.title.uppercase(),
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontFamily = FontFamily(
-                    Font(DeviceFontFamilyName("sans-serif-condensed")),
-                )
-            ),
-            color = color,
+            text = title,
+            style = style,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
@@ -51,6 +50,11 @@ fun SubsectionHeader(
         )
     }
 }
+
+@OptIn(ExperimentalTextApi::class)
+private val SubsectionHeaderFontFamily = FontFamily(
+    Font(DeviceFontFamilyName("sans-serif-condensed")),
+)
 
 @Preview
 @Composable

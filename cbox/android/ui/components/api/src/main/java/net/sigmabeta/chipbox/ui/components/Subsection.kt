@@ -44,7 +44,7 @@ fun Subsection(
         modifier = modifier
             .padding(8.dp)
             .wrapContentHeight()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(SubsectionShape)
             .background(MaterialTheme.colorScheme.primaryContainer)
             .padding(8.dp)
     ) {
@@ -80,6 +80,8 @@ fun Subsection(
         }
     }
 }
+
+private val SubsectionShape = RoundedCornerShape(16.dp)
 
 @Preview
 @Composable
