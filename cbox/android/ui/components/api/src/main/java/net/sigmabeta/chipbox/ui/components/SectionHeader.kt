@@ -42,7 +42,7 @@ fun SectionHeader(
                 .border(
                     width = 2.dp,
                     color = color,
-                    shape = RoundedCornerShape(4.dp)
+                    shape = SectionHeaderShape
                 )
                 .padding(horizontal = 8.dp)
                 .semantics {
@@ -51,6 +51,8 @@ fun SectionHeader(
         )
     }
 }
+
+private val SectionHeaderShape = RoundedCornerShape(4.dp)
 
 @Preview
 @Composable

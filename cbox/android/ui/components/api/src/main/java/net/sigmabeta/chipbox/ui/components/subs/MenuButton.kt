@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -21,13 +22,13 @@ fun MenuButton(
     iconId: Int,
     modifier: Modifier = Modifier
 ) {
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
+    val border = remember(onPrimary) { BorderStroke(width = 1.dp, color = onPrimary) }
+
     OutlinedButton(
         onClick = onClick,
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.onPrimary
-        ),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onPrimary),
+        border = border,
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = onPrimary),
         modifier = modifier
     ) {
         Icon(

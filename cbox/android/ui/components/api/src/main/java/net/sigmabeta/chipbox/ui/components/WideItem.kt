@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,7 +44,7 @@ fun WideItem(
     modifier: Modifier,
     padding: PaddingValues,
 ) {
-    val shape = RoundedCornerShape(8.dp)
+    val sourceInfo = remember(model.sourceInfo) { SourceInfo(model.sourceInfo) }
 
     val commonModifier = modifier
         .padding(padding)
@@ -54,10 +55,10 @@ fun WideItem(
     val actualModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
         commonModifier.shadow(
             elevation = 4.dp,
-            shape = shape
+            shape = WideItemShape
         )
     } else {
-        commonModifier.clip(shape)
+        commonModifier.clip(WideItemShape)
     }
 
     Row(
@@ -66,7 +67,7 @@ fun WideItem(
             .background(MaterialTheme.colorScheme.surfaceContainer)
     ) {
         CrossfadeImage(
-            sourceInfo = SourceInfo(model.sourceInfo),
+            sourceInfo = sourceInfo,
             imagePlaceholder = model.imagePlaceholder,
             contentDescription = null,
             modifier = Modifier
@@ -87,6 +88,8 @@ fun WideItem(
         )
     }
 }
+
+private val WideItemShape = RoundedCornerShape(8.dp)
 
 @Preview
 @Composable

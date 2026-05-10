@@ -40,7 +40,7 @@ fun Dropdown(
             .border(
                 width = 2.dp,
                 color = MaterialTheme.colorScheme.tertiary,
-                shape = RoundedCornerShape(8.dp)
+                shape = DropdownShape
             )
     ) {
         if (expanded) {
@@ -72,6 +72,8 @@ fun Dropdown(
         )
     }
 }
+
+private val DropdownShape = RoundedCornerShape(8.dp)
 
 @Composable
 private fun DropdownItem(
