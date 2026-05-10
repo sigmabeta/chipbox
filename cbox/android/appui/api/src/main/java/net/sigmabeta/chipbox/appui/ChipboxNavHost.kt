@@ -5,9 +5,9 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import net.sigmabeta.chipbox.appui.screens.LibraryScreen
 import net.sigmabeta.chipbox.appui.screens.SearchScreen
 import net.sigmabeta.chipbox.appui.screens.SettingsScreen
+import net.sigmabeta.chipbox.features.library.LibraryRoute
 
 @Composable
 fun ChipboxNavHost(navController: NavHostController, modifier: Modifier = Modifier) {
@@ -16,7 +16,7 @@ fun ChipboxNavHost(navController: NavHostController, modifier: Modifier = Modifi
         startDestination = Library,
         modifier = modifier,
     ) {
-        composable<Library> { LibraryScreen() }
+        composable<Library> { LibraryRoute() }
         composable<Search> { SearchScreen() }
         composable<Settings> { SettingsScreen() }
     }

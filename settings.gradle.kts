@@ -95,8 +95,10 @@ include(
     ":cbox:android:styles:api",
     ":cbox:android:ui:components:api",
     ":cbox:android:ui:fonts:api",
+    ":cbox:android:ui:list:api",
     ":cbox:android:ui:theme:api",
 
+    ":cbox:common:appcomm:api",
     ":cbox:common:contentsource:api",
     ":cbox:common:entities:api",
     ":cbox:common:models:api",
@@ -140,6 +142,7 @@ include(
     ":features:artist-detail",
     ":features:games",
     ":features:game-detail",
+    ":features:library",
 )
 
 // 2sf starts with a digit — map to a valid project name

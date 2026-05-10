@@ -1,0 +1,17 @@
+plugins {
+    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.compose.android)
+    alias(libs.plugins.sage.di.android)
+}
+
+android {
+    namespace = "net.sigmabeta.chipbox.features.library"
+}
+
+dependencies {
+    implementation(projects.cbox.android.ui.list.api)
+    implementation(projects.cbox.common.appcomm.api)
+    implementation(projects.cbox.common.strings.api)
+
+    implementation(libs.androidx.hilt.navigation.compose)
+}
