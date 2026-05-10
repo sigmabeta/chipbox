@@ -22,6 +22,8 @@ dependencies {
     implementation(projects.features.browseByArtist.real)
     implementation(projects.features.browseByGame.api)
     implementation(projects.features.browseByGame.real)
+    implementation(projects.features.gameDetail.api)
+    implementation(projects.features.gameDetail.real)
 
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.compose.material3.adaptive.navigation)

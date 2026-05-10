@@ -148,6 +148,8 @@ include(
     ":features:browse-by-game:real",
     ":features:games",
     ":features:game-detail",
+    ":features:game-detail:api",
+    ":features:game-detail:real",
     ":features:library:api",
     ":features:library:real",
 )
