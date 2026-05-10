@@ -2,11 +2,13 @@ package net.sigmabeta.chipbox.ui.list
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import net.sigmabeta.chipbox.appcomm.ChipboxNavEvent
 import net.sigmabeta.chipbox.ui.components.Content
 import net.sigmabeta.sage.android.ui.list.GridScreen
 import net.sigmabeta.sage.android.ui.list.ListScreen
@@ -18,8 +20,13 @@ import net.sigmabeta.sage.list.WidthClass
 @Composable
 fun ChipboxListEntry(
     viewModel: ChipboxListViewModel<*>,
+    onNavEvent: (ChipboxNavEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    LaunchedEffect(viewModel) {
+        viewModel.navEvents.collect(onNavEvent)
+    }
+
     val state by viewModel.uiStateActual.collectAsStateWithLifecycle()
     val showDebug by viewModel.showDebug.collectAsStateWithLifecycle()
 

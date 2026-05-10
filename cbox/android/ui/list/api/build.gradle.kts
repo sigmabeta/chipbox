@@ -12,6 +12,7 @@ dependencies {
     api(libs.sage.common.appcomm)
     api(libs.sage.common.ui.strings)
     api(libs.sage.common.ui.components)
+    api(projects.cbox.common.appcomm.api)
 
     implementation(libs.sage.android.ui.list)
     implementation(projects.cbox.android.ui.components.api)
