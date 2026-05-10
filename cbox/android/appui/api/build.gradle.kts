@@ -12,6 +12,7 @@ android {
 dependencies {
     implementation(projects.cbox.android.ui.theme.api)
     implementation(projects.cbox.common.strings.api)
+    implementation(projects.features.library)
 
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.compose.material3.adaptive.navigation)

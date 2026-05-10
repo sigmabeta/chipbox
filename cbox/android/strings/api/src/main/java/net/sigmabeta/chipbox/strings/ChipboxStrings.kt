@@ -12,4 +12,7 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.APPUI_TAB_LIBRARY      -> R.string.appui_tab_library
     ChipboxStringId.APPUI_TAB_SEARCH       -> R.string.appui_tab_search
     ChipboxStringId.APPUI_TAB_SETTINGS     -> R.string.appui_tab_settings
+    ChipboxStringId.LIBRARY_BROWSE_BY_GAME    -> R.string.library_browse_by_game
+    ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST  -> R.string.library_browse_by_artist
+    ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS -> R.string.library_browse_all_tracks
 }
