@@ -24,6 +24,13 @@ android {
         getByName("release") {
             isMinifyEnabled = false
         }
+        create("benchmark") {
+            initWith(getByName("release"))
+            isDebuggable = false
+            isProfileable = true
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
     }
 
     compileOptions {
@@ -90,6 +97,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtimeCompose)
+    implementation(libs.androidx.compose.runtime.tracing)
 
     implementation(libs.hilt)
     ksp(libs.hilt.compiler)
