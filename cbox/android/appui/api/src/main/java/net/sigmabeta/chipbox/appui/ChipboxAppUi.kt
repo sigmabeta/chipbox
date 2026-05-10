@@ -9,11 +9,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScope
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -22,6 +25,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import net.sigmabeta.chipbox.ui.theme.AppTheme
 import net.sigmabeta.sage.ui.StringProvider
+
+private val NAV_RAIL_MIN_WIDTH = 480.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,8 +42,16 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
         val topAppBarState = rememberTopAppBarState()
         val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(topAppBarState)
 
+        val widthDp = LocalConfiguration.current.screenWidthDp.dp
+        val layoutType = if (widthDp >= NAV_RAIL_MIN_WIDTH) {
+            NavigationSuiteType.NavigationRail
+        } else {
+            NavigationSuiteType.NavigationBar
+        }
+
         NavigationSuiteScaffold(
             navigationSuiteItems = navItems(stringProvider, current, navController),
+            layoutType = layoutType,
             modifier = modifier,
         ) {
             Scaffold(

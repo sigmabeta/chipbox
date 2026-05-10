@@ -18,7 +18,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
-import net.sigmabeta.chipbox.ui.theme.tokens.toFontFamily
 
 // Gaius Van Baelsar — The Praetorium, FFXIV: A Realm Reborn
 private const val GAIUS_SPEECH = """Hmph! How very glib. And do you believe in Eorzea? Eorzea's unity is forged of falsehoods. Its city-states are built on deceit. And its faith is an instrument of deception.
@@ -31,8 +30,7 @@ private class ChipboxFontProvider : PreviewParameterProvider<ChipboxFont> {
 
 @Composable
 private fun FontPreviewContent(font: ChipboxFont) {
-    val fontFamily = font.toFontFamily()
-    AppTheme(brandFont = fontFamily, plainFont = fontFamily, fontScale = font.scaleFactor) {
+    AppTheme(brand = font, plain = font) {
         Surface {
             Column(
                 modifier = Modifier

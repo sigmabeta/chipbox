@@ -9,26 +9,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
 import net.sigmabeta.chipbox.ui.theme.tokens.ChipboxTypefaceTokens
-import net.sigmabeta.chipbox.ui.theme.tokens.toFontFamily
 
 @Composable
 private fun FontPreviewContent() {
     val fonts = ChipboxFont.entries
 
-    fonts
     AppTheme {
         Surface {
             Column(
@@ -38,11 +32,8 @@ private fun FontPreviewContent() {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                FontSample(null, null)
-                fonts.forEach {
-                    val fontFamily = it.toFontFamily()
-                    FontSample(fontFamily, it)
-                }
+                FontSample(null)
+                fonts.forEach { FontSample(it) }
             }
         }
     }
@@ -52,7 +43,6 @@ private fun FontPreviewContent() {
 private fun FontPreviewContentStaticText() {
     val fonts = ChipboxFont.entries
 
-    fonts
     AppTheme {
         Surface {
             Column(
@@ -63,23 +53,17 @@ private fun FontPreviewContentStaticText() {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FontSampleStaticText(null)
-                fonts.forEach {
-                    val fontFamily = it.toFontFamily()
-                    FontSampleStaticText(fontFamily, it.scaleFactor)
-                }
+                fonts.forEach { FontSampleStaticText(it) }
             }
         }
     }
 }
 
 @Composable
-private fun FontSample(
-    fontFamily: FontFamily?,
-    font: ChipboxFont?,
-) {
-    val brandFont = fontFamily ?: ChipboxTypefaceTokens.Brand
-    val plainFont = fontFamily ?: ChipboxTypefaceTokens.Plain
-    AppTheme(brandFont = brandFont, plainFont = plainFont, fontScale = font?.scaleFactor ?: 1.0f) {
+private fun FontSample(font: ChipboxFont?) {
+    val brand = font ?: ChipboxTypefaceTokens.Brand
+    val plain = font ?: ChipboxTypefaceTokens.Plain
+    AppTheme(brand = brand, plain = plain) {
         Text(
             text = font?.fontName ?: "Default Material",
             style = MaterialTheme.typography.titleLarge,
@@ -89,19 +73,14 @@ private fun FontSample(
             style = MaterialTheme.typography.bodyMedium,
         )
     }
-    Spacer(
-        modifier = Modifier.height(4.dp)
-    )
+    Spacer(modifier = Modifier.height(4.dp))
 }
 
 @Composable
-private fun FontSampleStaticText(
-    fontFamily: FontFamily?,
-    scaleFactor: Float = 1.0f,
-) {
-    val brandFont = fontFamily ?: ChipboxTypefaceTokens.Brand
-    val plainFont = fontFamily ?: ChipboxTypefaceTokens.Plain
-    AppTheme(brandFont = brandFont, plainFont = plainFont, fontScale = scaleFactor) {
+private fun FontSampleStaticText(font: ChipboxFont?) {
+    val brand = font ?: ChipboxTypefaceTokens.Brand
+    val plain = font ?: ChipboxTypefaceTokens.Plain
+    AppTheme(brand = brand, plain = plain) {
         Text(
             text = "Lorem Ipsum Tertium Est",
             style = MaterialTheme.typography.titleLarge,
@@ -111,9 +90,7 @@ private fun FontSampleStaticText(
             style = MaterialTheme.typography.bodyMedium,
         )
     }
-    Spacer(
-        modifier = Modifier.height(4.dp)
-    )
+    Spacer(modifier = Modifier.height(4.dp))
 }
 
 @Preview(name = "Light", showBackground = true, widthDp = 400)
