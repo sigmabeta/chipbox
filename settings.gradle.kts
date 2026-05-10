@@ -37,6 +37,7 @@ rootProject.name = "Chipbox"
 include(
     // SAGE-aware modules
     ":app",
+    ":benchmark",
 
     ":cbox:android:activities:api",
     ":cbox:android:appui:api",
