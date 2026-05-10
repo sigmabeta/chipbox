@@ -15,12 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -36,13 +35,14 @@ import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 
 @Composable
-@Suppress("MagicNumber")
 fun SquareItem(
     model: SquareItemListModel,
     actionSink: ActionSink,
     modifier: Modifier,
     padding: PaddingValues,
 ) {
+    val sourceInfo = remember(model.sourceInfo) { SourceInfo(model.sourceInfo) }
+
     ElevatedRoundRect(
         modifier = modifier
             .padding(paddingValues = padding)
@@ -52,11 +52,10 @@ fun SquareItem(
     ) {
         Box {
             CrossfadeImage(
-                sourceInfo = SourceInfo(model.sourceInfo),
+                sourceInfo = sourceInfo,
                 imagePlaceholder = model.imagePlaceholder,
                 contentDescription = model.name,
-                modifier = Modifier
-                    .fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
 
             Text(
@@ -64,31 +63,29 @@ fun SquareItem(
                 color = Color.White,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    shadow = Shadow(
-                        color = Color.Black,
-                        offset = Offset(4f, 4f),
-                        blurRadius = 8f
-                    )
-                ),
+                style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0, 0, 0, 0),
-                                Color(0, 0, 0, 160),
-                                Color(0, 0, 0, 255),
-                            )
-                        )
-                    )
-                    .padding(8.dp)
-                    .padding(top = 8.dp) // For extra scrim
+                    .background(brush = NameScrim)
+                    .padding(NameInnerPadding)
+                    .padding(top = NameExtraTopPadding), // For extra scrim
             )
         }
     }
 }
+
+@Suppress("MagicNumber")
+private val NameScrim = Brush.verticalGradient(
+    colors = listOf(
+        Color(0, 0, 0, 0),
+        Color(0, 0, 0, 160),
+        Color(0, 0, 0, 255),
+    ),
+)
+
+private val NameInnerPadding = 8.dp
+private val NameExtraTopPadding = 8.dp
 
 @Preview
 @Composable
