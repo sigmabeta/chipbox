@@ -2,13 +2,18 @@ package net.sigmabeta.chipbox.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import net.sigmabeta.chipbox.appcomm.ChipboxNavEvent
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.list.ListState
@@ -72,6 +77,27 @@ abstract class ChipboxListViewModel<S : ListState>(
      * in `ErrorStateListModel`). Always false today; will be wired to a debug setting later.
      */
     val showDebug: StateFlow<Boolean> = _showDebug.asStateFlow()
+
+    private val _navEvents = MutableSharedFlow<ChipboxNavEvent>(
+        replay = 0,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+
+    /**
+     * One-shot navigation effects produced by this view model. Collected by [ChipboxListEntry],
+     * which forwards each event to the host's `onNavEvent` lambda (see
+     * [net.sigmabeta.chipbox.ui.list.ChipboxListEntry]).
+     */
+    val navEvents: SharedFlow<ChipboxNavEvent> = _navEvents.asSharedFlow()
+
+    /**
+     * Emit a one-shot navigation effect. Subclasses call this from [handleAction] instead of
+     * touching a `NavController` directly, keeping the view model framework-free.
+     */
+    protected fun emit(event: ChipboxNavEvent) {
+        _navEvents.tryEmit(event)
+    }
 
     /**
      * Apply [updater] to the current state and publish the result. The lambda runs synchronously

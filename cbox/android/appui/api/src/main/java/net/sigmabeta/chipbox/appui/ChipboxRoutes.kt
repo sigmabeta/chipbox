@@ -7,10 +7,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlin.reflect.KClass
 import kotlinx.serialization.Serializable
+import net.sigmabeta.chipbox.features.library.Library
 import net.sigmabeta.chipbox.strings.ChipboxStringId
-
-@Serializable
-data object Library
 
 @Serializable
 data object Search

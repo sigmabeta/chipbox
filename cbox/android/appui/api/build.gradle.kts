@@ -11,8 +11,17 @@ android {
 
 dependencies {
     implementation(projects.cbox.android.ui.theme.api)
+    implementation(projects.cbox.common.appcomm.api)
     implementation(projects.cbox.common.strings.api)
-    implementation(projects.features.library)
+
+    implementation(projects.features.library.api)
+    implementation(projects.features.library.real)
+    implementation(projects.features.browseAllTracks.api)
+    implementation(projects.features.browseAllTracks.real)
+    implementation(projects.features.browseByArtist.api)
+    implementation(projects.features.browseByArtist.real)
+    implementation(projects.features.browseByGame.api)
+    implementation(projects.features.browseByGame.real)
 
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.compose.material3.adaptive.navigation)

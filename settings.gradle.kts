@@ -140,9 +140,16 @@ include(
 
     ":features:artists",
     ":features:artist-detail",
+    ":features:browse-all-tracks:api",
+    ":features:browse-all-tracks:real",
+    ":features:browse-by-artist:api",
+    ":features:browse-by-artist:real",
+    ":features:browse-by-game:api",
+    ":features:browse-by-game:real",
     ":features:games",
     ":features:game-detail",
-    ":features:library",
+    ":features:library:api",
+    ":features:library:real",
 )
 
 // 2sf starts with a digit — map to a valid project name
