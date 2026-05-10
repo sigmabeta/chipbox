@@ -9,4 +9,7 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.ACCY_ST_DESC_CHECKED   -> R.string.accy_st_desc_checked
     ChipboxStringId.ACCY_ST_DESC_LOADING   -> R.string.accy_st_desc_loading
     ChipboxStringId.ACCY_ST_DESC_UNCHECKED -> R.string.accy_st_desc_unchecked
+    ChipboxStringId.APPUI_TAB_LIBRARY      -> R.string.appui_tab_library
+    ChipboxStringId.APPUI_TAB_SEARCH       -> R.string.appui_tab_search
+    ChipboxStringId.APPUI_TAB_SETTINGS     -> R.string.appui_tab_settings
 }

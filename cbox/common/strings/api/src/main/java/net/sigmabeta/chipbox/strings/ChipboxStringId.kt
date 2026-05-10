@@ -11,4 +11,7 @@ enum class ChipboxStringId : SageStringId {
     ACCY_ST_DESC_CHECKED,
     ACCY_ST_DESC_LOADING,
     ACCY_ST_DESC_UNCHECKED,
+    APPUI_TAB_LIBRARY,
+    APPUI_TAB_SEARCH,
+    APPUI_TAB_SETTINGS,
 }

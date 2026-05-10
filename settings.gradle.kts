@@ -38,9 +38,8 @@ include(
     // SAGE-aware modules
     ":app",
 
-    ":features:welcome",
-
     ":cbox:android:activities:api",
+    ":cbox:android:appui:api",
     ":cbox:android:artworkprovider:api",
     ":cbox:android:colors:api",
     ":cbox:android:components:api",
