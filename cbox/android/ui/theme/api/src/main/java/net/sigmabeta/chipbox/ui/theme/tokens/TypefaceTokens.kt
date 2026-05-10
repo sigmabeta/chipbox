@@ -1,11 +1,11 @@
 package net.sigmabeta.chipbox.ui.theme.tokens
 
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
 
 internal object ChipboxTypefaceTokens {
-    val Brand = FontFamily.SansSerif
-    val Plain = FontFamily.SansSerif
+    val Brand: ChipboxFont = ChipboxFont.PORCUPINE
+    val Plain: ChipboxFont = ChipboxFont.PLANETARY
     val WeightBold = FontWeight.Bold
     val WeightMedium = FontWeight.Medium
     val WeightRegular = FontWeight.Normal
