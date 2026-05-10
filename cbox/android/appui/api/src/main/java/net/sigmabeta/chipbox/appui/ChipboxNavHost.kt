@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import net.sigmabeta.chipbox.appcomm.ChipboxNavEvent
 import net.sigmabeta.chipbox.appui.screens.SearchScreen
 import net.sigmabeta.chipbox.appui.screens.SettingsScreen
@@ -14,6 +15,8 @@ import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtist
 import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtistRoute
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGameRoute
+import net.sigmabeta.chipbox.features.gamedetail.GameDetail
+import net.sigmabeta.chipbox.features.gamedetail.GameDetailRoute
 import net.sigmabeta.chipbox.features.library.Library
 import net.sigmabeta.chipbox.features.library.LibraryRoute
 
@@ -34,8 +37,12 @@ fun ChipboxNavHost(navController: NavHostController, modifier: Modifier = Modifi
         composable<Library> { LibraryRoute(onNavEvent) }
         composable<Search> { SearchScreen() }
         composable<Settings> { SettingsScreen() }
-        composable<BrowseByGame> { BrowseByGameRoute() }
+        composable<BrowseByGame> { BrowseByGameRoute(onNavEvent) }
         composable<BrowseByArtist> { BrowseByArtistRoute() }
         composable<BrowseAllTracks> { BrowseAllTracksRoute() }
+        composable<GameDetail> { entry ->
+            val args = entry.toRoute<GameDetail>()
+            GameDetailRoute(id = args.id)
+        }
     }
 }
