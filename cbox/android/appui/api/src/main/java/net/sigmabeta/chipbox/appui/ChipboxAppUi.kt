@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.appui
 
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Box
@@ -25,13 +26,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.playerstatus.PlayerStatusAnimDurationMs
+import net.sigmabeta.chipbox.playerstatus.PlayerStatusReservedHeight
+import net.sigmabeta.sage.android.ui.list.LocalListBottomInset
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -98,6 +104,13 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
             NavigationSuiteType.NavigationBar
         }
 
+        var playerStatusVisible by remember { mutableStateOf(false) }
+        val navHostBottomInset by animateDpAsState(
+            targetValue = if (playerStatusVisible) PlayerStatusReservedHeight else 0.dp,
+            animationSpec = tween(PlayerStatusAnimDurationMs),
+            label = "ChipboxAppUi.navHostBottomInset",
+        )
+
         CompositionLocalProvider(LocalTitleBarController provides titleBarController) {
             NavigationSuiteScaffold(
                 navigationSuiteItems = navItems(stringProvider, current, navController),
@@ -138,18 +151,23 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
                     },
                     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 ) { padding ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(padding),
+                    CompositionLocalProvider(
+                        LocalListBottomInset provides navHostBottomInset,
                     ) {
-                        ChipboxNavHost(
-                            navController = navController,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        PlayerStatus(
-                            modifier = Modifier.align(Alignment.BottomCenter),
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(padding),
+                        ) {
+                            ChipboxNavHost(
+                                navController = navController,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            PlayerStatus(
+                                modifier = Modifier.align(Alignment.BottomCenter),
+                                onVisibleChange = { playerStatusVisible = it },
+                            )
+                        }
                     }
                 }
             }
