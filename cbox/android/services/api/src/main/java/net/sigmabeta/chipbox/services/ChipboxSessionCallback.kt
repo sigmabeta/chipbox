@@ -70,6 +70,11 @@ class ChipboxSessionCallback(
         director.stop()
     }
 
+    override fun onSeekTo(pos: Long) {
+        hatchet.d("Received 'seekTo $pos' command.")
+        director.seek(pos)
+    }
+
     private fun playHelper() {
         val result = requestAudioFocus()
         if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {

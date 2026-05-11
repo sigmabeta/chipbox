@@ -101,8 +101,10 @@ private fun ChipboxPlaybackState.availableActions(): Long {
 
     hatchet.w("Generating available actions for state: $state")
     actions = when (state) {
-        PlayerState.PLAYING, PlayerState.PRELOADING, PlayerState.BUFFERING -> PlaybackStateCompat.ACTION_STOP or PlaybackStateCompat.ACTION_PAUSE
-        PlayerState.PAUSED -> PlaybackStateCompat.ACTION_STOP or PlaybackStateCompat.ACTION_PLAY
+        PlayerState.PLAYING, PlayerState.PRELOADING, PlayerState.BUFFERING ->
+            PlaybackStateCompat.ACTION_STOP or PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_SEEK_TO
+        PlayerState.PAUSED ->
+            PlaybackStateCompat.ACTION_STOP or PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_SEEK_TO
         PlayerState.STOPPED -> PlaybackStateCompat.ACTION_PLAY
         else -> return actions
     }
