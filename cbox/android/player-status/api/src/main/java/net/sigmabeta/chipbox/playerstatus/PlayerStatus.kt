@@ -8,7 +8,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -23,22 +22,20 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import net.sigmabeta.chipbox.ui.components.NameCaptionListItem
 import net.sigmabeta.chipbox.ui.components.subs.CrossfadeImage
-import net.sigmabeta.sage.appcomm.ActionSink
-import net.sigmabeta.sage.appcomm.SageAction
-import net.sigmabeta.sage.components.NameCaptionListModel
 import net.sigmabeta.sage.ui.Icon as SageIcon
 
 private val COMPACT_WIDTH_BREAKPOINT = 480.dp
@@ -90,6 +87,8 @@ private fun PlayerStatusCard(
     state: PlayerStatusState,
     onPlayPauseClicked: () -> Unit,
 ) {
+    var imageLoaded by remember(state.artwork.info) { mutableStateOf(false) }
+
     Surface(
         shape = RoundedCornerShape(CARD_SHAPE_RADIUS),
         tonalElevation = 3.dp,
@@ -104,30 +103,28 @@ private fun PlayerStatusCard(
                     imagePlaceholder = SageIcon.MUSIC_NOTE,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
+                    onImageLoadedChange = { imageLoaded = it },
                 )
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Color.Black.copy(alpha = SCRIM_ALPHA)
-                        ),
-                )
+                if (imageLoaded) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Color.Black.copy(alpha = SCRIM_ALPHA)
+                            ),
+                    )
+                }
             }
 
             Row(modifier = Modifier.fillMaxSize()) {
-                NameCaptionListItem(
-                    model = NameCaptionListModel(
-                        dataId = 0L,
-                        name = state.title,
-                        caption = state.artistsCaption,
-                        clickAction = SageAction.Noop,
-                        active = true,
-                    ),
-                    actionSink = ActionSink { },
+                PlayerStatusInfo(
+                    name = state.title,
+                    caption = state.artistsCaption,
+                    onArtworkBackground = imageLoaded,
                     modifier = Modifier
                         .weight(1f)
-                        .align(Alignment.CenterVertically),
-                    padding = PaddingValues(horizontal = 12.dp),
+                        .align(Alignment.CenterVertically)
+                        .padding(horizontal = 12.dp),
                 )
 
                 IconButton(

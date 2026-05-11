@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -50,6 +51,7 @@ fun CrossfadeImage(
     modifier: Modifier,
     forceGenBitmap: Boolean = LocalInspectionMode.current,
     simulateError: Boolean = false,
+    onImageLoadedChange: ((Boolean) -> Unit)? = null,
 ) {
     if (sourceInfo.info == null) {
         PlaceHolderImage(imagePlaceholder, modifier)
@@ -66,6 +68,7 @@ fun CrossfadeImage(
         imagePlaceholder,
         contentDescription,
         simulateError,
+        onImageLoadedChange,
         modifier,
     )
 }
@@ -76,6 +79,7 @@ private fun RealImage(
     imagePlaceholder: Icon,
     contentDescription: String?,
     simulateError: Boolean,
+    onImageLoadedChange: ((Boolean) -> Unit)?,
     modifier: Modifier,
 ) {
     if (simulateError) {
@@ -94,6 +98,7 @@ private fun RealImage(
         sourceInfo,
         imagePlaceholder,
         contentDescription,
+        onImageLoadedChange,
         modifier,
     )
 }
@@ -104,6 +109,7 @@ fun RealStandardImage(
     sourceInfo: SourceInfo,
     imagePlaceholder: Icon,
     contentDescription: String?,
+    onImageLoadedChange: ((Boolean) -> Unit)?,
     modifier: Modifier,
 ) {
     val context = LocalContext.current
@@ -120,6 +126,10 @@ fun RealStandardImage(
     }
 
     val state by asyncPainter.state.collectAsState()
+    val isLoaded = state is AsyncImagePainter.State.Success
+    LaunchedEffect(isLoaded, onImageLoadedChange) {
+        onImageLoadedChange?.invoke(isLoaded)
+    }
 
     if (cacheHit) {
         Box(modifier = modifier) {
