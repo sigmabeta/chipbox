@@ -3,4 +3,9 @@
     <string name="library_browse_by_game">Browse by Game</string>
     <string name="library_browse_by_artist">Browse by Artist</string>
     <string name="library_browse_all_tracks">Browse All Tracks</string>
+
+    <string name="game_detail_section_songs">Songs</string>
+    <string name="game_detail_section_artists">Artists</string>
+    <string name="game_detail_cta_play_all">Play All</string>
+    <string name="game_detail_cta_shuffle_all">Shuffle All</string>
 </resources>
