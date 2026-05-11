@@ -8,7 +8,7 @@ android {
 }
 
 dependencies {
-    api("androidx.media2:media2-common:1.3.0")
+    api(libs.androidx.media3.session)
 
     implementation(projects.cbox.android.artworkprovider.api)
     implementation(projects.cbox.android.colors.api)
