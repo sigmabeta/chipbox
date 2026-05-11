@@ -21,8 +21,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -42,6 +44,7 @@ import net.sigmabeta.sage.components.SingleTextListModel
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 
 @Composable
+@Suppress("LongParameterList")
 fun LabeledThingy(
     label: String,
     thingy: @Composable RowScope.() -> Unit,
@@ -50,6 +53,8 @@ fun LabeledThingy(
     accyStateDescription: String? = null,
     modifier: Modifier,
     padding: PaddingValues,
+    labelColor: Color? = null,
+    labelFontWeight: FontWeight? = null,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -67,7 +72,8 @@ fun LabeledThingy(
         Text(
             text = label,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = labelColor ?: MaterialTheme.colorScheme.onBackground,
+            fontWeight = labelFontWeight,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
