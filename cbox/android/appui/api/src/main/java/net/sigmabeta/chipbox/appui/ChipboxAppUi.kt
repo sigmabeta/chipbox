@@ -38,6 +38,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import net.sigmabeta.chipbox.playerstatus.PlayerStatus
+import net.sigmabeta.chipbox.ui.components.CrossfadeText
 import net.sigmabeta.chipbox.ui.list.LocalTitleBarController
 import net.sigmabeta.chipbox.ui.list.TitleBarController
 import net.sigmabeta.chipbox.ui.theme.AppTheme
@@ -107,11 +108,11 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
                         val titleBar = titleBarController.state
                         CenterAlignedTopAppBar(
                             title = {
-                                Text(
+                                CrossfadeText(
                                     text = titleBar.title.orEmpty(),
                                     textAlign = TextAlign.Center,
                                     maxLines = 1,
-                                    modifier = Modifier.basicMarquee(),
+                                    textModifier = Modifier.basicMarquee(),
                                 )
                             },
                             navigationIcon = {
