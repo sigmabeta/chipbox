@@ -5,7 +5,6 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.toRoute
 import net.sigmabeta.chipbox.appcomm.ChipboxNavEvent
 import net.sigmabeta.chipbox.appui.screens.SearchScreen
 import net.sigmabeta.chipbox.appui.screens.SettingsScreen
@@ -40,9 +39,6 @@ fun ChipboxNavHost(navController: NavHostController, modifier: Modifier = Modifi
         composable<BrowseByGame> { BrowseByGameRoute(onNavEvent) }
         composable<BrowseByArtist> { BrowseByArtistRoute() }
         composable<BrowseAllTracks> { BrowseAllTracksRoute() }
-        composable<GameDetail> { entry ->
-            val args = entry.toRoute<GameDetail>()
-            GameDetailRoute(id = args.id)
-        }
+        composable<GameDetail> { GameDetailRoute(onNavEvent) }
     }
 }
