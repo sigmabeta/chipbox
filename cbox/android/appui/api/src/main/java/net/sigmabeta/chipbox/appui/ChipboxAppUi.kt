@@ -1,5 +1,8 @@
 package net.sigmabeta.chipbox.appui
 
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -68,6 +71,20 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
         val topAppBarState = rememberTopAppBarState()
         val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(topAppBarState)
 
+        LaunchedEffect(backStackEntry?.destination?.route) {
+            topAppBarState.contentOffset = 0f
+            val startOffset = topAppBarState.heightOffset
+            if (startOffset != 0f) {
+                animate(
+                    initialValue = startOffset,
+                    targetValue = 0f,
+                    animationSpec = tween(durationMillis = 300),
+                ) { value, _ ->
+                    topAppBarState.heightOffset = value
+                }
+            }
+        }
+
         val widthDp = LocalConfiguration.current.screenWidthDp.dp
         val layoutType = if (widthDp >= NAV_RAIL_MIN_WIDTH) {
             NavigationSuiteType.NavigationRail
@@ -88,7 +105,9 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
                             title = {
                                 Text(
                                     text = titleBar.title.orEmpty(),
-                                    textAlign = TextAlign.Center
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                    modifier = Modifier.basicMarquee(),
                                 )
                             },
                             navigationIcon = {
