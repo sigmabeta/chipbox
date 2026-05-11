@@ -38,6 +38,12 @@ class GameDetailViewModel @Inject constructor(
                 .getGame(args.id, withTracks = true, withArtists = true)
                 .collect(::onGameData)
         }
+
+        viewModelScope.launch {
+            director.metadataState().collect { track ->
+                updateState { it.copy(playingTrackId = track.id) }
+            }
+        }
     }
 
     override fun handleAction(action: SageAction) {

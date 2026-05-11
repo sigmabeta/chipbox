@@ -63,9 +63,11 @@ class RealDirector(
             }
         }
 
-    private val metadataStateMutable = MutableSharedFlow<Track>()
+    // replay = 1 so late subscribers (e.g. a screen opened mid-playback) immediately
+    // receive the current track / state instead of waiting for the next change.
+    private val metadataStateMutable = MutableSharedFlow<Track>(replay = 1)
 
-    private val playbackStateMutable = MutableSharedFlow<ChipboxPlaybackState>()
+    private val playbackStateMutable = MutableSharedFlow<ChipboxPlaybackState>(replay = 1)
 
     init {
         directorScope.launch {

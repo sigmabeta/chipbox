@@ -26,6 +26,7 @@ data class GameDetailState(
     val game: LCE<Game> = LCE.Uninitialized,
     val tracks: LCE<List<Track>> = LCE.Uninitialized,
     val artists: LCE<List<Artist>> = LCE.Uninitialized,
+    val playingTrackId: Long? = null,
 ) : ListState() {
     override val columnType: ColumnType = ColumnType.Staggered(STAGGERED_WIDTH_DP, false)
 
@@ -114,6 +115,8 @@ data class GameDetailState(
         val length = formatTrackLength(track.trackLengthMs)
         val clickAction = GameDetailAction.TrackClicked(index)
 
+        val active = track.id == playingTrackId
+
         return if (captionPerTrack) {
             NameCaptionValueListModel(
                 dataId = dataId,
@@ -121,6 +124,7 @@ data class GameDetailState(
                 caption = track.artists.orEmpty().joinToString { it.name },
                 value = length,
                 clickAction = clickAction,
+                active = active,
             )
         } else {
             LabelValueListModel(
@@ -128,6 +132,7 @@ data class GameDetailState(
                 label = track.title,
                 value = length,
                 clickAction = clickAction,
+                active = active,
             )
         }
     }
