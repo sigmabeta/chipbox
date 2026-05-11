@@ -1,9 +1,12 @@
 package net.sigmabeta.chipbox.ui.components
 
 import android.content.res.Configuration
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,11 +15,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -44,6 +53,7 @@ fun ImageNameListItem(
         model.sourceInfo,
         model.imagePlaceholder,
         model.clickAction,
+        model.active,
         actionSink,
         modifier,
         padding,
@@ -51,16 +61,31 @@ fun ImageNameListItem(
 }
 
 @Composable
-@Suppress("MagicNumber")
+@Suppress("MagicNumber", "LongParameterList")
 fun ImageNameListItem(
     name: String,
     sourceInfo: SourceInfo,
     imagePlaceholder: Icon,
     clickAction: SageAction,
+    active: Boolean,
     actionSink: ActionSink,
     modifier: Modifier,
     padding: PaddingValues,
 ) {
+    val textColor by animateColorAsState(
+        targetValue = if (active) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onBackground
+        },
+        label = "ImageNameListItem.textColor",
+    )
+    val fontWeightValue by animateIntAsState(
+        targetValue = if (active) FontWeight.Bold.weight else FontWeight.Normal.weight,
+        label = "ImageNameListItem.fontWeight",
+    )
+    val fontWeight = FontWeight(fontWeightValue)
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -89,7 +114,8 @@ fun ImageNameListItem(
         Text(
             text = name,
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = textColor,
+            fontWeight = fontWeight,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
@@ -158,17 +184,28 @@ private fun Beeg() {
 @Suppress("MagicNumber")
 @Composable
 private fun Sample() {
-    ImageNameListItem(
-        ImageNameListModel(
-            1234L,
-            "Carrying the Weight of Life",
-            SourceInfo("https://randomfox.ca/images/12.jpg"),
-            Icon.DESCRIPTION,
-            null,
-            clickAction = SageAction.Noop,
-        ),
-        PreviewActionSink { },
-        Modifier,
-        PaddingValues(horizontal = 8.dp)
-    )
+    var active by remember { mutableStateOf(false) }
+
+    Column {
+        ImageNameListItem(
+            ImageNameListModel(
+                dataId = 1234L,
+                name = "Carrying the Weight of Life",
+                sourceInfo = SourceInfo("https://randomfox.ca/images/12.jpg"),
+                imagePlaceholder = Icon.DESCRIPTION,
+                actionableId = null,
+                clickAction = SageAction.Noop,
+                active = active,
+            ),
+            PreviewActionSink { },
+            Modifier,
+            PaddingValues(horizontal = 8.dp)
+        )
+        Button(
+            onClick = { active = !active },
+            modifier = Modifier.padding(8.dp),
+        ) {
+            Text(text = if (active) "Deactivate" else "Activate")
+        }
+    }
 }

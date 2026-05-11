@@ -2,17 +2,25 @@ package net.sigmabeta.chipbox.ui.components
 
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,6 +53,20 @@ fun LabelValueListItem(
         null
     }
 
+    val labelColor by animateColorAsState(
+        targetValue = if (model.active) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onBackground
+        },
+        label = "LabelValueListItem.labelColor",
+    )
+    val fontWeightValue by animateIntAsState(
+        targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
+        label = "LabelValueListItem.fontWeight",
+    )
+    val fontWeight = FontWeight(fontWeightValue)
+
     LabeledThingy(
         label = model.label,
         thingy = {
@@ -56,7 +78,7 @@ fun LabelValueListItem(
             AnimatedVisibility(
                 visible = value != null
             ) {
-                TextValue(value = value!!)
+                TextValue(value = value!!, active = model.active)
             }
         },
         onClick = { actionSink.sendAction(model.clickAction) },
@@ -64,16 +86,32 @@ fun LabelValueListItem(
         accyStateDescription = null, // It already reads out both strings
         modifier = modifier,
         padding = padding,
+        labelColor = labelColor,
+        labelFontWeight = fontWeight,
     )
 }
 
 @Composable
-fun TextValue(value: String) {
+fun TextValue(value: String, active: Boolean = false) {
+    val valueColor by animateColorAsState(
+        targetValue = if (active) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onTertiaryContainer
+        },
+        label = "TextValue.color",
+    )
+    val fontWeightValue by animateIntAsState(
+        targetValue = if (active) FontWeight.Bold.weight else FontWeight.Normal.weight,
+        label = "TextValue.fontWeight",
+    )
+
     Text(
         text = value,
         textAlign = TextAlign.End,
         style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onTertiaryContainer,
+        color = valueColor,
+        fontWeight = FontWeight(fontWeightValue),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier
@@ -134,16 +172,27 @@ private fun Dark() {
 
 @Composable
 private fun Sample() {
-    LabelValueListItem(
-        LabelValueListModel(
-            "Days which are training days",
-            "Every",
-            SageAction.Noop
-        ),
-        PreviewActionSink {},
-        Modifier,
-        PaddingValues(horizontal = 8.dp)
-    )
+    var active by remember { mutableStateOf(false) }
+
+    Column {
+        LabelValueListItem(
+            LabelValueListModel(
+                label = "Days which are training days",
+                value = "Every",
+                clickAction = SageAction.Noop,
+                active = active,
+            ),
+            PreviewActionSink {},
+            Modifier,
+            PaddingValues(horizontal = 8.dp)
+        )
+        Button(
+            onClick = { active = !active },
+            modifier = Modifier.padding(8.dp),
+        ) {
+            Text(text = if (active) "Deactivate" else "Activate")
+        }
+    }
 }
 
 @Composable

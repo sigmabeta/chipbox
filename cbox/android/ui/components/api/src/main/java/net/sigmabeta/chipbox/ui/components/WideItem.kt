@@ -2,10 +2,13 @@ package net.sigmabeta.chipbox.ui.components
 
 import android.content.res.Configuration
 import android.os.Build
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -16,14 +19,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,6 +53,20 @@ fun WideItem(
     padding: PaddingValues,
 ) {
     val sourceInfo = remember(model.sourceInfo) { SourceInfo(model.sourceInfo) }
+
+    val textColor by animateColorAsState(
+        targetValue = if (model.active) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        label = "WideItem.textColor",
+    )
+    val fontWeightValue by animateIntAsState(
+        targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
+        label = "WideItem.fontWeight",
+    )
+    val fontWeight = FontWeight(fontWeightValue)
 
     val commonModifier = modifier
         .padding(padding)
@@ -79,7 +101,8 @@ fun WideItem(
             text = model.name,
             textAlign = TextAlign.Start,
             maxLines = 2,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = textColor,
+            fontWeight = fontWeight,
             style = MaterialTheme.typography.titleMedium,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
@@ -110,42 +133,54 @@ private fun Dark() {
 @Composable
 @Suppress("MagicNumber")
 private fun Sample() {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier
-            .horizontalScroll(rememberScrollState())
-            .wrapContentSize()
-            .background(
-                color = MaterialTheme.colorScheme.background
-            )
-            .padding(16.dp)
-    ) {
-        WideItem(
-            WideItemListModel(
-                1234L,
-                "Konami Kukeiha Club",
-                "https://randomfox.ca/images/12.jpg",
-                Icon.PERSON,
-                null,
-                SageAction.Noop
-            ),
-            PreviewActionSink {},
-            modifier = Modifier,
-            padding = PaddingValues(horizontal = 8.dp)
-        )
+    var active by remember { mutableStateOf(false) }
 
-        WideItem(
-            WideItemListModel(
-                1234L,
-                "Masayoshi Soken",
-                "https://randomfox.ca/images/12.jpg",
-                Icon.PERSON,
-                null,
-                SageAction.Noop
-            ),
-            PreviewActionSink {},
-            modifier = Modifier,
-            padding = PaddingValues(horizontal = 8.dp)
+    Column(
+        modifier = Modifier.background(
+            color = MaterialTheme.colorScheme.background
         )
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .horizontalScroll(rememberScrollState())
+                .wrapContentSize()
+                .padding(16.dp)
+        ) {
+            WideItem(
+                WideItemListModel(
+                    dataId = 1234L,
+                    name = "Konami Kukeiha Club",
+                    sourceInfo = "https://randomfox.ca/images/12.jpg",
+                    imagePlaceholder = Icon.PERSON,
+                    actionableId = null,
+                    clickAction = SageAction.Noop,
+                    active = active,
+                ),
+                PreviewActionSink {},
+                modifier = Modifier,
+                padding = PaddingValues(horizontal = 8.dp)
+            )
+
+            WideItem(
+                WideItemListModel(
+                    dataId = 1235L,
+                    name = "Masayoshi Soken",
+                    sourceInfo = "https://randomfox.ca/images/12.jpg",
+                    imagePlaceholder = Icon.PERSON,
+                    actionableId = null,
+                    clickAction = SageAction.Noop,
+                ),
+                PreviewActionSink {},
+                modifier = Modifier,
+                padding = PaddingValues(horizontal = 8.dp)
+            )
+        }
+        Button(
+            onClick = { active = !active },
+            modifier = Modifier.padding(8.dp),
+        ) {
+            Text(text = if (active) "Deactivate first" else "Activate first")
+        }
     }
 }

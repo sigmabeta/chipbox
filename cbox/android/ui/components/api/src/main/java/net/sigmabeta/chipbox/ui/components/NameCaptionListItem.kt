@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.ui.components
 
 import android.content.res.Configuration
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -13,10 +15,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -33,6 +41,20 @@ fun NameCaptionListItem(
     modifier: Modifier,
     padding: PaddingValues,
 ) {
+    val textColor by animateColorAsState(
+        targetValue = if (model.active) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onBackground
+        },
+        label = "NameCaptionListItem.textColor",
+    )
+    val fontWeightValue by animateIntAsState(
+        targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
+        label = "NameCaptionListItem.fontWeight",
+    )
+    val fontWeight = FontWeight(fontWeightValue)
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -48,7 +70,8 @@ fun NameCaptionListItem(
             Text(
                 text = model.name,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = textColor,
+                fontWeight = fontWeight,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
@@ -63,7 +86,7 @@ fun NameCaptionListItem(
             Text(
                 text = model.caption,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
@@ -105,15 +128,26 @@ private fun Dark() {
 @Composable
 @Suppress("MagicNumber")
 private fun Sample() {
-    NameCaptionListItem(
-        NameCaptionListModel(
-            1234L,
-            "Xenoblade Chronicles 3",
-            "Yasunori Mitsuda, Mariam Abounnasr, Manami Kiyota, ACE+, Kenji Hiramatsu",
-            SageAction.Noop,
-        ),
-        PreviewActionSink { },
-        Modifier,
-        PaddingValues(horizontal = 8.dp)
-    )
+    var active by remember { mutableStateOf(false) }
+
+    Column {
+        NameCaptionListItem(
+            NameCaptionListModel(
+                dataId = 1234L,
+                name = "Xenoblade Chronicles 3",
+                caption = "Yasunori Mitsuda, Mariam Abounnasr, Manami Kiyota, ACE+, Kenji Hiramatsu",
+                clickAction = SageAction.Noop,
+                active = active,
+            ),
+            PreviewActionSink { },
+            Modifier,
+            PaddingValues(horizontal = 8.dp)
+        )
+        Button(
+            onClick = { active = !active },
+            modifier = Modifier.padding(8.dp),
+        ) {
+            Text(text = if (active) "Deactivate" else "Activate")
+        }
+    }
 }

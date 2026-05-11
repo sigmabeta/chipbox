@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.ui.components
 
 import android.content.res.Configuration
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -14,11 +16,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -48,6 +56,7 @@ fun ImageNameCaptionListItem(
         model.sourceInfo,
         model.imagePlaceholder,
         model.clickAction,
+        model.active,
         actionSink,
         modifier,
         padding,
@@ -67,6 +76,7 @@ fun ImageNameCaptionListItem(
         model.sourceInfo,
         model.imagePlaceholder,
         model.clickAction,
+        false,
         actionSink,
         modifier,
         padding,
@@ -74,17 +84,32 @@ fun ImageNameCaptionListItem(
 }
 
 @Composable
-@Suppress("LongMethod", "MagicNumber")
+@Suppress("LongMethod", "MagicNumber", "LongParameterList")
 private fun ImageNameCaptionListItem(
     name: String,
     caption: String,
     sourceInfo: SourceInfo,
     imagePlaceholder: Icon,
     clickAction: SageAction,
+    active: Boolean,
     actionSink: ActionSink,
     modifier: Modifier,
     padding: PaddingValues,
 ) {
+    val textColor by animateColorAsState(
+        targetValue = if (active) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onBackground
+        },
+        label = "ImageNameCaptionListItem.textColor",
+    )
+    val fontWeightValue by animateIntAsState(
+        targetValue = if (active) FontWeight.Bold.weight else FontWeight.Normal.weight,
+        label = "ImageNameCaptionListItem.fontWeight",
+    )
+    val fontWeight = FontWeight(fontWeightValue)
+
     Row(
         modifier = modifier
             .padding(padding)
@@ -118,7 +143,8 @@ private fun ImageNameCaptionListItem(
             Text(
                 text = name,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = textColor,
+                fontWeight = fontWeight,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
@@ -133,7 +159,7 @@ private fun ImageNameCaptionListItem(
             Text(
                 text = caption,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
@@ -189,18 +215,29 @@ private fun Menu() {
 @Composable
 @Suppress("MagicNumber")
 private fun Sample() {
-    ImageNameCaptionListItem(
-        ImageNameCaptionListModel(
-            1234L,
-            "Xenoblade Chronicles 3",
-            "Yasunori Mitsuda, Mariam Abounnasr, Manami Kiyota, ACE+, Kenji Hiramatsu",
-            SourceInfo("https://randomfox.ca/images/12.jpg"),
-            Icon.PERSON,
-            null,
-            SageAction.Noop,
-        ),
-        PreviewActionSink {},
-        Modifier,
-        PaddingValues(horizontal = 8.dp)
-    )
+    var active by remember { mutableStateOf(false) }
+
+    Column {
+        ImageNameCaptionListItem(
+            ImageNameCaptionListModel(
+                dataId = 1234L,
+                name = "Xenoblade Chronicles 3",
+                caption = "Yasunori Mitsuda, Mariam Abounnasr, Manami Kiyota, ACE+, Kenji Hiramatsu",
+                sourceInfo = SourceInfo("https://randomfox.ca/images/12.jpg"),
+                imagePlaceholder = Icon.PERSON,
+                actionableId = null,
+                clickAction = SageAction.Noop,
+                active = active,
+            ),
+            PreviewActionSink {},
+            Modifier,
+            PaddingValues(horizontal = 8.dp)
+        )
+        Button(
+            onClick = { active = !active },
+            modifier = Modifier.padding(8.dp),
+        ) {
+            Text(text = if (active) "Deactivate" else "Activate")
+        }
+    }
 }

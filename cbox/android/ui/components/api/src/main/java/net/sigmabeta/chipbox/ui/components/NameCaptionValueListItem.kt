@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.ui.components
 
 import android.content.res.Configuration
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -15,11 +17,17 @@ import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -37,6 +45,28 @@ fun NameCaptionValueListItem(
     modifier: Modifier,
     padding: PaddingValues,
 ) {
+    val primaryColor by animateColorAsState(
+        targetValue = if (model.active) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onBackground
+        },
+        label = "NameCaptionValueListItem.primaryColor",
+    )
+    val valueColor by animateColorAsState(
+        targetValue = if (model.active) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onTertiaryContainer
+        },
+        label = "NameCaptionValueListItem.valueColor",
+    )
+    val fontWeightValue by animateIntAsState(
+        targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
+        label = "NameCaptionValueListItem.fontWeight",
+    )
+    val fontWeight = FontWeight(fontWeightValue)
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
@@ -53,7 +83,8 @@ fun NameCaptionValueListItem(
             Text(
                 text = model.name,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = primaryColor,
+                fontWeight = fontWeight,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
@@ -66,7 +97,7 @@ fun NameCaptionValueListItem(
             Text(
                 text = model.caption,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = primaryColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
@@ -81,7 +112,8 @@ fun NameCaptionValueListItem(
             text = model.value,
             textAlign = TextAlign.End,
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onTertiaryContainer,
+            color = valueColor,
+            fontWeight = fontWeight,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.wrapContentWidth(),
@@ -120,16 +152,27 @@ private fun Dark() {
 @Composable
 @Suppress("MagicNumber")
 private fun Sample() {
-    NameCaptionValueListItem(
-        NameCaptionValueListModel(
-            dataId = 1234L,
-            name = "Opening",
-            caption = "Yuzo Koshiro",
-            value = "3:42",
-            clickAction = SageAction.Noop,
-        ),
-        PreviewActionSink { },
-        Modifier,
-        PaddingValues(horizontal = 8.dp),
-    )
+    var active by remember { mutableStateOf(false) }
+
+    Column {
+        NameCaptionValueListItem(
+            NameCaptionValueListModel(
+                dataId = 1234L,
+                name = "The Super Shinobi",
+                caption = "Yuzo Koshiro",
+                value = "2:18",
+                clickAction = SageAction.Noop,
+                active = active,
+            ),
+            PreviewActionSink { },
+            Modifier,
+            PaddingValues(horizontal = 8.dp),
+        )
+        Button(
+            onClick = { active = !active },
+            modifier = Modifier.padding(8.dp),
+        ) {
+            Text(text = if (active) "Deactivate" else "Activate")
+        }
+    }
 }
