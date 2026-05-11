@@ -9,9 +9,10 @@ import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.components.HeroImageListModel
 import net.sigmabeta.sage.components.HorizontalScrollerListModel
-import net.sigmabeta.sage.components.ImageNameListModel
+import net.sigmabeta.sage.components.LabelValueListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.LoadingType
+import net.sigmabeta.sage.components.NameCaptionValueListModel
 import net.sigmabeta.sage.components.SectionHeaderListModel
 import net.sigmabeta.sage.components.TitleBarModel
 import net.sigmabeta.sage.components.WideItemListModel
@@ -85,24 +86,51 @@ data class GameDetailState(
     private fun songSection(stringProvider: StringProvider) =
         tracks.sectionWithStandardErrorAndLoading(
             sectionName = SECTION_NAME_SONGS,
-            loadingType = LoadingType.TEXT_IMAGE,
+            loadingType = LoadingType.TEXT_CAPTION,
             loadingItemCount = SONGS_LOADING_COUNT,
             loadingWithHeader = true,
         ) {
+            // When the game has a single artist, every track's caption would
+            // repeat the same name — drop it and fall back to the simpler
+            // label/value row.
+            val gameArtistCount = (artists as? LCE.Content)?.data?.size ?: 0
+            val captionPerTrack = gameArtistCount > 1
+
             listOf(
                 SectionHeaderListModel(
                     stringProvider.getString(ChipboxStringId.GAME_DETAIL_SECTION_SONGS),
                 ),
             ) + data.mapIndexed { index, track ->
-                ImageNameListModel(
-                    dataId = track.id + ID_PREFIX_SONGS,
-                    name = track.title,
-                    sourceInfo = SourceInfo(null),
-                    imagePlaceholder = Icon.MUSIC_NOTE,
-                    clickAction = GameDetailAction.TrackClicked(index),
-                )
+                trackRow(index, track, captionPerTrack)
             }
         }
+
+    private fun trackRow(
+        index: Int,
+        track: Track,
+        captionPerTrack: Boolean,
+    ): ListModel {
+        val dataId = track.id + ID_PREFIX_SONGS
+        val length = formatTrackLength(track.trackLengthMs)
+        val clickAction = GameDetailAction.TrackClicked(index)
+
+        return if (captionPerTrack) {
+            NameCaptionValueListModel(
+                dataId = dataId,
+                name = track.title,
+                caption = track.artists.orEmpty().joinToString { it.name },
+                value = length,
+                clickAction = clickAction,
+            )
+        } else {
+            LabelValueListModel(
+                dataId = dataId,
+                label = track.title,
+                value = length,
+                clickAction = clickAction,
+            )
+        }
+    }
 
     private fun artistSection(stringProvider: StringProvider) =
         artists.sectionWithStandardErrorAndLoading(
@@ -130,6 +158,13 @@ data class GameDetailState(
             )
         }
 
+    private fun formatTrackLength(millis: Long): String {
+        val totalSeconds = millis / MILLIS_PER_SECOND
+        val minutes = totalSeconds / SECONDS_PER_MINUTE
+        val seconds = totalSeconds % SECONDS_PER_MINUTE
+        return "%d:%02d".format(minutes, seconds)
+    }
+
     companion object {
         private const val SECTION_NAME_HERO = "section.hero"
         private const val SECTION_NAME_CTA = "section.cta"
@@ -138,6 +173,9 @@ data class GameDetailState(
 
         private const val STAGGERED_WIDTH_DP = 320
         private const val SONGS_LOADING_COUNT = 8
+
+        private const val MILLIS_PER_SECOND = 1_000L
+        private const val SECONDS_PER_MINUTE = 60L
 
         private const val ID_PREFIX_SONGS = 1_000_000L
         private const val ID_PREFIX_ARTISTS = 1_000_000_000L
