@@ -27,8 +27,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.SingletonImageLoader
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
+import coil3.memory.MemoryCache
 import coil3.request.ImageRequest
 import net.sigmabeta.chipbox.ui.components.ImageNameListItem
 import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
@@ -89,6 +91,7 @@ private fun RealImage(
 
     RealStandardImage(
         asyncPainter,
+        sourceInfo,
         imagePlaceholder,
         contentDescription,
         modifier,
@@ -98,11 +101,40 @@ private fun RealImage(
 @Composable
 fun RealStandardImage(
     asyncPainter: AsyncImagePainter,
+    sourceInfo: SourceInfo,
     imagePlaceholder: Icon,
     contentDescription: String?,
     modifier: Modifier,
 ) {
+    val context = LocalContext.current
+
+    // If Coil already has this image in memory, the painter will resolve in
+    // one frame from cache — skip the Crossfade and just paint over the
+    // placeholder so we don't flash the loading icon on scroll re-entry.
+    val cacheHit = remember(sourceInfo.info) {
+        sourceInfo.info?.let { key ->
+            SingletonImageLoader.get(context)
+                .memoryCache
+                ?.get(MemoryCache.Key(key.toString())) != null
+        } ?: false
+    }
+
     val state by asyncPainter.state.collectAsState()
+
+    if (cacheHit) {
+        Box(modifier = modifier) {
+            PlaceHolderImage(imagePlaceholder, Modifier.fillMaxSize())
+            if (state is AsyncImagePainter.State.Success) {
+                Image(
+                    painter = asyncPainter,
+                    contentDescription = contentDescription,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+        }
+        return
+    }
 
     Crossfade(
         targetState = state,
