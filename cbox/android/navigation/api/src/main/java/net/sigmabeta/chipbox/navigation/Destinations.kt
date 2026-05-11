@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.navigation
 
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.navArgument
