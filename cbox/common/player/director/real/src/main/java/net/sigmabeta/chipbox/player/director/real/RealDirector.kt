@@ -57,7 +57,11 @@ class RealDirector(
         null
     )
         set(value) {
-            field = value
+            // Stamp the speaker's current position on every emission so pause/resume and
+            // track-change reports anchor the notification's progress bar to actual played
+            // audio. During PLAYING the Android framework extrapolates forward from the last
+            // anchor, so this only needs to be right at state-transition moments.
+            field = value.copy(position = speaker.currentPositionMs())
             directorScope.launch {
                 playbackStateMutable.emit(currentState)
             }
