@@ -10,6 +10,7 @@ android {
 }
 
 dependencies {
+    implementation(projects.cbox.android.ui.list.api)
     implementation(projects.cbox.android.ui.theme.api)
     implementation(projects.cbox.common.appcomm.api)
     implementation(projects.cbox.common.strings.api)
