@@ -28,6 +28,8 @@ dependencies {
     implementation(projects.features.gameDetail.api)
     implementation(projects.features.gameDetail.real)
 
+    implementation(libs.sage.android.ui.list)
+
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.compose.material3.adaptive.navigation)
     implementation(libs.androidx.compose.material3.adaptive.navigation.suite)

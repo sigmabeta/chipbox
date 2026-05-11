@@ -28,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,12 +60,27 @@ private val TEXT_SHADOW_OFFSET_Y = 1.dp
 private val TEXT_SHADOW_BLUR = 4.dp
 private const val ANIM_DURATION_MS = 300
 
+/**
+ * Vertical space the PlayerStatus reserves at the bottom of the screen when visible —
+ * card height plus its top and bottom margins. Callers can use this to inset content
+ * so it doesn't get hidden behind the bar.
+ */
+val PlayerStatusReservedHeight: Dp = CONTAINER_HEIGHT + VERTICAL_MARGIN * 2
+
+/** Animation duration used by the bar's slide-in/out — exposed for syncing parent insets. */
+const val PlayerStatusAnimDurationMs: Int = ANIM_DURATION_MS
+
 @Composable
 fun PlayerStatus(
     modifier: Modifier = Modifier,
+    onVisibleChange: (Boolean) -> Unit = {},
     viewModel: PlayerStatusViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.visible) {
+        onVisibleChange(state.visible)
+    }
 
     val widthDp = LocalConfiguration.current.screenWidthDp.dp
     val widthModifier = if (widthDp >= COMPACT_WIDTH_BREAKPOINT) {
