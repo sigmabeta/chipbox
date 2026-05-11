@@ -26,6 +26,7 @@ import net.sigmabeta.sage.components.LoadingItemListModel
 import net.sigmabeta.sage.components.LoadingType
 import net.sigmabeta.sage.components.MenuItemListModel
 import net.sigmabeta.sage.components.NameCaptionListModel
+import net.sigmabeta.sage.components.NameCaptionValueListModel
 import net.sigmabeta.sage.components.NotifListModel
 import net.sigmabeta.sage.components.SearchHistoryListModel
 import net.sigmabeta.sage.components.SearchResultListModel
@@ -81,6 +82,8 @@ fun ListModel.Content(
             is MenuItemListModel -> MenuItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is NameCaptionListModel -> NameCaptionListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
+
+            is NameCaptionValueListModel -> NameCaptionValueListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is NotifListModel -> NotifListItem(model = this, actionSink = sink, modifier = mod)
 
