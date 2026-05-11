@@ -94,6 +94,7 @@ class RealDirector(
     override fun start(session: Session) {
         directorScope.launch {
             val setlistForSession = getSetlistForSession(session)
+                .let { if (session.shuffled) it.shuffled() else it }
 
             currentSession = session
             currentSetlist = setlistForSession
