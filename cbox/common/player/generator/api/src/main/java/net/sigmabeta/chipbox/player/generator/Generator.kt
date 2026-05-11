@@ -190,9 +190,10 @@ abstract class Generator(
 
                 bufferManager.sendAudioBuffer(
                     AudioBuffer(
-                        currentTrack!!.id,
-                        rate,
-                        generatedAudio
+                        trackId = currentTrack!!.id,
+                        sampleRate = rate,
+                        frameIndex = bufferStartFrame.toLong(),
+                        data = generatedAudio,
                     )
                 )
 

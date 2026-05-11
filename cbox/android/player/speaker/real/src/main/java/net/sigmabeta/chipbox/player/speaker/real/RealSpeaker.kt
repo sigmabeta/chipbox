@@ -27,6 +27,14 @@ class RealSpeaker(
 ) : Speaker(bufferManager, dispatcher) {
     private var audioTrack: AudioTrack? = null
 
+    // Snapshot of "AudioTrack head when this buffer was queued" + "the track-frame that
+    // buffer began at." currentPositionMs reads (head_now - referenceHeadFrames) and adds
+    // referenceTrackFrame to convert the AudioTrack's since-creation counter into a position
+    // within the song being played. Updated on every onAudioReceived so seeks and track
+    // changes (where frameIndex jumps) are picked up automatically.
+    private var referenceHeadFrames: Long = 0L
+    private var referenceTrackFrame: Long = 0L
+
     override fun onAudioReceived(audio: AudioBuffer) {
         if (audio.sampleRate != audioTrack?.sampleRate) {
             hatchet.d("New sample rate: ${audio.sampleRate}")
@@ -36,6 +44,9 @@ class RealSpeaker(
             audioTrack!!.play()
         }
 
+        referenceHeadFrames = audioTrack!!.playbackHeadPosition.toLong()
+        referenceTrackFrame = audio.frameIndex
+
         // Samples, not Frames
         val samplesWritten = audioTrack!!.write(
                 audio.data,
@@ -44,6 +55,16 @@ class RealSpeaker(
         )
 
         logProblems(samplesWritten)
+    }
+
+    override fun currentPositionMs(): Long {
+        val track = audioTrack ?: return 0L
+        val rate = track.sampleRate
+        if (rate <= 0) return 0L
+        val elapsedFrames = (track.playbackHeadPosition.toLong() - referenceHeadFrames)
+            .coerceAtLeast(0L)
+        val frame = referenceTrackFrame + elapsedFrames
+        return frame * MILLIS_PER_SECOND / rate
     }
 
     private fun initializeAudioTrack(
@@ -97,6 +118,8 @@ class RealSpeaker(
         audioTrack?.release()
 
         audioTrack = null
+        referenceHeadFrames = 0L
+        referenceTrackFrame = 0L
     }
 
     override fun flushSink() {
@@ -118,5 +141,9 @@ class RealSpeaker(
             hatchet.e(error)
             emitError(error)
         }
+    }
+
+    private companion object {
+        const val MILLIS_PER_SECOND = 1_000L
     }
 }

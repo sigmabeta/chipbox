@@ -9,10 +9,14 @@ package net.sigmabeta.chipbox.player.buffer
  *           buffer's id to detect track-boundary crossings.
  * @property sampleRate Frame rate in Hz for [data]; may differ from the previous buffer's rate
  *           when the setlist crosses emulator boundaries.
+ * @property frameIndex Index of [data]'s first frame within its track (0 at the start of a
+ *           track, advancing by frames-generated per buffer). Combined with [sampleRate] this
+ *           is a timestamp the speaker can use to report actual played position.
  * @property data Interleaved L/R 16-bit PCM samples. Length is fixed by the buffer pool.
  */
 data class AudioBuffer(
     val trackId: Long,
     val sampleRate: Int,
+    val frameIndex: Long,
     val data: ShortArray
 )

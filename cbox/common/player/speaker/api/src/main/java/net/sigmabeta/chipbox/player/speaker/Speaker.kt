@@ -45,6 +45,13 @@ abstract class Speaker(
 
     fun events() = eventSink.asSharedFlow()
 
+    /**
+     * Milliseconds played within the currently-loaded track, derived from each [AudioBuffer]'s
+     * [net.sigmabeta.chipbox.player.buffer.AudioBuffer.frameIndex] and the sink's own play head.
+     * Returns 0 for sinks that don't track a play head (e.g. test/file sinks).
+     */
+    open fun currentPositionMs(): Long = 0L
+
     fun play() {
         startPlayback()
     }
