@@ -60,8 +60,16 @@ class RealSpeaker(
         val track = audioTrack ?: return 0L
         val rate = track.sampleRate
         if (rate <= 0) return 0L
-        val elapsedFrames = (track.playbackHeadPosition.toLong() - referenceHeadFrames)
-            .coerceAtLeast(0L)
+        // playbackHeadPosition is a JNI call that throws IllegalStateException if the native
+        // AudioTrack pointer has been freed. The director's reducer runs on a separate
+        // coroutine from the speaker, so even after the null-check above the captured `track`
+        // can be released by a concurrent teardown() before this call lands.
+        val headFrames = try {
+            track.playbackHeadPosition.toLong()
+        } catch (_: IllegalStateException) {
+            return 0L
+        }
+        val elapsedFrames = (headFrames - referenceHeadFrames).coerceAtLeast(0L)
         val frame = referenceTrackFrame + elapsedFrames
         return frame * MILLIS_PER_SECOND / rate
     }
@@ -108,17 +116,18 @@ class RealSpeaker(
     }
 
     override fun teardown() {
-        if (audioTrack != null) {
-            hatchet.i("Tearing down audiotrack.")
-        }
-
-        audioTrack?.pause()
-        audioTrack?.flush()
-        audioTrack?.release()
-
+        // Null the field out before releasing so concurrent readers (e.g. the director
+        // reducer calling currentPositionMs()) bail at the null-check instead of holding a
+        // reference to a track whose native pointer is about to be freed.
+        val track = audioTrack ?: return
         audioTrack = null
         referenceHeadFrames = 0L
         referenceTrackFrame = 0L
+
+        hatchet.i("Tearing down audiotrack.")
+        track.pause()
+        track.flush()
+        track.release()
     }
 
     override fun flushSink() {
