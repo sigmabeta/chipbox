@@ -30,6 +30,11 @@ fun ChipboxListEntry(
     val state by viewModel.uiStateActual.collectAsStateWithLifecycle()
     val showDebug by viewModel.showDebug.collectAsStateWithLifecycle()
 
+    val titleBarController = LocalTitleBarController.current
+    LaunchedEffect(state.title) {
+        titleBarController.set(state.title)
+    }
+
     val widthClass = rememberWidthClass()
     val numColumns = state.columnType.numberOfColumns(widthClass)
     require(numColumns > 0) {
