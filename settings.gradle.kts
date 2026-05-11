@@ -56,6 +56,7 @@ include(
     ":cbox:android:image-loading:api",
     ":cbox:android:images:api",
     ":cbox:android:navigation:api",
+    ":cbox:android:player-status:api",
     ":cbox:android:player:emulators:di",
     ":cbox:android:player:emulators:gba:all",
     ":cbox:android:player:emulators:gba:api",

@@ -3,6 +3,8 @@ package net.sigmabeta.chipbox.appui
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,6 +25,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
@@ -34,6 +37,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import net.sigmabeta.chipbox.playerstatus.PlayerStatus
 import net.sigmabeta.chipbox.ui.list.LocalTitleBarController
 import net.sigmabeta.chipbox.ui.list.TitleBarController
 import net.sigmabeta.chipbox.ui.theme.AppTheme
@@ -132,10 +136,19 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
                     },
                     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 ) { padding ->
-                    ChipboxNavHost(
-                        navController = navController,
-                        modifier = Modifier.padding(padding),
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding),
+                    ) {
+                        ChipboxNavHost(
+                            navController = navController,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        PlayerStatus(
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                        )
+                    }
                 }
             }
         }
