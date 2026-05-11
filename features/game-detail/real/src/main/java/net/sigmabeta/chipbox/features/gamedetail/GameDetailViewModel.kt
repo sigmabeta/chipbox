@@ -49,7 +49,7 @@ class GameDetailViewModel @Inject constructor(
     override fun handleAction(action: SageAction) {
         when (action) {
             GameDetailAction.PlayAllClicked -> startSession(startingPosition = 0)
-            GameDetailAction.ShuffleAllClicked -> startSession(startingPosition = randomTrackIndex())
+            GameDetailAction.ShuffleAllClicked -> startSession(startingPosition = 0, shuffled = true)
             is GameDetailAction.TrackClicked -> startSession(startingPosition = action.position)
             is GameDetailAction.ArtistClicked -> hatchet.v(
                 "Artist ${action.id} clicked; ArtistDetail destination not wired yet."
@@ -58,20 +58,13 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    // Director plays the setlist in fixed order from this index onwards; true
-    // shuffled-order playback needs Session/Director support that doesn't exist yet.
-    private fun randomTrackIndex(): Int {
-        val tracks = state.value.tracks
-        val size = if (tracks is LCE.Content) tracks.data.size else 0
-        return if (size > 0) kotlin.random.Random.nextInt(size) else 0
-    }
-
-    private fun startSession(startingPosition: Int) {
+    private fun startSession(startingPosition: Int, shuffled: Boolean = false) {
         director.start(
             Session(
                 type = SessionType.GAME,
                 contentId = args.id,
                 startingPosition = startingPosition,
+                shuffled = shuffled,
             )
         )
     }

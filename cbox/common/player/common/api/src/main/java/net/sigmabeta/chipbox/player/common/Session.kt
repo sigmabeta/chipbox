@@ -18,6 +18,9 @@ import kotlin.random.Random
  *           specific track id is given.
  * @property currentPosition Index of the currently-playing track within the setlist. Updated
  *           by the director as playback advances; supplied externally only when restoring.
+ * @property shuffled When true the director randomises the resolved setlist before assigning
+ *           it; the starting hints then index into the shuffled order. The shuffled order is
+ *           stable for the lifetime of the session (it's not reshuffled on track change).
  * @property id Random session identifier; lets observers tell two unrelated sessions apart.
  */
 data class Session(
@@ -26,5 +29,6 @@ data class Session(
     val startingTrackId: Long? = null,
     val startingPosition: Int? = null,
     val currentPosition: Int? = null,
+    val shuffled: Boolean = false,
     val id: Long = Random.nextLong()
 )
