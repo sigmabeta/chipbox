@@ -1,8 +1,7 @@
 package net.sigmabeta.chipbox.services
 
-import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.media.MediaDescriptionCompat
-import androidx.media.MediaBrowserServiceCompat
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -15,24 +14,20 @@ import javax.inject.Inject
 class LibraryBrowser @Inject constructor(
     private val repository: Repository
 ) {
-    fun getTopLevelMenuItems(): List<MediaBrowserCompat.MediaItem> {
+    fun getTopLevelMenuItems(): List<MediaItem> {
         return listOf(
             topLevelItemGames(),
             topLevelItemArtists()
         )
     }
 
-    suspend fun browseTo(parentMediaId: String, result: MediaBrowserServiceCompat.Result<List<MediaBrowserCompat.MediaItem>>) {
-        val mediaItems = when {
-            parentMediaId.startsWith(ID_GAMES) -> browseGames(parentMediaId)
-            parentMediaId.startsWith(ID_ARTISTS) -> browseArtists(parentMediaId)
-            else -> null
-        }
-
-        result.sendResult(mediaItems)
+    suspend fun browseTo(parentMediaId: String): List<MediaItem>? = when {
+        parentMediaId.startsWith(ID_GAMES) -> browseGames(parentMediaId)
+        parentMediaId.startsWith(ID_ARTISTS) -> browseArtists(parentMediaId)
+        else -> null
     }
 
-    private suspend fun browseGames(parentMediaId: String): List<MediaBrowserCompat.MediaItem>? {
+    private suspend fun browseGames(parentMediaId: String): List<MediaItem>? {
         return when (val id = parentMediaId.substringAfterLast(".")) {
             ID_TOP -> getGamesMenuItems()
             ID_SHUFFLE -> startGamesShuffle()
@@ -43,7 +38,7 @@ class LibraryBrowser @Inject constructor(
         }
     }
 
-    private suspend fun browseArtists(parentMediaId: String): List<MediaBrowserCompat.MediaItem>? {
+    private suspend fun browseArtists(parentMediaId: String): List<MediaItem>? {
         return when (val id = parentMediaId.substringAfterLast(".")) {
             ID_TOP -> getArtistsMenuItems()
             ID_SHUFFLE -> startArtistsShuffle()
@@ -71,31 +66,43 @@ class LibraryBrowser @Inject constructor(
         .tracks!!
         .map { it.toMediaItem(parentMediaId) }
 
-    private fun startGamesShuffle(): List<MediaBrowserCompat.MediaItem>? {
+    private fun startGamesShuffle(): List<MediaItem>? {
         TODO("Not yet implemented")
     }
 
-    private fun startArtistsShuffle(): List<MediaBrowserCompat.MediaItem>? {
+    private fun startArtistsShuffle(): List<MediaItem>? {
         TODO("Not yet implemented")
     }
 
-    private fun topLevelItemGames() = MediaBrowserCompat.MediaItem(
-        MediaDescriptionCompat.Builder()
-            .setMediaId(ID_GAMES_TOP)
+    private fun topLevelItemGames(): MediaItem {
+        val metadata = MediaMetadata.Builder()
             .setTitle("Games")
             .setDescription("Your Chipbox library, sorted by game title.")
-            .build(),
-        MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
-    )
+            .setIsBrowsable(true)
+            .setIsPlayable(false)
+            .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+            .build()
 
-    private fun topLevelItemArtists() = MediaBrowserCompat.MediaItem(
-        MediaDescriptionCompat.Builder()
-            .setMediaId(ID_ARTISTS_TOP)
+        return MediaItem.Builder()
+            .setMediaId(ID_GAMES_TOP)
+            .setMediaMetadata(metadata)
+            .build()
+    }
+
+    private fun topLevelItemArtists(): MediaItem {
+        val metadata = MediaMetadata.Builder()
             .setTitle("Artists")
             .setDescription("Your Chipbox library, sorted by artist name.")
-            .build(),
-        MediaBrowserCompat.MediaItem.FLAG_BROWSABLE
-    )
+            .setIsBrowsable(true)
+            .setIsPlayable(false)
+            .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+            .build()
+
+        return MediaItem.Builder()
+            .setMediaId(ID_ARTISTS_TOP)
+            .setMediaMetadata(metadata)
+            .build()
+    }
 
     private suspend fun getGamesMenuItems() = repository
         .getAllGames(false, false)

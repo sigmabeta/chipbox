@@ -8,6 +8,4 @@ android {
 
 dependencies {
     api(projects.cbox.common.player.speaker.api)
-
-    implementation("androidx.media2:media2-common:1.3.0")
 }

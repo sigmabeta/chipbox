@@ -4,7 +4,6 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.os.Process
-import androidx.media.AudioAttributesCompat
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
@@ -81,9 +80,9 @@ class RealSpeaker(
 
         hatchet.v("Initializing audio track. Sample Rate: $sampleRate Hz, Buffer size: $bufferSizeBytes bytes")
 
-        val audioAttributes = AudioAttributesCompat.Builder().apply {
-            setContentType(AudioAttributesCompat.CONTENT_TYPE_MUSIC)
-            setUsage(AudioAttributesCompat.USAGE_MEDIA)
+        val audioAttributes = AudioAttributes.Builder().apply {
+            setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            setUsage(AudioAttributes.USAGE_MEDIA)
         }.build()
 
         val audioFormat = AudioFormat.Builder().apply {
@@ -93,7 +92,7 @@ class RealSpeaker(
         }.build()
 
         return AudioTrack.Builder().apply {
-            setAudioAttributes(audioAttributes.unwrap() as AudioAttributes)
+            setAudioAttributes(audioAttributes)
             setAudioFormat(audioFormat)
             setBufferSizeInBytes(bufferSizeBytes)
             setTransferMode(AudioTrack.MODE_STREAM)

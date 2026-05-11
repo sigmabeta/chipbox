@@ -1,25 +1,23 @@
 package net.sigmabeta.chipbox.services
 
 import android.content.Intent
-import android.os.Bundle
-import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.media.session.MediaSessionCompat
-import android.support.v4.media.session.PlaybackStateCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.media.MediaBrowserServiceCompat
-import androidx.media.session.MediaButtonReceiver
+import android.content.IntentFilter
+import android.media.AudioManager
+import androidx.media3.session.MediaLibraryService
+import androidx.media3.session.MediaSession
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.sage.logging.Hatchet
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class ChipboxPlaybackService : MediaBrowserServiceCompat() {
+class ChipboxPlaybackService : MediaLibraryService() {
     @Inject
-    lateinit var browser: LibraryBrowser
+    lateinit var libraryBrowser: LibraryBrowser
 
     @Inject
     lateinit var director: Director
@@ -27,125 +25,61 @@ class ChipboxPlaybackService : MediaBrowserServiceCompat() {
     @Inject
     lateinit var hatchet: Hatchet
 
-    private val serviceScope = CoroutineScope(Dispatchers.Default)
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    private var mediaSession: MediaSessionCompat? = null
-
-//    private var mediaController: MediaControllerCompat? = null
+    private var session: MediaLibrarySession? = null
+    private var directorPlayer: DirectorPlayer? = null
+    private var noisyReceiver: BecomingNoisyReceiver? = null
 
     override fun onCreate() {
         super.onCreate()
-
         hatchet.i("Starting service...")
 
-        val notificationGenerator = NotificationGenerator(this, hatchet)
-        val systemNotifService = NotificationManagerCompat.from(this)
+        val player = DirectorPlayer(director, this, hatchet)
+        val callback = ChipboxLibrarySessionCallback(libraryBrowser, serviceScope, hatchet)
 
-        val callback = ChipboxSessionCallback(
-            this,
-            serviceScope,
-            director,
-            notificationGenerator,
-            systemNotifService,
-            hatchet,
-        )
+        session = MediaLibrarySession.Builder(this, player, callback).build()
+        directorPlayer = player
 
-        mediaSession = createMediaSession(callback)
-//        mediaController = MediaControllerCompat(this, mediaSession!!)
-//        mediaController?.registerCallback(
-//            object : MediaControllerCompat.Callback() {
-//                override fun onSessionDestroyed() {
-//                    Timber.e("Session destroyed in Activity.")
-//                     maybe schedule a reconnection using a new MediaBrowser instance
-//                }
-//            }
-//        )
+        val receiver = BecomingNoisyReceiver { player.pauseFromBecomingNoisy() }
+        registerReceiver(receiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
+        noisyReceiver = receiver
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        MediaButtonReceiver.handleIntent(mediaSession, intent)
-        return super.onStartCommand(intent, flags, startId)
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
+        return session
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        val player = directorPlayer
+        if (player == null || !player.playWhenReady) {
+            stopSelf()
+        }
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         hatchet.i("Destroying service...")
-    }
-
-    override fun onGetRoot(
-        clientPackageName: String,
-        clientUid: Int,
-        rootHints: Bundle?
-    ): BrowserRoot? {
-        hatchet.v("onGetRoot for $clientPackageName")
-        return when (allowBrowsing(clientPackageName, clientUid)) {
-            AccessLevel.FULL -> BrowserRoot(ID_ROOT_FULL, null)
-            AccessLevel.NO_BROWSE -> BrowserRoot(ID_ROOT_EMPTY, null)
-            AccessLevel.NONE -> null
+        noisyReceiver?.let {
+            try {
+                unregisterReceiver(it)
+            } catch (t: Throwable) {
+                hatchet.w("Failed to unregister noisy receiver: $t")
+            }
         }
-    }
-
-    override fun onLoadChildren(
-        parentMediaId: String,
-        result: Result<List<MediaBrowserCompat.MediaItem>>
-    ) {
-//        Timber.v("onLoadChildren for $parentMediaId")
-
-        //  Browsing not allowed
-        if (ID_ROOT_EMPTY == parentMediaId) {
-            hatchet.w("App not permitted to browse library.")
-            result.sendResult(null)
-            return
-        }
-
-        if (parentMediaId == ID_ROOT_FULL) {
-            val topLevelMenuItems = browser.getTopLevelMenuItems()
-            hatchet.d("Sending top level menu items: ${topLevelMenuItems}")
-            result.sendResult(topLevelMenuItems)
-            return
-        }
-
-        result.detach()
-
-        serviceScope.launch {
-            browser.browseTo(parentMediaId, result)
-        }
-    }
-
-    private fun createMediaSession(
-        callback: ChipboxSessionCallback
-    ) = MediaSessionCompat(baseContext, LOG_TAG).apply {
-        // Set an initial PlaybackState with ACTION_PLAY, so media buttons can start the player
-        val state = PlaybackStateCompat
-            .Builder()
-            .setActions(
-                PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PLAY_PAUSE
-            ).build()
-
-        setPlaybackState(state)
-
-        setCallback(callback)
-        callback.mediaSession = this
-
-        // Set the session's token so that client activities can communicate with it.
-        val mscToken = sessionToken
-        hatchet.v("Creating session with Token: ${sessionToken.hashCode()} active: $isActive")
-
-        this@ChipboxPlaybackService.sessionToken = mscToken
-    }
-
-
-    private fun allowBrowsing(clientPackageName: String, clientUid: Int): AccessLevel {
-        return AccessLevel.FULL
+        noisyReceiver = null
+        session?.release()
+        session = null
+        directorPlayer?.release()
+        directorPlayer = null
+        serviceScope.cancel()
+        super.onDestroy()
     }
 
     companion object {
         private const val ID_ROOT_INFIX = ".media."
         const val ID_ROOT = "net.sigmabeta.chipbox.services" + ID_ROOT_INFIX
 
-        private const val ID_ROOT_FULL = ID_ROOT + "full"
-        private const val ID_ROOT_EMPTY = ID_ROOT + "empty"
-
-        private const val LOG_TAG = "ChipboxPlaybackService"
+        const val ID_ROOT_FULL = ID_ROOT + "full"
+        const val ID_ROOT_EMPTY = ID_ROOT + "empty"
     }
 }
