@@ -59,6 +59,7 @@ internal fun Track.toMetadataBuilder(): MediaMetadataCompat.Builder {
         .putString(MediaMetadata.METADATA_KEY_TITLE, title)
         .putString(MediaMetadata.METADATA_KEY_ALBUM, game?.title)
         .putString(MediaMetadata.METADATA_KEY_ARTIST, getArtistText())
+        .putLong(MediaMetadata.METADATA_KEY_DURATION, trackLengthMs)
     val artUri = game?.iconUri()?.toString()
     if (artUri != null) {
         builder.putString(MediaMetadata.METADATA_KEY_ALBUM_ART_URI, artUri)
