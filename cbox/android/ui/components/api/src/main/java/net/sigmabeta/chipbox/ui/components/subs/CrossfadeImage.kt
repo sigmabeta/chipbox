@@ -1,7 +1,11 @@
 package net.sigmabeta.chipbox.ui.components.subs
 
 import android.content.res.Configuration
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -18,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -53,24 +58,31 @@ fun CrossfadeImage(
     simulateError: Boolean = false,
     onImageLoadedChange: ((Boolean) -> Unit)? = null,
 ) {
-    if (sourceInfo.info == null) {
-        PlaceHolderImage(imagePlaceholder, modifier)
-        return
+    // AnimatedContent gives each `sourceInfo` its own composition scope so the
+    // outgoing branch can keep rendering the previous painter (and its loaded
+    // image) while the incoming branch starts a fresh Coil load. Without this,
+    // a re-keyed request mutates the same AsyncImagePainter and we lose the
+    // old frame the moment the source changes.
+    AnimatedContent(
+        targetState = sourceInfo,
+        contentKey = { it.info },
+        transitionSpec = { fadeIn() togetherWith fadeOut() },
+        modifier = modifier,
+        label = "CrossfadeImage.source",
+    ) { current ->
+        when {
+            current.info == null -> PlaceHolderImage(imagePlaceholder, Modifier.fillMaxSize())
+            forceGenBitmap -> FakeImage(current, Modifier.fillMaxSize())
+            else -> RealImage(
+                sourceInfo = current,
+                imagePlaceholder = imagePlaceholder,
+                contentDescription = contentDescription,
+                simulateError = simulateError,
+                onImageLoadedChange = onImageLoadedChange,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
-
-    if (forceGenBitmap) {
-        FakeImage(sourceInfo, modifier)
-        return
-    }
-
-    RealImage(
-        sourceInfo,
-        imagePlaceholder,
-        contentDescription,
-        simulateError,
-        onImageLoadedChange,
-        modifier,
-    )
 }
 
 @Composable
@@ -127,8 +139,12 @@ fun RealStandardImage(
 
     val state by asyncPainter.state.collectAsState()
     val isLoaded = state is AsyncImagePainter.State.Success
-    LaunchedEffect(isLoaded, onImageLoadedChange) {
-        onImageLoadedChange?.invoke(isLoaded)
+    // rememberUpdatedState so the callback can be a fresh lambda each recomposition
+    // without re-firing the LaunchedEffect — if the outer AnimatedContent / Crossfade keeps
+    // this branch alive during a transition we don't want to re-report a stale loaded=true.
+    val latestCallback by rememberUpdatedState(onImageLoadedChange)
+    LaunchedEffect(isLoaded) {
+        latestCallback?.invoke(isLoaded)
     }
 
     if (cacheHit) {

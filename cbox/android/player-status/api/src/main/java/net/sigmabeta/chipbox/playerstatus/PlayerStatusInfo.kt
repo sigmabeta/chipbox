@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.playerstatus
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,9 +9,9 @@ import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -22,18 +21,10 @@ import net.sigmabeta.chipbox.ui.components.CrossfadeText
 internal fun PlayerStatusInfo(
     name: String,
     caption: String,
-    onArtworkBackground: Boolean,
+    textColor: Color,
+    textShadow: Shadow,
     modifier: Modifier = Modifier,
 ) {
-    val textColor by animateColorAsState(
-        targetValue = if (onArtworkBackground) {
-            Color.White
-        } else {
-            MaterialTheme.colorScheme.primary
-        },
-        label = "PlayerStatusInfo.textColor",
-    )
-
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -46,7 +37,7 @@ internal fun PlayerStatusInfo(
         ) {
             CrossfadeText(
                 text = name,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(shadow = textShadow),
                 color = textColor,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -60,7 +51,7 @@ internal fun PlayerStatusInfo(
 
             CrossfadeText(
                 text = caption,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodySmall.copy(shadow = textShadow),
                 color = textColor,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
