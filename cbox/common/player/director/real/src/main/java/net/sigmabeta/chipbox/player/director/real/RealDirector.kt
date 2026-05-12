@@ -75,7 +75,7 @@ class RealDirector(
 
     // replay = 1 so late subscribers (e.g. a screen opened mid-playback) immediately
     // receive the current track / state instead of waiting for the next change.
-    private val metadataStateMutable = MutableSharedFlow<Track>(replay = 1)
+    private val metadataStateMutable = MutableSharedFlow<Track?>(replay = 1)
 
     private val playbackStateMutable = MutableSharedFlow<ChipboxPlaybackState>(replay = 1)
 
@@ -83,6 +83,13 @@ class RealDirector(
     private val sessionStateMutable = MutableSharedFlow<Session?>(replay = 1)
 
     init {
+        // Seed each replay buffer so a subscriber that attaches before any playback has
+        // happened gets a meaningful "nothing playing" emission instead of hanging on an
+        // empty flow.
+        metadataStateMutable.tryEmit(null)
+        playbackStateMutable.tryEmit(currentState)
+        sessionStateMutable.tryEmit(null)
+
         directorScope.launch {
             generator
                 .events()

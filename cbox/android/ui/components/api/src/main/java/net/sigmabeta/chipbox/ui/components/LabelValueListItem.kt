@@ -5,11 +5,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -70,15 +72,22 @@ fun LabelValueListItem(
     LabeledThingy(
         label = model.label,
         thingy = {
-            AnimatedVisibility(
-                visible = value == null
+            // weight(1f) caps the value's half of the row so long text can't crowd the
+            // label; CenterEnd alignment gravitates short content to the right edge
+            // instead of letting it float in the middle of the half-slot.
+            Box(
+                modifier = Modifier.weight(1f),
+                contentAlignment = Alignment.CenterEnd,
             ) {
-                LoadingTextValue(model)
-            }
-            AnimatedVisibility(
-                visible = value != null
-            ) {
-                TextValue(value = value!!, active = model.active)
+                // Fully-qualified call resolves to the scope-less overload; without the
+                // qualifier Kotlin picks the RowScope extension (still visible from the
+                // enclosing `thingy` lambda) and fails because BoxScope isn't RowScope.
+                androidx.compose.animation.AnimatedVisibility(visible = value == null) {
+                    LoadingTextValue(model)
+                }
+                androidx.compose.animation.AnimatedVisibility(visible = value != null) {
+                    TextValue(value = value!!, active = model.active)
+                }
             }
         },
         onClick = { actionSink.sendAction(model.clickAction) },
