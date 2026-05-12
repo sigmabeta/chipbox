@@ -181,6 +181,10 @@ class MockRepository(
 
     override suspend fun addGame(rawGame: RawGame) = Unit
 
+    override suspend fun clearLibrary() {
+        resetData()
+    }
+
     private suspend fun generateGames() {
         withContext(dispatcher) {
             resetData()

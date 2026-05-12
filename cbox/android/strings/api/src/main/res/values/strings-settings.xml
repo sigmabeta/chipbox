@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_screen_title">Settings</string>
+
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_section_library">Library</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_section_debug">Debug</string>
+
+    <string name="settings_label_brand_font">Brand font</string>
+    <string name="settings_label_plain_font">Plain font</string>
+
+    <string name="settings_label_rescan_library">Rescan library</string>
+    <string name="settings_caption_rescan_library">Look for new tracks in your configured folders.</string>
+    <string name="settings_label_clear_library">Clear library data</string>
+    <string name="settings_caption_clear_library">Removes all imported games, artists, and tracks. Does not delete files.</string>
+
+    <string name="settings_label_app_version">App version</string>
+    <string name="settings_label_build_date">Build date</string>
+    <string name="settings_label_licenses">Open-source licenses</string>
+    <string name="settings_label_github">GitHub repository</string>
+
+    <string name="settings_label_app_branch">Branch</string>
+    <string name="settings_label_version_code">Version code</string>
+</resources>

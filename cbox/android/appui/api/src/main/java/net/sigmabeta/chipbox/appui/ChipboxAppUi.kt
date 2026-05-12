@@ -44,6 +44,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.chipbox.playerstatus.PlayerStatus
 import net.sigmabeta.chipbox.ui.components.CrossfadeText
 import net.sigmabeta.chipbox.ui.list.LocalTitleBarController

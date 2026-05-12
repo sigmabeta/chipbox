@@ -48,4 +48,6 @@ interface Repository {
         withGame: Boolean = false,
         withArtists: Boolean = false
     ): Track?
+
+    suspend fun clearLibrary()
 }

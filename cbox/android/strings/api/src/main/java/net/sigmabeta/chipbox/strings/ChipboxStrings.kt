@@ -19,4 +19,21 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.GAME_DETAIL_SECTION_ARTISTS -> R.string.game_detail_section_artists
     ChipboxStringId.GAME_DETAIL_CTA_PLAY_ALL    -> R.string.game_detail_cta_play_all
     ChipboxStringId.GAME_DETAIL_CTA_SHUFFLE_ALL -> R.string.game_detail_cta_shuffle_all
+    ChipboxStringId.SETTINGS_SCREEN_TITLE        -> R.string.settings_screen_title
+    ChipboxStringId.SETTINGS_SECTION_APPEARANCE  -> R.string.settings_section_appearance
+    ChipboxStringId.SETTINGS_SECTION_LIBRARY     -> R.string.settings_section_library
+    ChipboxStringId.SETTINGS_SECTION_ABOUT       -> R.string.settings_section_about
+    ChipboxStringId.SETTINGS_SECTION_DEBUG       -> R.string.settings_section_debug
+    ChipboxStringId.SETTINGS_LABEL_BRAND_FONT    -> R.string.settings_label_brand_font
+    ChipboxStringId.SETTINGS_LABEL_PLAIN_FONT    -> R.string.settings_label_plain_font
+    ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY   -> R.string.settings_label_rescan_library
+    ChipboxStringId.SETTINGS_CAPTION_RESCAN_LIBRARY -> R.string.settings_caption_rescan_library
+    ChipboxStringId.SETTINGS_LABEL_CLEAR_LIBRARY    -> R.string.settings_label_clear_library
+    ChipboxStringId.SETTINGS_CAPTION_CLEAR_LIBRARY  -> R.string.settings_caption_clear_library
+    ChipboxStringId.SETTINGS_LABEL_APP_VERSION   -> R.string.settings_label_app_version
+    ChipboxStringId.SETTINGS_LABEL_BUILD_DATE    -> R.string.settings_label_build_date
+    ChipboxStringId.SETTINGS_LABEL_LICENSES      -> R.string.settings_label_licenses
+    ChipboxStringId.SETTINGS_LABEL_GITHUB        -> R.string.settings_label_github
+    ChipboxStringId.SETTINGS_LABEL_APP_BRANCH    -> R.string.settings_label_app_branch
+    ChipboxStringId.SETTINGS_LABEL_VERSION_CODE  -> R.string.settings_label_version_code
 }

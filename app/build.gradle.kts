@@ -5,6 +5,10 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+fun gitBranch(): String = providers.exec {
+    commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
+}.standardOutput.asText.get().trim().ifEmpty { "unknown" }
+
 android {
     namespace = "net.sigmabeta.chipbox"
     compileSdk = 36
@@ -15,6 +19,9 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+
+        buildConfigField("long", "BUILD_TIME_MS", "${System.currentTimeMillis()}L")
+        buildConfigField("String", "BUILD_BRANCH", "\"${gitBranch()}\"")
     }
 
     buildTypes {
@@ -40,6 +47,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -74,6 +82,12 @@ dependencies {
     implementation(projects.cbox.common.repository.di)
     implementation(projects.cbox.android.scanner.di)
     implementation(projects.cbox.android.ui.components.api)
+    implementation(projects.cbox.android.coroutines.api)
+    implementation(projects.cbox.android.storage.api)
+    implementation(projects.cbox.common.debug.di)
+    implementation(projects.cbox.common.settings.di)
+
+    implementation(libs.sage.common.appinfo)
 
     implementation(libs.sage.common.list)
     implementation(libs.sage.common.appcomm)

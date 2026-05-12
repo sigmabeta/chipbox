@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    api(libs.sage.common.storage.common)
+    api(libs.kotlinx.coroutines.core)
 }
