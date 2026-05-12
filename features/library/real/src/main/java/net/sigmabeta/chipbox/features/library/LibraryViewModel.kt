@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.features.library
 
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import net.sigmabeta.chipbox.appcomm.ChipboxNavEvent.NavigateTo
+import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.features.browsealltracks.BrowseAllTracks
 import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtist
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame

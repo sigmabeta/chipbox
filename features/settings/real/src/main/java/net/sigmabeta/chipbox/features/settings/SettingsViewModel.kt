@@ -9,7 +9,7 @@ import java.time.format.FormatStyle
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import net.sigmabeta.chipbox.appcomm.ChipboxNavEvent
+import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.models.state.ScannerState
 import net.sigmabeta.chipbox.repository.Repository
@@ -78,10 +78,10 @@ class SettingsViewModel @Inject constructor(
         when (action) {
             SettingsAction.RescanLibraryClicked -> onRescanClicked()
             SettingsAction.ClearLibraryClicked -> onClearLibraryClicked()
-            SettingsAction.LicensesClicked -> hatchet.i(
-                "Licenses tapped; licenses screen is not implemented yet."
+            SettingsAction.LicensesClicked -> emit(
+                ChipboxEvent.ShowSnackbar("Licenses screen coming soon.")
             )
-            SettingsAction.GithubClicked -> emit(ChipboxNavEvent.OpenUrl(GITHUB_URL))
+            SettingsAction.GithubClicked -> emit(ChipboxEvent.OpenUrl(GITHUB_URL))
             SettingsAction.BuildDateClicked -> onBuildDateClicked()
             else -> Unit
         }
@@ -98,9 +98,11 @@ class SettingsViewModel @Inject constructor(
             try {
                 repository.clearLibrary()
                 updateState { it.copy(clearLibraryStatus = LCE.Content(Unit)) }
+                emit(ChipboxEvent.ShowSnackbar("Library cleared."))
             } catch (ex: Throwable) {
                 hatchet.e("Clear library failed: ${ex.message}")
                 updateState { it.copy(clearLibraryStatus = LCE.Error(LOAD_OP_CLEAR, ex)) }
+                emit(ChipboxEvent.ShowSnackbar("Failed to clear library."))
             }
         }
     }
