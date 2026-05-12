@@ -38,4 +38,29 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.SETTINGS_LABEL_GITHUB        -> R.string.settings_label_github
     ChipboxStringId.SETTINGS_LABEL_APP_BRANCH    -> R.string.settings_label_app_branch
     ChipboxStringId.SETTINGS_LABEL_VERSION_CODE  -> R.string.settings_label_version_code
+    ChipboxStringId.SETTINGS_LABEL_PLAYBACK_STATUS   -> R.string.settings_label_playback_status
+    ChipboxStringId.SETTINGS_CAPTION_PLAYBACK_STATUS -> R.string.settings_caption_playback_status
+    ChipboxStringId.PLAYBACK_STATUS_SCREEN_TITLE        -> R.string.playback_status_screen_title
+    ChipboxStringId.PLAYBACK_STATUS_SECTION_TRACK       -> R.string.playback_status_section_track
+    ChipboxStringId.PLAYBACK_STATUS_SECTION_PLAYBACK    -> R.string.playback_status_section_playback
+    ChipboxStringId.PLAYBACK_STATUS_SECTION_SESSION     -> R.string.playback_status_section_session
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_TITLE         -> R.string.playback_status_label_title
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_ARTISTS       -> R.string.playback_status_label_artists
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_GAME          -> R.string.playback_status_label_game
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_TRACK_NUMBER  -> R.string.playback_status_label_track_number
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_SOURCE        -> R.string.playback_status_label_source
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_FADE          -> R.string.playback_status_label_fade
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_PATH          -> R.string.playback_status_label_path
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_STATE             -> R.string.playback_status_label_state
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_POSITION_MS       -> R.string.playback_status_label_position_ms
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_LENGTH_MS         -> R.string.playback_status_label_length_ms
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_BUFFER_AHEAD_MS   -> R.string.playback_status_label_buffer_ahead_ms
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_PLAYBACK_SPEED    -> R.string.playback_status_label_playback_speed
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_SKIP_FORWARD      -> R.string.playback_status_label_skip_forward
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_ERROR_MESSAGE     -> R.string.playback_status_label_error_message
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_SESSION_ID        -> R.string.playback_status_label_session_id
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_SESSION_TYPE      -> R.string.playback_status_label_session_type
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_CONTENT_ID        -> R.string.playback_status_label_content_id
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_CURRENT_POSITION  -> R.string.playback_status_label_current_position
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_SHUFFLED          -> R.string.playback_status_label_shuffled
 }

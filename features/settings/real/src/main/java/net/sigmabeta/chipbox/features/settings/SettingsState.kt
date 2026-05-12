@@ -28,6 +28,7 @@ data class SettingsState(
     val formattedBuildDate: String? = null,
     val debugClickCount: Int = 0,
     val shouldShowDebug: Boolean? = null,
+    val playbackStatusAvailable: Boolean = false,
 ) : ListState() {
     override fun title(stringProvider: StringProvider) = TitleBarModel(
         title = stringProvider.getString(ChipboxStringId.SETTINGS_SCREEN_TITLE),
@@ -52,6 +53,7 @@ data class SettingsState(
         },
         ifShowDebugEnabled { appBranchRow(stringProvider) },
         ifShowDebugEnabled { versionCodeRow(stringProvider) },
+        ifPlaybackStatusAvailable { playbackStatusRow(stringProvider) },
     )
 
     private fun sectionHeader(stringProvider: StringProvider, id: ChipboxStringId) =
@@ -151,4 +153,14 @@ data class SettingsState(
 
     private fun ifShowDebugEnabled(content: () -> ListModel): ListModel =
         if (shouldShowDebug == true) content() else NoopListModel
+
+    private fun ifPlaybackStatusAvailable(content: () -> ListModel): ListModel =
+        if (playbackStatusAvailable && shouldShowDebug == true) content() else NoopListModel
+
+    private fun playbackStatusRow(stringProvider: StringProvider) = NameCaptionListModel(
+        dataId = ChipboxStringId.SETTINGS_LABEL_PLAYBACK_STATUS.hashCode().toLong(),
+        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_PLAYBACK_STATUS),
+        caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_PLAYBACK_STATUS),
+        clickAction = SettingsAction.PlaybackStatusClicked,
+    )
 }

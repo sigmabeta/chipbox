@@ -117,7 +117,7 @@ abstract class Speaker(
                     var audioBuffer = bufferManager.checkForNextAudioBuffer()
 
                     if (audioBuffer == null) {
-                        eventSink.emit(SpeakerEvent.Buffering)
+                        eventSink.emit(SpeakerEvent.Buffering(currentPositionMs()))
                         audioBuffer = bufferManager.waitForNextAudioBuffer()
                     }
 
@@ -131,7 +131,7 @@ abstract class Speaker(
                         playingTrackId = audioBuffer.trackId
                     }
 
-                    eventSink.emit(SpeakerEvent.Playing)
+                    eventSink.emit(SpeakerEvent.Playing(currentPositionMs()))
 
                     onAudioReceived(audioBuffer)
                     bufferManager.recycleShortArray(audioBuffer.data)

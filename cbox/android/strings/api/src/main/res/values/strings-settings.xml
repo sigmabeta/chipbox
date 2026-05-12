@@ -24,4 +24,7 @@
 
     <string name="settings_label_app_branch">Branch</string>
     <string name="settings_label_version_code">Version code</string>
+
+    <string name="settings_label_playback_status">Playback status</string>
+    <string name="settings_caption_playback_status">Inspect current player state (debug only).</string>
 </resources>

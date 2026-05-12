@@ -40,6 +40,15 @@ interface Director {
      */
     fun seek(positionMs: Long)
 
+    /**
+     * Toggle shuffle on the current session. Re-resolves the setlist (original order from the
+     * repository, optionally shuffled) and updates `currentPosition` to wherever the active
+     * track lands in the new order — playback of the active track is not interrupted; only the
+     * sequence of *future* tracks changes. No-op if there's no active session or if shuffle is
+     * already in the requested mode.
+     */
+    fun setShuffled(shuffled: Boolean)
+
     // State Updates
 
     /** Hot stream of the currently-playing [Track], emitted whenever the active track changes. */
@@ -47,6 +56,13 @@ interface Director {
 
     /** Hot stream of the reduced [ChipboxPlaybackState] derived from generator + speaker events. */
     fun playbackState(): SharedFlow<ChipboxPlaybackState>
+
+    /**
+     * Hot stream of the current [Session]. Emits `null` before [start] is first called and on
+     * teardown, and re-emits a fresh copy whenever the director advances within the setlist
+     * (so subscribers see updated `currentPosition` values).
+     */
+    fun sessionState(): SharedFlow<Session?>
 
     // Audio Focus
 
