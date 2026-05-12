@@ -48,6 +48,7 @@ include(
     ":cbox:android:contentsource:file:api",
     ":cbox:android:contentsource:file:di",
     ":cbox:android:contentsource:file:real",
+    ":cbox:android:coroutines:api",
     ":cbox:android:database:all",
     ":cbox:android:database:api",
     ":cbox:android:database:di",
@@ -93,6 +94,7 @@ include(
     ":cbox:android:scanner:fake",
     ":cbox:android:scanner:real",
     ":cbox:android:services:api",
+    ":cbox:android:storage:api",
     ":cbox:android:strings:api",
     ":cbox:android:styles:api",
     ":cbox:android:ui:components:api",
@@ -102,6 +104,9 @@ include(
 
     ":cbox:common:appcomm:api",
     ":cbox:common:contentsource:api",
+    ":cbox:common:debug:api",
+    ":cbox:common:debug:di",
+    ":cbox:common:debug:real",
     ":cbox:common:entities:api",
     ":cbox:common:models:api",
     ":cbox:common:player:buffer:all",
@@ -137,6 +142,8 @@ include(
     ":cbox:common:repository:fake",
     ":cbox:common:scanner:api",
     ":cbox:common:settings:api",
+    ":cbox:common:settings:di",
+    ":cbox:common:settings:real",
     ":cbox:common:strings:api",
     ":cbox:common:utils:api",
 
@@ -154,6 +161,8 @@ include(
     ":features:game-detail:real",
     ":features:library:api",
     ":features:library:real",
+    ":features:settings:api",
+    ":features:settings:real",
 )
 
 // 2sf starts with a digit — map to a valid project name

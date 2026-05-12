@@ -232,6 +232,10 @@ class DatabaseRepository(
         .map { it.toTrack(withGame = true) }
         .sortedBy { it.game?.title }
 
+    override suspend fun clearLibrary() {
+        resetData()
+    }
+
     private fun resetData() {
         artistDao.nukeTable()
         gameDao.nukeTable()

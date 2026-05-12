@@ -203,6 +203,10 @@ class MemoryRepository(
         withArtists: Boolean
     ) = tracksById[id]?.toTrack(withGame, withArtists)
 
+    override suspend fun clearLibrary() {
+        resetData()
+    }
+
     override suspend fun addGame(rawGame: RawGame) {
         // Get and convert tracks
         val tracks = rawGame.tracks
