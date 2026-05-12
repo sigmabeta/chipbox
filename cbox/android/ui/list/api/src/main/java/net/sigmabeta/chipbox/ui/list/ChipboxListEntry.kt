@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import net.sigmabeta.chipbox.appcomm.ChipboxNavEvent
+import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.ui.components.Content
 import net.sigmabeta.sage.android.ui.list.GridScreen
 import net.sigmabeta.sage.android.ui.list.ListScreen
@@ -20,11 +20,11 @@ import net.sigmabeta.sage.list.WidthClass
 @Composable
 fun ChipboxListEntry(
     viewModel: ChipboxListViewModel<*>,
-    onNavEvent: (ChipboxNavEvent) -> Unit,
+    onEvent: (ChipboxEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LaunchedEffect(viewModel) {
-        viewModel.navEvents.collect(onNavEvent)
+        viewModel.events.collect(onEvent)
     }
 
     val state by viewModel.uiStateActual.collectAsStateWithLifecycle()

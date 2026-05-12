@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import net.sigmabeta.chipbox.appcomm.ChipboxNavEvent
+import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.list.ListState
@@ -78,25 +78,25 @@ abstract class ChipboxListViewModel<S : ListState>(
      */
     val showDebug: StateFlow<Boolean> = _showDebug.asStateFlow()
 
-    private val _navEvents = MutableSharedFlow<ChipboxNavEvent>(
+    private val _events = MutableSharedFlow<ChipboxEvent>(
         replay = 0,
         extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
 
     /**
-     * One-shot navigation effects produced by this view model. Collected by [ChipboxListEntry],
-     * which forwards each event to the host's `onNavEvent` lambda (see
-     * [net.sigmabeta.chipbox.ui.list.ChipboxListEntry]).
+     * One-shot effects produced by this view model — navigation, external-URL launches,
+     * snackbar messages, etc. Collected by [ChipboxListEntry], which forwards each event to
+     * the host's `onEvent` lambda (see [net.sigmabeta.chipbox.ui.list.ChipboxListEntry]).
      */
-    val navEvents: SharedFlow<ChipboxNavEvent> = _navEvents.asSharedFlow()
+    val events: SharedFlow<ChipboxEvent> = _events.asSharedFlow()
 
     /**
-     * Emit a one-shot navigation effect. Subclasses call this from [handleAction] instead of
-     * touching a `NavController` directly, keeping the view model framework-free.
+     * Emit a one-shot effect. Subclasses call this from [handleAction] instead of touching a
+     * `NavController` (or a `SnackbarHostState`) directly, keeping the view model framework-free.
      */
-    protected fun emit(event: ChipboxNavEvent) {
-        _navEvents.tryEmit(event)
+    protected fun emit(event: ChipboxEvent) {
+        _events.tryEmit(event)
     }
 
     /**
