@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.playerstatus.PlayerStatusAnimDurationMs
 import net.sigmabeta.chipbox.playerstatus.PlayerStatusReservedHeight
 import net.sigmabeta.sage.android.ui.list.LocalListBottomInset
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -62,6 +63,7 @@ private val NAV_RAIL_MIN_WIDTH = 480.dp
 @Composable
 fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) {
     AppTheme {
+        val appUiViewModel: ChipboxAppUiViewModel = hiltViewModel()
         val navController = rememberNavController()
         val backStackEntry by navController.currentBackStackEntryAsState()
 
@@ -171,6 +173,7 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
                                 navController = navController,
                                 snackbarHostState = snackbarHostState,
                                 snackbarScope = snackbarScope,
+                                playbackStatusEntryPoint = appUiViewModel.playbackStatusEntryPoint,
                                 modifier = Modifier.fillMaxSize(),
                             )
                             PlayerStatus(

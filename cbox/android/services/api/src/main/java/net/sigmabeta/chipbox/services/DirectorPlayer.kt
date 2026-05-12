@@ -36,6 +36,7 @@ class DirectorPlayer(
     private var currentTrack: Track? = null
     private var playbackState: ChipboxPlaybackState = INITIAL_STATE
     private var requestedPlayWhenReady: Boolean = false
+    private var shuffled: Boolean = false
 
     init {
         director.metadataState()
@@ -63,6 +64,13 @@ class DirectorPlayer(
                 invalidateState()
             }
             .launchIn(scope)
+
+        director.sessionState()
+            .onEach { session ->
+                shuffled = session?.shuffled == true
+                invalidateState()
+            }
+            .launchIn(scope)
     }
 
     override fun getState(): State {
@@ -75,7 +83,8 @@ class DirectorPlayer(
             .setPlaybackState(playbackState.state.toMedia3PlaybackState())
             .setPlaybackParameters(PlaybackParameters(playbackState.playbackSpeed))
             .setContentPositionMs(playbackState.position)
-            .setContentBufferedPositionMs { playbackState.bufferPosition }
+            .setContentBufferedPositionMs { playbackState.generatorProducedMs }
+            .setShuffleModeEnabled(shuffled)
             .setAudioAttributes(AUDIO_ATTRIBUTES)
 
         if (playbackState.state == PlayerState.ERROR) {
@@ -123,6 +132,11 @@ class DirectorPlayer(
     }
 
     override fun handlePrepare(): ListenableFuture<*> = Futures.immediateVoidFuture()
+
+    override fun handleSetShuffleModeEnabled(shuffleModeEnabled: Boolean): ListenableFuture<*> {
+        director.setShuffled(shuffleModeEnabled)
+        return Futures.immediateVoidFuture()
+    }
 
     override fun handleStop(): ListenableFuture<*> {
         requestedPlayWhenReady = false
@@ -212,7 +226,7 @@ class DirectorPlayer(
         private val INITIAL_STATE = ChipboxPlaybackState(
             state = PlayerState.IDLE,
             position = 0L,
-            bufferPosition = 0L,
+            generatorProducedMs = 0L,
             playbackSpeed = 1.0f,
             skipForwardAllowed = false,
             errorMessage = null,
@@ -229,6 +243,7 @@ class DirectorPlayer(
                 Player.COMMAND_GET_TIMELINE,
                 Player.COMMAND_GET_CURRENT_MEDIA_ITEM,
                 Player.COMMAND_GET_AUDIO_ATTRIBUTES,
+                Player.COMMAND_SET_SHUFFLE_MODE,
                 Player.COMMAND_RELEASE,
             )
             .build()

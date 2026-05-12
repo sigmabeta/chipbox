@@ -152,6 +152,9 @@ include(
     ":features:game-detail:real",
     ":features:library:api",
     ":features:library:real",
+    ":features:playback-status:api",
+    ":features:playback-status:fake",
+    ":features:playback-status:real",
     ":features:settings:api",
     ":features:settings:real",
 )

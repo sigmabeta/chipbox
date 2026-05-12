@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="playback_status_screen_title">Playback status</string>
+
+    <string name="playback_status_section_track">Track</string>
+    <string name="playback_status_section_playback">Playback</string>
+    <string name="playback_status_section_session">Session</string>
+
+    <string name="playback_status_label_title">Title</string>
+    <string name="playback_status_label_artists">Artists</string>
+    <string name="playback_status_label_game">Game</string>
+    <string name="playback_status_label_track_number">Track #</string>
+    <string name="playback_status_label_source">Source</string>
+    <string name="playback_status_label_fade">Fade</string>
+    <string name="playback_status_label_path">Path</string>
+
+    <string name="playback_status_label_state">State</string>
+    <string name="playback_status_label_position_ms">Position (ms)</string>
+    <string name="playback_status_label_length_ms">Length (ms)</string>
+    <string name="playback_status_label_buffer_ahead_ms">Buffer ahead (ms)</string>
+    <string name="playback_status_label_playback_speed">Playback speed</string>
+    <string name="playback_status_label_skip_forward">Skip forward allowed</string>
+    <string name="playback_status_label_error_message">Error message</string>
+
+    <string name="playback_status_label_session_id">Session id</string>
+    <string name="playback_status_label_session_type">Session type</string>
+    <string name="playback_status_label_content_id">Content id</string>
+    <string name="playback_status_label_current_position">Setlist position</string>
+    <string name="playback_status_label_shuffled">Shuffled</string>
+</resources>

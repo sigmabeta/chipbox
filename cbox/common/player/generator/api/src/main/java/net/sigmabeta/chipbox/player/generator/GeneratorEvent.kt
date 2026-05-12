@@ -17,8 +17,10 @@ sealed class GeneratorEvent {
     ) : GeneratorEvent()
 
     /** A buffer has just been pushed downstream. Used by the director to flip
-     *  [net.sigmabeta.chipbox.player.director.PlayerState.BUFFERING] → `PLAYING`. */
-    object Emitting : GeneratorEvent()
+     *  [net.sigmabeta.chipbox.player.director.PlayerState.BUFFERING] → `PLAYING`. [producedMs]
+     *  is the generator's high-water mark within the current track — the time-offset of the
+     *  last frame just handed to the buffer manager. */
+    data class Emitting(val producedMs: Long) : GeneratorEvent()
 
     /** The current track has finished and the generator is blocked waiting for the next
      *  track id. The director is expected to respond with [Generator.startTrack]. */

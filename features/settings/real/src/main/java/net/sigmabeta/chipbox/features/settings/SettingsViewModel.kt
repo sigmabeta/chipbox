@@ -13,6 +13,8 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
+import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatusEntryPoint
 import net.sigmabeta.chipbox.models.state.ScannerState
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
@@ -33,6 +35,7 @@ class SettingsViewModel @Inject constructor(
     private val scanner: Scanner,
     private val contentSource: AndroidFileContentSource,
     private val appInfo: AppInfo,
+    private val playbackStatusEntryPoint: PlaybackStatusEntryPoint,
     stringProvider: StringProvider,
     private val hatchet: Hatchet,
 ) : ChipboxListViewModel<SettingsState>(
@@ -45,6 +48,7 @@ class SettingsViewModel @Inject constructor(
             it.copy(
                 appInfo = appInfo,
                 formattedBuildDate = formatBuildDate(appInfo.buildTimeMs),
+                playbackStatusAvailable = playbackStatusEntryPoint.isAvailable,
             )
         }
 
@@ -89,6 +93,7 @@ class SettingsViewModel @Inject constructor(
             )
             SettingsAction.GithubClicked -> emit(ChipboxEvent.OpenUrl(GITHUB_URL))
             SettingsAction.BuildDateClicked -> onBuildDateClicked()
+            SettingsAction.PlaybackStatusClicked -> emit(ChipboxEvent.NavigateTo(PlaybackStatus))
             else -> Unit
         }
     }

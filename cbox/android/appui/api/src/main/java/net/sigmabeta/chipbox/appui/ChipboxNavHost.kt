@@ -24,6 +24,7 @@ import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetailRoute
 import net.sigmabeta.chipbox.features.library.Library
 import net.sigmabeta.chipbox.features.library.LibraryRoute
+import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatusEntryPoint
 import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.chipbox.features.settings.SettingsRoute
 
@@ -32,6 +33,7 @@ fun ChipboxNavHost(
     navController: NavHostController,
     snackbarHostState: SnackbarHostState,
     snackbarScope: CoroutineScope,
+    playbackStatusEntryPoint: PlaybackStatusEntryPoint,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -69,5 +71,6 @@ fun ChipboxNavHost(
         composable<BrowseByArtist> { BrowseByArtistRoute() }
         composable<BrowseAllTracks> { BrowseAllTracksRoute() }
         composable<GameDetail> { GameDetailRoute(onEvent) }
+        playbackStatusEntryPoint.register(this, onEvent)
     }
 }

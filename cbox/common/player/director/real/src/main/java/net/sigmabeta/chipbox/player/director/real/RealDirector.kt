@@ -45,16 +45,22 @@ class RealDirector(
     private val directorScope = CoroutineScope(dispatcher)
 
     private var currentSession: Session? = null
+        set(value) {
+            field = value
+            directorScope.launch {
+                sessionStateMutable.emit(value)
+            }
+        }
 
     private var currentSetlist: List<Long>? = null
 
     private var currentState: ChipboxPlaybackState = ChipboxPlaybackState(
-        PlayerState.IDLE,
-        0,
-        0,
-        1.0f,
-        false,
-        null
+        state = PlayerState.IDLE,
+        position = 0L,
+        generatorProducedMs = 0L,
+        playbackSpeed = 1.0f,
+        skipForwardAllowed = false,
+        errorMessage = null,
     )
         set(value) {
             // Stamp the speaker's current position on every emission so pause/resume and
@@ -72,6 +78,9 @@ class RealDirector(
     private val metadataStateMutable = MutableSharedFlow<Track>(replay = 1)
 
     private val playbackStateMutable = MutableSharedFlow<ChipboxPlaybackState>(replay = 1)
+
+    // replay = 1 so a debug screen opened mid-playback receives the active session immediately.
+    private val sessionStateMutable = MutableSharedFlow<Session?>(replay = 1)
 
     init {
         directorScope.launch {
@@ -157,9 +166,34 @@ class RealDirector(
         }
     }
 
+    override fun setShuffled(shuffled: Boolean) {
+        directorScope.launch {
+            val session = currentSession ?: return@launch
+            if (session.shuffled == shuffled) return@launch
+
+            // Remember which track is playing so we can find it in the new ordering.
+            val playingTrackId = currentSetlist
+                ?.let { setlist -> session.currentPosition?.let(setlist::getOrNull) }
+
+            val newSetlist = getSetlistForSession(session)
+                .let { if (shuffled) it.shuffled() else it }
+            val newPosition = playingTrackId
+                ?.let { id -> newSetlist.indexOf(id).takeIf { it >= 0 } }
+                ?: 0
+
+            currentSetlist = newSetlist
+            currentSession = session.copy(
+                shuffled = shuffled,
+                currentPosition = newPosition,
+            )
+        }
+    }
+
     override fun metadataState() = metadataStateMutable.asSharedFlow()
 
     override fun playbackState() = playbackStateMutable.asSharedFlow()
+
+    override fun sessionState() = sessionStateMutable.asSharedFlow()
 
     override fun pauseTemporarily() {
         directorScope.launch {
@@ -237,7 +271,7 @@ class RealDirector(
     private suspend fun reduce(oldState: ChipboxPlaybackState, event: GeneratorEvent) = when (event) {
         is GeneratorEvent.Error -> handleGeneratorError(event, oldState)
         is GeneratorEvent.Loading -> handleGeneratorLoading(oldState, event)
-        GeneratorEvent.Emitting -> handleGeneratorEmitting(oldState, event)
+        is GeneratorEvent.Emitting -> handleGeneratorEmitting(oldState, event)
         GeneratorEvent.TrackChange -> handleGeneratorTrackChange(oldState)
     }
 
@@ -264,6 +298,7 @@ class RealDirector(
         if (oldState.state == PlayerState.PLAYING) {
             return oldState.copy(
                 state = PlayerState.PRELOADING,
+                generatorProducedMs = 0L,
                 skipForwardAllowed = isCurrentTrackLastInSetlist(session, setlist)
             )
 
@@ -274,16 +309,17 @@ class RealDirector(
 
         return oldState.copy(
             state = PlayerState.BUFFERING,
+            generatorProducedMs = 0L,
             skipForwardAllowed = isCurrentTrackLastInSetlist(session, setlist)
         )
     }
 
-    private fun handleGeneratorEmitting(oldState: ChipboxPlaybackState, event: GeneratorEvent): ChipboxPlaybackState {
+    private fun handleGeneratorEmitting(oldState: ChipboxPlaybackState, event: GeneratorEvent.Emitting): ChipboxPlaybackState {
         if (oldState.state == PlayerState.BUFFERING) {
             speaker.play()
         }
 
-        return oldState
+        return oldState.copy(generatorProducedMs = event.producedMs)
     }
 
     private fun handleGeneratorTrackChange(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
@@ -303,8 +339,8 @@ class RealDirector(
     }
 
     private suspend fun reduce(oldState: ChipboxPlaybackState, event: SpeakerEvent) = when (event) {
-        SpeakerEvent.Buffering -> handleSpeakerBuffering(oldState)
-        SpeakerEvent.Playing -> handleSpeakerPlaying(oldState)
+        is SpeakerEvent.Buffering -> handleSpeakerBuffering(oldState)
+        is SpeakerEvent.Playing -> handleSpeakerPlaying(oldState)
         is SpeakerEvent.TrackChange -> updatePlayerMetadata(oldState, event.trackId)
         is SpeakerEvent.Error -> handleSpeakerError(event, oldState)
     }

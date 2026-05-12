@@ -197,7 +197,7 @@ abstract class Generator(
                     )
                 )
 
-                eventSink.emit(GeneratorEvent.Emitting)
+                eventSink.emit(GeneratorEvent.Emitting(framesPlayed.framesToMillis(rate).toLong()))
 
                 yield()
             }
