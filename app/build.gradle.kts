@@ -58,7 +58,6 @@ kotlin {
 }
 
 dependencies {
-    implementation(projects.cbox.android.activities.api)
     implementation(projects.cbox.android.appui.api)
     implementation(projects.cbox.android.strings.api)
     implementation(projects.cbox.android.artworkprovider.api)

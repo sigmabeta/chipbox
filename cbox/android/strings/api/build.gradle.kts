@@ -10,7 +10,6 @@ dependencies {
     api(projects.cbox.common.strings.api)
 
     implementation(projects.cbox.android.colors.api)
-    implementation(projects.cbox.android.drawables.api)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
 }

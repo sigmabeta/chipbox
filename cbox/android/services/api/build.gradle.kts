@@ -12,7 +12,6 @@ dependencies {
 
     implementation(projects.cbox.android.artworkprovider.api)
     implementation(projects.cbox.android.colors.api)
-    implementation(projects.cbox.android.drawables.api)
     implementation(projects.cbox.common.player.common.api)
     implementation(projects.cbox.common.player.director.api)
     implementation(projects.cbox.common.repository.api)
