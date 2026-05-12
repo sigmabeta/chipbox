@@ -51,6 +51,9 @@ fun ChipboxNavHost(
                     duration = SnackbarDuration.Short,
                 )
             }
+            // Screen-local effects intercepted by their owning route (see SettingsRoute);
+            // anything that reaches here is a routing bug, but no-op rather than crash.
+            ChipboxEvent.PickFolder -> Unit
         }
     }
 

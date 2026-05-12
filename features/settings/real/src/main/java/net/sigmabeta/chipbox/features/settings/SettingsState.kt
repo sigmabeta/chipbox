@@ -39,6 +39,7 @@ data class SettingsState(
         fontDropdown(stringProvider, ChipboxStringId.SETTINGS_LABEL_BRAND_FONT, brandFont),
         fontDropdown(stringProvider, ChipboxStringId.SETTINGS_LABEL_PLAIN_FONT, plainFont),
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_LIBRARY),
+        addFolderRow(stringProvider),
         rescanRow(stringProvider),
         clearLibraryRow(stringProvider),
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_ABOUT),
@@ -78,6 +79,13 @@ data class SettingsState(
             onNewOptionSelected = { },
         )
     }
+
+    private fun addFolderRow(stringProvider: StringProvider) = NameCaptionListModel(
+        dataId = ChipboxStringId.SETTINGS_LABEL_ADD_FOLDER.hashCode().toLong(),
+        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_ADD_FOLDER),
+        caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_ADD_FOLDER),
+        clickAction = SettingsAction.AddFolderClicked,
+    )
 
     private fun rescanRow(stringProvider: StringProvider): ListModel = when (rescanStatus) {
         is LCE.Loading -> LoadingItemListModel(

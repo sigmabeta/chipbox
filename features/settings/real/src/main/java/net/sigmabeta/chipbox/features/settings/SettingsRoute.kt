@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.features.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -12,5 +14,23 @@ fun SettingsRoute(
     modifier: Modifier = Modifier,
 ) {
     val viewModel: SettingsViewModel = hiltViewModel()
-    ChipboxListEntry(viewModel, onEvent, modifier)
+
+    val folderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree(),
+    ) { uri ->
+        if (uri != null) {
+            viewModel.sendAction(SettingsAction.FolderPicked(uri.toString()))
+        }
+    }
+
+    // PickFolder is screen-local (needs the SAF launcher remembered in this composable),
+    // so intercept it here and forward everything else to the host's event sink.
+    val routedOnEvent: (ChipboxEvent) -> Unit = { event ->
+        when (event) {
+            ChipboxEvent.PickFolder -> folderPicker.launch(null)
+            else -> onEvent(event)
+        }
+    }
+
+    ChipboxListEntry(viewModel, routedOnEvent, modifier)
 }

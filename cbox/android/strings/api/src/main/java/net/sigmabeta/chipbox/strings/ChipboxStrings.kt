@@ -26,6 +26,8 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.SETTINGS_SECTION_DEBUG       -> R.string.settings_section_debug
     ChipboxStringId.SETTINGS_LABEL_BRAND_FONT    -> R.string.settings_label_brand_font
     ChipboxStringId.SETTINGS_LABEL_PLAIN_FONT    -> R.string.settings_label_plain_font
+    ChipboxStringId.SETTINGS_LABEL_ADD_FOLDER       -> R.string.settings_label_add_folder
+    ChipboxStringId.SETTINGS_CAPTION_ADD_FOLDER     -> R.string.settings_caption_add_folder
     ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY   -> R.string.settings_label_rescan_library
     ChipboxStringId.SETTINGS_CAPTION_RESCAN_LIBRARY -> R.string.settings_caption_rescan_library
     ChipboxStringId.SETTINGS_LABEL_CLEAR_LIBRARY    -> R.string.settings_label_clear_library
