@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.entities.ArtistEntity
 import net.sigmabeta.chipbox.entities.GameEntity
@@ -232,11 +233,7 @@ class DatabaseRepository(
         .map { it.toTrack(withGame = true) }
         .sortedBy { it.game?.title }
 
-    override suspend fun clearLibrary() {
-        resetData()
-    }
-
-    private fun resetData() {
+    override suspend fun clearLibrary() = withContext(dispatcher) {
         artistDao.nukeTable()
         gameDao.nukeTable()
         trackDao.nukeTable()

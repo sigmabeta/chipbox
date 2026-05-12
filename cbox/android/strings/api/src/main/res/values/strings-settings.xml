@@ -10,6 +10,8 @@
     <string name="settings_label_brand_font">Brand font</string>
     <string name="settings_label_plain_font">Plain font</string>
 
+    <string name="settings_label_add_folder">Add folder to library</string>
+    <string name="settings_caption_add_folder">Pick a folder containing music files. Subfolders are included.</string>
     <string name="settings_label_rescan_library">Rescan library</string>
     <string name="settings_caption_rescan_library">Look for new tracks in your configured folders.</string>
     <string name="settings_label_clear_library">Clear library data</string>

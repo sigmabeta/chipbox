@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.features.settings
 
+import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Instant
@@ -10,6 +11,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.models.state.ScannerState
 import net.sigmabeta.chipbox.repository.Repository
@@ -21,6 +23,7 @@ import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
+import androidx.core.net.toUri
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -28,6 +31,7 @@ class SettingsViewModel @Inject constructor(
     private val debugSettingsManager: DebugSettingsManager,
     private val repository: Repository,
     private val scanner: Scanner,
+    private val contentSource: AndroidFileContentSource,
     private val appInfo: AppInfo,
     stringProvider: StringProvider,
     private val hatchet: Hatchet,
@@ -76,6 +80,8 @@ class SettingsViewModel @Inject constructor(
 
     override fun handleAction(action: SageAction) {
         when (action) {
+            SettingsAction.AddFolderClicked -> emit(ChipboxEvent.PickFolder)
+            is SettingsAction.FolderPicked -> onFolderPicked(action.uri)
             SettingsAction.RescanLibraryClicked -> onRescanClicked()
             SettingsAction.ClearLibraryClicked -> onClearLibraryClicked()
             SettingsAction.LicensesClicked -> emit(
@@ -85,6 +91,11 @@ class SettingsViewModel @Inject constructor(
             SettingsAction.BuildDateClicked -> onBuildDateClicked()
             else -> Unit
         }
+    }
+
+    private fun onFolderPicked(uri: String) {
+        contentSource.addLibraryLocation(uri.toUri())
+        emit(ChipboxEvent.ShowSnackbar("Folder added to library."))
     }
 
     private fun onRescanClicked() {

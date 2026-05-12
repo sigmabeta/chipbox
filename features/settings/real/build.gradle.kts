@@ -11,6 +11,7 @@ android {
 dependencies {
     api(projects.features.settings.api)
 
+    implementation(projects.cbox.android.contentsource.file.real)
     implementation(projects.cbox.android.ui.list.api)
     implementation(projects.cbox.android.ui.fonts.api)
     implementation(projects.cbox.common.appcomm.api)
@@ -23,5 +24,6 @@ dependencies {
     implementation(libs.sage.common.appinfo)
     implementation(libs.sage.common.ui.components)
     implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
 }

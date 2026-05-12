@@ -8,4 +8,5 @@ sealed class ChipboxEvent {
         val message: String,
         val withDismissAction: Boolean = true,
     ) : ChipboxEvent()
+    data object PickFolder : ChipboxEvent()
 }
