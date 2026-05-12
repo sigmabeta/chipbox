@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.features.playbackstatus.real
 
+import java.net.URLDecoder
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
@@ -56,7 +57,7 @@ data class PlaybackStatusState(
             track?.trackNumber?.toString()),
         row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_SOURCE, track?.source),
         row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_FADE, track?.fade?.toString()),
-        row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_PATH, track?.path),
+        row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_PATH, shortenPath(track?.path)),
     )
 
     private fun sessionSection(stringProvider: StringProvider): List<ListModel> = listOf(
@@ -83,4 +84,20 @@ data class PlaybackStatusState(
             clickAction = SageAction.Noop,
             dataId = id.hashCode().toLong(),
         )
+
+    /**
+     * Decode URI escapes and keep only the trailing folder + filename, dropping the SAF authority
+     * and tree-path ceremony. `content://.../tree/primary%3AMusic/document/primary%3AMusic%2FNES%2FZelda.nsf`
+     * → `NES/Zelda.nsf`. Returns null/originals untouched if decoding fails or there's nothing to trim.
+     */
+    private fun shortenPath(path: String?): String? {
+        if (path.isNullOrEmpty()) return path
+        val decoded = runCatching { URLDecoder.decode(path, Charsets.UTF_8) }.getOrDefault(path)
+        return decoded
+            .split('/')
+            .filter { it.isNotEmpty() }
+            .takeLast(2)
+            .joinToString("/")
+            .ifEmpty { decoded }
+    }
 }

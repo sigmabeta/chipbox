@@ -41,7 +41,7 @@ class GameDetailViewModel @Inject constructor(
 
         viewModelScope.launch {
             director.metadataState().collect { track ->
-                updateState { it.copy(playingTrackId = track.id) }
+                updateState { it.copy(playingTrackId = track?.id) }
             }
         }
     }

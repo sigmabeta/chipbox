@@ -21,14 +21,18 @@ class PlayerStatusViewModel @Inject constructor(
         director.metadataState(),
         director.playbackState(),
     ) { track, playback ->
-        val playerState = playback.state
-        PlayerStatusState(
-            visible = playerState != PlayerState.IDLE && playerState != PlayerState.STOPPED,
-            isPlaying = playerState.isPlaying(),
-            title = track.title,
-            artistsCaption = track.artists?.joinToString(", ") { it.name }.orEmpty(),
-            artwork = SourceInfo(info = track.game?.photoUrl),
-        )
+        if (track == null) {
+            PlayerStatusState.Empty
+        } else {
+            val playerState = playback.state
+            PlayerStatusState(
+                visible = playerState != PlayerState.IDLE && playerState != PlayerState.STOPPED,
+                isPlaying = playerState.isPlaying(),
+                title = track.title,
+                artistsCaption = track.artists?.joinToString(", ") { it.name }.orEmpty(),
+                artwork = SourceInfo(info = track.game?.photoUrl),
+            )
+        }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(SUBSCRIPTION_TIMEOUT_MS),

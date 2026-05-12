@@ -51,8 +51,10 @@ interface Director {
 
     // State Updates
 
-    /** Hot stream of the currently-playing [Track], emitted whenever the active track changes. */
-    fun metadataState(): SharedFlow<Track>
+    /** Hot stream of the currently-playing [Track], emitted whenever the active track changes.
+     *  Emits `null` before any track has loaded and on session teardown so subscribers see a
+     *  meaningful "nothing playing" state instead of waiting indefinitely. */
+    fun metadataState(): SharedFlow<Track?>
 
     /** Hot stream of the reduced [ChipboxPlaybackState] derived from generator + speaker events. */
     fun playbackState(): SharedFlow<ChipboxPlaybackState>
