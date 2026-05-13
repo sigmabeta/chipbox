@@ -12,7 +12,6 @@ import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.LoadingItemListModel
 import net.sigmabeta.sage.components.LoadingType
 import net.sigmabeta.sage.components.NameCaptionListModel
-import net.sigmabeta.sage.components.NoopListModel
 import net.sigmabeta.sage.components.SectionHeaderListModel
 import net.sigmabeta.sage.components.SingleTextListModel
 import net.sigmabeta.sage.components.TitleBarModel
@@ -35,26 +34,41 @@ data class SettingsState(
         shouldShowBack = true,
     )
 
-    override fun toListItems(stringProvider: StringProvider): List<ListModel> = listOf(
+    override fun toListItems(stringProvider: StringProvider): List<ListModel> =
+        appearanceSection(stringProvider) +
+            librarySection(stringProvider) +
+            aboutSection(stringProvider) +
+            debugSection(stringProvider)
+
+    private fun appearanceSection(stringProvider: StringProvider): List<ListModel> = listOf(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_APPEARANCE),
         fontDropdown(stringProvider, ChipboxStringId.SETTINGS_LABEL_BRAND_FONT, brandFont),
         fontDropdown(stringProvider, ChipboxStringId.SETTINGS_LABEL_PLAIN_FONT, plainFont),
+    )
+
+    private fun librarySection(stringProvider: StringProvider): List<ListModel> = listOf(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_LIBRARY),
         addFolderRow(stringProvider),
         rescanRow(stringProvider),
         clearLibraryRow(stringProvider),
+    )
+
+    private fun aboutSection(stringProvider: StringProvider): List<ListModel> = listOf(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_ABOUT),
         appVersionRow(stringProvider),
         buildDateRow(stringProvider),
         licensesRow(stringProvider),
-        githubRow(stringProvider),
-        ifShowDebugEnabled {
-            sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_DEBUG)
-        },
-        ifShowDebugEnabled { appBranchRow(stringProvider) },
-        ifShowDebugEnabled { versionCodeRow(stringProvider) },
-        ifPlaybackStatusAvailable { playbackStatusRow(stringProvider) },
     )
+
+    private fun debugSection(stringProvider: StringProvider): List<ListModel> {
+        if (shouldShowDebug != true) return emptyList()
+        return listOfNotNull(
+            sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_DEBUG),
+            appBranchRow(stringProvider),
+            versionCodeRow(stringProvider),
+            if (playbackStatusAvailable) playbackStatusRow(stringProvider) else null,
+        )
+    }
 
     private fun sectionHeader(stringProvider: StringProvider, id: ChipboxStringId) =
         SectionHeaderListModel(title = stringProvider.getString(id))
@@ -134,11 +148,6 @@ data class SettingsState(
         clickAction = SettingsAction.LicensesClicked,
     )
 
-    private fun githubRow(stringProvider: StringProvider) = SingleTextListModel(
-        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_GITHUB),
-        clickAction = SettingsAction.GithubClicked,
-    )
-
     private fun appBranchRow(stringProvider: StringProvider) = LabelValueListModel(
         label = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_APP_BRANCH),
         value = appInfo?.buildBranch,
@@ -150,12 +159,6 @@ data class SettingsState(
         value = appInfo?.versionCode?.toString(),
         clickAction = SageAction.Noop,
     )
-
-    private fun ifShowDebugEnabled(content: () -> ListModel): ListModel =
-        if (shouldShowDebug == true) content() else NoopListModel
-
-    private fun ifPlaybackStatusAvailable(content: () -> ListModel): ListModel =
-        if (playbackStatusAvailable && shouldShowDebug == true) content() else NoopListModel
 
     private fun playbackStatusRow(stringProvider: StringProvider) = NameCaptionListModel(
         dataId = ChipboxStringId.SETTINGS_LABEL_PLAYBACK_STATUS.hashCode().toLong(),

@@ -35,7 +35,6 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.SETTINGS_LABEL_APP_VERSION   -> R.string.settings_label_app_version
     ChipboxStringId.SETTINGS_LABEL_BUILD_DATE    -> R.string.settings_label_build_date
     ChipboxStringId.SETTINGS_LABEL_LICENSES      -> R.string.settings_label_licenses
-    ChipboxStringId.SETTINGS_LABEL_GITHUB        -> R.string.settings_label_github
     ChipboxStringId.SETTINGS_LABEL_APP_BRANCH    -> R.string.settings_label_app_branch
     ChipboxStringId.SETTINGS_LABEL_VERSION_CODE  -> R.string.settings_label_version_code
     ChipboxStringId.SETTINGS_LABEL_PLAYBACK_STATUS   -> R.string.settings_label_playback_status
