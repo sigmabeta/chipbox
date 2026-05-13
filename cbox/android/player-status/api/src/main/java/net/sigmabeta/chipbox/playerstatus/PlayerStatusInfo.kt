@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.ui.components.CrossfadeText
@@ -39,7 +38,6 @@ internal fun PlayerStatusInfo(
                 text = name,
                 style = MaterialTheme.typography.titleMedium.copy(shadow = textShadow),
                 color = textColor,
-                fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textModifier = Modifier
@@ -53,7 +51,6 @@ internal fun PlayerStatusInfo(
                 text = caption,
                 style = MaterialTheme.typography.bodySmall.copy(shadow = textShadow),
                 color = textColor,
-                fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textModifier = Modifier
