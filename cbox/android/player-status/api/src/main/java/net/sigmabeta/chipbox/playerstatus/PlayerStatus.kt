@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -74,6 +75,7 @@ const val PlayerStatusAnimDurationMs: Int = ANIM_DURATION_MS
 fun PlayerStatus(
     modifier: Modifier = Modifier,
     onVisibleChange: (Boolean) -> Unit = {},
+    onClick: () -> Unit = {},
     viewModel: PlayerStatusViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -106,6 +108,7 @@ fun PlayerStatus(
         PlayerStatusCard(
             state = state,
             onPlayPauseClicked = viewModel::onPlayPauseClicked,
+            onClick = onClick,
         )
     }
 }
@@ -114,6 +117,7 @@ fun PlayerStatus(
 private fun PlayerStatusCard(
     state: PlayerStatusState,
     onPlayPauseClicked: () -> Unit,
+    onClick: () -> Unit,
 ) {
     var imageLoaded by remember(state.artwork.info) { mutableStateOf(false) }
 
@@ -143,7 +147,8 @@ private fun PlayerStatusCard(
         shadowElevation = CARD_SHADOW_ELEVATION,
         modifier = Modifier
             .fillMaxWidth()
-            .height(CONTAINER_HEIGHT),
+            .height(CONTAINER_HEIGHT)
+            .clickable(onClick = onClick),
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // Crossfade keyed on `state.artwork` so the outgoing artwork (and its scrim) keeps

@@ -41,6 +41,22 @@ interface Director {
     fun seek(positionMs: Long)
 
     /**
+     * Advance to the next track in the current setlist. No-op when
+     * [ChipboxPlaybackState.skipForwardAllowed] is false (last track in the setlist) or there's
+     * no active session. Unlike the generator-driven auto-advance, this does *not* transition to
+     * [PlayerState.ENDING] when called at the last track — it just no-ops.
+     */
+    fun skipForward()
+
+    /**
+     * "Back" semantics matching standard music players: if the current track has played past a
+     * small threshold (a few seconds), seek to 0; else if we're not on the first track in the
+     * setlist, advance to the previous track; else seek to 0. No-op when there's no active
+     * session.
+     */
+    fun skipBack()
+
+    /**
      * Toggle shuffle on the current session. Re-resolves the setlist (original order from the
      * repository, optionally shuffled) and updates `currentPosition` to wherever the active
      * track lands in the new order — playback of the active track is not interrupted; only the
