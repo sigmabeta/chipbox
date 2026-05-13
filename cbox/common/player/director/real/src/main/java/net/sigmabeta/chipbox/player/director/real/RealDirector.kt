@@ -101,7 +101,6 @@ class RealDirector(
                 .events()
                 .distinctUntilChanged()
                 .collect {
-                    hatchet.d("Received GeneratorEvent: $it")
                     currentState = reduce(currentState, it)
                 }
         }
@@ -111,7 +110,6 @@ class RealDirector(
                 .events()
                 .distinctUntilChanged()
                 .collect {
-                    hatchet.d("Received SpeakerEvent: $it")
                     currentState = reduce(currentState, it)
                 }
         }
