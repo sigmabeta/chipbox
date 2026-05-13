@@ -76,7 +76,6 @@ dependencies {
     implementation(projects.cbox.android.player.emulators.twosf.di)
     implementation(projects.cbox.android.player.generator.di)
     implementation(projects.cbox.android.player.speaker.di)
-    implementation(projects.cbox.common.player.status.di)
     implementation(projects.cbox.android.repository.di)
     implementation(projects.cbox.common.repository.di)
     implementation(projects.cbox.android.scanner.di)

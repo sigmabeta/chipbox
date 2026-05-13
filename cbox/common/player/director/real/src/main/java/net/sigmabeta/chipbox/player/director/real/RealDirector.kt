@@ -3,6 +3,8 @@ package net.sigmabeta.chipbox.player.director.real
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -42,7 +44,11 @@ class RealDirector(
     private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : Director {
-    private val directorScope = CoroutineScope(dispatcher)
+    private val directorScope = CoroutineScope(SupervisorJob() + dispatcher)
+
+    fun release() {
+        directorScope.cancel()
+    }
 
     private var currentSession: Session? = null
         set(value) {
@@ -212,7 +218,7 @@ class RealDirector(
      * 🦆
      */
     override fun duck() {
-        TODO("Not yet implemented")
+        pauseTemporarily()
     }
 
     override fun resumeFocus() {
@@ -408,5 +414,9 @@ class RealDirector(
 
     private fun emitError(message: String) {
         hatchet.e("Error: $message")
+        currentState = currentState.copy(
+            state = PlayerState.ERROR,
+            errorMessage = message,
+        )
     }
 }

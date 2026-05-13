@@ -4,6 +4,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -33,7 +35,11 @@ abstract class Speaker(
         private val bufferManager: ConsumerBufferManager,
         dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    private val speakerScope = CoroutineScope(dispatcher)
+    private val speakerScope = CoroutineScope(SupervisorJob() + dispatcher)
+
+    fun release() {
+        speakerScope.cancel()
+    }
 
     private var ongoingPlaybackJob: Job? = null
 

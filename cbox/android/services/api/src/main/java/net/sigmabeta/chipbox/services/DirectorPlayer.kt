@@ -173,7 +173,7 @@ class DirectorPlayer(
         val resolvedStart = if (startIndex == C.INDEX_UNSET) 0 else startIndex
         val target = mediaItems.getOrNull(resolvedStart) ?: return Futures.immediateVoidFuture()
         try {
-            IdToCommandParser.handleCommand(director, target.mediaId)
+            IdToCommandParser.handleCommand(director, target.mediaId, hatchet)
         } catch (t: Throwable) {
             hatchet.e("Failed to parse media id ${target.mediaId}: $t")
             return Futures.immediateVoidFuture()
