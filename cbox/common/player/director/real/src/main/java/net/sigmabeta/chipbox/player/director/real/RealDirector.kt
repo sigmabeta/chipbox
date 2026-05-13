@@ -22,6 +22,8 @@ import net.sigmabeta.chipbox.player.speaker.SpeakerEvent
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.logging.Hatchet
 
+private const val SKIP_BACK_THRESHOLD_MS = 3_000L
+
 /**
  * Production [Director] implementation.
  *
@@ -177,6 +179,38 @@ class RealDirector(
         }
     }
 
+    override fun skipForward() {
+        directorScope.launch {
+            val session = currentSession ?: return@launch
+            val setlist = currentSetlist ?: return@launch
+            if (isCurrentTrackLastInSetlist(session, setlist)) return@launch
+
+            val nextPosition = (session.currentPosition ?: -1) + 1
+            advanceToTrackAt(session, setlist, nextPosition)
+            // Drop the play-out buffer so the audible track switches immediately; the
+            // auto-advance path naturally arrives at end-of-buffer so doesn't need this.
+            speaker.seek()
+        }
+    }
+
+    override fun skipBack() {
+        directorScope.launch {
+            val session = currentSession ?: return@launch
+            val setlist = currentSetlist ?: return@launch
+            val withinTrackPosition = currentState.position
+            val setlistPosition = session.currentPosition ?: 0
+
+            if (withinTrackPosition > SKIP_BACK_THRESHOLD_MS || setlistPosition <= 0) {
+                generator.seek(0L)
+                speaker.seek()
+                return@launch
+            }
+
+            advanceToTrackAt(session, setlist, setlistPosition - 1)
+            speaker.seek()
+        }
+    }
+
     override fun setShuffled(shuffled: Boolean) {
         directorScope.launch {
             val session = currentSession ?: return@launch
@@ -253,12 +287,17 @@ class RealDirector(
             }
 
             val nextTrackPosition = (session.currentPosition ?: -1) + 1
-
-            currentSession = session.copy(currentPosition = nextTrackPosition)
-            val nextTrack = setlist[nextTrackPosition]
-
-            startTrack(nextTrack)
+            advanceToTrackAt(session, setlist, nextTrackPosition)
         }
+    }
+
+    private suspend fun advanceToTrackAt(
+        session: Session,
+        setlist: List<Long>,
+        newPosition: Int,
+    ) {
+        currentSession = session.copy(currentPosition = newPosition)
+        startTrack(setlist[newPosition])
     }
 
     private fun isCurrentTrackLastInSetlist(session: Session, setlist: List<Long>): Boolean {

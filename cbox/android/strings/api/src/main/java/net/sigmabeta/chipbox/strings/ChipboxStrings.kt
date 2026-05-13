@@ -63,4 +63,5 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.PLAYBACK_STATUS_LABEL_CONTENT_ID        -> R.string.playback_status_label_content_id
     ChipboxStringId.PLAYBACK_STATUS_LABEL_CURRENT_POSITION  -> R.string.playback_status_label_current_position
     ChipboxStringId.PLAYBACK_STATUS_LABEL_SHUFFLED          -> R.string.playback_status_label_shuffled
+    ChipboxStringId.NOW_PLAYING_SCREEN_TITLE                -> R.string.now_playing_screen_title
 }

@@ -19,6 +19,8 @@ dependencies {
 
     implementation(projects.features.library.api)
     implementation(projects.features.library.real)
+    implementation(projects.features.nowPlaying.api)
+    implementation(projects.features.nowPlaying.real)
     implementation(projects.features.playbackStatus.api)
     debugImplementation(projects.features.playbackStatus.real)
     releaseImplementation(projects.features.playbackStatus.fake)
