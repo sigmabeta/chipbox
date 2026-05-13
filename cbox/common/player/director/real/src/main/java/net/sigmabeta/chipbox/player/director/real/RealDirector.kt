@@ -349,7 +349,7 @@ class RealDirector(
             return oldState.copy(
                 state = PlayerState.PRELOADING,
                 generatorProducedMs = 0L,
-                skipForwardAllowed = isCurrentTrackLastInSetlist(session, setlist)
+                skipForwardAllowed = !isCurrentTrackLastInSetlist(session, setlist)
             )
 
         }
@@ -360,7 +360,7 @@ class RealDirector(
         return oldState.copy(
             state = PlayerState.BUFFERING,
             generatorProducedMs = 0L,
-            skipForwardAllowed = isCurrentTrackLastInSetlist(session, setlist)
+            skipForwardAllowed = !isCurrentTrackLastInSetlist(session, setlist)
         )
     }
 
