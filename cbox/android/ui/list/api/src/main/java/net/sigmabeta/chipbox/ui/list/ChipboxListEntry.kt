@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.ui.chrome.LocalTitleBarController
 import net.sigmabeta.chipbox.ui.components.Content
 import net.sigmabeta.sage.android.ui.list.GridScreen
 import net.sigmabeta.sage.android.ui.list.ListScreen

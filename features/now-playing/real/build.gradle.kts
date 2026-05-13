@@ -11,6 +11,7 @@ android {
 dependencies {
     api(projects.features.nowPlaying.api)
 
+    implementation(projects.cbox.android.ui.chrome.api)
     implementation(projects.cbox.android.ui.freeform.api)
     implementation(projects.cbox.android.ui.components.api)
     implementation(projects.cbox.common.appcomm.api)
