@@ -144,7 +144,7 @@ private fun Sample(selected: Boolean) {
         MenuItemListModel(
             name = "Check for updates...",
             caption = "Last updated Feb 3, 1963",
-            icon = net.sigmabeta.sage.ui.Icon.REFRESH,
+            icon = net.sigmabeta.sage.ui.Icon.Refresh,
             selected = selected,
             clickAction = SageAction.Noop
         ),

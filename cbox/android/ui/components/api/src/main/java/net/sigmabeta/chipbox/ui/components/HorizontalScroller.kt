@@ -122,7 +122,7 @@ private fun SquareItemSection(rng: Random, padding: PaddingValues) {
                     dataId = index.toLong(),
                     name = "Square #$index",
                     sourceInfo = rng.nextInt().toString(),
-                    imagePlaceholder = Icon.ALBUM,
+                    imagePlaceholder = Icon.Album,
                     null,
                     clickAction = SageAction.Noop,
                 )
@@ -180,7 +180,7 @@ private fun WideItemSection(rng: Random, padding: PaddingValues) {
                     dataId = index.toLong(),
                     name = "Wide Item #$index",
                     sourceInfo = rng.nextInt().toString(),
-                    Icon.PERSON,
+                    Icon.Person,
                     null,
                     clickAction = SageAction.Noop
                 )
@@ -208,7 +208,7 @@ private fun VerticalSection(rng: Random, padding: PaddingValues) {
                 dataId = index.toLong(),
                 name = "Wide Item #$index",
                 sourceInfo = SourceInfo(rng.nextInt().toString()),
-                Icon.DESCRIPTION,
+                Icon.Description,
                 null,
                 clickAction = SageAction.Noop
             ),

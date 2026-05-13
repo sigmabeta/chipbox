@@ -50,7 +50,7 @@ private fun LoadingGame() {
     BigImage(
         HeroImageListModel(
             sourceInfo = SourceInfo("whatever"),
-            imagePlaceholder = Icon.ALBUM,
+            imagePlaceholder = Icon.Album,
             contentDescription = "",
             clickAction = SageAction.Noop,
         ),
@@ -66,7 +66,7 @@ private fun SuccessGame() {
     BigImage(
         HeroImageListModel(
             sourceInfo = SourceInfo("whatever"),
-            imagePlaceholder = Icon.DESCRIPTION,
+            imagePlaceholder = Icon.Description,
             contentDescription = "",
             clickAction = SageAction.Noop,
         ),
@@ -82,7 +82,7 @@ private fun SuccessGameWithLabel() {
     BigImage(
         HeroImageListModel(
             sourceInfo = SourceInfo("whatever"),
-            imagePlaceholder = Icon.DESCRIPTION,
+            imagePlaceholder = Icon.Description,
             contentDescription = "",
             clickAction = SageAction.Noop,
         ),

@@ -176,7 +176,7 @@ private fun Sample() {
                 dataId = 1234L,
                 name = "Moebius Battle",
                 caption = "ACE+",
-                icon = Icon.DESCRIPTION,
+                icon = Icon.Description,
                 clickAction = SageAction.Noop,
                 active = active,
             ),

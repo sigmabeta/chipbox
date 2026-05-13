@@ -105,7 +105,7 @@ private fun NotMenu() {
 private fun Sample() {
     ActionItem(
         CtaListModel(
-            Icon.FAVORITE_EMPTY,
+            Icon.FavoriteEmpty,
             "Find a path to the future",
             SageAction.Noop,
         ),

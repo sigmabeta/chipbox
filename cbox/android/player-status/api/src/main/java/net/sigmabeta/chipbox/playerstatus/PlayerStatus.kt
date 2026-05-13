@@ -162,7 +162,7 @@ private fun PlayerStatusCard(
                     Box(modifier = Modifier.fillMaxSize()) {
                         CrossfadeImage(
                             sourceInfo = artwork,
-                            imagePlaceholder = SageIcon.MUSIC_NOTE,
+                            imagePlaceholder = SageIcon.MusicNote,
                             contentDescription = null,
                             modifier = Modifier.fillMaxSize(),
                             onImageLoadedChange = {

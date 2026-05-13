@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.FilterQuality
@@ -46,6 +47,9 @@ import net.sigmabeta.sage.components.ImageNameListModel
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
+import net.sigmabeta.sage.ui.SageMaterialVectors
+import net.sigmabeta.sage.ui.icons.CrossOutColor
+import net.sigmabeta.sage.ui.icons.IcCrossOut24dp
 import net.sigmabeta.sage.ui.vector
 
 @Composable
@@ -222,8 +226,18 @@ private fun ErrorImage(
             modifier = modifier.fillMaxSize(),
         )
 
+        val errorContainer = MaterialTheme.colorScheme.errorContainer
+        val errorBackground = MaterialTheme.colorScheme.error
+        val crossOutVector = remember(errorBackground, errorContainer) {
+            SageMaterialVectors.IcCrossOut24dp(
+                mapOf(
+                    CrossOutColor.Line to errorBackground,
+                    CrossOutColor.Halo to errorContainer,
+                )
+            )
+        }
         Icon(
-            imageVector = Icon.CROSSOUT.vector(),
+            imageVector = crossOutVector,
             tint = Color.Unspecified,
             contentDescription = null,
             modifier = Modifier.fillMaxSize()
@@ -278,7 +292,7 @@ private fun Sample() {
                 1234L,
                 "Carrying the Weight of Life",
                 SourceInfo(info = null),
-                Icon.DESCRIPTION,
+                Icon.Description,
                 null,
                 clickAction = SageAction.Noop,
             ),
@@ -296,7 +310,7 @@ private fun Sample() {
             ) {
                 CrossfadeImage(
                     sourceInfo = SourceInfo("etc"),
-                    imagePlaceholder = Icon.PERSON,
+                    imagePlaceholder = Icon.Person,
                     contentDescription = null,
                     simulateError = true,
                     forceGenBitmap = false,
@@ -312,7 +326,7 @@ private fun Sample() {
             ) {
                 CrossfadeImage(
                     sourceInfo = SourceInfo(null),
-                    imagePlaceholder = Icon.DESCRIPTION,
+                    imagePlaceholder = Icon.Description,
                     contentDescription = null,
                     modifier = Modifier,
                 )
@@ -326,7 +340,7 @@ private fun Sample() {
             ) {
                 CrossfadeImage(
                     sourceInfo = SourceInfo("doesn't matter"),
-                    imagePlaceholder = Icon.DESCRIPTION,
+                    imagePlaceholder = Icon.Description,
                     contentDescription = null,
                     modifier = Modifier,
                 )
@@ -339,7 +353,7 @@ private fun Sample() {
             ) {
                 CrossfadeImage(
                     sourceInfo = SourceInfo("etc"),
-                    imagePlaceholder = Icon.PERSON,
+                    imagePlaceholder = Icon.Person,
                     contentDescription = null,
                     simulateError = true,
                     forceGenBitmap = false,
@@ -352,7 +366,7 @@ private fun Sample() {
             ) {
                 CrossfadeImage(
                     sourceInfo = SourceInfo(null),
-                    imagePlaceholder = Icon.DESCRIPTION,
+                    imagePlaceholder = Icon.Description,
                     contentDescription = null,
                     modifier = Modifier,
                 )
@@ -363,7 +377,7 @@ private fun Sample() {
             ) {
                 CrossfadeImage(
                     sourceInfo = SourceInfo("doesn't matter"),
-                    imagePlaceholder = Icon.DESCRIPTION,
+                    imagePlaceholder = Icon.Description,
                     contentDescription = null,
                     modifier = Modifier,
                 )

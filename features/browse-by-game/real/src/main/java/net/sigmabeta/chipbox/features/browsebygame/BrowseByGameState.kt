@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.features.browsebygame
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.strings.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
+import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.LoadingType
 import net.sigmabeta.sage.components.SquareItemListModel
@@ -25,16 +26,25 @@ data class BrowseByGameState(
         games.withStandardErrorAndLoading(
             loadingType = LoadingType.SQUARE,
             loadingWithHeader = false,
-        ) { content(data) }
+        ) { content(data, stringProvider) }
 
-    private fun content(games: List<Game>) = games.map { game ->
-        SquareItemListModel(
-            dataId = game.id,
-            name = game.title,
-            sourceInfo = game.photoUrl,
-            imagePlaceholder = Icon.ALBUM,
-            clickAction = BrowseByGameAction.GameClicked(game.id),
+    private fun content(games: List<Game>, stringProvider: StringProvider) = if (games.isEmpty()) {
+        listOf(
+            EmptyStateListModel(
+                icon = Icon.Album,
+                explanation = stringProvider.getString(ChipboxStringId.LIBRARY_BROWSE_BY_GAME_EMPTY),
+            )
         )
+    } else {
+        games.map { game ->
+            SquareItemListModel(
+                dataId = game.id,
+                name = game.title,
+                sourceInfo = game.photoUrl,
+                imagePlaceholder = Icon.Album,
+                clickAction = BrowseByGameAction.GameClicked(game.id),
+            )
+        }
     }
 
     private companion object {
