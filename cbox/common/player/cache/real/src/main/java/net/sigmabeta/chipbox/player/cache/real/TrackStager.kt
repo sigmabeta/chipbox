@@ -29,17 +29,15 @@ internal suspend fun stageTrack(
 
     if (track.chainFiles.isNotEmpty()) {
         val source = contentSourceRegistry.get(track.source)
-        if (source == null) {
-            hatchet.w(
-                "No content source '${track.source}' — chain files for track ${track.id} skipped."
+            ?: error(
+                "No content source '${track.source}' — cannot stage ${track.chainFiles.size}" +
+                    " chain file(s) for track ${track.id}."
             )
-        } else {
-            for (chain in track.chainFiles) {
-                val chainBytes = source.openBytes(chain.uri)
-                    ?: error("Failed to read chain file '${chain.filename}' for track ${track.id}.")
-                File(dir, chain.filename).writeBytes(chainBytes)
-                hatchet.v("Staged chain file ${chain.filename} (${chainBytes.size} bytes).")
-            }
+        for (chain in track.chainFiles) {
+            val chainBytes = source.openBytes(chain.uri)
+                ?: error("Failed to read chain file '${chain.filename}' for track ${track.id}.")
+            File(dir, chain.filename).writeBytes(chainBytes)
+            hatchet.v("Staged chain file ${chain.filename} (${chainBytes.size} bytes).")
         }
     }
 
