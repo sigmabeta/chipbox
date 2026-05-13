@@ -6,6 +6,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
@@ -50,7 +52,11 @@ abstract class Generator(
     protected val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    private val generatorScope = CoroutineScope(dispatcher)
+    private val generatorScope = CoroutineScope(SupervisorJob() + dispatcher)
+
+    fun release() {
+        generatorScope.cancel()
+    }
 
     private var ongoingGenerationJob: Job? = null
 

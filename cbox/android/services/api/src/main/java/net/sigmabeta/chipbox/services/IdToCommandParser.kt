@@ -4,9 +4,10 @@ import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService.Companion.ID_ROOT
+import net.sigmabeta.sage.logging.Hatchet
 
 object IdToCommandParser {
-    fun handleCommand(director: Director, mediaId: String) {
+    fun handleCommand(director: Director, mediaId: String, hatchet: Hatchet) {
         val details = mediaId.substringAfter(ID_ROOT)
         val detailSplit = details.split(".")
 
@@ -22,7 +23,7 @@ object IdToCommandParser {
                     startingTrackId = trackId.toLong()
                 )
             )
-            else -> TODO()
+            else -> hatchet.w("Unhandled media command type '$type' (mediaId=$mediaId); ignoring.")
         }
     }
 

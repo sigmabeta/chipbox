@@ -73,6 +73,8 @@ abstract class Emulator {
      *  track is loaded; goes negative once exhausted. */
     protected var remainingFramesTotal = Int.MAX_VALUE
 
+    private var hasLoadedTrack = false
+
     open fun isFileExtensionSupported(extension: String) =
         supportedFileExtensions.contains(extension)
 
@@ -86,7 +88,7 @@ abstract class Emulator {
      */
     open fun loadTrack(track: Track) {
         hatchet.d("Loading track: ${track.title} (#${track.trackNumber}) from ${track.path}")
-        if (remainingFramesTotal >= 0) {
+        if (hasLoadedTrack) {
             teardown()
         }
 
@@ -94,6 +96,7 @@ abstract class Emulator {
         loadTrackInternal(track.path)
         remainingFramesTotal =
             track.trackLengthMs.toDouble().millisToFrames(getSampleRateInternal())
+        hasLoadedTrack = true
     }
 
     /**
@@ -127,5 +130,6 @@ abstract class Emulator {
         trackOver = false
         remainingFramesTotal = Int.MAX_VALUE
         framesPlayedTotal = 0
+        hasLoadedTrack = false
     }
 }
