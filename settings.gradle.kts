@@ -95,6 +95,7 @@ include(
     ":cbox:android:ui:components:api",
     ":cbox:android:ui:fonts:api",
     ":cbox:android:ui:list:api",
+    ":cbox:android:ui:freeform:api",
     ":cbox:android:ui:theme:api",
 
     ":cbox:common:appcomm:api",
