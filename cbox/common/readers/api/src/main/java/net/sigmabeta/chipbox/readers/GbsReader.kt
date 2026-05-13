@@ -51,7 +51,7 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
     }
 
     private fun getNumberOfTracks(fileAsBytes: ByteArray): Int {
-        return fileAsBytes[0x04].toInt()
+        return fileAsBytes[0x04].toInt() and 0xFF
     }
 
     private fun getGameTitle(fileAsBytes: ByteArray): String {
@@ -70,6 +70,7 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
         return try {
             fileAsBytes
                 .decodeToString(0x30, 0x50, true)
+                .substringBefore(0.toChar())
                 .trim()
         } catch (ex: Exception) {
             hatchet.w("GBS: unable to read artist — ${ex.message}")

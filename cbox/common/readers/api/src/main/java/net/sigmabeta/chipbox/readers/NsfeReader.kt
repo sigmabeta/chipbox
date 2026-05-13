@@ -24,63 +24,48 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
             }
 
             val chunks = readNsfeChunks(fileAsByteBuffer)
-            val gameMetadata = chunks.parseChunkAsStrings(CHUNK_AUTH) ?: return null
+            val gameMetadata = chunks.parseChunkAsStrings(CHUNK_AUTH)
+            val gameTitle = gameMetadata?.getOrNull(0).orUnknown()
+            val gameArtist = gameMetadata?.getOrNull(1).orUnknown()
 
-            val gameTitle = gameMetadata[0]
-            val gameArtist = gameMetadata[1]
-
-            // TODO Use the track count in the header instead of this.
-            val trackNameList = chunks.parseChunkAsStrings(CHUNK_TLBL) ?: return null
+            val trackNameList = chunks.parseChunkAsStrings(CHUNK_TLBL).orEmpty()
             val artistList = chunks.parseChunkAsStrings(CHUNK_TAUT)
             val lengthChunk = chunks.parseChunkAsByteBuffer(CHUNK_TIME)
             val fadeChunk = chunks.parseChunkAsByteBuffer(CHUNK_FADE)
             val plstChunk = chunks.parseChunkAsByteBuffer(CHUNK_PLST)
             val infoChunk = chunks.parseChunkAsByteBuffer(CHUNK_INFO)
 
-            val lengthList = mutableListOf<Long>()
-            val fadeList = mutableListOf<Long>()
-
-            val trackCount = infoChunk?.get(0x08)?.toInt()?.and(0xFF) ?: trackNameList.size
-
-            for (index in 0 until trackCount) {
-                val length = parseTimeChunk(lengthChunk)
-                val fade = parseTimeChunk(fadeChunk)
-
-                lengthList.add(
-                    length ?: LENGTH_UNKNOWN_MS
-                )
-
-                fadeList.add(
-                    fade ?: 1L
-                )
-            }
+            // INFO[8] is the canonical track count per spec; fall back to tlbl length only if
+            // the file omits INFO. Bail when neither is available — there's nothing to scan.
+            val trackCount = infoChunk?.get(0x08)?.toInt()?.and(0xFF)
+                ?: trackNameList.size.takeIf { it > 0 }
+                ?: return null
 
             val tempTracks = mutableListOf<RawTrack>()
-            val plstIndexList = plstChunk
-                ?.array()
-                ?.map { it.toInt() and 0xFF }
+            for (index in 0 until trackCount) {
+                val length = parseTimeChunk(lengthChunk) ?: LENGTH_UNKNOWN_MS
+                val fade = parseTimeChunk(fadeChunk) ?: 1L
 
-            // tempTracks is indexed by subtune number, matching tlbl and time chunks
-            trackNameList.take(trackCount).forEachIndexed { index, name ->
                 tempTracks.add(
                     RawTrack(
                         identifier,
                         "",
-                        name,
-                        (artistList?.get(index) ?: gameArtist),
+                        trackNameList.getOrNull(index) ?: TAG_UNKNOWN,
+                        artistList?.getOrNull(index) ?: gameArtist,
                         gameTitle,
-                        lengthList[index],
+                        length,
                         index,
-                        fadeList[index] == 0L
+                        fade == 0L
                     )
                 )
             }
 
             // GME's start_track_(N) remaps N via playlist[N] internally, so trackNumber
             // must be the playlist position, not the subtune index.
+            val plstIndexList = plstChunk?.array()?.map { it.toInt() and 0xFF }
             return if (plstIndexList != null) {
-                plstIndexList.mapIndexed { playlistPos, subtuneIndex ->
-                    tempTracks[subtuneIndex].copy(trackNumber = playlistPos)
+                plstIndexList.mapIndexedNotNull { playlistPos, subtuneIndex ->
+                    tempTracks.getOrNull(subtuneIndex)?.copy(trackNumber = playlistPos)
                 }
             } else {
                 tempTracks

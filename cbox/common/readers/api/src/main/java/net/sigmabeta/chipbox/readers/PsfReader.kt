@@ -143,17 +143,8 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
         line: String,
         tagMap: HashMap<String, String>
     ) {
-        val parts = line
-            .split("=".toRegex())
-            .dropLastWhile { it.isEmpty() }
-            .toTypedArray()
-
-        if (parts.size >= 2) {
-            val tagKey = parts[0]
-            val tagValue = parts[1]
-
-            tagMap[tagKey] = tagValue
-        }
+        if (!line.contains('=')) return
+        tagMap[line.substringBefore('=')] = line.substringAfter('=')
     }
 
     private fun isPsfTagValid(wrappedBuffer: ByteBuffer): Boolean {
