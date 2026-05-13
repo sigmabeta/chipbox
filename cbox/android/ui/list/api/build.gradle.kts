@@ -15,6 +15,7 @@ dependencies {
     api(projects.cbox.common.appcomm.api)
 
     implementation(libs.sage.android.ui.list)
+    implementation(projects.cbox.android.ui.chrome.api)
     implementation(projects.cbox.android.ui.components.api)
 
     implementation(libs.androidx.lifecycle.runtimeCompose)

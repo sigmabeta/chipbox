@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
-import net.sigmabeta.chipbox.ui.list.LocalTitleBarController
+import net.sigmabeta.chipbox.ui.chrome.LocalTitleBarController
 import net.sigmabeta.sage.appcomm.ActionSink
 
 @Composable

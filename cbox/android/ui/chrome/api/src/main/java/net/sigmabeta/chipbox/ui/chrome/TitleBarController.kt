@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.ui.list
+package net.sigmabeta.chipbox.ui.chrome
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue

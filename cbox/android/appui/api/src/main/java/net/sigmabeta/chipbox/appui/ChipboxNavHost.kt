@@ -5,8 +5,10 @@ import android.net.Uri
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,6 +31,8 @@ import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingRoute
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatusEntryPoint
 import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.chipbox.features.settings.SettingsRoute
+import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
+import net.sigmabeta.chipbox.ui.chrome.ScreenChrome
 
 @Composable
 fun ChipboxNavHost(
@@ -66,14 +70,32 @@ fun ChipboxNavHost(
         startDestination = Library,
         modifier = modifier,
     ) {
-        composable<Library> { LibraryRoute(onEvent) }
-        composable<Search> { SearchScreen() }
-        composable<Settings> { SettingsRoute(onEvent) }
-        composable<NowPlaying> { NowPlayingRoute(onEvent) }
-        composable<BrowseByGame> { BrowseByGameRoute(onEvent) }
-        composable<BrowseByArtist> { BrowseByArtistRoute() }
-        composable<BrowseAllTracks> { BrowseAllTracksRoute() }
-        composable<GameDetail> { GameDetailRoute(onEvent) }
+        chipboxComposable<Library> { LibraryRoute(onEvent) }
+        chipboxComposable<Search> { SearchScreen() }
+        chipboxComposable<Settings> { SettingsRoute(onEvent) }
+        chipboxComposable<NowPlaying> { NowPlayingRoute(onEvent) }
+        chipboxComposable<BrowseByGame> { BrowseByGameRoute(onEvent) }
+        chipboxComposable<BrowseByArtist> { BrowseByArtistRoute() }
+        chipboxComposable<BrowseAllTracks> { BrowseAllTracksRoute() }
+        chipboxComposable<GameDetail> { GameDetailRoute(onEvent) }
         playbackStatusEntryPoint.register(this, onEvent)
+    }
+}
+
+/**
+ * Equivalent to `composable<T> { content() }` but resets [ScreenChrome] to its default on entry.
+ * Screens that want non-default chrome override it inside `content`; their `LaunchedEffect`
+ * composes after this one so the order — reset, then per-screen override — is deterministic
+ * across both navigation and configuration changes. Keeping the reset in the destination's own
+ * composition scope (rather than in the shell, keyed on a `backStackEntry` that transitions
+ * `null → actual` after recreation) avoids racing the screen's chrome push.
+ */
+private inline fun <reified T : Any> NavGraphBuilder.chipboxComposable(
+    noinline content: @Composable () -> Unit,
+) {
+    composable<T> {
+        val controller = LocalChromeController.current
+        LaunchedEffect(Unit) { controller.set(ScreenChrome.Default) }
+        content()
     }
 }

@@ -95,12 +95,12 @@ fun PlayerStatus(
         visible = state.visible,
         enter = slideInVertically(
             animationSpec = tween(ANIM_DURATION_MS),
-            initialOffsetY = { it },
-        ) + fadeIn(animationSpec = tween(ANIM_DURATION_MS)),
+            initialOffsetY = { it * 3 / 2 },
+        ),
         exit = slideOutVertically(
             animationSpec = tween(ANIM_DURATION_MS),
-            targetOffsetY = { it },
-        ) + fadeOut(animationSpec = tween(ANIM_DURATION_MS)),
+            targetOffsetY = { it * 3 / 2 },
+        ),
         modifier = modifier
             .then(widthModifier)
             .padding(horizontal = HORIZONTAL_MARGIN, vertical = VERTICAL_MARGIN),

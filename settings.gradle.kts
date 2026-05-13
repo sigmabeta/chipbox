@@ -92,6 +92,7 @@ include(
     ":cbox:android:services:api",
     ":cbox:android:storage:api",
     ":cbox:android:strings:api",
+    ":cbox:android:ui:chrome:api",
     ":cbox:android:ui:components:api",
     ":cbox:android:ui:fonts:api",
     ":cbox:android:ui:list:api",

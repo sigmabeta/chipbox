@@ -11,6 +11,7 @@ android {
 
 dependencies {
     implementation(projects.cbox.android.playerStatus.api)
+    implementation(projects.cbox.android.ui.chrome.api)
     implementation(projects.cbox.android.ui.components.api)
     implementation(projects.cbox.android.ui.list.api)
     implementation(projects.cbox.android.ui.theme.api)

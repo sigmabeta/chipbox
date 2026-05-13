@@ -5,12 +5,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
@@ -24,6 +27,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +40,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
+import net.sigmabeta.chipbox.ui.chrome.ScreenChrome
 import net.sigmabeta.chipbox.ui.components.subs.CrossfadeImage
 import net.sigmabeta.chipbox.ui.freeform.ChipboxFreeformEntry
 import net.sigmabeta.sage.appcomm.ActionSink
@@ -51,6 +57,16 @@ fun NowPlayingRoute(
     onEvent: (ChipboxEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val chromeController = LocalChromeController.current
+    LaunchedEffect(Unit) {
+        chromeController.set(
+            ScreenChrome(
+                showTopBar = false,
+                showPlayerStatus = false
+            )
+        )
+    }
+
     val viewModel: NowPlayingViewModel = hiltViewModel()
     ChipboxFreeformEntry(viewModel, onEvent, modifier) { model, actionSink, _, m ->
         NowPlayingContent(model, actionSink, m)
@@ -66,6 +82,7 @@ private fun NowPlayingContent(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.statusBars)
             .padding(ScreenPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {

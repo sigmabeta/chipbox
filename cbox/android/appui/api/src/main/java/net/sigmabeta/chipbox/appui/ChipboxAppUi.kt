@@ -1,10 +1,18 @@
 package net.sigmabeta.chipbox.appui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -51,9 +59,11 @@ import androidx.navigation.compose.rememberNavController
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.chipbox.playerstatus.PlayerStatus
+import net.sigmabeta.chipbox.ui.chrome.ChromeController
+import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
+import net.sigmabeta.chipbox.ui.chrome.LocalTitleBarController
+import net.sigmabeta.chipbox.ui.chrome.TitleBarController
 import net.sigmabeta.chipbox.ui.components.CrossfadeText
-import net.sigmabeta.chipbox.ui.list.LocalTitleBarController
-import net.sigmabeta.chipbox.ui.list.TitleBarController
 import net.sigmabeta.chipbox.ui.theme.AppTheme
 import net.sigmabeta.sage.components.TitleBarModel
 import net.sigmabeta.sage.ui.StringProvider
@@ -77,6 +87,8 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
         }
 
         val titleBarController = remember { TitleBarController() }
+        val chromeController = remember { ChromeController() }
+        val chrome = chromeController.state
 
         LaunchedEffect(backStackEntry?.destination?.route, atTopLevel) {
             titleBarController.set(
@@ -116,50 +128,60 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
 
         var playerStatusVisible by remember { mutableStateOf(false) }
         val navHostBottomInset by animateDpAsState(
-            targetValue = if (playerStatusVisible) PlayerStatusReservedHeight else 0.dp,
+            targetValue = if (playerStatusVisible && chrome.showPlayerStatus) PlayerStatusReservedHeight else 0.dp,
             animationSpec = tween(PlayerStatusAnimDurationMs),
             label = "ChipboxAppUi.navHostBottomInset",
         )
 
-        CompositionLocalProvider(LocalTitleBarController provides titleBarController) {
+        CompositionLocalProvider(
+            LocalTitleBarController provides titleBarController,
+            LocalChromeController provides chromeController,
+        ) {
             NavigationSuiteScaffold(
                 navigationSuiteItems = navItems(stringProvider, current, navController),
-                layoutType = layoutType,
+                layoutType = if (chrome.showNavBar) layoutType else NavigationSuiteType.None,
                 modifier = modifier,
             ) {
                 Scaffold(
                     topBar = {
-                        val titleBar = titleBarController.state
-                        TopAppBar(
-                            title = {
-                                CrossfadeText(
-                                    text = titleBar.title.orEmpty(),
-                                    textAlign = TextAlign.Center,
-                                    maxLines = 1,
-                                    textModifier = Modifier.basicMarquee(),
-                                )
-                            },
-                            navigationIcon = {
-                                if (titleBar.shouldShowBack) {
-                                    IconButton(onClick = { navController.popBackStack() }) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = null,
-                                        )
+                        AnimatedVisibility(
+                            visible = chrome.showTopBar,
+                            enter = expandVertically() + fadeIn(),
+                            exit = shrinkVertically() + fadeOut(),
+                        ) {
+                            val titleBar = titleBarController.state
+                            TopAppBar(
+                                title = {
+                                    CrossfadeText(
+                                        text = titleBar.title.orEmpty(),
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        textModifier = Modifier.basicMarquee(),
+                                    )
+                                },
+                                navigationIcon = {
+                                    if (titleBar.shouldShowBack) {
+                                        IconButton(onClick = { navController.popBackStack() }) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                                contentDescription = null,
+                                            )
+                                        }
+                                    } else {
+                                        IconButton(onClick = { navController.navigate(Settings) }) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Menu,
+                                                contentDescription = null,
+                                            )
+                                        }
                                     }
-                                } else {
-                                    IconButton(onClick = { navController.navigate(Settings) }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Menu,
-                                            contentDescription = null,
-                                        )
-                                    }
-                                }
-                            },
-                            scrollBehavior = scrollBehavior,
-                        )
+                                },
+                                scrollBehavior = scrollBehavior,
+                            )
+                        }
                     },
                     snackbarHost = { SnackbarHost(snackbarHostState) },
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
                     modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 ) { padding ->
                     CompositionLocalProvider(
@@ -177,11 +199,17 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
                                 playbackStatusEntryPoint = appUiViewModel.playbackStatusEntryPoint,
                                 modifier = Modifier.fillMaxSize(),
                             )
-                            PlayerStatus(
+                            AnimatedVisibility(
+                                visible = chrome.showPlayerStatus,
+                                enter = slideInVertically(initialOffsetY = { it }),
+                                exit = slideOutVertically(targetOffsetY = { it }),
                                 modifier = Modifier.align(Alignment.BottomCenter),
-                                onVisibleChange = { playerStatusVisible = it },
-                                onClick = { navController.navigate(NowPlaying) },
-                            )
+                            ) {
+                                PlayerStatus(
+                                    onVisibleChange = { playerStatusVisible = it },
+                                    onClick = { navController.navigate(NowPlaying) },
+                                )
+                            }
                         }
                     }
                 }
