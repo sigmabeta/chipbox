@@ -20,7 +20,6 @@
     <string name="settings_label_app_version">App version</string>
     <string name="settings_label_build_date">Build date</string>
     <string name="settings_label_licenses">Open-source licenses</string>
-    <string name="settings_label_github">GitHub repository</string>
 
     <string name="settings_label_app_branch">Branch</string>
     <string name="settings_label_version_code">Version code</string>
