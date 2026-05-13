@@ -21,19 +21,22 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
             }
 
             val spcMainTag = readMainTag(fileAsByteBuffer)
-            fileAsByteBuffer.position(0x1_0200)
-
             if (spcMainTag == null) {
                 return null
             }
+
+            // xid6 holds the un-truncated game/song/artist names; the 32-byte ID666 fields
+            // chop anything longer (e.g. "Teenage Mutant Ninja Turtles: To" → full name lives
+            // in xid6 only). Prefer xid6 values when present.
+            val extendedTag = readExtendedTag(bytes)
 
             return listOf(
                 RawTrack(
                     identifier,
                     "",
-                    spcMainTag.songTitle,
-                    spcMainTag.artistName,
-                    spcMainTag.gameTitle,
+                    extendedTag?.songTitle ?: spcMainTag.songTitle,
+                    extendedTag?.artistName ?: spcMainTag.artistName,
+                    extendedTag?.gameTitle ?: spcMainTag.gameTitle,
                     spcMainTag.trackLengthSeconds * 1_000L,
                     0,
                     spcMainTag.fadeLengthMillis != 0L
@@ -102,6 +105,61 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
     private fun isSpcFile(header: String) =
         header.contentEquals(HEADER_MAGIC)
 
+    /**
+     * Parse the extended ID666 (xid6) chunk that may follow the standard 0x10200-byte SPC body.
+     * Only the three string fields whose ID666 counterparts are 32-byte-capped are extracted;
+     * everything else is skipped. Returns null when the chunk is absent or malformed.
+     */
+    private fun readExtendedTag(bytes: ByteArray): SpcExtendedTag? {
+        if (bytes.size < XID6_OFFSET + XID6_HEADER_SIZE) return null
+        val buf = bytesAsByteBuffer(bytes)
+        buf.position(XID6_OFFSET)
+        val magic = buf.nextBytes(XID6_MAGIC_SIZE) ?: return null
+        if (!magic.toString(Charsets.US_ASCII).contentEquals(XID6_MAGIC)) return null
+        val chunkSize = buf.nextFourBytesAsInt()
+        if (chunkSize <= 0) return null
+        val end = (buf.position() + chunkSize).coerceAtMost(bytes.size)
+
+        var songTitle: String? = null
+        var gameTitle: String? = null
+        var artistName: String? = null
+
+        while (buf.position() + XID6_SUBCHUNK_HEADER_SIZE <= end) {
+            val id = buf.get().toInt() and 0xFF
+            val type = buf.get().toInt() and 0xFF
+            val data = buf.short.toInt() and 0xFFFF
+
+            when (type) {
+                XID6_TYPE_INLINE -> Unit // 16-bit value lives in `data`; no payload follows.
+                XID6_TYPE_STRING, XID6_TYPE_INTEGER -> {
+                    if (data == 0) continue
+                    if (buf.position() + data > end) break
+                    val payload = buf.nextBytes(data) ?: break
+                    val pad = (XID6_ALIGNMENT - (data % XID6_ALIGNMENT)) % XID6_ALIGNMENT
+                    if (pad > 0 && buf.position() + pad <= end) {
+                        buf.nextBytes(pad)
+                    }
+                    if (type == XID6_TYPE_STRING) {
+                        val str = payload.toString(Charsets.UTF_8)
+                            .substringBefore(0.toChar())
+                            .trim()
+                        if (str.isNotEmpty()) {
+                            when (id) {
+                                XID6_ID_SONG -> songTitle = str
+                                XID6_ID_GAME -> gameTitle = str
+                                XID6_ID_ARTIST -> artistName = str
+                            }
+                        }
+                    }
+                }
+                else -> break // Unknown type — bail to avoid misaligning subsequent reads.
+            }
+        }
+
+        if (songTitle == null && gameTitle == null && artistName == null) return null
+        return SpcExtendedTag(songTitle, gameTitle, artistName)
+    }
+
     companion object {
         private const val HEADER_MAGIC = "SNES-SPC700 Sound File Data v0.30"
         private const val SHOULD_LOG_EXTRA_INFO = false
@@ -112,6 +170,21 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
         private const val LENGTH_TAG_DUMP_DATE = 11
         private const val LENGTH_TAG_TRACK_LENGTH = 3
         private const val LENGTH_TAG_FADE_LENGTH = 5
+
+        private const val XID6_OFFSET = 0x1_0200
+        private const val XID6_MAGIC = "xid6"
+        private const val XID6_MAGIC_SIZE = 4
+        private const val XID6_HEADER_SIZE = 8
+        private const val XID6_SUBCHUNK_HEADER_SIZE = 4
+        private const val XID6_ALIGNMENT = 4
+
+        private const val XID6_TYPE_INLINE = 0
+        private const val XID6_TYPE_STRING = 1
+        private const val XID6_TYPE_INTEGER = 4
+
+        private const val XID6_ID_SONG = 0x01
+        private const val XID6_ID_GAME = 0x02
+        private const val XID6_ID_ARTIST = 0x03
     }
 }
 
@@ -121,4 +194,10 @@ data class SpcMainTag(
     val trackLengthSeconds: Long,
     val fadeLengthMillis: Long,
     val artistName: String
+)
+
+data class SpcExtendedTag(
+    val songTitle: String?,
+    val gameTitle: String?,
+    val artistName: String?,
 )
