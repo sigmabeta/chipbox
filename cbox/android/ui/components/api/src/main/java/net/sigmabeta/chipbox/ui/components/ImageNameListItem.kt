@@ -192,7 +192,7 @@ private fun Sample() {
                 dataId = 1234L,
                 name = "Carrying the Weight of Life",
                 sourceInfo = SourceInfo("https://randomfox.ca/images/12.jpg"),
-                imagePlaceholder = Icon.DESCRIPTION,
+                imagePlaceholder = Icon.Description,
                 actionableId = null,
                 clickAction = SageAction.Noop,
                 active = active,

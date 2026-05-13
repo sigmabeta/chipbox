@@ -24,9 +24,9 @@ fun Rating(
     ) {
         for (index in 1..4) {
             val icon = if (score >= index) {
-                net.sigmabeta.sage.ui.Icon.FAVORITE_FILLED
+                net.sigmabeta.sage.ui.Icon.FavoriteFilled
             } else {
-                net.sigmabeta.sage.ui.Icon.FAVORITE_EMPTY
+                net.sigmabeta.sage.ui.Icon.FavoriteEmpty
             }
 
             Icon(

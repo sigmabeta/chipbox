@@ -34,6 +34,9 @@ import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.ErrorStateListModel
 import net.sigmabeta.sage.ui.Icon
+import net.sigmabeta.sage.ui.SageMaterialVectors
+import net.sigmabeta.sage.ui.icons.CrossOutColor
+import net.sigmabeta.sage.ui.icons.IcCrossOut24dp
 import net.sigmabeta.sage.ui.vector
 
 @Composable
@@ -45,7 +48,7 @@ fun EmptyListIndicator(
 ) {
     EmptyListIndicator(
         explanation = model.errorString,
-        icon = Icon.WARNING,
+        icon = Icon.Warning,
         showCrossOut = false,
         error = model.error,
         showDebug = showDebug,
@@ -116,8 +119,17 @@ private fun EmptyListIndicator(
             )
 
             if (showCrossOut) {
+                val backgroundColor = MaterialTheme.colorScheme.background
+                val crossOutVector = remember(backgroundColor, color) {
+                    SageMaterialVectors.IcCrossOut24dp(
+                        mapOf(
+                            CrossOutColor.Line to backgroundColor,
+                            CrossOutColor.Halo to color,
+                        )
+                    )
+                }
                 Icon(
-                    imageVector = Icon.CROSSOUT.vector(),
+                    imageVector = crossOutVector,
                     tint = Color.Unspecified,
                     contentDescription = null,
                     modifier = Modifier
@@ -258,7 +270,7 @@ private fun DarkError() {
 private fun Sample() {
     EmptyListIndicator(
         EmptyStateListModel(
-            icon = Icon.ALBUM,
+            icon = Icon.Album,
             explanation = "It's all part of the protocol, innit?",
             debugText = null,
             showCrossOut = true

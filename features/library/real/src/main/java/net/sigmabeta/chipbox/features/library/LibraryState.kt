@@ -21,19 +21,19 @@ data object LibraryState : ListState() {
         menuItem(
             stringProvider,
             ChipboxStringId.LIBRARY_BROWSE_BY_GAME,
-            Icon.ALBUM,
+            Icon.Album,
             LibraryAction.BrowseByGameClicked,
         ),
         menuItem(
             stringProvider,
             ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST,
-            Icon.PERSON,
+            Icon.Person,
             LibraryAction.BrowseByArtistClicked,
         ),
         menuItem(
             stringProvider,
             ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS,
-            Icon.MUSIC_NOTE,
+            Icon.MusicNote,
             LibraryAction.BrowseAllTracksClicked,
         ),
     )

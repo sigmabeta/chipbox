@@ -54,7 +54,7 @@ data class GameDetailState(
                 listOf(
                     HeroImageListModel(
                         sourceInfo = SourceInfo(photoUrl),
-                        imagePlaceholder = Icon.ALBUM,
+                        imagePlaceholder = Icon.Album,
                         contentDescription = data.title,
                         clickAction = GameDetailAction.PlayAllClicked,
                     ),
@@ -72,12 +72,12 @@ data class GameDetailState(
         ) {
             listOf(
                 CtaListModel(
-                    icon = Icon.MUSIC_NOTE,
+                    icon = Icon.MusicNote,
                     name = stringProvider.getString(ChipboxStringId.GAME_DETAIL_CTA_PLAY_ALL),
                     clickAction = GameDetailAction.PlayAllClicked,
                 ),
                 CtaListModel(
-                    icon = Icon.SHUFFLE,
+                    icon = Icon.Shuffle,
                     name = stringProvider.getString(ChipboxStringId.GAME_DETAIL_CTA_SHUFFLE_ALL),
                     clickAction = GameDetailAction.ShuffleAllClicked,
                 ),
@@ -155,7 +155,7 @@ data class GameDetailState(
                             dataId = artist.id + ID_PREFIX_ARTISTS,
                             name = artist.name,
                             sourceInfo = artist.photoUrl,
-                            imagePlaceholder = Icon.PERSON,
+                            imagePlaceholder = Icon.Person,
                             clickAction = GameDetailAction.ArtistClicked(artist.id),
                         )
                     }.toImmutableList(),

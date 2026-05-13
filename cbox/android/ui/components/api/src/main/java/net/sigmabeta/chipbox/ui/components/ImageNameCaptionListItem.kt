@@ -224,7 +224,7 @@ private fun Sample() {
                 name = "Xenoblade Chronicles 3",
                 caption = "Yasunori Mitsuda, Mariam Abounnasr, Manami Kiyota, ACE+, Kenji Hiramatsu",
                 sourceInfo = SourceInfo("https://randomfox.ca/images/12.jpg"),
-                imagePlaceholder = Icon.PERSON,
+                imagePlaceholder = Icon.Person,
                 actionableId = null,
                 clickAction = SageAction.Noop,
                 active = active,

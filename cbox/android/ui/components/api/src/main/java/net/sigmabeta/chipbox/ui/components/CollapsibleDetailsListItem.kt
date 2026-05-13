@@ -72,7 +72,7 @@ fun CollapsibleDetailsListItem(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            val icon = if (collapsed) Icon.PLUS else Icon.MINUS
+            val icon = if (collapsed) Icon.Plus else Icon.Minus
 
             Icon(
                 imageVector = icon.vector(),
@@ -120,7 +120,7 @@ private fun DetailItem(
             .padding(padding),
     ) {
         Icon(
-            imageVector = Icon.FAVORITE_FILLED.vector(),
+            imageVector = Icon.FavoriteFilled.vector(),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier

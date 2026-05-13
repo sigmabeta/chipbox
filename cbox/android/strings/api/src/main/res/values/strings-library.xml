@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="library_browse_by_game">Browse by Game</string>
+    <string name="library_browse_by_game_empty">No games in your library yet. Add a folder in Settings to get started.</string>
     <string name="library_browse_by_artist">Browse by Artist</string>
     <string name="library_browse_all_tracks">Browse All Tracks</string>
 
