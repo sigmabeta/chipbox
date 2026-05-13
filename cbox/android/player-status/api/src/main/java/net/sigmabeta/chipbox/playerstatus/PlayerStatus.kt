@@ -56,7 +56,7 @@ private val CARD_SHAPE_RADIUS = 12.dp
 private val CARD_SHADOW_ELEVATION = 6.dp
 private const val SCRIM_ALPHA = 0.4f
 private const val TEXT_SHADOW_ALPHA = 1f
-private val TEXT_SHADOW_OFFSET_Y = 1.dp
+private val TEXT_SHADOW_OFFSET_Y = 2.dp
 private val TEXT_SHADOW_BLUR = 4.dp
 private const val ANIM_DURATION_MS = 300
 
