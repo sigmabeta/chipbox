@@ -1,10 +1,12 @@
 package net.sigmabeta.chipbox.player.cache.real
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -73,6 +75,11 @@ internal class CachingPcmSource(
         val scratch = ShortArray(WRITER_BUFFER_FRAMES * 2)
         try {
             while (true) {
+                // emulatorSource.readFrames and writer.appendFrames are synchronous, so without
+                // an explicit cancellation point the loop never observes cancelAndJoin from
+                // close() — the user's skip-track request would stall until the whole track
+                // finished rendering.
+                ensureActive()
                 val framesGenerated = emulatorSource.readFrames(scratch)
                 if (framesGenerated <= 0) {
                     if (emulatorSource.isTrackOver()) break
@@ -98,6 +105,12 @@ internal class CachingPcmSource(
                 writer.abort()
                 runCatching { onWriteAbort() }
             }
+        } catch (e: CancellationException) {
+            // Caller discarded this track mid-render. Drop the partial .pcm.tmp instead of
+            // sealing it as complete; next play of this track will cache-miss and start fresh.
+            writer.abort()
+            runCatching { onWriteAbort() }
+            throw e
         } catch (t: Throwable) {
             writerError = "Writer crash: ${t.message}"
             writer.abort()
