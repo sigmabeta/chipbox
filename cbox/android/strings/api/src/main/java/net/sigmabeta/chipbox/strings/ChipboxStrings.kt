@@ -16,7 +16,9 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.LIBRARY_BROWSE_BY_GAME_EMPTY   -> R.string.library_browse_by_game_empty
     ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST       -> R.string.library_browse_by_artist
     ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST_EMPTY -> R.string.library_browse_by_artist_empty
-    ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS      -> R.string.library_browse_all_tracks
+    ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS                 -> R.string.library_browse_all_tracks
+    ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS_EMPTY           -> R.string.library_browse_all_tracks_empty
+    ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS_CTA_SHUFFLE_ALL -> R.string.library_browse_all_tracks_cta_shuffle_all
     ChipboxStringId.GAME_DETAIL_SECTION_SONGS   -> R.string.game_detail_section_songs
     ChipboxStringId.GAME_DETAIL_SECTION_ARTISTS -> R.string.game_detail_section_artists
     ChipboxStringId.GAME_DETAIL_CTA_PLAY_ALL    -> R.string.game_detail_cta_play_all
