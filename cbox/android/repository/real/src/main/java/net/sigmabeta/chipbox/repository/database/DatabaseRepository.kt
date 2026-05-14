@@ -69,6 +69,11 @@ class DatabaseRepository(
         .getTracksForGameSync(id)
         .map { entity -> entity.toTrack(withGame, withArtists) }
 
+    override fun getTracksForArtist(id: Long, withGame: Boolean, withArtists: Boolean) = trackArtistDao
+        .getTracksForArtistSync(id)
+        .map { entity -> entity.toTrack(withGame, withArtists) }
+        .sortedBy { it.game?.title }
+
     override fun getGame(id: Long, withTracks: Boolean, withArtists: Boolean) = setupFlowWithId(
         id,
         { gameDao.getGame(id) },
@@ -125,7 +130,7 @@ class DatabaseRepository(
             id,
             name,
             photoUrl,
-            if (withTracks) getTracksForArtist(id) else null,
+            if (withTracks) getTracksForArtist(id, withGame = true) else null,
             if (withGames) getGamesForArtist(id) else null
         )
 
@@ -227,11 +232,6 @@ class DatabaseRepository(
     private fun getTracksForGame(id: Long): List<Track> = trackDao
         .getTracksForGameSync(id)
         .map { it.toTrack(withArtists = true) }
-
-    private fun getTracksForArtist(id: Long): List<Track> = trackArtistDao
-        .getTracksForArtistSync(id)
-        .map { it.toTrack(withGame = true) }
-        .sortedBy { it.game?.title }
 
     override suspend fun clearLibrary() = withContext(dispatcher) {
         artistDao.nukeTable()

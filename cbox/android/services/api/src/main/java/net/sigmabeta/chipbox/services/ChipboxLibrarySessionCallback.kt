@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.services
 
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService.LibraryParams
 import androidx.media3.session.MediaLibraryService.MediaLibrarySession
@@ -27,18 +26,7 @@ class ChipboxLibrarySessionCallback(
         browser: MediaSession.ControllerInfo,
         params: LibraryParams?,
     ): ListenableFuture<LibraryResult<MediaItem>> {
-        val root = MediaItem.Builder()
-            .setMediaId(ID_ROOT_FULL)
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle("Chipbox")
-                    .setIsBrowsable(true)
-                    .setIsPlayable(false)
-                    .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
-                    .build()
-            )
-            .build()
-        return Futures.immediateFuture(LibraryResult.ofItem(root, params))
+        return Futures.immediateFuture(LibraryResult.ofItem(libraryBrowser.rootItem(), params))
     }
 
     override fun onGetChildren(
@@ -78,8 +66,25 @@ class ChipboxLibrarySessionCallback(
         browser: MediaSession.ControllerInfo,
         mediaId: String,
     ): ListenableFuture<LibraryResult<MediaItem>> {
-        hatchet.v("onGetItem unsupported for $mediaId")
-        return Futures.immediateFuture(LibraryResult.ofError(LibraryResult.RESULT_ERROR_NOT_SUPPORTED))
+        val future = SettableFuture.create<LibraryResult<MediaItem>>()
+        scope.launch {
+            try {
+                val item = libraryBrowser.getItem(mediaId)
+                if (item == null) {
+                    hatchet.v("onGetItem unknown id: $mediaId")
+                    future.set(LibraryResult.ofError(LibraryResult.RESULT_ERROR_BAD_VALUE))
+                } else {
+                    future.set(LibraryResult.ofItem(item, null))
+                }
+            } catch (cancel: CancellationException) {
+                future.cancel(false)
+                throw cancel
+            } catch (t: Throwable) {
+                hatchet.e("onGetItem($mediaId) failed: $t")
+                future.set(LibraryResult.ofError(LibraryResult.RESULT_ERROR_UNKNOWN))
+            }
+        }
+        return future
     }
 
     override fun onAddMediaItems(

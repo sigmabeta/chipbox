@@ -23,6 +23,13 @@ object IdToCommandParser {
                     startingTrackId = trackId.toLong()
                 )
             )
+            LibraryBrowser.COMMAND_ARTISTS -> director.start(
+                Session(
+                    SessionType.ARTIST,
+                    parentId.toLong(),
+                    startingTrackId = trackId.toLong()
+                )
+            )
             else -> hatchet.w("Unhandled media command type '$type' (mediaId=$mediaId); ignoring.")
         }
     }

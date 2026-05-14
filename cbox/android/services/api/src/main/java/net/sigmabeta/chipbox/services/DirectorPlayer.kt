@@ -99,21 +99,48 @@ class DirectorPlayer(
 
         val track = currentTrack
         if (track != null) {
-            val mediaItem = MediaItem.Builder()
-                .setMediaId(track.id.toString())
-                .setMediaMetadata(track.toMediaMetadata())
-                .build()
-            val itemData = MediaItemData.Builder(track.id)
-                .setMediaItem(mediaItem)
-                .setDurationUs(track.trackLengthMs * MICROS_PER_MILLI)
-                .setIsSeekable(true)
-                .setIsDynamic(false)
-                .build()
-            builder.setPlaylist(listOf(itemData))
-            builder.setCurrentMediaItemIndex(0)
+            // Placeholder slots make seekToNext/Previous reachable — SimpleBasePlayer gates
+            // them on the timeline having an adjacent window. They mirror the current track's
+            // metadata so media3's optimistic index update doesn't flash empty UI mid-transition.
+            val items = buildList {
+                add(placeholderItem(PREV_PLACEHOLDER_UID, track))
+                add(currentItem(track))
+                if (playbackState.skipForwardAllowed) {
+                    add(placeholderItem(NEXT_PLACEHOLDER_UID, track))
+                }
+            }
+            builder.setPlaylist(items)
+            builder.setCurrentMediaItemIndex(1)
         }
 
         return builder.build()
+    }
+
+    private fun currentItem(track: Track): MediaItemData {
+        val mediaItem = MediaItem.Builder()
+            .setMediaId(track.id.toString())
+            .setMediaMetadata(track.toMediaMetadata())
+            .build()
+        return MediaItemData.Builder(track.id)
+            .setMediaItem(mediaItem)
+            .setDurationUs(track.trackLengthMs * MICROS_PER_MILLI)
+            .setIsSeekable(true)
+            .setIsDynamic(false)
+            .build()
+    }
+
+    private fun placeholderItem(uid: String, mirror: Track): MediaItemData {
+        val mediaItem = MediaItem.Builder()
+            .setMediaId(uid)
+            .setMediaMetadata(mirror.toMediaMetadata())
+            .build()
+        return MediaItemData.Builder(uid)
+            .setMediaItem(mediaItem)
+            .setDurationUs(mirror.trackLengthMs * MICROS_PER_MILLI)
+            .setIsSeekable(false)
+            .setIsDynamic(false)
+            .setIsPlaceholder(true)
+            .build()
     }
 
     override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
@@ -157,11 +184,17 @@ class DirectorPlayer(
         positionMs: Long,
         seekCommand: Int,
     ): ListenableFuture<*> {
-        // Update synchronously so the next getState() reflects the seek target. Without
-        // this, media3 records the pre-seek position with a fresh timestamp and extrapolates
-        // forward from it, making the notification clock drift until Director's flow catches up.
-        playbackState = playbackState.copy(position = positionMs)
-        director.seek(positionMs)
+        when (seekCommand) {
+            Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> director.skipForward()
+            Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> director.skipBack()
+            else -> {
+                // Update synchronously so the next getState() reflects the seek target. Without
+                // this, media3 records the pre-seek position with a fresh timestamp and extrapolates
+                // forward from it, making the notification clock drift until Director's flow catches up.
+                playbackState = playbackState.copy(position = positionMs)
+                director.seek(positionMs)
+            }
+        }
         return Futures.immediateVoidFuture()
     }
 
@@ -232,12 +265,19 @@ class DirectorPlayer(
             errorMessage = null,
         )
 
+        private const val PREV_PLACEHOLDER_UID = "chipbox.prev_placeholder"
+        private const val NEXT_PLACEHOLDER_UID = "chipbox.next_placeholder"
+
+        // Only the *_MEDIA_ITEM variants so BasePlayer.seekToPrevious doesn't apply its own
+        // "seek to 0 if past threshold" logic — Director.skipBack already owns that decision.
         private val AVAILABLE_COMMANDS: Player.Commands = Player.Commands.Builder()
             .addAll(
                 Player.COMMAND_PLAY_PAUSE,
                 Player.COMMAND_PREPARE,
                 Player.COMMAND_STOP,
                 Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM,
+                Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
+                Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
                 Player.COMMAND_SET_MEDIA_ITEM,
                 Player.COMMAND_GET_METADATA,
                 Player.COMMAND_GET_TIMELINE,
