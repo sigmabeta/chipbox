@@ -7,6 +7,7 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.strings.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.CtaListModel
+import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.HeroImageListModel
 import net.sigmabeta.sage.components.HorizontalScrollerListModel
 import net.sigmabeta.sage.components.LabelValueListModel
@@ -27,6 +28,7 @@ data class GameDetailState(
     val tracks: LCE<List<Track>> = LCE.Uninitialized,
     val artists: LCE<List<Artist>> = LCE.Uninitialized,
     val playingTrackId: Long? = null,
+    val notFound: Boolean = false,
 ) : ListState() {
     override val columnType: ColumnType = ColumnType.Staggered(STAGGERED_WIDTH_DP, false)
 
@@ -35,12 +37,21 @@ data class GameDetailState(
         else -> TitleBarModel()
     }
 
-    override fun toListItems(stringProvider: StringProvider): List<ListModel> = listOf(
-        heroSection(),
-        ctaSection(stringProvider),
-        songSection(stringProvider),
-        artistSection(stringProvider),
-    )
+    override fun toListItems(stringProvider: StringProvider): List<ListModel> = if (notFound) {
+        listOf(
+            EmptyStateListModel(
+                icon = Icon.Album,
+                explanation = stringProvider.getString(ChipboxStringId.GAME_DETAIL_EMPTY),
+            )
+        )
+    } else {
+        listOf(
+            heroSection(),
+            ctaSection(stringProvider),
+            songSection(stringProvider),
+            artistSection(stringProvider),
+        )
+    }
 
     private fun heroSection() =
         game.sectionWithStandardErrorAndLoading(

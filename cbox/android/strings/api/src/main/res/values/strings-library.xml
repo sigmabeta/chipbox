@@ -9,4 +9,5 @@
     <string name="game_detail_section_artists">Artists</string>
     <string name="game_detail_cta_play_all">Play All</string>
     <string name="game_detail_cta_shuffle_all">Shuffle All</string>
+    <string name="game_detail_empty">Game not found.</string>
 </resources>

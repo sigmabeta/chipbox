@@ -9,7 +9,7 @@ import net.sigmabeta.chipbox.entities.ArtistEntity
 @Dao
 interface ArtistDao {
     @Query("SELECT * FROM artist WHERE id = :artistId")
-    fun getArtist(artistId: Long): Flow<ArtistEntity>
+    fun getArtist(artistId: Long): Flow<ArtistEntity?>
 
     @Query("SELECT * FROM artist WHERE name = :name")
     fun getArtistByNameSync(name: String): ArtistEntity?

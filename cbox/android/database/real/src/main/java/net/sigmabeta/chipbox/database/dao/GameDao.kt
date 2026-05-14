@@ -9,7 +9,7 @@ import net.sigmabeta.chipbox.entities.GameEntity
 @Dao
 interface GameDao {
     @Query("SELECT * FROM game WHERE id = :gameId")
-    fun getGame(gameId: Long): Flow<GameEntity>
+    fun getGame(gameId: Long): Flow<GameEntity?>
 
     @Query("SELECT * FROM game WHERE id = :gameId")
     fun getGameSync(gameId: Long): GameEntity
