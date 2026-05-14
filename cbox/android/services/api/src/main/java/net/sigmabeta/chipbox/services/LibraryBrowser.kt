@@ -22,7 +22,8 @@ class LibraryBrowser @Inject constructor(
     fun getTopLevelMenuItems(): List<MediaItem> {
         return listOf(
             topLevelItemGames(),
-            topLevelItemArtists()
+            topLevelItemArtists(),
+            topLevelItemAllTracks(),
         )
     }
 
@@ -41,6 +42,7 @@ class LibraryBrowser @Inject constructor(
     suspend fun browseTo(parentMediaId: String): List<MediaItem>? = when {
         parentMediaId.startsWith(ID_GAMES) -> browseGames(parentMediaId)
         parentMediaId.startsWith(ID_ARTISTS) -> browseArtists(parentMediaId)
+        parentMediaId.startsWith(ID_TRACKS) -> browseTracks(parentMediaId)
         else -> null
     }
 
@@ -48,8 +50,10 @@ class LibraryBrowser @Inject constructor(
         mediaId == ID_ROOT_FULL -> rootItem()
         mediaId == ID_GAMES_TOP -> topLevelItemGames()
         mediaId == ID_ARTISTS_TOP -> topLevelItemArtists()
+        mediaId == ID_TRACKS_TOP -> topLevelItemAllTracks()
         mediaId.startsWith(ID_GAMES) -> getGamesItem(mediaId)
         mediaId.startsWith(ID_ARTISTS) -> getArtistsItem(mediaId)
+        mediaId.startsWith(ID_TRACKS) -> getTracksItem(mediaId)
         else -> null
     }
 
@@ -79,6 +83,21 @@ class LibraryBrowser @Inject constructor(
                     parentId = mediaId.substringBeforeLast('.'),
                     subtitle = track.game?.title ?: UNKNOWN_GAME,
                 )
+            }
+            else -> null
+        }
+    }
+
+    private suspend fun getTracksItem(mediaId: String): MediaItem? {
+        // All-tracks items share the games/artists 3-segment shape (top + trackId) so the
+        // IdToCommandParser doesn't need a special case.
+        val parts = mediaId.removePrefix(ID_TRACKS).split('.')
+        return when {
+            parts.size == 2 && parts[0] == ID_TOP -> {
+                val trackId = parts[1].toLongOrNull() ?: return null
+                val track = repository.getTrack(trackId, withGame = true, withArtists = true)
+                    ?: return null
+                track.toMediaItem(parentId = ID_TRACKS_TOP)
             }
             else -> null
         }
@@ -115,6 +134,13 @@ class LibraryBrowser @Inject constructor(
                 val artistId = id.toLongOrNull() ?: return null
                 browseToArtist(parentMediaId, artistId)
             }
+        }
+    }
+
+    private suspend fun browseTracks(parentMediaId: String): List<MediaItem>? {
+        return when (parentMediaId.substringAfterLast(".")) {
+            ID_TOP -> getAllTracksMenuItems()
+            else -> null
         }
     }
 
@@ -178,6 +204,21 @@ class LibraryBrowser @Inject constructor(
             .build()
     }
 
+    private fun topLevelItemAllTracks(): MediaItem {
+        val metadata = MediaMetadata.Builder()
+            .setTitle("All Tracks")
+            .setDescription("Your Chipbox library, sorted by track title.")
+            .setIsBrowsable(true)
+            .setIsPlayable(false)
+            .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+            .build()
+
+        return MediaItem.Builder()
+            .setMediaId(ID_TRACKS_TOP)
+            .setMediaMetadata(metadata)
+            .build()
+    }
+
     private suspend fun getGamesMenuItems() = repository
         .getAllGames(false, false)
         .filter { it is Data.Succeeded }
@@ -194,6 +235,13 @@ class LibraryBrowser @Inject constructor(
         .first()
         .map { it.toMediaItem() }
 
+    private suspend fun getAllTracksMenuItems() = repository
+        .getAllTracks(withGame = true, withArtists = true)
+        .filter { it is Data.Succeeded }
+        .map { (it as Data.Succeeded).data }
+        .first()
+        .map { it.toMediaItem(parentId = ID_TRACKS_TOP) }
+
     companion object {
         private const val UNKNOWN_GAME = "Unknown Game"
 
@@ -202,12 +250,15 @@ class LibraryBrowser @Inject constructor(
 
         const val COMMAND_GAMES = "games"
         const val COMMAND_ARTISTS = "artists"
+        const val COMMAND_TRACKS = "tracks"
 
         const val ID_GAMES = ID_ROOT + COMMAND_GAMES + "."
         const val ID_ARTISTS = ID_ROOT + COMMAND_ARTISTS + "."
+        const val ID_TRACKS = ID_ROOT + COMMAND_TRACKS + "."
 
         const val ID_GAMES_TOP = ID_GAMES + ID_TOP
         const val ID_ARTISTS_TOP = ID_ARTISTS + ID_TOP
+        const val ID_TRACKS_TOP = ID_TRACKS + ID_TOP
 
         const val ID_GAMES_SHUFFLE = ID_GAMES + ID_SHUFFLE
         const val ID_ARTISTS_SHUFFLE = ID_ARTISTS + ID_SHUFFLE
