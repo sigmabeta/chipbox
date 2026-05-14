@@ -39,7 +39,7 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
                     extendedTag?.gameTitle ?: spcMainTag.gameTitle,
                     spcMainTag.trackLengthMs,
                     0,
-                    spcMainTag.fadeLengthMs > 0L
+                    spcMainTag.fadeLengthMs.coerceAtLeast(0L)
                 )
             )
         } catch (iae: IllegalArgumentException) {

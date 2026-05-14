@@ -20,7 +20,7 @@ data class TrackEntity(
     val source: String,
     val trackLengthMs: Long,
     val trackNumber: Int,
-    val fade: Boolean,
+    val fadeLengthMs: Long,
     val game_id: Long,
     val chainFiles: String = "",
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

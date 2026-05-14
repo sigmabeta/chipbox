@@ -14,6 +14,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmCacheKey
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
+import net.sigmabeta.chipbox.player.common.isBufferSilent
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.File
 import java.io.RandomAccessFile
@@ -73,6 +74,9 @@ internal class CachingPcmSource(
     private val writerJob: Job = writerScope.launch {
         val startNanos = System.nanoTime()
         val scratch = ShortArray(WRITER_BUFFER_FRAMES * 2)
+        val zeroBuf = ShortArray(WRITER_BUFFER_FRAMES * 2)
+        val silenceTrimFrames = SILENCE_TRIM_SECONDS * emulatorSource.sampleRate
+        var pendingSilentFrames = 0L
         try {
             while (true) {
                 // emulatorSource.readFrames and writer.appendFrames are synchronous, so without
@@ -90,8 +94,30 @@ internal class CachingPcmSource(
                     }
                     break
                 }
-                writer.appendFrames(scratch, framesGenerated)
-                watermark.value = writer.framesWritten
+
+                if (isBufferSilent(scratch, framesGenerated)) {
+                    pendingSilentFrames += framesGenerated.toLong()
+                    if (pendingSilentFrames >= silenceTrimFrames) {
+                        // Trailing silence — trim by leaving pendingSilentFrames unwritten and
+                        // sealing the cache where the music actually ended.
+                        hatchet.d(
+                            "Cache trim for ${track.title}: dropping " +
+                                "${pendingSilentFrames} trailing silent frames."
+                        )
+                        break
+                    }
+                    // Hold this silent buffer — only commit it if audible audio follows.
+                } else {
+                    if (pendingSilentFrames > 0) {
+                        // Mid-track silent gap shorter than the trim threshold; persist it as
+                        // zero frames so it plays back in the right spot.
+                        writeZeroFrames(writer, zeroBuf, pendingSilentFrames)
+                        watermark.value = writer.framesWritten
+                        pendingSilentFrames = 0L
+                    }
+                    writer.appendFrames(scratch, framesGenerated)
+                    watermark.value = writer.framesWritten
+                }
             }
             if (writerError == null) {
                 writer.complete(track.id, track.trackLengthMs)
@@ -205,6 +231,20 @@ internal class CachingPcmSource(
         }
     }
 
+    private fun writeZeroFrames(
+        writer: PcmCacheFile.Writer,
+        zeroBuf: ShortArray,
+        totalFrames: Long,
+    ) {
+        val maxPerWrite = (zeroBuf.size / 2).toLong()
+        var remaining = totalFrames
+        while (remaining > 0) {
+            val chunk = minOf(remaining, maxPerWrite).toInt()
+            writer.appendFrames(zeroBuf, chunk)
+            remaining -= chunk.toLong()
+        }
+    }
+
     companion object {
         /** ~93 ms @ 44.1 kHz; same shape as the existing buffer manager so writer throughput
          *  isn't bottlenecked by tiny native calls. */
@@ -212,5 +252,9 @@ internal class CachingPcmSource(
 
         /** If the writer fails to produce a frame within this window, surface as an error. */
         private const val READ_WAIT_TIMEOUT_MS = 5_000L
+
+        /** Trailing silence longer than this is dropped from the cache file. Mid-track silent
+         *  gaps shorter than this still get persisted so the track plays back in time. */
+        private const val SILENCE_TRIM_SECONDS = 5L
     }
 }

@@ -12,7 +12,7 @@ data class M3uEntry(
     val artist: String?,   // non-null only in GBS-style compound tags ("Title - Artist - Game")
     val game: String?,     // non-null only in GBS-style compound tags
     val lengthMs: Long,
-    val hasFade: Boolean,
+    val fadeLengthMs: Long,
 )
 
 class M3uReader(private val hatchet: Hatchet) {
@@ -65,9 +65,9 @@ private fun String.toM3uEntry(): M3uEntry? {
     }
 
     val lengthMs = tags.getOrNull(3)?.toLengthMillis() ?: LENGTH_UNKNOWN_MS
-    val hasFade = (tags.getOrNull(5)?.toLengthMillis() ?: 0L) > 0L
+    val fadeLengthMs = (tags.getOrNull(5)?.toLengthMillis() ?: 0L).coerceAtLeast(0L)
 
-    return M3uEntry(filename, trackNumber, title, artist, game, lengthMs, hasFade)
+    return M3uEntry(filename, trackNumber, title, artist, game, lengthMs, fadeLengthMs)
 }
 
 /** Splits on commas not preceded by a backslash, then strips escape characters. */

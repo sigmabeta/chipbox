@@ -14,6 +14,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
+import net.sigmabeta.chipbox.player.common.FadeProcessor
+import net.sigmabeta.chipbox.player.common.framesToMillis
 
 /**
  * Consumer side of the playback pipeline. Pulls [AudioBuffer]s off the [bufferManager] and
@@ -146,6 +148,14 @@ abstract class Speaker(
                     }
 
                     eventSink.emit(SpeakerEvent.Playing(currentPositionMs()))
+
+                    FadeProcessor.fadeIfNecessary(
+                        audioBuffer.data,
+                        audioBuffer.sampleRate,
+                        audioBuffer.frameIndex.toInt().framesToMillis(audioBuffer.sampleRate),
+                        audioBuffer.fadeStartMs.toDouble(),
+                        audioBuffer.fadeLengthMs.toDouble(),
+                    )
 
                     onAudioReceived(audioBuffer)
                     bufferManager.recycleShortArray(audioBuffer.data)

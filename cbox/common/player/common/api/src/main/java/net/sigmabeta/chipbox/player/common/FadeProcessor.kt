@@ -1,16 +1,12 @@
-package net.sigmabeta.chipbox.player.generator
-
-import net.sigmabeta.chipbox.player.common.framesToMillis
-import net.sigmabeta.chipbox.player.common.millisToFrames
-import net.sigmabeta.chipbox.player.common.samplesToFrames
+package net.sigmabeta.chipbox.player.common
 
 /**
  * Applies a linear volume fade-out in place to PCM buffers as a track approaches its end.
  *
- * Most chiptune emulators loop forever — there is no "end of file" — so the [Generator] uses
- * the track's declared length to schedule a fade. This processor multiplies each sample by a
- * scale factor that ramps from 1.0 down to 0.0 across the configured fade window, then clamps
- * to 0.0 past the end so any extra samples the emulator hands back are silent.
+ * Most chiptune emulators loop forever — there is no "end of file" — so the player schedules a
+ * fade based on the track's declared length. This processor multiplies each sample by a scale
+ * factor that ramps from 1.0 down to 0.0 across the configured fade window, then clamps to 0.0
+ * past the end so any extra samples the emulator hands back are silent.
  */
 object FadeProcessor {
     /**
@@ -28,6 +24,8 @@ object FadeProcessor {
         fadeStartMillis: Double,
         fadeLengthMillis: Double
     ) {
+        if (fadeLengthMillis <= 0) return
+
         val audioInputLengthMillis = audioInput
             .size
             .samplesToFrames()

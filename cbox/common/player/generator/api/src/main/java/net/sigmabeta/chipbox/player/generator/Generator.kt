@@ -16,12 +16,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
-import net.sigmabeta.chipbox.models.FADE_LENGTH_MS
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.common.framesToMillis
+import net.sigmabeta.chipbox.player.common.isBufferSilent
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.logging.Hatchet
 
@@ -136,6 +136,7 @@ abstract class Generator(
             while (true) {
                 // When track is over, block waiting for the next one.
                 if (nextTrackId == null && currentSource?.isOver == true) {
+                    hatchet.d("Track ${currentTrack?.title} reached natural end.")
                     eventSink.emit(GeneratorEvent.TrackChange)
                     nextTrackId = nextTrackIdChannel.receive()
                 } else {
@@ -187,20 +188,16 @@ abstract class Generator(
                     break
                 }
 
-                FadeProcessor.fadeIfNecessary(
-                    generatedAudio,
-                    rate,
-                    bufferStartFrame.framesToMillis(rate),
-                    (currentTrack!!.trackLengthMs - FADE_LENGTH_MS).toDouble(),
-                    FADE_LENGTH_MS.toDouble()
-                )
+                val track = currentTrack!!
 
                 bufferManager.sendAudioBuffer(
                     AudioBuffer(
-                        trackId = currentTrack!!.id,
+                        trackId = track.id,
                         sampleRate = rate,
                         frameIndex = bufferStartFrame.toLong(),
                         data = generatedAudio,
+                        fadeStartMs = track.trackLengthMs,
+                        fadeLengthMs = track.fadeLengthMs,
                     )
                 )
 
@@ -252,6 +249,13 @@ abstract class Generator(
         sampleRate = pcmSource.sampleRate
         bufferManager.setSampleRate(pcmSource.sampleRate)
 
+        hatchet.d(
+            "Track ${newTrack.title} fade plan: " +
+                "trackLengthMs=${newTrack.trackLengthMs}, " +
+                "fadeStartMs=${newTrack.trackLengthMs}, " +
+                "fadeLengthMs=${newTrack.fadeLengthMs}."
+        )
+
         return pcmSource.getLastError()
     }
 
@@ -279,7 +283,7 @@ abstract class Generator(
         if (framesGenerated <= 0) return
         val track = currentTrack ?: return
 
-        val silent = buffer.all { it == 0.toShort() }
+        val silent = isBufferSilent(buffer, framesGenerated)
         val previousState = lastSilenceState
         val previousTrackId = lastSilenceTrackId
         if (track.id != previousTrackId) {
