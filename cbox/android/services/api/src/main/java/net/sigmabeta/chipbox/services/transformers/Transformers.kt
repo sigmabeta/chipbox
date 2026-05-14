@@ -42,11 +42,15 @@ internal fun Artist.toMediaItem(): MediaItem {
 internal fun Track.toMediaItem(
     parentId: String,
     game: Game? = this.game,
+    subtitle: String? = getArtistText(),
 ): MediaItem {
+    // Mirror subtitle into the artist field — different MediaBrowser renderers pick
+    // different ones, so keep them consistent. Default subtitle is artist text, so
+    // game-context browsing is unchanged; artist-context browsing surfaces the game.
     val metadata = MediaMetadata.Builder()
         .setTitle(title)
-        .setSubtitle(getArtistText())
-        .setArtist(getArtistText())
+        .setSubtitle(subtitle)
+        .setArtist(subtitle)
         .setAlbumTitle(game?.title)
         .setIsBrowsable(false)
         .setIsPlayable(true)

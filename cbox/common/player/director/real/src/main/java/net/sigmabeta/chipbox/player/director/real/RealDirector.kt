@@ -33,8 +33,8 @@ private const val SKIP_BACK_THRESHOLD_MS = 3_000L
  * [ChipboxPlaybackState]. Assigning to [currentState] re-emits the new value to observers via
  * the property's setter.
  *
- * Setlist resolution is driven by [Session.type]: a `GAME` session pulls every track for the
- * given game from the repository; `ARTIST`, `PLAYLIST`, and `ALL_TRACKS` are not yet
+ * Setlist resolution is driven by [Session.type]: `GAME` and `ARTIST` sessions pull every
+ * track for the given collection from the repository; `PLAYLIST` and `ALL_TRACKS` are not yet
  * implemented. The director
  * also decides when to advance tracks — the generator emits [GeneratorEvent.TrackChange] when
  * its current track ends, and the director responds by feeding it the next track id from the
@@ -326,9 +326,9 @@ class RealDirector(
         .getTracksForGame(gameId)
         .map { it.id }
 
-    private fun getTrackListForArtist(artistId: Long): List<Long> {
-        TODO("Not yet implemented")
-    }
+    private fun getTrackListForArtist(artistId: Long) = repository
+        .getTracksForArtist(artistId)
+        .map { it.id }
 
     private fun getTrackListForPlaylist(playlistId: Long): List<Long> {
         TODO("Not yet implemented")

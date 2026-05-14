@@ -5,14 +5,19 @@ import androidx.media3.common.MediaMetadata
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import net.sigmabeta.chipbox.models.Artist
+import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService.Companion.ID_ROOT
+import net.sigmabeta.chipbox.services.ChipboxPlaybackService.Companion.ID_ROOT_FULL
 import net.sigmabeta.chipbox.services.transformers.toMediaItem
+import net.sigmabeta.sage.logging.Hatchet
 import javax.inject.Inject
 
 class LibraryBrowser @Inject constructor(
-    private val repository: Repository
+    private val repository: Repository,
+    private val hatchet: Hatchet,
 ) {
     fun getTopLevelMenuItems(): List<MediaItem> {
         return listOf(
@@ -21,11 +26,75 @@ class LibraryBrowser @Inject constructor(
         )
     }
 
+    fun rootItem(): MediaItem = MediaItem.Builder()
+        .setMediaId(ID_ROOT_FULL)
+        .setMediaMetadata(
+            MediaMetadata.Builder()
+                .setTitle("Chipbox")
+                .setIsBrowsable(true)
+                .setIsPlayable(false)
+                .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                .build()
+        )
+        .build()
+
     suspend fun browseTo(parentMediaId: String): List<MediaItem>? = when {
         parentMediaId.startsWith(ID_GAMES) -> browseGames(parentMediaId)
         parentMediaId.startsWith(ID_ARTISTS) -> browseArtists(parentMediaId)
         else -> null
     }
+
+    suspend fun getItem(mediaId: String): MediaItem? = when {
+        mediaId == ID_ROOT_FULL -> rootItem()
+        mediaId == ID_GAMES_TOP -> topLevelItemGames()
+        mediaId == ID_ARTISTS_TOP -> topLevelItemArtists()
+        mediaId.startsWith(ID_GAMES) -> getGamesItem(mediaId)
+        mediaId.startsWith(ID_ARTISTS) -> getArtistsItem(mediaId)
+        else -> null
+    }
+
+    private suspend fun getGamesItem(mediaId: String): MediaItem? {
+        val parts = mediaId.removePrefix(ID_GAMES).split('.')
+        return when (parts.size) {
+            1 -> parts[0].toLongOrNull()?.let { fetchGame(it)?.toMediaItem() }
+            2 -> {
+                val trackId = parts[1].toLongOrNull() ?: return null
+                val track = repository.getTrack(trackId, withGame = true, withArtists = true)
+                    ?: return null
+                track.toMediaItem(parentId = mediaId.substringBeforeLast('.'))
+            }
+            else -> null
+        }
+    }
+
+    private suspend fun getArtistsItem(mediaId: String): MediaItem? {
+        val parts = mediaId.removePrefix(ID_ARTISTS).split('.')
+        return when (parts.size) {
+            1 -> parts[0].toLongOrNull()?.let { fetchArtist(it)?.toMediaItem() }
+            2 -> {
+                val trackId = parts[1].toLongOrNull() ?: return null
+                val track = repository.getTrack(trackId, withGame = true, withArtists = true)
+                    ?: return null
+                track.toMediaItem(
+                    parentId = mediaId.substringBeforeLast('.'),
+                    subtitle = track.game?.title ?: UNKNOWN_GAME,
+                )
+            }
+            else -> null
+        }
+    }
+
+    private suspend fun fetchGame(id: Long): Game? = repository
+        .getGame(id, withTracks = false, withArtists = false)
+        .filter { it is Data.Succeeded }
+        .map { (it as Data.Succeeded).data }
+        .first()
+
+    private suspend fun fetchArtist(id: Long): Artist? = repository
+        .getArtist(id, withTracks = false, withGames = false)
+        .filter { it is Data.Succeeded }
+        .map { (it as Data.Succeeded).data }
+        .first()
 
     private suspend fun browseGames(parentMediaId: String): List<MediaItem>? {
         return when (val id = parentMediaId.substringAfterLast(".")) {
@@ -64,7 +133,12 @@ class LibraryBrowser @Inject constructor(
         .map { it.data }
         .first()!!
         .tracks!!
-        .map { it.toMediaItem(parentMediaId) }
+        .map { track ->
+            if (track.game == null) {
+                hatchet.w("Track ${track.id} (${track.title}) has no game attached.")
+            }
+            track.toMediaItem(parentMediaId, subtitle = track.game?.title ?: UNKNOWN_GAME)
+        }
 
     private fun startGamesShuffle(): List<MediaItem>? {
         TODO("Not yet implemented")
@@ -121,6 +195,8 @@ class LibraryBrowser @Inject constructor(
         .map { it.toMediaItem() }
 
     companion object {
+        private const val UNKNOWN_GAME = "Unknown Game"
+
         private const val ID_TOP = "top"
         private const val ID_SHUFFLE = "shuffle"
 

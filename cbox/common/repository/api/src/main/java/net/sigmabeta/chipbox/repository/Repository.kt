@@ -28,6 +28,12 @@ interface Repository {
         withArtists: Boolean = false
     ): List<Track>
 
+    fun getTracksForArtist(
+        id: Long,
+        withGame: Boolean = false,
+        withArtists: Boolean = false
+    ): List<Track>
+
     // Individual models
     fun getGame(
         id: Long,
