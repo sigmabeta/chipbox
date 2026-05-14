@@ -146,6 +146,8 @@ include(
     ":features:browse-by-artist:real",
     ":features:browse-by-game:api",
     ":features:browse-by-game:real",
+    ":features:artist-detail:api",
+    ":features:artist-detail:real",
     ":features:game-detail:api",
     ":features:game-detail:real",
     ":features:library:api",

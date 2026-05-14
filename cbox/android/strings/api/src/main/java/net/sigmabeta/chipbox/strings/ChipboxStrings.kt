@@ -12,15 +12,21 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.APPUI_TAB_LIBRARY      -> R.string.appui_tab_library
     ChipboxStringId.APPUI_TAB_SEARCH       -> R.string.appui_tab_search
     ChipboxStringId.APPUI_TAB_SETTINGS     -> R.string.appui_tab_settings
-    ChipboxStringId.LIBRARY_BROWSE_BY_GAME       -> R.string.library_browse_by_game
-    ChipboxStringId.LIBRARY_BROWSE_BY_GAME_EMPTY -> R.string.library_browse_by_game_empty
-    ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST     -> R.string.library_browse_by_artist
-    ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS    -> R.string.library_browse_all_tracks
+    ChipboxStringId.LIBRARY_BROWSE_BY_GAME         -> R.string.library_browse_by_game
+    ChipboxStringId.LIBRARY_BROWSE_BY_GAME_EMPTY   -> R.string.library_browse_by_game_empty
+    ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST       -> R.string.library_browse_by_artist
+    ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST_EMPTY -> R.string.library_browse_by_artist_empty
+    ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS      -> R.string.library_browse_all_tracks
     ChipboxStringId.GAME_DETAIL_SECTION_SONGS   -> R.string.game_detail_section_songs
     ChipboxStringId.GAME_DETAIL_SECTION_ARTISTS -> R.string.game_detail_section_artists
     ChipboxStringId.GAME_DETAIL_CTA_PLAY_ALL    -> R.string.game_detail_cta_play_all
     ChipboxStringId.GAME_DETAIL_CTA_SHUFFLE_ALL -> R.string.game_detail_cta_shuffle_all
     ChipboxStringId.GAME_DETAIL_EMPTY           -> R.string.game_detail_empty
+    ChipboxStringId.ARTIST_DETAIL_SECTION_SONGS   -> R.string.artist_detail_section_songs
+    ChipboxStringId.ARTIST_DETAIL_SECTION_GAMES   -> R.string.artist_detail_section_games
+    ChipboxStringId.ARTIST_DETAIL_CTA_PLAY_ALL    -> R.string.artist_detail_cta_play_all
+    ChipboxStringId.ARTIST_DETAIL_CTA_SHUFFLE_ALL -> R.string.artist_detail_cta_shuffle_all
+    ChipboxStringId.ARTIST_DETAIL_EMPTY           -> R.string.artist_detail_empty
     ChipboxStringId.SETTINGS_SCREEN_TITLE        -> R.string.settings_screen_title
     ChipboxStringId.SETTINGS_SECTION_APPEARANCE  -> R.string.settings_section_appearance
     ChipboxStringId.SETTINGS_SECTION_LIBRARY     -> R.string.settings_section_library

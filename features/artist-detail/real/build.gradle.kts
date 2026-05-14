@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "net.sigmabeta.chipbox.features.gamedetail.real"
+    namespace = "net.sigmabeta.chipbox.features.artistdetail.real"
 }
 
 dependencies {
-    api(projects.features.gameDetail.api)
+    api(projects.features.artistDetail.api)
 
     implementation(projects.cbox.android.ui.list.api)
     implementation(projects.cbox.common.appcomm.api)
@@ -19,7 +19,7 @@ dependencies {
     implementation(projects.cbox.common.player.common.api)
     implementation(projects.cbox.common.player.director.api)
 
-    implementation(projects.features.artistDetail.api)
+    implementation(projects.features.gameDetail.api)
 
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)

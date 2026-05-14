@@ -22,6 +22,8 @@ import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtist
 import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtistRoute
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGameRoute
+import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
+import net.sigmabeta.chipbox.features.artistdetail.ArtistDetailRoute
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetailRoute
 import net.sigmabeta.chipbox.features.library.Library
@@ -75,9 +77,10 @@ fun ChipboxNavHost(
         chipboxComposable<Settings> { SettingsRoute(onEvent) }
         chipboxComposable<NowPlaying> { NowPlayingRoute(onEvent) }
         chipboxComposable<BrowseByGame> { BrowseByGameRoute(onEvent) }
-        chipboxComposable<BrowseByArtist> { BrowseByArtistRoute() }
+        chipboxComposable<BrowseByArtist> { BrowseByArtistRoute(onEvent) }
         chipboxComposable<BrowseAllTracks> { BrowseAllTracksRoute() }
         chipboxComposable<GameDetail> { GameDetailRoute(onEvent) }
+        chipboxComposable<ArtistDetail> { ArtistDetailRoute(onEvent) }
         playbackStatusEntryPoint.register(this, onEvent)
     }
 }

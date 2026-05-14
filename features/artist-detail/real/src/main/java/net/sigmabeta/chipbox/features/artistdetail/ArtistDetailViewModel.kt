@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.features.gamedetail
+package net.sigmabeta.chipbox.features.artistdetail
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -7,7 +7,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
-import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
+import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
@@ -20,25 +20,25 @@ import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 
 @HiltViewModel
-class GameDetailViewModel @Inject constructor(
+class ArtistDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: Repository,
     private val director: Director,
     stringProvider: StringProvider,
     hatchet: Hatchet,
-) : ChipboxListViewModel<GameDetailState>(
-    GameDetailState(),
+) : ChipboxListViewModel<ArtistDetailState>(
+    ArtistDetailState(),
     stringProvider,
     hatchet,
 ) {
 
-    private val args: GameDetail = savedStateHandle.toRoute()
+    private val args: ArtistDetail = savedStateHandle.toRoute()
 
     init {
         viewModelScope.launch {
             repository
-                .getGame(args.id, withTracks = true, withArtists = true)
-                .collect(::onGameData)
+                .getArtist(args.id, withTracks = true, withGames = true)
+                .collect(::onArtistData)
         }
 
         viewModelScope.launch {
@@ -50,10 +50,10 @@ class GameDetailViewModel @Inject constructor(
 
     override fun handleAction(action: SageAction) {
         when (action) {
-            GameDetailAction.PlayAllClicked -> startSession(startingPosition = 0)
-            GameDetailAction.ShuffleAllClicked -> startSession(startingPosition = 0, shuffled = true)
-            is GameDetailAction.TrackClicked -> startSession(startingPosition = action.position)
-            is GameDetailAction.ArtistClicked -> emit(NavigateTo(ArtistDetail(action.id)))
+            ArtistDetailAction.PlayAllClicked -> startSession(startingPosition = 0)
+            ArtistDetailAction.ShuffleAllClicked -> startSession(startingPosition = 0, shuffled = true)
+            is ArtistDetailAction.TrackClicked -> startSession(startingPosition = action.position)
+            is ArtistDetailAction.GameClicked -> emit(NavigateTo(GameDetail(action.id)))
             else -> Unit
         }
     }
@@ -61,7 +61,7 @@ class GameDetailViewModel @Inject constructor(
     private fun startSession(startingPosition: Int, shuffled: Boolean = false) {
         director.start(
             Session(
-                type = SessionType.GAME,
+                type = SessionType.ARTIST,
                 contentId = args.id,
                 startingPosition = startingPosition,
                 shuffled = shuffled,
@@ -69,31 +69,31 @@ class GameDetailViewModel @Inject constructor(
         )
     }
 
-    private fun onGameData(data: Data<net.sigmabeta.chipbox.models.Game?>) {
+    private fun onArtistData(data: Data<net.sigmabeta.chipbox.models.Artist?>) {
         when (data) {
             Data.Loading -> updateState {
                 it.copy(
-                    game = LCE.Loading(LOAD_OP),
+                    artist = LCE.Loading(LOAD_OP),
                     tracks = LCE.Loading(LOAD_OP),
-                    artists = LCE.Loading(LOAD_OP),
+                    games = LCE.Loading(LOAD_OP),
                     notFound = false,
                 )
             }
             Data.Empty -> updateState {
                 it.copy(
-                    game = LCE.Uninitialized,
+                    artist = LCE.Uninitialized,
                     tracks = LCE.Uninitialized,
-                    artists = LCE.Uninitialized,
+                    games = LCE.Uninitialized,
                     notFound = true,
                 )
             }
             is Data.Succeeded -> {
-                val game = data.data ?: return
+                val artist = data.data ?: return
                 updateState {
                     it.copy(
-                        game = LCE.Content(game),
-                        tracks = LCE.Content(game.tracks.orEmpty()),
-                        artists = LCE.Content(game.artists.orEmpty()),
+                        artist = LCE.Content(artist),
+                        tracks = LCE.Content(artist.tracks.orEmpty()),
+                        games = LCE.Content(artist.games.orEmpty()),
                         notFound = false,
                     )
                 }
@@ -101,9 +101,9 @@ class GameDetailViewModel @Inject constructor(
             is Data.Failed -> updateState {
                 val err = IllegalStateException(data.message)
                 it.copy(
-                    game = LCE.Error(LOAD_OP, err),
+                    artist = LCE.Error(LOAD_OP, err),
                     tracks = LCE.Error(LOAD_OP, err),
-                    artists = LCE.Error(LOAD_OP, err),
+                    games = LCE.Error(LOAD_OP, err),
                     notFound = false,
                 )
             }
@@ -111,6 +111,6 @@ class GameDetailViewModel @Inject constructor(
     }
 
     private companion object {
-        const val LOAD_OP = "game_detail.load"
+        const val LOAD_OP = "artist_detail.load"
     }
 }
