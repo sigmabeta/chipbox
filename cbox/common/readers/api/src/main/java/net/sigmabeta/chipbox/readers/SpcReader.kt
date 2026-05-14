@@ -37,9 +37,9 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
                     extendedTag?.songTitle ?: spcMainTag.songTitle,
                     extendedTag?.artistName ?: spcMainTag.artistName,
                     extendedTag?.gameTitle ?: spcMainTag.gameTitle,
-                    spcMainTag.trackLengthSeconds * 1_000L,
+                    spcMainTag.trackLengthMs,
                     0,
-                    spcMainTag.fadeLengthMillis != 0L
+                    spcMainTag.fadeLengthMs > 0L
                 )
             )
         } catch (iae: IllegalArgumentException) {
@@ -88,15 +88,14 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
         // SPC lengths are stored as string-encoded numbers?!?!? Apparently this is supposed to not
         // always be the case, but I've never seen an example of it not being the case, so until then,
         // this is assumed to be how it works.
-        val lengthSeconds = lengthSecondsString?.toLongOrNull() ?: (LENGTH_UNKNOWN_MS / 1_000L)
-        val fadeLengthMillis =
-            fadeLengthMillisString?.toLongOrNull() ?: (LENGTH_UNKNOWN_MS / 1_000L)
+        val lengthMs = lengthSecondsString?.toLongOrNull()?.times(1_000L) ?: LENGTH_UNKNOWN_MS
+        val fadeLengthMs = fadeLengthMillisString?.toLongOrNull() ?: LENGTH_UNKNOWN_MS
 
         return SpcMainTag(
             songTitle.orUnknown(),
             gameTitle.orUnknown(),
-            lengthSeconds,
-            fadeLengthMillis,
+            lengthMs,
+            fadeLengthMs,
             artistName.orUnknown()
         )
     }
@@ -191,8 +190,8 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
 data class SpcMainTag(
     val songTitle: String,
     val gameTitle: String,
-    val trackLengthSeconds: Long,
-    val fadeLengthMillis: Long,
+    val trackLengthMs: Long,
+    val fadeLengthMs: Long,
     val artistName: String
 )
 

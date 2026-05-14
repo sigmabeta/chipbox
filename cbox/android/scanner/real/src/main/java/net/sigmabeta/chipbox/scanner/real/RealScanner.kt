@@ -187,11 +187,19 @@ class RealScanner(
 
         var unknown = 0
         val checked = rawTracks.map {
-            if (it.title == TAG_UNKNOWN) {
+            val titled = if (it.title == TAG_UNKNOWN) {
                 unknown++
                 it.copy(title = "Unknown Track $unknown")
             } else {
                 it
+            }
+            // Reader (or m3u overlay) couldn't determine a length — fall back to a sensible
+            // default so the track is still seekable and the now-playing UI can render a
+            // progress bar. Accept any non-positive value to absorb reader bugs that emit 0.
+            if (titled.length <= 0L) {
+                titled.copy(length = DEFAULT_LENGTH_MS)
+            } else {
+                titled
             }
         }
 
@@ -282,5 +290,6 @@ class RealScanner(
         val EXTENSIONS_IMAGES = setOf("jpg", "png")
         private const val TAG_UNKNOWN = "Unknown"
         private const val MAX_LIB_DEPTH = 8
+        private const val DEFAULT_LENGTH_MS = 2L * 60 * 1000 + 30 * 1000
     }
 }
