@@ -11,6 +11,7 @@ import net.sigmabeta.chipbox.player.emulators.gme.GmeEmulator
 import net.sigmabeta.chipbox.player.emulators.psf.PsfEmulator
 import net.sigmabeta.chipbox.player.emulators.ssf.SsfEmulator
 import net.sigmabeta.chipbox.player.emulators.twosf.TwosfEmulator
+import net.sigmabeta.chipbox.player.emulators.vgm.VgmEmulator
 import javax.inject.Singleton
 
 @Module
@@ -25,6 +26,7 @@ object EmulatorModule {
             GmeEmulator,
             PsfEmulator,
             SsfEmulator,
+            VgmEmulator,
             FakeEmulator
         )
     )
