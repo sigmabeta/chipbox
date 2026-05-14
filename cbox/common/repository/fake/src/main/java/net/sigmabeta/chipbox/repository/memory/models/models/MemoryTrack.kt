@@ -6,7 +6,7 @@ data class MemoryTrack(
     val title: String,
     val trackLengthMs: Long,
     val trackNumber: Int,
-    val fade: Boolean,
+    val fadeLengthMs: Long,
     var game: MemoryGame?,
     val artists: List<MemoryArtist>
 

@@ -85,6 +85,9 @@ abstract class Emulator {
     /**
      * Load [track], computing the frame budget from its declared length so [generateBuffer]
      * knows when to stop. Tears down any previously-loaded track first.
+     *
+     * The budget extends by [Track.fadeLengthMs] past `trackLengthMs` so the fade ramp lands
+     * beyond the music. Tracks with `fadeLengthMs = 0L` stop at `trackLengthMs` exactly.
      */
     open fun loadTrack(track: Track) {
         hatchet.d("Loading track: ${track.title} (#${track.trackNumber}) from ${track.path}")
@@ -95,7 +98,8 @@ abstract class Emulator {
         setTrackNumber(track.trackNumber)
         loadTrackInternal(track.path)
         remainingFramesTotal =
-            track.trackLengthMs.toDouble().millisToFrames(getSampleRateInternal())
+            (track.trackLengthMs + track.fadeLengthMs).toDouble()
+                .millisToFrames(getSampleRateInternal())
         hasLoadedTrack = true
     }
 

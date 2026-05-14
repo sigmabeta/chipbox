@@ -6,7 +6,7 @@ data class MockTrack(
     val title: String,
     val trackLengthMs: Long,
     val trackNumber: Int,
-    val fade: Boolean,
+    val fadeLengthMs: Long,
     var game: MockGame?,
     val artists: List<MockArtist>
 )

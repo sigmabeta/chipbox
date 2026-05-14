@@ -98,7 +98,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
         tags[PSF_TAG_KEY_GAME].orUnknown(),
         tags[PSF_TAG_KEY_LENGTH]?.toLengthMillis() ?: LENGTH_UNKNOWN_MS,
         -1,
-        tags[PSF_TAG_KEY_FADE]?.toLengthMillis() ?: 0 > 0
+        tags[PSF_TAG_KEY_FADE]?.toLengthMillis() ?: 0L,
     )
 
     private fun libKeyToIndex(key: String): Int = key.removePrefix("_lib").toIntOrNull() ?: 1

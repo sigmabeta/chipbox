@@ -10,6 +10,6 @@ data class RawTrack(
     val game: String,
     val length: Long,
     val trackNumber: Int,
-    val fade: Boolean,
+    val fadeLengthMs: Long,
     val chainFiles: List<ChainFile> = emptyList(),
 )

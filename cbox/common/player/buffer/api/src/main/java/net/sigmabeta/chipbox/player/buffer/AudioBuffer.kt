@@ -13,10 +13,16 @@ package net.sigmabeta.chipbox.player.buffer
  *           track, advancing by frames-generated per buffer). Combined with [sampleRate] this
  *           is a timestamp the speaker can use to report actual played position.
  * @property data Interleaved L/R 16-bit PCM samples. Length is fixed by the buffer pool.
+ * @property fadeStartMs Position within the track where the speaker should begin the fade-out
+ *           ramp. Computed by the producer from the track's declared length and fade window.
+ * @property fadeLengthMs Duration of the fade-out ramp, in ms. After
+ *           [fadeStartMs] + [fadeLengthMs] the speaker should output silence.
  */
 data class AudioBuffer(
     val trackId: Long,
     val sampleRate: Int,
     val frameIndex: Long,
-    val data: ShortArray
+    val data: ShortArray,
+    val fadeStartMs: Long,
+    val fadeLengthMs: Long,
 )

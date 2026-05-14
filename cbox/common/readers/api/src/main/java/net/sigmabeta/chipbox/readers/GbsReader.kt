@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.readers
 
+import net.sigmabeta.chipbox.models.FADE_LENGTH_MS
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
@@ -36,7 +37,7 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
                         gameTitle,
                         LENGTH_UNKNOWN_MS,
                         index,
-                        true
+                        FADE_LENGTH_MS,
                     )
                 )
             }

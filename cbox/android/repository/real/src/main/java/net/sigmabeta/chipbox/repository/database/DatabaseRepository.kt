@@ -147,7 +147,7 @@ class DatabaseRepository(
             title,
             trackLengthMs,
             trackNumber,
-            fade,
+            fadeLengthMs,
             if (withGame) getGameById(game_id) else null,
             if (withArtists) getArtistsForTrack(id) else null,
             decodeChainFiles(chainFiles),
@@ -162,7 +162,7 @@ class DatabaseRepository(
             source,
             length,
             trackNumber,
-            fade,
+            fadeLengthMs,
             gameId,
             encodeChainFiles(chainFiles),
         )

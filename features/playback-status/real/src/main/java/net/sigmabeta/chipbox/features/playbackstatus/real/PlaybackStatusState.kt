@@ -56,7 +56,11 @@ data class PlaybackStatusState(
         row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_TRACK_NUMBER,
             track?.trackNumber?.toString()),
         row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_SOURCE, track?.source),
-        row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_FADE, track?.fade?.toString()),
+        row(
+            stringProvider,
+            ChipboxStringId.PLAYBACK_STATUS_LABEL_FADE,
+            track?.fadeLengthMs?.let { "${it}ms" },
+        ),
         row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_PATH, shortenPath(track?.path)),
     )
 

@@ -44,7 +44,9 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
             val tempTracks = mutableListOf<RawTrack>()
             for (index in 0 until trackCount) {
                 val length = parseTimeChunk(lengthChunk) ?: LENGTH_UNKNOWN_MS
-                val fade = parseTimeChunk(fadeChunk) ?: 1L
+                // NSFE 'fade' chunk holds one fade-out duration (ms) per subtune. >0 = fade,
+                // 0 = no fade; a missing chunk means no per-track fade metadata at all.
+                val fadeMs = parseTimeChunk(fadeChunk) ?: 0L
 
                 tempTracks.add(
                     RawTrack(
@@ -55,7 +57,7 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
                         gameTitle,
                         length,
                         index,
-                        fade == 0L
+                        fadeMs.coerceAtLeast(0L)
                     )
                 )
             }
