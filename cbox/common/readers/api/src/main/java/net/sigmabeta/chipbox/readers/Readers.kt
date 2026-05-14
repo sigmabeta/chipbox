@@ -15,6 +15,7 @@ class Readers(hatchet: Hatchet) {
     val nsfe = NsfeReader(hatchet)
     val gbs = GbsReader(hatchet)
     val spc = SpcReader(hatchet)
+    val vgm = VgmReader(hatchet)
     val m3u = M3uReader(hatchet)
 
     fun forExtension(extension: String): Reader? = when (extension) {
@@ -29,6 +30,7 @@ class Readers(hatchet: Hatchet) {
         EXT_NSFE -> nsfe
         EXT_GBS -> gbs
         EXT_SPC -> spc
+        EXT_VGM, EXT_VGZ -> vgm
         else -> null
     }
 }
@@ -49,6 +51,8 @@ private const val EXT_NSF = "nsf"
 private const val EXT_NSFE = "nsfe"
 private const val EXT_GBS = "gbs"
 private const val EXT_SPC = "spc"
+private const val EXT_VGM = "vgm"
+private const val EXT_VGZ = "vgz"
 
 private val PSF_FAMILY_EXTENSIONS = setOf(
     EXT_PSF, EXT_MINIPSF, EXT_GSF, EXT_MINIGSF,
