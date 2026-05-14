@@ -6,6 +6,8 @@ import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
+import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
@@ -23,7 +25,7 @@ class GameDetailViewModel @Inject constructor(
     private val repository: Repository,
     private val director: Director,
     stringProvider: StringProvider,
-    private val hatchet: Hatchet,
+    hatchet: Hatchet,
 ) : ChipboxListViewModel<GameDetailState>(
     GameDetailState(),
     stringProvider,
@@ -51,9 +53,7 @@ class GameDetailViewModel @Inject constructor(
             GameDetailAction.PlayAllClicked -> startSession(startingPosition = 0)
             GameDetailAction.ShuffleAllClicked -> startSession(startingPosition = 0, shuffled = true)
             is GameDetailAction.TrackClicked -> startSession(startingPosition = action.position)
-            is GameDetailAction.ArtistClicked -> hatchet.v(
-                "Artist ${action.id} clicked; ArtistDetail destination not wired yet."
-            )
+            is GameDetailAction.ArtistClicked -> emit(NavigateTo(ArtistDetail(action.id)))
             else -> Unit
         }
     }

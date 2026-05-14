@@ -35,6 +35,8 @@ dependencies {
     implementation(projects.features.browseByGame.real)
     implementation(projects.features.gameDetail.api)
     implementation(projects.features.gameDetail.real)
+    implementation(projects.features.artistDetail.api)
+    implementation(projects.features.artistDetail.real)
 
     implementation(libs.sage.android.ui.list)
 

@@ -1,0 +1,116 @@
+package net.sigmabeta.chipbox.features.artistdetail
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
+import androidx.navigation.toRoute
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.coroutines.launch
+import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
+import net.sigmabeta.chipbox.features.gamedetail.GameDetail
+import net.sigmabeta.chipbox.player.common.Session
+import net.sigmabeta.chipbox.player.common.SessionType
+import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.repository.Data
+import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.ui.list.ChipboxListViewModel
+import net.sigmabeta.sage.appcomm.LCE
+import net.sigmabeta.sage.appcomm.SageAction
+import net.sigmabeta.sage.logging.Hatchet
+import net.sigmabeta.sage.ui.StringProvider
+
+@HiltViewModel
+class ArtistDetailViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
+    private val repository: Repository,
+    private val director: Director,
+    stringProvider: StringProvider,
+    hatchet: Hatchet,
+) : ChipboxListViewModel<ArtistDetailState>(
+    ArtistDetailState(),
+    stringProvider,
+    hatchet,
+) {
+
+    private val args: ArtistDetail = savedStateHandle.toRoute()
+
+    init {
+        viewModelScope.launch {
+            repository
+                .getArtist(args.id, withTracks = true, withGames = true)
+                .collect(::onArtistData)
+        }
+
+        viewModelScope.launch {
+            director.metadataState().collect { track ->
+                updateState { it.copy(playingTrackId = track?.id) }
+            }
+        }
+    }
+
+    override fun handleAction(action: SageAction) {
+        when (action) {
+            ArtistDetailAction.PlayAllClicked -> startSession(startingPosition = 0)
+            ArtistDetailAction.ShuffleAllClicked -> startSession(startingPosition = 0, shuffled = true)
+            is ArtistDetailAction.TrackClicked -> startSession(startingPosition = action.position)
+            is ArtistDetailAction.GameClicked -> emit(NavigateTo(GameDetail(action.id)))
+            else -> Unit
+        }
+    }
+
+    private fun startSession(startingPosition: Int, shuffled: Boolean = false) {
+        director.start(
+            Session(
+                type = SessionType.ARTIST,
+                contentId = args.id,
+                startingPosition = startingPosition,
+                shuffled = shuffled,
+            )
+        )
+    }
+
+    private fun onArtistData(data: Data<net.sigmabeta.chipbox.models.Artist?>) {
+        when (data) {
+            Data.Loading -> updateState {
+                it.copy(
+                    artist = LCE.Loading(LOAD_OP),
+                    tracks = LCE.Loading(LOAD_OP),
+                    games = LCE.Loading(LOAD_OP),
+                    notFound = false,
+                )
+            }
+            Data.Empty -> updateState {
+                it.copy(
+                    artist = LCE.Uninitialized,
+                    tracks = LCE.Uninitialized,
+                    games = LCE.Uninitialized,
+                    notFound = true,
+                )
+            }
+            is Data.Succeeded -> {
+                val artist = data.data ?: return
+                updateState {
+                    it.copy(
+                        artist = LCE.Content(artist),
+                        tracks = LCE.Content(artist.tracks.orEmpty()),
+                        games = LCE.Content(artist.games.orEmpty()),
+                        notFound = false,
+                    )
+                }
+            }
+            is Data.Failed -> updateState {
+                val err = IllegalStateException(data.message)
+                it.copy(
+                    artist = LCE.Error(LOAD_OP, err),
+                    tracks = LCE.Error(LOAD_OP, err),
+                    games = LCE.Error(LOAD_OP, err),
+                    notFound = false,
+                )
+            }
+        }
+    }
+
+    private companion object {
+        const val LOAD_OP = "artist_detail.load"
+    }
+}
