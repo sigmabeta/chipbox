@@ -20,6 +20,7 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.GAME_DETAIL_SECTION_ARTISTS -> R.string.game_detail_section_artists
     ChipboxStringId.GAME_DETAIL_CTA_PLAY_ALL    -> R.string.game_detail_cta_play_all
     ChipboxStringId.GAME_DETAIL_CTA_SHUFFLE_ALL -> R.string.game_detail_cta_shuffle_all
+    ChipboxStringId.GAME_DETAIL_EMPTY           -> R.string.game_detail_empty
     ChipboxStringId.SETTINGS_SCREEN_TITLE        -> R.string.settings_screen_title
     ChipboxStringId.SETTINGS_SECTION_APPEARANCE  -> R.string.settings_section_appearance
     ChipboxStringId.SETTINGS_SECTION_LIBRARY     -> R.string.settings_section_library

@@ -68,7 +68,7 @@ class DatabaseRepository(
     override fun getGame(id: Long, withTracks: Boolean, withArtists: Boolean) = setupFlowWithId(
         id,
         { gameDao.getGame(id) },
-        { it.toGame(withTracks, withArtists) }
+        { it?.toGame(withTracks, withArtists) }
     )
 
     override fun getArtist(
@@ -78,7 +78,7 @@ class DatabaseRepository(
     ): Flow<Data<Artist?>> = setupFlowWithId(
         id,
         { artistDao.getArtist(id) },
-        { it.toArtist(withTracks, withGames) }
+        { it?.toArtist(withTracks, withGames) }
     )
 
     override fun getTrack(

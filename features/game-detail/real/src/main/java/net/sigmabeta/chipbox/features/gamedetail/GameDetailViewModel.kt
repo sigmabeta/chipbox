@@ -76,33 +76,26 @@ class GameDetailViewModel @Inject constructor(
                     game = LCE.Loading(LOAD_OP),
                     tracks = LCE.Loading(LOAD_OP),
                     artists = LCE.Loading(LOAD_OP),
+                    notFound = false,
                 )
             }
             Data.Empty -> updateState {
                 it.copy(
                     game = LCE.Uninitialized,
-                    tracks = LCE.Content(emptyList()),
-                    artists = LCE.Content(emptyList()),
+                    tracks = LCE.Uninitialized,
+                    artists = LCE.Uninitialized,
+                    notFound = true,
                 )
             }
             is Data.Succeeded -> {
-                val game = data.data
-                if (game == null) {
-                    updateState {
-                        it.copy(
-                            game = LCE.Uninitialized,
-                            tracks = LCE.Content(emptyList()),
-                            artists = LCE.Content(emptyList()),
-                        )
-                    }
-                } else {
-                    updateState {
-                        it.copy(
-                            game = LCE.Content(game),
-                            tracks = LCE.Content(game.tracks.orEmpty()),
-                            artists = LCE.Content(game.artists.orEmpty()),
-                        )
-                    }
+                val game = data.data ?: return
+                updateState {
+                    it.copy(
+                        game = LCE.Content(game),
+                        tracks = LCE.Content(game.tracks.orEmpty()),
+                        artists = LCE.Content(game.artists.orEmpty()),
+                        notFound = false,
+                    )
                 }
             }
             is Data.Failed -> updateState {
@@ -111,6 +104,7 @@ class GameDetailViewModel @Inject constructor(
                     game = LCE.Error(LOAD_OP, err),
                     tracks = LCE.Error(LOAD_OP, err),
                     artists = LCE.Error(LOAD_OP, err),
+                    notFound = false,
                 )
             }
         }
