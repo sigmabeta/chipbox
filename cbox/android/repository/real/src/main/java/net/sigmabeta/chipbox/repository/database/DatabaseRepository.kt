@@ -50,20 +50,10 @@ class DatabaseRepository(
         { list -> list.map { it.toGame(withTracks, withArtists) } }
     )
 
-    override fun getAllTracks(withGame: Boolean, withArtists: Boolean) = trackDao
-        .getAll()
-        .map { list -> list.map { entity -> entity.toTrack(withGame, withArtists) } }
-        .catch {
-            hatchet.e("Error: ${it.message}")
-            Data.Failed<List<Game>>(it.message ?: ERR_UNKNOWN)
-        }
-        .map {
-            if (it.isNotEmpty()) {
-                Data.Succeeded(it)
-            } else {
-                Data.Empty
-            }
-        }
+    override fun getAllTracks(withGame: Boolean, withArtists: Boolean) = setupFlow(
+        { trackDao.getAll() },
+        { list -> list.map { it.toTrack(withGame, withArtists) } }
+    )
 
     override fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean) = trackDao
         .getTracksForGameSync(id)

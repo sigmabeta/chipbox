@@ -8,6 +8,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.Session
@@ -19,6 +22,7 @@ import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.GeneratorEvent
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.player.speaker.SpeakerEvent
+import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.logging.Hatchet
 
@@ -33,9 +37,9 @@ private const val SKIP_BACK_THRESHOLD_MS = 3_000L
  * [ChipboxPlaybackState]. Assigning to [currentState] re-emits the new value to observers via
  * the property's setter.
  *
- * Setlist resolution is driven by [Session.type]: `GAME` and `ARTIST` sessions pull every
- * track for the given collection from the repository; `PLAYLIST` and `ALL_TRACKS` are not yet
- * implemented. The director
+ * Setlist resolution is driven by [Session.type]: `GAME`, `ARTIST`, and `ALL_TRACKS` sessions
+ * pull tracks for the given scope from the repository; `PLAYLIST` is not yet implemented. The
+ * director
  * also decides when to advance tracks — the generator emits [GeneratorEvent.TrackChange] when
  * its current track ends, and the director responds by feeding it the next track id from the
  * setlist (or transitioning to [PlayerState.ENDING] if the setlist is exhausted).
@@ -315,7 +319,7 @@ class RealDirector(
         return nextTrackPosition >= setlist.size
     }
 
-    private fun getSetlistForSession(session: Session) = when (session.type) {
+    private suspend fun getSetlistForSession(session: Session) = when (session.type) {
         SessionType.GAME -> getTrackListForGame(session.contentId)
         SessionType.ARTIST -> getTrackListForArtist(session.contentId)
         SessionType.PLAYLIST -> getTrackListForPlaylist(session.contentId)
@@ -334,9 +338,12 @@ class RealDirector(
         TODO("Not yet implemented")
     }
 
-    private fun getTrackListForAllTracks(): List<Long> {
-        TODO("Not yet implemented")
-    }
+    private suspend fun getTrackListForAllTracks(): List<Long> = repository
+        .getAllTracks(withGame = false, withArtists = false)
+        .filter { it is Data.Succeeded }
+        .map { (it as Data.Succeeded).data }
+        .first()
+        .map { it.id }
 
     private suspend fun reduce(oldState: ChipboxPlaybackState, event: GeneratorEvent) = when (event) {
         is GeneratorEvent.Error -> handleGeneratorError(event, oldState)

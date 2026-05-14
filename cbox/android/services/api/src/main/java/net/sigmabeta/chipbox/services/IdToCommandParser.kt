@@ -30,6 +30,15 @@ object IdToCommandParser {
                     startingTrackId = trackId.toLong()
                 )
             )
+            LibraryBrowser.COMMAND_TRACKS -> director.start(
+                // contentId is unused for ALL_TRACKS (per SessionType docs); parentId here
+                // is the placeholder "top" segment.
+                Session(
+                    SessionType.ALL_TRACKS,
+                    contentId = 0L,
+                    startingTrackId = trackId.toLong()
+                )
+            )
             else -> hatchet.w("Unhandled media command type '$type' (mediaId=$mediaId); ignoring.")
         }
     }
