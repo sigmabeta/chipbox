@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.ui.freeform.ChipboxFreeformViewModel
@@ -32,6 +33,11 @@ class NowPlayingViewModel @Inject constructor(
                 updateState { it.copy(playback = playback) }
             }
         }
+        viewModelScope.launch {
+            director.sessionState().collect { session ->
+                updateState { it.copy(session = session) }
+            }
+        }
     }
 
     override fun handleAction(action: SageAction) {
@@ -39,6 +45,17 @@ class NowPlayingViewModel @Inject constructor(
             NowPlayingAction.PlayPauseClicked -> togglePlayPause()
             NowPlayingAction.SkipForwardClicked -> director.skipForward()
             NowPlayingAction.SkipBackClicked -> director.skipBack()
+            NowPlayingAction.ShuffleClicked -> {
+                director.setShuffled(state.value.session?.shuffled != true)
+            }
+            NowPlayingAction.RepeatClicked -> {
+                updateState { it.copy(repeatMode = it.repeatMode.next()) }
+            }
+            NowPlayingAction.BackClicked -> emit(ChipboxEvent.NavigateBack)
+            NowPlayingAction.PlayerSettingsClicked -> emit(
+                // TODO: replace with a real Player Settings destination once that screen exists.
+                ChipboxEvent.ShowSnackbar("Player settings coming soon.")
+            )
             is NowPlayingAction.SeekRequested -> director.seek(action.positionMs)
         }
     }

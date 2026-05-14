@@ -43,6 +43,14 @@ abstract class Speaker(
 
     private var ongoingPlaybackJob: Job? = null
 
+    /**
+     * Track id of the most recently consumed [AudioBuffer]. Hoisted out of the playback loop so
+     * it survives [seek]'s cancel-and-restart cycle — without this the post-seek loop would
+     * treat the first buffer as an initial track and suppress its [SpeakerEvent.TrackChange],
+     * causing the now-playing UI to miss skip-forward/back updates. Reset only on full teardown.
+     */
+    private var playingTrackId: Long? = null
+
     private val eventSink = MutableSharedFlow<SpeakerEvent>(
         replay = 0,
         onBufferOverflow = BufferOverflow.SUSPEND,
@@ -72,6 +80,7 @@ abstract class Speaker(
     suspend fun stop() {
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = null
+        playingTrackId = null
 
         teardown()
     }
@@ -116,7 +125,6 @@ abstract class Speaker(
         if (ongoingPlaybackJob == null) {
             ongoingPlaybackJob = speakerScope.launch {
                 onResumed()
-                var playingTrackId: Long? = null
 
                 while (true) {
                     yield()

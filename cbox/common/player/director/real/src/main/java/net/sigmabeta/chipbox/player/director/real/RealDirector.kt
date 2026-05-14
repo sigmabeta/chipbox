@@ -34,7 +34,8 @@ private const val SKIP_BACK_THRESHOLD_MS = 3_000L
  * the property's setter.
  *
  * Setlist resolution is driven by [Session.type]: a `GAME` session pulls every track for the
- * given game from the repository; an `ARTIST` session is not yet implemented. The director
+ * given game from the repository; `ARTIST`, `PLAYLIST`, and `ALL_TRACKS` are not yet
+ * implemented. The director
  * also decides when to advance tracks — the generator emits [GeneratorEvent.TrackChange] when
  * its current track ends, and the director responds by feeding it the next track id from the
  * setlist (or transitioning to [PlayerState.ENDING] if the setlist is exhausted).
@@ -139,10 +140,19 @@ class RealDirector(
                 val startingPosition = session.startingPosition
                     ?: setlistForSession.indexOfFirst { it == firstTrackId }
 
+                val wasPaused = currentState.state == PlayerState.PAUSED
                 currentSession = session.copy(
                     currentPosition = startingPosition
                 )
                 startTrack(firstTrackId)
+                if (wasPaused) {
+                    // Drop the audio queued from the paused session and restart the speaker's
+                    // consume loop. Without this, the generator stays blocked filling buffers
+                    // nobody is reading, so the new session never becomes audible. Skipped on
+                    // cold start because the buffer manager isn't initialised until the
+                    // generator's first setSampleRate call lands.
+                    speaker.seek()
+                }
             }
         }
     }
@@ -308,6 +318,8 @@ class RealDirector(
     private fun getSetlistForSession(session: Session) = when (session.type) {
         SessionType.GAME -> getTrackListForGame(session.contentId)
         SessionType.ARTIST -> getTrackListForArtist(session.contentId)
+        SessionType.PLAYLIST -> getTrackListForPlaylist(session.contentId)
+        SessionType.ALL_TRACKS -> getTrackListForAllTracks()
     }
 
     private fun getTrackListForGame(gameId: Long) = repository
@@ -315,6 +327,14 @@ class RealDirector(
         .map { it.id }
 
     private fun getTrackListForArtist(artistId: Long): List<Long> {
+        TODO("Not yet implemented")
+    }
+
+    private fun getTrackListForPlaylist(playlistId: Long): List<Long> {
+        TODO("Not yet implemented")
+    }
+
+    private fun getTrackListForAllTracks(): List<Long> {
         TODO("Not yet implemented")
     }
 
@@ -429,10 +449,12 @@ class RealDirector(
 
     private suspend fun updatePlayerMetadata(oldState: ChipboxPlaybackState, newTrackId: Long): ChipboxPlaybackState {
         val newTrack = getTrack(newTrackId) ?: return oldState.copy(state = PlayerState.ERROR)
-        if (oldState.state == PlayerState.PRELOADING) {
-            metadataStateMutable.emit(newTrack)
+        metadataStateMutable.emit(newTrack)
+        return if (oldState.state == PlayerState.PRELOADING) {
+            oldState.copy(state = PlayerState.PLAYING)
+        } else {
+            oldState
         }
-        return oldState
     }
 
     private fun handleSpeakerError(event: SpeakerEvent.Error, oldState: ChipboxPlaybackState): ChipboxPlaybackState {
