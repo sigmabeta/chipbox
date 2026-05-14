@@ -48,8 +48,13 @@ private fun String.toM3uEntry(): M3uEntry? {
     val title: String
     val artist: String?
     val game: String?
-    if (metaParts.size >= 3) {
-        // GBS-style compound: "Title - Artist - Game"
+    if (metaParts.size >= 4 && metaParts.last().looksLikeCopyright()) {
+        // Zophar GBS/NSF compound: "Title - Artist - Game - Copyright". Anchor from the right
+        // so titles containing " - " (e.g. "Stage 3 - Float Islands") survive intact.
+        title = metaParts.dropLast(3).joinToString(" - ").orUnknown()
+        artist = metaParts[metaParts.size - 3].orUnknown()
+        game = metaParts[metaParts.size - 2].orUnknown()
+    } else if (metaParts.size == 3) {
         title = metaParts[0].orUnknown()
         artist = metaParts[1].orUnknown()
         game = metaParts[2].orUnknown()
@@ -68,3 +73,11 @@ private fun String.toM3uEntry(): M3uEntry? {
 /** Splits on commas not preceded by a backslash, then strips escape characters. */
 private fun String.splitByUnescapedCommas() = split(Regex("(?<!\\\\),"))
     .map { it.filterNot { c -> c == '\\' } }
+
+/**
+ * The trailing field of a Zophar GBS/NSF tag is a copyright line like "©1992 HAL Laboratory" —
+ * sometimes mangled to "�..." by an upstream encoding error. Either the copyright sigil or a
+ * 4-digit year is a strong enough signal to anchor right-side parsing.
+ */
+private fun String.looksLikeCopyright(): Boolean =
+    contains('©') || contains('�') || Regex("""\b(19|20)\d{2}\b""").containsMatchIn(this)
