@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.toList
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibraryFile
 import net.sigmabeta.chipbox.models.ChainFile
+import net.sigmabeta.chipbox.models.FADE_LENGTH_MS
 import net.sigmabeta.chipbox.models.state.ScannerEvent
 import net.sigmabeta.chipbox.models.state.ScannerState
 import net.sigmabeta.chipbox.readers.EXTENSION_M3U
@@ -196,10 +197,19 @@ class RealScanner(
             // Reader (or m3u overlay) couldn't determine a length — fall back to a sensible
             // default so the track is still seekable and the now-playing UI can render a
             // progress bar. Accept any non-positive value to absorb reader bugs that emit 0.
-            if (titled.length <= 0L) {
+            val sized = if (titled.length <= 0L) {
                 titled.copy(length = DEFAULT_LENGTH_MS)
             } else {
                 titled
+            }
+            // The fade ramp consumes the trailing FADE_LENGTH_MS of trackLengthMs at playback
+            // time, so a fading track recorded at its musical length would have its tail of
+            // music silenced. Extend the stored length so the audible portion plays in full
+            // and the fade lands beyond it.
+            if (sized.fade) {
+                sized.copy(length = sized.length + FADE_LENGTH_MS)
+            } else {
+                sized
             }
         }
 

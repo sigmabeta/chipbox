@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
+import net.sigmabeta.chipbox.models.FADE_LENGTH_MS
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
@@ -190,8 +191,8 @@ abstract class Generator(
                     generatedAudio,
                     rate,
                     bufferStartFrame.framesToMillis(rate),
-                    currentTrack!!.trackLengthMs - LENGTH_FADE_MILLIS,
-                    LENGTH_FADE_MILLIS
+                    (currentTrack!!.trackLengthMs - FADE_LENGTH_MS).toDouble(),
+                    FADE_LENGTH_MS.toDouble()
                 )
 
                 bufferManager.sendAudioBuffer(
@@ -292,7 +293,6 @@ abstract class Generator(
     }
 
     companion object {
-        private const val LENGTH_FADE_MILLIS = 6_000.0
         private const val MILLIS_PER_SECOND = 1_000L
     }
 }
