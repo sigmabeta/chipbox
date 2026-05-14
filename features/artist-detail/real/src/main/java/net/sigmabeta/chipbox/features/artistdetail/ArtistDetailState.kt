@@ -10,7 +10,6 @@ import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.HeroImageListModel
 import net.sigmabeta.sage.components.HorizontalScrollerListModel
-import net.sigmabeta.sage.components.LabelValueListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.LoadingType
 import net.sigmabeta.sage.components.NameCaptionValueListModel
@@ -102,51 +101,22 @@ data class ArtistDetailState(
             loadingItemCount = SONGS_LOADING_COUNT,
             loadingWithHeader = true,
         ) {
-            // When the artist has only one game, every track's caption would
-            // repeat the same title — drop it and fall back to the simpler
-            // label/value row.
-            val artistGameCount = (games as? LCE.Content)?.data?.size ?: 0
-            val captionPerTrack = artistGameCount > 1
-
             listOf(
                 SectionHeaderListModel(
                     stringProvider.getString(ChipboxStringId.ARTIST_DETAIL_SECTION_SONGS),
                 ),
-            ) + data.mapIndexed { index, track ->
-                trackRow(index, track, captionPerTrack)
-            }
+            ) + data.mapIndexed(::trackRow)
         }
 
-    private fun trackRow(
-        index: Int,
-        track: Track,
-        captionPerTrack: Boolean,
-    ): ListModel {
-        val dataId = track.id + ID_PREFIX_SONGS
-        val length = formatTrackLength(track.trackLengthMs)
-        val clickAction = ArtistDetailAction.TrackClicked(index)
-
-        val active = track.id == playingTrackId
-
-        return if (captionPerTrack) {
-            NameCaptionValueListModel(
-                dataId = dataId,
-                name = track.title,
-                caption = track.game?.title.orEmpty(),
-                value = length,
-                clickAction = clickAction,
-                active = active,
-            )
-        } else {
-            LabelValueListModel(
-                dataId = dataId,
-                label = track.title,
-                value = length,
-                clickAction = clickAction,
-                active = active,
-            )
-        }
-    }
+    private fun trackRow(index: Int, track: Track): ListModel =
+        NameCaptionValueListModel(
+            dataId = track.id + ID_PREFIX_SONGS,
+            name = track.title,
+            caption = track.game?.title.orEmpty(),
+            value = formatTrackLength(track.trackLengthMs),
+            clickAction = ArtistDetailAction.TrackClicked(index),
+            active = track.id == playingTrackId,
+        )
 
     private fun gamesSection(stringProvider: StringProvider) =
         games.sectionWithStandardErrorAndLoading(
