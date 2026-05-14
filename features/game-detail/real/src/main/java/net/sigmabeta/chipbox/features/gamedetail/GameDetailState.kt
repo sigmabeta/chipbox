@@ -48,8 +48,8 @@ data class GameDetailState(
         listOf(
             heroSection(),
             ctaSection(stringProvider),
-            songSection(stringProvider),
             artistSection(stringProvider),
+            songSection(stringProvider),
         )
     }
 
