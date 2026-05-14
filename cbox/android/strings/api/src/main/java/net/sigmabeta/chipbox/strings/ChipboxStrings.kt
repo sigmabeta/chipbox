@@ -64,4 +64,12 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.PLAYBACK_STATUS_LABEL_CURRENT_POSITION  -> R.string.playback_status_label_current_position
     ChipboxStringId.PLAYBACK_STATUS_LABEL_SHUFFLED          -> R.string.playback_status_label_shuffled
     ChipboxStringId.NOW_PLAYING_SCREEN_TITLE                -> R.string.now_playing_screen_title
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_GAME_PLAYING        -> R.string.now_playing_session_type_game_playing
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_GAME_SHUFFLING      -> R.string.now_playing_session_type_game_shuffling
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ARTIST_PLAYING      -> R.string.now_playing_session_type_artist_playing
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ARTIST_SHUFFLING    -> R.string.now_playing_session_type_artist_shuffling
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLAYLIST_PLAYING    -> R.string.now_playing_session_type_playlist_playing
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLAYLIST_SHUFFLING  -> R.string.now_playing_session_type_playlist_shuffling
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_PLAYING  -> R.string.now_playing_session_type_all_tracks_playing
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_SHUFFLING -> R.string.now_playing_session_type_all_tracks_shuffling
 }
