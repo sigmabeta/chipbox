@@ -34,8 +34,13 @@ private fun String.toM3uEntry(): M3uEntry? {
     val filename = substringBefore("::")
     val tags = substringAfter("::").splitByUnescapedCommas()
 
-    // tags[1] is the 1-based subtune index; subtract 1 to match our readers' 0-based trackNumber.
-    val trackNumber = (tags.getOrNull(1)?.toIntOrNull() ?: return null) - 1
+    // tags[0] is the source format (GBS/NSF/etc.), tags[1] is the subtune index. Conventions
+    // differ: NSF / NSFE / PSF m3u files index from 1 (matching the format's 1-based "song
+    // number"), but GBS m3u files in the wild are 0-based (matching the GBS internal subtune
+    // index). Normalize to our readers' 0-based trackNumber.
+    val format = tags.getOrNull(0)?.uppercase()
+    val rawIndex = tags.getOrNull(1)?.toIntOrNull() ?: return null
+    val trackNumber = if (format == "GBS") rawIndex else rawIndex - 1
     if (trackNumber < 0) return null
 
     val rawMeta = tags.getOrNull(2) ?: TAG_UNKNOWN
