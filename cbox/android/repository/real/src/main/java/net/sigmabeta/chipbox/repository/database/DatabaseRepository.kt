@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.withContext
 import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.entities.ArtistEntity
@@ -238,11 +239,7 @@ class DatabaseRepository(
     ): Flow<Data<Model>> {
         return databaseOp()
             .map { converter(it) }
-            .catch {
-                hatchet.e("Error: ${it.message}")
-                Data.Failed<List<Game>>(it.message ?: ERR_UNKNOWN)
-            }
-            .map { model ->
+            .map<Model, Data<Model>> { model ->
                 if (model is List<*>) {
                     if (model.isNotEmpty()) {
                         Data.Succeeded(model)
@@ -256,6 +253,11 @@ class DatabaseRepository(
                         Data.Empty
                     }
                 }
+            }
+            .onStart { emit(Data.Loading) }
+            .catch {
+                hatchet.e("Error: ${it.message}")
+                emit(Data.Failed(it.message ?: ERR_UNKNOWN))
             }
             .flowOn(dispatcher)
     }
@@ -267,11 +269,7 @@ class DatabaseRepository(
     ): Flow<Data<Model>> {
         return databaseOp(id)
             .map { converter(it) }
-            .catch {
-                hatchet.e("Error: ${it.message}")
-                Data.Failed<List<Game>>(it.message ?: ERR_UNKNOWN)
-            }
-            .map { model ->
+            .map<Model, Data<Model>> { model ->
                 if (model is List<*>) {
                     if (model.isNotEmpty()) {
                         Data.Succeeded(model)
@@ -285,6 +283,11 @@ class DatabaseRepository(
                         Data.Empty
                     }
                 }
+            }
+            .onStart { emit(Data.Loading) }
+            .catch {
+                hatchet.e("Error: ${it.message}")
+                emit(Data.Failed(it.message ?: ERR_UNKNOWN))
             }
             .flowOn(dispatcher)
     }
