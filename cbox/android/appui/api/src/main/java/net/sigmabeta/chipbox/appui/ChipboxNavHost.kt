@@ -78,7 +78,7 @@ fun ChipboxNavHost(
         chipboxComposable<NowPlaying> { NowPlayingRoute(onEvent) }
         chipboxComposable<BrowseByGame> { BrowseByGameRoute(onEvent) }
         chipboxComposable<BrowseByArtist> { BrowseByArtistRoute(onEvent) }
-        chipboxComposable<BrowseAllTracks> { BrowseAllTracksRoute() }
+        chipboxComposable<BrowseAllTracks> { BrowseAllTracksRoute(onEvent) }
         chipboxComposable<GameDetail> { GameDetailRoute(onEvent) }
         chipboxComposable<ArtistDetail> { ArtistDetailRoute(onEvent) }
         playbackStatusEntryPoint.register(this, onEvent)
