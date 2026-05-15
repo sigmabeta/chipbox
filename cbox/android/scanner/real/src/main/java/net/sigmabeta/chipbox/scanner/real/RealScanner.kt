@@ -205,7 +205,6 @@ class RealScanner(
 
         val gameName = rawTracks.first().game
         hatchet.i("Adding game \"$gameName\" with ${checked.size} track(s).")
-        checked.forEach { hatchet.v("  Track ${it.trackNumber}: \"${it.title}\" (${it.length}ms)") }
         repository.addGame(RawGame(gameName, imagePath, checked))
         emitEvent(ScannerEvent.GameFoundEvent(gameName, rawTracks.size, imagePath.orUnknown()))
         return Progress(1, rawTracks.size, failed)
