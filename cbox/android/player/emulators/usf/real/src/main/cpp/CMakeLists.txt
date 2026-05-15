@@ -14,8 +14,6 @@ set(library_name usf)
 set(usf_SRCS
         kotlin-jni.cpp
         Usf.cpp
-        common.cpp
-        psflib/psflib.c
 
         r4300/empty_dynarec.c
         ai/ai_controller.c
@@ -76,7 +74,12 @@ add_compile_options(-fno-strict-aliasing -Wno-pointer-sign)
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/psflib
+)
+
+# Shared psflib + PSF file-I/O, formerly vendored under psflib/ and common.*.
+add_subdirectory(
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../native-common
+        ${CMAKE_BINARY_DIR}/native-common
 )
 
 add_library(${library_name} SHARED ${usf_SRCS})
@@ -84,6 +87,7 @@ add_library(${library_name} SHARED ${usf_SRCS})
 target_link_libraries(
         ${library_name}
 
-        # PSFLib wants to know how to unzip stuff.
-        z
+        # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress
+        # PSF sections, so this also links libz transitively.
+        chipbox_native_common
 )

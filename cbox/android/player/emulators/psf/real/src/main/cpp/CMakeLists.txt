@@ -24,13 +24,16 @@ set(libaopsf_SRCS
         aopsf/r3000dis.c
         aopsf/spu/spu.c
         aopsf/spu/spucore.c
-        common/common.cpp
-        psflib/psf2fs.c
-        psflib/psflib.c
         )
 
 # Appears to just be a flag telling the code we want it to compile...?
 add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN)
+
+# Shared psflib + PSF file-I/O, formerly vendored under psflib/ and common/.
+add_subdirectory(
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../native-common
+        ${CMAKE_BINARY_DIR}/native-common
+)
 
 # Specifies a library name, specifies whether the library is STATIC or
 # SHARED, and provides relative paths to the source code. You can
@@ -51,8 +54,9 @@ add_library( # Specifies the name of the library.
 target_link_libraries(
         ${library_name}
 
-        # PSFLib wants to know how to unzip stuff.
-        z
+        # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress
+        # PSF sections, so this also links libz transitively.
+        chipbox_native_common
 
         # __android_log_print, used by debug probes in psx_hw.c and spu/spu.c.
         log

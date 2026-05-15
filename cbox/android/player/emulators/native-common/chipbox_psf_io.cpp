@@ -1,12 +1,10 @@
-#include "common.h"
+#include "chipbox_psf_io.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cstdio>
 
 void *psf_file_fopen(void *context, const char *uri) {
     try {
-        return fopen(uri, "r");
+        return fopen(uri, "rb");
     }
     catch (...) {
         return NULL;
@@ -54,6 +52,17 @@ long psf_file_ftell(void *handle) {
     }
 }
 
+const psf_file_callbacks psf_file_system =
+        {
+                "\\/|:",
+                NULL,
+                psf_file_fopen,
+                psf_file_fread,
+                psf_file_fseek,
+                psf_file_fclose,
+                psf_file_ftell
+        };
+
 uint32_t get_le32(void const *p) {
     return (unsigned) ((unsigned char const *) p)[3] << 24 |
            (unsigned) ((unsigned char const *) p)[2] << 16 |
@@ -61,14 +70,9 @@ uint32_t get_le32(void const *p) {
            (unsigned) ((unsigned char const *) p)[0];
 }
 
-void set_le32( void* p, uint32_t n )
-{
-    ((unsigned char*) p) [0] = (unsigned char) n;
-    ((unsigned char*) p) [1] = (unsigned char) (n >> 8);
-    ((unsigned char*) p) [2] = (unsigned char) (n >> 16);
-    ((unsigned char*) p) [3] = (unsigned char) (n >> 24);
+void set_le32(void *p, uint32_t n) {
+    ((unsigned char *) p)[0] = (unsigned char) n;
+    ((unsigned char *) p)[1] = (unsigned char) (n >> 8);
+    ((unsigned char *) p)[2] = (unsigned char) (n >> 16);
+    ((unsigned char *) p)[3] = (unsigned char) (n >> 24);
 }
-
-#ifdef __cplusplus
-};
-#endif

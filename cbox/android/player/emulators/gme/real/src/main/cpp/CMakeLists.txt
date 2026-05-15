@@ -56,6 +56,12 @@ set(libgme_SRCS
 # Appears to just be a flag telling the code we want it to compile...?
 add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN)
 
+# Shared header-only JNI bridge (no psflib: gme is not a PSF format).
+add_subdirectory(
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../native-common
+        ${CMAKE_BINARY_DIR}/native-common
+)
+
 # Specifies a library name, specifies whether the library is STATIC or
 # SHARED, and provides relative paths to the source code. You can
 # define multiple libraries by adding multiple add_library() commands,
@@ -77,4 +83,7 @@ target_link_libraries(
 
         # PSFLib wants to know how to unzip stuff.
         z
+
+        # Shared header-only JNI bridge.
+        chipbox_jni_bridge
 )
