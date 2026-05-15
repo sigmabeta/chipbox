@@ -15,7 +15,7 @@ import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatusEntryPoint
-import net.sigmabeta.chipbox.models.state.ScannerState
+import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager

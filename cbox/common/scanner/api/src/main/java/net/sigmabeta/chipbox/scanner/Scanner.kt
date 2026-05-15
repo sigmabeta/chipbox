@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
-import net.sigmabeta.chipbox.models.state.ScannerEvent
-import net.sigmabeta.chipbox.models.state.ScannerState
+import net.sigmabeta.chipbox.scanner.state.ScannerEvent
+import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.logging.Hatchet
 
