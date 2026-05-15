@@ -25,10 +25,10 @@ import java.nio.ByteOrder
  */
 class FileSpeaker(
         private val externalStorageDir: File,
-        private val hatchet: Hatchet,
+        hatchet: Hatchet,
         bufferManager: ConsumerBufferManager,
         dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : Speaker(bufferManager, dispatcher) {
+) : Speaker(bufferManager, hatchet, dispatcher) {
     private var bytesWritten = 0
 
     private var file: OutputStream? = null

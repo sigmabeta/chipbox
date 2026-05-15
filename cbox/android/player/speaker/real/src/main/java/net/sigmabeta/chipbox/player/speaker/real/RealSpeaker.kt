@@ -21,10 +21,12 @@ import net.sigmabeta.sage.logging.Hatchet
  */
 class RealSpeaker(
         bufferManager: ConsumerBufferManager,
-        private val hatchet: Hatchet,
+        hatchet: Hatchet,
         dispatcher: CoroutineDispatcher = Dispatchers.Default
-) : Speaker(bufferManager, dispatcher) {
+) : Speaker(bufferManager, hatchet, dispatcher) {
     private var audioTrack: AudioTrack? = null
+
+    private var lastLoggedTrackId: Long? = null
 
     // Snapshot of "AudioTrack head when this buffer was queued" + "the track-frame that
     // buffer began at." currentPositionMs reads (head_now - referenceHeadFrames) and adds
@@ -41,6 +43,15 @@ class RealSpeaker(
             hatchet.d("Audiotrack setup complete!")
 
             audioTrack!!.play()
+        }
+
+        if (audio.trackId != lastLoggedTrackId) {
+            hatchet.i(
+                "onAudioReceived: first buffer for track ${audio.trackId} " +
+                    "(prev=$lastLoggedTrackId, frameIndex=${audio.frameIndex}, " +
+                    "rate=${audio.sampleRate})."
+            )
+            lastLoggedTrackId = audio.trackId
         }
 
         referenceHeadFrames = audioTrack!!.playbackHeadPosition.toLong()
@@ -132,9 +143,13 @@ class RealSpeaker(
 
     override fun flushSink() {
         val track = audioTrack ?: return
+        hatchet.d("flushSink: audioTrack.pause()")
         track.pause()
+        hatchet.d("flushSink: audioTrack.flush()")
         track.flush()
+        hatchet.d("flushSink: audioTrack.play()")
         track.play()
+        hatchet.d("flushSink: complete.")
     }
 
     private fun logProblems(samplesWritten: Int) {
