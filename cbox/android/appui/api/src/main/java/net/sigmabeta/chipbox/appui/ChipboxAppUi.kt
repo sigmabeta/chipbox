@@ -13,12 +13,14 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,9 +48,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.playerstatus.PlayerStatusAnimDurationMs
-import net.sigmabeta.chipbox.playerstatus.PlayerStatusReservedHeight
-import net.sigmabeta.sage.android.ui.list.LocalListBottomInset
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -59,12 +58,15 @@ import androidx.navigation.compose.rememberNavController
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.chipbox.playerstatus.PlayerStatus
+import net.sigmabeta.chipbox.playerstatus.PlayerStatusAnimDurationMs
+import net.sigmabeta.chipbox.playerstatus.PlayerStatusReservedHeight
 import net.sigmabeta.chipbox.ui.chrome.ChromeController
 import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
 import net.sigmabeta.chipbox.ui.chrome.LocalTitleBarController
 import net.sigmabeta.chipbox.ui.chrome.TitleBarController
 import net.sigmabeta.chipbox.ui.components.CrossfadeText
 import net.sigmabeta.chipbox.ui.theme.AppTheme
+import net.sigmabeta.sage.android.ui.list.LocalListBottomInset
 import net.sigmabeta.sage.components.TitleBarModel
 import net.sigmabeta.sage.ui.StringProvider
 
@@ -127,8 +129,14 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
         val snackbarScope = rememberCoroutineScope()
 
         var playerStatusVisible by remember { mutableStateOf(false) }
+        val navBarBottomInset =
+            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
         val navHostBottomInset by animateDpAsState(
-            targetValue = if (playerStatusVisible && chrome.showPlayerStatus) PlayerStatusReservedHeight else 0.dp,
+            targetValue = if (playerStatusVisible && chrome.showPlayerStatus) {
+                PlayerStatusReservedHeight + navBarBottomInset
+            } else {
+                0.dp
+            },
             animationSpec = tween(PlayerStatusAnimDurationMs),
             label = "ChipboxAppUi.navHostBottomInset",
         )
@@ -203,7 +211,9 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
                                 visible = chrome.showPlayerStatus,
                                 enter = slideInVertically(initialOffsetY = { it }),
                                 exit = slideOutVertically(targetOffsetY = { it }),
-                                modifier = Modifier.align(Alignment.BottomCenter),
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .windowInsetsPadding(WindowInsets.navigationBars),
                             ) {
                                 PlayerStatus(
                                     onVisibleChange = { playerStatusVisible = it },
