@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.features.nowplaying.real
 
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
@@ -26,7 +27,7 @@ data class NowPlayingState(
     override fun toContent(stringProvider: StringProvider): NowPlayingModel = NowPlayingModel(
         artwork = SourceInfo(info = track?.game?.photoUrl),
         sessionTypeLabel = sessionTypeLabel(stringProvider),
-        sessionSourceName = sessionSourceName(),
+        sessionSourceName = sessionSourceName(stringProvider),
         title = track?.title.orEmpty(),
         artistsCaption = track?.artists?.joinToString(", ") { it.name }.orEmpty(),
         gameTitle = track?.game?.title.orEmpty(),
@@ -70,10 +71,11 @@ data class NowPlayingState(
 
     /**
      * Second line of the header — the source's display name (e.g. "Street Fighter II",
-     * "Yoko Shimomura"). Empty for ALL_TRACKS (no source) and for sources that aren't yet
-     * plumbed through (playlists), so the screen can skip rendering the second line.
+     * "Yoko Shimomura", "SNES"). Empty for ALL_TRACKS (no source) and for sources that
+     * aren't yet plumbed through (playlists), so the screen can skip rendering the
+     * second line.
      */
-    private fun sessionSourceName(): String {
+    private fun sessionSourceName(stringProvider: StringProvider): String {
         val session = session ?: return ""
         return when (session.type) {
             SessionType.GAME -> track?.game?.title.orEmpty()
@@ -89,9 +91,11 @@ data class NowPlayingState(
             // Playlists aren't wired up yet — no source name to surface.
             SessionType.PLAYLIST -> ""
             SessionType.ALL_TRACKS -> ""
-            // Platform name needs a StringProvider to resolve; second line is
-            // optional, so omit it rather than thread one through here.
-            SessionType.PLATFORM -> ""
+            // contentId carries the Platform ordinal (see SessionType docs).
+            SessionType.PLATFORM ->
+                Platform.entries.getOrNull(session.contentId.toInt())
+                    ?.let { stringProvider.getString(it.stringId) }
+                    ?: ""
         }
     }
 
