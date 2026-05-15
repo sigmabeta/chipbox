@@ -7,6 +7,7 @@ import dagger.hilt.components.SingletonComponent
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager
+import net.sigmabeta.sage.logging.Hatchet
 import javax.inject.Singleton
 
 @Module
@@ -14,7 +15,7 @@ import javax.inject.Singleton
 object BufferModule {
     @Provides
     @Singleton
-    fun provideRealBufferManager() = RealBufferManager()
+    fun provideRealBufferManager(hatchet: Hatchet) = RealBufferManager(hatchet)
 
     @Provides
     @Singleton

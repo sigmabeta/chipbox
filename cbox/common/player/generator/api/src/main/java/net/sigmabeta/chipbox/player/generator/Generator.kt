@@ -87,7 +87,9 @@ abstract class Generator(
     fun events() = eventSink.asSharedFlow()
 
     suspend fun startTrack(trackId: Long) {
+        hatchet.i("startTrack($trackId): queueing on nextTrackIdChannel.")
         nextTrackIdChannel.send(trackId)
+        hatchet.d("startTrack($trackId): queued; calling play().")
         play()
     }
 
@@ -190,6 +192,13 @@ abstract class Generator(
 
                 val track = currentTrack!!
 
+                if (bufferStartFrame == 0) {
+                    hatchet.d(
+                        "Sending first buffer for track ${track.id} (${track.title}, " +
+                            "frames=$framesGenerated, rate=$rate)."
+                    )
+                }
+
                 bufferManager.sendAudioBuffer(
                     AudioBuffer(
                         trackId = track.id,
@@ -200,6 +209,10 @@ abstract class Generator(
                         fadeLengthMs = track.fadeLengthMs,
                     )
                 )
+
+                if (bufferStartFrame == 0) {
+                    hatchet.d("First buffer for track ${track.id} delivered to buffer manager.")
+                }
 
                 eventSink.emit(GeneratorEvent.Emitting(framesPlayed.framesToMillis(rate).toLong()))
 
@@ -224,6 +237,7 @@ abstract class Generator(
             return null
         }
 
+        hatchet.i("loadNextTrack($trackId): emitting Loading.")
         eventSink.emit(GeneratorEvent.Loading(trackId))
 
         if (currentSource != null) {
@@ -247,7 +261,9 @@ abstract class Generator(
         currentSource = pcmSource
 
         sampleRate = pcmSource.sampleRate
+        hatchet.d("loadNextTrack($trackId): calling bufferManager.setSampleRate(${pcmSource.sampleRate}).")
         bufferManager.setSampleRate(pcmSource.sampleRate)
+        hatchet.d("loadNextTrack($trackId): setSampleRate returned.")
 
         hatchet.d(
             "Track ${newTrack.title} fade plan: " +

@@ -200,10 +200,13 @@ class RealDirector(
             if (isCurrentTrackLastInSetlist(session, setlist)) return@launch
 
             val nextPosition = (session.currentPosition ?: -1) + 1
+            hatchet.i("skipForward: advancing to position $nextPosition (state=${currentState.state}).")
             advanceToTrackAt(session, setlist, nextPosition)
             // Drop the play-out buffer so the audible track switches immediately; the
             // auto-advance path naturally arrives at end-of-buffer so doesn't need this.
+            hatchet.i("skipForward: generator.startTrack returned; calling speaker.seek().")
             speaker.seek()
+            hatchet.i("skipForward: speaker.seek returned (state=${currentState.state}).")
         }
     }
 
@@ -373,6 +376,10 @@ class RealDirector(
         }
 
         if (oldState.state == PlayerState.PLAYING) {
+            hatchet.i(
+                "handleGeneratorLoading(track=${event.trackId}): " +
+                    "PLAYING -> PRELOADING (await SpeakerEvent.TrackChange)."
+            )
             return oldState.copy(
                 state = PlayerState.PRELOADING,
                 generatorProducedMs = 0L,
@@ -383,6 +390,10 @@ class RealDirector(
 
         val newTrack = getTrack(event.trackId) ?: return oldState.copy(state = PlayerState.ERROR)
         metadataStateMutable.emit(newTrack)
+        hatchet.i(
+            "handleGeneratorLoading(track=${event.trackId}): " +
+                "${oldState.state} -> BUFFERING (metadata emitted)."
+        )
 
         return oldState.copy(
             state = PlayerState.BUFFERING,
@@ -456,8 +467,13 @@ class RealDirector(
 
     private suspend fun updatePlayerMetadata(oldState: ChipboxPlaybackState, newTrackId: Long): ChipboxPlaybackState {
         val newTrack = getTrack(newTrackId) ?: return oldState.copy(state = PlayerState.ERROR)
+        hatchet.i(
+            "updatePlayerMetadata(track=$newTrackId, ${newTrack.title}): " +
+                "state ${oldState.state}, emitting metadata."
+        )
         metadataStateMutable.emit(newTrack)
         return if (oldState.state == PlayerState.PRELOADING) {
+            hatchet.i("updatePlayerMetadata: PRELOADING -> PLAYING.")
             oldState.copy(state = PlayerState.PLAYING)
         } else {
             oldState

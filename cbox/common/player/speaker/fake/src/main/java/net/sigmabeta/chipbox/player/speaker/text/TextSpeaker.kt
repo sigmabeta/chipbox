@@ -13,10 +13,10 @@ import net.sigmabeta.sage.logging.Hatchet
  * needing audio hardware.
  */
 class TextSpeaker(
-    private val hatchet: Hatchet,
+    hatchet: Hatchet,
         bufferManager: ConsumerBufferManager,
         dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : Speaker(bufferManager, dispatcher)  {
+) : Speaker(bufferManager, hatchet, dispatcher)  {
     override fun onAudioReceived(audio: AudioBuffer) {
         logBuffer(audio)
     }

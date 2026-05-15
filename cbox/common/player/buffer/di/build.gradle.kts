@@ -6,4 +6,5 @@ plugins {
 dependencies {
     api(projects.cbox.common.player.buffer.api)
     api(projects.cbox.common.player.buffer.real)
+    implementation(libs.sage.common.logging)
 }

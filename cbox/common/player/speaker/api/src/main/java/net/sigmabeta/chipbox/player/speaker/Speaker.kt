@@ -16,6 +16,7 @@ import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.common.FadeProcessor
 import net.sigmabeta.chipbox.player.common.framesToMillis
+import net.sigmabeta.sage.logging.Hatchet
 
 /**
  * Consumer side of the playback pipeline. Pulls [AudioBuffer]s off the [bufferManager] and
@@ -35,6 +36,7 @@ import net.sigmabeta.chipbox.player.common.framesToMillis
  */
 abstract class Speaker(
         private val bufferManager: ConsumerBufferManager,
+        protected val hatchet: Hatchet,
         dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     private val speakerScope = CoroutineScope(SupervisorJob() + dispatcher)
@@ -110,11 +112,16 @@ abstract class Speaker(
      * post-seek position. Pre-seek audio that was already in flight is discarded.
      */
     suspend fun seek() {
+        hatchet.i("seek(): cancelling consume loop.")
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = null
+        hatchet.i("seek(): consume loop cancelled, draining buffers.")
         bufferManager.drain()
+        hatchet.i("seek(): drained, flushing sink.")
         flushSink()
+        hatchet.i("seek(): sink flushed, restarting consume loop (playingTrackId=$playingTrackId).")
         startPlayback()
+        hatchet.i("seek(): startPlayback returned.")
     }
 
     protected fun emitError(error: String) {
@@ -126,41 +133,57 @@ abstract class Speaker(
     private fun startPlayback() {
         if (ongoingPlaybackJob == null) {
             ongoingPlaybackJob = speakerScope.launch {
-                onResumed()
+                hatchet.i("Consume loop entering (playingTrackId=$playingTrackId).")
+                try {
+                    onResumed()
 
-                while (true) {
-                    yield()
-                    var audioBuffer = bufferManager.checkForNextAudioBuffer()
+                    while (true) {
+                        yield()
+                        var audioBuffer = bufferManager.checkForNextAudioBuffer()
 
-                    if (audioBuffer == null) {
-                        eventSink.emit(SpeakerEvent.Buffering(currentPositionMs()))
-                        audioBuffer = bufferManager.waitForNextAudioBuffer()
-                    }
-
-                    if (audioBuffer.trackId != playingTrackId) {
-                        if (playingTrackId != null) {
-                            eventSink.emit(
-                                SpeakerEvent.TrackChange(audioBuffer.trackId)
-                            )
+                        if (audioBuffer == null) {
+                            hatchet.d("Consume: no buffer ready, emitting Buffering and awaiting.")
+                            eventSink.emit(SpeakerEvent.Buffering(currentPositionMs()))
+                            audioBuffer = bufferManager.waitForNextAudioBuffer()
+                            hatchet.d("Consume: awaited buffer arrived (trackId=${audioBuffer.trackId}).")
                         }
 
-                        playingTrackId = audioBuffer.trackId
+                        if (audioBuffer.trackId != playingTrackId) {
+                            if (playingTrackId != null) {
+                                hatchet.i(
+                                    "Emitting TrackChange: $playingTrackId -> ${audioBuffer.trackId}."
+                                )
+                                eventSink.emit(
+                                    SpeakerEvent.TrackChange(audioBuffer.trackId)
+                                )
+                            } else {
+                                hatchet.d(
+                                    "First buffer this run; setting playingTrackId=${audioBuffer.trackId} without emit."
+                                )
+                            }
+
+                            playingTrackId = audioBuffer.trackId
+                        }
+
+                        eventSink.emit(SpeakerEvent.Playing(currentPositionMs()))
+
+                        FadeProcessor.fadeIfNecessary(
+                            audioBuffer.data,
+                            audioBuffer.sampleRate,
+                            audioBuffer.frameIndex.toInt().framesToMillis(audioBuffer.sampleRate),
+                            audioBuffer.fadeStartMs.toDouble(),
+                            audioBuffer.fadeLengthMs.toDouble(),
+                        )
+
+                        onAudioReceived(audioBuffer)
+                        bufferManager.recycleShortArray(audioBuffer.data)
                     }
-
-                    eventSink.emit(SpeakerEvent.Playing(currentPositionMs()))
-
-                    FadeProcessor.fadeIfNecessary(
-                        audioBuffer.data,
-                        audioBuffer.sampleRate,
-                        audioBuffer.frameIndex.toInt().framesToMillis(audioBuffer.sampleRate),
-                        audioBuffer.fadeStartMs.toDouble(),
-                        audioBuffer.fadeLengthMs.toDouble(),
-                    )
-
-                    onAudioReceived(audioBuffer)
-                    bufferManager.recycleShortArray(audioBuffer.data)
+                } finally {
+                    hatchet.i("Consume loop exiting (playingTrackId=$playingTrackId).")
                 }
             }
+        } else {
+            hatchet.w("startPlayback called but consume loop already running.")
         }
     }
 }
