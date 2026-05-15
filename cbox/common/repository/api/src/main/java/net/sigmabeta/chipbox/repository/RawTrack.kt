@@ -12,4 +12,5 @@ data class RawTrack(
     val trackNumber: Int,
     val fadeLengthMs: Long,
     val chainFiles: List<ChainFile> = emptyList(),
+    val extension: String = "",
 )

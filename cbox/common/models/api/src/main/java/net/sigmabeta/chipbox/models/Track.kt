@@ -11,6 +11,7 @@ data class Track(
     val game: Game?,
     val artists: List<Artist>?,
     val chainFiles: List<ChainFile> = emptyList(),
+    val extension: String = "",
 )
 
 /**

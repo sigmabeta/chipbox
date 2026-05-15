@@ -114,7 +114,7 @@ class RealScanner(
                     )
                     val mergedTags = chainTags + tagInfo.tags
                     readers.psf.buildRawTrack(mergedTags, file.uri.toString())
-                        .copy(source = contentSource.sourceId, chainFiles = chain)
+                        .copy(source = contentSource.sourceId, chainFiles = chain, extension = ext)
                 }
                 when (track) {
                     null -> failed++
@@ -136,7 +136,7 @@ class RealScanner(
                 val bytes = contentSource.openInputStream(file.uri)?.use { it.readBytes() }
                     ?: return@readWithErrorHandling null
                 reader.readTracksFromFile(bytes, file.uri.toString())
-                    ?.map { it.copy(source = contentSource.sourceId) }
+                    ?.map { it.copy(source = contentSource.sourceId, extension = ext) }
             }
 
             when {

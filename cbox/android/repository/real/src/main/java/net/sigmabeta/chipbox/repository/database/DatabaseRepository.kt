@@ -151,6 +151,7 @@ class DatabaseRepository(
             if (withGame) getGameById(game_id) else null,
             if (withArtists) getArtistsForTrack(id) else null,
             decodeChainFiles(chainFiles),
+            extension,
         )
 
     private suspend fun RawTrack.toTrackEntityWithArtists(gameId: Long): Pair<TrackEntity, List<ArtistEntity>> {
@@ -165,6 +166,7 @@ class DatabaseRepository(
             fadeLengthMs,
             gameId,
             encodeChainFiles(chainFiles),
+            extension,
         )
 
         val trackId = trackDao.insert(tempTrack)

@@ -40,7 +40,7 @@ class RealPcmTrackSourceFactory(
     }
 
     override suspend fun open(track: Track, bytes: ByteArray): PcmTrackSource {
-        val ext = track.path.substringAfterLast('.', "").lowercase()
+        val ext = track.extension
         val emulator = emulators.firstOrNull { it.isFileExtensionSupported(ext) }
             ?: throw IllegalArgumentException("No emulator found for extension '$ext'.")
 
