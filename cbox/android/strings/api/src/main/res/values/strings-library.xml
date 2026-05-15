@@ -4,6 +4,8 @@
     <string name="library_browse_by_game_empty">No games in your library yet. Add a folder in Settings to get started.</string>
     <string name="library_browse_by_artist">Browse by Artist</string>
     <string name="library_browse_by_artist_empty">No artists in your library yet. Add a folder in Settings to get started.</string>
+    <string name="library_browse_by_platform">Browse by Platform</string>
+    <string name="library_browse_by_platform_empty">No games in your library yet. Add a folder in Settings to get started.</string>
     <string name="library_browse_all_tracks">Browse All Tracks</string>
     <string name="library_browse_all_tracks_empty">No tracks in your library yet. Add a folder in Settings to get started.</string>
     <string name="library_browse_all_tracks_cta_shuffle_all">Shuffle all tracks</string>
@@ -19,4 +21,9 @@
     <string name="artist_detail_cta_play_all">Play All</string>
     <string name="artist_detail_cta_shuffle_all">Shuffle All</string>
     <string name="artist_detail_empty">Artist not found.</string>
+
+    <string name="games_for_platform_title">%s Games</string>
+    <string name="games_for_platform_empty">No games for this platform.</string>
+    <string name="games_for_platform_cta_play_all">Play All</string>
+    <string name="games_for_platform_cta_shuffle_all">Shuffle All</string>
 </resources>

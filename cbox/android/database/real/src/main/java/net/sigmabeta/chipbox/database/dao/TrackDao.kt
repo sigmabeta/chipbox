@@ -17,6 +17,12 @@ interface TrackDao {
     @Query("SELECT * FROM track WHERE game_id = :gameId")
     fun getTracksForGameSync(gameId: Long): List<TrackEntity>
 
+    @Query("SELECT * FROM track WHERE platform = :platformName")
+    fun getTracksForPlatformSync(platformName: String): List<TrackEntity>
+
+    @Query("SELECT DISTINCT platform FROM track")
+    fun getDistinctPlatforms(): Flow<List<String>>
+
     @Query("SELECT * FROM track WHERE id = :trackId")
     fun getTrack(trackId: Long): Flow<TrackEntity>
 

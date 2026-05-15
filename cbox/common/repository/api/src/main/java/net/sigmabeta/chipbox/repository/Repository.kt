@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.repository
 import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
 
 interface Repository {
@@ -33,6 +34,16 @@ interface Repository {
         withGame: Boolean = false,
         withArtists: Boolean = false
     ): List<Track>
+
+    fun getTracksForPlatform(
+        platform: Platform,
+        withGame: Boolean = false,
+        withArtists: Boolean = false
+    ): List<Track>
+
+    fun getGamesForPlatform(platform: Platform): Flow<Data<List<Game>>>
+
+    fun getAvailablePlatforms(): Flow<Data<List<Platform>>>
 
     // Individual models
     fun getGame(

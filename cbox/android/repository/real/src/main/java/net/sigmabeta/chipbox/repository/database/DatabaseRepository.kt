@@ -66,6 +66,24 @@ class DatabaseRepository(
         .map { entity -> entity.toTrack(withGame, withArtists) }
         .sortedBy { it.game?.title }
 
+    override fun getTracksForPlatform(
+        platform: Platform,
+        withGame: Boolean,
+        withArtists: Boolean
+    ) = trackDao
+        .getTracksForPlatformSync(platform.name)
+        .map { entity -> entity.toTrack(withGame, withArtists) }
+
+    override fun getGamesForPlatform(platform: Platform) = setupFlow(
+        { gameDao.getGamesForPlatform(platform.name) },
+        { list -> list.map { it.toGame() } }
+    )
+
+    override fun getAvailablePlatforms() = setupFlow(
+        { trackDao.getDistinctPlatforms() },
+        { list -> list.map { Platform.valueOf(it) } }
+    )
+
     override fun getGame(id: Long, withTracks: Boolean, withArtists: Boolean) = setupFlowWithId(
         id,
         { gameDao.getGame(id) },

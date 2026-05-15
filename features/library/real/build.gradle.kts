@@ -18,6 +18,7 @@ dependencies {
     implementation(projects.features.browseAllTracks.api)
     implementation(projects.features.browseByArtist.api)
     implementation(projects.features.browseByGame.api)
+    implementation(projects.features.browseByPlatform.api)
 
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
 }
