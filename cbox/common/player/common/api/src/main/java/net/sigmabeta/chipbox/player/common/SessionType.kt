@@ -9,10 +9,13 @@ package net.sigmabeta.chipbox.player.common
  * - `GAME` / `ARTIST` / `PLAYLIST` — `contentId` is the foreign-key id of the source
  *   collection, used both to resolve the setlist and to look up its display name.
  * - `ALL_TRACKS` — the entire library; `contentId` is unused (callers may pass `0`).
+ * - `PLATFORM` — every track whose platform matches; `contentId` is not a foreign key
+ *   but the `Platform.ordinal` (resolve via `Platform.entries[contentId.toInt()]`).
  */
 enum class SessionType {
     GAME,
     ARTIST,
     PLAYLIST,
     ALL_TRACKS,
+    PLATFORM,
 }

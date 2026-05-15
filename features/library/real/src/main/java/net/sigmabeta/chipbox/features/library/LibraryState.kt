@@ -32,6 +32,12 @@ data object LibraryState : ListState() {
         ),
         menuItem(
             stringProvider,
+            ChipboxStringId.LIBRARY_BROWSE_BY_PLATFORM,
+            Icon.Tag,
+            LibraryAction.BrowseByPlatformClicked,
+        ),
+        menuItem(
+            stringProvider,
             ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS,
             Icon.MusicNote,
             LibraryAction.BrowseAllTracksClicked,

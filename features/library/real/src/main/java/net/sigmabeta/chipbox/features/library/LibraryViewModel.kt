@@ -6,6 +6,7 @@ import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.features.browsealltracks.BrowseAllTracks
 import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtist
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
+import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatform
 import net.sigmabeta.chipbox.ui.list.ChipboxListViewModel
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.logging.Hatchet
@@ -20,6 +21,7 @@ class LibraryViewModel @Inject constructor(
     override fun handleAction(action: SageAction) {
         when (action) {
             LibraryAction.BrowseByGameClicked -> emit(NavigateTo(BrowseByGame))
+            LibraryAction.BrowseByPlatformClicked -> emit(NavigateTo(BrowseByPlatform))
             LibraryAction.BrowseByArtistClicked -> emit(NavigateTo(BrowseByArtist))
             LibraryAction.BrowseAllTracksClicked -> emit(NavigateTo(BrowseAllTracks))
             else -> Unit

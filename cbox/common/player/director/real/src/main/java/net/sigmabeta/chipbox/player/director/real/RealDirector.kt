@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
@@ -327,7 +328,12 @@ class RealDirector(
         SessionType.ARTIST -> getTrackListForArtist(session.contentId)
         SessionType.PLAYLIST -> getTrackListForPlaylist(session.contentId)
         SessionType.ALL_TRACKS -> getTrackListForAllTracks()
+        SessionType.PLATFORM -> getTrackListForPlatform(session.contentId)
     }
+
+    private fun getTrackListForPlatform(contentId: Long) = repository
+        .getTracksForPlatform(Platform.entries[contentId.toInt()])
+        .map { it.id }
 
     private fun getTrackListForGame(gameId: Long) = repository
         .getTracksForGame(gameId)

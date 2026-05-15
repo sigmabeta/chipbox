@@ -16,9 +16,15 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.LIBRARY_BROWSE_BY_GAME_EMPTY   -> R.string.library_browse_by_game_empty
     ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST       -> R.string.library_browse_by_artist
     ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST_EMPTY -> R.string.library_browse_by_artist_empty
+    ChipboxStringId.LIBRARY_BROWSE_BY_PLATFORM       -> R.string.library_browse_by_platform
+    ChipboxStringId.LIBRARY_BROWSE_BY_PLATFORM_EMPTY -> R.string.library_browse_by_platform_empty
     ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS                 -> R.string.library_browse_all_tracks
     ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS_EMPTY           -> R.string.library_browse_all_tracks_empty
     ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS_CTA_SHUFFLE_ALL -> R.string.library_browse_all_tracks_cta_shuffle_all
+    ChipboxStringId.GAMES_FOR_PLATFORM_TITLE          -> R.string.games_for_platform_title
+    ChipboxStringId.GAMES_FOR_PLATFORM_EMPTY          -> R.string.games_for_platform_empty
+    ChipboxStringId.GAMES_FOR_PLATFORM_CTA_PLAY_ALL    -> R.string.games_for_platform_cta_play_all
+    ChipboxStringId.GAMES_FOR_PLATFORM_CTA_SHUFFLE_ALL -> R.string.games_for_platform_cta_shuffle_all
     ChipboxStringId.GAME_DETAIL_SECTION_SONGS   -> R.string.game_detail_section_songs
     ChipboxStringId.GAME_DETAIL_SECTION_ARTISTS -> R.string.game_detail_section_artists
     ChipboxStringId.GAME_DETAIL_CTA_PLAY_ALL    -> R.string.game_detail_cta_play_all
@@ -79,6 +85,8 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ARTIST_SHUFFLING    -> R.string.now_playing_session_type_artist_shuffling
     ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLAYLIST_PLAYING    -> R.string.now_playing_session_type_playlist_playing
     ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLAYLIST_SHUFFLING  -> R.string.now_playing_session_type_playlist_shuffling
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLATFORM_PLAYING    -> R.string.now_playing_session_type_platform_playing
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLATFORM_SHUFFLING  -> R.string.now_playing_session_type_platform_shuffling
     ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_PLAYING  -> R.string.now_playing_session_type_all_tracks_playing
     ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_SHUFFLING -> R.string.now_playing_session_type_all_tracks_shuffling
     ChipboxStringId.PLATFORM_ARCADE          -> R.string.platform_arcade
@@ -95,4 +103,8 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.PLATFORM_SATURN          -> R.string.platform_saturn
     ChipboxStringId.PLATFORM_SNES            -> R.string.platform_snes
     ChipboxStringId.PLATFORM_OTHER           -> R.string.platform_other
+    ChipboxStringId.PLATFORM_MEDIA_DISC      -> R.string.platform_media_disc
+    ChipboxStringId.PLATFORM_MEDIA_CARTRIDGE -> R.string.platform_media_cartridge
+    ChipboxStringId.PLATFORM_MEDIA_COMPUTER  -> R.string.platform_media_computer
+    ChipboxStringId.PLATFORM_MEDIA_OTHER     -> R.string.platform_media_other
 }

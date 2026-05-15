@@ -152,6 +152,22 @@ class MemoryRepository(
         TODO("Not yet implemented")
     }
 
+    override fun getTracksForPlatform(
+        platform: Platform,
+        withGame: Boolean,
+        withArtists: Boolean
+    ): List<Track> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getGamesForPlatform(platform: Platform): Flow<Data<List<Game>>> {
+        TODO("Not yet implemented")
+    }
+
+    override fun getAvailablePlatforms(): Flow<Data<List<Platform>>> {
+        TODO("Not yet implemented")
+    }
+
     override fun getGame(
         id: Long,
         withTracks: Boolean,

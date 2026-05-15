@@ -17,6 +17,14 @@ interface GameDao {
     @Query("SELECT * FROM game ORDER BY title COLLATE NOCASE")
     fun getAll(): Flow<List<GameEntity>>
 
+    @Query(
+        "SELECT DISTINCT game.* FROM game " +
+            "INNER JOIN track ON track.game_id = game.id " +
+            "WHERE track.platform = :platformName " +
+            "ORDER BY game.title COLLATE NOCASE"
+    )
+    fun getGamesForPlatform(platformName: String): Flow<List<GameEntity>>
+
     @Query("SELECT * FROM game WHERE title LIKE :title ORDER BY title COLLATE NOCASE")
     fun searchGamesByTitle(title: String): Flow<List<GameEntity>>
 

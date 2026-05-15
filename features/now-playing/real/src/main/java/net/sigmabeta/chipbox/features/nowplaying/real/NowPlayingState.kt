@@ -61,6 +61,9 @@ data class NowPlayingState(
                 SessionType.ALL_TRACKS ->
                     if (shuffled) ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_SHUFFLING
                     else ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_PLAYING
+                SessionType.PLATFORM ->
+                    if (shuffled) ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLATFORM_SHUFFLING
+                    else ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLATFORM_PLAYING
             }
         )
     }
@@ -86,6 +89,9 @@ data class NowPlayingState(
             // Playlists aren't wired up yet — no source name to surface.
             SessionType.PLAYLIST -> ""
             SessionType.ALL_TRACKS -> ""
+            // Platform name needs a StringProvider to resolve; second line is
+            // optional, so omit it rather than thread one through here.
+            SessionType.PLATFORM -> ""
         }
     }
 
