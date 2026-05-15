@@ -17,7 +17,7 @@ import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
         GameArtistJoin::class,
         TrackArtistJoin::class
     ],
-    version = 5
+    version = 6
 )
 @Suppress("TooManyFunctions")
 abstract class ChipboxDatabase : RoomDatabase() {

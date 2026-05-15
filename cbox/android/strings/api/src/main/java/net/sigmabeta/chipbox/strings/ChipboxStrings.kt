@@ -81,4 +81,18 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLAYLIST_SHUFFLING  -> R.string.now_playing_session_type_playlist_shuffling
     ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_PLAYING  -> R.string.now_playing_session_type_all_tracks_playing
     ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_SHUFFLING -> R.string.now_playing_session_type_all_tracks_shuffling
+    ChipboxStringId.PLATFORM_ARCADE          -> R.string.platform_arcade
+    ChipboxStringId.PLATFORM_DREAMCAST       -> R.string.platform_dreamcast
+    ChipboxStringId.PLATFORM_GAMEBOY         -> R.string.platform_gameboy
+    ChipboxStringId.PLATFORM_GAMEBOY_ADVANCE -> R.string.platform_gameboy_advance
+    ChipboxStringId.PLATFORM_GENESIS         -> R.string.platform_genesis
+    ChipboxStringId.PLATFORM_NES             -> R.string.platform_nes
+    ChipboxStringId.PLATFORM_N64             -> R.string.platform_n64
+    ChipboxStringId.PLATFORM_NDS             -> R.string.platform_nds
+    ChipboxStringId.PLATFORM_PC              -> R.string.platform_pc
+    ChipboxStringId.PLATFORM_PS2             -> R.string.platform_ps2
+    ChipboxStringId.PLATFORM_PSX             -> R.string.platform_psx
+    ChipboxStringId.PLATFORM_SATURN          -> R.string.platform_saturn
+    ChipboxStringId.PLATFORM_SNES            -> R.string.platform_snes
+    ChipboxStringId.PLATFORM_OTHER           -> R.string.platform_other
 }

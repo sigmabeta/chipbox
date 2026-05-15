@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.readers
 
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
@@ -39,7 +40,8 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
                     extendedTag?.gameTitle ?: spcMainTag.gameTitle,
                     spcMainTag.trackLengthMs,
                     0,
-                    spcMainTag.fadeLengthMs.coerceAtLeast(0L)
+                    spcMainTag.fadeLengthMs.coerceAtLeast(0L),
+                    platform = Platform.SNES,
                 )
             )
         } catch (iae: IllegalArgumentException) {

@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.repository
 
 import net.sigmabeta.chipbox.models.ChainFile
+import net.sigmabeta.chipbox.models.Platform
 
 data class RawTrack(
     val path: String,
@@ -13,4 +14,5 @@ data class RawTrack(
     val fadeLengthMs: Long,
     val chainFiles: List<ChainFile> = emptyList(),
     val extension: String = "",
+    val platform: Platform = Platform.OTHER,
 )

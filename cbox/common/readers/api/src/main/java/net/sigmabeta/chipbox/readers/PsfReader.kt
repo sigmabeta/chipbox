@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.readers
 
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.utils.convert
 import net.sigmabeta.chipbox.utils.convertUtf
@@ -11,12 +12,13 @@ import java.nio.ByteBuffer
 data class PsfTagInfo(
     val tags: Map<String, String>,
     val libReferences: List<String>,  // ordered: _lib, _lib2, _lib3, ...
+    val platform: Platform,
 )
 
 class PsfReader(private val hatchet: Hatchet) : Reader() {
 
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? =
-        readTagInfo(bytes)?.let { listOf(buildRawTrack(it.tags, identifier)) }
+        readTagInfo(bytes)?.let { listOf(buildRawTrack(it.tags, identifier, it.platform)) }
 
     fun readTagInfo(bytes: ByteArray): PsfTagInfo? {
         val fileAsByteBuffer = bytesAsByteBuffer(bytes)
@@ -33,7 +35,8 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
         }
 
         val platformCode = formatHeader.toByteArray(Charsets.US_ASCII)[3]
-        if (!isSupportedPlatform(platformCode)) {
+        val platform = platformForCode(platformCode)
+        if (platform == null) {
             hatchet.w("PSF parse failed: unsupported platform code 0x%02X.".format(platformCode))
             return null
         }
@@ -77,7 +80,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
                 .sortedBy { libKeyToIndex(it) }
                 .mapNotNull { tagMap[it] }
 
-            PsfTagInfo(tagMap, libRefs)
+            PsfTagInfo(tagMap, libRefs, platform)
         } catch (iae: IllegalArgumentException) {
             hatchet.w("PSF parse failed: illegal argument — ${iae.message}")
             null
@@ -90,7 +93,11 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
         }
     }
 
-    fun buildRawTrack(tags: Map<String, String>, identifier: String) = RawTrack(
+    fun buildRawTrack(
+        tags: Map<String, String>,
+        identifier: String,
+        platform: Platform = Platform.OTHER,
+    ) = RawTrack(
         identifier,
         "",
         tags[PSF_TAG_KEY_TITLE].orUnknown(),
@@ -99,20 +106,22 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
         tags[PSF_TAG_KEY_LENGTH]?.toLengthMillis() ?: LENGTH_UNKNOWN_MS,
         -1,
         tags[PSF_TAG_KEY_FADE]?.toLengthMillis() ?: 0L,
+        platform = platform,
     )
 
     private fun libKeyToIndex(key: String): Int = key.removePrefix("_lib").toIntOrNull() ?: 1
 
-    private fun isSupportedPlatform(platformCode: Byte): Boolean {
+    // PSF "version" byte (header[3]) identifies the source system; unsupported codes return null.
+    private fun platformForCode(platformCode: Byte): Platform? {
         return when (platformCode) {
-            0x01.toByte() -> true // "Sony Playstation"
-            0x02.toByte() -> true // "Sony Playstation 2"
-            0x11.toByte() -> true // "Sega Saturn"
-            0x12.toByte() -> true // "Sega Dreamcast"
-            0x21.toByte() -> true // "Nintendo 64"
-            0x22.toByte() -> true // "GBA"
-            0x24.toByte() -> true // "Nintendo DS"
-            else -> false
+            0x01.toByte() -> Platform.PSX        // PSF1  — Sony PlayStation
+            0x02.toByte() -> Platform.PS2        // PSF2  — Sony PlayStation 2
+            0x11.toByte() -> Platform.SATURN     // SSF   — Sega Saturn
+            0x12.toByte() -> Platform.DREAMCAST  // DSF   — Sega Dreamcast
+            0x21.toByte() -> Platform.N64        // USF   — Nintendo 64
+            0x22.toByte() -> Platform.GAMEBOY_ADVANCE // GSF — Game Boy Advance
+            0x24.toByte() -> Platform.NDS        // 2SF   — Nintendo DS
+            else -> null
         }
     }
 

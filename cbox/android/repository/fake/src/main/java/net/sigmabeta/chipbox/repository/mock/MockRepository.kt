@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
@@ -339,7 +340,8 @@ class MockRepository(
             trackNumber,
             fadeLengthMs,
             if (withGame) game?.toGame() else null,
-            if (withArtists) artists.map { it.toArtist() } else null
+            if (withArtists) artists.map { it.toArtist() } else null,
+            platform = Platform.OTHER,
         )
 
     private fun MockGame.toGame(withTracks: Boolean = false, withArtists: Boolean = false): Game =
