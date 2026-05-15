@@ -21,6 +21,11 @@ internal suspend fun stageTrack(
     contentSourceRegistry: ContentSourceRegistry,
     hatchet: Hatchet,
 ): File {
+    // Guard against the extension carrying path separators or being empty — the staged filename
+    // is "main.<ext>" and unsanitised values would smuggle directories into the cache layout.
+    require(ext.isNotEmpty() && !ext.contains('/') && !ext.contains('\\')) {
+        "Refusing to stage track ${track.id}: invalid extension '$ext'."
+    }
     val dir = stagingTrackDir.apply {
         deleteRecursively()
         mkdirs()
