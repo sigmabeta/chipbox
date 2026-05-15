@@ -17,6 +17,7 @@ import net.sigmabeta.sage.components.ErrorStateListModel
 import net.sigmabeta.sage.components.HeroImageListModel
 import net.sigmabeta.sage.components.HorizontalScrollerListModel
 import net.sigmabeta.sage.components.IconNameCaptionListModel
+import net.sigmabeta.sage.components.IconNameListModel
 import net.sigmabeta.sage.components.ImageNameCaptionListModel
 import net.sigmabeta.sage.components.ImageNameListModel
 import net.sigmabeta.sage.components.LabelRatingStarListModel
@@ -70,6 +71,8 @@ fun ListModel.Content(
             is HorizontalScrollerListModel -> HorizontalScroller(model = this, actionSink = sink, showDebug = debug, modifier = mod, padding = pad)
 
             is IconNameCaptionListModel -> IconNameCaptionListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
+
+            is IconNameListModel -> IconNameListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is ImageNameCaptionListModel -> ImageNameCaptionListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
