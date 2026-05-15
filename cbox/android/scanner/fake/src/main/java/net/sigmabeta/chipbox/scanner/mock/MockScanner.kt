@@ -4,8 +4,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import net.sigmabeta.chipbox.models.state.ScannerEvent
-import net.sigmabeta.chipbox.models.state.ScannerState
+import net.sigmabeta.chipbox.scanner.state.ScannerEvent
+import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.repository.mock.MockRepository
 import net.sigmabeta.chipbox.scanner.Scanner
 import kotlin.time.ExperimentalTime

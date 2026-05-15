@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.models.state
+package net.sigmabeta.chipbox.scanner.state
 
 sealed class ScannerEvent {
     object Unknown : ScannerEvent()

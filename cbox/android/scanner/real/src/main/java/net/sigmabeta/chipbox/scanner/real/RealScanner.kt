@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.toList
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibraryFile
 import net.sigmabeta.chipbox.models.ChainFile
-import net.sigmabeta.chipbox.models.state.ScannerEvent
-import net.sigmabeta.chipbox.models.state.ScannerState
+import net.sigmabeta.chipbox.scanner.state.ScannerEvent
+import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.readers.EXTENSION_M3U
 import net.sigmabeta.chipbox.readers.LENGTH_UNKNOWN_MS
 import net.sigmabeta.chipbox.readers.PsfTagInfo
