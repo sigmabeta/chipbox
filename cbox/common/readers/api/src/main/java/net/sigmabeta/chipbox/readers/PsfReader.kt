@@ -109,6 +109,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
             0x02.toByte() -> true // "Sony Playstation 2"
             0x11.toByte() -> true // "Sega Saturn"
             0x12.toByte() -> true // "Sega Dreamcast"
+            0x21.toByte() -> true // "Nintendo 64"
             0x22.toByte() -> true // "GBA"
             0x24.toByte() -> true // "Nintendo DS"
             else -> false

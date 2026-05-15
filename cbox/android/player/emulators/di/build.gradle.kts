@@ -15,5 +15,6 @@ dependencies {
     implementation(projects.cbox.android.player.emulators.psf.real)
     implementation(projects.cbox.android.player.emulators.ssf.real)
     implementation(projects.cbox.android.player.emulators.twosf.real)
+    implementation(projects.cbox.android.player.emulators.usf.real)
     implementation(projects.cbox.android.player.emulators.vgm.real)
 }
