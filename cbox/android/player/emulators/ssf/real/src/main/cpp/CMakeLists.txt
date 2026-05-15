@@ -17,7 +17,6 @@ set(library_name ssf)
 set(libssf_SRCS
         kotlin-jni.cpp
         Ssf.cpp
-        common/common.cpp
         Core/arm.c
         Core/dcsound.c
         Core/satsound.c
@@ -25,8 +24,6 @@ set(libssf_SRCS
         Core/yam.c
         Core/m68k/m68kops.c
         Core/m68k/m68kcpu.c
-        psflib/psf2fs.c
-        psflib/psflib.c
         )
 
 # Appears to just be a flag telling the code we want it to compile...?
@@ -37,6 +34,12 @@ add_definitions(
         -DUSE_M68K
         -DLSB_FIRST
         -DHAVE_MPROTECT
+)
+
+# Shared psflib + PSF file-I/O, formerly vendored under psflib/ and common/.
+add_subdirectory(
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../native-common
+        ${CMAKE_BINARY_DIR}/native-common
 )
 
 # Specifies a library name, specifies whether the library is STATIC or
@@ -58,6 +61,7 @@ add_library( # Specifies the name of the library.
 target_link_libraries(
         ${library_name}
 
-        # PSFLib wants to know how to unzip stuff.
-        z
+        # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress
+        # PSF sections, so this also links libz transitively.
+        chipbox_native_common
 )

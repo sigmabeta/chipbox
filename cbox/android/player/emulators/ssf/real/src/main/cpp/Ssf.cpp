@@ -1,5 +1,4 @@
 #include "Ssf.h"
-#include "common/common.h"
 
 const char *last_error;
 

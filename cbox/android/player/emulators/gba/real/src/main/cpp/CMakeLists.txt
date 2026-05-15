@@ -1255,9 +1255,6 @@ set(library_name gba)
 set(libgba_SRCS
 		kotlin-jni.cpp
 		Gba.cpp
-		psflib/psf2fs.c
-		psflib/psflib.c
-		common/common.cpp
 		src/util/memory.c
 		)
 
@@ -1275,6 +1272,12 @@ add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN)
 # automatically packages shared libraries with your APK.
 add_definitions(-DMINIMAL_CORE=3)
 
+# Shared psflib + PSF file-I/O, formerly vendored under psflib/ and common/.
+add_subdirectory(
+		${CMAKE_CURRENT_SOURCE_DIR}/../../../../../native-common
+		${CMAKE_BINARY_DIR}/native-common
+)
+
 add_library( # Specifies the name of the library.
 		${library_name}
 
@@ -1288,8 +1291,9 @@ add_library( # Specifies the name of the library.
 target_link_libraries(
 		${library_name}
 
-		# PSFLib wants to know how to unzip stuff.
-		z
+		# Shared psflib + PSF file-I/O. psflib calls into zlib to decompress
+		# PSF sections, so this also links libz transitively.
+		chipbox_native_common
 
 		# The library we just built, hopefully
 		mgba

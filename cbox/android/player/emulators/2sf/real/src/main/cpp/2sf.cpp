@@ -1,5 +1,4 @@
 #include "2sf.h"
-#include "common/common.h"
 
 const char *last_error;
 

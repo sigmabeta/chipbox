@@ -12,7 +12,7 @@
 #include "desmume/state.h"
 #include "desmume/barray.h"
 
-#include "../../common/common.h"
+#include <chipbox_psf_io.h>
 
 struct twosf_loader_state
 {

@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "common/common.h"
+#include <chipbox_psf_io.h>
 
 #include <mgba/core/core.h>
 #include <mgba/core/blip_buf.h>

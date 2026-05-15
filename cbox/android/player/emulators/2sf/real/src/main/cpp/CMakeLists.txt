@@ -17,9 +17,6 @@ set(library_name twosf)
 set(libtwosf_SRCS
         kotlin-jni.cpp
         2sf.cpp
-        common/common.cpp
-        psflib/psf2fs.c
-        psflib/psflib.c
         Core/vio2sf/vio2sf.c
         Core/vio2sf/desmume/FIFO.c
         Core/vio2sf/desmume/GPU.c
@@ -46,6 +43,12 @@ add_definitions(
         -DEMU_LITTLE_ENDIAN
 )
 
+# Shared psflib + PSF file-I/O, formerly vendored under psflib/ and common/.
+add_subdirectory(
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../native-common
+        ${CMAKE_BINARY_DIR}/native-common
+)
+
 # Specifies a library name, specifies whether the library is STATIC or
 # SHARED, and provides relative paths to the source code. You can
 # define multiple libraries by adding multiple add_library() commands,
@@ -65,6 +68,7 @@ add_library( # Specifies the name of the library.
 target_link_libraries(
         ${library_name}
 
-        # PSFLib wants to know how to unzip stuff.
-        z
+        # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress
+        # PSF sections, so this also links libz transitively.
+        chipbox_native_common
 )

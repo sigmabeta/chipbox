@@ -49,6 +49,12 @@ add_subdirectory(utils)
 add_subdirectory(emu)
 add_subdirectory(player)
 
+# Shared header-only JNI bridge (no psflib: vgm is not a PSF format).
+add_subdirectory(
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../native-common
+        ${CMAKE_BINARY_DIR}/native-common
+)
+
 # Our shared library that Android loads via System.loadLibrary("vgm").
 add_library(${library_name} SHARED
         kotlin-jni.cpp
@@ -61,4 +67,5 @@ target_link_libraries(${library_name} PRIVATE
         vgm-emu
         vgm-utils
         z
+        chipbox_jni_bridge
 )
