@@ -4,7 +4,7 @@ import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.strings.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.EmptyStateListModel
-import net.sigmabeta.sage.components.IconNameCaptionListModel
+import net.sigmabeta.sage.components.IconNameListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.LoadingType
 import net.sigmabeta.sage.components.TitleBarModel
@@ -32,7 +32,7 @@ data class BrowseByPlatformState(
         if (platforms.isEmpty()) {
             listOf(
                 EmptyStateListModel(
-                    icon = Icon.Console,
+                    icon = Icon.Chip,
                     explanation = stringProvider.getString(
                         ChipboxStringId.LIBRARY_BROWSE_BY_PLATFORM_EMPTY,
                     ),
@@ -42,33 +42,24 @@ data class BrowseByPlatformState(
             platforms
                 .sortedBy { it.ordinal }
                 .map { platform ->
-                    val media = platform.media()
-                    IconNameCaptionListModel(
+                    IconNameListModel(
                         dataId = platform.ordinal.toLong(),
                         name = stringProvider.getString(platform.stringId),
-                        caption = stringProvider.getString(media.captionId),
-                        icon = media.icon,
+                        icon = platform.icon(),
                         clickAction = BrowseByPlatformAction.PlatformClicked(platform),
                     )
                 }
         }
 
     /**
-     * Groups platforms by storage medium purely to pick a list icon/caption — disc
-     * consoles, cartridge/board consoles (anything that doesn't use CDs), and computers.
+     * Picks a list icon by storage medium — a disc for CD consoles, a gamepad for
+     * anything cartridge/board based (doesn't use CDs), and a computer for PC.
      */
-    private enum class Media(val icon: Icon, val captionId: ChipboxStringId) {
-        DISC(Icon.Album, ChipboxStringId.PLATFORM_MEDIA_DISC),
-        CARTRIDGE(Icon.Console, ChipboxStringId.PLATFORM_MEDIA_CARTRIDGE),
-        COMPUTER(Icon.Computer, ChipboxStringId.PLATFORM_MEDIA_COMPUTER),
-        OTHER(Icon.Album, ChipboxStringId.PLATFORM_MEDIA_OTHER),
-    }
-
-    private fun Platform.media(): Media = when (this) {
+    private fun Platform.icon(): Icon = when (this) {
         Platform.DREAMCAST,
         Platform.PS2,
         Platform.PSX,
-        Platform.SATURN -> Media.DISC
+        Platform.SATURN -> Icon.Album
 
         Platform.ARCADE,
         Platform.GAMEBOY,
@@ -77,10 +68,10 @@ data class BrowseByPlatformState(
         Platform.NES,
         Platform.N64,
         Platform.NDS,
-        Platform.SNES -> Media.CARTRIDGE
+        Platform.SNES -> Icon.Chip
 
-        Platform.PC -> Media.COMPUTER
+        Platform.PC -> Icon.Computer
 
-        Platform.OTHER -> Media.OTHER
+        Platform.OTHER -> Icon.Album
     }
 }

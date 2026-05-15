@@ -14,9 +14,4 @@
     <string name="platform_saturn">Saturn</string>
     <string name="platform_snes">SNES</string>
     <string name="platform_other">Other</string>
-
-    <string name="platform_media_disc">Disc-based console</string>
-    <string name="platform_media_cartridge">Cartridge-based console</string>
-    <string name="platform_media_computer">Computer</string>
-    <string name="platform_media_other">Other</string>
 </resources>

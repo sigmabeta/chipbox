@@ -103,8 +103,4 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.PLATFORM_SATURN          -> R.string.platform_saturn
     ChipboxStringId.PLATFORM_SNES            -> R.string.platform_snes
     ChipboxStringId.PLATFORM_OTHER           -> R.string.platform_other
-    ChipboxStringId.PLATFORM_MEDIA_DISC      -> R.string.platform_media_disc
-    ChipboxStringId.PLATFORM_MEDIA_CARTRIDGE -> R.string.platform_media_cartridge
-    ChipboxStringId.PLATFORM_MEDIA_COMPUTER  -> R.string.platform_media_computer
-    ChipboxStringId.PLATFORM_MEDIA_OTHER     -> R.string.platform_media_other
 }
