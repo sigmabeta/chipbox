@@ -189,7 +189,7 @@ class RealScanner(
         val checked = rawTracks.map {
             val titled = if (it.title == TAG_UNKNOWN) {
                 unknown++
-                it.copy(title = "Unknown Track $unknown")
+                it.copy(title = "Track $unknown")
             } else {
                 it
             }
