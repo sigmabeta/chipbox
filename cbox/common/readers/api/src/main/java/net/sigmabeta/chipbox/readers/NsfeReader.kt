@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.readers
 
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
@@ -57,7 +58,8 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
                         gameTitle,
                         length,
                         index,
-                        fadeMs.coerceAtLeast(0L)
+                        fadeMs.coerceAtLeast(0L),
+                        platform = Platform.NES,
                     )
                 )
             }

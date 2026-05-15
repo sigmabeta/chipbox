@@ -24,5 +24,7 @@ data class TrackEntity(
     val game_id: Long,
     val chainFiles: String = "",
     val extension: String = "",
+    // Stored as Platform.name; the model enum lives in a module this one doesn't depend on.
+    val platform: String = "OTHER",
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
 )

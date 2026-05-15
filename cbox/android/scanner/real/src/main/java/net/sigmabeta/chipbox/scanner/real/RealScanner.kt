@@ -113,7 +113,7 @@ class RealScanner(
                         mutableSetOf(file.name.lowercase()), 0, chain,
                     )
                     val mergedTags = chainTags + tagInfo.tags
-                    readers.psf.buildRawTrack(mergedTags, file.uri.toString())
+                    readers.psf.buildRawTrack(mergedTags, file.uri.toString(), tagInfo.platform)
                         .copy(source = contentSource.sourceId, chainFiles = chain, extension = ext)
                 }
                 when (track) {

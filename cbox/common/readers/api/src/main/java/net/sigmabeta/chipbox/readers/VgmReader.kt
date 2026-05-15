@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.readers
 
 import net.sigmabeta.chipbox.models.FADE_LENGTH_MS
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.ByteArrayInputStream
@@ -51,6 +52,7 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
                     length = lengthMs,
                     trackNumber = 0,
                     fadeLengthMs = fadeMs,
+                    platform = platformForSystem(tag?.system),
                 )
             )
         } catch (iae: IllegalArgumentException) {
@@ -114,7 +116,44 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
             title = strings.getOrNull(GD3_IDX_TITLE_EN)?.takeIf { it.isNotEmpty() },
             game = strings.getOrNull(GD3_IDX_GAME_EN)?.takeIf { it.isNotEmpty() },
             artist = strings.getOrNull(GD3_IDX_AUTHOR_EN)?.takeIf { it.isNotEmpty() },
+            system = strings.getOrNull(GD3_IDX_SYSTEM_EN)?.takeIf { it.isNotEmpty() },
         )
+    }
+
+    // GD3 carries a free-text "system name" string; map the common values onto our platforms.
+    private fun platformForSystem(system: String?): Platform {
+        val name = system?.lowercase() ?: return Platform.OTHER
+        return when {
+            // Arcade boards first: many carry vendor names ("Sega X", "Namco System 2") that
+            // would otherwise be misread as the vendor's home console.
+            "arcade" in name || "cp system" in name || "cps" in name ||
+                "capcom play system" in name || "neo geo" in name || "toaplan" in name ||
+                "zn-1" in name || "hang-on" in name || "hang on" in name ||
+                "sega model" in name || "sega x" in name || "sega y" in name ||
+                "namco system" in name || "system 16" in name || "system 32" in name -> Platform.ARCADE
+            // Sega CD / 32X are Genesis add-ons; bucket them with the base console.
+            "mega drive" in name || "genesis" in name || "32x" in name ||
+                "megacd" in name || "mega cd" in name || "mega-cd" in name ||
+                "segacd" in name || "sega cd" in name -> Platform.GENESIS
+            "game boy advance" in name -> Platform.GAMEBOY_ADVANCE
+            "game boy" in name -> Platform.GAMEBOY
+            "saturn" in name -> Platform.SATURN
+            "dreamcast" in name -> Platform.DREAMCAST
+            "playstation 2" in name -> Platform.PS2
+            "playstation" in name -> Platform.PSX
+            "nintendo 64" in name -> Platform.N64
+            "nintendo ds" in name -> Platform.NDS
+            "super famicom" in name || "snes" in name ||
+                ("super" in name && "nintendo" in name) -> Platform.SNES
+            "famicom" in name || "family computer" in name ||
+                "nintendo entertainment" in name || "nes" in name -> Platform.NES
+            "pc-98" in name || "pc-88" in name || "pc-80" in name || "x68000" in name ||
+                "pc / dos" in name || "pc/dos" in name || "dos" in name || "msx" in name -> Platform.PC
+            else -> {
+                hatchet.w("VGM: unmapped GD3 system name '$system' — defaulting to OTHER.")
+                Platform.OTHER
+            }
+        }
     }
 
     private fun computeLengthMs(totalSamples: Long, loopSamples: Long): Long {
@@ -141,10 +180,16 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
         private const val GD3_STRING_COUNT = 11
         private const val GD3_IDX_TITLE_EN = 0
         private const val GD3_IDX_GAME_EN = 2
+        private const val GD3_IDX_SYSTEM_EN = 4
         private const val GD3_IDX_AUTHOR_EN = 6
 
         private const val SAMPLE_RATE_HZ = 44_100L
     }
 }
 
-private data class Gd3Tag(val title: String?, val game: String?, val artist: String?)
+private data class Gd3Tag(
+    val title: String?,
+    val game: String?,
+    val artist: String?,
+    val system: String?,
+)

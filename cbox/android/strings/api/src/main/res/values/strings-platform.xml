@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="platform_arcade">Arcade</string>
+    <string name="platform_dreamcast">Dreamcast</string>
+    <string name="platform_gameboy">Game Boy</string>
+    <string name="platform_gameboy_advance">Game Boy Advance</string>
+    <string name="platform_genesis">Genesis</string>
+    <string name="platform_nes">NES</string>
+    <string name="platform_n64">Nintendo 64</string>
+    <string name="platform_nds">Nintendo DS</string>
+    <string name="platform_pc">PC</string>
+    <string name="platform_ps2">PlayStation 2</string>
+    <string name="platform_psx">PlayStation</string>
+    <string name="platform_saturn">Saturn</string>
+    <string name="platform_snes">SNES</string>
+    <string name="platform_other">Other</string>
+</resources>
