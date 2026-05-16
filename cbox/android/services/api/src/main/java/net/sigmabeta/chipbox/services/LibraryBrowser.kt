@@ -11,6 +11,9 @@ import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService.Companion.ID_ROOT
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService.Companion.ID_ROOT_FULL
+import net.sigmabeta.chipbox.services.transformers.GRID
+import net.sigmabeta.chipbox.services.transformers.LIST
+import net.sigmabeta.chipbox.services.transformers.contentStyleExtras
 import net.sigmabeta.chipbox.services.transformers.toMediaItem
 import net.sigmabeta.sage.logging.Hatchet
 import javax.inject.Inject
@@ -181,6 +184,7 @@ class LibraryBrowser @Inject constructor(
             .setIsBrowsable(true)
             .setIsPlayable(false)
             .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+            .setExtras(contentStyleExtras(browsableChildren = GRID))
             .build()
 
         return MediaItem.Builder()
@@ -196,6 +200,7 @@ class LibraryBrowser @Inject constructor(
             .setIsBrowsable(true)
             .setIsPlayable(false)
             .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+            .setExtras(contentStyleExtras(browsableChildren = GRID))
             .build()
 
         return MediaItem.Builder()
@@ -211,6 +216,7 @@ class LibraryBrowser @Inject constructor(
             .setIsBrowsable(true)
             .setIsPlayable(false)
             .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+            .setExtras(contentStyleExtras(playableChildren = LIST))
             .build()
 
         return MediaItem.Builder()
