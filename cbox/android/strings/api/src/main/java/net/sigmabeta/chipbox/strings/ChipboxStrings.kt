@@ -174,28 +174,51 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.PLAYBACK_STATUS_LABEL_SHUFFLED -> R.string.playback_status_label_shuffled
 
     ChipboxStringId.PLAYBACK_STATUS_SECTION_GENERATOR -> R.string.playback_status_section_generator
+
     ChipboxStringId.PLAYBACK_STATUS_SECTION_SPEAKER -> R.string.playback_status_section_speaker
+
     ChipboxStringId.PLAYBACK_STATUS_SECTION_BUFFER -> R.string.playback_status_section_buffer
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_TRACK_ID -> R.string.playback_status_label_gen_track_id
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_TRACK_TITLE -> R.string.playback_status_label_gen_track_title
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_SAMPLE_RATE -> R.string.playback_status_label_gen_sample_rate
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_PRODUCED_MS -> R.string.playback_status_label_gen_produced_ms
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_FRAMES_PLAYED -> R.string.playback_status_label_gen_frames_played
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_LOOPING -> R.string.playback_status_label_gen_looping
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_LAST_EVENT -> R.string.playback_status_label_gen_last_event
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_LAST_ERROR -> R.string.playback_status_label_gen_last_error
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_SOURCE_DIAG -> R.string.playback_status_label_gen_source_diag
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_TRACK_ID -> R.string.playback_status_label_spk_track_id
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_POSITION_MS -> R.string.playback_status_label_spk_position_ms
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_CONSUME_LOOP -> R.string.playback_status_label_spk_consume_loop
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_LAST_EVENT -> R.string.playback_status_label_spk_last_event
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_UNDERRUNS -> R.string.playback_status_label_spk_underruns
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_LAST_ERROR -> R.string.playback_status_label_spk_last_error
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_SAMPLE_RATE -> R.string.playback_status_label_buf_sample_rate
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_CAPACITY -> R.string.playback_status_label_buf_capacity
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_FULL_QUEUED -> R.string.playback_status_label_buf_full_queued
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_EMPTY_AVAIL -> R.string.playback_status_label_buf_empty_avail
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_DRAIN_COUNT -> R.string.playback_status_label_buf_drain_count
+
     ChipboxStringId.PLAYBACK_STATUS_CTA_COPY_DEBUG_INFO -> R.string.playback_status_cta_copy_debug_info
 
     ChipboxStringId.NOW_PLAYING_SCREEN_TITLE -> R.string.now_playing_screen_title

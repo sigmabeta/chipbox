@@ -182,10 +182,13 @@ class RealBufferManager(
             val sendResult = empty?.trySend(buffer.data)
             when {
                 sendResult == null -> Unit
+
                 sendResult.isSuccess -> emptyCount.incrementAndGet()
+
                 // Closed == the expected case: setSampleRate swapped in a fresh pool and
                 // closed this old channel, so the orphan rightfully falls to GC.
                 sendResult.isClosed -> Unit
+
                 // Failure on a still-open channel should be impossible: during seek the
                 // consume loop is cancelled, so drain() is the sole sender into a channel
                 // whose capacity equals the (conserved) array count. If this ever fires,
