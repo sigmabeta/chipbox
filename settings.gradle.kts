@@ -105,6 +105,7 @@ include(
     ":cbox:android:ui:fonts:api",
     ":cbox:android:ui:list:api",
     ":cbox:android:ui:freeform:api",
+    ":cbox:android:ui:previews",
     ":cbox:android:ui:theme:api",
 
     ":cbox:common:appcomm:api",
@@ -160,8 +161,10 @@ include(
     ":features:games-for-platform:real",
     ":features:artist-detail:api",
     ":features:artist-detail:real",
+    ":features:artist-detail:screenshot",
     ":features:game-detail:api",
     ":features:game-detail:real",
+    ":features:game-detail:screenshot",
     ":features:library:api",
     ":features:library:real",
     ":features:now-playing:api",
