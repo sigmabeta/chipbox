@@ -50,3 +50,7 @@ app/.externalNativeBuild/
 package.json
 package-lock.json
 node_modules/
+
+# ktlint
+ktlint
+ktlint.html
