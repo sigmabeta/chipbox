@@ -159,13 +159,16 @@ class RealBufferManager(
     }
 
     override suspend fun drain() {
-        // Capture both channel references at entry. If setSampleRate runs concurrently
-        // (it does — the generator's loadNextTrack races with the director's drain), we
-        // must keep recycling these old-pool buffers back into the OLD emptyArrays. If
-        // we re-read the field on every send we'd race into the freshly-allocated NEW
-        // emptyArrays, which is initialized full-to-capacity, and our send would suspend
-        // forever — the suspension actually deadlocks speaker.seek so it never reaches
-        // flushSink/startPlayback and the consume loop never restarts.
+        // drain() exists only to discard queued audio so a seek/skip starts clean; it must
+        // never suspend. Capture both channel references at entry — setSampleRate runs
+        // concurrently (the generator's loadNextTrack races the director's drain) and
+        // re-reading the field mid-loop would race into the freshly-allocated NEW
+        // emptyArrays. Recycling old-pool arrays is a pure optimization, so use the
+        // non-blocking trySend: if the old empty channel is at capacity (nobody receives
+        // from it once setSampleRate swaps in a new pool) or already closed, let the
+        // array fall to GC. A suspending send here would park forever and deadlock
+        // speaker.seek so it never reaches flushSink/startPlayback and the consume loop
+        // never restarts.
         val full = fullBuffers ?: return
         val empty = emptyArrays
         hatchet.d("drain: entering.")
@@ -176,14 +179,8 @@ class RealBufferManager(
             drained++
             fullCount.decrementAndGet()
             buffer.data.clear()
-            try {
-                empty?.send(buffer.data)
+            if (empty?.trySend(buffer.data)?.isSuccess == true) {
                 emptyCount.incrementAndGet()
-            } catch (_: ClosedSendChannelException) {
-                // OLD emptyArrays was closed by a concurrent setSampleRate before we
-                // could deposit this buffer. The new pool has its own allocations, so
-                // the orphan can just fall to GC.
-                hatchet.w("drain: emptyArrays send hit ClosedSendChannelException.")
             }
             if (drained % DRAIN_LOG_INTERVAL == 0) {
                 hatchet.d("drain: $drained buffer(s) so far.")
