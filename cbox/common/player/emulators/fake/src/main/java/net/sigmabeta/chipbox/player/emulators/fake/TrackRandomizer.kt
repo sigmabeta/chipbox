@@ -26,7 +26,7 @@ object TrackRandomizer {
 
         val random = Random(trackId)
 
-        val tempo = random.nextInt(140) + 60
+        val tempo = random.nextInt(TEMPO_RANGE_BPM) + TEMPO_MIN_BPM
         val timeSignature = generateTimeSignature(trackId, random)
 
         val generatedMeasures = mutableListOf<Measure>()
@@ -35,7 +35,9 @@ object TrackRandomizer {
         val mode = random.nextValue(ScaleMode.values())
         val scale = Scale(root, mode)
 
-        val measuresInLoop = random.nextValue(arrayOf(8, 16, 32))
+        val measuresInLoop = random.nextValue(
+            arrayOf(LOOP_LENGTH_SHORT, LOOP_LENGTH_MEDIUM, LOOP_LENGTH_LONG)
+        )
         while (measuresGenerated < measuresInLoop) {
             val measure = generateMeasure(random, timeSignature, scale, hatchet)
             generatedMeasures.add(measure)
@@ -109,9 +111,9 @@ object TrackRandomizer {
         beatStartPoint: Double, // Hard to name. 0.5 == note starts on & of a beat
         maximumDuration: Double
     ): Note {
-        val pitchIndex = random.nextInt(6)
+        val pitchIndex = random.nextInt(PITCH_INDEX_RANGE)
 
-        val octave = random.nextInt(2) + 3
+        val octave = random.nextInt(OCTAVE_RANGE) + OCTAVE_MIN
         val pitch = scale.note(pitchIndex, octave)
 
         val possibleDurations = Duration
@@ -121,7 +123,7 @@ object TrackRandomizer {
             .toTypedArray()
 
         val duration = random.nextValue(possibleDurations)
-        val amplitude = random.nextDouble(0.3) + 0.4
+        val amplitude = random.nextDouble(AMPLITUDE_RANGE) + AMPLITUDE_MIN
 
         return Note(
             pitch,
@@ -131,9 +133,9 @@ object TrackRandomizer {
     }
 
     private fun generateTimeSignature(trackId: Long, random: Random) = when {
-        trackId.isDivisibleBy(7) -> TimeSignature.FIVE
-        trackId.isDivisibleBy(11) -> TimeSignature.BLUE_RONDO
-        trackId.isDivisibleBy(13) -> TimeSignature.UNSQUARE
+        trackId.isDivisibleBy(DIVISOR_FIVE) -> TimeSignature.FIVE
+        trackId.isDivisibleBy(DIVISOR_BLUE_RONDO) -> TimeSignature.BLUE_RONDO
+        trackId.isDivisibleBy(DIVISOR_UNSQUARE) -> TimeSignature.UNSQUARE
         trackId.isDivisibleBy(2) -> TimeSignature.COMMON
         else -> random.nextValue(arrayOf(TimeSignature.MARCH, TimeSignature.WALTZ))
     }
@@ -143,7 +145,7 @@ object TrackRandomizer {
             Duration.HALF -> this / 2.0
             Duration.QUARTER -> this
             Duration.EIGHTH -> this * 2.0
-            Duration.SIXTEENTH -> this * 4.0
+            Duration.SIXTEENTH -> this * SIXTEENTH_BEAT_MULTIPLIER
             else -> throw IllegalArgumentException(
                 "Only time signatures with denominators of 2, 4, 8, or 16 are allowed."
             )
@@ -161,6 +163,27 @@ object TrackRandomizer {
     }
 
 //        const val PREFER_WHOLE_BEATS = listOf(Duration.WHOLE, Duration.HALF_DOTTED, Duration.)
+
+    private const val TEMPO_RANGE_BPM = 140
+    private const val TEMPO_MIN_BPM = 60
+
+    private const val LOOP_LENGTH_SHORT = 8
+    private const val LOOP_LENGTH_MEDIUM = 16
+    private const val LOOP_LENGTH_LONG = 32
+
+    private const val PITCH_INDEX_RANGE = 6
+
+    private const val OCTAVE_RANGE = 2
+    private const val OCTAVE_MIN = 3
+
+    private const val AMPLITUDE_RANGE = 0.3
+    private const val AMPLITUDE_MIN = 0.4
+
+    private const val DIVISOR_FIVE = 7
+    private const val DIVISOR_BLUE_RONDO = 11
+    private const val DIVISOR_UNSQUARE = 13
+
+    private const val SIXTEENTH_BEAT_MULTIPLIER = 4.0
 }
 
 

@@ -361,7 +361,10 @@ class RealDirector(
         GeneratorEvent.TrackChange -> handleGeneratorTrackChange(oldState)
     }
 
-    private suspend fun handleGeneratorLoading(oldState: ChipboxPlaybackState, event: GeneratorEvent.Loading): ChipboxPlaybackState {
+    private suspend fun handleGeneratorLoading(
+        oldState: ChipboxPlaybackState,
+        event: GeneratorEvent.Loading,
+    ): ChipboxPlaybackState {
         val session = currentSession
         val setlist = currentSetlist
 
@@ -408,7 +411,10 @@ class RealDirector(
         )
     }
 
-    private fun handleGeneratorEmitting(oldState: ChipboxPlaybackState, event: GeneratorEvent.Emitting): ChipboxPlaybackState {
+    private fun handleGeneratorEmitting(
+        oldState: ChipboxPlaybackState,
+        event: GeneratorEvent.Emitting,
+    ): ChipboxPlaybackState {
         if (oldState.state == PlayerState.BUFFERING) {
             speaker.play()
         }
@@ -421,7 +427,10 @@ class RealDirector(
         return oldState
     }
 
-    private fun handleGeneratorError(event: GeneratorEvent.Error, oldState: ChipboxPlaybackState): ChipboxPlaybackState {
+    private fun handleGeneratorError(
+        event: GeneratorEvent.Error,
+        oldState: ChipboxPlaybackState,
+    ): ChipboxPlaybackState {
         emitError(event.message)
 
         directorScope.launch {

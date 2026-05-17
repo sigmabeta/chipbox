@@ -36,13 +36,13 @@ internal class PcmCacheHasher(
             }
         }
 
-        return hash.toULong().toString(16).padStart(16, '0')
+        return hash.toULong().toString(HASH_RADIX_HEX).padStart(HASH_HEX_WIDTH, HASH_PAD_CHAR)
     }
 
     private fun fold(seed: Long, bytes: ByteArray): Long {
         var hash = seed
         for (b in bytes) {
-            hash = hash xor (b.toLong() and 0xFFL)
+            hash = hash xor (b.toLong() and BYTE_MASK)
             hash *= FNV_PRIME
         }
         return hash
@@ -52,5 +52,15 @@ internal class PcmCacheHasher(
         // 64-bit FNV-1a constants (https://en.wikipedia.org/wiki/Fowler–Noll–Vo_hash_function).
         private const val FNV_OFFSET_BASIS = -3750763034362895579L // 0xCBF29CE484222325
         private const val FNV_PRIME = 1099511628211L
+
+        /** Mask isolating the low 8 bits of a byte promoted to Long. */
+        private const val BYTE_MASK = 0xFFL
+
+        /** Radix for rendering the 64-bit hash as a hex string. */
+        private const val HASH_RADIX_HEX = 16
+
+        /** Zero-pad the hex hash to a fixed 16-char (64-bit) width. */
+        private const val HASH_HEX_WIDTH = 16
+        private const val HASH_PAD_CHAR = '0'
     }
 }

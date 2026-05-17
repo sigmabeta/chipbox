@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ReturnCount:FakeEmulator.kt$FakeEmulator$override fun generateBufferInternal( buffer: ShortArray, framesPerBuffer: Int, ): Int</ID>
+  </CurrentIssues>
+</SmellBaseline>

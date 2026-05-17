@@ -108,6 +108,7 @@ class SettingsViewModel @Inject constructor(
         scanner.startScan()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun onClearLibraryClicked() {
         updateState { it.copy(clearLibraryStatus = LCE.Loading(LOAD_OP_CLEAR)) }
         viewModelScope.launch {

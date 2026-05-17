@@ -93,13 +93,17 @@ internal class PcmCacheJanitor(
         }
         if (evicted > 0) {
             hatchet.i(
-                "PCM cache evicted $evicted file(s), freed ${bytesEvicted / 1024 / 1024} MB " +
-                    "to stay under ${capBytes / 1024 / 1024} MB cap."
+                "PCM cache evicted $evicted file(s), freed " +
+                    "${bytesEvicted / BYTES_PER_KIB / BYTES_PER_KIB} MB " +
+                    "to stay under ${capBytes / BYTES_PER_KIB / BYTES_PER_KIB} MB cap."
             )
         }
     }
 
     companion object {
         const val DEFAULT_CAP_BYTES: Long = 1024L * 1024L * 1024L
+
+        /** Bytes per kibibyte; applied twice to convert bytes to MiB for logging. */
+        private const val BYTES_PER_KIB = 1024
     }
 }

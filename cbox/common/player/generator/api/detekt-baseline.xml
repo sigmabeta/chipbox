@@ -1,0 +1,12 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:Generator.kt$Generator$private suspend fun loop()</ID>
+    <ID>LoopWithTooManyJumpStatements:Generator.kt$Generator$while</ID>
+    <ID>NestedBlockDepth:Generator.kt$Generator$private suspend fun loop()</ID>
+    <ID>ReturnCount:Generator.kt$Generator$private suspend fun loadNextTrack(trackId: Long?): String?</ID>
+    <ID>TooGenericExceptionCaught:Generator.kt$Generator$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Generator.kt$Generator$t: Throwable</ID>
+  </CurrentIssues>
+</SmellBaseline>

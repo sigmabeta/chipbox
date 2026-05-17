@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.entities
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
@@ -21,7 +22,7 @@ data class TrackEntity(
     val trackLengthMs: Long,
     val trackNumber: Int,
     val fadeLengthMs: Long,
-    val game_id: Long,
+    @ColumnInfo(name = "game_id") val gameId: Long,
     val chainFiles: String = "",
     val extension: String = "",
     // Stored as Platform.name; the model enum lives in a module this one doesn't depend on.

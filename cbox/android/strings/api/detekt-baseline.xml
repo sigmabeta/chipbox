@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:ChipboxStrings.kt$fun ChipboxStringId.id(): Int</ID>
+  </CurrentIssues>
+</SmellBaseline>

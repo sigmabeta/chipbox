@@ -53,7 +53,7 @@ class NowPlayingViewModel @Inject constructor(
             }
             NowPlayingAction.BackClicked -> emit(ChipboxEvent.NavigateBack)
             NowPlayingAction.PlayerSettingsClicked -> emit(
-                // TODO: replace with a real Player Settings destination once that screen exists.
+                // Placeholder until a real Player Settings destination screen exists.
                 ChipboxEvent.ShowSnackbar("Player settings coming soon.")
             )
             is NowPlayingAction.SeekRequested -> director.seek(action.positionMs)

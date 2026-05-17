@@ -10,6 +10,8 @@ import kotlin.math.round
 object PreviewTestUtils {
     const val SUFFIX_TESTNAME = "{1} {2}x{3}"
 
+    private const val QUAD_INDEX_SCREEN_HEIGHT = 3
+
     private val INTERESTING_DEVICES_INTERNAL = listOf(
         "Small Tablet" to DeviceConfig.NEXUS_7,
         "Beeg Tablet" to DeviceConfig.NEXUS_10,
@@ -36,7 +38,7 @@ object PreviewTestUtils {
             lightConfig,
             lightConfigName,
             deviceConfigQuad[2],
-            deviceConfigQuad[3],
+            deviceConfigQuad[QUAD_INDEX_SCREEN_HEIGHT],
         )
     } + INTERESTING_DEVICES_INTERNAL.map { deviceConfigQuad ->
         val originalConfigName = deviceConfigQuad[1] as String
@@ -51,7 +53,7 @@ object PreviewTestUtils {
             darkConfig,
             darkConfigName,
             deviceConfigQuad[2],
-            deviceConfigQuad[3],
+            deviceConfigQuad[QUAD_INDEX_SCREEN_HEIGHT],
         )
     }
 }
@@ -64,8 +66,11 @@ fun DeviceConfig.toWidthClass(): WidthClass {
     val relevantWidthDp = round(relevantWidth / scalingFactor)
 
     return when {
-        relevantWidthDp < 600 -> WidthClass.COMPACT
-        relevantWidthDp < 840 -> WidthClass.MEDIUM
+        relevantWidthDp < WIDTH_DP_COMPACT_MAX -> WidthClass.COMPACT
+        relevantWidthDp < WIDTH_DP_MEDIUM_MAX -> WidthClass.MEDIUM
         else -> WidthClass.EXPANDED
     }
 }
+
+private const val WIDTH_DP_COMPACT_MAX = 600
+private const val WIDTH_DP_MEDIUM_MAX = 840

@@ -1,9 +1,11 @@
 package net.sigmabeta.chipbox.repository.database.models
 
-data class DatabaseGame(
+data class DatabaseTrack(
     val id: Long,
+    val path: String,
     val title: String,
-    val photoUrl: String?,
     val artists: List<DatabaseArtist>,
-    val tracks: List<DatabaseTrack>
+    var game: DatabaseGame?,
+    val trackLengthMs: Long
+
 )

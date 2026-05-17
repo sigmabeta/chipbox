@@ -166,7 +166,10 @@ class RealScanner(
                 }
                 val index = siblings.indexOfFirst { it.trackNumber == entry.trackNumber }
                 if (index < 0) {
-                    hatchet.v("m3u references track ${entry.trackNumber} in '${entry.filename}' which doesn't exist — skipping.")
+                    hatchet.v(
+                        "m3u references track ${entry.trackNumber} in " +
+                            "'${entry.filename}' which doesn't exist — skipping."
+                    )
                     continue
                 }
                 siblings[index] = siblings[index].copy(

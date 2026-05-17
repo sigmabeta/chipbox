@@ -13,7 +13,7 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
         try {
             val fileAsByteBuffer = bytesAsByteBuffer(bytes)
 
-            val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
+            val formatHeader = fileAsByteBuffer.nextBytesAsString(HEADER_MAGIC_SIZE)
             if (formatHeader == null) {
                 hatchet.w("NSFE parse failed: file too small to contain header (${bytes.size} bytes).")
                 return null
@@ -38,7 +38,7 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
 
             // INFO[8] is the canonical track count per spec; fall back to tlbl length only if
             // the file omits INFO. Bail when neither is available — there's nothing to scan.
-            val trackCount = infoChunk?.get(0x08)?.toInt()?.and(0xFF)
+            val trackCount = infoChunk?.get(INFO_OFFSET_TRACK_COUNT)?.toInt()?.and(BYTE_MASK)
                 ?: trackNameList.size.takeIf { it > 0 }
                 ?: return null
 
@@ -66,7 +66,7 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
 
             // GME's start_track_(N) remaps N via playlist[N] internally, so trackNumber
             // must be the playlist position, not the subtune index.
-            val plstIndexList = plstChunk?.array()?.map { it.toInt() and 0xFF }
+            val plstIndexList = plstChunk?.array()?.map { it.toInt() and BYTE_MASK }
             return if (plstIndexList != null) {
                 plstIndexList.mapIndexedNotNull { playlistPos, subtuneIndex ->
                     tempTracks.getOrNull(subtuneIndex)?.copy(trackNumber = playlistPos)
@@ -137,7 +137,7 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
 
     private fun readNextChunk(fileAsByteBuffer: ByteBuffer): NsfeChunk? {
         val length = fileAsByteBuffer.nextFourBytesAsInt()
-        val name = fileAsByteBuffer.nextBytesAsString(4)
+        val name = fileAsByteBuffer.nextBytesAsString(CHUNK_NAME_SIZE)
         val content = ByteArray(length)
 
         if (name == null) {
@@ -153,6 +153,13 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
 
     companion object {
         private const val HEADER_MAGIC = "NSFE"
+        private const val HEADER_MAGIC_SIZE = 4
+        private const val CHUNK_NAME_SIZE = 4
+
+        // Byte offset of the track-count field within the NSFE 'INFO' chunk.
+        private const val INFO_OFFSET_TRACK_COUNT = 0x08
+        private const val BYTE_MASK = 0xFF
+
         private const val CHUNK_AUTH = "auth"
         private const val CHUNK_TLBL = "tlbl"
         private const val CHUNK_TAUT = "taut"

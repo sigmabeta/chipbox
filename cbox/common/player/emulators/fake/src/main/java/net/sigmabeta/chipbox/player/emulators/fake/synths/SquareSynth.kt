@@ -5,7 +5,7 @@ import net.sigmabeta.chipbox.player.common.toShortValue
 class SquareSynth(val dutyCycle: Double) : Synth {
 
     override fun generate(timeMillis: Double, frequency: Double, amplitude: Double): Short {
-        val wavelength = 1000 / frequency
+        val wavelength = MS_PER_SECOND / frequency
         val edgeThreshold = wavelength * dutyCycle
         val wavePosition = timeMillis % wavelength
 
@@ -19,5 +19,9 @@ class SquareSynth(val dutyCycle: Double) : Synth {
             .toShortValue()
 
         return if (wavePosition >= edgeThreshold) amplitudeShort else amplitudeShort
+    }
+
+    private companion object {
+        private const val MS_PER_SECOND = 1000
     }
 }

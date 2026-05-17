@@ -11,6 +11,8 @@ import net.sigmabeta.chipbox.scanner.Scanner
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
+private const val GAME_FOUND_DELAY_MS = 100L
+
 class MockScanner(
     private val mockRepository: MockRepository,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
@@ -35,7 +37,7 @@ class MockScanner(
                 tracksFound += it.tracks?.size ?: 0
 
                 emitEvent(event)
-                delay(100)
+                delay(GAME_FOUND_DELAY_MS)
             }
         }
 

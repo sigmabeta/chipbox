@@ -58,7 +58,7 @@ import androidx.navigation.compose.rememberNavController
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.chipbox.playerstatus.PlayerStatus
-import net.sigmabeta.chipbox.playerstatus.PlayerStatusAnimDurationMs
+import net.sigmabeta.chipbox.playerstatus.PLAYER_STATUS_ANIM_DURATION_MS
 import net.sigmabeta.chipbox.playerstatus.PlayerStatusReservedHeight
 import net.sigmabeta.chipbox.ui.chrome.ChromeController
 import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
@@ -73,6 +73,7 @@ import net.sigmabeta.sage.ui.StringProvider
 private val NAV_RAIL_MIN_WIDTH = 480.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Suppress("LongMethod")
 @Composable
 fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) {
     AppTheme {
@@ -137,7 +138,7 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
             } else {
                 0.dp
             },
-            animationSpec = tween(PlayerStatusAnimDurationMs),
+            animationSpec = tween(PLAYER_STATUS_ANIM_DURATION_MS),
             label = "ChipboxAppUi.navHostBottomInset",
         )
 

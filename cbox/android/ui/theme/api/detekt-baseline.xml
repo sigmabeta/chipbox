@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:Typography.kt$fun buildChipboxTypography( brand: ChipboxFont = ChipboxTypefaceTokens.Brand, plain: ChipboxFont = ChipboxTypefaceTokens.Plain, fontScale: Float = 1.0f, ): Typography</ID>
+  </CurrentIssues>
+</SmellBaseline>

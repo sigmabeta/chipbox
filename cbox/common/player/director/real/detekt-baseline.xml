@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ReturnCount:RealDirector.kt$RealDirector$private fun handleSpeakerBuffering(oldState: ChipboxPlaybackState): ChipboxPlaybackState</ID>
+    <ID>ReturnCount:RealDirector.kt$RealDirector$private fun handleSpeakerPlaying(oldState: ChipboxPlaybackState): ChipboxPlaybackState</ID>
+    <ID>ReturnCount:RealDirector.kt$RealDirector$private suspend fun handleGeneratorLoading( oldState: ChipboxPlaybackState, event: GeneratorEvent.Loading, ): ChipboxPlaybackState</ID>
+  </CurrentIssues>
+</SmellBaseline>

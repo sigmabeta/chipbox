@@ -311,7 +311,7 @@ class MemoryRepository(
 
     private fun RawTrack.toMemoryTrack(): MemoryTrack {
         val trackArtists = artist
-            .split(*DELIMITERS_ARTISTS)
+            .split(DELIMITERS_ARTISTS)
             .map { it.trim() }
             .map { artistName -> getOrAddArtistByName(artistName) }
 
@@ -407,6 +407,6 @@ class MemoryRepository(
     }
 
     companion object {
-        val DELIMITERS_ARTISTS = arrayOf(", &", ",", " or ", " and ", "&")
+        val DELIMITERS_ARTISTS = Regex(", &|,| or | and |&")
     }
 }

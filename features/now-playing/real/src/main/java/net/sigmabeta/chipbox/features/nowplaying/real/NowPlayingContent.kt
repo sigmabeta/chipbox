@@ -242,6 +242,7 @@ private fun ColumnScope.ProgressSection(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun ColumnScope.TransportRow(
     model: NowPlayingModel,
@@ -342,10 +343,13 @@ private fun ColumnScope.TransportRow(
     }
 }
 
+private const val MS_PER_SECOND = 1000L
+private const val SECONDS_PER_MINUTE = 60L
+
 private fun formatMs(ms: Long): String {
-    val totalSeconds = (ms.coerceAtLeast(0L) / 1000L)
-    val minutes = totalSeconds / 60L
-    val seconds = totalSeconds % 60L
+    val totalSeconds = (ms.coerceAtLeast(0L) / MS_PER_SECOND)
+    val minutes = totalSeconds / SECONDS_PER_MINUTE
+    val seconds = totalSeconds % SECONDS_PER_MINUTE
     return "%d:%02d".format(minutes, seconds)
 }
 

@@ -123,7 +123,7 @@ class FileSpeaker(
         writeIntLittleEndian(output, sampleRate) // 4 bytes
         writeIntLittleEndian(output, sampleRate * CHANNELS_STEREO * BYTES_PER_SAMPLE) // 4 bytes
         writeShortLittleEndian(output, (CHANNELS_STEREO * BYTES_PER_SAMPLE).toShort()) // 2 bytes
-        writeShortLittleEndian(output, (BYTES_PER_SAMPLE * 8).toShort()) // 2 bytes
+        writeShortLittleEndian(output, (BYTES_PER_SAMPLE * BITS_PER_BYTE).toShort()) // 2 bytes
 
         output.write(HEADER_STRING_DATA.toByteArray())
     }
@@ -142,10 +142,10 @@ class FileSpeaker(
         val seekableFile = RandomAccessFile(file, MODE_FILE_ACCESS_RW)
 
         // TODO Pretty sure this assumes little-endianness. Maybe a bad idea?
-        seekableFile.seek(4)
+        seekableFile.seek(HEADER_OFFSET_RIFF_SIZE)
         seekableFile.writeInt(bytesWritten + HEADER_SIZE_TOTAL)
 
-        seekableFile.seek(0x40)
+        seekableFile.seek(HEADER_OFFSET_DATA_SIZE)
         seekableFile.writeInt(bytesWritten)
 
         hatchet.d("Wrote $bytesWritten bytes of audio to file.")
@@ -162,7 +162,7 @@ class FileSpeaker(
     }
 
     private fun writeIntLittleEndian(output: OutputStream, int: Int) {
-        val bb: ByteBuffer = ByteBuffer.allocate(4)
+        val bb: ByteBuffer = ByteBuffer.allocate(BYTES_PER_INT)
         bb.order(ByteOrder.LITTLE_ENDIAN)
         bb.putInt(int)
 
@@ -177,8 +177,8 @@ class FileSpeaker(
 
     private fun Short.toBytes(): ByteArray {
         return byteArrayOf(
-            (toInt() and 0x00FF).toByte(),
-            ((toInt() and 0xFF00) shr (8)).toByte()
+            (toInt() and LOW_BYTE_MASK).toByte(),
+            ((toInt() and HIGH_BYTE_MASK) shr (BITS_PER_BYTE)).toByte()
         )
     }
 
@@ -203,6 +203,22 @@ class FileSpeaker(
         const val HEADER_SIZE_TOTAL = 36
 
         const val MODE_FILE_ACCESS_RW = "rw"
+
+        /** Byte offset of the RIFF chunk size field, patched in once the body size is known. */
+        private const val HEADER_OFFSET_RIFF_SIZE = 4L
+
+        /** Byte offset of the data chunk size field within the WAV header. */
+        private const val HEADER_OFFSET_DATA_SIZE = 0x40L
+
+        /** Bits per byte; WAV stores bits-per-sample as bytes-per-sample * 8. */
+        private const val BITS_PER_BYTE = 8
+
+        /** Byte width of a 32-bit int written little-endian into the header. */
+        private const val BYTES_PER_INT = 4
+
+        /** Masks isolating the low / high byte of a 16-bit sample. */
+        private const val LOW_BYTE_MASK = 0x00FF
+        private const val HIGH_BYTE_MASK = 0xFF00
     }
 }
 

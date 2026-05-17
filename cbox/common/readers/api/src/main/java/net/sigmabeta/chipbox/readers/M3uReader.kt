@@ -48,13 +48,13 @@ private fun String.toM3uEntry(): M3uEntry? {
     val title: String
     val artist: String?
     val game: String?
-    if (metaParts.size >= 4 && metaParts.last().looksLikeCopyright()) {
+    if (metaParts.size >= COMPOUND_TAG_MIN_PARTS && metaParts.last().looksLikeCopyright()) {
         // Zophar GBS/NSF compound: "Title - Artist - Game - Copyright". Anchor from the right
         // so titles containing " - " (e.g. "Stage 3 - Float Islands") survive intact.
-        title = metaParts.dropLast(3).joinToString(" - ").orUnknown()
-        artist = metaParts[metaParts.size - 3].orUnknown()
-        game = metaParts[metaParts.size - 2].orUnknown()
-    } else if (metaParts.size == 3) {
+        title = metaParts.dropLast(COMPOUND_TAG_TRAILING_PARTS).joinToString(" - ").orUnknown()
+        artist = metaParts[metaParts.size - COMPOUND_TAG_ARTIST_FROM_END].orUnknown()
+        game = metaParts[metaParts.size - COMPOUND_TAG_GAME_FROM_END].orUnknown()
+    } else if (metaParts.size == SIMPLE_TAG_PARTS) {
         title = metaParts[0].orUnknown()
         artist = metaParts[1].orUnknown()
         game = metaParts[2].orUnknown()
@@ -64,8 +64,8 @@ private fun String.toM3uEntry(): M3uEntry? {
         game = null
     }
 
-    val lengthMs = tags.getOrNull(3)?.toLengthMillis() ?: LENGTH_UNKNOWN_MS
-    val fadeLengthMs = (tags.getOrNull(5)?.toLengthMillis() ?: 0L).coerceAtLeast(0L)
+    val lengthMs = tags.getOrNull(TAG_INDEX_LENGTH)?.toLengthMillis() ?: LENGTH_UNKNOWN_MS
+    val fadeLengthMs = (tags.getOrNull(TAG_INDEX_FADE)?.toLengthMillis() ?: 0L).coerceAtLeast(0L)
 
     return M3uEntry(filename, trackNumber, title, artist, game, lengthMs, fadeLengthMs)
 }
@@ -81,3 +81,16 @@ private fun String.splitByUnescapedCommas() = split(Regex("(?<!\\\\),"))
  */
 private fun String.looksLikeCopyright(): Boolean =
     contains('©') || contains('�') || Regex("""\b(19|20)\d{2}\b""").containsMatchIn(this)
+
+// Zophar compound meta is "Title - Artist - Game - Copyright" split on " - ".
+private const val COMPOUND_TAG_MIN_PARTS = 4
+private const val COMPOUND_TAG_TRAILING_PARTS = 3
+private const val COMPOUND_TAG_ARTIST_FROM_END = 3
+private const val COMPOUND_TAG_GAME_FROM_END = 2
+
+// Simple meta is "Title - Artist - Game".
+private const val SIMPLE_TAG_PARTS = 3
+
+// Comma-separated m3u tag field positions: format,index,meta,length,fade-start,fade.
+private const val TAG_INDEX_LENGTH = 3
+private const val TAG_INDEX_FADE = 5
