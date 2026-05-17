@@ -179,8 +179,21 @@ class RealBufferManager(
             drained++
             fullCount.decrementAndGet()
             buffer.data.clear()
-            if (empty?.trySend(buffer.data)?.isSuccess == true) {
-                emptyCount.incrementAndGet()
+            val sendResult = empty?.trySend(buffer.data)
+            when {
+                sendResult == null -> Unit
+                sendResult.isSuccess -> emptyCount.incrementAndGet()
+                // Closed == the expected case: setSampleRate swapped in a fresh pool and
+                // closed this old channel, so the orphan rightfully falls to GC.
+                sendResult.isClosed -> Unit
+                // Failure on a still-open channel should be impossible: during seek the
+                // consume loop is cancelled, so drain() is the sole sender into a channel
+                // whose capacity equals the (conserved) array count. If this ever fires,
+                // an unforeseen path is permanently shrinking the live buffer pool.
+                else -> hatchet.w(
+                    "drain: trySend failed on an open emptyArrays channel; " +
+                        "live-pool array dropped to GC ($sendResult)."
+                )
             }
             if (drained % DRAIN_LOG_INTERVAL == 0) {
                 hatchet.d("drain: $drained buffer(s) so far.")
