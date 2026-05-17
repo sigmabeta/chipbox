@@ -53,12 +53,9 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
         }
     }
 
-    private fun getNumberOfTracks(fileAsBytes: ByteArray): Int {
-        return fileAsBytes[OFFSET_NUMBER_OF_SONGS].toInt() and BYTE_MASK
-    }
+    private fun getNumberOfTracks(fileAsBytes: ByteArray): Int = fileAsBytes[OFFSET_NUMBER_OF_SONGS].toInt() and BYTE_MASK
 
-    private fun getGameTitle(fileAsBytes: ByteArray): String {
-        return try {
+    private fun getGameTitle(fileAsBytes: ByteArray): String = try {
             fileAsBytes
                 .decodeToString(OFFSET_TITLE, OFFSET_AUTHOR, true)
                 .substringBefore(0.toChar())
@@ -67,10 +64,8 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
             hatchet.w("GBS: unable to read game title — ${ex.message}")
             TAG_UNKNOWN
         }
-    }
 
-    private fun getGameArtist(fileAsBytes: ByteArray): String {
-        return try {
+    private fun getGameArtist(fileAsBytes: ByteArray): String = try {
             fileAsBytes
                 .decodeToString(OFFSET_AUTHOR, OFFSET_COPYRIGHT, true)
                 .substringBefore(0.toChar())
@@ -79,7 +74,6 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
             hatchet.w("GBS: unable to read artist — ${ex.message}")
             TAG_UNKNOWN
         }
-    }
 
     private fun isGbsFile(header: String) = header.startsWith(HEADER_MAGIC)
 
@@ -97,7 +91,7 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
     }
 }
 
-/**
+/*
 HEADER FIELDS
 
 Offset Size Description
