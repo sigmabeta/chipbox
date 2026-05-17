@@ -185,7 +185,9 @@ class DirectorPlayer(
         seekCommand: Int,
     ): ListenableFuture<*> {
         when (seekCommand) {
+            Player.COMMAND_SEEK_TO_NEXT,
             Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> director.skipForward()
+            Player.COMMAND_SEEK_TO_PREVIOUS,
             Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> director.skipBack()
             else -> {
                 // Update synchronously so the next getState() reflects the seek target. Without
@@ -268,15 +270,21 @@ class DirectorPlayer(
         private const val PREV_PLACEHOLDER_UID = "chipbox.prev_placeholder"
         private const val NEXT_PLACEHOLDER_UID = "chipbox.next_placeholder"
 
-        // Only the *_MEDIA_ITEM variants so BasePlayer.seekToPrevious doesn't apply its own
-        // "seek to 0 if past threshold" logic — Director.skipBack already owns that decision.
+        // The generic SEEK_TO_NEXT/PREVIOUS commands are required: Media3's media-notification
+        // controller path (MediaSessionStub.seekTo{Next,Previous}ForControllerInfo) gates hardware
+        // next/prev buttons strictly on these and, unlike the legacy stub, has no *_MEDIA_ITEM
+        // fallback — without them the buttons are dropped with ERROR_PERMISSION_DENIED. handleSeek
+        // funnels every SEEK_TO_PREVIOUS sub-path into Director.skipBack(), so BasePlayer's own
+        // "seek to 0 if past threshold" branch is moot — Director still owns that decision.
         private val AVAILABLE_COMMANDS: Player.Commands = Player.Commands.Builder()
             .addAll(
                 Player.COMMAND_PLAY_PAUSE,
                 Player.COMMAND_PREPARE,
                 Player.COMMAND_STOP,
                 Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM,
+                Player.COMMAND_SEEK_TO_NEXT,
                 Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM,
+                Player.COMMAND_SEEK_TO_PREVIOUS,
                 Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
                 Player.COMMAND_SET_MEDIA_ITEM,
                 Player.COMMAND_GET_METADATA,
