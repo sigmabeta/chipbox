@@ -22,13 +22,11 @@ class LibraryBrowser @Inject constructor(
     private val repository: Repository,
     private val hatchet: Hatchet,
 ) {
-    fun getTopLevelMenuItems(): List<MediaItem> {
-        return listOf(
+    fun getTopLevelMenuItems(): List<MediaItem> = listOf(
             topLevelItemGames(),
             topLevelItemArtists(),
             topLevelItemAllTracks(),
         )
-    }
 
     fun rootItem(): MediaItem = MediaItem.Builder()
         .setMediaId(ID_ROOT_FULL)
@@ -64,12 +62,14 @@ class LibraryBrowser @Inject constructor(
         val parts = mediaId.removePrefix(ID_GAMES).split('.')
         return when (parts.size) {
             1 -> parts[0].toLongOrNull()?.let { fetchGame(it)?.toMediaItem() }
+
             2 -> {
                 val trackId = parts[1].toLongOrNull() ?: return null
                 val track = repository.getTrack(trackId, withGame = true, withArtists = true)
                     ?: return null
                 track.toMediaItem(parentId = mediaId.substringBeforeLast('.'))
             }
+
             else -> null
         }
     }
@@ -78,6 +78,7 @@ class LibraryBrowser @Inject constructor(
         val parts = mediaId.removePrefix(ID_ARTISTS).split('.')
         return when (parts.size) {
             1 -> parts[0].toLongOrNull()?.let { fetchArtist(it)?.toMediaItem() }
+
             2 -> {
                 val trackId = parts[1].toLongOrNull() ?: return null
                 val track = repository.getTrack(trackId, withGame = true, withArtists = true)
@@ -87,6 +88,7 @@ class LibraryBrowser @Inject constructor(
                     subtitle = track.game?.title ?: UNKNOWN_GAME,
                 )
             }
+
             else -> null
         }
     }
@@ -102,6 +104,7 @@ class LibraryBrowser @Inject constructor(
                     ?: return null
                 track.toMediaItem(parentId = ID_TRACKS_TOP)
             }
+
             else -> null
         }
     }
@@ -121,7 +124,9 @@ class LibraryBrowser @Inject constructor(
     private suspend fun browseGames(parentMediaId: String): List<MediaItem>? {
         return when (val id = parentMediaId.substringAfterLast(".")) {
             ID_TOP -> getGamesMenuItems()
+
             ID_SHUFFLE -> startGamesShuffle()
+
             else -> {
                 val gameId = id.toLongOrNull() ?: return null
                 browseToGame(parentMediaId, gameId)
@@ -132,7 +137,9 @@ class LibraryBrowser @Inject constructor(
     private suspend fun browseArtists(parentMediaId: String): List<MediaItem>? {
         return when (val id = parentMediaId.substringAfterLast(".")) {
             ID_TOP -> getArtistsMenuItems()
+
             ID_SHUFFLE -> startArtistsShuffle()
+
             else -> {
                 val artistId = id.toLongOrNull() ?: return null
                 browseToArtist(parentMediaId, artistId)
@@ -140,12 +147,10 @@ class LibraryBrowser @Inject constructor(
         }
     }
 
-    private suspend fun browseTracks(parentMediaId: String): List<MediaItem>? {
-        return when (parentMediaId.substringAfterLast(".")) {
+    private suspend fun browseTracks(parentMediaId: String): List<MediaItem>? = when (parentMediaId.substringAfterLast(".")) {
             ID_TOP -> getAllTracksMenuItems()
             else -> null
         }
-    }
 
     private suspend fun browseToGame(parentMediaId: String, gameId: Long) = repository
         .getGame(gameId, true)

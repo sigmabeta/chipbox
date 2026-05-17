@@ -14,6 +14,5 @@ import net.sigmabeta.sage.storage.common.Storage
 object DebugModule {
     @Provides
     @Singleton
-    fun provideDebugSettingsManager(storage: Storage): DebugSettingsManager =
-        RealDebugSettingsManager(storage)
+    fun provideDebugSettingsManager(storage: Storage): DebugSettingsManager = RealDebugSettingsManager(storage)
 }

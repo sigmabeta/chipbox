@@ -32,8 +32,7 @@ data class GamesForPlatformState(
         TitleBarModel()
     }
 
-    override fun toListItems(stringProvider: StringProvider): List<ListModel> =
-        games.withStandardErrorAndLoading(
+    override fun toListItems(stringProvider: StringProvider): List<ListModel> = games.withStandardErrorAndLoading(
             loadingType = LoadingType.SQUARE,
             loadingWithHeader = false,
         ) { content(data, stringProvider) }

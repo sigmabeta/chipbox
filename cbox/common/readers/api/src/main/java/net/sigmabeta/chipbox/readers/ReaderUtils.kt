@@ -5,7 +5,6 @@ import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-
 internal fun ByteBuffer.nextFourBytesAsInt() = int
 
 internal fun ByteBuffer.nextBytes(numberOfBytes: Int): ByteArray? {
@@ -24,7 +23,6 @@ internal fun ByteBuffer.nextBytesAsString(numberOfBytes: Int) = nextBytes(number
     ?.toString(Charsets.UTF_8)
     ?.substringBefore(0.toChar())
     ?.trim()
-
 
 internal fun ByteBuffer.nextBytesAsInt(numberOfBytes: Int): Int {
     val lengthSecondsBytes = nextBytes(numberOfBytes)
@@ -49,8 +47,7 @@ fun String?.orUnknown(): String {
     return this
 }
 
-internal fun bytesAsByteBuffer(bytes: ByteArray): ByteBuffer =
-    ByteBuffer.wrap(bytes, 0, bytes.size).order(ByteOrder.LITTLE_ENDIAN)
+internal fun bytesAsByteBuffer(bytes: ByteArray): ByteBuffer = ByteBuffer.wrap(bytes, 0, bytes.size).order(ByteOrder.LITTLE_ENDIAN)
 
 internal fun String.toLengthMillis(): Long {
     val splitText = split(":")
@@ -63,14 +60,17 @@ internal fun String.toLengthMillis(): Long {
             minutesText = "0"
             secondsText = splitText[0]
         }
+
         2 -> {
             minutesText = splitText[0]
             secondsText = splitText[1]
         }
+
         TIME_PARTS_HMS -> {
             minutesText = splitText[1]
             secondsText = splitText[2]
         }
+
         else -> return 0L
     }
 

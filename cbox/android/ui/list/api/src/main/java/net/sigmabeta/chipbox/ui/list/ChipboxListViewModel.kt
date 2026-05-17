@@ -47,7 +47,8 @@ abstract class ChipboxListViewModel<S : ListState>(
     initialState: S,
     private val stringProvider: StringProvider,
     private val hatchet: Hatchet,
-) : ViewModel(), ActionSink {
+) : ViewModel(),
+    ActionSink {
 
     private val _state = MutableStateFlow(initialState)
 

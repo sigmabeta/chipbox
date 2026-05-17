@@ -86,7 +86,7 @@ class RealSpeaker(
     }
 
     private fun initializeAudioTrack(
-            sampleRate: Int,
+        sampleRate: Int,
     ): AudioTrack {
         teardown()
         Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)

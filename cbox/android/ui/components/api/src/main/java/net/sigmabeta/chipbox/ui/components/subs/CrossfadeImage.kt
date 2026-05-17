@@ -76,7 +76,9 @@ fun CrossfadeImage(
     ) { current ->
         when {
             current.info == null -> PlaceHolderImage(imagePlaceholder, Modifier.fillMaxSize())
+
             forceGenBitmap -> FakeImage(current, Modifier.fillMaxSize())
+
             else -> RealImage(
                 sourceInfo = current,
                 imagePlaceholder = imagePlaceholder,

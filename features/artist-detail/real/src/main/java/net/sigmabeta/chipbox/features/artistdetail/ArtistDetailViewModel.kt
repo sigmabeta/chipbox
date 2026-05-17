@@ -79,6 +79,7 @@ class ArtistDetailViewModel @Inject constructor(
                     notFound = false,
                 )
             }
+
             Data.Empty -> updateState {
                 it.copy(
                     artist = LCE.Uninitialized,
@@ -87,6 +88,7 @@ class ArtistDetailViewModel @Inject constructor(
                     notFound = true,
                 )
             }
+
             is Data.Succeeded -> {
                 val artist = data.data ?: return
                 updateState {
@@ -98,6 +100,7 @@ class ArtistDetailViewModel @Inject constructor(
                     )
                 }
             }
+
             is Data.Failed -> updateState {
                 val err = IllegalStateException(data.message)
                 it.copy(

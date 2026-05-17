@@ -71,5 +71,5 @@ enum class ScaleMode(val intervals: List<Interval>) {
             Interval.SIXTH_MINOR,
             Interval.SEVENTH_MINOR
         )
-    );
+    )
 }

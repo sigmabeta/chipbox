@@ -54,6 +54,7 @@ class PlayerStatusViewModel @Inject constructor(
         PlayerState.FAST_FORWARDING,
         PlayerState.REWINDING,
         PlayerState.ENDING -> true
+
         PlayerState.PAUSED,
         PlayerState.ERROR,
         PlayerState.IDLE,

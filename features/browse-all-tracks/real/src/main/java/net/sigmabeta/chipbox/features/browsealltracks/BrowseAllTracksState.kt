@@ -24,15 +24,13 @@ data class BrowseAllTracksState(
         title = stringProvider.getString(ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS),
     )
 
-    override fun toListItems(stringProvider: StringProvider): List<ListModel> =
-        tracks.withStandardErrorAndLoading(
+    override fun toListItems(stringProvider: StringProvider): List<ListModel> = tracks.withStandardErrorAndLoading(
             loadingType = LoadingType.TEXT_CAPTION,
             loadingItemCount = LOADING_COUNT,
             loadingWithHeader = false,
         ) { content(data, stringProvider) }
 
-    private fun content(tracks: List<Track>, stringProvider: StringProvider): List<ListModel> =
-        if (tracks.isEmpty()) {
+    private fun content(tracks: List<Track>, stringProvider: StringProvider): List<ListModel> = if (tracks.isEmpty()) {
             listOf(
                 EmptyStateListModel(
                     icon = Icon.MusicNote,
@@ -49,8 +47,7 @@ data class BrowseAllTracksState(
             ) + tracks.mapIndexed(::trackRow)
         }
 
-    private fun trackRow(index: Int, track: Track): ListModel =
-        NameCaptionValueListModel(
+    private fun trackRow(index: Int, track: Track): ListModel = NameCaptionValueListModel(
             dataId = track.id,
             name = track.title,
             caption = track.game?.title.orEmpty(),

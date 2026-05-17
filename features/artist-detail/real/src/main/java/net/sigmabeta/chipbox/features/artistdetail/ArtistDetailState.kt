@@ -52,8 +52,7 @@ data class ArtistDetailState(
         )
     }
 
-    private fun heroSection() =
-        artist.sectionWithStandardErrorAndLoading(
+    private fun heroSection() = artist.sectionWithStandardErrorAndLoading(
             sectionName = SECTION_NAME_HERO,
             loadingType = LoadingType.BIG_IMAGE,
             loadingItemCount = 1,
@@ -74,8 +73,7 @@ data class ArtistDetailState(
             }
         }
 
-    private fun ctaSection(stringProvider: StringProvider) =
-        artist.sectionWithStandardErrorAndLoading(
+    private fun ctaSection(stringProvider: StringProvider) = artist.sectionWithStandardErrorAndLoading(
             sectionName = SECTION_NAME_CTA,
             loadingItemCount = 0,
             loadingWithHeader = false,
@@ -94,8 +92,7 @@ data class ArtistDetailState(
             )
         }
 
-    private fun songSection(stringProvider: StringProvider) =
-        tracks.sectionWithStandardErrorAndLoading(
+    private fun songSection(stringProvider: StringProvider) = tracks.sectionWithStandardErrorAndLoading(
             sectionName = SECTION_NAME_SONGS,
             loadingType = LoadingType.TEXT_CAPTION,
             loadingItemCount = SONGS_LOADING_COUNT,
@@ -108,8 +105,7 @@ data class ArtistDetailState(
             ) + data.mapIndexed(::trackRow)
         }
 
-    private fun trackRow(index: Int, track: Track): ListModel =
-        NameCaptionValueListModel(
+    private fun trackRow(index: Int, track: Track): ListModel = NameCaptionValueListModel(
             dataId = track.id + ID_PREFIX_SONGS,
             name = track.title,
             caption = track.game?.title.orEmpty(),
@@ -118,8 +114,7 @@ data class ArtistDetailState(
             active = track.id == playingTrackId,
         )
 
-    private fun gamesSection(stringProvider: StringProvider) =
-        games.sectionWithStandardErrorAndLoading(
+    private fun gamesSection(stringProvider: StringProvider) = games.sectionWithStandardErrorAndLoading(
             sectionName = SECTION_NAME_GAMES,
             loadingType = LoadingType.WIDE_ITEM,
             loadingWithHeader = true,

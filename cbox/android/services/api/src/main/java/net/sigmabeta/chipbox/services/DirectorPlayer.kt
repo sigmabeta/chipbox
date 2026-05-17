@@ -28,7 +28,8 @@ class DirectorPlayer(
     private val director: Director,
     context: Context,
     private val hatchet: Hatchet,
-) : SimpleBasePlayer(Looper.getMainLooper()), AudioFocusHelper.Callbacks {
+) : SimpleBasePlayer(Looper.getMainLooper()),
+    AudioFocusHelper.Callbacks {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val audioFocusHelper = AudioFocusHelper(context, this)
@@ -56,6 +57,7 @@ class DirectorPlayer(
                     PlayerState.FAST_FORWARDING,
                     PlayerState.REWINDING,
                     PlayerState.ENDING -> true
+
                     PlayerState.PAUSED,
                     PlayerState.STOPPED,
                     PlayerState.IDLE,
@@ -187,8 +189,10 @@ class DirectorPlayer(
         when (seekCommand) {
             Player.COMMAND_SEEK_TO_NEXT,
             Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> director.skipForward()
+
             Player.COMMAND_SEEK_TO_PREVIOUS,
             Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> director.skipBack()
+
             else -> {
                 // Update synchronously so the next getState() reflects the seek target. Without
                 // this, media3 records the pre-seek position with a fresh timestamp and extrapolates
@@ -246,7 +250,9 @@ class DirectorPlayer(
         PlayerState.IDLE,
         PlayerState.STOPPED,
         PlayerState.ERROR -> Player.STATE_IDLE
+
         PlayerState.BUFFERING -> Player.STATE_BUFFERING
+
         PlayerState.PRELOADING,
         PlayerState.PLAYING,
         PlayerState.FAST_FORWARDING,

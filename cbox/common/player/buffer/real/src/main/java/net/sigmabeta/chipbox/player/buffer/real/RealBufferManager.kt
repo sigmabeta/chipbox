@@ -29,7 +29,8 @@ import net.sigmabeta.sage.logging.Hatchet
  */
 class RealBufferManager(
     private val hatchet: Hatchet,
-): ProducerBufferManager, ConsumerBufferManager {
+) : ProducerBufferManager,
+    ConsumerBufferManager {
     // @Volatile so a consumer that wakes from a ClosedReceiveChannelException after
     // setSampleRate swaps channels sees the post-swap value when it retries.
     @Volatile
@@ -87,9 +88,7 @@ class RealBufferManager(
         fullBuffers?.send(audioBuffer)
     }
 
-    override fun checkForNextAudioBuffer(): AudioBuffer? {
-        return fullBuffers?.tryReceive()?.getOrNull()
-    }
+    override fun checkForNextAudioBuffer(): AudioBuffer? = fullBuffers?.tryReceive()?.getOrNull()
 
     override suspend fun waitForNextAudioBuffer(): AudioBuffer {
         while (true) {
@@ -145,9 +144,7 @@ class RealBufferManager(
         hatchet.d("drain: returned $drained buffer(s) to the old empty pool.")
     }
 
-    override suspend fun getNextEmptyBuffer(): ShortArray {
-        return emptyArrays?.receive() ?: throw  IllegalStateException("Set up buffers first!")
-    }
+    override suspend fun getNextEmptyBuffer(): ShortArray = emptyArrays?.receive() ?: throw IllegalStateException("Set up buffers first!")
 
     companion object {
         const val BUFFER_SIZE_BYTES_DEFAULT = 8192

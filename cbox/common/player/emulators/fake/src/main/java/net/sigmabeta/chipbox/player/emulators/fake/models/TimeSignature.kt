@@ -12,5 +12,5 @@ enum class TimeSignature(val numberOfBeats: Int, val durationOfBeat: Duration) {
     WALTZ(BEATS_WALTZ, Duration.QUARTER),
     FIVE(BEATS_FIVE, Duration.EIGHTH),
     UNSQUARE(BEATS_UNSQUARE, Duration.EIGHTH),
-    BLUE_RONDO(BEATS_BLUE_RONDO, Duration.EIGHTH);
+    BLUE_RONDO(BEATS_BLUE_RONDO, Duration.EIGHTH)
 }

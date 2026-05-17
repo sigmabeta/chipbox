@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.models
 
-data class Game (
+data class Game(
     val id: Long,
     val title: String,
     val photoUrl: String?,

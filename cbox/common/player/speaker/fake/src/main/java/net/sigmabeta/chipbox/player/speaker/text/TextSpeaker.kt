@@ -16,7 +16,7 @@ class TextSpeaker(
     hatchet: Hatchet,
         bufferManager: ConsumerBufferManager,
         dispatcher: CoroutineDispatcher = Dispatchers.IO
-) : Speaker(bufferManager, hatchet, dispatcher)  {
+) : Speaker(bufferManager, hatchet, dispatcher) {
     override fun onAudioReceived(audio: AudioBuffer) {
         logBuffer(audio)
     }
@@ -66,5 +66,3 @@ class TextSpeaker(
         const val SEPARATOR_DATA_COLUMN = " | "
     }
 }
-
-

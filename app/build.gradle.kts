@@ -125,7 +125,6 @@ dependencies {
     implementation(libs.sage.android.ui.strings)
     implementation(libs.sage.android.ui.themes)
 
-
     implementation(libs.sage.fake.analytics)
 
     implementation(platform(libs.androidx.compose.bom))

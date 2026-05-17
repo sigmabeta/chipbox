@@ -85,15 +85,23 @@ class SettingsViewModel @Inject constructor(
     override fun handleAction(action: SageAction) {
         when (action) {
             SettingsAction.AddFolderClicked -> emit(ChipboxEvent.PickFolder)
+
             is SettingsAction.FolderPicked -> onFolderPicked(action.uri)
+
             SettingsAction.RescanLibraryClicked -> onRescanClicked()
+
             SettingsAction.ClearLibraryClicked -> onClearLibraryClicked()
+
             SettingsAction.LicensesClicked -> emit(
                 ChipboxEvent.ShowSnackbar("Licenses screen coming soon.")
             )
+
             SettingsAction.GithubClicked -> emit(ChipboxEvent.OpenUrl(GITHUB_URL))
+
             SettingsAction.BuildDateClicked -> onBuildDateClicked()
+
             SettingsAction.PlaybackStatusClicked -> emit(ChipboxEvent.NavigateTo(PlaybackStatus))
+
             else -> Unit
         }
     }

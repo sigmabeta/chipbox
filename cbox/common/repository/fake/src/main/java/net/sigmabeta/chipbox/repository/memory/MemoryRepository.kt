@@ -303,8 +303,7 @@ class MemoryRepository(
         }
     }
 
-    private fun getLatestAllGames(withTracks: Boolean = false, withArtists: Boolean = false) =
-        gamesByTitle
+    private fun getLatestAllGames(withTracks: Boolean = false, withArtists: Boolean = false) = gamesByTitle
             .values
             .sortedBy { it.title }
             .map { it.toGame(withTracks, withArtists) }
@@ -343,8 +342,7 @@ class MemoryRepository(
         platform = Platform.OTHER,
     )
 
-    private fun MemoryGame.toGame(withTracks: Boolean = false, withArtists: Boolean = false): Game =
-        Game(
+    private fun MemoryGame.toGame(withTracks: Boolean = false, withArtists: Boolean = false): Game = Game(
             id,
             title,
             photoUrl,

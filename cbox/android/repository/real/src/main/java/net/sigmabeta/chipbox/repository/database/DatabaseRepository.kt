@@ -42,7 +42,6 @@ class DatabaseRepository(
 
     private val searchHistoryDao = database.searchHistoryDao()
 
-
     override fun getAllArtists(
         withTracks: Boolean,
         withGames: Boolean
@@ -112,7 +111,6 @@ class DatabaseRepository(
         .getTrackSync(id)
         ?.toTrack(withGame, withArtists)
 
-
     override suspend fun addGame(rawGame: RawGame) {
         // Insert game..
         val game = GameEntity(
@@ -139,8 +137,7 @@ class DatabaseRepository(
     private fun ArtistEntity.toArtist(
         withTracks: Boolean = false,
         withGames: Boolean = false
-    ) =
-        Artist(
+    ) = Artist(
             id,
             name,
             photoUrl,
@@ -162,8 +159,7 @@ class DatabaseRepository(
     private fun TrackEntity.toTrack(
         withGame: Boolean = false,
         withArtists: Boolean = false
-    ) =
-        Track(
+    ) = Track(
             id,
             path,
             source,
@@ -298,8 +294,7 @@ class DatabaseRepository(
     private fun <Entity, Model> setupFlow(
         databaseOp: () -> Flow<Entity>,
         converter: suspend (Entity) -> Model
-    ): Flow<Data<Model>> {
-        return databaseOp()
+    ): Flow<Data<Model>> = databaseOp()
             .map { converter(it) }
             .map<Model, Data<Model>> { model ->
                 if (model is List<*>) {
@@ -322,14 +317,12 @@ class DatabaseRepository(
                 emit(Data.Failed(it.message ?: ERR_UNKNOWN))
             }
             .flowOn(dispatcher)
-    }
 
     private fun <Entity, Model> setupFlowWithId(
         id: Long,
         databaseOp: (Long) -> Flow<Entity>,
         converter: suspend (Entity) -> Model
-    ): Flow<Data<Model>> {
-        return databaseOp(id)
+    ): Flow<Data<Model>> = databaseOp(id)
             .map { converter(it) }
             .map<Model, Data<Model>> { model ->
                 if (model is List<*>) {
@@ -352,7 +345,6 @@ class DatabaseRepository(
                 emit(Data.Failed(it.message ?: ERR_UNKNOWN))
             }
             .flowOn(dispatcher)
-    }
 
     companion object {
         const val ERR_UNKNOWN = "Unknown Error"

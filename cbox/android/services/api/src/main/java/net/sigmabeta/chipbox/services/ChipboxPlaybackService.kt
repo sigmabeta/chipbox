@@ -46,9 +46,7 @@ class ChipboxPlaybackService : MediaLibraryService() {
         noisyReceiver = receiver
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
-        return session
-    }
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         val player = directorPlayer

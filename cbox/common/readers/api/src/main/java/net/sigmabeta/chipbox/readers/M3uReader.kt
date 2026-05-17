@@ -7,17 +7,16 @@ const val EXTENSION_M3U = "m3u"
 
 data class M3uEntry(
     val filename: String,
-    val trackNumber: Int,  // 0-based
+    val trackNumber: Int, // 0-based
     val title: String,
-    val artist: String?,   // non-null only in GBS-style compound tags ("Title - Artist - Game")
-    val game: String?,     // non-null only in GBS-style compound tags
+    val artist: String?, // non-null only in GBS-style compound tags ("Title - Artist - Game")
+    val game: String?, // non-null only in GBS-style compound tags
     val lengthMs: Long,
     val fadeLengthMs: Long,
 )
 
 class M3uReader(private val hatchet: Hatchet) {
-    fun parse(bytes: ByteArray): List<M3uEntry> {
-        return try {
+    fun parse(bytes: ByteArray): List<M3uEntry> = try {
             bytes.convert()
                 .split("\n")
                 .map { it.trim() }
@@ -27,7 +26,6 @@ class M3uReader(private val hatchet: Hatchet) {
             hatchet.w("Failed to parse m3u: ${ex.message}")
             emptyList()
         }
-    }
 }
 
 private fun String.toM3uEntry(): M3uEntry? {
@@ -79,8 +77,7 @@ private fun String.splitByUnescapedCommas() = split(Regex("(?<!\\\\),"))
  * sometimes mangled to "�..." by an upstream encoding error. Either the copyright sigil or a
  * 4-digit year is a strong enough signal to anchor right-side parsing.
  */
-private fun String.looksLikeCopyright(): Boolean =
-    contains('©') || contains('�') || Regex("""\b(19|20)\d{2}\b""").containsMatchIn(this)
+private fun String.looksLikeCopyright(): Boolean = contains('©') || contains('�') || Regex("""\b(19|20)\d{2}\b""").containsMatchIn(this)
 
 // Zophar compound meta is "Title - Artist - Game - Copyright" split on " - ".
 private const val COMPOUND_TAG_MIN_PARTS = 4

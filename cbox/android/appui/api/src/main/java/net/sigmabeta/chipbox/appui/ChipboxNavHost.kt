@@ -53,12 +53,17 @@ fun ChipboxNavHost(
     val onEvent: (ChipboxEvent) -> Unit = { event ->
         when (event) {
             is ChipboxEvent.NavigateTo -> navController.navigate(event.destination)
-            ChipboxEvent.NavigateBack -> { navController.popBackStack() }
+
+            ChipboxEvent.NavigateBack -> {
+                navController.popBackStack()
+            }
+
             is ChipboxEvent.OpenUrl -> {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(event.url))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
             }
+
             is ChipboxEvent.ShowSnackbar -> snackbarScope.launch {
                 snackbarHostState.showSnackbar(
                     message = event.message,
@@ -66,6 +71,7 @@ fun ChipboxNavHost(
                     duration = SnackbarDuration.Short,
                 )
             }
+
             // Screen-local effects intercepted by their owning route (see SettingsRoute);
             // anything that reaches here is a routing bug, but no-op rather than crash.
             ChipboxEvent.PickFolder -> Unit

@@ -101,11 +101,9 @@ private fun Artist.iconUri() = if (photoUrl != null) ArtworkUris.forArtist(id) e
 
 private const val MAX_ARTISTS_TO_LIST = 3
 
-private fun Track.getArtistText(): String {
-    return when (artists?.size) {
+private fun Track.getArtistText(): String = when (artists?.size) {
         null, 0 -> "Unknown Artist"
         1 -> artists!!.first().name
         2, MAX_ARTISTS_TO_LIST -> artists!!.joinToString(", ") { it.name }
         else -> "Various Artists"
     }
-}

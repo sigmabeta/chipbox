@@ -35,13 +35,9 @@ const val BYTES_PER_SAMPLE = BYTES_PER_SHORT
 const val BYTES_PER_FRAME = BYTES_PER_SAMPLE * CHANNELS_STEREO
 const val SHORTS_PER_FRAME = BYTES_PER_FRAME / BYTES_PER_SAMPLE
 
-fun Long.isDivisibleBy(divisor: Int): Boolean {
-    return this % divisor == 0L
-}
+fun Long.isDivisibleBy(divisor: Int): Boolean = this % divisor == 0L
 
-fun Int.isDivisibleBy(divisor: Int): Boolean {
-    return this % divisor == 0
-}
+fun Int.isDivisibleBy(divisor: Int): Boolean = this % divisor == 0
 
 fun ShortArray.clear() {
     forEachIndexed { index, _ -> set(index, 0) }

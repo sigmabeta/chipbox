@@ -22,5 +22,4 @@ object DatabaseModule {
         )
         .fallbackToDestructiveMigration()
         .build()
-
 }
