@@ -1,1 +1,2 @@
+# Paparazzi golden snapshots — stored via Git LFS (see :features:*:screenshot modules)
 **/src/test/snapshots/images/*.png filter=lfs diff=lfs merge=lfs -text
