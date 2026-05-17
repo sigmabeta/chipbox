@@ -29,7 +29,7 @@ interface TrackDao {
     @Query("SELECT * FROM track WHERE id = :trackId")
     fun getTrackSync(trackId: Long): TrackEntity?
 
-    @Query("SELECT * FROM track WHERE title LIKE :title")
+    @Query("SELECT * FROM track WHERE title LIKE :title ORDER BY title COLLATE NOCASE")
     fun searchTracksByTitle(title: String): Flow<List<TrackEntity>>
 
     @Insert
