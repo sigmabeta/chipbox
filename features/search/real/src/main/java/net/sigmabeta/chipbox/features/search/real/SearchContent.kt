@@ -39,7 +39,7 @@ import net.sigmabeta.sage.components.ListModel
  * SearchScreen, just rendering Chipbox list models.
  */
 @Composable
-internal fun SearchContent(
+fun SearchContent(
     listItems: ImmutableList<ListModel>,
     query: String,
     showDebug: Boolean,

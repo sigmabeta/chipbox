@@ -35,6 +35,7 @@ import net.sigmabeta.sage.list.ListState
 import net.sigmabeta.sage.list.ListStateActual
 import net.sigmabeta.sage.list.WidthClass
 import net.sigmabeta.sage.logging.BasicHatchet
+import net.sigmabeta.sage.ui.StringProvider
 import net.sigmabeta.sage.ui.strings.AndroidStringProvider
 
 /**
@@ -74,6 +75,44 @@ fun ListScreenPreview(
                     ) {
                         ListContent(state, syntheticWidthClass, actionSink)
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * For screens that own their chrome and don't render through the generic list pipeline (e.g.
+ * Search, with its in-screen SearchBar). Provides the same theme / `LocalInspectionMode` /
+ * logger wrapper as [ListScreenPreview] but no top bar, and hands the [content] a
+ * [StringProvider] so it can turn a screen state into list items itself.
+ */
+@Composable
+fun ScreenPreview(
+    darkTheme: Boolean,
+    syntheticWidthClass: WidthClass,
+    screenName: String = "Screen",
+    content: @Composable (StringProvider) -> Unit,
+) {
+    val stringProvider =
+        AndroidStringProvider(LocalContext.current.resources) { (it as ChipboxStringId).id() }
+
+    AppTheme(forceDark = darkTheme) {
+        CompositionLocalProvider(
+            LocalInspectionMode provides true,
+            LocalLogger provides BasicHatchet(),
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.background)
+                    .fillMaxSize(),
+            ) {
+                WithMeasurementScreen(
+                    "$screenName ($syntheticWidthClass)",
+                    DURATION_THRESHOLD_WARNING_SCREEN_PREVIEW,
+                    DURATION_THRESHOLD_ERROR_SCREEN_PREVIEW,
+                ) {
+                    content(stringProvider)
                 }
             }
         }
