@@ -17,10 +17,11 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.SEARCH_SCREEN_TITLE   -> R.string.search_screen_title
     ChipboxStringId.SEARCH_HINT           -> R.string.search_hint
     ChipboxStringId.SEARCH_EMPTY_PROMPT   -> R.string.search_empty_prompt
-    ChipboxStringId.SEARCH_FAKE_RECENT_1  -> R.string.search_fake_recent_1
-    ChipboxStringId.SEARCH_FAKE_RECENT_2  -> R.string.search_fake_recent_2
-    ChipboxStringId.SEARCH_FAKE_RECENT_3  -> R.string.search_fake_recent_3
-    ChipboxStringId.SEARCH_COMING_SOON    -> R.string.search_coming_soon
+    ChipboxStringId.SEARCH_SEARCHING      -> R.string.search_searching
+    ChipboxStringId.SEARCH_NO_RESULTS     -> R.string.search_no_results
+    ChipboxStringId.SEARCH_SECTION_GAMES  -> R.string.search_section_games
+    ChipboxStringId.SEARCH_SECTION_SONGS  -> R.string.search_section_songs
+    ChipboxStringId.SEARCH_SECTION_ARTISTS -> R.string.search_section_artists
     ChipboxStringId.LIBRARY_BROWSE_BY_GAME         -> R.string.library_browse_by_game
     ChipboxStringId.LIBRARY_BROWSE_BY_GAME_EMPTY   -> R.string.library_browse_by_game_empty
     ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST       -> R.string.library_browse_by_artist

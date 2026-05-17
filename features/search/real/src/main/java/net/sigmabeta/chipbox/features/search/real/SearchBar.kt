@@ -35,12 +35,12 @@ private val SidePadding = 16.dp
 @Composable
 @Suppress("LongMethod")
 fun SearchBar(
-    text: String,
     model: SearchModel,
-    textFieldUpdater: (String) -> Unit,
     actionSink: ActionSink,
     modifier: Modifier,
 ) {
+    val text = model.query
+
     val shape = RoundedCornerShape(32.dp)
 
     val commonModifier = modifier
@@ -83,7 +83,7 @@ fun SearchBar(
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     ),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.onPrimaryContainer),
-                    onValueChange = { textFieldUpdater(it) },
+                    onValueChange = { actionSink.sendAction(SearchAction.QueryChanged(it)) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(focusRequester),
@@ -106,7 +106,7 @@ fun SearchBar(
                 MenuActionIcon(
                     icon = Icon.Clear,
                     contentDescription = ChipboxStringId.ACCY_CDESC_SEARCH_CLEAR,
-                    onClick = { textFieldUpdater("") },
+                    onClick = { actionSink.sendAction(SearchAction.QueryChanged("")) },
                 )
             }
         }
