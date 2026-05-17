@@ -6,11 +6,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
+import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
@@ -226,6 +230,30 @@ class MemoryRepository(
 
     override suspend fun clearLibrary() {
         resetData()
+    }
+
+    override fun searchGames(query: String): Flow<Data<List<Game>>> = flowOf(Data.Empty)
+
+    override fun searchSongs(query: String): Flow<Data<List<Track>>> = flowOf(Data.Empty)
+
+    override fun searchArtists(query: String): Flow<Data<List<Artist>>> = flowOf(Data.Empty)
+
+    private val searchHistory = MutableStateFlow<List<SearchHistory>>(emptyList())
+    private var searchHistoryIdCounter = 0L
+
+    override fun getSearchHistory(): Flow<Data<List<SearchHistory>>> = searchHistory.map {
+        if (it.isEmpty()) Data.Empty else Data.Succeeded(it)
+    }
+
+    override suspend fun addSearchHistory(query: String) {
+        if (searchHistory.value.none { it.query == query }) {
+            searchHistory.value =
+                listOf(SearchHistory(searchHistoryIdCounter++, query)) + searchHistory.value
+        }
+    }
+
+    override suspend fun removeSearchHistory(id: Long) {
+        searchHistory.value = searchHistory.value.filterNot { it.id == id }
     }
 
     override suspend fun addGame(rawGame: RawGame) {

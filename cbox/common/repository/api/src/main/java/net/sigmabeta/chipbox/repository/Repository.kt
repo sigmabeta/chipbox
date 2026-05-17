@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
+import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
 
 interface Repository {
@@ -67,4 +68,18 @@ interface Repository {
     ): Track?
 
     suspend fun clearLibrary()
+
+    // Search
+    fun searchGames(query: String): Flow<Data<List<Game>>>
+
+    fun searchSongs(query: String): Flow<Data<List<Track>>>
+
+    fun searchArtists(query: String): Flow<Data<List<Artist>>>
+
+    // Search history
+    fun getSearchHistory(): Flow<Data<List<SearchHistory>>>
+
+    suspend fun addSearchHistory(query: String)
+
+    suspend fun removeSearchHistory(id: Long)
 }

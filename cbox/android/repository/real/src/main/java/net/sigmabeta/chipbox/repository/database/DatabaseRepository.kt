@@ -12,11 +12,13 @@ import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.entities.ArtistEntity
 import net.sigmabeta.chipbox.entities.GameEntity
 import net.sigmabeta.chipbox.entities.TrackEntity
+import net.sigmabeta.chipbox.entities.SearchHistoryEntity
 import net.sigmabeta.chipbox.entities.joins.GameArtistJoin
 import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
+import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.models.decodeChainFiles
 import net.sigmabeta.chipbox.models.encodeChainFiles
@@ -37,6 +39,8 @@ class DatabaseRepository(
 
     private val gameArtistDao = database.gameArtistDao()
     private val trackArtistDao = database.trackArtistDao()
+
+    private val searchHistoryDao = database.searchHistoryDao()
 
 
     override fun getAllArtists(
@@ -255,6 +259,41 @@ class DatabaseRepository(
         gameArtistDao.nukeTable()
         trackArtistDao.nukeTable()
     }
+
+    override fun searchGames(query: String) = setupFlow(
+        { gameDao.searchGamesByTitle("%$query%") },
+        { list -> list.map { it.toGame() } }
+    )
+
+    override fun searchSongs(query: String) = setupFlow(
+        { trackDao.searchTracksByTitle("%$query%") },
+        { list -> list.map { it.toTrack(withGame = true) } }
+    )
+
+    override fun searchArtists(query: String) = setupFlow(
+        { artistDao.searchArtistsByName("%$query%") },
+        { list -> list.map { it.toArtist() } }
+    )
+
+    override fun getSearchHistory(): Flow<Data<List<SearchHistory>>> = setupFlow(
+        { searchHistoryDao.getRecent() },
+        { list -> list.map { it.toSearchHistory() } }
+    )
+
+    override suspend fun addSearchHistory(query: String): Unit = withContext(dispatcher) {
+        // Dedupe like VGLS: don't re-record a query that's already in history.
+        if (searchHistoryDao.getByQuerySync(query) == null) {
+            searchHistoryDao.insert(
+                SearchHistoryEntity(query, System.currentTimeMillis())
+            )
+        }
+    }
+
+    override suspend fun removeSearchHistory(id: Long) = withContext(dispatcher) {
+        searchHistoryDao.deleteById(id)
+    }
+
+    private fun SearchHistoryEntity.toSearchHistory() = SearchHistory(id, query)
 
     private fun <Entity, Model> setupFlow(
         databaseOp: () -> Flow<Entity>,
