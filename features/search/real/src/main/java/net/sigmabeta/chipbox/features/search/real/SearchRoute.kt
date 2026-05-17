@@ -2,12 +2,13 @@ package net.sigmabeta.chipbox.features.search.real
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
 import net.sigmabeta.chipbox.ui.chrome.ScreenChrome
-import net.sigmabeta.chipbox.ui.freeform.ChipboxFreeformEntry
 
 @Composable
 fun SearchRoute(
@@ -22,7 +23,19 @@ fun SearchRoute(
     }
 
     val viewModel: SearchViewModel = hiltViewModel()
-    ChipboxFreeformEntry(viewModel, onEvent, modifier) { model, actionSink, _, m ->
-        SearchContent(model, actionSink, m)
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect(onEvent)
     }
+
+    val actual by viewModel.uiStateActual.collectAsStateWithLifecycle()
+    val raw by viewModel.state.collectAsStateWithLifecycle()
+    val showDebug by viewModel.showDebug.collectAsStateWithLifecycle()
+
+    SearchContent(
+        listItems = actual.listItems,
+        query = raw.query,
+        showDebug = showDebug,
+        actionSink = viewModel,
+        modifier = modifier,
+    )
 }

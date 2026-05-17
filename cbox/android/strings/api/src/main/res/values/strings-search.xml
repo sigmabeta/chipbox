@@ -3,7 +3,6 @@
     <string name="search_screen_title">Search</string>
     <string name="search_hint">Search games, artists, tracks…</string>
     <string name="search_empty_prompt">Search your library</string>
-    <string name="search_searching">Searching…</string>
     <string name="search_no_results">No results for \"%s\"</string>
     <string name="search_section_games">Games</string>
     <string name="search_section_songs">Songs</string>

@@ -21,7 +21,8 @@ import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
-import net.sigmabeta.chipbox.ui.freeform.ChipboxFreeformViewModel
+import net.sigmabeta.chipbox.ui.list.ChipboxListViewModel
+import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
@@ -31,18 +32,23 @@ internal const val MIN_QUERY_LENGTH = 3
 private const val DEBOUNCE_MS = 300L
 private const val HISTORY_RECORD_DELAY_MS = 3_000L
 
+private const val OP_HISTORY = "search.history"
+private const val OP_GAMES = "search.games"
+private const val OP_SONGS = "search.songs"
+private const val OP_ARTISTS = "search.artists"
+
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val repository: Repository,
     stringProvider: StringProvider,
     hatchet: Hatchet,
-) : ChipboxFreeformViewModel<SearchState, SearchModel>(
+) : ChipboxListViewModel<SearchState>(
     SearchState(),
     stringProvider,
     hatchet,
 ) {
-    // Cancelled/restarted on every settled query, so only the query the user actually
-    // lingers on gets recorded (VGLS's startHistoryTimer behaviour).
+    // Cancelled/restarted on every settled query, so only the query the user lingers on
+    // is considered for recording (VGLS's startHistoryTimer behaviour).
     private var historyTimer: Job? = null
 
     init {
@@ -83,96 +89,41 @@ class SearchViewModel @Inject constructor(
     private fun observeSearchHistory() {
         viewModelScope.launch {
             repository.getSearchHistory().collect { data ->
-                when (data) {
-                    is Data.Succeeded -> updateState { it.copy(history = data.data) }
-                    Data.Empty -> updateState { it.copy(history = emptyList()) }
-                    // Keep the last list on transient loading / failure.
-                    Data.Loading, is Data.Failed -> Unit
-                }
+                updateState { it.copy(history = data.toLce(OP_HISTORY)) }
             }
         }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeGameResults() {
-        state
-            .map { it.submittedQuery }
-            .distinctUntilChanged()
-            .flatMapLatest { query ->
-                if (query.isBlank()) flowOf(Data.Empty) else repository.searchGames(query)
-            }
-            .onEach { data ->
-                updateState {
-                    when (data) {
-                        Data.Loading -> it.copy(gamesLoading = true)
-                        Data.Empty -> it.copy(gameResults = emptyList(), gamesLoading = false)
-                        is Data.Succeeded -> it.copy(
-                            gameResults = data.data,
-                            gamesLoading = false,
-                        )
-                        is Data.Failed -> it.copy(
-                            gameResults = emptyList(),
-                            gamesLoading = false,
-                        )
-                    }
-                }
-            }
+        searchResults({ repository.searchGames(it) }, OP_GAMES)
+            .onEach { lce -> updateState { it.copy(gameResults = lce) } }
             .launchIn(viewModelScope)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeSongResults() {
-        state
-            .map { it.submittedQuery }
-            .distinctUntilChanged()
-            .flatMapLatest { query ->
-                if (query.isBlank()) flowOf(Data.Empty) else repository.searchSongs(query)
-            }
-            .onEach { data ->
-                updateState {
-                    when (data) {
-                        Data.Loading -> it.copy(songsLoading = true)
-                        Data.Empty -> it.copy(songResults = emptyList(), songsLoading = false)
-                        is Data.Succeeded -> it.copy(
-                            songResults = data.data,
-                            songsLoading = false,
-                        )
-                        is Data.Failed -> it.copy(
-                            songResults = emptyList(),
-                            songsLoading = false,
-                        )
-                    }
-                }
-            }
+        searchResults({ repository.searchSongs(it) }, OP_SONGS)
+            .onEach { lce -> updateState { it.copy(songResults = lce) } }
             .launchIn(viewModelScope)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeArtistResults() {
-        state
-            .map { it.submittedQuery }
-            .distinctUntilChanged()
-            .flatMapLatest { query ->
-                if (query.isBlank()) flowOf(Data.Empty) else repository.searchArtists(query)
-            }
-            .onEach { data ->
-                updateState {
-                    when (data) {
-                        Data.Loading -> it.copy(artistsLoading = true)
-                        Data.Empty -> it.copy(artistResults = emptyList(), artistsLoading = false)
-                        is Data.Succeeded -> it.copy(
-                            artistResults = data.data,
-                            artistsLoading = false,
-                        )
-                        is Data.Failed -> it.copy(
-                            artistResults = emptyList(),
-                            artistsLoading = false,
-                        )
-                    }
-                }
-            }
+        searchResults({ repository.searchArtists(it) }, OP_ARTISTS)
+            .onEach { lce -> updateState { it.copy(artistResults = lce) } }
             .launchIn(viewModelScope)
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun <T> searchResults(
+        query: (String) -> kotlinx.coroutines.flow.Flow<Data<List<T>>>,
+        operation: String,
+    ) = state
+        .map { it.submittedQuery }
+        .distinctUntilChanged()
+        .flatMapLatest { q -> if (q.isBlank()) flowOf(Data.Empty) else query(q) }
+        .map { it.toLce(operation) }
 
     @OptIn(FlowPreview::class)
     private fun observeQueryForSubmit() {
@@ -183,16 +134,31 @@ class SearchViewModel @Inject constructor(
             .onEach { query ->
                 historyTimer?.cancel()
                 if (query.length >= MIN_QUERY_LENGTH) {
-                    // Run the search now (observeResults keys off submittedQuery).
+                    // Run the search now (the result observers key off submittedQuery).
                     updateState { it.copy(submittedQuery = query) }
-                    // Only the history write waits the full linger window, so a query
-                    // typed through on the way to another one isn't recorded.
+                    // Record to history only after the linger window, and only if the
+                    // search actually found something — matches VGLS.
                     historyTimer = viewModelScope.launch {
                         delay(HISTORY_RECORD_DELAY_MS)
-                        repository.addSearchHistory(query)
+                        val s = state.value
+                        if (s.submittedQuery == query && s.hasAnyResults()) {
+                            repository.addSearchHistory(query)
+                        }
                     }
                 }
             }
             .launchIn(viewModelScope)
     }
 }
+
+private fun <T> Data<List<T>>.toLce(operation: String): LCE<List<T>> = when (this) {
+    Data.Loading -> LCE.Loading(operation)
+    Data.Empty -> LCE.Content(emptyList())
+    is Data.Succeeded -> LCE.Content(data)
+    is Data.Failed -> LCE.Error(operation, IllegalStateException(message))
+}
+
+private fun LCE<List<*>>.hasContent(): Boolean = this is LCE.Content && data.isNotEmpty()
+
+private fun SearchState.hasAnyResults(): Boolean =
+    gameResults.hasContent() || songResults.hasContent() || artistResults.hasContent()

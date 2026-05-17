@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.features.search.real
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -12,122 +11,82 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.ui.components.ImageNameCaptionListItem
-import net.sigmabeta.chipbox.ui.components.ImageNameListItem
-import net.sigmabeta.chipbox.ui.components.SearchHistoryListItem
+import kotlinx.collections.immutable.ImmutableList
+import net.sigmabeta.chipbox.ui.components.Content
 import net.sigmabeta.sage.appcomm.ActionSink
+import net.sigmabeta.sage.components.ListModel
 
+/**
+ * Custom search screen: a results grid (the standard SAGE [ListModel] pipeline) with the
+ * [SearchBar] and a status-bar scrim overlaid on top — the same shape as VGLS's
+ * SearchScreen, just rendering Chipbox list models.
+ */
 @Composable
-@Suppress("LongMethod")
 internal fun SearchContent(
-    model: SearchModel,
+    listItems: ImmutableList<ListModel>,
+    query: String,
+    showDebug: Boolean,
     actionSink: ActionSink,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        val enoughToGetBelowSearchBar: Dp = 96.dp
+        val belowSearchBar: Dp = 96.dp
         val topInsets = WindowInsets.statusBars
-        val sidePadding = WindowInsets(left = 16.dp, right = 16.dp)
 
-        val contentPadding = WindowInsets(top = enoughToGetBelowSearchBar)
+        val contentPadding = WindowInsets(top = belowSearchBar)
             .add(topInsets)
-            .add(sidePadding)
+            .add(WindowInsets(left = 16.dp, right = 16.dp))
+            .add(WindowInsets.navigationBars)
             .asPaddingValues()
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(contentPadding),
+        val gridState = rememberLazyGridState()
+        LaunchedEffect(query) { gridState.animateScrollToItem(0) }
+
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Adaptive(160.dp),
+            contentPadding = contentPadding,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxSize(),
         ) {
-            // Until a query is *submitted* (recorded + run against the DB), show
-            // recent searches. After submit, show the games/songs/artists results.
-            val noResults = model.gameItems.isEmpty() &&
-                model.songItems.isEmpty() &&
-                model.artistItems.isEmpty()
-            if (model.submittedQuery.isBlank()) {
-                Text(
-                    text = model.emptyPrompt,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                )
-                model.historyItems.forEach { item ->
-                    SearchHistoryListItem(
-                        model = item,
-                        actionSink = actionSink,
-                        modifier = Modifier,
-                        padding = PaddingValues(),
-                    )
-                }
-            } else if (model.searching && noResults) {
-                Text(
-                    text = model.searchingLabel,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                )
-            } else if (noResults) {
-                Text(
-                    text = model.noResultsTemplate.format(model.submittedQuery),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 16.dp),
-                )
-            } else {
-                if (model.gameItems.isNotEmpty()) {
-                    SectionHeader(model.gamesSectionLabel)
-                    model.gameItems.forEach { item ->
-                        ImageNameListItem(
-                            model = item,
-                            actionSink = actionSink,
-                            modifier = Modifier,
-                            padding = PaddingValues(),
-                        )
+            items(
+                items = listItems,
+                key = { it.dataId },
+                contentType = { it.layoutId() },
+                span = {
+                    if (it.columns < 1) {
+                        GridItemSpan(maxLineSpan)
+                    } else {
+                        GridItemSpan(it.columns)
                     }
-                }
-                if (model.songItems.isNotEmpty()) {
-                    SectionHeader(model.songsSectionLabel)
-                    model.songItems.forEach { item ->
-                        ImageNameCaptionListItem(
-                            model = item,
-                            actionSink = actionSink,
-                            modifier = Modifier,
-                            padding = PaddingValues(),
-                        )
-                    }
-                }
-                if (model.artistItems.isNotEmpty()) {
-                    SectionHeader(model.artistsSectionLabel)
-                    model.artistItems.forEach { item ->
-                        ImageNameListItem(
-                            model = item,
-                            actionSink = actionSink,
-                            modifier = Modifier,
-                            padding = PaddingValues(),
-                        )
-                    }
-                }
+                },
+            ) {
+                it.Content(actionSink, showDebug, Modifier.animateItem(), PaddingValues())
             }
         }
 
         val topPaddingForSearchBar = topInsets.asPaddingValues().calculateTopPadding()
 
         SearchBar(
-            model = model,
+            text = query,
             actionSink = actionSink,
             modifier = Modifier.padding(top = topPaddingForSearchBar + 16.dp),
         )
@@ -145,16 +104,6 @@ internal fun SearchContent(
                 ),
         )
     }
-}
-
-@Composable
-private fun SectionHeader(label: String) {
-    Text(
-        text = label,
-        style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp),
-    )
 }
 
 @Suppress("MagicNumber")
