@@ -1,9 +1,7 @@
 package net.sigmabeta.chipbox.features.playbackstatus.real
 
 import java.net.URLDecoder
-import net.sigmabeta.chipbox.models.Track
-import net.sigmabeta.chipbox.player.common.Session
-import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
+import net.sigmabeta.chipbox.debuginfo.PlaybackDebugInfo
 import net.sigmabeta.chipbox.strings.ChipboxStringId
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.LabelValueListModel
@@ -14,9 +12,7 @@ import net.sigmabeta.sage.list.ListState
 import net.sigmabeta.sage.ui.StringProvider
 
 data class PlaybackStatusState(
-    val track: Track? = null,
-    val playback: ChipboxPlaybackState? = null,
-    val session: Session? = null,
+    val debug: PlaybackDebugInfo? = null,
 ) : ListState() {
 
     override fun title(stringProvider: StringProvider) = TitleBarModel(
@@ -28,94 +24,232 @@ data class PlaybackStatusState(
         addAll(playbackSection(stringProvider))
         addAll(trackSection(stringProvider))
         addAll(sessionSection(stringProvider))
+        addAll(generatorSection(stringProvider))
+        addAll(speakerSection(stringProvider))
+        addAll(bufferSection(stringProvider))
     }
 
-    private fun playbackSection(stringProvider: StringProvider): List<ListModel> = listOf(
-        section(stringProvider, ChipboxStringId.PLAYBACK_STATUS_SECTION_PLAYBACK),
-        row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_STATE, playback?.state?.name),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_POSITION_MS,
-            playback?.position?.toString()
-        ),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_LENGTH_MS,
-            track?.trackLengthMs?.toString()
-        ),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_BUFFER_AHEAD_MS,
-            playback?.let { (it.generatorProducedMs - it.position).toString() }
-        ),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_PLAYBACK_SPEED,
-            playback?.playbackSpeed?.toString()
-        ),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_SKIP_FORWARD,
-            playback?.skipForwardAllowed?.toString()
-        ),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_ERROR_MESSAGE,
-            playback?.errorMessage ?: "—"
-        ),
-    )
+    private fun playbackSection(stringProvider: StringProvider): List<ListModel> {
+        val playback = debug?.playback
+        val track = debug?.track
+        return listOf(
+            section(stringProvider, ChipboxStringId.PLAYBACK_STATUS_SECTION_PLAYBACK),
+            row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_STATE, playback?.state?.name),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_POSITION_MS,
+                playback?.position?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_LENGTH_MS,
+                track?.trackLengthMs?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_BUFFER_AHEAD_MS,
+                playback?.let { (it.generatorProducedMs - it.position).toString() }
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_PLAYBACK_SPEED,
+                playback?.playbackSpeed?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_SKIP_FORWARD,
+                playback?.skipForwardAllowed?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_ERROR_MESSAGE,
+                playback?.errorMessage ?: "—"
+            ),
+        )
+    }
 
-    private fun trackSection(stringProvider: StringProvider): List<ListModel> = listOf(
-        section(stringProvider, ChipboxStringId.PLAYBACK_STATUS_SECTION_TRACK),
-        row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_TITLE, track?.title),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_ARTISTS,
-            track?.artists?.joinToString { it.name }
-        ),
-        row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_GAME, track?.game?.title),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_TRACK_NUMBER,
-            track?.trackNumber?.toString()
-        ),
-        row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_SOURCE, track?.source),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_FADE,
-            track?.fadeLengthMs?.let { "${it}ms" },
-        ),
-        row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_PATH, shortenPath(track?.path)),
-    )
+    private fun trackSection(stringProvider: StringProvider): List<ListModel> {
+        val track = debug?.track
+        return listOf(
+            section(stringProvider, ChipboxStringId.PLAYBACK_STATUS_SECTION_TRACK),
+            row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_TITLE, track?.title),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_ARTISTS,
+                track?.artists?.joinToString { it.name }
+            ),
+            row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_GAME, track?.game?.title),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_TRACK_NUMBER,
+                track?.trackNumber?.toString()
+            ),
+            row(stringProvider, ChipboxStringId.PLAYBACK_STATUS_LABEL_SOURCE, track?.source),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_FADE,
+                track?.fadeLengthMs?.let { "${it}ms" },
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_PATH,
+                shortenPath(track?.path)
+            ),
+        )
+    }
 
-    private fun sessionSection(stringProvider: StringProvider): List<ListModel> = listOf(
-        section(stringProvider, ChipboxStringId.PLAYBACK_STATUS_SECTION_SESSION),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_SESSION_ID,
-            session?.id?.toString()
-        ),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_SESSION_TYPE,
-            session?.type?.name
-        ),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_CONTENT_ID,
-            session?.contentId?.toString()
-        ),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_CURRENT_POSITION,
-            session?.currentPosition?.toString()
-        ),
-        row(
-            stringProvider,
-            ChipboxStringId.PLAYBACK_STATUS_LABEL_SHUFFLED,
-            session?.shuffled?.toString()
-        ),
-    )
+    private fun sessionSection(stringProvider: StringProvider): List<ListModel> {
+        val session = debug?.session
+        return listOf(
+            section(stringProvider, ChipboxStringId.PLAYBACK_STATUS_SECTION_SESSION),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_SESSION_ID,
+                session?.id?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_SESSION_TYPE,
+                session?.type?.name
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_CONTENT_ID,
+                session?.contentId?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_CURRENT_POSITION,
+                session?.currentPosition?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_SHUFFLED,
+                session?.shuffled?.toString()
+            ),
+        )
+    }
+
+    private fun generatorSection(stringProvider: StringProvider): List<ListModel> {
+        val generator = debug?.generator
+        return listOf(
+            section(stringProvider, ChipboxStringId.PLAYBACK_STATUS_SECTION_GENERATOR),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_TRACK_ID,
+                generator?.currentTrackId?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_TRACK_TITLE,
+                generator?.currentTrackTitle
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_SAMPLE_RATE,
+                generator?.sampleRate?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_PRODUCED_MS,
+                generator?.producedMs?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_FRAMES_PLAYED,
+                generator?.framesPlayed?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_LOOPING,
+                generator?.looping?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_LAST_EVENT,
+                generator?.lastEvent?.let { it::class.simpleName }
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_LAST_ERROR,
+                generator?.lastError ?: "—"
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_GEN_SOURCE_DIAG,
+                generator?.sourceDiagnostics ?: "—"
+            ),
+        )
+    }
+
+    private fun speakerSection(stringProvider: StringProvider): List<ListModel> {
+        val speaker = debug?.speaker
+        return listOf(
+            section(stringProvider, ChipboxStringId.PLAYBACK_STATUS_SECTION_SPEAKER),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_TRACK_ID,
+                speaker?.playingTrackId?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_POSITION_MS,
+                speaker?.positionMs?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_CONSUME_LOOP,
+                speaker?.consumeLoopRunning?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_LAST_EVENT,
+                speaker?.lastEvent?.let { it::class.simpleName }
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_UNDERRUNS,
+                speaker?.underrunCount?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_LAST_ERROR,
+                speaker?.lastError ?: "—"
+            ),
+        )
+    }
+
+    private fun bufferSection(stringProvider: StringProvider): List<ListModel> {
+        val buffer = debug?.buffer
+        return listOf(
+            section(stringProvider, ChipboxStringId.PLAYBACK_STATUS_SECTION_BUFFER),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_SAMPLE_RATE,
+                buffer?.sampleRate?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_CAPACITY,
+                buffer?.capacity?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_FULL_QUEUED,
+                buffer?.fullBuffersQueued?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_EMPTY_AVAIL,
+                buffer?.emptyArraysAvailable?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_DRAIN_COUNT,
+                buffer?.drainCount?.toString()
+            ),
+        )
+    }
 
     private fun section(stringProvider: StringProvider, id: ChipboxStringId) =
         SectionHeaderListModel(title = stringProvider.getString(id))

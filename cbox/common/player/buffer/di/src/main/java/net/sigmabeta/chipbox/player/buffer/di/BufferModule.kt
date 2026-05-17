@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import net.sigmabeta.chipbox.player.buffer.BufferDebugSource
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager
@@ -24,4 +25,8 @@ object BufferModule {
     @Provides
     @Singleton
     fun provideProducerBufferManager(bufferManager: RealBufferManager): ProducerBufferManager = bufferManager
+
+    @Provides
+    @Singleton
+    fun provideBufferDebugSource(bufferManager: RealBufferManager): BufferDebugSource = bufferManager
 }
