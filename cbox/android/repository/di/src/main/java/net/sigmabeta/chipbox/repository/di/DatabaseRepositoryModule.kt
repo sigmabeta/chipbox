@@ -15,7 +15,8 @@ import javax.inject.Singleton
 object DatabaseRepositoryModule {
     @Provides
     @Singleton
-    fun provideRepository(database: ChipboxDatabase, hatchet: Hatchet): Repository = provideDatabaseRepository(database, hatchet)
+    fun provideRepository(database: ChipboxDatabase, hatchet: Hatchet): Repository =
+        provideDatabaseRepository(database, hatchet)
 
     @Provides
     @Singleton

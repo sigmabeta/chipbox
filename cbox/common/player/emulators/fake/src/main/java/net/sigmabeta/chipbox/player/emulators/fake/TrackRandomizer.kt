@@ -140,7 +140,8 @@ object TrackRandomizer {
         else -> random.nextValue(arrayOf(TimeSignature.MARCH, TimeSignature.WALTZ))
     }
 
-    private fun Double.adjustForTimeSignature(timeSignature: TimeSignature): Double = when (timeSignature.durationOfBeat) {
+    private fun Double.adjustForTimeSignature(timeSignature: TimeSignature): Double =
+        when (timeSignature.durationOfBeat) {
             Duration.HALF -> this / 2.0
 
             Duration.QUARTER -> this

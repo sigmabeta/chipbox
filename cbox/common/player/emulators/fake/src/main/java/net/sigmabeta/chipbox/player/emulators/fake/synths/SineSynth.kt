@@ -12,7 +12,8 @@ object SineSynth : Synth {
             amplitude
         )
 
-    private fun sineValueAtMillis(timeMillis: Double, frequency: Double, amplitude: Double) = frequency.rateInMillis() // Frequency in cycles per millis
+    private fun sineValueAtMillis(timeMillis: Double, frequency: Double, amplitude: Double) =
+        frequency.rateInMillis() // Frequency in cycles per millis
             .times(timeMillis) // Time in millis
             .times(SCALE_FACTOR) // 2 PI
             .let { sin(it) } // Sample a sine wave at the radian value calculated above

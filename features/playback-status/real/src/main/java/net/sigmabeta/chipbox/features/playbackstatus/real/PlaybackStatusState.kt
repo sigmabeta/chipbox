@@ -117,7 +117,8 @@ data class PlaybackStatusState(
         ),
     )
 
-    private fun section(stringProvider: StringProvider, id: ChipboxStringId) = SectionHeaderListModel(title = stringProvider.getString(id))
+    private fun section(stringProvider: StringProvider, id: ChipboxStringId) =
+        SectionHeaderListModel(title = stringProvider.getString(id))
 
     private fun row(stringProvider: StringProvider, id: ChipboxStringId, value: String?) = LabelValueListModel(
             label = stringProvider.getString(id),

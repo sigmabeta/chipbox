@@ -144,7 +144,8 @@ class RealBufferManager(
         hatchet.d("drain: returned $drained buffer(s) to the old empty pool.")
     }
 
-    override suspend fun getNextEmptyBuffer(): ShortArray = emptyArrays?.receive() ?: throw IllegalStateException("Set up buffers first!")
+    override suspend fun getNextEmptyBuffer(): ShortArray =
+        emptyArrays?.receive() ?: throw IllegalStateException("Set up buffers first!")
 
     companion object {
         const val BUFFER_SIZE_BYTES_DEFAULT = 8192
