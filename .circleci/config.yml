@@ -1,40 +1,206 @@
 version: 2
 
+submodule_init: &submodule_init
+  run:
+    name: Initialize submodules
+    command: git submodule sync && git submodule update --init --recursive
+
+workflows:
+  version: 2
+  build_analyze:
+    jobs:
+      - setup
+      - kt-lint:
+          requires:
+            - setup
+      - detekt:
+          requires:
+            - setup
+      - android-lint:
+          requires:
+            - setup
+      - screenshot-test:
+          requires:
+            - setup
+      - build_release_apk:
+          requires:
+            - kt-lint
+            - detekt
+            - android-lint
+
+##################################################
+
 jobs:
-  build:
+  setup:
+    resource_class: medium
+
     docker:
-    - image: circleci/android:api-27
-    - image: circleci/openjdk:8-jdk
+      - image: cimg/android:2024.04.1
 
     environment:
       JVM_OPTS: -Xmx3200m
 
     steps:
-    - checkout
-    - run:
-        name: Accept Android SDK licenses
-        command: (yes || true) | /opt/android/sdk/cmdline-tools/tools/bin/sdkmanager --licenses
-    - restore_cache:
-        key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
-    - run:
-        name: Set Environment Vars
-        command: echo apiSecret=$FABRIC_SECRET > app/fabric.properties
-    - run:
-        name: Chmod permissions #if permission for Gradlew Dependencies fail, use this.
-        command: sudo chmod +x ./gradlew
-    - run:
-        name: Download Dependencies
-        command: ./gradlew androidDependencies
-    - save_cache:
-        key: jars-{{ checksum "build.gradle" }}-{{ checksum  "app/build.gradle" }}
-        paths:
-        - ~/.gradle
-    - run:
-        name: Get all Git tags
-        command: git fetch --tags
-    - run:
-        name: Build App Remastered
-        command: ./gradlew app-remaster:assembleRelease -PdisablePreDex
-    - store_artifacts: # for display in Artifacts: https://circleci.com/docs/2.0/artifacts/
-        path: app/build/outputs/
-        destination: artifacts
+      - restore_cache:
+          keys:
+            - source-v1-{{ .Branch }}-{{ .Revision }}
+            - source-v1-{{ .Branch }}-
+            - source-v1-
+      - checkout
+      - *submodule_init
+      - restore_cache:
+          key: jars-v1-
+      - run:
+          name: Download Dependencies
+          command: ./gradlew androidDependencies --no-configuration-cache --no-daemon --max-workers=1
+      - save_cache:
+          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+          paths:
+            - ~/.gradle
+      - run:
+          name: Get all Git tags
+          command: git fetch --prune --prune-tags && git fetch --tags -f
+      - save_cache:
+          key: source-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ".git"
+            - "sage"
+
+  kt-lint:
+    docker:
+      - image: cimg/android:2024.04.1
+
+    environment:
+      JVM_OPTS: -Xmx2048m
+
+    steps:
+      - restore_cache:
+          keys:
+            - source-v1-{{ .Branch }}-{{ .Revision }}
+            - source-v1-{{ .Branch }}-
+            - source-v1-
+      - checkout
+      - *submodule_init
+      - restore_cache:
+          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+      - run:
+          name: Run Ktlint
+          command: ./ktlint-check.sh
+      - store_artifacts:
+          path: ktlint.html
+          destination: ktlint-reports
+
+  detekt:
+    resource_class: medium
+
+    docker:
+      - image: cimg/android:2024.04.1
+
+    environment:
+      JVM_OPTS: -Xmx3200m
+
+    steps:
+      - restore_cache:
+          keys:
+            - source-v1-{{ .Branch }}-{{ .Revision }}
+            - source-v1-{{ .Branch }}-
+            - source-v1-
+      - checkout
+      - *submodule_init
+      - restore_cache:
+          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+      - run:
+          name: Run Detekt checks
+          command: ./gradlew detekt --no-configuration-cache --no-daemon --max-workers=2
+
+  android-lint:
+    resource_class: large
+
+    docker:
+      - image: cimg/android:2024.04.1
+
+    environment:
+      # Start off with a 4GB heap size; expand up to 6GB
+      JVM_OPTS: -Xms4g -Xmx6g
+
+    steps:
+      - restore_cache:
+          keys:
+            - source-v1-{{ .Branch }}-{{ .Revision }}
+            - source-v1-{{ .Branch }}-
+            - source-v1-
+      - checkout
+      - *submodule_init
+      - restore_cache:
+          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+      - run:
+          name: Run Android Lint checks
+          command: ./gradlew :app:lintRelease --no-configuration-cache --no-daemon --max-workers=4
+      - store_artifacts:
+          path: app/build/reports/
+          destination: reports
+
+  screenshot-test:
+    resource_class: large
+
+    docker:
+      - image: cimg/android:2024.04.1
+
+    environment:
+      JVM_OPTS: -Xmx512m
+
+    steps:
+      - restore_cache:
+          keys:
+            - source-v1-{{ .Branch }}-{{ .Revision }}
+            - source-v1-{{ .Branch }}-
+            - source-v1-
+      - checkout
+      - *submodule_init
+      - restore_cache:
+          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+      - run:
+          name: Pull Paparazzi golden snapshots from Git LFS
+          command: git lfs install --local && git lfs pull
+      - run:
+          name: Compare screenshot tests
+          command: ./gradlew verifyPaparazziDebug --no-configuration-cache --no-daemon --max-workers=2
+      - store_artifacts:
+          path: features/search/screenshot/build/paparazzi/failures/
+          destination: failure-screenshots/search
+      - store_artifacts:
+          path: features/artist-detail/screenshot/build/paparazzi/failures/
+          destination: failure-screenshots/artist-detail
+      - store_artifacts:
+          path: features/game-detail/screenshot/build/paparazzi/failures/
+          destination: failure-screenshots/game-detail
+
+  build_release_apk:
+    resource_class: large
+
+    docker:
+      - image: cimg/android:2024.04.1
+
+    environment:
+      # Start off with a 4GB heap size; expand up to 6GB
+      JVM_OPTS: -Xms4g -Xmx6g
+
+    steps:
+      - restore_cache:
+          keys:
+            - source-v1-{{ .Branch }}-{{ .Revision }}
+            - source-v1-{{ .Branch }}-
+            - source-v1-
+      - checkout
+      - *submodule_init
+      - restore_cache:
+          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+      # Release signing reads CHIPBOX_KEY_ALIAS / CHIPBOX_KEYSTORE_PASSWORD /
+      # CHIPBOX_KEY_PASSWORD from CircleCI project env vars (chipbox.jks is
+      # committed at the repo root). Without them the APK is debug-signed.
+      - run:
+          name: Build Release
+          command: ./gradlew :app:assembleRelease -PdisablePreDex --no-configuration-cache --no-daemon --max-workers=4
+      - store_artifacts:
+          path: app/build/outputs/apk/release
+          destination: outputs
