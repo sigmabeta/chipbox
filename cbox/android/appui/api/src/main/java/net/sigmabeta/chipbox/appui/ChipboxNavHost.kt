@@ -15,7 +15,8 @@ import androidx.navigation.compose.composable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
-import net.sigmabeta.chipbox.appui.screens.SearchScreen
+import net.sigmabeta.chipbox.features.search.Search
+import net.sigmabeta.chipbox.features.search.real.SearchRoute
 import net.sigmabeta.chipbox.features.browsealltracks.BrowseAllTracks
 import net.sigmabeta.chipbox.features.browsealltracks.BrowseAllTracksRoute
 import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtist
@@ -77,7 +78,7 @@ fun ChipboxNavHost(
         modifier = modifier,
     ) {
         chipboxComposable<Library> { LibraryRoute(onEvent) }
-        chipboxComposable<Search> { SearchScreen() }
+        chipboxComposable<Search> { SearchRoute(onEvent) }
         chipboxComposable<Settings> { SettingsRoute(onEvent) }
         chipboxComposable<NowPlaying> { NowPlayingRoute(onEvent) }
         chipboxComposable<BrowseByGame> { BrowseByGameRoute(onEvent) }

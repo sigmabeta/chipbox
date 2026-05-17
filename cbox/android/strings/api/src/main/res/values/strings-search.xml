@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="search_screen_title">Search</string>
+    <string name="search_hint">Search games, artists, tracks…</string>
+    <string name="search_empty_prompt">Search your library</string>
+    <string name="search_fake_recent_1">Chrono Trigger</string>
+    <string name="search_fake_recent_2">Yoko Shimomura</string>
+    <string name="search_fake_recent_3">Final Fantasy VI</string>
+    <string name="search_coming_soon">Search coming soon: %s</string>
+    <string name="accy_cdesc_topbar_back">Back</string>
+    <string name="accy_cdesc_search_clear">Clear search</string>
+</resources>

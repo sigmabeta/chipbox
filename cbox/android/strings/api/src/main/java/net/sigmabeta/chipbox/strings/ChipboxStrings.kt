@@ -9,9 +9,18 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.ACCY_ST_DESC_CHECKED   -> R.string.accy_st_desc_checked
     ChipboxStringId.ACCY_ST_DESC_LOADING   -> R.string.accy_st_desc_loading
     ChipboxStringId.ACCY_ST_DESC_UNCHECKED -> R.string.accy_st_desc_unchecked
+    ChipboxStringId.ACCY_CDESC_TOPBAR_BACK  -> R.string.accy_cdesc_topbar_back
+    ChipboxStringId.ACCY_CDESC_SEARCH_CLEAR -> R.string.accy_cdesc_search_clear
     ChipboxStringId.APPUI_TAB_LIBRARY      -> R.string.appui_tab_library
     ChipboxStringId.APPUI_TAB_SEARCH       -> R.string.appui_tab_search
     ChipboxStringId.APPUI_TAB_SETTINGS     -> R.string.appui_tab_settings
+    ChipboxStringId.SEARCH_SCREEN_TITLE   -> R.string.search_screen_title
+    ChipboxStringId.SEARCH_HINT           -> R.string.search_hint
+    ChipboxStringId.SEARCH_EMPTY_PROMPT   -> R.string.search_empty_prompt
+    ChipboxStringId.SEARCH_FAKE_RECENT_1  -> R.string.search_fake_recent_1
+    ChipboxStringId.SEARCH_FAKE_RECENT_2  -> R.string.search_fake_recent_2
+    ChipboxStringId.SEARCH_FAKE_RECENT_3  -> R.string.search_fake_recent_3
+    ChipboxStringId.SEARCH_COMING_SOON    -> R.string.search_coming_soon
     ChipboxStringId.LIBRARY_BROWSE_BY_GAME         -> R.string.library_browse_by_game
     ChipboxStringId.LIBRARY_BROWSE_BY_GAME_EMPTY   -> R.string.library_browse_by_game_empty
     ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST       -> R.string.library_browse_by_artist
