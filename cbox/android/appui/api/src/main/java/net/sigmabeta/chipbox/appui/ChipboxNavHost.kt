@@ -1,5 +1,8 @@
 package net.sigmabeta.chipbox.appui
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.material3.SnackbarDuration
@@ -70,6 +73,19 @@ fun ChipboxNavHost(
                     withDismissAction = event.withDismissAction,
                     duration = SnackbarDuration.Short,
                 )
+            }
+
+            is ChipboxEvent.CopyToClipboard -> {
+                val clipboard = context
+                    .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText(event.label, event.text))
+                snackbarScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "${event.label} copied to clipboard",
+                        withDismissAction = true,
+                        duration = SnackbarDuration.Short,
+                    )
+                }
             }
 
             // Screen-local effects intercepted by their owning route (see SettingsRoute);
