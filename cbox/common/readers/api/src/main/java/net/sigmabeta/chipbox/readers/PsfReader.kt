@@ -17,7 +17,8 @@ data class PsfTagInfo(
 
 class PsfReader(private val hatchet: Hatchet) : Reader() {
 
-    override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? = readTagInfo(bytes)?.let { listOf(buildRawTrack(it.tags, identifier, it.platform)) }
+    override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? =
+        readTagInfo(bytes)?.let { listOf(buildRawTrack(it.tags, identifier, it.platform)) }
 
     fun readTagInfo(bytes: ByteArray): PsfTagInfo? {
         val fileAsByteBuffer = bytesAsByteBuffer(bytes)

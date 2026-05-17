@@ -147,7 +147,8 @@ class LibraryBrowser @Inject constructor(
         }
     }
 
-    private suspend fun browseTracks(parentMediaId: String): List<MediaItem>? = when (parentMediaId.substringAfterLast(".")) {
+    private suspend fun browseTracks(parentMediaId: String): List<MediaItem>? =
+        when (parentMediaId.substringAfterLast(".")) {
             ID_TOP -> getAllTracksMenuItems()
             else -> null
         }

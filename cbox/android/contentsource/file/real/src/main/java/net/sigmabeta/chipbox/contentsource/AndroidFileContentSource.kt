@@ -25,7 +25,8 @@ class AndroidFileContentSource(
 
     override val sourceId: String = SOURCE_ID
 
-    override suspend fun openBytes(identifier: String): ByteArray? = openInputStream(Uri.parse(identifier))?.use { it.readBytes() }
+    override suspend fun openBytes(identifier: String): ByteArray? =
+        openInputStream(Uri.parse(identifier))?.use { it.readBytes() }
 
     private val _libraryLocations = MutableStateFlow<List<LibraryLocation>>(emptyList())
     val libraryLocations: StateFlow<List<LibraryLocation>> = _libraryLocations.asStateFlow()

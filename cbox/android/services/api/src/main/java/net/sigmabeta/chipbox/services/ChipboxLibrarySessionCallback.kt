@@ -25,7 +25,8 @@ class ChipboxLibrarySessionCallback(
         session: MediaLibrarySession,
         browser: MediaSession.ControllerInfo,
         params: LibraryParams?,
-    ): ListenableFuture<LibraryResult<MediaItem>> = Futures.immediateFuture(LibraryResult.ofItem(libraryBrowser.rootItem(), params))
+    ): ListenableFuture<LibraryResult<MediaItem>> =
+        Futures.immediateFuture(LibraryResult.ofItem(libraryBrowser.rootItem(), params))
 
     override fun onGetChildren(
         session: MediaLibrarySession,

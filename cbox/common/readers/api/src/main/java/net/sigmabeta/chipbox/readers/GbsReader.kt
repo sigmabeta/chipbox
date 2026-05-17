@@ -53,7 +53,8 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
         }
     }
 
-    private fun getNumberOfTracks(fileAsBytes: ByteArray): Int = fileAsBytes[OFFSET_NUMBER_OF_SONGS].toInt() and BYTE_MASK
+    private fun getNumberOfTracks(fileAsBytes: ByteArray): Int =
+        fileAsBytes[OFFSET_NUMBER_OF_SONGS].toInt() and BYTE_MASK
 
     private fun getGameTitle(fileAsBytes: ByteArray): String = try {
             fileAsBytes

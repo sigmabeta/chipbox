@@ -147,7 +147,8 @@ jobs:
             - build-cache-detekt-v1-
       - run:
           name: Run Detekt checks
-          command: ./gradlew detekt --build-cache --configuration-cache --no-daemon --max-workers=2
+          # --continue so a failing module doesn't mask violations in others.
+          command: ./gradlew detekt --continue --build-cache --configuration-cache --no-daemon --max-workers=2
       - save_cache:
           key: build-cache-detekt-v1-{{ .Branch }}-{{ .Revision }}
           paths:

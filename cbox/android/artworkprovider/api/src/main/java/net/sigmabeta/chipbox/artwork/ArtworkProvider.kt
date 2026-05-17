@@ -77,7 +77,8 @@ class ArtworkProvider : ContentProvider() {
         sortOrder: String?,
     ): Cursor? = null
 
-    override fun insert(uri: Uri, values: ContentValues?): Uri? = throw UnsupportedOperationException("ArtworkProvider is read-only")
+    override fun insert(uri: Uri, values: ContentValues?): Uri? =
+        throw UnsupportedOperationException("ArtworkProvider is read-only")
 
     override fun update(
         uri: Uri,

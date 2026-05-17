@@ -77,7 +77,8 @@ private fun String.splitByUnescapedCommas() = split(Regex("(?<!\\\\),"))
  * sometimes mangled to "�..." by an upstream encoding error. Either the copyright sigil or a
  * 4-digit year is a strong enough signal to anchor right-side parsing.
  */
-private fun String.looksLikeCopyright(): Boolean = contains('©') || contains('�') || Regex("""\b(19|20)\d{2}\b""").containsMatchIn(this)
+private fun String.looksLikeCopyright(): Boolean =
+    contains('©') || contains('�') || Regex("""\b(19|20)\d{2}\b""").containsMatchIn(this)
 
 // Zophar compound meta is "Title - Artist - Game - Copyright" split on " - ".
 private const val COMPOUND_TAG_MIN_PARTS = 4

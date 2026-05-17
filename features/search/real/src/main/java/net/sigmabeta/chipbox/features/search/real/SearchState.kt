@@ -130,7 +130,8 @@ data class SearchState(
             }
         }
 
-    private fun artistItems(stringProvider: StringProvider): List<ListModel> = artistResults.withStandardErrorAndLoading(
+    private fun artistItems(stringProvider: StringProvider): List<ListModel> =
+        artistResults.withStandardErrorAndLoading(
             loadingType = LoadingType.SQUARE,
             loadingItemCount = RESULT_LOADING_COUNT,
         ) {

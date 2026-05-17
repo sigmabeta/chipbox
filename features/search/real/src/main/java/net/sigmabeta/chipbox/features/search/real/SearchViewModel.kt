@@ -166,4 +166,5 @@ private fun <T> Data<List<T>>.toLce(operation: String): LCE<List<T>> = when (thi
 
 private fun LCE<List<*>>.hasContent(): Boolean = this is LCE.Content && data.isNotEmpty()
 
-private fun SearchState.hasAnyResults(): Boolean = gameResults.hasContent() || songResults.hasContent() || artistResults.hasContent()
+private fun SearchState.hasAnyResults(): Boolean =
+    gameResults.hasContent() || songResults.hasContent() || artistResults.hasContent()

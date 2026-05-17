@@ -47,7 +47,8 @@ fun String?.orUnknown(): String {
     return this
 }
 
-internal fun bytesAsByteBuffer(bytes: ByteArray): ByteBuffer = ByteBuffer.wrap(bytes, 0, bytes.size).order(ByteOrder.LITTLE_ENDIAN)
+internal fun bytesAsByteBuffer(bytes: ByteArray): ByteBuffer =
+    ByteBuffer.wrap(bytes, 0, bytes.size).order(ByteOrder.LITTLE_ENDIAN)
 
 internal fun String.toLengthMillis(): Long {
     val splitText = split(":")
