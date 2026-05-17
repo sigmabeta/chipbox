@@ -17,7 +17,6 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.SEARCH_SCREEN_TITLE   -> R.string.search_screen_title
     ChipboxStringId.SEARCH_HINT           -> R.string.search_hint
     ChipboxStringId.SEARCH_EMPTY_PROMPT   -> R.string.search_empty_prompt
-    ChipboxStringId.SEARCH_SEARCHING      -> R.string.search_searching
     ChipboxStringId.SEARCH_NO_RESULTS     -> R.string.search_no_results
     ChipboxStringId.SEARCH_SECTION_GAMES  -> R.string.search_section_games
     ChipboxStringId.SEARCH_SECTION_SONGS  -> R.string.search_section_songs

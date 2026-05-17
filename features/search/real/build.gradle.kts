@@ -12,8 +12,9 @@ dependencies {
     api(projects.features.search.api)
 
     implementation(projects.cbox.android.ui.chrome.api)
-    implementation(projects.cbox.android.ui.freeform.api)
+    implementation(projects.cbox.android.ui.list.api)
     implementation(projects.cbox.android.ui.components.api)
+    implementation(projects.cbox.android.strings.api)
     implementation(projects.cbox.common.appcomm.api)
     implementation(projects.cbox.common.strings.api)
     implementation(projects.cbox.common.repository.api)
@@ -22,7 +23,6 @@ dependencies {
     implementation(projects.features.artistDetail.api)
 
     implementation(libs.sage.common.appcomm)
-    implementation(libs.sage.common.freeform)
     implementation(libs.sage.common.images)
     implementation(libs.sage.common.ui.components)
     implementation(libs.sage.common.ui.strings)

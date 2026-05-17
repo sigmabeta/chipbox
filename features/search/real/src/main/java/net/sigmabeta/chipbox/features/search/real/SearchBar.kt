@@ -24,8 +24,10 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.strings.ChipboxStringId
+import net.sigmabeta.chipbox.strings.id
 import net.sigmabeta.chipbox.ui.components.subs.MenuActionIcon
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon
@@ -35,12 +37,10 @@ private val SidePadding = 16.dp
 @Composable
 @Suppress("LongMethod")
 fun SearchBar(
-    model: SearchModel,
+    text: String,
     actionSink: ActionSink,
     modifier: Modifier,
 ) {
-    val text = model.query
-
     val shape = RoundedCornerShape(32.dp)
 
     val commonModifier = modifier
@@ -91,7 +91,7 @@ fun SearchBar(
 
                 this@Row.AnimatedVisibility(visible = textEmpty) {
                     Text(
-                        text = model.hint,
+                        text = stringResource(ChipboxStringId.SEARCH_HINT.id()),
                         style = MaterialTheme.typography.titleMedium.copy(
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         ),
