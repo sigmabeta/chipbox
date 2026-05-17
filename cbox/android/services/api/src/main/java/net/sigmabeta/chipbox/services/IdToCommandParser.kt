@@ -23,6 +23,7 @@ object IdToCommandParser {
                     startingTrackId = trackId.toLong()
                 )
             )
+
             LibraryBrowser.COMMAND_ARTISTS -> director.start(
                 Session(
                     SessionType.ARTIST,
@@ -30,6 +31,7 @@ object IdToCommandParser {
                     startingTrackId = trackId.toLong()
                 )
             )
+
             LibraryBrowser.COMMAND_TRACKS -> director.start(
                 // contentId is unused for ALL_TRACKS (per SessionType docs); parentId here
                 // is the placeholder "top" segment.
@@ -39,8 +41,8 @@ object IdToCommandParser {
                     startingTrackId = trackId.toLong()
                 )
             )
+
             else -> hatchet.w("Unhandled media command type '$type' (mediaId=$mediaId); ignoring.")
         }
     }
-
 }

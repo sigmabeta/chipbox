@@ -102,9 +102,7 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
         )
     }
 
-
-    private fun isSpcFile(header: String) =
-        header.contentEquals(HEADER_MAGIC)
+    private fun isSpcFile(header: String) = header.contentEquals(HEADER_MAGIC)
 
     /**
      * Parse the extended ID666 (xid6) chunk that may follow the standard 0x10200-byte SPC body.
@@ -131,7 +129,9 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
             val data = buf.short.toInt() and SHORT_MASK
 
             when (type) {
-                XID6_TYPE_INLINE -> Unit // 16-bit value lives in `data`; no payload follows.
+                XID6_TYPE_INLINE -> Unit
+
+                // 16-bit value lives in `data`; no payload follows.
                 XID6_TYPE_STRING, XID6_TYPE_INTEGER -> {
                     if (data == 0) continue
                     if (buf.position() + data > end) break
@@ -153,6 +153,7 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
                         }
                     }
                 }
+
                 else -> break // Unknown type — bail to avoid misaligning subsequent reads.
             }
         }
@@ -163,8 +164,10 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
 
     companion object {
         private const val HEADER_MAGIC = "SNES-SPC700 Sound File Data v0.30"
+
         // 33-byte magic string (32 chars + the trailing v-version digit) is read up front.
         private const val HEADER_MAGIC_SIZE = 33
+
         // 3-byte field after the magic; its last byte is 0x1A when ID666 metadata is present.
         private const val LENGTH_HEADER_INFO_FIELD = 3
         private const val MILLIS_PER_SECOND = 1_000L

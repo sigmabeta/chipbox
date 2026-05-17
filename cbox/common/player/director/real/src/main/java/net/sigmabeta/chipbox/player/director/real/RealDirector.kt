@@ -133,8 +133,11 @@ class RealDirector(
 
             val firstTrackId = when {
                 session.startingTrackId != null -> session.startingTrackId
+
                 session.currentPosition != null -> setlistForSession[session.currentPosition!!]
+
                 session.startingPosition != null -> setlistForSession[session.startingPosition!!]
+
                 else -> {
                     emitError("Unable to find a track id to play.")
                     return@launch
@@ -394,7 +397,6 @@ class RealDirector(
                 generatorProducedMs = 0L,
                 skipForwardAllowed = !isCurrentTrackLastInSetlist(session, setlist)
             )
-
         }
 
         val newTrack = getTrack(event.trackId) ?: return oldState.copy(state = PlayerState.ERROR)
@@ -506,8 +508,7 @@ class RealDirector(
         return oldState.copy(state = PlayerState.ERROR, errorMessage = event.message)
     }
 
-    private fun getTrack(id: Long) =
-        repository.getTrack(id, withArtists = true, withGame = true)
+    private fun getTrack(id: Long) = repository.getTrack(id, withArtists = true, withGame = true)
 
     private fun emitError(message: String) {
         hatchet.e("Error: $message")

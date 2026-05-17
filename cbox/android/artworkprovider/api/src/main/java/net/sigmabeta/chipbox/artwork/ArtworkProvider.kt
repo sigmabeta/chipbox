@@ -77,8 +77,7 @@ class ArtworkProvider : ContentProvider() {
         sortOrder: String?,
     ): Cursor? = null
 
-    override fun insert(uri: Uri, values: ContentValues?): Uri? =
-        throw UnsupportedOperationException("ArtworkProvider is read-only")
+    override fun insert(uri: Uri, values: ContentValues?): Uri? = throw UnsupportedOperationException("ArtworkProvider is read-only")
 
     override fun update(
         uri: Uri,
@@ -93,21 +92,18 @@ class ArtworkProvider : ContentProvider() {
         selectionArgs: Array<out String>?,
     ): Int = throw UnsupportedOperationException("ArtworkProvider is read-only")
 
-    private fun resolveEntryPoint(ctx: Context): ArtworkProviderEntryPoint =
-        EntryPointAccessors.fromApplication(
+    private fun resolveEntryPoint(ctx: Context): ArtworkProviderEntryPoint = EntryPointAccessors.fromApplication(
             ctx.applicationContext,
             ArtworkProviderEntryPoint::class.java,
         )
 
-    private suspend fun loadGamePhoto(repo: Repository, id: Long): String? =
-        repo.getGame(id)
+    private suspend fun loadGamePhoto(repo: Repository, id: Long): String? = repo.getGame(id)
             .filterIsInstance<Data.Succeeded<Game?>>()
             .first()
             .data
             ?.photoUrl
 
-    private suspend fun loadArtistPhoto(repo: Repository, id: Long): String? =
-        repo.getArtist(id)
+    private suspend fun loadArtistPhoto(repo: Repository, id: Long): String? = repo.getArtist(id)
             .filterIsInstance<Data.Succeeded<Artist?>>()
             .first()
             .data

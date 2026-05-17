@@ -13,8 +13,7 @@ sealed class AdsrProcessor {
         noteProgress: Double,
         progressStart: Double,
         progressEnd: Double
-    ) =
-        doMath(
+    ) = doMath(
             noteProgress,
             progressStart,
             progressEnd,
@@ -22,8 +21,7 @@ sealed class AdsrProcessor {
             AMPLITUDE_ATTACK
         )
 
-    protected fun calculateDecay(noteProgress: Double, progressStart: Double, progressEnd: Double) =
-        doMath(
+    protected fun calculateDecay(noteProgress: Double, progressStart: Double, progressEnd: Double) = doMath(
             noteProgress,
             progressStart,
             progressEnd,
@@ -35,8 +33,7 @@ sealed class AdsrProcessor {
         noteProgress: Double,
         progressStart: Double,
         progressEnd: Double
-    ) =
-        doMath(
+    ) = doMath(
             noteProgress,
             progressStart,
             progressEnd,
@@ -83,17 +80,21 @@ object PercentAdsrProcessor : AdsrProcessor() {
                 PROGRESS_START,
                 PROGRESS_ATTACK
             )
+
             noteProgress < PROGRESS_DECAY -> calculateDecay(
                 noteProgress,
                 PROGRESS_ATTACK,
                 PROGRESS_DECAY
             )
+
             noteProgress < PROGRESS_SUSTAIN -> AMPLITUDE_SUSTAIN
+
             noteProgress < PROGRESS_RELEASE -> calculateRelease(
                 noteProgress,
                 PROGRESS_SUSTAIN,
                 PROGRESS_RELEASE
             )
+
             else -> 0.0
         }
     }
@@ -123,17 +124,21 @@ object TimeAdsrProcessor : AdsrProcessor() {
                 MILLIS_START,
                 MILLIS_ATTACK
             )
+
             currentMillis < MILLIS_DECAY -> calculateDecay(
                 currentMillis,
                 MILLIS_ATTACK,
                 MILLIS_DECAY
             )
+
             currentMillis < sustainEndMillis -> AMPLITUDE_SUSTAIN
+
             currentMillis < releaseEndMillis -> calculateRelease(
                 currentMillis,
                 sustainEndMillis,
                 releaseEndMillis
             )
+
             else -> 0.0
         }
     }

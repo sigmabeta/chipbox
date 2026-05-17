@@ -11,14 +11,13 @@ import java.nio.ByteBuffer
 
 data class PsfTagInfo(
     val tags: Map<String, String>,
-    val libReferences: List<String>,  // ordered: _lib, _lib2, _lib3, ...
+    val libReferences: List<String>, // ordered: _lib, _lib2, _lib3, ...
     val platform: Platform,
 )
 
 class PsfReader(private val hatchet: Hatchet) : Reader() {
 
-    override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? =
-        readTagInfo(bytes)?.let { listOf(buildRawTrack(it.tags, identifier, it.platform)) }
+    override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? = readTagInfo(bytes)?.let { listOf(buildRawTrack(it.tags, identifier, it.platform)) }
 
     fun readTagInfo(bytes: ByteArray): PsfTagInfo? {
         val fileAsByteBuffer = bytesAsByteBuffer(bytes)
@@ -78,8 +77,10 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
             val libRefs = tagMap.keys
                 .filter { key ->
                     key == PSF_TAG_KEY_LIB ||
-                        (key.startsWith(PSF_TAG_KEY_LIB) &&
-                            key.removePrefix(PSF_TAG_KEY_LIB).all { c -> c.isDigit() })
+                        (
+                            key.startsWith(PSF_TAG_KEY_LIB) &&
+                            key.removePrefix(PSF_TAG_KEY_LIB).all { c -> c.isDigit() }
+                        )
                 }
                 .sortedBy { libKeyToIndex(it) }
                 .mapNotNull { tagMap[it] }
@@ -116,18 +117,30 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
     private fun libKeyToIndex(key: String): Int = key.removePrefix("_lib").toIntOrNull() ?: 1
 
     // PSF "version" byte (header[3]) identifies the source system; unsupported codes return null.
-    private fun platformForCode(platformCode: Byte): Platform? {
-        return when (platformCode) {
-            0x01.toByte() -> Platform.PSX        // PSF1  — Sony PlayStation
-            0x02.toByte() -> Platform.PS2        // PSF2  — Sony PlayStation 2
-            0x11.toByte() -> Platform.SATURN     // SSF   — Sega Saturn
-            0x12.toByte() -> Platform.DREAMCAST  // DSF   — Sega Dreamcast
-            0x21.toByte() -> Platform.N64        // USF   — Nintendo 64
-            0x22.toByte() -> Platform.GAMEBOY_ADVANCE // GSF — Game Boy Advance
-            0x24.toByte() -> Platform.NDS        // 2SF   — Nintendo DS
+    private fun platformForCode(platformCode: Byte): Platform? = when (platformCode) {
+            0x01.toByte() -> Platform.PSX
+
+            // PSF1  — Sony PlayStation
+            0x02.toByte() -> Platform.PS2
+
+            // PSF2  — Sony PlayStation 2
+            0x11.toByte() -> Platform.SATURN
+
+            // SSF   — Sega Saturn
+            0x12.toByte() -> Platform.DREAMCAST
+
+            // DSF   — Sega Dreamcast
+            0x21.toByte() -> Platform.N64
+
+            // USF   — Nintendo 64
+            0x22.toByte() -> Platform.GAMEBOY_ADVANCE
+
+            // GSF — Game Boy Advance
+            0x24.toByte() -> Platform.NDS
+
+            // 2SF   — Nintendo DS
             else -> null
         }
-    }
 
     private fun readAllTags(
         tagsAreaSize: Int,

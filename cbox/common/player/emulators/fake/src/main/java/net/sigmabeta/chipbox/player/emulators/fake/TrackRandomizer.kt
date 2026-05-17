@@ -140,17 +140,19 @@ object TrackRandomizer {
         else -> random.nextValue(arrayOf(TimeSignature.MARCH, TimeSignature.WALTZ))
     }
 
-    private fun Double.adjustForTimeSignature(timeSignature: TimeSignature): Double {
-        return when (timeSignature.durationOfBeat) {
+    private fun Double.adjustForTimeSignature(timeSignature: TimeSignature): Double = when (timeSignature.durationOfBeat) {
             Duration.HALF -> this / 2.0
+
             Duration.QUARTER -> this
+
             Duration.EIGHTH -> this * 2.0
+
             Duration.SIXTEENTH -> this * SIXTEENTH_BEAT_MULTIPLIER
+
             else -> throw IllegalArgumentException(
                 "Only time signatures with denominators of 2, 4, 8, or 16 are allowed."
             )
         }
-    }
 
     private fun Double.fractionalPart(): Double {
         val integerPart = floor(this)
@@ -185,5 +187,3 @@ object TrackRandomizer {
 
     private const val SIXTEENTH_BEAT_MULTIPLIER = 4.0
 }
-
-

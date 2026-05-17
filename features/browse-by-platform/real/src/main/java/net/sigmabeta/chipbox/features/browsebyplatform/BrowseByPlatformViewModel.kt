@@ -44,6 +44,7 @@ class BrowseByPlatformViewModel @Inject constructor(
         when (action) {
             is BrowseByPlatformAction.PlatformClicked ->
                 emit(NavigateTo(GamesForPlatform(action.platform)))
+
             else -> Unit
         }
     }

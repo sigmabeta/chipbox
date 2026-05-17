@@ -22,8 +22,7 @@ data class BrowseByArtistState(
         title = stringProvider.getString(ChipboxStringId.LIBRARY_BROWSE_BY_ARTIST),
     )
 
-    override fun toListItems(stringProvider: StringProvider): List<ListModel> =
-        artists.withStandardErrorAndLoading(
+    override fun toListItems(stringProvider: StringProvider): List<ListModel> = artists.withStandardErrorAndLoading(
             loadingType = LoadingType.SQUARE,
             loadingWithHeader = false,
         ) { content(data, stringProvider) }

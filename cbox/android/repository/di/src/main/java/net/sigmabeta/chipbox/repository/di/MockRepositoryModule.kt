@@ -32,8 +32,7 @@ object MockRepositoryModule {
 
     @Provides
     @Singleton
-    fun provideMockImageUrlGenerator(@ApplicationContext context: Context) =
-        MockImageUrlGenerator(context)
+    fun provideMockImageUrlGenerator(@ApplicationContext context: Context) = MockImageUrlGenerator(context)
 
     @Provides
     @Singleton

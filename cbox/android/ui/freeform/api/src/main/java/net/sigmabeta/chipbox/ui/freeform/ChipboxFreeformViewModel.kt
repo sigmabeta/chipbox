@@ -35,7 +35,8 @@ abstract class ChipboxFreeformViewModel<S : FreeformState<Model>, Model>(
     initialState: S,
     private val stringProvider: StringProvider,
     private val hatchet: Hatchet,
-) : ViewModel(), ActionSink {
+) : ViewModel(),
+    ActionSink {
 
     private val _state = MutableStateFlow(initialState)
 

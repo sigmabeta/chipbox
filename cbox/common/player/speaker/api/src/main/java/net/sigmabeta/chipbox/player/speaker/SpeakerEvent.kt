@@ -14,7 +14,7 @@ sealed class SpeakerEvent {
      *  crossed a track boundary. The director uses this to update displayed metadata. */
     data class TrackChange(
         val trackId: Long
-    ): SpeakerEvent()
+    ) : SpeakerEvent()
 
     /** The queue was empty when the speaker tried to pull. Indicates an underrun (or the
      *  initial pre-roll before playback starts). [positionMs] is the speaker's play head at

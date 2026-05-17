@@ -69,20 +69,17 @@ class FileSpeaker(
     private fun initializeOutputStream(
         sampleRate: Int,
         externalStorageDir: File
-    ): OutputStream? {
-        return try {
+    ): OutputStream? = try {
             val outputFile = getOutputFile(externalStorageDir)
             val fileOutput = outputFile.outputStream()
             val bufferedOutput = BufferedOutputStream(fileOutput)
 
             writeHeader(bufferedOutput, sampleRate)
             bufferedOutput
-
         } catch (ex: Exception) {
             logProblems(ex.message)
             null
         }
-    }
 
     private fun getOutputFile(externalStorageDir: File): File {
         var outputFolder = File(externalStorageDir, FOLDER_NAME)
@@ -127,7 +124,6 @@ class FileSpeaker(
 
         output.write(HEADER_STRING_DATA.toByteArray())
     }
-
 
     private fun writeWaveHeader(output: OutputStream) {
         val emptySizeValue = byteArrayOf(0, 0, 0, 0)
@@ -175,19 +171,15 @@ class FileSpeaker(
         hatchet.e("Error writing to file: $message")
     }
 
-    private fun Short.toBytes(): ByteArray {
-        return byteArrayOf(
+    private fun Short.toBytes(): ByteArray = byteArrayOf(
             (toInt() and LOW_BYTE_MASK).toByte(),
             ((toInt() and HIGH_BYTE_MASK) shr (BITS_PER_BYTE)).toByte()
         )
-    }
 
-    private fun ShortArray.toByteArray(): ByteArray {
-        return this
+    private fun ShortArray.toByteArray(): ByteArray = this
             .map { it.toBytes().toList() }
             .flatten()
             .toByteArray()
-    }
 
     companion object {
         const val FOLDER_NAME = "Chipbox Output Files"
@@ -221,5 +213,3 @@ class FileSpeaker(
         private const val HIGH_BYTE_MASK = 0xFF00
     }
 }
-
-

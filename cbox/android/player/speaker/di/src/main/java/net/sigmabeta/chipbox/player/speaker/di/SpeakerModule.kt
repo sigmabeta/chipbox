@@ -20,8 +20,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object SpeakerModule {
     @Provides
-    fun provideFileLocation(@ApplicationContext context: Context): File =
-        Environment.getExternalStorageDirectory()
+    fun provideFileLocation(@ApplicationContext context: Context): File = Environment.getExternalStorageDirectory()
 
     @Provides
     @Singleton

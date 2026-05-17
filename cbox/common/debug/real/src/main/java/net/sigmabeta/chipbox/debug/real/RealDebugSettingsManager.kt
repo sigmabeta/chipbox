@@ -10,8 +10,7 @@ class RealDebugSettingsManager(private val storage: Storage) : DebugSettingsMana
         .savedStringFlow(KEY_DEBUG_ENABLED)
         .map { it?.toBooleanStrictOrNull() ?: false }
 
-    override fun setShouldShowDebug(value: Boolean) =
-        storage.saveString(KEY_DEBUG_ENABLED, value.toString())
+    override fun setShouldShowDebug(value: Boolean) = storage.saveString(KEY_DEBUG_ENABLED, value.toString())
 
     companion object {
         const val KEY_DEBUG_ENABLED = "setting.debug.enabled"

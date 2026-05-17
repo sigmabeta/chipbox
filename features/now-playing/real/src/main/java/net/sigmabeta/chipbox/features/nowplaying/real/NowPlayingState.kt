@@ -51,20 +51,39 @@ data class NowPlayingState(
         return stringProvider.getString(
             when (session.type) {
                 SessionType.GAME ->
-                    if (shuffled) ChipboxStringId.NOW_PLAYING_SESSION_TYPE_GAME_SHUFFLING
-                    else ChipboxStringId.NOW_PLAYING_SESSION_TYPE_GAME_PLAYING
+                    if (shuffled) {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_GAME_SHUFFLING
+                    } else {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_GAME_PLAYING
+                    }
+
                 SessionType.ARTIST ->
-                    if (shuffled) ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ARTIST_SHUFFLING
-                    else ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ARTIST_PLAYING
+                    if (shuffled) {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ARTIST_SHUFFLING
+                    } else {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ARTIST_PLAYING
+                    }
+
                 SessionType.PLAYLIST ->
-                    if (shuffled) ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLAYLIST_SHUFFLING
-                    else ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLAYLIST_PLAYING
+                    if (shuffled) {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLAYLIST_SHUFFLING
+                    } else {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLAYLIST_PLAYING
+                    }
+
                 SessionType.ALL_TRACKS ->
-                    if (shuffled) ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_SHUFFLING
-                    else ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_PLAYING
+                    if (shuffled) {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_SHUFFLING
+                    } else {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_PLAYING
+                    }
+
                 SessionType.PLATFORM ->
-                    if (shuffled) ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLATFORM_SHUFFLING
-                    else ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLATFORM_PLAYING
+                    if (shuffled) {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLATFORM_SHUFFLING
+                    } else {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLATFORM_PLAYING
+                    }
             }
         )
     }
@@ -79,6 +98,7 @@ data class NowPlayingState(
         val session = session ?: return ""
         return when (session.type) {
             SessionType.GAME -> track?.game?.title.orEmpty()
+
             // Tracks can have multiple artists; the session points at one specifically via
             // contentId, so prefer that match and fall back to the first listed artist
             // (e.g. mid-load before joined artists are populated).
@@ -88,9 +108,12 @@ data class NowPlayingState(
                     ?: artists.firstOrNull()?.name
                     ?: ""
             }
+
             // Playlists aren't wired up yet — no source name to surface.
             SessionType.PLAYLIST -> ""
+
             SessionType.ALL_TRACKS -> ""
+
             // contentId carries the Platform ordinal (see SessionType docs).
             SessionType.PLATFORM ->
                 Platform.entries.getOrNull(session.contentId.toInt())
@@ -109,6 +132,7 @@ data class NowPlayingState(
         PlayerState.FAST_FORWARDING,
         PlayerState.REWINDING,
         PlayerState.ENDING -> true
+
         PlayerState.PAUSED,
         PlayerState.ERROR,
         PlayerState.IDLE,

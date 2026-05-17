@@ -28,10 +28,15 @@ class Readers(hatchet: Hatchet) {
         EXT_USF, EXT_MINIUSF -> psf
 
         EXT_NSF -> nsf
+
         EXT_NSFE -> nsfe
+
         EXT_GBS -> gbs
+
         EXT_SPC -> spc
+
         EXT_VGM, EXT_VGZ -> vgm
+
         else -> null
     }
 }

@@ -43,19 +43,26 @@ class NowPlayingViewModel @Inject constructor(
     override fun handleAction(action: SageAction) {
         when (action) {
             NowPlayingAction.PlayPauseClicked -> togglePlayPause()
+
             NowPlayingAction.SkipForwardClicked -> director.skipForward()
+
             NowPlayingAction.SkipBackClicked -> director.skipBack()
+
             NowPlayingAction.ShuffleClicked -> {
                 director.setShuffled(state.value.session?.shuffled != true)
             }
+
             NowPlayingAction.RepeatClicked -> {
                 updateState { it.copy(repeatMode = it.repeatMode.next()) }
             }
+
             NowPlayingAction.BackClicked -> emit(ChipboxEvent.NavigateBack)
+
             NowPlayingAction.PlayerSettingsClicked -> emit(
                 // Placeholder until a real Player Settings destination screen exists.
                 ChipboxEvent.ShowSnackbar("Player settings coming soon.")
             )
+
             is NowPlayingAction.SeekRequested -> director.seek(action.positionMs)
         }
     }
@@ -72,6 +79,7 @@ class NowPlayingViewModel @Inject constructor(
         PlayerState.FAST_FORWARDING,
         PlayerState.REWINDING,
         PlayerState.ENDING -> true
+
         PlayerState.PAUSED,
         PlayerState.ERROR,
         PlayerState.IDLE,

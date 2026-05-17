@@ -53,12 +53,10 @@ class FakeModelGenerator(private val seed: Long = DEFAULT_SEED) {
         }
     }
 
-    fun randomTracks(artists: List<Artist>): List<Track> =
-        buildTracks(seed + 1, artists, games = null)
+    fun randomTracks(artists: List<Artist>): List<Track> = buildTracks(seed + 1, artists, games = null)
 
     /** Tracks tagged with a [Game] so artist-detail rows show a non-empty caption. */
-    fun randomTracks(artists: List<Artist>, games: List<Game>): List<Track> =
-        buildTracks(seed + 4, artists, games)
+    fun randomTracks(artists: List<Artist>, games: List<Game>): List<Track> = buildTracks(seed + 4, artists, games)
 
     fun randomGame(artists: List<Artist>, tracks: List<Track>): Game {
         random.setSeed(seed + 2)

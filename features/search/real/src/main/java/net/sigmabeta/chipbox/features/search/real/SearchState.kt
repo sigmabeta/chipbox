@@ -39,8 +39,7 @@ data class SearchState(
     // title is unused — kept for pipeline correctness.
     override fun title(stringProvider: StringProvider) = TitleBarModel()
 
-    override fun toListItems(stringProvider: StringProvider): List<ListModel> =
-        if (submittedQuery.isBlank()) {
+    override fun toListItems(stringProvider: StringProvider): List<ListModel> = if (submittedQuery.isBlank()) {
             // No query submitted yet → recent searches, plus a prompt when sparse.
             val historyItems = historyItems()
             if (historyItems.size < HISTORY_CTA_THRESHOLD) {
@@ -84,8 +83,7 @@ data class SearchState(
         }
     }
 
-    private fun gameItems(stringProvider: StringProvider): List<ListModel> =
-        gameResults.withStandardErrorAndLoading(
+    private fun gameItems(stringProvider: StringProvider): List<ListModel> = gameResults.withStandardErrorAndLoading(
             loadingType = LoadingType.SQUARE,
             loadingItemCount = RESULT_LOADING_COUNT,
         ) {
@@ -108,8 +106,7 @@ data class SearchState(
             }
         }
 
-    private fun songItems(stringProvider: StringProvider): List<ListModel> =
-        songResults.withStandardErrorAndLoading(
+    private fun songItems(stringProvider: StringProvider): List<ListModel> = songResults.withStandardErrorAndLoading(
             loadingType = LoadingType.TEXT_CAPTION_IMAGE,
             loadingItemCount = RESULT_LOADING_COUNT,
         ) {
@@ -133,8 +130,7 @@ data class SearchState(
             }
         }
 
-    private fun artistItems(stringProvider: StringProvider): List<ListModel> =
-        artistResults.withStandardErrorAndLoading(
+    private fun artistItems(stringProvider: StringProvider): List<ListModel> = artistResults.withStandardErrorAndLoading(
             loadingType = LoadingType.SQUARE,
             loadingItemCount = RESULT_LOADING_COUNT,
         ) {

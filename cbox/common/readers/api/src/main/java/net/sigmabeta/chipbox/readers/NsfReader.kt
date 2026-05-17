@@ -54,12 +54,9 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
         }
     }
 
-    private fun getNumberOfTracks(fileAsBytes: ByteArray): Int {
-        return fileAsBytes[OFFSET_TOTAL_SONGS].toInt() and BYTE_MASK
-    }
+    private fun getNumberOfTracks(fileAsBytes: ByteArray): Int = fileAsBytes[OFFSET_TOTAL_SONGS].toInt() and BYTE_MASK
 
-    private fun getGameTitle(fileAsBytes: ByteArray): String {
-        return try {
+    private fun getGameTitle(fileAsBytes: ByteArray): String = try {
             fileAsBytes
                 .decodeToString(OFFSET_GAME_TITLE, OFFSET_GAME_ARTIST, true)
                 .substringBefore(0.toChar())
@@ -68,10 +65,8 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
             hatchet.w("NSF: unable to read game title — ${ex.message}")
             TAG_UNKNOWN
         }
-    }
 
-    private fun getGameArtist(fileAsBytes: ByteArray): String {
-        return try {
+    private fun getGameArtist(fileAsBytes: ByteArray): String = try {
             fileAsBytes
                 .decodeToString(OFFSET_GAME_ARTIST, OFFSET_COPYRIGHT, true)
                 .substringBefore(0.toChar())
@@ -80,7 +75,6 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
             hatchet.w("NSF: unable to read artist — ${ex.message}")
             TAG_UNKNOWN
         }
-    }
 
     private fun isNsfFile(header: String) = header.contentEquals(HEADER_MAGIC)
 

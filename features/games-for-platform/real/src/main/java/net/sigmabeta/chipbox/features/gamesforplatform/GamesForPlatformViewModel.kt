@@ -54,9 +54,12 @@ class GamesForPlatformViewModel @Inject constructor(
     override fun handleAction(action: SageAction) {
         when (action) {
             GamesForPlatformAction.PlayAllClicked -> startSession(startingPosition = 0)
+
             GamesForPlatformAction.ShuffleAllClicked ->
                 startSession(startingPosition = 0, shuffled = true)
+
             is GamesForPlatformAction.GameClicked -> emit(NavigateTo(GameDetail(action.id)))
+
             else -> Unit
         }
     }

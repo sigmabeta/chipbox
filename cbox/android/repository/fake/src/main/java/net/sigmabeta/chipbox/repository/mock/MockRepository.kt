@@ -179,7 +179,6 @@ class MockRepository(
     }
 
     override fun getArtist(id: Long, withTracks: Boolean, withGames: Boolean): Flow<Data<Artist?>> {
-
         if (artists.isEmpty()) {
             repositoryScope.launch {
                 singleArtistLoadEvents.emit(Data.Loading)
@@ -374,8 +373,7 @@ class MockRepository(
         artists.clear()
     }
 
-    private fun MockTrack.toTrack(withGame: Boolean = false, withArtists: Boolean = false): Track =
-        Track(
+    private fun MockTrack.toTrack(withGame: Boolean = false, withArtists: Boolean = false): Track = Track(
             id,
             path,
             "",
@@ -388,8 +386,7 @@ class MockRepository(
             platform = Platform.OTHER,
         )
 
-    private fun MockGame.toGame(withTracks: Boolean = false, withArtists: Boolean = false): Game =
-        Game(
+    private fun MockGame.toGame(withTracks: Boolean = false, withArtists: Boolean = false): Game = Game(
             id,
             title,
             photoUrl,

@@ -9,10 +9,11 @@ class SquareSynth(val dutyCycle: Double) : Synth {
         val edgeThreshold = wavelength * dutyCycle
         val wavePosition = timeMillis % wavelength
 
-        val scalar = if (wavePosition >= edgeThreshold)
+        val scalar = if (wavePosition >= edgeThreshold) {
             Short.MAX_VALUE
-        else
+        } else {
             Short.MAX_VALUE.unaryMinus().toShort()
+        }
 
         val amplitudeShort = amplitude
             .times(scalar)

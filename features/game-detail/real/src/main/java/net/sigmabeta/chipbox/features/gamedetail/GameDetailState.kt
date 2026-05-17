@@ -53,8 +53,7 @@ data class GameDetailState(
         )
     }
 
-    private fun heroSection() =
-        game.sectionWithStandardErrorAndLoading(
+    private fun heroSection() = game.sectionWithStandardErrorAndLoading(
             sectionName = SECTION_NAME_HERO,
             loadingType = LoadingType.BIG_IMAGE,
             loadingItemCount = 1,
@@ -75,8 +74,7 @@ data class GameDetailState(
             }
         }
 
-    private fun ctaSection(stringProvider: StringProvider) =
-        game.sectionWithStandardErrorAndLoading(
+    private fun ctaSection(stringProvider: StringProvider) = game.sectionWithStandardErrorAndLoading(
             sectionName = SECTION_NAME_CTA,
             loadingItemCount = 0,
             loadingWithHeader = false,
@@ -95,8 +93,7 @@ data class GameDetailState(
             )
         }
 
-    private fun songSection(stringProvider: StringProvider) =
-        tracks.sectionWithStandardErrorAndLoading(
+    private fun songSection(stringProvider: StringProvider) = tracks.sectionWithStandardErrorAndLoading(
             sectionName = SECTION_NAME_SONGS,
             loadingType = LoadingType.TEXT_CAPTION,
             loadingItemCount = SONGS_LOADING_COUNT,
@@ -148,8 +145,7 @@ data class GameDetailState(
         }
     }
 
-    private fun artistSection(stringProvider: StringProvider) =
-        artists.sectionWithStandardErrorAndLoading(
+    private fun artistSection(stringProvider: StringProvider) = artists.sectionWithStandardErrorAndLoading(
             sectionName = SECTION_NAME_ARTISTS,
             loadingType = LoadingType.WIDE_ITEM,
             loadingWithHeader = true,

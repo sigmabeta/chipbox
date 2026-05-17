@@ -40,6 +40,7 @@ internal class PcmCacheJanitor(
                 name.endsWith(".pcm.tmp") -> {
                     if (file.delete()) deleted++
                 }
+
                 name.endsWith(".pcm") -> {
                     val header = PcmCacheFile.readHeader(file)
                     val isComplete = header != null &&

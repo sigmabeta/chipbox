@@ -40,7 +40,9 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
             val fadeMs = if (loopSamples > 0L) FADE_LENGTH_MS else 0L
             val tag = if (gd3Relative != 0) {
                 readGd3(vgm, OFFSET_GD3 + gd3Relative.toLong())
-            } else null
+            } else {
+                null
+            }
 
             return listOf(
                 RawTrack(
@@ -131,24 +133,37 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
                 "zn-1" in name || "hang-on" in name || "hang on" in name ||
                 "sega model" in name || "sega x" in name || "sega y" in name ||
                 "namco system" in name || "system 16" in name || "system 32" in name -> Platform.ARCADE
+
             // Sega CD / 32X are Genesis add-ons; bucket them with the base console.
             "mega drive" in name || "genesis" in name || "32x" in name ||
                 "megacd" in name || "mega cd" in name || "mega-cd" in name ||
                 "segacd" in name || "sega cd" in name -> Platform.GENESIS
+
             "game boy advance" in name -> Platform.GAMEBOY_ADVANCE
+
             "game boy" in name -> Platform.GAMEBOY
+
             "saturn" in name -> Platform.SATURN
+
             "dreamcast" in name -> Platform.DREAMCAST
+
             "playstation 2" in name -> Platform.PS2
+
             "playstation" in name -> Platform.PSX
+
             "nintendo 64" in name -> Platform.N64
+
             "nintendo ds" in name -> Platform.NDS
+
             "super famicom" in name || "snes" in name ||
                 ("super" in name && "nintendo" in name) -> Platform.SNES
+
             "famicom" in name || "family computer" in name ||
                 "nintendo entertainment" in name || "nes" in name -> Platform.NES
+
             "pc-98" in name || "pc-88" in name || "pc-80" in name || "x68000" in name ||
                 "pc / dos" in name || "pc/dos" in name || "dos" in name || "msx" in name -> Platform.PC
+
             else -> {
                 hatchet.w("VGM: unmapped GD3 system name '$system' — defaulting to OTHER.")
                 Platform.OTHER

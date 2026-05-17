@@ -14,6 +14,5 @@ import net.sigmabeta.sage.storage.common.Storage
 object SettingsModule {
     @Provides
     @Singleton
-    fun provideChipboxSettingsManager(storage: Storage): ChipboxSettingsManager =
-        RealChipboxSettingsManager(storage)
+    fun provideChipboxSettingsManager(storage: Storage): ChipboxSettingsManager = RealChipboxSettingsManager(storage)
 }

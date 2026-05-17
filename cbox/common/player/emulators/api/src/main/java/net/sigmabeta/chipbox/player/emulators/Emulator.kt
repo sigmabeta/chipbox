@@ -75,8 +75,7 @@ abstract class Emulator {
 
     private var hasLoadedTrack = false
 
-    open fun isFileExtensionSupported(extension: String) =
-        supportedFileExtensions.contains(extension)
+    open fun isFileExtensionSupported(extension: String) = supportedFileExtensions.contains(extension)
 
     /** Selects a sub-track for multi-track formats (NSF, GBS, etc). No-op for single-track
      *  formats, which is the default. */

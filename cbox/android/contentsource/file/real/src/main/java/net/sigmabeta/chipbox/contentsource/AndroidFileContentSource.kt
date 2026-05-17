@@ -25,8 +25,7 @@ class AndroidFileContentSource(
 
     override val sourceId: String = SOURCE_ID
 
-    override suspend fun openBytes(identifier: String): ByteArray? =
-        openInputStream(Uri.parse(identifier))?.use { it.readBytes() }
+    override suspend fun openBytes(identifier: String): ByteArray? = openInputStream(Uri.parse(identifier))?.use { it.readBytes() }
 
     private val _libraryLocations = MutableStateFlow<List<LibraryLocation>>(emptyList())
     val libraryLocations: StateFlow<List<LibraryLocation>> = _libraryLocations.asStateFlow()
@@ -52,8 +51,7 @@ class AndroidFileContentSource(
         }
     }.flowOn(dispatchers.disk)
 
-    suspend fun openInputStream(uri: Uri): InputStream? =
-        withContext(dispatchers.disk) {
+    suspend fun openInputStream(uri: Uri): InputStream? = withContext(dispatchers.disk) {
             runCatching { context.contentResolver.openInputStream(uri) }
                 .onFailure { hatchet.w("Failed to open $uri: $it") }
                 .getOrNull()
@@ -69,7 +67,9 @@ class AndroidFileContentSource(
                 DocumentsContract.Document.COLUMN_MIME_TYPE,
                 DocumentsContract.Document.COLUMN_SIZE,
             ),
-            null, null, null,
+            null,
+            null,
+            null,
         )?.use { cursor ->
             while (cursor.moveToNext()) {
                 val childDocId = cursor.getString(0)
@@ -103,7 +103,9 @@ class AndroidFileContentSource(
         return context.contentResolver.query(
             rootDocUri,
             arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME),
-            null, null, null,
+            null,
+            null,
+            null,
         )?.use { if (it.moveToFirst()) it.getString(0) else null }
     }
 

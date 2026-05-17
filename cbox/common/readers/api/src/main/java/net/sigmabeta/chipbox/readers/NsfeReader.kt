@@ -91,8 +91,7 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
         null
     }
 
-    private fun List<NsfeChunk>.parseChunkAsStrings(chunkName: String): List<String>? {
-        return try {
+    private fun List<NsfeChunk>.parseChunkAsStrings(chunkName: String): List<String>? = try {
             first { it.name == chunkName }
                 .content
                 .toString(Charsets.UTF_8)
@@ -102,10 +101,8 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
         } catch (ex: NoSuchElementException) {
             null
         }
-    }
 
-    private fun List<NsfeChunk>.parseChunkAsByteBuffer(chunkName: String): ByteBuffer? {
-        return try {
+    private fun List<NsfeChunk>.parseChunkAsByteBuffer(chunkName: String): ByteBuffer? = try {
             val chunk = first { it.name == chunkName }
             chunk
                 .content
@@ -114,7 +111,6 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
         } catch (ex: NoSuchElementException) {
             null
         }
-    }
 
     private fun readNsfeChunks(fileAsByteBuffer: ByteBuffer): List<NsfeChunk> {
         val chunks = mutableListOf<NsfeChunk>()

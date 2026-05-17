@@ -109,8 +109,12 @@ class RealScanner(
                     tagInfoCache[file.name.lowercase()] = tagInfo
                     val chain = mutableListOf<ChainFile>()
                     val chainTags = resolvePsfChain(
-                        tagInfo, byFilename, tagInfoCache,
-                        mutableSetOf(file.name.lowercase()), 0, chain,
+                        tagInfo,
+                        byFilename,
+                        tagInfoCache,
+                        mutableSetOf(file.name.lowercase()),
+                        0,
+                        chain,
                     )
                     val mergedTags = chainTags + tagInfo.tags
                     readers.psf.buildRawTrack(mergedTags, file.uri.toString(), tagInfo.platform)
@@ -118,6 +122,7 @@ class RealScanner(
                 }
                 when (track) {
                     null -> failed++
+
                     else -> {
                         hatchet.d("${file.name} yielded 1 track.")
                         tracksByFilename[file.name] = mutableListOf(track)
@@ -144,7 +149,9 @@ class RealScanner(
                     hatchet.w("Failed to read ${file.name}.")
                     failed++
                 }
+
                 tracks.isEmpty() -> hatchet.d("${file.name} yielded no tracks.")
+
                 else -> {
                     hatchet.d("${file.name} yielded ${tracks.size} track(s).")
                     tracksByFilename[file.name] = tracks.toMutableList()

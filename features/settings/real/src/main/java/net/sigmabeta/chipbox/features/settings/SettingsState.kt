@@ -34,8 +34,7 @@ data class SettingsState(
         shouldShowBack = true,
     )
 
-    override fun toListItems(stringProvider: StringProvider): List<ListModel> =
-        appearanceSection(stringProvider) +
+    override fun toListItems(stringProvider: StringProvider): List<ListModel> = appearanceSection(stringProvider) +
             librarySection(stringProvider) +
             aboutSection(stringProvider) +
             debugSection(stringProvider)
@@ -70,8 +69,7 @@ data class SettingsState(
         )
     }
 
-    private fun sectionHeader(stringProvider: StringProvider, id: ChipboxStringId) =
-        SectionHeaderListModel(title = stringProvider.getString(id))
+    private fun sectionHeader(stringProvider: StringProvider, id: ChipboxStringId) = SectionHeaderListModel(title = stringProvider.getString(id))
 
     // No-op selection callback: dropdown renders the current persisted font but
     // doesn't yet write changes back. Wiring this up requires either routing the
@@ -109,6 +107,7 @@ data class SettingsState(
             loadOperationName = rescanStatus.operationName,
             loadPositionOffset = 0,
         )
+
         else -> NameCaptionListModel(
             dataId = ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY.hashCode().toLong(),
             name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY),
@@ -123,6 +122,7 @@ data class SettingsState(
             loadOperationName = clearLibraryStatus.operationName,
             loadPositionOffset = 0,
         )
+
         else -> NameCaptionListModel(
             dataId = ChipboxStringId.SETTINGS_LABEL_CLEAR_LIBRARY.hashCode().toLong(),
             name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_CLEAR_LIBRARY),

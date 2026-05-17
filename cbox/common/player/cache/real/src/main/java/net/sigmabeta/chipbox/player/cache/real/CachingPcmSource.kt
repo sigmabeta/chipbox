@@ -102,7 +102,7 @@ internal class CachingPcmSource(
                         // sealing the cache where the music actually ended.
                         hatchet.d(
                             "Cache trim for ${track.title}: dropping " +
-                                "${pendingSilentFrames} trailing silent frames."
+                                "$pendingSilentFrames trailing silent frames."
                         )
                         break
                     }

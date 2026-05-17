@@ -13,7 +13,8 @@ import androidx.room.PrimaryKey
             parentColumns = arrayOf("id"),
             childColumns = arrayOf("game_id"),
             onDelete = ForeignKey.CASCADE
-        )]
+        )
+    ]
 )
 data class TrackEntity(
     val title: String,

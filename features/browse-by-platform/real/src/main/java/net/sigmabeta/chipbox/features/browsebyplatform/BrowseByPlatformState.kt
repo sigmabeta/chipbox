@@ -22,14 +22,12 @@ data class BrowseByPlatformState(
         title = stringProvider.getString(ChipboxStringId.LIBRARY_BROWSE_BY_PLATFORM),
     )
 
-    override fun toListItems(stringProvider: StringProvider): List<ListModel> =
-        platforms.withStandardErrorAndLoading(
+    override fun toListItems(stringProvider: StringProvider): List<ListModel> = platforms.withStandardErrorAndLoading(
             loadingType = LoadingType.TEXT_CAPTION,
             loadingWithHeader = false,
         ) { content(data, stringProvider) }
 
-    private fun content(platforms: List<Platform>, stringProvider: StringProvider) =
-        if (platforms.isEmpty()) {
+    private fun content(platforms: List<Platform>, stringProvider: StringProvider) = if (platforms.isEmpty()) {
             listOf(
                 EmptyStateListModel(
                     icon = Icon.Chip,
