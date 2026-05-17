@@ -24,12 +24,35 @@ android {
         buildConfigField("String", "BUILD_BRANCH", "\"${gitBranch()}\"")
     }
 
+    signingConfigs {
+        create("release") {
+            // Set these in CircleCI project settings → Environment Variables.
+            // chipbox.jks lives at the repo root and is committed to the repo.
+            val ksAlias = System.getenv("CHIPBOX_KEY_ALIAS")
+            val ksPass = System.getenv("CHIPBOX_KEYSTORE_PASSWORD")
+            val keyPass = System.getenv("CHIPBOX_KEY_PASSWORD")
+            if (ksAlias != null && ksPass != null && keyPass != null) {
+                storeFile = rootProject.file("chipbox.jks")
+                storePassword = ksPass
+                keyAlias = ksAlias
+                keyPassword = keyPass
+            }
+        }
+    }
+
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false
         }
         getByName("release") {
             isMinifyEnabled = false
+            // Release-signed with chipbox.jks when the CHIPBOX_* env vars are
+            // present (CI); falls back to debug signing for local builds.
+            signingConfig = if (System.getenv("CHIPBOX_KEY_ALIAS") != null) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
         create("benchmark") {
             initWith(getByName("release"))
