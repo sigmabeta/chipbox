@@ -168,16 +168,19 @@ jobs:
       - *attach_ws
       # lintRelease pulls dependency AARs, which builds the emulator native libs.
       - *install_cmake
+      # Shared release build cache: lintRelease and assembleRelease compile the
+      # same release graph. build_release_apk requires this job, so it restores
+      # what we save here (its identical-key save is then a CircleCI no-op).
       - restore_cache:
           keys:
-            - build-cache-lint-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-lint-v1-{{ .Branch }}-
-            - build-cache-lint-v1-
+            - build-cache-release-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-release-v1-{{ .Branch }}-
+            - build-cache-release-v1-
       - run:
           name: Run Android Lint checks
           command: ./gradlew :app:lintRelease --build-cache --configuration-cache --no-daemon --max-workers=4
       - save_cache:
-          key: build-cache-lint-v1-{{ .Branch }}-{{ .Revision }}
+          key: build-cache-release-v1-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle/caches/build-cache-1
       - store_artifacts:
@@ -191,7 +194,9 @@ jobs:
       - image: cimg/android:2024.04.1
 
     environment:
-      JVM_OPTS: -Xmx512m
+      # Paparazzi LayoutLib rendering across the screenshot modules is
+      # memory-hungry; the old -Xmx512m GC-thrashed on this `large` box.
+      JVM_OPTS: -Xms2g -Xmx4g
 
     steps:
       # Golden snapshots come from the workspace (setup did the LFS pull;
@@ -233,11 +238,13 @@ jobs:
       - *attach_ws
       # assembleRelease builds the emulator modules' native code via CMake.
       - *install_cmake
+      # Shared with android-lint (runs first): restores its compiled release
+      # graph so assembleRelease is largely cache hits.
       - restore_cache:
           keys:
-            - build-cache-apk-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-apk-v1-{{ .Branch }}-
-            - build-cache-apk-v1-
+            - build-cache-release-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-release-v1-{{ .Branch }}-
+            - build-cache-release-v1-
       # Release signing reads CHIPBOX_KEY_ALIAS / CHIPBOX_KEYSTORE_PASSWORD /
       # CHIPBOX_KEY_PASSWORD from CircleCI project env vars (chipbox.jks is
       # committed at the repo root). Without them the APK is debug-signed.
@@ -245,7 +252,7 @@ jobs:
           name: Build Release
           command: ./gradlew :app:assembleRelease -PdisablePreDex --build-cache --configuration-cache --no-daemon --max-workers=4
       - save_cache:
-          key: build-cache-apk-v1-{{ .Branch }}-{{ .Revision }}
+          key: build-cache-release-v1-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle/caches/build-cache-1
       - store_artifacts:
