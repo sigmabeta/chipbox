@@ -4,11 +4,13 @@ import java.net.URLDecoder
 import net.sigmabeta.chipbox.debuginfo.PlaybackDebugInfo
 import net.sigmabeta.chipbox.strings.ChipboxStringId
 import net.sigmabeta.sage.appcomm.SageAction
+import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.components.LabelValueListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.SectionHeaderListModel
 import net.sigmabeta.sage.components.TitleBarModel
 import net.sigmabeta.sage.list.ListState
+import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.StringProvider
 
 data class PlaybackStatusState(
@@ -21,6 +23,15 @@ data class PlaybackStatusState(
     )
 
     override fun toListItems(stringProvider: StringProvider): List<ListModel> = buildList {
+        add(
+            CtaListModel(
+                icon = Icon.Description,
+                name = stringProvider.getString(
+                    ChipboxStringId.PLAYBACK_STATUS_CTA_COPY_DEBUG_INFO
+                ),
+                clickAction = PlaybackStatusAction.CopyDebugInfoClicked,
+            )
+        )
         addAll(playbackSection(stringProvider))
         addAll(trackSection(stringProvider))
         addAll(sessionSection(stringProvider))

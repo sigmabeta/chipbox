@@ -53,4 +53,6 @@
     <string name="playback_status_label_buf_full_queued">Full buffers queued</string>
     <string name="playback_status_label_buf_empty_avail">Empty arrays available</string>
     <string name="playback_status_label_buf_drain_count">Drain count</string>
+
+    <string name="playback_status_cta_copy_debug_info">Copy debug info</string>
 </resources>

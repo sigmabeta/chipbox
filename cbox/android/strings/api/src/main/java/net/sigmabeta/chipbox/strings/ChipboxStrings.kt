@@ -196,6 +196,7 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_FULL_QUEUED -> R.string.playback_status_label_buf_full_queued
     ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_EMPTY_AVAIL -> R.string.playback_status_label_buf_empty_avail
     ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_DRAIN_COUNT -> R.string.playback_status_label_buf_drain_count
+    ChipboxStringId.PLAYBACK_STATUS_CTA_COPY_DEBUG_INFO -> R.string.playback_status_cta_copy_debug_info
 
     ChipboxStringId.NOW_PLAYING_SCREEN_TITLE -> R.string.now_playing_screen_title
 

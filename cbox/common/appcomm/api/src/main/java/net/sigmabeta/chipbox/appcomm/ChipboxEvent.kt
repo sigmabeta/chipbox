@@ -9,4 +9,8 @@ sealed class ChipboxEvent {
         val withDismissAction: Boolean = true,
     ) : ChipboxEvent()
     data object PickFolder : ChipboxEvent()
+    data class CopyToClipboard(
+        val label: String,
+        val text: String,
+    ) : ChipboxEvent()
 }
