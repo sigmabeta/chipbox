@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!--
+      The app declares Android Auto support (com.google.android.gms.car.application
+      meta-data) but voice search / browse callbacks are not implemented yet.
+      Suppressed deliberately until onPlayFromSearch is wired up.
+      Tracked in Trello: "Implement onPlayFromSearch for Android Auto".
+    -->
+    <issue id="MissingIntentFilterForMediaSearch" severity="ignore" />
+    <issue id="MissingMediaBrowserServiceIntentFilter" severity="ignore" />
+</lint>
