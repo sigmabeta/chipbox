@@ -174,6 +174,7 @@ include(
     ":features:playback-status:real",
     ":features:search:api",
     ":features:search:real",
+    ":features:search:screenshot",
     ":features:settings:api",
     ":features:settings:real",
 )
