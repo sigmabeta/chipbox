@@ -13,6 +13,14 @@ attach_ws: &attach_ws
   attach_workspace:
     at: *workspace_root
 
+# The emulator modules build native code via CMake, which needs Ninja. The
+# cimg/android image ships CMake but not Ninja, so install it onto PATH (where
+# AGP looks) before any job that may configure a native build.
+install_ninja: &install_ninja
+  run:
+    name: Install Ninja (required for native CMake builds)
+    command: sudo apt-get update -y && sudo apt-get install -y ninja-build
+
 workflows:
   version: 2
   build_analyze:
@@ -62,6 +70,7 @@ jobs:
       - run:
           name: Get all Git tags
           command: git fetch --prune --prune-tags && git fetch --tags -f
+      - *install_ninja
       - restore_cache:
           keys:
             - jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
@@ -73,9 +82,9 @@ jobs:
             - build-cache-v1-
       - run:
           name: Resolve dependencies and compile the app graph
-          # Compiling once here warms the build cache + Gradle home that the
-          # workspace then shares with every downstream job.
-          command: ./gradlew :app:assembleRelease -PdisablePreDex --build-cache --no-configuration-cache --no-daemon --max-workers=4
+          # Compiling once here warms the build + configuration caches and the
+          # Gradle home that the workspace then shares with downstream jobs.
+          command: ./gradlew :app:assembleRelease -PdisablePreDex --build-cache --configuration-cache --no-daemon --max-workers=4
       # Cross-run caches keep `setup` itself fast on repeat builds; the
       # workspace handles intra-run sharing for the downstream jobs.
       - save_cache:
@@ -95,6 +104,8 @@ jobs:
       - persist_to_workspace:
           root: *workspace_root
           paths:
+            # `project` carries .gradle/configuration-cache so build_release_apk
+            # reuses setup's :app:assembleRelease configuration-cache entry.
             - project
             - .gradle/caches/modules-2
             - .gradle/caches/build-cache-1
@@ -135,9 +146,10 @@ jobs:
 
     steps:
       - *attach_ws
+      - *install_ninja
       - run:
           name: Run Detekt checks
-          command: ./gradlew detekt --build-cache --no-configuration-cache --no-daemon --max-workers=2
+          command: ./gradlew detekt --build-cache --configuration-cache --no-daemon --max-workers=2
 
   android-lint:
     resource_class: large
@@ -151,9 +163,10 @@ jobs:
 
     steps:
       - *attach_ws
+      - *install_ninja
       - run:
           name: Run Android Lint checks
-          command: ./gradlew :app:lintRelease --build-cache --no-configuration-cache --no-daemon --max-workers=4
+          command: ./gradlew :app:lintRelease --build-cache --configuration-cache --no-daemon --max-workers=4
       - store_artifacts:
           path: app/build/reports/
           destination: reports
@@ -169,12 +182,13 @@ jobs:
 
     steps:
       - *attach_ws
+      - *install_ninja
       - run:
           name: Pull Paparazzi golden snapshots from Git LFS
           command: git lfs install --local && git lfs pull
       - run:
           name: Compare screenshot tests
-          command: ./gradlew verifyPaparazziDebug --build-cache --no-configuration-cache --no-daemon --max-workers=2
+          command: ./gradlew verifyPaparazziDebug --build-cache --configuration-cache --no-daemon --max-workers=2
       - store_artifacts:
           path: features/search/screenshot/build/paparazzi/failures/
           destination: failure-screenshots/search
@@ -197,14 +211,15 @@ jobs:
 
     steps:
       - *attach_ws
+      - *install_ninja
       # Release signing reads CHIPBOX_KEY_ALIAS / CHIPBOX_KEYSTORE_PASSWORD /
       # CHIPBOX_KEY_PASSWORD from CircleCI project env vars (chipbox.jks is
       # committed at the repo root). Without them the APK is debug-signed.
-      # The workspace already holds setup's release build, so this is mostly
-      # UP-TO-DATE and just re-signs / collects the artifact.
+      # The workspace already holds setup's release build + configuration-cache
+      # entry, so this is mostly UP-TO-DATE and just collects the artifact.
       - run:
           name: Build Release
-          command: ./gradlew :app:assembleRelease -PdisablePreDex --build-cache --no-configuration-cache --no-daemon --max-workers=4
+          command: ./gradlew :app:assembleRelease -PdisablePreDex --build-cache --configuration-cache --no-daemon --max-workers=4
       - store_artifacts:
           path: app/build/outputs/apk/release
           destination: outputs
