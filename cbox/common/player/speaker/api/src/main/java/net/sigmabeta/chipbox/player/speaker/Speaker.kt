@@ -143,79 +143,93 @@ abstract class Speaker(
     }
 
     private fun startPlayback() {
-        if (ongoingPlaybackJob == null) {
-            ongoingPlaybackJob = speakerScope.launch {
-                hatchet.i("Consume loop entering (playingTrackId=$playingTrackId).")
-                updateDebug { it.copy(consumeLoopRunning = true) }
-                try {
-                    onResumed()
-
-                    while (true) {
-                        yield()
-                        var audioBuffer = bufferManager.checkForNextAudioBuffer()
-
-                        if (audioBuffer == null) {
-                            hatchet.d("Consume: no buffer ready, emitting Buffering and awaiting.")
-                            val bufferingEvent = SpeakerEvent.Buffering(currentPositionMs())
-                            updateDebug {
-                                it.copy(
-                                    lastEvent = bufferingEvent,
-                                    positionMs = bufferingEvent.positionMs,
-                                    underrunCount = it.underrunCount + 1,
-                                )
-                            }
-                            eventSink.emit(bufferingEvent)
-                            audioBuffer = bufferManager.waitForNextAudioBuffer()
-                            hatchet.d("Consume: awaited buffer arrived (trackId=${audioBuffer.trackId}).")
-                        }
-
-                        if (audioBuffer.trackId != playingTrackId) {
-                            if (playingTrackId != null) {
-                                hatchet.i(
-                                    "Emitting TrackChange: $playingTrackId -> ${audioBuffer.trackId}."
-                                )
-                                val trackChangeEvent = SpeakerEvent.TrackChange(audioBuffer.trackId)
-                                updateDebug {
-                                    it.copy(
-                                        lastEvent = trackChangeEvent,
-                                        playingTrackId = audioBuffer.trackId,
-                                    )
-                                }
-                                eventSink.emit(trackChangeEvent)
-                            } else {
-                                hatchet.d(
-                                    "First buffer this run; setting playingTrackId=${audioBuffer.trackId} without emit."
-                                )
-                            }
-
-                            playingTrackId = audioBuffer.trackId
-                            updateDebug { it.copy(playingTrackId = audioBuffer.trackId) }
-                        }
-
-                        val playingEvent = SpeakerEvent.Playing(currentPositionMs())
-                        updateDebug {
-                            it.copy(lastEvent = playingEvent, positionMs = playingEvent.positionMs)
-                        }
-                        eventSink.emit(playingEvent)
-
-                        FadeProcessor.fadeIfNecessary(
-                            audioBuffer.data,
-                            audioBuffer.sampleRate,
-                            audioBuffer.frameIndex.toInt().framesToMillis(audioBuffer.sampleRate),
-                            audioBuffer.fadeStartMs.toDouble(),
-                            audioBuffer.fadeLengthMs.toDouble(),
-                        )
-
-                        onAudioReceived(audioBuffer)
-                        bufferManager.recycleShortArray(audioBuffer.data)
-                    }
-                } finally {
-                    hatchet.i("Consume loop exiting (playingTrackId=$playingTrackId).")
-                    updateDebug { it.copy(consumeLoopRunning = false) }
-                }
-            }
-        } else {
+        if (ongoingPlaybackJob != null) {
             hatchet.w("startPlayback called but consume loop already running.")
+            return
         }
+        ongoingPlaybackJob = speakerScope.launch { runConsumeLoop() }
+    }
+
+    private suspend fun runConsumeLoop() {
+        hatchet.i("Consume loop entering (playingTrackId=$playingTrackId).")
+        updateDebug { it.copy(consumeLoopRunning = true) }
+        try {
+            onResumed()
+
+            while (true) {
+                yield()
+                val audioBuffer = nextBufferOrAwait()
+                emitTrackChangeIfNeeded(audioBuffer)
+
+                val playingEvent = SpeakerEvent.Playing(currentPositionMs())
+                updateDebug {
+                    it.copy(lastEvent = playingEvent, positionMs = playingEvent.positionMs)
+                }
+                eventSink.emit(playingEvent)
+
+                FadeProcessor.fadeIfNecessary(
+                    audioBuffer.data,
+                    audioBuffer.sampleRate,
+                    audioBuffer.frameIndex.toInt().framesToMillis(audioBuffer.sampleRate),
+                    audioBuffer.fadeStartMs.toDouble(),
+                    audioBuffer.fadeLengthMs.toDouble(),
+                )
+
+                onAudioReceived(audioBuffer)
+                bufferManager.recycleShortArray(audioBuffer.data)
+            }
+        } finally {
+            hatchet.i("Consume loop exiting (playingTrackId=$playingTrackId).")
+            updateDebug { it.copy(consumeLoopRunning = false) }
+        }
+    }
+
+    /**
+     * Return an immediately-available buffer, or emit [SpeakerEvent.Buffering] (an underrun)
+     * and suspend until the next one arrives.
+     */
+    private suspend fun nextBufferOrAwait(): AudioBuffer {
+        bufferManager.checkForNextAudioBuffer()?.let { return it }
+
+        hatchet.d("Consume: no buffer ready, emitting Buffering and awaiting.")
+        val bufferingEvent = SpeakerEvent.Buffering(currentPositionMs())
+        updateDebug {
+            it.copy(
+                lastEvent = bufferingEvent,
+                positionMs = bufferingEvent.positionMs,
+                underrunCount = it.underrunCount + 1,
+            )
+        }
+        eventSink.emit(bufferingEvent)
+        val awaited = bufferManager.waitForNextAudioBuffer()
+        hatchet.d("Consume: awaited buffer arrived (trackId=${awaited.trackId}).")
+        return awaited
+    }
+
+    /**
+     * Emit [SpeakerEvent.TrackChange] when [audioBuffer] starts a different track than the one
+     * being played — except for the first buffer of a run, which only seeds [playingTrackId].
+     */
+    private suspend fun emitTrackChangeIfNeeded(audioBuffer: AudioBuffer) {
+        if (audioBuffer.trackId == playingTrackId) return
+
+        if (playingTrackId != null) {
+            hatchet.i("Emitting TrackChange: $playingTrackId -> ${audioBuffer.trackId}.")
+            val trackChangeEvent = SpeakerEvent.TrackChange(audioBuffer.trackId)
+            updateDebug {
+                it.copy(
+                    lastEvent = trackChangeEvent,
+                    playingTrackId = audioBuffer.trackId,
+                )
+            }
+            eventSink.emit(trackChangeEvent)
+        } else {
+            hatchet.d(
+                "First buffer this run; setting playingTrackId=${audioBuffer.trackId} without emit."
+            )
+        }
+
+        playingTrackId = audioBuffer.trackId
+        updateDebug { it.copy(playingTrackId = audioBuffer.trackId) }
     }
 }
