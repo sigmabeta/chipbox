@@ -11,3 +11,7 @@ ktlint_standard_indent = disabled
 ktlint_standard_annotation = disabled
 ktlint_function_naming_ignore_when_annotated_with = Composable
 ktlint_standard_backing-property-naming = disabled
+# Disabled to reconcile with detekt's MaxLineLength (120): with
+# max_line_length=off this rule collapses `fun x() =\n    expr` expression
+# bodies back onto one line, recreating the >120-char lines detekt rejects.
+ktlint_standard_function-signature = disabled
