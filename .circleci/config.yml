@@ -21,7 +21,10 @@ attach_ws: &attach_ws
 install_cmake: &install_cmake
   run:
     name: Install SDK CMake (bundles Ninja for native builds)
-    command: yes | sdkmanager "cmake;3.22.1"
+    # `yes` gets SIGPIPE (exit 141) once sdkmanager stops reading; under
+    # CircleCI's `bash -eo pipefail` that would fail the step. `yes || true`
+    # absorbs the signal so only sdkmanager's real exit status counts.
+    command: (yes || true) | sdkmanager "cmake;3.22.1"
 
 workflows:
   version: 2
@@ -71,6 +74,11 @@ jobs:
       - run:
           name: Get all Git tags
           command: git fetch --prune --prune-tags && git fetch --tags -f
+      - run:
+          name: Fetch Paparazzi golden snapshots (Git LFS)
+          # Done here because `setup` has SSH configured by `checkout`;
+          # downstream jobs use attach_workspace and have no SSH set up.
+          command: git lfs install --local && git lfs pull
       - restore_cache:
           keys:
             - jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
@@ -185,15 +193,14 @@ jobs:
       JVM_OPTS: -Xmx512m
 
     steps:
+      # Golden snapshots come from the workspace (setup did the LFS pull;
+      # this job has no SSH for git@github.com).
       - *attach_ws
       - restore_cache:
           keys:
             - build-cache-screenshot-v1-{{ .Branch }}-{{ .Revision }}
             - build-cache-screenshot-v1-{{ .Branch }}-
             - build-cache-screenshot-v1-
-      - run:
-          name: Pull Paparazzi golden snapshots from Git LFS
-          command: git lfs install --local && git lfs pull
       - run:
           name: Compare screenshot tests
           command: ./gradlew verifyPaparazziDebug --build-cache --configuration-cache --no-daemon --max-workers=2
