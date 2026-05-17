@@ -49,7 +49,9 @@ jobs:
       - checkout
       - *submodule_init
       - restore_cache:
-          key: jars-v1-
+          keys:
+            - jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+            - jars-v1-
       - run:
           name: Download Dependencies
           # AGP 9 removed `androidDependencies`; resolving :app's classpaths
@@ -57,8 +59,11 @@ jobs:
           command: ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --no-configuration-cache --no-daemon --max-workers=1
       - save_cache:
           key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+          # Only the artifact + wrapper caches — not all of ~/.gradle (daemon
+          # logs, transient state) which bloats save/restore time.
           paths:
-            - ~/.gradle
+            - ~/.gradle/caches/modules-2
+            - ~/.gradle/wrapper
       - run:
           name: Get all Git tags
           command: git fetch --prune --prune-tags && git fetch --tags -f
@@ -76,15 +81,15 @@ jobs:
       JVM_OPTS: -Xmx2048m
 
     steps:
+      # ktlint-check.sh downloads the ktlint binary and lints source directly;
+      # it uses no Gradle, so the sage submodule and jars cache aren't needed
+      # (and skipping the submodule keeps vendored sage/ out of the lint set).
       - restore_cache:
           keys:
             - source-v1-{{ .Branch }}-{{ .Revision }}
             - source-v1-{{ .Branch }}-
             - source-v1-
       - checkout
-      - *submodule_init
-      - restore_cache:
-          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
       - run:
           name: Run Ktlint
           command: ./ktlint-check.sh
@@ -110,10 +115,21 @@ jobs:
       - checkout
       - *submodule_init
       - restore_cache:
-          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+          keys:
+            - jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+            - jars-v1-
+      - restore_cache:
+          keys:
+            - build-cache-detekt-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-detekt-v1-{{ .Branch }}-
+            - build-cache-detekt-v1-
       - run:
           name: Run Detekt checks
-          command: ./gradlew detekt --no-configuration-cache --no-daemon --max-workers=2
+          command: ./gradlew detekt --build-cache --no-configuration-cache --no-daemon --max-workers=2
+      - save_cache:
+          key: build-cache-detekt-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle/caches/build-cache-1
 
   android-lint:
     resource_class: large
@@ -134,10 +150,21 @@ jobs:
       - checkout
       - *submodule_init
       - restore_cache:
-          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+          keys:
+            - jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+            - jars-v1-
+      - restore_cache:
+          keys:
+            - build-cache-lint-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-lint-v1-{{ .Branch }}-
+            - build-cache-lint-v1-
       - run:
           name: Run Android Lint checks
-          command: ./gradlew :app:lintRelease --no-configuration-cache --no-daemon --max-workers=4
+          command: ./gradlew :app:lintRelease --build-cache --no-configuration-cache --no-daemon --max-workers=4
+      - save_cache:
+          key: build-cache-lint-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle/caches/build-cache-1
       - store_artifacts:
           path: app/build/reports/
           destination: reports
@@ -160,13 +187,24 @@ jobs:
       - checkout
       - *submodule_init
       - restore_cache:
-          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+          keys:
+            - jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+            - jars-v1-
+      - restore_cache:
+          keys:
+            - build-cache-screenshot-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-screenshot-v1-{{ .Branch }}-
+            - build-cache-screenshot-v1-
       - run:
           name: Pull Paparazzi golden snapshots from Git LFS
           command: git lfs install --local && git lfs pull
       - run:
           name: Compare screenshot tests
-          command: ./gradlew verifyPaparazziDebug --no-configuration-cache --no-daemon --max-workers=2
+          command: ./gradlew verifyPaparazziDebug --build-cache --no-configuration-cache --no-daemon --max-workers=2
+      - save_cache:
+          key: build-cache-screenshot-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle/caches/build-cache-1
       - store_artifacts:
           path: features/search/screenshot/build/paparazzi/failures/
           destination: failure-screenshots/search
@@ -196,13 +234,24 @@ jobs:
       - checkout
       - *submodule_init
       - restore_cache:
-          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+          keys:
+            - jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
+            - jars-v1-
+      - restore_cache:
+          keys:
+            - build-cache-apk-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-apk-v1-{{ .Branch }}-
+            - build-cache-apk-v1-
       # Release signing reads CHIPBOX_KEY_ALIAS / CHIPBOX_KEYSTORE_PASSWORD /
       # CHIPBOX_KEY_PASSWORD from CircleCI project env vars (chipbox.jks is
       # committed at the repo root). Without them the APK is debug-signed.
       - run:
           name: Build Release
-          command: ./gradlew :app:assembleRelease -PdisablePreDex --no-configuration-cache --no-daemon --max-workers=4
+          command: ./gradlew :app:assembleRelease -PdisablePreDex --build-cache --no-configuration-cache --no-daemon --max-workers=4
+      - save_cache:
+          key: build-cache-apk-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle/caches/build-cache-1
       - store_artifacts:
           path: app/build/outputs/apk/release
           destination: outputs
