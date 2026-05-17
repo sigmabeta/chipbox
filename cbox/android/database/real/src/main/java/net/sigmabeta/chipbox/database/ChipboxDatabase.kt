@@ -2,7 +2,12 @@ package net.sigmabeta.chipbox.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import net.sigmabeta.chipbox.database.dao.*
+import net.sigmabeta.chipbox.database.dao.ArtistDao
+import net.sigmabeta.chipbox.database.dao.GameArtistDao
+import net.sigmabeta.chipbox.database.dao.GameDao
+import net.sigmabeta.chipbox.database.dao.SearchHistoryDao
+import net.sigmabeta.chipbox.database.dao.TrackArtistDao
+import net.sigmabeta.chipbox.database.dao.TrackDao
 import net.sigmabeta.chipbox.entities.ArtistEntity
 import net.sigmabeta.chipbox.entities.GameEntity
 import net.sigmabeta.chipbox.entities.SearchHistoryEntity

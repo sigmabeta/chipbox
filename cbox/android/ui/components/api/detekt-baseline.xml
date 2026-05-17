@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:IconNameCaptionListItem.kt$@Composable @Suppress("LongParameterList") fun IconNameCaptionListItem( name: String, caption: String, icon: Icon, clickAction: SageAction, active: Boolean, actionSink: ActionSink, modifier: Modifier, padding: PaddingValues, )</ID>
+    <ID>LongMethod:LabeledThingyPaparazziTest.kt$@Composable private fun Sample()</ID>
+    <ID>LongMethod:NameCaptionValueListItem.kt$@Composable fun NameCaptionValueListItem( model: NameCaptionValueListModel, actionSink: ActionSink, modifier: Modifier, padding: PaddingValues, )</ID>
+  </CurrentIssues>
+</SmellBaseline>

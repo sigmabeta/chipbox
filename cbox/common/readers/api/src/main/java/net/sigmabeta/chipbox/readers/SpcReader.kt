@@ -10,7 +10,7 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
             val fileAsByteBuffer = bytesAsByteBuffer(bytes)
-            val formatHeader = fileAsByteBuffer.nextBytesAsString(33)
+            val formatHeader = fileAsByteBuffer.nextBytesAsString(HEADER_MAGIC_SIZE)
             if (formatHeader == null) {
                 hatchet.w("SPC parse failed: file too small to contain header (${bytes.size} bytes).")
                 return null
@@ -58,7 +58,7 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
 
     private fun readMainTag(fileAsByteBuffer: ByteBuffer): SpcMainTag? {
         val hasHeaderInfo = fileAsByteBuffer
-            .nextBytes(3)
+            .nextBytes(LENGTH_HEADER_INFO_FIELD)
             ?.last()
             ?.equals(0x1A.toByte()) ?: false
 
@@ -90,7 +90,7 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
         // SPC lengths are stored as string-encoded numbers?!?!? Apparently this is supposed to not
         // always be the case, but I've never seen an example of it not being the case, so until then,
         // this is assumed to be how it works.
-        val lengthMs = lengthSecondsString?.toLongOrNull()?.times(1_000L) ?: LENGTH_UNKNOWN_MS
+        val lengthMs = lengthSecondsString?.toLongOrNull()?.times(MILLIS_PER_SECOND) ?: LENGTH_UNKNOWN_MS
         val fadeLengthMs = fadeLengthMillisString?.toLongOrNull() ?: LENGTH_UNKNOWN_MS
 
         return SpcMainTag(
@@ -126,9 +126,9 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
         var artistName: String? = null
 
         while (buf.position() + XID6_SUBCHUNK_HEADER_SIZE <= end) {
-            val id = buf.get().toInt() and 0xFF
-            val type = buf.get().toInt() and 0xFF
-            val data = buf.short.toInt() and 0xFFFF
+            val id = buf.get().toInt() and BYTE_MASK
+            val type = buf.get().toInt() and BYTE_MASK
+            val data = buf.short.toInt() and SHORT_MASK
 
             when (type) {
                 XID6_TYPE_INLINE -> Unit // 16-bit value lives in `data`; no payload follows.
@@ -163,6 +163,13 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
 
     companion object {
         private const val HEADER_MAGIC = "SNES-SPC700 Sound File Data v0.30"
+        // 33-byte magic string (32 chars + the trailing v-version digit) is read up front.
+        private const val HEADER_MAGIC_SIZE = 33
+        // 3-byte field after the magic; its last byte is 0x1A when ID666 metadata is present.
+        private const val LENGTH_HEADER_INFO_FIELD = 3
+        private const val MILLIS_PER_SECOND = 1_000L
+        private const val BYTE_MASK = 0xFF
+        private const val SHORT_MASK = 0xFFFF
         private const val SHOULD_LOG_EXTRA_INFO = false
 
         private const val LENGTH_SPC_REGISTERS = 9

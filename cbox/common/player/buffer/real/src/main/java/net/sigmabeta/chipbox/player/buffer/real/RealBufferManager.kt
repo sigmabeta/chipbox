@@ -138,7 +138,7 @@ class RealBufferManager(
                 // the orphan can just fall to GC.
                 hatchet.w("drain: emptyArrays send hit ClosedSendChannelException.")
             }
-            if (drained % 4 == 0) {
+            if (drained % DRAIN_LOG_INTERVAL == 0) {
                 hatchet.d("drain: $drained buffer(s) so far.")
             }
         }
@@ -153,5 +153,7 @@ class RealBufferManager(
         const val BUFFER_SIZE_BYTES_DEFAULT = 8192
 
         private const val BUFFER_LENGTH_MILLIS = 500.0
+
+        private const val DRAIN_LOG_INTERVAL = 4
     }
 }

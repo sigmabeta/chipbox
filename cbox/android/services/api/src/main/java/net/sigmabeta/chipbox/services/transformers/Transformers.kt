@@ -99,11 +99,13 @@ private fun Game.iconUri() = if (photoUrl != null) ArtworkUris.forGame(id) else 
 
 private fun Artist.iconUri() = if (photoUrl != null) ArtworkUris.forArtist(id) else null
 
+private const val MAX_ARTISTS_TO_LIST = 3
+
 private fun Track.getArtistText(): String {
     return when (artists?.size) {
         null, 0 -> "Unknown Artist"
         1 -> artists!!.first().name
-        2, 3 -> artists!!.joinToString(", ") { it.name }
+        2, MAX_ARTISTS_TO_LIST -> artists!!.joinToString(", ") { it.name }
         else -> "Various Artists"
     }
 }

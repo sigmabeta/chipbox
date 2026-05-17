@@ -32,9 +32,9 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
             buf.position(OFFSET_GD3)
             val gd3Relative = buf.nextFourBytesAsInt()
             buf.position(OFFSET_TOTAL_SAMPLES)
-            val totalSamples = buf.nextFourBytesAsInt().toLong() and 0xFFFFFFFFL
+            val totalSamples = buf.nextFourBytesAsInt().toLong() and UINT32_MASK
             buf.position(OFFSET_LOOP_SAMPLES)
-            val loopSamples = buf.nextFourBytesAsInt().toLong() and 0xFFFFFFFFL
+            val loopSamples = buf.nextFourBytesAsInt().toLong() and UINT32_MASK
 
             val lengthMs = computeLengthMs(totalSamples, loopSamples)
             val fadeMs = if (loopSamples > 0L) FADE_LENGTH_MS else 0L
@@ -94,7 +94,7 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
             return null
         }
         buf.nextFourBytesAsInt() // version, ignored
-        val payloadSize = buf.nextFourBytesAsInt().toLong() and 0xFFFFFFFFL
+        val payloadSize = buf.nextFourBytesAsInt().toLong() and UINT32_MASK
         val payloadStart = buf.position()
         val payloadEnd = (payloadStart + payloadSize).coerceAtMost(bytes.size.toLong()).toInt()
 
@@ -159,7 +159,7 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
     private fun computeLengthMs(totalSamples: Long, loopSamples: Long): Long {
         if (totalSamples <= 0L) return LENGTH_UNKNOWN_MS
         val withExtraLoops = if (loopSamples > 0L) totalSamples + 2L * loopSamples else totalSamples
-        return withExtraLoops * 1000L / SAMPLE_RATE_HZ
+        return withExtraLoops * MILLIS_PER_SECOND / SAMPLE_RATE_HZ
     }
 
     companion object {
@@ -184,6 +184,10 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
         private const val GD3_IDX_AUTHOR_EN = 6
 
         private const val SAMPLE_RATE_HZ = 44_100L
+        private const val MILLIS_PER_SECOND = 1000L
+
+        // Mask treating a signed 32-bit field as an unsigned value widened to Long.
+        private const val UINT32_MASK = 0xFFFFFFFFL
     }
 }
 

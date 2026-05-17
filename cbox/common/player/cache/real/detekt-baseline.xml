@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:RealPcmTrackSourceFactory.kt$RealPcmTrackSourceFactory$override suspend fun open(track: Track, bytes: ByteArray): PcmTrackSource</ID>
+    <ID>LoopWithTooManyJumpStatements:CachingPcmSource.kt$CachingPcmSource$while</ID>
+    <ID>NestedBlockDepth:PcmCacheJanitor.kt$PcmCacheJanitor$fun runStartupCleanup()</ID>
+    <ID>ReturnCount:CachingPcmSource.kt$CachingPcmSource$override suspend fun readFrames(buffer: ShortArray): Int</ID>
+    <ID>ReturnCount:PcmCacheFile.kt$PcmCacheFile$private fun readHeader(channel: FileChannel): Header?</ID>
+    <ID>ReturnCount:PcmCacheFile.kt$PcmCacheFile.Reader$fun readFrames(buffer: ShortArray, atFramePosition: Long): Int</ID>
+    <ID>SwallowedException:PcmCacheFile.kt$PcmCacheFile$e: IOException</ID>
+    <ID>TooGenericExceptionCaught:CachedFilePcmSource.kt$CachedFilePcmSource$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:CachingPcmSource.kt$CachingPcmSource$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:PcmCacheFile.kt$PcmCacheFile$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:RealPcmTrackSourceFactory.kt$RealPcmTrackSourceFactory$t: Throwable</ID>
+  </CurrentIssues>
+</SmellBaseline>

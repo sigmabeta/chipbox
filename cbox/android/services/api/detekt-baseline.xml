@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ReturnCount:DirectorPlayer.kt$DirectorPlayer$override fun handleSetMediaItems( mediaItems: List&lt;MediaItem&gt;, startIndex: Int, startPositionMs: Long, ): ListenableFuture&lt;*&gt;</ID>
+    <ID>ReturnCount:LibraryBrowser.kt$LibraryBrowser$private suspend fun getArtistsItem(mediaId: String): MediaItem?</ID>
+    <ID>ReturnCount:LibraryBrowser.kt$LibraryBrowser$private suspend fun getGamesItem(mediaId: String): MediaItem?</ID>
+    <ID>ReturnCount:LibraryBrowser.kt$LibraryBrowser$private suspend fun getTracksItem(mediaId: String): MediaItem?</ID>
+    <ID>TooGenericExceptionCaught:ChipboxLibrarySessionCallback.kt$ChipboxLibrarySessionCallback$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:ChipboxPlaybackService.kt$ChipboxPlaybackService$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:DirectorPlayer.kt$DirectorPlayer$t: Throwable</ID>
+  </CurrentIssues>
+</SmellBaseline>

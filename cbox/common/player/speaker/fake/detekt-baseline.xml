@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ImplicitDefaultLocale:TextSpeaker.kt$TextSpeaker$String.format("%4d:", frameCount)</ID>
+    <ID>ImplicitDefaultLocale:TextSpeaker.kt$TextSpeaker$String.format("%6d", data[leftSampleIndex])</ID>
+    <ID>ImplicitDefaultLocale:TextSpeaker.kt$TextSpeaker$String.format("%6d", data[rightSampleIndex])</ID>
+    <ID>NestedBlockDepth:FileSpeaker.kt$FileSpeaker$private fun getOutputFile(externalStorageDir: File): File</ID>
+    <ID>TooGenericExceptionCaught:FileSpeaker.kt$FileSpeaker$ex: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

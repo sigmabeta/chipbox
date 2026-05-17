@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:RealScanner.kt$RealScanner$private suspend fun scanGroup(files: List&lt;LibraryFile&gt;): Progress</ID>
+    <ID>LoopWithTooManyJumpStatements:RealScanner.kt$RealScanner$for</ID>
+    <ID>TooGenericExceptionCaught:RealScanner.kt$RealScanner$ex: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

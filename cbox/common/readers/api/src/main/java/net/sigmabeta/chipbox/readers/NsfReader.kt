@@ -12,7 +12,7 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
         try {
             val fileAsByteBuffer = bytesAsByteBuffer(bytes)
 
-            val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
+            val formatHeader = fileAsByteBuffer.nextBytesAsString(HEADER_MAGIC_SIZE)
             if (formatHeader == null) {
                 hatchet.w("NSF parse failed: file too small to contain header (${bytes.size} bytes).")
                 return null
@@ -55,13 +55,13 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
     }
 
     private fun getNumberOfTracks(fileAsBytes: ByteArray): Int {
-        return fileAsBytes[0x06].toInt() and 0xFF
+        return fileAsBytes[OFFSET_TOTAL_SONGS].toInt() and BYTE_MASK
     }
 
     private fun getGameTitle(fileAsBytes: ByteArray): String {
         return try {
             fileAsBytes
-                .decodeToString(0x0E, 0x2E, true)
+                .decodeToString(OFFSET_GAME_TITLE, OFFSET_GAME_ARTIST, true)
                 .substringBefore(0.toChar())
                 .trim()
         } catch (ex: Exception) {
@@ -73,7 +73,7 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
     private fun getGameArtist(fileAsBytes: ByteArray): String {
         return try {
             fileAsBytes
-                .decodeToString(0x2E, 0x4E, true)
+                .decodeToString(OFFSET_GAME_ARTIST, OFFSET_COPYRIGHT, true)
                 .substringBefore(0.toChar())
                 .trim()
         } catch (ex: Exception) {
@@ -86,5 +86,14 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
 
     companion object {
         private const val HEADER_MAGIC = "NESM"
+        private const val HEADER_MAGIC_SIZE = 4
+
+        // NSF header layout (offsets into the file).
+        private const val OFFSET_TOTAL_SONGS = 0x06
+        private const val OFFSET_GAME_TITLE = 0x0E
+        private const val OFFSET_GAME_ARTIST = 0x2E
+        private const val OFFSET_COPYRIGHT = 0x4E
+
+        private const val BYTE_MASK = 0xFF
     }
 }

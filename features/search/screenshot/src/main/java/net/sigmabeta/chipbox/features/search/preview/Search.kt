@@ -22,7 +22,11 @@ internal fun Search(
     syntheticWidthClass: WidthClass = previewWidthClass(),
 ) {
     val state = searchResultsState()
-    ScreenPreview(darkTheme = darkTheme, syntheticWidthClass = syntheticWidthClass, screenName = "Search") { stringProvider ->
+    ScreenPreview(
+        darkTheme = darkTheme,
+        syntheticWidthClass = syntheticWidthClass,
+        screenName = "Search",
+    ) { stringProvider ->
         SearchContent(
             listItems = state.toActual(stringProvider).listItems,
             query = state.query,
@@ -39,7 +43,11 @@ internal fun SearchHistoryAndPrompt(
     syntheticWidthClass: WidthClass = previewWidthClass(),
 ) {
     val state = searchHistoryState()
-    ScreenPreview(darkTheme = darkTheme, syntheticWidthClass = syntheticWidthClass, screenName = "Search") { stringProvider ->
+    ScreenPreview(
+        darkTheme = darkTheme,
+        syntheticWidthClass = syntheticWidthClass,
+        screenName = "Search",
+    ) { stringProvider ->
         SearchContent(
             listItems = state.toActual(stringProvider).listItems,
             query = state.query,

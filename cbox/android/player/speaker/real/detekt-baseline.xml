@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ReturnCount:RealSpeaker.kt$RealSpeaker$override fun currentPositionMs(): Long</ID>
+  </CurrentIssues>
+</SmellBaseline>

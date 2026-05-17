@@ -319,16 +319,16 @@ class MockRepository(
         return tracks
     }
 
-    private fun shouldTrackHaveOneArtist() = random.nextInt(10) >= 5
+    private fun shouldTrackHaveOneArtist() = random.nextInt(RANDOM_BOUND) >= SINGLE_ARTIST_THRESHOLD
 
-    private fun shouldGenerateNewArtist() = random.nextInt(10) >= 3
+    private fun shouldGenerateNewArtist() = random.nextInt(RANDOM_BOUND) >= NEW_ARTIST_THRESHOLD
 
     private fun getArtistCountForGame(): Int {
-        val randomNumber = random.nextInt(10)
+        val randomNumber = random.nextInt(RANDOM_BOUND)
         return when {
             randomNumber < 1 -> 0
-            randomNumber < 2 -> 3
-            randomNumber < 4 -> 2
+            randomNumber < 2 -> MULTI_ARTIST_COUNT
+            randomNumber < MULTI_ARTIST_ROLL_MAX -> 2
             else -> 1
         }
     }
@@ -338,7 +338,7 @@ class MockRepository(
             random.nextLong(),
             "",
             stringGenerator.generateTitle(),
-            random.nextInt(400000).toLong(),
+            random.nextInt(MAX_TRACK_LENGTH_MS).toLong(),
             -1,
             0L,
             null,
@@ -411,5 +411,12 @@ class MockRepository(
     companion object {
         const val DEFAULT_MAX_GAMES = 100
         const val DEFAULT_MAX_TRACKS_PER_GAME = 30
+
+        private const val RANDOM_BOUND = 10
+        private const val SINGLE_ARTIST_THRESHOLD = 5
+        private const val NEW_ARTIST_THRESHOLD = 3
+        private const val MULTI_ARTIST_COUNT = 3
+        private const val MULTI_ARTIST_ROLL_MAX = 4
+        private const val MAX_TRACK_LENGTH_MS = 400000
     }
 }

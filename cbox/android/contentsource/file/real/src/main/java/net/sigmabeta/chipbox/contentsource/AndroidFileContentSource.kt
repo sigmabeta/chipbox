@@ -75,7 +75,7 @@ class AndroidFileContentSource(
                 val childDocId = cursor.getString(0)
                 val name = cursor.getString(1) ?: continue
                 val mime = cursor.getString(2)
-                val size = if (cursor.isNull(3)) 0L else cursor.getLong(3)
+                val size = if (cursor.isNull(COLUMN_INDEX_SIZE)) 0L else cursor.getLong(COLUMN_INDEX_SIZE)
                 if (mime == DocumentsContract.Document.MIME_TYPE_DIR) {
                     walk(treeUri, childDocId)
                 } else {
@@ -109,5 +109,7 @@ class AndroidFileContentSource(
 
     companion object {
         const val SOURCE_ID = "android-file"
+
+        private const val COLUMN_INDEX_SIZE = 3
     }
 }

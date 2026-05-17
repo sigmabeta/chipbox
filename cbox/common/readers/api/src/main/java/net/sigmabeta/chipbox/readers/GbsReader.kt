@@ -11,7 +11,7 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
         try {
             val fileAsByteBuffer = bytesAsByteBuffer(bytes)
 
-            val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
+            val formatHeader = fileAsByteBuffer.nextBytesAsString(HEADER_READ_SIZE)
             if (formatHeader == null) {
                 hatchet.w("GBS parse failed: file too small to contain header (${bytes.size} bytes).")
                 return null
@@ -54,13 +54,13 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
     }
 
     private fun getNumberOfTracks(fileAsBytes: ByteArray): Int {
-        return fileAsBytes[0x04].toInt() and 0xFF
+        return fileAsBytes[OFFSET_NUMBER_OF_SONGS].toInt() and BYTE_MASK
     }
 
     private fun getGameTitle(fileAsBytes: ByteArray): String {
         return try {
             fileAsBytes
-                .decodeToString(0x10, 0x30, true)
+                .decodeToString(OFFSET_TITLE, OFFSET_AUTHOR, true)
                 .substringBefore(0.toChar())
                 .trim()
         } catch (ex: Exception) {
@@ -72,7 +72,7 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
     private fun getGameArtist(fileAsBytes: ByteArray): String {
         return try {
             fileAsBytes
-                .decodeToString(0x30, 0x50, true)
+                .decodeToString(OFFSET_AUTHOR, OFFSET_COPYRIGHT, true)
                 .substringBefore(0.toChar())
                 .trim()
         } catch (ex: Exception) {
@@ -85,6 +85,15 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
 
     companion object {
         private const val HEADER_MAGIC = "GBS"
+        private const val HEADER_READ_SIZE = 4
+
+        // GBS header layout (offsets into the file).
+        private const val OFFSET_NUMBER_OF_SONGS = 0x04
+        private const val OFFSET_TITLE = 0x10
+        private const val OFFSET_AUTHOR = 0x30
+        private const val OFFSET_COPYRIGHT = 0x50
+
+        private const val BYTE_MASK = 0xFF
     }
 }
 

@@ -171,7 +171,7 @@ class DatabaseRepository(
             trackLengthMs,
             trackNumber,
             fadeLengthMs,
-            if (withGame) getGameById(game_id) else null,
+            if (withGame) getGameById(gameId) else null,
             if (withArtists) getArtistsForTrack(id) else null,
             decodeChainFiles(chainFiles),
             extension,
@@ -203,7 +203,7 @@ class DatabaseRepository(
     }
 
     private suspend fun RawTrack.getArtistsSplit() = artist
-        .split(*DELIMITERS_ARTISTS)
+        .split(DELIMITERS_ARTISTS)
         .map { it.trim() }
         .map { artistName -> getOrAddArtistByName(artistName) }
 
@@ -357,6 +357,6 @@ class DatabaseRepository(
     companion object {
         const val ERR_UNKNOWN = "Unknown Error"
 
-        val DELIMITERS_ARTISTS = arrayOf(", &", ",", " or ", " and ", "&")
+        val DELIMITERS_ARTISTS = Regex(", &|,| or | and |&")
     }
 }

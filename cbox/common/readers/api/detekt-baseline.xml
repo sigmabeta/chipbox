@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongMethod:PsfReader.kt$PsfReader$fun readTagInfo(bytes: ByteArray): PsfTagInfo?</ID>
+    <ID>LoopWithTooManyJumpStatements:NsfeReader.kt$NsfeReader$while</ID>
+    <ID>LoopWithTooManyJumpStatements:SpcReader.kt$SpcReader$while</ID>
+    <ID>NestedBlockDepth:SpcReader.kt$SpcReader$private fun readExtendedTag(bytes: ByteArray): SpcExtendedTag?</ID>
+    <ID>ReturnCount:GbsReader.kt$GbsReader$override fun readTracksFromFile(bytes: ByteArray, identifier: String): List&lt;RawTrack&gt;?</ID>
+    <ID>ReturnCount:M3uReader.kt$private fun String.toM3uEntry(): M3uEntry?</ID>
+    <ID>ReturnCount:NsfReader.kt$NsfReader$@OptIn(ExperimentalStdlibApi::class) override fun readTracksFromFile(bytes: ByteArray, identifier: String): List&lt;RawTrack&gt;?</ID>
+    <ID>ReturnCount:NsfeReader.kt$NsfeReader$override fun readTracksFromFile(bytes: ByteArray, identifier: String): List&lt;RawTrack&gt;?</ID>
+    <ID>ReturnCount:PsfReader.kt$PsfReader$fun readTagInfo(bytes: ByteArray): PsfTagInfo?</ID>
+    <ID>ReturnCount:ReaderUtils.kt$fun String?.orUnknown(): String</ID>
+    <ID>ReturnCount:SpcReader.kt$SpcReader$override fun readTracksFromFile(bytes: ByteArray, identifier: String): List&lt;RawTrack&gt;?</ID>
+    <ID>ReturnCount:SpcReader.kt$SpcReader$private fun readExtendedTag(bytes: ByteArray): SpcExtendedTag?</ID>
+    <ID>ReturnCount:VgmReader.kt$VgmReader$override fun readTracksFromFile(bytes: ByteArray, identifier: String): List&lt;RawTrack&gt;?</ID>
+    <ID>ReturnCount:VgmReader.kt$VgmReader$private fun readGd3(bytes: ByteArray, absoluteOffset: Long): Gd3Tag?</ID>
+    <ID>SwallowedException:NsfeReader.kt$NsfeReader$ex: BufferUnderflowException</ID>
+    <ID>SwallowedException:NsfeReader.kt$NsfeReader$ex: NoSuchElementException</ID>
+    <ID>SwallowedException:PsfReader.kt$PsfReader$e: BufferUnderflowException</ID>
+    <ID>SwallowedException:ReaderUtils.kt$ex: BufferUnderflowException</ID>
+    <ID>TooGenericExceptionCaught:GbsReader.kt$GbsReader$ex: Exception</ID>
+    <ID>TooGenericExceptionCaught:M3uReader.kt$M3uReader$ex: Exception</ID>
+    <ID>TooGenericExceptionCaught:NsfReader.kt$NsfReader$ex: Exception</ID>
+    <ID>TooGenericExceptionCaught:SpcReader.kt$SpcReader$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:VgmReader.kt$VgmReader$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

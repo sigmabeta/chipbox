@@ -113,6 +113,7 @@ class ArtworkProvider : ContentProvider() {
             .data
             ?.photoUrl
 
+    @Suppress("TooGenericExceptionCaught")
     private fun ensureCached(
         ctx: Context,
         source: AndroidFileContentSource,
@@ -120,7 +121,7 @@ class ArtworkProvider : ContentProvider() {
         id: Long,
         photoUrl: String,
     ): File {
-        val srcHash = photoUrl.hashCode().toUInt().toString(16)
+        val srcHash = photoUrl.hashCode().toUInt().toString(HEX_RADIX)
         val cacheDir = File(ctx.cacheDir, "artwork").apply { mkdirs() }
         val cacheFile = File(cacheDir, "${kind}_${id}_$srcHash.bin")
 
@@ -147,6 +148,7 @@ class ArtworkProvider : ContentProvider() {
     }
 
     companion object {
+        private const val HEX_RADIX = 16
         private const val MATCH_GAME = 1
         private const val MATCH_ARTIST = 2
         private const val SEGMENT_GAME = ArtworkUris.SEGMENT_GAME

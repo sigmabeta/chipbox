@@ -195,7 +195,7 @@ internal class CachingPcmSource(
 
     private fun logWriteComplete(startNanos: Long) {
         val frames = writer.framesWritten
-        val wallSec = (System.nanoTime() - startNanos) / 1_000_000_000.0
+        val wallSec = (System.nanoTime() - startNanos) / NANOS_PER_SECOND
         val audioSec = if (sampleRate > 0) frames.toDouble() / sampleRate else 0.0
         val ratio = if (wallSec > 0) audioSec / wallSec else 0.0
         hatchet.i(
@@ -256,5 +256,8 @@ internal class CachingPcmSource(
         /** Trailing silence longer than this is dropped from the cache file. Mid-track silent
          *  gaps shorter than this still get persisted so the track plays back in time. */
         private const val SILENCE_TRIM_SECONDS = 5L
+
+        /** Nanoseconds per second, for converting elapsed nanoTime to wall-clock seconds. */
+        private const val NANOS_PER_SECOND = 1_000_000_000.0
     }
 }

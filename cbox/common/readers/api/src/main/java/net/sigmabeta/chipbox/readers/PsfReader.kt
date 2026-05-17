@@ -22,7 +22,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
 
     fun readTagInfo(bytes: ByteArray): PsfTagInfo? {
         val fileAsByteBuffer = bytesAsByteBuffer(bytes)
-        val formatHeader = fileAsByteBuffer.nextBytesAsString(4)
+        val formatHeader = fileAsByteBuffer.nextBytesAsString(SIGNATURE_SIZE)
 
         if (formatHeader == null) {
             hatchet.w("PSF parse failed: file too small to contain header (${bytes.size} bytes).")
@@ -34,7 +34,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
             return null
         }
 
-        val platformCode = formatHeader.toByteArray(Charsets.US_ASCII)[3]
+        val platformCode = formatHeader.toByteArray(Charsets.US_ASCII)[SIGNATURE_INDEX_PLATFORM_CODE]
         val platform = platformForCode(platformCode)
         if (platform == null) {
             hatchet.w("PSF parse failed: unsupported platform code 0x%02X.".format(platformCode))
@@ -76,7 +76,11 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
             readAllTags(tagsAreaSize, fileAsByteBuffer, tagMap)
 
             val libRefs = tagMap.keys
-                .filter { it == PSF_TAG_KEY_LIB || (it.startsWith("_lib") && it.removePrefix("_lib").all { c -> c.isDigit() }) }
+                .filter { key ->
+                    key == PSF_TAG_KEY_LIB ||
+                        (key.startsWith(PSF_TAG_KEY_LIB) &&
+                            key.removePrefix(PSF_TAG_KEY_LIB).all { c -> c.isDigit() })
+                }
                 .sortedBy { libKeyToIndex(it) }
                 .mapNotNull { tagMap[it] }
 
@@ -158,7 +162,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
     }
 
     private fun isPsfTagValid(wrappedBuffer: ByteBuffer): Boolean {
-        val tagHeader = ByteArray(5)
+        val tagHeader = ByteArray(TAG_HEADER_SIZE)
         wrappedBuffer.get(tagHeader)
 
         return String(tagHeader) == PSF_TAG_HEADER
@@ -167,6 +171,10 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
     private fun isPsfFile(header: String) = header.startsWith("PSF")
 
     companion object {
+        // "PSF" + 1-byte platform code makes up the 4-byte file signature.
+        private const val SIGNATURE_SIZE = 4
+        private const val SIGNATURE_INDEX_PLATFORM_CODE = 3
+
         private const val FILE_HEADER_SIZE = 16
         private const val TAG_HEADER_SIZE = 5
         private const val COMBINED_HEADER_SIZE = FILE_HEADER_SIZE + TAG_HEADER_SIZE

@@ -69,7 +69,7 @@ private const val ANIM_DURATION_MS = 300
 val PlayerStatusReservedHeight: Dp = CONTAINER_HEIGHT + VERTICAL_MARGIN * 2
 
 /** Animation duration used by the bar's slide-in/out — exposed for syncing parent insets. */
-const val PlayerStatusAnimDurationMs: Int = ANIM_DURATION_MS
+const val PLAYER_STATUS_ANIM_DURATION_MS: Int = ANIM_DURATION_MS
 
 @Composable
 fun PlayerStatus(
@@ -113,6 +113,7 @@ fun PlayerStatus(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun PlayerStatusCard(
     state: PlayerStatusState,

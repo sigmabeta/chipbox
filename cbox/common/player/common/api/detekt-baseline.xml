@@ -1,0 +1,7 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>ReturnCount:SilenceDetection.kt$fun isBufferSilent(buffer: ShortArray, frameCount: Int): Boolean</ID>
+  </CurrentIssues>
+</SmellBaseline>

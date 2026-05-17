@@ -33,6 +33,7 @@ import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon
 
 private val SidePadding = 16.dp
+private const val HINT_ALPHA = 0.5f
 
 @Composable
 @Suppress("LongMethod")
@@ -96,7 +97,7 @@ fun SearchBar(
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         ),
                         modifier = Modifier
-                            .alpha(0.5f)
+                            .alpha(HINT_ALPHA)
                             .fillMaxWidth(),
                     )
                 }
