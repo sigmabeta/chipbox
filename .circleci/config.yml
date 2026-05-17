@@ -52,7 +52,9 @@ jobs:
           key: jars-v1-
       - run:
           name: Download Dependencies
-          command: ./gradlew androidDependencies --no-configuration-cache --no-daemon --max-workers=1
+          # AGP 9 removed `androidDependencies`; resolving :app's classpaths
+          # pulls the dependency graph into the shared ~/.gradle cache.
+          command: ./gradlew :app:dependencies --configuration releaseRuntimeClasspath --no-configuration-cache --no-daemon --max-workers=1
       - save_cache:
           key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "app/build.gradle.kts" }}
           paths:
