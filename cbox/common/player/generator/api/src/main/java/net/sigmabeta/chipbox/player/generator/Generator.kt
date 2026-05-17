@@ -12,7 +12,10 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
@@ -86,6 +89,15 @@ abstract class Generator(
 
     fun events() = eventSink.asSharedFlow()
 
+    private val debugInfoMutable = MutableStateFlow(GeneratorDebugInfo())
+
+    /** Observational diagnostics for the debug PlaybackStatus screen. */
+    fun debugInfo(): StateFlow<GeneratorDebugInfo> = debugInfoMutable.asStateFlow()
+
+    private fun updateDebug(block: (GeneratorDebugInfo) -> GeneratorDebugInfo) {
+        debugInfoMutable.value = block(debugInfoMutable.value)
+    }
+
     suspend fun startTrack(trackId: Long) {
         hatchet.i("startTrack($trackId): queueing on nextTrackIdChannel.")
         nextTrackIdChannel.send(trackId)
@@ -95,6 +107,7 @@ abstract class Generator(
 
     fun play() {
         if (ongoingGenerationJob == null) {
+            updateDebug { it.copy(looping = true) }
             ongoingGenerationJob = generatorScope.launch {
                 loop()
             }
@@ -139,6 +152,7 @@ abstract class Generator(
                 // When track is over, block waiting for the next one.
                 if (nextTrackId == null && currentSource?.isOver == true) {
                     hatchet.d("Track ${currentTrack?.title} reached natural end.")
+                    updateDebug { it.copy(lastEvent = GeneratorEvent.TrackChange) }
                     eventSink.emit(GeneratorEvent.TrackChange)
                     nextTrackId = nextTrackIdChannel.receive()
                 } else {
@@ -181,7 +195,10 @@ abstract class Generator(
 
                 framesPlayed += framesGenerated
 
-                source.getDiagnostics()?.let { hatchet.w("Source diagnostics: $it") }
+                source.getDiagnostics()?.let {
+                    hatchet.w("Source diagnostics: $it")
+                    updateDebug { info -> info.copy(sourceDiagnostics = it) }
+                }
 
                 logSilenceTransition(generatedAudio, framesGenerated)
 
@@ -214,20 +231,33 @@ abstract class Generator(
                     hatchet.d("First buffer for track ${track.id} delivered to buffer manager.")
                 }
 
-                eventSink.emit(GeneratorEvent.Emitting(framesPlayed.framesToMillis(rate).toLong()))
+                val emittingEvent = GeneratorEvent.Emitting(framesPlayed.framesToMillis(rate).toLong())
+                updateDebug {
+                    it.copy(
+                        producedMs = emittingEvent.producedMs,
+                        framesPlayed = framesPlayed,
+                        lastEvent = emittingEvent,
+                    )
+                }
+                eventSink.emit(emittingEvent)
 
                 yield()
             }
 
             if (error != null) {
-                eventSink.emit(GeneratorEvent.Error(error))
+                val errorEvent = GeneratorEvent.Error(error)
+                updateDebug { it.copy(lastEvent = errorEvent, lastError = error) }
+                eventSink.emit(errorEvent)
             }
 
             teardownHelper()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            eventSink.emit(GeneratorEvent.Error(e.message ?: "Unknown error"))
+            val message = e.message ?: "Unknown error"
+            val errorEvent = GeneratorEvent.Error(message)
+            updateDebug { it.copy(lastEvent = errorEvent, lastError = message) }
+            eventSink.emit(errorEvent)
             teardownHelper()
         }
     }
@@ -238,7 +268,9 @@ abstract class Generator(
         }
 
         hatchet.i("loadNextTrack($trackId): emitting Loading.")
-        eventSink.emit(GeneratorEvent.Loading(trackId))
+        val loadingEvent = GeneratorEvent.Loading(trackId)
+        updateDebug { it.copy(lastEvent = loadingEvent, currentTrackId = trackId) }
+        eventSink.emit(loadingEvent)
 
         if (currentSource != null) {
             try {
@@ -261,6 +293,15 @@ abstract class Generator(
         currentSource = pcmSource
 
         sampleRate = pcmSource.sampleRate
+        updateDebug {
+            it.copy(
+                currentTrackId = newTrack.id,
+                currentTrackTitle = newTrack.title,
+                sampleRate = pcmSource.sampleRate,
+                producedMs = 0L,
+                framesPlayed = 0,
+            )
+        }
         hatchet.d("loadNextTrack($trackId): calling bufferManager.setSampleRate(${pcmSource.sampleRate}).")
         bufferManager.setSampleRate(pcmSource.sampleRate)
         hatchet.d("loadNextTrack($trackId): setSampleRate returned.")
@@ -293,6 +334,13 @@ abstract class Generator(
         framesPlayed = 0
         lastSilenceState = null
         lastSilenceTrackId = null
+        updateDebug {
+            GeneratorDebugInfo(
+                looping = false,
+                lastEvent = it.lastEvent,
+                lastError = it.lastError,
+            )
+        }
     }
 
     private fun logSilenceTransition(buffer: ShortArray, framesGenerated: Int) {

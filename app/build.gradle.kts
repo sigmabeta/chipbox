@@ -107,6 +107,7 @@ dependencies {
     implementation(projects.cbox.android.coroutines.api)
     implementation(projects.cbox.android.storage.api)
     implementation(projects.cbox.common.debug.di)
+    implementation(projects.cbox.common.debugInfo.di)
     implementation(projects.cbox.common.settings.di)
 
     implementation(libs.sage.common.appinfo)

@@ -27,4 +27,30 @@
     <string name="playback_status_label_content_id">Content id</string>
     <string name="playback_status_label_current_position">Setlist position</string>
     <string name="playback_status_label_shuffled">Shuffled</string>
+
+    <string name="playback_status_section_generator">Generator</string>
+    <string name="playback_status_label_gen_track_id">Current track id</string>
+    <string name="playback_status_label_gen_track_title">Current track</string>
+    <string name="playback_status_label_gen_sample_rate">Sample rate</string>
+    <string name="playback_status_label_gen_produced_ms">Produced (ms)</string>
+    <string name="playback_status_label_gen_frames_played">Frames played</string>
+    <string name="playback_status_label_gen_looping">Looping</string>
+    <string name="playback_status_label_gen_last_event">Last event</string>
+    <string name="playback_status_label_gen_last_error">Last error</string>
+    <string name="playback_status_label_gen_source_diag">Source diagnostics</string>
+
+    <string name="playback_status_section_speaker">Speaker</string>
+    <string name="playback_status_label_spk_track_id">Playing track id</string>
+    <string name="playback_status_label_spk_position_ms">Position (ms)</string>
+    <string name="playback_status_label_spk_consume_loop">Consume loop running</string>
+    <string name="playback_status_label_spk_last_event">Last event</string>
+    <string name="playback_status_label_spk_underruns">Underruns</string>
+    <string name="playback_status_label_spk_last_error">Last error</string>
+
+    <string name="playback_status_section_buffer">Buffer</string>
+    <string name="playback_status_label_buf_sample_rate">Sample rate</string>
+    <string name="playback_status_label_buf_capacity">Pool capacity</string>
+    <string name="playback_status_label_buf_full_queued">Full buffers queued</string>
+    <string name="playback_status_label_buf_empty_avail">Empty arrays available</string>
+    <string name="playback_status_label_buf_drain_count">Drain count</string>
 </resources>

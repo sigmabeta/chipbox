@@ -16,7 +16,7 @@ dependencies {
     implementation(projects.cbox.common.strings.api)
     implementation(projects.cbox.common.models.api)
     implementation(projects.cbox.common.player.common.api)
-    implementation(projects.cbox.common.player.director.api)
+    implementation(projects.cbox.common.debugInfo.api)
 
     implementation(libs.sage.common.ui.components)
     implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
