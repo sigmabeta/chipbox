@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import net.sigmabeta.chipbox.database.dao.*
 import net.sigmabeta.chipbox.entities.ArtistEntity
 import net.sigmabeta.chipbox.entities.GameEntity
+import net.sigmabeta.chipbox.entities.SearchHistoryEntity
 import net.sigmabeta.chipbox.entities.TrackEntity
 import net.sigmabeta.chipbox.entities.joins.GameArtistJoin
 import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
@@ -15,9 +16,10 @@ import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
         GameEntity::class,
         TrackEntity::class,
         GameArtistJoin::class,
-        TrackArtistJoin::class
+        TrackArtistJoin::class,
+        SearchHistoryEntity::class
     ],
-    version = 6
+    version = 7
 )
 @Suppress("TooManyFunctions")
 abstract class ChipboxDatabase : RoomDatabase() {
@@ -27,4 +29,6 @@ abstract class ChipboxDatabase : RoomDatabase() {
 
     abstract fun gameArtistDao(): GameArtistDao
     abstract fun trackArtistDao(): TrackArtistDao
+
+    abstract fun searchHistoryDao(): SearchHistoryDao
 }
