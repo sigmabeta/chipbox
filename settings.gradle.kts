@@ -169,6 +169,8 @@ include(
     ":features:playback-status:api",
     ":features:playback-status:fake",
     ":features:playback-status:real",
+    ":features:search:api",
+    ":features:search:real",
     ":features:settings:api",
     ":features:settings:real",
 )

@@ -6,13 +6,10 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlin.reflect.KClass
-import kotlinx.serialization.Serializable
 import net.sigmabeta.chipbox.features.library.Library
+import net.sigmabeta.chipbox.features.search.Search
 import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.chipbox.strings.ChipboxStringId
-
-@Serializable
-data object Search
 
 enum class TopLevelDestination(
     val route: Any,

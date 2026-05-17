@@ -25,6 +25,8 @@ dependencies {
     implementation(projects.features.playbackStatus.api)
     debugImplementation(projects.features.playbackStatus.real)
     releaseImplementation(projects.features.playbackStatus.fake)
+    implementation(projects.features.search.api)
+    implementation(projects.features.search.real)
     implementation(projects.features.settings.api)
     implementation(projects.features.settings.real)
     implementation(projects.features.browseAllTracks.api)
