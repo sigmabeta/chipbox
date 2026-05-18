@@ -4,7 +4,7 @@ import net.sigmabeta.chipbox.player.emulators.Emulator
 
 object PsfEmulator : Emulator() {
     override fun loadNativeLib() {
-        System.loadLibrary("aopsf")
+        System.loadLibrary("slopsf")
     }
 
     override val supportedFileExtensions = listOf(

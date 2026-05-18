@@ -50,83 +50,55 @@ sint32 EMU_CALL r3000dis(char *dest, uint32 rich, uint32 pc, uint32 ins) {
     if (ins < 0x04000000) {
         switch (ins & 0x3F) {
             case 0x00:
-                if (!ins) {
-                    fmt = "nop";
-                    goto ok;
-                }
-                if (INS_D == INS_T) {
-                    fmt = "sll D,H";
-                    goto ok;
-                }
-                if (!INS_H) {
-                    fmt = "move D,T";
-                    goto ok;
-                }
+                if (!ins) fmt = "nop";
+                goto ok;
+                if (INS_D == INS_T) fmt = "sll D,H";
+                goto ok;
+                if (!INS_H) fmt = "move D,T";
+                goto ok;
                 fmt = "sll D,T,H";
                 goto ok;
             case 0x02:
-                if (INS_D == INS_T) {
-                    fmt = "srl D,H";
-                    goto ok;
-                }
-                if (!INS_H) {
-                    fmt = "move D,T";
-                    goto ok;
-                }
+                if (INS_D == INS_T) fmt = "srl D,H";
+                goto ok;
+                if (!INS_H) fmt = "move D,T";
+                goto ok;
                 fmt = "srl D,T,H";
                 goto ok;
             case 0x03:
-                if (INS_D == INS_T) {
-                    fmt = "sra D,H";
-                    goto ok;
-                }
-                if (!INS_H) {
-                    fmt = "move D,T";
-                    goto ok;
-                }
+                if (INS_D == INS_T) fmt = "sra D,H";
+                goto ok;
+                if (!INS_H) fmt = "move D,T";
+                goto ok;
                 fmt = "sra D,T,H";
                 goto ok;
             case 0x04:
-                if (INS_D == INS_T) {
-                    fmt = "sllv D,S";
-                    goto ok;
-                }
-                if (!INS_S) {
-                    fmt = "move D,T";
-                    goto ok;
-                }
+                if (INS_D == INS_T) fmt = "sllv D,S";
+                goto ok;
+                if (!INS_S) fmt = "move D,T";
+                goto ok;
                 fmt = "sllv D,T,S";
                 goto ok;
             case 0x06:
-                if (INS_D == INS_T) {
-                    fmt = "srlv D,S";
-                    goto ok;
-                }
-                if (!INS_S) {
-                    fmt = "move D,T";
-                    goto ok;
-                }
+                if (INS_D == INS_T) fmt = "srlv D,S";
+                goto ok;
+                if (!INS_S) fmt = "move D,T";
+                goto ok;
                 fmt = "srlv D,T,S";
                 goto ok;
             case 0x07:
-                if (INS_D == INS_T) {
-                    fmt = "srav D,S";
-                    goto ok;
-                }
-                if (!INS_S) {
-                    fmt = "move D,T";
-                    goto ok;
-                }
+                if (INS_D == INS_T) fmt = "srav D,S";
+                goto ok;
+                if (!INS_S) fmt = "move D,T";
+                goto ok;
                 fmt = "srav D,T,S";
                 goto ok;
             case 0x08:
                 fmt = "jr S";
                 goto okdelayslot;
             case 0x09:
-                if (INS_D == 31) {
-                    fmt = "jalr S";
-                    goto okdelayslot;
-                }
+                if (INS_D == 31) fmt = "jalr S";
+                goto okdelayslot;
                 fmt = "jalr D,S";
                 goto okdelayslot;
             case 0x0C:
@@ -157,122 +129,82 @@ sint32 EMU_CALL r3000dis(char *dest, uint32 rich, uint32 pc, uint32 ins) {
                 fmt = "divu S,T";
                 goto ok;
             case 0x20:
-                if (INS_D == INS_S) {
-                    fmt = "add D,T";
-                    goto ok;
-                }
-                if (!INS_T) {
-                    fmt = "move D,S";
-                    goto ok;
-                }
-                if (!INS_S) {
-                    fmt = "move D,T";
-                    goto ok;
-                }
+                if (INS_D == INS_S) fmt = "add D,T";
+                goto ok;
+                if (!INS_T) fmt = "move D,S";
+                goto ok;
+                if (!INS_S) fmt = "move D,T";
+                goto ok;
                 fmt = "add D,S,T";
                 goto ok;
             case 0x21:
-                if (INS_D == INS_S) {
-                    fmt = "addu D,T";
-                    goto ok;
-                }
-                if (!INS_T) {
-                    fmt = "move D,S";
-                    goto ok;
-                }
-                if (!INS_S) {
-                    fmt = "move D,T";
-                    goto ok;
-                }
+                if (INS_D == INS_S) fmt = "addu D,T";
+                goto ok;
+                if (!INS_T) fmt = "move D,S";
+                goto ok;
+                if (!INS_S) fmt = "move D,T";
+                goto ok;
                 fmt = "addu D,S,T";
                 goto ok;
             case 0x22:
-                if (INS_D == INS_S) {
-                    fmt = "sub D,T";
-                    goto ok;
-                }
-                if (!INS_T) {
-                    fmt = "move D,S";
-                    goto ok;
-                }
+                if (INS_D == INS_S) fmt = "sub D,T";
+                goto ok;
+                if (!INS_T) fmt = "move D,S";
+                goto ok;
                 if (!INS_S) {
-                    if (INS_D == INS_T) {
-                        fmt = "neg D";
-                        goto ok;
-                    }
+                    if (INS_D == INS_T) fmt = "neg D";
+                    goto ok;
                     fmt = "neg D,T";
                     goto ok;
                 }
                 fmt = "sub D,S,T";
                 goto ok;
             case 0x23:
-                if (INS_D == INS_S) {
-                    fmt = "subu D,T";
-                    goto ok;
-                }
-                if (!INS_T) {
-                    fmt = "move D,S";
-                    goto ok;
-                }
+                if (INS_D == INS_S) fmt = "subu D,T";
+                goto ok;
+                if (!INS_T) fmt = "move D,S";
+                goto ok;
                 if (!INS_S) {
-                    if (INS_D == INS_T) {
-                        fmt = "negu D";
-                        goto ok;
-                    }
+                    if (INS_D == INS_T) fmt = "negu D";
+                    goto ok;
                     fmt = "negu D,T";
                     goto ok;
                 }
                 fmt = "subu D,S,T";
                 goto ok;
             case 0x24:
-                if (INS_D == INS_S) {
-                    fmt = "and D,T";
-                    goto ok;
-                }
+                if (INS_D == INS_S) fmt = "and D,T";
+                goto ok;
                 fmt = "and D,S,T";
                 goto ok;
             case 0x25:
-                if (INS_D == INS_S) {
-                    fmt = "or D,T";
-                    goto ok;
-                }
-                if (!INS_T) {
-                    fmt = "move D,S";
-                    goto ok;
-                }
+                if (INS_D == INS_S) fmt = "or D,T";
+                goto ok;
+                if (!INS_T) fmt = "move D,S";
+                goto ok;
                 fmt = "or D,S,T";
                 goto ok;
             case 0x26:
-                if (INS_D == INS_S) {
-                    fmt = "xor D,T";
-                    goto ok;
-                }
-                if (!INS_T) {
-                    fmt = "move D,S";
-                    goto ok;
-                }
+                if (INS_D == INS_S) fmt = "xor D,T";
+                goto ok;
+                if (!INS_T) fmt = "move D,S";
+                goto ok;
                 fmt = "xor D,S,T";
                 goto ok;
             case 0x27:
                 if (!INS_T) {
-                    if (INS_D == INS_S) {
-                        fmt = "not D";
-                        goto ok;
-                    }
+                    if (INS_D == INS_S) fmt = "not D";
+                    goto ok;
                     fmt = "not D,S";
                     goto ok;
                 } else if (!INS_S) {
-                    if (INS_D == INS_T) {
-                        fmt = "not D";
-                        goto ok;
-                    }
+                    if (INS_D == INS_T) fmt = "not D";
+                    goto ok;
                     fmt = "not D,T";
                     goto ok;
                 } else {
-                    if (INS_D == INS_S) {
-                        fmt = "nor D,T";
-                        goto ok;
-                    }
+                    if (INS_D == INS_S) fmt = "nor D,T";
+                    goto ok;
                     fmt = "nor D,S,T";
                     goto ok;
                 }
@@ -312,53 +244,37 @@ sint32 EMU_CALL r3000dis(char *dest, uint32 rich, uint32 pc, uint32 ins) {
                 fmt = "jal J";
                 goto okdelayslot;
             case 0x04:
-                if (INS_S == INS_T) {
-                    fmt = "b B";
-                    goto okdelayslot;
-                }
+                if (INS_S == INS_T) fmt = "b B";
+                goto okdelayslot;
                 fmt = "beq S,T,B";
                 goto okdelayslot;
             case 0x05:
                 fmt = "bne S,T,B";
                 goto okdelayslot;
             case 0x06:
-                if (!INS_S) {
-                    fmt = "b B";
-                    goto okdelayslot;
-                }
+                if (!INS_S) fmt = "b B";
+                goto okdelayslot;
                 fmt = "blez S,B";
                 goto okdelayslot;
             case 0x07:
                 fmt = "bgtz S,B";
                 goto okdelayslot;
             case 0x08:
-                if (INS_T == INS_S) {
-                    fmt = "addi T,I";
-                    goto ok;
-                }
-                if (!INS_S) {
-                    fmt = "li T,I";
-                    goto ok;
-                }
-                if (!INS_I) {
-                    fmt = "move T,S";
-                    goto ok;
-                }
+                if (INS_T == INS_S) fmt = "addi T,I";
+                goto ok;
+                if (!INS_S) fmt = "li T,I";
+                goto ok;
+                if (!INS_I) fmt = "move T,S";
+                goto ok;
                 fmt = "addi T,S,I";
                 goto ok;
             case 0x09:
-                if (INS_T == INS_S) {
-                    fmt = "addiu T,I";
-                    goto ok;
-                }
-                if (!INS_S) {
-                    fmt = "li T,I";
-                    goto ok;
-                }
-                if (!INS_I) {
-                    fmt = "move T,S";
-                    goto ok;
-                }
+                if (INS_T == INS_S) fmt = "addiu T,I";
+                goto ok;
+                if (!INS_S) fmt = "li T,I";
+                goto ok;
+                if (!INS_I) fmt = "move T,S";
+                goto ok;
                 fmt = "addiu T,S,I";
                 goto ok;
             case 0x0A:
@@ -368,24 +284,18 @@ sint32 EMU_CALL r3000dis(char *dest, uint32 rich, uint32 pc, uint32 ins) {
                 fmt = "sltiu T,S,I";
                 goto ok;
             case 0x0C:
-                if (INS_T == INS_S) {
-                    fmt = "andi T,I";
-                    goto ok;
-                }
+                if (INS_T == INS_S) fmt = "andi T,I";
+                goto ok;
                 fmt = "andi T,S,I";
                 goto ok;
             case 0x0D:
-                if (INS_T == INS_S) {
-                    fmt = "ori T,I";
-                    goto ok;
-                }
+                if (INS_T == INS_S) fmt = "ori T,I";
+                goto ok;
                 fmt = "ori T,S,I";
                 goto ok;
             case 0x0E:
-                if (INS_T == INS_S) {
-                    fmt = "xori T,I";
-                    goto ok;
-                }
+                if (INS_T == INS_S) fmt = "xori T,I";
+                goto ok;
                 fmt = "xori T,S,I";
                 goto ok;
             case 0x0F:
@@ -407,87 +317,63 @@ sint32 EMU_CALL r3000dis(char *dest, uint32 rich, uint32 pc, uint32 ins) {
                 }
                 break;
             case 0x20:
-                if (!INS_I) {
-                    fmt = "lb T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "lb T,(S)";
+                goto ok;
                 fmt = "lb T,I(S)";
                 goto ok;
             case 0x21:
-                if (!INS_I) {
-                    fmt = "lh T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "lh T,(S)";
+                goto ok;
                 fmt = "lh T,I(S)";
                 goto ok;
             case 0x22:
-                if (!INS_I) {
-                    fmt = "lwl T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "lwl T,(S)";
+                goto ok;
                 fmt = "lwl T,I(S)";
                 goto ok;
             case 0x23:
-                if (!INS_I) {
-                    fmt = "lw T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "lw T,(S)";
+                goto ok;
                 fmt = "lw T,I(S)";
                 goto ok;
             case 0x24:
-                if (!INS_I) {
-                    fmt = "lbu T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "lbu T,(S)";
+                goto ok;
                 fmt = "lbu T,I(S)";
                 goto ok;
             case 0x25:
-                if (!INS_I) {
-                    fmt = "lhu T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "lhu T,(S)";
+                goto ok;
                 fmt = "lhu T,I(S)";
                 goto ok;
             case 0x26:
-                if (!INS_I) {
-                    fmt = "lwr T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "lwr T,(S)";
+                goto ok;
                 fmt = "lwr T,I(S)";
                 goto ok;
             case 0x28:
-                if (!INS_I) {
-                    fmt = "sb T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "sb T,(S)";
+                goto ok;
                 fmt = "sb T,I(S)";
                 goto ok;
             case 0x29:
-                if (!INS_I) {
-                    fmt = "sh T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "sh T,(S)";
+                goto ok;
                 fmt = "sh T,I(S)";
                 goto ok;
             case 0x2A:
-                if (!INS_I) {
-                    fmt = "swl T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "swl T,(S)";
+                goto ok;
                 fmt = "swl T,I(S)";
                 goto ok;
             case 0x2B:
-                if (!INS_I) {
-                    fmt = "sw T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "sw T,(S)";
+                goto ok;
                 fmt = "sw T,I(S)";
                 goto ok;
             case 0x2E:
-                if (!INS_I) {
-                    fmt = "swr T,(S)";
-                    goto ok;
-                }
+                if (!INS_I) fmt = "swr T,(S)";
+                goto ok;
                 fmt = "swr T,I(S)";
                 goto ok;
             default:

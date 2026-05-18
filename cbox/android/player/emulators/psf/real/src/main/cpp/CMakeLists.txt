@@ -10,24 +10,33 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Name the library.
-set(library_name aopsf)
+# "slopsf" -- this PSX (PSF1/PSF2) audio emulation system. The backing
+# PS1/PS2 core in he/ (Neill Corlett's PSXCore0008) replaced the prior
+# PSF core.
+set(library_name slopsf)
 
-# List of source files that make up aopsf
-set(libaopsf_SRCS
+# List of source files that make up slopsf.
+#
+# he/ is the PS1/PS2 core (PSXCore0008), run purely via the HLE IOP-
+# kernel path -- no copyrighted PS2/PS1 BIOS blob. The real-BIOS path
+# (hebios_data.c, he/bios.c) has been removed.
+set(slopsf_SRCS
         kotlin-jni.cpp
         Psf.cpp
-        aopsf/eng_psf.c
-        aopsf/eng_psf2.c
-        aopsf/psx.c
-        aopsf/psx_hw.c
-        aopsf/r3000dis.c
-        aopsf/spu/spu.c
-        aopsf/spu/spucore.c
+        slop/psx.c
+        slop/hle.c
+        slop/hle_ps2.c
+        slop/iop.c
+        slop/ioptimer.c
+        slop/r3000.c
+        slop/vfs.c
+        slop/spu.c
+        slop/spucore.c
         )
 
-# Appears to just be a flag telling the code we want it to compile...?
-add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN)
+# EMU_COMPILE enables library compilation; the core needs an explicit byte
+# order; HAVE_STDINT_H makes emuconfig.h use <stdint.h> fixed-width types.
+add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN -DHAVE_STDINT_H)
 
 # Shared psflib + PSF file-I/O, formerly vendored under psflib/ and common/.
 add_subdirectory(
@@ -48,7 +57,7 @@ add_library( # Specifies the name of the library.
         SHARED
 
         # Provides a relative path to your source file(s).
-        ${libaopsf_SRCS})
+        ${slopsf_SRCS})
 
 # Libraries must be listed in here to be accessible in C/C++ code.
 target_link_libraries(

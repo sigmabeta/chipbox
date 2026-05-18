@@ -9,7 +9,6 @@
 #endif
 
 #include "spu.h"
-
 #include "spucore.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -47,10 +46,6 @@ struct SPU_STATE {
 
     uint16 mystery_dma[2];
 
-    sint16 *sample_buffer;
-    uint32 samples_remain;
-
-    uint32 samples_advance;
 };
 
 /*
@@ -145,6 +140,16 @@ void EMU_CALL spu_enable_main(void *state, uint8 enable) {
     SPUSTATE->global_main_on = enable;
 }
 
+/*
+** Enable/disable mute
+*/
+void EMU_CALL spu_enable_mute(void *state, uint8 channel, uint8 enable) {
+    if (SPUSTATE->version < 2 || channel < 24)
+        spucore_enable_mute(CORESTATE(0), channel, enable);
+    else if (channel < 48)
+        spucore_enable_mute(CORESTATE(1), channel - 24, enable);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /*
 ** Hardware register load/store
@@ -199,7 +204,15 @@ spu_dma(void *state, uint32 core, void *mem, uint32 mem_ofs, uint32 mem_mask, ui
         }
     }
     // complete flag?
-    //SPUSTATE->mystery_dma[core] |= 0x80;
+    //
+    // Do NOT set the SPU2 transfer-complete STATX (0x344) bit at transfer
+    // time. the reference has this line commented out
+    // (spu/spu.c "//SPUSTATE->mystery_dma[core] |= 0x80;") -- completion is
+    // signalled ONLY via the delayed spu_interrupt_dma4/7 (after dma_delay
+    // samples), bridged through spu_set_dma_complete(). Setting it here
+    // made 0x344 read "done" the instant a transfer was kicked, so libsd's
+    // transfer-busy poll exited with zero spin -- the audio clock never
+    // advanced during SPU2 transfers and the sequence raced ~7x ahead.
 }
 
 static uint16 EMU_CALL get_mystery_dma(struct SPU_STATE *state, uint32 core) {
@@ -209,6 +222,15 @@ static uint16 EMU_CALL get_mystery_dma(struct SPU_STATE *state, uint32 core) {
 }
 
 static void EMU_CALL set_mystery_dma(struct SPU_STATE *state, uint32 core, uint16 n) {
+}
+
+// Mark the per-core SPU2 DMA-transfer-complete STATX (reg 0x344) bit.
+// Called from the HLE PS2 DMA-completion path (the reference spu_interrupt_dma4/
+// dma7) just before the libsd interrupt handler runs, so the handler
+// reads a *fresh* status and routes the completion to the correct core's
+// transfer callback (an earlier read of 0x344 clears it -> mis-route).
+void EMU_CALL spu_set_dma_complete(void *state, uint32 core) {
+    if (core < 2) SPUSTATE->mystery_dma[core] |= 0x80;
 }
 
 static uint16 EMU_CALL get_ctrl(struct SPU_STATE *state, uint32 core) {
@@ -1383,9 +1405,6 @@ static void EMU_CALL sh2(struct SPU_STATE *state, uint32 a, uint16 d) {
 */
 
 uint16 EMU_CALL spu_lh(void *state, uint32 a) {
-    if (SPUSTATE->samples_advance) {
-        spu_flush(state);
-    }
     a &= 0x1FFFFFFE;
     if (a >= 0x1F801C00 && a <= 0x1F801DFF) {
         return lh1(SPUSTATE, a);
@@ -1396,9 +1415,6 @@ uint16 EMU_CALL spu_lh(void *state, uint32 a) {
 }
 
 void EMU_CALL spu_sh(void *state, uint32 a, uint16 d) {
-    if (SPUSTATE->samples_advance) {
-        spu_flush(state);
-    }
     a &= 0x1FFFFFFE;
     if (a >= 0x1F801C00 && a <= 0x1F801DFF) {
         sh1(SPUSTATE, a, d);
@@ -1409,22 +1425,8 @@ void EMU_CALL spu_sh(void *state, uint32 a, uint16 d) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void EMU_CALL spu_set_buffer(void *state, sint16 *buf, uint32 samples) {
-    SPUSTATE->sample_buffer = buf;
-    SPUSTATE->samples_remain = samples;
-}
+void EMU_CALL spu_render(void *state, sint16 *buf, uint32 samples) {
 
-////////////////////////////////////////////////////////////////////////////////
-
-void EMU_CALL spu_advance(void *state, uint32 samples) {
-    SPUSTATE->samples_advance += samples;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void EMU_CALL spu_flush(void *state) {
-    sint16 *buf = SPUSTATE->sample_buffer;
-    uint32 samples = SPUSTATE->samples_advance;
     uint8 mainout = SPUSTATE->global_main_on;
     uint8 effectout = SPUSTATE->global_effect_on;
 //  mainout = 0;
@@ -1435,9 +1437,6 @@ void EMU_CALL spu_flush(void *state) {
         spucore_render(CORESTATE(1), SPURAM, buf, buf, samples, mainout, effectout);
 //    spucore_render(CORESTATE(1), SPURAM, buf, NULL, samples);
     }
-    SPUSTATE->samples_advance = 0;
-    SPUSTATE->samples_remain -= samples;
-    if (buf) SPUSTATE->sample_buffer += samples * 2;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1465,24 +1464,6 @@ uint32 EMU_CALL spu_cycles_until_interrupt(void *state, uint32 samples) {
         uint32 cycles1 = spucore_cycles_until_interrupt(CORESTATE(0), SPURAM, samples);
         uint32 cycles2 = spucore_cycles_until_interrupt(CORESTATE(1), SPURAM, samples);
         return cycles1 < cycles2 ? cycles1 : cycles2;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void EMU_CALL spu_interrupt_dma4(void *state) {
-    SPUSTATE->dma_mode[0] = 0;
-    // set core 0 reg 0x1B0 to 0, but we don't implement that
-    SPUSTATE->mystery_dma[0] |= 0x80;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void EMU_CALL spu_interrupt_dma7(void *state) {
-    if (SPUSTATE->version == 2) {
-        SPUSTATE->dma_mode[1] = 0;
-        // set core 1 reg 0x1B0 to 0, but we don't implement that
-        SPUSTATE->mystery_dma[1] |= 0x80;
     }
 }
 
