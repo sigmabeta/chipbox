@@ -1,18 +1,40 @@
 #include "Psf.h"
 
-uint8_t *pEmu;
+// slopsf -- the PSX (PSF1/PSF2) audio emulation system. Runs the PS1/PS2
+// core purely via the HLE IOP-kernel path -- no copyrighted PS2/PS1 BIOS
+// blob. PSF1 and PSF2 both boot through the HLE.
 
-bool isPs2Track;
+static void *pEmu = nullptr;
 
-const char *last_error;
+static bool isPs2Track = false;
 
-void *psf2fs;
+static const char *last_error = nullptr;
+
+static void *psf2fs = nullptr;
+
+// psx_init() is global, one-time setup for the whole core.
+static bool heInitialized = false;
+
+static bool ensureHeInitialized() {
+    if (heInitialized) return true;
+
+    if (psx_init() != 0) {
+        last_error = "Failed to initialize PSX core.";
+        return false;
+    }
+
+    heInitialized = true;
+    return true;
+}
 
 void loadFile(const char *filename_c_str) {
+    teardown();
     last_error = nullptr;
     isPs2Track = false;
 
-    char psf_version = psf_load(filename_c_str, &psf_file_system, 0, 0, 0, 0, 0, 0, 0, 0);
+    if (!ensureHeInitialized()) return;
+
+    int psf_version = psf_load(filename_c_str, &psf_file_system, 0, 0, 0, 0, 0, 0, 0, 0);
 
     if (psf_version < 0) {
         last_error = "Not a PSF file";
@@ -23,22 +45,19 @@ void loadFile(const char *filename_c_str) {
         return;
     }
 
-    uint64_t psx_state_size = psx_get_state_size(psf_version);
-    uint8_t *psx_state = static_cast<uint8_t *>(malloc(psx_state_size));
-    if (!psx_state) {
+    uint32_t psx_state_size = psx_get_state_size((uint8_t) psf_version);
+    pEmu = malloc(psx_state_size);
+    if (!pEmu) {
         last_error = "Failed to allocate PSX state.";
         return;
     }
-    memset(psx_state, 0, psx_state_size);
 
-    pEmu = psx_state;
+    // Boots the HLE IOP kernel to a known entry point. Must run before any
+    // EXE upload; will psx_hang() if psx_init() never succeeded.
+    psx_clear_state(pEmu, (uint8_t) psf_version);
 
     if (psf_version == 1) {
-        psf1_load_state state{};
-
-        state.emu = pEmu;
-        state.first = true;
-        state.refresh = 0;
+        psf1_load_state state{pEmu, true, 0};
 
         int ret = psf_load(
                 filename_c_str,
@@ -60,15 +79,10 @@ void loadFile(const char *filename_c_str) {
             return;
         }
 
-        if (state.refresh) {
-            psx_set_refresh((PSX_STATE *) pEmu, state.refresh);
-        }
+        if (state.refresh) psx_set_refresh(pEmu, state.refresh);
 
         isPs2Track = false;
-        psf_start((PSX_STATE *) pEmu);
-    } else if (psf_version == 2) {
-        if (psf2fs) psf2fs_delete(psf2fs);
-
+    } else {
         psf2fs = psf2fs_create();
         if (!psf2fs) {
             last_error = "Failed to allocate PS2 FS.";
@@ -77,9 +91,7 @@ void loadFile(const char *filename_c_str) {
             return;
         }
 
-        psf1_load_state state;
-
-        state.refresh = 0;
+        psf1_load_state state{pEmu, true, 0};
 
         int ret = psf_load(
                 filename_c_str,
@@ -102,50 +114,45 @@ void loadFile(const char *filename_c_str) {
             return;
         }
 
-        if (state.refresh)
-            psx_set_refresh((PSX_STATE *) pEmu, state.refresh);
+        if (state.refresh) psx_set_refresh(pEmu, state.refresh);
 
         isPs2Track = true;
 
-        psf2_register_readfile((PSX_STATE *) pEmu, psf2fs_virtual_readfile, psf2fs);
-        psf2_start((PSX_STATE *) pEmu);
+        // The IOP runtime pulls its modules/data through this callback as it
+        // executes; psf2fs holds the decompressed PSF2 filesystem.
+        psx_set_readfile(pEmu, (psx_readfile_t) psf2fs_virtual_readfile, psf2fs);
     }
 }
 
-int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_shorts) {
+int32_t generateBuffer(int16_t *target_array, int32_t frames_per_buffer) {
     if (!pEmu) {
         last_error = "Cannot generate audio: emulator not loaded.";
         return 0;
     }
 
-    int32_t written = 0;
+    uint32_t samples = (uint32_t) frames_per_buffer;
 
-    int32_t samples = buffer_size_shorts;
+    // Run until the requested number of stereo frames is produced. -1 is a
+    // clean PS2 halt (track ended); only <= -2 is a real failure.
+    sint32 r = psx_execute(pEmu, 0x7fffffff, target_array, &samples, 0);
+    if (r <= -2) {
+        last_error = "PSX execution error.";
+        return 0;
+    }
 
-    if (isPs2Track)
-        written = psf2_gen((PSX_STATE *) pEmu, target_array, samples);
-    else
-        written = psf_gen((PSX_STATE *) pEmu, target_array, samples);
-
-    return written;
+    return (int32_t) samples;
 }
 
 void teardown() {
+    if (psf2fs) {
+        psf2fs_delete(psf2fs);
+        psf2fs = nullptr;
+    }
     if (pEmu) {
-        if (isPs2Track) {
-            psf2_stop((PSX_STATE *) pEmu);
-
-            if (psf2fs) {
-                psf2fs_delete(psf2fs);
-                psf2fs = nullptr;
-            }
-        } else {
-            psf_stop((PSX_STATE *) pEmu);
-        }
-
         free(pEmu);
         pEmu = nullptr;
     }
+    isPs2Track = false;
 }
 
 const char *get_last_error() {
@@ -153,16 +160,15 @@ const char *get_last_error() {
 }
 
 const char *get_diagnostics() {
-    if (!pEmu) return nullptr;
-    return psx_get_last_error((PSX_STATE *) pEmu);
+    // The HE core has no per-track diagnostics channel.
+    return nullptr;
 }
 
 int32_t get_sample_rate() {
-    if (isPs2Track) {
-        return 48000;
-    } else {
-        return 44100;
-    }
+    // HE clocks the IOP at 33868800 Hz for PS1 and 36864000 Hz for PS2, with a
+    // fixed 768 cycles/sample (he/iop.c) — i.e. 44100 Hz for PS1, 48000 Hz for
+    // PS2. Reporting 44100 for PS2 makes it play pitched-down.
+    return isPs2Track ? 48000 : 44100;
 }
 
 static int psf1_info(void *context, const char *name, const char *value) {
@@ -182,10 +188,41 @@ int psf1_load(void *context, const uint8_t *exe, size_t exe_size,
     if (reserved && reserved_size)
         return -1;
 
-    if (psf_load_section((PSX_STATE *) state->emu, exe, exe_size, state->first))
+    if (exe_size < 0x800)
         return -1;
 
-    state->first = false;
+    uint32_t addr = get_le32(exe + 0x18);
+    uint32_t size = (uint32_t) (exe_size - 0x800);
+
+    addr &= 0x1fffff;
+    if (addr < 0x10000 || size > 0x1f0000 || (addr + size) > 0x200000)
+        return -1;
+
+    void *iop = psx_get_iop_state(state->emu);
+    iop_upload_to_ram(iop, addr, exe + 0x800, size);
+
+    // Region marker lives in the PS-X EXE header; first match wins.
+    if (!state->refresh) {
+        if (!strncasecmp((const char *) exe + 113, "Japan", 5))
+            state->refresh = 60;
+        else if (!strncasecmp((const char *) exe + 113, "Europe", 6))
+            state->refresh = 50;
+        else if (!strncasecmp((const char *) exe + 113, "North America", 13))
+            state->refresh = 60;
+    }
+
+    if (state->first) {
+        void *r3000 = iop_get_r3000_state(iop);
+        r3000_setreg(r3000, R3000_REG_PC, get_le32(exe + 0x10));
+        r3000_setreg(r3000, R3000_REG_GEN + 29, get_le32(exe + 0x30)); // $sp
+        // The PS-X EXE entry contract (per the reference eng_psf.c): the loader
+        // sets $gp = gp0 (header 0x14) and $fp = $sp. With no BIOS the
+        // HLE does it here; without $gp the driver's gp-relative globals
+        // (sequencer/SPU buffers) read garbage -> runs but plays no notes.
+        r3000_setreg(r3000, R3000_REG_GEN + 28, get_le32(exe + 0x14)); // $gp
+        r3000_setreg(r3000, R3000_REG_GEN + 30, get_le32(exe + 0x30)); // $fp
+        state->first = false;
+    }
 
     return 0;
 }
