@@ -24,6 +24,22 @@ interface Director {
      *  off the generator + speaker pipeline. Replaces any previous session. */
     fun start(session: Session)
 
+    /**
+     * Begin a new playback session from an explicit, caller-supplied setlist (an ordered list
+     * of track ids) rather than a repository-resolved collection. Playback starts at
+     * [startingPosition] within [setlist]. [sourceName] is a human-readable label for where
+     * the setlist came from (e.g. the search query), surfaced on the now-playing screen since
+     * an ad-hoc setlist has no backing collection to derive a name from. Use this for ad-hoc
+     * queues such as a list of search results that don't correspond to any single
+     * game/artist/playlist. Replaces any previous session.
+     */
+    fun start(
+        setlist: List<Long>,
+        startingPosition: Int,
+        sourceName: String? = null,
+        shuffled: Boolean = false,
+    )
+
     /** Resume the current session if paused, or (re)attach the speaker to the buffer stream. */
     fun play()
 

@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
+import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.ui.list.ChipboxListViewModel
@@ -40,6 +41,7 @@ private const val OP_ARTISTS = "search.artists"
 @HiltViewModel
 class SearchViewModel @Inject constructor(
     private val repository: Repository,
+    private val director: Director,
     stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<SearchState>(
@@ -80,8 +82,19 @@ class SearchViewModel @Inject constructor(
                 ChipboxEvent.NavigateTo(GameDetail(action.gameId))
             )
 
-            is SearchAction.SongClicked -> action.gameId?.let {
-                emit(ChipboxEvent.NavigateTo(GameDetail(it)))
+            // Treat the whole song-results list as a setlist; start from the tapped song.
+            is SearchAction.SongClicked -> {
+                val setlist = (state.value.songResults as? LCE.Content)?.data
+                    ?.map { it.id }
+                    .orEmpty()
+                val startingPosition = setlist.indexOf(action.trackId)
+                if (startingPosition >= 0) {
+                    director.start(
+                        setlist = setlist,
+                        startingPosition = startingPosition,
+                        sourceName = state.value.submittedQuery,
+                    )
+                }
             }
 
             is SearchAction.ArtistClicked -> emit(

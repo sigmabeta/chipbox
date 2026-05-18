@@ -124,7 +124,7 @@ data class SearchState(
                         caption = track.game?.title.orEmpty(),
                         sourceInfo = SourceInfo(info = track.game?.photoUrl),
                         imagePlaceholder = Icon.MusicNote,
-                        clickAction = SearchAction.SongClicked(track.game?.id),
+                        clickAction = SearchAction.SongClicked(track.id),
                     )
                 }
             }

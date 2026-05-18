@@ -11,6 +11,9 @@ package net.sigmabeta.chipbox.player.common
  * - `ALL_TRACKS` — the entire library; `contentId` is unused (callers may pass `0`).
  * - `PLATFORM` — every track whose platform matches; `contentId` is not a foreign key
  *   but the `Platform.ordinal` (resolve via `Platform.entries[contentId.toInt()]`).
+ * - `SETLIST` — an explicit, caller-supplied list of track ids carried in
+ *   `Session.explicitSetlist`; `contentId` is unused (callers may pass `0`). Used for
+ *   ad-hoc queues that aren't backed by a repository collection (e.g. search results).
  */
 enum class SessionType {
     GAME,
@@ -18,4 +21,5 @@ enum class SessionType {
     PLAYLIST,
     ALL_TRACKS,
     PLATFORM,
+    SETLIST,
 }

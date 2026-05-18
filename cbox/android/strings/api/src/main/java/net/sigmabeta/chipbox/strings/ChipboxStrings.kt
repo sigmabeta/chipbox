@@ -244,6 +244,11 @@ fun ChipboxStringId.id(): Int = when (this) {
     ChipboxStringId.NOW_PLAYING_SESSION_TYPE_ALL_TRACKS_SHUFFLING ->
         R.string.now_playing_session_type_all_tracks_shuffling
 
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_SETLIST_PLAYING -> R.string.now_playing_session_type_setlist_playing
+
+    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_SETLIST_SHUFFLING ->
+        R.string.now_playing_session_type_setlist_shuffling
+
     ChipboxStringId.PLATFORM_ARCADE -> R.string.platform_arcade
 
     ChipboxStringId.PLATFORM_DREAMCAST -> R.string.platform_dreamcast
