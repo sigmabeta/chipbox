@@ -209,6 +209,16 @@ void EMU_CALL r3000_setreg(void *state, sint32 regnum, uint32 value) {
     switch (regnum) {
         case R3000_REG_PC:
             STATE->pc = value;
+            // An external PC write (HLE BIOS-call / exception return via
+            // hle_set_pc) can cross memory segments -- e.g. the KSEG0
+            // exception sentinel (0x80000080) returning to a KUSEG ePC in
+            // the low RAM mirror (drivers that run from 0x0008xxxx, e.g.
+            // Misadventures, Persona 2 Innocent Sin). The cached fetch
+            // window (maxpc/fetchbase) is segment-specific; if the new pc
+            // is numerically below the stale maxpc, fetch() would skip
+            // renew_fetch_region and dereference a wild fetchbase. Force a
+            // re-walk on the next fetch.
+            STATE->maxpc = 0;
             return;
         case R3000_REG_HI:
             STATE->hi = value;
