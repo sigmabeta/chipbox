@@ -45,6 +45,7 @@ void ARMSetPrivilegeMode(struct ARMCore* cpu, enum PrivilegeMode mode) {
 }
 
 void ARMInit(struct ARMCore* cpu) {
+	memset(cpu->cp, 0, sizeof(cpu->cp));
 	cpu->master->init(cpu, cpu->master);
 	size_t i;
 	for (i = 0; i < cpu->numComponents; ++i) {
@@ -233,6 +234,9 @@ void ARMRun(struct ARMCore* cpu) {
 		ThumbStep(cpu);
 	} else {
 		ARMStep(cpu);
+	}
+	while (cpu->cycles >= cpu->nextEvent) {
+		cpu->irqh.processEvents(cpu);
 	}
 }
 

@@ -752,6 +752,13 @@ add_subdirectory(src/util)
 list(APPEND GUI_SRC ${EXTRA_GUI_SRC})
 list(APPEND UTIL_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.c)
 
+# Headless single-threaded decoder: generateBuffer() drives core->runFrame
+# synchronously, so there is no video thread. Upstream's own minimal/libretro
+# cores set this too. Without it src/gba/core.c references the video thread
+# proxy (mVideoThreadProxyCreate), which lives in src/feature (not built here)
+# and whose backend is only implemented under src/platform/qt.
+add_definitions(-DDISABLE_THREADING)
+
 set(TEST_SRC ${CORE_TEST_SRC})
 if(M_CORE_GB)
 	add_definitions(-DM_CORE_GB)
@@ -776,6 +783,12 @@ endif()
 foreach(FEATURE IN LISTS FEATURES)
 	list(APPEND FEATURE_DEFINES "USE_${FEATURE}")
 endforeach()
+
+# Upstream mgba (post-0.10) gates the VFS struct definitions and the
+# file/directory VFS prototypes in mgba-util/vfs.h behind these macros.
+# CORE_VFS_SRC always pulls in vfs-fd.c/vfs-dirent.c on POSIX (Android),
+# so they must be defined or those translation units fail to compile.
+list(APPEND ENABLES VFS DIRECTORIES VFS_FD)
 
 foreach(ENABLE IN LISTS ENABLES)
 	list(APPEND FEATURE_DEFINES "ENABLE_${ENABLE}")
@@ -1265,12 +1278,18 @@ include_directories(
 # Appears to just be a flag telling the code we want it to compile...?
 add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN)
 
-# Specifies a library name, specifies whether the library is STATIC or
-# SHARED, and provides relative paths to the source code. You can
-# define multiple libraries by adding multiple add_library() commands,
-# and CMake builds them for you. When you build your app, Gradle
-# automatically packages shared libraries with your APK.
+# struct mCore (mgba/core/core.h) gates members behind
+# `#if defined(ENABLE_VFS) && defined(ENABLE_DIRECTORIES)` and
+# `#ifndef MINIMAL_CORE`. Both this wrapper and the mgba library MUST see the
+# identical struct layout, or core->init() (and every later vtable slot) is
+# read at the wrong offset and jumps through garbage (on-device SIGSEGV).
+#
+# MINIMAL_CORE=3 is a directory-scoped define and already reaches both the
+# mgba and gba targets (mgba also needs it to compile out the un-built
+# video-logger code). ENABLE_VFS/ENABLE_DIRECTORIES, however, only reach mgba
+# via FEATURE_DEFINES, so add them here too to keep the layouts in lockstep.
 add_definitions(-DMINIMAL_CORE=3)
+add_definitions(-DENABLE_VFS -DENABLE_DIRECTORIES -DENABLE_VFS_FD)
 
 # Shared psflib + PSF file-I/O, formerly vendored under psflib/ and common/.
 add_subdirectory(

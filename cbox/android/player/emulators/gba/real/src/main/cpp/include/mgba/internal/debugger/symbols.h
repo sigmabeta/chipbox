@@ -12,23 +12,17 @@ CXX_GUARD_START
 
 struct mDebuggerSymbols;
 
-struct mDebuggerSymbols *mDebuggerSymbolTableCreate(void);
+struct mDebuggerSymbols* mDebuggerSymbolTableCreate(void);
+void mDebuggerSymbolTableDestroy(struct mDebuggerSymbols*);
 
-void mDebuggerSymbolTableDestroy(struct mDebuggerSymbols *);
+bool mDebuggerSymbolLookup(const struct mDebuggerSymbols*, const char* name, int32_t* value, int* segment);
+const char* mDebuggerSymbolReverseLookup(const struct mDebuggerSymbols*, int32_t value, int segment);
 
-bool mDebuggerSymbolLookup(const struct mDebuggerSymbols *, const char *name, int32_t *value,
-                           int *segment);
-
-const char *
-mDebuggerSymbolReverseLookup(const struct mDebuggerSymbols *, int32_t value, int segment);
-
-void mDebuggerSymbolAdd(struct mDebuggerSymbols *, const char *name, int32_t value, int segment);
-
-void mDebuggerSymbolRemove(struct mDebuggerSymbols *, const char *name);
+void mDebuggerSymbolAdd(struct mDebuggerSymbols*, const char* name, int32_t value, int segment);
+void mDebuggerSymbolRemove(struct mDebuggerSymbols*, const char* name);
 
 struct VFile;
-
-void mDebuggerLoadARMIPSSymbols(struct mDebuggerSymbols *, struct VFile *vf);
+void mDebuggerLoadARMIPSSymbols(struct mDebuggerSymbols*, struct VFile* vf);
 
 CXX_GUARD_END
 

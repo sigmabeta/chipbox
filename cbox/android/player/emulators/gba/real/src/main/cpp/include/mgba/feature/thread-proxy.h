@@ -16,25 +16,25 @@ CXX_GUARD_START
 #include <mgba-util/ring-fifo.h>
 
 enum mVideoThreadProxyState {
-    PROXY_THREAD_STOPPED = 0,
-    PROXY_THREAD_IDLE,
-    PROXY_THREAD_BUSY
+	PROXY_THREAD_STOPPED = 0,
+	PROXY_THREAD_IDLE,
+	PROXY_THREAD_BUSY
 };
 
 struct mVideoThreadProxy {
-    struct mVideoLogger d;
+	struct mVideoLogger d;
 
-    Thread thread;
-    Condition fromThreadCond;
-    Condition toThreadCond;
-    Mutex mutex;
-    enum mVideoThreadProxyState threadState;
-    enum mVideoLoggerEvent event;
+	Thread thread;
+	Condition fromThreadCond;
+	Condition toThreadCond;
+	Mutex mutex;
+	enum mVideoThreadProxyState threadState;
+	enum mVideoLoggerEvent event;
 
-    struct RingFIFO dirtyQueue;
+	struct RingFIFO dirtyQueue;
 };
 
-void mVideoThreadProxyCreate(struct mVideoThreadProxy *renderer);
+void mVideoThreadProxyCreate(struct mVideoThreadProxy* renderer);
 
 CXX_GUARD_END
 

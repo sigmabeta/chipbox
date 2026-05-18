@@ -9,8 +9,6 @@
 #include <mgba-util/table.h>
 #include <mgba-util/vector.h>
 
-#include <inttypes.h>
-
 #define SECTION_NAME_MAX 128
 #define KEY_NAME_MAX 32
 #define KEY_VALUE_MAX 16
@@ -35,6 +33,11 @@ struct mInputAxisSave {
 
 struct mInputAxisEnumerate {
 	void (*handler)(int axis, const struct mInputAxis* description, void* user);
+	void* user;
+};
+
+struct mInputHatEnumerate {
+	void (*handler)(int axis, const struct mInputHatBindings* bindings, void* user);
 	void* user;
 };
 
@@ -304,6 +307,12 @@ void _unbindAxis(uint32_t axis, void* dp, void* user) {
 	}
 }
 
+void _enumerateHat(uint32_t axis, void* dp, void* ep) {
+	struct mInputHatEnumerate* enumUser = ep;
+	const struct mInputHatBindings* description = dp;
+	enumUser->handler(axis, description, enumUser->user);
+}
+
 static bool _loadAll(struct mInputMap* map, uint32_t type, const char* sectionName, const struct Configuration* config) {
 	if (!ConfigurationHasSection(config, sectionName)) {
 		return false;
@@ -415,6 +424,16 @@ void mInputUnbindKey(struct mInputMap* map, uint32_t type, int input) {
 	}
 }
 
+void mInputUnbindAllKeys(struct mInputMap* map, uint32_t type) {
+	struct mInputMapImpl* impl = _lookupMap(map, type);
+	if (impl) {
+		size_t i;
+		for (i = 0; i < map->info->nKeys; ++i) {
+			impl->map[i] = -1;
+		}
+	}
+}
+
 int mInputQueryBinding(const struct mInputMap* map, uint32_t type, int input) {
 	if (input < 0 || (size_t) input >= map->info->nKeys) {
 		return -1;
@@ -428,7 +447,7 @@ int mInputQueryBinding(const struct mInputMap* map, uint32_t type, int input) {
 	return impl->map[input];
 }
 
-int mInputMapAxis(const struct mInputMap* map, uint32_t type, int axis, int value) {
+int mInputMapAxis(const struct mInputMap* map, uint32_t type, int axis, int16_t value) {
 	const struct mInputMapImpl* impl = _lookupMapConst(map, type);
 	if (!impl) {
 		return -1;
@@ -450,6 +469,14 @@ int mInputMapAxis(const struct mInputMap* map, uint32_t type, int axis, int valu
 		return description->lowDirection;
 	}
 	return -1;
+}
+
+int mInputMapAxisBit(const struct mInputMap* map, uint32_t type, int axis, int16_t value) {
+	int bit = mInputMapAxis(map, type, axis, value);
+	if (bit < 0) {
+		return 0;
+	}
+	return 1 << bit;
 }
 
 int mInputClearAxis(const struct mInputMap* map, uint32_t type, int axis, int keys) {
@@ -578,6 +605,18 @@ void mInputUnbindAllHats(struct mInputMap* map, uint32_t type) {
 	}
 }
 
+void mInputEnumerateHats(const struct mInputMap* map, uint32_t type, void (handler(int hat, const struct mInputHatBindings* bindings, void* user)), void* user) {
+	const struct mInputMapImpl* impl = _lookupMapConst(map, type);
+	if (!impl) {
+		return;
+	}
+	struct mInputHatEnumerate enumUser = {
+		handler,
+		user
+	};
+	TableEnumerate(&impl->axes, _enumerateHat, &enumUser);
+}
+
 bool mInputMapLoad(struct mInputMap* map, uint32_t type, const struct Configuration* config) {
 	char sectionName[SECTION_NAME_MAX];
 	_makeSectionName(map->info->platformName, sectionName, SECTION_NAME_MAX, type);
@@ -604,7 +643,7 @@ void mInputProfileSave(const struct mInputMap* map, uint32_t type, struct Config
 	_saveAll(map, type, sectionName, config);
 }
 
-const char* mInputGetPreferredDevice(const struct Configuration* config, const char* platformName, uint32_t type, int playerId) {
+const char* mInputGetPreferredDeviceType(const struct Configuration* config, const char* platformName, uint32_t type, int playerId) {
 	char sectionName[SECTION_NAME_MAX];
 	_makeSectionName(platformName, sectionName, SECTION_NAME_MAX, type);
 
@@ -613,13 +652,31 @@ const char* mInputGetPreferredDevice(const struct Configuration* config, const c
 	return ConfigurationGetValue(config, sectionName, deviceId);
 }
 
-void mInputSetPreferredDevice(struct Configuration* config, const char* platformName, uint32_t type, int playerId, const char* deviceName) {
+const char* mInputGetPreferredDeviceSerial(const struct Configuration* config, const char* platformName, uint32_t type, int playerId) {
+	char sectionName[SECTION_NAME_MAX];
+	_makeSectionName(platformName, sectionName, SECTION_NAME_MAX, type);
+
+	char deviceId[KEY_NAME_MAX];
+	snprintf(deviceId, sizeof(deviceId), "deviceSerial%i", playerId);
+	return ConfigurationGetValue(config, sectionName, deviceId);
+}
+
+void mInputSetPreferredDeviceType(struct Configuration* config, const char* platformName, uint32_t type, int playerId, const char* deviceName) {
 	char sectionName[SECTION_NAME_MAX];
 	_makeSectionName(platformName, sectionName, SECTION_NAME_MAX, type);
 
 	char deviceId[KEY_NAME_MAX];
 	snprintf(deviceId, sizeof(deviceId), "device%i", playerId);
-	return ConfigurationSetValue(config, sectionName, deviceId, deviceName);
+	ConfigurationSetValue(config, sectionName, deviceId, deviceName);
+}
+
+void mInputSetPreferredDeviceSerial(struct Configuration* config, const char* platformName, uint32_t type, int playerId, const char* serial) {
+	char sectionName[SECTION_NAME_MAX];
+	_makeSectionName(platformName, sectionName, SECTION_NAME_MAX, type);
+
+	char deviceId[KEY_NAME_MAX];
+	snprintf(deviceId, sizeof(deviceId), "deviceSerial%i", playerId);
+	ConfigurationSetValue(config, sectionName, deviceId, serial);
 }
 
 const char* mInputGetCustomValue(const struct Configuration* config, const char* platformName, uint32_t type, const char* key, const char* profile) {

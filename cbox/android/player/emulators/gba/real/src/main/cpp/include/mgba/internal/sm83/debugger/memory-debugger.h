@@ -12,9 +12,8 @@ CXX_GUARD_START
 
 struct SM83Debugger;
 
-void SM83DebuggerInstallMemoryShim(struct SM83Debugger *debugger);
-
-void SM83DebuggerRemoveMemoryShim(struct SM83Debugger *debugger);
+void SM83DebuggerInstallMemoryShim(struct SM83Debugger* debugger);
+void SM83DebuggerRemoveMemoryShim(struct SM83Debugger* debugger);
 
 CXX_GUARD_END
 

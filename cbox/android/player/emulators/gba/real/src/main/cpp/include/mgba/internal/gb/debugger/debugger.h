@@ -13,7 +13,7 @@ CXX_GUARD_START
 struct GB;
 struct mDebuggerPlatform;
 
-struct mDebuggerPlatform *GBDebuggerCreate(struct GB *gb);
+struct mDebuggerPlatform* GBDebuggerCreate(struct GB* gb);
 
 CXX_GUARD_END
 

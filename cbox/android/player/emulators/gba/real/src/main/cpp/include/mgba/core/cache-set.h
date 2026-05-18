@@ -16,27 +16,22 @@ CXX_GUARD_START
 #include <mgba-util/vector.h>
 
 DECLARE_VECTOR(mMapCacheSet, struct mMapCache);
-
-DECLARE_VECTOR(mBitmapCacheSet,
-struct mBitmapCache);
-DECLARE_VECTOR(mTileCacheSet,
-struct mTileCache);
+DECLARE_VECTOR(mBitmapCacheSet, struct mBitmapCache);
+DECLARE_VECTOR(mTileCacheSet, struct mTileCache);
 
 struct mCacheSet {
-    struct mMapCacheSet maps;
-    struct mBitmapCacheSet bitmaps;
-    struct mTileCacheSet tiles;
+	struct mMapCacheSet maps;
+	struct mBitmapCacheSet bitmaps;
+	struct mTileCacheSet tiles;
 };
 
-void mCacheSetInit(struct mCacheSet *, size_t nMaps, size_t nBitmaps, size_t nTiles);
+void mCacheSetInit(struct mCacheSet*, size_t nMaps, size_t nBitmaps, size_t nTiles);
+void mCacheSetDeinit(struct mCacheSet*);
 
-void mCacheSetDeinit(struct mCacheSet *);
+void mCacheSetAssignVRAM(struct mCacheSet*, void* vram);
 
-void mCacheSetAssignVRAM(struct mCacheSet *, void *vram);
-
-void mCacheSetWriteVRAM(struct mCacheSet *, uint32_t address);
-
-void mCacheSetWritePalette(struct mCacheSet *, uint32_t entry, color_t color);
+void mCacheSetWriteVRAM(struct mCacheSet*, uint32_t address);
+void mCacheSetWritePalette(struct mCacheSet*, uint32_t entry, mColor color);
 
 CXX_GUARD_END
 

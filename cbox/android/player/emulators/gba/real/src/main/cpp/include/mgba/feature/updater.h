@@ -17,46 +17,34 @@ struct StringList;
 struct Table;
 
 struct mUpdaterContext {
-    struct Configuration manifest;
+	struct Configuration manifest;
 };
 
 struct mUpdate {
-    const char *path;
-    size_t size;
-    int rev;
-    const char *version;
-    const char *commit;
-    const char *sha256;
+	const char* path;
+	size_t size;
+	int rev;
+	const char* version;
+	const char* commit;
+	const char* sha256;
 };
 
-bool mUpdaterInit(struct mUpdaterContext *, const char *manifest);
+bool mUpdaterInit(struct mUpdaterContext*, const char* manifest);
+void mUpdaterDeinit(struct mUpdaterContext*);
+void mUpdaterGetPlatforms(const struct mUpdaterContext*, struct StringList* out);
+void mUpdaterGetUpdates(const struct mUpdaterContext*, const char* platform, struct Table* out);
+void mUpdaterGetUpdateForChannel(const struct mUpdaterContext*, const char* platform, const char* channel, struct mUpdate* out);
+const char* mUpdaterGetBucket(const struct mUpdaterContext*);
+void mUpdateRecord(struct mCoreConfig*, const char* prefix, const struct mUpdate*);
+bool mUpdateLoad(const struct mCoreConfig*, const char* prefix, struct mUpdate*);
 
-void mUpdaterDeinit(struct mUpdaterContext *);
+void mUpdateRegister(struct mCoreConfig*, const char* arg0, const char* updatePath);
+void mUpdateDeregister(struct mCoreConfig*);
 
-void mUpdaterGetPlatforms(const struct mUpdaterContext *, struct StringList *out);
-
-void mUpdaterGetUpdates(const struct mUpdaterContext *, const char *platform, struct Table *out);
-
-void mUpdaterGetUpdateForChannel(const struct mUpdaterContext *, const char *platform,
-                                 const char *channel, struct mUpdate *out);
-
-const char *mUpdaterGetBucket(const struct mUpdaterContext *);
-
-void mUpdateRecord(struct mCoreConfig *, const char *prefix, const struct mUpdate *);
-
-bool mUpdateLoad(const struct mCoreConfig *, const char *prefix, struct mUpdate *);
-
-void mUpdateRegister(struct mCoreConfig *, const char *arg0, const char *updatePath);
-
-void mUpdateDeregister(struct mCoreConfig *);
-
-const char *mUpdateGetRoot(const struct mCoreConfig *);
-
-const char *mUpdateGetCommand(const struct mCoreConfig *);
-
-const char *mUpdateGetArchiveExtension(const struct mCoreConfig *);
-
-bool mUpdateGetArchivePath(const struct mCoreConfig *, char *out, size_t outLength);
+const char* mUpdateGetRoot(const struct mCoreConfig*);
+const char* mUpdateGetCommand(const struct mCoreConfig*);
+const char* mUpdateGetArchiveExtension(const struct mCoreConfig*);
+bool mUpdateGetArchivePath(const struct mCoreConfig*, char* out, size_t outLength);
 
 CXX_GUARD_END
 

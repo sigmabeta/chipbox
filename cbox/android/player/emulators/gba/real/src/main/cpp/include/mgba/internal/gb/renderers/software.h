@@ -15,56 +15,57 @@ CXX_GUARD_START
 #include <mgba/internal/gb/video.h>
 
 struct GBVideoRendererSprite {
-    struct GBObj obj;
-    int8_t index;
+	struct GBObj obj;
+	int8_t index;
 };
 
 struct GBVideoSoftwareRenderer {
-    struct GBVideoRenderer d;
+	struct GBVideoRenderer d;
 
-    color_t *outputBuffer;
-    int outputBufferStride;
+	mColor* outputBuffer;
+	int outputBufferStride;
 
-    // TODO: Implement the pixel FIFO
-    uint16_t row[GB_VIDEO_HORIZONTAL_PIXELS + 8];
+	// TODO: Implement the pixel FIFO
+	uint16_t row[GB_VIDEO_HORIZONTAL_PIXELS + 8];
 
-    color_t palette[192];
-    uint8_t lookup[192];
+	mColor palette[192];
+	uint8_t lookup[192];
 
-    uint32_t *temporaryBuffer;
+	uint32_t* temporaryBuffer;
 
-    uint8_t scy;
-    uint8_t scx;
-    uint8_t wy;
-    uint8_t wx;
-    uint8_t currentWy;
-    uint8_t currentWx;
-    int lastY;
-    int lastX;
-    bool hasWindow;
+	uint8_t scy;
+	uint8_t scx;
+	uint8_t wy;
+	uint8_t wx;
+	uint8_t currentWy;
+	uint8_t currentWx;
+	int lastY;
+	int lastX;
+	bool hasWindow;
 
-    GBRegisterLCDC lcdc;
-    enum GBModel model;
+	GBRegisterLCDC lcdc;
+	enum GBModel model;
 
-    struct GBVideoRendererSprite obj[GB_VIDEO_MAX_LINE_OBJ];
-    int objMax;
+	struct GBVideoRendererSprite obj[GB_VIDEO_MAX_LINE_OBJ];
+	int objMax;
 
-    int16_t objOffsetX;
-    int16_t objOffsetY;
-    int16_t offsetScx;
-    int16_t offsetScy;
-    int16_t offsetWx;
-    int16_t offsetWy;
+	int16_t objOffsetX;
+	int16_t objOffsetY;
+	int16_t offsetScx;
+	int16_t offsetScy;
+	int16_t offsetWx;
+	int16_t offsetWy;
 
-    int sgbTransfer;
-    uint8_t sgbPacket[128];
-    uint8_t sgbCommandHeader;
-    bool sgbBorders;
+	int sgbTransfer;
+	uint8_t sgbPacket[128];
+	uint8_t sgbCommandHeader;
+	bool sgbBorders;
+	uint32_t sgbBorderMask[18];
 
-    uint8_t lastHighlightAmount;
+	uint8_t lastHighlightAmount;
 };
 
-void GBVideoSoftwareRendererCreate(struct GBVideoSoftwareRenderer *);
+void GBVideoSoftwareRendererCreate(struct GBVideoSoftwareRenderer*);
 
 CXX_GUARD_END
 

@@ -11,8 +11,7 @@
 CXX_GUARD_START
 
 struct CLIDebuggerSystem;
-
-void SM83CLIDebuggerCreate(struct CLIDebuggerSystem *debugger);
+void SM83CLIDebuggerCreate(struct CLIDebuggerSystem* debugger);
 
 CXX_GUARD_END
 

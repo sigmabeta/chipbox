@@ -8,7 +8,7 @@
 #include <chipbox_psf_io.h>
 
 #include <mgba/core/core.h>
-#include <mgba/core/blip_buf.h>
+#include <mgba-util/audio-buffer.h>
 #include <mgba-util/vfs.h>
 
 void loadFile(const char *);
@@ -33,14 +33,11 @@ struct gsf_loader_state
 
 struct gsf_running_state
 {
-    struct mAVStream stream;
     int frames_available;
     int buffer_size_frames;
     int16_t * samples;
 };
 
 int gsf_loader(void *, const uint8_t *, size_t, const uint8_t * , size_t );
-
-static void _gsf_postAudioBuffer(struct mAVStream *, blip_t *, blip_t *);
 
 #endif //CHIPBOX_GBA_H

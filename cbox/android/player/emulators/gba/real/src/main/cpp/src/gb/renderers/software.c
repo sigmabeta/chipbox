@@ -44,7 +44,7 @@ static void _clearScreen(struct GBVideoSoftwareRenderer* renderer) {
 	}
 	int y;
 	for (y = 0; y < GB_VIDEO_VERTICAL_PIXELS; ++y) {
-		color_t* row = &renderer->outputBuffer[renderer->outputBufferStride * y + sgbOffset];
+		mColor* row = &renderer->outputBuffer[renderer->outputBufferStride * y + sgbOffset];
 		int x;
 		for (x = 0; x < GB_VIDEO_HORIZONTAL_PIXELS; x += 4) {
 			row[x + 0] = renderer->palette[0];
@@ -64,37 +64,58 @@ static void _regenerateSGBBorder(struct GBVideoSoftwareRenderer* renderer) {
 	}
 	int x, y;
 	for (y = 0; y < 224; ++y) {
+		int localY = y & 0x7;
+		if (!localY && y >= 40 && y < 184) {
+			renderer->sgbBorderMask[(y - 40) >> 3] = 0;
+		}
 		for (x = 0; x < 256; x += 8) {
-			if (x >= 48 && x < 208 && y >= 40 && y < 184) {
-				continue;
-			}
 			uint16_t mapData;
 			LOAD_16LE(mapData, (x >> 2) + (y & ~7) * 8, renderer->d.sgbMapRam);
 			if (UNLIKELY(SGBBgAttributesGetTile(mapData) >= 0x100)) {
 				continue;
 			}
 
-			int localY = y & 0x7;
-			if (SGBBgAttributesIsYFlip(mapData)) {
-				localY = 7 - localY;
+			if (x >= 48 && x < 208 && y >= 40 && y < 184) {
+				if (!localY) {
+					unsigned tileBase = SGBBgAttributesGetTile(mapData) * 8;
+					uint32_t bits = 0;
+					bits |= ((uint32_t*) renderer->d.sgbCharRam)[tileBase + 0];
+					bits |= ((uint32_t*) renderer->d.sgbCharRam)[tileBase + 1];
+					bits |= ((uint32_t*) renderer->d.sgbCharRam)[tileBase + 2];
+					bits |= ((uint32_t*) renderer->d.sgbCharRam)[tileBase + 3];
+					bits |= ((uint32_t*) renderer->d.sgbCharRam)[tileBase + 4];
+					bits |= ((uint32_t*) renderer->d.sgbCharRam)[tileBase + 5];
+					bits |= ((uint32_t*) renderer->d.sgbCharRam)[tileBase + 6];
+					bits |= ((uint32_t*) renderer->d.sgbCharRam)[tileBase + 7];
+					if (bits) {
+						renderer->sgbBorderMask[(y - 40) >> 3] |= 1 << ((x - 48) >> 3);
+					}
+				}
+				continue;
 			}
+
+			int yFlip = 0;
+			if (SGBBgAttributesIsYFlip(mapData)) {
+				yFlip = 7;
+			}
+			unsigned tileBase = (SGBBgAttributesGetTile(mapData) * 16 + (localY ^ yFlip)) * 2;
 			uint8_t tileData[4];
-			tileData[0] = renderer->d.sgbCharRam[(SGBBgAttributesGetTile(mapData) * 16 + localY) * 2 + 0x00];
-			tileData[1] = renderer->d.sgbCharRam[(SGBBgAttributesGetTile(mapData) * 16 + localY) * 2 + 0x01];
-			tileData[2] = renderer->d.sgbCharRam[(SGBBgAttributesGetTile(mapData) * 16 + localY) * 2 + 0x10];
-			tileData[3] = renderer->d.sgbCharRam[(SGBBgAttributesGetTile(mapData) * 16 + localY) * 2 + 0x11];
+			tileData[0] = renderer->d.sgbCharRam[tileBase + 0x00];
+			tileData[1] = renderer->d.sgbCharRam[tileBase + 0x01];
+			tileData[2] = renderer->d.sgbCharRam[tileBase + 0x10];
+			tileData[3] = renderer->d.sgbCharRam[tileBase + 0x11];
 
 			size_t base = y * renderer->outputBufferStride + x;
 			int paletteBase = SGBBgAttributesGetPalette(mapData) * 0x10;
 			int colorSelector;
 
-			int flip = 0;
+			int xFlip = 0;
 			if (SGBBgAttributesIsXFlip(mapData)) {
-				flip = 7;
+				xFlip = 7;
 			}
 			for (i = 7; i >= 0; --i) {
 				colorSelector = (tileData[0] >> i & 0x1) << 0 | (tileData[1] >> i & 0x1) << 1 | (tileData[2] >> i & 0x1) << 2 | (tileData[3] >> i & 0x1) << 3;
-				renderer->outputBuffer[(base + 7 - i) ^ flip] = renderer->palette[paletteBase | colorSelector];
+				renderer->outputBuffer[(base + 7 - i) ^ xFlip] = renderer->palette[paletteBase | colorSelector];
 			}
 		}
 	}
@@ -233,6 +254,7 @@ static void GBVideoSoftwareRendererInit(struct GBVideoRenderer* renderer, enum G
 	}
 
 	memset(softwareRenderer->palette, 0, sizeof(softwareRenderer->palette));
+	memset(softwareRenderer->sgbBorderMask, 0, sizeof(softwareRenderer->sgbBorderMask));
 
 	softwareRenderer->lastHighlightAmount = 0;
 }
@@ -246,7 +268,7 @@ static void GBVideoSoftwareRendererUpdateWindow(struct GBVideoSoftwareRenderer* 
 	if (renderer->lastY >= GB_VIDEO_VERTICAL_PIXELS || !(after || before)) {
 		return;
 	}
-	if (!renderer->hasWindow && renderer->lastX == GB_VIDEO_HORIZONTAL_PIXELS) {
+	if (!renderer->hasWindow && renderer->lastX == GB_VIDEO_HORIZONTAL_PIXELS && renderer->lastY != oldWy) {
 		return;
 	}
 	if (renderer->lastY >= oldWy) {
@@ -470,14 +492,16 @@ static void GBVideoSoftwareRendererWriteSGBPacket(struct GBVideoRenderer* render
 
 static void GBVideoSoftwareRendererWritePalette(struct GBVideoRenderer* renderer, int index, uint16_t value) {
 	struct GBVideoSoftwareRenderer* softwareRenderer = (struct GBVideoSoftwareRenderer*) renderer;
-	color_t color = mColorFrom555(value);
+	mColor color = mColorFrom555(value);
 	if (softwareRenderer->model & GB_MODEL_SGB) {
-		if (index < 0x10 && index && !(index & 3)) {
+		if (index >= PAL_SGB_BORDER && !(index & 0xF)) {
 			color = softwareRenderer->palette[0];
-		} else if (index >= PAL_SGB_BORDER && !(index & 0xF)) {
-			color = softwareRenderer->palette[0];
-		} else if (index > PAL_HIGHLIGHT && index < PAL_HIGHLIGHT_OBJ && !(index & 3)) {
-			color = softwareRenderer->palette[PAL_HIGHLIGHT_BG];			
+		} else if (!(softwareRenderer->model & GB_MODEL_CGB)) {
+			if (index < 0x10 && index && !(index & 3)) {
+				color = softwareRenderer->palette[0];
+			} else if (index > PAL_HIGHLIGHT && index < PAL_HIGHLIGHT_OBJ && !(index & 3)) {
+				color = softwareRenderer->palette[PAL_HIGHLIGHT_BG];
+			}
 		}
 	}
 	if (renderer->cache) {
@@ -511,13 +535,15 @@ static void GBVideoSoftwareRendererWritePalette(struct GBVideoRenderer* renderer
 	}
 
 	if (softwareRenderer->model & GB_MODEL_SGB && !index && GBRegisterLCDCIsEnable(softwareRenderer->lcdc)) {
-		renderer->writePalette(renderer, 0x04, value);
-		renderer->writePalette(renderer, 0x08, value);
-		renderer->writePalette(renderer, 0x0C, value);
-		renderer->writePalette(renderer, 0x40, value);
-		renderer->writePalette(renderer, 0x50, value);
-		renderer->writePalette(renderer, 0x60, value);
-		renderer->writePalette(renderer, 0x70, value);
+		if (!(softwareRenderer->model & GB_MODEL_CGB)) {
+			renderer->writePalette(renderer, 0x04, value);
+			renderer->writePalette(renderer, 0x08, value);
+			renderer->writePalette(renderer, 0x0C, value);
+			renderer->writePalette(renderer, 0x40, value);
+			renderer->writePalette(renderer, 0x50, value);
+			renderer->writePalette(renderer, 0x60, value);
+			renderer->writePalette(renderer, 0x70, value);
+		}
 		if (softwareRenderer->sgbBorders && !renderer->sgbRenderMode) {
 			_regenerateSGBBorder(softwareRenderer);
 		}
@@ -545,20 +571,38 @@ static void _cleanOAM(struct GBVideoSoftwareRenderer* renderer, int y) {
 	}
 	int o = 0;
 	int i;
+	int16_t ids[GB_VIDEO_MAX_LINE_OBJ];
 	for (i = 0; i < GB_VIDEO_MAX_OBJ && o < GB_VIDEO_MAX_LINE_OBJ; ++i) {
 		uint8_t oy = renderer->d.oam->obj[i].y;
 		if (y < oy - 16 || y >= oy - 16 + spriteHeight) {
 			continue;
 		}
-		// TODO: Sort
-		renderer->obj[o].obj = renderer->d.oam->obj[i];
-		renderer->obj[o].index = i;
+		ids[o] = (renderer->d.oam->obj[i].x << 7) | i;
 		++o;
-		if (o == 10) {
-			break;
-		}
 	}
 	renderer->objMax = o;
+	if (renderer->model < GB_MODEL_CGB) {
+		// Terrble n^2 sort, but it's only 10 elements so it shouldn't be that bad
+		int16_t ids2[GB_VIDEO_MAX_LINE_OBJ];
+		int min = -1;
+		int j;
+		for (i = 0; i < o; ++i) {
+			int min2 = 0xFFFF;
+			for (j = 0; j < o; ++j) {
+				if (ids[j] > min && ids[j] < min2) {
+					min2 = ids[j];
+				}
+			}
+			min = min2;
+			ids2[i] = min;
+		}
+		memcpy(ids, ids2, sizeof(ids));
+	}
+	for (i = 0; i < o; ++i) {
+		int id = ids[i] & 0x7F;
+		renderer->obj[i].obj = renderer->d.oam->obj[id];
+		renderer->obj[i].index = id;
+	}
 }
 
 static void GBVideoSoftwareRendererDrawRange(struct GBVideoRenderer* renderer, int startX, int endX, int y) {
@@ -624,7 +668,7 @@ static void GBVideoSoftwareRendererDrawRange(struct GBVideoRenderer* renderer, i
 	if (softwareRenderer->model & GB_MODEL_SGB && softwareRenderer->sgbBorders) {
 		sgbOffset = softwareRenderer->outputBufferStride * 40 + 48;
 	}
-	color_t* row = &softwareRenderer->outputBuffer[softwareRenderer->outputBufferStride * y + sgbOffset];
+	mColor* row = &softwareRenderer->outputBuffer[softwareRenderer->outputBufferStride * y + sgbOffset];
 	int x = startX;
 	int p = 0;
 	switch (softwareRenderer->d.sgbRenderMode) {
@@ -662,6 +706,46 @@ static void GBVideoSoftwareRendererDrawRange(struct GBVideoRenderer* renderer, i
 		}
 		for (; x < endX; ++x) {
 			row[x] = softwareRenderer->palette[p | softwareRenderer->lookup[softwareRenderer->row[x] & OBJ_PRIO_MASK]];
+		}
+		if (softwareRenderer->sgbBorderMask[y >> 3]) {
+			uint32_t borderMask = softwareRenderer->sgbBorderMask[y >> 3];
+			int localY = y & 0x7;
+			for (x = startX; x < endX; x += 8) {
+				if (!(borderMask & (1 << (x >> 3)))) {
+					continue;
+				}
+				uint16_t mapData;
+				LOAD_16LE(mapData, (x >> 2) + 12 + (y & ~7) * 8 + 320, softwareRenderer->d.sgbMapRam);
+				if (UNLIKELY(SGBBgAttributesGetTile(mapData) >= 0x100)) {
+					continue;
+				}
+
+				int yFlip = 0;
+				if (SGBBgAttributesIsYFlip(mapData)) {
+					yFlip = 7;
+				}
+				unsigned tileBase = (SGBBgAttributesGetTile(mapData) * 16 + (localY ^ yFlip)) * 2;
+				uint8_t tileData[4];
+				tileData[0] = softwareRenderer->d.sgbCharRam[tileBase + 0x00];
+				tileData[1] = softwareRenderer->d.sgbCharRam[tileBase + 0x01];
+				tileData[2] = softwareRenderer->d.sgbCharRam[tileBase + 0x10];
+				tileData[3] = softwareRenderer->d.sgbCharRam[tileBase + 0x11];
+
+				int paletteBase = SGBBgAttributesGetPalette(mapData) * 0x10;
+				int colorSelector;
+
+				int flip = 0;
+				if (SGBBgAttributesIsXFlip(mapData)) {
+					flip = 7;
+				}
+				int i;
+				for (i = 7; i >= 0; --i) {
+					colorSelector = (tileData[0] >> i & 0x1) << 0 | (tileData[1] >> i & 0x1) << 1 | (tileData[2] >> i & 0x1) << 2 | (tileData[3] >> i & 0x1) << 3;
+					if (colorSelector) {
+						row[(x + 7 - i) ^ flip] = softwareRenderer->palette[paletteBase | colorSelector];
+					}
+				}
+			}
 		}
 		break;
 	case 1:
@@ -1077,7 +1161,7 @@ static void GBVideoSoftwareRendererPutPixels(struct GBVideoRenderer* renderer, s
 	struct GBVideoSoftwareRenderer* softwareRenderer = (struct GBVideoSoftwareRenderer*) renderer;
 	// TODO: Share with GBAVideoSoftwareRendererGetPixels
 
-	const color_t* colorPixels = pixels;
+	const mColor* colorPixels = pixels;
 	unsigned i;
 	for (i = 0; i < GB_VIDEO_VERTICAL_PIXELS; ++i) {
 		memmove(&softwareRenderer->outputBuffer[softwareRenderer->outputBufferStride * i], &colorPixels[stride * i], GB_VIDEO_HORIZONTAL_PIXELS * BYTES_PER_PIXEL);

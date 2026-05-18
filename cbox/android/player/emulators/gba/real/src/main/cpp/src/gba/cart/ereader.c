@@ -13,7 +13,7 @@
 #ifdef USE_FFMPEG
 #include <mgba-util/convolve.h>
 #ifdef USE_PNG
-#include <mgba-util/png-io.h>
+#include <mgba-util/image/png-io.h>
 #include <mgba-util/vfs.h>
 #endif
 
@@ -371,7 +371,7 @@ void GBACartEReaderScan(struct GBACartEReader* ereader, const void* data, size_t
 	memset(ereader->dots, 0, EREADER_DOTCODE_SIZE);
 
 	uint8_t blockRS[44][0x10];
-	uint8_t block0[0x30];
+	uint8_t block0[0x30] = {0};
 	bool parsed = false;
 	bool bitmap = false;
 	bool reducedHeader = false;
@@ -650,7 +650,7 @@ void _eReaderWriteControl0(struct GBACartEReader* ereader, uint8_t value) {
 	}
 	ereader->registerControl0 = control;
 	if (!EReaderControl0IsScan(oldControl) && EReaderControl0IsScan(control)) {
-		if (ereader->scanX > 1000) {
+		if (ereader->scanX > 0) {
 			_eReaderScanCard(ereader);
 		}
 		ereader->scanX = 0;
@@ -668,7 +668,7 @@ void _eReaderWriteControl1(struct GBACartEReader* ereader, uint8_t value) {
 		++ereader->scanY;
 		if (ereader->scanY == (ereader->serial[0x15] | (ereader->serial[0x14] << 8))) {
 			ereader->scanY = 0;
-			if (ereader->scanX < 3400) {
+			if (ereader->scanX < 4050) {
 				ereader->scanX += 210;
 			}
 		}
@@ -718,7 +718,7 @@ void _eReaderReadData(struct GBACartEReader* ereader) {
 		if (led > 0x4000) {
 			led = 0x4000;
 		}
-		GBARaiseIRQ(ereader->p, IRQ_GAMEPAK, -led);
+		GBARaiseIRQ(ereader->p, GBA_IRQ_GAMEPAK, -led);
 	}
 }
 
@@ -875,7 +875,7 @@ void EReaderScanDestroy(struct EReaderScan* scan) {
 	free(scan);
 }
 
-#ifdef USE_PNG
+#if defined(USE_PNG) && defined(ENABLE_VFS)
 struct EReaderScan* EReaderScanLoadImagePNG(const char* filename) {
 	struct VFile* vf = VFileOpen(filename, O_RDONLY);
 	if (!vf) {
@@ -888,7 +888,11 @@ struct EReaderScan* EReaderScanLoadImagePNG(const char* filename) {
 	}
 	png_infop info = png_create_info_struct(png);
 	png_infop end = png_create_info_struct(png);
-	PNGReadHeader(png, info);
+	if (!PNGReadHeader(png, info)) {
+		PNGReadClose(png, info, end);
+		vf->close(vf);
+		return NULL;
+	}
 	unsigned height = png_get_image_height(png, info);
 	unsigned width = png_get_image_width(png, info);
 	int type = png_get_color_type(png, info);
@@ -900,19 +904,34 @@ struct EReaderScan* EReaderScanLoadImagePNG(const char* filename) {
 			break;
 		}
 		image = malloc(height * width * 3);
-		PNGReadPixels(png, info, image, width, height, width);
+		if (!image) {
+			goto out;
+		}
+		if (!PNGReadPixels(png, info, image, width, height, width)) {
+			free(image);
+			image = NULL;
+			goto out;
+		}
 		break;
 	case PNG_COLOR_TYPE_RGBA:
 		if (depth != 8) {
 			break;
 		}
 		image = malloc(height * width * 4);
-		PNGReadPixelsA(png, info, image, width, height, width);
+		if (!image) {
+			goto out;
+		}
+		if (!PNGReadPixelsA(png, info, image, width, height, width)) {
+			free(image);
+			image = NULL;
+			goto out;
+		}
 		break;
 	default:
 		break;
 	}
 	PNGReadFooter(png, end);
+out:
 	PNGReadClose(png, info, end);
 	vf->close(vf);
 	if (!image) {
@@ -979,14 +998,14 @@ struct EReaderScan* EReaderScanLoadImage8(const void* pixels, unsigned width, un
 }
 
 void EReaderScanDetectParams(struct EReaderScan* scan) {
-	size_t sum = 0;
+	double product = 0;
 	unsigned y;
 	for (y = 0; y < scan->height; ++y) {
 		const uint8_t* row = &scan->buffer[scan->width * y];
 		unsigned x;
 		for (x = 0; x < scan->width; ++x) {
 			uint8_t color = row[x];
-			sum += color;
+			product += log(color + 1);
 			if (color < scan->min) {
 				scan->min = color;
 			}
@@ -995,8 +1014,8 @@ void EReaderScanDetectParams(struct EReaderScan* scan) {
 			}
 		}
 	}
-	scan->mean = sum / (scan->width * scan->height);
-	scan->anchorThreshold = 2 * (scan->mean - scan->min) / 5 + scan->min;
+	scan->mean = exp(product / (scan->width * scan->height));
+	scan->anchorThreshold = (scan->max - scan->mean) / 2 + scan->min;
 }
 
 void EReaderScanDetectAnchors(struct EReaderScan* scan) {
@@ -1088,6 +1107,10 @@ void EReaderScanFilterAnchors(struct EReaderScan* scan) {
 			areaMean += portion;
 		}
 	}
+	if (!EReaderAnchorListSize(&scan->anchors)) {
+		return;
+	}
+
 	areaMean /= EReaderAnchorListSize(&scan->anchors);
 	for (i = 0; i < EReaderAnchorListSize(&scan->anchors); ++i) {
 		struct EReaderAnchor* anchor = EReaderAnchorListGetPointer(&scan->anchors, i);
@@ -1099,6 +1122,9 @@ void EReaderScanFilterAnchors(struct EReaderScan* scan) {
 			--i;
 		}
 	}
+	if (!EReaderAnchorListSize(&scan->anchors)) {
+		return;
+	}
 
 	qsort(EReaderAnchorListGetPointer(&scan->anchors, 0), EReaderAnchorListSize(&scan->anchors), sizeof(struct EReaderAnchor), _compareAnchors);
 }
@@ -1108,7 +1134,7 @@ void EReaderScanConnectAnchors(struct EReaderScan* scan) {
 	for (i = 0; i < EReaderAnchorListSize(&scan->anchors); ++i) {
 		struct EReaderAnchor* anchor = EReaderAnchorListGetPointer(&scan->anchors, i);
 		float closest = scan->scale * 2.f;
-		float threshold;
+		float threshold = 1.25f * closest;
 		size_t j;
 		for (j = 0; j < EReaderAnchorListSize(&scan->anchors); ++j) {
 			if (i == j) {
@@ -1120,7 +1146,7 @@ void EReaderScanConnectAnchors(struct EReaderScan* scan) {
 			float distance = hypotf(dx, dy);
 			if (distance < closest) {
 				closest = distance;
-				threshold = 1.25 * closest;
+				threshold = 1.25f * closest;
 			}
 		}
 		if (closest >= scan->scale) {
@@ -1477,11 +1503,15 @@ bool EReaderScanCard(struct EReaderScan* scan) {
 	EReaderScanConnectAnchors(scan);
 	EReaderScanCreateBlocks(scan);
 	size_t blocks = EReaderBlockListSize(&scan->blocks);
+	if (!blocks) {
+		return false;
+	}
+
 	size_t i;
 	for (i = 0; i < blocks; ++i) {
 		EReaderScanDetectBlockThreshold(scan, i);
-		int errors = 36 * 36;
-		while (!EReaderScanScanBlock(scan, i, true)) {
+		unsigned errors = 36 * 36;
+		while (!EReaderScanScanBlock(scan, i, false)) {
 			if (errors < EReaderBlockListGetPointer(&scan->blocks, i)->errors) {
 				return false;
 			}
@@ -1545,6 +1575,7 @@ void EReaderScanOutputBitmap(const struct EReaderScan* scan, void* output, size_
 	}
 }
 
+#ifdef ENABLE_VFS
 bool EReaderScanSaveRaw(const struct EReaderScan* scan, const char* filename, bool strict) {
 	size_t blocks = EReaderBlockListSize(&scan->blocks);
 	if (!blocks) {
@@ -1614,5 +1645,6 @@ bool EReaderScanSaveRaw(const struct EReaderScan* scan, const char* filename, bo
 	free(data);
 	return true;
 }
+#endif
 
 #endif

@@ -14,8 +14,7 @@ CXX_GUARD_START
 
 struct ARMCore;
 
-typedef void (*ARMInstruction)(struct ARMCore *, uint32_t opcode);
-
+typedef void (*ARMInstruction)(struct ARMCore*, uint32_t opcode);
 extern const ARMInstruction _armTable[0x1000];
 
 CXX_GUARD_END

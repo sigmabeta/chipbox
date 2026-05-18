@@ -10,38 +10,31 @@
 
 CXX_GUARD_START
 
-#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 2
+#if defined(ENABLE_VFS) && defined(ENABLE_DIRECTORIES)
 struct VDir;
 
 struct mDirectorySet {
-    char baseName[PATH_MAX];
-    struct VDir *base;
-    struct VDir *archive;
-    struct VDir *save;
-    struct VDir *patch;
-    struct VDir *state;
-    struct VDir *screenshot;
-    struct VDir *cheats;
+	char baseName[PATH_MAX];
+	struct VDir* base;
+	struct VDir* archive;
+	struct VDir* save;
+	struct VDir* patch;
+	struct VDir* state;
+	struct VDir* screenshot;
+	struct VDir* cheats;
 };
 
-void mDirectorySetInit(struct mDirectorySet *dirs);
+void mDirectorySetInit(struct mDirectorySet* dirs);
+void mDirectorySetDeinit(struct mDirectorySet* dirs);
 
-void mDirectorySetDeinit(struct mDirectorySet *dirs);
+void mDirectorySetAttachBase(struct mDirectorySet* dirs, struct VDir* base);
+void mDirectorySetDetachBase(struct mDirectorySet* dirs);
 
-void mDirectorySetAttachBase(struct mDirectorySet *dirs, struct VDir *base);
-
-void mDirectorySetDetachBase(struct mDirectorySet *dirs);
-
-struct VFile *
-mDirectorySetOpenPath(struct mDirectorySet *dirs, const char *path, bool (*filter)(struct VFile *));
-
-struct VFile *
-mDirectorySetOpenSuffix(struct mDirectorySet *dirs, struct VDir *dir, const char *suffix, int mode);
+struct VFile* mDirectorySetOpenPath(struct mDirectorySet* dirs, const char* path, bool (*filter)(struct VFile*));
+struct VFile* mDirectorySetOpenSuffix(struct mDirectorySet* dirs, struct VDir* dir, const char* suffix, int mode);
 
 struct mCoreOptions;
-
-void mDirectorySetMapOptions(struct mDirectorySet *dirs, const struct mCoreOptions *opts);
-
+void mDirectorySetMapOptions(struct mDirectorySet* dirs, const struct mCoreOptions* opts);
 #endif
 
 CXX_GUARD_END

@@ -14,12 +14,27 @@
 #define CXX_GUARD_END
 #endif
 
-#ifdef __MINGW32__
-#define __USE_MINGW_ANSI_STDIO 1
-#endif
-
 CXX_GUARD_START
 
+#ifdef _WIN32
+#ifndef _CRT_NONSTDC_NO_WARNINGS
+#define _CRT_NONSTDC_NO_WARNINGS
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+// Require Windows 7 or newer
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601
+#elif _WIN32_WINNT < 0x0601
+#undef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601
+#endif
+// WinSock2 gets very angry if it's included too late
+#include <winsock2.h>
+#endif
+
+#include <assert.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -34,13 +49,12 @@ CXX_GUARD_START
 #include <string.h>
 #include <time.h>
 
-#ifdef _WIN32
-// WinSock2 gets very angry if it's included too late
-#include <winsock2.h>
-#endif
-
 #if defined(_MSC_VER) || defined(__cplusplus)
 #define restrict __restrict
+#endif
+
+#ifndef containerof
+#define containerof(PTR, TYPE, MEMBER) ((TYPE*) ((uintptr_t) (PTR) - offsetof(TYPE, MEMBER)))
 #endif
 
 #ifdef _MSC_VER
@@ -83,6 +97,10 @@ typedef intptr_t ssize_t;
 #define M_PI 3.141592654f
 #endif
 
+#if !defined(__cplusplus) && !defined(static_assert)
+#define static_assert(X, C) _Static_assert((X), C)
+#endif
+
 #if !defined(_MSC_VER) && (defined(__llvm__) || (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7))
 #define ATOMIC_STORE(DST, SRC) __atomic_store_n(&DST, SRC, __ATOMIC_RELEASE)
 #define ATOMIC_LOAD(DST, SRC) DST = __atomic_load_n(&SRC, __ATOMIC_ACQUIRE)
@@ -105,18 +123,18 @@ typedef intptr_t ssize_t;
 #define ATOMIC_LOAD_PTR(DST, SRC) DST = InterlockedCompareExchangePointer(&SRC, 0, 0)
 #else
 // TODO
-#define ATOMIC_STORE(DST, SRC) DST = SRC
-#define ATOMIC_LOAD(DST, SRC) DST = SRC
-#define ATOMIC_ADD(DST, OP) DST += OP
-#define ATOMIC_SUB(DST, OP) DST -= OP
-#define ATOMIC_OR(DST, OP) DST |= OP
-#define ATOMIC_AND(DST, OP) DST &= OP
-#define ATOMIC_CMPXCHG(DST, EXPECTED, OP) ((DST == EXPECTED) ? ((DST = OP), true) : false)
+#define ATOMIC_STORE(DST, SRC) ((DST) = (SRC))
+#define ATOMIC_LOAD(DST, SRC) ((DST) = (SRC))
+#define ATOMIC_ADD(DST, OP) ((DST) += (OP))
+#define ATOMIC_SUB(DST, OP) ((DST) -= (OP))
+#define ATOMIC_OR(DST, OP) ((DST) |= (OP))
+#define ATOMIC_AND(DST, OP) ((DST) &= (OP))
+#define ATOMIC_CMPXCHG(DST, EXPECTED, OP) (((DST) == (EXPECTED)) ? (((DST) = (OP)), true) : false)
 #define ATOMIC_STORE_PTR(DST, SRC) ATOMIC_STORE(DST, SRC)
 #define ATOMIC_LOAD_PTR(DST, SRC) ATOMIC_LOAD(DST, SRC)
 #endif
 
-#if defined(_3DS) || defined(GEKKO) || defined(PSP2)
+#if defined(__3DS__) || defined(GEKKO) || defined(PSP2)
 // newlib doesn't support %z properly by default
 #define PRIz ""
 #elif defined(_MSC_VER)
@@ -250,6 +268,7 @@ typedef intptr_t ssize_t;
 #define ATTRIBUTE_UNUSED
 #define ATTRIBUTE_FORMAT(X, Y, Z)
 #define ATTRIBUTE_NOINLINE
+#define ATTRIBUTE_NONSTRING
 // Adapted from https://stackoverflow.com/a/2390626
 #define _CONSTRUCTOR(FN, PRE) \
 	static void FN(void); \
@@ -264,6 +283,11 @@ typedef intptr_t ssize_t;
 #define ATTRIBUTE_UNUSED __attribute__((unused))
 #define ATTRIBUTE_FORMAT(X, Y, Z) __attribute__((format(X, Y, Z)))
 #define ATTRIBUTE_NOINLINE __attribute__((noinline))
+#if defined(__llvm__) || (__GNUC__ < 8)
+#define ATTRIBUTE_NONSTRING
+#else
+#define ATTRIBUTE_NONSTRING __attribute__((nonstring))
+#endif
 #define CONSTRUCTOR(FN) static __attribute__((constructor)) void FN(void)
 #endif
 
@@ -300,6 +324,26 @@ typedef intptr_t ssize_t;
 #endif
 
 #define ROR(I, ROTATE) ((((uint32_t) (I)) >> ROTATE) | ((uint32_t) (I) << ((-ROTATE) & 31)))
+
+#define mASSERT(COND) \
+	if (!(COND)) { \
+		abort(); \
+	}
+#define mASSERT_DEBUG(COND) assert((COND))
+
+#define mASSERT_LOG(CAT, COND, ...) \
+	if (!(COND)) { \
+		mLOG(CAT, FATAL, __VA_ARGS__); \
+	}
+
+#ifdef NDEBUG
+#define mASSERT_DEBUG_LOG(...)
+#else
+#define mASSERT_DEBUG_LOG(CAT, COND, ...) \
+	if (!(COND)) { \
+		mLOG(CAT, FATAL, __VA_ARGS__); \
+	}
+#endif
 
 CXX_GUARD_END
 

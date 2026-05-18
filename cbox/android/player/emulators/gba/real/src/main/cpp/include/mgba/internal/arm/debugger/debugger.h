@@ -17,40 +17,36 @@ CXX_GUARD_START
 
 struct ParseTree;
 struct ARMDebugBreakpoint {
-    struct mBreakpoint d;
-    struct {
-        uint32_t opcode;
-        enum ExecutionMode mode;
-    } sw;
+	struct mBreakpoint d;
+	struct {
+		uint32_t opcode;
+		enum ExecutionMode mode;
+	} sw;
 };
 
-DECLARE_VECTOR(ARMDebugBreakpointList,
-struct ARMDebugBreakpoint);
+DECLARE_VECTOR(ARMDebugBreakpointList, struct ARMDebugBreakpoint);
 
 struct ARMDebugger {
-    struct mDebuggerPlatform d;
-    struct ARMCore *cpu;
+	struct mDebuggerPlatform d;
+	struct ARMCore* cpu;
 
-    struct ARMDebugBreakpointList breakpoints;
-    struct ARMDebugBreakpointList swBreakpoints;
-    struct mWatchpointList watchpoints;
-    struct ARMMemory originalMemory;
+	struct ARMDebugBreakpointList breakpoints;
+	uint64_t bpBloom[4];
+	struct ARMDebugBreakpointList swBreakpoints;
+	struct mWatchpointList watchpoints;
+	struct ARMMemory originalMemory;
 
-    ssize_t nextId;
-    uint32_t stackTraceMode;
+	ssize_t nextId;
+	enum mStackTraceMode stackTraceMode;
 
-    void (*entered)(struct mDebugger *, enum mDebuggerEntryReason, struct mDebuggerEntryInfo *);
+	void (*entered)(struct mDebugger*, enum mDebuggerEntryReason, struct mDebuggerEntryInfo*);
 
-    bool (*setSoftwareBreakpoint)(struct ARMDebugger *, uint32_t address, enum ExecutionMode mode,
-                                  uint32_t *opcode);
-
-    void (*clearSoftwareBreakpoint)(struct ARMDebugger *, const struct ARMDebugBreakpoint *);
+	bool (*setSoftwareBreakpoint)(struct ARMDebugger*, uint32_t address, enum ExecutionMode mode, uint32_t* opcode);
+	void (*clearSoftwareBreakpoint)(struct ARMDebugger*, const struct ARMDebugBreakpoint*);
 };
 
-struct mDebuggerPlatform *ARMDebuggerPlatformCreate(void);
-
-ssize_t ARMDebuggerSetSoftwareBreakpoint(struct mDebuggerPlatform *debugger, uint32_t address,
-                                         enum ExecutionMode mode);
+struct mDebuggerPlatform* ARMDebuggerPlatformCreate(void);
+ssize_t ARMDebuggerSetSoftwareBreakpoint(struct mDebuggerPlatform* debugger, struct mDebuggerModule* owner, uint32_t address, enum ExecutionMode mode);
 
 CXX_GUARD_END
 

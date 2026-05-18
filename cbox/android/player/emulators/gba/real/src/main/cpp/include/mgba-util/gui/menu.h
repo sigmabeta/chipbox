@@ -10,7 +10,11 @@
 
 CXX_GUARD_START
 
+#include <mgba/core/log.h>
+#include <mgba-util/gui.h>
 #include <mgba-util/vector.h>
+
+mLOG_DECLARE_CATEGORY(GUI_MENU);
 
 #define GUI_V_V (struct GUIVariant) { .type = GUI_VARIANT_VOID }
 #define GUI_V_U(U) (struct GUIVariant) { .type = GUI_VARIANT_UNSIGNED, .v.u = (U) }
@@ -60,6 +64,7 @@ struct GUIMenuItem {
 	const struct GUIVariant* stateMappings;
 	unsigned nStates;
 	struct GUIMenu* submenu;
+	bool readonly;
 };
 
 DECLARE_VECTOR(GUIMenuItemList, struct GUIMenuItem);
@@ -73,10 +78,29 @@ struct GUIMenu {
 	struct GUIBackground* background;
 };
 
+struct GUIMenuSavedState {
+	struct GUIMenu* menu;
+	size_t start;
+};
+
+DECLARE_VECTOR(GUIMenuSavedList, struct GUIMenuSavedState);
+
+struct GUIMenuState {
+	size_t start;
+	int cursorOverItem;
+	enum GUICursorState cursor;
+	unsigned cx, cy;
+	struct GUIMenuSavedList stack;
+
+	struct GUIMenuItem* resultItem;
+};
+
 enum GUIMenuExitReason {
+	GUI_MENU_CONTINUE = 0,
 	GUI_MENU_EXIT_ACCEPT,
 	GUI_MENU_EXIT_BACK,
 	GUI_MENU_EXIT_CANCEL,
+	GUI_MENU_ENTER,
 };
 
 enum GUIMessageBoxButtons {
@@ -85,7 +109,11 @@ enum GUIMessageBoxButtons {
 };
 
 struct GUIParams;
+void GUIMenuStateInit(struct GUIMenuState*);
+void GUIMenuStateDeinit(struct GUIMenuState*);
+
 enum GUIMenuExitReason GUIShowMenu(struct GUIParams* params, struct GUIMenu* menu, struct GUIMenuItem** item);
+enum GUIMenuExitReason GUIMenuRun(struct GUIParams* params, struct GUIMenu* menu, struct GUIMenuState* state);
 
 ATTRIBUTE_FORMAT(printf, 4, 5)
 enum GUIMenuExitReason GUIShowMessageBox(struct GUIParams* params, int buttons, int frames, const char* format, ...);

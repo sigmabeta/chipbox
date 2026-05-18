@@ -108,7 +108,7 @@ void GBAVideoSoftwareRendererDrawBackgroundMode3(struct GBAVideoSoftwareRenderer
 	BACKGROUND_BITMAP_INIT;
 
 	uint32_t color = renderer->normalPalette[0];
-	if (mosaicWait && localX >= 0 && localY >= 0) {
+	if (mosaicWait && localX >= 0 && localY >= 0 && (localX >> 8) < GBA_VIDEO_HORIZONTAL_PIXELS && (localY >> 8) < GBA_VIDEO_VERTICAL_PIXELS) {
 		LOAD_16(color, ((localX >> 8) + (localY >> 8) * GBA_VIDEO_HORIZONTAL_PIXELS) << 1, renderer->d.vram);
 		color = mColorFrom555(color);
 	}
@@ -127,7 +127,7 @@ void GBAVideoSoftwareRendererDrawBackgroundMode3(struct GBAVideoSoftwareRenderer
 		}
 
 		uint32_t current = *pixel;
-		if (!objwinSlowPath || (!(current & FLAG_OBJWIN)) != objwinOnly) {
+		if (!objwinSlowPath || (!(current & FLAG_OBJWIN)) != background->objwinOnly) {
 			unsigned mergedFlags = flags;
 			if (current & FLAG_OBJWIN) {
 				mergedFlags = objwinFlags;
@@ -151,7 +151,7 @@ void GBAVideoSoftwareRendererDrawBackgroundMode4(struct GBAVideoSoftwareRenderer
 	if (GBARegisterDISPCNTIsFrameSelect(renderer->dispcnt)) {
 		offset = 0xA000;
 	}
-	if (mosaicWait && localX >= 0 && localY >= 0) {
+	if (mosaicWait && localX >= 0 && localY >= 0 && (localX >> 8) < GBA_VIDEO_HORIZONTAL_PIXELS && (localY >> 8) < GBA_VIDEO_VERTICAL_PIXELS) {
 		color = ((uint8_t*)renderer->d.vram)[offset + (localX >> 8) + (localY >> 8) * GBA_VIDEO_HORIZONTAL_PIXELS];
 	}
 
@@ -172,8 +172,8 @@ void GBAVideoSoftwareRendererDrawBackgroundMode4(struct GBAVideoSoftwareRenderer
 		if (color && IS_WRITABLE(current)) {
 			if (!objwinSlowPath) {
 				_compositeBlendNoObjwin(renderer, pixel, palette[color] | flags, current);
-			} else if (objwinForceEnable || (!(current & FLAG_OBJWIN)) == objwinOnly) {
-				color_t* currentPalette = (current & FLAG_OBJWIN) ? objwinPalette : palette;
+			} else if (background->objwinForceEnable || (!(current & FLAG_OBJWIN)) == background->objwinOnly) {
+				mColor* currentPalette = (current & FLAG_OBJWIN) ? objwinPalette : palette;
 				unsigned mergedFlags = flags;
 				if (current & FLAG_OBJWIN) {
 					mergedFlags = objwinFlags;
@@ -192,7 +192,7 @@ void GBAVideoSoftwareRendererDrawBackgroundMode5(struct GBAVideoSoftwareRenderer
 	if (GBARegisterDISPCNTIsFrameSelect(renderer->dispcnt)) {
 		offset = 0xA000;
 	}
-	if (mosaicWait && localX >= 0 && localY >= 0) {
+	if (mosaicWait && localX >= 0 && localY >= 0 && (localX >> 8) < 160 && (localY >> 8) < 128) {
 		LOAD_16(color, offset + (localX >> 8) * 2 + (localY >> 8) * 320, renderer->d.vram);
 		color = mColorFrom555(color);
 	}
@@ -211,7 +211,7 @@ void GBAVideoSoftwareRendererDrawBackgroundMode5(struct GBAVideoSoftwareRenderer
 		}
 
 		uint32_t current = *pixel;
-		if (!objwinSlowPath || (!(current & FLAG_OBJWIN)) != objwinOnly) {
+		if (!objwinSlowPath || (!(current & FLAG_OBJWIN)) != background->objwinOnly) {
 			unsigned mergedFlags = flags;
 			if (current & FLAG_OBJWIN) {
 				mergedFlags = objwinFlags;

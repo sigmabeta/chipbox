@@ -25,18 +25,30 @@ void mTimingClear(struct mTiming* timing) {
 	timing->masterCycles = 0;
 }
 
+void mTimingInterrupt(struct mTiming* timing) {
+	if (!timing->root) {
+		return;
+	}
+	timing->reroot = timing->root;
+	timing->root = NULL;
+}
+
 void mTimingSchedule(struct mTiming* timing, struct mTimingEvent* event, int32_t when) {
 	int32_t nextEvent = when + *timing->relativeCycles;
 	event->when = nextEvent + timing->masterCycles;
 	if (nextEvent < *timing->nextEvent) {
 		*timing->nextEvent = nextEvent;
 	}
+	struct mTimingEvent** previous;
+	struct mTimingEvent* next;
 	if (timing->reroot) {
-		timing->root = timing->reroot;
-		timing->reroot = NULL;
+		previous = &timing->reroot;
+		next = timing->reroot;
+	} else {
+		previous = &timing->root;
+		next = timing->root;
 	}
-	struct mTimingEvent** previous = &timing->root;
-	struct mTimingEvent* next = timing->root;
+
 	unsigned priority = event->priority;
 	while (next) {
 		int32_t nextWhen = next->when - timing->masterCycles;
@@ -55,12 +67,16 @@ void mTimingScheduleAbsolute(struct mTiming* timing, struct mTimingEvent* event,
 }
 
 void mTimingDeschedule(struct mTiming* timing, struct mTimingEvent* event) {
+	struct mTimingEvent** previous;
+	struct mTimingEvent* next;
 	if (timing->reroot) {
-		timing->root = timing->reroot;
-		timing->reroot = NULL;
+		previous = &timing->reroot;
+		next = timing->reroot;
+	} else {
+		previous = &timing->root;
+		next = timing->root;
 	}
-	struct mTimingEvent** previous = &timing->root;
-	struct mTimingEvent* next = timing->root;
+
 	while (next) {
 		if (next == event) {
 			*previous = next->next;
@@ -97,13 +113,10 @@ int32_t mTimingTick(struct mTiming* timing, int32_t cycles) {
 		timing->root = next->next;
 		next->callback(timing, next->context, -nextWhen);
 	}
-	if (timing->reroot) {
+	if (UNLIKELY(timing->reroot)) {
 		timing->root = timing->reroot;
 		timing->reroot = NULL;
 		*timing->nextEvent = mTimingNextEvent(timing);
-		if (*timing->nextEvent <= 0) {
-			return mTimingTick(timing, 0);
-		}
 	}
 	return *timing->nextEvent;
 }

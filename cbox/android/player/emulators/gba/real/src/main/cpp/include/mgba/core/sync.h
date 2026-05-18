@@ -13,38 +13,34 @@ CXX_GUARD_START
 #include <mgba-util/threading.h>
 
 struct mCoreSync {
-    int videoFramePending;
-    bool videoFrameWait;
-    Mutex videoFrameMutex;
-    Condition videoFrameAvailableCond;
-    Condition videoFrameRequiredCond;
+	int videoFramePending;
+	bool videoFrameWait;
+	Mutex videoFrameMutex;
+	Condition videoFrameAvailableCond;
+	Condition videoFrameRequiredCond;
 
-    bool audioWait;
-    Condition audioRequiredCond;
-    Mutex audioBufferMutex;
+	bool audioWait;
+	Condition audioRequiredCond;
+	Mutex audioBufferMutex;
+	size_t audioHighWater;
 
-    float fpsTarget;
+	float fpsTarget;
 };
 
-void mCoreSyncPostFrame(struct mCoreSync *sync);
+struct mCoreOptions;
+void mCoreSyncLoadCoreOpts(struct mCoreSync* sync, const struct mCoreOptions* opts);
 
-void mCoreSyncForceFrame(struct mCoreSync *sync);
+void mCoreSyncPostFrame(struct mCoreSync* sync);
+void mCoreSyncForceFrame(struct mCoreSync* sync);
+bool mCoreSyncWaitFrameStart(struct mCoreSync* sync);
+void mCoreSyncWaitFrameEnd(struct mCoreSync* sync);
+void mCoreSyncSetVideoSync(struct mCoreSync* sync, bool wait);
 
-bool mCoreSyncWaitFrameStart(struct mCoreSync *sync);
-
-void mCoreSyncWaitFrameEnd(struct mCoreSync *sync);
-
-void mCoreSyncSetVideoSync(struct mCoreSync *sync, bool wait);
-
-struct blip_t;
-
-bool mCoreSyncProduceAudio(struct mCoreSync *sync, const struct blip_t *, size_t samples);
-
-void mCoreSyncLockAudio(struct mCoreSync *sync);
-
-void mCoreSyncUnlockAudio(struct mCoreSync *sync);
-
-void mCoreSyncConsumeAudio(struct mCoreSync *sync);
+struct mAudioBuffer;
+bool mCoreSyncProduceAudio(struct mCoreSync* sync, const struct mAudioBuffer*);
+void mCoreSyncLockAudio(struct mCoreSync* sync);
+void mCoreSyncUnlockAudio(struct mCoreSync* sync);
+void mCoreSyncConsumeAudio(struct mCoreSync* sync);
 
 CXX_GUARD_END
 

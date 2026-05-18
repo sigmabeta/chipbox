@@ -16,51 +16,49 @@ nop
 b irqBase
 b fiqBase
 
-resetBase:
-mov r0, #0x8000000
-ldrb r1, [r0, #3]
-cmp r1, #0xEA
-ldrne r0, =0x20000C0
-bx r0
-.word 0
-.word 0xE129F000
-
 .word 0 @ Padding for back-compat
+.word 0
+.word 0
+.word 0
+.word 0
+.word 0
+.word 0
+.word 0
 
 swiBase:
 cmp    sp, #0
 moveq  sp, #0x04000000
 subeq  sp, #0x20
-stmfd  sp!, {r11-r12, lr}
-ldrb   r11, [lr, #-2]
-mov    r12, #swiTable
-ldr    r11, [r12, r11, lsl #2]
-mov    r12, #StallCall
-cmp    r12, r11
-mrs    r12, spsr
-stmfd  sp!, {r12}
-and    r12, #0x80
-orr    r12, #0x1F
-msr    cpsr_c, r12
-swieq  0xF00000  @ Special mGBA-internal call to load the stall count into r12
+stmfd  sp!, {r11, r12, lr}
+ldrb   r12, [lr, #-2]
+mov    r11, #swiTable
+ldr    r12, [r11, r12, lsl #2]
+mov    r11, #StallCall
+cmp    r11, r12
+mrs    r11, spsr
+stmfd  sp!, {r11}
+and    r11, #0x80
+orr    r11, #0x1F
+msr    cpsr_c, r11
+swieq  0xF00000  @ Special mGBA-internal call to load the stall count into r11
 stmfd  sp!, {r2, lr}
-cmp    r11, #0
+cmp    r12, #0
 nop
 nop
 nop
 nop
 nop
 nop
-mov    lr, pc
-bxne   r11
+movne  lr, pc
+bxne   r12
 nop
 nop
 nop
 ldmfd  sp!, {r2, lr}
 msr    cpsr, #0x93
-ldmfd  sp!, {r12}
-msr    spsr, r12
-ldmfd  sp!, {r11-r12, lr}
+ldmfd  sp!, {r11}
+msr    spsr, r11
+ldmfd  sp!, {r11, r12, lr}
 movs   pc, lr
 .word 0
 .word 0xE3A02004
@@ -113,6 +111,7 @@ swiTable:
 .word SoundDriverGetJumpList  @ 0x2A
 
 .ltorg
+.word 0 @ Padding for back-compat
 
 irqBase:
 stmfd  sp!, {r0-r3, r12, lr}
@@ -124,21 +123,18 @@ subs   pc, lr, #4
 .word 0
 .word 0xE55EC002
 
-undefBase:
+@ Padding for back compat
 subs   pc, lr, #4
 .word 0
 .word 0x03A0E004
 
 @ Unimplemented
-SoftReset:
 RegisterRamReset:
 Stop:
 GetBiosChecksum:
 BgAffineSet:
 ObjAffineSet:
 BitUnPack:
-Lz77UnCompWram:
-Lz77UnCompVram:
 HuffmanUnComp:
 RlUnCompWram:
 RlUnCompVram:
@@ -212,10 +208,10 @@ tst    r2, #0x04000000
 beq    1f
 @ Word
 add    r4, r5, r4, lsr #10
-ldmia  r12!, {r3}
+ldmia  r0!, {r3}
 2:
-cmp    r5, r4
-stmltia  r5!, {r3}
+cmp    r1, r4
+stmltia  r1!, {r3}
 blt    2b
 b      3f
 @ Halfword
@@ -236,9 +232,9 @@ beq    1f
 @ Word
 add    r4, r5, r4, lsr #10
 2:
-cmp    r5, r4
-ldmltia r12!, {r3}
-stmltia r5!, {r3}
+cmp    r1, r4
+ldmltia r0!, {r3}
+stmltia r1!, {r3}
 blt    2b
 b      3f
 @ Halfword
@@ -308,8 +304,97 @@ DivArm:
 Sqrt:
 ArcTan:
 ArcTan2:
+Lz77UnCompWram:
+Lz77UnCompVram:
 
 StallCall:
-subs r12, #4
+subs r11, #4
 bhi StallCall
 bx lr
+
+resetBase:
+mov lr, #0x8000003
+ldrb r1, [lr], #-3
+cmp r1, #0
+movne r1, #0
+bne 1f
+ldr lr, =0x20000C0
+ldr r1, [lr]
+cmp r1, #0
+mov r1, #0
+bne 1f
+sub lr, #0xC0
+1:
+bx lr
+.word 0
+.word 0xE129F000
+
+.ltorg
+
+undefBase:
+pabtBase:
+dabtBase:
+fiqBase:
+ldr sp, =0x03007FF0
+stmdb sp!, {r12, lr}
+mrs r12, spsr
+mrs lr, cpsr
+stmdb sp!, {r12, lr}
+mov lr, #0x08000000
+ldrb r12, [lr, #0x9C]
+cmp r12, #0xA5
+bne 1f
+ldrb r12, [lr, #0xB4]
+tst r12, #0x80
+adr lr, 1f
+ldrne pc, =0x09FE2000
+ldreq pc, =0x09FFC000
+1:
+ldr sp, =0x03007FF0
+ldr r12, [sp, #-0x10]
+msr spsr, r12
+ldmdb sp!, {r12, lr}
+subs pc, lr, #4
+.word 0
+.word 0x03A0E004
+
+SoftReset:
+msr   spsr, #0
+mov   lr, #0
+ldr   sp, =0x03007F00
+msr   cpsr_c, #0x92
+msr   spsr, #0
+mov   lr, #0
+ldr   sp, =0x03007FA0
+msr   cpsr_c, #0x93
+msr   spsr, #0
+mov   lr, #0
+ldr   sp, =0x03007FE0
+mov   r0, #0x04000000
+sub   r1, r0, #0x200
+ldrb  r0, [r0, #-6]
+mov   r2, #0
+mov   r3, #0
+mov   r4, #0
+mov   r5, #0
+mov   r6, #0
+mov   r7, #0
+mov   r8, #0
+mov   r9, #0
+mov   r10, #0
+mov   r11, #0
+mov   r12, #0
+1:
+stmia r1!, {r2, r3, r4, r5, r6, r7, r8, r9}
+cmp   r1, #0x04000000
+bne   1b
+cmp   r0, #0
+mov   r0, #0
+mov   r1, #0
+moveq lr, #0x08000000
+movne lr, #0x02000000
+movs  pc, lr
+.word 0
+.word 0xE129F000
+
+.ltorg

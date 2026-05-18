@@ -50,23 +50,14 @@ void loadFile(const char *filename_c_str) {
     }
 
     memset(&m_output, 0, sizeof(m_output));
-    m_output.stream.postAudioBuffer = _gsf_postAudioBuffer;
 
     core->init(core);
-    core->setAVStream(core, &m_output.stream);
     mCoreInitConfig(core, NULL);
-
-    unsigned int sample_rate = 44100;
-
-    int32_t core_frequency = core->frequency(core);
-    blip_set_rates(core->getAudioChannel(core, 0), core_frequency, sample_rate);
-    blip_set_rates(core->getAudioChannel(core, 1), core_frequency, sample_rate);
 
     struct mCoreOptions opts = {};
     opts.useBios = false;
     opts.skipBios = true;
     opts.volume = 0x100;
-    opts.sampleRate = sample_rate;
 
     core->loadROM(core, rom);
     core->reset(core);
@@ -77,23 +68,26 @@ void loadFile(const char *filename_c_str) {
 int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_frames) {
 
     if (m_output.buffer_size_frames != buffer_size_frames) {
-        delete m_output.samples;
-        m_core->setAudioBufferSize(m_core, buffer_size_frames);
-
+        // GBA's internal audio buffer is hard-capped at 0x4000 frames upstream;
+        // we drain it in chunks below so a larger request is still honoured.
+        size_t core_buffer = buffer_size_frames > 0x4000 ? 0x4000 : buffer_size_frames;
+        m_core->setAudioBufferSize(m_core, core_buffer);
         m_output.buffer_size_frames = buffer_size_frames;
-        m_output.samples = static_cast<int16_t *>(malloc(buffer_size_frames * 4));
     }
 
-    m_output.frames_available = 0;
-    while (!m_output.frames_available) {
-//        printf("Running frame");
-        m_core->runFrame(m_core);
+    struct mAudioBuffer *buffer = m_core->getAudioBuffer(m_core);
+
+    int32_t frames_written = 0;
+    while (frames_written < buffer_size_frames) {
+        if (mAudioBufferAvailable(buffer) == 0) {
+            m_core->runFrame(m_core);
+        }
+        // mAudioBuffer is interleaved stereo int16: 2 samples per frame.
+        size_t got = mAudioBufferRead(buffer,
+                                      target_array + frames_written * 2,
+                                      buffer_size_frames - frames_written);
+        frames_written += got;
     }
-    printf("Frames available: %d / %d", m_output.frames_available, buffer_size_frames);
-
-    int frames_written = m_output.frames_available;
-
-    memcpy(target_array, m_output.samples, buffer_size_frames * 4);
 
     return frames_written;
 }
@@ -114,6 +108,12 @@ const char *get_last_error() {
 }
 
 int32_t get_sample_rate() {
+    // Upstream mgba (post-0.10) dropped the blip_buf resampler; the GBA core
+    // now emits audio at its native rate. Report that so the Kotlin layer
+    // configures the AudioTrack to match (pitch/speed stays correct).
+    if (m_core) {
+        return m_core->audioSampleRate(m_core);
+    }
     return 44100;
 }
 
@@ -188,12 +188,5 @@ int gsf_loader(void *context, const uint8_t *exe, size_t exe_size,
         state->data_size = isize;
     }
     return 0;
-}
-
-static void _gsf_postAudioBuffer(struct mAVStream *stream, blip_t *left, blip_t *right) {
-    struct gsf_running_state *state = (struct gsf_running_state *) stream;
-    blip_read_samples(left, state->samples, m_output.buffer_size_frames, true);
-    blip_read_samples(right, state->samples + 1, m_output.buffer_size_frames, true);
-    state->frames_available += m_output.buffer_size_frames;
 }
 
