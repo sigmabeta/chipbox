@@ -88,7 +88,8 @@ enum {
 };
 
 // BIOS RootCounter / DMA event class ids
-#define CLASS_RCNT  (0xF2000002u)
+#define CLASS_RCNT  (0xF2000002u)   // RootCounters 0-2 (I_STAT bits 4-6)
+#define CLASS_VSYNC (0xF2000003u)   // RootCounter 3 / VBLANK (I_STAT bit 0)
 #define CLASS_DMA   (0xF0000009u)
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1066,6 +1067,16 @@ static void exc_begin(void) {
         hle_set_pc(mips_get_ePC(c) + 4);
         return;
     }
+    if (cause == 0x24) { // break (ExcCode 9): the BIOS swallows the trap
+        // and returns past it. Restore the status stack (RFE-equivalent,
+        // exactly as the syscall path) and resume after the break, so
+        // SDK assert/trap `break`s don't wedge the driver.
+        uint32 status = mips_get_status(c);
+        status = (status & 0xfffffff0) | ((status & 0x3c) >> 2);
+        mips_set_status(c, status);
+        hle_set_pc(mips_get_ePC(c) + 4);
+        return;
+    }
     if (cause != 0) {                          // unknown: just resume
         hle_set_pc(mips_get_ePC(c));
         return;
@@ -1162,6 +1173,49 @@ static void exc_begin(void) {
                 // than aopsf, which would never clear here).
                 handled |= (sig & 0x70);
                 r3000_sw(g_hle.r3000, 0x1f801070, ~(sig & 0x70));
+            }
+        }
+        // VBLANK (I_STAT bit 0) drives RootCounter-3 / VSync events:
+        // class 0xF2000003, EvMdINTR (callback). Gran Turismo
+        // (arcade.psf) runs its sequencer SOLELY off a 0xF2000003 VBLANK
+        // callback (func 8001019C) and was pure silence without this.
+        //
+        // This is tightly scoped: deliver VSync ONLY when there is no
+        // 0xF2000002 RootCounter event AND no hooked entry_int handler --
+        // i.e. VBLANK is the game's sole timing source. Most games open a
+        // 0xF2000003 VSync event for housekeeping while running the real
+        // sequencer off 0xF2000002 RootCounters or their own entry_int;
+        // touching VBLANK for those wedged ~85 games (Megaman8 /
+        // MetalSlugX / CrashBandicoot / Persona went silent). Outside this
+        // narrow case nothing about VBLANK/other I_STAT bits changes, so
+        // every previously-working title is byte-for-byte unaffected.
+        if ((sig & 0x01) && g_hle.eventsAllocated && !entryint) {
+            int has_rcnt = 0, vsynced = 0;
+            for (i = 0; i < MAX_EVENT; i++)
+                if (EVT(i, EV_ISVALID) && EVT(i, EV_CLASSID) == CLASS_RCNT) {
+                    has_rcnt = 1;
+                    break;
+                }
+            if (!has_rcnt) {
+                for (i = 0; i < MAX_EVENT; i++) {
+                    if (!EVT(i, EV_ISVALID) ||
+                        EVT(i, EV_CLASSID) != CLASS_VSYNC)
+                        continue;
+                    vsynced = 1;
+                    if (!EVT(i, EV_ENABLED)) continue;
+                    EVT(i, EV_FIRED) = 1;
+                    if (EVT(i, EV_FUNC)) {
+                        softcall_arm(EVT(i, EV_FUNC), 0);
+                        fired++;
+                    }
+                }
+                // Ack VBLANK only here (the GT-style sole-VSync case), so
+                // the callback isn't re-stormed. Games that don't take
+                // this branch keep VBLANK exactly as before (untouched).
+                if (vsynced) {
+                    handled |= (sig & 0x01);
+                    r3000_sw(g_hle.r3000, 0x1f801070, ~(sig & 0x01));
+                }
             }
         }
         // DMA (0x08): the entry_int handler runs its own SPU-RAM ISR and
