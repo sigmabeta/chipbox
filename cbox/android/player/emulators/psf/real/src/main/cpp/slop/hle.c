@@ -141,6 +141,16 @@ typedef struct {
     int dma4_delay;     // in 768-cycle slices, like the reference
     uint32 adv_accum;      // cycle accumulator for 768-cycle slicing
     uint32 ack_pending;    // I_STAT bits to ack after the handler chain runs
+    // RootCounter period re-delivery (non-0xF2000002 / game-hooked-entry_int
+    // path only). The ioptimer keeps counting while the game's entry_int
+    // handler runs with the RCnt cause held pending (deferred ack); each
+    // period that elapses in that window is OR-coalesced into the single
+    // I_STAT bit and otherwise lost -> the sequencer ticks once per N real
+    // periods (Persona 1: ~half tempo). Count the coalesced periods and
+    // replay them one handler invocation at a time at ReturnFromException.
+    int rcnt_event_present; // a class 0xF2000002 RCnt event exists (VP path)
+    uint32 rcnt_missed;    // coalesced RCnt periods awaiting re-delivery
+    uint32 rcnt_missed_bits; // which RCnt I_STAT bits (subset of 0x70)
 
     // --- PS2 IOP-kernel HLE (Phase 2) ---
     int ps2;            // PS2 (PSF2) mode
@@ -239,6 +249,18 @@ static void psx_irq_update(void) {
 }
 
 static void psx_irq_set(uint32 irq) {
+    // RootCounter coalescing: if an RCnt bit is raised while the same bit
+    // is still pending (the game's entry_int handler is mid-flight with the
+    // cause deferred), the |= is idempotent and that timer period is lost.
+    // On the game-hooked path (no 0xF2000002 BIOS event) record it so the
+    // sequencer can be ticked once per missed period at ReturnFromException.
+    // The VP / 0xF2000002 path acks the RCnt cause immediately (never
+    // defers) so rcnt_event_present gates this off -> byte-identical.
+    uint32 rc = irq & 0x70;
+    if (rc && !g_hle.rcnt_event_present && (g_hle.irq_data & rc)) {
+        if (g_hle.rcnt_missed < 32) g_hle.rcnt_missed++;
+        g_hle.rcnt_missed_bits |= rc;
+    }
     g_hle.irq_data |= irq;
     psx_irq_update();
 }
@@ -953,6 +975,20 @@ static void bios_call(uint32 vec) {
                         r3000_sw(g_hle.r3000, 0x1f801070, ~g_hle.ack_pending);
                         g_hle.ack_pending = 0;
                     }
+                    // Re-deliver one RootCounter period coalesced away while
+                    // this handler ran (game-hooked path only -- the VP
+                    // 0xF2000002 path acks immediately and never gets here
+                    // with rcnt_missed set). Re-asserting after the context
+                    // restore makes the resumed code take the exception
+                    // again at once, ticking the game's sequencer once per
+                    // missed period -- restoring real tempo (Persona 1).
+                    if (!g_hle.rcnt_event_present && g_hle.rcnt_missed) {
+                        uint32 rb = g_hle.rcnt_missed_bits ? g_hle.rcnt_missed_bits
+                                                           : 0x40;
+                        g_hle.rcnt_missed--;
+                        if (!g_hle.rcnt_missed) g_hle.rcnt_missed_bits = 0;
+                        psx_irq_set(rb);
+                    }
                     for (i = 0; i < 32; i++) SETR(i, g_hle.irq_regs[i]);
                     SET(CPUINFO_INT_REGISTER + MIPS_HI, g_hle.irq_regs[32]);
                     SET(CPUINFO_INT_REGISTER + MIPS_LO, g_hle.irq_regs[33]);
@@ -1087,7 +1123,13 @@ static void exc_begin(void) {
                     fired++;
                 }
             }
+            // Remember whether this is the VP-style 0xF2000002 path so
+            // psx_irq_set / ReturnFromException leave it byte-identical and
+            // never re-deliver (it acks the RCnt cause immediately below).
+            g_hle.rcnt_event_present = needClear;
             if (needClear) {
+                g_hle.rcnt_missed = 0;
+                g_hle.rcnt_missed_bits = 0;
                 handled |= (sig & 0x70);
                 r3000_sw(g_hle.r3000, 0x1f801070, ~(sig & 0x70)); // the reference: irq_data &= ~0x70
             } else if (entryint) {
