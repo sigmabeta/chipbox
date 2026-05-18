@@ -79,155 +79,151 @@ CXX_GUARD_START
 #define MEMORY_FORMAT_TO_DIRECTION(F) (((F) >> 8) & 0x3)
 
 enum ARMCondition {
-    ARM_CONDITION_EQ = 0x0,
-    ARM_CONDITION_NE = 0x1,
-    ARM_CONDITION_CS = 0x2,
-    ARM_CONDITION_CC = 0x3,
-    ARM_CONDITION_MI = 0x4,
-    ARM_CONDITION_PL = 0x5,
-    ARM_CONDITION_VS = 0x6,
-    ARM_CONDITION_VC = 0x7,
-    ARM_CONDITION_HI = 0x8,
-    ARM_CONDITION_LS = 0x9,
-    ARM_CONDITION_GE = 0xA,
-    ARM_CONDITION_LT = 0xB,
-    ARM_CONDITION_GT = 0xC,
-    ARM_CONDITION_LE = 0xD,
-    ARM_CONDITION_AL = 0xE,
-    ARM_CONDITION_NV = 0xF
+	ARM_CONDITION_EQ = 0x0,
+	ARM_CONDITION_NE = 0x1,
+	ARM_CONDITION_CS = 0x2,
+	ARM_CONDITION_CC = 0x3,
+	ARM_CONDITION_MI = 0x4,
+	ARM_CONDITION_PL = 0x5,
+	ARM_CONDITION_VS = 0x6,
+	ARM_CONDITION_VC = 0x7,
+	ARM_CONDITION_HI = 0x8,
+	ARM_CONDITION_LS = 0x9,
+	ARM_CONDITION_GE = 0xA,
+	ARM_CONDITION_LT = 0xB,
+	ARM_CONDITION_GT = 0xC,
+	ARM_CONDITION_LE = 0xD,
+	ARM_CONDITION_AL = 0xE,
+	ARM_CONDITION_NV = 0xF
 };
 
 enum ARMShifterOperation {
-    ARM_SHIFT_NONE = 0,
-    ARM_SHIFT_LSL,
-    ARM_SHIFT_LSR,
-    ARM_SHIFT_ASR,
-    ARM_SHIFT_ROR,
-    ARM_SHIFT_RRX
+	ARM_SHIFT_NONE = 0,
+	ARM_SHIFT_LSL,
+	ARM_SHIFT_LSR,
+	ARM_SHIFT_ASR,
+	ARM_SHIFT_ROR,
+	ARM_SHIFT_RRX
 };
 
 union ARMOperand {
-    struct {
-        uint8_t reg;
-        uint8_t shifterOp;
-        union {
-            uint8_t shifterReg;
-            uint8_t shifterImm;
-            uint8_t psrBits;
-        };
-    };
-    int32_t immediate;
+	struct {
+		uint8_t reg;
+		uint8_t shifterOp;
+		union {
+			uint8_t shifterReg;
+			uint8_t shifterImm;
+			uint8_t psrBits;
+		};
+	};
+	int32_t immediate;
 };
 
 enum ARMMemoryAccessType {
-    ARM_ACCESS_WORD = 4,
-    ARM_ACCESS_HALFWORD = 2,
-    ARM_ACCESS_SIGNED_HALFWORD = 10,
-    ARM_ACCESS_BYTE = 1,
-    ARM_ACCESS_SIGNED_BYTE = 9,
-    ARM_ACCESS_TRANSLATED_WORD = 20,
-    ARM_ACCESS_TRANSLATED_BYTE = 17
+	ARM_ACCESS_WORD = 4,
+	ARM_ACCESS_HALFWORD = 2,
+	ARM_ACCESS_SIGNED_HALFWORD = 10,
+	ARM_ACCESS_BYTE = 1,
+	ARM_ACCESS_SIGNED_BYTE = 9,
+	ARM_ACCESS_TRANSLATED_WORD = 20,
+	ARM_ACCESS_TRANSLATED_BYTE = 17
 };
 
 enum ARMBranchType {
-    ARM_BRANCH_NONE = 0,
-    ARM_BRANCH = 1,
-    ARM_BRANCH_INDIRECT = 2,
-    ARM_BRANCH_LINKED = 4
+	ARM_BRANCH_NONE = 0,
+	ARM_BRANCH = 1,
+	ARM_BRANCH_INDIRECT = 2,
+	ARM_BRANCH_LINKED = 4
 };
 
 struct ARMMemoryAccess {
-    uint8_t baseReg;
-    uint8_t width;
-    uint16_t format;
-    union ARMOperand offset;
+	uint8_t baseReg;
+	uint8_t width;
+	uint16_t format;
+	union ARMOperand offset;
 };
 
 enum ARMMnemonic {
-    ARM_MN_ILL = 0,
-    ARM_MN_ADC,
-    ARM_MN_ADD,
-    ARM_MN_AND,
-    ARM_MN_ASR,
-    ARM_MN_B,
-    ARM_MN_BIC,
-    ARM_MN_BKPT,
-    ARM_MN_BL,
-    ARM_MN_BX,
-    ARM_MN_CMN,
-    ARM_MN_CMP,
-    ARM_MN_EOR,
-    ARM_MN_LDM,
-    ARM_MN_LDR,
-    ARM_MN_LSL,
-    ARM_MN_LSR,
-    ARM_MN_MLA,
-    ARM_MN_MOV,
-    ARM_MN_MRS,
-    ARM_MN_MSR,
-    ARM_MN_MUL,
-    ARM_MN_MVN,
-    ARM_MN_NEG,
-    ARM_MN_ORR,
-    ARM_MN_ROR,
-    ARM_MN_RSB,
-    ARM_MN_RSC,
-    ARM_MN_SBC,
-    ARM_MN_SMLAL,
-    ARM_MN_SMULL,
-    ARM_MN_STM,
-    ARM_MN_STR,
-    ARM_MN_SUB,
-    ARM_MN_SWI,
-    ARM_MN_SWP,
-    ARM_MN_TEQ,
-    ARM_MN_TST,
-    ARM_MN_UMLAL,
-    ARM_MN_UMULL,
+	ARM_MN_ILL = 0,
+	ARM_MN_ADC,
+	ARM_MN_ADD,
+	ARM_MN_AND,
+	ARM_MN_ASR,
+	ARM_MN_B,
+	ARM_MN_BIC,
+	ARM_MN_BKPT,
+	ARM_MN_BL,
+	ARM_MN_BX,
+	ARM_MN_CMN,
+	ARM_MN_CMP,
+	ARM_MN_EOR,
+	ARM_MN_LDM,
+	ARM_MN_LDR,
+	ARM_MN_LSL,
+	ARM_MN_LSR,
+	ARM_MN_MLA,
+	ARM_MN_MOV,
+	ARM_MN_MRS,
+	ARM_MN_MSR,
+	ARM_MN_MUL,
+	ARM_MN_MVN,
+	ARM_MN_NEG,
+	ARM_MN_ORR,
+	ARM_MN_ROR,
+	ARM_MN_RSB,
+	ARM_MN_RSC,
+	ARM_MN_SBC,
+	ARM_MN_SMLAL,
+	ARM_MN_SMULL,
+	ARM_MN_STM,
+	ARM_MN_STR,
+	ARM_MN_SUB,
+	ARM_MN_SWI,
+	ARM_MN_SWP,
+	ARM_MN_TEQ,
+	ARM_MN_TST,
+	ARM_MN_UMLAL,
+	ARM_MN_UMULL,
 
-    ARM_MN_MAX
+	ARM_MN_MAX
 };
 
 enum {
-    ARM_CPSR = 16,
-    ARM_SPSR = 17
+	ARM_CPSR = 16,
+	ARM_SPSR = 17
 };
 
 struct ARMInstructionInfo {
-    uint32_t opcode;
-    union ARMOperand op1;
-    union ARMOperand op2;
-    union ARMOperand op3;
-    union ARMOperand op4;
-    struct ARMMemoryAccess memory;
-    int operandFormat;
-    unsigned execMode: 1;
-    bool traps: 1;
-    bool affectsCPSR: 1;
-    unsigned branchType: 3;
-    unsigned condition: 4;
-    unsigned mnemonic: 6;
-    unsigned iCycles: 3;
-    unsigned cCycles: 4;
-    unsigned sInstructionCycles: 4;
-    unsigned nInstructionCycles: 4;
-    unsigned sDataCycles: 10;
-    unsigned nDataCycles: 10;
+	uint32_t opcode;
+	union ARMOperand op1;
+	union ARMOperand op2;
+	union ARMOperand op3;
+	union ARMOperand op4;
+	struct ARMMemoryAccess memory;
+	int operandFormat;
+	unsigned execMode : 1;
+	bool traps : 1;
+	bool affectsCPSR : 1;
+	unsigned branchType : 3;
+	unsigned condition : 4;
+	unsigned mnemonic : 6;
+	unsigned iCycles : 3;
+	unsigned cCycles : 4;
+	unsigned sInstructionCycles : 4;
+	unsigned nInstructionCycles : 4;
+	unsigned sDataCycles : 10;
+	unsigned nDataCycles : 10;
 };
 
-void ARMDecodeARM(uint32_t opcode, struct ARMInstructionInfo *info);
+void ARMDecodeARM(uint32_t opcode, struct ARMInstructionInfo* info);
+void ARMDecodeThumb(uint16_t opcode, struct ARMInstructionInfo* info);
+bool ARMDecodeThumbCombine(struct ARMInstructionInfo* info1, struct ARMInstructionInfo* info2,
+                           struct ARMInstructionInfo* out);
+uint32_t ARMResolveMemoryAccess(struct ARMInstructionInfo* info, struct ARMRegisterFile* regs, uint32_t pc);
 
-void ARMDecodeThumb(uint16_t opcode, struct ARMInstructionInfo *info);
-
-bool ARMDecodeThumbCombine(struct ARMInstructionInfo *info1, struct ARMInstructionInfo *info2,
-                           struct ARMInstructionInfo *out);
-
-uint32_t
-ARMResolveMemoryAccess(struct ARMInstructionInfo *info, struct ARMRegisterFile *regs, uint32_t pc);
-
-#ifdef USE_DEBUGGERS
+#ifdef ENABLE_DEBUGGERS
 struct mDebuggerSymbols;
-int ARMDisassemble(struct ARMInstructionInfo* info, struct ARMCore* core, const struct mDebuggerSymbols* symbols, uint32_t pc, char* buffer, int blen);
+int ARMDisassemble(const struct ARMInstructionInfo* info, struct ARMCore* core, const struct mDebuggerSymbols* symbols, uint32_t pc, char* buffer, int blen);
 #endif
 
 CXX_GUARD_END

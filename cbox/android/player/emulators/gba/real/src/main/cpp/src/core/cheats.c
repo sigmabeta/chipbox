@@ -37,7 +37,7 @@ static uint32_t _patchMakeKey(struct mCheatPatch* patch) {
 		patchKey >>= 2;
 		break;
 	default:
-		break;	
+		break;
 	}
 	// TODO: More than one segment
 	if (patch->segment > 0) {
@@ -282,14 +282,14 @@ bool mCheatParseFile(struct mCheatDevice* device, struct VFile* vf) {
 			StringListDeinit(&directives);
 			return false;
 		}
-		while (isspace((int) cheat[i])) {
+		while (isspace((unsigned) cheat[i])) {
 			++i;
 		}
 		switch (cheat[i]) {
 		case '#':
 			do {
 				++i;
-			} while (isspace((int) cheat[i]));
+			} while (isspace((unsigned) cheat[i]));
 			newSet = device->createSet(device, &cheat[i]);
 			newSet->enabled = !nextDisabled;
 			nextDisabled = false;
@@ -305,7 +305,7 @@ bool mCheatParseFile(struct mCheatDevice* device, struct VFile* vf) {
 		case '!':
 			do {
 				++i;
-			} while (isspace((int) cheat[i]));
+			} while (isspace((unsigned) cheat[i]));
 			if (strcasecmp(&cheat[i], "disabled") == 0) {
 				nextDisabled = true;
 				break;
@@ -384,7 +384,7 @@ bool mCheatParseLibretroFile(struct mCheatDevice* device, struct VFile* vf) {
 					return false;
 				}
 				++eq;
-				while (isspace((int) eq[0])) {
+				while (isspace((unsigned) eq[0])) {
 					if (eq[0] == '\0') {
 						return false;
 					}
@@ -393,7 +393,7 @@ bool mCheatParseLibretroFile(struct mCheatDevice* device, struct VFile* vf) {
 
 				char* end;
 				unsigned long nCheats = strtoul(eq, &end, 10);
-				if (end[0] != '\0' && !isspace(end[0])) {
+				if (end[0] != '\0' && !isspace((unsigned) end[0])) {
 					return false;
 				}
 
@@ -423,7 +423,7 @@ bool mCheatParseLibretroFile(struct mCheatDevice* device, struct VFile* vf) {
 			return false;
 		}
 		++eq;
-		while (isspace((int) eq[0])) {
+		while (isspace((unsigned) eq[0])) {
 			if (eq[0] == '\0') {
 				return false;
 			}
@@ -480,7 +480,6 @@ bool mCheatParseEZFChtFile(struct mCheatDevice* device, struct VFile* vf) {
 			continue;
 		}
 
-#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
 		if (cheat[0] == '[') {
 			if (strncmp(cheat, "[GameInfo]", 10) == 0) {
 				break;
@@ -490,23 +489,25 @@ bool mCheatParseEZFChtFile(struct mCheatDevice* device, struct VFile* vf) {
 				return false;
 			}
 			char* name = gbkToUtf8(&cheat[1], end - cheat - 1);
-			strncpy(cheatName, name, sizeof(cheatName) - 1);
-			free(name);
+			if (name) {
+				strncpy(cheatName, name, sizeof(cheatName) - 1);
+				free(name);
+			}
 			cheatNameLength = strlen(cheatName);
 			continue;
 		}
-#endif
 
 		char* eq = strchr(cheat, '=');
 		if (!eq) {
 			continue;
 		}
-#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 3
-        if (strncmp(cheat, "ON", eq - cheat) != 0) {
+		if (strncmp(cheat, "ON", eq - cheat) != 0) {
 			char* subname = gbkToUtf8(cheat, eq - cheat);
-			snprintf(&cheatName[cheatNameLength], sizeof(cheatName) - cheatNameLength - 1, ": %s", subname);
+			if (subname) {
+				snprintf(&cheatName[cheatNameLength], sizeof(cheatName) - cheatNameLength - 1, ": %s", subname);
+				free(subname);
+			}
 		}
-#endif
 		set = device->createSet(device, cheatName);
 		set->enabled = false;
 		mCheatAddSet(device, set);
@@ -621,9 +622,12 @@ bool mCheatSaveFile(struct mCheatDevice* device, struct VFile* vf) {
 	return true;
 }
 
-#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 2
+#if defined(ENABLE_VFS) && defined(ENABLE_DIRECTORIES)
 void mCheatAutosave(struct mCheatDevice* device) {
 	if (!device->autosave) {
+		return;
+	}
+	if (!device->p->dirs.cheats) {
 		return;
 	}
 	struct VFile* vf = mDirectorySetOpenSuffix(&device->p->dirs, device->p->dirs.cheats, ".cheats", O_WRONLY | O_CREAT | O_TRUNC);
@@ -681,6 +685,10 @@ void mCheatRefresh(struct mCheatDevice* device, struct mCheatSet* cheats) {
 				value = _readMem(device->p, address, cheat->width) + operand;
 				performAssignment = true;
 				break;
+			case CHEAT_SUB:
+				value = _readMem(device->p, address, cheat->width) - operand;
+				performAssignment = true;
+				break;
 			case CHEAT_OR:
 				value = _readMem(device->p, address, cheat->width) | operand;
 				performAssignment = true;
@@ -705,6 +713,18 @@ void mCheatRefresh(struct mCheatDevice* device, struct mCheatSet* cheats) {
 				break;
 			case CHEAT_IF_GT:
 				condition = _readMem(device->p, address, cheat->width) > operand;
+				conditionRemaining = cheat->repeat;
+				negativeConditionRemaining = cheat->negativeRepeat;
+				operationsRemaining = 1;
+				break;
+			case CHEAT_IF_LE:
+				condition = _readMem(device->p, address, cheat->width) <= operand;
+				conditionRemaining = cheat->repeat;
+				negativeConditionRemaining = cheat->negativeRepeat;
+				operationsRemaining = 1;
+				break;
+			case CHEAT_IF_GE:
+				condition = _readMem(device->p, address, cheat->width) >= operand;
 				conditionRemaining = cheat->repeat;
 				negativeConditionRemaining = cheat->negativeRepeat;
 				operationsRemaining = 1;
@@ -741,6 +761,12 @@ void mCheatRefresh(struct mCheatDevice* device, struct mCheatSet* cheats) {
 				break;
 			case CHEAT_IF_BUTTON:
 				condition = device->buttonDown;
+				conditionRemaining = cheat->repeat;
+				negativeConditionRemaining = cheat->negativeRepeat;
+				operationsRemaining = 1;
+				break;
+			case CHEAT_NEVER:
+				condition = false;
 				conditionRemaining = cheat->repeat;
 				negativeConditionRemaining = cheat->negativeRepeat;
 				operationsRemaining = 1;

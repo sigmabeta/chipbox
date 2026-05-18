@@ -14,7 +14,7 @@
 mLOG_DEFINE_CATEGORY(GB_STATE, "GB Savestate", "gb.serialize");
 
 MGBA_EXPORT const uint32_t GBSavestateMagic = 0x00400000;
-MGBA_EXPORT const uint32_t GBSavestateVersion = 0x00000002;
+MGBA_EXPORT const uint32_t GBSavestateVersion = 0x00000003;
 
 void GBSerialize(struct GB* gb, struct GBSerializedState* state) {
 	STORE_32LE(GBSavestateMagic + GBSavestateVersion, 0, &state->versionMagic);
@@ -122,6 +122,13 @@ bool GBDeserialize(struct GB* gb, const struct GBSerializedState* state) {
 		mLOG(GB_STATE, WARN, "Savestate is corrupted: video y is out of range");
 		error = true;
 	}
+
+	GBSerializedVideoFlags videoFlags = state->video.flags;
+	if (check16 >= GB_VIDEO_VERTICAL_PIXELS && GBSerializedVideoFlagsGetMode(videoFlags) != 1) {
+		mLOG(GB_STATE, WARN, "Savestate is corrupted: video y is in vblank but mode is not vblank");
+		error = true;
+	}
+
 	LOAD_16LE(ucheck16, 0, &state->memory.dmaDest);
 	if (ucheck16 + state->memory.dmaRemaining > GB_SIZE_OAM) {
 		mLOG(GB_STATE, WARN, "Savestate is corrupted: DMA destination is out of range");
@@ -217,8 +224,7 @@ bool GBDeserialize(struct GB* gb, const struct GBSerializedState* state) {
 
 	gb->cpu->memory.setActiveRegion(gb->cpu, gb->cpu->pc);
 
-	gb->timing.reroot = gb->timing.root;
-	gb->timing.root = NULL;
+	mTimingInterrupt(&gb->timing);
 
 	return true;
 }

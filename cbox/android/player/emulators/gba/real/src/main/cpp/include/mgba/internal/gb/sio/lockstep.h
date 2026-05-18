@@ -15,35 +15,34 @@ CXX_GUARD_START
 #include <mgba/internal/gb/sio.h>
 
 struct GBSIOLockstep {
-    struct mLockstep d;
-    struct GBSIOLockstepNode *players[MAX_GBS];
+	struct mLockstep d;
+	struct GBSIOLockstepNode* players[MAX_GBS];
 
-    uint8_t pendingSB[MAX_GBS];
-    bool masterClaimed;
+	uint8_t pendingSB[MAX_GBS];
+	bool masterClaimed;
 };
 
 struct GBSIOLockstepNode {
-    struct GBSIODriver d;
-    struct GBSIOLockstep *p;
-    struct mTimingEvent event;
+	struct GBSIODriver d;
+	struct GBSIOLockstep* p;
+	struct mTimingEvent event;
 
-    volatile int32_t nextEvent;
-    int32_t eventDiff;
-    int id;
-    bool transferFinished;
+	volatile int32_t nextEvent;
+	int32_t eventDiff;
+	int id;
+	bool transferFinished;
 #ifndef NDEBUG
-    int transferId;
-    enum mLockstepPhase phase;
+	int transferId;
+	enum mLockstepPhase phase;
 #endif
 };
 
-void GBSIOLockstepInit(struct GBSIOLockstep *);
+void GBSIOLockstepInit(struct GBSIOLockstep*);
 
-void GBSIOLockstepNodeCreate(struct GBSIOLockstepNode *);
+void GBSIOLockstepNodeCreate(struct GBSIOLockstepNode*);
 
-bool GBSIOLockstepAttachNode(struct GBSIOLockstep *, struct GBSIOLockstepNode *);
-
-void GBSIOLockstepDetachNode(struct GBSIOLockstep *, struct GBSIOLockstepNode *);
+bool GBSIOLockstepAttachNode(struct GBSIOLockstep*, struct GBSIOLockstepNode*);
+void GBSIOLockstepDetachNode(struct GBSIOLockstep*, struct GBSIOLockstepNode*);
 
 CXX_GUARD_END
 

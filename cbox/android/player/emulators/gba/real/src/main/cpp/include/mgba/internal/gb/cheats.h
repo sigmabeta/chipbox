@@ -13,13 +13,13 @@ CXX_GUARD_START
 #include <mgba/core/cheats.h>
 
 enum GBCheatType {
-    GB_CHEAT_AUTODETECT,
-    GB_CHEAT_GAMESHARK,
-    GB_CHEAT_GAME_GENIE,
-    GB_CHEAT_VBA
+	GB_CHEAT_AUTODETECT,
+	GB_CHEAT_GAMESHARK,
+	GB_CHEAT_GAME_GENIE,
+	GB_CHEAT_VBA
 };
 
-struct mCheatDevice *GBCheatDeviceCreate(void);
+struct mCheatDevice* GBCheatDeviceCreate(void);
 
 CXX_GUARD_END
 

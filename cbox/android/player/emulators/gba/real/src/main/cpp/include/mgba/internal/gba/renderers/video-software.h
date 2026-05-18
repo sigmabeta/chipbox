@@ -17,37 +17,42 @@ CXX_GUARD_START
 #include <mgba/internal/gba/video.h>
 
 struct GBAVideoSoftwareBackground {
-    unsigned index;
-    int enabled;
-    unsigned priority;
-    uint32_t charBase;
-    int mosaic;
-    int multipalette;
-    uint32_t screenBase;
-    int overflow;
-    int size;
-    int target1;
-    int target2;
-    uint16_t x;
-    uint16_t y;
-    int32_t refx;
-    int32_t refy;
-    int16_t dx;
-    int16_t dmx;
-    int16_t dy;
-    int16_t dmy;
-    int32_t sx;
-    int32_t sy;
-    int yCache;
-    uint16_t mapCache[64];
-    int32_t offsetX;
-    int32_t offsetY;
-    bool highlight;
+	unsigned index;
+	int enabled;
+	unsigned priority;
+	uint32_t charBase;
+	int mosaic;
+	int multipalette;
+	uint32_t screenBase;
+	int overflow;
+	int size;
+	int target1;
+	int target2;
+	uint16_t x;
+	uint16_t y;
+	int32_t refx;
+	int32_t refy;
+	int16_t dx;
+	int16_t dmx;
+	int16_t dy;
+	int16_t dmy;
+	int32_t sx;
+	int32_t sy;
+	int yCache;
+	uint16_t mapCache[64];
+	uint32_t flags;
+	uint32_t objwinFlags;
+	int objwinForceEnable;
+	bool objwinOnly;
+	bool variant;
+	int32_t offsetX;
+	int32_t offsetY;
+	bool highlight;
 };
 
 enum {
-    OFFSET_PRIORITY = 30,
-    OFFSET_INDEX = 28,
+	OFFSET_PRIORITY = 30,
+	OFFSET_INDEX = 28,
 };
 
 #define FLAG_PRIORITY       0xC0000000
@@ -63,90 +68,92 @@ enum {
 #define IS_WRITABLE(PIXEL) ((PIXEL) & 0xFE000000)
 
 struct WindowControl {
-    GBAWindowControl packed;
-    int8_t priority;
+	GBAWindowControl packed;
+	int8_t priority;
 };
 
 #define MAX_WINDOW 5
 
 struct Window {
-    uint8_t endX;
-    struct WindowControl control;
+	uint8_t endX;
+	struct WindowControl control;
 };
 
 struct GBAVideoSoftwareRenderer {
-    struct GBAVideoRenderer d;
+	struct GBAVideoRenderer d;
 
-    color_t *outputBuffer;
-    int outputBufferStride;
+	mColor* outputBuffer;
+	int outputBufferStride;
 
-    uint32_t *temporaryBuffer;
+	uint32_t* temporaryBuffer;
 
-    GBARegisterDISPCNT dispcnt;
+	GBARegisterDISPCNT dispcnt;
 
-    uint32_t row[GBA_VIDEO_HORIZONTAL_PIXELS];
-    uint32_t spriteLayer[GBA_VIDEO_HORIZONTAL_PIXELS];
-    int32_t spriteCyclesRemaining;
+	uint32_t row[GBA_VIDEO_HORIZONTAL_PIXELS];
+	uint32_t spriteLayer[GBA_VIDEO_HORIZONTAL_PIXELS];
+	int32_t spriteCyclesRemaining;
 
-    // BLDCNT
-    unsigned target1Obj;
-    unsigned target1Bd;
-    unsigned target2Obj;
-    unsigned target2Bd;
-    bool blendDirty;
-    enum GBAVideoBlendEffect blendEffect;
-    color_t normalPalette[512];
-    color_t variantPalette[512];
-    color_t highlightPalette[512];
-    color_t highlightVariantPalette[512];
+	// BLDCNT
+	unsigned target1Obj;
+	unsigned target1Bd;
+	unsigned target2Obj;
+	unsigned target2Bd;
+	bool blendDirty;
+	enum GBAVideoBlendEffect blendEffect;
+	mColor normalPalette[512];
+	mColor variantPalette[512];
+	mColor highlightPalette[512];
+	mColor highlightVariantPalette[512];
 
-    uint16_t blda;
-    uint16_t bldb;
-    uint16_t bldy;
+	uint16_t blda;
+	uint16_t bldb;
+	uint16_t bldy;
 
-    GBAMosaicControl mosaic;
-    bool greenswap;
+	GBAMosaicControl mosaic;
+	bool stereo;
 
-    struct WindowN {
-        struct GBAVideoWindowRegion h;
-        struct GBAVideoWindowRegion v;
-        struct WindowControl control;
-        int16_t offsetX;
-        int16_t offsetY;
-    } winN[2];
+	struct WindowN {
+		struct GBAVideoWindowRegion h;
+		struct GBAVideoWindowRegion v;
+		struct WindowControl control;
+		int16_t offsetX;
+		int16_t offsetY;
+		bool on;
+	} winN[2];
 
-    struct WindowControl winout;
-    struct WindowControl objwin;
+	struct WindowControl winout;
+	struct WindowControl objwin;
 
-    struct WindowControl currentWindow;
+	struct WindowControl currentWindow;
 
-    int nWindows;
-    struct Window windows[MAX_WINDOW];
+	int nWindows;
+	struct Window windows[MAX_WINDOW];
 
-    struct GBAVideoSoftwareBackground bg[4];
+	struct GBAVideoSoftwareBackground bg[4];
 
-    bool forceTarget1;
-    bool oamDirty;
-    int oamMax;
-    struct GBAVideoRendererSprite sprites[128];
-    int16_t objOffsetX;
-    int16_t objOffsetY;
+	bool forceTarget1;
+	bool oamDirty;
+	int oamMax;
+	struct GBAVideoRendererSprite sprites[128];
+	int16_t objOffsetX;
+	int16_t objOffsetY;
 
-    uint32_t scanlineDirty[5];
-    uint16_t nextIo[REG_SOUND1CNT_LO >> 1];
-    struct ScanlineCache {
-        uint16_t io[REG_SOUND1CNT_LO >> 1];
-        int32_t scale[2][2];
-    } cache[GBA_VIDEO_VERTICAL_PIXELS];
-    int nextY;
+	uint32_t scanlineDirty[5];
+	uint16_t nextIo[GBA_REG(SOUND1CNT_LO)];
+	struct ScanlineCache {
+		uint16_t io[GBA_REG(SOUND1CNT_LO)];
+		int32_t scale[2][2];
+		bool windowOn[2];
+	} cache[GBA_VIDEO_VERTICAL_PIXELS];
+	int nextY;
 
-    int start;
-    int end;
+	int start;
+	int end;
 
-    uint8_t lastHighlightAmount;
+	uint8_t lastHighlightAmount;
 };
 
-void GBAVideoSoftwareRendererCreate(struct GBAVideoSoftwareRenderer *renderer);
+void GBAVideoSoftwareRendererCreate(struct GBAVideoSoftwareRenderer* renderer);
 
 CXX_GUARD_START
 

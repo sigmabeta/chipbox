@@ -20,11 +20,11 @@ CXX_GUARD_START
 
 #define THREAD_ENTRY void*
 typedef THREAD_ENTRY (*ThreadEntry)(void*);
+#define THREAD_EXIT(RES) return RES
 
 typedef pthread_t Thread;
 typedef pthread_mutex_t Mutex;
 typedef pthread_cond_t Condition;
-typedef pthread_key_t ThreadLocal;
 
 static inline int MutexInit(Mutex* mutex) {
 	return pthread_mutex_init(mutex, 0);
@@ -94,6 +94,8 @@ static inline int ThreadSetName(const char* name) {
 #elif defined(__HAIKU__)
 	rename_thread(find_thread(NULL), name);
 	return 0;
+#elif defined(__NetBSD__)
+	return pthread_setname_np(pthread_self(), "%s", (void *) name);
 #elif defined(HAVE_PTHREAD_SETNAME_NP)
 	return pthread_setname_np(pthread_self(), name);
 #else
@@ -101,6 +103,9 @@ static inline int ThreadSetName(const char* name) {
 	return 0;
 #endif
 }
+
+#if (__STDC_VERSION__ < 201112L) || (__STDC_NO_THREADS__ == 1)
+typedef pthread_key_t ThreadLocal;
 
 static inline void ThreadLocalInitKey(ThreadLocal* key) {
 	pthread_key_create(key, 0);
@@ -113,6 +118,7 @@ static inline void ThreadLocalSetKey(ThreadLocal key, void* value) {
 static inline void* ThreadLocalGetValue(ThreadLocal key) {
 	return pthread_getspecific(key);
 }
+#endif
 
 CXX_GUARD_END
 

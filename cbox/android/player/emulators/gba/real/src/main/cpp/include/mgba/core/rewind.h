@@ -11,41 +11,36 @@
 CXX_GUARD_START
 
 #include <mgba-util/vector.h>
-
 #ifndef DISABLE_THREADING
-
 #include <mgba-util/threading.h>
-
 #endif
 
 DECLARE_VECTOR(mCoreRewindPatches, struct PatchFast);
 
 struct VFile;
 struct mCoreRewindContext {
-    struct mCoreRewindPatches patchMemory;
-    size_t current;
-    size_t size;
-    struct VFile *previousState;
-    struct VFile *currentState;
+	struct mCoreRewindPatches patchMemory;
+	size_t current;
+	size_t size;
+	struct VFile* previousState;
+	struct VFile* currentState;
+	int rewindFrameCounter;
 
 #ifndef DISABLE_THREADING
-    bool onThread;
-    Thread thread;
-    Condition cond;
-    Mutex mutex;
-    bool ready;
+	bool onThread;
+	Thread thread;
+	Condition cond;
+	Mutex mutex;
+	bool ready;
 #endif
 };
 
-void mCoreRewindContextInit(struct mCoreRewindContext *, size_t entries, bool onThread);
-
-void mCoreRewindContextDeinit(struct mCoreRewindContext *);
+void mCoreRewindContextInit(struct mCoreRewindContext*, size_t entries, bool onThread);
+void mCoreRewindContextDeinit(struct mCoreRewindContext*);
 
 struct mCore;
-
-void mCoreRewindAppend(struct mCoreRewindContext *, struct mCore *);
-
-bool mCoreRewindRestore(struct mCoreRewindContext *, struct mCore *);
+void mCoreRewindAppend(struct mCoreRewindContext*, struct mCore*);
+bool mCoreRewindRestore(struct mCoreRewindContext*, struct mCore*, unsigned count);
 
 CXX_GUARD_END
 

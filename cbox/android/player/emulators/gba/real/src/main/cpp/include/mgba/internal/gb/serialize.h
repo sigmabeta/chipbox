@@ -13,15 +13,13 @@ CXX_GUARD_START
 #include <mgba/core/core.h>
 #include <mgba/internal/gb/gb.h>
 
-extern MGBA_EXPORT
-const uint32_t GBSavestateMagic;
-extern MGBA_EXPORT const uint32_t
-GBSavestateVersion;
+extern MGBA_EXPORT const uint32_t GBSavestateMagic;
+extern MGBA_EXPORT const uint32_t GBSavestateVersion;
 
 mLOG_DECLARE_CATEGORY(GB_STATE);
 
 /* Savestate format:
- * 0x00000 - 0x00003: Version Magic (0x01000002)
+ * 0x00000 - 0x00003: Version Magic (0x00400003)
  * 0x00004 - 0x00007: ROM CRC32
  * 0x00008: Game Boy model
  * 0x00009 - 0x0000B: Reserved (leave zero)
@@ -58,20 +56,23 @@ mLOG_DECLARE_CATEGORY(GB_STATE);
  *   | bits 0 - 6: Remaining length
  *   | bits 7 - 9: Next step
  *   | bits 10 - 20: Shadow frequency register
- *   | bits 21 - 31: Reserved
+ *   | bits 21 - 23: Duty index
+ *   | bits 24 - 31: Reserved
  * | 0x0004C - 0x0004F: Next frame
- * | 0x00050 - 0x00053: Next channel 3 fade
+ * | 0x00050 - 0x00053: Reserved
  * | 0x00054 - 0x00057: Sweep state
  *   | bits 0 - 2: Timesteps
  *   | bits 3 - 31: Reserved
- * | 0x00058 - 0x0005B: Next event
+ * | 0x00058 - 0x0005B: Last update
  * 0x0005C - 0x0006B: Audio channel 2 state
  * | 0x0005C - 0x0005F: Envelepe timing
  *   | bits 0 - 2: Remaining length
  *   | bits 3 - 5: Next step
- *   | bits 6 - 31: Reserved
+ *   | bits 6 - 20: Reserved
+ *   | bits 21 - 23: Duty index
+ *   | bits 24 - 31: Reserved
  * | 0x00060 - 0x00067: Reserved
- * | 0x00068 - 0x0006B: Next event
+ * | 0x00068 - 0x0006B: Last update
  * 0x0006C - 0x00093: Audio channel 3 state
  * | 0x0006C - 0x0008B: Wave banks
  * | 0x0008C - 0x0008D: Remaining length
@@ -163,14 +164,20 @@ mLOG_DECLARE_CATEGORY(GB_STATE);
  * | 0x00197: Reserved (leave zero)
  * 0x00198 - 0x0019F: Global cycle counter
  * 0x001A0 - 0x001A1: Program counter for last cartridge read
- * 0x001A2 - 0x0025F: Reserved (leave zero)
+ * 0x001A2 - 0x001D7: Reserved (leave zero)
+ * 0x001D8 - 0x0025F: Additional audio state
+ * | 0x001D8 - 0x001DB: Last sample timestamp
+ * | 0x001DC: Current audio sample index
+ * | 0x001DD - 0x001DF: Reserved (leave zero)
+ * | 0x001E0 - 0x0025F: Audio rendered samples
  * 0x00260 - 0x002FF: OAM
  * 0x00300 - 0x0037F: I/O memory
  * 0x00380 - 0x003FE: HRAM
  * 0x003FF: Interrupts enabled
  * 0x00400 - 0x043FF: VRAM
  * 0x04400 - 0x0C3FF: WRAM
- * 0x0C400 - 0x0C77F: Reserved
+ * 0x0C400 - 0x0C6FF: Reserved
+ * 0x0C700 - 0x0C77F: Reserved
  * 0x0C780 - 0x117FF: Super Game Boy
  * | 0x0C780 - 0x0C7D9: Current attributes
  * | 0x0C7DA: Current command
@@ -190,315 +197,339 @@ mLOG_DECLARE_CATEGORY(GB_STATE);
  * Total size: 0x11800 (71,680) bytes
 */
 
-DECL_BITFIELD(GBSerializedAudioFlags, uint32_t
-);
-DECL_BITS(GBSerializedAudioFlags, Ch1Volume,
-0, 4);
-DECL_BITS(GBSerializedAudioFlags, Ch1Dead,
-4, 2);
-DECL_BIT(GBSerializedAudioFlags, Ch1Hi,
-6);
-DECL_BITS(GBSerializedAudioFlags, Ch2Volume,
-8, 4);
-DECL_BITS(GBSerializedAudioFlags, Ch2Dead,
-12, 2);
-DECL_BIT(GBSerializedAudioFlags, Ch2Hi,
-14);
-DECL_BITS(GBSerializedAudioFlags, Ch4Volume,
-16, 4);
-DECL_BITS(GBSerializedAudioFlags, Ch4Dead,
-20, 2);
-DECL_BITS(GBSerializedAudioFlags, Frame,
-22, 3);
-DECL_BIT(GBSerializedAudioFlags, Ch1SweepEnabled,
-25);
-DECL_BIT(GBSerializedAudioFlags, Ch1SweepOccurred,
-26);
-DECL_BIT(GBSerializedAudioFlags, Ch3Readable,
-27);
-DECL_BIT(GBSerializedAudioFlags, SkipFrame,
-28);
+DECL_BITFIELD(GBSerializedAudioFlags, uint32_t);
+DECL_BITS(GBSerializedAudioFlags, Ch1Volume, 0, 4);
+DECL_BITS(GBSerializedAudioFlags, Ch1Dead, 4, 2);
+DECL_BIT(GBSerializedAudioFlags, Ch1Hi, 6);
+DECL_BITS(GBSerializedAudioFlags, Ch2Volume, 8, 4);
+DECL_BITS(GBSerializedAudioFlags, Ch2Dead, 12, 2);
+DECL_BIT(GBSerializedAudioFlags, Ch2Hi, 14);
+DECL_BITS(GBSerializedAudioFlags, Ch4Volume, 16, 4);
+DECL_BITS(GBSerializedAudioFlags, Ch4Dead, 20, 2);
+DECL_BITS(GBSerializedAudioFlags, Frame, 22, 3);
+DECL_BIT(GBSerializedAudioFlags, Ch1SweepEnabled, 25);
+DECL_BIT(GBSerializedAudioFlags, Ch1SweepOccurred, 26);
+DECL_BIT(GBSerializedAudioFlags, Ch3Readable, 27);
+DECL_BIT(GBSerializedAudioFlags, SkipFrame, 28);
 
-DECL_BITFIELD(GBSerializedAudioEnvelope, uint32_t
-);
-DECL_BITS(GBSerializedAudioEnvelope, Length,
-0, 7);
-DECL_BITS(GBSerializedAudioEnvelope, NextStep,
-7, 3);
-DECL_BITS(GBSerializedAudioEnvelope, Frequency,
-10, 11);
+DECL_BITFIELD(GBSerializedAudioEnvelope, uint32_t);
+DECL_BITS(GBSerializedAudioEnvelope, Length, 0, 7);
+DECL_BITS(GBSerializedAudioEnvelope, NextStep, 7, 3);
+DECL_BITS(GBSerializedAudioEnvelope, Frequency, 10, 11);
+DECL_BITS(GBSerializedAudioEnvelope, DutyIndex, 21, 3);
 
-
-DECL_BITFIELD(GBSerializedAudioSweep, uint32_t
-);
-DECL_BITS(GBSerializedAudioSweep, Time,
-0, 3);
+DECL_BITFIELD(GBSerializedAudioSweep, uint32_t);
+DECL_BITS(GBSerializedAudioSweep, Time, 0, 3);
 
 struct GBSerializedPSGState {
-    struct {
-        GBSerializedAudioEnvelope envelope;
-        int32_t nextFrame;
-        int32_t nextCh3Fade;
-        GBSerializedAudioSweep sweep;
-        uint32_t nextEvent;
-    } ch1;
-    struct {
-        GBSerializedAudioEnvelope envelope;
-        int32_t reserved[2];
-        int32_t nextEvent;
-    } ch2;
-    struct {
-        uint32_t wavebanks[8];
-        int16_t length;
-        int16_t reserved;
-        uint32_t nextEvent;
-    } ch3;
-    struct {
-        int32_t lfsr;
-        GBSerializedAudioEnvelope envelope;
-        int32_t lastEvent;
-        uint32_t nextEvent;
-    } ch4;
+	struct {
+		GBSerializedAudioEnvelope envelope;
+		int32_t nextFrame;
+		int32_t reserved;
+		GBSerializedAudioSweep sweep;
+		uint32_t lastUpdate;
+	} ch1;
+	struct {
+		GBSerializedAudioEnvelope envelope;
+		int32_t reserved[2];
+		uint32_t lastUpdate;
+	} ch2;
+	struct {
+		uint32_t wavebanks[8];
+		int16_t length;
+		int16_t reserved;
+		uint32_t nextEvent;
+	} ch3;
+	struct {
+		int32_t lfsr;
+		GBSerializedAudioEnvelope envelope;
+		int32_t lastEvent;
+		uint32_t nextEvent;
+	} ch4;
 };
 
-DECL_BITFIELD(GBSerializedCpuFlags, uint32_t
-);
-DECL_BIT(GBSerializedCpuFlags, Condition,
-0);
-DECL_BIT(GBSerializedCpuFlags, IrqPending,
-1);
-DECL_BIT(GBSerializedCpuFlags, DoubleSpeed,
-2);
-DECL_BIT(GBSerializedCpuFlags, EiPending,
-3);
-DECL_BIT(GBSerializedCpuFlags, Halted,
-4);
-DECL_BIT(GBSerializedCpuFlags, Blocked,
-5);
+DECL_BITFIELD(GBSerializedCpuFlags, uint32_t);
+DECL_BIT(GBSerializedCpuFlags, Condition, 0);
+DECL_BIT(GBSerializedCpuFlags, IrqPending, 1);
+DECL_BIT(GBSerializedCpuFlags, DoubleSpeed, 2);
+DECL_BIT(GBSerializedCpuFlags, EiPending, 3);
+DECL_BIT(GBSerializedCpuFlags, Halted, 4);
+DECL_BIT(GBSerializedCpuFlags, Blocked, 5);
 
-DECL_BITFIELD(GBSerializedTimerFlags, uint8_t
-);
-DECL_BIT(GBSerializedTimerFlags, IrqPending,
-0);
+DECL_BITFIELD(GBSerializedTimerFlags, uint8_t);
+DECL_BIT(GBSerializedTimerFlags, IrqPending, 0);
 
-DECL_BITFIELD(GBSerializedVideoFlags, uint8_t
-);
-DECL_BIT(GBSerializedVideoFlags, BcpIncrement,
-0);
-DECL_BIT(GBSerializedVideoFlags, OcpIncrement,
-1);
-DECL_BITS(GBSerializedVideoFlags, Mode,
-2, 2);
-DECL_BIT(GBSerializedVideoFlags, NotModeEventScheduled,
-4);
-DECL_BIT(GBSerializedVideoFlags, NotFrameEventScheduled,
-5);
+DECL_BITFIELD(GBSerializedVideoFlags, uint8_t);
+DECL_BIT(GBSerializedVideoFlags, BcpIncrement, 0);
+DECL_BIT(GBSerializedVideoFlags, OcpIncrement, 1);
+DECL_BITS(GBSerializedVideoFlags, Mode, 2, 2);
+DECL_BIT(GBSerializedVideoFlags, NotModeEventScheduled, 4);
+DECL_BIT(GBSerializedVideoFlags, NotFrameEventScheduled, 5);
 
-DECL_BITFIELD(GBSerializedMBC7Flags, uint8_t
-);
-DECL_BITS(GBSerializedMBC7Flags, Command,
-0, 2);
-DECL_BIT(GBSerializedMBC7Flags, Writable,
-2);
+DECL_BITFIELD(GBSerializedMBC6Flags, uint8_t);
+DECL_BIT(GBSerializedMBC6Flags, FlashBank0, 0);
+DECL_BIT(GBSerializedMBC6Flags, FlashBank1, 1);
 
-DECL_BITFIELD(GBSerializedMemoryFlags, uint16_t
-);
-DECL_BIT(GBSerializedMemoryFlags, SramAccess,
-0);
-DECL_BIT(GBSerializedMemoryFlags, RtcAccess,
-1);
-DECL_BIT(GBSerializedMemoryFlags, RtcLatched,
-2);
-DECL_BIT(GBSerializedMemoryFlags, Ime,
-3);
-DECL_BIT(GBSerializedMemoryFlags, IsHdma,
-4);
-DECL_BITS(GBSerializedMemoryFlags, ActiveRtcReg,
-5, 3);
+DECL_BITFIELD(GBSerializedMBC7Flags, uint8_t);
+DECL_BITS(GBSerializedMBC7Flags, Command, 0, 2);
+DECL_BIT(GBSerializedMBC7Flags, Writable, 2);
 
-DECL_BITFIELD(GBSerializedSGBFlags, uint32_t
-);
-DECL_BITS(GBSerializedSGBFlags, P1Bits,
-0, 2);
-DECL_BITS(GBSerializedSGBFlags, RenderMode,
-2, 2);
-DECL_BITS(GBSerializedSGBFlags, BufferIndex,
-4, 3);
-DECL_BITS(GBSerializedSGBFlags, CurrentController,
-7, 2);
-DECL_BITS(GBSerializedSGBFlags, ReqControllers,
-9, 2);
-DECL_BIT(GBSerializedSGBFlags, Increment,
-11);
+DECL_BITFIELD(GBSerializedSachenFlags, uint8_t);
+DECL_BITS(GBSerializedSachenFlags, Transition, 0, 6);
+DECL_BITS(GBSerializedSachenFlags, Locked, 6, 2);
+
+DECL_BITFIELD(GBSerializedNTOldFlags, uint8_t);
+DECL_BIT(GBSerializedNTOldFlags, Swapped, 0);
+DECL_BIT(GBSerializedNTOldFlags, Rumble, 1);
+
+DECL_BITFIELD(GBSerializedMemoryFlags, uint16_t);
+DECL_BIT(GBSerializedMemoryFlags, SramAccess, 0);
+DECL_BIT(GBSerializedMemoryFlags, RtcAccess, 1);
+DECL_BIT(GBSerializedMemoryFlags, RtcLatched, 2);
+DECL_BIT(GBSerializedMemoryFlags, Ime, 3);
+DECL_BIT(GBSerializedMemoryFlags, IsHdma, 4);
+DECL_BITS(GBSerializedMemoryFlags, ActiveRtcReg, 5, 3);
+
+DECL_BITFIELD(GBSerializedSGBFlags, uint32_t);
+DECL_BITS(GBSerializedSGBFlags, P1Bits, 0, 2);
+DECL_BITS(GBSerializedSGBFlags, RenderMode, 2, 2);
+DECL_BITS(GBSerializedSGBFlags, BufferIndex, 4, 3);
+DECL_BITS(GBSerializedSGBFlags, CurrentController, 7, 2);
+DECL_BITS(GBSerializedSGBFlags, ReqControllers, 9, 2);
+DECL_BIT(GBSerializedSGBFlags, Increment, 11);
 
 #pragma pack(push, 1)
 struct GBSerializedState {
-    uint32_t versionMagic;
-    uint32_t romCrc32;
-    uint8_t model;
-    uint8_t reservedHeader[3];
-    uint32_t masterCycles;
+	uint32_t versionMagic;
+	uint32_t romCrc32;
+	uint8_t model;
+	uint8_t reservedHeader[3];
+	uint32_t masterCycles;
 
-    char title[16];
+	char title[16];
 
-    struct {
-        uint8_t a;
-        uint8_t f;
-        uint8_t b;
-        uint8_t c;
-        uint8_t d;
-        uint8_t e;
-        uint8_t h;
-        uint8_t l;
-        uint16_t sp;
-        uint16_t pc;
+	struct {
+		uint8_t a;
+		uint8_t f;
+		uint8_t b;
+		uint8_t c;
+		uint8_t d;
+		uint8_t e;
+		uint8_t h;
+		uint8_t l;
+		uint16_t sp;
+		uint16_t pc;
 
-        int32_t cycles;
-        int32_t nextEvent;
+		int32_t cycles;
+		int32_t nextEvent;
 
-        uint16_t reservedInstruction;
-        uint16_t index;
-        uint8_t bus;
-        uint8_t executionState;
+		uint16_t reservedInstruction;
+		uint16_t index;
+		uint8_t bus;
+		uint8_t executionState;
 
-        uint16_t reserved;
+		uint16_t reserved;
 
-        uint32_t eiPending;
-        int32_t reservedDiPending;
-        GBSerializedCpuFlags flags;
-    } cpu;
+		uint32_t eiPending;
+		int32_t reservedDiPending;
+		GBSerializedCpuFlags flags;
+	} cpu;
 
-    struct {
-        struct GBSerializedPSGState psg;
-        GBSerializedAudioFlags flags;
-        int32_t capLeft;
-        int32_t capRight;
-        uint32_t nextSample;
-    } audio;
+	struct {
+		struct GBSerializedPSGState psg;
+		GBSerializedAudioFlags flags;
+		int32_t capLeft;
+		int32_t capRight;
+		uint32_t nextSample;
+	} audio;
 
-    struct {
-        int16_t x;
-        int16_t ly;
-        uint32_t nextFrame;
-        uint32_t reserved;
-        uint32_t nextMode;
-        int32_t dotCounter;
-        int32_t frameCounter;
+	struct {
+		int16_t x;
+		int16_t ly;
+		uint32_t nextFrame;
+		uint32_t reserved;
+		uint32_t nextMode;
+		int32_t dotCounter;
+		uint32_t frameCounter;
 
-        uint8_t vramCurrentBank;
-        GBSerializedVideoFlags flags;
-        uint16_t reserved2;
+		uint8_t vramCurrentBank;
+		GBSerializedVideoFlags flags;
+		uint16_t reserved2;
 
-        uint16_t bcpIndex;
-        uint16_t ocpIndex;
+		uint16_t bcpIndex;
+		uint16_t ocpIndex;
 
-        uint16_t palette[64];
-    } video;
+		uint16_t palette[64];
+	} video;
 
-    struct {
-        uint32_t nextEvent;
-        uint32_t nextIRQ;
+	struct {
+		uint32_t nextEvent;
+		uint32_t nextIRQ;
 
-        uint32_t nextDiv;
-        uint32_t internalDiv;
-        uint8_t timaPeriod;
-        GBSerializedTimerFlags flags;
-        uint16_t reserved;
-    } timer;
+		uint32_t nextDiv;
+		uint32_t internalDiv;
+		uint8_t timaPeriod;
+		GBSerializedTimerFlags flags;
+		uint16_t reserved;
+	} timer;
 
-    struct {
-        uint16_t currentBank;
-        uint8_t wramCurrentBank;
-        uint8_t sramCurrentBank;
+	struct {
+		uint16_t currentBank;
+		uint8_t wramCurrentBank;
+		uint8_t sramCurrentBank;
 
-        uint32_t dmaNext;
-        uint16_t dmaSource;
-        uint16_t dmaDest;
+		uint32_t dmaNext;
+		uint16_t dmaSource;
+		uint16_t dmaDest;
 
-        uint32_t hdmaNext;
-        uint16_t hdmaSource;
-        uint16_t hdmaDest;
+		uint32_t hdmaNext;
+		uint16_t hdmaSource;
+		uint16_t hdmaDest;
 
-        uint16_t hdmaRemaining;
-        uint8_t dmaRemaining;
-        uint8_t rtcRegs[5];
+		uint16_t hdmaRemaining;
+		uint8_t dmaRemaining;
+		uint8_t rtcRegs[5];
 
-        union {
-            struct {
-                uint8_t mode;
-                uint8_t multicartStride;
-                uint8_t bankLo;
-                uint8_t bankHi;
-            } mbc1;
-            struct {
-                uint64_t lastLatch;
-            } rtc;
-            struct {
-                uint8_t state;
-                GBMBC7Field eeprom;
-                uint8_t address;
-                uint8_t access;
-                uint8_t latch;
-                uint8_t srBits;
-                uint16_t sr;
-                uint32_t writable;
-            } mbc7;
-            struct {
-                uint8_t locked;
-                uint8_t bank0;
-            } mmm01;
-            struct {
-                uint8_t dataSwapMode;
-                uint8_t bankSwapMode;
-            } bbd;
-            struct {
-                uint8_t reserved[16];
-            } padding;
-        };
+		union {
+			struct {
+				uint8_t mode;
+				uint8_t multicartStride;
+				uint8_t bankLo;
+				uint8_t bankHi;
+			} mbc1;
+			struct {
+				uint64_t lastLatch;
+			} rtc;
+			struct {
+				GBSerializedMBC6Flags flags;
+				uint8_t bank1;
+				uint8_t sramBank1;
+			} mbc6;
+			struct {
+				uint8_t state;
+				GBMBC7Field eeprom;
+				uint8_t address;
+				uint8_t access;
+				uint8_t latch;
+				uint8_t srBits;
+				uint16_t sr;
+				uint32_t writable;
+			} mbc7;
+			struct {
+				uint8_t locked;
+				uint8_t bank0;
+			} mmm01;
+			struct {
+				uint8_t registersActive;
+			} pocketCam;
+			struct {
+				uint64_t lastLatch;
+				uint8_t reg;
+			} tama5;
+			struct {
+				uint64_t lastLatch;
+				uint8_t index;
+				uint8_t value;
+				uint8_t mode;
+			} huc3;
+			struct {
+				uint8_t bank;
+				uint8_t locked;
+			} m161;
+			struct {
+				GBSerializedNTOldFlags flags;
+				uint8_t baseBank;
+				uint8_t bankCount;
+			} ntOld;
+			struct {
+				uint8_t splitMode;
+				uint8_t bank1;
+			} ntNew;
+			struct {
+				uint8_t dataSwapMode;
+				uint8_t bankSwapMode;
+			} bbd;
+			struct {
+				GBSerializedSachenFlags flags;
+				uint8_t mask;
+				uint8_t unmaskedBank;
+				uint8_t baseBank;
+			} sachen;
+			struct {
+				uint8_t mode;
+				uint8_t xorValues[4];
+				uint8_t bankNo;
+				uint8_t romBankXor;
+			} sintax;
+			struct {
+				uint8_t reserved[16];
+			} padding;
+		};
 
-        GBSerializedMemoryFlags flags;
-        uint8_t cartBus;
-        uint8_t reserved;
-    } memory;
+		GBSerializedMemoryFlags flags;
+		uint8_t cartBus;
+		uint8_t reserved;
+	} memory;
 
-    uint64_t globalCycles;
+	uint64_t globalCycles;
 
-    uint16_t cartBusPc;
-    uint16_t reserved[95];
+	uint16_t cartBusPc;
 
-    uint8_t oam[GB_SIZE_OAM];
+	uint16_t reserved[27];
 
-    uint8_t io[GB_SIZE_IO];
-    uint8_t hram[GB_SIZE_HRAM];
-    uint8_t ie;
+	struct {
+		int32_t lastSample;
+		uint8_t sampleIndex;
+		uint8_t reserved[3];
+		struct mStereoSample currentSamples[GB_MAX_SAMPLES];
+	} audio2;
 
-    uint8_t vram[GB_SIZE_VRAM];
-    uint8_t wram[GB_SIZE_WORKING_RAM];
+	uint8_t oam[GB_SIZE_OAM];
 
-    uint32_t reserved2[0xC4];
+	uint8_t io[GB_SIZE_IO];
+	uint8_t hram[GB_SIZE_HRAM];
+	uint8_t ie;
 
-    struct {
-        uint8_t attributes[90];
-        uint8_t command;
-        uint8_t bits;
-        GBSerializedSGBFlags flags;
-        uint8_t inProgressPacket[16];
-        uint8_t packet[128];
-        uint8_t charRam[SGB_SIZE_CHAR_RAM];
-        uint8_t mapRam[SGB_SIZE_MAP_RAM];
-        uint8_t palRam[SGB_SIZE_PAL_RAM];
-        uint8_t atfRam[SGB_SIZE_ATF_RAM];
-    } sgb;
+	uint8_t vram[GB_SIZE_VRAM];
+	uint8_t wram[GB_SIZE_WORKING_RAM];
+
+	uint32_t reserved2[0xA4];
+
+	union {
+		uint8_t huc3Registers[0x80];
+		uint8_t pocketCamRegisters[0x36];
+		struct {
+			uint8_t registers[4];
+			uint8_t reserved[4];
+			uint8_t rtcTimerPage[8];
+			uint8_t rtcAlarmPage[8];
+			uint8_t rtcFreePage0[8];
+			uint8_t rtcFreePage1[8];
+		} tama5Registers;
+	};
+
+	struct {
+		uint8_t attributes[90];
+		uint8_t command;
+		uint8_t bits;
+		GBSerializedSGBFlags flags;
+		uint8_t inProgressPacket[16];
+		uint8_t packet[128];
+		uint8_t charRam[SGB_SIZE_CHAR_RAM];
+		uint8_t mapRam[SGB_SIZE_MAP_RAM];
+		uint8_t palRam[SGB_SIZE_PAL_RAM];
+		uint8_t atfRam[SGB_SIZE_ATF_RAM];
+	} sgb;
 };
 #pragma pack(pop)
 
-bool GBDeserialize(struct GB *gb, const struct GBSerializedState *state);
+static_assert(sizeof(struct GBSerializedState) == 0x11800, "GB savestate struct sized wrong");
 
-void GBSerialize(struct GB *gb, struct GBSerializedState *state);
+bool GBDeserialize(struct GB* gb, const struct GBSerializedState* state);
+void GBSerialize(struct GB* gb, struct GBSerializedState* state);
 
-void GBSGBSerialize(struct GB *gb, struct GBSerializedState *state);
-
-void GBSGBDeserialize(struct GB *gb, const struct GBSerializedState *state);
+void GBSGBSerialize(struct GB* gb, struct GBSerializedState* state);
+void GBSGBDeserialize(struct GB* gb, const struct GBSerializedState* state);
 
 CXX_GUARD_END
 

@@ -282,18 +282,18 @@ ATTRIBUTE_NOINLINE static void _neutralS(struct ARMCore* cpu, int32_t d) {
 		cpu->cycles += currentCycles; \
 	}
 
-#define DEFINE_ALU_INSTRUCTION_EX_ARM(NAME, S_BODY, SHIFTER, BODY) \
+#define DEFINE_ALU_INSTRUCTION_EX_ARM(NAME, S_BODY, SHIFTER, BODY, DO_WRITE) \
 	DEFINE_INSTRUCTION_ARM(NAME, \
 		SHIFTER(cpu, opcode); \
 		int rd = (opcode >> 12) & 0xF; \
 		int rn = (opcode >> 16) & 0xF; \
-		int32_t n = cpu->gprs[rn]; \
+		int32_t n ATTRIBUTE_UNUSED = cpu->gprs[rn]; \
 		if (UNLIKELY(rn == ARM_PC && (opcode & 0x02000010) == 0x00000010)) { \
 			n += WORD_SIZE_ARM; \
 		} \
 		BODY; \
 		S_BODY; \
-		if (rd == ARM_PC) { \
+		if (DO_WRITE && rd == ARM_PC) { \
 			if (cpu->executionMode == MODE_ARM) { \
 				currentCycles += ARMWritePC(cpu); \
 			} else { \
@@ -302,63 +302,63 @@ ATTRIBUTE_NOINLINE static void _neutralS(struct ARMCore* cpu, int32_t d) {
 		})
 
 #define DEFINE_ALU_INSTRUCTION_ARM(NAME, S_BODY, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _LSL, , _shiftLSL, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## S_LSL, S_BODY, _shiftLSL, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _LSR, , _shiftLSR, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## S_LSR, S_BODY, _shiftLSR, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _ASR, , _shiftASR, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## S_ASR, S_BODY, _shiftASR, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _ROR, , _shiftROR, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## S_ROR, S_BODY, _shiftROR, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## I, , _immediate, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## SI, S_BODY, _immediate, BODY)
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _LSL, , _shiftLSL, BODY, 1) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## S_LSL, S_BODY, _shiftLSL, BODY, 1) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _LSR, , _shiftLSR, BODY, 1) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## S_LSR, S_BODY, _shiftLSR, BODY, 1) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _ASR, , _shiftASR, BODY, 1) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## S_ASR, S_BODY, _shiftASR, BODY, 1) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _ROR, , _shiftROR, BODY, 1) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## S_ROR, S_BODY, _shiftROR, BODY, 1) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## I, , _immediate, BODY, 1) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## SI, S_BODY, _immediate, BODY, 1)
 
 #define DEFINE_ALU_INSTRUCTION_S_ONLY_ARM(NAME, S_BODY, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _LSL, S_BODY, _shiftLSL, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _LSR, S_BODY, _shiftLSR, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _ASR, S_BODY, _shiftASR, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _ROR, S_BODY, _shiftROR, BODY) \
-	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## I, S_BODY, _immediate, BODY)
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _LSL, S_BODY, _shiftLSL, BODY, 0) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _LSR, S_BODY, _shiftLSR, BODY, 0) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _ASR, S_BODY, _shiftASR, BODY, 0) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## _ROR, S_BODY, _shiftROR, BODY, 0) \
+	DEFINE_ALU_INSTRUCTION_EX_ARM(NAME ## I, S_BODY, _immediate, BODY, 0)
 
-#define DEFINE_MULTIPLY_INSTRUCTION_EX_ARM(NAME, BODY, S_BODY) \
+#define DEFINE_MULTIPLY_INSTRUCTION_EX_ARM(NAME, BODY, S_BODY, SIGNED) \
 	DEFINE_INSTRUCTION_ARM(NAME, \
 		int rd = (opcode >> 16) & 0xF; \
 		int rs = (opcode >> 8) & 0xF; \
 		int rm = opcode & 0xF; \
 		if (rd != ARM_PC) { \
-			ARM_WAIT_MUL(cpu->gprs[rs], 0); \
+			ARM_WAIT_ ## SIGNED ## MUL(cpu->gprs[rs], 0); \
 			BODY; \
 			S_BODY; \
 		} \
 		currentCycles += cpu->memory.activeNonseqCycles32 - cpu->memory.activeSeqCycles32)
 
-#define DEFINE_MULTIPLY_INSTRUCTION_2_EX_ARM(NAME, BODY, S_BODY, WAIT) \
+#define DEFINE_MULTIPLY_INSTRUCTION_2_EX_ARM(NAME, BODY, S_BODY, SIGNED, WAIT) \
 	DEFINE_INSTRUCTION_ARM(NAME, \
 		int rd = (opcode >> 12) & 0xF; \
 		int rdHi = (opcode >> 16) & 0xF; \
 		int rs = (opcode >> 8) & 0xF; \
 		int rm = opcode & 0xF; \
 		if (rdHi != ARM_PC && rd != ARM_PC) { \
-			ARM_WAIT_MUL(cpu->gprs[rs], WAIT); \
+			ARM_WAIT_ ## SIGNED ## MUL(cpu->gprs[rs], WAIT); \
 			BODY; \
 			S_BODY; \
 		} \
 		currentCycles += cpu->memory.activeNonseqCycles32 - cpu->memory.activeSeqCycles32)
 
-#define DEFINE_MULTIPLY_INSTRUCTION_ARM(NAME, BODY, S_BODY) \
-	DEFINE_MULTIPLY_INSTRUCTION_EX_ARM(NAME, BODY, ) \
-	DEFINE_MULTIPLY_INSTRUCTION_EX_ARM(NAME ## S, BODY, S_BODY)
+#define DEFINE_MULTIPLY_INSTRUCTION_ARM(NAME, BODY, S_BODY, SIGNED) \
+	DEFINE_MULTIPLY_INSTRUCTION_EX_ARM(NAME, BODY, , SIGNED) \
+	DEFINE_MULTIPLY_INSTRUCTION_EX_ARM(NAME ## S, BODY, S_BODY, SIGNED)
 
-#define DEFINE_MULTIPLY_INSTRUCTION_2_ARM(NAME, BODY, S_BODY, WAIT) \
-	DEFINE_MULTIPLY_INSTRUCTION_2_EX_ARM(NAME, BODY, , WAIT) \
-	DEFINE_MULTIPLY_INSTRUCTION_2_EX_ARM(NAME ## S, BODY, S_BODY, WAIT)
+#define DEFINE_MULTIPLY_INSTRUCTION_2_ARM(NAME, BODY, S_BODY, SIGNED, WAIT) \
+	DEFINE_MULTIPLY_INSTRUCTION_2_EX_ARM(NAME, BODY, , SIGNED, WAIT) \
+	DEFINE_MULTIPLY_INSTRUCTION_2_EX_ARM(NAME ## S, BODY, S_BODY, SIGNED, WAIT)
 
 #define DEFINE_LOAD_STORE_INSTRUCTION_EX_ARM(NAME, ADDRESS, WRITEBACK, LS, BODY) \
 	DEFINE_INSTRUCTION_ARM(NAME, \
 		uint32_t address; \
 		int rn = (opcode >> 16) & 0xF; \
 		int rd = (opcode >> 12) & 0xF; \
-		int32_t d = cpu->gprs[rd]; \
+		int32_t d ATTRIBUTE_UNUSED = cpu->gprs[rd]; \
 		if (UNLIKELY(rd == ARM_PC)) { \
 			d += WORD_SIZE_ARM; \
 		} \
@@ -404,8 +404,8 @@ ATTRIBUTE_NOINLINE static void _neutralS(struct ARMCore* cpu, int32_t d) {
 	DEFINE_LOAD_STORE_INSTRUCTION_EX_ARM(NAME ## IPUW, ADDR_MODE_3_INDEX(+, ADDR_MODE_3_IMMEDIATE), ADDR_MODE_3_WRITEBACK(ADDR_MODE_3_ADDRESS), LS, BODY) \
 
 #define DEFINE_LOAD_STORE_T_INSTRUCTION_SHIFTER_ARM(NAME, SHIFTER, LS, BODY) \
-	DEFINE_LOAD_STORE_INSTRUCTION_EX_ARM(NAME, SHIFTER, ADDR_MODE_2_WRITEBACK(ADDR_MODE_2_INDEX(-, ADDR_MODE_2_RM)), LS, BODY) \
-	DEFINE_LOAD_STORE_INSTRUCTION_EX_ARM(NAME ## U, SHIFTER, ADDR_MODE_2_WRITEBACK(ADDR_MODE_2_INDEX(+, ADDR_MODE_2_RM)), LS, BODY) \
+	DEFINE_LOAD_STORE_INSTRUCTION_EX_ARM(NAME, ADDR_MODE_2_RN, ADDR_MODE_2_WRITEBACK(ADDR_MODE_2_INDEX(-, SHIFTER)), LS, BODY) \
+	DEFINE_LOAD_STORE_INSTRUCTION_EX_ARM(NAME ## U, ADDR_MODE_2_RN, ADDR_MODE_2_WRITEBACK(ADDR_MODE_2_INDEX(+, SHIFTER)), LS, BODY) \
 
 #define DEFINE_LOAD_STORE_T_INSTRUCTION_ARM(NAME, LS, BODY) \
 	DEFINE_LOAD_STORE_T_INSTRUCTION_SHIFTER_ARM(NAME ## _LSL_, ADDR_MODE_2_LSL, LS, BODY) \
@@ -520,34 +520,34 @@ DEFINE_ALU_INSTRUCTION_S_ONLY_ARM(TST, ARM_NEUTRAL_S(n, cpu->shifterOperand, alu
 
 // Begin multiply definitions
 
-DEFINE_MULTIPLY_INSTRUCTION_2_ARM(MLA, cpu->gprs[rdHi] = cpu->gprs[rm] * cpu->gprs[rs] + cpu->gprs[rd], ARM_NEUTRAL_S(, , cpu->gprs[rdHi]), 1)
-DEFINE_MULTIPLY_INSTRUCTION_ARM(MUL, cpu->gprs[rd] = cpu->gprs[rm] * cpu->gprs[rs], ARM_NEUTRAL_S(cpu->gprs[rm], cpu->gprs[rs], cpu->gprs[rd]))
+DEFINE_MULTIPLY_INSTRUCTION_2_ARM(MLA, cpu->gprs[rdHi] = cpu->gprs[rm] * cpu->gprs[rs] + cpu->gprs[rd], ARM_NEUTRAL_S(, , cpu->gprs[rdHi]), S, 1)
+DEFINE_MULTIPLY_INSTRUCTION_ARM(MUL, cpu->gprs[rd] = cpu->gprs[rm] * cpu->gprs[rs], ARM_NEUTRAL_S(cpu->gprs[rm], cpu->gprs[rs], cpu->gprs[rd]), S)
 
 DEFINE_MULTIPLY_INSTRUCTION_2_ARM(SMLAL,
 	int64_t d = ((int64_t) cpu->gprs[rm]) * ((int64_t) cpu->gprs[rs]) + ((uint32_t) cpu->gprs[rd]);
 	int32_t dHi = cpu->gprs[rdHi] + (d >> 32);
 	cpu->gprs[rd] = d;
 	cpu->gprs[rdHi] = dHi;,
-	ARM_NEUTRAL_HI_S(cpu->gprs[rd], dHi), 2)
+	ARM_NEUTRAL_HI_S(cpu->gprs[rd], dHi), S, 2)
 
 DEFINE_MULTIPLY_INSTRUCTION_2_ARM(SMULL,
 	int64_t d = ((int64_t) cpu->gprs[rm]) * ((int64_t) cpu->gprs[rs]);
 	cpu->gprs[rd] = d;
 	cpu->gprs[rdHi] = d >> 32;,
-	ARM_NEUTRAL_HI_S(cpu->gprs[rd], cpu->gprs[rdHi]), 1)
+	ARM_NEUTRAL_HI_S(cpu->gprs[rd], cpu->gprs[rdHi]), S, 1)
 
 DEFINE_MULTIPLY_INSTRUCTION_2_ARM(UMLAL,
 	uint64_t d = ARM_UXT_64(cpu->gprs[rm]) * ARM_UXT_64(cpu->gprs[rs]) + ((uint32_t) cpu->gprs[rd]);
 	uint32_t dHi = ((uint32_t) cpu->gprs[rdHi]) + (d >> 32);
 	cpu->gprs[rd] = d;
 	cpu->gprs[rdHi] = dHi;,
-	ARM_NEUTRAL_HI_S(cpu->gprs[rd], dHi), 2)
+	ARM_NEUTRAL_HI_S(cpu->gprs[rd], dHi), U, 2)
 
 DEFINE_MULTIPLY_INSTRUCTION_2_ARM(UMULL,
 	uint64_t d = ARM_UXT_64(cpu->gprs[rm]) * ARM_UXT_64(cpu->gprs[rs]);
 	cpu->gprs[rd] = d;
 	cpu->gprs[rdHi] = d >> 32;,
-	ARM_NEUTRAL_HI_S(cpu->gprs[rd], cpu->gprs[rdHi]), 1)
+	ARM_NEUTRAL_HI_S(cpu->gprs[rd], cpu->gprs[rdHi]), U, 1)
 
 // End multiply definitions
 
@@ -655,15 +655,50 @@ DEFINE_INSTRUCTION_ARM(BX,
 
 // Begin coprocessor definitions
 
-DEFINE_INSTRUCTION_ARM(CDP, ARM_STUB)
+#define DEFINE_COPROCESSOR_INSTRUCTION(NAME, BODY) \
+	DEFINE_INSTRUCTION_ARM(NAME, \
+		int op1 = (opcode >> 21) & 7; \
+		int op2 = (opcode >> 5) & 7; \
+		int rd = (opcode >> 12) & 0xF; \
+		int cp = (opcode >> 8) & 0xF; \
+		int crn = (opcode >> 16) & 0xF; \
+		int crm = opcode & 0xF; \
+		UNUSED(op1); \
+		UNUSED(op2); \
+		UNUSED(rd); \
+		UNUSED(crn); \
+		UNUSED(crm); \
+		BODY;)
+
+DEFINE_COPROCESSOR_INSTRUCTION(MRC,
+	if (cpu->cp[cp].mrc) {
+		cpu->gprs[rd] = cpu->cp[cp].mrc(cpu, crn, crm, op1, op2);
+	} else {
+		ARM_ILL;
+	})
+
+DEFINE_COPROCESSOR_INSTRUCTION(MCR,
+	if (cpu->cp[cp].mcr) {
+		cpu->cp[cp].mcr(cpu, crn, crm, op1, op2, cpu->gprs[rd]);
+	} else {
+		ARM_ILL;
+	})
+
+DEFINE_COPROCESSOR_INSTRUCTION(CDP,
+	if (cpu->cp[cp].cdp) {
+		cpu->cp[cp].cdp(cpu, crn, crm, rd, op1, op2);
+	} else {
+		ARM_ILL;
+	})
+
 DEFINE_INSTRUCTION_ARM(LDC, ARM_STUB)
 DEFINE_INSTRUCTION_ARM(STC, ARM_STUB)
-DEFINE_INSTRUCTION_ARM(MCR, ARM_STUB)
-DEFINE_INSTRUCTION_ARM(MRC, ARM_STUB)
 
 // Begin miscellaneous definitions
 
-DEFINE_INSTRUCTION_ARM(BKPT, cpu->irqh.bkpt32(cpu, ((opcode >> 4) & 0xFFF0) | (opcode & 0xF))); // Not strictly in ARMv4T, but here for convenience
+DEFINE_INSTRUCTION_ARM(BKPT,
+	cpu->irqh.bkpt32(cpu, ((opcode >> 4) & 0xFFF0) | (opcode & 0xF));
+	currentCycles = 0;); // Not strictly in ARMv4T, but here for convenience
 DEFINE_INSTRUCTION_ARM(ILL, ARM_ILL) // Illegal opcode
 
 DEFINE_INSTRUCTION_ARM(MSR,
@@ -708,11 +743,11 @@ DEFINE_INSTRUCTION_ARM(MRSR, \
 	cpu->gprs[rd] = cpu->spsr.packed;)
 
 DEFINE_INSTRUCTION_ARM(MSRI,
-	int c = opcode & 0x00010000;
-	int f = opcode & 0x00080000;
-	int rotate = (opcode & 0x00000F00) >> 7;
-	int32_t operand = ROR(opcode & 0x000000FF, rotate);
-	int32_t mask = (c ? 0x000000FF : 0) | (f ? 0xFF000000 : 0);
+	uint32_t c = opcode & 0x00010000;
+	uint32_t f = opcode & 0x00080000;
+	uint32_t rotate = (opcode & 0x00000F00) >> 7;
+	uint32_t operand = ROR(opcode & 0x000000FF, rotate);
+	uint32_t mask = (c ? 0x000000FF : 0) | (f ? 0xFF000000 : 0);
 	if (mask & PSR_USER_MASK) {
 		cpu->cpsr.packed = (cpu->cpsr.packed & ~PSR_USER_MASK) | (operand & PSR_USER_MASK);
 	}
@@ -734,11 +769,11 @@ DEFINE_INSTRUCTION_ARM(MSRI,
 	})
 
 DEFINE_INSTRUCTION_ARM(MSRRI,
-	int c = opcode & 0x00010000;
-	int f = opcode & 0x00080000;
-	int rotate = (opcode & 0x00000F00) >> 7;
-	int32_t operand = ROR(opcode & 0x000000FF, rotate);
-	int32_t mask = (c ? 0x000000FF : 0) | (f ? 0xFF000000 : 0);
+	uint32_t c = opcode & 0x00010000;
+	uint32_t f = opcode & 0x00080000;
+	uint32_t rotate = (opcode & 0x00000F00) >> 7;
+	uint32_t operand = ROR(opcode & 0x000000FF, rotate);
+	uint32_t mask = (c ? 0x000000FF : 0) | (f ? 0xFF000000 : 0);
 	mask &= PSR_USER_MASK | PSR_PRIV_MASK | PSR_STATE_MASK;
 	cpu->spsr.packed = (cpu->spsr.packed & ~mask) | (operand & mask) | 0x00000010;)
 

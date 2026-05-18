@@ -13,131 +13,105 @@ CXX_GUARD_START
 #include <mgba-util/configuration.h>
 
 struct mCoreConfig {
-    struct Configuration configTable;
-    struct Configuration defaultsTable;
-    struct Configuration overridesTable;
-    char *port;
+	struct Configuration configTable;
+	struct Configuration defaultsTable;
+	struct Configuration overridesTable;
+	char* port;
 };
 
 enum mCoreConfigLevel {
-    mCONFIG_LEVEL_DEFAULT = 0,
-    mCONFIG_LEVEL_CUSTOM,
-    mCONFIG_LEVEL_OVERRIDE,
+	mCONFIG_LEVEL_DEFAULT = 0,
+	mCONFIG_LEVEL_CUSTOM,
+	mCONFIG_LEVEL_OVERRIDE,
 };
 
 struct mCoreOptions {
-    char *bios;
-    bool skipBios;
-    bool useBios;
-    int logLevel;
-    int frameskip;
-    bool rewindEnable;
-    int rewindBufferCapacity;
-    float fpsTarget;
-    size_t audioBuffers;
-    unsigned sampleRate;
+	char* bios;
+	bool skipBios;
+	bool useBios;
+	int logLevel;
+	int frameskip;
+	bool rewindEnable;
+	int rewindBufferCapacity;
+	int rewindBufferInterval;
+	float fpsTarget;
+	size_t audioBuffers;
+	unsigned sampleRate;
 
-    int fullscreen;
-    int width;
-    int height;
-    bool lockAspectRatio;
-    bool lockIntegerScaling;
-    bool interframeBlending;
-    bool resampleVideo;
-    bool suspendScreensaver;
-    char *shader;
+	int fullscreen;
+	int width;
+	int height;
+	bool lockAspectRatio;
+	bool lockIntegerScaling;
+	bool interframeBlending;
+	bool resampleVideo;
+	bool suspendScreensaver;
+	char* shader;
 
-    char *savegamePath;
-    char *savestatePath;
-    char *screenshotPath;
-    char *patchPath;
-    char *cheatsPath;
+	char* savegamePath;
+	char* savestatePath;
+	char* screenshotPath;
+	char* patchPath;
+	char* cheatsPath;
 
-    int volume;
-    bool mute;
+	int volume;
+	bool mute;
 
-    bool videoSync;
-    bool audioSync;
+	bool videoSync;
+	bool audioSync;
 };
 
-void mCoreConfigInit(struct mCoreConfig *, const char *port);
+void mCoreConfigInit(struct mCoreConfig*, const char* port);
+void mCoreConfigDeinit(struct mCoreConfig*);
 
-void mCoreConfigDeinit(struct mCoreConfig *);
+#ifdef ENABLE_VFS
+bool mCoreConfigLoad(struct mCoreConfig*);
+bool mCoreConfigSave(const struct mCoreConfig*);
+bool mCoreConfigLoadPath(struct mCoreConfig*, const char* path);
+bool mCoreConfigSavePath(const struct mCoreConfig*, const char* path);
+bool mCoreConfigLoadVFile(struct mCoreConfig*, struct VFile* vf);
+bool mCoreConfigSaveVFile(const struct mCoreConfig*, struct VFile* vf);
 
-#if !defined(MINIMAL_CORE) || MINIMAL_CORE < 2
-
-bool mCoreConfigLoad(struct mCoreConfig *);
-
-bool mCoreConfigSave(const struct mCoreConfig *);
-
-bool mCoreConfigLoadPath(struct mCoreConfig *, const char *path);
-
-bool mCoreConfigSavePath(const struct mCoreConfig *, const char *path);
-
-bool mCoreConfigLoadVFile(struct mCoreConfig *, struct VFile *vf);
-
-bool mCoreConfigSaveVFile(const struct mCoreConfig *, struct VFile *vf);
-
-void mCoreConfigMakePortable(const struct mCoreConfig *);
-
-void mCoreConfigDirectory(char *out, size_t outLength);
-
-void mCoreConfigPortablePath(char *out, size_t outLength);
-
+void mCoreConfigMakePortable(const struct mCoreConfig*, const char* path);
+void mCoreConfigDirectory(char* out, size_t outLength);
+void mCoreConfigPortableIniPath(char* out, size_t outLength);
+void mCoreConfigPortablePath(char* out, size_t outLength);
 bool mCoreConfigIsPortable(void);
-
 #endif
 
-const char *mCoreConfigGetValue(const struct mCoreConfig *, const char *key);
+const char* mCoreConfigGetValue(const struct mCoreConfig*, const char* key);
+bool mCoreConfigGetBoolValue(const struct mCoreConfig*, const char* key, bool* value);
+bool mCoreConfigGetIntValue(const struct mCoreConfig*, const char* key, int* value);
+bool mCoreConfigGetUIntValue(const struct mCoreConfig*, const char* key, unsigned* value);
+bool mCoreConfigGetFloatValue(const struct mCoreConfig*, const char* key, float* value);
 
-bool mCoreConfigGetIntValue(const struct mCoreConfig *, const char *key, int *value);
+void mCoreConfigSetValue(struct mCoreConfig*, const char* key, const char* value);
+void mCoreConfigSetIntValue(struct mCoreConfig*, const char* key, int value);
+void mCoreConfigSetUIntValue(struct mCoreConfig*, const char* key, unsigned value);
+void mCoreConfigSetFloatValue(struct mCoreConfig*, const char* key, float value);
 
-bool mCoreConfigGetUIntValue(const struct mCoreConfig *, const char *key, unsigned *value);
+void mCoreConfigSetDefaultValue(struct mCoreConfig*, const char* key, const char* value);
+void mCoreConfigSetDefaultIntValue(struct mCoreConfig*, const char* key, int value);
+void mCoreConfigSetDefaultUIntValue(struct mCoreConfig*, const char* key, unsigned value);
+void mCoreConfigSetDefaultFloatValue(struct mCoreConfig*, const char* key, float value);
 
-bool mCoreConfigGetFloatValue(const struct mCoreConfig *, const char *key, float *value);
+void mCoreConfigSetOverrideValue(struct mCoreConfig*, const char* key, const char* value);
+void mCoreConfigSetOverrideIntValue(struct mCoreConfig*, const char* key, int value);
+void mCoreConfigSetOverrideUIntValue(struct mCoreConfig*, const char* key, unsigned value);
+void mCoreConfigSetOverrideFloatValue(struct mCoreConfig*, const char* key, float value);
 
-void mCoreConfigSetValue(struct mCoreConfig *, const char *key, const char *value);
+void mCoreConfigCopyValue(struct mCoreConfig* config, const struct mCoreConfig* src, const char* key);
 
-void mCoreConfigSetIntValue(struct mCoreConfig *, const char *key, int value);
+void mCoreConfigMap(const struct mCoreConfig* config, struct mCoreOptions* opts);
+void mCoreConfigLoadDefaults(struct mCoreConfig* config, const struct mCoreOptions* opts);
 
-void mCoreConfigSetUIntValue(struct mCoreConfig *, const char *key, unsigned value);
+void mCoreConfigEnumerate(const struct mCoreConfig* config, const char* prefix, void (*handler)(const char* key, const char* value, enum mCoreConfigLevel type, void* user), void* user);
 
-void mCoreConfigSetFloatValue(struct mCoreConfig *, const char *key, float value);
+struct Configuration* mCoreConfigGetInput(struct mCoreConfig*);
+struct Configuration* mCoreConfigGetOverrides(struct mCoreConfig*);
+const struct Configuration* mCoreConfigGetOverridesConst(const struct mCoreConfig*);
 
-void mCoreConfigSetDefaultValue(struct mCoreConfig *, const char *key, const char *value);
-
-void mCoreConfigSetDefaultIntValue(struct mCoreConfig *, const char *key, int value);
-
-void mCoreConfigSetDefaultUIntValue(struct mCoreConfig *, const char *key, unsigned value);
-
-void mCoreConfigSetDefaultFloatValue(struct mCoreConfig *, const char *key, float value);
-
-void mCoreConfigSetOverrideValue(struct mCoreConfig *, const char *key, const char *value);
-
-void mCoreConfigSetOverrideIntValue(struct mCoreConfig *, const char *key, int value);
-
-void mCoreConfigSetOverrideUIntValue(struct mCoreConfig *, const char *key, unsigned value);
-
-void mCoreConfigSetOverrideFloatValue(struct mCoreConfig *, const char *key, float value);
-
-void
-mCoreConfigCopyValue(struct mCoreConfig *config, const struct mCoreConfig *src, const char *key);
-
-void mCoreConfigMap(const struct mCoreConfig *config, struct mCoreOptions *opts);
-
-void mCoreConfigLoadDefaults(struct mCoreConfig *config, const struct mCoreOptions *opts);
-
-void mCoreConfigEnumerate(const struct mCoreConfig *config, const char *prefix,
-                          void (*handler)(const char *key, const char *value,
-                                          enum mCoreConfigLevel type, void *user), void *user);
-
-struct Configuration *mCoreConfigGetInput(struct mCoreConfig *);
-
-struct Configuration *mCoreConfigGetOverrides(struct mCoreConfig *);
-
-const struct Configuration *mCoreConfigGetOverridesConst(const struct mCoreConfig *);
-
-void mCoreConfigFreeOpts(struct mCoreOptions *opts);
+void mCoreConfigFreeOpts(struct mCoreOptions* opts);
 
 CXX_GUARD_END
 

@@ -30,6 +30,7 @@ void mCoreRewindContextInit(struct mCoreRewindContext* context, size_t entries, 
 	context->previousState = VFileMemChunk(0, 0);
 	context->currentState = VFileMemChunk(0, 0);
 	context->size = 0;
+	context->rewindFrameCounter = 0;
 #ifndef DISABLE_THREADING
 	context->onThread = onThread;
 	context->ready = false;
@@ -91,6 +92,12 @@ void mCoreRewindAppend(struct mCoreRewindContext* context, struct mCore* core) {
 }
 
 void _rewindDiff(struct mCoreRewindContext* context) {
+	size_t size = context->previousState->size(context->previousState);
+	if (!size) {
+		// We are appending the first state
+		return;
+	}
+
 	++context->current;
 	if (context->size < mCoreRewindPatchesSize(&context->patchMemory)) {
 		++context->size;
@@ -100,7 +107,6 @@ void _rewindDiff(struct mCoreRewindContext* context) {
 	}
 	struct PatchFast* patch = mCoreRewindPatchesGetPointer(&context->patchMemory, context->current);
 	size_t size2 = context->currentState->size(context->currentState);
-	size_t size = context->previousState->size(context->previousState);
 	if (size2 > size) {
 		context->previousState->truncate(context->previousState, size2);
 		size = size2;
@@ -114,7 +120,7 @@ void _rewindDiff(struct mCoreRewindContext* context) {
 	context->currentState->unmap(context->currentState, next, size);
 }
 
-bool mCoreRewindRestore(struct mCoreRewindContext* context, struct mCore* core) {
+bool mCoreRewindRestore(struct mCoreRewindContext* context, struct mCore* core, unsigned count) {
 #ifndef DISABLE_THREADING
 	if (context->onThread) {
 		MutexLock(&context->mutex);
@@ -128,30 +134,34 @@ bool mCoreRewindRestore(struct mCoreRewindContext* context, struct mCore* core) 
 #endif
 		return false;
 	}
-	--context->size;
 
-	mCoreLoadStateNamed(core, context->previousState, SAVESTATE_SAVEDATA | SAVESTATE_RTC);
-	if (context->current == 0) {
-		context->current = mCoreRewindPatchesSize(&context->patchMemory);
-	}
-	--context->current;
-
-	if (context->size) {
-		struct PatchFast* patch = mCoreRewindPatchesGetPointer(&context->patchMemory, context->current);
-		size_t size2 = context->previousState->size(context->previousState);
-		size_t size = context->currentState->size(context->currentState);
-		if (size2 < size) {
-			size = size2;
+	for (; count && context->size; --count, --context->size) {
+		if (context->current == 0) {
+			context->current = mCoreRewindPatchesSize(&context->patchMemory);
 		}
-		void* current = context->currentState->map(context->currentState, size, MAP_READ);
-		void* previous = context->previousState->map(context->previousState, size, MAP_WRITE);
-		patch->d.applyPatch(&patch->d, previous, size, current, size);
-		context->currentState->unmap(context->currentState, current, size);
-		context->previousState->unmap(context->previousState, previous, size);
+		--context->current;
+
+		if (context->size > 1) {
+			struct PatchFast* patch = mCoreRewindPatchesGetPointer(&context->patchMemory, context->current);
+			size_t size2 = context->previousState->size(context->previousState);
+			size_t size = context->currentState->size(context->currentState);
+			if (size2 < size) {
+				size = size2;
+			}
+			void* current = context->currentState->map(context->currentState, size, MAP_READ);
+			void* previous = context->previousState->map(context->previousState, size, MAP_WRITE);
+			patch->d.applyPatch(&patch->d, previous, size, current, size);
+			context->currentState->unmap(context->currentState, current, size);
+			context->previousState->unmap(context->previousState, previous, size);
+		}
+		struct VFile* nextState = context->previousState;
+		context->previousState = context->currentState;
+		context->currentState = nextState;
 	}
-	struct VFile* nextState = context->previousState;
-	context->previousState = context->currentState;
-	context->currentState = nextState;
+
+	mCoreLoadStateNamed(core, context->currentState, SAVESTATE_SAVEDATA | SAVESTATE_RTC);
+
+
 #ifndef DISABLE_THREADING
 	if (context->onThread) {
 		MutexUnlock(&context->mutex);
@@ -175,7 +185,7 @@ THREAD_ENTRY _rewindThread(void* context) {
 		rewindContext->ready = false;
 	}
 	MutexUnlock(&rewindContext->mutex);
-	return 0;
+	THREAD_EXIT(0);
 }
 #endif
 

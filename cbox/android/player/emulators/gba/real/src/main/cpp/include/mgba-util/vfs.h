@@ -50,6 +50,7 @@ struct VFile {
 	bool (*sync)(struct VFile* vf, void* buffer, size_t size);
 };
 
+#if defined(ENABLE_VFS) && defined(ENABLE_DIRECTORIES)
 struct VDirEntry {
 	const char* (*name)(struct VDirEntry* vde);
 	enum VFSType (*type)(struct VDirEntry* vde);
@@ -63,19 +64,30 @@ struct VDir {
 	struct VDir* (*openDir)(struct VDir* vd, const char* name);
 	bool (*deleteFile)(struct VDir* vd, const char* name);
 };
+#endif
 
+#ifdef ENABLE_VFS
 struct VFile* VFileOpen(const char* path, int flags);
+#endif
 
+#ifdef ENABLE_VFS_FD
 struct VFile* VFileOpenFD(const char* path, int flags);
 struct VFile* VFileFromFD(int fd);
+#endif
+
+#ifdef ENABLE_VFS_FILE
+struct VFile* VFileFOpen(const char* path, const char* mode);
+struct VFile* VFileFromFILE(FILE* file);
+#endif
 
 struct VFile* VFileFromMemory(void* mem, size_t size);
 struct VFile* VFileFromConstMemory(const void* mem, size_t size);
 struct VFile* VFileMemChunk(const void* mem, size_t size);
 
-struct CircleBuffer;
-struct VFile* VFileFIFO(struct CircleBuffer* backing);
+struct mCircleBuffer;
+struct VFile* VFileFIFO(struct mCircleBuffer* backing);
 
+#if defined(ENABLE_VFS) && defined(ENABLE_DIRECTORIES)
 struct VDir* VDirOpen(const char* path);
 struct VDir* VDirOpenArchive(const char* path);
 
@@ -87,21 +99,20 @@ struct VDir* VDirOpenZip(const char* path, int flags);
 struct VDir* VDirOpen7z(const char* path, int flags);
 #endif
 
-#if defined(__wii__) || defined(_3DS) || defined(PSP2)
+#if defined(__wii__) || defined(__3DS__) || defined(PSP2)
 struct VDir* VDeviceList(void);
 #endif
 
 bool VDirCreate(const char* path);
-
-#ifdef USE_VFS_FILE
-struct VFile* VFileFOpen(const char* path, const char* mode);
-struct VFile* VFileFromFILE(FILE* file);
+struct VFile* VDirFindFirst(struct VDir* dir, bool (*filter)(struct VFile*));
+struct VFile* VDirFindNextAvailable(struct VDir*, const char* basename, const char* infix, const char* suffix, int mode);
 #endif
 
 void separatePath(const char* path, char* dirname, char* basename, char* extension);
 
-struct VFile* VDirFindFirst(struct VDir* dir, bool (*filter)(struct VFile*));
-struct VFile* VDirFindNextAvailable(struct VDir*, const char* basename, const char* infix, const char* suffix, int mode);
+bool isAbsolute(const char* path);
+void makeAbsolute(const char* path, const char* base, char* out);
+bool upDirectory(char* path);
 
 ssize_t VFileReadline(struct VFile* vf, char* buffer, size_t size);
 

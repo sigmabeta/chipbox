@@ -15,30 +15,26 @@ CXX_GUARD_START
 
 #include <mgba-util/socket.h>
 
-extern const uint16_t
-DOLPHIN_CLOCK_PORT;
+extern const uint16_t DOLPHIN_CLOCK_PORT;
 extern const uint16_t DOLPHIN_DATA_PORT;
 
 struct GBASIODolphin {
-    struct GBASIODriver d;
-    struct mTimingEvent event;
+	struct GBASIODriver d;
+	struct mTimingEvent event;
 
-    Socket data;
-    Socket clock;
+	Socket data;
+	Socket clock;
 
-    int32_t clockSlice;
-    int state;
-    bool active;
+	int32_t clockSlice;
+	int state;
+	bool active;
 };
 
-void GBASIODolphinCreate(struct GBASIODolphin *);
+void GBASIODolphinCreate(struct GBASIODolphin*);
+void GBASIODolphinDestroy(struct GBASIODolphin*);
 
-void GBASIODolphinDestroy(struct GBASIODolphin *);
-
-bool GBASIODolphinConnect(struct GBASIODolphin *, const struct Address *address, short dataPort,
-                          short clockPort);
-
-bool GBASIODolphinIsConnected(struct GBASIODolphin *);
+bool GBASIODolphinConnect(struct GBASIODolphin*, const struct Address* address, short dataPort, short clockPort);
+bool GBASIODolphinIsConnected(struct GBASIODolphin*);
 
 CXX_GUARD_END
 
