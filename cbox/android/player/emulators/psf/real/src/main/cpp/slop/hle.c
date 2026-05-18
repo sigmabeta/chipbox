@@ -250,14 +250,16 @@ static void psx_irq_update(void) {
 
 static void psx_irq_set(uint32 irq) {
     // RootCounter coalescing: if an RCnt bit is raised while the same bit
-    // is still pending (the game's entry_int handler is mid-flight with the
-    // cause deferred), the |= is idempotent and that timer period is lost.
-    // On the game-hooked path (no 0xF2000002 BIOS event) record it so the
-    // sequencer can be ticked once per missed period at ReturnFromException.
-    // The VP / 0xF2000002 path acks the RCnt cause immediately (never
-    // defers) so rcnt_event_present gates this off -> byte-identical.
+    // is still pending, the |= below is idempotent and that timer period
+    // is lost. This happens on BOTH sequencer paths -- the game-hooked
+    // entry_int path (cause deferred, e.g. Persona 1) and the BIOS
+    // 0xF2000002 softcall path (the armed sequencer is mid-flight, e.g.
+    // FF7/FFT/Xenogears/Valkyrie Profile) -- and drops ~half the periods
+    // (~2x slow). Count the lost periods here; they are re-delivered (one
+    // sequencer tick each) at ReturnFromException for the entry_int path
+    // and via extra softcall arms for the 0xF2000002 path.
     uint32 rc = irq & 0x70;
-    if (rc && !g_hle.rcnt_event_present && (g_hle.irq_data & rc)) {
+    if (rc && (g_hle.irq_data & rc)) {
         if (g_hle.rcnt_missed < 32) g_hle.rcnt_missed++;
         g_hle.rcnt_missed_bits |= rc;
     }
@@ -1110,8 +1112,8 @@ static void exc_begin(void) {
             // aopsf psx_bios_exception: needClearInt is set iff a BIOS
             // RootCounter event (class 0xF2000002) is present; only then
             // does it consume the RCnt cause (irq_data &= ~0x70). Games
-            // like Valkyrie Profile use that 0xF2000002 (EvMdINTR)
-            // sequencer handler -- keep that path byte-identical.
+            // like Valkyrie Profile / FF7 / FFT / Xenogears run their
+            // sequencer off this 0xF2000002 (EvMdINTR) softcall.
             int needClear = 0;
             for (i = 0; i < MAX_EVENT; i++) {
                 if (!EVT(i, EV_ISVALID) || EVT(i, EV_CLASSID) != CLASS_RCNT) continue;
@@ -1119,13 +1121,24 @@ static void exc_begin(void) {
                 if (!EVT(i, EV_ENABLED)) continue;
                 EVT(i, EV_FIRED) = 1;
                 if (EVT(i, EV_FUNC)) {
+                    // One softcall for this period, plus one for each
+                    // period coalesced away while the previous softcall
+                    // sequencer was mid-flight (psx_irq_set's idempotent
+                    // |= dropped them). Without this the 0xF2000002
+                    // sequencer ticks once per ~2 real timer periods --
+                    // FF7/FFT/Xenogears/Valkyrie Profile ran ~half tempo.
+                    uint32 extra = g_hle.rcnt_missed, e;
                     softcall_arm(EVT(i, EV_FUNC), 0);
                     fired++;
+                    for (e = 0; e < extra; e++)
+                        softcall_arm(EVT(i, EV_FUNC), 0);
                 }
             }
-            // Remember whether this is the VP-style 0xF2000002 path so
-            // psx_irq_set / ReturnFromException leave it byte-identical and
-            // never re-deliver (it acks the RCnt cause immediately below).
+            // Remember which path serviced the RCnt cause: the 0xF2000002
+            // path re-delivers via the extra softcall arms above (and
+            // resets the counter here); the entry_int path re-delivers at
+            // ReturnFromException, gated on !rcnt_event_present so the two
+            // mechanisms never double-fire.
             g_hle.rcnt_event_present = needClear;
             if (needClear) {
                 g_hle.rcnt_missed = 0;
