@@ -630,6 +630,17 @@ sint32 EMU_CALL r3000_execute(void *state, sint32 cycles) {
                         PC -= 4;
                     }
                     break;
+                caseMINOR(0x0D) /* break */ if (!STATE->slot) {
+                        /* MIPS Breakpoint exception (ExcCode 9). Some PS1
+                        ** sound drivers (Pepsiman, Heroine Dream 2,
+                        ** Nekketsu Oyako) execute a `break` as an SDK
+                        ** assert/trap that the real BIOS swallows; without
+                        ** this it fell through to badins and aborted the
+                        ** whole render. Mirror syscall. */
+                        exception(STATE, 9, 0);
+                        PC -= 4;
+                    }
+                    break;
                 caseMINOR(0x10) /* mfhi  */ if (INS_D) { REGS[INS_D] = HI; }
                     break;
                 caseMINOR(0x11) /* mthi  */           {
