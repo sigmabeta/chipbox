@@ -84,6 +84,13 @@ data class NowPlayingState(
                     } else {
                         ChipboxStringId.NOW_PLAYING_SESSION_TYPE_PLATFORM_PLAYING
                     }
+
+                SessionType.SETLIST ->
+                    if (shuffled) {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_SETLIST_SHUFFLING
+                    } else {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_SETLIST_PLAYING
+                    }
             }
         )
     }
@@ -113,6 +120,10 @@ data class NowPlayingState(
             SessionType.PLAYLIST -> ""
 
             SessionType.ALL_TRACKS -> ""
+
+            // Ad-hoc queue (e.g. search results) — the caller-supplied label is the source
+            // name (the search query); no backing collection to derive one from.
+            SessionType.SETLIST -> session.sourceName.orEmpty()
 
             // contentId carries the Platform ordinal (see SessionType docs).
             SessionType.PLATFORM ->

@@ -165,6 +165,24 @@ class RealDirector(
         }
     }
 
+    override fun start(
+        setlist: List<Long>,
+        startingPosition: Int,
+        sourceName: String?,
+        shuffled: Boolean,
+    ) {
+        start(
+            Session(
+                type = SessionType.SETLIST,
+                contentId = 0L,
+                explicitSetlist = setlist,
+                sourceName = sourceName,
+                startingPosition = startingPosition,
+                shuffled = shuffled,
+            )
+        )
+    }
+
     override fun play() {
         if (currentState.state == PlayerState.PAUSED) {
             speaker.play()
@@ -332,6 +350,7 @@ class RealDirector(
         SessionType.PLAYLIST -> getTrackListForPlaylist(session.contentId)
         SessionType.ALL_TRACKS -> getTrackListForAllTracks()
         SessionType.PLATFORM -> getTrackListForPlatform(session.contentId)
+        SessionType.SETLIST -> session.explicitSetlist.orEmpty()
     }
 
     private fun getTrackListForPlatform(contentId: Long) = repository

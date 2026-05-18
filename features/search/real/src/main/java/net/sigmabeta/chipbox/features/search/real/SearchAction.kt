@@ -15,8 +15,8 @@ sealed class SearchAction : ChipboxAction() {
     /** A game result row was tapped — open its detail screen. */
     data class GameClicked(val gameId: Long) : SearchAction()
 
-    /** A song result row was tapped — open its game's detail screen. */
-    data class SongClicked(val gameId: Long?) : SearchAction()
+    /** A song result row was tapped — play the song results as a setlist, starting here. */
+    data class SongClicked(val trackId: Long) : SearchAction()
 
     /** An artist result row was tapped — open its detail screen. */
     data class ArtistClicked(val artistId: Long) : SearchAction()
