@@ -9,6 +9,7 @@
 
 #include <mgba/core/core.h>
 #include <mgba-util/audio-buffer.h>
+#include <mgba-util/audio-resampler.h>
 #include <mgba-util/vfs.h>
 
 void loadFile(const char *);
@@ -33,9 +34,14 @@ struct gsf_loader_state
 
 struct gsf_running_state
 {
-    int frames_available;
     int buffer_size_frames;
-    int16_t * samples;
+    bool audio_inited;
+    // Upstream mgba dropped blip_buf; we resample the core's native-rate
+    // output to a fixed 44100 Hz (what the rest of the pipeline expects)
+    // with mAudioResampler, which adapts on the fly if the GSF driver
+    // reprograms SOUNDBIAS mid-track.
+    struct mAudioBuffer resampled;
+    struct mAudioResampler resampler;
 };
 
 int gsf_loader(void *, const uint8_t *, size_t, const uint8_t * , size_t );

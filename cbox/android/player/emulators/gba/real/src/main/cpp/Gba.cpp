@@ -67,32 +67,47 @@ void loadFile(const char *filename_c_str) {
 
 int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_frames) {
 
-    if (m_output.buffer_size_frames != buffer_size_frames) {
-        // GBA's internal audio buffer is hard-capped at 0x4000 frames upstream;
-        // we drain it in chunks below so a larger request is still honoured.
+    if (!m_output.audio_inited || m_output.buffer_size_frames != buffer_size_frames) {
+        if (m_output.audio_inited) {
+            mAudioResamplerDeinit(&m_output.resampler);
+            mAudioBufferDeinit(&m_output.resampled);
+        }
+
+        // GBA's internal audio buffer is hard-capped at 0x4000 frames upstream.
         size_t core_buffer = buffer_size_frames > 0x4000 ? 0x4000 : buffer_size_frames;
         m_core->setAudioBufferSize(m_core, core_buffer);
+
+        // Destination is fixed 44100 Hz stereo, with 2x headroom so one
+        // resample pass can overshoot a request without stalling the loop.
+        mAudioBufferInit(&m_output.resampled, buffer_size_frames * 2, 2);
+        mAudioResamplerInit(&m_output.resampler, mINTERPOLATOR_SINC);
+        mAudioResamplerSetDestination(&m_output.resampler, &m_output.resampled, 44100.0);
+
         m_output.buffer_size_frames = buffer_size_frames;
+        m_output.audio_inited = true;
     }
 
-    struct mAudioBuffer *buffer = m_core->getAudioBuffer(m_core);
+    struct mAudioBuffer *src = m_core->getAudioBuffer(m_core);
 
-    int32_t frames_written = 0;
-    while (frames_written < buffer_size_frames) {
-        if (mAudioBufferAvailable(buffer) == 0) {
-            m_core->runFrame(m_core);
-        }
-        // mAudioBuffer is interleaved stereo int16: 2 samples per frame.
-        size_t got = mAudioBufferRead(buffer,
-                                      target_array + frames_written * 2,
-                                      buffer_size_frames - frames_written);
-        frames_written += got;
+    while ((int32_t) mAudioBufferAvailable(&m_output.resampled) < buffer_size_frames) {
+        m_core->runFrame(m_core);
+        // Re-query the source rate every pass: the GSF driver can reprogram
+        // SOUNDBIAS at any time, and the resampler adapts on the fly.
+        mAudioResamplerSetSource(&m_output.resampler, src,
+                                 m_core->audioSampleRate(m_core), true);
+        mAudioResamplerProcess(&m_output.resampler);
     }
 
-    return frames_written;
+    return mAudioBufferRead(&m_output.resampled, target_array, buffer_size_frames);
 }
 
 void teardown() {
+    if (m_output.audio_inited) {
+        mAudioResamplerDeinit(&m_output.resampler);
+        mAudioBufferDeinit(&m_output.resampled);
+        m_output.audio_inited = false;
+    }
+
     if (m_core) {
         m_core->deinit(m_core);
         m_core = NULL;
@@ -108,12 +123,9 @@ const char *get_last_error() {
 }
 
 int32_t get_sample_rate() {
-    // Upstream mgba (post-0.10) dropped the blip_buf resampler; the GBA core
-    // now emits audio at its native rate. Report that so the Kotlin layer
-    // configures the AudioTrack to match (pitch/speed stays correct).
-    if (m_core) {
-        return m_core->audioSampleRate(m_core);
-    }
+    // generateBuffer() resamples the core's native (and possibly varying)
+    // output to a fixed 44100 Hz, so this is constant and safe to read
+    // before any frames are generated.
     return 44100;
 }
 
