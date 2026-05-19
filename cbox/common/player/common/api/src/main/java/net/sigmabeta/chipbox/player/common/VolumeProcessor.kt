@@ -64,6 +64,15 @@ class VolumeProcessor {
     }
 
     /**
+     * Convenience wrapper: peak-normalize the current track from its measured loudest sample
+     * [peakAmplitude] (0 = unknown, leaves audio unchanged). Independent of the fade-out,
+     * ducking, and master volume. Set once per track by the speaker.
+     */
+    fun setNormalization(peakAmplitude: Int) {
+        setModification(KEY_NORMALIZATION, normalizationGain(peakAmplitude))
+    }
+
+    /**
      * Mutate [audioInput] in place, applying the end-of-track fade-out (if this buffer reaches
      * into the fade window) and every registered modification.
      *
@@ -137,6 +146,9 @@ class VolumeProcessor {
 
         /** Registry key for the arbitrary user/master volume. */
         const val KEY_MASTER = "master"
+
+        /** Registry key for per-track peak normalization. */
+        const val KEY_NORMALIZATION = "normalization"
 
         /** Gain applied while ducked (50%). */
         const val DUCK_SCALE = 0.5

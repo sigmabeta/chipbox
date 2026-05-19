@@ -54,6 +54,14 @@ internal class CachingPcmSource(
     override val isOver: Boolean
         get() = writerComplete && cursor >= writer.framesWritten
 
+    // Loudest sample across the rendered track; reported alongside the cache-write-complete
+    // log and stamped into the header. 0 until the writer has produced audible audio, so a
+    // first-time play (which reads this at track load) is left un-normalized.
+    @Volatile
+    private var measuredPeak = 0
+
+    override val peakAmplitude: Int get() = measuredPeak
+
     private val writerScope = CoroutineScope(dispatcher)
 
     private val watermark = MutableStateFlow(0L)
@@ -78,9 +86,6 @@ internal class CachingPcmSource(
         val zeroBuf = ShortArray(WRITER_BUFFER_FRAMES * 2)
         val silenceTrimFrames = SILENCE_TRIM_SECONDS * emulatorSource.sampleRate
         var pendingSilentFrames = 0L
-        // Loudest sample across the whole rendered track; reported alongside the
-        // cache-write-complete log so the headroom figure lands with it.
-        var peakAmplitude = 0
         try {
             while (true) {
                 // emulatorSource.readFrames and writer.appendFrames are synchronous, so without
@@ -119,17 +124,17 @@ internal class CachingPcmSource(
                         watermark.value = writer.framesWritten
                         pendingSilentFrames = 0L
                     }
-                    peakAmplitude = maxOf(peakAmplitude, maxAmplitude(scratch, framesGenerated))
+                    measuredPeak = maxOf(measuredPeak, maxAmplitude(scratch, framesGenerated))
                     writer.appendFrames(scratch, framesGenerated)
                     watermark.value = writer.framesWritten
                 }
             }
             if (writerError == null) {
-                writer.complete(track.id, track.trackLengthMs, peakAmplitude)
+                writer.complete(track.id, track.trackLengthMs, measuredPeak)
                 writerComplete = true
                 watermark.value = writer.framesWritten
                 logWriteComplete(startNanos)
-                LoudnessLog.report(hatchet, track.title, peakAmplitude)
+                LoudnessLog.report(hatchet, track.title, measuredPeak)
                 runCatching { onWriteComplete() }.onFailure {
                     hatchet.w("onWriteComplete callback failed: ${it.message}")
                 }

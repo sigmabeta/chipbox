@@ -79,6 +79,15 @@ abstract class Speaker(
      */
     private var playingTrackId: Long? = null
 
+    /**
+     * Peak amplitude the [volumeProcessor]'s normalization is currently configured for. The
+     * generator stamps a *live* peak on every buffer — for a render-ahead source it climbs
+     * over the first buffers then settles — so the gain is re-derived whenever this value
+     * changes (it only ever rises, so the gain only steps down, never pumps). `-1` is a
+     * "nothing applied yet" sentinel (a real peak is always `>= 0`); reset on full teardown.
+     */
+    private var appliedNormalizationPeak: Int = -1
+
     private val eventSink = MutableSharedFlow<SpeakerEvent>(
         replay = 0,
         onBufferOverflow = BufferOverflow.SUSPEND,
@@ -118,6 +127,7 @@ abstract class Speaker(
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = null
         playingTrackId = null
+        appliedNormalizationPeak = -1
 
         teardown()
     }
@@ -187,6 +197,11 @@ abstract class Speaker(
                     it.copy(lastEvent = playingEvent, positionMs = playingEvent.positionMs)
                 }
                 eventSink.emit(playingEvent)
+
+                if (audioBuffer.peakAmplitude != appliedNormalizationPeak) {
+                    volumeProcessor.setNormalization(audioBuffer.peakAmplitude)
+                    appliedNormalizationPeak = audioBuffer.peakAmplitude
+                }
 
                 volumeProcessor.process(
                     audioBuffer.data,

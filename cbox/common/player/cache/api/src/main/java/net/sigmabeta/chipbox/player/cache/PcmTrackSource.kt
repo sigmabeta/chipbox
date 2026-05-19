@@ -51,6 +51,12 @@ interface PcmTrackSource {
      *  polls this between buffers to know when to advance the setlist. */
     val isOver: Boolean
 
+    /** Loudest 16-bit sample magnitude across the track, or `0` when not (yet) known: a
+     *  first-time render only learns this once the track finishes, and live/uncached sources
+     *  never measure it. Read once at track load and carried downstream to drive playback
+     *  normalization. */
+    val peakAmplitude: Int get() = 0
+
     /** Most-recent error from the underlying source, or null. Polled by the Generator after
      *  every read; non-null aborts playback. */
     fun getLastError(): String?

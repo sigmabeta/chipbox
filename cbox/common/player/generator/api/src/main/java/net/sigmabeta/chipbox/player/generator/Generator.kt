@@ -261,6 +261,11 @@ abstract class Generator(
                         data = generatedAudio,
                         fadeStartMs = track.trackLengthMs,
                         fadeLengthMs = track.fadeLengthMs,
+                        // Live, not snapshotted: a render-ahead source's writer races well
+                        // past the play head, so its running peak is at/near final within the
+                        // first buffers. Monotonic (only ever rises), so the gain only ever
+                        // steps down as a louder sample appears — it never pumps up and down.
+                        peakAmplitude = source.peakAmplitude,
                     )
                 )
 
