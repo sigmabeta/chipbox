@@ -5,9 +5,9 @@ package net.sigmabeta.chipbox.player.common
  * speaker's [VolumeProcessor] (the gain we *apply*) so the two can never drift apart.
  */
 
-/** Loudest 16-bit sample a normalized track is aimed at: 95% of full scale, leaving a little
+/** Loudest 16-bit sample a normalized track is aimed at: 85% of full scale, leaving a little
  *  headroom so the fade ramp, resampler, and inter-sample peaks don't clip. */
-const val NORMALIZATION_TARGET_FRACTION: Double = 0.95
+const val NORMALIZATION_TARGET_FRACTION: Double = 0.85
 
 /**
  * Gain that brings a track whose loudest sample magnitude is [peakAmplitude] to

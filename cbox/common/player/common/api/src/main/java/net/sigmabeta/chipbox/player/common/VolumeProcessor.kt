@@ -196,13 +196,13 @@ class VolumeProcessor(private val hatchet: Hatchet) {
         /** Gain applied while ducked (50%). */
         const val DUCK_SCALE = 0.5
 
-        /** Upper bound on any single modification's gain. Caps boosts (5x ≈ +14 dB) so
+        /** Upper bound on any single modification's gain. Caps boosts so
          *  normalizing a near-silent track can't amplify its noise floor without limit. */
-        const val MAX_GAIN = 5.0
+        const val MAX_GAIN = 3.0
 
         /** Most the applied gain may move toward the target per frame. At 0.01 a full
          *  0.0↔1.0 swing takes 100 frames (~2 ms @ 48 kHz), enough to declick any
          *  ducking/master/normalization change without an audible slew. */
-        const val MAX_GAIN_CHANGE_PER_FRAME = 0.01
+        const val MAX_GAIN_CHANGE_PER_FRAME = 0.001
     }
 }
