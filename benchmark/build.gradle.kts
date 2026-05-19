@@ -15,7 +15,7 @@ android {
         testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR"
     }
 
-    targetProjectPath = ":app"
+    targetProjectPath = ":apps:android"
     @Suppress("UnstableApiUsage")
     experimentalProperties["android.experimental.self-instrumenting"] = true
 

@@ -37,12 +37,12 @@ build/
 *.iml
 build.properties
 .so
-app/src/main/jniLibs/
+apps/android/src/main/jniLibs/
 
 *placeholder*
 
 .gradle/
-app/.externalNativeBuild/
+apps/android/.externalNativeBuild/
 .kotlin/
 .cxx/
 
@@ -51,6 +51,17 @@ package.json
 package-lock.json
 node_modules/
 
+# Headless JVM app: host-built native lib, CMake tree, run-time staging/cache & WAV output
+apps/jvm/libs/
+apps/jvm/native-build/
+apps/jvm/.chipbox-jvm/
+apps/jvm/Chipbox Output Files/
+*.so
+
 # ktlint
 ktlint
 ktlint.html
+
+# JVM crash dumps from the headless app
+apps/jvm/hs_err_pid*.log
+apps/jvm/core.*
