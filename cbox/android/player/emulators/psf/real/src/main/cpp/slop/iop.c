@@ -1041,9 +1041,19 @@ static uint32 EMU_CALL cycles_until_next_interrupt(struct IOP_STATE *state, uint
     //
     // SPU
     //
-    state->sound_cycles_until_interrupt = cyc = spu_cycles_until_interrupt(SPUSTATE,
-                                                                           (min + 767) / 768);
-    if (cyc < min) min = cyc;
+    cyc = spu_cycles_until_interrupt(SPUSTATE, (min + 767) / 768);
+    if (cyc == SPUIRQ_NOT_NEAR) {
+        // SPU IRQ is armed but its decoder crossing is farther than the
+        // bounded look-ahead (see spu.h). Don't fire it this slice -- there
+        // is no concrete prediction yet -- but cap the slice so the next
+        // (cheap, bounded) scan cannot step past the crossing. Same
+        // slice-capping idea as the PSF2 768-cycle clamp below.
+        state->sound_cycles_until_interrupt = 0xFFFFFFFF;
+        if (min > SPUIRQ_LOOKAHEAD_CYCLES) min = SPUIRQ_LOOKAHEAD_CYCLES;
+    } else {
+        state->sound_cycles_until_interrupt = cyc;
+        if (cyc < min) min = cyc;
+    }
 
     if (min < 1) min = 1;
     // PSF2-HLE: cap the r3000 slice to one audio sample (768 cycles) so

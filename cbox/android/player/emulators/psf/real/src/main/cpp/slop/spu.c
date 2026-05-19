@@ -46,6 +46,19 @@ struct SPU_STATE {
 
     uint16 mystery_dma[2];
 
+    /* Memo for spu_cycles_until_interrupt() (PS1 path) -- see spu.h.
+    ** The speculative SPU-IRQ scan depends only on SPU register / RAM /
+    ** decoder state. The SPU is not rendered during an IOP slice (audio
+    ** is buffered and flushed at slice end), so within the slice that
+    ** state changes ONLY via spu_sh / spu_dma. mutate_epoch is bumped on
+    ** every such mutation (and on spu_render, which advances the decoder);
+    ** the cached prediction is reused whenever the epoch is unchanged,
+    ** turning a per-IOP-iteration full speculative render into one render
+    ** per actual SPU-state change. */
+    uint32 mutate_epoch;
+    uint32 cui_epoch;
+    uint32 cui_cache;
+
 };
 
 /*
@@ -82,6 +95,9 @@ void EMU_CALL spu_clear_state(void *state, uint8 version) {
     ** Set version
     */
     SPUSTATE->version = version;
+    /* Force the first spu_cycles_until_interrupt() to compute (epoch 0 ==
+    ** cleared cui_epoch would otherwise reuse a bogus zero cache). */
+    SPUSTATE->mutate_epoch = 1;
     /*
     ** Set offsets
     */
@@ -182,6 +198,7 @@ static EMU_INLINE void EMU_CALL set_transfer(struct SPU_STATE *state, uint32 cor
 void EMU_CALL
 spu_dma(void *state, uint32 core, void *mem, uint32 mem_ofs, uint32 mem_mask, uint32 bytes,
         int iswrite) {
+    SPUSTATE->mutate_epoch++;   /* SPU RAM / transfer ptr changes -> memo stale */
     uint32 words = (bytes + 3) / 4;
     mem_ofs &= (~3);
     if (iswrite) {
@@ -1415,6 +1432,7 @@ uint16 EMU_CALL spu_lh(void *state, uint32 a) {
 }
 
 void EMU_CALL spu_sh(void *state, uint32 a, uint16 d) {
+    SPUSTATE->mutate_epoch++;   /* invalidate the IRQ-prediction memo */
     a &= 0x1FFFFFFE;
     if (a >= 0x1F801C00 && a <= 0x1F801DFF) {
         sh1(SPUSTATE, a, d);
@@ -1426,7 +1444,7 @@ void EMU_CALL spu_sh(void *state, uint32 a, uint16 d) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void EMU_CALL spu_render(void *state, sint16 *buf, uint32 samples) {
-
+    SPUSTATE->mutate_epoch++;   /* decoder advances -> memo stale */
     uint8 mainout = SPUSTATE->global_main_on;
     uint8 effectout = SPUSTATE->global_effect_on;
 //  mainout = 0;
@@ -1442,7 +1460,7 @@ void EMU_CALL spu_render(void *state, sint16 *buf, uint32 samples) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void EMU_CALL spu_render_ext(void *state, sint16 *buf, sint16 *ext, uint32 samples) {
-
+    SPUSTATE->mutate_epoch++;   /* decoder advances -> memo stale */
     uint8 mainout = SPUSTATE->global_main_on;
     uint8 effectout = SPUSTATE->global_effect_on;
 //  mainout = 0;
@@ -1459,7 +1477,15 @@ void EMU_CALL spu_render_ext(void *state, sint16 *buf, sint16 *ext, uint32 sampl
 
 uint32 EMU_CALL spu_cycles_until_interrupt(void *state, uint32 samples) {
     if (SPUSTATE->version == 1) {
-        return spucore_cycles_until_interrupt(CORESTATE(0), SPURAM, samples);
+        // Reuse the memo while the SPU state is unchanged (see SPU_STATE).
+        // Always scan the full fixed look-ahead so the cached value does
+        // not depend on the caller's (variable) `samples` window.
+        if (SPUSTATE->cui_epoch == SPUSTATE->mutate_epoch)
+            return SPUSTATE->cui_cache;
+        SPUSTATE->cui_cache = spucore_cycles_until_interrupt(
+                CORESTATE(0), SPURAM, SPUIRQ_LOOKAHEAD_SAMPLES);
+        SPUSTATE->cui_epoch = SPUSTATE->mutate_epoch;
+        return SPUSTATE->cui_cache;
     } else {
         uint32 cycles1 = spucore_cycles_until_interrupt(CORESTATE(0), SPURAM, samples);
         uint32 cycles2 = spucore_cycles_until_interrupt(CORESTATE(1), SPURAM, samples);
