@@ -36,7 +36,8 @@ rootProject.name = "Chipbox"
 
 include(
     // SAGE-aware modules
-    ":app",
+    ":apps:android",
+    ":apps:jvm",
     ":benchmark",
 
     ":cbox:android:appui:api",
@@ -152,7 +153,14 @@ include(
     ":cbox:common:strings:api",
     ":cbox:common:utils:api",
 
-    ":cbox:jvm:app",
+    ":cbox:jvm:player:emulators:gba:real",
+    ":cbox:jvm:player:emulators:gme:real",
+    ":cbox:jvm:player:emulators:psf:real",
+    ":cbox:jvm:player:emulators:ssf:real",
+    ":cbox:jvm:player:emulators:twosf:real",
+    ":cbox:jvm:player:emulators:usf:real",
+    ":cbox:jvm:player:emulators:vgm:real",
+    ":cbox:jvm:player:generator:real",
 
     ":features:browse-all-tracks:api",
     ":features:browse-all-tracks:real",
