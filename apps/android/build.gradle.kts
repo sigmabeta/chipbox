@@ -97,6 +97,7 @@ dependencies {
     implementation(projects.cbox.android.player.emulators.psf.di)
     implementation(projects.cbox.android.player.emulators.ssf.di)
     implementation(projects.cbox.android.player.emulators.twosf.di)
+    implementation(projects.cbox.android.player.emulators.usf.di)
     implementation(projects.cbox.android.player.emulators.vgm.di)
     implementation(projects.cbox.android.player.generator.di)
     implementation(projects.cbox.android.player.speaker.di)
