@@ -1,9 +1,15 @@
 # Kotlin Multiplatform migration — plan & status
 
-Status: **Milestone 2b implemented.** JVM is the second target. All seven
+Status: **Milestone 3 implemented.** JVM is the second target. All seven
 native emulators decode end-to-end on it (playback-verified on host
-x86-64), and the headless app also runs without Gradle via a generated
-launcher.
+x86-64), the headless app also runs without Gradle via a generated
+launcher, and the mass `sage.android`/`sage.jvm` → `sage.kmp` conversion
+has collapsed every module whose dependency closure is pure — **61
+conversions in all** (33 `sage.jvm` shared modules, 20 `sage.android`
+pure modules, plus the 7 emulator wrappers and the generator that
+previously had cbox/jvm/* duplicates) — onto single KMP modules serving
+both variants. `cbox/jvm/` is now empty (deleted); the remaining
+single-target modules are genuinely Android-only and blocked on item 4.
 Scope of this doc: how Chipbox moves from Android-only to Kotlin
 Multiplatform, what's already done, and the remaining milestones.
 
@@ -89,17 +95,19 @@ section documents the pattern GME established.
   includes injected via `CMAKE_*_FLAGS`). Only portability change: a
   `#include <cstdint>` in `Gme.h` (NDK headers leaked it; host GCC is
   stricter — safe for the Android build too). See `apps/jvm/README.md`.
-- **JVM emulator module.** New `:cbox:jvm:player:emulators:gme:real`
-  (`sage.jvm`) carries a byte-identical `GmeEmulator` twin — the JNI
+- **JVM emulator module.** A new `:cbox:jvm:player:emulators:gme:real`
+  (`sage.jvm`) carried a byte-identical `GmeEmulator` twin — the JNI
   symbols bind to that exact FQCN, so the Android and JVM wrappers must
-  match. The Android Kotlin wrapper is unchanged; only its build script's
-  CMake path and `Gme.h` were touched (the relocation + `<cstdint>`
-  above).
-- **Context-free real generator.** New
+  match. (This intermediate twin was collapsed onto a single `sage.kmp`
+  `:real` module in Milestone 3; the twin no longer exists.) The Android
+  Kotlin wrapper itself was unchanged; only its build script's CMake path
+  and `Gme.h` were touched (the relocation + `<cstdint>` above).
+- **Context-free real generator.** A new
   `:cbox:jvm:player:generator:real` (`sage.jvm`): the Android
   `RealGenerator`'s only Android tie was `Context.cacheDir`; the actual
   work already lived in the pure-JVM `:cbox:common:player:cache:real`, so
-  the staging / PCM-cache dirs are now plain `File` params.
+  the staging / PCM-cache dirs are now plain `File` params. (Also
+  collapsed onto `sage.kmp` in Milestone 3.)
 - **File content source + repository.** `apps/jvm` gets a
   `FileContentSource` (path-is-the-identifier) and a one-track
   `SingleTrackRepository` (avoids `MemoryRepository`, which drops
@@ -109,10 +117,12 @@ section documents the pattern GME established.
 
 ### Milestone 2b — all emulators wired
 
-All seven native emulators now have a `:cbox:jvm:player:emulators:<emu>:real`
-twin module and are wired into `apps/jvm` (`ALL_EMULATORS`; the generator
+All seven native emulators got a `:cbox:jvm:player:emulators:<emu>:real`
+twin module and were wired into `apps/jvm` (`ALL_EMULATORS`; the generator
 picks by extension). `Main.kt` stages `*lib` siblings so mini-formats
-resolve their `_lib` chain. Host portability needed only build-flag shims
+resolve their `_lib` chain. (The twin modules were collapsed onto single
+`sage.kmp` `:real` modules in Milestone 3; the `apps/jvm` wiring still
+references the same FQCNs, now resolved by the KMP modules' jvm variant.) Host portability needed only build-flag shims
 (no Android-build impact): `-D__fastcall=`/`__cdecl=`/`__stdcall=` for
 MSVC/x86 keywords, and an `android/log.h` + `liblog.a` shim for psf's
 debug probes.
@@ -129,21 +139,95 @@ queue before the error propagates, and the second run is cache-served and
 instant) — but in a live player that event would interrupt playback, so
 the render-ahead window still needs tuning for these cores.
 
+## Milestone 3 — mass KMP conversion (done, within constraints)
+
+The duplicated `cbox/jvm/*` tree introduced for Milestone 2 served its
+purpose and is now gone. Every module whose dependency closure is pure
+moved onto `sage.kmp`; the rest stays single-target until item 4 lifts
+the genuinely-Android dependencies (Room / SAF / resources / Hilt).
+
+- **Twin collapse (8 modules).** The 7 emulator wrappers and the
+  generator collapsed pairs of `cbox/android/.../<emu>:real` +
+  `cbox/jvm/.../<emu>:real` into one `sage.kmp` `:real` module each.
+  Because AGP 9.2's `KotlinMultiplatformAndroidLibraryExtension` exposes
+  **no `externalNativeBuild` DSL**, the CMake/NDK trigger for each
+  emulator was split out into a thin Android-only `:native` companion
+  module (no Kotlin). The Android app pulls `<emu>:native` so the `.so`
+  is packaged into the APK; the JVM target host-builds the same
+  `cbox/native/<emu>` tree into `apps/jvm/libs`. The generator collapse
+  needed no `expect`/`actual`: the Android `Context.cacheDir` was just
+  caller-supplied configuration, and the Android Hilt module now derives
+  the staging / PCM-cache `File`s at the call site.
+- **`sage.jvm` bulk (33 modules).** Every pure-JVM `cbox/common/*`
+  shared module converted to `sage.kmp` — the bulk of the original
+  "Mass module conversion" item. Namespaces synthesised from the
+  **module Gradle path** including the `common.` segment (deriving from
+  the source package collided with parallel `sage.android` modules in
+  the manifest merge; the path-derived form keeps them globally unique).
+- **`sage.android` pure subset (20 modules).** Every `sage.android`
+  module whose transitive closure is now KMP/pure — the 7 emulator
+  `:api` + 7 emulator `:all`, plus leaf `colors`, `contentsource/file`,
+  `database`, `image-loading`, `repository`, `scanner` `:api` modules.
+- **What stayed `sage.android`** (blocked on item 4): the Room/SAF chain
+  (`database/all`, `repository/real|all`, `scanner/real|fake|all`,
+  `contentsource/file/real|all`), every `:di` module (Hilt), the resource-
+  touching `strings/api` and `ui/fonts/api` (`R.string.*` / `R.font.*`
+  references — not visible as `import android.*`), and the real
+  Android-only feature modules under `cbox/android/{appui,images,
+  artworkprovider,player-status,player/speaker/real,ui/*}`. **Item 2 and
+  item 4 are coupled:** the remaining KMP conversions need that storage
+  layer (and Hilt) abstracted first.
+
+A small inspectable Python helper (`scripts/kmpify.py`) drove the bulk
+rewrite — kept around for the next pass.
+
+### Diagnoses corrected during this work
+
+A few things I asserted earlier turned out to be wrong; recording them so
+the doc and reader stay honest:
+
+- **No module needs `expect`/`actual` today.** Both candidates I flagged
+  (the generator's cache dir; an audio sink later) turn out to be
+  caller-supplied config or factory choices, not platform implementation
+  seams. A genuine `expect`/`actual` may still appear for real-time
+  audio (item 1), but it's not certain.
+- **`runtimeOnly(:native)` does propagate jniLibs** through a transitive
+  library dependency to the consuming app's APK — my initial fear was
+  unfounded. The runtime crash that surfaced was a pre-existing missing
+  `:usf:di` line in `apps/android/build.gradle.kts`, not a packaging
+  failure (commit `56fa46db`).
+- **The convertibility closure must consider Android resources.** The
+  initial check grepped `^import android.*`; that misses `R.string.*` /
+  `R.font.*` references (the `R` class is generated in the module's own
+  package, no import line). Caught at compile, fixed by reverting two
+  files (commit `7936ba06`). Future kmpify runs should grep
+  `\bR\.(string|drawable|font|color|...)` as an Android marker too.
+
 ## Roadmap (not yet done)
 
-1. **Real-time JVM audio.** An `expect`/`actual` (or factory) audio sink:
-   Android `AudioTrack` vs a JVM `javax.sound.sampled.SourceDataLine`
-   speaker, so the JVM target plays live instead of only writing WAV.
-2. **Mass module conversion.** Move the rest of `cbox/common/player/*`
-   and other shared modules onto `sage.kmp`; then progressively hoist
-   pure-Kotlin code from `jvmSharedMain` into `commonMain`.
-3. **More native emulators on desktop.** All seven wired and
-   playback-verified (Milestone 2b); remaining: macOS/Windows
-   `.so`/`.dylib`/`.dll` builds + a packaged `java.library.path`, and
-   tuning the render-ahead window for the heavy cold-cache cores.
-4. **DI / content sources.** Replace Hilt with JVM-friendly wiring (or
-   manual factories) and a richer file-based repository for the JVM
-   target beyond the single-track shim.
+1. **Real-time JVM audio.** An audio sink (probably a factory, possibly
+   `expect`/`actual`): Android `AudioTrack` vs a JVM
+   `javax.sound.sampled.SourceDataLine` speaker, so the JVM target plays
+   live instead of only writing WAV. Tune the render-ahead window at the
+   same time — the heavy cores currently emit a terminal
+   `GeneratorEvent.Error` on a cold cache, which the WAV harness
+   survives but live playback would not.
+2. **Finish the KMP conversion.** Blocked on item 4. Once Room/SAF/Hilt
+   are abstracted, the rest of `cbox/android/*` collapses onto
+   `sage.kmp` via the same `kmpify.py` pass. The progressive
+   `jvmSharedMain` → `commonMain` hoist (the second half of the original
+   item 2) is the deliberately-incremental remainder.
+3. **Cross-platform native packaging.** All seven emulators wired and
+   playback-verified on host x86-64 Linux. Remaining: macOS/Windows
+   `.dylib`/`.dll` builds + a packaged `java.library.path`, and a real
+   distribution (today blocked by the duplicate jar-basename
+   `installDist` issue — see Known issues).
+4. **DI / content sources / repository.** Replace Hilt with a
+   JVM-friendly wiring (manual factories or another container), abstract
+   Room behind a multiplatform repository interface, and abstract SAF
+   behind the existing `ContentSource` so the JVM target gets a real
+   file-scanning library instead of the `SingleTrackRepository` shim.
+   This is the keystone that unblocks the rest of item 2.
 
 ## Known issues / out of scope
 
