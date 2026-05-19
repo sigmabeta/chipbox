@@ -63,6 +63,7 @@ include(
     ":cbox:android:player:emulators:gme:all",
     ":cbox:android:player:emulators:gme:api",
     ":cbox:android:player:emulators:gme:di",
+    ":cbox:android:player:emulators:gme:native",
     ":cbox:android:player:emulators:gme:real",
     ":cbox:android:player:emulators:psf:all",
     ":cbox:android:player:emulators:psf:api",
@@ -154,7 +155,6 @@ include(
     ":cbox:common:utils:api",
 
     ":cbox:jvm:player:emulators:gba:real",
-    ":cbox:jvm:player:emulators:gme:real",
     ":cbox:jvm:player:emulators:psf:real",
     ":cbox:jvm:player:emulators:ssf:real",
     ":cbox:jvm:player:emulators:twosf:real",

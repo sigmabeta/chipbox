@@ -10,4 +10,6 @@ android {
 dependencies {
     api(projects.cbox.android.player.emulators.gme.api)
     api(projects.cbox.android.player.emulators.gme.real)
+    // Android-only: packages the GME .so into the APK (KMP `:real` can't host CMake).
+    runtimeOnly(projects.cbox.android.player.emulators.gme.native)
 }
