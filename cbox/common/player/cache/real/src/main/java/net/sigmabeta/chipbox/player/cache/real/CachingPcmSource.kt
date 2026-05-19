@@ -107,12 +107,22 @@ internal class CachingPcmSource(
                 if (isBufferSilent(scratch, framesGenerated)) {
                     pendingSilentFrames += framesGenerated.toLong()
                     if (pendingSilentFrames >= silenceTrimFrames) {
-                        // Trailing silence — trim by leaving pendingSilentFrames unwritten and
-                        // sealing the cache where the music actually ended.
-                        hatchet.d(
-                            "Cache trim for ${track.title}: dropping " +
-                                "$pendingSilentFrames trailing silent frames."
-                        )
+                        if (writer.framesWritten == 0L) {
+                            // We've now counted the full silence window without a single
+                            // audible buffer, so this isn't trailing silence to trim — the
+                            // track has produced no audio at all. Surface it instead of
+                            // sealing an empty, "complete" cache entry that every future
+                            // play would serve back instantly as a silent track.
+                            writerError = "Track produced no audio within the first " +
+                                "$SILENCE_TRIM_SECONDS seconds."
+                        } else {
+                            // Trailing silence — trim by leaving pendingSilentFrames
+                            // unwritten and sealing the cache where the music actually ended.
+                            hatchet.d(
+                                "Cache trim for ${track.title}: dropping " +
+                                    "$pendingSilentFrames trailing silent frames."
+                            )
+                        }
                         break
                     }
                     // Hold this silent buffer — only commit it if audible audio follows.
@@ -140,6 +150,11 @@ internal class CachingPcmSource(
                 }
             } else {
                 writer.abort()
+                // The watermark flow only re-checks its predicate on emission, and an
+                // all-silent track never wrote a frame to bump it. Nudge it so a reader
+                // parked in readFrames() wakes with this error rather than waiting out
+                // READ_WAIT_TIMEOUT_MS and reporting the misleading "fell behind" timeout.
+                watermark.value = -1L
                 runCatching { onWriteAbort() }
             }
         } catch (e: CancellationException) {
