@@ -23,6 +23,8 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
+import net.sigmabeta.chipbox.player.common.SHORTS_PER_FRAME
+import net.sigmabeta.chipbox.player.common.firstAudibleFrame
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.player.common.isBufferSilent
 import net.sigmabeta.chipbox.repository.Repository
@@ -77,6 +79,14 @@ abstract class Generator(
     private var lastSilenceState: Boolean? = null
 
     private var lastSilenceTrackId: Long? = null
+
+    /** False until the current track has produced its first non-silent frame. While false the
+     *  leading silence is trimmed; once true the rest of the track passes through untouched. */
+    private var audibleStarted: Boolean = false
+
+    /** Frames of leading silence dropped so far for the current track. Drives the
+     *  "no audio within the first N seconds" abort. */
+    private var silentLeadFrames: Int = 0
 
     private val eventSink = MutableSharedFlow<GeneratorEvent>(
         replay = 0,
@@ -182,10 +192,36 @@ abstract class Generator(
                     break
                 }
 
-                val bufferStartFrame = framesPlayed
-
                 val generatedAudio = bufferManager.getNextEmptyBuffer()
-                val framesGenerated = source.readFrames(generatedAudio)
+                var framesGenerated = source.readFrames(generatedAudio)
+
+                // Trim the run of silence many tracks open with so playback (and the fade
+                // timeline) begins at the music. Reuses `generatedAudio` rather than
+                // re-borrowing, since the producer side has no way to return a buffer to
+                // the pool.
+                if (!audibleStarted) {
+                    when (
+                        val trim = trimLeadingSilence(source, generatedAudio, framesGenerated, rate)
+                    ) {
+                        is TrimResult.Aborted -> {
+                            error = trim.error
+                            break
+                        }
+
+                        is TrimResult.Audible -> {
+                            framesGenerated = trim.frames
+                            audibleStarted = true
+                            if (trim.trimmedFrames > 0) {
+                                hatchet.i(
+                                    "Track ${currentTrack?.title}: trimmed " +
+                                        "${trim.trimmedFrames} frame(s) of leading silence."
+                                )
+                            }
+                        }
+
+                        is TrimResult.PassThrough -> framesGenerated = trim.frames
+                    }
+                }
 
                 if (framesGenerated <= 0 && !source.isOver) {
                     error = source.getLastError()
@@ -193,6 +229,7 @@ abstract class Generator(
                     break
                 }
 
+                val bufferStartFrame = framesPlayed
                 framesPlayed += framesGenerated
 
                 source.getDiagnostics()?.let {
@@ -224,6 +261,11 @@ abstract class Generator(
                         data = generatedAudio,
                         fadeStartMs = track.trackLengthMs,
                         fadeLengthMs = track.fadeLengthMs,
+                        // Live, not snapshotted: a render-ahead source's writer races well
+                        // past the play head, so its running peak is at/near final within the
+                        // first buffers. Monotonic (only ever rises), so the gain only ever
+                        // steps down as a louder sample appears — it never pumps up and down.
+                        peakAmplitude = source.peakAmplitude,
                     )
                 )
 
@@ -289,6 +331,8 @@ abstract class Generator(
             ?: return "Failed to read bytes for ${newTrack.title}."
 
         currentTrack = newTrack
+        audibleStarted = false
+        silentLeadFrames = 0
         val pcmSource = pcmSourceFactory.open(newTrack, bytes)
         currentSource = pcmSource
 
@@ -334,6 +378,8 @@ abstract class Generator(
         framesPlayed = 0
         lastSilenceState = null
         lastSilenceTrackId = null
+        audibleStarted = false
+        silentLeadFrames = 0
         updateDebug {
             GeneratorDebugInfo(
                 looping = false,
@@ -360,7 +406,91 @@ abstract class Generator(
         lastSilenceTrackId = track.id
     }
 
+    /**
+     * Outcome of [trimLeadingSilence].
+     */
+    private sealed interface TrimResult {
+        /** Audio found. [frames] valid frames sit at the front of the buffer; [trimmedFrames]
+         *  leading silent frames were discarded. */
+        data class Audible(val frames: Int, val trimmedFrames: Int) : TrimResult
+
+        /** The track stayed silent past the timeout — abort with [error]. */
+        data class Aborted(val error: String) : TrimResult
+
+        /** The source ended (or errored) before producing audio. Hand [frames] back so the
+         *  caller's normal end/error handling runs. */
+        data class PassThrough(val frames: Int) : TrimResult
+    }
+
+    /**
+     * Drop the leading silence at the very start of a track. Called only until the first
+     * audible frame is found ([audibleStarted]). Whole-silent buffers are read over in place —
+     * the producer side can't return a buffer to the pool, so re-borrowing would shrink it.
+     * Once any audible frame appears, the audible tail is shifted to the front of [buffer] and
+     * the freed space refilled so the buffer stays a full, contiguous block (the pipeline
+     * always plays the whole array).
+     *
+     * Aborts via [TrimResult.Aborted] if no audio appears within [SILENCE_TIMEOUT_SECONDS].
+     */
+    private suspend fun trimLeadingSilence(
+        source: PcmTrackSource,
+        buffer: ShortArray,
+        initialFrames: Int,
+        sampleRate: Int,
+    ): TrimResult {
+        var frames = initialFrames
+        var result: TrimResult? = null
+        while (result == null) {
+            val firstAudible = if (frames > 0) firstAudibleFrame(buffer, frames) else 0
+            when {
+                frames <= 0 -> result = TrimResult.PassThrough(frames)
+
+                firstAudible == 0 -> result = TrimResult.Audible(frames, 0)
+
+                firstAudible > 0 -> {
+                    val keptShorts = (frames - firstAudible) * SHORTS_PER_FRAME
+                    System.arraycopy(
+                        buffer, firstAudible * SHORTS_PER_FRAME,
+                        buffer, 0, keptShorts,
+                    )
+                    // Refill the freed tail so we don't drop music or replay stale samples.
+                    val gap = ShortArray(buffer.size - keptShorts)
+                    val refilled = source.readFrames(gap).coerceAtLeast(0)
+                    System.arraycopy(gap, 0, buffer, keptShorts, refilled * SHORTS_PER_FRAME)
+                    val tailStart = keptShorts + refilled * SHORTS_PER_FRAME
+                    if (tailStart < buffer.size) {
+                        buffer.fill(0.toShort(), tailStart, buffer.size)
+                    }
+                    result = TrimResult.Audible((frames - firstAudible) + refilled, firstAudible)
+                }
+
+                else -> {
+                    // Whole buffer silent.
+                    silentLeadFrames += frames
+                    when {
+                        silentLeadFrames >= sampleRate * SILENCE_TIMEOUT_SECONDS ->
+                            result = TrimResult.Aborted(
+                                "Track produced no audio within the first " +
+                                    "$SILENCE_TIMEOUT_SECONDS seconds."
+                            )
+
+                        source.isOver -> result = TrimResult.PassThrough(frames)
+
+                        else -> {
+                            yield()
+                            frames = source.readFrames(buffer)
+                        }
+                    }
+                }
+            }
+        }
+        return result
+    }
+
     companion object {
         private const val MILLIS_PER_SECOND = 1_000L
+
+        /** Abort a track that produces no audio within this many seconds of generation. */
+        private const val SILENCE_TIMEOUT_SECONDS = 5
     }
 }

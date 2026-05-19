@@ -29,6 +29,10 @@ import net.sigmabeta.sage.logging.Hatchet
 
 private const val SKIP_BACK_THRESHOLD_MS = 3_000L
 
+/** Consecutive generator errors (with no successful audio in between) before the director
+ *  gives up and stops the session instead of skipping to yet another track. */
+private const val MAX_CONSECUTIVE_FAILURES = 3
+
 /**
  * Production [Director] implementation.
  *
@@ -67,6 +71,10 @@ class RealDirector(
         }
 
     private var currentSetlist: List<Long>? = null
+
+    /** Number of generator errors since the last successful audio emission. Reset whenever a
+     *  track actually produces audio (or a fresh session starts); drives the give-up cutoff. */
+    private var consecutiveGeneratorFailures: Int = 0
 
     private var currentState: ChipboxPlaybackState = ChipboxPlaybackState(
         state = PlayerState.IDLE,
@@ -125,6 +133,7 @@ class RealDirector(
 
     override fun start(session: Session) {
         directorScope.launch {
+            consecutiveGeneratorFailures = 0
             val setlistForSession = getSetlistForSession(session)
                 .let { if (session.shuffled) it.shuffled() else it }
 
@@ -286,16 +295,22 @@ class RealDirector(
     }
 
     /**
-     * 🦆
+     * 🦆 Drop the speaker's output to 50% but keep playing — the OS only asked us to get out
+     * of the way of a transient sound, not to stop.
      */
     override fun duck() {
-        pauseTemporarily()
+        speaker.setDucked(true)
     }
 
     override fun resumeFocus() {
-        // 🚫🦆
-        // speaker.unduck()
+        // Undo a duck() (no-op if we weren't ducked) and restart the consume loop if a
+        // pauseTemporarily() had stopped it (no-op if it's already running).
+        speaker.setDucked(false)
         speaker.play()
+    }
+
+    override fun setVolume(scale: Double) {
+        speaker.setVolume(scale)
     }
 
     private suspend fun startTrack(trackId: Long) {
@@ -440,6 +455,9 @@ class RealDirector(
             speaker.play()
         }
 
+        // The current track is producing audio — the failure streak is broken.
+        consecutiveGeneratorFailures = 0
+
         return oldState.copy(generatorProducedMs = event.producedMs)
     }
 
@@ -448,18 +466,72 @@ class RealDirector(
         return oldState
     }
 
+    /**
+     * A generator error is treated as a bad track, not a fatal session error: log it and skip
+     * to the next track in the setlist (mirroring the user-initiated [skipForward] path so the
+     * failed track's queued audio is dropped and playback switches promptly). The session is
+     * only stopped when there's nothing left to try: no setlist to recover within, the failed
+     * track was the last one, or [MAX_CONSECUTIVE_FAILURES] tracks have failed in a row with
+     * no audio in between (the streak resets in [handleGeneratorEmitting]).
+     */
     private fun handleGeneratorError(
         event: GeneratorEvent.Error,
         oldState: ChipboxPlaybackState,
     ): ChipboxPlaybackState {
-        emitError(event.message)
+        val session = currentSession
+        val setlist = currentSetlist
 
-        directorScope.launch {
-            speaker.stop()
-            generator.stop()
+        return when {
+            session == null || setlist == null -> {
+                emitError(event.message)
+                directorScope.launch {
+                    speaker.stop()
+                    generator.stop()
+                }
+                oldState.copy(state = PlayerState.ERROR, errorMessage = event.message)
+            }
+
+            else -> {
+                consecutiveGeneratorFailures += 1
+                when {
+                    consecutiveGeneratorFailures >= MAX_CONSECUTIVE_FAILURES -> {
+                        val message = "Playback stopped after $MAX_CONSECUTIVE_FAILURES " +
+                            "consecutive track failures. Last error: ${event.message}"
+                        emitError(message)
+                        directorScope.launch {
+                            speaker.stop()
+                            generator.stop()
+                        }
+                        oldState.copy(state = PlayerState.ERROR, errorMessage = message)
+                    }
+
+                    isCurrentTrackLastInSetlist(session, setlist) -> {
+                        hatchet.w(
+                            "Generator error on last track: ${event.message}. Ending session."
+                        )
+                        directorScope.launch {
+                            speaker.stop()
+                            generator.stop()
+                        }
+                        oldState.copy(state = PlayerState.STOPPED)
+                    }
+
+                    else -> {
+                        hatchet.w(
+                            "Generator error " +
+                                "($consecutiveGeneratorFailures/$MAX_CONSECUTIVE_FAILURES): " +
+                                "${event.message}. Skipping to the next track."
+                        )
+                        val nextPosition = (session.currentPosition ?: -1) + 1
+                        directorScope.launch {
+                            advanceToTrackAt(session, setlist, nextPosition)
+                            speaker.seek()
+                        }
+                        oldState
+                    }
+                }
+            }
         }
-
-        return oldState.copy(state = PlayerState.ERROR, errorMessage = event.message)
     }
 
     private suspend fun reduce(oldState: ChipboxPlaybackState, event: SpeakerEvent) = when (event) {

@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
-import net.sigmabeta.chipbox.player.common.FadeProcessor
+import net.sigmabeta.chipbox.player.common.VolumeProcessor
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.sage.logging.Hatchet
 
@@ -51,12 +51,42 @@ abstract class Speaker(
     private var ongoingPlaybackJob: Job? = null
 
     /**
+     * Volume adjustments applied to every consumed buffer: the end-of-track fade-out plus any
+     * persistent modifications (OS ducking, master volume, …). Shared for this speaker's
+     * lifetime; mutated from the director/audio-focus side via the pass-through methods below.
+     */
+    private val volumeProcessor = VolumeProcessor(hatchet)
+
+    /** Duck output to 50% while [ducked] (transient OS audio-focus loss), restoring it after. */
+    fun setDucked(ducked: Boolean) = volumeProcessor.setDucked(ducked)
+
+    /** Set an arbitrary master output volume ([scale] = 1.0 unchanged, 1.5 = +50%, 0.0 silent).
+     *  Independent of the fade-out and of ducking. */
+    fun setVolume(scale: Double) = volumeProcessor.setMasterVolume(scale)
+
+    /** Register an arbitrary, independently-keyed volume modification. No UI yet — API only. */
+    fun setVolumeModification(key: String, scale: Double) =
+        volumeProcessor.setModification(key, scale)
+
+    /** Remove a previously registered [setVolumeModification]. */
+    fun clearVolumeModification(key: String) = volumeProcessor.clearModification(key)
+
+    /**
      * Track id of the most recently consumed [AudioBuffer]. Hoisted out of the playback loop so
      * it survives [seek]'s cancel-and-restart cycle — without this the post-seek loop would
      * treat the first buffer as an initial track and suppress its [SpeakerEvent.TrackChange],
      * causing the now-playing UI to miss skip-forward/back updates. Reset only on full teardown.
      */
     private var playingTrackId: Long? = null
+
+    /**
+     * Peak amplitude the [volumeProcessor]'s normalization is currently configured for. The
+     * generator stamps a *live* peak on every buffer — for a render-ahead source it climbs
+     * over the first buffers then settles — so the gain is re-derived whenever this value
+     * changes (it only ever rises, so the gain only steps down, never pumps). `-1` is a
+     * "nothing applied yet" sentinel (a real peak is always `>= 0`); reset on full teardown.
+     */
+    private var appliedNormalizationPeak: Int = -1
 
     private val eventSink = MutableSharedFlow<SpeakerEvent>(
         replay = 0,
@@ -97,6 +127,7 @@ abstract class Speaker(
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = null
         playingTrackId = null
+        appliedNormalizationPeak = -1
 
         teardown()
     }
@@ -167,7 +198,12 @@ abstract class Speaker(
                 }
                 eventSink.emit(playingEvent)
 
-                FadeProcessor.fadeIfNecessary(
+                if (audioBuffer.peakAmplitude != appliedNormalizationPeak) {
+                    volumeProcessor.setNormalization(audioBuffer.peakAmplitude)
+                    appliedNormalizationPeak = audioBuffer.peakAmplitude
+                }
+
+                volumeProcessor.process(
                     audioBuffer.data,
                     audioBuffer.sampleRate,
                     audioBuffer.frameIndex.toInt().framesToMillis(audioBuffer.sampleRate),
