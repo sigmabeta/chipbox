@@ -193,7 +193,7 @@ abstract class Generator(
                 }
 
                 val generatedAudio = bufferManager.getNextEmptyBuffer()
-                var framesGenerated = source.readFrames(generatedAudio)
+                var framesGenerated = fillBuffer(source, generatedAudio)
 
                 // Trim the run of silence many tracks open with so playback (and the fade
                 // timeline) begins at the music. Reuses `generatedAudio` rather than
@@ -453,14 +453,12 @@ abstract class Generator(
                         buffer, firstAudible * SHORTS_PER_FRAME,
                         buffer, 0, keptShorts,
                     )
-                    // Refill the freed tail so we don't drop music or replay stale samples.
+                    // Refill the freed tail *completely* so we neither drop music nor leave a
+                    // gap of pool zeros / stale samples for the consumer to play. fillBuffer
+                    // zero-fills its own tail if the source ends mid-refill.
                     val gap = ShortArray(buffer.size - keptShorts)
-                    val refilled = source.readFrames(gap).coerceAtLeast(0)
-                    System.arraycopy(gap, 0, buffer, keptShorts, refilled * SHORTS_PER_FRAME)
-                    val tailStart = keptShorts + refilled * SHORTS_PER_FRAME
-                    if (tailStart < buffer.size) {
-                        buffer.fill(0.toShort(), tailStart, buffer.size)
-                    }
+                    val refilled = fillBuffer(source, gap)
+                    System.arraycopy(gap, 0, buffer, keptShorts, gap.size)
                     result = TrimResult.Audible((frames - firstAudible) + refilled, firstAudible)
                 }
 
@@ -485,6 +483,39 @@ abstract class Generator(
             }
         }
         return result
+    }
+
+    /**
+     * Fill [buffer] to its full capacity, reading [source] repeatedly until it's full, the
+     * track ends, or the source errors. Returns the number of frames actually produced.
+     *
+     * A single [PcmTrackSource.readFrames] is allowed to return a *short* count: a render-ahead
+     * caching source hands back only what its writer has produced so far, which can be a
+     * fraction of the buffer. The pipeline plays the whole fixed-size array (no per-buffer
+     * frame count travels on [net.sigmabeta.chipbox.player.buffer.AudioBuffer]), so emitting a
+     * partially-filled buffer plays its untouched tail — pool zeros or a recycled buffer's
+     * stale audio — as a mid-stream gap/glitch. Looping here keeps the caching source's
+     * `readFrames` (which blocks for at least one new frame) feeding until the buffer is whole,
+     * so every emitted buffer is one contiguous block. Cached-file sources already return full
+     * reads, so for them the first read fills the buffer and the loop is a no-op.
+     *
+     * Only a genuine end-of-track (or error) ends the fill early; whatever tail is left unread
+     * is zeroed so the final buffer can't replay stale samples.
+     */
+    private suspend fun fillBuffer(source: PcmTrackSource, buffer: ShortArray): Int {
+        val capacityShorts = buffer.size
+        var filledShorts = source.readFrames(buffer).coerceAtLeast(0) * SHORTS_PER_FRAME
+        while (filledShorts in 1 until capacityShorts) {
+            val rest = ShortArray(capacityShorts - filledShorts)
+            val read = source.readFrames(rest).coerceAtLeast(0)
+            if (read == 0) break
+            System.arraycopy(rest, 0, buffer, filledShorts, read * SHORTS_PER_FRAME)
+            filledShorts += read * SHORTS_PER_FRAME
+        }
+        if (filledShorts in 1 until capacityShorts) {
+            buffer.fill(0.toShort(), filledShorts, capacityShorts)
+        }
+        return filledShorts / SHORTS_PER_FRAME
     }
 
     companion object {
