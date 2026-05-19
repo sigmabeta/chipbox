@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.player.common
 
+import net.sigmabeta.sage.logging.Hatchet
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
@@ -22,30 +23,52 @@ import kotlin.math.roundToInt
  *     pre-gain) can be added under their own keys without touching existing ones.
  *
  * The effective per-frame gain is the product of the fade gain and every registered
- * modification. Results are rounded and clamped to the signed 16-bit range, so a modification
- * greater than 1.0 (e.g. boosting to 150%) is supported without integer wrap-around.
+ * modification. Each modification is itself capped at [MAX_GAIN]x; results are rounded and
+ * clamped to the signed 16-bit range, so a boost (e.g. 150%) is supported without
+ * integer wrap-around.
  *
  * A single instance is shared for the lifetime of a [net.sigmabeta.chipbox.player.speaker.Speaker]
  * and mutated from arbitrary threads (audio-focus callbacks land on the main thread; [process]
  * runs on the speaker coroutine), hence the thread-safe registry.
  */
-class VolumeProcessor {
+class VolumeProcessor(private val hatchet: Hatchet) {
 
     private val modifications = ConcurrentHashMap<String, Double>()
 
     /**
      * Register (or replace) the modification stored under [key] with [scale]. `1.0` leaves audio
-     * unchanged; `0.5` halves it; `1.5` boosts it by 50%. Negative values are clamped to `0.0`.
-     * Independent of every other key.
+     * unchanged; `0.5` halves it; `1.5` boosts it by 50%. Clamped to `[0.0, MAX_GAIN]` — a
+     * negative scale becomes silence and a boost is capped at [MAX_GAIN]x so a runaway
+     * normalization of a near-silent track (or a stray API call) can't blow the output up.
+     * Independent of every other key. A change is logged with the resulting combined gain.
      */
     fun setModification(key: String, scale: Double) {
-        modifications[key] = scale.coerceAtLeast(0.0)
+        val clamped = scale.coerceIn(0.0, MAX_GAIN)
+        val previous = modifications.put(key, clamped)
+        if (previous != clamped) {
+            hatchet.d(
+                "Volume: '$key' ${fmt(previous ?: 1.0)} -> ${fmt(clamped)} " +
+                    "(combined gain ${fmt(combinedGain())})."
+            )
+        }
     }
 
     /** Remove the modification under [key], if any. Other modifications are unaffected. */
     fun clearModification(key: String) {
-        modifications.remove(key)
+        val previous = modifications.remove(key)
+        if (previous != null) {
+            hatchet.d(
+                "Volume: cleared '$key' (was ${fmt(previous)}; " +
+                    "combined gain ${fmt(combinedGain())})."
+            )
+        }
     }
+
+    /** Product of every registered modification (the constant, non-fade component of gain). */
+    private fun combinedGain(): Double =
+        modifications.values.fold(1.0) { acc, scale -> acc * scale }
+
+    private fun fmt(value: Double): String = "%.3f".format(value)
 
     /**
      * Convenience wrapper: duck output to [DUCK_SCALE] while [ducked], restoring full volume
@@ -90,7 +113,7 @@ class VolumeProcessor {
         fadeStartMillis: Double,
         fadeLengthMillis: Double,
     ) {
-        val staticGain = modifications.values.fold(1.0) { acc, scale -> acc * scale }
+        val staticGain = combinedGain()
 
         val audioInputLengthMillis = audioInput
             .size
@@ -152,5 +175,9 @@ class VolumeProcessor {
 
         /** Gain applied while ducked (50%). */
         const val DUCK_SCALE = 0.5
+
+        /** Upper bound on any single modification's gain. Caps boosts (5x ≈ +14 dB) so
+         *  normalizing a near-silent track can't amplify its noise floor without limit. */
+        const val MAX_GAIN = 5.0
     }
 }
