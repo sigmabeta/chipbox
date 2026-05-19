@@ -175,6 +175,15 @@ typedef struct {
 
 static HLE_STATE g_hle;
 
+// Screen refresh for the HLE-owned PS1 root counters: 60 = NTSC, 50 = PAL.
+// Lives OUTSIDE g_hle (which hle_init_ps1 memsets) so a region detected at
+// load time survives the init that runs before it, and any later
+// hle_init_ps1 re-rates RCNT() correctly. Without this the HLE VBLANK was
+// always 60 Hz, so PAL rips (e.g. South Park) ran the sequencer 60/50 =
+// 1.2x too fast -- iop_set_refresh() only re-rated the IOP timer, never
+// these counters, which actually clock the PS1 sequencer.
+static uint32 g_ps1_refresh = 60;
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // RAM helpers. HE IOP RAM is a host-endian uint32[] (2 MB); the build is
@@ -671,7 +680,10 @@ void EMU_CALL hle_init_ps1(void *iop) {
     if (ioptimer_get_state_size() > sizeof(g_hle.root_cnts))
         fprintf(stderr, "[hle] FATAL: root_cnts buffer too small\n");
     ioptimer_clear_state(RCNT());
-    ioptimer_set_rates(RCNT(), 33868800, 429, 262, 224, 60);
+    ioptimer_set_rates(RCNT(), 33868800, 429,
+                       (g_ps1_refresh == 50) ? 312 : 262,
+                       (g_ps1_refresh == 50) ? 240 : 224,
+                       g_ps1_refresh);
     g_hle.irq_data = g_hle.irq_mask = 0;
     g_hle.irq_masked = 0;
 
@@ -696,6 +708,19 @@ void EMU_CALL hle_ps2_irq_set(uint32 irq) {
 }
 
 void EMU_CALL hle_ps2_set_refresh(uint32 refresh) { (void) refresh; }
+
+// Re-rate the HLE-owned PS1 root counters for NTSC (60) / PAL (50). Called
+// from iop_set_refresh() once the region is known (PSF _refresh tag or the
+// PS-X EXE region string), so the PS1 sequencer's VBLANK cadence matches
+// the rip's region instead of always running NTSC.
+void EMU_CALL hle_ps1_set_refresh(uint32 refresh) {
+    if (refresh != 50 && refresh != 60) return;
+    g_ps1_refresh = refresh;
+    ioptimer_set_rates(RCNT(), 33868800, 429,
+                       (refresh == 50) ? 312 : 262,
+                       (refresh == 50) ? 240 : 224,
+                       refresh);
+}
 
 sint32 EMU_CALL hle_ps2_readfile_bridge(const char *path, sint32 ofs,
                                         char *buf, sint32 len) {

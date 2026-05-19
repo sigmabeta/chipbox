@@ -138,6 +138,9 @@ void EMU_CALL hle_init_ps1(void *iop);
 
 void EMU_CALL hle_init_ps2(void *iop);
 
+// NTSC(60)/PAL(50) for the HLE-owned PS1 root counters (called by iop_set_refresh).
+void EMU_CALL hle_ps1_set_refresh(uint32 refresh);
+
 #ifdef __cplusplus
 }
 #endif
