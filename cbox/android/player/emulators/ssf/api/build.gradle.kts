@@ -1,7 +1,9 @@
 plugins {
-    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.kmp)
 }
 
-android {
-    namespace = "net.sigmabeta.chipbox.player.emulators.ssf.api"
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.player.emulators.ssf.api"
+    }
 }
