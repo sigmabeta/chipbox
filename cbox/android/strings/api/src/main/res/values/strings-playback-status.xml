@@ -47,6 +47,14 @@
     <string name="playback_status_label_spk_underruns">Underruns</string>
     <string name="playback_status_label_spk_last_error">Last error</string>
 
+    <string name="playback_status_section_volume">Volume</string>
+    <string name="playback_status_label_vol_target_gain">Target gain</string>
+    <string name="playback_status_label_vol_actual_gain">Actual gain (smoothed)</string>
+    <string name="playback_status_label_vol_max_gain">Max gain (per modification)</string>
+    <string name="playback_status_label_vol_duck">Duck</string>
+    <string name="playback_status_label_vol_master">Master</string>
+    <string name="playback_status_label_vol_normalization">Normalization</string>
+
     <string name="playback_status_section_buffer">Buffer</string>
     <string name="playback_status_label_buf_sample_rate">Sample rate</string>
     <string name="playback_status_label_buf_capacity">Pool capacity</string>

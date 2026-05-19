@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.player.speaker
 
+import net.sigmabeta.chipbox.player.common.VolumeDebugInfo
+
 /**
  * Diagnostic snapshot of the [Speaker]'s consume loop, surfaced for the debug
  * PlaybackStatus screen via [Speaker.debugInfo]. Purely observational.
@@ -14,4 +16,7 @@ data class SpeakerDebugInfo(
     /** Count of [SpeakerEvent.Buffering] events (queue-empty underruns) this run. */
     val underrunCount: Int = 0,
     val lastError: String? = null,
+    /** Gain state of the speaker's [net.sigmabeta.chipbox.player.common.VolumeProcessor],
+     *  sampled after the most recent buffer was processed. */
+    val volume: VolumeDebugInfo? = null,
 )
