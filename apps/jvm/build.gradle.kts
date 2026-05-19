@@ -43,7 +43,7 @@ tasks.register("standaloneScript") {
 }
 
 dependencies {
-    implementation(projects.cbox.jvm.player.generator.real)
+    implementation(projects.cbox.android.player.generator.real)
     implementation(projects.cbox.android.player.emulators.gba.real)
     implementation(projects.cbox.android.player.emulators.gme.real)
     implementation(projects.cbox.android.player.emulators.psf.real)

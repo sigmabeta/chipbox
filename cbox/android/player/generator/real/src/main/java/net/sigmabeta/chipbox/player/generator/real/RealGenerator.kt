@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.player.generator.real
 
-import android.content.Context
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
@@ -14,28 +13,31 @@ import net.sigmabeta.sage.logging.Hatchet
 import java.io.File
 
 /**
- * Production [Generator]. Wires up a [RealPcmTrackSourceFactory] over the supplied list of
- * native emulators (selected per-track by file extension) and a `pcm-cache/` directory under
- * the app's cache directory for render-ahead PCM output.
+ * Production [Generator] for both targets. Wires a [RealPcmTrackSourceFactory] over the
+ * supplied native emulators (selected per-track by file extension); the factory owns input
+ * staging and the render-ahead PCM cache (the real work lives in the pure-JVM
+ * `:cbox:common:player:cache:real`).
  *
- * The factory itself owns input staging (writing source bytes + chain files to a real path
- * the native code can read) and the cache file format. This class is intentionally a thin
- * wiring layer — most of what used to live here moved into the cache module.
+ * Takes the staging / PCM-cache directories as plain [File]s. The Android Hilt module derives
+ * them from `Context.cacheDir`; the JVM app passes a work dir. The old Android-only twin's
+ * `Context` parameter was never a platform seam — just these two dirs — so one `sage.kmp`
+ * module serves both variants.
  */
 class RealGenerator(
     repository: Repository,
     contentSourceRegistry: ContentSourceRegistry,
     bufferManager: ProducerBufferManager,
     emulators: List<Emulator>,
-    context: Context,
+    stagingDir: File,
+    pcmCacheDir: File,
     hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Generator(repository, contentSourceRegistry, bufferManager, hatchet, dispatcher) {
 
     override val pcmSourceFactory: PcmTrackSource.Factory = RealPcmTrackSourceFactory(
         emulators = emulators,
-        stagingDir = File(context.cacheDir, "playback"),
-        pcmCacheDir = File(context.cacheDir, "pcm-cache"),
+        stagingDir = stagingDir,
+        pcmCacheDir = pcmCacheDir,
         contentSourceRegistry = contentSourceRegistry,
         hatchet = hatchet,
     )

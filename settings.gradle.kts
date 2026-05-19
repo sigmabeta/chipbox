@@ -160,8 +160,6 @@ include(
     ":cbox:common:strings:api",
     ":cbox:common:utils:api",
 
-    ":cbox:jvm:player:generator:real",
-
     ":features:browse-all-tracks:api",
     ":features:browse-all-tracks:real",
     ":features:browse-all-tracks:screenshot",
