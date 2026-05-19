@@ -104,9 +104,20 @@ interface Director {
      *  cleanly without colliding with user intent. */
     fun pauseTemporarily()
 
-    /** Lower output volume for transient focus loss (e.g. nav prompt). 🦆 */
+    /** Duck output volume to 50% for transient focus loss it's OK to play quietly through
+     *  (e.g. a navigation prompt). Playback continues; only the volume drops. Independent of
+     *  any [setVolume] the user has set. 🦆 */
     fun duck()
 
     /** Undo [pauseTemporarily] / [duck] when audio focus returns. */
     fun resumeFocus()
+
+    // Volume
+
+    /**
+     * Apply an arbitrary master output volume [scale], independent of the end-of-track fade-out
+     * and of OS ducking. `1.0` leaves audio unchanged, `1.5` boosts it by 50%, `0.0` silences
+     * it; negative values are clamped to `0.0`. No UI is wired to this yet — API only.
+     */
+    fun setVolume(scale: Double)
 }
