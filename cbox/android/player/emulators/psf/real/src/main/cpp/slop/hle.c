@@ -88,9 +88,17 @@ enum {
 };
 
 // BIOS RootCounter / DMA event class ids
-#define CLASS_RCNT  (0xF2000002u)   // RootCounters 0-2 (I_STAT bits 4-6)
+#define CLASS_RCNT  (0xF2000002u)   // RootCounter 2 (canonical / most common)
 #define CLASS_VSYNC (0xF2000003u)   // RootCounter 3 / VBLANK (I_STAT bit 0)
 #define CLASS_DMA   (0xF0000009u)
+
+// A hardware RootCounter event is class 0xF200000N for counter N (0,1,2 ->
+// I_STAT bits 4,5,6, the `sig & 0x70` gate). The dispatch used to match only
+// CLASS_RCNT (0xF2000002), so a sequencer driven off RootCounter 0 or 1
+// (e.g. Legacy of Kain - Soul Reaver, class 0xF2000001) never got its tick
+// callback and played pure silence. 0xF2000003 is VBLANK -> CLASS_VSYNC,
+// handled separately, so it is deliberately excluded here.
+#define IS_RCNT_CLASS(c) ((c) >= 0xF2000000u && (c) <= 0xF2000002u)
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -1127,7 +1135,7 @@ static void exc_begin(void) {
             // sequencer off this 0xF2000002 (EvMdINTR) softcall.
             int needClear = 0;
             for (i = 0; i < MAX_EVENT; i++) {
-                if (!EVT(i, EV_ISVALID) || EVT(i, EV_CLASSID) != CLASS_RCNT) continue;
+                if (!EVT(i, EV_ISVALID) || !IS_RCNT_CLASS(EVT(i, EV_CLASSID))) continue;
                 needClear = 1;
                 if (!EVT(i, EV_ENABLED)) continue;
                 EVT(i, EV_FIRED) = 1;
@@ -1192,7 +1200,7 @@ static void exc_begin(void) {
         if ((sig & 0x01) && g_hle.eventsAllocated && !entryint) {
             int has_rcnt = 0, vsynced = 0;
             for (i = 0; i < MAX_EVENT; i++)
-                if (EVT(i, EV_ISVALID) && EVT(i, EV_CLASSID) == CLASS_RCNT) {
+                if (EVT(i, EV_ISVALID) && IS_RCNT_CLASS(EVT(i, EV_CLASSID))) {
                     has_rcnt = 1;
                     break;
                 }
