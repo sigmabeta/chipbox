@@ -55,7 +55,7 @@ abstract class Speaker(
      * persistent modifications (OS ducking, master volume, …). Shared for this speaker's
      * lifetime; mutated from the director/audio-focus side via the pass-through methods below.
      */
-    private val volumeProcessor = VolumeProcessor()
+    private val volumeProcessor = VolumeProcessor(hatchet)
 
     /** Duck output to 50% while [ducked] (transient OS audio-focus loss), restoring it after. */
     fun setDucked(ducked: Boolean) = volumeProcessor.setDucked(ducked)
