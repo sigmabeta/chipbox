@@ -22,10 +22,17 @@ import kotlin.math.roundToInt
  *     [setModification] / [clearModification] pair; additional modifications (e.g. an equalizer
  *     pre-gain) can be added under their own keys without touching existing ones.
  *
- * The effective per-frame gain is the product of the fade gain and every registered
- * modification. Each modification is itself capped at [MAX_GAIN]x; results are rounded and
- * clamped to the signed 16-bit range, so a boost (e.g. 150%) is supported without
- * integer wrap-around.
+ * The product of every registered modification is the *target* gain. The processor does not
+ * jump to it: it keeps a private *actual* gain that, applied per frame, steps toward the
+ * target by at most [MAX_GAIN_CHANGE_PER_FRAME] each frame. So any external gain change
+ * (ducking, master volume, normalization) fades in/out over ~`1 / MAX_GAIN_CHANGE_PER_FRAME`
+ * frames rather than clicking. The actual gain persists across buffers, so the ramp continues
+ * seamlessly from one [process] call to the next.
+ *
+ * The effective per-frame gain is that smoothed actual gain times the positional fade gain
+ * (the fade is already a per-frame ramp and is left un-smoothed). Each modification is itself
+ * capped at [MAX_GAIN]x; results are rounded and clamped to the signed 16-bit range, so a
+ * boost (e.g. 150%) is supported without integer wrap-around.
  *
  * A single instance is shared for the lifetime of a [net.sigmabeta.chipbox.player.speaker.Speaker]
  * and mutated from arbitrary threads (audio-focus callbacks land on the main thread; [process]
@@ -34,6 +41,13 @@ import kotlin.math.roundToInt
 class VolumeProcessor(private val hatchet: Hatchet) {
 
     private val modifications = ConcurrentHashMap<String, Double>()
+
+    /**
+     * Smoothed gain actually applied to audio. Chases the target ([combinedGain]) by at most
+     * [MAX_GAIN_CHANGE_PER_FRAME] per frame. Only ever touched from [process], which runs on
+     * the single speaker coroutine, so it needs no synchronization of its own.
+     */
+    private var actualGain: Double = 1.0
 
     /**
      * Register (or replace) the modification stored under [key] with [scale]. `1.0` leaves audio
@@ -113,7 +127,7 @@ class VolumeProcessor(private val hatchet: Hatchet) {
         fadeStartMillis: Double,
         fadeLengthMillis: Double,
     ) {
-        val staticGain = combinedGain()
+        val targetGain = combinedGain()
 
         val audioInputLengthMillis = audioInput
             .size
@@ -123,37 +137,43 @@ class VolumeProcessor(private val hatchet: Hatchet) {
         val fadeActive = fadeLengthMillis > 0 &&
             inputStartMillis + audioInputLengthMillis >= fadeStartMillis
 
-        if (!fadeActive) {
-            // No positional component — apply the (constant) static gain uniformly, or skip
-            // entirely when nothing modifies the audio.
-            if (staticGain == 1.0) return
-            for (sampleIndex in audioInput.indices) {
-                audioInput[sampleIndex] = scaleSample(audioInput[sampleIndex], staticGain)
-            }
-            return
-        }
+        // Nothing modifies the audio and there's no ramp in progress: leave the buffer as-is.
+        if (!fadeActive && targetGain == 1.0 && actualGain == 1.0) return
 
         val inputStartFrames = inputStartMillis.millisToFrames(sampleRate)
         val fadeStartFrames = fadeStartMillis.millisToFrames(sampleRate)
         val fadeLengthFrames = fadeLengthMillis.millisToFrames(sampleRate)
 
         for (sampleIndex in audioInput.indices step SHORTS_PER_FRAME) {
-            val currentFrame = sampleIndex.samplesToFrames() + inputStartFrames
-
-            val fadeFramesRemaining = fadeStartFrames
-                .plus(fadeLengthFrames)
-                .minus(currentFrame)
-                .toDouble()
-
-            val fadeGain = if (fadeFramesRemaining > 0) {
-                fadeFramesRemaining / fadeLengthFrames
+            val fadeGain = if (fadeActive) {
+                val currentFrame = sampleIndex.samplesToFrames() + inputStartFrames
+                val fadeFramesRemaining = fadeStartFrames
+                    .plus(fadeLengthFrames)
+                    .minus(currentFrame)
+                    .toDouble()
+                if (fadeFramesRemaining > 0) fadeFramesRemaining / fadeLengthFrames else 0.0
             } else {
-                0.0
+                1.0
             }
 
-            val gain = staticGain * fadeGain
+            val gain = actualGain * fadeGain
             audioInput[sampleIndex] = scaleSample(audioInput[sampleIndex], gain)
             audioInput[sampleIndex + 1] = scaleSample(audioInput[sampleIndex + 1], gain)
+
+            // Step the smoothed gain toward the target after applying this frame, so a change
+            // takes ~1 / MAX_GAIN_CHANGE_PER_FRAME frames to fully land (fading it in/out).
+            actualGain = approach(actualGain, targetGain, MAX_GAIN_CHANGE_PER_FRAME)
+        }
+    }
+
+    /** [current] moved toward [target] by at most [maxStep]; snaps exactly to [target] once
+     *  within one step so the ramp terminates cleanly (no float drift). */
+    private fun approach(current: Double, target: Double, maxStep: Double): Double {
+        val delta = target - current
+        return when {
+            delta > maxStep -> current + maxStep
+            delta < -maxStep -> current - maxStep
+            else -> target
         }
     }
 
@@ -179,5 +199,10 @@ class VolumeProcessor(private val hatchet: Hatchet) {
         /** Upper bound on any single modification's gain. Caps boosts (5x ≈ +14 dB) so
          *  normalizing a near-silent track can't amplify its noise floor without limit. */
         const val MAX_GAIN = 5.0
+
+        /** Most the applied gain may move toward the target per frame. At 0.01 a full
+         *  0.0↔1.0 swing takes 100 frames (~2 ms @ 48 kHz), enough to declick any
+         *  ducking/master/normalization change without an audible slew. */
+        const val MAX_GAIN_CHANGE_PER_FRAME = 0.01
     }
 }
