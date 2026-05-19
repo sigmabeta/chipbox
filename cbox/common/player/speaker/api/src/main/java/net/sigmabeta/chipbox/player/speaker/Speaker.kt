@@ -249,6 +249,10 @@ abstract class Speaker(
     private suspend fun emitTrackChangeIfNeeded(audioBuffer: AudioBuffer) {
         if (audioBuffer.trackId == playingTrackId) return
 
+        // New track starting: drop any in-progress gain ramp so this track's gain fades in
+        // from unity rather than from the previous track's faded/ducked state.
+        volumeProcessor.resetGain()
+
         if (playingTrackId != null) {
             hatchet.i("Emitting TrackChange: $playingTrackId -> ${audioBuffer.trackId}.")
             val trackChangeEvent = SpeakerEvent.TrackChange(audioBuffer.trackId)

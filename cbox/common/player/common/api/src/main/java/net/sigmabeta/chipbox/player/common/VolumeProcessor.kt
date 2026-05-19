@@ -44,10 +44,19 @@ class VolumeProcessor(private val hatchet: Hatchet) {
 
     /**
      * Smoothed gain actually applied to audio. Chases the target ([combinedGain]) by at most
-     * [MAX_GAIN_CHANGE_PER_FRAME] per frame. Only ever touched from [process], which runs on
-     * the single speaker coroutine, so it needs no synchronization of its own.
+     * [MAX_GAIN_CHANGE_PER_FRAME] per frame. Only touched from [process] and [resetGain], both
+     * driven by the single speaker coroutine, so it needs no synchronization of its own.
      */
     private var actualGain: Double = 1.0
+
+    /**
+     * Snap the smoothed gain back to unity. The speaker calls this when a new track begins so
+     * the new track's gain (normalization, plus any active duck/master) ramps in cleanly from
+     * 1.0 rather than continuing from the previous track's ramp state.
+     */
+    fun resetGain() {
+        actualGain = 1.0
+    }
 
     /**
      * Register (or replace) the modification stored under [key] with [scale]. `1.0` leaves audio
@@ -62,7 +71,7 @@ class VolumeProcessor(private val hatchet: Hatchet) {
         if (previous != clamped) {
             hatchet.d(
                 "Volume: '$key' ${fmt(previous ?: 1.0)} -> ${fmt(clamped)} " +
-                    "(combined gain ${fmt(combinedGain())})."
+                    "(target gain ${fmt(combinedGain())}, actual gain ${fmt(actualGain)})."
             )
         }
     }
@@ -73,7 +82,7 @@ class VolumeProcessor(private val hatchet: Hatchet) {
         if (previous != null) {
             hatchet.d(
                 "Volume: cleared '$key' (was ${fmt(previous)}; " +
-                    "combined gain ${fmt(combinedGain())})."
+                    "target gain ${fmt(combinedGain())}, actual gain ${fmt(actualGain)})."
             )
         }
     }
