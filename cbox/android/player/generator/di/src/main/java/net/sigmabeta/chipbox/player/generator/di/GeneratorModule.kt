@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.player.generator.fake.FakeGenerator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.logging.Hatchet
+import java.io.File
 import javax.inject.Singleton
 
 @Module
@@ -28,7 +29,15 @@ object GeneratorModule {
         contentSourceRegistry: ContentSourceRegistry,
         @ApplicationContext context: Context,
         hatchet: Hatchet,
-    ) = RealGenerator(repository, contentSourceRegistry, bufferManager, emulatorProvider.emulators, context, hatchet)
+    ) = RealGenerator(
+        repository,
+        contentSourceRegistry,
+        bufferManager,
+        emulatorProvider.emulators,
+        File(context.cacheDir, "playback"),
+        File(context.cacheDir, "pcm-cache"),
+        hatchet,
+    )
 
     @Provides
     @Singleton
