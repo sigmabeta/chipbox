@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.player.generator
 
-import kotlin.math.log10
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +27,6 @@ import net.sigmabeta.chipbox.player.common.SHORTS_PER_FRAME
 import net.sigmabeta.chipbox.player.common.firstAudibleFrame
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.player.common.isBufferSilent
-import net.sigmabeta.chipbox.player.common.maxAmplitude
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.logging.Hatchet
 
@@ -89,9 +87,6 @@ abstract class Generator(
     /** Frames of leading silence dropped so far for the current track. Drives the
      *  "no audio within the first N seconds" abort. */
     private var silentLeadFrames: Int = 0
-
-    /** Loudest absolute sample magnitude seen on the current track (16-bit, 0..32768). */
-    private var peakAmplitude: Int = 0
 
     private val eventSink = MutableSharedFlow<GeneratorEvent>(
         replay = 0,
@@ -167,7 +162,6 @@ abstract class Generator(
                 // When track is over, block waiting for the next one.
                 if (nextTrackId == null && currentSource?.isOver == true) {
                     hatchet.d("Track ${currentTrack?.title} reached natural end.")
-                    reportPeakLoudness()
                     updateDebug { it.copy(lastEvent = GeneratorEvent.TrackChange) }
                     eventSink.emit(GeneratorEvent.TrackChange)
                     nextTrackId = nextTrackIdChannel.receive()
@@ -233,11 +227,6 @@ abstract class Generator(
                     error = source.getLastError()
                         ?: "Source returned $framesGenerated frames."
                     break
-                }
-
-                if (framesGenerated > 0) {
-                    val bufferPeak = maxAmplitude(generatedAudio, framesGenerated)
-                    if (bufferPeak > peakAmplitude) peakAmplitude = bufferPeak
                 }
 
                 val bufferStartFrame = framesPlayed
@@ -339,7 +328,6 @@ abstract class Generator(
         currentTrack = newTrack
         audibleStarted = false
         silentLeadFrames = 0
-        peakAmplitude = 0
         val pcmSource = pcmSourceFactory.open(newTrack, bytes)
         currentSource = pcmSource
 
@@ -387,7 +375,6 @@ abstract class Generator(
         lastSilenceTrackId = null
         audibleStarted = false
         silentLeadFrames = 0
-        peakAmplitude = 0
         updateDebug {
             GeneratorDebugInfo(
                 looping = false,
@@ -495,39 +482,10 @@ abstract class Generator(
         return result
     }
 
-    /**
-     * Log the loudest sample seen on the just-finished track and the gain that would bring it
-     * to [TARGET_PEAK_FRACTION] of full scale (headroom info for a future normalization pass).
-     */
-    private fun reportPeakLoudness() {
-        val track = currentTrack ?: return
-        val fullScale = Short.MAX_VALUE.toInt()
-        if (peakAmplitude <= 0) {
-            hatchet.i("Track ${track.title}: no audible samples; peak loudness unavailable.")
-            return
-        }
-        val targetAmplitude = TARGET_PEAK_FRACTION * fullScale
-        val gain = targetAmplitude / peakAmplitude
-        val dbfs = DBFS_VOLTAGE_FACTOR * log10(peakAmplitude.toDouble() / fullScale)
-        hatchet.i(
-            "Track ${track.title}: peak amplitude $peakAmplitude/$fullScale " +
-                "(${"%.1f".format(dbfs)} dBFS). Multiply by ${"%.3f".format(gain)}x to reach " +
-                "${(TARGET_PEAK_FRACTION * PERCENT).toInt()}% of full scale."
-        )
-    }
-
     companion object {
         private const val MILLIS_PER_SECOND = 1_000L
 
         /** Abort a track that produces no audio within this many seconds of generation. */
         private const val SILENCE_TIMEOUT_SECONDS = 5
-
-        /** Headroom target used by [reportPeakLoudness]: 95% of full scale. */
-        private const val TARGET_PEAK_FRACTION = 0.95
-
-        /** dB = 20·log10(amplitude ratio) for a voltage/sample-amplitude quantity. */
-        private const val DBFS_VOLTAGE_FACTOR = 20.0
-
-        private const val PERCENT = 100
     }
 }

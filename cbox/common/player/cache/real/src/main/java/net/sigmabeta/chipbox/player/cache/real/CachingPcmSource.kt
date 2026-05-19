@@ -15,6 +15,7 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmCacheKey
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.common.isBufferSilent
+import net.sigmabeta.chipbox.player.common.maxAmplitude
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.File
 import java.io.RandomAccessFile
@@ -77,6 +78,9 @@ internal class CachingPcmSource(
         val zeroBuf = ShortArray(WRITER_BUFFER_FRAMES * 2)
         val silenceTrimFrames = SILENCE_TRIM_SECONDS * emulatorSource.sampleRate
         var pendingSilentFrames = 0L
+        // Loudest sample across the whole rendered track; reported alongside the
+        // cache-write-complete log so the headroom figure lands with it.
+        var peakAmplitude = 0
         try {
             while (true) {
                 // emulatorSource.readFrames and writer.appendFrames are synchronous, so without
@@ -115,15 +119,17 @@ internal class CachingPcmSource(
                         watermark.value = writer.framesWritten
                         pendingSilentFrames = 0L
                     }
+                    peakAmplitude = maxOf(peakAmplitude, maxAmplitude(scratch, framesGenerated))
                     writer.appendFrames(scratch, framesGenerated)
                     watermark.value = writer.framesWritten
                 }
             }
             if (writerError == null) {
-                writer.complete(track.id, track.trackLengthMs)
+                writer.complete(track.id, track.trackLengthMs, peakAmplitude)
                 writerComplete = true
                 watermark.value = writer.framesWritten
                 logWriteComplete(startNanos)
+                LoudnessLog.report(hatchet, track.title, peakAmplitude)
                 runCatching { onWriteComplete() }.onFailure {
                     hatchet.w("onWriteComplete callback failed: ${it.message}")
                 }

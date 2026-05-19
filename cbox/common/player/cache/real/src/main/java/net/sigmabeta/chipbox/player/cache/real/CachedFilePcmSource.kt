@@ -16,6 +16,7 @@ import net.sigmabeta.sage.logging.Hatchet
  */
 internal class CachedFilePcmSource(
     private val reader: PcmCacheFile.Reader,
+    private val trackTitle: String,
     private val hatchet: Hatchet,
 ) : PcmTrackSource {
 
@@ -34,6 +35,9 @@ internal class CachedFilePcmSource(
     init {
         reader.touch()
         hatchet.d("Opened cached PCM source: ${reader.totalFrames} frames at ${reader.sampleRate} Hz.")
+        // Replay the headroom figure measured when this track was first rendered (stashed in
+        // the cache header), so a cache hit reports the same line a fresh render would.
+        LoudnessLog.report(hatchet, trackTitle, reader.header.peakAmplitude)
     }
 
     override suspend fun readFrames(buffer: ShortArray): Int {

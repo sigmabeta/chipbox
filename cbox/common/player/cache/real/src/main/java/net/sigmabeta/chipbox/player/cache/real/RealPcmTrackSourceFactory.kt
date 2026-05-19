@@ -78,7 +78,7 @@ class RealPcmTrackSourceFactory(
             } catch (t: Throwable) {
                 hatchet.w("Error tearing down unused emulator source: ${t.message}")
             }
-            return CachedFilePcmSource(reader, hatchet)
+            return CachedFilePcmSource(reader, track.title, hatchet)
         }
 
         hatchet.i("Cache miss for ${track.title}; starting render-ahead.")
