@@ -210,6 +210,7 @@ abstract class Speaker(
                     audioBuffer.fadeStartMs.toDouble(),
                     audioBuffer.fadeLengthMs.toDouble(),
                 )
+                updateDebug { it.copy(volume = volumeProcessor.debugSnapshot()) }
 
                 onAudioReceived(audioBuffer)
                 bufferManager.recycleShortArray(audioBuffer.data)

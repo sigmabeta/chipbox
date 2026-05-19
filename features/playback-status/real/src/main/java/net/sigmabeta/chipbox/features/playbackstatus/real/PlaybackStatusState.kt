@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.features.playbackstatus.real
 
 import java.net.URLDecoder
 import net.sigmabeta.chipbox.debuginfo.PlaybackDebugInfo
+import net.sigmabeta.chipbox.player.common.VolumeProcessor
 import net.sigmabeta.chipbox.strings.ChipboxStringId
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.CtaListModel
@@ -37,6 +38,7 @@ data class PlaybackStatusState(
         addAll(sessionSection(stringProvider))
         addAll(generatorSection(stringProvider))
         addAll(speakerSection(stringProvider))
+        addAll(volumeSection(stringProvider))
         addAll(bufferSection(stringProvider))
     }
 
@@ -226,6 +228,45 @@ data class PlaybackStatusState(
                 stringProvider,
                 ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_LAST_ERROR,
                 speaker?.lastError ?: "—"
+            ),
+        )
+    }
+
+    private fun volumeSection(stringProvider: StringProvider): List<ListModel> {
+        val volume = debug?.speaker?.volume
+        fun gain(value: Double?) = value?.let { "%.3f".format(it) }
+        fun modification(key: String) = volume?.modifications?.get(key)?.let { "%.3f".format(it) } ?: "—"
+        return listOf(
+            section(stringProvider, ChipboxStringId.PLAYBACK_STATUS_SECTION_VOLUME),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_TARGET_GAIN,
+                gain(volume?.targetGain)
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_ACTUAL_GAIN,
+                gain(volume?.actualGain)
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_MAX_GAIN,
+                gain(volume?.maxGain)
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_DUCK,
+                modification(VolumeProcessor.KEY_DUCK)
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_MASTER,
+                modification(VolumeProcessor.KEY_MASTER)
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_NORMALIZATION,
+                modification(VolumeProcessor.KEY_NORMALIZATION)
             ),
         )
     }

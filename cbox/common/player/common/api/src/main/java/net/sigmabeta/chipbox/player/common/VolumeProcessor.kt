@@ -91,6 +91,18 @@ class VolumeProcessor(private val hatchet: Hatchet) {
     private fun combinedGain(): Double =
         modifications.values.fold(1.0) { acc, scale -> acc * scale }
 
+    /**
+     * Observational snapshot for the debug PlaybackStatus screen: the target gain (product of
+     * every modification), the smoothed gain currently applied, the per-modification cap, and a
+     * copy of the keyed multipliers. Safe to call from any thread.
+     */
+    fun debugSnapshot(): VolumeDebugInfo = VolumeDebugInfo(
+        targetGain = combinedGain(),
+        actualGain = actualGain,
+        maxGain = MAX_GAIN,
+        modifications = modifications.toMap(),
+    )
+
     private fun fmt(value: Double): String = "%.3f".format(value)
 
     /**

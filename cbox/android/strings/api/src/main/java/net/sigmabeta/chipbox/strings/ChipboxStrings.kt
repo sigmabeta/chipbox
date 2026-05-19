@@ -209,6 +209,20 @@ fun ChipboxStringId.id(): Int = when (this) {
 
     ChipboxStringId.PLAYBACK_STATUS_LABEL_SPK_LAST_ERROR -> R.string.playback_status_label_spk_last_error
 
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_TARGET_GAIN -> R.string.playback_status_label_vol_target_gain
+
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_ACTUAL_GAIN -> R.string.playback_status_label_vol_actual_gain
+
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_MAX_GAIN -> R.string.playback_status_label_vol_max_gain
+
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_DUCK -> R.string.playback_status_label_vol_duck
+
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_MASTER -> R.string.playback_status_label_vol_master
+
+    ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_NORMALIZATION -> R.string.playback_status_label_vol_normalization
+
+    ChipboxStringId.PLAYBACK_STATUS_SECTION_VOLUME -> R.string.playback_status_section_volume
+
     ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_SAMPLE_RATE -> R.string.playback_status_label_buf_sample_rate
 
     ChipboxStringId.PLAYBACK_STATUS_LABEL_BUF_CAPACITY -> R.string.playback_status_label_buf_capacity
