@@ -1,8 +1,18 @@
 plugins {
-    alias(libs.plugins.sage.jvm)
+    alias(libs.plugins.sage.kmp)
 }
 
-dependencies {
-    api(projects.cbox.common.player.emulators.api)
-    api(projects.cbox.common.player.emulators.fake)
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.common.player.emulators.all"
+    }
+
+    sourceSets {
+        named("jvmSharedMain") {
+            dependencies {
+                api(projects.cbox.common.player.emulators.api)
+                api(projects.cbox.common.player.emulators.fake)
+            }
+        }
+    }
 }

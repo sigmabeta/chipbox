@@ -1,9 +1,19 @@
 plugins {
-    alias(libs.plugins.sage.jvm)
+    alias(libs.plugins.sage.kmp)
 }
 
-dependencies {
-    api(projects.cbox.common.player.speaker.api)
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.common.player.speaker.fake"
+    }
 
-    implementation(libs.sage.common.logging)
+    sourceSets {
+        named("jvmSharedMain") {
+            dependencies {
+                api(projects.cbox.common.player.speaker.api)
+
+                implementation(libs.sage.common.logging)
+            }
+        }
+    }
 }
