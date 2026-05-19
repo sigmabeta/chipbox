@@ -664,6 +664,19 @@ void EMU_CALL hle_init_ps1(void *iop) {
     ram[0x00B0 / 4] = R3000_HLE_SENTINEL;        // B0 table
     ram[0x00C0 / 4] = R3000_HLE_SENTINEL;        // C0 table
     ram[SOFTCALL_LOW / 4] = R3000_HLE_SENTINEL;  // softcall return
+    // A `jal`/`jalr` through a NULL function pointer lands at address 0.
+    // On a real PS1 address 0 holds the kernel exception trampoline
+    // (lui k0,0 / addiu k0,0xC80 / jr k0) which traps into the BIOS
+    // handler and unwinds back to $ra (verified against the BIOS oracle:
+    // it returns to the caller with v0=0 and playback continues). Several
+    // PSF sound engines do this deliberately and the BIOS tolerates it
+    // (e.g. libsnd's SsSeqCalledTbyT path in Crash Team Racing / Metamor
+    // Panic). slopsf left address 0 zeroed, so the NULL call nop-slid into
+    // the exception sentinel and wedged irq_mutex. Plant `jr ra; nop` so
+    // the NULL call returns harmlessly -- the net effect of the real
+    // kernel trampoline for this case.
+    ram[0x0000 / 4] = 0x03E00008u;               // jr ra
+    ram[0x0004 / 4] = 0x00000000u;               // nop (delay slot)
 
     // Clear the event-control block table.
     for (i = 0; i < (int) (EVENTS_SIZE / 4); i++) ram[(EVENTS_BEGIN / 4) + i] = 0;
