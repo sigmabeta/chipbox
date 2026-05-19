@@ -117,6 +117,7 @@ struct IOP_STATE {
     uint32 sound_buffer_samples_free;
     uint32 sound_cycles_pending;
     uint32 sound_cycles_until_interrupt;
+    uint32 spu_irq_latched;   /* SPU-IRQ edge latch (see iop_advance) */
     struct IOP_EVENT event[IOP_MAX_EVENTS];
     uint32 event_write_index;
     uint32 event_count;
@@ -1001,7 +1002,19 @@ static void EMU_CALL iop_advance(void *state, uint32 elapse) {
         // Under the PSF2-HLE per-sample pump, SPU2-IRQ delivery is owned by
         // the pump (gated on the SPU's true IRQA crossing). Delivering here
         // too would double/over-fire with a stale sound_cycles_until_interrupt.
-        if (!hle_ps2_pump_active()) hle_ps2_spu_irq();
+        //
+        // Edge-trigger: the SPU IRQ is a latched level on hardware -- raised
+        // once when the decoder reaches IRQA, held until the handler acks.
+        // Our prediction returns 0 every slice while the decoder is parked
+        // on IRQA, so without a latch the IRQ was redelivered on every slice;
+        // combined with the (correct) decision not to zero-slice for it,
+        // delivery must be edge-gated or the handler floods. Fire once per
+        // arming; cycles_until_next_interrupt re-arms when the decoder is
+        // no longer on IRQA.
+        if (!hle_ps2_pump_active() && !IOPSTATE->spu_irq_latched) {
+            IOPSTATE->spu_irq_latched = 1;
+            hle_ps2_spu_irq();
+        }
     }
     /*
     ** Update pending sound cycles
@@ -1042,6 +1055,10 @@ static uint32 EMU_CALL cycles_until_next_interrupt(struct IOP_STATE *state, uint
     // SPU
     //
     cyc = spu_cycles_until_interrupt(SPUSTATE, (min + 767) / 768);
+    // Re-arm the SPU-IRQ edge latch (see iop_advance) once the decoder is
+    // no longer parked exactly on IRQA -- any non-zero prediction: a future
+    // crossing, NOT_NEAR, or IRQ disabled.
+    if (cyc != 0) state->spu_irq_latched = 0;
     if (cyc == SPUIRQ_NOT_NEAR) {
         // SPU IRQ is armed but its decoder crossing is farther than the
         // bounded look-ahead (see spu.h). Don't fire it this slice -- there
@@ -1052,7 +1069,14 @@ static uint32 EMU_CALL cycles_until_next_interrupt(struct IOP_STATE *state, uint
         if (min > SPUIRQ_LOOKAHEAD_CYCLES) min = SPUIRQ_LOOKAHEAD_CYCLES;
     } else {
         state->sound_cycles_until_interrupt = cyc;
-        if (cyc < min) min = cyc;
+        // cyc==0 means the decoder is parked exactly on IRQA: deliver the
+        // IRQ now (once, via the latch in iop_advance) but do NOT clamp the
+        // slice to ~0. The SPU decoder is frozen until the next flush_sound
+        // regardless, so a 1-cycle slice does not advance it -- it only
+        // starves the timer the guest's wait loop is actually counting,
+        // turning one timer interval into millions of 1-cycle slices
+        // (Koudelka spun ~109M times here).
+        if (cyc && cyc < min) min = cyc;
     }
 
     if (min < 1) min = 1;
