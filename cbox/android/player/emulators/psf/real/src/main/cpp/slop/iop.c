@@ -217,6 +217,9 @@ void EMU_CALL iop_set_refresh(void *state, uint32 refresh) {
                            (refresh == 60) ? 224 : 240,
                            refresh
         );
+        // The PS1 sequencer is clocked by the HLE-owned root counters, not
+        // IOPTIMERSTATE -- re-rate those too, or PAL rips run 1.2x fast.
+        if (IOPSTATE->version == 1) hle_ps1_set_refresh(refresh);
     }
 }
 
