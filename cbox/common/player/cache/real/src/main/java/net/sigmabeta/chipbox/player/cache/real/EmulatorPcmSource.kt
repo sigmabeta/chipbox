@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.player.cache.real
 
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
+import net.sigmabeta.chipbox.player.common.maxAmplitude
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.File
@@ -31,6 +32,13 @@ internal class EmulatorPcmSource(
 
     private var lastError: String? = null
 
+    // Loudest sample produced so far. Grows as the track plays (no render-ahead here, so it
+    // tracks the playback position); exposed live for progressive normalization.
+    @Volatile
+    private var measuredPeak = 0
+
+    override val peakAmplitude: Int get() = measuredPeak
+
     init {
         if (!emulator.nativeLibLoaded) {
             hatchet.i("Loading native lib for ${emulator::class.simpleName}.")
@@ -52,7 +60,9 @@ internal class EmulatorPcmSource(
     override suspend fun readFrames(buffer: ShortArray): Int {
         val framesGenerated = emulator.generateBuffer(buffer)
         lastError = emulator.getLastError()
-        return if (framesGenerated < 0) 0 else framesGenerated
+        if (framesGenerated <= 0) return 0
+        measuredPeak = maxOf(measuredPeak, maxAmplitude(buffer, framesGenerated))
+        return framesGenerated
     }
 
     override suspend fun seek(framePosition: Long) {

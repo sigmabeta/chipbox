@@ -32,6 +32,8 @@ internal class CachedFilePcmSource(
 
     override val isOver: Boolean get() = cursor >= reader.totalFrames
 
+    override val peakAmplitude: Int = reader.header.peakAmplitude
+
     init {
         reader.touch()
         hatchet.d("Opened cached PCM source: ${reader.totalFrames} frames at ${reader.sampleRate} Hz.")
