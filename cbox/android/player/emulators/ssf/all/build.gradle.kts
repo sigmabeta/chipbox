@@ -1,12 +1,18 @@
 plugins {
-    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.kmp)
 }
 
-android {
-    namespace = "net.sigmabeta.chipbox.player.emulators.ssf.all"
-}
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.player.emulators.ssf.all"
+    }
 
-dependencies {
-    api(projects.cbox.android.player.emulators.ssf.api)
-    api(projects.cbox.android.player.emulators.ssf.real)
+    sourceSets {
+        named("jvmSharedMain") {
+            dependencies {
+                api(projects.cbox.android.player.emulators.ssf.api)
+                api(projects.cbox.android.player.emulators.ssf.real)
+            }
+        }
+    }
 }

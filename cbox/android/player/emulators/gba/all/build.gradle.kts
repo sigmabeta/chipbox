@@ -1,12 +1,18 @@
 plugins {
-    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.kmp)
 }
 
-android {
-    namespace = "net.sigmabeta.chipbox.player.emulators.gba.all"
-}
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.player.emulators.gba.all"
+    }
 
-dependencies {
-    api(projects.cbox.android.player.emulators.gba.api)
-    api(projects.cbox.android.player.emulators.gba.real)
+    sourceSets {
+        named("jvmSharedMain") {
+            dependencies {
+                api(projects.cbox.android.player.emulators.gba.api)
+                api(projects.cbox.android.player.emulators.gba.real)
+            }
+        }
+    }
 }
