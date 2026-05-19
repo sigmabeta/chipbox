@@ -10,4 +10,6 @@ android {
 dependencies {
     api(projects.cbox.android.player.emulators.usf.api)
     api(projects.cbox.android.player.emulators.usf.real)
+    // Android-only: packages the usf .so into the APK (KMP `:real` can't host CMake).
+    runtimeOnly(projects.cbox.android.player.emulators.usf.native)
 }

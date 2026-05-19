@@ -59,6 +59,7 @@ include(
     ":cbox:android:player:emulators:gba:all",
     ":cbox:android:player:emulators:gba:api",
     ":cbox:android:player:emulators:gba:di",
+    ":cbox:android:player:emulators:gba:native",
     ":cbox:android:player:emulators:gba:real",
     ":cbox:android:player:emulators:gme:all",
     ":cbox:android:player:emulators:gme:api",
@@ -68,22 +69,27 @@ include(
     ":cbox:android:player:emulators:psf:all",
     ":cbox:android:player:emulators:psf:api",
     ":cbox:android:player:emulators:psf:di",
+    ":cbox:android:player:emulators:psf:native",
     ":cbox:android:player:emulators:psf:real",
     ":cbox:android:player:emulators:ssf:all",
     ":cbox:android:player:emulators:ssf:api",
     ":cbox:android:player:emulators:ssf:di",
+    ":cbox:android:player:emulators:ssf:native",
     ":cbox:android:player:emulators:ssf:real",
     ":cbox:android:player:emulators:twosf:all",
     ":cbox:android:player:emulators:twosf:api",
     ":cbox:android:player:emulators:twosf:di",
+    ":cbox:android:player:emulators:twosf:native",
     ":cbox:android:player:emulators:twosf:real",
     ":cbox:android:player:emulators:usf:all",
     ":cbox:android:player:emulators:usf:api",
     ":cbox:android:player:emulators:usf:di",
+    ":cbox:android:player:emulators:usf:native",
     ":cbox:android:player:emulators:usf:real",
     ":cbox:android:player:emulators:vgm:all",
     ":cbox:android:player:emulators:vgm:api",
     ":cbox:android:player:emulators:vgm:di",
+    ":cbox:android:player:emulators:vgm:native",
     ":cbox:android:player:emulators:vgm:real",
     ":cbox:android:player:generator:di",
     ":cbox:android:player:generator:real",
@@ -154,12 +160,6 @@ include(
     ":cbox:common:strings:api",
     ":cbox:common:utils:api",
 
-    ":cbox:jvm:player:emulators:gba:real",
-    ":cbox:jvm:player:emulators:psf:real",
-    ":cbox:jvm:player:emulators:ssf:real",
-    ":cbox:jvm:player:emulators:twosf:real",
-    ":cbox:jvm:player:emulators:usf:real",
-    ":cbox:jvm:player:emulators:vgm:real",
     ":cbox:jvm:player:generator:real",
 
     ":features:browse-all-tracks:api",
@@ -204,3 +204,4 @@ project(":cbox:android:player:emulators:twosf:all").projectDir = file("cbox/andr
 project(":cbox:android:player:emulators:twosf:api").projectDir = file("cbox/android/player/emulators/2sf/api")
 project(":cbox:android:player:emulators:twosf:di").projectDir = file("cbox/android/player/emulators/2sf/di")
 project(":cbox:android:player:emulators:twosf:real").projectDir = file("cbox/android/player/emulators/2sf/real")
+project(":cbox:android:player:emulators:twosf:native").projectDir = file("cbox/android/player/emulators/2sf/native")

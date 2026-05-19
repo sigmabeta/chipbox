@@ -10,4 +10,6 @@ android {
 dependencies {
     api(projects.cbox.android.player.emulators.psf.api)
     api(projects.cbox.android.player.emulators.psf.real)
+    // Android-only: packages the psf .so into the APK (KMP `:real` can't host CMake).
+    runtimeOnly(projects.cbox.android.player.emulators.psf.native)
 }

@@ -10,4 +10,6 @@ android {
 dependencies {
     api(projects.cbox.android.player.emulators.vgm.api)
     api(projects.cbox.android.player.emulators.vgm.real)
+    // Android-only: packages the vgm .so into the APK (KMP `:real` can't host CMake).
+    runtimeOnly(projects.cbox.android.player.emulators.vgm.native)
 }
