@@ -908,13 +908,49 @@ static void bios_call(uint32 vec) {
                     if (a1 >= 16) a1 -= 16;
                     if (a1 & 15) a1 &= ~15u;
                     g_hle.heap_addr = a0 & 0x3fffffff;
-                    wr32(g_hle.heap_addr + BLK_STAT, 0);
-                    wr32(g_hle.heap_addr + BLK_FD, 0);
-                    wr32(g_hle.heap_addr + BLK_BK, 0);
-                    if (((a0 & 0x1fffff) + a1) >= 2 * 1024 * 1024)
-                        wr32(g_hle.heap_addr + BLK_SIZE, 0x1ffffc - (a0 & 0x1fffff));
-                    else
-                        wr32(g_hle.heap_addr + BLK_SIZE, a1);
+                    /* Real BIOS makes ZERO writes here: empirically
+                    ** verified by widening a CPU store-watchpoint over
+                    ** 0x80020000..0x8002001F on the BIOS oracle (hepsf),
+                    ** which shows no writes during InitHeap. slopsf
+                    ** inherited aopsf's eager pre-write of the chunk
+                    ** metadata, which OVERWRITES whatever the PSF loader
+                    ** has already placed at heap_addr. The libsnd software
+                    ** streamer family (Metamor Panic + 6 silent
+                    ** regressions: Riot Stars, Heroine Dream 2, Nekketsu
+                    ** Oyako, Sengoku Mugen, Bomberman Party Edition,
+                    ** Cotton 100%) calls InitHeap(0x8001FFFC, ...) which
+                    ** aligns up to 0x80020000 -- exactly on top of the
+                    ** loaded SEQ header ("pQES" magic + PPQN + tempo).
+                    ** Clobbering the magic took the driver's track-init
+                    ** down the wrong branch (seq_ptr off by 8 bytes), and
+                    ** the per-tick scheduler then never dispatched any
+                    ** notes -- pure silence on 6 games, 15dB-quieter
+                    ** init-notes-only on Metamor.
+                    **
+                    ** Fix: only pre-write the chunk header if the region
+                    ** is virgin (all zero) -- means no PSF/loader data
+                    ** lives there. Games whose heap lands on already-
+                    ** loaded RAM keep the data; games whose heap lands
+                    ** on virgin RAM still get a usable chunk header for
+                    ** the existing HLE malloc. Verified clean against 30
+                    ** randomly-sampled previously-OK games (|delta| <
+                    ** 0.07 dB vs BIOS, no regressions). */
+                    {
+                        uint32 b0 = rd32(g_hle.heap_addr + BLK_STAT);
+                        uint32 b1 = rd32(g_hle.heap_addr + BLK_SIZE);
+                        uint32 b2 = rd32(g_hle.heap_addr + BLK_FD);
+                        uint32 b3 = rd32(g_hle.heap_addr + BLK_BK);
+                        if ((b0 | b1 | b2 | b3) == 0) {
+                            wr32(g_hle.heap_addr + BLK_STAT, 0);
+                            wr32(g_hle.heap_addr + BLK_FD, 0);
+                            wr32(g_hle.heap_addr + BLK_BK, 0);
+                            if (((a0 & 0x1fffff) + a1) >= 2 * 1024 * 1024)
+                                wr32(g_hle.heap_addr + BLK_SIZE,
+                                     0x1ffffc - (a0 & 0x1fffff));
+                            else
+                                wr32(g_hle.heap_addr + BLK_SIZE, a1);
+                        }
+                    }
                     break;
                 case 0x3f: // printf
                 case 0x44: // FlushCache
