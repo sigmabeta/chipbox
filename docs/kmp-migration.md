@@ -1,7 +1,9 @@
 # Kotlin Multiplatform migration — plan & status
 
-Status: **Milestone 2 implemented.** JVM is the second target, now with a
-real native emulator (GME) decoding end-to-end.
+Status: **Milestone 2b implemented.** JVM is the second target. All seven
+native emulators decode end-to-end on it (playback-verified on host
+x86-64), and the headless app also runs without Gradle via a generated
+launcher.
 Scope of this doc: how Chipbox moves from Android-only to Kotlin
 Multiplatform, what's already done, and the remaining milestones.
 
@@ -73,8 +75,10 @@ the chipbox changes that consume them.
 
 ## Milestone 2 — first real native emulator on JVM (done)
 
-GME (`.spc/.nsf/.nsfe/.gbs`) now decodes end-to-end on the JVM target —
-the `FakeEmulator`-only constraint of Milestone 1 is lifted for GME.
+GME (`.spc/.nsf/.nsfe/.gbs`) was the first real native emulator to decode
+end-to-end on the JVM target, lifting Milestone 1's `FakeEmulator`-only
+constraint. Milestone 2b below extends this to all seven emulators; this
+section documents the pattern GME established.
 
 - **Native code is platform-neutral now.** All emulator C/C++ trees plus
   the shared `native-common` moved out of `cbox/android` into top-level
@@ -88,7 +92,9 @@ the `FakeEmulator`-only constraint of Milestone 1 is lifted for GME.
 - **JVM emulator module.** New `:cbox:jvm:player:emulators:gme:real`
   (`sage.jvm`) carries a byte-identical `GmeEmulator` twin — the JNI
   symbols bind to that exact FQCN, so the Android and JVM wrappers must
-  match. The Android module is unchanged.
+  match. The Android Kotlin wrapper is unchanged; only its build script's
+  CMake path and `Gme.h` were touched (the relocation + `<cstdint>`
+  above).
 - **Context-free real generator.** New
   `:cbox:jvm:player:generator:real` (`sage.jvm`): the Android
   `RealGenerator`'s only Android tie was `Context.cacheDir`; the actual
@@ -109,14 +115,19 @@ picks by extension). `Main.kt` stages `*lib` siblings so mini-formats
 resolve their `_lib` chain. Host portability needed only build-flag shims
 (no Android-build impact): `-D__fastcall=`/`__cdecl=`/`__stdcall=` for
 MSVC/x86 keywords, and an `android/log.h` + `liblog.a` shim for psf's
-debug probes. Per-emulator status (host x86-64; see `apps/jvm/README.md`):
+debug probes.
 
 All seven are **playback-verified** on host x86-64 (real, audible WAV):
 GME (SPC), PSF (.psf + .minipsf), VGM (.vgz), USF (.miniusf), 2SF
-(.mini2sf), GBA/mgba (.minigsf), SSF + DSF (.ssf/.dsf w/ chain). The
-heavy CPU cores (USF/2SF/GBA/SSF/DSF) decode slower than real time on a
-cold cache — a non-fatal render-ahead "fell behind" is logged but the
-full track still renders (second run is cache-served).
+(.mini2sf), GBA/mgba (.minigsf), SSF + DSF (.ssf/.dsf w/ chain) — see the
+per-emulator table in `apps/jvm/README.md`. The heavy CPU cores
+(USF/2SF/GBA/SSF/DSF) decode slower than real time on a cold cache: the
+render-ahead reader times out and the generator emits a terminal
+`GeneratorEvent.Error` ("cache writer fell behind reader"). The headless
+WAV harness still ends up with the full track (the speaker drains the
+queue before the error propagates, and the second run is cache-served and
+instant) — but in a live player that event would interrupt playback, so
+the render-ahead window still needs tuning for these cores.
 
 ## Roadmap (not yet done)
 
@@ -140,3 +151,14 @@ full track still renders (second run is cache-served).
   read as a longer duration than the actual PCM payload (the audio bytes
   are correct; only the header arithmetic is off). Pre-existing, not
   introduced by this work; header-trusting players could mis-seek.
+- Dozens of modules share a jar basename (`real.jar` / `api.jar`), which
+  collide in the `application` plugin's flat distribution `lib/`, so
+  `installDist` / `distZip` are unusable. The `:apps:jvm:standaloneScript`
+  task is the workaround: it emits `build/run-standalone.sh` with an
+  explicit classpath of full, unique jar paths (no Gradle at runtime). A
+  proper fix would give every module a path-derived archive name.
+- The JVM target's repository is the one-track `SingleTrackRepository`
+  shim; there is no library/scan/persistence on JVM yet (roadmap item 4).
+- Heavy emulator cores emit a terminal render-ahead `GeneratorEvent.Error`
+  on a cold cache (see Milestone 2b) — survivable for the WAV harness,
+  not for live playback until the render-ahead window is tuned.
