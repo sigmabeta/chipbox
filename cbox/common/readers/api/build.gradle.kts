@@ -1,11 +1,21 @@
 plugins {
-    alias(libs.plugins.sage.jvm)
+    alias(libs.plugins.sage.kmp)
 }
 
-dependencies {
-    api(projects.cbox.common.repository.api)
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.common.readers.api"
+    }
 
-    implementation(projects.cbox.common.models.api)
-    implementation(projects.cbox.common.utils.api)
-    implementation(libs.sage.common.logging)
+    sourceSets {
+        named("jvmSharedMain") {
+            dependencies {
+                api(projects.cbox.common.repository.api)
+
+                implementation(projects.cbox.common.models.api)
+                implementation(projects.cbox.common.utils.api)
+                implementation(libs.sage.common.logging)
+            }
+        }
+    }
 }
