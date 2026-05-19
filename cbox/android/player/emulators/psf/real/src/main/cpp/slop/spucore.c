@@ -9,6 +9,7 @@
 #endif
 
 #include "spucore.h"
+#include "spu.h"   /* SPUIRQ_LOOKAHEAD_SAMPLES / SPUIRQ_NOT_NEAR */
 
 ////////////////////////////////////////////////////////////////////////////////
 /*
@@ -2431,6 +2432,11 @@ uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 
 
     if (!(SPUCORESTATE->flags & SPUREG_FLAG_IRQ_ENABLE)) return 0xFFFFFFFF;
 
+    /* Bound the speculative look-ahead (see spu.h). Beyond this window we
+    ** report SPUIRQ_NOT_NEAR rather than re-rendering the whole pending
+    ** buffer on every IOP slice. */
+    if (samples > SPUIRQ_LOOKAHEAD_SAMPLES) samples = SPUIRQ_LOOKAHEAD_SAMPLES;
+
     backup = malloc(spucore_get_state_size());
     if (!backup) return 0xFFFFFFFF;
     memcpy(backup, state, spucore_get_state_size());
@@ -2445,7 +2451,7 @@ uint32 EMU_CALL spucore_cycles_until_interrupt(void *state, uint16 *ram, uint32 
     }
     if (samples && SPUCORESTATE->irq_triggered_cycle == 0xFFFFFFFF)
         render(SPUCORESTATE, ram, NULL, NULL, samples, 0, 0);
-    r = (SPUCORESTATE->irq_triggered_cycle == 0xFFFFFFFF) ? 0xFFFFFFFF :
+    r = (SPUCORESTATE->irq_triggered_cycle == 0xFFFFFFFF) ? SPUIRQ_NOT_NEAR :
         SPUCORESTATE->irq_triggered_cycle + r;
     free(backup);
     return r;
