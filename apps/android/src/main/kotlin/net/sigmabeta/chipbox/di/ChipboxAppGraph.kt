@@ -1,5 +1,8 @@
 package net.sigmabeta.chipbox.di
 
+import android.app.Application
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
@@ -7,6 +10,7 @@ import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.sage.android.logging.AndroidHatchet
 import net.sigmabeta.sage.appinfo.AppInfo
+import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 
 /**
@@ -45,4 +49,18 @@ interface ChipboxAppGraph : ViewModelGraph {
     @Provides
     @SingleIn(AppScope::class)
     fun provideHatchet(): Hatchet = AndroidHatchet()
+
+    // Bridge for Hilt's @ApplicationContext qualifier: sage modules that take an
+    // @ApplicationContext Context (resources, analytics) keep using the Hilt-style qualifier,
+    // and Metro's interop recognises the meta-annotated @Qualifier — but the binding itself
+    // has to come from somewhere. Application enters the graph via the factory below.
+    @Provides
+    @SingleIn(AppScope::class)
+    @ApplicationContext
+    fun provideAppContext(application: Application): Context = application
+
+    @DependencyGraph.Factory
+    fun interface Factory {
+        fun create(@Provides application: Application): ChipboxAppGraph
+    }
 }
