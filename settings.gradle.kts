@@ -110,7 +110,6 @@ include(
     ":cbox:android:strings:api",
     ":cbox:android:ui:chrome:api",
     ":cbox:android:ui:components:api",
-    ":cbox:android:ui:fonts:api",
     ":cbox:android:ui:list:api",
     ":cbox:android:ui:freeform:api",
     ":cbox:android:ui:previews",
@@ -158,6 +157,7 @@ include(
     ":cbox:common:settings:di",
     ":cbox:common:settings:real",
     ":cbox:common:strings:api",
+    ":cbox:common:ui:fonts:api",
     ":cbox:common:ui:theme:api",
     ":cbox:common:utils:api",
 

@@ -13,7 +13,7 @@ dependencies {
 
     implementation(projects.cbox.android.contentsource.file.real)
     implementation(projects.cbox.android.ui.list.api)
-    implementation(projects.cbox.android.ui.fonts.api)
+    implementation(projects.cbox.common.ui.fonts.api)
     implementation(projects.cbox.common.appcomm.api)
     implementation(projects.features.playbackStatus.api)
     implementation(projects.cbox.common.strings.api)
