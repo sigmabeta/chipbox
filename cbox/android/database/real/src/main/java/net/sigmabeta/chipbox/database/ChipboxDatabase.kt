@@ -1,7 +1,9 @@
 package net.sigmabeta.chipbox.database
 
+import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.RoomDatabaseConstructor
 import net.sigmabeta.chipbox.database.dao.ArtistDao
 import net.sigmabeta.chipbox.database.dao.GameArtistDao
 import net.sigmabeta.chipbox.database.dao.GameDao
@@ -15,6 +17,12 @@ import net.sigmabeta.chipbox.entities.TrackEntity
 import net.sigmabeta.chipbox.entities.joins.GameArtistJoin
 import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
 
+/**
+ * Room KMP database. The `@ConstructedBy(ChipboxDatabaseConstructor::class)`
+ * lets Room generate a per-target `actual` for the `expect object` below, so
+ * the same `@Database` definition serves both Android (framework SQLite) and
+ * JVM (bundled SQLite driver) without per-target source duplication.
+ */
 @Database(
     entities = [
         ArtistEntity::class,
@@ -26,6 +34,7 @@ import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
     ],
     version = 7
 )
+@ConstructedBy(ChipboxDatabaseConstructor::class)
 @Suppress("TooManyFunctions")
 abstract class ChipboxDatabase : RoomDatabase() {
     abstract fun artistDao(): ArtistDao
@@ -36,4 +45,13 @@ abstract class ChipboxDatabase : RoomDatabase() {
     abstract fun trackArtistDao(): TrackArtistDao
 
     abstract fun searchHistoryDao(): SearchHistoryDao
+}
+
+/**
+ * Room generates the `actual` for each target at build time (KSP). Suppress
+ * the unmatched-expect warning — the per-target actuals exist post-KSP.
+ */
+@Suppress("NO_ACTUAL_FOR_EXPECT", "KotlinNoActualForExpect")
+expect object ChipboxDatabaseConstructor : RoomDatabaseConstructor<ChipboxDatabase> {
+    override fun initialize(): ChipboxDatabase
 }

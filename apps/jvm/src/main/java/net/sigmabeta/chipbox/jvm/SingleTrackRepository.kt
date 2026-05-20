@@ -19,7 +19,7 @@ import net.sigmabeta.chipbox.repository.Repository
  */
 class SingleTrackRepository(private val track: Track) : Repository {
 
-    override fun getTrack(id: Long, withGame: Boolean, withArtists: Boolean): Track? =
+    override suspend fun getTrack(id: Long, withGame: Boolean, withArtists: Boolean): Track? =
         track.takeIf { it.id == id }
 
     override fun getAllTracks(withGame: Boolean, withArtists: Boolean): Flow<Data<List<Track>>> =
@@ -31,13 +31,13 @@ class SingleTrackRepository(private val track: Track) : Repository {
     override fun getAllGames(withTracks: Boolean, withArtists: Boolean): Flow<Data<List<Game>>> =
         flowOf(Data.Empty)
 
-    override fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> =
+    override suspend fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> =
         emptyList()
 
-    override fun getTracksForArtist(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> =
+    override suspend fun getTracksForArtist(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> =
         emptyList()
 
-    override fun getTracksForPlatform(
+    override suspend fun getTracksForPlatform(
         platform: Platform,
         withGame: Boolean,
         withArtists: Boolean

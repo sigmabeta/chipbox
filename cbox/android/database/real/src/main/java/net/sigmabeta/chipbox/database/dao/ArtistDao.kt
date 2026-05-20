@@ -6,13 +6,15 @@ import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.entities.ArtistEntity
 
+// Room KMP requires every non-Flow DAO method to be `suspend` on non-Android
+// targets — Flow returns stay as plain `fun`.
 @Dao
 interface ArtistDao {
     @Query("SELECT * FROM artist WHERE id = :artistId")
     fun getArtist(artistId: Long): Flow<ArtistEntity?>
 
     @Query("SELECT * FROM artist WHERE name = :name")
-    fun getArtistByNameSync(name: String): ArtistEntity?
+    suspend fun getArtistByNameSync(name: String): ArtistEntity?
 
     @Query("SELECT * FROM artist ORDER BY name COLLATE NOCASE")
     fun getAll(): Flow<List<ArtistEntity>>
@@ -21,8 +23,8 @@ interface ArtistDao {
     fun searchArtistsByName(name: String): Flow<List<ArtistEntity>>
 
     @Insert
-    fun insert(artist: ArtistEntity): Long
+    suspend fun insert(artist: ArtistEntity): Long
 
     @Query("DELETE FROM artist")
-    fun nukeTable()
+    suspend fun nukeTable()
 }

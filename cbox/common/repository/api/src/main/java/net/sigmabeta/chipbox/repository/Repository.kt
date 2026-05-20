@@ -24,19 +24,19 @@ interface Repository {
         withArtists: Boolean = false
     ): Flow<Data<List<Track>>>
 
-    fun getTracksForGame(
+    suspend fun getTracksForGame(
         id: Long,
         withGame: Boolean = false,
         withArtists: Boolean = false
     ): List<Track>
 
-    fun getTracksForArtist(
+    suspend fun getTracksForArtist(
         id: Long,
         withGame: Boolean = false,
         withArtists: Boolean = false
     ): List<Track>
 
-    fun getTracksForPlatform(
+    suspend fun getTracksForPlatform(
         platform: Platform,
         withGame: Boolean = false,
         withArtists: Boolean = false
@@ -61,7 +61,7 @@ interface Repository {
 
     suspend fun addGame(rawGame: RawGame)
 
-    fun getTrack(
+    suspend fun getTrack(
         id: Long,
         withGame: Boolean = false,
         withArtists: Boolean = false

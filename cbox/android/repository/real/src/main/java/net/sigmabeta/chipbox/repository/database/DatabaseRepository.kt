@@ -11,8 +11,8 @@ import kotlinx.coroutines.withContext
 import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.entities.ArtistEntity
 import net.sigmabeta.chipbox.entities.GameEntity
-import net.sigmabeta.chipbox.entities.TrackEntity
 import net.sigmabeta.chipbox.entities.SearchHistoryEntity
+import net.sigmabeta.chipbox.entities.TrackEntity
 import net.sigmabeta.chipbox.entities.joins.GameArtistJoin
 import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
 import net.sigmabeta.chipbox.models.Artist
@@ -28,6 +28,13 @@ import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.logging.Hatchet
 
+/**
+ * Room KMP makes every non-Flow DAO method `suspend` on non-Android targets, so every method
+ * that called a `*Sync` DAO query (including the `toArtist`/`toGame`/`toTrack` model converters
+ * that fan out for `withTracks`/`withGames`/`withArtists` joins) is now `suspend` too. The
+ * standard-library `Iterable.map` can't accept a suspending transform, so [suspendMap] does
+ * the obvious `for`-loop equivalent.
+ */
 class DatabaseRepository(
     database: ChipboxDatabase,
     private val hatchet: Hatchet,
@@ -47,39 +54,47 @@ class DatabaseRepository(
         withGames: Boolean
     ): Flow<Data<List<Artist>>> = setupFlow(
         { artistDao.getAll() },
-        { list -> list.map { it.toArtist(withTracks, withGames) } }
+        { list -> list.suspendMap { it.toArtist(withTracks, withGames) } }
     )
 
     override fun getAllGames(withTracks: Boolean, withArtists: Boolean) = setupFlow(
         { gameDao.getAll() },
-        { list -> list.map { it.toGame(withTracks, withArtists) } }
+        { list -> list.suspendMap { it.toGame(withTracks, withArtists) } }
     )
 
     override fun getAllTracks(withGame: Boolean, withArtists: Boolean) = setupFlow(
         { trackDao.getAll() },
-        { list -> list.map { it.toTrack(withGame, withArtists) } }
+        { list -> list.suspendMap { it.toTrack(withGame, withArtists) } }
     )
 
-    override fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean) = trackDao
+    override suspend fun getTracksForGame(
+        id: Long,
+        withGame: Boolean,
+        withArtists: Boolean
+    ): List<Track> = trackDao
         .getTracksForGameSync(id)
-        .map { entity -> entity.toTrack(withGame, withArtists) }
+        .suspendMap { entity -> entity.toTrack(withGame, withArtists) }
 
-    override fun getTracksForArtist(id: Long, withGame: Boolean, withArtists: Boolean) = trackArtistDao
+    override suspend fun getTracksForArtist(
+        id: Long,
+        withGame: Boolean,
+        withArtists: Boolean
+    ): List<Track> = trackArtistDao
         .getTracksForArtistSync(id)
-        .map { entity -> entity.toTrack(withGame, withArtists) }
+        .suspendMap { entity -> entity.toTrack(withGame, withArtists) }
         .sortedBy { it.game?.title }
 
-    override fun getTracksForPlatform(
+    override suspend fun getTracksForPlatform(
         platform: Platform,
         withGame: Boolean,
         withArtists: Boolean
-    ) = trackDao
+    ): List<Track> = trackDao
         .getTracksForPlatformSync(platform.name)
-        .map { entity -> entity.toTrack(withGame, withArtists) }
+        .suspendMap { entity -> entity.toTrack(withGame, withArtists) }
 
     override fun getGamesForPlatform(platform: Platform) = setupFlow(
         { gameDao.getGamesForPlatform(platform.name) },
-        { list -> list.map { it.toGame() } }
+        { list -> list.suspendMap { it.toGame() } }
     )
 
     override fun getAvailablePlatforms() = setupFlow(
@@ -103,28 +118,21 @@ class DatabaseRepository(
         { it?.toArtist(withTracks, withGames) }
     )
 
-    override fun getTrack(
+    override suspend fun getTrack(
         id: Long,
         withGame: Boolean,
         withArtists: Boolean
-    ) = trackDao
+    ): Track? = trackDao
         .getTrackSync(id)
         ?.toTrack(withGame, withArtists)
 
     override suspend fun addGame(rawGame: RawGame) {
-        // Insert game..
-        val game = GameEntity(
-            rawGame.title,
-            rawGame.photoUrl
-        )
-
+        val game = GameEntity(rawGame.title, rawGame.photoUrl)
         val gameId = gameDao.insert(game)
 
-        // Insert & return tracks & artists.
         val trackAndArtists = rawGame.tracks
-            .map { it.toTrackEntityWithArtists(gameId) }
+            .suspendMap { it.toTrackEntityWithArtists(gameId) }
 
-        // Link this game to its artists.
         val gameArtistJoins = trackAndArtists
             .map { it.second }
             .flatten()
@@ -134,18 +142,18 @@ class DatabaseRepository(
         gameArtistDao.insertAll(gameArtistJoins)
     }
 
-    private fun ArtistEntity.toArtist(
+    private suspend fun ArtistEntity.toArtist(
         withTracks: Boolean = false,
         withGames: Boolean = false
     ) = Artist(
-            id,
-            name,
-            photoUrl,
-            if (withTracks) getTracksForArtist(id, withGame = true) else null,
-            if (withGames) getGamesForArtist(id) else null
-        )
+        id,
+        name,
+        photoUrl,
+        if (withTracks) getTracksForArtist(id, withGame = true) else null,
+        if (withGames) getGamesForArtist(id) else null
+    )
 
-    private fun GameEntity.toGame(
+    private suspend fun GameEntity.toGame(
         withTracks: Boolean = false,
         withArtists: Boolean = false
     ) = Game(
@@ -156,23 +164,23 @@ class DatabaseRepository(
         if (withTracks) getTracksForGame(id) else null
     )
 
-    private fun TrackEntity.toTrack(
+    private suspend fun TrackEntity.toTrack(
         withGame: Boolean = false,
         withArtists: Boolean = false
     ) = Track(
-            id,
-            path,
-            source,
-            title,
-            trackLengthMs,
-            trackNumber,
-            fadeLengthMs,
-            if (withGame) getGameById(gameId) else null,
-            if (withArtists) getArtistsForTrack(id) else null,
-            decodeChainFiles(chainFiles),
-            extension,
-            Platform.valueOf(platform),
-        )
+        id,
+        path,
+        source,
+        title,
+        trackLengthMs,
+        trackNumber,
+        fadeLengthMs,
+        if (withGame) getGameById(gameId) else null,
+        if (withArtists) getArtistsForTrack(id) else null,
+        decodeChainFiles(chainFiles),
+        extension,
+        Platform.valueOf(platform),
+    )
 
     private suspend fun RawTrack.toTrackEntityWithArtists(gameId: Long): Pair<TrackEntity, List<ArtistEntity>> {
         val trackArtists = getArtistsSplit()
@@ -198,15 +206,13 @@ class DatabaseRepository(
         return insertedTrack to trackArtists
     }
 
-    private suspend fun RawTrack.getArtistsSplit() = artist
+    private suspend fun RawTrack.getArtistsSplit(): List<ArtistEntity> = artist
         .split(DELIMITERS_ARTISTS)
         .map { it.trim() }
-        .map { artistName -> getOrAddArtistByName(artistName) }
+        .suspendMap { artistName -> getOrAddArtistByName(artistName) }
 
-    private fun TrackEntity.linkToTrackFromItsArtists(artists: List<ArtistEntity>) {
-        val joins = artists
-            .map { artist -> TrackArtistJoin(this.id, artist.id) }
-
+    private suspend fun TrackEntity.linkToTrackFromItsArtists(artists: List<ArtistEntity>) {
+        val joins = artists.map { artist -> TrackArtistJoin(this.id, artist.id) }
         trackArtistDao.insertAll(joins)
     }
 
@@ -217,58 +223,54 @@ class DatabaseRepository(
             return artist
         }
 
-        artist = ArtistEntity(
-            name,
-            null
-        )
+        artist = ArtistEntity(name, null)
 
         val id = artistDao.insert(artist)
 
         return artist.copy(id = id)
     }
 
-    private fun getGameById(id: Long): Game = gameDao
+    private suspend fun getGameById(id: Long): Game = gameDao
         .getGameSync(id)
         .toGame()
 
-    private fun getGamesForArtist(id: Long): List<Game> = gameArtistDao
+    private suspend fun getGamesForArtist(id: Long): List<Game> = gameArtistDao
         .getGamesForArtistSync(id)
-        .map { it.toGame() }
+        .suspendMap { it.toGame() }
 
-    private fun getArtistsForTrack(id: Long): List<Artist> = trackArtistDao
+    private suspend fun getArtistsForTrack(id: Long): List<Artist> = trackArtistDao
         .getArtistsForTrackSync(id)
-        .map { it.toArtist() }
+        .suspendMap { it.toArtist() }
 
-    private fun getArtistsForGame(id: Long): List<Artist> = gameArtistDao
+    private suspend fun getArtistsForGame(id: Long): List<Artist> = gameArtistDao
         .getArtistsForGameSync(id)
-        .map { it.toArtist() }
+        .suspendMap { it.toArtist() }
 
-    private fun getTracksForGame(id: Long): List<Track> = trackDao
+    private suspend fun getTracksForGame(id: Long): List<Track> = trackDao
         .getTracksForGameSync(id)
-        .map { it.toTrack(withArtists = true) }
+        .suspendMap { it.toTrack(withArtists = true) }
 
     override suspend fun clearLibrary() = withContext(dispatcher) {
         artistDao.nukeTable()
         gameDao.nukeTable()
         trackDao.nukeTable()
-
         gameArtistDao.nukeTable()
         trackArtistDao.nukeTable()
     }
 
     override fun searchGames(query: String) = setupFlow(
         { gameDao.searchGamesByTitle("%$query%") },
-        { list -> list.map { it.toGame() } }
+        { list -> list.suspendMap { it.toGame() } }
     )
 
     override fun searchSongs(query: String) = setupFlow(
         { trackDao.searchTracksByTitle("%$query%") },
-        { list -> list.map { it.toTrack(withGame = true) } }
+        { list -> list.suspendMap { it.toTrack(withGame = true) } }
     )
 
     override fun searchArtists(query: String) = setupFlow(
         { artistDao.searchArtistsByName("%$query%") },
-        { list -> list.map { it.toArtist() } }
+        { list -> list.suspendMap { it.toArtist() } }
     )
 
     override fun getSearchHistory(): Flow<Data<List<SearchHistory>>> = setupFlow(
@@ -277,11 +279,8 @@ class DatabaseRepository(
     )
 
     override suspend fun addSearchHistory(query: String): Unit = withContext(dispatcher) {
-        // Dedupe like VGLS: don't re-record a query that's already in history.
         if (searchHistoryDao.getByQuerySync(query) == null) {
-            searchHistoryDao.insert(
-                SearchHistoryEntity(query, System.currentTimeMillis())
-            )
+            searchHistoryDao.insert(SearchHistoryEntity(query, currentTimeMillis()))
         }
     }
 
@@ -295,60 +294,57 @@ class DatabaseRepository(
         databaseOp: () -> Flow<Entity>,
         converter: suspend (Entity) -> Model
     ): Flow<Data<Model>> = databaseOp()
-            .map { converter(it) }
-            .map<Model, Data<Model>> { model ->
-                if (model is List<*>) {
-                    if (model.isNotEmpty()) {
-                        Data.Succeeded(model)
-                    } else {
-                        Data.Empty
-                    }
-                } else {
-                    if (model != null) {
-                        Data.Succeeded(model)
-                    } else {
-                        Data.Empty
-                    }
-                }
+        .map { converter(it) }
+        .map<Model, Data<Model>> { model ->
+            if (model is List<*>) {
+                if (model.isNotEmpty()) Data.Succeeded(model) else Data.Empty
+            } else {
+                if (model != null) Data.Succeeded(model) else Data.Empty
             }
-            .onStart { emit(Data.Loading) }
-            .catch {
-                hatchet.e("Error: ${it.message}")
-                emit(Data.Failed(it.message ?: ERR_UNKNOWN))
-            }
-            .flowOn(dispatcher)
+        }
+        .onStart { emit(Data.Loading) }
+        .catch {
+            hatchet.e("Error: ${it.message}")
+            emit(Data.Failed(it.message ?: ERR_UNKNOWN))
+        }
+        .flowOn(dispatcher)
 
     private fun <Entity, Model> setupFlowWithId(
         id: Long,
         databaseOp: (Long) -> Flow<Entity>,
         converter: suspend (Entity) -> Model
     ): Flow<Data<Model>> = databaseOp(id)
-            .map { converter(it) }
-            .map<Model, Data<Model>> { model ->
-                if (model is List<*>) {
-                    if (model.isNotEmpty()) {
-                        Data.Succeeded(model)
-                    } else {
-                        Data.Empty
-                    }
-                } else {
-                    if (model != null) {
-                        Data.Succeeded(model)
-                    } else {
-                        Data.Empty
-                    }
-                }
+        .map { converter(it) }
+        .map<Model, Data<Model>> { model ->
+            if (model is List<*>) {
+                if (model.isNotEmpty()) Data.Succeeded(model) else Data.Empty
+            } else {
+                if (model != null) Data.Succeeded(model) else Data.Empty
             }
-            .onStart { emit(Data.Loading) }
-            .catch {
-                hatchet.e("Error: ${it.message}")
-                emit(Data.Failed(it.message ?: ERR_UNKNOWN))
-            }
-            .flowOn(dispatcher)
+        }
+        .onStart { emit(Data.Loading) }
+        .catch {
+            hatchet.e("Error: ${it.message}")
+            emit(Data.Failed(it.message ?: ERR_UNKNOWN))
+        }
+        .flowOn(dispatcher)
 
     companion object {
         const val ERR_UNKNOWN = "Unknown Error"
-
         val DELIMITERS_ARTISTS = Regex(", &|,| or | and |&")
     }
 }
+
+/**
+ * `Iterable.map` accepts only non-suspend transforms, so this is the obvious for-loop
+ * equivalent for the (sequential) suspending case the DAO `*Sync` calls introduce.
+ */
+private suspend fun <T, R> Iterable<T>.suspendMap(transform: suspend (T) -> R): List<R> {
+    val out = mutableListOf<R>()
+    for (e in this) out += transform(e)
+    return out
+}
+
+// kotlin.system.currentTimeMillis() works only on JVM; for KMP both targets get the same via
+// kotlin.time.Clock + nowMilliseconds(). Keep the small platform-neutral helper here.
+private fun currentTimeMillis(): Long = System.currentTimeMillis()

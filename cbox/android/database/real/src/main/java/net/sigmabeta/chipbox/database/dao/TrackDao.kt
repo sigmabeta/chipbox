@@ -15,10 +15,10 @@ interface TrackDao {
     fun getTracksForGame(gameId: Long): Flow<List<TrackEntity>>
 
     @Query("SELECT * FROM track WHERE game_id = :gameId")
-    fun getTracksForGameSync(gameId: Long): List<TrackEntity>
+    suspend fun getTracksForGameSync(gameId: Long): List<TrackEntity>
 
     @Query("SELECT * FROM track WHERE platform = :platformName")
-    fun getTracksForPlatformSync(platformName: String): List<TrackEntity>
+    suspend fun getTracksForPlatformSync(platformName: String): List<TrackEntity>
 
     @Query("SELECT DISTINCT platform FROM track")
     fun getDistinctPlatforms(): Flow<List<String>>
@@ -27,14 +27,14 @@ interface TrackDao {
     fun getTrack(trackId: Long): Flow<TrackEntity>
 
     @Query("SELECT * FROM track WHERE id = :trackId")
-    fun getTrackSync(trackId: Long): TrackEntity?
+    suspend fun getTrackSync(trackId: Long): TrackEntity?
 
     @Query("SELECT * FROM track WHERE title LIKE :title ORDER BY title COLLATE NOCASE")
     fun searchTracksByTitle(title: String): Flow<List<TrackEntity>>
 
     @Insert
-    fun insert(track: TrackEntity): Long
+    suspend fun insert(track: TrackEntity): Long
 
     @Query("DELETE FROM track")
-    fun nukeTable()
+    suspend fun nukeTable()
 }

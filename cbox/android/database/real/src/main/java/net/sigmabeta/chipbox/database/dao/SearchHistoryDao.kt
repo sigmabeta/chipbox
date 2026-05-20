@@ -13,11 +13,11 @@ interface SearchHistoryDao {
     fun getRecent(): Flow<List<SearchHistoryEntity>>
 
     @Query("SELECT * FROM search_history WHERE query = :query LIMIT 1")
-    fun getByQuerySync(query: String): SearchHistoryEntity?
+    suspend fun getByQuerySync(query: String): SearchHistoryEntity?
 
     @Insert
-    fun insert(entry: SearchHistoryEntity): Long
+    suspend fun insert(entry: SearchHistoryEntity): Long
 
     @Query("DELETE FROM search_history WHERE id = :id")
-    fun deleteById(id: Long)
+    suspend fun deleteById(id: Long)
 }
