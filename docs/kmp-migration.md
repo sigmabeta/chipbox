@@ -1,18 +1,25 @@
 # Kotlin Multiplatform migration — plan & status
 
-Status: **Milestone 4 implemented.** JVM is the second target. All seven
-native emulators decode end-to-end on it (playback-verified on host
-x86-64), the headless app also runs without Gradle via a generated
-launcher, the mass `sage.android`/`sage.jvm` → `sage.kmp` conversion
-collapsed 61 modules onto single KMP modules serving both variants
-(`cbox/jvm/` is empty, deleted), the Room storage stack is now KMP
-(via Room 2.7+'s multiplatform support + the bundled SQLite driver),
-and the JVM target uses the *same* Room database the Android app does
-via a `scan`/`play` CLI — not the one-track `SingleTrackRepository`
-shim. The remaining `sage.android`-classified modules split between
-**genuinely Android-only** (Hilt `:di` glue, `R.*` resource modules,
-Compose feature modules — all legitimate end-state, not transitional)
-and **one real KMP blocker**: the scanner/SAF chain.
+Status: **Milestone 6 implemented.** JVM is the second target with a real
+library *and* a Compose Multiplatform desktop window. All seven native
+emulators decode end-to-end on host x86-64 (playback-verified), the
+headless app also runs without Gradle via a generated launcher, the mass
+`sage.android`/`sage.jvm` → `sage.kmp` conversion collapsed 61 modules
+onto single KMP modules serving both variants (`cbox/jvm/` is empty,
+deleted), the Room storage stack is now KMP (via Room 2.7+'s multiplatform
+support + the bundled SQLite driver) and the JVM target uses the *same*
+Room database the Android app does — driven by the *same* `RealScanner`
+via a `LibrarySource` abstraction (so the SAF / file walk is the only
+platform implementation, not the metadata logic). The JVM target now also
+opens a desktop window via Compose Multiplatform — placeholder Hello
+composable rendering the real Chipbox color palette out of a new shared
+`sage.compose.kmp` module. The remaining `sage.android`-classified modules
+split between **genuinely Android-only system glue** (Hilt `:di`, `R.*`
+resource modules, audio service, SAF / ContentProvider) and **the Compose
+UI surface**, which used to be tagged as legitimately-Android end-state
+but is now being ported slice by slice to Compose Multiplatform — see
+Milestone 6.
+
 Scope of this doc: how Chipbox moves from Android-only to Kotlin
 Multiplatform, what's already done, and the remaining milestones.
 
@@ -171,26 +178,27 @@ the genuinely-Android dependencies (Room / SAF / resources / Hilt).
   module whose transitive closure is now KMP/pure — the 7 emulator
   `:api` + 7 emulator `:all`, plus leaf `colors`, `contentsource/file`,
   `database`, `image-loading`, `repository`, `scanner` `:api` modules.
-- **What stayed `sage.android`**, split honestly between two reasons:
-  - **Genuinely Android-only (correct end state, not transitional).**
-    Every `:di` module — Hilt is Android-only DI glue, and the JVM app
-    doesn't need it (it wires manually in `Main.kt`); the `:di` modules
-    are app-level Android plumbing, not player-core code, so they're
-    correctly Android-flavored. The resource-touching `strings/api` and
-    `ui/fonts/api` (`R.string.*` / `R.font.*` references — not visible
-    as `import android.*`; resources don't exist on JVM). The real
-    Android feature modules under `cbox/android/{appui,images,
-    artworkprovider,player-status,player/speaker/real,ui/*}` (Compose
-    UI, audio service, image loading — all genuinely Android).
-  - **Blocked on item 4** (the only real remaining KMP work):
-    `cbox/android/scanner/{real,fake,all}` and
-    `cbox/android/contentsource/file/{real,all}`. The Android scanner
-    uses SAF (`DocumentsContract`, `Uri`, `Context`) and the file
-    `ContentSource` wraps SAF. Abstracting that behind a `LibrarySource`
-    interface lets both Android (SAF impl) and JVM (`java.io.File` impl)
-    drive `RealScanner`'s metadata/PSF-chain logic from one module.
-    Until then, the JVM has its own `JvmLibraryScanner` doing minimal
-    file-walking (no metadata extraction).
+- **What stayed `sage.android`** (and why):
+  - **Genuinely Android-only system glue (correct end state, not
+    transitional).** Every `:di` module — Hilt is Android-only DI glue,
+    and the JVM app doesn't need it (it wires manually via a plain-Dagger
+    `@Component`; see Milestone 5). The resource-touching `strings/api`
+    and `ui/fonts/api` (`R.string.*` / `R.font.*` references). The audio
+    service (`player/speaker/real` uses `AudioTrack`), the SAF /
+    ContentProvider wrappers (`artworkprovider`, `contentsource/file/real`).
+  - **Compose UI surface — being ported to Compose Multiplatform.**
+    `cbox/android/{appui,images,player-status,ui/*}` plus the
+    `features/*` Compose screens were earlier classified as legitimate
+    end-state too, but that classification was wrong: Compose
+    Multiplatform now runs on the JVM target, so these modules are
+    candidates for a slice-by-slice port to `sage.compose.kmp` — see
+    Milestone 6.
+  - The scanner/SAF chain (`cbox/android/scanner/{real,fake,all}` +
+    `cbox/android/contentsource/file/*`) was previously listed as a real
+    KMP blocker; the `LibrarySource` abstraction in Milestone 5 lifted
+    that — `scanner/real` is now `sage.kmp`. The SAF-wrapping
+    `contentsource/file/real` legitimately stays Android (it's the
+    Android impl of `LibrarySource`); the JVM gets `LocalFileContentSource`.
 
   (Earlier doc revisions claimed Room/database modules and `:di` were
   also blocked. Room is now KMP — see Milestone 4. `:di`/Hilt is not
@@ -285,41 +293,126 @@ the doc and reader stay honest:
   Hilt stays entirely intact on Android; the JVM gets typesafe DI
   parity without it.
 
+## Milestone 5 — SAF abstraction + JVM Dagger graph (done)
+
+Two adjacent slices that closed the long-standing "real KMP blocker"
+(scanner/SAF) and fleshed out the JVM's DI story.
+
+- **SAF abstraction** (commit `96fcdb88`). New `LibrarySource` interface
+  in `cbox/common/contentsource/api` (KMP) — adds `locations:
+  StateFlow<List<LibraryLocationInfo>>` and `scanFiles(): Flow<LibraryFileInfo>`
+  on top of `ContentSource`. `AndroidFileContentSource` implements it
+  (projects SAF `Uri.toString()` to a platform-neutral `identifier`).
+  `RealScanner` retypes against `LibrarySource` and moves to `sage.kmp` —
+  every `file.uri.toString()` → `file.identifier`;
+  `openInputStream(uri).use { readBytes() }` → `openBytes(identifier)`.
+  The JVM target deletes `JvmLibraryScanner` (the ~80-LOC filename-only
+  walker) and gains `LocalFileContentSource` (a `LibrarySource` walking
+  `java.io.File`). The `scan` mode now persists real metadata-derived
+  titles ("Wind Scene" not "109 Wind Scene") because it runs the same
+  `RealScanner` Android does.
+- **JVM Dagger graph** (commit `07893db1`). A plain-Dagger `@Component`
+  (`apps/jvm/.../di/JvmChipboxComponent`) with nine `@Module` objects
+  mirroring the Hilt modules shape-for-shape (Hatchet, Database with the
+  bundled SQLite driver, Repository, ContentSource, Buffer, Emulators,
+  Readers, Scanner, Generator, Speaker). Hilt itself stays Android-only;
+  pulling the `cbox/.../di` modules into a `sage.jvm` app classpath
+  fights Gradle variant resolution, so the JVM-side `@Module` classes
+  duplicate the trivial provider methods. A few lines per binding, no
+  cross-module plumbing required. `Main.kt`'s `scan`/`play` modes build
+  the component once and pull singletons.
+
+Verified: `:apps:android:assembleDebug` green; the JVM `scan` of an SPC
++ minipsf corpus persists tracks with metadata-derived titles; `play
+<substring>` renders audible WAVs through the same pipeline.
+
+## Milestone 6 — Compose Multiplatform desktop bootstrap (done)
+
+First two slices of porting the Android Compose UI to the JVM target.
+Proves the toolchain end-to-end and ports the lowest-risk shared piece
+(the color palette) without yet committing to navigation, ViewModel
+scoping, font/resource, or image-loading stories.
+
+- **Slice 1 — toolchain bootstrap** (sage commit `7bf0089a`, chipbox
+  commit `597e9ef0`). New `sage.compose.kmp` convention plugin mirrors
+  `sage.compose.android` but layers on `sage.kmp` instead of
+  `com.android.library`. Applies the Kotlin Compose compiler plugin
+  (same one the Android UI uses) and adds JetBrains Compose runtime /
+  foundation / material3 / ui libs to `commonMain`. Catalog gets
+  `composeMultiplatform = "1.9.0"` (latest stable lib line — 1.10+ ship
+  the Gradle plugin but the lib jars only go to 1.9.0 stable; CMP
+  tolerates newer Kotlin because @Composable codegen lives in the
+  Kotlin compiler plugin, not in CMP itself) plus four
+  `jetbrains-compose-*` library aliases and the `compose-multiplatform`
+  plugin alias. `apps/jvm` (still `sage.jvm`, not KMP) applies
+  `compose.compiler` + `compose.multiplatform`, depends on the four
+  catalog libs + `compose.desktop.currentOs` for the per-OS Skia native,
+  and grows a `gui` arg mode that calls `runDesktop()` →
+  `application { Window { HelloChipbox() } }`. `gui` is dispatched
+  before `runBlocking` so the Compose event loop owns the main thread
+  cleanly; the existing CLI dispatch moves into a private suspend
+  `dispatch()`.
+- **Slice 2 — shared color palette**. New `cbox/common/ui/theme/api`
+  KMP module on `sage.kmp + sage.compose.kmp` — first real consumer of
+  the new convention plugin. `Colors.kt` (the `md_theme_*` constants
+  plus `ChipboxLight`, `ChipboxDark`, `ChipboxMenu` `ColorScheme`s)
+  moves into `commonMain`; both the existing Android `AppTheme` and the
+  JVM `DesktopMain` resolve them from there. The desktop bootstrap
+  drops its inlined hex constants in favour of the real palette.
+
+Explicit non-goals of this milestone (each will land as its own slice
+once the strategy is picked — see Roadmap item 1):
+
+- Typography + `AppTheme()` + `ChipboxFont` resource handling. The
+  Android `AppTheme` wraps `SageMaterial` (from
+  `sage-android-ui-themes`); `ChipboxFont` entries reference
+  `R.font.*`. Needs either Compose-MP resources or an `expect`/`actual`
+  `FontFamily` factory.
+- Navigation library. `androidx.navigation.compose:2.9.8` is
+  Android-only; the CMP fork / Voyager / Decompose all viable.
+- ViewModel scoping on Desktop. `hiltViewModel()` is Android-only — a
+  `chipboxViewModel<T>()` helper backed by Hilt on Android and by the
+  plain-Dagger graph (Milestone 5) on Desktop is the obvious shape.
+- Image loading. Coil 3 is multiplatform now; the `:images` wrapper
+  uses `SingletonImageLoader.get(context)` and needs a context-free
+  entry on JVM.
+- Strings. CMP `Res.string.*` vs keeping the `ChipboxStringId`
+  indirection + a desktop `StringProvider`.
+
+Verified each slice: `:apps:android:assembleDebug` green;
+`:apps:jvm:compileKotlin`, `:apps:jvm:detekt`, and
+`:cbox:common:ui:theme:api:check` clean; `:apps:jvm:run --args="gui"`
+opens a desktop window with the real Chipbox palette.
+
 ## Roadmap (not yet done)
 
-1. **Real-time JVM audio.** An audio sink (probably a factory, possibly
+1. **Compose Multiplatform UI port.** Multi-slice; Milestone 6 covers
+   the first two. Remaining slices roughly in order: pick a
+   font-resource strategy and port typography + `AppTheme()` (audit
+   whether `sage-android-ui-themes`'s `SageMaterial` has a KMP-friendly
+   inner shape — if not, the JVM theme just calls
+   `MaterialTheme(colorScheme, typography)` directly); pick a navigation
+   library; pick a ViewModel-scoping pattern on Desktop; pick an
+   image-loading story; pick a strings story; then port real feature
+   modules (`appui`, `features/*`) slice by slice.
+2. **Real-time JVM audio.** An audio sink (probably a factory, possibly
    `expect`/`actual`): Android `AudioTrack` vs a JVM
    `javax.sound.sampled.SourceDataLine` speaker, so the JVM target plays
    live instead of only writing WAV. Tune the render-ahead window at the
    same time — the heavy cores currently emit a terminal
    `GeneratorEvent.Error` on a cold cache, which the WAV harness
    survives but live playback would not.
-2. **Finish the KMP conversion** (smaller than before). After Room
-   joined KMP in Milestone 4, the only remaining genuine blocker is the
-   scanner/SAF chain (see item 4). After that lands,
-   `cbox/android/scanner/*` and `cbox/android/contentsource/file/*`
-   collapse onto `sage.kmp` via the next `kmpify.py` pass. The other
-   modules still tagged `sage.android` (`:di`, resources, Compose UI,
-   audio service) are *legitimately* Android-only end states, not
-   transitional. The progressive `jvmSharedMain` → `commonMain` hoist
-   is the deliberately-incremental remainder.
 3. **Cross-platform native packaging.** All seven emulators wired and
    playback-verified on host x86-64 Linux. Remaining: macOS/Windows
    `.dylib`/`.dll` builds + a packaged `java.library.path`, and a real
    distribution (today blocked by the duplicate jar-basename
    `installDist` issue — see Known issues).
-4. **SAF abstraction so JVM and Android share `RealScanner`.** Today
-   the Android scanner depends concretely on `AndroidFileContentSource`
-   (SAF / `DocumentsContract` / `Uri`); the JVM has its own minimal
-   `JvmLibraryScanner` (~80 LOC, no metadata extraction). Introduce a
-   `LibrarySource` interface (`locations` + `scanFiles` + `openBytes`)
-   in `cbox/common/contentsource/api` with two impls — the existing
-   Android SAF one and a new `LocalFileContentSource` walking
-   `java.io.File`. Retype `RealScanner` against `LibrarySource` so both
-   apps run the same scanner code (metadata via the KMP `Readers`,
-   PSF `_lib` chain resolution, m3u overlays). After this lands, the
-   scanner/contentsource chain becomes `sage.kmp` (closing item 2).
-   (Hilt replacement is *not* needed — see "Diagnoses corrected".)
+4. **The `jvmSharedMain` → `commonMain` hoist.** Per-module audit/move
+   pass: code in `src/main/java` (still under `jvmSharedMain` via the
+   `sage.kmp` plugin's intermediate source set) that doesn't actually
+   reach `java.*` migrates into `src/commonMain/kotlin`. Pure cleanup —
+   no functional change, only a tighter contract on what `commonMain`
+   may not use. Deliberately incremental.
 
 ## Known issues / out of scope
 
