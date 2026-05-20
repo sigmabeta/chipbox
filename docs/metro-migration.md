@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Milestone 1 implemented.**
+Status: **Milestone 2 implemented.**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -170,23 +170,52 @@ Verified: `:apps:android:assembleDebug` + `:cbox:common:di:api:build` both
 green. `features/settings/real` and the KMP-side blocker stay as-is until
 Milestone 6.
 
-### Milestone 2 — `ChipboxAppGraph` (planned)
+### Milestone 2 — `ChipboxAppGraph` (done)
 
-Build the Metro equivalent of `SingletonComponent`. Doesn't remove Hilt yet
-— both DI systems run side-by-side in this slice.
+Builds the Metro equivalent of `SingletonComponent` with real (no-cross-module-
+dependency) bindings, and gives it a stable owner. Hilt continues to do almost
+all the work; this slice just establishes the parallel graph.
 
-- **`ChipboxAppGraph`** as `@DependencyGraph(AppScope::class)` in apps/android.
-  Initial accessors mirror the Hilt-injected services `MainActivity` /
-  `ChipboxPlaybackService` need today.
-- **`ChipboxApplication`** (the `@HiltAndroidApp` class today) gains a Metro
-  `appGraph: ChipboxAppGraph` property created via `createGraph<ChipboxAppGraph>()`.
-- **`AndroidAppModule`** (the single apps/android-level Hilt module) converts:
-  - `@Module` interface → `@ContributesTo(AppScope::class)` interface.
-  - `@Provides` companion methods → top-level `@Provides` in the same file.
-  - `@Singleton` → `@SingleIn(AppScope::class)`.
-- Verify both the Hilt graph and the Metro graph build and a smoke test
-  (one new property accessed via `appGraph.appInfo` in `MainActivity`)
-  resolves correctly.
+- **`ChipboxAppGraph`** drops the M1 smoke-test `metroSmokeTest: String`
+  binding and gains two real ones:
+  - `appInfo: AppInfo` — provides a `BuildConfig`-derived `AppInfo` inline,
+    matching `AndroidAppModule.provideAppInfo()`.
+  - `hatchet: Hatchet` — provides `AndroidHatchet()` inline, matching
+    `AndroidAppModule.provideHatchet()`.
+
+  Both bindings are `@SingleIn(AppScope::class)` (Metro's equivalent of
+  `@Singleton` for an `AppScope`-scoped graph), and both are duplicated on
+  the Hilt side for now — Hilt consumers (`@Inject lateinit` on
+  `MainActivity` etc.) still see Hilt's copies; Metro consumers see Metro's.
+  Same `BuildConfig` values + same `AndroidHatchet` singleton class, so the
+  two instances are functionally equivalent.
+
+  Bindings with cross-module deps (`StringProvider` needs `@ApplicationContext`,
+  `LibrarySource` needs `AndroidFileContentSource` from a separate module,
+  `PLAYBACK_STATUS_AVAILABLE` needs `PlaybackStatusEntryPoint`) stay
+  Hilt-only this slice — they'll land in `ChipboxAppGraph` in Milestone 4
+  when those modules also `@ContributesTo(AppScope::class)`.
+
+- **`ChipboxApplication`** owns the graph: `val appGraph: ChipboxAppGraph by
+  lazy { createGraph<ChipboxAppGraph>() }`. Lazy so the graph is built on
+  first use, not at process start — cold-start cost stays near zero during
+  the migration while Hilt does the heavy lifting. `@HiltAndroidApp` stays
+  on the class until Milestone 6.
+
+- **`MainActivity`** moved off the M1-era local `createGraph` call: now
+  pulls `(application as ChipboxApplication).appGraph` and logs
+  `appGraph.appInfo`. Confirms the graph resolves a real binding from its
+  stable owner.
+
+- **`AndroidAppModule`** untouched this slice — the "convert to
+  `@ContributesTo(AppScope::class)`" item from the original plan is
+  deferred to Milestone 4. Doing it now would require every transitive
+  dep's home module to also be Metro-aware, which is the whole point of
+  the bulk sweep slice.
+
+Verified: `:apps:android:assembleDebug` green; Hilt and Metro graphs
+coexist; `ChipboxApplication.appGraph` resolves correctly at runtime
+(verified via the `MainActivity.onCreate` log line).
 
 ### Milestone 3 — wire `metrox-viewmodel-compose` (planned)
 
