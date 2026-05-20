@@ -12,10 +12,8 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import dagger.hilt.android.AndroidEntryPoint
-import dev.zacsweers.metro.createGraph
 import javax.inject.Inject
 import net.sigmabeta.chipbox.appui.ChipboxAppUi
-import net.sigmabeta.chipbox.di.ChipboxAppGraph
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService
 import net.sigmabeta.chipbox.ui.vm.LocalViewModelProvider
 import net.sigmabeta.chipbox.vm.AndroidHiltViewModelProvider
@@ -30,15 +28,11 @@ class MainActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
 
-    // Metro smoke test (Hilt → Metro migration Milestone 1): instantiate ChipboxAppGraph
-    // and read its single binding. Will be removed in Milestone 2 when the graph holds real
-    // bindings and gets owned by ChipboxApplication.
-    private val metroGraph = createGraph<ChipboxAppGraph>()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        Log.i("Metro", "ChipboxAppGraph smoke test: ${metroGraph.metroSmokeTest}")
+        val appGraph = (application as ChipboxApplication).appGraph
+        Log.i("Metro", "ChipboxAppGraph.appInfo = ${appGraph.appInfo}")
         setContent {
             CompositionLocalProvider(LocalViewModelProvider provides viewModelProvider) {
                 ChipboxAppUi(stringProvider)

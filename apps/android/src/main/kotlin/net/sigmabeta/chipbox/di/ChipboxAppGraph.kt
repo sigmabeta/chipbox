@@ -3,23 +3,38 @@ package net.sigmabeta.chipbox.di
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
+import net.sigmabeta.chipbox.BuildConfig
+import net.sigmabeta.sage.android.logging.AndroidHatchet
+import net.sigmabeta.sage.appinfo.AppInfo
+import net.sigmabeta.sage.logging.Hatchet
 
 /**
- * The Metro equivalent of Hilt's `SingletonComponent` — early-stage stub during the
- * Hilt → Metro migration (see docs/metro-migration.md, Milestone 1).
+ * The Metro equivalent of Hilt's `SingletonComponent` (see docs/metro-migration.md).
  *
- * Today this graph has exactly one binding: a marker `metroSmokeTest: String`. Its only
- * purpose is to prove that Metro's compiler plugin is wired correctly in apps/android
- * alongside the existing Hilt processor. As bindings move out of `AndroidAppModule` and
- * the rest of the Hilt graph in Milestones 2+, they land here (or in `@ContributesTo`-
- * annotated module interfaces aggregated into this graph) and the Hilt versions retire.
+ * Currently exposes a small subset of the app's singleton bindings — the ones with no
+ * cross-module dependencies, so they can land here without the rest of the Hilt graph also
+ * needing to be Metro-aware. Hilt continues to own the rest until the bulk module sweep
+ * in Milestone 4; bindings that exist on both sides (AppInfo, Hatchet today) are duplicated
+ * during the transition — same `BuildConfig` values, same `AndroidHatchet`, so Metro
+ * consumers and Hilt consumers see equivalent instances.
  */
 @SingleIn(AppScope::class)
 @DependencyGraph(AppScope::class)
 interface ChipboxAppGraph {
-    val metroSmokeTest: String
+    val appInfo: AppInfo
+    val hatchet: Hatchet
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideMetroSmokeTest(): String = "metro is wired"
+    fun provideAppInfo(): AppInfo = AppInfo(
+        isDebug = BuildConfig.DEBUG,
+        versionName = BuildConfig.VERSION_NAME,
+        versionCode = BuildConfig.VERSION_CODE,
+        buildTimeMs = BuildConfig.BUILD_TIME_MS,
+        buildBranch = BuildConfig.BUILD_BRANCH,
+    )
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideHatchet(): Hatchet = AndroidHatchet()
 }
