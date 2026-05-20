@@ -717,18 +717,39 @@ remainder, sliced by dependency order.
   Verified: `:apps:android:assembleDebug` + `:apps:jvm:check` both
   green.
 
+- **Slice 4 — `sage/android/ui/list` on commonMain (done).**
+  `ListScreen`, `GridScreen`, and the `LocalListBottomInset`
+  composition-local all hoist to `src/commonMain/kotlin` — the
+  Compose APIs they use (`LazyColumn`, `LazyVerticalGrid`,
+  `LazyVerticalStaggeredGrid`, `WindowInsets.navigationBars`,
+  `Modifier.animateItem`) are all in Compose Multiplatform's
+  foundation. Module plugin flips to `sage.kmp + sage.compose.kmp`;
+  the namespace stays `net.sigmabeta.sage.android.ui.list` (M3
+  precedent — KMP modules keep their pre-conversion FQCNs even when
+  the path/name has "android" in it). Deps split: sage common types
+  in commonMain; `androidx.navigation.compose` in androidMain
+  (where `NavArgType.kt` legitimately stays — it pins to
+  AndroidX's `NavType`, which has no multiplatform replacement until
+  Voyager-side `ArgType` codecs land).
+
+  Verified: `:sage:android:ui:list:build` green for both Android +
+  JVM variants, `:cbox:android:ui:list:api:build` (the immediate
+  downstream consumer, post-slice 2) green, `:apps:android:assembleDebug`
+  + `:apps:jvm:check` green. With this, the entire
+  `ChipboxListEntry` → `ListScreen`/`GridScreen` chain can move to
+  commonMain in slice 6 — at that point `ChipboxListEntry.kt` itself
+  promotes from androidMain to commonMain too (its remaining
+  Android-only call, `collectAsStateWithLifecycle`, swaps to plain
+  `collectAsState`).
+
 ## Roadmap (not yet done)
 
 1. **Compose Multiplatform UI port: finish the Settings port.**
    Milestones 6 + 7 set every prerequisite (toolchain, palette,
    typography, fonts, ViewModel scoping, navigation, sage commonMain
-   types). Slices 1–4 are done (see Milestone 9 above); the
+   types). Slices 1–5 are done (see Milestone 9 above); the
    remaining work, in dependency order:
 
-   5. **Convert `sage/android/ui/list` to `sage.kmp`** with
-      `ListScreen` + `GridScreen` Composables in commonMain. CMP has
-      `LazyColumn` + `LazyVerticalGrid` in commonMain so the
-      rendering itself ports.
    6. **Port `features/settings/api` + `features/settings/real` to
       `sage.kmp`.** `SettingsViewModel` extends the now-commonMain
       `ChipboxListViewModel`; `AndroidFileContentSource` swaps to
