@@ -14,8 +14,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmCacheKey
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
+import net.sigmabeta.chipbox.player.common.EbuR128
 import net.sigmabeta.chipbox.player.common.isBufferSilent
-import net.sigmabeta.chipbox.player.common.maxAmplitude
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.File
 import java.io.RandomAccessFile
@@ -54,13 +54,20 @@ internal class CachingPcmSource(
     override val isOver: Boolean
         get() = writerComplete && cursor >= writer.framesWritten
 
-    // Loudest sample across the rendered track; reported alongside the cache-write-complete
-    // log and stamped into the header. 0 until the writer has produced audible audio, so a
-    // first-time play (which reads this at track load) is left un-normalized.
-    @Volatile
-    private var measuredPeak = 0
+    // BS.1770 measurer fed every committed (non-trimmed-silence) buffer. The writer races well
+    // past the play head, so [loudnessLufs]/[truePeakDbtp] settle within the first 400 ms of
+    // playback; until then they're NaN / -Infinity and the speaker leaves audio un-normalized.
+    private val measurer = EbuR128(emulatorSource.sampleRate)
 
-    override val peakAmplitude: Int get() = measuredPeak
+    @Volatile
+    private var measuredLufs: Double = Double.NaN
+
+    @Volatile
+    private var measuredTruePeakDbtp: Double = Double.NEGATIVE_INFINITY
+
+    override val loudnessLufs: Double get() = measuredLufs
+
+    override val truePeakDbtp: Double get() = measuredTruePeakDbtp
 
     private val writerScope = CoroutineScope(dispatcher)
 
@@ -134,17 +141,24 @@ internal class CachingPcmSource(
                         watermark.value = writer.framesWritten
                         pendingSilentFrames = 0L
                     }
-                    measuredPeak = maxOf(measuredPeak, maxAmplitude(scratch, framesGenerated))
+                    measurer.process(scratch, framesGenerated)
+                    measuredLufs = measurer.integratedLoudness()
+                    measuredTruePeakDbtp = measurer.truePeakDbtp()
                     writer.appendFrames(scratch, framesGenerated)
                     watermark.value = writer.framesWritten
                 }
             }
             if (writerError == null) {
-                writer.complete(track.id, track.trackLengthMs, measuredPeak)
+                writer.complete(
+                    trackId = track.id,
+                    trackLengthMs = track.trackLengthMs,
+                    integratedLufs = measuredLufs,
+                    truePeakDbtp = measuredTruePeakDbtp,
+                )
                 writerComplete = true
                 watermark.value = writer.framesWritten
                 logWriteComplete(startNanos)
-                LoudnessLog.report(hatchet, track.title, measuredPeak)
+                LoudnessLog.report(hatchet, track.title, measuredLufs, measuredTruePeakDbtp)
                 runCatching { onWriteComplete() }.onFailure {
                     hatchet.w("onWriteComplete callback failed: ${it.message}")
                 }

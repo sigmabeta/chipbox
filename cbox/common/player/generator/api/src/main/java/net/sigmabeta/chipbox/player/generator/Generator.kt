@@ -261,11 +261,11 @@ abstract class Generator(
                         data = generatedAudio,
                         fadeStartMs = track.trackLengthMs,
                         fadeLengthMs = track.fadeLengthMs,
-                        // Live, not snapshotted: a render-ahead source's writer races well
-                        // past the play head, so its running peak is at/near final within the
-                        // first buffers. Monotonic (only ever rises), so the gain only ever
-                        // steps down as a louder sample appears — it never pumps up and down.
-                        peakAmplitude = source.peakAmplitude,
+                        // Live, not snapshotted: a render-ahead source's writer races well past
+                        // the play head, so the BS.1770 figures are at/near final within the
+                        // first 400 ms. The speaker re-derives gain whenever they change.
+                        loudnessLufs = source.loudnessLufs,
+                        truePeakDbtp = source.truePeakDbtp,
                     )
                 )
 

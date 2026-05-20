@@ -80,13 +80,14 @@ abstract class Speaker(
     private var playingTrackId: Long? = null
 
     /**
-     * Peak amplitude the [volumeProcessor]'s normalization is currently configured for. The
-     * generator stamps a *live* peak on every buffer — for a render-ahead source it climbs
-     * over the first buffers then settles — so the gain is re-derived whenever this value
-     * changes (it only ever rises, so the gain only steps down, never pumps). `-1` is a
-     * "nothing applied yet" sentinel (a real peak is always `>= 0`); reset on full teardown.
+     * (LUFS, dBTP) pair the [volumeProcessor]'s normalization is currently configured for. The
+     * generator stamps live BS.1770 figures on every buffer — for a render-ahead source they
+     * climb over the first 400 ms then settle — so the gain is re-derived whenever either
+     * changes. `NaN` LUFS is the "nothing applied yet" sentinel (a real LUFS is always finite
+     * and `<= 0`); reset on full teardown.
      */
-    private var appliedNormalizationPeak: Int = -1
+    private var appliedNormalizationLufs: Double = Double.NaN
+    private var appliedNormalizationTruePeakDbtp: Double = Double.NaN
 
     private val eventSink = MutableSharedFlow<SpeakerEvent>(
         replay = 0,
@@ -127,7 +128,8 @@ abstract class Speaker(
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = null
         playingTrackId = null
-        appliedNormalizationPeak = -1
+        appliedNormalizationLufs = Double.NaN
+        appliedNormalizationTruePeakDbtp = Double.NaN
 
         teardown()
     }
@@ -173,6 +175,10 @@ abstract class Speaker(
         eventSink.tryEmit(errorEvent)
     }
 
+    /** Double equality that treats NaN-as-NaN as the same value (so an unmeasured buffer
+     *  doesn't bounce the gain between calls), matching the contract of [Double.compareTo]. */
+    private fun sameDouble(a: Double, b: Double): Boolean = a.compareTo(b) == 0
+
     private fun startPlayback() {
         if (ongoingPlaybackJob != null) {
             hatchet.w("startPlayback called but consume loop already running.")
@@ -198,9 +204,15 @@ abstract class Speaker(
                 }
                 eventSink.emit(playingEvent)
 
-                if (audioBuffer.peakAmplitude != appliedNormalizationPeak) {
-                    volumeProcessor.setNormalization(audioBuffer.peakAmplitude)
-                    appliedNormalizationPeak = audioBuffer.peakAmplitude
+                if (!sameDouble(audioBuffer.loudnessLufs, appliedNormalizationLufs) ||
+                    !sameDouble(audioBuffer.truePeakDbtp, appliedNormalizationTruePeakDbtp)
+                ) {
+                    volumeProcessor.setNormalization(
+                        audioBuffer.loudnessLufs,
+                        audioBuffer.truePeakDbtp,
+                    )
+                    appliedNormalizationLufs = audioBuffer.loudnessLufs
+                    appliedNormalizationTruePeakDbtp = audioBuffer.truePeakDbtp
                 }
 
                 volumeProcessor.process(

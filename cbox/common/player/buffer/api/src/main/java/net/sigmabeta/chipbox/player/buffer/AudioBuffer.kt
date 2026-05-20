@@ -17,9 +17,12 @@ package net.sigmabeta.chipbox.player.buffer
  *           ramp. Computed by the producer from the track's declared length and fade window.
  * @property fadeLengthMs Duration of the fade-out ramp, in ms. After
  *           [fadeStartMs] + [fadeLengthMs] the speaker should output silence.
- * @property peakAmplitude Loudest 16-bit sample magnitude across this buffer's track, or `0`
- *           if unknown. Constant for every buffer of a track; the speaker uses it to
- *           peak-normalize playback.
+ * @property loudnessLufs Integrated BS.1770 loudness across this buffer's track, in LUFS, or
+ *           [Double.NaN] if not yet measured. Climbs over the first 400 ms of a fresh render
+ *           and settles thereafter; constant for every buffer of a cached replay.
+ * @property truePeakDbtp Inter-sample true peak across this buffer's track, in dBTP, or
+ *           [Double.NEGATIVE_INFINITY] if no audible peak. Paired with [loudnessLufs] to
+ *           compute the speaker's loudness-normalization gain.
  */
 data class AudioBuffer(
     val trackId: Long,
@@ -28,5 +31,6 @@ data class AudioBuffer(
     val data: ShortArray,
     val fadeStartMs: Long,
     val fadeLengthMs: Long,
-    val peakAmplitude: Int = 0,
+    val loudnessLufs: Double = Double.NaN,
+    val truePeakDbtp: Double = Double.NEGATIVE_INFINITY,
 )

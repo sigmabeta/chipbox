@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.player.cache.real
 
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
-import net.sigmabeta.chipbox.player.common.maxAmplitude
+import net.sigmabeta.chipbox.player.common.EbuR128
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.File
@@ -32,12 +32,19 @@ internal class EmulatorPcmSource(
 
     private var lastError: String? = null
 
-    // Loudest sample produced so far. Grows as the track plays (no render-ahead here, so it
-    // tracks the playback position); exposed live for progressive normalization.
-    @Volatile
-    private var measuredPeak = 0
+    // Live BS.1770 measurer. Without render-ahead, the measurement tracks the playback position —
+    // exposed via [loudnessLufs] / [truePeakDbtp] for the speaker's progressive normalization.
+    private val measurer: EbuR128
 
-    override val peakAmplitude: Int get() = measuredPeak
+    @Volatile
+    private var measuredLufs: Double = Double.NaN
+
+    @Volatile
+    private var measuredTruePeakDbtp: Double = Double.NEGATIVE_INFINITY
+
+    override val loudnessLufs: Double get() = measuredLufs
+
+    override val truePeakDbtp: Double get() = measuredTruePeakDbtp
 
     init {
         if (!emulator.nativeLibLoaded) {
@@ -55,13 +62,16 @@ internal class EmulatorPcmSource(
         } else {
             null
         }
+        measurer = EbuR128(sampleRate)
     }
 
     override suspend fun readFrames(buffer: ShortArray): Int {
         val framesGenerated = emulator.generateBuffer(buffer)
         lastError = emulator.getLastError()
         if (framesGenerated <= 0) return 0
-        measuredPeak = maxOf(measuredPeak, maxAmplitude(buffer, framesGenerated))
+        measurer.process(buffer, framesGenerated)
+        measuredLufs = measurer.integratedLoudness()
+        measuredTruePeakDbtp = measurer.truePeakDbtp()
         return framesGenerated
     }
 
