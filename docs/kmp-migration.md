@@ -1,26 +1,34 @@
 # Kotlin Multiplatform migration — plan & status
 
-Status: **Milestone 6 implemented.** JVM is the second target with a real
-library *and* a Compose Multiplatform desktop window. All seven native
-emulators decode end-to-end on host x86-64 (playback-verified), the
-headless app also runs without Gradle via a generated launcher, the mass
-`sage.android`/`sage.jvm` → `sage.kmp` conversion collapsed 61 modules
-onto single KMP modules serving both variants (`cbox/jvm/` is empty,
-deleted), the Room storage stack is now KMP (via Room 2.7+'s multiplatform
-support + the bundled SQLite driver) and the JVM target uses the *same*
-Room database the Android app does — driven by the *same* `RealScanner`
-via a `LibrarySource` abstraction (so the SAF / file walk is the only
-platform implementation, not the metadata logic). The JVM target now also
-opens a desktop window via Compose Multiplatform — placeholder Hello
-composable rendering the real Chipbox color palette **and** the real
-Chipbox typography structure (sizes, weights, line heights) out of a
-new shared `sage.compose.kmp` module; only the custom pixel-art fonts
-themselves are still Android-only (system font fallback on JVM). The remaining `sage.android`-classified modules
-split between **genuinely Android-only system glue** (Hilt `:di`, `R.*`
-resource modules, audio service, SAF / ContentProvider) and **the Compose
-UI surface**, which used to be tagged as legitimately-Android end-state
-but is now being ported slice by slice to Compose Multiplatform — see
-Milestone 6.
+Status: **Milestone 7 implemented.** JVM is the second target with a
+real library *and* a Compose Multiplatform desktop window with real
+pixel-art fonts, a working ViewModel scoping pattern, and Voyager-driven
+navigation. All seven native emulators decode end-to-end on host x86-64
+(playback-verified), the headless app also runs without Gradle via a
+generated launcher, the mass `sage.android`/`sage.jvm` → `sage.kmp`
+conversion collapsed 61 chipbox modules onto single KMP modules serving
+both variants (`cbox/jvm/` is empty, deleted), the Room storage stack
+is now KMP (via Room 2.7+'s multiplatform support + the bundled SQLite
+driver) and the JVM target uses the *same* Room database the Android
+app does — driven by the *same* `RealScanner` via a `LibrarySource`
+abstraction.
+
+The desktop window renders via Compose Multiplatform: shared color
+palette + typography from `cbox/common/ui/theme/api`, real pixel-art
+fonts via Compose Multiplatform resources from `cbox/common/ui/fonts/api`,
+a `chipboxViewModel<T>()` helper from `cbox/common/ui/vm/api` (Dagger-
+backed on JVM), and Voyager navigation (`Screen` interface +
+`LocalNavigator`). The sage submodule's entire `common/*` library tree
+is now KMP-published and the types the Settings ViewModel chain depends
+on (`SageAction`, `LCE`, `ListState`, `ListStateActual`, `StringProvider`,
+`ListModel` hierarchy) all live in commonMain.
+
+The remaining `sage.android`-classified chipbox modules split between
+**genuinely Android-only system glue** (Hilt `:di`, `R.*` resource
+modules, audio service, SAF / ContentProvider) and **the Compose UI
+surface**, which used to be tagged as legitimately-Android end-state
+but is being ported slice by slice to Compose Multiplatform — see
+Milestones 6 and 7.
 
 Scope of this doc: how Chipbox moves from Android-only to Kotlin
 Multiplatform, what's already done, and the remaining milestones.
@@ -361,7 +369,7 @@ scoping, font/resource, or image-loading stories.
   moves into `commonMain`; both the existing Android `AppTheme` and the
   JVM `DesktopMain` resolve them from there. The desktop bootstrap
   drops its inlined hex constants in favour of the real palette.
-- **Slice 3 — typography structure + multiplatform `ChipboxTheme()`**.
+- **Slice 3 — typography structure + multiplatform `ChipboxTheme()`** (commit `b47f95d4`).
   The typography tokens (`ChipboxTypeScaleTokens`,
   `ChipboxTypographyTokens`, the weight half of `ChipboxTypefaceTokens`)
   and the `buildChipboxTypography(...)` builder move to `commonMain`;
@@ -382,63 +390,212 @@ scoping, font/resource, or image-loading stories.
   `expect`/`actual` is needed for the base `TextStyle`: Android keeps
   its `PlatformTextStyle(includeFontPadding = false)` tweak (the legacy
   Android font-padding default), JVM gets plain `TextStyle.Default`.
+- **Slice 4 — Chipbox pixel fonts on JVM via CMP resources** (sage
+  `39475a8d`, chipbox `3b1eacae`). The 18 `.otf` font files move from
+  Android `R.font.*` resources to Compose Multiplatform resources. New
+  `cbox/common/ui/fonts/api` KMP module on
+  `sage.kmp + sage.compose.kmp + compose.multiplatform` (the JetBrains
+  plugin, applied here for the `Res.font.*` codegen). ChipboxFont enum
+  loses `fontResId: Int`, gains `resource: FontResource` + a
+  `@Composable fun toFontFamily()` member wrapping CMP's
+  `Font(FontResource)` factory. `cbox/android/ui/theme/api`'s
+  `tokens/Fonts.kt` (the old Android-only `Font(resId)` extension)
+  deletes; `ChipboxFontDefaults` moves into the shared theme module's
+  commonMain. apps/jvm pulls the fonts module transitively via the
+  theme module; `DesktopMain` passes `ChipboxFontDefaults.Brand/
+  Plain.toFontFamily()` into `ChipboxTheme` with each font's
+  `scaleFactor` folded in. Desktop window now renders in the real
+  pixel fonts. Catalog wrinkle: JB Compose plugin 1.9.0 NoSuchMethod
+  Errors on AGP 9's `KotlinMultiplatformAndroidComponentsExtension
+  .onVariant` for sage.kmp modules; bumped the plugin to 1.9.3 while
+  keeping the lib jars at 1.9.0 (material3 stable is stuck there;
+  plugin manages its own internal lib version for codegen contract).
+- **Slice 5 — multiplatform ViewModel scoping** (commit `42d39548`).
+  New `cbox/common/ui/vm/api` KMP module exporting an
+  `open class ChipboxViewModel` marker base (deliberately *not*
+  `androidx.lifecycle.ViewModel` yet — the KMP lifecycle artifact's
+  `onCleared`/scope shape lands when the first real Android port
+  needs it), a `ViewModelProvider` interface,
+  `LocalViewModelProvider` `staticCompositionLocalOf` carrying it,
+  and `@Composable inline fun <reified T : ChipboxViewModel>
+  chipboxViewModel(): T`. Demo: a tiny
+  `HelloViewModel @Inject constructor(hatchet: Hatchet) :
+  ChipboxViewModel()` in apps/jvm, surfaced via
+  `JvmChipboxComponent.helloViewModel()`. `JvmViewModelProvider`
+  dispatches `KClass<T>` to the component accessor via `when`. The
+  desktop window now observes a `StateFlow` driven by a real
+  Dagger-injected VM. The Android `actual` (Hilt bridge) is deferred
+  until the first real Android consumer arrives.
+- **Slice 6 — Voyager navigation on Desktop** (sage `1a474e3a`,
+  chipbox `9d1268f6`). Picked Voyager over the AndroidX
+  `navigation-compose` CMP fork after discovering the AndroidX fork
+  (latest stable 2.9.8) publishes JVM variants whose
+  `jvmStubsRuntimeElements-published` has *zero files* — compile-time
+  stubs only, no actual desktop runtime. Voyager 1.0.1 stable has a
+  real `voyager-navigator-desktop-1.0.1.jar`. New `HomeScreen` (data
+  object Screen, wraps the slice-5 Hello+VM content plus a "Go to
+  About" button) and `AboutScreen` (data object Screen, Text + Back
+  button). `DesktopMain`'s root composable is now
+  `Navigator(HomeScreen)` inside the existing ChipboxTheme +
+  CompositionLocalProvider wrapping. Real feature screens follow the
+  same shape: `data object`/`data class Screen` per route,
+  `LocalNavigator.currentOrThrow` for stack manipulation. Per-screen
+  ViewModel scoping isn't tied into Voyager's screen scope yet (every
+  `chipboxViewModel<T>()` call still hits the JvmViewModelProvider
+  directly); that integration lands alongside the first real Android
+  bridge.
 
-Explicit non-goals of this milestone (each will land as its own slice
-once the strategy is picked — see Roadmap item 1):
+Explicit non-goals of this milestone (still pending, see Roadmap item 1):
 
-- Custom Chipbox fonts on JVM. The pixel-art `.otf`s ship as Android
-  `R.font.*` resources today; the JVM theme falls back to
-  `FontFamily.Default`. Needs either Compose-MP resources or an
-  `expect`/`actual` `FontFamily` factory that resolves font names off
-  the JVM classpath.
-- Navigation library. `androidx.navigation.compose:2.9.8` is
-  Android-only; the CMP fork / Voyager / Decompose all viable.
-- ViewModel scoping on Desktop. `hiltViewModel()` is Android-only — a
-  `chipboxViewModel<T>()` helper backed by Hilt on Android and by the
-  plain-Dagger graph (Milestone 5) on Desktop is the obvious shape.
 - Image loading. Coil 3 is multiplatform now; the `:images` wrapper
   uses `SingletonImageLoader.get(context)` and needs a context-free
   entry on JVM.
 - Strings. CMP `Res.string.*` vs keeping the `ChipboxStringId`
-  indirection + a desktop `StringProvider`.
+  indirection + a desktop `StringProvider` impl.
+- Android-side actual of `chipboxViewModel<T>()` — a Hilt wrapper.
+  Easy slice; deferred until the first real Android consumer needs it.
 
 Verified each slice: `:apps:android:assembleDebug` green;
-`:apps:jvm:compileKotlin`, `:apps:jvm:detekt`, and
-`:cbox:common:ui:theme:api:check` clean; `:apps:jvm:run --args="gui"`
-opens a desktop window with the real Chipbox palette.
+`:apps:jvm:compileKotlin`, `:apps:jvm:detekt`, ktlint, and per-module
+`:check` clean; `:apps:jvm:run --args="gui"` opens a desktop window
+that renders the real Chipbox palette + typography + pixel fonts, lets
+you navigate Home → About → back, and shows a VM-supplied
+`StateFlow<String>` updating via `collectAsState`.
+
+## Milestone 7 — sage submodule KMP foundation (done)
+
+Four slices that flip every `sage/common/*` library from `sage.jvm` to
+`sage.kmp` and hoist their pure-Kotlin types into commonMain, so future
+Chipbox commonMain modules can depend on them. This unblocks the
+chipbox-side port of `ChipboxListViewModel` (the base class for every
+Chipbox feature ViewModel) — its imports (`SageAction`, `LCE`,
+`ListState`, `ListStateActual`, `StringProvider`, `ListModel`
+hierarchy) all live in commonMain now.
+
+- **Slice 1 — `common/logging` → sage.kmp** (sage commit `f9aba752`).
+  First library converted. `Hatchet` interface + `BasicHatchet` +
+  `BluntHatchet` are pure Kotlin (just `println` + a `when` on `Int`),
+  so the three files move from `src/main/java` straight into
+  `src/commonMain/kotlin`. Sets the bottom-of-chain dependency every
+  other sage library uses for logging.
+- **Slice 2 — bulk-convert sage/common/* to sage.kmp** (sage commit
+  `05728b41`). 18 JVM-only modules flipped via a one-off Python
+  script adapted from `scripts/kmpify.py`: plugin alias swapped,
+  `androidLibrary { namespace }` added, project-level
+  `dependencies { … }` block moved into
+  `sourceSets.named("jvmSharedMain").dependencies { … }`. No source
+  moves; `java.*` / Hilt / Moshi keep working from where they sit
+  because `jvmSharedMain` covers both targets. Modules touched:
+  `analytics, appinfo, connectivity, coroutines, debug, events,
+  freeform, images, list, nav, pdf, perf, settings/environment,
+  settings/general, storage/common, time, ui/components, ui/icons`.
+  (appcomm + ui/strings landed in a follow-up slice once their
+  JVM-family deps were cleaned up.) One real detekt regression caught
+  inline (`StringGenerator.kt` had a 121-char line that `sage.jvm`'s
+  detekt task graph apparently wasn't scanning — `sage.kmp`'s
+  per-source-set tasks caught it).
+- **Slice 3 — appcomm + ui/strings cleanup** (sage commit `a6e486ac`).
+  `common/appcomm` drops `implementation(libs.hilt.core)` and both
+  Hilt KSP processor lines — a grep of `common/appcomm/src/` shows
+  zero Hilt symbols, the deps were vestigial. `GenericAction.kt`
+  swaps Moshi for `kotlinx.serialization`: `@JsonClass(generateAdapter
+  = true)` → `@Serializable`. GenericAction is sage's only Moshi
+  user, has downstream consumers in VGLS, and kotlinx.serialization
+  is already in the catalog and fully multiplatform. Net: appcomm
+  becomes KSP-free, codegen-free, JVM-family-host-free.
+  `common/ui/strings` drops a vestigial Moshi dep (zero source
+  imports of it).
+- **Slice 4 — hoist 59 pure-Kotlin files to commonMain** (sage commit
+  `9ee7afae`). Every file in scope (appcomm, appinfo, list,
+  ui/components, ui/strings) moves from `src/main/java` to
+  `src/commonMain/kotlin`. Strict audit: any `import java.*` /
+  `javax.*` / `android.*` keeps the file in jvmSharedMain. Only
+  `StringGenerator.kt` (uses `java.util.Locale` / `Random`) stays.
+  After this, types like `SageAction`, `LCE`, `ListState`,
+  `ListStateActual`, `StringProvider`, the `ListModel` hierarchy, etc.
+  are all reachable from any Chipbox commonMain module.
+
+Why this matters for the Chipbox-side port: the original analysis for
+porting `SettingsViewModel` flagged the long sage-side dependency
+chain (`androidx.lifecycle.ViewModel` base + `ChipboxListViewModel`
+super + `SageAction` / `LCE` / `ListState` / `ListStateActual` /
+`StringProvider` / `ListModel` …) as needing KMP conversion before any
+Chipbox feature could move. Milestone 7 closes the sage-side half of
+that chain. The chipbox-side remainder — `ChipboxListViewModel` itself,
+a strings story, the desktop folder picker, the Android-side
+`chipboxViewModel<T>()` actual, and the Settings port itself — is now
+unblocked.
+
+Sage submodule cleanup not in scope: there's a parallel
+`jvmSharedMain → commonMain` hoist opportunity in other sage common
+modules (analytics, debug, events, freeform, nav, pdf, perf — anything
+pure Kotlin) that didn't need to happen for the Settings port. Those
+move when a future consumer needs them in commonMain.
 
 ## Roadmap (not yet done)
 
-1. **Compose Multiplatform UI port.** Multi-slice; Milestone 6 covers
-   the first three (toolchain, palette, typography). Remaining slices
-   roughly in order: pick a font-resource strategy and ship the
-   pixel-art `.otf`s on the JVM classpath so `ChipboxFont` works on
-   desktop; pick a navigation library (`androidx.navigation.compose:2.9.8`
-   is Android-only; the CMP fork / Voyager / Decompose are all viable);
-   pick a ViewModel-scoping pattern on Desktop (a
-   `chipboxViewModel<T>()` helper backed by Hilt on Android and by the
-   plain-Dagger graph on Desktop is the obvious shape); pick an
-   image-loading story (Coil 3 is multiplatform now); pick a strings
-   story (CMP `Res.string.*` vs keeping `ChipboxStringId` indirection);
-   then port real feature modules (`appui`, `features/*`) slice by slice.
+1. **Compose Multiplatform UI port: finish the Settings port.**
+   Milestones 6 + 7 set every prerequisite (toolchain, palette,
+   typography, fonts, ViewModel scoping, navigation, sage commonMain
+   types). The remaining work for Settings specifically, in
+   dependency order, is now all on the chipbox side:
+
+   1. **Pick a strings strategy** for Chipbox. Either keep the
+      `ChipboxStringId` indirection (Android `AndroidStringProvider`
+      stays; new JVM impl backs the same `SageStringId` interface with
+      a hardcoded map) or move to Compose Multiplatform resources
+      (`Res.string.foo` everywhere; uses the same plugin/codegen
+      already wired for fonts).
+   2. **JVM `StringProvider` impl.** Once the strategy is picked,
+      ship the desktop-side implementation of the now-commonMain
+      `sage.ui.StringProvider` interface so feature VMs work on JVM.
+   3. **Convert `cbox/android/ui/list/api` to `sage.kmp`.**
+      `ChipboxListViewModel`'s imports now resolve from commonMain;
+      file can hoist. Decision in this slice: extend
+      `androidx.lifecycle.ViewModel` (lifecycle 2.10 should have KMP
+      support — verify) or extend the slice-5 `ChipboxViewModel`
+      marker.
+   4. **Android-side actual of `chipboxViewModel<T>()`.** Thin Hilt
+      wrapper. Easy slice; needed before any Chipbox commonMain
+      module's `chipboxViewModel<T>()` call compiles on the Android
+      target.
+   5. **Convert `sage/android/ui/list` to `sage.kmp`** with
+      `ListScreen` + `GridScreen` Composables in commonMain. CMP has
+      `LazyColumn` + `LazyVerticalGrid` in commonMain so the
+      rendering itself ports.
+   6. **Port `features/settings/api` + `features/settings/real` to
+      `sage.kmp`.** `SettingsViewModel` extends the now-commonMain
+      `ChipboxListViewModel`; `AndroidFileContentSource` swaps to
+      `LibrarySource`; `PlaybackStatusEntryPoint` link drops on
+      desktop (Android-only media service tie-in).
+   7. **Desktop folder picker.** `expect`/`actual` or a JVM-only
+      `LibraryLocationPicker` backed by `javax.swing.JFileChooser`.
+   8. **Wire `SettingsScreen` into Voyager.** Replace the demo
+      Home/About screens with the real Settings entry.
+
+   After Settings lands, subsequent feature ports follow the same
+   shape. Image loading (Coil 3 KMP wrapper for `:images`) becomes
+   the next decision when a feature port needs artwork.
+
 2. **Real-time JVM audio.** An audio sink (probably a factory, possibly
    `expect`/`actual`): Android `AudioTrack` vs a JVM
    `javax.sound.sampled.SourceDataLine` speaker, so the JVM target plays
    live instead of only writing WAV. Tune the render-ahead window at the
    same time — the heavy cores currently emit a terminal
    `GeneratorEvent.Error` on a cold cache, which the WAV harness
-   survives but live playback would not.
+   survives but live playback would not. Independent of the UI port —
+   could land at any time.
 3. **Cross-platform native packaging.** All seven emulators wired and
    playback-verified on host x86-64 Linux. Remaining: macOS/Windows
    `.dylib`/`.dll` builds + a packaged `java.library.path`, and a real
    distribution (today blocked by the duplicate jar-basename
    `installDist` issue — see Known issues).
-4. **The `jvmSharedMain` → `commonMain` hoist.** Per-module audit/move
-   pass: code in `src/main/java` (still under `jvmSharedMain` via the
-   `sage.kmp` plugin's intermediate source set) that doesn't actually
-   reach `java.*` migrates into `src/commonMain/kotlin`. Pure cleanup —
-   no functional change, only a tighter contract on what `commonMain`
-   may not use. Deliberately incremental.
+4. **Rest of the `jvmSharedMain` → `commonMain` hoist.** Milestone 7
+   slice 4 hoisted the subset needed for the Settings VM port. Other
+   sage commonMain candidates (analytics, debug, events, freeform,
+   nav, pdf, perf) move when a downstream consumer needs them.
+   Genuine JVM-only modules (connectivity, storage/common, time) stay
+   put.
 
 ## Known issues / out of scope
 
@@ -452,14 +609,6 @@ opens a desktop window with the real Chipbox palette.
   task is the workaround: it emits `build/run-standalone.sh` with an
   explicit classpath of full, unique jar paths (no Gradle at runtime). A
   proper fix would give every module a path-derived archive name.
-- The JVM target's library scanner (`JvmLibraryScanner`) is minimal:
-  one `RawGame` per folder, filename = track title, no tag/header
-  metadata extraction, `trackNumber = 0` for every track so
-  multi-subtrack formats (NSF/GBS) are addressed as one track. The
-  richer `RealScanner` (`Readers`-driven metadata + PSF chain
-  resolution + m3u overlays) ships on Android but isn't reused yet —
-  roadmap item 4 introduces the `LibrarySource` abstraction that lets
-  both apps run it.
 - Heavy emulator cores emit a terminal render-ahead `GeneratorEvent.Error`
   on a cold cache (see Milestone 2b) — survivable for the WAV harness,
   not for live playback until the render-ahead window is tuned.
