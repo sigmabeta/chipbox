@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Milestone 2 implemented.**
+Status: **Milestone 3 implemented.**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -217,33 +217,77 @@ Verified: `:apps:android:assembleDebug` green; Hilt and Metro graphs
 coexist; `ChipboxApplication.appGraph` resolves correctly at runtime
 (verified via the `MainActivity.onCreate` log line).
 
-### Milestone 3 — wire `metrox-viewmodel-compose` (planned)
+### Milestone 3 — wire `metrox-viewmodel-compose` framework (done, Android side)
 
-What would have been the hard slice — designing a `@HiltViewModel` replacement
-— is mostly a config job thanks to `metrox-viewmodel-compose`. Slice goals:
+The original M3 plan tried to do both framework wiring AND one VM
+conversion in the same slice. Discovered mid-slice that the second part
+isn't possible yet: converting `SettingsViewModel` (or any non-trivial VM)
+requires *all* its transitive constructor params — Repository, Scanner,
+LibrarySource, the @Named flags, etc. — to be Metro-resolvable, which is
+exactly M4's bulk module sweep. So M3 shrank to framework wiring only;
+the VM conversions move from M3 to M5 once M4 makes the deps available.
 
-- **Extend `ChipboxAppGraph` (and the JVM-side graph) with `ViewModelGraph`**
-  so the framework's three multibindings (`viewModelProviders`,
-  `assistedFactoryProviders`, `manualAssistedFactoryProviders`) are exposed.
-- **Build one `MetroViewModelFactory` per target** and provide it via
-  `LocalMetroViewModelFactory` at the root composable in both `MainActivity`
-  (Android) and `DesktopMain` (JVM).
-- **Convert one VM end-to-end** (probably `SettingsViewModel`):
-  - Drop `@HiltViewModel`.
-  - Add `@Inject @ViewModelKey @ContributesIntoMap(AppScope::class)`.
-  - Switch the route composable's `hiltViewModel<SettingsViewModel>()` (Android)
-    and the chipbox-side `chipboxViewModel<SettingsViewModel>()` (JVM) to
-    `metroViewModel<SettingsViewModel>()`. Confirm per-screen scoping still
-    behaves correctly on both targets.
-- **Delete the chipbox-side VM provider** —
-  `cbox/common/ui/vm/api/.../ViewModelProvider.kt`,
-  `ChipboxViewModelComposable.kt`, the Android
-  `AndroidHiltViewModelProvider`, the JVM `JvmViewModelProvider`, and the
-  `LocalViewModelProvider` CompositionLocal all go. `metroViewModel<T>()` is
-  the canonical accessor going forward.
-- This slice closes the original KMP-migration M9 slice 5c gap — the JVM
-  target instantiates `SettingsViewModel` through the same Metro graph as
-  Android does.
+Slice landed on the Android target:
+
+- **`apps/android/build.gradle.kts`** picks up `metrox-viewmodel` +
+  `metrox-viewmodel-compose` deps.
+
+- **`ChipboxAppGraph`** now extends `ViewModelGraph` from `metrox-viewmodel`.
+  That contributes three `@Multibinds(allowEmpty = true)` maps
+  (`viewModelProviders`, `assistedFactoryProviders`,
+  `manualAssistedFactoryProviders`) and the `metroViewModelFactory:
+  MetroViewModelFactory` accessor. All three maps are empty for now —
+  they fill in when each VM gets converted in M5.
+
+- **`ChipboxMetroViewModelFactory`** — `@Inject @ContributesBinding(AppScope::class)
+  @SingleIn(AppScope::class)` subclass of `MetroViewModelFactory` whose
+  three constructor params are the multibinding maps. The framework's
+  base class dispatches `create(modelClass, extras)` to the right map at
+  runtime.
+
+- **`MainActivity`** wraps `setContent` in
+  `CompositionLocalProvider(LocalMetroViewModelFactory provides
+  appGraph.metroViewModelFactory)`. `metroViewModel<T>()` calls anywhere
+  in the composition will read from this factory once M5 starts
+  registering VMs.
+
+- **`features/settings/real`** applies the Metro plugin alongside the
+  existing Hilt plugin (with `interop.includeDagger()`). Pulls
+  `metrox-viewmodel-compose` so its `metroViewModel<T>()` accessor is
+  reachable. `SettingsViewModel` stays `@HiltViewModel` for now — the
+  Metro annotations land in M5 once Repository / Scanner / LibrarySource
+  modules also `@ContributesTo(AppScope::class)`.
+
+What got tried during the slice but had to revert: a one-shot conversion
+of `SettingsViewModel` to `@Inject @ViewModelKey @ContributesIntoMap(AppScope::class)`.
+Metro correctly aggregated the contribution but then choked at graph
+build time on every constructor arg — 10 `[Metro/MissingBinding]` errors
+because Repository / Scanner / LibrarySource / etc. are all still
+Hilt-only. The plan's slice ordering was just wrong: framework wiring
+(M3) → bulk module sweep (M4) → bulk VM sweep (M5) is the correct
+sequence; doing one VM in M3 ahead of M4 doesn't work for any VM with
+non-trivial deps.
+
+Plain Dagger interop (`includeDagger()`) does mean we're not blocked on
+the M4 sweep — Metro can pick up `@Inject` / `@Provides` annotations from
+existing Hilt modules whenever they `@ContributesTo(AppScope::class)`.
+M4 is mostly mechanical: every `@Module @InstallIn(SingletonComponent::class)`
+gains a sibling `@ContributesTo(AppScope::class)` annotation; the
+modules continue to feed Hilt's graph AND start feeding Metro's.
+
+JVM-side work (extending the JVM-side graph with `ViewModelGraph`,
+wiring `LocalMetroViewModelFactory` in `DesktopMain`, removing the
+hand-rolled `chipboxViewModel<T>()` machinery) is deferred to its own
+slice after the Android side is fully Metro. The chipbox-side
+`ViewModelProvider` / `chipboxViewModel<T>()` /
+`AndroidHiltViewModelProvider` / `JvmViewModelProvider` /
+`LocalViewModelProvider` all still exist — they get deleted once both
+targets are on `metroViewModel<T>()`.
+
+Verified: `:apps:android:assembleDebug` green with both Hilt and Metro
+processing the same module's annotations; the empty-but-declared
+`MetroViewModelFactory` is bound from `appGraph.metroViewModelFactory`
+and provided at composition root — ready for VMs to plug in.
 
 ### Milestone 4 — bulk module sweep (planned)
 

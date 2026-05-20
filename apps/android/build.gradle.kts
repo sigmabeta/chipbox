@@ -157,4 +157,7 @@ dependencies {
     implementation(libs.androidx.hilt.navigation)
     implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
+
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
 }

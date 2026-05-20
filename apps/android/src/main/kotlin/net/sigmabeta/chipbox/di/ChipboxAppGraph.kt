@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.di
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
+import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.sage.android.logging.AndroidHatchet
 import net.sigmabeta.sage.appinfo.AppInfo
@@ -17,10 +18,17 @@ import net.sigmabeta.sage.logging.Hatchet
  * in Milestone 4; bindings that exist on both sides (AppInfo, Hatchet today) are duplicated
  * during the transition — same `BuildConfig` values, same `AndroidHatchet`, so Metro
  * consumers and Hilt consumers see equivalent instances.
+ *
+ * Extends [ViewModelGraph] from `metrox-viewmodel`, which adds three multibinding maps
+ * (`viewModelProviders`, `assistedFactoryProviders`, `manualAssistedFactoryProviders`) plus a
+ * `metroViewModelFactory: MetroViewModelFactory` accessor. The maps fill in from
+ * `@ContributesIntoMap(AppScope::class)` annotations on individual VMs (see
+ * `SettingsViewModel`); the factory comes from [ChipboxMetroViewModelFactory] via
+ * `@ContributesBinding(AppScope::class)`.
  */
 @SingleIn(AppScope::class)
 @DependencyGraph(AppScope::class)
-interface ChipboxAppGraph {
+interface ChipboxAppGraph : ViewModelGraph {
     val appInfo: AppInfo
     val hatchet: Hatchet
 
