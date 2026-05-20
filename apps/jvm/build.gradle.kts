@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.jvm)
+    alias(libs.plugins.ksp)
     application
 }
 
@@ -69,6 +70,13 @@ dependencies {
     // is the JVM impl, the Android twin is AndroidFileContentSource (SAF).
     implementation(projects.cbox.android.scanner.real)
     implementation(projects.cbox.common.readers.api)
+
+    // Plain Dagger — the headless JVM target assembles its own @Component. Hilt is
+    // Android-only by design, so the JVM-side `@Module` classes (see jvm/di/) duplicate
+    // the trivial @Provides for each emulator + buffer + repository binding; that's
+    // simpler than wiring sage.android Hilt modules into a sage.jvm app's classpath.
+    implementation(libs.dagger)
+    ksp(libs.dagger.compiler)
 
     implementation(libs.sage.common.logging)
     implementation(libs.kotlinx.coroutines.core)
