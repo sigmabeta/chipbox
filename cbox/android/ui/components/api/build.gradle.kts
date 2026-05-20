@@ -20,7 +20,7 @@ dependencies {
 
     implementation(projects.cbox.android.images.api)
     implementation(projects.cbox.android.strings.api)
-    implementation(projects.cbox.android.ui.fonts.api)
+    implementation(projects.cbox.common.ui.fonts.api)
     implementation(projects.cbox.android.ui.theme.api)
 
     implementation(libs.kotlin.reflect)
