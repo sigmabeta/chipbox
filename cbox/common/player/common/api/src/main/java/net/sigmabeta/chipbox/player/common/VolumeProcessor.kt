@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.player.common
 
+import net.sigmabeta.chipbox.player.common.VolumeProcessor.Companion.DUCK_SCALE
+import net.sigmabeta.chipbox.player.common.VolumeProcessor.Companion.MAX_GAIN
 import net.sigmabeta.sage.logging.Hatchet
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
@@ -181,19 +183,25 @@ class VolumeProcessor(private val hatchet: Hatchet) {
             audioInput[sampleIndex] = scaleSample(audioInput[sampleIndex], gain)
             audioInput[sampleIndex + 1] = scaleSample(audioInput[sampleIndex + 1], gain)
 
-            // Step the smoothed gain toward the target after applying this frame, so a change
-            // takes ~1 / MAX_GAIN_CHANGE_PER_FRAME frames to fully land (fading it in/out).
-            actualGain = approach(actualGain, targetGain, MAX_GAIN_CHANGE_PER_FRAME)
+            // Step the smoothed gain toward the target after applying this frame. The ramp is
+            // asymmetric — slow attack, fast decay — so the per-frame step depends on whether
+            // gain is rising or falling. See MAX_GAIN_CHANGE_PER_FRAME_UP/DOWN below.
+            actualGain = approach(actualGain, targetGain)
         }
     }
 
-    /** [current] moved toward [target] by at most [maxStep]; snaps exactly to [target] once
-     *  within one step so the ramp terminates cleanly (no float drift). */
-    private fun approach(current: Double, target: Double, maxStep: Double): Double {
+    /** [current] moved toward [target] by an asymmetric per-frame step — UP when rising,
+     *  DOWN when falling — and snapped exactly to [target] once within one step so the ramp
+     *  terminates cleanly (no float drift). */
+    private fun approach(current: Double, target: Double): Double {
         val delta = target - current
+
+        val maxStepUp = MAX_GAIN_CHANGE_PER_FRAME_UP
+        val maxStepDown = MAX_GAIN_CHANGE_PER_FRAME_DOWN
+
         return when {
-            delta > maxStep -> current + maxStep
-            delta < -maxStep -> current - maxStep
+            delta > maxStepUp -> current + maxStepUp
+            delta < -maxStepDown -> current - maxStepDown
             else -> target
         }
     }
@@ -221,9 +229,13 @@ class VolumeProcessor(private val hatchet: Hatchet) {
          *  normalizing a near-silent track can't amplify its noise floor without limit. */
         const val MAX_GAIN = 3.0
 
-        /** Most the applied gain may move toward the target per frame. At 0.01 a full
-         *  0.0↔1.0 swing takes 100 frames (~2 ms @ 48 kHz), enough to declick any
-         *  ducking/master/normalization change without an audible slew. */
-        const val MAX_GAIN_CHANGE_PER_FRAME = 0.001
+        /** Per-frame cap on how far the applied gain may move toward the target, split
+         *  asymmetrically: rises (attack) crawl up at 0.00005/frame — a 0.0→1.0 swing takes
+         *  ~100000 frames (~2083 ms @ 48 kHz), slow enough that normalization or unducking
+         *  doesn't pump on quiet sections. Falls (decay) bite at 0.0005/frame — a 1.0→0.0
+         *  swing takes ~10000 frames (~208 ms), fast enough that ducks land and peak-limit
+         *  cuts land before something audibly clips. */
+        const val MAX_GAIN_CHANGE_PER_FRAME_UP = 0.00001
+        const val MAX_GAIN_CHANGE_PER_FRAME_DOWN = 0.0001
     }
 }
