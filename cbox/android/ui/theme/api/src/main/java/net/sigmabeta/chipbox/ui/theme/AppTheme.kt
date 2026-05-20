@@ -2,22 +2,30 @@ package net.sigmabeta.chipbox.ui.theme
 
 import androidx.compose.runtime.Composable
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
-import net.sigmabeta.chipbox.ui.theme.tokens.ChipboxTypefaceTokens
-import net.sigmabeta.sage.ui.themes.SageMaterial
-import net.sigmabeta.sage.ui.themes.SageMaterialMenu
+import net.sigmabeta.chipbox.ui.theme.tokens.ChipboxFontDefaults
+import net.sigmabeta.chipbox.ui.theme.tokens.toFontFamily
 
+/**
+ * Android-side wrapper preserving the historic `AppTheme(brand: ChipboxFont, ...)` signature
+ * (so existing Compose preview / feature call sites build unchanged) on top of the new shared
+ * [ChipboxTheme]. Converts the picked `ChipboxFont`s to `FontFamily`s here (via the Android
+ * `Font(resId)` factory) and folds their per-font `scaleFactor`s into the brand/plain scales
+ * passed through to the multiplatform theme. The earlier `SageMaterial` wrapping is gone —
+ * its `isSystemInDarkTheme()` + scheme pick logic lives inside [ChipboxTheme] now.
+ */
 @Composable
 fun AppTheme(
-    brand: ChipboxFont = ChipboxTypefaceTokens.Brand,
-    plain: ChipboxFont = ChipboxTypefaceTokens.Plain,
+    brand: ChipboxFont = ChipboxFontDefaults.Brand,
+    plain: ChipboxFont = ChipboxFontDefaults.Plain,
     fontScale: Float = 1.0f,
     forceDark: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    SageMaterial(
-        lightColors = ChipboxLight,
-        darkColors = ChipboxDark,
-        typography = buildChipboxTypography(brand, plain, fontScale),
+    ChipboxTheme(
+        brand = brand.toFontFamily(),
+        plain = plain.toFontFamily(),
+        brandScale = brand.scaleFactor * fontScale,
+        plainScale = plain.scaleFactor * fontScale,
         forceDark = forceDark,
         content = content,
     )
@@ -25,14 +33,16 @@ fun AppTheme(
 
 @Composable
 fun AppThemeMenu(
-    brand: ChipboxFont = ChipboxTypefaceTokens.Brand,
-    plain: ChipboxFont = ChipboxTypefaceTokens.Plain,
+    brand: ChipboxFont = ChipboxFontDefaults.Brand,
+    plain: ChipboxFont = ChipboxFontDefaults.Plain,
     fontScale: Float = 1.0f,
     content: @Composable () -> Unit,
 ) {
-    SageMaterialMenu(
-        menuColors = ChipboxMenu,
-        typography = buildChipboxTypography(brand, plain, fontScale),
+    ChipboxThemeMenu(
+        brand = brand.toFontFamily(),
+        plain = plain.toFontFamily(),
+        brandScale = brand.scaleFactor * fontScale,
+        plainScale = plain.scaleFactor * fontScale,
         content = content,
     )
 }
