@@ -1,15 +1,18 @@
 # Kotlin Multiplatform migration — plan & status
 
-Status: **Milestone 3 implemented.** JVM is the second target. All seven
+Status: **Milestone 4 implemented.** JVM is the second target. All seven
 native emulators decode end-to-end on it (playback-verified on host
 x86-64), the headless app also runs without Gradle via a generated
-launcher, and the mass `sage.android`/`sage.jvm` → `sage.kmp` conversion
-has collapsed every module whose dependency closure is pure — **61
-conversions in all** (33 `sage.jvm` shared modules, 20 `sage.android`
-pure modules, plus the 7 emulator wrappers and the generator that
-previously had cbox/jvm/* duplicates) — onto single KMP modules serving
-both variants. `cbox/jvm/` is now empty (deleted); the remaining
-single-target modules are genuinely Android-only and blocked on item 4.
+launcher, the mass `sage.android`/`sage.jvm` → `sage.kmp` conversion
+collapsed 61 modules onto single KMP modules serving both variants
+(`cbox/jvm/` is empty, deleted), the Room storage stack is now KMP
+(via Room 2.7+'s multiplatform support + the bundled SQLite driver),
+and the JVM target uses the *same* Room database the Android app does
+via a `scan`/`play` CLI — not the one-track `SingleTrackRepository`
+shim. The remaining `sage.android`-classified modules split between
+**genuinely Android-only** (Hilt `:di` glue, `R.*` resource modules,
+Compose feature modules — all legitimate end-state, not transitional)
+and **one real KMP blocker**: the scanner/SAF chain.
 Scope of this doc: how Chipbox moves from Android-only to Kotlin
 Multiplatform, what's already done, and the remaining milestones.
 
@@ -122,10 +125,10 @@ twin module and were wired into `apps/jvm` (`ALL_EMULATORS`; the generator
 picks by extension). `Main.kt` stages `*lib` siblings so mini-formats
 resolve their `_lib` chain. (The twin modules were collapsed onto single
 `sage.kmp` `:real` modules in Milestone 3; the `apps/jvm` wiring still
-references the same FQCNs, now resolved by the KMP modules' jvm variant.) Host portability needed only build-flag shims
-(no Android-build impact): `-D__fastcall=`/`__cdecl=`/`__stdcall=` for
-MSVC/x86 keywords, and an `android/log.h` + `liblog.a` shim for psf's
-debug probes.
+references the same FQCNs, now resolved by the KMP modules' jvm variant.)
+Host portability needed only build-flag shims (no Android-build impact):
+`-D__fastcall=`/`__cdecl=`/`__stdcall=` for MSVC/x86 keywords, and an
+`android/log.h` + `liblog.a` shim for psf's debug probes.
 
 All seven are **playback-verified** on host x86-64 (real, audible WAV):
 GME (SPC), PSF (.psf + .minipsf), VGM (.vgz), USF (.miniusf), 2SF
@@ -168,18 +171,80 @@ the genuinely-Android dependencies (Room / SAF / resources / Hilt).
   module whose transitive closure is now KMP/pure — the 7 emulator
   `:api` + 7 emulator `:all`, plus leaf `colors`, `contentsource/file`,
   `database`, `image-loading`, `repository`, `scanner` `:api` modules.
-- **What stayed `sage.android`** (blocked on item 4): the Room/SAF chain
-  (`database/all`, `repository/real|all`, `scanner/real|fake|all`,
-  `contentsource/file/real|all`), every `:di` module (Hilt), the resource-
-  touching `strings/api` and `ui/fonts/api` (`R.string.*` / `R.font.*`
-  references — not visible as `import android.*`), and the real
-  Android-only feature modules under `cbox/android/{appui,images,
-  artworkprovider,player-status,player/speaker/real,ui/*}`. **Item 2 and
-  item 4 are coupled:** the remaining KMP conversions need that storage
-  layer (and Hilt) abstracted first.
+- **What stayed `sage.android`**, split honestly between two reasons:
+  - **Genuinely Android-only (correct end state, not transitional).**
+    Every `:di` module — Hilt is Android-only DI glue, and the JVM app
+    doesn't need it (it wires manually in `Main.kt`); the `:di` modules
+    are app-level Android plumbing, not player-core code, so they're
+    correctly Android-flavored. The resource-touching `strings/api` and
+    `ui/fonts/api` (`R.string.*` / `R.font.*` references — not visible
+    as `import android.*`; resources don't exist on JVM). The real
+    Android feature modules under `cbox/android/{appui,images,
+    artworkprovider,player-status,player/speaker/real,ui/*}` (Compose
+    UI, audio service, image loading — all genuinely Android).
+  - **Blocked on item 4** (the only real remaining KMP work):
+    `cbox/android/scanner/{real,fake,all}` and
+    `cbox/android/contentsource/file/{real,all}`. The Android scanner
+    uses SAF (`DocumentsContract`, `Uri`, `Context`) and the file
+    `ContentSource` wraps SAF. Abstracting that behind a `LibrarySource`
+    interface lets both Android (SAF impl) and JVM (`java.io.File` impl)
+    drive `RealScanner`'s metadata/PSF-chain logic from one module.
+    Until then, the JVM has its own `JvmLibraryScanner` doing minimal
+    file-walking (no metadata extraction).
+
+  (Earlier doc revisions claimed Room/database modules and `:di` were
+  also blocked. Room is now KMP — see Milestone 4. `:di`/Hilt is not
+  blocking anything: per the migration's stated goal of running the
+  player core on both targets, Hilt is app glue, not player core.)
 
 A small inspectable Python helper (`scripts/kmpify.py`) drove the bulk
 rewrite — kept around for the next pass.
+
+## Milestone 4 — Room is KMP, JVM has a real library (done)
+
+The JVM target stops being a one-track WAV writer and becomes a real
+music library, sharing the **same Room schema** the Android app uses.
+
+- **Room storage stack on `sage.kmp`** (commit `e6bb188d`). Room 2.7+
+  is multiplatform, so `@Database` / `@Dao` / `@Entity` work for both
+  the android and jvm variants from one module. The conversions:
+  `cbox/common/entities/api`, `cbox/android/database/real`,
+  `cbox/android/repository/real`, `cbox/android/database/all`.
+  `database/real` applies KSP locally with `kspAndroid` / `kspJvm`
+  configurations for `room-compiler`, declares
+  `androidx.sqlite:sqlite-bundled` on `jvmMain` only (Android keeps the
+  framework SQLite via the existing `databaseBuilder(Context, …)`
+  overload). `ChipboxDatabase` gained `@ConstructedBy(ChipboxDatabase
+  Constructor::class)` + the matching `expect object … :
+  RoomDatabaseConstructor<ChipboxDatabase>`; Room's KSP generates the
+  per-target `actual` impls.
+- **Suspend cascade absorbed.** Room KMP requires every non-`Flow` DAO
+  method to be `suspend` on non-Android targets. ~30 DAO methods + 4
+  `Repository` interface methods (`getTrack`,
+  `getTracksForGame|Artist|Platform`) became `suspend`;
+  `DatabaseRepository` rewritten with a small `suspendMap` helper for
+  the `Iterable.map`-with-suspending-transform spots; `RealDirector`
+  private wrappers became `suspend`. Every existing call site was
+  already in a coroutine context, so zero call-site changes were
+  needed across `Generator`, `LibraryBrowser`, and `RealDirector`.
+- **JVM library wiring** (commit `8d9b3717`). `apps/jvm` builds the
+  database with `Room.databaseBuilder<ChipboxDatabase>(name = …)
+  .setDriver(BundledSQLiteDriver())`, constructs a `DatabaseRepository`
+  for it, and exposes three `Main.kt` modes:
+    - `scan <music-dir>` — walks via the new `JvmLibraryScanner`,
+      persists tracks/games into `.chipbox-jvm/library.sqlite`.
+    - `play <track-id|title-substring>` — resolves a track from the DB
+      and renders to WAV through the existing native pipeline.
+    - `<file-path> [output-dir]` — legacy single-file path (no DB),
+      still backed by `SingleTrackRepository` for one-off renders.
+  The scanner is minimal (~80 LOC, one `RawGame` per folder, no
+  metadata extraction — track titles are filenames). Sharing
+  `RealScanner`'s richer metadata/PSF logic with the JVM is the
+  remaining item-4 work (the SAF abstraction below).
+- Verified: `:apps:android:assembleDebug` green; the JVM `scan`+`play`
+  loop indexed a small SPC/minipsf corpus and rendered audible WAVs
+  for both (the `psflib` chain auto-staged from the persisted
+  `RawTrack.chainFiles`).
 
 ### Diagnoses corrected during this work
 
@@ -202,6 +267,17 @@ the doc and reader stay honest:
   package, no import line). Caught at compile, fixed by reverting two
   files (commit `7936ba06`). Future kmpify runs should grep
   `\bR\.(string|drawable|font|color|...)` as an Android marker too.
+- **Hilt is not a KMP-conversion blocker.** Earlier roadmap framing
+  said "replace Hilt to unblock item 2." On second look: Hilt is
+  Android app-wiring glue (entry points, app/activity components),
+  not player-core code. The JVM app already does manual constructor
+  injection in `Main.kt` and that works fine. The `:di` modules being
+  `sage.android` is their natural end state — they're not transitional
+  artifacts blocking anything. If the JVM ever wants typesafe DI, a
+  plain Dagger `@Component(modules = […])` on the JVM side can consume
+  the existing `@Module @Provides` classes (Dagger ignores the
+  `@InstallIn` Hilt-specific annotation as a no-op), no shared-code
+  rewrite required.
 
 ## Roadmap (not yet done)
 
@@ -212,22 +288,32 @@ the doc and reader stay honest:
    same time — the heavy cores currently emit a terminal
    `GeneratorEvent.Error` on a cold cache, which the WAV harness
    survives but live playback would not.
-2. **Finish the KMP conversion.** Blocked on item 4. Once Room/SAF/Hilt
-   are abstracted, the rest of `cbox/android/*` collapses onto
-   `sage.kmp` via the same `kmpify.py` pass. The progressive
-   `jvmSharedMain` → `commonMain` hoist (the second half of the original
-   item 2) is the deliberately-incremental remainder.
+2. **Finish the KMP conversion** (smaller than before). After Room
+   joined KMP in Milestone 4, the only remaining genuine blocker is the
+   scanner/SAF chain (see item 4). After that lands,
+   `cbox/android/scanner/*` and `cbox/android/contentsource/file/*`
+   collapse onto `sage.kmp` via the next `kmpify.py` pass. The other
+   modules still tagged `sage.android` (`:di`, resources, Compose UI,
+   audio service) are *legitimately* Android-only end states, not
+   transitional. The progressive `jvmSharedMain` → `commonMain` hoist
+   is the deliberately-incremental remainder.
 3. **Cross-platform native packaging.** All seven emulators wired and
    playback-verified on host x86-64 Linux. Remaining: macOS/Windows
    `.dylib`/`.dll` builds + a packaged `java.library.path`, and a real
    distribution (today blocked by the duplicate jar-basename
    `installDist` issue — see Known issues).
-4. **DI / content sources / repository.** Replace Hilt with a
-   JVM-friendly wiring (manual factories or another container), abstract
-   Room behind a multiplatform repository interface, and abstract SAF
-   behind the existing `ContentSource` so the JVM target gets a real
-   file-scanning library instead of the `SingleTrackRepository` shim.
-   This is the keystone that unblocks the rest of item 2.
+4. **SAF abstraction so JVM and Android share `RealScanner`.** Today
+   the Android scanner depends concretely on `AndroidFileContentSource`
+   (SAF / `DocumentsContract` / `Uri`); the JVM has its own minimal
+   `JvmLibraryScanner` (~80 LOC, no metadata extraction). Introduce a
+   `LibrarySource` interface (`locations` + `scanFiles` + `openBytes`)
+   in `cbox/common/contentsource/api` with two impls — the existing
+   Android SAF one and a new `LocalFileContentSource` walking
+   `java.io.File`. Retype `RealScanner` against `LibrarySource` so both
+   apps run the same scanner code (metadata via the KMP `Readers`,
+   PSF `_lib` chain resolution, m3u overlays). After this lands, the
+   scanner/contentsource chain becomes `sage.kmp` (closing item 2).
+   (Hilt replacement is *not* needed — see "Diagnoses corrected".)
 
 ## Known issues / out of scope
 
@@ -241,8 +327,14 @@ the doc and reader stay honest:
   task is the workaround: it emits `build/run-standalone.sh` with an
   explicit classpath of full, unique jar paths (no Gradle at runtime). A
   proper fix would give every module a path-derived archive name.
-- The JVM target's repository is the one-track `SingleTrackRepository`
-  shim; there is no library/scan/persistence on JVM yet (roadmap item 4).
+- The JVM target's library scanner (`JvmLibraryScanner`) is minimal:
+  one `RawGame` per folder, filename = track title, no tag/header
+  metadata extraction, `trackNumber = 0` for every track so
+  multi-subtrack formats (NSF/GBS) are addressed as one track. The
+  richer `RealScanner` (`Readers`-driven metadata + PSF chain
+  resolution + m3u overlays) ships on Android but isn't reused yet —
+  roadmap item 4 introduces the `LibrarySource` abstraction that lets
+  both apps run it.
 - Heavy emulator cores emit a terminal render-ahead `GeneratorEvent.Error`
   on a cold cache (see Milestone 2b) — survivable for the WAV harness,
   not for live playback until the render-ahead window is tuned.
