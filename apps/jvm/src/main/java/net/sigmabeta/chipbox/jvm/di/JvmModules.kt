@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import dagger.Module
 import dagger.Provides
+import dev.zacsweers.metro.ContributesTo
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
@@ -37,6 +38,7 @@ import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.chipbox.settings.real.RealChipboxSettingsManager
 import net.sigmabeta.sage.appinfo.AppInfo
+import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.BasicHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.storage.common.Storage
@@ -61,17 +63,20 @@ import javax.inject.Singleton
  */
 
 @Module
+@ContributesTo(AppScope::class)
 object HatchetModule {
     @Provides @Singleton fun provideHatchet(): Hatchet = BasicHatchet()
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmStringsModule {
     @Provides @Singleton
     fun provideStringProvider(): StringProvider = JvmStringProvider(chipboxJvmStrings)
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmDatabaseModule {
     @Provides @Singleton
     fun provideDatabase(@Named("dbPath") path: String): ChipboxDatabase = Room
@@ -82,6 +87,7 @@ object JvmDatabaseModule {
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmRepositoryModule {
     @Provides @Singleton
     fun provideDatabaseRepository(database: ChipboxDatabase, hatchet: Hatchet): DatabaseRepository =
@@ -92,8 +98,9 @@ object JvmRepositoryModule {
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmContentSourceModule {
-    @Provides @Singleton fun provideLocalFileContentSource() = LocalFileContentSource()
+    @Provides @Singleton fun provideLocalFileContentSource(): LocalFileContentSource = LocalFileContentSource()
 
     @Provides @Singleton
     fun provideLibrarySource(impl: LocalFileContentSource): LibrarySource = impl
@@ -104,8 +111,9 @@ object JvmContentSourceModule {
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmBufferModule {
-    @Provides @Singleton fun provideRealBufferManager(hatchet: Hatchet) = RealBufferManager(hatchet)
+    @Provides @Singleton fun provideRealBufferManager(hatchet: Hatchet): RealBufferManager = RealBufferManager(hatchet)
 
     @Provides @Singleton
     fun provideProducer(impl: RealBufferManager): ProducerBufferManager = impl
@@ -115,20 +123,21 @@ object JvmBufferModule {
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmEmulatorsModule {
-    @Provides @Singleton fun provideGba() = GbaEmulator
+    @Provides @Singleton fun provideGba(): GbaEmulator = GbaEmulator
 
-    @Provides @Singleton fun provideGme() = GmeEmulator
+    @Provides @Singleton fun provideGme(): GmeEmulator = GmeEmulator
 
-    @Provides @Singleton fun providePsf() = PsfEmulator
+    @Provides @Singleton fun providePsf(): PsfEmulator = PsfEmulator
 
-    @Provides @Singleton fun provideSsf() = SsfEmulator
+    @Provides @Singleton fun provideSsf(): SsfEmulator = SsfEmulator
 
-    @Provides @Singleton fun provideTwosf() = TwosfEmulator
+    @Provides @Singleton fun provideTwosf(): TwosfEmulator = TwosfEmulator
 
-    @Provides @Singleton fun provideUsf() = UsfEmulator
+    @Provides @Singleton fun provideUsf(): UsfEmulator = UsfEmulator
 
-    @Provides @Singleton fun provideVgm() = VgmEmulator
+    @Provides @Singleton fun provideVgm(): VgmEmulator = VgmEmulator
 
     @Provides @Singleton
     fun provideEmulatorProvider(
@@ -145,11 +154,13 @@ object JvmEmulatorsModule {
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmReadersModule {
     @Provides @Singleton fun provideReaders(hatchet: Hatchet): Readers = Readers(hatchet)
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmScannerModule {
     @Provides @Singleton
     fun provideRealScanner(
@@ -164,6 +175,7 @@ object JvmScannerModule {
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmGeneratorModule {
     @Provides @Singleton
     fun provideRealGenerator(
@@ -185,6 +197,7 @@ object JvmGeneratorModule {
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmSpeakerModule {
     @Provides @Singleton
     fun provideFileSpeaker(
@@ -195,11 +208,13 @@ object JvmSpeakerModule {
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmStorageModule {
     @Provides @Singleton fun provideStorage(): Storage = JvmStorage()
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmSettingsManagersModule {
     @Provides @Singleton
     fun provideChipboxSettingsManager(storage: Storage): ChipboxSettingsManager =
@@ -211,6 +226,7 @@ object JvmSettingsManagersModule {
 }
 
 @Module
+@ContributesTo(AppScope::class)
 object JvmAppInfoModule {
     // The Android target builds this from Gradle-injected BuildConfig fields; on JVM there's
     // no BuildConfig + no signed-build context, so the values are intentionally fake (debug
@@ -223,4 +239,3 @@ object JvmAppInfoModule {
         buildBranch = "desktop",
     )
 }
-

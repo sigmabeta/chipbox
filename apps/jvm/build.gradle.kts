@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.sage.jvm)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.metro)
     // Compose Multiplatform desktop. Two plugins are needed: the Kotlin Compose compiler
     // (shared with the Android UI) handles @Composable codegen, and the JetBrains Compose
     // plugin provides the `compose.desktop.currentOs` dependency notation that resolves the
@@ -9,6 +10,18 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
     application
+}
+
+// Hilt → Metro migration M4c (see docs/metro-migration.md). The JVM target uses plain
+// Dagger (no Hilt — Hilt is Android-only), but the same coexistence pattern from M1
+// applies here: Metro runs alongside Dagger's KSP processor on the same @Module sources;
+// interop.includeDagger() makes Metro recognise @Inject / @Provides / @Module / @Singleton
+// without disturbing Dagger's own codegen. JvmChipboxComponent stays the runtime DI root
+// until M6 swaps over to the parallel JvmChipboxGraph.
+metro {
+    interop {
+        includeDagger()
+    }
 }
 
 application {
@@ -89,6 +102,14 @@ dependencies {
     // simpler than wiring sage.android Hilt modules into a sage.jvm app's classpath.
     implementation(libs.dagger)
     ksp(libs.dagger.compiler)
+
+    // Metro DI — runs alongside Dagger during the migration (see M4c). AppScope lives in
+    // sage/common/di; metrox-viewmodel is here for the future JvmChipboxGraph extension
+    // (deferred to a later slice when LocalMetroViewModelFactory replaces the hand-rolled
+    // JvmViewModelProvider).
+    implementation(libs.sage.common.di)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
 
     implementation(libs.sage.common.logging)
     implementation(libs.sage.common.appinfo)
