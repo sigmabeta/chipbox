@@ -24,7 +24,7 @@ import net.sigmabeta.sage.ui.strings.AndroidStringProvider
 
 @Module
 @InstallIn(SingletonComponent::class)
-object ChipboxModule {
+object AndroidAppModule {
     @Provides
     @Singleton
     fun provideStringProvider(@ApplicationContext context: Context): StringProvider = AndroidStringProvider(context.resources) { (it as ChipboxStringId).id() }
