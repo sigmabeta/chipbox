@@ -1,7 +1,5 @@
 package net.sigmabeta.chipbox.player.common
 
-import net.sigmabeta.chipbox.player.common.VolumeProcessor.Companion.DUCK_SCALE
-import net.sigmabeta.chipbox.player.common.VolumeProcessor.Companion.MAX_GAIN
 import net.sigmabeta.sage.logging.Hatchet
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
@@ -227,15 +225,15 @@ class VolumeProcessor(private val hatchet: Hatchet) {
 
         /** Upper bound on any single modification's gain. Caps boosts so
          *  normalizing a near-silent track can't amplify its noise floor without limit. */
-        const val MAX_GAIN = 3.0
+        const val MAX_GAIN = 5.0
 
         /** Per-frame cap on how far the applied gain may move toward the target, split
          *  asymmetrically: rises (attack) crawl up at 0.00005/frame — a 0.0→1.0 swing takes
-         *  ~100000 frames (~2083 ms @ 48 kHz), slow enough that normalization or unducking
-         *  doesn't pump on quiet sections. Falls (decay) bite at 0.0005/frame — a 1.0→0.0
+         *  ~20000 frames (~417 ms @ 48 kHz), slow enough that normalization or unducking
+         *  doesn't pump on quiet sections. Falls (decay) bite at 0.0001/frame — a 1.0→0.0
          *  swing takes ~10000 frames (~208 ms), fast enough that ducks land and peak-limit
          *  cuts land before something audibly clips. */
-        const val MAX_GAIN_CHANGE_PER_FRAME_UP = 0.00001
+        const val MAX_GAIN_CHANGE_PER_FRAME_UP = 0.00005
         const val MAX_GAIN_CHANGE_PER_FRAME_DOWN = 0.0001
     }
 }
