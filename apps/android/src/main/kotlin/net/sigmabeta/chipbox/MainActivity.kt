@@ -12,6 +12,7 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import dagger.hilt.android.AndroidEntryPoint
+import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 import javax.inject.Inject
 import net.sigmabeta.chipbox.appui.ChipboxAppUi
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService
@@ -34,7 +35,10 @@ class MainActivity : ComponentActivity() {
         val appGraph = (application as ChipboxApplication).appGraph
         Log.i("Metro", "ChipboxAppGraph.appInfo = ${appGraph.appInfo}")
         setContent {
-            CompositionLocalProvider(LocalViewModelProvider provides viewModelProvider) {
+            CompositionLocalProvider(
+                LocalViewModelProvider provides viewModelProvider,
+                LocalMetroViewModelFactory provides appGraph.metroViewModelFactory,
+            ) {
                 ChipboxAppUi(stringProvider)
             }
         }
