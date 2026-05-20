@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Milestones 3 + 4 implemented. Milestone 5 attempted on `SettingsViewModel`, reverted on Kotlin/Metro version-compat blocker.**
+Status: **Milestones 3 + 4 implemented (incl. M4c JVM-side). Milestone 5 attempted on `SettingsViewModel`, reverted on Kotlin/Metro version-compat blocker.**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -420,11 +420,55 @@ non-trivially populated now — about ~40 contributed bindings
 yet expose accessors for most of them, but they're available
 should M5's VM conversions need them.
 
-#### Sub-slice 4c — JVM-side (pending)
+#### Sub-slice 4c — JVM-side (done)
 
-`apps/jvm`'s plain-Dagger `JvmChipboxComponent` + `JvmModules.kt` gets
-the same treatment, producing one shared module set that contributes
-to both the Android `ChipboxAppGraph` and a JVM-side `JvmChipboxGraph`.
+`apps/jvm`'s plain-Dagger `JvmChipboxComponent` + `JvmModules.kt` get
+the same treatment, producing a JVM-side Metro graph that processes
+the same `@Module` set in parallel with Dagger's KSP. JvmChipboxComponent
+stays as the runtime DI root for this slice — analogous to M2's
+"establish the parallel graph without flipping the runtime path".
+
+- **`apps/jvm/build.gradle.kts`** applies the `dev.zacsweers.metro`
+  plugin (no `sage.di.jvm` convention applies here — `apps/jvm` uses
+  `sage.jvm`), adds `metro { interop { includeDagger() } }`, and pulls
+  `libs.sage.common.di` + `libs.metrox.viewmodel` + `libs.metrox.viewmodel.compose`
+  for forthcoming ViewModelGraph wiring.
+- **`JvmModules.kt`**: 14 `@Module object`s gained `@ContributesTo(AppScope::class)`
+  via the same `scripts/add_metro_contributes_to.py` helper used in M4b. Nine
+  `@Provides` functions also gained explicit return types — `provideLocalFileContentSource`,
+  `provideRealBufferManager`, and the seven emulator object providers — same
+  Metro-strictness fix M4a/M4b surfaced ("Implicit return types are not allowed
+  for @Provides").
+- **`JvmChipboxGraph`** added next to `JvmChipboxComponent`:
+  `@DependencyGraph(AppScope::class)` + `@SingleIn(AppScope::class)` +
+  `@Singleton`. Mirrors `JvmChipboxComponent`'s accessors and exposes a
+  `@DependencyGraph.Factory` taking the three `@Named` params (dbPath /
+  workDir / outputDir) via `@Provides`-annotated factory params. Does NOT
+  yet extend `ViewModelGraph` — that lands with the JVM-side `metroViewModel<T>()`
+  wiring in a later slice.
+
+Metro-interop snag surfaced + fixed: Metro reads Dagger's `@BindsInstance`
+abstract methods on `@Component.Builder` as `@Provides` declarations and
+rejects them as body-less (`@Provides declarations must have bodies`).
+Switched `JvmChipboxComponent` from a `@Component.Builder` (with three
+abstract `@BindsInstance` setter methods) to a `@Component.Factory` (with
+the three params on a single `create(...)` signature, `@BindsInstance`
+annotating the parameters instead of the methods). `Main.kt`'s
+`DaggerJvmChipboxComponent.builder().dbPath(...).workDir(...).outputDir(...).build()`
+becomes `DaggerJvmChipboxComponent.factory().create(...)`. Dagger accepts
+both forms; the Factory form keeps `@BindsInstance` off the method signature
+so Metro's interop doesn't see body-less @Provides.
+
+Verified: `:apps:jvm:compileKotlin` + `:jar` + `:standaloneScript` all green
+(Metro processes JvmModules contributions alongside Dagger KSP); `detekt`
+clean; ktlint clean; `scan` mode against an empty dir constructs the Dagger
+graph and walks the dir without error — runtime path unaffected.
+
+Out of scope for this slice (deferred): `JvmChipboxGraph` extending
+`ViewModelGraph`, wiring `LocalMetroViewModelFactory` in `DesktopMain`,
+and deleting the hand-rolled `JvmViewModelProvider` /
+`chipboxViewModel<T>()` machinery. Those happen after M5 unblocks VM
+conversions on Android.
 
 ### Milestone 5 — VM sweep (paused on version compat)
 

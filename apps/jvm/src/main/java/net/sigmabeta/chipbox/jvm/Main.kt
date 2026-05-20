@@ -144,11 +144,11 @@ private fun workingDir(): File = File(System.getProperty("user.dir"))
  */
 internal fun buildComponent(outputDir: File): JvmChipboxComponent {
     val workDir = File(workingDir(), WORK_DIR_NAME).apply { mkdirs() }
-    return DaggerJvmChipboxComponent.builder()
-        .dbPath(File(workDir, LIBRARY_DB_NAME).absolutePath)
-        .workDir(workDir)
-        .outputDir(outputDir)
-        .build()
+    return DaggerJvmChipboxComponent.factory().create(
+        dbPath = File(workDir, LIBRARY_DB_NAME).absolutePath,
+        workDir = workDir,
+        outputDir = outputDir,
+    )
 }
 
 private suspend fun withComponent(outputDir: File, block: suspend (JvmChipboxComponent) -> Unit) {

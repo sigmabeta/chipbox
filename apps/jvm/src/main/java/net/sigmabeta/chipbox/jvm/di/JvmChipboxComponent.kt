@@ -59,13 +59,18 @@ interface JvmChipboxComponent {
     // there's more than one).
     fun helloViewModel(): HelloViewModel
 
-    @Component.Builder
-    interface Builder {
-        @BindsInstance fun dbPath(@Named("dbPath") path: String): Builder
-
-        @BindsInstance fun workDir(@Named("workDir") dir: File): Builder
-
-        @BindsInstance fun outputDir(@Named("outputDir") dir: File): Builder
-        fun build(): JvmChipboxComponent
+    // Uses @Component.Factory rather than @Component.Builder so the caller-supplied paths
+    // arrive as factory params with `@BindsInstance` on the params themselves. The Builder
+    // form would put `@BindsInstance` on abstract methods, and Metro's Dagger-interop
+    // (running alongside Dagger during the M4c slice — see docs/metro-migration.md) reads
+    // those as `@Provides` declarations and rejects them as body-less. Param-level
+    // `@BindsInstance` keeps Dagger happy without tripping the Metro check.
+    @Component.Factory
+    interface Factory {
+        fun create(
+            @BindsInstance @Named("dbPath") dbPath: String,
+            @BindsInstance @Named("workDir") workDir: File,
+            @BindsInstance @Named("outputDir") outputDir: File,
+        ): JvmChipboxComponent
     }
 }
