@@ -158,6 +158,7 @@ include(
     ":cbox:common:settings:di",
     ":cbox:common:settings:real",
     ":cbox:common:strings:api",
+    ":cbox:common:ui:theme:api",
     ":cbox:common:utils:api",
 
     ":features:browse-all-tracks:api",
