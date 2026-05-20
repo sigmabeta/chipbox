@@ -122,12 +122,16 @@ class VolumeProcessor(private val hatchet: Hatchet) {
     }
 
     /**
-     * Convenience wrapper: peak-normalize the current track from its measured loudest sample
-     * [peakAmplitude] (0 = unknown, leaves audio unchanged). Independent of the fade-out,
-     * ducking, and master volume. Set once per track by the speaker.
+     * Convenience wrapper: loudness-normalize the current track from its measured integrated
+     * loudness [loudnessLufs] and true peak [truePeakDbtp]. Non-finite [loudnessLufs]
+     * (`Double.NaN`) means "unknown — leave audio unchanged"; a non-finite [truePeakDbtp]
+     * drops the peak ceiling and uses pure loudness gain. Independent of the fade-out,
+     * ducking, and master volume. Set per buffer by the speaker — for a render-ahead source
+     * the measurement climbs over the first 400 ms then settles, so the gain re-derives until
+     * stable.
      */
-    fun setNormalization(peakAmplitude: Int) {
-        setModification(KEY_NORMALIZATION, normalizationGain(peakAmplitude))
+    fun setNormalization(loudnessLufs: Double, truePeakDbtp: Double) {
+        setModification(KEY_NORMALIZATION, normalizationGain(loudnessLufs, truePeakDbtp))
     }
 
     /**

@@ -32,14 +32,16 @@ internal class CachedFilePcmSource(
 
     override val isOver: Boolean get() = cursor >= reader.totalFrames
 
-    override val peakAmplitude: Int = reader.header.peakAmplitude
+    override val loudnessLufs: Double = reader.header.integratedLufs
+
+    override val truePeakDbtp: Double = reader.header.truePeakDbtp
 
     init {
         reader.touch()
         hatchet.d("Opened cached PCM source: ${reader.totalFrames} frames at ${reader.sampleRate} Hz.")
-        // Replay the headroom figure measured when this track was first rendered (stashed in
+        // Replay the loudness figure measured when this track was first rendered (stashed in
         // the cache header), so a cache hit reports the same line a fresh render would.
-        LoudnessLog.report(hatchet, trackTitle, reader.header.peakAmplitude)
+        LoudnessLog.report(hatchet, trackTitle, loudnessLufs, truePeakDbtp)
     }
 
     override suspend fun readFrames(buffer: ShortArray): Int {

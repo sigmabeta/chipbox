@@ -51,11 +51,16 @@ interface PcmTrackSource {
      *  polls this between buffers to know when to advance the setlist. */
     val isOver: Boolean
 
-    /** Loudest 16-bit sample magnitude across the track, or `0` when not (yet) known: a
-     *  first-time render only learns this once the track finishes, and live/uncached sources
-     *  never measure it. Read once at track load and carried downstream to drive playback
-     *  normalization. */
-    val peakAmplitude: Int get() = 0
+    /** Integrated BS.1770 loudness across the track in LUFS, or [Double.NaN] until enough audio
+     *  has been measured (the first valid value appears after the first 400 ms). For a render-
+     *  ahead source the writer races well past the play head, so the figure is final within the
+     *  first buffers; cached-file sources return the value stashed in the header on construction. */
+    val loudnessLufs: Double get() = Double.NaN
+
+    /** Inter-sample true peak across the track in dBTP, or [Double.NEGATIVE_INFINITY] if no
+     *  audible peak yet. Paired with [loudnessLufs] to compute the loudness-normalization gain
+     *  with a peak ceiling so a quiet-but-dynamic track can't be boosted into clipping. */
+    val truePeakDbtp: Double get() = Double.NEGATIVE_INFINITY
 
     /** Most-recent error from the underlying source, or null. Polled by the Generator after
      *  every read; non-null aborts playback. */
