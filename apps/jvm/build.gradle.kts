@@ -108,4 +108,10 @@ dependencies {
     // Multiplatform ChipboxViewModel + LocalViewModelProvider — consumed by the demo
     // HelloViewModel and the JvmViewModelProvider that wires it into DesktopMain.
     implementation(projects.cbox.common.ui.vm.api)
+
+    // Voyager — Compose Multiplatform navigation. Replaces what would otherwise be
+    // androidx.navigation:navigation-compose (the AndroidX CMP fork publishes JVM stubs
+    // only, no runtime). Each screen implements `Screen`; `Navigator(MyScreen())` owns
+    // the back stack.
+    implementation(libs.voyager.navigator)
 }
