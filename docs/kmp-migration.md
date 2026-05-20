@@ -270,14 +270,20 @@ the doc and reader stay honest:
 - **Hilt is not a KMP-conversion blocker.** Earlier roadmap framing
   said "replace Hilt to unblock item 2." On second look: Hilt is
   Android app-wiring glue (entry points, app/activity components),
-  not player-core code. The JVM app already does manual constructor
-  injection in `Main.kt` and that works fine. The `:di` modules being
-  `sage.android` is their natural end state — they're not transitional
-  artifacts blocking anything. If the JVM ever wants typesafe DI, a
-  plain Dagger `@Component(modules = […])` on the JVM side can consume
-  the existing `@Module @Provides` classes (Dagger ignores the
-  `@InstallIn` Hilt-specific annotation as a no-op), no shared-code
-  rewrite required.
+  not player-core code. The `:di` modules being `sage.android` is
+  their natural end state — they're not transitional artifacts
+  blocking anything. The headless JVM target instead carries its own
+  plain-Dagger `@Component` (`apps/jvm/.../di/JvmChipboxComponent`)
+  with sibling `@Module` classes that mirror each Hilt module's
+  bindings — Hatchet, Database (bundled SQLite driver), Repository
+  (`DatabaseRepository`), ContentSource (`LocalFileContentSource`),
+  Buffer, Emulators (7 native + `EmulatorProvider`), Readers,
+  Scanner, Generator, Speaker. The trivial provider methods are
+  duplicated rather than shared (the cbox `:di` modules apply Hilt's
+  Android plugin and don't expose a JVM variant; dragging them into
+  a `sage.jvm` app's classpath fights Gradle variant resolution).
+  Hilt stays entirely intact on Android; the JVM gets typesafe DI
+  parity without it.
 
 ## Roadmap (not yet done)
 
