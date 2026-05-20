@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
@@ -13,11 +14,15 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import net.sigmabeta.chipbox.appui.ChipboxAppUi
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService
+import net.sigmabeta.chipbox.ui.vm.LocalViewModelProvider
+import net.sigmabeta.chipbox.vm.AndroidHiltViewModelProvider
 import net.sigmabeta.sage.ui.StringProvider
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     @Inject lateinit var stringProvider: StringProvider
+
+    private val viewModelProvider = AndroidHiltViewModelProvider()
 
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
@@ -25,7 +30,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContent { ChipboxAppUi(stringProvider) }
+        setContent {
+            CompositionLocalProvider(LocalViewModelProvider provides viewModelProvider) {
+                ChipboxAppUi(stringProvider)
+            }
+        }
     }
 
     override fun onStart() {

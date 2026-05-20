@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.jvm
 
+import androidx.compose.runtime.Composable
 import net.sigmabeta.chipbox.jvm.di.JvmChipboxComponent
 import net.sigmabeta.chipbox.ui.vm.ChipboxViewModel
 import net.sigmabeta.chipbox.ui.vm.ViewModelProvider
@@ -16,6 +17,7 @@ import kotlin.reflect.KClass
 class JvmViewModelProvider(
     private val component: JvmChipboxComponent,
 ) : ViewModelProvider {
+    @Composable
     @Suppress("UNCHECKED_CAST")
     override fun <T : ChipboxViewModel> get(type: KClass<T>): T = when (type) {
         HelloViewModel::class -> component.helloViewModel() as T
