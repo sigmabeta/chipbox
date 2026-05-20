@@ -742,6 +742,75 @@ remainder, sliced by dependency order.
   Android-only call, `collectAsStateWithLifecycle`, swaps to plain
   `collectAsState`).
 
+- **Slice 5a — Settings feature value types on commonMain (done).**
+  First sub-slice of the Settings feature port. Scope: hoist the
+  rendering value types into a KMP-published `features/settings/api`
+  so the desktop UI can build the same screen from the same types
+  the Android UI uses. SettingsViewModel itself stays in
+  `features/settings/real` as `sage.android` for now (Hilt
+  processing on `com.android.kotlin.multiplatform.library` would
+  require new plumbing in `SageDiAndroidModulePlugin` and isn't
+  in scope here); the JVM-side VM impl is sub-slice 5b.
+
+  - **`LibrarySource.addLibraryLocation(identifier: String)`** is
+    now on the commonMain interface. The Android impl
+    (`AndroidFileContentSource`) keeps its `addLibraryLocation(uri: Uri)`
+    overload for the SAF-typed call sites and routes the new
+    String overload through it; the JVM `LocalFileContentSource`
+    gets a native impl that treats the identifier as a directory
+    path. Settles "AndroidFileContentSource swaps to LibrarySource"
+    from the roadmap.
+
+  - **`features/settings/api` → `sage.kmp`.** Plugin swap; namespace
+    stays `net.sigmabeta.chipbox.features.settings.api`. Three
+    files move to `src/commonMain/kotlin/`:
+    - `Settings.kt` — the `@Serializable data object` route key.
+    - `SettingsAction.kt` — sealed action hierarchy extending
+      `ChipboxAction` (commonMain since slice 2).
+    - `SettingsState.kt` — the `ListState` subtype + per-row
+      `ListModel` builders. All types it references already live
+      in commonMain (sage common + cbox common types).
+
+    Deps split into `commonMain { }`: `sage.common.list`,
+    `sage.common.appcomm`, `sage.common.appinfo`,
+    `sage.common.ui.{components,strings}`, `kotlinx-collections-immutable`,
+    plus `cbox.common.{appcomm,strings,ui.fonts}` for the
+    ChipboxStringId/ChipboxFont references the `ListModel`
+    builders need.
+
+  - **`SettingsViewModel` signature changes.** Replaces
+    `AndroidFileContentSource` with `LibrarySource` (the .toUri()
+    call disappears — the SAF URI string flows straight through to
+    `librarySource.addLibraryLocation(identifier)`). Replaces
+    `PlaybackStatusEntryPoint` with two `@Named`-injected params:
+    `PLAYBACK_STATUS_AVAILABLE: Boolean` and
+    `PLAYBACK_STATUS_DESTINATION: Any?`. The companion exposes the
+    `@Named` keys as constants; Android Hilt module wires them
+    from the real `PlaybackStatusEntryPoint.isAvailable` and the
+    `PlaybackStatus` route. The JVM-side bindings (to constant
+    `false` / `null`) come with sub-slice 5b's VM wiring.
+
+  - **`apps/android/.../di/ChipboxModule`** adds `@Provides` for
+    `LibrarySource` (binds `AndroidFileContentSource`), the
+    `@Named` Boolean (delegates to `PlaybackStatusEntryPoint`),
+    and the `@Named` destination object (`PlaybackStatus`). The
+    app's `build.gradle.kts` pulls
+    `features.playbackStatus.api` + `features.settings.real` so
+    those types are visible to the Hilt module.
+
+  Sub-slice 5b — the JVM-side `SettingsViewModel` instantiation
+  (requires a JVM `Storage` impl so `ChipboxSettingsManager` /
+  `DebugSettingsManager` work; plus a JVM `@Provides` for the two
+  `@Named` keys; plus a `JvmChipboxComponent.settingsViewModel()`
+  accessor + `JvmViewModelProvider` dispatch arm) — is the next
+  piece. Doesn't block the existing Android build or any other
+  Chipbox commonMain consumer reading `SettingsState`.
+
+  Verified: `:features:settings:api:build` green for both Android
+  + JVM variants, `:features:settings:real:build` (still
+  `sage.android`) green, `:apps:android:assembleDebug` green,
+  `:apps:jvm:check` green.
+
 ## Roadmap (not yet done)
 
 1. **Compose Multiplatform UI port: finish the Settings port.**
@@ -750,11 +819,19 @@ remainder, sliced by dependency order.
    types). Slices 1–5 are done (see Milestone 9 above); the
    remaining work, in dependency order:
 
-   6. **Port `features/settings/api` + `features/settings/real` to
-      `sage.kmp`.** `SettingsViewModel` extends the now-commonMain
-      `ChipboxListViewModel`; `AndroidFileContentSource` swaps to
-      `LibrarySource`; `PlaybackStatusEntryPoint` link drops on
-      desktop (Android-only media service tie-in).
+   6b. **JVM-side `SettingsViewModel` wiring.** Sub-slice 5a in
+       Milestone 9 hoisted the Settings value types to commonMain
+       and adjusted the VM's signature; what's left is making it
+       instantiable on JVM. Needs:
+       - A JVM `Storage` impl (file-backed properties) so
+         `ChipboxSettingsManager` / `DebugSettingsManager` work.
+       - `@Provides` bindings in `JvmChipboxComponent` for the
+         `LibrarySource` (already there), the
+         `PLAYBACK_STATUS_AVAILABLE` / `_DESTINATION` `@Named`
+         params (constant false / null), and SettingsViewModel
+         itself.
+       - A `JvmChipboxComponent.settingsViewModel()` accessor +
+         a `JvmViewModelProvider` `when` arm.
    7. **Desktop folder picker.** `expect`/`actual` or a JVM-only
       `LibraryLocationPicker` backed by `javax.swing.JFileChooser`.
    8. **Wire `SettingsScreen` into Voyager.** Replace the demo

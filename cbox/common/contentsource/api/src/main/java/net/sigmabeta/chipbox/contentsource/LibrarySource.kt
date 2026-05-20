@@ -18,4 +18,13 @@ interface LibrarySource : ContentSource {
     val locations: StateFlow<List<LibraryLocationInfo>>
 
     fun scanFiles(): Flow<LibraryFileInfo>
+
+    /**
+     * Persist a new library root identified by [identifier]. Same string-shape contract as
+     * [locations] / [scanFiles]: the SAF tree-doc URI string on Android, an absolute filesystem
+     * path on the JVM. Implementations decide how to take a content lock on the location
+     * (e.g. `ContentResolver.takePersistableUriPermission` on Android) and where to persist
+     * the location list across restarts.
+     */
+    fun addLibraryLocation(identifier: String)
 }

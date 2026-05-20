@@ -54,6 +54,10 @@ class AndroidFileContentSource(
         )
     }
 
+    override fun addLibraryLocation(identifier: String) {
+        addLibraryLocation(Uri.parse(identifier))
+    }
+
     fun addLibraryLocation(uri: Uri) {
         if (_libraryLocations.value.any { it.uri == uri }) {
             hatchet.d("Library location already added: $uri")
