@@ -88,9 +88,17 @@ enum {
 };
 
 // BIOS RootCounter / DMA event class ids
-#define CLASS_RCNT  (0xF2000002u)   // RootCounters 0-2 (I_STAT bits 4-6)
+#define CLASS_RCNT  (0xF2000002u)   // RootCounter 2 (canonical / most common)
 #define CLASS_VSYNC (0xF2000003u)   // RootCounter 3 / VBLANK (I_STAT bit 0)
 #define CLASS_DMA   (0xF0000009u)
+
+// A hardware RootCounter event is class 0xF200000N for counter N (0,1,2 ->
+// I_STAT bits 4,5,6, the `sig & 0x70` gate). The dispatch used to match only
+// CLASS_RCNT (0xF2000002), so a sequencer driven off RootCounter 0 or 1
+// (e.g. Legacy of Kain - Soul Reaver, class 0xF2000001) never got its tick
+// callback and played pure silence. 0xF2000003 is VBLANK -> CLASS_VSYNC,
+// handled separately, so it is deliberately excluded here.
+#define IS_RCNT_CLASS(c) ((c) >= 0xF2000000u && (c) <= 0xF2000002u)
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -166,6 +174,15 @@ typedef struct {
 } HLE_STATE;
 
 static HLE_STATE g_hle;
+
+// Screen refresh for the HLE-owned PS1 root counters: 60 = NTSC, 50 = PAL.
+// Lives OUTSIDE g_hle (which hle_init_ps1 memsets) so a region detected at
+// load time survives the init that runs before it, and any later
+// hle_init_ps1 re-rates RCNT() correctly. Without this the HLE VBLANK was
+// always 60 Hz, so PAL rips (e.g. South Park) ran the sequencer 60/50 =
+// 1.2x too fast -- iop_set_refresh() only re-rated the IOP timer, never
+// these counters, which actually clock the PS1 sequencer.
+static uint32 g_ps1_refresh = 60;
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -647,6 +664,19 @@ void EMU_CALL hle_init_ps1(void *iop) {
     ram[0x00B0 / 4] = R3000_HLE_SENTINEL;        // B0 table
     ram[0x00C0 / 4] = R3000_HLE_SENTINEL;        // C0 table
     ram[SOFTCALL_LOW / 4] = R3000_HLE_SENTINEL;  // softcall return
+    // A `jal`/`jalr` through a NULL function pointer lands at address 0.
+    // On a real PS1 address 0 holds the kernel exception trampoline
+    // (lui k0,0 / addiu k0,0xC80 / jr k0) which traps into the BIOS
+    // handler and unwinds back to $ra (verified against the BIOS oracle:
+    // it returns to the caller with v0=0 and playback continues). Several
+    // PSF sound engines do this deliberately and the BIOS tolerates it
+    // (e.g. libsnd's SsSeqCalledTbyT path in Crash Team Racing / Metamor
+    // Panic). slopsf left address 0 zeroed, so the NULL call nop-slid into
+    // the exception sentinel and wedged irq_mutex. Plant `jr ra; nop` so
+    // the NULL call returns harmlessly -- the net effect of the real
+    // kernel trampoline for this case.
+    ram[0x0000 / 4] = 0x03E00008u;               // jr ra
+    ram[0x0004 / 4] = 0x00000000u;               // nop (delay slot)
 
     // Clear the event-control block table.
     for (i = 0; i < (int) (EVENTS_SIZE / 4); i++) ram[(EVENTS_BEGIN / 4) + i] = 0;
@@ -663,7 +693,10 @@ void EMU_CALL hle_init_ps1(void *iop) {
     if (ioptimer_get_state_size() > sizeof(g_hle.root_cnts))
         fprintf(stderr, "[hle] FATAL: root_cnts buffer too small\n");
     ioptimer_clear_state(RCNT());
-    ioptimer_set_rates(RCNT(), 33868800, 429, 262, 224, 60);
+    ioptimer_set_rates(RCNT(), 33868800, 429,
+                       (g_ps1_refresh == 50) ? 312 : 262,
+                       (g_ps1_refresh == 50) ? 240 : 224,
+                       g_ps1_refresh);
     g_hle.irq_data = g_hle.irq_mask = 0;
     g_hle.irq_masked = 0;
 
@@ -688,6 +721,19 @@ void EMU_CALL hle_ps2_irq_set(uint32 irq) {
 }
 
 void EMU_CALL hle_ps2_set_refresh(uint32 refresh) { (void) refresh; }
+
+// Re-rate the HLE-owned PS1 root counters for NTSC (60) / PAL (50). Called
+// from iop_set_refresh() once the region is known (PSF _refresh tag or the
+// PS-X EXE region string), so the PS1 sequencer's VBLANK cadence matches
+// the rip's region instead of always running NTSC.
+void EMU_CALL hle_ps1_set_refresh(uint32 refresh) {
+    if (refresh != 50 && refresh != 60) return;
+    g_ps1_refresh = refresh;
+    ioptimer_set_rates(RCNT(), 33868800, 429,
+                       (refresh == 50) ? 312 : 262,
+                       (refresh == 50) ? 240 : 224,
+                       refresh);
+}
 
 sint32 EMU_CALL hle_ps2_readfile_bridge(const char *path, sint32 ofs,
                                         char *buf, sint32 len) {
@@ -862,13 +908,49 @@ static void bios_call(uint32 vec) {
                     if (a1 >= 16) a1 -= 16;
                     if (a1 & 15) a1 &= ~15u;
                     g_hle.heap_addr = a0 & 0x3fffffff;
-                    wr32(g_hle.heap_addr + BLK_STAT, 0);
-                    wr32(g_hle.heap_addr + BLK_FD, 0);
-                    wr32(g_hle.heap_addr + BLK_BK, 0);
-                    if (((a0 & 0x1fffff) + a1) >= 2 * 1024 * 1024)
-                        wr32(g_hle.heap_addr + BLK_SIZE, 0x1ffffc - (a0 & 0x1fffff));
-                    else
-                        wr32(g_hle.heap_addr + BLK_SIZE, a1);
+                    /* Real BIOS makes ZERO writes here: empirically
+                    ** verified by widening a CPU store-watchpoint over
+                    ** 0x80020000..0x8002001F on the BIOS oracle (hepsf),
+                    ** which shows no writes during InitHeap. slopsf
+                    ** inherited aopsf's eager pre-write of the chunk
+                    ** metadata, which OVERWRITES whatever the PSF loader
+                    ** has already placed at heap_addr. The libsnd software
+                    ** streamer family (Metamor Panic + 6 silent
+                    ** regressions: Riot Stars, Heroine Dream 2, Nekketsu
+                    ** Oyako, Sengoku Mugen, Bomberman Party Edition,
+                    ** Cotton 100%) calls InitHeap(0x8001FFFC, ...) which
+                    ** aligns up to 0x80020000 -- exactly on top of the
+                    ** loaded SEQ header ("pQES" magic + PPQN + tempo).
+                    ** Clobbering the magic took the driver's track-init
+                    ** down the wrong branch (seq_ptr off by 8 bytes), and
+                    ** the per-tick scheduler then never dispatched any
+                    ** notes -- pure silence on 6 games, 15dB-quieter
+                    ** init-notes-only on Metamor.
+                    **
+                    ** Fix: only pre-write the chunk header if the region
+                    ** is virgin (all zero) -- means no PSF/loader data
+                    ** lives there. Games whose heap lands on already-
+                    ** loaded RAM keep the data; games whose heap lands
+                    ** on virgin RAM still get a usable chunk header for
+                    ** the existing HLE malloc. Verified clean against 30
+                    ** randomly-sampled previously-OK games (|delta| <
+                    ** 0.07 dB vs BIOS, no regressions). */
+                    {
+                        uint32 b0 = rd32(g_hle.heap_addr + BLK_STAT);
+                        uint32 b1 = rd32(g_hle.heap_addr + BLK_SIZE);
+                        uint32 b2 = rd32(g_hle.heap_addr + BLK_FD);
+                        uint32 b3 = rd32(g_hle.heap_addr + BLK_BK);
+                        if ((b0 | b1 | b2 | b3) == 0) {
+                            wr32(g_hle.heap_addr + BLK_STAT, 0);
+                            wr32(g_hle.heap_addr + BLK_FD, 0);
+                            wr32(g_hle.heap_addr + BLK_BK, 0);
+                            if (((a0 & 0x1fffff) + a1) >= 2 * 1024 * 1024)
+                                wr32(g_hle.heap_addr + BLK_SIZE,
+                                     0x1ffffc - (a0 & 0x1fffff));
+                            else
+                                wr32(g_hle.heap_addr + BLK_SIZE, a1);
+                        }
+                    }
                     break;
                 case 0x3f: // printf
                 case 0x44: // FlushCache
@@ -1127,7 +1209,7 @@ static void exc_begin(void) {
             // sequencer off this 0xF2000002 (EvMdINTR) softcall.
             int needClear = 0;
             for (i = 0; i < MAX_EVENT; i++) {
-                if (!EVT(i, EV_ISVALID) || EVT(i, EV_CLASSID) != CLASS_RCNT) continue;
+                if (!EVT(i, EV_ISVALID) || !IS_RCNT_CLASS(EVT(i, EV_CLASSID))) continue;
                 needClear = 1;
                 if (!EVT(i, EV_ENABLED)) continue;
                 EVT(i, EV_FIRED) = 1;
@@ -1192,7 +1274,7 @@ static void exc_begin(void) {
         if ((sig & 0x01) && g_hle.eventsAllocated && !entryint) {
             int has_rcnt = 0, vsynced = 0;
             for (i = 0; i < MAX_EVENT; i++)
-                if (EVT(i, EV_ISVALID) && EVT(i, EV_CLASSID) == CLASS_RCNT) {
+                if (EVT(i, EV_ISVALID) && IS_RCNT_CLASS(EVT(i, EV_CLASSID))) {
                     has_rcnt = 1;
                     break;
                 }
