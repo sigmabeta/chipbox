@@ -121,7 +121,7 @@ dependencies {
     implementation(projects.cbox.android.storage.api)
     implementation(projects.cbox.common.debug.di)
     implementation(projects.cbox.common.debugInfo.di)
-    implementation(projects.cbox.common.di.api)
+    implementation(libs.sage.common.di)
     implementation(projects.cbox.common.settings.di)
     implementation(projects.cbox.common.ui.vm.api)
     implementation(projects.features.playbackStatus.api)

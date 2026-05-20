@@ -8,6 +8,7 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.MetroViewModelFactory
 import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactory
 import kotlin.reflect.KClass
+import net.sigmabeta.sage.di.AppScope
 
 /**
  * Chipbox's [MetroViewModelFactory] — the `androidx.lifecycle.ViewModelProvider.Factory` that

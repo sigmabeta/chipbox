@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Milestone 3 implemented.**
+Status: **Milestone 3 implemented; Milestone 4 in progress (sage modules done).**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -289,23 +289,76 @@ processing the same module's annotations; the empty-but-declared
 `MetroViewModelFactory` is bound from `appGraph.metroViewModelFactory`
 and provided at composition root — ready for VMs to plug in.
 
-### Milestone 4 — bulk module sweep (planned)
+### Milestone 4 — bulk module sweep (sage modules done; chipbox modules pending)
 
-Mechanical conversion of the remaining `@Module` files.
+Mechanical conversion: each `@Module` gains an `@ContributesTo(AppScope::class)`
+annotation alongside its existing `@InstallIn(SingletonComponent::class)`,
+so the bindings flow into both Hilt's and Metro's graphs during the
+transition. Started with the sage submodule — only 4 `@Module` files
+there vs. 30+ in chipbox/features, and converting sage first means all
+the foundational bindings (Hatchet, coroutines, resources, analytics)
+land on the Metro side before chipbox features need them.
 
-- For each of the 34 remaining `@Module` declarations:
-  - `@InstallIn(SingletonComponent::class)` → `@ContributesTo(AppScope::class)`.
-  - `@Module abstract class` → `@ContributesTo interface` (Metro doesn't
-    distinguish).
-  - `@Singleton` → `@SingleIn(AppScope::class)`.
-  - `@Binds abstract fun` → Metro's `@Binds val Impl.bind: Iface` syntax,
-    OR `@ContributesBinding(AppScope::class)` on the impl class directly
-    (preferred for simple bind-to-interface cases — drops the module).
-- A scripted bulk-rewrite (similar to `scripts/kmpify.py`) keeps the manual
-  diff small.
-- The JVM target's `JvmChipboxComponent` + `JvmModules.kt` get the same
-  treatment, producing one shared module set that contributes to both
-  the Android `ChipboxAppGraph` and a JVM-side `JvmChipboxGraph`.
+#### Sub-slice 4a — sage modules + scope plumbing (done)
+
+- **`AppScope` moved into sage** as a new `sage/common/di` module
+  (`net.sigmabeta.sage.di.AppScope`). Was previously in chipbox; sage
+  modules couldn't reference it without forcing a sage → chipbox cycle.
+  Chipbox-side `cbox/common/di/api` deleted; apps/android and
+  features/settings/real now depend on `libs.sage.common.di`.
+  `ChipboxAppGraph` + `ChipboxMetroViewModelFactory` import the sage
+  flavor.
+
+- **4 sage modules converted** — each gains `dev.zacsweers.metro`
+  plugin, `metro { interop { includeDagger() } }`, a `projects.common.di`
+  dep for AppScope, and `@ContributesTo(AppScope::class)` on the
+  `@Module object` declaration:
+  - `sage/android/coroutines` — `SageDispatchers` + `CoroutineScope`.
+  - `sage/android/resources` — `Resources` + `ResourceProvider`.
+  - `sage/fake/analytics` — `Analytics` (Noop impl).
+  - `sage/android/analytics` — `FirebaseAnalytics`. (Build hit an
+    *unrelated* pre-existing Firebase catalog issue —
+    `firebase-analytics-ktx` got renamed to `firebase-analytics` in
+    a newer BOM — not part of this slice; Metro wiring on the module
+    is in place.)
+
+  Found inline: **Metro requires explicit return types on `@Provides`
+  functions** where Hilt was lax. `CoroutinesModule.provideCoroutineScope`
+  and `provideRegularDispatchers` had inferred return types; added
+  explicit `: CoroutineScope` / `: SageDispatchers`. Expect more of
+  the same in the chipbox sweep.
+
+- **`ChipboxAppGraph` gains a factory + Application binding.** Sage
+  `ResourcesModule` and `AnalyticsModule` take `@ApplicationContext
+  Context` parameters. Metro recognises Hilt's `@Qualifier` meta-
+  annotation via interop, but the binding has to come from somewhere
+  — added a `@DependencyGraph.Factory` that takes `Application` as
+  `@Provides`, plus a `@Provides @ApplicationContext fun
+  provideAppContext(application: Application): Context = application`.
+  `ChipboxApplication` switched from `createGraph<…>()` to
+  `createGraphFactory<ChipboxAppGraph.Factory>().create(this)`.
+
+  Result: sage's `@ApplicationContext` parameters resolve cleanly from
+  Metro's graph at compile time.
+
+Verified: `:apps:android:assembleDebug` green. Hilt and Metro
+processing both run on the 4 sage modules without conflict.
+
+#### Sub-slice 4b — chipbox modules (pending)
+
+The remaining 30+ `@Module` declarations across `cbox/**/di` and
+`features/**/di`. Same mechanical recipe — `@ContributesTo(AppScope::class)`
++ Metro plugin + interop + AppScope dep — plus the now-known
+"explicit return type" fix-up wherever Hilt was tolerant. Several
+modules use Anvil-style `@Binds` patterns where the chipbox version
+will probably benefit from collapsing into `@ContributesBinding` on
+the impl class directly.
+
+#### Sub-slice 4c — JVM-side (pending)
+
+`apps/jvm`'s plain-Dagger `JvmChipboxComponent` + `JvmModules.kt` gets
+the same treatment, producing one shared module set that contributes
+to both the Android `ChipboxAppGraph` and a JVM-side `JvmChipboxGraph`.
 
 ### Milestone 5 — bulk VM sweep (planned)
 
