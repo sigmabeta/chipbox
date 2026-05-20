@@ -7,14 +7,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.zacsweers.metro.ContributesTo
-import javax.inject.Named
 import javax.inject.Singleton
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibrarySource
-import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
-import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatusEntryPoint
-import net.sigmabeta.chipbox.features.settings.SettingsViewModel
 import net.sigmabeta.chipbox.strings.ChipboxStringId
 import net.sigmabeta.chipbox.strings.id
 import net.sigmabeta.sage.android.logging.AndroidHatchet
@@ -52,16 +48,4 @@ object AndroidAppModule {
     @Provides
     @Singleton
     fun provideLibrarySource(impl: AndroidFileContentSource): LibrarySource = impl
-
-    // SettingsViewModel's playback-status flag/destination — Android wires the real entry
-    // point's availability and routes clicks to the PlaybackStatus screen. The JVM target's
-    // JvmChipboxComponent provides constant false + null for the same @Named keys.
-    @Provides
-    @Named(SettingsViewModel.PLAYBACK_STATUS_AVAILABLE)
-    fun providePlaybackStatusAvailable(entryPoint: PlaybackStatusEntryPoint): Boolean =
-        entryPoint.isAvailable
-
-    @Provides
-    @Named(SettingsViewModel.PLAYBACK_STATUS_DESTINATION)
-    fun providePlaybackStatusDestination(): Any = PlaybackStatus
 }

@@ -27,7 +27,6 @@ data class SettingsState(
     val formattedBuildDate: String? = null,
     val debugClickCount: Int = 0,
     val shouldShowDebug: Boolean? = null,
-    val playbackStatusAvailable: Boolean = false,
 ) : ListState() {
     override fun title(stringProvider: StringProvider) = TitleBarModel(
         title = stringProvider.getString(ChipboxStringId.SETTINGS_SCREEN_TITLE),
@@ -61,11 +60,13 @@ data class SettingsState(
 
     private fun debugSection(stringProvider: StringProvider): List<ListModel> {
         if (shouldShowDebug != true) return emptyList()
-        return listOfNotNull(
+        // Playback-status row dropped during the Hilt → Metro migration; the feature module
+        // doesn't depend on features/playback-status/api anymore. Re-add when playback-status
+        // itself migrates and the dep is restored — see docs/metro-migration.md.
+        return listOf(
             sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_DEBUG),
             appBranchRow(stringProvider),
             versionCodeRow(stringProvider),
-            if (playbackStatusAvailable) playbackStatusRow(stringProvider) else null,
         )
     }
 
@@ -161,10 +162,4 @@ data class SettingsState(
         clickAction = SageAction.Noop,
     )
 
-    private fun playbackStatusRow(stringProvider: StringProvider) = NameCaptionListModel(
-        dataId = ChipboxStringId.SETTINGS_LABEL_PLAYBACK_STATUS.hashCode().toLong(),
-        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_PLAYBACK_STATUS),
-        caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_PLAYBACK_STATUS),
-        clickAction = SettingsAction.PlaybackStatusClicked,
-    )
 }

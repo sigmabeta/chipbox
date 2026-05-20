@@ -27,7 +27,11 @@ dependencies {
     implementation(libs.sage.common.di)
     implementation(projects.cbox.common.ui.fonts.api)
     implementation(projects.cbox.common.appcomm.api)
-    implementation(projects.features.playbackStatus.api)
+    // features.playbackStatus.api dropped during Hilt → Metro migration —
+    // PlaybackStatusEntryPoint pulled in playback-status' Hilt module transitively, and
+    // Metro's @ContributesTo aggregation didn't see it through the variant-specific
+    // debugImplementation chain. Re-add when playback-status itself migrates. See
+    // docs/metro-migration.md.
     implementation(projects.cbox.common.strings.api)
     implementation(projects.cbox.common.settings.api)
     implementation(projects.cbox.common.debug.api)

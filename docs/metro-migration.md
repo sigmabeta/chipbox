@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Milestones 3 + 4 implemented (sage and chipbox `@Module`s contribute to Metro graph).**
+Status: **Milestones 3 + 4 implemented. Milestone 5 attempted on `SettingsViewModel`, reverted on Kotlin/Metro version-compat blocker.**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -426,11 +426,95 @@ should M5's VM conversions need them.
 the same treatment, producing one shared module set that contributes
 to both the Android `ChipboxAppGraph` and a JVM-side `JvmChipboxGraph`.
 
-### Milestone 5 — bulk VM sweep (planned)
+### Milestone 5 — VM sweep (paused on version compat)
 
-Convert the remaining 14 `@HiltViewModel`-annotated classes using the
-mechanism from Milestone 3. Each conversion is two annotation changes plus
-verifying the route still gets a proper instance.
+Per-feature VM migration. Pivoted from the original "bulk sweep" plan
+to **screen-by-screen** after attempting `SettingsViewModel` and
+finding the all-at-once approach fights Metro's transitive aggregation
+across variant-specific `debugImplementation` chains (see commit
+notes). The new slicing rules — recorded in user memory for the rest
+of the migration:
+
+- Migrate one feature at a time.
+- When the feature depends on another feature's `api`, *drop that dep*
+  during the migration. Delete the now-broken state fields / VM params
+  / `@Named` bindings.
+- If a `SageAction` would navigate to a not-yet-migrated screen,
+  replace `emit(ChipboxEvent.NavigateTo(...))` with a `hatchet.w(...)`
+  + `ShowSnackbar("Not implemented yet")`.
+- Re-add the dep as each dependency screen itself migrates.
+
+This keeps each feature's Metro graph self-contained — no
+transitive-resolution gymnastics.
+
+#### Sub-slice 5a — Settings de-coupling (done, VM still @HiltViewModel)
+
+Applied the screen-by-screen rules to Settings, but reverted the
+`@HiltViewModel` → Metro conversion on a separate version-compat
+blocker (see below). The cleanup itself stays — when the compat issue
+is resolved, the VM converts on top of an already-trimmed feature.
+
+- `features/settings/real`'s `implementation(projects.features.playbackStatus.api)`
+  dropped. Adjacent `features/playback-status/{real,fake}/di/PlaybackStatusModule`
+  files have their `@Singleton`-on-`@Binds` removed (Metro forbids
+  scopes on `@Binds`); the real variant's module also rewrote
+  `@Binds` → `@Provides` on `object` (Metro's Dagger interop doesn't
+  pick up `@Binds` on `abstract class` reliably).
+- `SettingsViewModel`: lost two constructor params
+  (`@Named(PLAYBACK_STATUS_AVAILABLE) Boolean`,
+  `@Named(PLAYBACK_STATUS_DESTINATION) Any?`) and the matching
+  `PLAYBACK_STATUS_*` companion constants. `PlaybackStatusClicked`
+  action handler replaces the nav-emit with `hatchet.w(...)` + a
+  "not implemented yet" snackbar. `PlaybackStatusEntryPoint` /
+  `PlaybackStatus` imports gone.
+- `SettingsState`: `playbackStatusAvailable: Boolean` field gone;
+  the conditional `playbackStatusRow` ListModel in the debug section
+  removed; the `playbackStatusRow` private function deleted.
+- `AndroidAppModule`: dropped both `@Named` playback-status
+  `@Provides` bindings and the `PlaybackStatus` / `SettingsViewModel`
+  / `PlaybackStatusEntryPoint` imports. Hilt-side LibrarySource +
+  StringProvider + Hatchet + AppInfo bindings retained.
+
+**The Metro-conversion attempt and what blocked it.** Tried converting
+`SettingsViewModel` to `@Inject @ViewModelKey @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())`
+and switching `SettingsRoute` to `metroViewModel<SettingsViewModel>()`.
+Metro's compiler plugin then hit:
+
+```
+e: org.jetbrains.kotlin.fir.pipeline.IrGenerationExtensionException:
+'org.jetbrains.kotlin.ir.declarations.IrDeclarationOrigin
+$Companion.getIR_EXTERNAL_DECLARATION_STUB()'
+Caused by: java.lang.NoSuchMethodError ...
+at dev.zacsweers.metro.compiler.ir.IrKt.requireSimpleType(ir.kt:2178)
+at dev.zacsweers.metro.compiler.ir.MetroIrPipeline.run(MetroIrPipeline.kt:40)
+```
+
+Per Metro's `compatibility.md`, Metro 1.1.1 supports Kotlin 2.3.20+ and
+2.4.0+ explicitly; chipbox is on **Kotlin 2.3.10** (sage catalog),
+which falls in a gap. The `@ContributesIntoMap` codepath specifically
+triggers this — all of M4's plain `@ContributesTo` conversions don't
+go through `requireSimpleType` and stay green.
+
+Reverted the VM annotations + `SettingsRoute` accessor back to
+`@HiltViewModel` / `hiltViewModel()`. The cleanup stands.
+
+#### Sub-slice 5b — version-compat decision (pending)
+
+Two routes to unblock VM conversions:
+
+1. **Bump Kotlin to 2.3.20** in `sage/gradle/libs.versions.toml`.
+   Side-effects: compose-compiler / KSP / kotlinx-serialization
+   plugins pinned to Kotlin will need version bumps too. Most
+   forward-compatible — keeps Metro on 1.1.1.
+2. **Downgrade Metro to ~0.10.x** (the range that supports 2.3.10).
+   Risk: `metrox-viewmodel-compose` may have different API shape
+   pre-1.0; sub-slice 4b assumptions about
+   `@ContributesTo`/`@ContributesIntoMap`/`binding<>()` may need
+   adjustment.
+
+Recommendation: option 1 — chipbox is already chasing recent stable
+versions of every other framework (AGP 9, Compose 1.9, etc.); a
+patch-level Kotlin bump is the smaller delta than rolling Metro back.
 
 ### Milestone 6 — drop Hilt (planned)
 
