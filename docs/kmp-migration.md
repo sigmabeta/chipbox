@@ -12,8 +12,10 @@ Room database the Android app does — driven by the *same* `RealScanner`
 via a `LibrarySource` abstraction (so the SAF / file walk is the only
 platform implementation, not the metadata logic). The JVM target now also
 opens a desktop window via Compose Multiplatform — placeholder Hello
-composable rendering the real Chipbox color palette out of a new shared
-`sage.compose.kmp` module. The remaining `sage.android`-classified modules
+composable rendering the real Chipbox color palette **and** the real
+Chipbox typography structure (sizes, weights, line heights) out of a
+new shared `sage.compose.kmp` module; only the custom pixel-art fonts
+themselves are still Android-only (system font fallback on JVM). The remaining `sage.android`-classified modules
 split between **genuinely Android-only system glue** (Hilt `:di`, `R.*`
 resource modules, audio service, SAF / ContentProvider) and **the Compose
 UI surface**, which used to be tagged as legitimately-Android end-state
@@ -359,15 +361,36 @@ scoping, font/resource, or image-loading stories.
   moves into `commonMain`; both the existing Android `AppTheme` and the
   JVM `DesktopMain` resolve them from there. The desktop bootstrap
   drops its inlined hex constants in favour of the real palette.
+- **Slice 3 — typography structure + multiplatform `ChipboxTheme()`**.
+  The typography tokens (`ChipboxTypeScaleTokens`,
+  `ChipboxTypographyTokens`, the weight half of `ChipboxTypefaceTokens`)
+  and the `buildChipboxTypography(...)` builder move to `commonMain`;
+  the builder's signature changes from `(brand: ChipboxFont, plain:
+  ChipboxFont, fontScale)` to `(brand: FontFamily, plain: FontFamily,
+  brandScale: Float, plainScale: Float)` so callers fold the per-font
+  `scaleFactor` in themselves. New `ChipboxTheme()` /
+  `ChipboxThemeMenu()` composables in `commonMain` inline the previous
+  `SageMaterial` wrapping (`isSystemInDarkTheme()` + scheme pick +
+  `MaterialTheme(colorScheme, typography)`) — `isSystemInDarkTheme()`
+  itself is multiplatform (it lives in `androidx.compose.foundation`)
+  so no Android-only theme dep is needed on the JVM side. The Android
+  `AppTheme()` becomes a thin wrapper that converts ChipboxFont →
+  FontFamily via the existing `Font(resId)` factory and delegates to
+  the shared `ChipboxTheme()`. `DesktopMain.kt` calls
+  `ChipboxTheme { ... }` directly, picking up real Chipbox type
+  sizes/weights/line heights with system-default fonts. One small
+  `expect`/`actual` is needed for the base `TextStyle`: Android keeps
+  its `PlatformTextStyle(includeFontPadding = false)` tweak (the legacy
+  Android font-padding default), JVM gets plain `TextStyle.Default`.
 
 Explicit non-goals of this milestone (each will land as its own slice
 once the strategy is picked — see Roadmap item 1):
 
-- Typography + `AppTheme()` + `ChipboxFont` resource handling. The
-  Android `AppTheme` wraps `SageMaterial` (from
-  `sage-android-ui-themes`); `ChipboxFont` entries reference
-  `R.font.*`. Needs either Compose-MP resources or an `expect`/`actual`
-  `FontFamily` factory.
+- Custom Chipbox fonts on JVM. The pixel-art `.otf`s ship as Android
+  `R.font.*` resources today; the JVM theme falls back to
+  `FontFamily.Default`. Needs either Compose-MP resources or an
+  `expect`/`actual` `FontFamily` factory that resolves font names off
+  the JVM classpath.
 - Navigation library. `androidx.navigation.compose:2.9.8` is
   Android-only; the CMP fork / Voyager / Decompose all viable.
 - ViewModel scoping on Desktop. `hiltViewModel()` is Android-only — a
@@ -387,14 +410,17 @@ opens a desktop window with the real Chipbox palette.
 ## Roadmap (not yet done)
 
 1. **Compose Multiplatform UI port.** Multi-slice; Milestone 6 covers
-   the first two. Remaining slices roughly in order: pick a
-   font-resource strategy and port typography + `AppTheme()` (audit
-   whether `sage-android-ui-themes`'s `SageMaterial` has a KMP-friendly
-   inner shape — if not, the JVM theme just calls
-   `MaterialTheme(colorScheme, typography)` directly); pick a navigation
-   library; pick a ViewModel-scoping pattern on Desktop; pick an
-   image-loading story; pick a strings story; then port real feature
-   modules (`appui`, `features/*`) slice by slice.
+   the first three (toolchain, palette, typography). Remaining slices
+   roughly in order: pick a font-resource strategy and ship the
+   pixel-art `.otf`s on the JVM classpath so `ChipboxFont` works on
+   desktop; pick a navigation library (`androidx.navigation.compose:2.9.8`
+   is Android-only; the CMP fork / Voyager / Decompose are all viable);
+   pick a ViewModel-scoping pattern on Desktop (a
+   `chipboxViewModel<T>()` helper backed by Hilt on Android and by the
+   plain-Dagger graph on Desktop is the obvious shape); pick an
+   image-loading story (Coil 3 is multiplatform now); pick a strings
+   story (CMP `Res.string.*` vs keeping `ChipboxStringId` indirection);
+   then port real feature modules (`appui`, `features/*`) slice by slice.
 2. **Real-time JVM audio.** An audio sink (probably a factory, possibly
    `expect`/`actual`): Android `AudioTrack` vs a JVM
    `javax.sound.sampled.SourceDataLine` speaker, so the JVM target plays
