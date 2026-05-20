@@ -10,18 +10,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import net.sigmabeta.chipbox.ui.theme.ChipboxDark
+import net.sigmabeta.chipbox.ui.theme.ChipboxTheme
 
 /**
- * Bootstrap Compose Multiplatform entry point for the JVM/desktop target. The desktop
- * theme is just `MaterialTheme(colorScheme = ChipboxDark)` from the shared KMP color
- * module — the full Android `AppTheme()` wraps that same palette in `SageMaterial` plus
- * a typography pipeline that still depends on Android font resources; both move when
- * the font-resource story is settled (likely Compose-MP resources or expect/actual).
+ * Bootstrap Compose Multiplatform entry point for the JVM/desktop target. [ChipboxTheme] is
+ * the shared KMP composable that wraps Material3 with the Chipbox color schemes and a
+ * Chipbox-shaped typography. The brand/plain `FontFamily`s default to `FontFamily.Default`
+ * here — Chipbox's pixel-art fonts live as Android resources today, and the font-resource
+ * story for desktop (Compose-MP resources vs `expect`/`actual` `FontFamily`) hasn't been
+ * picked yet. The typography *structure* (sizes / weights / line heights) is already shared.
  */
 @Composable
 private fun HelloChipbox() {
-    MaterialTheme(colorScheme = ChipboxDark) {
+    ChipboxTheme {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(

@@ -3,11 +3,14 @@ plugins {
     alias(libs.plugins.sage.compose.kmp)
 }
 
-// Shared color schemes for Chipbox (ChipboxLight / ChipboxDark / ChipboxMenu) — pure Compose,
-// no Android dependencies, so the source lives in commonMain and feeds both the existing
-// Android theme (which still owns Typography / AppTheme / Paparazzi previews against
-// SageMaterial) and the JVM/desktop entry. Typography + fonts move in a follow-up slice once
-// the font-resource story (Compose-MP resources vs expect/actual FontFamily) is settled.
+// Shared Chipbox theme — color schemes, typography tokens + builder, and the multiplatform
+// `ChipboxTheme()` composable that wraps Material3. Pure Compose, no Android dependencies.
+// The Android `AppTheme()` (in cbox/android/ui/theme/api) is a thin wrapper that supplies
+// ChipboxFont-derived font families to this module's `ChipboxTheme`; the JVM/desktop entry
+// calls `ChipboxTheme()` directly with `FontFamily.Default`. Custom fonts on JVM (the
+// pixel-art `.otf` files currently shipped as Android resources) wait for a later slice —
+// the font-resource story (Compose-MP resources vs `expect`/`actual` `FontFamily`) hasn't
+// been picked yet.
 kotlin {
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.ui.theme.api"

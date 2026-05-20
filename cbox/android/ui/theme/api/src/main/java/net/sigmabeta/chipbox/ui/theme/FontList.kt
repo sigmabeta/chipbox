@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
-import net.sigmabeta.chipbox.ui.theme.tokens.ChipboxTypefaceTokens
+import net.sigmabeta.chipbox.ui.theme.tokens.ChipboxFontDefaults
 
 @Composable
 private fun FontPreviewContent() {
@@ -61,8 +61,8 @@ private fun FontPreviewContentStaticText() {
 
 @Composable
 private fun FontSample(font: ChipboxFont?) {
-    val brand = font ?: ChipboxTypefaceTokens.Brand
-    val plain = font ?: ChipboxTypefaceTokens.Plain
+    val brand = font ?: ChipboxFontDefaults.Brand
+    val plain = font ?: ChipboxFontDefaults.Plain
     AppTheme(brand = brand, plain = plain) {
         Text(
             text = font?.fontName ?: "Default Material",
@@ -78,8 +78,8 @@ private fun FontSample(font: ChipboxFont?) {
 
 @Composable
 private fun FontSampleStaticText(font: ChipboxFont?) {
-    val brand = font ?: ChipboxTypefaceTokens.Brand
-    val plain = font ?: ChipboxTypefaceTokens.Plain
+    val brand = font ?: ChipboxFontDefaults.Brand
+    val plain = font ?: ChipboxFontDefaults.Plain
     AppTheme(brand = brand, plain = plain) {
         Text(
             text = "Lorem Ipsum Tertium Est",

@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.ui.theme.tokens
 
-import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 
 internal object ChipboxTypographyTokens {
@@ -126,8 +125,13 @@ internal object ChipboxTypographyTokens {
         )
 }
 
-private val DefaultPlatformTextStyle = PlatformTextStyle(
-    includeFontPadding = false
-)
+/**
+ * Base [TextStyle] every Chipbox `Typography` slot copies from. Android applies a
+ * `PlatformTextStyle(includeFontPadding = false)` tweak (the legacy
+ * `android:includeFontPadding` default added extra vertical space around text); JVM/desktop
+ * has no such concept, so its actual is just `TextStyle.Default`. Declared as a function
+ * rather than a val because `expect val` is still a Beta language feature.
+ */
+internal expect fun chipboxDefaultTextStyle(): TextStyle
 
-internal val DefaultTextStyle = TextStyle.Default.copy(platformStyle = DefaultPlatformTextStyle)
+internal val DefaultTextStyle = chipboxDefaultTextStyle()
