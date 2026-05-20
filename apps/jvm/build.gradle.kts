@@ -57,6 +57,14 @@ dependencies {
     implementation(projects.cbox.common.player.common.api)
     implementation(projects.cbox.common.repository.api)
     implementation(projects.cbox.common.models.api)
+
+    // Room KMP database used as the JVM target's real library (replaces the
+    // SingleTrackRepository shim for `scan` / `play` modes). `sqlite-bundled`
+    // is the cross-platform Room driver Android doesn't need.
+    implementation(projects.cbox.android.repository.real)
+    implementation(projects.cbox.android.database.all)
+    implementation(libs.sqlite.bundled)
+
     implementation(libs.sage.common.logging)
     implementation(libs.kotlinx.coroutines.core)
 }
