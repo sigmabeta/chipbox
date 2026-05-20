@@ -49,7 +49,9 @@ interface JvmChipboxComponent {
     @Component.Builder
     interface Builder {
         @BindsInstance fun dbPath(@Named("dbPath") path: String): Builder
+
         @BindsInstance fun workDir(@Named("workDir") dir: File): Builder
+
         @BindsInstance fun outputDir(@Named("outputDir") dir: File): Builder
         fun build(): JvmChipboxComponent
     }

@@ -118,6 +118,7 @@ private suspend fun CoroutineScope.dispatch(args: Array<String>) {
                 scanner.state().first { it is ScannerState.Complete || it is ScannerState.Failed }
             }
         }
+
         "play" -> {
             require(args.size >= 2) { "play mode: $USAGE" }
             val outputDir = File(args.getOrNull(2) ?: System.getProperty("user.dir"))
@@ -127,6 +128,7 @@ private suspend fun CoroutineScope.dispatch(args: Array<String>) {
                 playPipelineFromComponent(track, component)
             }
         }
+
         else -> playSingleFile(args, BasicHatchet())
     }
 }
@@ -275,6 +277,7 @@ private suspend fun CoroutineScope.playToCompletion(
                     hatchet.e("Generator error: ${event.message}")
                     true
                 }
+
                 is GeneratorEvent.Emitting -> {
                     if (!speakerStarted) {
                         speakerStarted = true
@@ -282,7 +285,9 @@ private suspend fun CoroutineScope.playToCompletion(
                     }
                     false
                 }
+
                 is GeneratorEvent.TrackChange -> true
+
                 else -> false
             }
         }
