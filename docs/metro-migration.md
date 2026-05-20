@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Milestone 3 implemented; Milestone 4 in progress (sage modules done).**
+Status: **Milestones 3 + 4 implemented (sage and chipbox `@Module`s contribute to Metro graph).**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -344,15 +344,81 @@ land on the Metro side before chipbox features need them.
 Verified: `:apps:android:assembleDebug` green. Hilt and Metro
 processing both run on the 4 sage modules without conflict.
 
-#### Sub-slice 4b — chipbox modules (pending)
+#### Sub-slice 4b — chipbox modules (done)
 
-The remaining 30+ `@Module` declarations across `cbox/**/di` and
-`features/**/di`. Same mechanical recipe — `@ContributesTo(AppScope::class)`
-+ Metro plugin + interop + AppScope dep — plus the now-known
-"explicit return type" fix-up wherever Hilt was tolerant. Several
-modules use Anvil-style `@Binds` patterns where the chipbox version
-will probably benefit from collapsing into `@ContributesBinding` on
-the impl class directly.
+The 27 remaining `@Module` declarations across `cbox/**/di` and
+`features/**/di`. Rather than touching each `build.gradle.kts`, the
+heavy lift went into the two `sage.di.*` convention plugins so the
+Metro plumbing reaches all consumers automatically:
+
+- **`SageDiAndroidModulePlugin`** (sage) now applies the
+  `dev.zacsweers.metro` plugin, configures
+  `metro.interop.includeDagger()`, and adds the `sage-common-di`
+  dep. Every `sage.di.android` consumer (33 chipbox/feature
+  modules) gets Metro for free.
+- **`SageDiJvmModulePlugin`** (sage) got the same treatment for the
+  `cbox/common/*/di` JVM-only modules. These use `hilt-core` instead
+  of `hilt-android`; convention plugin still applies Metro alongside.
+- **`MetroPluginExtension` on the convention classpath**:
+  sage-build-logic's `convention/build.gradle.kts` adds the
+  `metro-gradlePlugin` dep as `implementation` (not `compileOnly`) —
+  the convention applies the Metro plugin programmatically via
+  `pluginManager.apply`, so the plugin's classes have to be on the
+  runtime classpath. New `metro-gradlePlugin` catalog alias.
+- **27 `@Module` source files** gained `@ContributesTo(AppScope::class)`
+  + the two imports (`dev.zacsweers.metro.ContributesTo` and
+  `net.sigmabeta.sage.di.AppScope`), applied via the idempotent
+  `scripts/add_metro_contributes_to.py` helper (committed). The
+  helper scans for `@Module` declarations, adds the annotation
+  immediately above the class/object, and inserts the imports in
+  alphabetical order relative to the existing block.
+
+Metro-strictness fixes surfaced during the build cycle, expected
+from M4a's discovery — caught + fixed in 11 modules:
+
+- **`Implicit return types are not allowed for @Provides`**: Metro
+  is stricter than Hilt about inferring binding target types.
+  `SpeakerModule` (3 functions), `DatabaseModule`, `EmulatorModule`,
+  all 7 emulator-specific submodules (`gba`/`gme`/`psf`/`ssf`/`vgm`/`usf`/`2sf`),
+  `MockRepositoryModule` (5), `DatabaseRepositoryModule`,
+  `GeneratorModule` (2), `RepositoryModule`, `EmulatorsModule`,
+  `BufferModule` — all got explicit return types added.
+- **`@Binds declarations may not have scopes`**: Metro forbids
+  scopes (e.g. `@Singleton`) on `@Binds` declarations; the
+  underlying `@Provides` still has the scope.
+  `AndroidFileContentSourceModule` and `PlaybackStatusModule` (real
+  variant) had `@Singleton` removed from `@Binds`.
+
+**Critical graph adjustment**: `ChipboxAppGraph` now carries both
+`@Singleton` (javax) and `@SingleIn(AppScope::class)` as graph
+scopes. Metro treats `javax.inject.Singleton` as a scope distinct
+from `AppScope`, and a graph refuses to wire bindings whose scope
+doesn't match any of the graph's declared scopes. During the
+transition, the contributed `@Module`s use the original `@Singleton`
+annotations untouched — letting the graph accept *both* scope
+markers means we don't have to mass-rewrite `@Singleton` →
+`@SingleIn(AppScope::class)` until M6 drops Hilt entirely. The
+inline `provideAppInfo` / `provideHatchet` on the graph also go
+away — `AndroidAppModule` (now `@ContributesTo`) provides both, and
+having both inline + via aggregation would cause `Metro/DuplicateBinding`.
+
+What was NOT touched in this sub-slice:
+
+- `cbox/android/artworkprovider/api/.../ArtworkProvider.kt` — uses
+  `@EntryPoint` (Hilt-specific pattern for non-Hilt-managed Android
+  components like `ContentProvider`s); converts in M6 when entry
+  points get their Metro equivalents.
+- `AndroidAppModule`'s `@Named` playback-status bindings + `LibrarySource`
+  binding: still Hilt-side only. They're consumed by `SettingsViewModel`
+  (a `@HiltViewModel`); once M5 converts that VM, those bindings will
+  be needed via Metro and either get migrated or stay duplicated.
+
+Verified: `:apps:android:assembleDebug` green; Metro processes all
+27 module contributions alongside Hilt's KSP. Metro graph is
+non-trivially populated now — about ~40 contributed bindings
+(everything from sage M4a + chipbox M4b). `ChipboxAppGraph` doesn't
+yet expose accessors for most of them, but they're available
+should M5's VM conversions need them.
 
 #### Sub-slice 4c — JVM-side (pending)
 
