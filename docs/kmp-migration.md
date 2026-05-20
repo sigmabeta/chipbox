@@ -1,6 +1,6 @@
 # Kotlin Multiplatform migration — plan & status
 
-Status: **Milestone 7 implemented.** JVM is the second target with a
+Status: **Milestone 8 implemented.** JVM is the second target with a
 real library *and* a Compose Multiplatform desktop window with real
 pixel-art fonts, a working ViewModel scoping pattern, and Voyager-driven
 navigation. All seven native emulators decode end-to-end on host x86-64
@@ -532,6 +532,63 @@ modules (analytics, debug, events, freeform, nav, pdf, perf — anything
 pure Kotlin) that didn't need to happen for the Settings port. Those
 move when a future consumer needs them in commonMain.
 
+## Milestone 8 — finish the sage commonMain hoist (done)
+
+Final pass of the `jvmSharedMain` → `commonMain` hoist across the
+remaining `sage/common/*` modules. 32 pure-Kotlin files move from
+`src/main/java` to `src/commonMain/kotlin` (preserved with `git mv`,
+no build.gradle.kts changes — the `sage.kmp` plugin picks up
+commonMain automatically because `jvmSharedMain dependsOn commonMain`).
+
+Modules hoisted (file counts):
+
+- `analytics` (4): ActionUtils, Analytics, AnalyticsScreen, AnalyticsScreenId.
+- `debug` (2): RenderOverlayProvider, ShowDebugProvider.
+- `events` (1): EventDispatcherReal.
+- `freeform` (2): FreeformState, FreeformStateActual.
+- `nav` (2): ArgType, RouteDescriptor.
+- `pdf` (1): PdfConfigById.
+- `perf` (10): FrameInfo, FrameTimeStats, InvalidateInfo, InvalidateStats,
+  PerfBackend, PerfMeasurer, PerfMeasurerImpl, PerfSpec, PerfStage, plus
+  ScreenLoadStatus (its `EnumMap(PerfStage::class.java)` default param
+  switched to `emptyMap()` — every consumer reads the map via
+  `copy(stageDurationMillis = … + (stage to value))`, so the EnumMap
+  vs LinkedHashMap distinction was inert).
+- `coroutines` (2): CustomFlows, SageDispatchers.
+- `images` (2): SourceInfo, PdfSize.
+- `storage/common` (1): Storage (the doc previously listed `storage/common`
+  as "genuine JVM-only"; the file is in fact a pure-Kotlin
+  interface over `kotlinx.coroutines.flow.Flow` — reclassified).
+- `settings/environment` (2): AppEnvironment, EnvironmentManager (depends
+  on `storage.Storage`, which is now commonMain too).
+- `settings/general` (2): DebugSettingsManager, GeneralSettingsManager.
+- `connectivity` (2 of 4): NetworkStatus, NetworkStatusProvider.
+
+What stays in `src/main/java` (still jvmSharedMain) — files with
+`java.*` imports that don't have a trivial multiplatform-safe
+rewrite:
+
+- `connectivity/HttpException` + `NetworkUnavailableException` —
+  extend `java.io.IOException` (caller contract).
+- `common/ui/strings/StringGenerator` — `java.util.Locale`/`Random`
+  (carry-over from Milestone 7 slice 4).
+- All of `common/time` — `org.threeten.bp.*` (ThreeTenABP).
+
+Compile noise observed (warnings, not errors): every module's pure
+commonMain compilation prints `Opt-in requirement marker
+kotlinx.coroutines.ExperimentalCoroutinesApi is unresolved` because
+the `sage.kmp` convention plugin adds the opt-in arg unconditionally
+and commonMain-without-coroutines compilations can't resolve the
+marker class. Harmless — no generated-code impact. Cleanup would be
+a one-liner in `SageKmpModulePlugin` (gate the opt-in to source sets
+that depend on kotlinx-coroutines) but is out of scope here.
+
+Verified: every touched sage module's `:build` green for both Android
++ JVM variants; chipbox `:apps:android:assembleDebug` +
+`:apps:jvm:compileKotlin` unchanged. Zero downstream source changes
+— the FQCN coordinates are stable; consumers continue to resolve the
+types from whichever source set still sees them after the move.
+
 ## Roadmap (not yet done)
 
 1. **Compose Multiplatform UI port: finish the Settings port.**
@@ -590,12 +647,13 @@ move when a future consumer needs them in commonMain.
    `.dylib`/`.dll` builds + a packaged `java.library.path`, and a real
    distribution (today blocked by the duplicate jar-basename
    `installDist` issue — see Known issues).
-4. **Rest of the `jvmSharedMain` → `commonMain` hoist.** Milestone 7
-   slice 4 hoisted the subset needed for the Settings VM port. Other
-   sage commonMain candidates (analytics, debug, events, freeform,
-   nav, pdf, perf) move when a downstream consumer needs them.
-   Genuine JVM-only modules (connectivity, storage/common, time) stay
-   put.
+4. **Rest of the `jvmSharedMain` → `commonMain` hoist** (done — see
+   Milestone 8). The remaining genuinely JVM-family-only code is now
+   the four files surfaced by the strict-import audit: `perf/ScreenLoadStatus`
+   (refactored — no longer JVM-only — see Milestone 8),
+   `connectivity/HttpException` + `NetworkUnavailableException`
+   (`java.io.IOException` super), `ui/strings/StringGenerator`
+   (`java.util.Locale`/`Random`), and all of `common/time` (ThreeTenABP).
 
 ## Known issues / out of scope
 
