@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Milestones 3 + 4 implemented (incl. M4c JVM-side). Milestone 5 attempted on `SettingsViewModel`, reverted on Kotlin/Metro version-compat blocker.**
+Status: **Milestones 3 + 4 implemented (incl. M4c JVM-side); M5b Kotlin bump unblocks the VM sweep. Ready for per-feature VM migration (M5c+).**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -542,23 +542,45 @@ go through `requireSimpleType` and stay green.
 Reverted the VM annotations + `SettingsRoute` accessor back to
 `@HiltViewModel` / `hiltViewModel()`. The cleanup stands.
 
-#### Sub-slice 5b — version-compat decision (pending)
+#### Sub-slice 5b — Kotlin bump (done)
 
-Two routes to unblock VM conversions:
+Picked option 1 from the version-compat decision: bumped `kotlin = "2.3.20"`
+in `sage/gradle/libs.versions.toml`. Single-line change; no downstream
+catalog updates needed in practice:
 
-1. **Bump Kotlin to 2.3.20** in `sage/gradle/libs.versions.toml`.
-   Side-effects: compose-compiler / KSP / kotlinx-serialization
-   plugins pinned to Kotlin will need version bumps too. Most
-   forward-compatible — keeps Metro on 1.1.1.
-2. **Downgrade Metro to ~0.10.x** (the range that supports 2.3.10).
-   Risk: `metrox-viewmodel-compose` may have different API shape
-   pre-1.0; sub-slice 4b assumptions about
-   `@ContributesTo`/`@ContributesIntoMap`/`binding<>()` may need
-   adjustment.
+- **compose-compiler plugin** is `version.ref = "kotlin"` (id
+  `org.jetbrains.kotlin.plugin.compose`) — auto-tracks Kotlin.
+- **kotlin-serialization plugin** is `version.ref = "kotlin"` — same.
+- **KSP 2.3.7** stays. KSP 2.x is semver-versioned and Analysis-API based;
+  no patch-level Kotlin pin. Release notes for 2.3.7 confirm "Kotlin target
+  language version 2.3" — 2.3.20 is within the supported line.
+- **Compose Multiplatform** 1.9.0 lib + 1.9.3 plugin: JetBrains docs state
+  the latest CMP is compatible with the latest Kotlin (min Kotlin 2.1.0
+  for CMP 1.8+) — no bump required.
 
-Recommendation: option 1 — chipbox is already chasing recent stable
-versions of every other framework (AGP 9, Compose 1.9, etc.); a
-patch-level Kotlin bump is the smaller delta than rolling Metro back.
+Verified: `:apps:android:assembleDebug` + `:apps:jvm:compileKotlin`
++ `:jar` + `:standaloneScript` all green on Kotlin 2.3.20. Pre-existing
+detekt/ktlint debt on `cbox/common/player/common/api/EbuR128.kt` and a
+handful of other unrelated files predates this slice (confirmed by
+re-running detekt with the bump stashed).
+
+Blocker-clearance smoke test: temporarily applied
+`@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())` +
+`@ViewModelKey(SettingsViewModel::class)` to `SettingsViewModel` — the
+exact codepath that previously failed with `NoSuchMethodError ... requireSimpleType`.
+`:features:settings:real:compileDebugKotlin` succeeded; Metro even emitted
+a useful warning that the explicit `@ViewModelKey(class)` argument can be
+omitted (the implicit class key matches). The annotations were reverted
+so this slice stays scoped to the bump — the actual per-feature VM sweep
+lands in M5c.
+
+#### Sub-slice 5c — VM sweep (next)
+
+With M5b's blocker cleared, the per-feature VM rules from M5's pivot
+apply: migrate one VM at a time, drop forward-deps on not-yet-migrated
+feature `api`s during the move, snackbar-stub any navigation actions that
+would target an un-migrated screen. `SettingsViewModel` is the natural
+first target since M5a already trimmed its playback-status coupling.
 
 ### Milestone 6 — drop Hilt (planned)
 
