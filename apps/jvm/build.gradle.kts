@@ -98,4 +98,8 @@ dependencies {
     implementation(libs.jetbrains.compose.material3)
     implementation(libs.jetbrains.compose.ui)
     implementation(compose.desktop.currentOs)
+
+    // Shared Chipbox color schemes — first sage.compose.kmp consumer, same palette the
+    // Android UI uses via cbox/android/ui/theme/api.
+    implementation(projects.cbox.common.ui.theme.api)
 }
