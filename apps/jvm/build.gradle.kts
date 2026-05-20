@@ -104,4 +104,8 @@ dependencies {
     // cbox/common/ui/fonts/api (via api()), so the JVM target gets real Chipbox pixel-art
     // fonts via Compose Multiplatform resources.
     implementation(projects.cbox.common.ui.theme.api)
+
+    // Multiplatform ChipboxViewModel + LocalViewModelProvider — consumed by the demo
+    // HelloViewModel and the JvmViewModelProvider that wires it into DesktopMain.
+    implementation(projects.cbox.common.ui.vm.api)
 }
