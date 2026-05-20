@@ -68,6 +68,7 @@ private const val LIBRARY_DB_NAME = "library.sqlite"
 
 private const val USAGE =
     """usage:
+  gui                                open the Compose Multiplatform desktop window
   scan <music-dir>                   walk the dir, persist tracks/games to the library DB
   play <track-id|title-substring>    play a track from the library DB (writes WAV)
   <file-path> [output-dir]           single-file mode (no DB) — direct file -> WAV
@@ -76,16 +77,29 @@ Output: <output-dir>/Chipbox Output Files/temp.wav. Working dir is the
 DB / render-cache home (.chipbox-jvm/library.sqlite + staging + pcm-cache)."""
 
 /**
- * Headless JVM entrypoint. Three modes — `scan` builds a real Room library by walking a
- * directory; `play` resolves a track from that library and renders it; the legacy file-path
- * form keeps working for one-off renders without touching the DB.
+ * Headless / desktop JVM entrypoint. Four modes — `gui` opens the Compose Multiplatform
+ * desktop window (bootstrap; see [runDesktop]); `scan` builds a real Room library by
+ * walking a directory; `play` resolves a track from that library and renders it; the
+ * legacy file-path form keeps working for one-off renders without touching the DB.
  *
  * The scan/play modes pull everything from the plain-Dagger [JvmChipboxComponent] — the JVM
  * equivalent of the Android app's Hilt graph. The legacy file-path mode bypasses the
  * component (no DB, no scanner) and wires a small player pipeline manually so a CI smoke
  * test doesn't need a populated library on disk.
+ *
+ * `gui` is dispatched before `runBlocking` so the Compose event loop owns the main thread
+ * cleanly — `application { Window { ... } }` blocks until the window closes, and the
+ * coroutine machinery is irrelevant on that path.
  */
-fun main(args: Array<String>) = runBlocking {
+fun main(args: Array<String>) {
+    if (args.firstOrNull() == "gui") {
+        runDesktop()
+        return
+    }
+    runBlocking { dispatch(args) }
+}
+
+private suspend fun CoroutineScope.dispatch(args: Array<String>) {
     if (args.isEmpty()) {
         System.err.println(USAGE)
         exitProcess(2)
