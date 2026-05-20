@@ -110,6 +110,7 @@ dependencies {
     implementation(projects.cbox.common.debug.di)
     implementation(projects.cbox.common.debugInfo.di)
     implementation(projects.cbox.common.settings.di)
+    implementation(projects.cbox.common.ui.vm.api)
 
     implementation(libs.sage.common.appinfo)
 
@@ -137,5 +138,7 @@ dependencies {
     implementation(libs.androidx.compose.runtime.tracing)
 
     implementation(libs.hilt)
+    implementation(libs.androidx.hilt.navigation)
+    implementation(libs.androidx.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
 }

@@ -673,18 +673,58 @@ remainder, sliced by dependency order.
   changes — every existing Chipbox feature VM still extends
   `ChipboxListViewModel` from the same FQCN.
 
+- **Slice 3 — Android actual of `chipboxViewModel<T>()` (done).**
+  Now that `ChipboxViewModel` extends `androidx.lifecycle.ViewModel`
+  (slice 2) and `ChipboxListViewModel` lives in commonMain, the
+  Android side needs a `ViewModelProvider` that resolves a
+  `KClass<out ChipboxViewModel>` through Hilt the same way
+  `hiltViewModel<T>()` does internally.
+
+  - **`ViewModelProvider.get()` is `@Composable` now.** The Android
+    impl needs `LocalViewModelStoreOwner` / `LocalContext` out of
+    composition to find the right scope and factory; the JVM impl
+    just doesn't read them. `chipboxViewModel<T>()` loses its
+    `@ReadOnlyComposable` annotation because the Android impl
+    delegates to `viewModel(modelClass, factory)`, which produces
+    composition state. `JvmViewModelProvider`'s override gains a
+    matching `@Composable` annotation — its body unchanged.
+  - **`apps/android/.../vm/AndroidHiltViewModelProvider`.** Pulls
+    the active owner out of `LocalViewModelStoreOwner`, wraps its
+    default factory in `androidx.hilt.navigation.HiltViewModelFactory`
+    (a top-level function under a `@JvmName`-rewritten façade —
+    artifact `hilt-navigation`, separate from the
+    `hilt-navigation-compose` already on the classpath; the catalog
+    now has the standalone `androidx-hilt-navigation` alias and
+    apps/android pulls it directly), and asks
+    `androidx.lifecycle.viewmodel.compose.viewModel(modelClass,
+    viewModelStoreOwner, factory)` for the instance. Generic —
+    any `@HiltViewModel`-annotated `ChipboxViewModel` resolves
+    with zero per-VM wiring. Scope follows Hilt's normal rules:
+    inside `NavHost { composable { ... } }` the owner is a
+    `NavBackStackEntry` and the VM dies with the screen; otherwise
+    the activity-rooted owner is used.
+  - **`MainActivity` wraps `setContent` in
+    `CompositionLocalProvider(LocalViewModelProvider provides …)`.**
+    Single instance per activity (held in a `private val`); the
+    provider has no state of its own, so an instance per
+    composition isn't necessary.
+
+  No existing call sites change — every Chipbox feature
+  `Route.kt` still uses `hiltViewModel()`. The provider goes live
+  the moment slice 6 ports `SettingsRoute` to commonMain and its
+  `hiltViewModel()` becomes `chipboxViewModel()`.
+
+  Verified: `:apps:android:assembleDebug` + `:apps:jvm:check` both
+  green.
+
 ## Roadmap (not yet done)
 
 1. **Compose Multiplatform UI port: finish the Settings port.**
    Milestones 6 + 7 set every prerequisite (toolchain, palette,
    typography, fonts, ViewModel scoping, navigation, sage commonMain
-   types). Slices 1–3 are done (see Milestone 9 above); the
+   types). Slices 1–4 are done (see Milestone 9 above); the
    remaining work, in dependency order:
 
-   4. **Android-side actual of `chipboxViewModel<T>()`.** Thin Hilt
-      wrapper. Easy slice; needed before any Chipbox commonMain
-      module's `chipboxViewModel<T>()` call compiles on the Android
-      target.
    5. **Convert `sage/android/ui/list` to `sage.kmp`** with
       `ListScreen` + `GridScreen` Composables in commonMain. CMP has
       `LazyColumn` + `LazyVerticalGrid` in commonMain so the
