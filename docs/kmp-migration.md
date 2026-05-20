@@ -599,10 +599,6 @@ move when a future consumer needs them in commonMain.
 
 ## Known issues / out of scope
 
-- `FileSpeaker` writes a WAV `data`-size header field that some parsers
-  read as a longer duration than the actual PCM payload (the audio bytes
-  are correct; only the header arithmetic is off). Pre-existing, not
-  introduced by this work; header-trusting players could mis-seek.
 - Dozens of modules share a jar basename (`real.jar` / `api.jar`), which
   collide in the `application` plugin's flat distribution `lib/`, so
   `installDist` / `distZip` are unusable. The `:apps:jvm:standaloneScript`
