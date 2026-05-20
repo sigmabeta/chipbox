@@ -29,6 +29,9 @@ import javax.inject.Singleton
     modules = [
         HatchetModule::class,
         JvmStringsModule::class,
+        JvmAppInfoModule::class,
+        JvmStorageModule::class,
+        JvmSettingsManagersModule::class,
         JvmDatabaseModule::class,
         JvmRepositoryModule::class,
         JvmContentSourceModule::class,

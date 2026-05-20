@@ -811,6 +811,53 @@ remainder, sliced by dependency order.
   `sage.android`) green, `:apps:android:assembleDebug` green,
   `:apps:jvm:check` green.
 
+- **Slice 5b — JVM-side settings infrastructure (done, partial).**
+  Originally scoped as "wire SettingsViewModel into JvmChipboxComponent
+  + add `JvmViewModelProvider` dispatch arm." Hit a real blocker
+  trying to KMP-ify `features/settings/real`: the
+  `com.google.dagger.hilt.android` Gradle plugin rejects
+  `com.android.kotlin.multiplatform.library` targets with "The Hilt
+  Android Gradle plugin can only be applied to an Android project."
+  And pulling the still-`sage.android` `features/settings/real`
+  module into the `sage.jvm` `apps/jvm` classpath fails Gradle variant
+  resolution — the M5 problem the original doc called out. So this
+  sub-slice shipped the JVM-side infrastructure pieces that *don't*
+  need the VM, deferring the actual VM wiring to a future slice:
+
+  - `apps/jvm/.../JvmStorage`: in-memory `Storage` impl backed by a
+    `ConcurrentHashMap` of `MutableStateFlow`s. Values do not survive
+    process death; persistence (a `java.util.Properties` file or a
+    kotlinx-serialization JSON snapshot) lands when there's a real
+    desktop consumer of long-lived settings. Thread-safe.
+  - `JvmStorageModule` provides the `Storage` binding.
+  - `JvmSettingsManagersModule` provides the chipbox
+    `ChipboxSettingsManager` (via `RealChipboxSettingsManager`) and
+    `DebugSettingsManager` (via `RealDebugSettingsManager`) bindings
+    using `Storage` — both `sage.kmp` modules, reachable from
+    `apps/jvm` without variant trouble.
+  - `JvmAppInfoModule` provides a constant `AppInfo` (debug=true,
+    versionName "0.1.0-jvm", buildTimeMs = `System.currentTimeMillis()`,
+    buildBranch "desktop"). The Android target builds this from
+    Gradle-injected `BuildConfig`; the JVM target has no
+    `BuildConfig` plumbing yet so the values are explicitly fake.
+  - `JvmScannerModule` gains a `@Binds Scanner` (was only `RealScanner`).
+  - `apps/jvm/build.gradle.kts` gains `sage.common.{appinfo,storage.common}`
+    plus the chipbox `cbox.common.{debug.api,debug.real,settings.api,settings.real}`
+    deps so the modules' references resolve.
+
+  Slice 5c (the actual JVM-side VM wiring) needs one of:
+  - A way to apply `hilt-android` to a `sage.kmp` module (custom
+    Gradle plumbing, possibly a `SageDiKmpModulePlugin`).
+  - A Hilt-free path for chipbox feature VMs — strip `@HiltViewModel`,
+    register VMs via a chipbox-side `Map<KClass, ViewModelFactory>`
+    on the Android side, dispatch through it from
+    `AndroidHiltViewModelProvider`.
+  - Kotlin-Inject (the multiplatform DI library) for the feature
+    layer, keeping Hilt only for the app-level glue.
+
+  Verified: `:apps:android:assembleDebug` + `:apps:jvm:check` both
+  green.
+
 ## Roadmap (not yet done)
 
 1. **Compose Multiplatform UI port: finish the Settings port.**
@@ -819,19 +866,16 @@ remainder, sliced by dependency order.
    types). Slices 1–5 are done (see Milestone 9 above); the
    remaining work, in dependency order:
 
-   6b. **JVM-side `SettingsViewModel` wiring.** Sub-slice 5a in
-       Milestone 9 hoisted the Settings value types to commonMain
-       and adjusted the VM's signature; what's left is making it
-       instantiable on JVM. Needs:
-       - A JVM `Storage` impl (file-backed properties) so
-         `ChipboxSettingsManager` / `DebugSettingsManager` work.
-       - `@Provides` bindings in `JvmChipboxComponent` for the
-         `LibrarySource` (already there), the
-         `PLAYBACK_STATUS_AVAILABLE` / `_DESTINATION` `@Named`
-         params (constant false / null), and SettingsViewModel
-         itself.
-       - A `JvmChipboxComponent.settingsViewModel()` accessor +
-         a `JvmViewModelProvider` `when` arm.
+   6c. **JVM-side `SettingsViewModel` wiring.** Slice 5b shipped
+       the supporting infrastructure (`JvmStorage`,
+       `JvmSettingsManagersModule`, `JvmAppInfoModule`); what
+       remains is making `SettingsViewModel` itself reachable from
+       `apps/jvm`. Blocked on the Hilt-on-KMP problem: the
+       `hilt-android` Gradle plugin doesn't recognise
+       `com.android.kotlin.multiplatform.library`, and the
+       still-`sage.android` `features/settings/real` module can't
+       be pulled into a `sage.jvm` app's classpath. Options laid
+       out under Milestone 9 slice 5b — needs a design decision.
    7. **Desktop folder picker.** `expect`/`actual` or a JVM-only
       `LibraryLocationPicker` backed by `javax.swing.JFileChooser`.
    8. **Wire `SettingsScreen` into Voyager.** Replace the demo

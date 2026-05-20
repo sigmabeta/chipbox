@@ -61,6 +61,10 @@ dependencies {
     implementation(projects.cbox.android.player.emulators.vgm.real)
     implementation(projects.cbox.common.contentsource.api)
     implementation(projects.cbox.common.strings.api)
+    implementation(projects.cbox.common.debug.api)
+    implementation(projects.cbox.common.debug.real)
+    implementation(projects.cbox.common.settings.api)
+    implementation(projects.cbox.common.settings.real)
     implementation(projects.cbox.common.player.speaker.fake)
     implementation(projects.cbox.common.player.buffer.real)
     implementation(projects.cbox.common.player.common.api)
@@ -87,6 +91,8 @@ dependencies {
     ksp(libs.dagger.compiler)
 
     implementation(libs.sage.common.logging)
+    implementation(libs.sage.common.appinfo)
+    implementation(libs.sage.common.storage.common)
     implementation(libs.kotlinx.coroutines.core)
 
     // Compose Multiplatform desktop. The platform-agnostic libs come from the catalog so
