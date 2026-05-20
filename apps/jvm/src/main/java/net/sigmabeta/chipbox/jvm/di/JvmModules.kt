@@ -10,6 +10,8 @@ import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.jvm.LocalFileContentSource
+import net.sigmabeta.chipbox.jvm.strings.JvmStringProvider
+import net.sigmabeta.chipbox.jvm.strings.chipboxJvmStrings
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager
@@ -30,6 +32,7 @@ import net.sigmabeta.chipbox.repository.database.DatabaseRepository
 import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.sage.logging.BasicHatchet
 import net.sigmabeta.sage.logging.Hatchet
+import net.sigmabeta.sage.ui.StringProvider
 import java.io.File
 import javax.inject.Named
 import javax.inject.Singleton
@@ -52,6 +55,12 @@ import javax.inject.Singleton
 @Module
 object HatchetModule {
     @Provides @Singleton fun provideHatchet(): Hatchet = BasicHatchet()
+}
+
+@Module
+object JvmStringsModule {
+    @Provides @Singleton
+    fun provideStringProvider(): StringProvider = JvmStringProvider(chipboxJvmStrings)
 }
 
 @Module

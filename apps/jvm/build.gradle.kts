@@ -60,6 +60,7 @@ dependencies {
     implementation(projects.cbox.android.player.emulators.usf.real)
     implementation(projects.cbox.android.player.emulators.vgm.real)
     implementation(projects.cbox.common.contentsource.api)
+    implementation(projects.cbox.common.strings.api)
     implementation(projects.cbox.common.player.speaker.fake)
     implementation(projects.cbox.common.player.buffer.real)
     implementation(projects.cbox.common.player.common.api)

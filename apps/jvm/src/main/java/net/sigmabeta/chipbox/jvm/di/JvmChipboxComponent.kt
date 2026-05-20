@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.sage.logging.Hatchet
+import net.sigmabeta.sage.ui.StringProvider
 import java.io.File
 import javax.inject.Named
 import javax.inject.Singleton
@@ -27,6 +28,7 @@ import javax.inject.Singleton
 @Component(
     modules = [
         HatchetModule::class,
+        JvmStringsModule::class,
         JvmDatabaseModule::class,
         JvmRepositoryModule::class,
         JvmContentSourceModule::class,
@@ -41,6 +43,7 @@ import javax.inject.Singleton
 interface JvmChipboxComponent {
 
     fun hatchet(): Hatchet
+    fun stringProvider(): StringProvider
     fun repository(): Repository
     fun librarySource(): LocalFileContentSource
     fun scanner(): RealScanner
