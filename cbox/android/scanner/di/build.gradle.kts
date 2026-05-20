@@ -11,4 +11,8 @@ dependencies {
     api(projects.cbox.android.scanner.api)
     api(projects.cbox.android.scanner.real)
     api(projects.cbox.android.scanner.fake)
+    // scanner.real is now KMP and takes the platform-neutral LibrarySource interface;
+    // the Android Hilt module here picks the concrete AndroidFileContentSource impl,
+    // so it must depend on contentsource:file:all directly (no longer pulled transitively).
+    implementation(projects.cbox.android.contentsource.file.all)
 }

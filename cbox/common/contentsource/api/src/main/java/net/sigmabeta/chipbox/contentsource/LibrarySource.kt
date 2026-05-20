@@ -1,0 +1,21 @@
+package net.sigmabeta.chipbox.contentsource
+
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+
+/**
+ * Platform-neutral library access. A [LibrarySource] is a [ContentSource] that also knows
+ * what locations the user has added and how to walk them for music files. Identifiers are
+ * platform-specific strings — for the Android impl, the SAF tree-doc URI string; for the JVM
+ * impl, an absolute filesystem path — and the same strings flow into [Track.path] / the
+ * scanner's track records, so the player's [ContentSource.openBytes] resolves them later
+ * without knowing which platform produced them.
+ *
+ * Existed to decouple the shared `RealScanner` from `AndroidFileContentSource`'s concrete
+ * SAF type: roadmap item 4 in `docs/kmp-migration.md`.
+ */
+interface LibrarySource : ContentSource {
+    val locations: StateFlow<List<LibraryLocationInfo>>
+
+    fun scanFiles(): Flow<LibraryFileInfo>
+}

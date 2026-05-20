@@ -65,6 +65,11 @@ dependencies {
     implementation(projects.cbox.android.database.all)
     implementation(libs.sqlite.bundled)
 
+    // Shared scanner — uses the new LibrarySource interface; LocalFileContentSource
+    // is the JVM impl, the Android twin is AndroidFileContentSource (SAF).
+    implementation(projects.cbox.android.scanner.real)
+    implementation(projects.cbox.common.readers.api)
+
     implementation(libs.sage.common.logging)
     implementation(libs.kotlinx.coroutines.core)
 }

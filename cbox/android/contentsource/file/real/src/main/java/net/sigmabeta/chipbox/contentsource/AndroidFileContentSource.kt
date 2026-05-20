@@ -11,6 +11,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import net.sigmabeta.sage.coroutines.SageDispatchers
@@ -21,7 +26,7 @@ class AndroidFileContentSource(
     private val context: Context,
     private val dispatchers: SageDispatchers,
     private val hatchet: Hatchet,
-) : ContentSource {
+) : LibrarySource {
 
     override val sourceId: String = SOURCE_ID
 
@@ -30,6 +35,24 @@ class AndroidFileContentSource(
 
     private val _libraryLocations = MutableStateFlow<List<LibraryLocation>>(emptyList())
     val libraryLocations: StateFlow<List<LibraryLocation>> = _libraryLocations.asStateFlow()
+
+    // LibrarySource projections — same data, platform-neutral types. The legacy SAF-typed
+    // properties above stay for the Android UI that still calls `addLibraryLocation(uri)`.
+    private val sourceScope = CoroutineScope(SupervisorJob() + dispatchers.disk)
+    override val locations: StateFlow<List<LibraryLocationInfo>> = _libraryLocations
+        .map { list -> list.map { LibraryLocationInfo(it.uri.toString(), it.displayName) } }
+        .stateIn(sourceScope, SharingStarted.Eagerly, emptyList())
+
+    override fun scanFiles(): Flow<LibraryFileInfo> = scanLibraryFiles().map { libFile ->
+        LibraryFileInfo(
+            identifier = libFile.uri.toString(),
+            parentFolderId = libFile.parentDocumentId,
+            name = libFile.name,
+            extension = libFile.extension,
+            mimeType = libFile.mimeType,
+            sizeBytes = libFile.sizeBytes,
+        )
+    }
 
     fun addLibraryLocation(uri: Uri) {
         if (_libraryLocations.value.any { it.uri == uri }) {

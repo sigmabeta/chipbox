@@ -4,11 +4,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
-import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
-import net.sigmabeta.chipbox.contentsource.LibraryFile
+import net.sigmabeta.chipbox.contentsource.LibraryFileInfo
+import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.models.ChainFile
-import net.sigmabeta.chipbox.scanner.state.ScannerEvent
-import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.readers.EXTENSION_M3U
 import net.sigmabeta.chipbox.readers.LENGTH_UNKNOWN_MS
 import net.sigmabeta.chipbox.readers.PsfTagInfo
@@ -19,13 +17,22 @@ import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.chipbox.scanner.state.ScannerEvent
+import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.Hatchet
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
+/**
+ * The production scanner — drives [readers] over every file [librarySource] exposes,
+ * applies PSF `_lib` chain resolution and m3u overlays, and persists one `RawGame` per
+ * source folder to [repository]. Talks to the library through the platform-neutral
+ * [LibrarySource] / [LibraryFileInfo] interfaces so both the Android (SAF) and JVM
+ * (`java.io.File`) targets share this same code.
+ */
 class RealScanner(
     private val repository: Repository,
-    private val contentSource: AndroidFileContentSource,
+    private val librarySource: LibrarySource,
     private val readers: Readers,
     private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
@@ -36,7 +43,7 @@ class RealScanner(
         hatchet.i("Starting library scan.")
         emitState(ScannerState.Scanning)
 
-        val locations = contentSource.libraryLocations.value
+        val locations = librarySource.locations.value
         if (locations.isEmpty()) {
             hatchet.w("No library locations configured — aborting scan.")
             emitState(ScannerState.Complete(0, 0, 0, 0))
@@ -44,12 +51,15 @@ class RealScanner(
             return
         }
 
-        hatchet.d("Scanning ${locations.size} library location(s): ${locations.map { it.uri }}")
+        hatchet.d(
+            "Scanning ${locations.size} library location(s): " +
+                locations.joinToString { it.identifier }
+        )
 
         var total = Progress.EMPTY
         val duration = measureTime {
-            val files = contentSource.scanLibraryFiles().toList()
-            val groups = files.groupBy { it.parentDocumentId }
+            val files = librarySource.scanFiles().toList()
+            val groups = files.groupBy { it.parentFolderId }
             hatchet.d("Found ${files.size} file(s) across ${groups.size} folder(s).")
             for ((folderId, group) in groups) {
                 hatchet.d("Scanning folder $folderId (${group.size} file(s)).")
@@ -72,13 +82,13 @@ class RealScanner(
         emitEvent(ScannerEvent.Unknown)
     }
 
-    private suspend fun scanGroup(files: List<LibraryFile>): Progress {
+    private suspend fun scanGroup(files: List<LibraryFileInfo>): Progress {
         var imagePath: String? = null
         val tracksByFilename = LinkedHashMap<String, MutableList<RawTrack>>()
-        val m3uFiles = mutableListOf<LibraryFile>()
+        val m3uFiles = mutableListOf<LibraryFileInfo>()
         var failed = 0
 
-        val byFilename: Map<String, LibraryFile> = files.associateBy { it.name.lowercase() }
+        val byFilename: Map<String, LibraryFileInfo> = files.associateBy { it.name.lowercase() }
         // plain HashMap: scanGroup is sequential suspend, no concurrent access
         val tagInfoCache = HashMap<String, PsfTagInfo?>()
 
@@ -87,7 +97,7 @@ class RealScanner(
             if (ext.isEmpty()) continue
 
             if (EXTENSIONS_IMAGES.contains(ext)) {
-                if (imagePath == null) imagePath = file.uri.toString()
+                if (imagePath == null) imagePath = file.identifier
                 continue
             }
 
@@ -99,9 +109,9 @@ class RealScanner(
             if (isPsfFamily(ext)) {
                 hatchet.d("Reading ${file.name} (PSF family).")
                 val track = readWithErrorHandling(file) {
-                    val bytes = contentSource.openInputStream(file.uri)?.use { it.readBytes() }
+                    val bytes = librarySource.openBytes(file.identifier)
                     if (bytes == null) {
-                        hatchet.w("Failed to read ${file.name}: could not open input stream for ${file.uri}.")
+                        hatchet.w("Failed to read ${file.name}: could not open ${file.identifier}.")
                         return@readWithErrorHandling null
                     }
                     val tagInfo = readers.psf.readTagInfo(bytes)
@@ -117,8 +127,8 @@ class RealScanner(
                         chain,
                     )
                     val mergedTags = chainTags + tagInfo.tags
-                    readers.psf.buildRawTrack(mergedTags, file.uri.toString(), tagInfo.platform)
-                        .copy(source = contentSource.sourceId, chainFiles = chain, extension = ext)
+                    readers.psf.buildRawTrack(mergedTags, file.identifier, tagInfo.platform)
+                        .copy(source = librarySource.sourceId, chainFiles = chain, extension = ext)
                 }
                 when (track) {
                     null -> failed++
@@ -138,10 +148,10 @@ class RealScanner(
 
             hatchet.d("Reading ${file.name}.")
             val tracks = readWithErrorHandling(file) {
-                val bytes = contentSource.openInputStream(file.uri)?.use { it.readBytes() }
+                val bytes = librarySource.openBytes(file.identifier)
                     ?: return@readWithErrorHandling null
-                reader.readTracksFromFile(bytes, file.uri.toString())
-                    ?.map { it.copy(source = contentSource.sourceId, extension = ext) }
+                reader.readTracksFromFile(bytes, file.identifier)
+                    ?.map { it.copy(source = librarySource.sourceId, extension = ext) }
             }
 
             when {
@@ -161,7 +171,7 @@ class RealScanner(
 
         for (m3uFile in m3uFiles) {
             hatchet.d("Applying m3u overlay from ${m3uFile.name}.")
-            val bytes = contentSource.openInputStream(m3uFile.uri)?.use { it.readBytes() }
+            val bytes = librarySource.openBytes(m3uFile.identifier)
             if (bytes == null) {
                 hatchet.w("Failed to open ${m3uFile.name}.")
                 continue
@@ -222,7 +232,7 @@ class RealScanner(
 
     private suspend fun resolvePsfChain(
         tagInfo: PsfTagInfo,
-        byFilename: Map<String, LibraryFile>,
+        byFilename: Map<String, LibraryFileInfo>,
         tagInfoCache: HashMap<String, PsfTagInfo?>,
         visited: MutableSet<String>,
         depth: Int,
@@ -246,13 +256,13 @@ class RealScanner(
             val libTagInfo = if (tagInfoCache.containsKey(refLower)) {
                 tagInfoCache[refLower]
             } else {
-                val parsed = contentSource.openInputStream(libFile.uri)?.use { it.readBytes() }
+                val parsed = librarySource.openBytes(libFile.identifier)
                     ?.let { readers.psf.readTagInfo(it) }
                 tagInfoCache[refLower] = parsed
                 parsed
             }
             if (chainOut.none { it.filename.equals(libFile.name, ignoreCase = true) }) {
-                chainOut += ChainFile(libFile.name, libFile.uri.toString())
+                chainOut += ChainFile(libFile.name, libFile.identifier)
             }
             if (libTagInfo != null) {
                 visited.add(refLower)
@@ -266,7 +276,7 @@ class RealScanner(
     }
 
     private suspend inline fun <T> readWithErrorHandling(
-        file: LibraryFile,
+        file: LibraryFileInfo,
         op: () -> T?,
     ): T? = try {
         op()
