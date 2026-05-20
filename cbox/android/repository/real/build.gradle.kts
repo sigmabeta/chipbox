@@ -1,12 +1,21 @@
 plugins {
-    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.kmp)
 }
 
-android {
-    namespace = "net.sigmabeta.chipbox.repository.real"
-}
+// DatabaseRepository — already pure Kotlin (its only platform tie was
+// `ChipboxDatabase`, now KMP). One module for both variants.
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.repository.real"
+    }
 
-dependencies {
-    api(projects.cbox.common.repository.api)
-    api(projects.cbox.android.database.all)
+    sourceSets {
+        named("jvmSharedMain") {
+            dependencies {
+                api(projects.cbox.common.repository.api)
+                api(projects.cbox.android.database.all)
+                implementation(libs.sage.common.logging)
+            }
+        }
+    }
 }

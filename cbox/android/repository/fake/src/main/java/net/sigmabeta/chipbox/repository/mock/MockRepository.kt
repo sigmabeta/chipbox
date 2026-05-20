@@ -137,15 +137,15 @@ class MockRepository(
         return tracksLoadEvents.asSharedFlow()
     }
 
-    override fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> {
+    override suspend fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> {
         TODO("Not yet implemented")
     }
 
-    override fun getTracksForArtist(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> {
+    override suspend fun getTracksForArtist(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> {
         TODO("Not yet implemented")
     }
 
-    override fun getTracksForPlatform(
+    override suspend fun getTracksForPlatform(
         platform: Platform,
         withGame: Boolean,
         withArtists: Boolean
@@ -195,7 +195,7 @@ class MockRepository(
         return singleArtistLoadEvents.asSharedFlow()
     }
 
-    override fun getTrack(
+    override suspend fun getTrack(
         id: Long,
         withGame: Boolean,
         withArtists: Boolean

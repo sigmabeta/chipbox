@@ -368,15 +368,15 @@ class RealDirector(
         SessionType.SETLIST -> session.explicitSetlist.orEmpty()
     }
 
-    private fun getTrackListForPlatform(contentId: Long) = repository
+    private suspend fun getTrackListForPlatform(contentId: Long) = repository
         .getTracksForPlatform(Platform.entries[contentId.toInt()])
         .map { it.id }
 
-    private fun getTrackListForGame(gameId: Long) = repository
+    private suspend fun getTrackListForGame(gameId: Long) = repository
         .getTracksForGame(gameId)
         .map { it.id }
 
-    private fun getTrackListForArtist(artistId: Long) = repository
+    private suspend fun getTrackListForArtist(artistId: Long) = repository
         .getTracksForArtist(artistId)
         .map { it.id }
 
@@ -599,7 +599,7 @@ class RealDirector(
         return oldState.copy(state = PlayerState.ERROR, errorMessage = event.message)
     }
 
-    private fun getTrack(id: Long) = repository.getTrack(id, withArtists = true, withGame = true)
+    private suspend fun getTrack(id: Long) = repository.getTrack(id, withArtists = true, withGame = true)
 
     private fun emitError(message: String) {
         hatchet.e("Error: $message")

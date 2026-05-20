@@ -12,7 +12,7 @@ interface GameDao {
     fun getGame(gameId: Long): Flow<GameEntity?>
 
     @Query("SELECT * FROM game WHERE id = :gameId")
-    fun getGameSync(gameId: Long): GameEntity
+    suspend fun getGameSync(gameId: Long): GameEntity
 
     @Query("SELECT * FROM game ORDER BY title COLLATE NOCASE")
     fun getAll(): Flow<List<GameEntity>>
@@ -29,8 +29,8 @@ interface GameDao {
     fun searchGamesByTitle(title: String): Flow<List<GameEntity>>
 
     @Insert
-    fun insert(game: GameEntity): Long
+    suspend fun insert(game: GameEntity): Long
 
     @Query("DELETE FROM game")
-    fun nukeTable()
+    suspend fun nukeTable()
 }

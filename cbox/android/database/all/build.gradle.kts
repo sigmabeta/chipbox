@@ -1,12 +1,18 @@
 plugins {
-    alias(libs.plugins.sage.android)
+    alias(libs.plugins.sage.kmp)
 }
 
-android {
-    namespace = "net.sigmabeta.chipbox.database.all"
-}
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.database.all"
+    }
 
-dependencies {
-    api(projects.cbox.android.database.api)
-    api(projects.cbox.android.database.real)
+    sourceSets {
+        named("jvmSharedMain") {
+            dependencies {
+                api(projects.cbox.android.database.api)
+                api(projects.cbox.android.database.real)
+            }
+        }
+    }
 }

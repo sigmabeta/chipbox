@@ -11,7 +11,7 @@ import net.sigmabeta.chipbox.entities.joins.GameArtistJoin
 @Dao
 interface GameArtistDao {
     @Insert
-    fun insertAll(gameArtistJoins: List<GameArtistJoin>)
+    suspend fun insertAll(gameArtistJoins: List<GameArtistJoin>)
 
     @Query(
         """ 
@@ -33,7 +33,7 @@ interface GameArtistDao {
             COLLATE NOCASE
             """
     )
-    fun getArtistsForGameSync(gameId: Long): List<ArtistEntity>
+    suspend fun getArtistsForGameSync(gameId: Long): List<ArtistEntity>
 
     @Query(
         """ 
@@ -44,7 +44,7 @@ interface GameArtistDao {
             COLLATE NOCASE
             """
     )
-    fun getGamesForArtistSync(artistId: Long): List<GameEntity>
+    suspend fun getGamesForArtistSync(artistId: Long): List<GameEntity>
 
     @Query(
         """ 
@@ -58,5 +58,5 @@ interface GameArtistDao {
     fun getGamesForArtist(artistId: Long): Flow<List<GameEntity>>
 
     @Query("DELETE FROM game_artist_join")
-    fun nukeTable()
+    suspend fun nukeTable()
 }

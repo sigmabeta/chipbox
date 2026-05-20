@@ -1,7 +1,20 @@
 plugins {
-    alias(libs.plugins.sage.jvm)
+    alias(libs.plugins.sage.kmp)
 }
 
-dependencies {
-    api(libs.room.runtime)
+// Room entities. Room 2.7+ is multiplatform, so the `@Entity` / `@PrimaryKey`
+// annotations and `androidx.room.*` types here build for both the android and
+// jvm variants from one module.
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.common.entities.api"
+    }
+
+    sourceSets {
+        named("jvmSharedMain") {
+            dependencies {
+                api(libs.room.runtime)
+            }
+        }
+    }
 }
