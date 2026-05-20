@@ -3,6 +3,18 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.metro)
+}
+
+// Hilt → Metro migration foundation (see docs/metro-migration.md, Milestone 1). Metro is
+// applied alongside Hilt during the migration; interop.includeDagger() makes Metro's
+// compiler plugin recognise existing @Inject / @Provides / @Module / @Binds annotations,
+// so Hilt-side wiring keeps working while we incrementally introduce @DependencyGraph
+// declarations.
+metro {
+    interop {
+        includeDagger()
+    }
 }
 
 fun gitBranch(): String = providers.exec {
@@ -109,6 +121,7 @@ dependencies {
     implementation(projects.cbox.android.storage.api)
     implementation(projects.cbox.common.debug.di)
     implementation(projects.cbox.common.debugInfo.di)
+    implementation(projects.cbox.common.di.api)
     implementation(projects.cbox.common.settings.di)
     implementation(projects.cbox.common.ui.vm.api)
     implementation(projects.features.playbackStatus.api)

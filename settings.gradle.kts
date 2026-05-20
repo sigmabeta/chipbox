@@ -120,6 +120,7 @@ include(
     ":cbox:common:debug:api",
     ":cbox:common:debug:di",
     ":cbox:common:debug:real",
+    ":cbox:common:di:api",
     ":cbox:common:debug-info:api",
     ":cbox:common:debug-info:di",
     ":cbox:common:debug-info:real",

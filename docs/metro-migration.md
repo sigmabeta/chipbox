@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Not started.** Plan only.
+Status: **Milestone 1 implemented.**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -126,39 +126,49 @@ upstream-maintained, and works on both Android and desktop.
 
 ## Milestones
 
-### Milestone 1 — foundation smoke test (planned)
+### Milestone 1 — foundation smoke test (done)
 
-The "is this viable" round. Lands Metro on a small KMP-ready module first to
-prove the toolchain works before sweeping the rest of the codebase.
+The "is this viable" round. The original plan was to land Metro on
+`features/settings/real` (the original Hilt-on-KMP blocker), but that ran
+straight into the same wall again: the `dagger-hilt-android` Gradle plugin
+rejects `com.android.kotlin.multiplatform.library` *even when* Metro is also
+applied, and we can't drop Hilt from that module yet because
+`@HiltViewModel SettingsViewModel` still needs Hilt-side processing during
+the migration. So slice 1 pivoted to `apps/android` — a smaller-blast-radius
+smoke test that validates Metro + Hilt coexistence without involving KMP:
 
-- **Add `dev.zacsweers.metro` to the version catalog.** Pin to 1.1.1 or
-  whatever the current stable is. Add the `metro` plugin alias, plus library
-  aliases for `metrox-viewmodel` and `metrox-viewmodel-compose` (the plugin
-  auto-adds the core runtime; the metrox extensions need explicit deps).
-- **Pick one module — `features/settings/real`** — as the smoke test.
-  - Flip to `sage.kmp + sage.compose.kmp` (the blocker that triggered this
-    whole migration).
-  - Apply `id("dev.zacsweers.metro")` in addition to the KMP plugins.
-  - Enable `metro { interop { includeDagger() } }` so existing
-    `@Inject` / `@HiltViewModel` annotations on `SettingsViewModel` still
-    type-check.
-  - Move `SettingsViewModel.kt` to jvmSharedMain (still has `@HiltViewModel`
-    via Dagger interop — Metro accepts the annotation but does nothing with
-    it). The Android build's apps-level Hilt processor still picks it up
-    via the compile classpath.
-  - Move `SettingsRoute.kt` to androidMain (Android-only SAF activity-result
-    API).
-  - Verify `:apps:android:assembleDebug` still green — Hilt's existing wiring
-    keeps working on Android, Metro just sits there in the same module.
-- **Define `AppScope` + `@SingleIn`**. New file in
-  `cbox/common/di/api` (new sage.kmp module) — a marker class
-  `class AppScope private constructor()` and the convenience scope marker for
-  graph-scoped singletons. Used in slice 2.
+- **Sage catalog**: pinned Metro to 1.1.1; added `metro` plugin alias and
+  `metrox-viewmodel` + `metrox-viewmodel-compose` library aliases.
+- **`cbox/common/di/api`**: new sage.kmp module hosting `AppScope`. Pure
+  marker class with a private constructor — Metro uses the `KClass`
+  reference at compile time only. Referenced by `@DependencyGraph`,
+  `@SingleIn`, `@ContributesTo`, and `@ContributesBinding` annotations
+  going forward.
+- **`apps/android` applies the Metro plugin** with
+  `metro { interop { includeDagger() } }`. Coexists with the existing
+  `hilt-android` Gradle plugin without complaint.
+- **`apps/android/.../di/ChipboxAppGraph`**: minimal
+  `@DependencyGraph(AppScope::class)` interface with one binding —
+  `metroSmokeTest: String` provided as a constant. Stub for the real
+  graph that grows in Milestone 2.
+- **`MainActivity` instantiates the graph via `createGraph<ChipboxAppGraph>()`**
+  and logs its single binding. Confirms Metro generated working code; the
+  log line gets deleted in Milestone 2 alongside the stub binding.
 
-This slice doesn't change any runtime behavior; it proves that the Metro
-plugin can be applied to a sage.kmp module without fighting Hilt's existing
-processing, and that Metro's Dagger interop accepts our current annotation
-usage.
+This slice doesn't change any production behavior — Hilt still owns every
+real binding and entry point. It only proves three things:
+
+1. Metro's compiler plugin coexists with `dagger-hilt-android` in the same
+   module.
+2. Metro's Dagger annotation interop (`includeDagger()`) recognises our
+   existing `@Inject` / `@Provides` / `@HiltViewModel` annotations across
+   the compile classpath without breaking them.
+3. `createGraph<T>()` and `@DependencyGraph` produce working bytecode in
+   the actual app build.
+
+Verified: `:apps:android:assembleDebug` + `:cbox:common:di:api:build` both
+green. `features/settings/real` and the KMP-side blocker stay as-is until
+Milestone 6.
 
 ### Milestone 2 — `ChipboxAppGraph` (planned)
 
