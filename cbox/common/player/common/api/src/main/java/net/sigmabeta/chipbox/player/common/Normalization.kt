@@ -1,9 +1,7 @@
 package net.sigmabeta.chipbox.player.common
 
-/**
- * Peak-normalization math, shared by the loudness log (the figure we *report*) and the
- * speaker's [VolumeProcessor] (the gain we *apply*) so the two can never drift apart.
- */
+// Peak-normalization math, shared by the loudness log (the figure we *report*) and the
+// speaker's [VolumeProcessor] (the gain we *apply*) so the two can never drift apart.
 
 /** Loudest 16-bit sample a normalized track is aimed at: 95% of full scale, leaving a little
  *  headroom so the fade ramp, resampler, and inter-sample peaks don't clip. */
