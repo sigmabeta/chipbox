@@ -622,20 +622,65 @@ remainder, sliced by dependency order.
   re-run `scripts/gen_jvm_strings.py`. Same one-way-sync pattern
   as `ChipboxStrings.kt`'s `R.string` mapping.
 
+- **Slice 2 — `ChipboxListViewModel` on commonMain (done).** The
+  base ViewModel every Chipbox feature screen extends now lives in
+  commonMain. Three prerequisite moves first:
+
+  - **Hoist `cbox/common/appcomm/api` to commonMain.** Both files
+    in scope (`ChipboxEvent`, `ChipboxAction`) are pure-Kotlin
+    sealed/open classes — strict audit passes with no
+    `java.*`/`android.*` imports. Same `git mv` pattern as
+    Milestones 7/8.
+  - **Add `androidx-lifecycle-viewmodel` to the sage catalog.**
+    `androidx.lifecycle:lifecycle-viewmodel` 2.8+ publishes
+    multiplatform artifacts that expose `ViewModel` +
+    `viewModelScope` in commonMain; pinned to the existing
+    `androidxLifecycle = 2.10.0` version. The existing
+    `lifecycle-runtime-compose` / `lifecycle-viewmodel-compose`
+    aliases stay Android-only.
+  - **Promote the `ChipboxViewModel` marker** (M6 slice 5,
+    `cbox/common/ui/vm/api`) to extend
+    `androidx.lifecycle.ViewModel`. M6 slice 5 deliberately left
+    it empty pending the first real Android consumer; this is
+    that consumer. `cbox/common/ui/vm/api` now `api`-depends on
+    the new lifecycle-viewmodel alias from commonMain.
+
+  Then the conversion proper:
+
+  - **`cbox/android/ui/list/api` → `sage.kmp + sage.compose.kmp`.**
+    Plugin swap; namespace stays
+    `net.sigmabeta.chipbox.ui.list`; deps split between
+    `commonMain` (sage common types + appcomm + ui/vm +
+    lifecycle-viewmodel) and `androidMain` (the Android sage
+    list screens, chrome, lifecycle-compose helpers).
+  - **`ChipboxListViewModel.kt` → `src/commonMain/kotlin/`.** Now
+    extends `ChipboxViewModel` (which itself extends
+    `androidx.lifecycle.ViewModel`), picks up `viewModelScope`
+    from the multiplatform artifact, and reaches `ChipboxEvent`
+    from the now-commonMain appcomm hoist. No body changes
+    beyond the supertype + import.
+  - **`ChipboxListEntry.kt` → `src/androidMain/kotlin/`.** The
+    Compose scaffolding still binds to the Android-only
+    `sage.android.ui.list` `ListScreen`/`GridScreen` (slice 5
+    will KMP-ify those) and uses Android-only Compose helpers
+    (`LocalConfiguration`, `collectAsStateWithLifecycle`), so it
+    legitimately stays on the Android target until slice 5
+    lifts the sage-list dependency.
+
+  Verified: `:cbox:android:ui:list:api:build` green for both
+  Android + JVM variants, `:apps:android:assembleDebug` green,
+  `:apps:jvm:check` (incl. detekt) green. No downstream source
+  changes — every existing Chipbox feature VM still extends
+  `ChipboxListViewModel` from the same FQCN.
+
 ## Roadmap (not yet done)
 
 1. **Compose Multiplatform UI port: finish the Settings port.**
    Milestones 6 + 7 set every prerequisite (toolchain, palette,
    typography, fonts, ViewModel scoping, navigation, sage commonMain
-   types). Slices 1–2 are done (see Milestone 9 above); the
+   types). Slices 1–3 are done (see Milestone 9 above); the
    remaining work, in dependency order:
 
-   3. **Convert `cbox/android/ui/list/api` to `sage.kmp`.**
-      `ChipboxListViewModel`'s imports now resolve from commonMain;
-      file can hoist. Decision in this slice: extend
-      `androidx.lifecycle.ViewModel` (lifecycle 2.10 should have KMP
-      support — verify) or extend the slice-5 `ChipboxViewModel`
-      marker.
    4. **Android-side actual of `chipboxViewModel<T>()`.** Thin Hilt
       wrapper. Easy slice; needed before any Chipbox commonMain
       module's `chipboxViewModel<T>()` call compiles on the Android

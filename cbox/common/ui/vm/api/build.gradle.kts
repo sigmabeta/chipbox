@@ -20,4 +20,12 @@ kotlin {
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.ui.vm.api"
     }
+
+    sourceSets {
+        named("commonMain") {
+            dependencies {
+                api(libs.androidx.lifecycle.viewmodel)
+            }
+        }
+    }
 }
