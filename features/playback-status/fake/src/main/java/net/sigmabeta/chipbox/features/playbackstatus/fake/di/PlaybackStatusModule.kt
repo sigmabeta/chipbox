@@ -15,6 +15,5 @@ import net.sigmabeta.sage.di.AppScope
 @ContributesTo(AppScope::class)
 abstract class PlaybackStatusModule {
     @Binds
-    @Singleton
     abstract fun bindEntryPoint(impl: FakePlaybackStatusEntryPoint): PlaybackStatusEntryPoint
 }

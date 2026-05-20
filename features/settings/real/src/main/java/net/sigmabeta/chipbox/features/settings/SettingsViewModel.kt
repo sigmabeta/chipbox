@@ -7,7 +7,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import javax.inject.Inject
-import javax.inject.Named
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
@@ -32,8 +31,6 @@ class SettingsViewModel @Inject constructor(
     private val scanner: Scanner,
     private val librarySource: LibrarySource,
     private val appInfo: AppInfo,
-    @Named(PLAYBACK_STATUS_AVAILABLE) private val playbackStatusAvailable: Boolean,
-    @Named(PLAYBACK_STATUS_DESTINATION) private val playbackStatusDestination: Any?,
     stringProvider: StringProvider,
     private val hatchet: Hatchet,
 ) : ChipboxListViewModel<SettingsState>(
@@ -46,7 +43,6 @@ class SettingsViewModel @Inject constructor(
             it.copy(
                 appInfo = appInfo,
                 formattedBuildDate = formatBuildDate(appInfo.buildTimeMs),
-                playbackStatusAvailable = playbackStatusAvailable,
             )
         }
 
@@ -98,8 +94,11 @@ class SettingsViewModel @Inject constructor(
 
             SettingsAction.BuildDateClicked -> onBuildDateClicked()
 
-            SettingsAction.PlaybackStatusClicked -> playbackStatusDestination?.let {
-                emit(ChipboxEvent.NavigateTo(it))
+            SettingsAction.PlaybackStatusClicked -> {
+                hatchet.w(
+                    "Playback Status screen not migrated yet — re-link when the feature lands.",
+                )
+                emit(ChipboxEvent.ShowSnackbar("Playback Status: not implemented yet."))
             }
 
             else -> Unit
@@ -151,17 +150,7 @@ class SettingsViewModel @Inject constructor(
             .format(BUILD_DATE_FORMATTER)
     }
 
-    companion object {
-        /** `@Named` key for the Boolean: whether the desktop/Android target exposes the
-         *  Playback Status debug screen. Android wires `playbackStatusEntryPoint.isAvailable`;
-         *  the JVM target wires a constant `false`. */
-        const val PLAYBACK_STATUS_AVAILABLE = "settings.playbackStatusAvailable"
-
-        /** `@Named` key for the navigation destination object the Playback Status row routes
-         *  to. Android wires the Playback Status `Screen` data-object; the JVM target wires
-         *  `null` (when the destination is null, the click is a no-op). */
-        const val PLAYBACK_STATUS_DESTINATION = "settings.playbackStatusDestination"
-
+    private companion object {
         private const val LOAD_OP_RESCAN = "settings.rescan"
         private const val LOAD_OP_CLEAR = "settings.clear_library"
         private const val DEBUG_TAP_THRESHOLD = 5
