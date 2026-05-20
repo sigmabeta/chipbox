@@ -100,17 +100,28 @@ object JvmBufferModule {
 @Module
 object JvmEmulatorsModule {
     @Provides @Singleton fun provideGba() = GbaEmulator
+
     @Provides @Singleton fun provideGme() = GmeEmulator
+
     @Provides @Singleton fun providePsf() = PsfEmulator
+
     @Provides @Singleton fun provideSsf() = SsfEmulator
+
     @Provides @Singleton fun provideTwosf() = TwosfEmulator
+
     @Provides @Singleton fun provideUsf() = UsfEmulator
+
     @Provides @Singleton fun provideVgm() = VgmEmulator
 
     @Provides @Singleton
     fun provideEmulatorProvider(
-        gba: GbaEmulator, gme: GmeEmulator, psf: PsfEmulator, ssf: SsfEmulator,
-        twosf: TwosfEmulator, usf: UsfEmulator, vgm: VgmEmulator,
+        gba: GbaEmulator,
+        gme: GmeEmulator,
+        psf: PsfEmulator,
+        ssf: SsfEmulator,
+        twosf: TwosfEmulator,
+        usf: UsfEmulator,
+        vgm: VgmEmulator,
     ): EmulatorProvider = EmulatorProvider(
         listOf<Emulator>(gba, gme, psf, ssf, twosf, usf, vgm)
     )
