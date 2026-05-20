@@ -1,6 +1,13 @@
 plugins {
     alias(libs.plugins.sage.jvm)
     alias(libs.plugins.ksp)
+    // Compose Multiplatform desktop. Two plugins are needed: the Kotlin Compose compiler
+    // (shared with the Android UI) handles @Composable codegen, and the JetBrains Compose
+    // plugin provides the `compose.desktop.currentOs` dependency notation that resolves the
+    // per-OS Skia native artifact. Both must be applied here; only the compiler plugin will
+    // travel through the future sage.compose.kmp convention for shared UI modules.
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.compose.multiplatform)
     application
 }
 
@@ -80,4 +87,15 @@ dependencies {
 
     implementation(libs.sage.common.logging)
     implementation(libs.kotlinx.coroutines.core)
+
+    // Compose Multiplatform desktop. The platform-agnostic libs come from the catalog so
+    // shared UI modules (future sage.compose.kmp) pin the exact same versions; the per-OS
+    // Skia native is pulled via `compose.desktop.currentOs` from the JetBrains plugin
+    // extension applied above. Bootstrap inlines its Hello composable in DesktopMain.kt;
+    // these deps will mostly move into shared modules in follow-up slices.
+    implementation(libs.jetbrains.compose.runtime)
+    implementation(libs.jetbrains.compose.foundation)
+    implementation(libs.jetbrains.compose.material3)
+    implementation(libs.jetbrains.compose.ui)
+    implementation(compose.desktop.currentOs)
 }
