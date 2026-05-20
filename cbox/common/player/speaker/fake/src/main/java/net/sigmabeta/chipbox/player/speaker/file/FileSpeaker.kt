@@ -123,6 +123,7 @@ class FileSpeaker(
         writeShortLittleEndian(output, (BYTES_PER_SAMPLE * BITS_PER_BYTE).toShort()) // 2 bytes
 
         output.write(HEADER_STRING_DATA.toByteArray())
+        output.write(byteArrayOf(0, 0, 0, 0)) // data chunk size placeholder, patched in teardown
     }
 
     private fun writeWaveHeader(output: OutputStream) {
@@ -135,17 +136,19 @@ class FileSpeaker(
 
     private fun writeSizeToHeader() {
         val file = getOutputFile(externalStorageDir)
-        val seekableFile = RandomAccessFile(file, MODE_FILE_ACCESS_RW)
+        RandomAccessFile(file, MODE_FILE_ACCESS_RW).use { seekableFile ->
+            seekableFile.seek(HEADER_OFFSET_RIFF_SIZE)
+            seekableFile.write(intToLittleEndianBytes(bytesWritten + HEADER_SIZE_TOTAL))
 
-        // TODO Pretty sure this assumes little-endianness. Maybe a bad idea?
-        seekableFile.seek(HEADER_OFFSET_RIFF_SIZE)
-        seekableFile.writeInt(bytesWritten + HEADER_SIZE_TOTAL)
-
-        seekableFile.seek(HEADER_OFFSET_DATA_SIZE)
-        seekableFile.writeInt(bytesWritten)
+            seekableFile.seek(HEADER_OFFSET_DATA_SIZE)
+            seekableFile.write(intToLittleEndianBytes(bytesWritten))
+        }
 
         hatchet.d("Wrote $bytesWritten bytes of audio to file.")
     }
+
+    private fun intToLittleEndianBytes(value: Int): ByteArray =
+        ByteBuffer.allocate(BYTES_PER_INT).order(ByteOrder.LITTLE_ENDIAN).putInt(value).array()
 
     private fun writeShortLittleEndian(output: OutputStream, short: Short) {
         val bb: ByteBuffer = ByteBuffer.allocate(2)
@@ -200,7 +203,7 @@ class FileSpeaker(
         private const val HEADER_OFFSET_RIFF_SIZE = 4L
 
         /** Byte offset of the data chunk size field within the WAV header. */
-        private const val HEADER_OFFSET_DATA_SIZE = 0x40L
+        private const val HEADER_OFFSET_DATA_SIZE = 40L
 
         /** Bits per byte; WAV stores bits-per-sample as bytes-per-sample * 8. */
         private const val BITS_PER_BYTE = 8
