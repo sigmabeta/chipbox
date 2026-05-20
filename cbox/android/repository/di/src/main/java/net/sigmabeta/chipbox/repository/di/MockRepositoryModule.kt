@@ -6,8 +6,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.ContributesTo
 import net.sigmabeta.chipbox.repository.mock.MockImageUrlGenerator
 import net.sigmabeta.chipbox.repository.mock.MockRepository
+import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringGenerator
 import java.util.Random
@@ -16,23 +18,25 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
+@ContributesTo(AppScope::class)
 object MockRepositoryModule {
     @Provides
     @Singleton
     @Named("RngSeed")
-    fun provideSeed() = SEED_RANDOM_NUMBER_GENERATOR
+    fun provideSeed(): Long = SEED_RANDOM_NUMBER_GENERATOR
 
     @Provides
     @Singleton
-    fun provideRandom(@Named("RngSeed") seed: Long) = Random(seed)
+    fun provideRandom(@Named("RngSeed") seed: Long): Random = Random(seed)
 
     @Provides
     @Singleton
-    fun provideStringGenerator(random: Random) = StringGenerator(random)
+    fun provideStringGenerator(random: Random): StringGenerator = StringGenerator(random)
 
     @Provides
     @Singleton
-    fun provideMockImageUrlGenerator(@ApplicationContext context: Context) = MockImageUrlGenerator(context)
+    fun provideMockImageUrlGenerator(@ApplicationContext context: Context): MockImageUrlGenerator =
+        MockImageUrlGenerator(context)
 
     @Provides
     @Singleton
@@ -42,7 +46,7 @@ object MockRepositoryModule {
         stringGenerator: StringGenerator,
         mockImageUrlGenerator: MockImageUrlGenerator,
         hatchet: Hatchet,
-    ) = MockRepository(
+    ): MockRepository = MockRepository(
         random,
         seed,
         stringGenerator,

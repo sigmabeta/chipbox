@@ -4,15 +4,18 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.ContributesTo
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
+@ContributesTo(AppScope::class)
 object RealScannerModule {
     @Provides
     @Singleton

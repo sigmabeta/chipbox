@@ -6,6 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.ContributesTo
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.emulators.EmulatorProvider
@@ -13,12 +14,14 @@ import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.fake.FakeGenerator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.File
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
+@ContributesTo(AppScope::class)
 object GeneratorModule {
     @Provides
     @Singleton
@@ -29,7 +32,7 @@ object GeneratorModule {
         contentSourceRegistry: ContentSourceRegistry,
         @ApplicationContext context: Context,
         hatchet: Hatchet,
-    ) = RealGenerator(
+    ): RealGenerator = RealGenerator(
         repository,
         contentSourceRegistry,
         bufferManager,
@@ -46,7 +49,7 @@ object GeneratorModule {
         bufferManager: ProducerBufferManager,
         contentSourceRegistry: ContentSourceRegistry,
         hatchet: Hatchet,
-    ) = FakeGenerator(repository, contentSourceRegistry, bufferManager, hatchet)
+    ): FakeGenerator = FakeGenerator(repository, contentSourceRegistry, bufferManager, hatchet)
 
     @Provides
     @Singleton

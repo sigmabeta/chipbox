@@ -6,6 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.ContributesTo
 import javax.inject.Named
 import javax.inject.Singleton
 import net.sigmabeta.chipbox.BuildConfig
@@ -18,12 +19,14 @@ import net.sigmabeta.chipbox.strings.ChipboxStringId
 import net.sigmabeta.chipbox.strings.id
 import net.sigmabeta.sage.android.logging.AndroidHatchet
 import net.sigmabeta.sage.appinfo.AppInfo
+import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 import net.sigmabeta.sage.ui.strings.AndroidStringProvider
 
 @Module
 @InstallIn(SingletonComponent::class)
+@ContributesTo(AppScope::class)
 object AndroidAppModule {
     @Provides
     @Singleton
