@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.ui.list
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -14,6 +13,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.ui.vm.ChipboxViewModel
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.list.ListState
@@ -47,7 +47,7 @@ abstract class ChipboxListViewModel<S : ListState>(
     initialState: S,
     private val stringProvider: StringProvider,
     private val hatchet: Hatchet,
-) : ViewModel(),
+) : ChipboxViewModel(),
     ActionSink {
 
     private val _state = MutableStateFlow(initialState)
