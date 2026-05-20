@@ -28,9 +28,12 @@ import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.GeneratorEvent
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
+import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.database.DatabaseRepository
+import net.sigmabeta.chipbox.scanner.real.RealScanner
+import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.BasicHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.File
@@ -99,7 +102,16 @@ fun main(args: Array<String>) = runBlocking {
             val root = File(args[1])
             require(root.isDirectory) { "Not a directory: ${root.absolutePath}" }
             withDatabase(hatchet) { db ->
-                JvmLibraryScanner(ALL_EMULATORS, hatchet).scan(root, DatabaseRepository(db, hatchet))
+                val librarySource = LocalFileContentSource().apply { addLocation(root) }
+                val scanner = RealScanner(
+                    repository = DatabaseRepository(db, hatchet),
+                    librarySource = librarySource,
+                    readers = Readers(hatchet),
+                    hatchet = hatchet,
+                )
+                scanner.startScan()
+                // RealScanner runs the walk in its own scope; wait for a terminal state.
+                scanner.state().first { it is ScannerState.Complete || it is ScannerState.Failed }
             }
         }
         "play" -> {
@@ -201,7 +213,7 @@ private suspend fun CoroutineScope.playPipeline(
     outputDir: File,
     hatchet: Hatchet,
 ) {
-    val contentSources = ContentSourceRegistry(setOf(FileContentSource(SOURCE_ID)))
+    val contentSources = ContentSourceRegistry(setOf(LocalFileContentSource()))
     val bufferManager = RealBufferManager(hatchet)
 
     val workDir = File(outputDir, WORK_DIR_NAME)
