@@ -450,8 +450,11 @@ abstract class Generator(
                 firstAudible > 0 -> {
                     val keptShorts = (frames - firstAudible) * SHORTS_PER_FRAME
                     System.arraycopy(
-                        buffer, firstAudible * SHORTS_PER_FRAME,
-                        buffer, 0, keptShorts,
+                        buffer,
+                        firstAudible * SHORTS_PER_FRAME,
+                        buffer,
+                        0,
+                        keptShorts,
                     )
                     // Refill the freed tail *completely* so we neither drop music nor leave a
                     // gap of pool zeros / stale samples for the consumer to play. fillBuffer

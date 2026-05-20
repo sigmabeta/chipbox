@@ -718,7 +718,16 @@ sint32 EMU_CALL r3000_execute(void *state, sint32 cycles) {
                     }
                     break;
                 default:
-                    goto badins;
+                    /* Reserved Instruction (ExcCode 10): a real R3000 takes
+                    ** an RI exception and the BIOS handler deals with it --
+                    ** PSF sound drivers run off into junk at end-of-track
+                    ** (e.g. Tomba! 2) and the BIOS just unwinds the thread,
+                    ** ending the track cleanly. Mirror syscall/break above;
+                    ** badins (hard render abort) is for emulator-side faults
+                    ** only. */
+                    exception(STATE, 10, 0);
+                    PC -= 4;
+                    break;
             }
         } else {
             switch (instruction >> 26) {
@@ -748,7 +757,9 @@ sint32 EMU_CALL r3000_execute(void *state, sint32 cycles) {
                             }
                             break;
                         default:
-                            goto badins;
+                            exception(STATE, 10, 0); /* RI -- see note above */
+                            PC -= 4;
+                            break;
                     }
                     break;
                 caseMAJOR(0x02) /* j     */ if (!STATE->slot) {J_ABS_I; }
@@ -839,7 +850,9 @@ sint32 EMU_CALL r3000_execute(void *state, sint32 cycles) {
                         }
                             break;
                         default:
-                            goto badins;
+                            exception(STATE, 10, 0); /* RI -- see note above */
+                            PC -= 4;
+                            break;
                     }
                     break;
                 caseMAJOR(0x20) /* lb    */ {
@@ -938,7 +951,9 @@ sint32 EMU_CALL r3000_execute(void *state, sint32 cycles) {
                     break;
 
                 default:
-                    goto badins;
+                    exception(STATE, 10, 0); /* RI -- see note above */
+                    PC -= 4;
+                    break;
             }
         }
 
