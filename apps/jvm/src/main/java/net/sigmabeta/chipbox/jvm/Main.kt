@@ -1,9 +1,6 @@
 package net.sigmabeta.chipbox.jvm
 
-import androidx.room.Room
-import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -11,7 +8,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
-import net.sigmabeta.chipbox.database.ChipboxDatabase
+import net.sigmabeta.chipbox.jvm.di.DaggerJvmChipboxComponent
+import net.sigmabeta.chipbox.jvm.di.JvmChipboxComponent
 import net.sigmabeta.chipbox.models.ChainFile
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
@@ -28,11 +26,8 @@ import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.GeneratorEvent
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
-import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
-import net.sigmabeta.chipbox.repository.database.DatabaseRepository
-import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.BasicHatchet
 import net.sigmabeta.sage.logging.Hatchet
@@ -45,8 +40,8 @@ private const val DEMO_TRACK_LENGTH_MS = 10_000L
 private const val DEMO_FADE_LENGTH_MS = 2_000L
 
 /**
- * Every native emulator the JVM target can drive. [RealGenerator]'s factory picks one per
- * track by file extension, so the whole set is always wired and any supported file just works.
+ * Every native emulator the legacy single-file mode can drive (the Dagger graph for the
+ * scan/play modes pulls them from [net.sigmabeta.chipbox.jvm.di.JvmEmulatorsModule]).
  */
 private val ALL_EMULATORS: List<Emulator> = listOf(
     GbaEmulator,
@@ -85,8 +80,10 @@ DB / render-cache home (.chipbox-jvm/library.sqlite + staging + pcm-cache)."""
  * directory; `play` resolves a track from that library and renders it; the legacy file-path
  * form keeps working for one-off renders without touching the DB.
  *
- * All three drive the same native pipeline ([Emulator] → [RealGenerator] → buffer manager →
- * [FileSpeaker]); the only difference is which [Repository] supplies the track.
+ * The scan/play modes pull everything from the plain-Dagger [JvmChipboxComponent] — the JVM
+ * equivalent of the Android app's Hilt graph. The legacy file-path mode bypasses the
+ * component (no DB, no scanner) and wires a small player pipeline manually so a CI smoke
+ * test doesn't need a populated library on disk.
  */
 fun main(args: Array<String>) = runBlocking {
     if (args.isEmpty()) {
@@ -94,21 +91,14 @@ fun main(args: Array<String>) = runBlocking {
         exitProcess(2)
     }
 
-    val hatchet = BasicHatchet()
-
     when (args[0]) {
         "scan" -> {
             require(args.size >= 2) { "scan mode: $USAGE" }
             val root = File(args[1])
             require(root.isDirectory) { "Not a directory: ${root.absolutePath}" }
-            withDatabase(hatchet) { db ->
-                val librarySource = LocalFileContentSource().apply { addLocation(root) }
-                val scanner = RealScanner(
-                    repository = DatabaseRepository(db, hatchet),
-                    librarySource = librarySource,
-                    readers = Readers(hatchet),
-                    hatchet = hatchet,
-                )
+            withComponent(outputDir = workingDir()) { component ->
+                component.librarySource().addLocation(root)
+                val scanner = component.scanner()
                 scanner.startScan()
                 // RealScanner runs the walk in its own scope; wait for a terminal state.
                 scanner.state().first { it is ScannerState.Complete || it is ScannerState.Failed }
@@ -117,34 +107,37 @@ fun main(args: Array<String>) = runBlocking {
         "play" -> {
             require(args.size >= 2) { "play mode: $USAGE" }
             val outputDir = File(args.getOrNull(2) ?: System.getProperty("user.dir"))
-            withDatabase(hatchet) { db ->
-                val repo: Repository = DatabaseRepository(db, hatchet)
-                val track = resolveTrackFromLibrary(repo, args[1], hatchet)
+            withComponent(outputDir = outputDir) { component ->
+                val track = resolveTrackFromLibrary(component.repository(), args[1], component.hatchet())
                     ?: error("No track matches '${args[1]}' in the library. Did you `scan` first?")
-                playPipeline(track, repo, outputDir, hatchet)
+                playPipelineFromComponent(track, component)
             }
         }
-        else -> playSingleFile(args, hatchet)
+        else -> playSingleFile(args, BasicHatchet())
     }
 }
 
+private fun workingDir(): File = File(System.getProperty("user.dir"))
+
 /**
- * Build the JVM Room database with the bundled SQLite driver, hand it to [block], then close
- * it. The DB file lives under the working directory's `.chipbox-jvm/library.sqlite` so a run
- * is self-contained.
+ * Build the plain-Dagger graph for this run. The DB file + render-cache workdir live under
+ * `<user.dir>/.chipbox-jvm` so a run is self-contained; the WAV output dir comes from the
+ * caller (CLI arg).
  */
-private suspend fun withDatabase(hatchet: Hatchet, block: suspend (ChipboxDatabase) -> Unit) {
-    val workDir = File(System.getProperty("user.dir"), WORK_DIR_NAME).apply { mkdirs() }
-    val dbFile = File(workDir, LIBRARY_DB_NAME)
-    hatchet.i("Opening library DB at ${dbFile.absolutePath}")
-    val database = Room.databaseBuilder<ChipboxDatabase>(name = dbFile.absolutePath)
-        .setDriver(BundledSQLiteDriver())
-        .setQueryCoroutineContext(Dispatchers.IO)
+private suspend fun withComponent(outputDir: File, block: suspend (JvmChipboxComponent) -> Unit) {
+    val workDir = File(workingDir(), WORK_DIR_NAME).apply { mkdirs() }
+    val component = DaggerJvmChipboxComponent.builder()
+        .dbPath(File(workDir, LIBRARY_DB_NAME).absolutePath)
+        .workDir(workDir)
+        .outputDir(outputDir)
         .build()
+    component.hatchet().i("Opened library DB at $workDir/$LIBRARY_DB_NAME")
     try {
-        block(database)
+        block(component)
     } finally {
-        database.close()
+        // Tear down the Dagger-supplied singletons that own external resources. Room owns the
+        // SQLite handle; the speaker is closed by playPipelineFromComponent on the play path.
+        runCatching { (component.repository() as? AutoCloseable)?.close() }
     }
 }
 
@@ -170,10 +163,29 @@ private suspend fun resolveTrackFromLibrary(
     return hit
 }
 
+/** Play path using the Dagger component — pulls generator + speaker from the graph. */
+private suspend fun CoroutineScope.playPipelineFromComponent(
+    track: Track,
+    component: JvmChipboxComponent,
+) {
+    val hatchet = component.hatchet()
+    val generator = component.generator()
+    val speaker = component.speaker()
+
+    playToCompletion(track, generator, speaker, hatchet)
+
+    delay(DRAIN_GRACE_MS)
+    launch { generator.stop() }
+    speaker.stop()
+
+    val outFile = File(File(File(System.getProperty("user.dir")), FileSpeaker.FOLDER_NAME), "temp.wav")
+    hatchet.i("Done. WAV written to: ${outFile.absolutePath} (${outFile.length()} bytes).")
+}
+
 /**
- * Single-file legacy mode: no DB, just build a Track in memory backed by
- * [SingleTrackRepository] and render it. Also stages any `*lib` siblings so mini-formats
- * resolve their `_lib` without a real library.
+ * Single-file legacy mode: no DB, no Dagger graph — wire a small player by hand around a
+ * [SingleTrackRepository] so a CI smoke test doesn't need a populated library. Stages any
+ * `*lib` siblings so mini-formats resolve their `_lib`.
  */
 private suspend fun CoroutineScope.playSingleFile(args: Array<String>, hatchet: Hatchet) {
     val trackFile = File(args[0])
@@ -203,22 +215,11 @@ private suspend fun CoroutineScope.playSingleFile(args: Array<String>, hatchet: 
     )
     hatchet.i("Resolved track '${track.title}' (.${track.extension}) from ${track.path}.")
 
-    playPipeline(track, SingleTrackRepository(track), outputDir, hatchet)
-}
-
-/** Shared render path. Builds the generator + speaker for [track] and runs to completion. */
-private suspend fun CoroutineScope.playPipeline(
-    track: Track,
-    repository: Repository,
-    outputDir: File,
-    hatchet: Hatchet,
-) {
     val contentSources = ContentSourceRegistry(setOf(LocalFileContentSource()))
     val bufferManager = RealBufferManager(hatchet)
-
     val workDir = File(outputDir, WORK_DIR_NAME)
     val generator = RealGenerator(
-        repository = repository,
+        repository = SingleTrackRepository(track),
         contentSourceRegistry = contentSources,
         bufferManager = bufferManager,
         emulators = ALL_EMULATORS,
