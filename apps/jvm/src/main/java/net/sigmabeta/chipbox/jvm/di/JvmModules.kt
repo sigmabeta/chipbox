@@ -9,6 +9,9 @@ import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.database.ChipboxDatabase
+import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
+import net.sigmabeta.chipbox.jvm.JvmStorage
 import net.sigmabeta.chipbox.jvm.LocalFileContentSource
 import net.sigmabeta.chipbox.jvm.strings.JvmStringProvider
 import net.sigmabeta.chipbox.jvm.strings.chipboxJvmStrings
@@ -29,9 +32,14 @@ import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.database.DatabaseRepository
+import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.real.RealScanner
+import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
+import net.sigmabeta.chipbox.settings.real.RealChipboxSettingsManager
+import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.logging.BasicHatchet
 import net.sigmabeta.sage.logging.Hatchet
+import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.ui.StringProvider
 import java.io.File
 import javax.inject.Named
@@ -150,6 +158,9 @@ object JvmScannerModule {
         readers: Readers,
         hatchet: Hatchet,
     ): RealScanner = RealScanner(repository, librarySource, readers, hatchet)
+
+    @Provides @Singleton
+    fun provideScanner(impl: RealScanner): Scanner = impl
 }
 
 @Module
@@ -182,3 +193,34 @@ object JvmSpeakerModule {
         bufferManager: ConsumerBufferManager,
     ): FileSpeaker = FileSpeaker(outputDir, hatchet, bufferManager)
 }
+
+@Module
+object JvmStorageModule {
+    @Provides @Singleton fun provideStorage(): Storage = JvmStorage()
+}
+
+@Module
+object JvmSettingsManagersModule {
+    @Provides @Singleton
+    fun provideChipboxSettingsManager(storage: Storage): ChipboxSettingsManager =
+        RealChipboxSettingsManager(storage)
+
+    @Provides @Singleton
+    fun provideDebugSettingsManager(storage: Storage): DebugSettingsManager =
+        RealDebugSettingsManager(storage)
+}
+
+@Module
+object JvmAppInfoModule {
+    // The Android target builds this from Gradle-injected BuildConfig fields; on JVM there's
+    // no BuildConfig + no signed-build context, so the values are intentionally fake (debug
+    // flag on, dev version) — good enough for the desktop bootstrap's Settings screen.
+    @Provides @Singleton fun provideAppInfo(): AppInfo = AppInfo(
+        isDebug = true,
+        versionName = "0.1.0-jvm",
+        versionCode = 1,
+        buildTimeMs = System.currentTimeMillis(),
+        buildBranch = "desktop",
+    )
+}
+
