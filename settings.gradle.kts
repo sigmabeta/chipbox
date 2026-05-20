@@ -159,6 +159,7 @@ include(
     ":cbox:common:strings:api",
     ":cbox:common:ui:fonts:api",
     ":cbox:common:ui:theme:api",
+    ":cbox:common:ui:vm:api",
     ":cbox:common:utils:api",
 
     ":features:browse-all-tracks:api",

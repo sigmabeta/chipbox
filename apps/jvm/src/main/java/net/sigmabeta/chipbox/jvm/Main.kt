@@ -93,7 +93,7 @@ DB / render-cache home (.chipbox-jvm/library.sqlite + staging + pcm-cache)."""
  */
 fun main(args: Array<String>) {
     if (args.firstOrNull() == "gui") {
-        runDesktop()
+        runDesktop(buildComponent(outputDir = workingDir()))
         return
     }
     runBlocking { dispatch(args) }
@@ -138,16 +138,22 @@ private fun workingDir(): File = File(System.getProperty("user.dir"))
 /**
  * Build the plain-Dagger graph for this run. The DB file + render-cache workdir live under
  * `<user.dir>/.chipbox-jvm` so a run is self-contained; the WAV output dir comes from the
- * caller (CLI arg).
+ * caller (CLI arg). Dagger is lazy — `repository()` / `speaker()` aren't constructed until
+ * the consumer asks for them, so `gui` mode can call this safely without opening the DB
+ * (it only pulls `helloViewModel()` → `hatchet()`).
  */
-private suspend fun withComponent(outputDir: File, block: suspend (JvmChipboxComponent) -> Unit) {
+internal fun buildComponent(outputDir: File): JvmChipboxComponent {
     val workDir = File(workingDir(), WORK_DIR_NAME).apply { mkdirs() }
-    val component = DaggerJvmChipboxComponent.builder()
+    return DaggerJvmChipboxComponent.builder()
         .dbPath(File(workDir, LIBRARY_DB_NAME).absolutePath)
         .workDir(workDir)
         .outputDir(outputDir)
         .build()
-    component.hatchet().i("Opened library DB at $workDir/$LIBRARY_DB_NAME")
+}
+
+private suspend fun withComponent(outputDir: File, block: suspend (JvmChipboxComponent) -> Unit) {
+    val component = buildComponent(outputDir)
+    component.hatchet().i("Opened library DB at $WORK_DIR_NAME/$LIBRARY_DB_NAME")
     try {
         block(component)
     } finally {

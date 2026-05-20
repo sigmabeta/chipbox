@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.jvm.di
 
 import dagger.BindsInstance
 import dagger.Component
+import net.sigmabeta.chipbox.jvm.HelloViewModel
 import net.sigmabeta.chipbox.jvm.LocalFileContentSource
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
@@ -45,6 +46,12 @@ interface JvmChipboxComponent {
     fun scanner(): RealScanner
     fun generator(): RealGenerator
     fun speaker(): FileSpeaker
+
+    // Demo view-model surfaced for the Compose Multiplatform desktop bootstrap. Pulled by
+    // JvmViewModelProvider's `when` arm for HelloViewModel; future feature ports surface
+    // their own VMs here (or migrate to a Dagger Multibindings map keyed by KClass once
+    // there's more than one).
+    fun helloViewModel(): HelloViewModel
 
     @Component.Builder
     interface Builder {
