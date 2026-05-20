@@ -26,7 +26,13 @@ class LocalFileContentSource : LibrarySource {
 
     fun addLocation(dir: File) {
         require(dir.isDirectory) { "Not a directory: ${dir.absolutePath}" }
-        val info = LibraryLocationInfo(dir.absolutePath, dir.name)
+        addLibraryLocation(dir.absolutePath)
+    }
+
+    override fun addLibraryLocation(identifier: String) {
+        val file = File(identifier)
+        require(file.isDirectory) { "Not a directory: $identifier" }
+        val info = LibraryLocationInfo(file.absolutePath, file.name)
         _locations.update { current ->
             if (current.any { it.identifier == info.identifier }) current else current + info
         }

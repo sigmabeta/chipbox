@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.features.settings
 
-import android.net.Uri
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Instant
@@ -8,13 +7,12 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import javax.inject.Inject
+import javax.inject.Named
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
-import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
+import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
-import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
-import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatusEntryPoint
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
@@ -25,7 +23,6 @@ import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
-import androidx.core.net.toUri
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -33,9 +30,10 @@ class SettingsViewModel @Inject constructor(
     private val debugSettingsManager: DebugSettingsManager,
     private val repository: Repository,
     private val scanner: Scanner,
-    private val contentSource: AndroidFileContentSource,
+    private val librarySource: LibrarySource,
     private val appInfo: AppInfo,
-    private val playbackStatusEntryPoint: PlaybackStatusEntryPoint,
+    @Named(PLAYBACK_STATUS_AVAILABLE) private val playbackStatusAvailable: Boolean,
+    @Named(PLAYBACK_STATUS_DESTINATION) private val playbackStatusDestination: Any?,
     stringProvider: StringProvider,
     private val hatchet: Hatchet,
 ) : ChipboxListViewModel<SettingsState>(
@@ -48,7 +46,7 @@ class SettingsViewModel @Inject constructor(
             it.copy(
                 appInfo = appInfo,
                 formattedBuildDate = formatBuildDate(appInfo.buildTimeMs),
-                playbackStatusAvailable = playbackStatusEntryPoint.isAvailable,
+                playbackStatusAvailable = playbackStatusAvailable,
             )
         }
 
@@ -100,14 +98,16 @@ class SettingsViewModel @Inject constructor(
 
             SettingsAction.BuildDateClicked -> onBuildDateClicked()
 
-            SettingsAction.PlaybackStatusClicked -> emit(ChipboxEvent.NavigateTo(PlaybackStatus))
+            SettingsAction.PlaybackStatusClicked -> playbackStatusDestination?.let {
+                emit(ChipboxEvent.NavigateTo(it))
+            }
 
             else -> Unit
         }
     }
 
     private fun onFolderPicked(uri: String) {
-        contentSource.addLibraryLocation(uri.toUri())
+        librarySource.addLibraryLocation(uri)
         emit(ChipboxEvent.ShowSnackbar("Folder added to library."))
     }
 
@@ -151,13 +151,23 @@ class SettingsViewModel @Inject constructor(
             .format(BUILD_DATE_FORMATTER)
     }
 
-    private companion object {
-        const val LOAD_OP_RESCAN = "settings.rescan"
-        const val LOAD_OP_CLEAR = "settings.clear_library"
-        const val DEBUG_TAP_THRESHOLD = 5
-        const val GITHUB_URL = "https://github.com/sigmabeta/chipbox"
+    companion object {
+        /** `@Named` key for the Boolean: whether the desktop/Android target exposes the
+         *  Playback Status debug screen. Android wires `playbackStatusEntryPoint.isAvailable`;
+         *  the JVM target wires a constant `false`. */
+        const val PLAYBACK_STATUS_AVAILABLE = "settings.playbackStatusAvailable"
 
-        val BUILD_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter
+        /** `@Named` key for the navigation destination object the Playback Status row routes
+         *  to. Android wires the Playback Status `Screen` data-object; the JVM target wires
+         *  `null` (when the destination is null, the click is a no-op). */
+        const val PLAYBACK_STATUS_DESTINATION = "settings.playbackStatusDestination"
+
+        private const val LOAD_OP_RESCAN = "settings.rescan"
+        private const val LOAD_OP_CLEAR = "settings.clear_library"
+        private const val DEBUG_TAP_THRESHOLD = 5
+        private const val GITHUB_URL = "https://github.com/sigmabeta/chipbox"
+
+        private val BUILD_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter
             .ofLocalizedDate(FormatStyle.LONG)
     }
 }

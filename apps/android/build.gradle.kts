@@ -111,6 +111,9 @@ dependencies {
     implementation(projects.cbox.common.debugInfo.di)
     implementation(projects.cbox.common.settings.di)
     implementation(projects.cbox.common.ui.vm.api)
+    implementation(projects.features.playbackStatus.api)
+    implementation(projects.features.settings.api)
+    implementation(projects.features.settings.real)
 
     implementation(libs.sage.common.appinfo)
 
