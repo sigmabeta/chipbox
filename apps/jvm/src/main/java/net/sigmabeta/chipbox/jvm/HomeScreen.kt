@@ -50,6 +50,9 @@ data object HomeScreen : Screen {
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.bodyMedium,
             )
+            Button(onClick = { navigator.push(LibraryScreen) }) {
+                Text("Library")
+            }
             Button(onClick = { navigator.push(SettingsScreen) }) {
                 Text("Settings")
             }
