@@ -65,9 +65,11 @@ dependencies {
     implementation(projects.cbox.common.debug.real)
     implementation(projects.cbox.common.settings.api)
     implementation(projects.cbox.common.settings.real)
-    // features/settings/real is sage.kmp post-M9 slice 5c (see docs/kmp-migration.md);
-    // SettingsViewModel contributes into the Metro ViewModelGraph for the desktop UI.
+    // features/settings/real + features/library/real are sage.kmp (M9 slices 5c / 5d
+    // — see docs/kmp-migration.md); their VMs contribute into the Metro ViewModelGraph
+    // for the desktop UI.
     implementation(projects.features.settings.real)
+    implementation(projects.features.library.real)
     implementation(projects.cbox.common.player.speaker.fake)
     implementation(projects.cbox.common.player.buffer.real)
     implementation(projects.cbox.common.player.common.api)
