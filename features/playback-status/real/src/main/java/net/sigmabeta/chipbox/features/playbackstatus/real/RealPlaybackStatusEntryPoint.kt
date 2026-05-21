@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.features.playbackstatus.real
 
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import javax.inject.Inject
+import dev.zacsweers.metro.Inject
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatusEntryPoint

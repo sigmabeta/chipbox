@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.sage.jvm)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.metro)
     // Compose Multiplatform desktop. Two plugins are needed: the Kotlin Compose compiler
     // (shared with the Android UI) handles @Composable codegen, and the JetBrains Compose
@@ -10,18 +9,6 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
     application
-}
-
-// Hilt → Metro migration M4c (see docs/metro-migration.md). The JVM target uses plain
-// Dagger (no Hilt — Hilt is Android-only), but the same coexistence pattern from M1
-// applies here: Metro runs alongside Dagger's KSP processor on the same @Module sources;
-// interop.includeDagger() makes Metro recognise @Inject / @Provides / @Module / @Singleton
-// without disturbing Dagger's own codegen. JvmChipboxComponent stays the runtime DI root
-// until M6 swaps over to the parallel JvmChipboxGraph.
-metro {
-    interop {
-        includeDagger()
-    }
 }
 
 application {
@@ -96,17 +83,9 @@ dependencies {
     implementation(projects.cbox.android.scanner.real)
     implementation(projects.cbox.common.readers.api)
 
-    // Plain Dagger — the headless JVM target assembles its own @Component. Hilt is
-    // Android-only by design, so the JVM-side `@Module` classes (see jvm/di/) duplicate
-    // the trivial @Provides for each emulator + buffer + repository binding; that's
-    // simpler than wiring sage.android Hilt modules into a sage.jvm app's classpath.
-    implementation(libs.dagger)
-    ksp(libs.dagger.compiler)
-
-    // Metro DI — runs alongside Dagger during the migration (see M4c). AppScope lives in
-    // sage/common/di; metrox-viewmodel is here for the future JvmChipboxGraph extension
-    // (deferred to a later slice when LocalMetroViewModelFactory replaces the hand-rolled
-    // JvmViewModelProvider).
+    // Metro DI — JvmChipboxGraph is the runtime DI root (replaces the plain-Dagger
+    // JvmChipboxComponent dropped at M6). AppScope lives in sage/common/di;
+    // metrox-viewmodel(-compose) backs metroViewModel<T>() on the desktop UI.
     implementation(libs.sage.common.di)
     implementation(libs.metrox.viewmodel)
     implementation(libs.metrox.viewmodel.compose)
@@ -133,9 +112,10 @@ dependencies {
     // fonts via Compose Multiplatform resources.
     implementation(projects.cbox.common.ui.theme.api)
 
-    // Multiplatform ChipboxViewModel + LocalViewModelProvider — consumed by the demo
-    // HelloViewModel and the JvmViewModelProvider that wires it into DesktopMain.
-    implementation(projects.cbox.common.ui.vm.api)
+    // androidx.lifecycle.ViewModel for HelloViewModel (Metro VMs extend ViewModel directly
+    // post-M6 — the old ChipboxViewModel marker class in cbox/common/ui/vm/api was for the
+    // pre-Metro chipboxViewModel<T>() multiplatform machinery, now deleted).
+    implementation(libs.androidx.lifecycle.viewmodel)
 
     // Voyager — Compose Multiplatform navigation. Replaces what would otherwise be
     // androidx.navigation:navigation-compose (the AndroidX CMP fork publishes JVM stubs

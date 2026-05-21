@@ -2,9 +2,9 @@ package net.sigmabeta.chipbox.features.library
 
 import androidx.lifecycle.ViewModel
 import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.binding
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
-import javax.inject.Inject
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.features.browsealltracks.BrowseAllTracks
 import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtist

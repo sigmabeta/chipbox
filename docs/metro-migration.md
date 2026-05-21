@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Milestones 3 + 4 implemented (incl. M4c JVM-side); M5b Kotlin bump done; M5c–d migrated all 14 @HiltViewModels to Metro. Ready for M6 (drop Hilt).**
+Status: **Done. M1–M6 complete; Hilt and plain Dagger fully removed from chipbox. `git grep -i hilt` matches only doc/historical comments; `git grep dagger` returns nothing in code; `git grep javax.inject` returns nothing in code.**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -696,26 +696,134 @@ the playback-status entry-point is moved off variant-qualified
 implementations. Until then, navigation to the `PlaybackStatus` route
 is dead. Tracking note inline in `ChipboxNavHost.kt`.
 
-### Milestone 6 — drop Hilt (planned)
+### Milestone 6 — drop Hilt + Dagger (done)
 
-Final cleanup once everything Metro-side is green.
+Final sweep: every Hilt entry point gone, every `javax.inject` /
+`dagger.*` annotation migrated to its Metro-native equivalent, and
+plain Dagger gone from the JVM target. `git grep -i hilt` returns
+only doc/historical comments; `git grep dagger` and `git grep
+javax.inject` return nothing in production code.
 
-- Remove `dagger-hilt-android` Gradle plugin from `apps/android` and from
-  `sage.di.android` convention plugin.
-- Remove `hilt-android` / `hilt-compiler` / `hilt-navigation` /
-  `hilt-navigation-compose` / `hilt-lifecycle-viewmodel-compose`
-  dependencies.
-- Delete `SageDiAndroidModulePlugin` (or repurpose for Metro-only setup if
-  any modules need extra Metro config).
-- Replace `@HiltAndroidApp` on `ChipboxApplication` with a plain
-  `Application` subclass that owns the Metro graph.
-- Replace `@AndroidEntryPoint` on `MainActivity` and `ChipboxPlaybackService`
-  with hand-rolled injection: pull the graph from the
-  `Application` cast on `onCreate` and read accessors directly.
-- Drop the `kotlinx.coroutines.android.AsyncDispatcher` thing if anything
-  was tied to Hilt's WorkManager helpers (audit).
-- Final pass: `git grep -i hilt` should be empty.
-- KMP-ify `features/settings/real` properly and close the M9 slice 5c gap.
+**Annotation sweep** (`scripts/migrate_annotations_to_metro.py` +
+`scripts/add_binding_container.py`):
+
+| Hilt / Dagger                          | Metro                                          |
+|----------------------------------------|------------------------------------------------|
+| `@dagger.Module` (on object)           | `@dev.zacsweers.metro.BindingContainer`        |
+| `@dagger.Module` (on interface)        | drop — `@ContributesTo` is enough              |
+| `@dagger.Provides`                     | `@dev.zacsweers.metro.Provides`                |
+| `@dagger.Binds`                        | `@dev.zacsweers.metro.Binds`                   |
+| `@dagger.multibindings.IntoSet`        | `@dev.zacsweers.metro.IntoSet`                 |
+| `@dagger.multibindings.Multibinds`     | `@dev.zacsweers.metro.Multibinds`              |
+| `@javax.inject.Inject`                 | `@dev.zacsweers.metro.Inject`                  |
+| `@javax.inject.Singleton`              | `@dev.zacsweers.metro.SingleIn(AppScope::class)` |
+| `@javax.inject.Named("…")`             | `@dev.zacsweers.metro.Named("…")`              |
+| `@javax.inject.Qualifier`              | `@dev.zacsweers.metro.Qualifier`               |
+| `@dagger.hilt.android.qualifiers.ApplicationContext` | dropped — Metro's single scope makes the qualifier redundant, `Context` is bound directly from `Application` |
+| `@dagger.hilt.InstallIn(SingletonComponent::class)` | drop — `@ContributesTo(AppScope::class)` is the replacement |
+
+Abstract-class modules with `@Binds` (e.g. `AndroidFileContentSourceModule`,
+fake `PlaybackStatusModule`) converted to plain interfaces — Metro
+accepts `@Binds` declarations on interfaces directly and rejects them
+on abstract classes via `@ContributesTo`.
+
+**Entry-point replacements** (Hilt @HiltAndroidApp / @AndroidEntryPoint
+/ @EntryPoint → hand-rolled Application-cast pattern):
+
+- `ChipboxApplication` drops `@HiltAndroidApp`, becomes a plain
+  `Application` subclass that owns `appGraph` (lazy
+  `createGraphFactory<ChipboxAppGraph.Factory>().create(this)`) and
+  implements two narrow interfaces — `ArtworkProviderGraph` (in
+  `cbox/android/artworkprovider/api`) and `ChipboxServiceGraph` (in
+  `cbox/android/services/api`) — so the `ContentProvider` and the
+  `MediaLibraryService` can each cast `applicationContext` to their own
+  interface and pull the bindings they need without depending on
+  `apps/android`. These narrow interfaces replace Hilt's
+  `EntryPointAccessors.fromApplication(...)` pattern.
+- `MainActivity` drops `@AndroidEntryPoint` + `@Inject lateinit var
+  stringProvider`. Reads everything via
+  `(application as ChipboxApplication).appGraph.…` directly.
+  `LocalMetroViewModelFactory` is the only `CompositionLocalProvider`
+  it sets up (the `LocalViewModelProvider` legacy provider from M9
+  slice 3 of the KMP migration is gone).
+- `ChipboxPlaybackService` drops `@AndroidEntryPoint` + three
+  `@Inject lateinit var` (LibraryBrowser / Director / Hatchet).
+  `onCreate()` resolves the graph via `application as ChipboxServiceGraph`
+  before its first use.
+- `ArtworkProvider` drops the `@EntryPoint @InstallIn(SingletonComponent::class)`
+  nested interface + `EntryPointAccessors.fromApplication(...)` call.
+  Reads the same accessors lazily through the new `ArtworkProviderGraph`
+  interface (cast happens inside `openFile` since `ContentProvider`s can
+  be constructed during process init before the graph is wired).
+
+**Graph + scope** (chipbox now Metro-pure):
+
+- `ChipboxAppGraph` carries only `@SingleIn(AppScope::class)` —
+  `@Singleton` from the M4b "accept both kinds of scoped binding"
+  transition is gone since every contributed module is Metro-native.
+- `ChipboxAppGraph` exposes the new accessors the entry points need:
+  `stringProvider`, `libraryBrowser`, `director`, `repository`,
+  `fileContentSource`. `provideAppContext` keeps its unqualified
+  `Context = application` binding (no qualifier needed in a
+  single-scope graph).
+- `JvmChipboxGraph` extends `ViewModelGraph` and is now the
+  **runtime** DI root for the JVM target. `JvmChipboxComponent` (plain
+  Dagger `@Component`) is deleted. `Main.kt`'s
+  `DaggerJvmChipboxComponent.factory().create(...)` becomes
+  `createGraphFactory<JvmChipboxGraph.Factory>().create(...)`; the
+  three `@Named` paths flow in as `@Provides` factory params just like
+  on the Android side. `apps/jvm/build.gradle.kts` drops `libs.dagger`,
+  `libs.dagger.compiler`, and the `ksp` plugin entirely.
+
+**Catalog + plugins:**
+
+- `apps/android/build.gradle.kts` drops the `hilt` plugin, the KSP
+  plugin, and `libs.hilt` / `libs.androidx.hilt.navigation*` /
+  `libs.hilt.compiler`.
+- Root `build.gradle.kts` drops the `apply false` declaration for
+  `libs.plugins.hilt`.
+- `SageDiAndroidModulePlugin` (sage submodule) stops applying the
+  `com.google.dagger.hilt.android` Gradle plugin and the KSP plugin,
+  drops `hilt-android` + `hilt-compiler` from the implementation /
+  ksp configurations, and keeps only `dev.zacsweers.metro` plugin +
+  `sage-common-di` dep.
+- `SageDiJvmModulePlugin` (sage submodule) drops `hilt-core` + KSP
+  the same way.
+- Individual sage modules that used to apply Hilt + ksp directly
+  (`sage/android/analytics`, `sage/android/coroutines`,
+  `sage/android/resources`, `sage/fake/analytics`) keep the Metro
+  plugin and drop the Hilt + KSP deps. `sage/android/firebase` drops
+  both since it had no DI annotations.
+- New chipbox-side qualifier `net.sigmabeta.sage.di.ApplicationContext`
+  was introduced and then dropped: the qualifier is redundant in a
+  single-scope Metro graph, so consumers just inject `Context`
+  unqualified.
+
+**M6 build / runtime verification:**
+
+- `clean :apps:android:assembleDebug` green (~1m 40s).
+- `:apps:jvm:compileKotlin + :jar + :standaloneScript` green.
+- `:apps:jvm:run scan <empty-dir>` walks the dir through Metro-resolved
+  `Scanner` + `LibrarySource` and reports `0 game(s), 0 track(s)`.
+- `./gradlew detekt -x …EbuR128 -x …LoudnessLog` clean.
+- ktlint clean for files I touched (modulo pre-existing
+  `SettingsState.kt` blank-line / `*ViewModelFactory.kt`
+  parameter-list-spacing issues that predate M6).
+
+**Out of scope, follow-ups:**
+
+- The `kotlinx.coroutines.android.AsyncDispatcher` audit from the
+  original M6 plan: chipbox doesn't use any Hilt WorkManager helpers,
+  so nothing to drop.
+- KMP-ifying `features/settings/real` (the original blocker that
+  motivated this whole migration — see `docs/kmp-migration.md` slice
+  5c). Now unblocked by Metro's KMP support; tracked separately.
+- Sage submodule catalog cleanup: `libs.hilt` / `libs.hilt.core` /
+  `libs.hilt.compiler` / `libs.hilt.testing` / `libs.androidx.hilt.navigation*`
+  / `libs.androidx.hilt.lifecycle.viewmodel.compose` entries are no
+  longer consumed by chipbox; can be dropped from
+  `sage/gradle/libs.versions.toml` once nothing else in the sage org
+  references them.
 
 ## Risks / open questions
 

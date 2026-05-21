@@ -16,22 +16,22 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import net.sigmabeta.chipbox.ui.vm.chipboxViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
  * Voyager `Screen` carrying the existing Hello content + a button that pushes
  * [AboutScreen]. The `Screen` interface only requires `@Composable fun Content()`, which is
  * what the parent `Navigator` calls for the topmost screen on the stack.
  *
- * `data object` because the screen has no per-instance state (the VM is pulled via the
- * `chipboxViewModel()` helper, not stored on the screen). `data` is required by Voyager
- * for screen identity/equality across recompositions.
+ * `data object` because the screen has no per-instance state (the VM is pulled via
+ * `metroViewModel()` from the JvmChipboxGraph multibinding map). `data` is required by
+ * Voyager for screen identity/equality across recompositions.
  */
 data object HomeScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        val vm: HelloViewModel = chipboxViewModel()
+        val vm: HelloViewModel = metroViewModel()
         val message by vm.message.collectAsState()
         Column(
             modifier = Modifier.fillMaxSize().padding(24.dp),

@@ -1,9 +1,10 @@
 package net.sigmabeta.chipbox.contentsource
 
-import javax.inject.Inject
-import javax.inject.Singleton
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
+import net.sigmabeta.sage.di.AppScope
 
-@Singleton
+@SingleIn(AppScope::class)
 class ContentSourceRegistry @Inject constructor(
     sources: Set<@JvmSuppressWildcards ContentSource>,
 ) {

@@ -1,16 +1,15 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.metro)
 }
 
-// Hilt → Metro migration foundation (see docs/metro-migration.md, Milestone 1). Metro is
-// applied alongside Hilt during the migration; interop.includeDagger() makes Metro's
-// compiler plugin recognise existing @Inject / @Provides / @Module / @Binds annotations,
-// so Hilt-side wiring keeps working while we incrementally introduce @DependencyGraph
-// declarations.
+// Metro's `interop.includeDagger()` keeps the compiler plugin recognising the existing
+// Dagger-shaped `@Inject` / `@Provides` / `@Module` / `@Binds` annotations on the
+// `@ContributesTo(AppScope::class)` modules across the compile classpath. The Hilt plugin
+// and KSP step are gone (Milestone 6 — see docs/metro-migration.md); the Dagger annotations
+// stay because rewriting them as Metro-native (`@SingleIn(AppScope::class)`, etc.) buys
+// nothing functional and would churn 30+ module files.
 metro {
     interop {
         includeDagger()
@@ -123,8 +122,6 @@ dependencies {
     implementation(projects.cbox.common.debugInfo.di)
     implementation(libs.sage.common.di)
     implementation(projects.cbox.common.settings.di)
-    implementation(projects.cbox.common.ui.vm.api)
-    implementation(projects.features.playbackStatus.api)
     implementation(projects.features.settings.api)
     implementation(projects.features.settings.real)
 
@@ -152,11 +149,6 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtimeCompose)
     implementation(libs.androidx.compose.runtime.tracing)
-
-    implementation(libs.hilt)
-    implementation(libs.androidx.hilt.navigation)
-    implementation(libs.androidx.hilt.navigation.compose)
-    ksp(libs.hilt.compiler)
 
     implementation(libs.metrox.viewmodel)
     implementation(libs.metrox.viewmodel.compose)

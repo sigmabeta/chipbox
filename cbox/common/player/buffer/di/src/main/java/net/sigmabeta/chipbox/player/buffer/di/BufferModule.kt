@@ -1,35 +1,32 @@
 package net.sigmabeta.chipbox.player.buffer.di
 
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import net.sigmabeta.chipbox.player.buffer.BufferDebugSource
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
-import javax.inject.Singleton
 
-@Module
-@InstallIn(SingletonComponent::class)
+@BindingContainer
 @ContributesTo(AppScope::class)
 object BufferModule {
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideRealBufferManager(hatchet: Hatchet): RealBufferManager = RealBufferManager(hatchet)
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideConsumerBufferManager(bufferManager: RealBufferManager): ConsumerBufferManager = bufferManager
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideProducerBufferManager(bufferManager: RealBufferManager): ProducerBufferManager = bufferManager
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideBufferDebugSource(bufferManager: RealBufferManager): BufferDebugSource = bufferManager
 }

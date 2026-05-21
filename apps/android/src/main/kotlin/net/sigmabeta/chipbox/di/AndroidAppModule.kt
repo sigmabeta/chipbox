@@ -1,13 +1,10 @@
 package net.sigmabeta.chipbox.di
 
 import android.content.Context
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
-import javax.inject.Singleton
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibrarySource
@@ -20,20 +17,19 @@ import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 import net.sigmabeta.sage.ui.strings.AndroidStringProvider
 
-@Module
-@InstallIn(SingletonComponent::class)
+@BindingContainer
 @ContributesTo(AppScope::class)
 object AndroidAppModule {
     @Provides
-    @Singleton
-    fun provideStringProvider(@ApplicationContext context: Context): StringProvider = AndroidStringProvider(context.resources) { (it as ChipboxStringId).id() }
+    @SingleIn(AppScope::class)
+    fun provideStringProvider(context: Context): StringProvider = AndroidStringProvider(context.resources) { (it as ChipboxStringId).id() }
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideHatchet(): Hatchet = AndroidHatchet()
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideAppInfo(): AppInfo = AppInfo(
         isDebug = BuildConfig.DEBUG,
         versionName = BuildConfig.VERSION_NAME,
@@ -46,6 +42,6 @@ object AndroidAppModule {
     // target. (The interface lives in cbox/common/contentsource/api; AndroidFileContentSource
     // is bound as a ContentSource elsewhere — this binding adds the LibrarySource face.)
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideLibrarySource(impl: AndroidFileContentSource): LibrarySource = impl
 }

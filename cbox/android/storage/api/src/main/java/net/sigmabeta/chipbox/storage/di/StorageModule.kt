@@ -4,13 +4,10 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
-import javax.inject.Singleton
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineScope
 import net.sigmabeta.chipbox.storage.ChipboxDataStore
 import net.sigmabeta.sage.coroutines.SageDispatchers
@@ -18,8 +15,7 @@ import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.storage.common.Storage
 
-@Module
-@InstallIn(SingletonComponent::class)
+@BindingContainer
 @ContributesTo(AppScope::class)
 object StorageModule {
     // The DataStore is consumed only by ChipboxDataStore here, so inline its
@@ -29,13 +25,13 @@ object StorageModule {
     // type: 'dev.zacsweers.metro.Provider<out <error>>'") when the binding is
     // consumed transitively from another module's graph. Keeping DataStore off the
     // binding surface sidesteps the bug; ChipboxDataStore still gets exactly one
-    // instance because @Singleton is on this @Provides.
+    // instance because @SingleIn(AppScope::class) is on this @Provides.
     private val Context.settingsDataStore by preferencesDataStore(name = "chipbox_settings")
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideStorage(
-        @ApplicationContext context: Context,
+        context: Context,
         coroutineScope: CoroutineScope,
         dispatchers: SageDispatchers,
         hatchet: Hatchet,

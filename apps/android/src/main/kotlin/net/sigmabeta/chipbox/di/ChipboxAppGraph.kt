@@ -2,54 +2,53 @@ package net.sigmabeta.chipbox.di
 
 import android.app.Application
 import android.content.Context
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
-import javax.inject.Singleton
+import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
+import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.services.LibraryBrowser
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
+import net.sigmabeta.sage.ui.StringProvider
 
 /**
- * The Metro equivalent of Hilt's `SingletonComponent` (see docs/metro-migration.md).
- *
- * Currently exposes a small subset of the app's singleton bindings — the ones with no
- * cross-module dependencies, so they can land here without the rest of the Hilt graph also
- * needing to be Metro-aware. Hilt continues to own the rest until the bulk module sweep
- * in Milestone 4; bindings that exist on both sides (AppInfo, Hatchet today) are duplicated
- * during the transition — same `BuildConfig` values, same `AndroidHatchet`, so Metro
- * consumers and Hilt consumers see equivalent instances.
- *
- * Extends [ViewModelGraph] from `metrox-viewmodel`, which adds three multibinding maps
- * (`viewModelProviders`, `assistedFactoryProviders`, `manualAssistedFactoryProviders`) plus a
- * `metroViewModelFactory: MetroViewModelFactory` accessor. The maps fill in from
- * `@ContributesIntoMap(AppScope::class)` annotations on individual VMs (see
- * `SettingsViewModel`); the factory comes from [ChipboxMetroViewModelFactory] via
- * `@ContributesBinding(AppScope::class)`.
+ * Application-wide Metro dependency graph (see docs/metro-migration.md). Owns every
+ * `AppScope`-scoped binding the app needs — both for `metroViewModel<T>()` resolution
+ * (via the inherited [ViewModelGraph] multibindings) and for hand-rolled injection at
+ * the four `Application` / `Activity` / `Service` / `ContentProvider` entry points: those
+ * cast `application` to [net.sigmabeta.chipbox.ChipboxApplication] and read accessors here
+ * directly. The pattern replaces Hilt's `@HiltAndroidApp` + `@AndroidEntryPoint` /
+ * `@EntryPoint` machinery removed in M6.
  */
-// Graph carries both @SingleIn(AppScope::class) (Metro-native) and @Singleton (Hilt-style)
-// scope markers. During the migration, @ContributesTo modules use the existing @Singleton
-// annotations untouched — Metro treats `javax.inject.Singleton` as its own scope, distinct
-// from AppScope, and refuses to wire bindings from a non-matching scope into the graph.
-// Adding @Singleton to the graph itself lets it accept both kinds of scoped binding. Once
-// Milestone 6 drops Hilt entirely and the codebase rewrites @Singleton → @SingleIn(AppScope),
-// the @Singleton annotation here goes away.
-@Singleton
 @SingleIn(AppScope::class)
 @DependencyGraph(AppScope::class)
 interface ChipboxAppGraph : ViewModelGraph {
     val appInfo: AppInfo
     val hatchet: Hatchet
+    val stringProvider: StringProvider
 
-    // Bridge for Hilt's @ApplicationContext qualifier: sage modules that take an
-    // @ApplicationContext Context (resources, analytics) keep using the Hilt-style qualifier,
-    // and Metro's interop recognises the meta-annotated @Qualifier — but the binding itself
-    // has to come from somewhere. Application enters the graph via the factory below.
+    // ChipboxPlaybackService dependencies — pulled in `ChipboxPlaybackService.onCreate()`
+    // (post-M6, no more @Inject lateinit).
+    val libraryBrowser: LibraryBrowser
+    val director: Director
+
+    // ArtworkProvider dependencies — pulled lazily in `ArtworkProvider.openFile()` since
+    // ContentProvider construction is process-init and can't synchronously resolve
+    // an AppScope graph that's lazy-built.
+    val repository: Repository
+    val fileContentSource: AndroidFileContentSource
+
+    // Bind Context from Application: contributed modules that take a Context (resources,
+    // analytics, datastore) get the Application Context routed through this @Provides.
+    // Metro's single-scope graph doesn't need a qualifier — the old Hilt `@ApplicationContext`
+    // disambiguated between SingletonComponent vs ActivityComponent Contexts, which doesn't
+    // exist post-M6.
     @Provides
-    @Singleton
-    @ApplicationContext
+    @SingleIn(AppScope::class)
     fun provideAppContext(application: Application): Context = application
 
     @DependencyGraph.Factory

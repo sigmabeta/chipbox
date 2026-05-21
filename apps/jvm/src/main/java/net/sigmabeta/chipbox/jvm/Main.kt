@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.jvm
 
+import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -8,8 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
-import net.sigmabeta.chipbox.jvm.di.DaggerJvmChipboxComponent
-import net.sigmabeta.chipbox.jvm.di.JvmChipboxComponent
+import net.sigmabeta.chipbox.jvm.di.JvmChipboxGraph
 import net.sigmabeta.chipbox.models.ChainFile
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
@@ -40,7 +40,7 @@ private const val DEMO_TRACK_LENGTH_MS = 10_000L
 private const val DEMO_FADE_LENGTH_MS = 2_000L
 
 /**
- * Every native emulator the legacy single-file mode can drive (the Dagger graph for the
+ * Every native emulator the legacy single-file mode can drive (the Metro graph for the
  * scan/play modes pulls them from [net.sigmabeta.chipbox.jvm.di.JvmEmulatorsModule]).
  */
 private val ALL_EMULATORS: List<Emulator> = listOf(
@@ -82,10 +82,10 @@ DB / render-cache home (.chipbox-jvm/library.sqlite + staging + pcm-cache)."""
  * walking a directory; `play` resolves a track from that library and renders it; the
  * legacy file-path form keeps working for one-off renders without touching the DB.
  *
- * The scan/play modes pull everything from the plain-Dagger [JvmChipboxComponent] — the JVM
- * equivalent of the Android app's Hilt graph. The legacy file-path mode bypasses the
- * component (no DB, no scanner) and wires a small player pipeline manually so a CI smoke
- * test doesn't need a populated library on disk.
+ * The scan/play modes pull everything from the Metro [JvmChipboxGraph] — the JVM equivalent
+ * of the Android app's `ChipboxAppGraph`. The legacy file-path mode bypasses the graph (no
+ * DB, no scanner) and wires a small player pipeline manually so a CI smoke test doesn't need
+ * a populated library on disk.
  *
  * `gui` is dispatched before `runBlocking` so the Compose event loop owns the main thread
  * cleanly — `application { Window { ... } }` blocks until the window closes, and the
@@ -93,7 +93,7 @@ DB / render-cache home (.chipbox-jvm/library.sqlite + staging + pcm-cache)."""
  */
 fun main(args: Array<String>) {
     if (args.firstOrNull() == "gui") {
-        runDesktop(buildComponent(outputDir = workingDir()))
+        runDesktop(buildGraph(outputDir = workingDir()))
         return
     }
     runBlocking { dispatch(args) }
@@ -110,9 +110,9 @@ private suspend fun CoroutineScope.dispatch(args: Array<String>) {
             require(args.size >= 2) { "scan mode: $USAGE" }
             val root = File(args[1])
             require(root.isDirectory) { "Not a directory: ${root.absolutePath}" }
-            withComponent(outputDir = workingDir()) { component ->
-                component.librarySource().addLocation(root)
-                val scanner = component.scanner()
+            withGraph(outputDir = workingDir()) { graph ->
+                graph.librarySource.addLocation(root)
+                val scanner = graph.scanner
                 scanner.startScan()
                 // RealScanner runs the walk in its own scope; wait for a terminal state.
                 scanner.state().first { it is ScannerState.Complete || it is ScannerState.Failed }
@@ -122,10 +122,10 @@ private suspend fun CoroutineScope.dispatch(args: Array<String>) {
         "play" -> {
             require(args.size >= 2) { "play mode: $USAGE" }
             val outputDir = File(args.getOrNull(2) ?: System.getProperty("user.dir"))
-            withComponent(outputDir = outputDir) { component ->
-                val track = resolveTrackFromLibrary(component.repository(), args[1], component.hatchet())
+            withGraph(outputDir = outputDir) { graph ->
+                val track = resolveTrackFromLibrary(graph.repository, args[1], graph.hatchet)
                     ?: error("No track matches '${args[1]}' in the library. Did you `scan` first?")
-                playPipelineFromComponent(track, component)
+                playPipelineFromGraph(track, graph)
             }
         }
 
@@ -136,30 +136,29 @@ private suspend fun CoroutineScope.dispatch(args: Array<String>) {
 private fun workingDir(): File = File(System.getProperty("user.dir"))
 
 /**
- * Build the plain-Dagger graph for this run. The DB file + render-cache workdir live under
+ * Build the Metro graph for this run. The DB file + render-cache workdir live under
  * `<user.dir>/.chipbox-jvm` so a run is self-contained; the WAV output dir comes from the
- * caller (CLI arg). Dagger is lazy — `repository()` / `speaker()` aren't constructed until
- * the consumer asks for them, so `gui` mode can call this safely without opening the DB
- * (it only pulls `helloViewModel()` → `hatchet()`).
+ * caller (CLI arg). Metro's `@SingleIn(AppScope::class)` makes accessors lazy enough that
+ * `gui` mode can call this safely without opening the DB (it only touches `metroViewModelFactory`).
  */
-internal fun buildComponent(outputDir: File): JvmChipboxComponent {
+internal fun buildGraph(outputDir: File): JvmChipboxGraph {
     val workDir = File(workingDir(), WORK_DIR_NAME).apply { mkdirs() }
-    return DaggerJvmChipboxComponent.factory().create(
+    return createGraphFactory<JvmChipboxGraph.Factory>().create(
         dbPath = File(workDir, LIBRARY_DB_NAME).absolutePath,
         workDir = workDir,
         outputDir = outputDir,
     )
 }
 
-private suspend fun withComponent(outputDir: File, block: suspend (JvmChipboxComponent) -> Unit) {
-    val component = buildComponent(outputDir)
-    component.hatchet().i("Opened library DB at $WORK_DIR_NAME/$LIBRARY_DB_NAME")
+private suspend fun withGraph(outputDir: File, block: suspend (JvmChipboxGraph) -> Unit) {
+    val graph = buildGraph(outputDir)
+    graph.hatchet.i("Opened library DB at $WORK_DIR_NAME/$LIBRARY_DB_NAME")
     try {
-        block(component)
+        block(graph)
     } finally {
-        // Tear down the Dagger-supplied singletons that own external resources. Room owns the
-        // SQLite handle; the speaker is closed by playPipelineFromComponent on the play path.
-        runCatching { (component.repository() as? AutoCloseable)?.close() }
+        // Tear down the graph-owned singletons that hold external resources. Room owns the
+        // SQLite handle; the speaker is closed by playPipelineFromGraph on the play path.
+        runCatching { (graph.repository as? AutoCloseable)?.close() }
     }
 }
 
@@ -185,14 +184,14 @@ private suspend fun resolveTrackFromLibrary(
     return hit
 }
 
-/** Play path using the Dagger component — pulls generator + speaker from the graph. */
-private suspend fun CoroutineScope.playPipelineFromComponent(
+/** Play path using the Metro graph — pulls generator + speaker from the graph. */
+private suspend fun CoroutineScope.playPipelineFromGraph(
     track: Track,
-    component: JvmChipboxComponent,
+    graph: JvmChipboxGraph,
 ) {
-    val hatchet = component.hatchet()
-    val generator = component.generator()
-    val speaker = component.speaker()
+    val hatchet = graph.hatchet
+    val generator = graph.generator
+    val speaker = graph.speaker
 
     playToCompletion(track, generator, speaker, hatchet)
 
@@ -205,7 +204,7 @@ private suspend fun CoroutineScope.playPipelineFromComponent(
 }
 
 /**
- * Single-file legacy mode: no DB, no Dagger graph — wire a small player by hand around a
+ * Single-file legacy mode: no DB, no graph — wire a small player by hand around a
  * [SingleTrackRepository] so a CI smoke test doesn't need a populated library. Stages any
  * `*lib` siblings so mini-formats resolve their `_lib`.
  */

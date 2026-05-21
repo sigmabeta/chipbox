@@ -1,20 +1,17 @@
 package net.sigmabeta.chipbox.coroutines.di
 
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
-import javax.inject.Singleton
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import net.sigmabeta.chipbox.coroutines.ChipboxScheduler
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.list.SageScheduler
 
-@Module
-@InstallIn(SingletonComponent::class)
+@BindingContainer
 @ContributesTo(AppScope::class)
 object SchedulerModule {
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideScheduler(impl: ChipboxScheduler): SageScheduler = impl
 }

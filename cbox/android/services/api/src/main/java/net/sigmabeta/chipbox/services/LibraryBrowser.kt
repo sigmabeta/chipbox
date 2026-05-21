@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.services
 
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -16,7 +17,6 @@ import net.sigmabeta.chipbox.services.transformers.LIST
 import net.sigmabeta.chipbox.services.transformers.contentStyleExtras
 import net.sigmabeta.chipbox.services.transformers.toMediaItem
 import net.sigmabeta.sage.logging.Hatchet
-import javax.inject.Inject
 
 class LibraryBrowser @Inject constructor(
     private val repository: Repository,

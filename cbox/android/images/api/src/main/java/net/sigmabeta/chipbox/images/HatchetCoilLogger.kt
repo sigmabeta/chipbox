@@ -2,9 +2,9 @@ package net.sigmabeta.chipbox.images
 
 import android.util.Log
 import coil3.util.Logger
+import dev.zacsweers.metro.Inject
 import net.sigmabeta.sage.analytics.Analytics
 import net.sigmabeta.sage.logging.Hatchet
-import javax.inject.Inject
 
 class HatchetCoilLogger @Inject constructor(
     private val hatchet: Hatchet,

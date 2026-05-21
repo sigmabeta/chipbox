@@ -2,12 +2,11 @@ package net.sigmabeta.chipbox.player.speaker.di
 
 import android.content.Context
 import android.os.Environment
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
+import java.io.File
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
@@ -15,18 +14,15 @@ import net.sigmabeta.chipbox.player.speaker.real.RealSpeaker
 import net.sigmabeta.chipbox.player.speaker.text.TextSpeaker
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.File
-import javax.inject.Singleton
 
-@Module
-@InstallIn(SingletonComponent::class)
+@BindingContainer
 @ContributesTo(AppScope::class)
 object SpeakerModule {
     @Provides
-    fun provideFileLocation(@ApplicationContext context: Context): File = Environment.getExternalStorageDirectory()
+    fun provideFileLocation(context: Context): File = Environment.getExternalStorageDirectory()
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideFileSpeaker(
         externalStorageDir: File,
         hatchet: Hatchet,
@@ -34,21 +30,21 @@ object SpeakerModule {
     ): FileSpeaker = FileSpeaker(externalStorageDir, hatchet, bufferManager)
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideTextSpeaker(
         hatchet: Hatchet,
         bufferManager: ConsumerBufferManager,
     ): TextSpeaker = TextSpeaker(hatchet, bufferManager)
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideRealSpeaker(
         bufferManager: ConsumerBufferManager,
         hatchet: Hatchet,
     ): RealSpeaker = RealSpeaker(bufferManager, hatchet)
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideSpeaker(
         fileSpeaker: FileSpeaker,
         realSpeaker: RealSpeaker,
