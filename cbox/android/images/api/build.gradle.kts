@@ -12,8 +12,6 @@ dependencies {
     api(libs.coil.kt.compose)
     api(libs.coil.kt.okhttp)
 
-    api(libs.sage.android.bitmaps)
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.sage.common.analytics)
     implementation(libs.sage.common.images)
