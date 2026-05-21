@@ -1330,10 +1330,35 @@ remainder, sliced by dependency order.
    Windows are roadmap item 3.
 
 3. **Cross-platform native packaging.** All seven emulators wired and
-   playback-verified on host x86-64 Linux. Remaining: macOS/Windows
-   `.dylib`/`.dll` builds + a packaged `java.library.path`, and a real
-   distribution (today blocked by the duplicate jar-basename
-   `installDist` issue — see Known issues).
+   playback-verified on host x86-64 Linux; macOS/Windows `.dylib`/`.dll`
+   builds remain. The distribution side is done: `:apps:jvm:installDist`
+   / `distZip` / `distTar` produce a runnable layout with the start
+   scripts (`bin/chipbox`, `bin/chipbox.bat`) wired to load the bundled
+   native libs from `lib/native/` next to the per-module jars in `lib/`.
+   Two enablers landed:
+
+   - **Path-derived `archiveBaseName`.** Every module previously emitted
+     a `real.jar` / `api.jar`, which collided in the flat `lib/`. The
+     SAGE convention plugins (`sage.kmp`, `sage.jvm`) now set
+     `archiveBaseName` from `project.path` on every `Jar` task — e.g.
+     `:cbox:common:appui:api` → `cbox-common-appui-api-jvm.jar` —
+     so all 158 jars on the classpath have unique names. Helper is
+     `Project.configureUniqueArchiveBaseName()` in
+     `sage-build-logic/.../components/ProjectExtensions.kt`.
+   - **Start-script injection of `java.library.path`.** The
+     `application` plugin's `applicationDefaultJvmArgs` doesn't reliably
+     reach the JVM with `$APP_HOME` interpolation (Gradle's unix template
+     escapes `$` through an xargs+sed pipeline before the shell ever sees
+     it). Instead the `startScripts` task is post-processed to splice
+     `-Djava.library.path=$APP_HOME/lib/native` into `exec "$JAVACMD"`
+     directly (unix) and `-D"java.library.path=%APP_HOME%\lib\native"`
+     into the `endlocal & "%JAVA_EXE%"` line (bat). The natives are
+     bundled into `lib/native/` via the `distributions { main { contents
+     { from(nativeLibsDirFile) { into("lib/native") } } } }` block.
+
+   The old `:apps:jvm:standaloneScript` workaround (an out-of-tree
+   `build/run-standalone.sh` with absolute jar paths in the classpath)
+   is gone.
 4. **Rest of the `jvmSharedMain` → `commonMain` hoist** (done — see
    Milestone 8). The remaining genuinely JVM-family-only code is now
    the four files surfaced by the strict-import audit: `perf/ScreenLoadStatus`
@@ -1344,18 +1369,3 @@ remainder, sliced by dependency order.
 
 ## Known issues / out of scope
 
-- Dozens of modules share a jar basename (`real.jar` / `api.jar`), which
-  collide in the `application` plugin's flat distribution `lib/`, so
-  `installDist` / `distZip` are unusable. The `:apps:jvm:standaloneScript`
-  task is the workaround: it emits `build/run-standalone.sh` with an
-  explicit classpath of full, unique jar paths (no Gradle at runtime). A
-  proper fix would give every module a path-derived archive name.
-- `CachingPcmSource` still has a 5s `READ_WAIT_TIMEOUT_MS` that fires
-  `GeneratorEvent.Error` if the writer falls behind the reader
-  (`CachingPcmSource.kt:193-199`). Two fixes made this rare in practice:
-  `Generator.fillBuffer()` (commit 59a286e6) loops `readFrames()` until
-  the render-ahead buffer is full instead of emitting short reads, and
-  the writer loop is now interruptible via `ensureActive()` (commit
-  e1f9283a) so cancelled renders drop their partial `.pcm.tmp` instead
-  of stalling. Heavy cores play cleanly day-to-day; the timeout still
-  terminates on a genuine render stall.
