@@ -1,30 +1,36 @@
 plugins {
-    alias(libs.plugins.ksp)
-    alias(libs.plugins.sage.android)
-    alias(libs.plugins.sage.compose.android)
+    alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.compose.kmp)
 }
 
-android {
-    namespace = "net.sigmabeta.chipbox.ui.components"
-    sourceSets {
-        getByName("main").kotlin.srcDirs("src/androidMain/kotlin")
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.ui.components"
     }
-}
 
-dependencies {
-    api(libs.sage.common.ui.components)
+    sourceSets {
+        named("commonMain") {
+            dependencies {
+                api(libs.sage.common.ui.components)
 
-    implementation(libs.sage.common.appcomm)
-    implementation(libs.sage.common.images)
+                implementation(libs.sage.common.appcomm)
+                implementation(libs.sage.common.images)
 
-    implementation(libs.sage.android.perf)
-    implementation(libs.sage.android.ui.icons)
+                implementation(libs.sage.android.perf)
+                implementation(libs.sage.android.ui.icons)
 
-    implementation(projects.cbox.android.images.api)
-    implementation(projects.cbox.android.strings.api)
-    implementation(projects.cbox.common.ui.fonts.api)
-    implementation(projects.cbox.android.ui.theme.api)
+                implementation(projects.cbox.common.strings.api)
+                implementation(projects.cbox.common.ui.fonts.api)
 
-    implementation(libs.kotlin.reflect)
-    implementation(libs.material)
+                implementation(libs.coil.kt.core)
+                implementation(libs.coil.kt.compose)
+            }
+        }
+        named("androidMain") {
+            dependencies {
+                implementation(projects.cbox.android.ui.theme.api)
+                implementation(libs.androidx.compose.ui.tooling.preview)
+            }
+        }
+    }
 }
