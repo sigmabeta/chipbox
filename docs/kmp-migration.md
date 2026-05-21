@@ -1167,8 +1167,10 @@ remainder, sliced by dependency order.
    host, URL/clipboard sinks) differs.
 
    Subsequent feature ports follow the same shape. Image loading
-   (Coil 3 KMP wrapper for `:images`) becomes the next decision when
-   a feature port needs artwork.
+   already works cross-platform: `:images` is on `sage.kmp` and the
+   feature `:images:api` pulls Coil 3 (`coil-kt-core`,
+   `coil-kt-compose`, `coil-kt-okhttp`), so artwork renders on the
+   JVM target without a wrapper.
 
    **Android nav backend swapped to Voyager.** AndroidX
    `navigation-compose` (`NavHost` + `composable<T>` typesafe routes)
@@ -1299,11 +1301,10 @@ remainder, sliced by dependency order.
    added — `FileSpeaker` stays for the headless CLI `play` mode that
    writes WAVs.
 
-   The cold-cache `GeneratorEvent.Error` from heavy emulator cores
-   wasn't addressed in this slice — light-load formats (SPC, basic
-   PSF/VGM) play cleanly; heavy cores will halt the track when the
-   render-ahead cache misses. Tuning the render-ahead window is still
-   on the roadmap (see Known Issue #2).
+   The cold-cache `GeneratorEvent.Error` wasn't addressed in this
+   slice, but follow-up work (`Generator.fillBuffer()` +
+   interruptible writer loop) made it rare in practice — see Known
+   Issue #2.
 
    **JVM-side CMake wiring as a side-effect.** Android's
    `externalNativeBuild { cmake { … } }` (per `:native` module) builds
@@ -1349,6 +1350,12 @@ remainder, sliced by dependency order.
   task is the workaround: it emits `build/run-standalone.sh` with an
   explicit classpath of full, unique jar paths (no Gradle at runtime). A
   proper fix would give every module a path-derived archive name.
-- Heavy emulator cores emit a terminal render-ahead `GeneratorEvent.Error`
-  on a cold cache (see Milestone 2b) — survivable for the WAV harness,
-  not for live playback until the render-ahead window is tuned.
+- `CachingPcmSource` still has a 5s `READ_WAIT_TIMEOUT_MS` that fires
+  `GeneratorEvent.Error` if the writer falls behind the reader
+  (`CachingPcmSource.kt:193-199`). Two fixes made this rare in practice:
+  `Generator.fillBuffer()` (commit 59a286e6) loops `readFrames()` until
+  the render-ahead buffer is full instead of emitting short reads, and
+  the writer loop is now interruptible via `ensureActive()` (commit
+  e1f9283a) so cancelled renders drop their partial `.pcm.tmp` instead
+  of stalling. Heavy cores play cleanly day-to-day; the timeout still
+  terminates on a genuine render stall.
