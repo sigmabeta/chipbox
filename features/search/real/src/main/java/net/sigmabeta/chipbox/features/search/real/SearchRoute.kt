@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
@@ -22,7 +22,7 @@ fun SearchRoute(
         chromeController.set(ScreenChrome(showTopBar = false))
     }
 
-    val viewModel: SearchViewModel = hiltViewModel()
+    val viewModel: SearchViewModel = metroViewModel()
     LaunchedEffect(viewModel) {
         viewModel.events.collect(onEvent)
     }

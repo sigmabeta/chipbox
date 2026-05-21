@@ -1,9 +1,12 @@
 package net.sigmabeta.chipbox.features.gamesforplatform
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
@@ -17,10 +20,12 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.ui.list.ChipboxListViewModel
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
+import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 
-@HiltViewModel
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+@ViewModelKey
 class GamesForPlatformViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: Repository,

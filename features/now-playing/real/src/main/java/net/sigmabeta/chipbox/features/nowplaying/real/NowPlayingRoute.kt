@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.features.nowplaying.real
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
 import net.sigmabeta.chipbox.ui.chrome.ScreenChrome
@@ -24,7 +24,7 @@ fun NowPlayingRoute(
         )
     }
 
-    val viewModel: NowPlayingViewModel = hiltViewModel()
+    val viewModel: NowPlayingViewModel = metroViewModel()
     ChipboxFreeformEntry(viewModel, onEvent, modifier) { model, actionSink, _, m ->
         NowPlayingContent(model, actionSink, m)
     }

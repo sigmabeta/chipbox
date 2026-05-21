@@ -1,6 +1,9 @@
 package net.sigmabeta.chipbox.features.library
 
-import dagger.hilt.android.lifecycle.HiltViewModel
+import androidx.lifecycle.ViewModel
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import javax.inject.Inject
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.features.browsealltracks.BrowseAllTracks
@@ -9,10 +12,12 @@ import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
 import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatform
 import net.sigmabeta.chipbox.ui.list.ChipboxListViewModel
 import net.sigmabeta.sage.appcomm.SageAction
+import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 
-@HiltViewModel
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+@ViewModelKey
 class LibraryViewModel @Inject constructor(
     stringProvider: StringProvider,
     hatchet: Hatchet,

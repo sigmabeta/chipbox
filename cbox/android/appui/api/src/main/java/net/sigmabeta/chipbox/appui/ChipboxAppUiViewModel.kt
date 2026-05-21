@@ -1,11 +1,12 @@
 package net.sigmabeta.chipbox.appui
 
 import androidx.lifecycle.ViewModel
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import javax.inject.Inject
-import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatusEntryPoint
+import net.sigmabeta.sage.di.AppScope
 
-@HiltViewModel
-class ChipboxAppUiViewModel @Inject constructor(
-    val playbackStatusEntryPoint: PlaybackStatusEntryPoint,
-) : ViewModel()
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+@ViewModelKey
+class ChipboxAppUiViewModel @Inject constructor() : ViewModel()

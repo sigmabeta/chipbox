@@ -19,5 +19,6 @@ dependencies {
 
     implementation(projects.features.gamesForPlatform.api)
 
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
 }

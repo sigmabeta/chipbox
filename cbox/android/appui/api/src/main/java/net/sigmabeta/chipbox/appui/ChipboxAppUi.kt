@@ -48,7 +48,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -77,7 +77,7 @@ private val NAV_RAIL_MIN_WIDTH = 480.dp
 @Composable
 fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) {
     AppTheme {
-        val appUiViewModel: ChipboxAppUiViewModel = hiltViewModel()
+        val appUiViewModel: ChipboxAppUiViewModel = metroViewModel()
         val navController = rememberNavController()
         val backStackEntry by navController.currentBackStackEntryAsState()
 
@@ -205,7 +205,6 @@ fun ChipboxAppUi(stringProvider: StringProvider, modifier: Modifier = Modifier) 
                                 navController = navController,
                                 snackbarHostState = snackbarHostState,
                                 snackbarScope = snackbarScope,
-                                playbackStatusEntryPoint = appUiViewModel.playbackStatusEntryPoint,
                                 modifier = Modifier.fillMaxSize(),
                             )
                             AnimatedVisibility(

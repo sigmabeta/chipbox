@@ -20,5 +20,6 @@ dependencies {
     implementation(projects.features.browseByGame.api)
     implementation(projects.features.browseByPlatform.api)
 
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
 }

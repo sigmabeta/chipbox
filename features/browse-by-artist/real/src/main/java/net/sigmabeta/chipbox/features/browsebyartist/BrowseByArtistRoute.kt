@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.features.browsebyartist
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.ui.list.ChipboxListEntry
 
@@ -11,6 +11,6 @@ fun BrowseByArtistRoute(
     onEvent: (ChipboxEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val viewModel: BrowseByArtistViewModel = hiltViewModel()
+    val viewModel: BrowseByArtistViewModel = metroViewModel()
     ChipboxListEntry(viewModel, onEvent, modifier)
 }
