@@ -22,23 +22,25 @@ import net.sigmabeta.sage.storage.common.Storage
 @InstallIn(SingletonComponent::class)
 @ContributesTo(AppScope::class)
 object StorageModule {
+    // The DataStore is consumed only by ChipboxDataStore here, so inline its
+    // construction inside provideStorage instead of exposing DataStore<Preferences>
+    // as its own binding. Metro 1.1.1's cross-module Provider generation chokes on
+    // `DataStore<Preferences>` ("Encountered an unexpected error while processing
+    // type: 'dev.zacsweers.metro.Provider<out <error>>'") when the binding is
+    // consumed transitively from another module's graph. Keeping DataStore off the
+    // binding surface sidesteps the bug; ChipboxDataStore still gets exactly one
+    // instance because @Singleton is on this @Provides.
     private val Context.settingsDataStore by preferencesDataStore(name = "chipbox_settings")
 
     @Provides
     @Singleton
-    fun provideSettingsDataStore(
-        @ApplicationContext context: Context,
-    ): DataStore<Preferences> = context.settingsDataStore
-
-    @Provides
-    @Singleton
     fun provideStorage(
-        dataStore: DataStore<Preferences>,
+        @ApplicationContext context: Context,
         coroutineScope: CoroutineScope,
         dispatchers: SageDispatchers,
         hatchet: Hatchet,
     ): Storage = ChipboxDataStore(
-        dataStore = dataStore,
+        dataStore = context.settingsDataStore,
         coroutineScope = coroutineScope,
         dispatchers = dispatchers,
         hatchet = hatchet,

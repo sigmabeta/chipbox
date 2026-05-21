@@ -9,10 +9,12 @@ android {
     namespace = "net.sigmabeta.chipbox.features.settings.real"
 }
 
-// First feature module to register a Metro-side @Inject @ViewModelKey @ContributesIntoMap
-// VM (SettingsViewModel). interop.includeDagger() keeps Hilt's @HiltViewModel processing
-// working in OTHER feature modules across the compile classpath; SettingsViewModel itself
-// drops @HiltViewModel and goes Metro-native.
+// SettingsViewModel is the first @HiltViewModel converted to Metro (M5c — see
+// docs/metro-migration.md). It carries `@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())`
+// and SettingsRoute consumes it via `metroViewModel<SettingsViewModel>()`.
+// interop.includeDagger() keeps Hilt's @HiltViewModel processing working in OTHER
+// feature modules across the compile classpath until their own per-feature M5c
+// slices flip them over.
 metro {
     interop {
         includeDagger()
@@ -42,7 +44,6 @@ dependencies {
     implementation(libs.sage.common.ui.components)
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
 
     implementation(libs.metrox.viewmodel)
     implementation(libs.metrox.viewmodel.compose)
