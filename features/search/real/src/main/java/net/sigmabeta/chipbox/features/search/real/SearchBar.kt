@@ -24,10 +24,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.strings.ChipboxStringId
-import net.sigmabeta.chipbox.strings.id
+import net.sigmabeta.chipbox.strings.text
 import net.sigmabeta.chipbox.ui.components.subs.MenuActionIcon
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon
@@ -92,7 +91,7 @@ fun SearchBar(
 
                 this@Row.AnimatedVisibility(visible = textEmpty) {
                     Text(
-                        text = stringResource(ChipboxStringId.SEARCH_HINT.id()),
+                        text = ChipboxStringId.SEARCH_HINT.text(),
                         style = MaterialTheme.typography.titleMedium.copy(
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         ),

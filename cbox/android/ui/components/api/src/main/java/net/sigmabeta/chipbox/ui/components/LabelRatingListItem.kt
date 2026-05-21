@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
@@ -16,7 +15,7 @@ import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
 import net.sigmabeta.chipbox.ui.components.subs.LabeledThingy
 import net.sigmabeta.chipbox.ui.components.subs.Rating
 import net.sigmabeta.chipbox.strings.ChipboxStringId
-import net.sigmabeta.chipbox.strings.id
+import net.sigmabeta.chipbox.strings.text
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreviewMenu
 import net.sigmabeta.sage.appcomm.ActionSink
@@ -39,7 +38,7 @@ fun LabelRatingListItem(
             )
         },
         onClick = { actionSink.sendAction(model.clickAction) },
-        onClickLabel = stringResource(ChipboxStringId.ACCY_OCL_RATING.id()),
+        onClickLabel = ChipboxStringId.ACCY_OCL_RATING.text(),
         modifier = modifier.semantics {
             stateDescription = "${model.value} out of 4"
         },

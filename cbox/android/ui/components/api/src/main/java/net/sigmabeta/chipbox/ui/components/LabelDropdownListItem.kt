@@ -11,13 +11,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.ui.components.subs.Dropdown
 import net.sigmabeta.chipbox.ui.components.subs.LabeledThingy
 import net.sigmabeta.chipbox.strings.ChipboxStringId
-import net.sigmabeta.chipbox.strings.id
+import net.sigmabeta.chipbox.strings.text
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreviewMenu
 import kotlinx.collections.immutable.toImmutableList
@@ -41,7 +40,7 @@ fun LabelDropdownListItem(
             )
         },
         onClick = {},
-        onClickLabel = stringResource(ChipboxStringId.ACCY_OCL_DROPDOWN.id()),
+        onClickLabel = ChipboxStringId.ACCY_OCL_DROPDOWN.text(),
         modifier = modifier,
         padding = padding,
     )
