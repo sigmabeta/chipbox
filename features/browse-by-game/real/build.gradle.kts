@@ -1,17 +1,8 @@
 plugins {
-    alias(libs.plugins.sage.kmp)
-    alias(libs.plugins.sage.compose.kmp)
-    alias(libs.plugins.metro)
+    alias(libs.plugins.sage.feature.real)
 }
 
-// Browse-by-game on sage.kmp — pure-Kotlin/Compose VM + Route, no Android-specific surface.
-// Conversion is a plugin swap; the existing `src/main/java` source layout maps to
-// `jvmSharedMain` (VM + Route are shared between Android and JVM/desktop).
 kotlin {
-    androidLibrary {
-        namespace = "net.sigmabeta.chipbox.features.browsebygame.real"
-    }
-
     sourceSets {
         named("commonMain") {
             dependencies {
@@ -24,10 +15,6 @@ kotlin {
                 implementation(projects.cbox.common.models.api)
 
                 implementation(projects.features.gameDetail.api)
-
-                implementation(libs.sage.common.di)
-                implementation(libs.metrox.viewmodel)
-                implementation(libs.metrox.viewmodel.compose)
             }
         }
     }

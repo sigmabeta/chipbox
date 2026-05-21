@@ -1,14 +1,8 @@
 plugins {
-    alias(libs.plugins.sage.kmp)
-    alias(libs.plugins.sage.compose.kmp)
-    alias(libs.plugins.metro)
+    alias(libs.plugins.sage.feature.real)
 }
 
 kotlin {
-    androidLibrary {
-        namespace = "net.sigmabeta.chipbox.features.gamesforplatform.real"
-    }
-
     sourceSets {
         named("commonMain") {
             dependencies {
@@ -23,10 +17,6 @@ kotlin {
                 implementation(projects.cbox.common.player.director.api)
 
                 implementation(projects.features.gameDetail.api)
-
-                implementation(libs.sage.common.di)
-                implementation(libs.metrox.viewmodel)
-                implementation(libs.metrox.viewmodel.compose)
             }
         }
     }
