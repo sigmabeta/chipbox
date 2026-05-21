@@ -33,7 +33,6 @@ import net.sigmabeta.chipbox.player.emulators.twosf.TwosfEmulator
 import net.sigmabeta.chipbox.player.emulators.usf.UsfEmulator
 import net.sigmabeta.chipbox.player.emulators.vgm.VgmEmulator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
-import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.database.DatabaseRepository
@@ -204,17 +203,10 @@ object JvmGeneratorModule {
 @BindingContainer
 @ContributesTo(AppScope::class)
 object JvmSpeakerModule {
-    @Provides @SingleIn(AppScope::class)
-    fun provideFileSpeaker(
-        @Named("outputDir") outputDir: File,
-        hatchet: Hatchet,
-        bufferManager: ConsumerBufferManager,
-    ): FileSpeaker = FileSpeaker(outputDir, hatchet, bufferManager)
-
     /**
      * Real-time JVM speaker — backs `Speaker` (the abstract type Director receives) for the
-     * Compose Desktop UI. [FileSpeaker] above is only used by the headless CLI `play` mode,
-     * which pulls it as a concrete from the graph and bypasses Director.
+     * desktop UI. The headless `FileSpeaker` (WAV output) was used by the removed `play` CLI
+     * mode and is no longer wired into the graph.
      */
     @Provides @SingleIn(AppScope::class)
     fun provideLiveSpeaker(

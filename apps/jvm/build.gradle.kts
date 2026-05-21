@@ -137,12 +137,37 @@ File(logHeaderPath).writeText(
     #endif
     """.trimIndent() + "\n",
 )
+// Filter by priority before printing — without this, mGBA's `GBA DMA:` /
+// `GBA BIOS: SWI:` trace lines (ANDROID_LOG_DEBUG=3) and similar from other
+// emulators spam stderr on every track. Android's logd does the equivalent
+// filtering for the NDK build; on host we do it here. Defaults to WARN (5);
+// override at runtime via `CHIPBOX_NATIVE_LOG_LEVEL` (numeric 2-7, or one
+// of verbose/debug/info/warn/error/fatal) when chasing an emulator-level bug.
 File(logCPath).writeText(
     "#include <stdarg.h>\n" +
         "#include <stdio.h>\n" +
-        "int __android_log_print(int p,const char*t,const char*f,...)" +
-        "{va_list a;va_start(a,f);fprintf(stderr,\"[%s] \",t?t:\"?\");" +
-        "int n=vfprintf(stderr,f,a);fputc(10,stderr);va_end(a);return n;}\n",
+        "#include <stdlib.h>\n" +
+        "#include <string.h>\n" +
+        "#include <strings.h>\n" +
+        "static int log_min_priority = -1;\n" +
+        "static int resolve_min_priority(void) {\n" +
+        "    const char *s = getenv(\"CHIPBOX_NATIVE_LOG_LEVEL\");\n" +
+        "    if (!s || !*s) return 5;\n" +
+        "    if (!strcasecmp(s, \"verbose\")) return 2;\n" +
+        "    if (!strcasecmp(s, \"debug\"))   return 3;\n" +
+        "    if (!strcasecmp(s, \"info\"))    return 4;\n" +
+        "    if (!strcasecmp(s, \"warn\"))    return 5;\n" +
+        "    if (!strcasecmp(s, \"error\"))   return 6;\n" +
+        "    if (!strcasecmp(s, \"fatal\"))   return 7;\n" +
+        "    int n = atoi(s);\n" +
+        "    return (n >= 2 && n <= 7) ? n : 5;\n" +
+        "}\n" +
+        "int __android_log_print(int p,const char*t,const char*f,...){\n" +
+        "    if (log_min_priority < 0) log_min_priority = resolve_min_priority();\n" +
+        "    if (p < log_min_priority) return 0;\n" +
+        "    va_list a;va_start(a,f);fprintf(stderr,\"[%s] \",t?t:\"?\");\n" +
+        "    int n=vfprintf(stderr,f,a);fputc(10,stderr);va_end(a);return n;\n" +
+        "}\n",
 )
 
 val hostShimCompile = tasks.register<Exec>("nativeHostShimCompile") {
@@ -320,15 +345,16 @@ dependencies {
     // for the Metro graph; without :di the binding isn't on the classpath and feature VMs
     // that take a Director fail to resolve.
     implementation(projects.cbox.common.player.director.di)
-    implementation(projects.cbox.common.player.speaker.fake)
+    // SourceDataLineSpeaker extends the Speaker base class — was transitive via
+    // :player:speaker:fake before the CLI WAV-output mode was removed. Explicit now.
+    implementation(projects.cbox.common.player.speaker.api)
     implementation(projects.cbox.common.player.buffer.real)
     implementation(projects.cbox.common.player.common.api)
     implementation(projects.cbox.common.repository.api)
     implementation(projects.cbox.common.models.api)
 
-    // Room KMP database used as the JVM target's real library (replaces the
-    // SingleTrackRepository shim for `scan` / `play` modes). `sqlite-bundled`
-    // is the cross-platform Room driver Android doesn't need.
+    // Room KMP database used as the JVM target's real library. `sqlite-bundled` is the
+    // cross-platform Room driver Android doesn't need.
     implementation(projects.cbox.android.repository.real)
     implementation(projects.cbox.android.database.all)
     implementation(libs.sqlite.bundled)
