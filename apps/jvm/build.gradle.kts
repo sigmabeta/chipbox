@@ -104,6 +104,9 @@ dependencies {
     implementation(libs.sage.common.appinfo)
     implementation(libs.sage.common.storage.common)
     implementation(libs.kotlinx.coroutines.core)
+    // Dispatchers.Main on the JVM target = AWT event queue. SettingsViewModel and any other
+    // ChipboxListViewModel scheduling onto viewModelScope (default = Main) needs this runtime.
+    implementation(libs.kotlinx.coroutines.swing)
 
     // Compose Multiplatform desktop. The platform-agnostic libs come from the catalog so
     // shared UI modules (future sage.compose.kmp) pin the exact same versions; the per-OS
