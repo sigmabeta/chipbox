@@ -8,8 +8,8 @@ import dev.zacsweers.metro.SingleIn
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibrarySource
-import net.sigmabeta.chipbox.strings.ChipboxStringId
-import net.sigmabeta.chipbox.strings.id
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.id
 import net.sigmabeta.sage.android.logging.AndroidHatchet
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope

@@ -2,8 +2,8 @@
 
     <application>
         <provider
-            android:name="net.sigmabeta.chipbox.artwork.ArtworkProvider"
-            android:authorities="net.sigmabeta.chipbox.artwork"
+            android:name="net.sigmabeta.chipbox.artworkprovider.api.ArtworkProvider"
+            android:authorities="net.sigmabeta.chipbox.artworkprovider.api"
             android:exported="true"
             android:grantUriPermissions="true" />
     </application>

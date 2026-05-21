@@ -2,9 +2,9 @@ package net.sigmabeta.chipbox
 
 import android.app.Application
 import dev.zacsweers.metro.createGraphFactory
-import net.sigmabeta.chipbox.artwork.ArtworkProviderGraph
+import net.sigmabeta.chipbox.artworkprovider.api.ArtworkProviderGraph
 import net.sigmabeta.chipbox.di.ChipboxAppGraph
-import net.sigmabeta.chipbox.services.ChipboxServiceGraph
+import net.sigmabeta.chipbox.services.api.ChipboxServiceGraph
 import net.sigmabeta.sage.android.perf.isPerfMeasurementEnabled
 
 class ChipboxApplication :

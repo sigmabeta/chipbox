@@ -16,9 +16,9 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
-import net.sigmabeta.chipbox.appui.ChipboxAppUi
-import net.sigmabeta.chipbox.services.ChipboxPlaybackService
-import net.sigmabeta.chipbox.strings.LocalChipboxStringProvider
+import net.sigmabeta.chipbox.appui.api.ChipboxAppUi
+import net.sigmabeta.chipbox.services.api.ChipboxPlaybackService
+import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 
 class MainActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null

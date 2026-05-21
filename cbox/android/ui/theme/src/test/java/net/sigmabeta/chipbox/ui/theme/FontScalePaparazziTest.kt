@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.ui.theme
+package net.sigmabeta.chipbox.ui.theme.api
 
 import app.cash.paparazzi.DeviceConfig
 import app.cash.paparazzi.Paparazzi

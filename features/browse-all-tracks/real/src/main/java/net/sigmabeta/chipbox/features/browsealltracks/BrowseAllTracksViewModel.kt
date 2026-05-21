@@ -13,7 +13,7 @@ import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
-import net.sigmabeta.chipbox.ui.list.ChipboxListViewModel
+import net.sigmabeta.chipbox.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope

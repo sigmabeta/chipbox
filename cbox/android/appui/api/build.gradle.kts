@@ -1,3 +1,5 @@
+import net.sigmabeta.sage.plugins.components.chipboxNamespace
+
 plugins {
     alias(libs.plugins.sage.kmp)
     alias(libs.plugins.sage.compose.kmp)
@@ -11,7 +13,7 @@ plugins {
 // in [ChipboxAppUi], filled in by each app entry point.
 kotlin {
     androidLibrary {
-        namespace = "net.sigmabeta.chipbox.appui"
+        namespace = chipboxNamespace()
     }
 
     sourceSets {

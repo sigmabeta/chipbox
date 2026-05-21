@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.features.playbackstatus.real
 import java.net.URLDecoder
 import net.sigmabeta.chipbox.debuginfo.PlaybackDebugInfo
 import net.sigmabeta.chipbox.player.common.VolumeProcessor
-import net.sigmabeta.chipbox.strings.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.components.LabelValueListModel

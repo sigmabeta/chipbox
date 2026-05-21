@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
-import net.sigmabeta.chipbox.ui.components.Content
+import net.sigmabeta.chipbox.ui.components.api.Content
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.ListModel
 

@@ -7,8 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.collectAsState
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
-import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
-import net.sigmabeta.chipbox.ui.chrome.ScreenChrome
+import net.sigmabeta.chipbox.ui.chrome.api.LocalChromeController
+import net.sigmabeta.chipbox.ui.chrome.api.ScreenChrome
 
 @Composable
 fun SearchRoute(

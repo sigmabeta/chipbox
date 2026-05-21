@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.strings
+package net.sigmabeta.chipbox.strings.api
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable

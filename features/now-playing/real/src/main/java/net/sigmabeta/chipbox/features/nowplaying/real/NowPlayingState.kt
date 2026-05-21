@@ -6,7 +6,7 @@ import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.PlayerState
-import net.sigmabeta.chipbox.strings.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.components.TitleBarModel
 import net.sigmabeta.sage.freeform.FreeformState
 import net.sigmabeta.sage.images.SourceInfo

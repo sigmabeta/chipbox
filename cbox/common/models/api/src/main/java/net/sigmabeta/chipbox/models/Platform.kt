@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.models
 
-import net.sigmabeta.chipbox.strings.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.ui.SageStringId
 
 enum class Platform(val stringId: SageStringId) {

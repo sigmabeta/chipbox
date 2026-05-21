@@ -1,3 +1,5 @@
+import net.sigmabeta.sage.plugins.components.chipboxNamespace
+
 plugins {
     alias(libs.plugins.sage.kmp)
     alias(libs.plugins.sage.compose.kmp)
@@ -12,7 +14,7 @@ plugins {
 // any source file); dropped during the KMP conversion.
 kotlin {
     androidLibrary {
-        namespace = "net.sigmabeta.chipbox.playerstatus"
+        namespace = chipboxNamespace()
     }
 
     sourceSets {

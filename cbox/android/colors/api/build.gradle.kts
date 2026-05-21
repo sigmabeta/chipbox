@@ -1,9 +1,11 @@
+import net.sigmabeta.sage.plugins.components.chipboxNamespace
+
 plugins {
     alias(libs.plugins.sage.kmp)
 }
 
 kotlin {
     androidLibrary {
-        namespace = "net.sigmabeta.chipbox.colors"
+        namespace = chipboxNamespace()
     }
 }

@@ -42,7 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.ui.components.subs.CrossfadeImage
+import net.sigmabeta.chipbox.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon

@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.features.library
 
-import net.sigmabeta.chipbox.strings.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.MenuItemListModel
 import net.sigmabeta.sage.components.TitleBarModel
