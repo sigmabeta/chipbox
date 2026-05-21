@@ -49,7 +49,7 @@ fun ListModel.Content(
     pad: PaddingValues,
 ) {
     WithMeasurementComponent(
-        this.javaClass.simpleName,
+        this::class.simpleName ?: "Unknown",
         DURATION_THRESHOLD_WARNING_COMPONENT_DEVICE,
         DURATION_THRESHOLD_ERROR_COMPONENT_DEVICE,
     ) {

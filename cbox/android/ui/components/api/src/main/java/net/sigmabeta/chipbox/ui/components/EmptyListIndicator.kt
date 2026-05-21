@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.ui.components
 
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -16,10 +15,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -27,10 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.ErrorStateListModel
 import net.sigmabeta.sage.ui.Icon
@@ -38,6 +33,9 @@ import net.sigmabeta.sage.ui.SageMaterialVectors
 import net.sigmabeta.sage.ui.icons.CrossOutColor
 import net.sigmabeta.sage.ui.icons.IcCrossOut24dp
 import net.sigmabeta.sage.ui.vector
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+
 
 @Composable
 fun EmptyListIndicator(
@@ -207,87 +205,5 @@ private fun DebugTextSmall(debugText: String, color: Color) {
             .padding(bottom = 16.dp)
             .widthIn(min = 200.dp, max = 400.dp)
             .alpha(0.8f)
-    )
-}
-
-@Preview
-@Composable
-private fun Light() {
-    ChipboxPreview {
-        Box(
-            modifier = Modifier.background(
-                color = MaterialTheme.colorScheme.background
-            )
-        ) {
-            Sample()
-        }
-    }
-}
-
-@Preview(uiMode = UI_MODE_NIGHT_YES)
-@Composable
-private fun Dark() {
-    ChipboxPreview {
-        Box(
-            modifier = Modifier.background(
-                color = MaterialTheme.colorScheme.background
-            )
-        ) {
-            Sample()
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun LightError() {
-    ChipboxPreview {
-        Box(
-            modifier = Modifier.background(
-                color = MaterialTheme.colorScheme.background
-            )
-        ) {
-            SampleError()
-        }
-    }
-}
-
-@Preview(uiMode = UI_MODE_NIGHT_YES)
-@Composable
-private fun DarkError() {
-    ChipboxPreview {
-        Box(
-            modifier = Modifier.background(
-                color = MaterialTheme.colorScheme.background
-            )
-        ) {
-            SampleError()
-        }
-    }
-}
-
-@Composable
-private fun Sample() {
-    EmptyListIndicator(
-        EmptyStateListModel(
-            icon = Icon.Album,
-            explanation = "It's all part of the protocol, innit?",
-            debugText = null,
-            showCrossOut = true
-        ),
-        Modifier
-    )
-}
-
-@Composable
-private fun SampleError() {
-    EmptyListIndicator(
-        model = ErrorStateListModel(
-            failedOperationName = "oops",
-            errorString = "Enemy's broken away from me!",
-            error = IllegalStateException("Could not maintain aggro. Try using provoke?"),
-        ),
-        showDebug = true,
-        modifier = Modifier
     )
 }

@@ -6,6 +6,9 @@ plugins {
 
 android {
     namespace = "net.sigmabeta.chipbox.ui.components"
+    sourceSets {
+        getByName("main").kotlin.srcDirs("src/androidMain/kotlin")
+    }
 }
 
 dependencies {

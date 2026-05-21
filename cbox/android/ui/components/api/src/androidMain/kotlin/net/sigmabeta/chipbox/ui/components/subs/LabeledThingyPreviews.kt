@@ -1,56 +1,66 @@
 package net.sigmabeta.chipbox.ui.components.subs
 
+import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import app.cash.paparazzi.DeviceConfig
-import app.cash.paparazzi.Paparazzi
-import kotlinx.collections.immutable.toImmutableList
 import net.sigmabeta.chipbox.ui.components.LabelCheckboxItem
 import net.sigmabeta.chipbox.ui.components.LabelDropdownListItem
 import net.sigmabeta.chipbox.ui.components.LabelNoThingyItem
 import net.sigmabeta.chipbox.ui.components.LabelRatingListItem
 import net.sigmabeta.chipbox.ui.components.LabelValueListItem
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
+import kotlinx.collections.immutable.toImmutableList
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.CheckableListModel
 import net.sigmabeta.sage.components.DropdownSettingListModel
 import net.sigmabeta.sage.components.LabelRatingStarListModel
 import net.sigmabeta.sage.components.LabelValueListModel
 import net.sigmabeta.sage.components.SingleTextListModel
-import org.junit.Rule
-import org.junit.Test
+import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
-class LabeledThingyPaparazziTest {
 
-    @get:Rule
-    val paparazzi = Paparazzi(deviceConfig = DeviceConfig.PIXEL_5)
+@Preview
+@Composable
+private fun Light() {
+    ChipboxPreview {
+        Box(
+            modifier = Modifier.background(
+                color = MaterialTheme.colorScheme.background
+            )
+        ) {
+            Sample()
+        }
+    }
+}
 
-    @Test
-    fun light() {
-        paparazzi.snapshot {
-            ChipboxPreview {
-                Box(
-                    modifier = Modifier.background(MaterialTheme.colorScheme.background),
-                ) {
-                    Sample()
-                }
-            }
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun Dark() {
+    ChipboxPreview {
+        Box(
+            modifier = Modifier.background(
+                color = MaterialTheme.colorScheme.background
+            )
+        ) {
+            Sample()
         }
     }
 }
 
 @Composable
+@Suppress("MagicNumber", "LongMethod")
 private fun Sample() {
     Column {
         val padding = PaddingValues(horizontal = 16.dp)
@@ -59,7 +69,7 @@ private fun Sample() {
             model = SingleTextListModel(
                 dataId = 1234L,
                 name = "Paths to the future",
-                clickAction = SageAction.Noop,
+                clickAction = SageAction.Noop
             ),
             actionSink = actionSink,
             modifier = Modifier,
@@ -70,7 +80,7 @@ private fun Sample() {
             LabelValueListModel(
                 "Days which are training days",
                 "Every",
-                SageAction.Noop,
+                SageAction.Noop
             ),
             PreviewActionSink {},
             Modifier,
@@ -94,7 +104,7 @@ private fun Sample() {
                 "someId",
                 "Sena seen in action",
                 checked = isChecked,
-                clickAction = SageAction.Noop,
+                clickAction = SageAction.Noop
             ),
             PreviewActionSink { isChecked = !isChecked },
             Modifier,
@@ -107,7 +117,14 @@ private fun Sample() {
                 "",
                 "Who the bus is",
                 selectedPosition,
-                listOf("Noah", "Lanz", "Taion", "Eunie", "Mio", "Sena").toImmutableList(),
+                listOf(
+                    "Noah",
+                    "Lanz",
+                    "Taion",
+                    "Eunie",
+                    "Mio",
+                    "Sena",
+                ).toImmutableList()
             ) { selectedPosition = it },
             defaultExpansion = false,
             modifier = Modifier,

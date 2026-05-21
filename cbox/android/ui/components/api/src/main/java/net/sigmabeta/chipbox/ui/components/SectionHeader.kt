@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.ui.components
 
-import android.content.res.Configuration
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,9 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.ui.components.previews.FullScreenOf
+
 
 @Composable
 fun SectionHeader(
@@ -53,28 +51,3 @@ fun SectionHeader(
 }
 
 private val SectionHeaderShape = RoundedCornerShape(4.dp)
-
-@Preview
-@Composable
-private fun Light() {
-    FullScreenOf { paddingValues ->
-        Sample(paddingValues)
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun Dark() {
-    FullScreenOf(darkTheme = true) { paddingValues ->
-        Sample(paddingValues)
-    }
-}
-
-@Composable
-private fun Sample(paddingValues: PaddingValues) {
-    SectionHeader(
-        "Sick new skills",
-        modifier = Modifier,
-        padding = paddingValues,
-    )
-}

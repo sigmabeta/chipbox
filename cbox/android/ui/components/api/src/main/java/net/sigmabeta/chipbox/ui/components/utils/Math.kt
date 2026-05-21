@@ -1,7 +1,8 @@
 package net.sigmabeta.chipbox.ui.components.utils
 
-import com.google.android.material.math.MathUtils
 import kotlin.random.Random
+
+private fun lerp(start: Float, end: Float, t: Float): Float = start + t * (end - start)
 
 fun partialLerpUntil(
     start: Float,
@@ -12,7 +13,7 @@ fun partialLerpUntil(
         start
     } else {
         val scaledProgress = (progress - threshold) / threshold
-        MathUtils.lerp(start, end, scaledProgress)
+        lerp(start, end, scaledProgress)
     }
 
 fun partialLerpAfter(
@@ -24,7 +25,7 @@ fun partialLerpAfter(
         end
     } else {
         val scaledProgress = 1.0f - ((threshold - progress) / threshold)
-        MathUtils.lerp(start, end, scaledProgress)
+        lerp(start, end, scaledProgress)
     }
 
 @Suppress("MagicNumber")

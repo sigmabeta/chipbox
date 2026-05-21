@@ -1,8 +1,5 @@
 package net.sigmabeta.chipbox.ui.components
 
-import android.content.res.Configuration
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,10 +13,9 @@ import androidx.compose.ui.text.font.DeviceFontFamilyName
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.sage.components.SubsectionHeaderListModel
+
 
 @OptIn(ExperimentalTextApi::class)
 @Composable
@@ -55,39 +51,3 @@ fun SubsectionHeader(
 private val SubsectionHeaderFontFamily = FontFamily(
     Font(DeviceFontFamilyName("sans-serif-condensed")),
 )
-
-@Preview
-@Composable
-private fun Light() {
-    ChipboxPreview {
-        Box(
-            modifier = Modifier
-                .background(color = MaterialTheme.colorScheme.primaryContainer)
-        ) {
-            Sample()
-        }
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun Dark() {
-    ChipboxPreview {
-        Box(
-            modifier = Modifier
-                .background(color = MaterialTheme.colorScheme.primaryContainer)
-        ) {
-            Sample()
-        }
-    }
-}
-
-@Composable
-private fun Sample() {
-    SubsectionHeader(
-        SubsectionHeaderListModel(
-            "Sick new skills",
-        ),
-        modifier = Modifier,
-    )
-}

@@ -13,15 +13,14 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.sage.components.LoadingType
-import net.sigmabeta.chipbox.ui.components.previews.FullScreenOf
 import net.sigmabeta.chipbox.ui.components.subs.ElevatedCircle
 import net.sigmabeta.chipbox.ui.components.subs.ElevatedPill
 import net.sigmabeta.chipbox.ui.components.subs.Flasher
 import net.sigmabeta.chipbox.ui.components.utils.nextPercentageFloat
 import kotlin.random.Random
+
 
 @Composable
 @Suppress("MagicNumber", "LongMethod")
@@ -104,58 +103,4 @@ fun LoadingTextItem(
             }
         }
     }
-}
-
-@Preview
-@Composable
-private fun Light() {
-    FullScreenOf {
-        Sample(
-            seed = Random.nextLong(),
-            loadingType = LoadingType.SINGLE_TEXT,
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun LightWithImage() {
-    FullScreenOf {
-        Sample(
-            seed = Random.nextLong(),
-            loadingType = LoadingType.TEXT_IMAGE,
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun LightWithImageAndCaption() {
-    FullScreenOf {
-        Sample(
-            seed = Random.nextLong(),
-            loadingType = LoadingType.TEXT_CAPTION_IMAGE,
-        )
-    }
-}
-
-@Preview
-@Composable
-private fun DarkWithImageAndCaption() {
-    FullScreenOf(darkTheme = true) {
-        Sample(
-            seed = Random.nextLong(),
-            loadingType = LoadingType.TEXT_CAPTION_IMAGE,
-        )
-    }
-}
-
-@Composable
-private fun Sample(seed: Long, loadingType: LoadingType) {
-    LoadingTextItem(
-        loadingType = loadingType,
-        seed = seed,
-        modifier = Modifier,
-        padding = PaddingValues(horizontal = 16.dp)
-    )
 }
