@@ -22,6 +22,7 @@ import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.net.URI
 import javax.swing.JFileChooser
+import javax.swing.SwingUtilities
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.features.settings.SettingsAction
@@ -69,11 +70,8 @@ data object SettingsScreen : Screen {
                     )
                 }
                 is ChipboxEvent.CopyToClipboard -> copyToClipboard(event.text)
-                ChipboxEvent.PickFolder -> {
-                    val path = pickLibraryFolder()
-                    if (path != null) {
-                        viewModel.sendAction(SettingsAction.FolderPicked(path))
-                    }
+                ChipboxEvent.PickFolder -> pickLibraryFolderAsync { path ->
+                    viewModel.sendAction(SettingsAction.FolderPicked(path))
                 }
                 is ChipboxEvent.NavigateTo -> Unit
             }
@@ -115,13 +113,24 @@ private fun copyToClipboard(text: String) {
     clipboard.setContents(StringSelection(text), null)
 }
 
-private fun pickLibraryFolder(): String? {
-    val chooser = JFileChooser().apply {
-        dialogTitle = "Choose music library folder"
-        fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
-        isMultiSelectionEnabled = false
+/**
+ * Pop a modal directory chooser via [SwingUtilities.invokeLater] so the dialog's nested EDT
+ * pump (`WaitDispatchSupport.enter()`) runs on a fresh event-queue task instead of nesting
+ * inside the currently-dispatched coroutine continuation. Calling `JFileChooser.showOpenDialog`
+ * directly from a suspend collector (the events flow lambda) corrupts the dispatched
+ * continuation's intercepted state and surfaces as
+ * `CompletedContinuation cannot be cast to DispatchedContinuation` when the original
+ * continuation tries to resume.
+ */
+private fun pickLibraryFolderAsync(onResult: (String) -> Unit) {
+    SwingUtilities.invokeLater {
+        val chooser = JFileChooser().apply {
+            dialogTitle = "Choose music library folder"
+            fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+            isMultiSelectionEnabled = false
+        }
+        val approved = chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION
+        val path = if (approved) chooser.selectedFile?.absolutePath else null
+        if (path != null) onResult(path)
     }
-    val result = chooser.showOpenDialog(null)
-    if (result != JFileChooser.APPROVE_OPTION) return null
-    return chooser.selectedFile?.absolutePath
 }
