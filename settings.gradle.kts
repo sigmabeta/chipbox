@@ -55,25 +55,18 @@ include(
     ":cbox:android:images:api",
     ":cbox:common:player-status:api",
     ":cbox:android:player:emulators:di",
-    ":cbox:android:player:emulators:gba:di",
     ":cbox:android:player:emulators:gba:native",
     ":cbox:android:player:emulators:gba:real",
-    ":cbox:android:player:emulators:gme:di",
     ":cbox:android:player:emulators:gme:native",
     ":cbox:android:player:emulators:gme:real",
-    ":cbox:android:player:emulators:psf:di",
     ":cbox:android:player:emulators:psf:native",
     ":cbox:android:player:emulators:psf:real",
-    ":cbox:android:player:emulators:ssf:di",
     ":cbox:android:player:emulators:ssf:native",
     ":cbox:android:player:emulators:ssf:real",
-    ":cbox:android:player:emulators:twosf:di",
     ":cbox:android:player:emulators:twosf:native",
     ":cbox:android:player:emulators:twosf:real",
-    ":cbox:android:player:emulators:usf:di",
     ":cbox:android:player:emulators:usf:native",
     ":cbox:android:player:emulators:usf:real",
-    ":cbox:android:player:emulators:vgm:di",
     ":cbox:android:player:emulators:vgm:native",
     ":cbox:android:player:emulators:vgm:real",
     ":cbox:android:player:generator:di",
@@ -185,6 +178,5 @@ include(
 
 // 2sf starts with a digit — map to a valid project name
 project(":cbox:android:player:emulators:twosf").projectDir = file("cbox/android/player/emulators/2sf")
-project(":cbox:android:player:emulators:twosf:di").projectDir = file("cbox/android/player/emulators/2sf/di")
 project(":cbox:android:player:emulators:twosf:real").projectDir = file("cbox/android/player/emulators/2sf/real")
 project(":cbox:android:player:emulators:twosf:native").projectDir = file("cbox/android/player/emulators/2sf/native")

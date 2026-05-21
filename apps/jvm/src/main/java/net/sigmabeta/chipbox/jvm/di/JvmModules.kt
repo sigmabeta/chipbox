@@ -129,31 +129,20 @@ object JvmBufferModule {
 @BindingContainer
 @ContributesTo(AppScope::class)
 object JvmEmulatorsModule {
-    @Provides @SingleIn(AppScope::class) fun provideGba(): GbaEmulator = GbaEmulator
-
-    @Provides @SingleIn(AppScope::class) fun provideGme(): GmeEmulator = GmeEmulator
-
-    @Provides @SingleIn(AppScope::class) fun providePsf(): PsfEmulator = PsfEmulator
-
-    @Provides @SingleIn(AppScope::class) fun provideSsf(): SsfEmulator = SsfEmulator
-
-    @Provides @SingleIn(AppScope::class) fun provideTwosf(): TwosfEmulator = TwosfEmulator
-
-    @Provides @SingleIn(AppScope::class) fun provideUsf(): UsfEmulator = UsfEmulator
-
-    @Provides @SingleIn(AppScope::class) fun provideVgm(): VgmEmulator = VgmEmulator
-
+    // Build the EmulatorProvider from direct singleton refs — matches the Android-side
+    // EmulatorModule.kt in :cbox:android:player:emulators:di. No per-emulator @Provides
+    // needed since nothing else in the graph injects an individual `*Emulator` type.
     @Provides @SingleIn(AppScope::class)
-    fun provideEmulatorProvider(
-        gba: GbaEmulator,
-        gme: GmeEmulator,
-        psf: PsfEmulator,
-        ssf: SsfEmulator,
-        twosf: TwosfEmulator,
-        usf: UsfEmulator,
-        vgm: VgmEmulator,
-    ): EmulatorProvider = EmulatorProvider(
-        listOf<Emulator>(gba, gme, psf, ssf, twosf, usf, vgm)
+    fun provideEmulatorProvider(): EmulatorProvider = EmulatorProvider(
+        listOf<Emulator>(
+            GbaEmulator,
+            GmeEmulator,
+            PsfEmulator,
+            SsfEmulator,
+            TwosfEmulator,
+            UsfEmulator,
+            VgmEmulator,
+        ),
     )
 }
 
