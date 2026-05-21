@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
 import net.sigmabeta.chipbox.jvm.JvmStorage
 import net.sigmabeta.chipbox.jvm.LocalFileContentSource
+import net.sigmabeta.chipbox.jvm.SourceDataLineSpeaker
 import net.sigmabeta.chipbox.jvm.strings.JvmStringProvider
 import net.sigmabeta.chipbox.jvm.strings.chipboxJvmStrings
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
@@ -209,6 +210,17 @@ object JvmSpeakerModule {
         hatchet: Hatchet,
         bufferManager: ConsumerBufferManager,
     ): FileSpeaker = FileSpeaker(outputDir, hatchet, bufferManager)
+
+    /**
+     * Real-time JVM speaker — backs `Speaker` (the abstract type Director receives) for the
+     * Compose Desktop UI. [FileSpeaker] above is only used by the headless CLI `play` mode,
+     * which pulls it as a concrete from the graph and bypasses Director.
+     */
+    @Provides @SingleIn(AppScope::class)
+    fun provideLiveSpeaker(
+        hatchet: Hatchet,
+        bufferManager: ConsumerBufferManager,
+    ): SourceDataLineSpeaker = SourceDataLineSpeaker(bufferManager, hatchet)
 }
 
 @BindingContainer

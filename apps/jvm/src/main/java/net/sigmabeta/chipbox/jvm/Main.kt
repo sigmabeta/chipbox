@@ -191,7 +191,7 @@ private suspend fun CoroutineScope.playPipelineFromGraph(
 ) {
     val hatchet = graph.hatchet
     val generator = graph.generator
-    val speaker = graph.speaker
+    val speaker = graph.fileSpeaker
 
     playToCompletion(track, generator, speaker, hatchet)
 

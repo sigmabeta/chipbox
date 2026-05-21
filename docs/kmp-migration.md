@@ -1272,12 +1272,13 @@ remainder, sliced by dependency order.
    - `:player-status` converted (no `android.*` imports in any of
      its sources today — pure Compose).
    - JVM `JvmChipboxGraph` now `@Binds` `RealGenerator → Generator`
-     and `FileSpeaker → Speaker` so `DirectorModule`'s
+     and `SourceDataLineSpeaker → Speaker` so `DirectorModule`'s
      `Director = RealDirector(generator, speaker, …)` resolves for
      the feature VMs that now reach the JVM target through `appui`.
-     Live audio on the JVM target isn't wired yet (FileSpeaker writes
-     WAVs); pressing Play in NowPlaying on desktop renders to disk
-     rather than the speakers. Real-time JVM audio is roadmap item 2.
+     `FileSpeaker` stays available as a concrete accessor for the
+     headless CLI `play` mode (WAV output); only the desktop UI uses
+     the live speaker. See roadmap item 2 below for the real-time
+     audio details.
 
    The chrome (TopAppBar + NavigationSuiteScaffold + PlayerStatus
    overlay + TabNavigator + per-tab Navigator + system event sink)
@@ -1285,14 +1286,48 @@ remainder, sliced by dependency order.
    Settings tabs, identical back-stack semantics, and identical
    NowPlaying overlay shape.
 
-2. **Real-time JVM audio.** An audio sink (probably a factory, possibly
-   `expect`/`actual`): Android `AudioTrack` vs a JVM
-   `javax.sound.sampled.SourceDataLine` speaker, so the JVM target plays
-   live instead of only writing WAV. Tune the render-ahead window at the
-   same time — the heavy cores currently emit a terminal
-   `GeneratorEvent.Error` on a cold cache, which the WAV harness
-   survives but live playback would not. Independent of the UI port —
-   could land at any time.
+2. **Real-time JVM audio (done — `SourceDataLineSpeaker`).** A
+   `javax.sound.sampled.SourceDataLine`-backed [Speaker] sibling of
+   Android's `AudioTrack`-based `RealSpeaker`. Lives in
+   `apps/jvm/.../SourceDataLineSpeaker.kt` (single consumer, no module
+   shuffle yet); same lifecycle contract as the base — re-opens the
+   line on sample-rate changes (setlist emulators differ),
+   `SourceDataLine.flush()` on seek, `stop()`/`start()` on pause/
+   resume, `drain()+stop()+close()` on teardown. Wired through
+   `JvmChipboxGraph.@Binds SourceDataLineSpeaker → Speaker`;
+   `JvmSpeakerModule.provideLiveSpeaker(…)` is the only `@Provides`
+   added — `FileSpeaker` stays for the headless CLI `play` mode that
+   writes WAVs.
+
+   The cold-cache `GeneratorEvent.Error` from heavy emulator cores
+   wasn't addressed in this slice — light-load formats (SPC, basic
+   PSF/VGM) play cleanly; heavy cores will halt the track when the
+   render-ahead cache misses. Tuning the render-ahead window is still
+   on the roadmap (see Known Issue #2).
+
+   **JVM-side CMake wiring as a side-effect.** Android's
+   `externalNativeBuild { cmake { … } }` (per `:native` module) builds
+   the seven emulator `.so`s into the APK on `:assembleDebug`. The
+   JVM target previously had no analog — the host-build was a
+   one-time shell-script step from `apps/jvm/README.md`. That's
+   addressed: `apps/jvm/build.gradle.kts` now registers
+   `nativeHostShim` + `nativeEmulator<Target>` Exec tasks (one per
+   emulator) and an aggregate `nativeLibs`. `:apps:jvm:run`
+   `dependsOn(nativeLibs)`, so launching `gui` mode just-in-time
+   builds anything missing. The CMake invocation matches the README
+   script flag-for-flag (same hostshim, same `-D__fastcall=` /
+   `-D__cdecl=` neutralization, same JNI include path).
+
+   Configuration-cache compat: the source-writing for the hostshim
+   (`android/log.h` + `log.c`) happens at Gradle configuration time
+   rather than inside a `doLast` lambda; the lambda would have
+   captured build-script references the configuration cache rejects.
+   `gcc → log.o` and `ar → liblog.a` stay as plain `Exec` tasks (no
+   lambdas, no captures). JDK with JNI headers is auto-detected:
+   override via `-Pchipbox.jvm.nativeJdk=/path/to/jdk`. cmake path:
+   `-Pchipbox.jvm.cmake`. Linux-only host build for now; macOS /
+   Windows are roadmap item 3.
+
 3. **Cross-platform native packaging.** All seven emulators wired and
    playback-verified on host x86-64 Linux. Remaining: macOS/Windows
    `.dylib`/`.dll` builds + a packaged `java.library.path`, and a real

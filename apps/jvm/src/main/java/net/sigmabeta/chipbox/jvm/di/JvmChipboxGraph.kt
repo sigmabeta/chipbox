@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.jvm.di
 
+import dev.zacsweers.metro.Binds
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
@@ -7,7 +8,10 @@ import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import java.io.File
 import net.sigmabeta.chipbox.jvm.LocalFileContentSource
+import net.sigmabeta.chipbox.jvm.SourceDataLineSpeaker
+import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
+import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.real.RealScanner
@@ -36,19 +40,28 @@ interface JvmChipboxGraph : ViewModelGraph {
     val librarySource: LocalFileContentSource
     val scanner: RealScanner
     val generator: RealGenerator
-    val speaker: FileSpeaker
 
-    // Bind the abstract Generator + Speaker types onto the JVM concretes so DirectorModule
-    // (`@ContributesTo(AppScope) @Provides Director`) can resolve `provideDirector(generator,
-    // speaker, …)` for the feature VMs that now reach the JVM target via the shared appui
-    // module — every detail/browse-all/now-playing VM takes a Director. Live audio on the
-    // JVM target isn't wired (FileSpeaker writes WAVs; see Milestone 8 roadmap), so
-    // pressing Play in NowPlaying will currently render to disk rather than the speakers.
-    @dev.zacsweers.metro.Binds
-    val RealGenerator.generatorBinding: net.sigmabeta.chipbox.player.generator.Generator
+    /**
+     * Exposed for the headless CLI `play` mode in `Main.kt`, which routes audio to a WAV file
+     * rather than the speakers. The Compose Desktop / `gui` mode goes through `Director`,
+     * which receives the [Speaker] binding below ([SourceDataLineSpeaker]) — the WAV speaker
+     * isn't used there.
+     */
+    val fileSpeaker: FileSpeaker
 
-    @dev.zacsweers.metro.Binds
-    val FileSpeaker.speakerBinding: net.sigmabeta.chipbox.player.speaker.Speaker
+    /** Live speaker used by the desktop UI; bound to [Speaker] below. */
+    val liveSpeaker: SourceDataLineSpeaker
+
+    @Binds
+    val RealGenerator.generatorBinding: Generator
+
+    /**
+     * Director receives this binding via `DirectorModule.provideDirector(speaker = …)`. The
+     * desktop UI plays through it; the `play` CLI mode bypasses the binding and uses
+     * [fileSpeaker] directly to write WAVs.
+     */
+    @Binds
+    val SourceDataLineSpeaker.speakerBinding: Speaker
 
     @DependencyGraph.Factory
     fun interface Factory {
