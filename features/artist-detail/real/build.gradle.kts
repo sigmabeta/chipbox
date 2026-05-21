@@ -23,5 +23,4 @@ dependencies {
 
     implementation(libs.metrox.viewmodel)
     implementation(libs.metrox.viewmodel.compose)
-    implementation(libs.androidx.navigation.compose)
 }

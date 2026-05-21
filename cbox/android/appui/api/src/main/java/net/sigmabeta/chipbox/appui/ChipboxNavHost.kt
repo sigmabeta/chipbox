@@ -5,132 +5,304 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScope
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import cafe.adriel.voyager.core.screen.Screen
+import cafe.adriel.voyager.core.screen.ScreenKey
+import cafe.adriel.voyager.navigator.LocalNavigator
+import cafe.adriel.voyager.navigator.currentOrThrow
+import cafe.adriel.voyager.navigator.tab.CurrentTab
+import cafe.adriel.voyager.navigator.tab.TabNavigator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
-import net.sigmabeta.chipbox.features.search.Search
-import net.sigmabeta.chipbox.features.search.real.SearchRoute
-import net.sigmabeta.chipbox.features.browsealltracks.BrowseAllTracks
-import net.sigmabeta.chipbox.features.browsealltracks.BrowseAllTracksRoute
-import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtist
-import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtistRoute
-import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
-import net.sigmabeta.chipbox.features.browsebygame.BrowseByGameRoute
-import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatform
-import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatformRoute
-import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatform
-import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatformRoute
-import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
-import net.sigmabeta.chipbox.features.artistdetail.ArtistDetailRoute
-import net.sigmabeta.chipbox.features.gamedetail.GameDetail
-import net.sigmabeta.chipbox.features.gamedetail.GameDetailRoute
-import net.sigmabeta.chipbox.features.library.Library
-import net.sigmabeta.chipbox.features.library.LibraryRoute
-import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
-import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingRoute
-import net.sigmabeta.chipbox.features.settings.Settings
-import net.sigmabeta.chipbox.features.settings.SettingsRoute
+import net.sigmabeta.chipbox.playerstatus.PLAYER_STATUS_ANIM_DURATION_MS
+import net.sigmabeta.chipbox.playerstatus.PlayerStatus
+import net.sigmabeta.chipbox.playerstatus.PlayerStatusReservedHeight
+import net.sigmabeta.chipbox.ui.chrome.LocalChipboxEventSink
 import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
-import net.sigmabeta.chipbox.ui.chrome.ScreenChrome
+import net.sigmabeta.chipbox.ui.chrome.LocalTitleBarController
+import net.sigmabeta.chipbox.ui.components.CrossfadeText
+import net.sigmabeta.sage.android.ui.list.LocalListBottomInset
 
-@Composable
-fun ChipboxNavHost(
-    navController: NavHostController,
-    snackbarHostState: SnackbarHostState,
-    snackbarScope: CoroutineScope,
-    modifier: Modifier = Modifier,
-) {
-    val context = LocalContext.current
-    val onEvent: (ChipboxEvent) -> Unit = { event ->
-        when (event) {
-            is ChipboxEvent.NavigateTo -> navController.navigate(event.destination)
+private val NAV_RAIL_MIN_WIDTH = 480.dp
 
-            ChipboxEvent.NavigateBack -> {
-                navController.popBackStack()
-            }
+/**
+ * Root of the outer Voyager Navigator owned by [ChipboxAppUi]. Renders the chrome
+ * (TopAppBar + NavigationSuiteScaffold + PlayerStatus overlay) and a [TabNavigator] for
+ * the three top-level tabs. Pushing a screen onto the outer Navigator above this root
+ * (currently only [NowPlayingScreen]) replaces the whole tab UI on screen — the natural
+ * "full-screen overlay" shape for NowPlaying without needing [LocalChromeController] to
+ * hide the bars.
+ *
+ * Deep navigation *within* a tab is handled by each tab's inner Navigator (see
+ * `TabNavigatorContent` in [ChipboxScreens]); the inner sink rebind there short-circuits
+ * `NavigateTo` / `NavigateBack` to the tab's own stack before the outer sink ever sees
+ * the event.
+ */
+internal object ChipboxTabsScreen : Screen {
+    override val key: ScreenKey = "ChipboxTabsScreen"
 
-            is ChipboxEvent.OpenUrl -> {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(event.url))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                context.startActivity(intent)
-            }
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Suppress("LongMethod")
+    @Composable
+    override fun Content() {
+        // Outer Navigator + outer ChipboxEvent sink + shared SnackbarHostState live in
+        // [ChipboxAppUi] so they survive while NowPlayingScreen (pushed onto the outer
+        // Navigator) replaces this screen as the active stack top.
+        val outerNavigator = LocalNavigator.currentOrThrow
+        val snackbarHostState = LocalAppSnackbarHostState.current
 
-            is ChipboxEvent.ShowSnackbar -> snackbarScope.launch {
-                snackbarHostState.showSnackbar(
-                    message = event.message,
-                    withDismissAction = event.withDismissAction,
-                    duration = SnackbarDuration.Short,
-                )
-            }
+        // Tracks the active tab's inner Navigator so the TopAppBar back arrow can pop deep
+        // destinations within a tab — see [ActiveTabNavigator] for the registration shape.
+        val activeTabNavigator = remember { ActiveTabNavigator() }
 
-            is ChipboxEvent.CopyToClipboard -> {
-                val clipboard = context
-                    .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText(event.label, event.text))
-                snackbarScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = "${event.label} copied to clipboard",
-                        withDismissAction = true,
-                        duration = SnackbarDuration.Short,
-                    )
+        val titleBar = LocalTitleBarController.current.state
+        val chrome = LocalChromeController.current.state
+
+        val topAppBarState = rememberTopAppBarState()
+        val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(topAppBarState)
+
+        val widthDp = LocalConfiguration.current.screenWidthDp.dp
+        val layoutType = if (widthDp >= NAV_RAIL_MIN_WIDTH) {
+            NavigationSuiteType.NavigationRail
+        } else {
+            NavigationSuiteType.NavigationBar
+        }
+
+        var playerStatusVisible by remember { mutableStateOf(false) }
+        val navBarBottomInset =
+            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val navHostBottomInset by animateDpAsState(
+            targetValue = if (playerStatusVisible && chrome.showPlayerStatus) {
+                PlayerStatusReservedHeight + navBarBottomInset
+            } else {
+                0.dp
+            },
+            animationSpec = tween(PLAYER_STATUS_ANIM_DURATION_MS),
+            label = "ChipboxTabsScreen.navHostBottomInset",
+        )
+
+        CompositionLocalProvider(LocalActiveTabNavigator provides activeTabNavigator) {
+            TabNavigator(LibraryTab) { tabNavigator ->
+                // Reset the TopAppBar scroll offset on tab switch (parity with the
+                // AndroidX backStackEntry-keyed LaunchedEffect the old shell used).
+                LaunchedEffect(tabNavigator.current.key) {
+                    topAppBarState.contentOffset = 0f
+                    topAppBarState.heightOffset = 0f
+                }
+
+                NavigationSuiteScaffold(
+                    navigationSuiteItems = navItems(tabNavigator),
+                    layoutType = if (chrome.showNavBar) layoutType else NavigationSuiteType.None,
+                ) {
+                    Scaffold(
+                        topBar = {
+                            AnimatedVisibility(
+                                visible = chrome.showTopBar,
+                                enter = expandVertically() + fadeIn(),
+                                exit = shrinkVertically() + fadeOut(),
+                            ) {
+                                TopAppBar(
+                                    title = {
+                                        CrossfadeText(
+                                            text = titleBar.title.orEmpty(),
+                                            textAlign = TextAlign.Center,
+                                            maxLines = 1,
+                                            textModifier = Modifier.basicMarquee(),
+                                        )
+                                    },
+                                    navigationIcon = {
+                                        TopAppBarNavIcon(
+                                            shouldShowBack = titleBar.shouldShowBack,
+                                            onMenu = {
+                                                tabNavigator.current = SettingsTab
+                                            },
+                                        )
+                                    },
+                                    scrollBehavior = scrollBehavior,
+                                )
+                            }
+                        },
+                        snackbarHost = { SnackbarHost(snackbarHostState) },
+                        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                    ) { padding ->
+                        CompositionLocalProvider(
+                            LocalListBottomInset provides navHostBottomInset,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(padding),
+                            ) {
+                                CurrentTab()
+                                AnimatedVisibility(
+                                    visible = chrome.showPlayerStatus,
+                                    enter = slideInVertically(initialOffsetY = { it }),
+                                    exit = slideOutVertically(targetOffsetY = { it }),
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .windowInsetsPadding(WindowInsets.navigationBars),
+                                ) {
+                                    PlayerStatus(
+                                        onVisibleChange = { playerStatusVisible = it },
+                                        // Push onto the *outer* Navigator so NowPlaying
+                                        // covers the tab UI entirely. The tab's inner sink
+                                        // would push NowPlaying inside the active tab —
+                                        // wrong shape for a full-screen player.
+                                        onClick = { outerNavigator.push(NowPlayingScreen) },
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
-
-            // Screen-local effects intercepted by their owning route (see SettingsRoute);
-            // anything that reaches here is a routing bug, but no-op rather than crash.
-            ChipboxEvent.PickFolder -> Unit
         }
-    }
-
-    NavHost(
-        navController = navController,
-        startDestination = Library,
-        modifier = modifier,
-    ) {
-        chipboxComposable<Library> { LibraryRoute(onEvent) }
-        chipboxComposable<Search> { SearchRoute(onEvent) }
-        chipboxComposable<Settings> { SettingsRoute(onEvent) }
-        chipboxComposable<NowPlaying> { NowPlayingRoute(onEvent) }
-        chipboxComposable<BrowseByGame> { BrowseByGameRoute(onEvent) }
-        chipboxComposable<BrowseByPlatform> { BrowseByPlatformRoute(onEvent) }
-        chipboxComposable<GamesForPlatform> { GamesForPlatformRoute(onEvent) }
-        chipboxComposable<BrowseByArtist> { BrowseByArtistRoute(onEvent) }
-        chipboxComposable<BrowseAllTracks> { BrowseAllTracksRoute(onEvent) }
-        chipboxComposable<GameDetail> { GameDetailRoute(onEvent) }
-        chipboxComposable<ArtistDetail> { ArtistDetailRoute(onEvent) }
-        // Playback-status destination registration dropped during Hilt → Metro VM sweep:
-        // PlaybackStatusEntryPoint was variant-selected (debug=real, release=fake) and Metro
-        // 1.1.1 doesn't aggregate @ContributesTo through variant-specific debug/release
-        // implementation chains reliably. M5a already removed the Settings → playback-status
-        // navigation entry, so this destination has no actual entry point in practice.
-        // Re-register inline when playback-status' variant aggregation is solved (M5d+).
     }
 }
 
 /**
- * Equivalent to `composable<T> { content() }` but resets [ScreenChrome] to its default on entry.
- * Screens that want non-default chrome override it inside `content`; their `LaunchedEffect`
- * composes after this one so the order — reset, then per-screen override — is deterministic
- * across both navigation and configuration changes. Keeping the reset in the destination's own
- * composition scope (rather than in the shell, keyed on a `backStackEntry` that transitions
- * `null → actual` after recreation) avoids racing the screen's chrome push.
+ * Pops the *active tab's* inner Navigator on back, falling back to the outer Navigator if
+ * for some reason no tab is currently registered. [LocalChipboxEventSink] at this scope
+ * is the outer sink, which would only pop the outer Navigator — not what the user wants
+ * when at a deep destination inside a tab. Hardware back already works because Voyager
+ * routes it to the innermost active Navigator directly.
  */
-private inline fun <reified T : Any> NavGraphBuilder.chipboxComposable(
-    noinline content: @Composable () -> Unit,
-) {
-    composable<T> {
-        val controller = LocalChromeController.current
-        LaunchedEffect(Unit) { controller.set(ScreenChrome.Default) }
-        content()
+@Composable
+private fun TopAppBarNavIcon(shouldShowBack: Boolean, onMenu: () -> Unit) {
+    val activeTabNavigator = LocalActiveTabNavigator.current
+    val outerSink = LocalChipboxEventSink.current
+    if (shouldShowBack) {
+        IconButton(
+            onClick = {
+                val tabNav = activeTabNavigator.navigator
+                if (tabNav != null && tabNav.canPop) {
+                    tabNav.pop()
+                } else {
+                    outerSink(ChipboxEvent.NavigateBack)
+                }
+            },
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = null,
+            )
+        }
+    } else {
+        IconButton(onClick = onMenu) {
+            Icon(
+                imageVector = Icons.Filled.Menu,
+                contentDescription = null,
+            )
+        }
+    }
+}
+
+private fun navItems(tabNavigator: TabNavigator): NavigationSuiteScope.() -> Unit = {
+    AllTabs.forEach { tab ->
+        item(
+            selected = tabNavigator.current.key == tab.key,
+            onClick = { tabNavigator.current = tab },
+            // `Tab.options` is `@Composable get` — read it inside the composable closures
+            // (icon/label), not in the outer non-composable lambda body.
+            icon = { Icon(painter = tab.options.icon!!, contentDescription = null) },
+            label = { Text(tab.options.title) },
+        )
+    }
+}
+
+/**
+ * Builds the outer (app-level) [ChipboxEvent] sink. Snackbar + clipboard + open-url have
+ * Android system surfaces, so they're built here rather than per tab. `NavigateTo` /
+ * `NavigateBack` push/pop the *outer* Navigator — the per-tab sink override in
+ * `TabNavigatorContent` short-circuits these for deep destinations so they stay inside
+ * a tab; only screens explicitly pushed onto the outer Navigator (NowPlaying) ride this
+ * sink for their own NavigateBack.
+ */
+internal fun buildOuterSink(
+    context: Context,
+    snackbarHostState: SnackbarHostState,
+    snackbarScope: CoroutineScope,
+    onNavigateTo: (Any) -> Unit,
+    onNavigateBack: () -> Unit,
+): (ChipboxEvent) -> Unit = { event ->
+    when (event) {
+        is ChipboxEvent.NavigateTo -> onNavigateTo(event.destination)
+        ChipboxEvent.NavigateBack -> onNavigateBack()
+        is ChipboxEvent.OpenUrl -> {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(event.url))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+        }
+        is ChipboxEvent.ShowSnackbar -> snackbarScope.launch {
+            snackbarHostState.showSnackbar(
+                message = event.message,
+                withDismissAction = event.withDismissAction,
+                duration = SnackbarDuration.Short,
+            )
+        }
+        is ChipboxEvent.CopyToClipboard -> {
+            val clipboard = context
+                .getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.setPrimaryClip(ClipData.newPlainText(event.label, event.text))
+            snackbarScope.launch {
+                snackbarHostState.showSnackbar(
+                    message = "${event.label} copied to clipboard",
+                    withDismissAction = true,
+                    duration = SnackbarDuration.Short,
+                )
+            }
+        }
+        // Screen-local effects intercepted by their owning route (see SettingsRoute on
+        // Android — SAF folder picker); anything reaching here is a routing bug, but
+        // no-op rather than crash.
+        ChipboxEvent.PickFolder -> Unit
     }
 }

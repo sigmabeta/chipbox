@@ -1170,6 +1170,67 @@ remainder, sliced by dependency order.
    (Coil 3 KMP wrapper for `:images`) becomes the next decision when
    a feature port needs artwork.
 
+   **Android nav backend swapped to Voyager.** AndroidX
+   `navigation-compose` (`NavHost` + `composable<T>` typesafe routes)
+   was the Android backend; the JVM target used Voyager because the
+   AndroidX CMP fork publishes JVM stubs with no runtime. Android now
+   uses Voyager too: outer `Navigator(ChipboxTabsScreen)` for
+   full-screen overlays (`NowPlayingScreen` covers the tab UI without
+   needing `ChromeController` to hide bars), inner `TabNavigator` for
+   `Library`/`Search`/`Settings` tabs, and a per-tab `Navigator`
+   inside each `Tab.Content()` so deep stacks survive tab switches
+   (parity with the old `popUpTo(start) + saveState + restoreState`
+   pattern). `ChipboxEvent`s reach screens through
+   `LocalChipboxEventSink` (in `cbox/android/ui/chrome/api`), provided
+   once at the appui level and rebound inside each tab so
+   `NavigateTo` / `NavigateBack` push/pop the local tab Navigator.
+   Mapping from event payload → Voyager `Screen` lives in `screenFor()`
+   in `ChipboxScreens.kt`; the existing per-feature `XxxRoute`
+   composables are unchanged behind anonymous `Screen` wrappers.
+
+   Three parameterised VMs (`GameDetail`/`ArtistDetail`/
+   `GamesForPlatform`) were rewritten from
+   `@Assisted SavedStateHandle` + `savedStateHandle.toRoute<T>()`
+   (an AndroidX-nav extension) to `ManualViewModelAssistedFactory`
+   with typed `@Assisted` args. Routes now take the typed arg as a
+   composable parameter and call
+   `assistedMetroViewModel<VM, Factory> { create(arg) }`.
+
+   Three Voyager gotchas surfaced during the swap (all fixed):
+
+   - **`Screen.key` defaults to the class name.** A `data class
+     GameDetailDeepScreen(val gameId: Long)` instance for game 248
+     and another for game 96 collide on the same Voyager screen key,
+     share the same `ViewModelStore`, and reuse the same VM (with
+     its `@Assisted gameId` baked in from the first push). Every
+     parameterised `Screen` must override `key` to embed the args —
+     see `ChipboxScreens.kt:GameDetailDeepScreen` etc.
+   - **Voyager 1.0.1 throws on pop+recompose.**
+     `AndroidScreenLifecycleOwner` tries to transition `DESTROYED`
+     → `STARTED` against androidx.lifecycle 2.10.x (e.g. ArtistDetail
+     → back → GameDetail recompose), crashing. Pin Voyager at a
+     1.1.0 beta (`1.1.0-beta03` at time of writing); bump to stable
+     when it lands.
+   - **Locals provided inside the tabs root unmount with it.**
+     `LocalChipboxEventSink` and the shared `SnackbarHostState` must
+     be provided in `ChipboxAppUi` *inside* the outer `Navigator { … }`
+     but *outside* `SlideTransition`; otherwise pushing
+     `NowPlayingScreen` onto the outer Navigator unmounts the tabs
+     root (which provided them) and the pushed screen throws on
+     `LocalChipboxEventSink.current`. Similarly, the TopAppBar back
+     arrow lives at the tabs-root scope where `LocalChipboxEventSink`
+     is the *outer* sink — it can't reach the active tab's inner
+     Navigator. `LocalActiveTabNavigator` (a `Stable` holder updated
+     via `DisposableEffect` inside each tab's `TabNavigatorContent`)
+     bridges that, so the chrome back arrow pops the current tab's
+     deep stack.
+
+   Convergence dividend (not done): the per-feature `XxxRoute`
+   composables can move to commonMain as `Screen` implementations
+   themselves, dropping the duplicate `apps/jvm/.../LibraryScreen.kt`
+   and `SettingsScreen.kt` files. Holds until the next feature port
+   surfaces the duplication.
+
 2. **Real-time JVM audio.** An audio sink (probably a factory, possibly
    `expect`/`actual`): Android `AudioTrack` vs a JVM
    `javax.sound.sampled.SourceDataLine` speaker, so the JVM target plays

@@ -1,16 +1,12 @@
 package net.sigmabeta.chipbox.features.gamedetail
 
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.navigation.toRoute
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import dev.zacsweers.metro.ContributesIntoMap
-import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactory
-import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactoryKey
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
@@ -26,11 +22,13 @@ import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 
-// SavedStateHandle comes through CreationExtras at resolution time — see
-// GamesForPlatformViewModel for the explanation; same metrox-viewmodel pattern here.
+// `gameId` is the only route arg; took it as `@Assisted` directly after the AndroidX-nav
+// removal — `SavedStateHandle.toRoute<GameDetail>()` only existed because the typed route
+// args travelled through the NavBackStackEntry's saved state. Voyager pushes typed Screen
+// instances instead, so the Screen passes `gameId` to the [Factory] explicitly.
 @AssistedInject
 class GameDetailViewModel(
-    @Assisted savedStateHandle: SavedStateHandle,
+    @Assisted private val gameId: Long,
     private val repository: Repository,
     private val director: Director,
     stringProvider: StringProvider,
@@ -41,12 +39,10 @@ class GameDetailViewModel(
     hatchet,
 ) {
 
-    private val args: GameDetail = savedStateHandle.toRoute()
-
     init {
         viewModelScope.launch {
             repository
-                .getGame(args.id, withTracks = true, withArtists = true)
+                .getGame(gameId, withTracks = true, withArtists = true)
                 .collect(::onGameData)
         }
 
@@ -71,7 +67,7 @@ class GameDetailViewModel(
         director.start(
             Session(
                 type = SessionType.GAME,
-                contentId = args.id,
+                contentId = gameId,
                 startingPosition = startingPosition,
                 shuffled = shuffled,
             )
@@ -123,13 +119,10 @@ class GameDetailViewModel(
     }
 
     @AssistedFactory
-    @ViewModelAssistedFactoryKey(GameDetailViewModel::class)
+    @ManualViewModelAssistedFactoryKey(Factory::class)
     @ContributesIntoMap(AppScope::class)
-    fun interface Factory : ViewModelAssistedFactory {
-        override fun create(extras: CreationExtras): GameDetailViewModel =
-            create(extras.createSavedStateHandle())
-
-        fun create(@Assisted savedStateHandle: SavedStateHandle): GameDetailViewModel
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(@Assisted gameId: Long): GameDetailViewModel
     }
 
     private companion object {

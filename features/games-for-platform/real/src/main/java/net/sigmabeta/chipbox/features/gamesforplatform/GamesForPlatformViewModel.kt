@@ -1,20 +1,17 @@
 package net.sigmabeta.chipbox.features.gamesforplatform
 
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.navigation.toRoute
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import dev.zacsweers.metro.ContributesIntoMap
-import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactory
-import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactoryKey
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
@@ -27,12 +24,9 @@ import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 
-// SavedStateHandle isn't directly injectable in Metro the way it is in Hilt — it has to come
-// out of `CreationExtras` at ViewModel resolution time. See `metrox-viewmodel` README for the
-// `@AssistedFactory` + `ViewModelAssistedFactory` pattern this VM uses.
 @AssistedInject
 class GamesForPlatformViewModel(
-    @Assisted savedStateHandle: SavedStateHandle,
+    @Assisted private val platform: Platform,
     private val repository: Repository,
     private val director: Director,
     stringProvider: StringProvider,
@@ -43,13 +37,11 @@ class GamesForPlatformViewModel(
     hatchet,
 ) {
 
-    private val args: GamesForPlatform = savedStateHandle.toRoute()
-
     init {
-        updateState { it.copy(platform = args.platform) }
+        updateState { it.copy(platform = platform) }
 
         viewModelScope.launch {
-            repository.getGamesForPlatform(args.platform).collect { data ->
+            repository.getGamesForPlatform(platform).collect { data ->
                 val lce: LCE<List<Game>> = when (data) {
                     Data.Loading -> LCE.Loading(LOAD_OP)
                     Data.Empty -> LCE.Content(emptyList())
@@ -78,7 +70,7 @@ class GamesForPlatformViewModel(
         director.start(
             Session(
                 type = SessionType.PLATFORM,
-                contentId = args.platform.ordinal.toLong(),
+                contentId = platform.ordinal.toLong(),
                 startingPosition = startingPosition,
                 shuffled = shuffled,
             )
@@ -86,13 +78,10 @@ class GamesForPlatformViewModel(
     }
 
     @AssistedFactory
-    @ViewModelAssistedFactoryKey(GamesForPlatformViewModel::class)
+    @ManualViewModelAssistedFactoryKey(Factory::class)
     @ContributesIntoMap(AppScope::class)
-    fun interface Factory : ViewModelAssistedFactory {
-        override fun create(extras: CreationExtras): GamesForPlatformViewModel =
-            create(extras.createSavedStateHandle())
-
-        fun create(@Assisted savedStateHandle: SavedStateHandle): GamesForPlatformViewModel
+    fun interface Factory : ManualViewModelAssistedFactory {
+        fun create(@Assisted platform: Platform): GamesForPlatformViewModel
     }
 
     private companion object {
