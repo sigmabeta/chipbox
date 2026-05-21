@@ -1,7 +1,8 @@
 # Kotlin Multiplatform migration — plan & status
 
 Status: **Milestone 8 implemented; Milestone 9 in progress (slices
-1–5d done).** JVM is the second target with a real library *and* a
+1–5d done + 6a/6b/6c/6d/6e done; 6f/6g pending).** JVM is the second
+target with a real library *and* a
 Compose Multiplatform desktop window with real pixel-art fonts,
 Metro-backed ViewModel scoping, and Voyager-driven navigation. All
 seven native emulators decode end-to-end on host x86-64
@@ -982,26 +983,111 @@ remainder, sliced by dependency order.
   `@AssistedFactory` pattern. Re-verified on device: Library, the
   three detail screens, and every Browse-* tab resolve cleanly.
 
+- **Slice 6 — prep for the ui/components KMP flip (5 of 7 sub-slices
+  done).** Slice 6's stated goal — promote `ChipboxListEntry` to
+  commonMain so SettingsRoute can render the same composable on both
+  targets — has a deeper transitive closure than the three Android-only
+  imports the prior roadmap entry called out (`LocalConfiguration`,
+  `collectAsStateWithLifecycle`, `LocalTitleBarController`). The entry
+  also calls `model.Content(...)` from `cbox/android/ui/components/api`,
+  a 30-file Compose UI surface module loaded with `stringResource`,
+  `@Preview`, `android.content.res.Configuration`, `sage.android.bitmaps`,
+  `sage.android.perf`, `android.os.Build`, and Coil's `LocalContext`.
+  Slice 6 is a multi-sub-slice arc through that closure:
+
+  - **6a — delete `sage/android/bitmaps`.** VGLS spritesheet leftover;
+    sole external reference was `SheetConstants.MIN_WIDTH/ASPECT_RATIO`
+    in chipbox `LoadingItem` (inlined as `PAGE_MIN_WIDTH` /
+    `PAGE_ASPECT_RATIO` module constants). `cbox/android/images/api`
+    declared `api(libs.sage.android.bitmaps)` but no source imported
+    a symbol from it — vestigial. Catalog entry dropped, settings
+    include dropped, module dir removed.
+  - **6b — `sage/android/perf` → `sage.kmp + sage.compose.kmp`.** Single
+    `Logging.kt` file moved straight to commonMain. Severity ints
+    (`android.util.Log.INFO/WARN/ERROR`) replaced with hardcoded 4/5/6
+    matching Hatchet's existing severity convention. `BuildConfig.DEBUG`
+    gate became a runtime `var isPerfMeasurementEnabled` defaulting to
+    true (right for JVM dev); AGP 9's KotlinMultiplatformAndroidLibraryExtension
+    doesn't expose `buildConfig` generation, so the Android-side release
+    gate is restored at runtime via
+    `ChipboxApplication.onCreate { isPerfMeasurementEnabled = BuildConfig.DEBUG }`.
+  - **6c — `LocalChipboxStringProvider` + drop `stringResource` from
+    composables.** `stringResource(id)` is Android-only and was paired
+    with the androidMain `.id() -> R.string.*` extension. Pattern is
+    now the same `StringProvider` indirection sage VMs already use —
+    composables read it from a `staticCompositionLocalOf<StringProvider>`
+    in cbox/common/strings/api (which gains the sage.compose.kmp plugin
+    layer + hoists `ChipboxStringId` to commonMain). Four `@Composable
+    @ReadOnlyComposable` helpers (`ChipboxStringId.text()`,
+    `text(arg)`, `textInt(arg)`, `text(first, second)`) wrap
+    `StringProvider.getString*`. 7 composables swapped (6 ui/components
+    files + SearchBar.kt). Provider wiring: MainActivity wraps
+    `setContent` with `CompositionLocalProvider(LocalChipboxStringProvider
+    provides appGraph.stringProvider)` alongside the existing
+    `LocalMetroViewModelFactory provides ...`; DesktopMain mirrors
+    the same pattern off the JvmChipboxGraph.
+  - **6d — Coil3 `LocalContext` → `LocalPlatformContext`.** CrossfadeImage's
+    two `LocalContext.current` reads swap to Coil 3.4.0's multiplatform
+    `coil3.compose.LocalPlatformContext`. Behavior unchanged on Android
+    (the PlatformContext type-aliases to `android.content.Context`
+    there). Remaining Android-only barriers in CrossfadeImage —
+    `BitmapGenerator` for the preview-only FakeImage branch + the
+    `@Preview` sample suite — are preview-only and land in 6f.
+  - **6e — `cbox/android/ui/chrome/api` → `sage.kmp + sage.compose.kmp`.**
+    All three files (TitleBarController, ChromeController, ScreenChrome)
+    hoist straight to commonMain — pure Compose runtime over the
+    sage commonMain TitleBarModel. Namespace stays
+    `net.sigmabeta.chipbox.ui.chrome` via `androidLibrary { namespace }`.
+    Removes one of ChipboxListEntry's three direct barriers.
+  - **6f (pending) — `cbox/android/ui/components/api` → `sage.kmp +
+    sage.compose.kmp`.** The big one. Each of the ~17 component files
+    currently mixes production composables with `@Preview` /
+    `Configuration.UI_MODE_NIGHT_YES` previews; the preview helpers
+    move to per-component `*Previews.kt` files under `androidMain/`,
+    leaving the production composable in commonMain. The 4 files using
+    `android.os.Build` version checks (ElevatedCircle, ElevatedRoundRect,
+    ElevatedPill, WideItem) either drop the version-gated shadow or
+    `expect val IS_API_LEVEL_X`. `ComposableMapping` swaps
+    `this.javaClass.simpleName` for `this::class.simpleName`. The
+    7 `previews/*` helpers and CrossfadeImage's FakeImage branch
+    (uses `cbox/android/images`'s `BitmapGenerator`) move to
+    androidMain too. CrossfadeImage's `dimensionResource` /
+    `R.dimen.*` calls in `ActionItem` etc. either inline the dp
+    values or move with the previews.
+  - **6g (pending) — promote `ChipboxListEntry` to commonMain.**
+    Once 6f lands: swap `LocalConfiguration.current.screenWidthDp`
+    for `BoxWithConstraints { maxWidth }` (CMP has no
+    LocalConfiguration), replace `collectAsStateWithLifecycle` with
+    plain `collectAsState`, `git mv` the file from androidMain to
+    commonMain. SettingsRoute can then move to commonMain too.
+
 ## Roadmap (not yet done)
 
 1. **Compose Multiplatform UI port: finish the Settings port.**
    Milestones 6 + 7 set every prerequisite (toolchain, palette,
    typography, fonts, ViewModel scoping, navigation, sage commonMain
-   types). Slices 1–5 are done (see Milestone 9 above); the
-   remaining work, in dependency order:
+   types). Slices 1–5 done + 6a/6b/6c/6d/6e done (see Milestone 9
+   above); the remaining work, in dependency order:
 
-   6. **Promote `ChipboxListEntry` to commonMain.** Currently
-      androidMain because of `LocalConfiguration`,
-      `collectAsStateWithLifecycle`, and `LocalTitleBarController`.
-      Once it lifts, SettingsRoute can move to commonMain too and the
-      desktop UI uses the same composable Android does.
+   6f. **`cbox/android/ui/components/api` → `sage.kmp +
+       sage.compose.kmp`.** Split each of ~17 component files into
+       commonMain (production composable) + androidMain (`@Preview`
+       helpers). Handle the four `android.os.Build` version checks,
+       ComposableMapping's `javaClass.simpleName`, and CrossfadeImage's
+       BitmapGenerator-using FakeImage preview branch. See M9 slice
+       6f description above for the full file-by-file plan.
+   6g. **Promote `ChipboxListEntry` to commonMain.** Three remaining
+       Android-only barriers (`LocalConfiguration` → `BoxWithConstraints`,
+       `collectAsStateWithLifecycle` → `collectAsState`, `model.Content`
+       resolves to the now-commonMain `Content` extension after 6f).
+       Then SettingsRoute moves to commonMain too.
    7. **Desktop folder picker.** `expect`/`actual` or a JVM-only
       `LibraryLocationPicker` backed by `javax.swing.JFileChooser`.
    8. **Wire `SettingsScreen` into Voyager.** Replace the demo
       Home/About screens with the real Settings entry — at minimum a
       `metroViewModel<SettingsViewModel>()` consumer composable
       rendering the `SettingsState` rows; eventually the same
-      `ChipboxListEntry` once item 6 lands.
+      `ChipboxListEntry` once 6g lands.
 
    After Settings lands, subsequent feature ports follow the same
    shape. Image loading (Coil 3 KMP wrapper for `:images`) becomes
