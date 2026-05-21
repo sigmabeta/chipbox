@@ -19,7 +19,7 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
-import net.sigmabeta.chipbox.ui.list.api.ChipboxListViewModel
+import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.appinfo.AppInfo

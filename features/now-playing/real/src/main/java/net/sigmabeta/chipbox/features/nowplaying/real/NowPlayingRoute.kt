@@ -5,9 +5,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
-import net.sigmabeta.chipbox.ui.chrome.api.LocalChromeController
-import net.sigmabeta.chipbox.ui.chrome.api.ScreenChrome
-import net.sigmabeta.chipbox.ui.freeform.api.ChipboxFreeformEntry
+import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
+import net.sigmabeta.chipbox.common.ui.chrome.api.ScreenChrome
+import net.sigmabeta.chipbox.common.ui.freeform.api.ChipboxFreeformEntry
 
 @Composable
 fun NowPlayingRoute(

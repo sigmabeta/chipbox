@@ -8,7 +8,7 @@ import java.awt.Desktop
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.net.URI
-import net.sigmabeta.chipbox.appui.api.ChipboxAppUi
+import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.jvm.di.JvmChipboxGraph
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 

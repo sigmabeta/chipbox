@@ -657,7 +657,7 @@ remainder, sliced by dependency order.
 
   - **`cbox/android/ui/list/api` → `sage.kmp + sage.compose.kmp`.**
     Plugin swap; namespace stays
-    `net.sigmabeta.chipbox.ui.list.api`; deps split between
+    `net.sigmabeta.chipbox.common.ui.list.api`; deps split between
     `commonMain` (sage common types + appcomm + ui/vm +
     lifecycle-viewmodel) and `androidMain` (the Android sage
     list screens, chrome, lifecycle-compose helpers).
@@ -675,7 +675,7 @@ remainder, sliced by dependency order.
     legitimately stays on the Android target until slice 5
     lifts the sage-list dependency.
 
-  Verified: `:cbox:android:ui:list:api:build` green for both
+  Verified: `:cbox:common:ui:list:api:build` green for both
   Android + JVM variants, `:apps:android:assembleDebug` green,
   `:apps:jvm:check` (incl. detekt) green. No downstream source
   changes — every existing Chipbox feature VM still extends
@@ -741,7 +741,7 @@ remainder, sliced by dependency order.
   Voyager-side `ArgType` codecs land).
 
   Verified: `:sage:android:ui:list:build` green for both Android +
-  JVM variants, `:cbox:android:ui:list:api:build` (the immediate
+  JVM variants, `:cbox:common:ui:list:api:build` (the immediate
   downstream consumer, post-slice 2) green, `:apps:android:assembleDebug`
   + `:apps:jvm:check` green. With this, the entire
   `ChipboxListEntry` → `ListScreen`/`GridScreen` chain can move to
@@ -1038,7 +1038,7 @@ remainder, sliced by dependency order.
     All three files (TitleBarController, ChromeController, ScreenChrome)
     hoist straight to commonMain — pure Compose runtime over the
     sage commonMain TitleBarModel. Namespace stays
-    `net.sigmabeta.chipbox.ui.chrome.api` via `androidLibrary { namespace }`.
+    `net.sigmabeta.chipbox.common.ui.chrome.api` via `androidLibrary { namespace }`.
     Removes one of ChipboxListEntry's three direct barriers.
   - **6f-pre — `sage/android/ui/icons` → `sage.kmp + sage.compose.kmp`
     (added mid-slice).** The 6f plan as written assumed the icons
