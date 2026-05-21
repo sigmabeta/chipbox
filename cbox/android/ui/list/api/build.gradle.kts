@@ -3,10 +3,8 @@ plugins {
     alias(libs.plugins.sage.compose.kmp)
 }
 
-// ChipboxListViewModel (commonMain) is the base VM every Chipbox feature screen extends.
-// ChipboxListEntry (androidMain) is the Compose scaffolding that binds a list VM to the
-// Android sage list screens — it's pinned to the Android target until sage/android/ui/list
-// itself moves to sage.kmp (Settings port slice 5).
+// ChipboxListViewModel + ChipboxListEntry both live in commonMain — ChipboxListEntry is the
+// Compose scaffolding that binds a list VM to sage's GridScreen / ListScreen (also commonMain).
 kotlin {
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.ui.list"
@@ -23,16 +21,10 @@ kotlin {
                 api(libs.androidx.lifecycle.viewmodel)
                 api(projects.cbox.common.appcomm.api)
                 api(projects.cbox.common.ui.vm.api)
-            }
-        }
-        named("androidMain") {
-            dependencies {
+
                 implementation(libs.sage.android.ui.list)
                 implementation(projects.cbox.android.ui.chrome.api)
                 implementation(projects.cbox.android.ui.components.api)
-
-                implementation(libs.androidx.lifecycle.runtimeCompose)
-                implementation(libs.androidx.lifecycle.viewModelCompose)
             }
         }
     }
