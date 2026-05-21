@@ -1,19 +1,16 @@
 package net.sigmabeta.chipbox.player.emulators.gba.di
 
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import net.sigmabeta.chipbox.player.emulators.gba.GbaEmulator
-import javax.inject.Singleton
 import net.sigmabeta.sage.di.AppScope
 
-@Module
-@InstallIn(SingletonComponent::class)
+@BindingContainer
 @ContributesTo(AppScope::class)
 object GbaEmulatorModule {
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideGbaEmulator(): GbaEmulator = GbaEmulator
 }

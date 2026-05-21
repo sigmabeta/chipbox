@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox
 
 import android.content.ComponentName
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -11,21 +10,11 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
-import dagger.hilt.android.AndroidEntryPoint
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
-import javax.inject.Inject
 import net.sigmabeta.chipbox.appui.ChipboxAppUi
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService
-import net.sigmabeta.chipbox.ui.vm.LocalViewModelProvider
-import net.sigmabeta.chipbox.vm.AndroidHiltViewModelProvider
-import net.sigmabeta.sage.ui.StringProvider
 
-@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject lateinit var stringProvider: StringProvider
-
-    private val viewModelProvider = AndroidHiltViewModelProvider()
-
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
 
@@ -33,13 +22,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val appGraph = (application as ChipboxApplication).appGraph
-        Log.i("Metro", "ChipboxAppGraph.appInfo = ${appGraph.appInfo}")
         setContent {
             CompositionLocalProvider(
-                LocalViewModelProvider provides viewModelProvider,
                 LocalMetroViewModelFactory provides appGraph.metroViewModelFactory,
             ) {
-                ChipboxAppUi(stringProvider)
+                ChipboxAppUi(appGraph.stringProvider)
             }
         }
     }

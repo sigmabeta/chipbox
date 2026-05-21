@@ -5,25 +5,20 @@ import android.content.IntentFilter
 import android.media.AudioManager
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.sage.logging.Hatchet
-import javax.inject.Inject
 
-@AndroidEntryPoint
 class ChipboxPlaybackService : MediaLibraryService() {
-    @Inject
-    lateinit var libraryBrowser: LibraryBrowser
-
-    @Inject
-    lateinit var director: Director
-
-    @Inject
-    lateinit var hatchet: Hatchet
+    // Resolved in onCreate from `application as ChipboxServiceGraph`; assigned-once so the
+    // accessors read like Hilt @Inject lateinit at the use sites but reach the Metro graph
+    // instead. See docs/metro-migration.md M6.
+    private lateinit var libraryBrowser: LibraryBrowser
+    private lateinit var director: Director
+    private lateinit var hatchet: Hatchet
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -33,6 +28,15 @@ class ChipboxPlaybackService : MediaLibraryService() {
 
     override fun onCreate() {
         super.onCreate()
+        val graph = application as? ChipboxServiceGraph
+            ?: error(
+                "Application ${application::class.java} does not implement ChipboxServiceGraph " +
+                    "— the Metro graph cannot be reached from ChipboxPlaybackService.",
+            )
+        libraryBrowser = graph.libraryBrowser()
+        director = graph.director()
+        hatchet = graph.hatchet()
+
         hatchet.i("Starting service...")
 
         val player = DirectorPlayer(director, this, hatchet)

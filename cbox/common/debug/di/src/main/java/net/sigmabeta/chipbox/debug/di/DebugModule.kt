@@ -1,21 +1,18 @@
 package net.sigmabeta.chipbox.debug.di
 
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
-import javax.inject.Singleton
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.storage.common.Storage
 
-@Module
-@InstallIn(SingletonComponent::class)
+@BindingContainer
 @ContributesTo(AppScope::class)
 object DebugModule {
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideDebugSettingsManager(storage: Storage): DebugSettingsManager = RealDebugSettingsManager(storage)
 }

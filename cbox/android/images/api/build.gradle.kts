@@ -14,6 +14,7 @@ dependencies {
 
     api(libs.sage.android.bitmaps)
 
+    implementation(libs.androidx.core.ktx)
     implementation(libs.sage.common.analytics)
     implementation(libs.sage.common.images)
 }

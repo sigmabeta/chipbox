@@ -7,10 +7,6 @@ import android.content.UriMatcher
 import android.database.Cursor
 import android.net.Uri
 import android.os.ParcelFileDescriptor
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
-import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -24,20 +20,13 @@ import java.io.FileNotFoundException
 
 class ArtworkProvider : ContentProvider() {
 
-    @EntryPoint
-    @InstallIn(SingletonComponent::class)
-    interface ArtworkProviderEntryPoint {
-        fun repository(): Repository
-        fun fileContentSource(): AndroidFileContentSource
-    }
-
     private val matcher = UriMatcher(UriMatcher.NO_MATCH).apply {
         addURI(ArtworkUris.AUTHORITY, "${ArtworkUris.SEGMENT_GAME}/#", MATCH_GAME)
         addURI(ArtworkUris.AUTHORITY, "${ArtworkUris.SEGMENT_ARTIST}/#", MATCH_ARTIST)
     }
 
     @Volatile
-    private var entryPoint: ArtworkProviderEntryPoint? = null
+    private var graph: ArtworkProviderGraph? = null
 
     override fun onCreate(): Boolean = true
 
@@ -52,7 +41,7 @@ class ArtworkProvider : ContentProvider() {
         }
 
         val ctx = context ?: throw FileNotFoundException("No context")
-        val ep = entryPoint ?: resolveEntryPoint(ctx).also { entryPoint = it }
+        val ep = graph ?: resolveGraph(ctx).also { graph = it }
 
         val match = matcher.match(uri)
         val id = uri.lastPathSegment?.toLongOrNull()
@@ -93,10 +82,12 @@ class ArtworkProvider : ContentProvider() {
         selectionArgs: Array<out String>?,
     ): Int = throw UnsupportedOperationException("ArtworkProvider is read-only")
 
-    private fun resolveEntryPoint(ctx: Context): ArtworkProviderEntryPoint = EntryPointAccessors.fromApplication(
-            ctx.applicationContext,
-            ArtworkProviderEntryPoint::class.java,
-        )
+    private fun resolveGraph(ctx: Context): ArtworkProviderGraph =
+        ctx.applicationContext as? ArtworkProviderGraph
+            ?: error(
+                "Application ${ctx.applicationContext::class.java} does not implement " +
+                    "ArtworkProviderGraph — the Metro graph cannot be reached from ArtworkProvider.",
+            )
 
     private suspend fun loadGamePhoto(repo: Repository, id: Long): String? = repo.getGame(id)
             .filterIsInstance<Data.Succeeded<Game?>>()
