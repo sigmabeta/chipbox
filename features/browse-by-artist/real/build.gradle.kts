@@ -1,14 +1,8 @@
 plugins {
-    alias(libs.plugins.sage.kmp)
-    alias(libs.plugins.sage.compose.kmp)
-    alias(libs.plugins.metro)
+    alias(libs.plugins.sage.feature.real)
 }
 
 kotlin {
-    androidLibrary {
-        namespace = "net.sigmabeta.chipbox.features.browsebyartist.real"
-    }
-
     sourceSets {
         named("commonMain") {
             dependencies {
@@ -21,10 +15,6 @@ kotlin {
                 implementation(projects.cbox.common.models.api)
 
                 implementation(projects.features.artistDetail.api)
-
-                implementation(libs.sage.common.di)
-                implementation(libs.metrox.viewmodel)
-                implementation(libs.metrox.viewmodel.compose)
             }
         }
     }

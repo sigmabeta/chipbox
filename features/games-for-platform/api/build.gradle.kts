@@ -1,17 +1,11 @@
 plugins {
-    alias(libs.plugins.sage.kmp)
-    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.sage.feature.api)
 }
 
 kotlin {
-    androidLibrary {
-        namespace = "net.sigmabeta.chipbox.features.gamesforplatform.api"
-    }
-
     sourceSets {
         named("commonMain") {
             dependencies {
-                implementation(libs.kotlinx.serialization.core)
                 implementation(projects.cbox.common.models.api)
             }
         }
