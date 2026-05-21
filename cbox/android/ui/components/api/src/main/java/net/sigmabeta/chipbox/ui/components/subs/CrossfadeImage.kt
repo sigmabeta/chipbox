@@ -30,12 +30,12 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImagePainter
+import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
 import coil3.memory.MemoryCache
 import coil3.request.ImageRequest
@@ -105,7 +105,7 @@ private fun RealImage(
         return
     }
 
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val request = remember(context, sourceInfo.info) {
         ImageRequest.Builder(context).data(sourceInfo.info).build()
     }
@@ -130,7 +130,7 @@ fun RealStandardImage(
     onImageLoadedChange: ((Boolean) -> Unit)?,
     modifier: Modifier,
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
 
     // If Coil already has this image in memory, the painter will resolve in
     // one frame from cache — skip the Crossfade and just paint over the
