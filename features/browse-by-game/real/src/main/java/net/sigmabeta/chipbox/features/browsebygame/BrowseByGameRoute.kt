@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.features.browsebygame
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.ui.list.ChipboxListEntry
 
@@ -11,6 +11,6 @@ fun BrowseByGameRoute(
     onEvent: (ChipboxEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val viewModel: BrowseByGameViewModel = hiltViewModel()
+    val viewModel: BrowseByGameViewModel = metroViewModel()
     ChipboxListEntry(viewModel, onEvent, modifier)
 }

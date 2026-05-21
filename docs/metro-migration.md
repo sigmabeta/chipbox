@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Milestones 3 + 4 implemented (incl. M4c JVM-side); M5b Kotlin bump done; M5c migrated `SettingsViewModel` (first @HiltViewModel → Metro). Per-feature VM sweep continuing.**
+Status: **Milestones 3 + 4 implemented (incl. M4c JVM-side); M5b Kotlin bump done; M5c–d migrated all 14 @HiltViewModels to Metro. Ready for M6 (drop Hilt).**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -626,6 +626,75 @@ follow the same pattern. The screen-by-screen rules apply: when a
 feature still depends on another feature's `api` whose VM hasn't
 migrated yet, drop that forward-dep + snackbar-stub the relevant
 `SageAction`.
+
+#### Sub-slice 5d — bulk VM sweep (done)
+
+All 13 remaining `@HiltViewModel`s flipped to Metro in one batch via
+`scripts/migrate_vms.py` (gist preserved in commit body). Mechanical
+substitution per VM:
+
+```
+@HiltViewModel                  →  @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+                                   @ViewModelKey
+```
+
+Imports swapped accordingly (drop `dagger.hilt.android.lifecycle.HiltViewModel`;
+add the four Metro/Metrox imports + `androidx.lifecycle.ViewModel` +
+`net.sigmabeta.sage.di.AppScope`). Each Route/Screen composable swapped
+`hiltViewModel()` → `metroViewModel()` (and the corresponding import
+under `dev.zacsweers.metrox.viewmodel.metroViewModel`). Each module's
+`build.gradle.kts` swapped `libs.androidx.hilt.lifecycle.viewmodel.compose`
+→ `libs.metrox.viewmodel(+ -compose)`. The `cbox/android/appui/api`
+module didn't follow the same gradle pattern (uses
+`androidx.hilt.navigation.compose` instead) and got its swap by hand.
+
+VMs migrated this slice:
+
+- `cbox/android/appui/api` — `ChipboxAppUiViewModel`
+- `cbox/android/player-status/api` — `PlayerStatusViewModel`
+- `features/artist-detail/real` — `ArtistDetailViewModel`
+- `features/browse-all-tracks/real` — `BrowseAllTracksViewModel`
+- `features/browse-by-artist/real` — `BrowseByArtistViewModel`
+- `features/browse-by-game/real` — `BrowseByGameViewModel`
+- `features/browse-by-platform/real` — `BrowseByPlatformViewModel`
+- `features/game-detail/real` — `GameDetailViewModel`
+- `features/games-for-platform/real` — `GamesForPlatformViewModel`
+- `features/library/real` — `LibraryViewModel`
+- `features/now-playing/real` — `NowPlayingViewModel`
+- `features/playback-status/real` — `PlaybackStatusViewModel`
+- `features/search/real` — `SearchViewModel`
+
+Plus `SettingsViewModel` from M5c = 14 total, matching the M0 starting
+inventory.
+
+One forward-dep dropped per M5's screen-by-screen rule:
+`ChipboxAppUiViewModel`'s `PlaybackStatusEntryPoint` constructor param,
+the matching threading through `ChipboxAppUi` → `ChipboxNavHost`, and
+the `playbackStatusEntryPoint.register(this, onEvent)` call. The entry
+point was variant-selected (debug-real, release-fake) and Metro 1.1.1
+doesn't aggregate `@ContributesTo` reliably across variant-specific
+`debugImplementation`/`releaseImplementation` chains (same root cause
+M5a noted when dropping the dep from Settings). M5a already removed
+the Settings → playback-status navigation entry, so the destination
+has no actual entry point in practice — dropping the registration is
+not user-visible. The fake/real impls + the variant-specific Hilt
+modules in `features/playback-status/{real,fake}/di/` stay in place
+for the eventual M5e re-link.
+
+Build clean: `:apps:android:assembleDebug` green (clean build,
+~37s); `:apps:jvm:compileKotlin + :jar` green; detekt clean across
+the whole project (excluding the pre-existing `EbuR128.kt` /
+`LoudnessLog.kt` debt that predates this work); ktlint clean on
+touched files.
+
+#### Sub-slice 5e — playback-status re-link (deferred)
+
+Re-add the variant-specific `features.playbackStatus.{real,fake}` deps
+to `cbox/android/appui/api/build.gradle.kts` and restore the entry-point
+threading once Metro's variant-aggregation behavior is understood or
+the playback-status entry-point is moved off variant-qualified
+implementations. Until then, navigation to the `PlaybackStatus` route
+is dead. Tracking note inline in `ChipboxNavHost.kt`.
 
 ### Milestone 6 — drop Hilt (planned)
 

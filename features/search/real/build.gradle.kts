@@ -29,6 +29,7 @@ dependencies {
     implementation(libs.sage.common.ui.components)
     implementation(libs.sage.common.ui.strings)
     implementation(libs.androidx.compose.material.icons.extended)
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
 }

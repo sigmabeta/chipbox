@@ -1,7 +1,10 @@
 package net.sigmabeta.chipbox.features.nowplaying.real
 
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
@@ -9,10 +12,12 @@ import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.ui.freeform.ChipboxFreeformViewModel
 import net.sigmabeta.sage.appcomm.SageAction
+import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 
-@HiltViewModel
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+@ViewModelKey
 class NowPlayingViewModel @Inject constructor(
     private val director: Director,
     stringProvider: StringProvider,

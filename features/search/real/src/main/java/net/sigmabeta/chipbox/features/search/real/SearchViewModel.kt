@@ -1,7 +1,10 @@
 package net.sigmabeta.chipbox.features.search.real
 
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.binding
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -25,6 +28,7 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.ui.list.ChipboxListViewModel
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
+import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 
@@ -38,7 +42,8 @@ private const val OP_GAMES = "search.games"
 private const val OP_SONGS = "search.songs"
 private const val OP_ARTISTS = "search.artists"
 
-@HiltViewModel
+@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+@ViewModelKey
 class SearchViewModel @Inject constructor(
     private val repository: Repository,
     private val director: Director,

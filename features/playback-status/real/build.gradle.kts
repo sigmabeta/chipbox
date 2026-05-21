@@ -19,6 +19,7 @@ dependencies {
     implementation(projects.cbox.common.debugInfo.api)
 
     implementation(libs.sage.common.ui.components)
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
 }

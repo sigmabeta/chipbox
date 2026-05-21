@@ -43,7 +43,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.sigmabeta.chipbox.ui.components.subs.CrossfadeImage
 import net.sigmabeta.sage.ui.Icon as SageIcon
@@ -76,7 +76,7 @@ fun PlayerStatus(
     modifier: Modifier = Modifier,
     onVisibleChange: (Boolean) -> Unit = {},
     onClick: () -> Unit = {},
-    viewModel: PlayerStatusViewModel = hiltViewModel(),
+    viewModel: PlayerStatusViewModel = metroViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 

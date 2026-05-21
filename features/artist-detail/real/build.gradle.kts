@@ -21,6 +21,7 @@ dependencies {
 
     implementation(projects.features.gameDetail.api)
 
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
 }

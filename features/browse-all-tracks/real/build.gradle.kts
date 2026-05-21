@@ -19,5 +19,6 @@ dependencies {
     implementation(projects.cbox.common.player.common.api)
     implementation(projects.cbox.common.player.director.api)
 
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
 }

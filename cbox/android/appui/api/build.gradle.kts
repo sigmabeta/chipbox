@@ -22,9 +22,11 @@ dependencies {
     implementation(projects.features.library.real)
     implementation(projects.features.nowPlaying.api)
     implementation(projects.features.nowPlaying.real)
-    implementation(projects.features.playbackStatus.api)
-    debugImplementation(projects.features.playbackStatus.real)
-    releaseImplementation(projects.features.playbackStatus.fake)
+    // features.playbackStatus deps dropped during the M5c Hilt → Metro VM sweep.
+    // PlaybackStatusEntryPoint was a variant-selected hook (debug=real, release=fake)
+    // and Metro 1.1.1 doesn't aggregate @ContributesTo across variant-specific
+    // debug/release implementation chains reliably (see ChipboxNavHost.kt note).
+    // Re-add once playback-status' variant aggregation has a fix.
     implementation(projects.features.search.api)
     implementation(projects.features.search.real)
     implementation(projects.features.settings.api)
@@ -53,6 +55,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtimeCompose)
     implementation(libs.androidx.lifecycle.viewModelCompose)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
     implementation(libs.kotlinx.serialization.core)
 }

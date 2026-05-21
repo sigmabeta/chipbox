@@ -38,7 +38,6 @@ import net.sigmabeta.chipbox.features.library.Library
 import net.sigmabeta.chipbox.features.library.LibraryRoute
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingRoute
-import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatusEntryPoint
 import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.chipbox.features.settings.SettingsRoute
 import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
@@ -49,7 +48,6 @@ fun ChipboxNavHost(
     navController: NavHostController,
     snackbarHostState: SnackbarHostState,
     snackbarScope: CoroutineScope,
-    playbackStatusEntryPoint: PlaybackStatusEntryPoint,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -110,7 +108,12 @@ fun ChipboxNavHost(
         chipboxComposable<BrowseAllTracks> { BrowseAllTracksRoute(onEvent) }
         chipboxComposable<GameDetail> { GameDetailRoute(onEvent) }
         chipboxComposable<ArtistDetail> { ArtistDetailRoute(onEvent) }
-        playbackStatusEntryPoint.register(this, onEvent)
+        // Playback-status destination registration dropped during Hilt → Metro VM sweep:
+        // PlaybackStatusEntryPoint was variant-selected (debug=real, release=fake) and Metro
+        // 1.1.1 doesn't aggregate @ContributesTo through variant-specific debug/release
+        // implementation chains reliably. M5a already removed the Settings → playback-status
+        // navigation entry, so this destination has no actual entry point in practice.
+        // Re-register inline when playback-status' variant aggregation is solved (M5d+).
     }
 }
 
