@@ -1,9 +1,10 @@
 # Kotlin Multiplatform migration — plan & status
 
-Status: **Milestone 8 implemented; Milestone 9 in progress.** JVM is the second target with a
-real library *and* a Compose Multiplatform desktop window with real
-pixel-art fonts, a working ViewModel scoping pattern, and Voyager-driven
-navigation. All seven native emulators decode end-to-end on host x86-64
+Status: **Milestone 8 implemented; Milestone 9 in progress (slices
+1–5c done).** JVM is the second target with a real library *and* a
+Compose Multiplatform desktop window with real pixel-art fonts,
+Metro-backed ViewModel scoping, and Voyager-driven navigation. All
+seven native emulators decode end-to-end on host x86-64
 (playback-verified), the headless app also runs without Gradle via a
 generated launcher, the mass `sage.android`/`sage.jvm` → `sage.kmp`
 conversion collapsed 61 chipbox modules onto single KMP modules serving
@@ -11,24 +12,29 @@ both variants (`cbox/jvm/` is empty, deleted), the Room storage stack
 is now KMP (via Room 2.7+'s multiplatform support + the bundled SQLite
 driver) and the JVM target uses the *same* Room database the Android
 app does — driven by the *same* `RealScanner` via a `LibrarySource`
-abstraction.
+abstraction. `features/settings/real` is the first chipbox feature on
+`sage.kmp` and `SettingsViewModel` contributes into both Android's and
+JVM's Metro graph.
 
 The desktop window renders via Compose Multiplatform: shared color
 palette + typography from `cbox/common/ui/theme/api`, real pixel-art
 fonts via Compose Multiplatform resources from `cbox/common/ui/fonts/api`,
-a `chipboxViewModel<T>()` helper from `cbox/common/ui/vm/api` (Dagger-
-backed on JVM), and Voyager navigation (`Screen` interface +
-`LocalNavigator`). The sage submodule's entire `common/*` library tree
-is now KMP-published and the types the Settings ViewModel chain depends
-on (`SageAction`, `LCE`, `ListState`, `ListStateActual`, `StringProvider`,
-`ListModel` hierarchy) all live in commonMain.
+`metroViewModel<T>()` from `metrox-viewmodel-compose` after the Hilt →
+Metro migration (`docs/metro-migration.md`), and Voyager navigation
+(`Screen` interface + `LocalNavigator`). The sage submodule's entire
+`common/*` library tree is now KMP-published and the types the Settings
+ViewModel chain depends on (`SageAction`, `LCE`, `ListState`,
+`ListStateActual`, `StringProvider`, `ListModel` hierarchy) all live in
+commonMain.
 
-The remaining `sage.android`-classified chipbox modules split between
-**genuinely Android-only system glue** (Hilt `:di`, `R.*` resource
-modules, audio service, SAF / ContentProvider) and **the Compose UI
-surface**, which used to be tagged as legitimately-Android end-state
-but is being ported slice by slice to Compose Multiplatform — see
-Milestones 6 and 7.
+The remaining `sage.android`-classified chipbox modules are
+**genuinely Android-only system glue** (`R.*` resource modules, audio
+service, SAF / ContentProvider) plus **the Compose UI surface**, which
+used to be tagged as legitimately-Android end-state but is being
+ported slice by slice to Compose Multiplatform — see Milestones 6, 7,
+9. (`:di` modules were on this list pre-Metro; after Hilt + plain
+Dagger were dropped at the Metro migration's Milestone 6, DI plays
+nicely with `sage.kmp`.)
 
 Scope of this doc: how Chipbox moves from Android-only to Kotlin
 Multiplatform, what's already done, and the remaining milestones.
@@ -858,6 +864,59 @@ remainder, sliced by dependency order.
   Verified: `:apps:android:assembleDebug` + `:apps:jvm:check` both
   green.
 
+- **Slice 5c — KMP-ify `features/settings/real` (done).** Picked
+  option 2 above by way of the broader Hilt → Metro migration: chipbox
+  is Metro-only after `docs/metro-migration.md` Milestone 6, so the
+  Hilt-on-KMP plugin conflict that blocked this slice is gone. The
+  conversion proper:
+
+  - **Plugin swap**: `sage.android + sage.compose.android +
+    sage.di.android + metro` → `sage.kmp + sage.compose.kmp + metro`.
+    Namespace stays `net.sigmabeta.chipbox.features.settings.real`
+    via `androidLibrary { namespace }`. Dropped the vestigial
+    `metro { interop { includeDagger() } }` block — no Dagger
+    annotations left after M6. Dropped the unused
+    `cbox.android.contentsource.file.real` dep (SettingsViewModel
+    only references the commonMain `LibrarySource` interface).
+  - **Source-set placement**:
+    - `SettingsViewModel.kt` stays in `src/main/java/...` (= `jvmSharedMain`
+      after the `sage.kmp` plugin's source-set mapping). Uses
+      `java.time.*` for the build-date formatter; commonMain would
+      need a kotlinx-datetime swap — out of scope. Every other dep
+      (`Repository`, `Scanner`, `LibrarySource`, `AppInfo`,
+      `StringProvider`, `ChipboxSettingsManager`, `DebugSettingsManager`,
+      `ChipboxListViewModel`, `ChipboxEvent`, `SettingsState`,
+      `SettingsAction`) is already commonMain after M5a + Metro M4.
+    - `SettingsRoute.kt` moved to `src/androidMain/kotlin/...` via
+      `git mv`. Owns the SAF folder picker
+      (`rememberLauncherForActivityResult` +
+      `ActivityResultContracts.OpenDocumentTree`) and consumes
+      `ChipboxListEntry` which is still androidMain (Milestone 9 slice
+      6 below promotes it). Desktop gets its own route in a later slice.
+  - **JVM wiring**: `apps/jvm/build.gradle.kts` adds
+    `implementation(projects.features.settings.real)`. Metro's compile-
+    time validation in `:apps:jvm:compileKotlin` proves the JVM
+    `JvmChipboxGraph` resolves the full transitive chain
+    `SettingsViewModel ← ChipboxSettingsManager / DebugSettingsManager /
+    Repository / Scanner / LibrarySource / AppInfo / StringProvider /
+    Hatchet` through the same `@ContributesIntoMap` aggregation Android
+    uses. No new accessor needed on the graph — the VM is reached via
+    `metroViewModel<SettingsViewModel>()` once a desktop SettingsRoute
+    composable exists.
+  - **No code change to `SettingsViewModel.kt` itself**: Metro
+    annotations + constructor stayed identical (slice 5a + M5c already
+    landed the right shape).
+
+  Verified: `:features:settings:real:build` green for both Android +
+  JVM variants; `:apps:android:assembleDebug` green; `:apps:jvm:compileKotlin
+  + :jar + :standaloneScript` green; runtime smoke test via the
+  generated `run-standalone.sh scan <empty-dir>` constructs the JVM
+  graph (which now includes the SettingsViewModel multibinding
+  contribution) and walks the dir without error. Detekt clean across
+  the touched modules; ktlint clean on touched files (the two existing
+  warnings on `apps/jvm/README.md` and `JvmMetroViewModelFactory.kt`
+  predate this slice).
+
 ## Roadmap (not yet done)
 
 1. **Compose Multiplatform UI port: finish the Settings port.**
@@ -866,20 +925,18 @@ remainder, sliced by dependency order.
    types). Slices 1–5 are done (see Milestone 9 above); the
    remaining work, in dependency order:
 
-   6c. **JVM-side `SettingsViewModel` wiring.** Slice 5b shipped
-       the supporting infrastructure (`JvmStorage`,
-       `JvmSettingsManagersModule`, `JvmAppInfoModule`); what
-       remains is making `SettingsViewModel` itself reachable from
-       `apps/jvm`. Blocked on the Hilt-on-KMP problem: the
-       `hilt-android` Gradle plugin doesn't recognise
-       `com.android.kotlin.multiplatform.library`, and the
-       still-`sage.android` `features/settings/real` module can't
-       be pulled into a `sage.jvm` app's classpath. Options laid
-       out under Milestone 9 slice 5b — needs a design decision.
+   6. **Promote `ChipboxListEntry` to commonMain.** Currently
+      androidMain because of `LocalConfiguration`,
+      `collectAsStateWithLifecycle`, and `LocalTitleBarController`.
+      Once it lifts, SettingsRoute can move to commonMain too and the
+      desktop UI uses the same composable Android does.
    7. **Desktop folder picker.** `expect`/`actual` or a JVM-only
       `LibraryLocationPicker` backed by `javax.swing.JFileChooser`.
    8. **Wire `SettingsScreen` into Voyager.** Replace the demo
-      Home/About screens with the real Settings entry.
+      Home/About screens with the real Settings entry — at minimum a
+      `metroViewModel<SettingsViewModel>()` consumer composable
+      rendering the `SettingsState` rows; eventually the same
+      `ChipboxListEntry` once item 6 lands.
 
    After Settings lands, subsequent feature ports follow the same
    shape. Image loading (Coil 3 KMP wrapper for `:images`) becomes
