@@ -9,10 +9,8 @@ kotlin {
 
     sourceSets {
         named("jvmSharedMain") {
-            dependencies {
-                api("io.coil-kt:coil:2.4.0")
-                api("io.coil-kt:coil-compose:2.4.0")
-            }
+            // A very wrong version of coil was here for some reason.
+            // Pull the newest one in instead.
         }
     }
 }
