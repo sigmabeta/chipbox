@@ -95,6 +95,18 @@ MOVES = [
         "old_pkg_path": "net/sigmabeta/chipbox/ui/list",
         "new_pkg_path": "net/sigmabeta/chipbox/common/ui/list",
     },
+    {
+        "old_module":   "cbox/android/ui/components/api",
+        "new_module":   "cbox/common/ui/components/api",
+        "old_gradle":   ":cbox:android:ui:components:api",
+        "new_gradle":   ":cbox:common:ui:components:api",
+        "old_typesafe": "projects.cbox.android.ui.components",
+        "new_typesafe": "projects.cbox.common.ui.components",
+        "old_ns":       "net.sigmabeta.chipbox.ui.components",
+        "new_ns":       "net.sigmabeta.chipbox.common.ui.components",
+        "old_pkg_path": "net/sigmabeta/chipbox/ui/components",
+        "new_pkg_path": "net/sigmabeta/chipbox/common/ui/components",
+    },
 ]
 
 SRC_ROOTS = [

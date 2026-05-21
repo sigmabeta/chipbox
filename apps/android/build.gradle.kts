@@ -115,7 +115,7 @@ dependencies {
     implementation(projects.cbox.android.repository.di)
     implementation(projects.cbox.common.repository.di)
     implementation(projects.cbox.android.scanner.di)
-    implementation(projects.cbox.android.ui.components.api)
+    implementation(projects.cbox.common.ui.components.api)
     implementation(projects.cbox.android.coroutines.api)
     implementation(projects.cbox.android.storage.api)
     implementation(projects.cbox.common.debug.di)

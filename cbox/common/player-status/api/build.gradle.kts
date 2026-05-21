@@ -20,7 +20,7 @@ kotlin {
     sourceSets {
         named("commonMain") {
             dependencies {
-                implementation(projects.cbox.android.ui.components.api)
+                implementation(projects.cbox.common.ui.components.api)
                 implementation(projects.cbox.common.models.api)
                 implementation(projects.cbox.common.player.director.api)
 

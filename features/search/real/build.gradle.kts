@@ -10,7 +10,7 @@ kotlin {
 
                 implementation(projects.cbox.common.ui.chrome.api)
                 implementation(projects.cbox.common.ui.list.api)
-                implementation(projects.cbox.android.ui.components.api)
+                implementation(projects.cbox.common.ui.components.api)
                 implementation(projects.cbox.common.appcomm.api)
                 implementation(projects.cbox.common.strings.api)
                 implementation(projects.cbox.common.repository.api)

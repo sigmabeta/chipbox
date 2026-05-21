@@ -29,7 +29,7 @@ kotlin {
                 // (M9 slice 5d of docs/kmp-migration.md).
                 api(projects.cbox.common.playerStatus.api)
                 implementation(projects.cbox.common.ui.chrome.api)
-                implementation(projects.cbox.android.ui.components.api)
+                implementation(projects.cbox.common.ui.components.api)
                 implementation(projects.cbox.common.ui.list.api)
                 implementation(projects.cbox.common.appcomm.api)
                 implementation(projects.cbox.common.strings.api)
