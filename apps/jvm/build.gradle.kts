@@ -70,6 +70,11 @@ dependencies {
     // for the desktop UI.
     implementation(projects.features.settings.real)
     implementation(projects.features.library.real)
+
+    // SettingsScreen.kt hosts SettingsViewModel through the commonMain ChipboxListEntry
+    // promoted in M9 slice 6g, and needs LocalTitleBarController from chrome.
+    implementation(projects.cbox.android.ui.list.api)
+    implementation(projects.cbox.android.ui.chrome.api)
     implementation(projects.cbox.common.player.speaker.fake)
     implementation(projects.cbox.common.player.buffer.real)
     implementation(projects.cbox.common.player.common.api)

@@ -19,9 +19,11 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 /**
- * Voyager `Screen` carrying the existing Hello content + a button that pushes
- * [AboutScreen]. The `Screen` interface only requires `@Composable fun Content()`, which is
- * what the parent `Navigator` calls for the topmost screen on the stack.
+ * Voyager `Screen` carrying the existing Hello content + buttons that push [SettingsScreen]
+ * (the first real feature wired through the JVM Metro graph + commonMain `ChipboxListEntry`)
+ * and [AboutScreen] (kept around as a smoke test for the nav stack). The `Screen` interface
+ * only requires `@Composable fun Content()`, which is what the parent `Navigator` calls for
+ * the topmost screen on the stack.
  *
  * `data object` because the screen has no per-instance state (the VM is pulled via
  * `metroViewModel()` from the JvmChipboxGraph multibinding map). `data` is required by
@@ -48,6 +50,9 @@ data object HomeScreen : Screen {
                 color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.bodyMedium,
             )
+            Button(onClick = { navigator.push(SettingsScreen) }) {
+                Text("Settings")
+            }
             Button(onClick = { navigator.push(AboutScreen) }) {
                 Text("Go to About")
             }
