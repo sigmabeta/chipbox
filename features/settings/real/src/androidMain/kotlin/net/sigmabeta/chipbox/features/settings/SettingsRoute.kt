@@ -9,9 +9,9 @@ import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.ui.list.ChipboxListEntry
 
 @Composable
-fun SettingsRoute(
+actual fun SettingsRoute(
     onEvent: (ChipboxEvent) -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier,
 ) {
     val viewModel: SettingsViewModel = metroViewModel()
 

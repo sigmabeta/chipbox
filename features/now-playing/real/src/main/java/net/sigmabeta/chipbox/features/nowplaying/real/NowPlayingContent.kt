@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.features.nowplaying.real
 
-import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,10 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
-import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
 import net.sigmabeta.chipbox.ui.components.subs.CrossfadeImage
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.images.SourceInfo
@@ -353,39 +349,3 @@ private fun formatMs(ms: Long): String {
     return "%d:%02d".format(minutes, seconds)
 }
 
-@Preview
-@Composable
-private fun NowPlayingContentLightPreview() {
-    ChipboxPreview {
-        NowPlayingContent(
-            model = PreviewModel,
-            actionSink = PreviewActionSink(),
-        )
-    }
-}
-
-@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
-@Composable
-private fun NowPlayingContentDarkPreview() {
-    ChipboxPreview(forceDark = true) {
-        NowPlayingContent(
-            model = PreviewModel,
-            actionSink = PreviewActionSink(),
-        )
-    }
-}
-
-private val PreviewModel = NowPlayingModel(
-    artwork = SourceInfo(info = null),
-    sessionTypeLabel = "Playing from game",
-    sessionSourceName = "Street Fighter II",
-    title = "Ryu Stage",
-    artistsCaption = "Yoko Shimomura",
-    gameTitle = "Street Fighter II",
-    isPlaying = true,
-    positionMs = 75_000L,
-    lengthMs = 180_000L,
-    canSkipForward = true,
-    isShuffled = false,
-    repeatMode = RepeatMode.OFF,
-)

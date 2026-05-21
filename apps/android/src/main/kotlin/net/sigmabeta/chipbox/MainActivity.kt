@@ -1,6 +1,11 @@
 package net.sigmabeta.chipbox
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -28,7 +33,10 @@ class MainActivity : ComponentActivity() {
                 LocalMetroViewModelFactory provides appGraph.metroViewModelFactory,
                 LocalChipboxStringProvider provides appGraph.stringProvider,
             ) {
-                ChipboxAppUi(appGraph.stringProvider)
+                ChipboxAppUi(
+                    onOpenUrl = { url -> openUrl(url) },
+                    onCopyToClipboard = { label, text -> copyToClipboard(label, text) },
+                )
             }
         }
     }
@@ -52,5 +60,16 @@ class MainActivity : ComponentActivity() {
         controllerFuture?.let { MediaController.releaseFuture(it) }
         controllerFuture = null
         controller = null
+    }
+
+    private fun openUrl(url: String) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
+    }
+
+    private fun copyToClipboard(label: String, text: String) {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
     }
 }

@@ -38,6 +38,18 @@ interface JvmChipboxGraph : ViewModelGraph {
     val generator: RealGenerator
     val speaker: FileSpeaker
 
+    // Bind the abstract Generator + Speaker types onto the JVM concretes so DirectorModule
+    // (`@ContributesTo(AppScope) @Provides Director`) can resolve `provideDirector(generator,
+    // speaker, …)` for the feature VMs that now reach the JVM target via the shared appui
+    // module — every detail/browse-all/now-playing VM takes a Director. Live audio on the
+    // JVM target isn't wired (FileSpeaker writes WAVs; see Milestone 8 roadmap), so
+    // pressing Play in NowPlaying will currently render to disk rather than the speakers.
+    @dev.zacsweers.metro.Binds
+    val RealGenerator.generatorBinding: net.sigmabeta.chipbox.player.generator.Generator
+
+    @dev.zacsweers.metro.Binds
+    val FileSpeaker.speakerBinding: net.sigmabeta.chipbox.player.speaker.Speaker
+
     @DependencyGraph.Factory
     fun interface Factory {
         fun create(

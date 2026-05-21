@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.collectAsState
 import dev.zacsweers.metrox.viewmodel.metroViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.ui.chrome.LocalChromeController
 import net.sigmabeta.chipbox.ui.chrome.ScreenChrome
@@ -27,9 +27,9 @@ fun SearchRoute(
         viewModel.events.collect(onEvent)
     }
 
-    val actual by viewModel.uiStateActual.collectAsStateWithLifecycle()
-    val raw by viewModel.state.collectAsStateWithLifecycle()
-    val showDebug by viewModel.showDebug.collectAsStateWithLifecycle()
+    val actual by viewModel.uiStateActual.collectAsState()
+    val raw by viewModel.state.collectAsState()
+    val showDebug by viewModel.showDebug.collectAsState()
 
     SearchContent(
         listItems = actual.listItems,

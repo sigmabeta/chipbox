@@ -1,24 +1,31 @@
 plugins {
-    alias(libs.plugins.sage.android)
-    alias(libs.plugins.sage.compose.android)
-    alias(libs.plugins.sage.di.android)
+    alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.compose.kmp)
+    alias(libs.plugins.metro)
 }
 
-android {
-    namespace = "net.sigmabeta.chipbox.features.browsebyplatform.real"
-}
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.features.browsebyplatform.real"
+    }
 
-dependencies {
-    api(projects.features.browseByPlatform.api)
+    sourceSets {
+        named("commonMain") {
+            dependencies {
+                api(projects.features.browseByPlatform.api)
 
-    implementation(projects.cbox.android.ui.list.api)
-    implementation(projects.cbox.common.appcomm.api)
-    implementation(projects.cbox.common.strings.api)
-    implementation(projects.cbox.common.repository.api)
-    implementation(projects.cbox.common.models.api)
+                implementation(projects.cbox.android.ui.list.api)
+                implementation(projects.cbox.common.appcomm.api)
+                implementation(projects.cbox.common.strings.api)
+                implementation(projects.cbox.common.repository.api)
+                implementation(projects.cbox.common.models.api)
 
-    implementation(projects.features.gamesForPlatform.api)
+                implementation(projects.features.gamesForPlatform.api)
 
-    implementation(libs.metrox.viewmodel)
-    implementation(libs.metrox.viewmodel.compose)
+                implementation(libs.sage.common.di)
+                implementation(libs.metrox.viewmodel)
+                implementation(libs.metrox.viewmodel.compose)
+            }
+        }
+    }
 }
