@@ -21,7 +21,6 @@ import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 
-
 @Preview
 @Composable
 private fun Light() {

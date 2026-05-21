@@ -14,7 +14,6 @@ import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.SearchHistoryListModel
 
-
 @Preview
 @Composable
 private fun Light() {

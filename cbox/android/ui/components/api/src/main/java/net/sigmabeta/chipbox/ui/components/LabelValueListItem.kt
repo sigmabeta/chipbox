@@ -27,7 +27,6 @@ import net.sigmabeta.sage.components.LabelValueListModel
 import kotlin.random.Random
 import androidx.compose.runtime.getValue
 
-
 @Composable
 fun LabelValueListItem(
     model: LabelValueListModel,

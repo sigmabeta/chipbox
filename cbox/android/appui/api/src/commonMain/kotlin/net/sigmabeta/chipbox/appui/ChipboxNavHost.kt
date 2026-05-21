@@ -290,8 +290,11 @@ internal fun buildOuterSink(
 ): (ChipboxEvent) -> Unit = { event ->
     when (event) {
         is ChipboxEvent.NavigateTo -> onNavigateTo(event.destination)
+
         ChipboxEvent.NavigateBack -> onNavigateBack()
+
         is ChipboxEvent.OpenUrl -> onOpenUrl(event.url)
+
         is ChipboxEvent.ShowSnackbar -> snackbarScope.launch {
             snackbarHostState.showSnackbar(
                 message = event.message,
@@ -299,6 +302,7 @@ internal fun buildOuterSink(
                 duration = SnackbarDuration.Short,
             )
         }
+
         is ChipboxEvent.CopyToClipboard -> {
             onCopyToClipboard(event.label, event.text)
             snackbarScope.launch {
@@ -309,6 +313,7 @@ internal fun buildOuterSink(
                 )
             }
         }
+
         // Screen-local effects intercepted by their owning route (see SettingsRoute on
         // Android — SAF folder picker); anything reaching here is a routing bug, but
         // no-op rather than crash.

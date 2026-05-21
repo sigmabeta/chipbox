@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.sp
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreviewMenu
 
-
 @Preview
 @Composable
 private fun Light() {

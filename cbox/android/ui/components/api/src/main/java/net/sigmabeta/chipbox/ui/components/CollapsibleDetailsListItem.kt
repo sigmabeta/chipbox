@@ -33,7 +33,6 @@ import net.sigmabeta.sage.ui.vector
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
-
 @Composable
 fun CollapsibleDetailsListItem(
     model: CollapsibleDetailsListModel,

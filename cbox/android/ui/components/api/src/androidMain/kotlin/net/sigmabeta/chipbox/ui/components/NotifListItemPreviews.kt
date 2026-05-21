@@ -19,7 +19,6 @@ import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.NotifListModel
 
-
 @Preview
 @Composable
 private fun Light() {

@@ -36,7 +36,6 @@ import net.sigmabeta.sage.ui.icons.IcCrossOut24dp
 import net.sigmabeta.sage.ui.vector
 import androidx.compose.runtime.getValue
 
-
 @Composable
 fun CrossfadeImage(
     sourceInfo: SourceInfo,
@@ -228,4 +227,3 @@ private fun ErrorImage(
         )
     }
 }
-

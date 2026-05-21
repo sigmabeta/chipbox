@@ -23,7 +23,6 @@ import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.NameCaptionListModel
 import androidx.compose.runtime.getValue
 
-
 @Composable
 fun NameCaptionListItem(
     model: NameCaptionListModel,

@@ -12,7 +12,6 @@ import net.sigmabeta.chipbox.strings.text
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.LabelRatingStarListModel
 
-
 @Composable
 fun LabelRatingListItem(
     model: LabelRatingStarListModel,

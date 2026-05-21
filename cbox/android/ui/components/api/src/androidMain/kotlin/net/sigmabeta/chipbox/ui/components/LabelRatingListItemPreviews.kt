@@ -15,7 +15,6 @@ import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreviewMenu
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.LabelRatingStarListModel
 
-
 @Preview
 @Composable
 private fun Light() {

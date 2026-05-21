@@ -16,7 +16,6 @@ import net.sigmabeta.chipbox.ui.components.subs.Flasher
 import net.sigmabeta.sage.components.LoadingType
 import kotlin.random.Random
 
-
 @Composable
 @Suppress("MagicNumber")
 fun LoadingItem(

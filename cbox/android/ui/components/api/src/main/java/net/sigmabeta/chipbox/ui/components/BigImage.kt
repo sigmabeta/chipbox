@@ -14,7 +14,6 @@ import net.sigmabeta.chipbox.ui.components.subs.ElevatedRoundRect
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.HeroImageListModel
 
-
 @Composable
 @Suppress("MagicNumber", "LongMethod", "UnsafeCallOnNullableType")
 fun BigImage(

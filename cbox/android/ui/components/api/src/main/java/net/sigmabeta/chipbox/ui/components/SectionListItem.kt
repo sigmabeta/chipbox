@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.SectionListModel
 
-
 @Composable
 @Suppress("MagicNumber")
 fun SectionListItem(

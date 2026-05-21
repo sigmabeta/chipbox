@@ -10,7 +10,6 @@ import net.sigmabeta.sage.components.LoadingType
 import net.sigmabeta.chipbox.ui.components.previews.FullScreenOf
 import kotlin.random.Random
 
-
 @Preview
 @Composable
 private fun Light() {

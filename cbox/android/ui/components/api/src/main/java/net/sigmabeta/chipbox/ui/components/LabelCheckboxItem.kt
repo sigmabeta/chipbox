@@ -16,7 +16,6 @@ import net.sigmabeta.chipbox.strings.text
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.CheckableListModel
 
-
 @Composable
 fun LabelCheckboxItem(
     model: CheckableListModel,

@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.dp
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.HorizontalScrollerListModel
 
-
 @Composable
 @Suppress("MagicNumber")
 fun HorizontalScroller(

@@ -8,7 +8,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import net.sigmabeta.chipbox.ui.components.previews.FullScreenOf
 import kotlin.random.Random
 
-
 @Preview
 @Composable
 private fun LightNotLoading() {

@@ -30,7 +30,6 @@ import net.sigmabeta.sage.components.SquareItemListModel
 import net.sigmabeta.sage.images.SourceInfo
 import androidx.compose.runtime.getValue
 
-
 @Composable
 fun SquareItem(
     model: SquareItemListModel,

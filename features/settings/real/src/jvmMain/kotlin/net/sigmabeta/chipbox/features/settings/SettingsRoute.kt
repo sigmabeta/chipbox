@@ -34,6 +34,7 @@ actual fun SettingsRoute(
             ChipboxEvent.PickFolder -> pickLibraryFolderAsync { path ->
                 viewModel.sendAction(SettingsAction.FolderPicked(path))
             }
+
             else -> onEvent(event)
         }
     }

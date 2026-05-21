@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.SearchHistoryListModel
 
-
 @Composable
 fun SearchHistoryListItem(
     model: SearchHistoryListModel,

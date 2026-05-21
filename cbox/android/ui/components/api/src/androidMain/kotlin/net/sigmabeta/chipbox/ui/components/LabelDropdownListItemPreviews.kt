@@ -18,7 +18,6 @@ import net.sigmabeta.sage.components.DropdownSettingListModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
-
 @Preview
 @Composable
 private fun Light() {

@@ -17,7 +17,6 @@ import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreviewMenu
 
-
 @Preview
 @Composable
 private fun Selected() {

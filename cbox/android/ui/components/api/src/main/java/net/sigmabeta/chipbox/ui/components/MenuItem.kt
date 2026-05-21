@@ -22,7 +22,6 @@ import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.MenuItemListModel
 import net.sigmabeta.sage.ui.vector
 
-
 @Composable
 @Suppress("LongMethod")
 fun MenuItem(

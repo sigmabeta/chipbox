@@ -226,7 +226,7 @@ val nativeEmulatorTasks = nativeEmulators.map { (subdir, target) ->
         )
     }
 
-    tasks.register<Exec>("nativeEmulator${capitalTarget}") {
+    tasks.register<Exec>("nativeEmulator$capitalTarget") {
         description = "Host-builds the $target emulator native lib " +
             "(cbox/native/$subdir → apps/jvm/libs/lib$target.so)."
         group = "native"
@@ -237,8 +237,10 @@ val nativeEmulatorTasks = nativeEmulators.map { (subdir, target) ->
 
         commandLine(
             cmakeExecutable,
-            "--build", cmakeBuildDirPath,
-            "--target", target,
+            "--build",
+            cmakeBuildDirPath,
+            "--target",
+            target,
             "-j",
         )
     }

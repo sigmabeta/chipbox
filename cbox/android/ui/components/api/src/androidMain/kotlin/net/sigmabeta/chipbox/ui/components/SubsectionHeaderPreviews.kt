@@ -10,7 +10,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import net.sigmabeta.sage.components.SubsectionHeaderListModel
 
-
 @Preview
 @Composable
 private fun Light() {

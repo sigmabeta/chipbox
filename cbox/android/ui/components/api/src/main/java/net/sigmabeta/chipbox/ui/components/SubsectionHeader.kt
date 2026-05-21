@@ -13,7 +13,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.sage.components.SubsectionHeaderListModel
 
-
 @Composable
 fun SubsectionHeader(
     model: SubsectionHeaderListModel,

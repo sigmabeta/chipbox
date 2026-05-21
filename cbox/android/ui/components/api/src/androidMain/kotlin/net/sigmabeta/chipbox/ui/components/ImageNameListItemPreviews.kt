@@ -25,7 +25,6 @@ import net.sigmabeta.sage.ui.Icon
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
-
 @Preview
 @Composable
 private fun Light() {
