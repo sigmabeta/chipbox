@@ -24,8 +24,11 @@ internal object LoudnessLog {
             return
         }
         val gain = normalizationGain(loudnessLufs, truePeakDbtp)
-        val peakField = if (truePeakDbtp.isFinite()) "${"%.1f".format(truePeakDbtp)} dBTP"
-            else "—"
+        val peakField = if (truePeakDbtp.isFinite()) {
+            "${"%.1f".format(truePeakDbtp)} dBTP"
+        } else {
+            "—"
+        }
         hatchet.i(
             "Track $trackTitle: ${"%.1f".format(loudnessLufs)} LUFS, $peakField. " +
                 "Multiply by ${"%.3f".format(gain)}x to reach " +

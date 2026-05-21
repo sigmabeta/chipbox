@@ -25,7 +25,6 @@ import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.NotifListModel
 
-
 @Composable
 @Suppress("LongMethod")
 fun NotifListItem(

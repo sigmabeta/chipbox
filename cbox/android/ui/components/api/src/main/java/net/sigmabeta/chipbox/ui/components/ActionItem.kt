@@ -21,7 +21,6 @@ import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.vector
 
-
 @Composable
 fun ActionItem(
     model: CtaListModel,

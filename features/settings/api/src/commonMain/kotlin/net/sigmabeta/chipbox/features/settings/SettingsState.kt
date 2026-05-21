@@ -161,5 +161,4 @@ data class SettingsState(
         value = appInfo?.versionCode?.toString(),
         clickAction = SageAction.Noop,
     )
-
 }

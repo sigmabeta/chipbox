@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.runtime.getValue
 
-
 @Composable
 fun Flasher(
     startDelay: Int = 0

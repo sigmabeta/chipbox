@@ -22,7 +22,6 @@ import net.sigmabeta.sage.components.NameCaptionValueListModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
-
 @Preview
 @Composable
 private fun Light() {

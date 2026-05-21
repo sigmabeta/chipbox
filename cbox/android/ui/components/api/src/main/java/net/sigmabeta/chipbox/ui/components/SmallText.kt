@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.SmallTextListModel
 
-
 @Composable
 fun SmallText(
     model: SmallTextListModel,

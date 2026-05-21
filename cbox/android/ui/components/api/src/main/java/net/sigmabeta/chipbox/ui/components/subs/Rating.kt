@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import net.sigmabeta.sage.ui.vector
 
-
 @Composable
 @Suppress("MagicNumber")
 fun Rating(

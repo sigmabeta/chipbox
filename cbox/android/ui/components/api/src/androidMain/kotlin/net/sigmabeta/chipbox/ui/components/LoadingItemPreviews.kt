@@ -16,7 +16,6 @@ import net.sigmabeta.sage.components.LoadingType
 import java.util.Random
 import kotlin.random.asKotlinRandom
 
-
 @Preview
 @Composable
 private fun Light() {

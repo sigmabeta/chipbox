@@ -11,7 +11,6 @@ import net.sigmabeta.sage.ui.StringGenerator
 import java.util.Random
 import kotlinx.collections.immutable.toImmutableList
 
-
 @Preview
 @Composable
 private fun Light() {

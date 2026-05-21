@@ -13,7 +13,6 @@ import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.ErrorStateListModel
 import net.sigmabeta.sage.ui.Icon
 
-
 @Preview
 @Composable
 private fun Light() {

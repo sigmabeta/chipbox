@@ -174,13 +174,18 @@ internal class Biquad(
 
     fun process(x0: Double): Double {
         val y0 = b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2
-        x2 = x1; x1 = x0
-        y2 = y1; y1 = y0
+        x2 = x1
+        x1 = x0
+        y2 = y1
+        y1 = y0
         return y0
     }
 
     fun reset() {
-        x1 = 0.0; x2 = 0.0; y1 = 0.0; y2 = 0.0
+        x1 = 0.0
+        x2 = 0.0
+        y1 = 0.0
+        y2 = 0.0
     }
 
     companion object {

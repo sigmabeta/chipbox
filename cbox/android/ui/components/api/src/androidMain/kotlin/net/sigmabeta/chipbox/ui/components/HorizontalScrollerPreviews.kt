@@ -26,7 +26,6 @@ import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 import java.util.Random
 
-
 @Preview
 @Composable
 private fun Light() {

@@ -30,7 +30,6 @@ import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.vector
 import androidx.compose.runtime.getValue
 
-
 @Composable
 fun IconNameCaptionListItem(
     model: IconNameCaptionListModel,

@@ -12,7 +12,6 @@ import net.sigmabeta.sage.components.HeroImageListModel
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 
-
 @Preview
 @Composable
 private fun LoadingGame() {

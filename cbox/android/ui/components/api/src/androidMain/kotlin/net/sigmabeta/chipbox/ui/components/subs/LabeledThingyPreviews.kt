@@ -30,7 +30,6 @@ import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
-
 @Preview
 @Composable
 private fun Light() {

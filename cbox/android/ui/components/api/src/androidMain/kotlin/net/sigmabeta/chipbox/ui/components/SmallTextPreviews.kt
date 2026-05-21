@@ -21,7 +21,6 @@ import net.sigmabeta.sage.components.HorizontalScrollerListModel
 import net.sigmabeta.sage.components.SmallTextListModel
 import java.util.Random
 
-
 @Preview
 @Composable
 private fun Light() {

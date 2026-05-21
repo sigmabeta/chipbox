@@ -29,7 +29,6 @@ import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 import androidx.compose.runtime.getValue
 
-
 @Composable
 fun ImageNameListItem(
     model: ImageNameListModel,

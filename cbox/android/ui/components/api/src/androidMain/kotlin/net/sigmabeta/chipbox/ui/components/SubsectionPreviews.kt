@@ -20,7 +20,6 @@ import net.sigmabeta.sage.components.SubsectionListModel
 import net.sigmabeta.sage.components.WideItemListModel
 import net.sigmabeta.sage.ui.Icon
 
-
 @Preview
 @Composable
 private fun LightWide() {

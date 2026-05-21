@@ -21,7 +21,6 @@ import net.sigmabeta.chipbox.ui.components.subs.Flasher
 import net.sigmabeta.chipbox.ui.components.utils.nextPercentageFloat
 import kotlin.random.Random
 
-
 @Composable
 @Suppress("MagicNumber", "LongMethod")
 fun LoadingTextItem(

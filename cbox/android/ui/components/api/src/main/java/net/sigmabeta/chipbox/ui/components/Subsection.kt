@@ -19,7 +19,6 @@ import net.sigmabeta.sage.components.SquareItemListModel
 import net.sigmabeta.sage.components.SubsectionListModel
 import net.sigmabeta.sage.components.WideItemListModel
 
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun Subsection(

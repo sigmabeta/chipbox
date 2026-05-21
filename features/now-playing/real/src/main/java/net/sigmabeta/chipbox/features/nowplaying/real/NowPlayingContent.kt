@@ -348,4 +348,3 @@ private fun formatMs(ms: Long): String {
     val seconds = totalSeconds % SECONDS_PER_MINUTE
     return "%d:%02d".format(minutes, seconds)
 }
-

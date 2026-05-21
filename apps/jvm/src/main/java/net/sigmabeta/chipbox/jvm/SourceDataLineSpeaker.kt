@@ -118,7 +118,8 @@ class SourceDataLineSpeaker(
             CHANNELS,
             BYTES_PER_FRAME,
             sampleRate.toFloat(),
-            /* bigEndian = */ false,
+            /* bigEndian = */
+            false,
         )
 
         val opened = try {

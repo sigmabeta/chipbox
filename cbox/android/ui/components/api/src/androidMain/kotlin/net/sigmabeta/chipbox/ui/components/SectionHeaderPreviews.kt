@@ -8,7 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import net.sigmabeta.chipbox.ui.components.previews.FullScreenOf
 
-
 @Preview
 @Composable
 private fun Light() {

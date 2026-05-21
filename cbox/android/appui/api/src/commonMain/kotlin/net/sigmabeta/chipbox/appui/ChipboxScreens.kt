@@ -191,10 +191,12 @@ private fun TabNavigatorContent(root: Screen) {
             { event ->
                 when (event) {
                     is ChipboxEvent.NavigateTo -> navigator.push(screenFor(event.destination))
+
                     ChipboxEvent.NavigateBack -> {
                         navigator.pop()
                         Unit
                     }
+
                     else -> outerSink(event)
                 }
             }
@@ -272,6 +274,7 @@ private object SettingsDeepScreen : Screen {
  */
 internal object NowPlayingScreen : Screen {
     override val key: ScreenKey = "NowPlaying"
+
     @Composable override fun Content() = ScreenScaffold {
         Box(Modifier.fillMaxSize()) {
             NowPlayingRoute(

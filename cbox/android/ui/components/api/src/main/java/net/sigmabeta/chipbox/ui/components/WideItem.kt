@@ -29,7 +29,6 @@ import net.sigmabeta.sage.components.WideItemListModel
 import net.sigmabeta.sage.images.SourceInfo
 import androidx.compose.runtime.getValue
 
-
 @Composable
 fun WideItem(
     model: WideItemListModel,

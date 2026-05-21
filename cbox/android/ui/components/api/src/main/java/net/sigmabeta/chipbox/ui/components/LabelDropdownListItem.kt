@@ -9,7 +9,6 @@ import net.sigmabeta.chipbox.strings.ChipboxStringId
 import net.sigmabeta.chipbox.strings.text
 import net.sigmabeta.sage.components.DropdownSettingListModel
 
-
 @Composable
 fun LabelDropdownListItem(
     model: DropdownSettingListModel,
