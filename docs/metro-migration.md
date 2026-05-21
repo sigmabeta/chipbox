@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Done. M1–M6 complete; Hilt and plain Dagger fully removed from chipbox. `git grep -i hilt` matches only doc/historical comments; `git grep dagger` returns nothing in code; `git grep javax.inject` returns nothing in code.**
+Status: **Done. M1–M7 complete; Hilt and plain Dagger fully removed from chipbox. `git grep -i hilt` matches only doc/historical comments; `git grep dagger` returns nothing in code; `git grep javax.inject` returns nothing in code. M7 fixed two latent M5d bugs surfaced by KMP migration slice 5d (aggregation through two-level `implementation` chains; SavedStateHandle injection in three VMs).**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -824,6 +824,96 @@ on abstract classes via `@ContributesTo`.
   longer consumed by chipbox; can be dropped from
   `sage/gradle/libs.versions.toml` once nothing else in the sage org
   references them.
+
+### Milestone 7 — latent M5d bugs surfaced + fixed (done)
+
+The M5d bulk VM sweep shipped two latent runtime bugs that the build
+verification (`assembleDebug` only, no actual screen-by-screen
+runtime test) missed. The KMP migration's slice 5d
+(`docs/kmp-migration.md` — converting `features/library/real` to
+`sage.kmp` and tapping into Library on a real device) flushed both
+out. Both fixes landed here, independent of the KMP work that
+revealed them.
+
+**Bug 1 — `@ContributesIntoMap` aggregation through two-level
+`implementation` chains.** Decompiling `ChipboxAppGraph$Impl` on
+the post-M5d build showed only `SettingsViewModel` +
+`ChipboxAppUiViewModel` bound in the `viewModelProviders`
+multibinding. Every other feature VM (Library, Browse-*, Now-Playing,
+Search, Game/Artist/GamesForPlatform details, PlayerStatus) reached
+`apps/android` only via a two-hop chain
+(`apps/android → cbox/android/appui/api → features/X/real`,
+where both edges are `implementation`). Metro's FIR pass discovers
+`metro.hints.*` on the compile classpath, but Gradle's
+`implementation` configuration hides transitive types from second-
+level consumers (the resolved compile classpath includes the JARs
+but Metro's scan doesn't reach contributions there). One-hop chains
+work — both Settings (direct in `apps/android`) and ChipboxAppUi
+(direct in appui/api) aggregated correctly.
+
+Fix: promote every `features.X.real` + `playerStatus.api`
+dependency in `cbox/android/appui/api/build.gradle.kts` from
+`implementation()` to `api()`. The `:api` route-key modules
+(`features.X.api`) stay `implementation` — only the contributing
+modules need to be `api`. After the change all 13 feature VMs
+populate `ChipboxAppGraph$Impl` (12 `viewModelProviders` entries
+plus 1 in `assistedFactoryProviders` after bug 2's refactor;
+`PlaybackStatusViewModel` intentionally absent, dropped in M5d).
+
+**Bug 2 — `SavedStateHandle` injection.** Three VMs
+(`GamesForPlatformViewModel`, `GameDetailViewModel`,
+`ArtistDetailViewModel`) take `SavedStateHandle` as a constructor
+param and call `savedStateHandle.toRoute()` to read their nav args.
+Hilt's `@HiltViewModel` special-cased SavedStateHandle (via
+`SavedStateHandleSupport`); the M5d sweep just substituted
+`@HiltViewModel` → `@ContributesIntoMap` and left the constructor
+shape, which Metro doesn't auto-bind. With bug 1 in play these VMs
+were never in the graph so the missing binding never compiled;
+once bug 1 was fixed Metro correctly reported
+`[Metro/MissingBinding] androidx.lifecycle.SavedStateHandle`.
+
+Fix: refactor each of the three VMs to the metrox-viewmodel
+`@AssistedFactory` + `ViewModelAssistedFactory` pattern documented in
+`metrox-viewmodel/README.md`. Shape:
+
+```kotlin
+@AssistedInject
+class FooViewModel(
+    @Assisted savedStateHandle: SavedStateHandle,
+    /* other @Inject params */
+) : ChipboxListViewModel<…>(…) {
+    private val args: Foo = savedStateHandle.toRoute()
+    // …
+
+    @AssistedFactory
+    @ViewModelAssistedFactoryKey(FooViewModel::class)
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ViewModelAssistedFactory {
+        override fun create(extras: CreationExtras): FooViewModel =
+            create(extras.createSavedStateHandle())
+
+        fun create(@Assisted savedStateHandle: SavedStateHandle): FooViewModel
+    }
+}
+```
+
+Outer `@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())`
+and `@ViewModelKey` are removed — the nested Factory carries the
+contribution into `assistedFactoryProviders` instead, keyed by the VM
+class via `@ViewModelAssistedFactoryKey(VM::class)`.
+`extras.createSavedStateHandle()` is the AndroidX
+`SavedStateHandleSupport` extension that pulls a SavedStateHandle
+out of the CreationExtras the host owner (`NavBackStackEntry`)
+supplies. Route composables (`metroViewModel<VM>()`) need no change:
+`MetroViewModelFactory.create()` consults both
+`viewModelProviders` and `assistedFactoryProviders` on each call.
+
+**Verification:** `:apps:android:assembleDebug` clean; decompiled
+`ChipboxAppGraph$Impl` enumerates all 13 expected VMs; on-device
+tap into Library, Game Detail, Artist Detail, Games For Platform,
+and every Browse-* tab now resolves the VM without the prior
+`Unknown model class` crash. Detekt clean on touched modules;
+ktlint clean on touched files.
 
 ## Risks / open questions
 

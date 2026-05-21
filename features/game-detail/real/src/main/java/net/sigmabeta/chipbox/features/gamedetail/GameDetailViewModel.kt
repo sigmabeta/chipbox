@@ -1,13 +1,16 @@
 package net.sigmabeta.chipbox.features.gamedetail
 
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.navigation.toRoute
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
 import dev.zacsweers.metro.ContributesIntoMap
-import dev.zacsweers.metro.Inject
-import dev.zacsweers.metro.binding
-import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactoryKey
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
@@ -23,10 +26,11 @@ import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 
-@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
-@ViewModelKey
-class GameDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
+// SavedStateHandle comes through CreationExtras at resolution time — see
+// GamesForPlatformViewModel for the explanation; same metrox-viewmodel pattern here.
+@AssistedInject
+class GameDetailViewModel(
+    @Assisted savedStateHandle: SavedStateHandle,
     private val repository: Repository,
     private val director: Director,
     stringProvider: StringProvider,
@@ -116,6 +120,16 @@ class GameDetailViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    @AssistedFactory
+    @ViewModelAssistedFactoryKey(GameDetailViewModel::class)
+    @ContributesIntoMap(AppScope::class)
+    fun interface Factory : ViewModelAssistedFactory {
+        override fun create(extras: CreationExtras): GameDetailViewModel =
+            create(extras.createSavedStateHandle())
+
+        fun create(@Assisted savedStateHandle: SavedStateHandle): GameDetailViewModel
     }
 
     private companion object {
