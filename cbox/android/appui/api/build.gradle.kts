@@ -2,7 +2,6 @@ plugins {
     alias(libs.plugins.sage.android)
     alias(libs.plugins.sage.compose.android)
     alias(libs.plugins.sage.di.android)
-    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -27,6 +26,9 @@ dependencies {
     implementation(projects.cbox.android.ui.theme.api)
     implementation(projects.cbox.common.appcomm.api)
     implementation(projects.cbox.common.strings.api)
+    // Needed for `GamesForPlatformDeepScreen(val platform: Platform)` — the typed Voyager
+    // Screen that carries the route arg now that AndroidX nav's typesafe routing is gone.
+    implementation(projects.cbox.common.models.api)
 
     implementation(projects.features.library.api)
     api(projects.features.library.real)
@@ -64,8 +66,14 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.lifecycle.runtimeCompose)
     implementation(libs.androidx.lifecycle.viewModelCompose)
-    implementation(libs.androidx.navigation.compose)
+    // Voyager — single Compose Multiplatform nav stack shared with apps/jvm. Replaces
+    // androidx.navigation:navigation-compose (the AndroidX CMP fork publishes JVM stubs
+    // only). Three artifacts: navigator (per-stack push/pop), tab-navigator (per-tab
+    // back stacks for Library/Search/Settings — saveState + restoreState equivalent),
+    // transitions (SlideTransition between pushed screens).
+    implementation(libs.voyager.navigator)
+    implementation(libs.voyager.tab.navigator)
+    implementation(libs.voyager.transitions)
     implementation(libs.metrox.viewmodel)
     implementation(libs.metrox.viewmodel.compose)
-    implementation(libs.kotlinx.serialization.core)
 }

@@ -12,6 +12,7 @@ kotlin {
         named("commonMain") {
             dependencies {
                 api(libs.sage.common.ui.components)
+                api(projects.cbox.common.appcomm.api)
             }
         }
     }
