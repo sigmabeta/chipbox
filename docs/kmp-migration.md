@@ -1,7 +1,7 @@
 # Kotlin Multiplatform migration — plan & status
 
 Status: **Milestone 8 implemented; Milestone 9 in progress (slices
-1–5c done).** JVM is the second target with a real library *and* a
+1–5d done).** JVM is the second target with a real library *and* a
 Compose Multiplatform desktop window with real pixel-art fonts,
 Metro-backed ViewModel scoping, and Voyager-driven navigation. All
 seven native emulators decode end-to-end on host x86-64
@@ -12,9 +12,9 @@ both variants (`cbox/jvm/` is empty, deleted), the Room storage stack
 is now KMP (via Room 2.7+'s multiplatform support + the bundled SQLite
 driver) and the JVM target uses the *same* Room database the Android
 app does — driven by the *same* `RealScanner` via a `LibrarySource`
-abstraction. `features/settings/real` is the first chipbox feature on
-`sage.kmp` and `SettingsViewModel` contributes into both Android's and
-JVM's Metro graph.
+abstraction. `features/settings/real` + `features/library/real` are the first
+chipbox features on `sage.kmp`; their VMs contribute into both
+Android's and JVM's Metro graph.
 
 The desktop window renders via Compose Multiplatform: shared color
 palette + typography from `cbox/common/ui/theme/api`, real pixel-art
@@ -916,6 +916,71 @@ remainder, sliced by dependency order.
   the touched modules; ktlint clean on touched files (the two existing
   warnings on `apps/jvm/README.md` and `JvmMetroViewModelFactory.kt`
   predate this slice).
+
+- **Slice 5d — Library feature on sage.kmp (done).** Second chipbox
+  feature ported. Library is much simpler than Settings — no
+  `java.time`, no SAF, no scanner/repo deps; just a pure-Kotlin VM
+  that emits nav events for four downstream browse-* screens. The
+  port walks six trivial modules:
+
+  - **Four browse-*/api route-key modules**
+    (`features/browse-{all-tracks,by-artist,by-game,by-platform}/api`)
+    flip from `sage.android` to `sage.kmp`. Each owns a single
+    `@Serializable data object` route key with `kotlinx-serialization`
+    as its only dep; the file `git mv`'s from `src/main/java/...`
+    into `src/commonMain/kotlin/...` so the route keys can be
+    referenced from any commonMain consumer (including the eventual
+    desktop nav graph). No source changes.
+  - **`features/library/api`** — same shape, same conversion: the
+    `Library` route-key data object hoists to commonMain.
+  - **`features/library/real`** flips to
+    `sage.kmp + sage.compose.kmp + metro`. Source-set placement:
+    - `LibraryAction.kt`, `LibraryState.kt`, `LibraryViewModel.kt` →
+      `src/commonMain/kotlin/...`. Pure Kotlin; every dep
+      (`ChipboxAction`/`ChipboxEvent`/`ChipboxListViewModel`,
+      `SageAction`, `Hatchet`, `StringProvider`, `ChipboxStringId`,
+      `ListModel`/`MenuItemListModel`/`TitleBarModel`,
+      `ColumnType`/`ListState`, `Icon`, the four Browse* route keys
+      now in commonMain) is already commonMain after M7 + M9 slices
+      1–2.
+    - `LibraryRoute.kt` → `src/androidMain/kotlin/...`. Still
+      androidMain because it consumes `ChipboxListEntry` which is
+      androidMain (slice 6 below). Same desktop-route-in-apps/jvm
+      pattern Settings uses.
+
+    Unlike Settings, library/real keeps every browse-*/api dep — they
+    KMP-ified in the same slice, so the screen-by-screen "drop the
+    forward dep + snackbar-stub the nav action" workaround from the
+    Metro M5 slicing rules isn't needed.
+
+  - **JVM wiring**: `apps/jvm/build.gradle.kts` adds
+    `implementation(projects.features.library.real)` alongside the
+    settings line from slice 5c. `LibraryViewModel` contributes into
+    `JvmChipboxGraph`'s ViewModel multibinding via
+    `@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())`
+    (already on the class before this slice — Metro M5d sweep).
+
+  Verified: `:features:library:real:build` green for both Android +
+  JVM variants; `:apps:android:assembleDebug` green; `:apps:jvm:compileKotlin
+  + :jar + :standaloneScript` green; runtime smoke test via the
+  standalone scan path constructs the graph cleanly. Detekt clean on
+  all six touched modules; ktlint clean on touched .kt files.
+
+  Caught at runtime test on the Android target: tapping into Library
+  crashed with `Unknown model class … LibraryViewModel`. Initially
+  misdiagnosed as a KMP-conversion-specific Metro packaging
+  issue; tracing what actually populated `ChipboxAppGraph$Impl`
+  revealed every non-Settings/non-ChipboxAppUi feature VM was missing
+  from the graph since the Metro M5d sweep. The aggregation chain
+  was broken at the second `implementation` hop; the LibraryViewModel
+  crash was the first one to surface because the user happened to
+  tap a Library route. Fix lives in the Metro migration as Milestone 7
+  (see `docs/metro-migration.md`) — `cbox/android/appui/api`
+  promotes its `features.X.real` + `playerStatus.api` deps to `api()`,
+  and three `SavedStateHandle`-injecting VMs (Games-For-Platform,
+  Game-Detail, Artist-Detail) refactor to the metrox-viewmodel
+  `@AssistedFactory` pattern. Re-verified on device: Library, the
+  three detail screens, and every Browse-* tab resolve cleanly.
 
 ## Roadmap (not yet done)
 
