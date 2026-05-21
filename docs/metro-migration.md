@@ -1,6 +1,6 @@
 # Hilt → Metro migration — plan & status
 
-Status: **Milestones 3 + 4 implemented (incl. M4c JVM-side); M5b Kotlin bump unblocks the VM sweep. Ready for per-feature VM migration (M5c+).**
+Status: **Milestones 3 + 4 implemented (incl. M4c JVM-side); M5b Kotlin bump done; M5c migrated `SettingsViewModel` (first @HiltViewModel → Metro). Per-feature VM sweep continuing.**
 
 Scope of this doc: how Chipbox moves from Dagger/Hilt to
 [Metro](https://github.com/ZacSweers/metro) (Zac Sweers' Kotlin-compiler-plugin
@@ -574,13 +574,58 @@ omitted (the implicit class key matches). The annotations were reverted
 so this slice stays scoped to the bump — the actual per-feature VM sweep
 lands in M5c.
 
-#### Sub-slice 5c — VM sweep (next)
+#### Sub-slice 5c — SettingsViewModel (done)
 
-With M5b's blocker cleared, the per-feature VM rules from M5's pivot
-apply: migrate one VM at a time, drop forward-deps on not-yet-migrated
-feature `api`s during the move, snackbar-stub any navigation actions that
-would target an un-migrated screen. `SettingsViewModel` is the natural
-first target since M5a already trimmed its playback-status coupling.
+First feature VM flipped to Metro. Build green via Metro's graph end-to-end:
+`apps:android:assembleDebug` resolves `SettingsViewModel` from the
+`metroViewModel<SettingsViewModel>()` accessor in `SettingsRoute`, walking
+the full transitive chain `SettingsViewModel ← ChipboxSettingsManager /
+DebugSettingsManager / Repository / Scanner / LibrarySource / AppInfo /
+StringProvider / Hatchet` through `@ContributesTo(AppScope::class)` modules
+contributed in M4b.
+
+- **`SettingsViewModel`** drops `@HiltViewModel` (+ `dagger.hilt.android.lifecycle.HiltViewModel`
+  import) for `@ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())`
+  + `@ViewModelKey`. `@ViewModelKey` is required (Metro refuses
+  `@ContributesIntoMap`-without-key with "must declare a map key"); the
+  class-key arg can be omitted because the implicit key matches the
+  annotated class. Constructor + `init` body + action handlers are
+  untouched — same `@Inject` constructor, same `androidx.lifecycle.ViewModel`
+  superclass via `ChipboxListViewModel`.
+- **`SettingsRoute`** swaps `import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel`
+  → `import dev.zacsweers.metrox.viewmodel.metroViewModel` and
+  `hiltViewModel()` → `metroViewModel()`. The accessor lives directly
+  under `dev.zacsweers.metrox.viewmodel` (no `.compose` sub-package, even
+  though the artifact is `metrox-viewmodel-compose`).
+- **`features/settings/real/build.gradle.kts`** drops the
+  `libs.androidx.hilt.lifecycle.viewmodel.compose` implementation dep —
+  unused once `hiltViewModel()` is gone from this module.
+
+Metro DataStore bug hit + worked around in `cbox/android/storage/api/.../StorageModule.kt`:
+Metro 1.1.1 fails cross-module Provider generation for
+`DataStore<Preferences>` ("Encountered an unexpected error while
+processing type: `dev.zacsweers.metro.Provider<out <error>>`") whenever
+a consumer's graph tries to walk through it transitively. The previous
+two-binding shape (`@Provides DataStore<Preferences>` separately from
+`@Provides Storage`) didn't show the bug until SettingsViewModel landed
+in the Metro graph and forced full resolution. Workaround: inline
+`context.settingsDataStore` directly inside `provideStorage` and stop
+exposing `DataStore<Preferences>` as its own binding. Single
+`@Singleton` `Storage` instance is preserved; `ChipboxDataStore` still
+holds one `DataStore<Preferences>`. No other consumers of the dropped
+binding (grep confirmed `DataStore<Preferences>` is only referenced by
+`StorageModule.kt` + `ChipboxDataStore.kt`).
+
+Verified: `:apps:android:assembleDebug` green; `:features:settings:real:detekt`
++ `:cbox:android:storage:api:detekt` clean; ktlint on the touched files
+clean (the remaining `SettingsState.kt` blank-line warning is from M5a
+commit 7f00412c and pre-dates this slice).
+
+Remaining 14 `@HiltViewModel`s (one per non-Settings feature screen)
+follow the same pattern. The screen-by-screen rules apply: when a
+feature still depends on another feature's `api` whose VM hasn't
+migrated yet, drop that forward-dep + snackbar-stub the relevant
+`SageAction`.
 
 ### Milestone 6 — drop Hilt (planned)
 
