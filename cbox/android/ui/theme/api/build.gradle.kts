@@ -3,7 +3,6 @@ import net.sigmabeta.sage.plugins.components.chipboxNamespace
 plugins {
     alias(libs.plugins.sage.android)
     alias(libs.plugins.sage.compose.android)
-    alias(libs.plugins.paparazzi)
 }
 
 android {

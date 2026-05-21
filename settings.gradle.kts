@@ -42,7 +42,6 @@ include(
 
     ":cbox:common:appui:api",
     ":cbox:android:artworkprovider:api",
-    ":cbox:android:colors:api",
     ":cbox:android:contentsource:file:all",
     ":cbox:android:contentsource:file:api",
     ":cbox:android:contentsource:file:di",
