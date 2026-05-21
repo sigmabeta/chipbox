@@ -8,16 +8,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.ExperimentalTextApi
-import androidx.compose.ui.text.font.DeviceFontFamilyName
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.sage.components.SubsectionHeaderListModel
 
 
-@OptIn(ExperimentalTextApi::class)
 @Composable
 fun SubsectionHeader(
     model: SubsectionHeaderListModel,
@@ -25,7 +21,7 @@ fun SubsectionHeader(
 ) {
     val title = remember(model.title) { model.title.uppercase() }
     val baseStyle = MaterialTheme.typography.bodyMedium
-    val style = remember(baseStyle) { baseStyle.copy(fontFamily = SubsectionHeaderFontFamily) }
+    val style = remember(baseStyle) { baseStyle.copy(fontFamily = FontFamily.SansSerif) }
 
     Column(
         modifier = modifier
@@ -46,8 +42,3 @@ fun SubsectionHeader(
         )
     }
 }
-
-@OptIn(ExperimentalTextApi::class)
-private val SubsectionHeaderFontFamily = FontFamily(
-    Font(DeviceFontFamilyName("sans-serif-condensed")),
-)

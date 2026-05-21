@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.components
 
+import androidx.compose.ui.unit.dp
 import android.content.res.Configuration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -10,7 +11,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
 import net.sigmabeta.chipbox.ui.components.previews.ChipboxPreview
@@ -57,7 +57,7 @@ private fun Sample() {
         val rng = Random("HorizontalScroller".hashCode().toLong())
 
         val paddingModifier = PaddingValues(
-            horizontal = dimensionResource(id = R.dimen.margin_side)
+            horizontal = 16.dp
         )
         SquareItemSection(rng, paddingModifier)
         WideItemSection(rng, paddingModifier)

@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.ui.components
 
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,7 +9,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
 import net.sigmabeta.sage.appcomm.SageAction
@@ -55,7 +55,7 @@ private fun Sample() {
             SageAction.Noop,
         ),
         PreviewActionSink { },
-        padding = PaddingValues(horizontal = dimensionResource(id = R.dimen.margin_medium)),
+        padding = PaddingValues(horizontal = 16.dp),
         modifier = Modifier
     )
 }

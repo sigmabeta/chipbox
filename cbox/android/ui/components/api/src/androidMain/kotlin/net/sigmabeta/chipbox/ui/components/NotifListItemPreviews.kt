@@ -12,7 +12,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.ui.components.previews.PreviewActionSink
@@ -56,7 +55,7 @@ private fun Sample() {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier
             .verticalScroll(rememberScrollState())
-            .padding(dimensionResource(id = R.dimen.margin_side))
+            .padding(16.dp)
     ) {
         NotifListItem(
             NotifListModel(
