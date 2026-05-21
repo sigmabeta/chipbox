@@ -25,7 +25,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.text
-import net.sigmabeta.chipbox.ui.components.api.subs.MenuActionIcon
+import net.sigmabeta.chipbox.common.ui.components.api.subs.MenuActionIcon
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon
 

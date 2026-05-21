@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.ui.components.api.CrossfadeText
+import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
 
 @Composable
 internal fun PlayerStatusInfo(

@@ -45,7 +45,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.zacsweers.metrox.viewmodel.metroViewModel
-import net.sigmabeta.chipbox.ui.components.api.subs.CrossfadeImage
+import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.sage.ui.Icon as SageIcon
 
 private val COMPACT_WIDTH_BREAKPOINT = 480.dp

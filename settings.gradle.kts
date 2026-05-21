@@ -109,7 +109,7 @@ include(
     ":cbox:android:storage:api",
     ":cbox:android:strings:api",
     ":cbox:common:ui:chrome:api",
-    ":cbox:android:ui:components:api",
+    ":cbox:common:ui:components:api",
     ":cbox:common:ui:list:api",
     ":cbox:common:ui:freeform:api",
     ":cbox:android:ui:previews",

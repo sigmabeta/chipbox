@@ -19,7 +19,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.id
-import net.sigmabeta.chipbox.ui.components.api.Content
+import net.sigmabeta.chipbox.common.ui.components.api.Content
 import net.sigmabeta.chipbox.ui.theme.api.AppTheme
 import net.sigmabeta.sage.android.perf.DURATION_THRESHOLD_ERROR_SCREEN_PREVIEW
 import net.sigmabeta.sage.android.perf.DURATION_THRESHOLD_WARNING_SCREEN_PREVIEW

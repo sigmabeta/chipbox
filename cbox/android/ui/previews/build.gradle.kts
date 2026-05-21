@@ -9,7 +9,7 @@ android {
 
 dependencies {
     implementation(projects.cbox.android.ui.theme.api)
-    implementation(projects.cbox.android.ui.components.api)
+    implementation(projects.cbox.common.ui.components.api)
     implementation(projects.cbox.android.strings.api)
     implementation(projects.cbox.common.strings.api)
     implementation(projects.cbox.common.models.api)

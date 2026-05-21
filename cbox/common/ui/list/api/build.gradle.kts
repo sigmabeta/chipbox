@@ -26,7 +26,7 @@ kotlin {
 
                 implementation(libs.sage.android.ui.list)
                 implementation(projects.cbox.common.ui.chrome.api)
-                implementation(projects.cbox.android.ui.components.api)
+                implementation(projects.cbox.common.ui.components.api)
             }
         }
     }
