@@ -89,7 +89,14 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
 private fun ScreenScaffold(content: @Composable () -> Unit) {
     val controller = LocalChromeController.current
     LaunchedEffect(Unit) { controller.set(ScreenChrome.Default) }
-    content()
+    // [WithPerScreenViewModelStore] gives each Screen its own ViewModelStore on JVM (where
+    // Voyager doesn't); androidMain is a passthrough since Voyager already does it via
+    // AndroidScreenLifecycleOwner. Without this, all screens in the JVM Navigator share the
+    // Window's ViewModelStore and `metroViewModel<VM>()` returns the same cached instance —
+    // pushing GamesForPlatform(DREAMCAST) then GamesForPlatform(GENESIS) reuses Dreamcast.
+    WithPerScreenViewModelStore {
+        content()
+    }
 }
 
 // region Tabs ----------------------------------------------------------------------------------
