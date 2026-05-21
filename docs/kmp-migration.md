@@ -1225,11 +1225,65 @@ remainder, sliced by dependency order.
      bridges that, so the chrome back arrow pops the current tab's
      deep stack.
 
-   Convergence dividend (not done): the per-feature `XxxRoute`
-   composables can move to commonMain as `Screen` implementations
-   themselves, dropping the duplicate `apps/jvm/.../LibraryScreen.kt`
-   and `SettingsScreen.kt` files. Holds until the next feature port
-   surfaces the duplication.
+   **App shell shared across Android + JVM.** Following the Voyager
+   swap, `cbox/android/appui/api` was promoted to `sage.kmp` and the
+   Android `MainActivity` + JVM `DesktopMain.kt` now both call the
+   same `ChipboxAppUi(onOpenUrl, onCopyToClipboard)` composable.
+   `apps/jvm/.../{HomeScreen,LibraryScreen,SettingsScreen,AboutScreen,
+   HelloViewModel}.kt` are deleted — the JVM target gets the full
+   Library/Search/Settings tab UI for free instead of its bespoke
+   buttons-only home screen.
+
+   Mechanics:
+   - `Intent.ACTION_VIEW` / `ClipboardManager` (Android-only) became
+     `onOpenUrl(String)` / `onCopyToClipboard(label, text)` callbacks
+     in `ChipboxAppUi`; `MainActivity` fills them with the Android
+     impls, `DesktopMain.kt` with `Desktop.browse(URI(url))` +
+     `Toolkit.getDefaultToolkit().systemClipboard`.
+   - `LocalConfiguration.current.screenWidthDp` (Android-only)
+     replaced by `BoxWithConstraints { maxWidth }` in `PlayerStatus`
+     and `ChipboxTabsScreen` — works on every Compose target.
+   - `androidx.compose.material3.adaptive.navigation-suite` (Android
+     library only) swapped for
+     `org.jetbrains.compose.material3:material3-adaptive-navigation-suite`
+     (JetBrains-published CMP twin — same package names, published
+     for JVM/desktop too).
+   - `androidx.lifecycle.compose.collectAsStateWithLifecycle` (Android
+     only) swapped for `androidx.compose.runtime.collectAsState` in
+     `PlayerStatus` + `ChipboxFreeformEntry` + `SearchRoute`.
+   - 10 feature modules promoted to `sage.kmp`: every `:api`
+     (artist-detail, game-detail, games-for-platform, now-playing,
+     search), every `:real` that ships VMs reachable from `appui`
+     (browse-all-tracks, browse-by-artist, browse-by-game,
+     browse-by-platform, artist-detail, game-detail, games-for-platform,
+     now-playing, search), plus `player-status` and `ui/freeform`.
+     The conversions are mostly plugin swaps; two had small platform-
+     conditional bits to remove (`@Preview(uiMode = Configuration
+     .UI_MODE_NIGHT_YES)` in NowPlayingContent's preview functions —
+     deleted; `Build.VERSION.SDK_INT >= Q` gate in SearchBar — minSdk
+     is past Q, gate dropped).
+   - `SettingsRoute` became `expect`/`actual`: androidMain keeps the
+     SAF `OpenDocumentTree` launcher; jvmMain uses
+     `javax.swing.JFileChooser` (the same JFileChooser plumbing the
+     deleted `apps/jvm/SettingsScreen.kt` had — moved into the
+     feature module so the shared `screenFor()` in `appui` resolves
+     to the right platform impl). `LibraryRoute` moved fully to
+     commonMain — no platform-specific bits.
+   - `:player-status` converted (no `android.*` imports in any of
+     its sources today — pure Compose).
+   - JVM `JvmChipboxGraph` now `@Binds` `RealGenerator → Generator`
+     and `FileSpeaker → Speaker` so `DirectorModule`'s
+     `Director = RealDirector(generator, speaker, …)` resolves for
+     the feature VMs that now reach the JVM target through `appui`.
+     Live audio on the JVM target isn't wired yet (FileSpeaker writes
+     WAVs); pressing Play in NowPlaying on desktop renders to disk
+     rather than the speakers. Real-time JVM audio is roadmap item 2.
+
+   The chrome (TopAppBar + NavigationSuiteScaffold + PlayerStatus
+   overlay + TabNavigator + per-tab Navigator + system event sink)
+   lives in commonMain. Both targets see identical Library/Search/
+   Settings tabs, identical back-stack semantics, and identical
+   NowPlaying overlay shape.
 
 2. **Real-time JVM audio.** An audio sink (probably a factory, possibly
    `expect`/`actual`): Android `AudioTrack` vs a JVM

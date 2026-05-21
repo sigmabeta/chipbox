@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.features.search.real
 
-import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -43,15 +41,14 @@ fun SearchBar(
 ) {
     val shape = RoundedCornerShape(32.dp)
 
-    val commonModifier = modifier
+    // Compose's `shadow` modifier is available cross-platform; the older SDK_INT < Q gate
+    // (pre-Renderscript path that fell back to `clip(shape)` on KitKat-Pi) is no longer
+    // needed — minSdk is well past Q by now, and the gate blocks the shared appui scaffold
+    // from compiling on JVM/desktop. See the M9 nav-unification commit in docs/kmp-migration.md.
+    val actualModifier = modifier
         .fillMaxWidth()
         .padding(horizontal = SidePadding)
-
-    val actualModifier = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        commonModifier.shadow(elevation = 4.dp, shape = shape)
-    } else {
-        commonModifier.clip(shape)
-    }
+        .shadow(elevation = 4.dp, shape = shape)
 
     Surface(modifier = actualModifier) {
         Row(

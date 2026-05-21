@@ -65,16 +65,26 @@ dependencies {
     implementation(projects.cbox.common.debug.real)
     implementation(projects.cbox.common.settings.api)
     implementation(projects.cbox.common.settings.real)
-    // features/settings/real + features/library/real are sage.kmp (M9 slices 5c / 5d
-    // — see docs/kmp-migration.md); their VMs contribute into the Metro ViewModelGraph
-    // for the desktop UI.
+    // The JVM target now reuses the same `ChipboxAppUi` composable as Android — see
+    // `cbox/android/appui/api` (now sage.kmp). `appui:api` already pulls in every feature
+    // module via `api(...)`, so we don't list them individually here.
+    implementation(projects.cbox.android.appui.api)
+
+    // Direct deps for things the JVM-side Metro graph (JvmChipboxGraph) needs that aren't
+    // covered transitively by appui.
     implementation(projects.features.settings.real)
     implementation(projects.features.library.real)
-
-    // SettingsScreen.kt hosts SettingsViewModel through the commonMain ChipboxListEntry
-    // promoted in M9 slice 6g, and needs LocalTitleBarController from chrome.
     implementation(projects.cbox.android.ui.list.api)
     implementation(projects.cbox.android.ui.chrome.api)
+    // RealDirector — needed by every feature VM that depends on player.director.api
+    // (NowPlaying, GameDetail, ArtistDetail, GamesForPlatform, BrowseAllTracks). All wired
+    // into the appui module, so without a Director provider the JvmChipboxGraph fails to
+    // resolve them.
+    implementation(projects.cbox.common.player.director.real)
+    // DirectorModule's `@ContributesTo(AppScope) @Provides` binds Director → RealDirector
+    // for the Metro graph; without :di the binding isn't on the classpath and feature VMs
+    // that take a Director fail to resolve.
+    implementation(projects.cbox.common.player.director.di)
     implementation(projects.cbox.common.player.speaker.fake)
     implementation(projects.cbox.common.player.buffer.real)
     implementation(projects.cbox.common.player.common.api)

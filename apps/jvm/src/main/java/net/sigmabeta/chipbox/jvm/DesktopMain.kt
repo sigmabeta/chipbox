@@ -1,54 +1,52 @@
 package net.sigmabeta.chipbox.jvm
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
-import cafe.adriel.voyager.navigator.Navigator
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
+import java.awt.Desktop
+import java.awt.Toolkit
+import java.awt.datatransfer.StringSelection
+import java.net.URI
+import net.sigmabeta.chipbox.appui.ChipboxAppUi
 import net.sigmabeta.chipbox.jvm.di.JvmChipboxGraph
 import net.sigmabeta.chipbox.strings.LocalChipboxStringProvider
-import net.sigmabeta.chipbox.ui.theme.ChipboxTheme
-import net.sigmabeta.chipbox.ui.theme.tokens.ChipboxFontDefaults
 
 /**
- * Bootstrap Compose Multiplatform entry point for the JVM/desktop target. Wraps the Voyager
- * [Navigator] in (a) [ChipboxTheme] for color/typography/fonts, and (b) a
- * [CompositionLocalProvider] supplying [LocalMetroViewModelFactory] so each
- * [cafe.adriel.voyager.core.screen.Screen]'s `Content()` can call
- * `metroViewModel<...>()` without knowing it's on Desktop.
+ * Compose Multiplatform entry point for the JVM/desktop target. Calls the same
+ * [ChipboxAppUi] composable the Android `MainActivity` does so the chrome / tab navigator /
+ * per-tab Navigators are identical across both platforms — the dividend of converting
+ * `cbox/android/appui/api` to `sage.kmp` and lifting the system event sink's Intent /
+ * Clipboard usage into platform callbacks.
  *
- * The root destination is [HomeScreen]; that screen pushes [AboutScreen]; AboutScreen pops
- * back. Real feature screens slot into the same shape — `data object` or `data class` per
- * route, `Screen` interface, `LocalNavigator.currentOrThrow` for stack manipulation.
+ * `onOpenUrl` is `Desktop.browse(URI(url))` (the cross-platform AWT route — `xdg-open`
+ * on Linux, `open` on macOS, `cmd /c start` on Windows). `onCopyToClipboard` writes to
+ * the system clipboard via AWT. The folder-picker callback isn't wired here — it's the
+ * `expect`/`actual` `SettingsRoute`'s job, and the JVM actual lives in
+ * `features/settings/real/src/jvmMain` (uses `javax.swing.JFileChooser`).
  */
-@Composable
-private fun DesktopApp() {
-    val brand = ChipboxFontDefaults.Brand
-    val plain = ChipboxFontDefaults.Plain
-    ChipboxTheme(
-        brand = brand.toFontFamily(),
-        plain = plain.toFontFamily(),
-        brandScale = brand.scaleFactor,
-        plainScale = plain.scaleFactor,
-    ) {
-        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            Navigator(HomeScreen)
-        }
-    }
-}
-
 fun runDesktop(graph: JvmChipboxGraph) = application {
     Window(onCloseRequest = ::exitApplication, title = "Chipbox") {
         CompositionLocalProvider(
             LocalMetroViewModelFactory provides graph.metroViewModelFactory,
             LocalChipboxStringProvider provides graph.stringProvider,
         ) {
-            DesktopApp()
+            ChipboxAppUi(
+                onOpenUrl = { url -> openUrlIfSupported(url) },
+                onCopyToClipboard = { _, text -> copyToClipboard(text) },
+            )
         }
     }
+}
+
+private fun openUrlIfSupported(url: String) {
+    if (!Desktop.isDesktopSupported()) return
+    val desktop = Desktop.getDesktop()
+    if (!desktop.isSupported(Desktop.Action.BROWSE)) return
+    desktop.browse(URI(url))
+}
+
+private fun copyToClipboard(text: String) {
+    val clipboard = Toolkit.getDefaultToolkit().systemClipboard
+    clipboard.setContents(StringSelection(text), null)
 }

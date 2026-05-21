@@ -1,22 +1,34 @@
 plugins {
-    alias(libs.plugins.sage.android)
-    alias(libs.plugins.sage.compose.android)
-    alias(libs.plugins.sage.di.android)
+    alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.compose.kmp)
+    alias(libs.plugins.metro)
 }
 
-android {
-    namespace = "net.sigmabeta.chipbox.playerstatus"
-}
+// Sage.kmp so PlayerStatus + PlayerStatusViewModel are reachable from the shared
+// `ChipboxAppUi` composable in `cbox/android/appui/api` (also KMP). No `android.*` imports
+// in the sources today — pure Compose + androidx.lifecycle ViewModel. Same Metro
+// multibinding contribution pattern as `features/settings/real` and `features/library/real`.
+// The earlier `cbox.android.ui.theme.api` dep was unused (no AppTheme/ChipboxTheme refs in
+// any source file); dropped during the KMP conversion.
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.playerstatus"
+    }
 
-dependencies {
-    implementation(projects.cbox.android.ui.components.api)
-    implementation(projects.cbox.android.ui.theme.api)
-    implementation(projects.cbox.common.models.api)
-    implementation(projects.cbox.common.player.director.api)
+    sourceSets {
+        named("commonMain") {
+            dependencies {
+                implementation(projects.cbox.android.ui.components.api)
+                implementation(projects.cbox.common.models.api)
+                implementation(projects.cbox.common.player.director.api)
 
-    implementation(libs.androidx.compose.material.icons.extended)
-    implementation(libs.androidx.lifecycle.runtimeCompose)
-    implementation(libs.androidx.lifecycle.viewModelCompose)
-    implementation(libs.metrox.viewmodel)
-    implementation(libs.metrox.viewmodel.compose)
+                implementation(libs.sage.common.di)
+                implementation(libs.sage.common.images)
+
+                implementation(libs.metrox.viewmodel)
+                implementation(libs.metrox.viewmodel.compose)
+                implementation(libs.jetbrains.compose.material.icons.extended)
+            }
+        }
+    }
 }
