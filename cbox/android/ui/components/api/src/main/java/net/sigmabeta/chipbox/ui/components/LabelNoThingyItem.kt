@@ -3,10 +3,9 @@ package net.sigmabeta.chipbox.ui.components
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import net.sigmabeta.chipbox.ui.components.subs.LabeledThingy
 import net.sigmabeta.chipbox.strings.ChipboxStringId
-import net.sigmabeta.chipbox.strings.id
+import net.sigmabeta.chipbox.strings.text
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.SingleTextListModel
@@ -20,7 +19,7 @@ fun LabelNoThingyItem(
 ) {
     val action = model.clickAction
     val onClickLabel = if (action !is SageAction.Noop) {
-        stringResource(ChipboxStringId.ACCY_OCL_SINGLE_LINE.id(), model.name)
+        ChipboxStringId.ACCY_OCL_SINGLE_LINE.text(model.name)
     } else {
         null
     }

@@ -13,6 +13,7 @@ import com.google.common.util.concurrent.MoreExecutors
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 import net.sigmabeta.chipbox.appui.ChipboxAppUi
 import net.sigmabeta.chipbox.services.ChipboxPlaybackService
+import net.sigmabeta.chipbox.strings.LocalChipboxStringProvider
 
 class MainActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -25,6 +26,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             CompositionLocalProvider(
                 LocalMetroViewModelFactory provides appGraph.metroViewModelFactory,
+                LocalChipboxStringProvider provides appGraph.stringProvider,
             ) {
                 ChipboxAppUi(appGraph.stringProvider)
             }

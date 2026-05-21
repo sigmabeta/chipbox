@@ -11,6 +11,7 @@ import androidx.compose.ui.window.application
 import cafe.adriel.voyager.navigator.Navigator
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 import net.sigmabeta.chipbox.jvm.di.JvmChipboxGraph
+import net.sigmabeta.chipbox.strings.LocalChipboxStringProvider
 import net.sigmabeta.chipbox.ui.theme.ChipboxTheme
 import net.sigmabeta.chipbox.ui.theme.tokens.ChipboxFontDefaults
 
@@ -45,6 +46,7 @@ fun runDesktop(graph: JvmChipboxGraph) = application {
     Window(onCloseRequest = ::exitApplication, title = "Chipbox") {
         CompositionLocalProvider(
             LocalMetroViewModelFactory provides graph.metroViewModelFactory,
+            LocalChipboxStringProvider provides graph.stringProvider,
         ) {
             DesktopApp()
         }
