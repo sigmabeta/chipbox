@@ -1127,22 +1127,48 @@ remainder, sliced by dependency order.
    Milestones 6 + 7 set every prerequisite (toolchain, palette,
    typography, fonts, ViewModel scoping, navigation, sage commonMain
    types). Milestone 9 slice 6 is complete (`ChipboxListEntry` lives in
-   commonMain — see slices 6a–6g above); the remaining work, in
-   dependency order:
+   commonMain — see slices 6a–6g above). Items 7 + 8 below also landed
+   this milestone — Settings is now a real, functioning screen on both
+   targets. **Compose Multiplatform UI port: Settings = done.**
 
-   7. **Desktop folder picker.** `expect`/`actual` or a JVM-only
-      `LibraryLocationPicker` backed by `javax.swing.JFileChooser`.
-   8. **Wire `SettingsScreen` into Voyager.** Replace the demo
-      Home/About screens with the real Settings entry — at minimum a
-      `metroViewModel<SettingsViewModel>()` consumer composable that
-      hosts `ChipboxListEntry` (now commonMain after 6g) over the
-      Settings ViewModel. SettingsRoute itself still lives in
-      androidMain and needs the same kind of last-mile promotion once
-      its remaining Android-only dependencies are resolved.
+   7. **Desktop folder picker** — landed. `SettingsScreen.kt` on the
+      JVM target intercepts `ChipboxEvent.PickFolder` and pops a
+      `javax.swing.JFileChooser` in `DIRECTORIES_ONLY` mode, sending
+      the selected absolute path back as `SettingsAction.FolderPicked`
+      (mirrors the Android SAF `OpenDocumentTree` path through the
+      same shared `SettingsViewModel`). Inlined in the screen file
+      rather than a separate `expect`/`actual` `LibraryLocationPicker`
+      — only one consumer today; factor out when a second one shows up.
+      Note: `LocalFileContentSource.addLibraryLocation` expects a
+      filesystem path, not a `file://` URI, so the action's `uri`
+      field is platform-bag-of-bytes (consistent with the Android side
+      sending a SAF URI string).
+   8. **Wire `SettingsScreen` into Voyager** — landed. JVM
+      `data object SettingsScreen : Screen` pulls `SettingsViewModel`
+      via `metroViewModel<>()` and hosts `ChipboxListEntry` inside a
+      Material3 `Scaffold` (TopAppBar + SnackbarHost). Event handling:
+      `NavigateBack` → `navigator.pop()`, `OpenUrl` →
+      `java.awt.Desktop.browse(URI(url))`, `ShowSnackbar` →
+      `SnackbarHostState`, `CopyToClipboard` →
+      `Toolkit.getDefaultToolkit().systemClipboard`, `PickFolder` →
+      JFileChooser (see item 7). Each screen instantiates its own
+      `TitleBarController` via `CompositionLocalProvider` (Android wires
+      one at the `ChipboxAppUi` root). Also added
+      `kotlinx-coroutines-swing` to the JVM runtime — Compose Desktop
+      runs on the AWT event queue and `viewModelScope.launch` posts to
+      `Dispatchers.Main`, which needs the Swing dispatcher impl to be
+      registered.
 
-   After Settings lands, subsequent feature ports follow the same
-   shape. Image loading (Coil 3 KMP wrapper for `:images`) becomes
-   the next decision when a feature port needs artwork.
+   `SettingsRoute` (the Android-side composable) still lives in
+   androidMain — the SAF `rememberLauncherForActivityResult` keeps it
+   Android-only. The two SettingsScreens (Android + JVM) host the same
+   commonMain `SettingsViewModel` through the same commonMain
+   `ChipboxListEntry`; only the platform glue (folder picker, snackbar
+   host, URL/clipboard sinks) differs.
+
+   Subsequent feature ports follow the same shape. Image loading
+   (Coil 3 KMP wrapper for `:images`) becomes the next decision when
+   a feature port needs artwork.
 
 2. **Real-time JVM audio.** An audio sink (probably a factory, possibly
    `expect`/`actual`): Android `AudioTrack` vs a JVM

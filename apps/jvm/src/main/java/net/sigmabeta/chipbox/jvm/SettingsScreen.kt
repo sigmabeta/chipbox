@@ -21,8 +21,10 @@ import java.awt.Desktop
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.net.URI
+import javax.swing.JFileChooser
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.features.settings.SettingsAction
 import net.sigmabeta.chipbox.features.settings.SettingsViewModel
 import net.sigmabeta.chipbox.ui.chrome.LocalTitleBarController
 import net.sigmabeta.chipbox.ui.chrome.TitleBarController
@@ -36,10 +38,12 @@ import net.sigmabeta.chipbox.ui.list.ChipboxListEntry
  *
  * Event handling differs by platform:
  *   - Android (`SettingsRoute`) intercepts [ChipboxEvent.PickFolder] with the SAF
- *     `OpenDocumentTree` launcher.
- *   - Desktop has no SAF; the JVM folder picker is roadmap item 7 (a `javax.swing.JFileChooser`
- *     backed `LibraryLocationPicker`). Until that lands, [ChipboxEvent.PickFolder] falls through
- *     to a snackbar telling the user the action isn't wired yet.
+ *     `OpenDocumentTree` launcher and sends the resulting SAF URI back through
+ *     `SettingsAction.FolderPicked`.
+ *   - Desktop pops a `javax.swing.JFileChooser` in directories-only mode and sends the
+ *     selected absolute path back as the same `SettingsAction.FolderPicked` payload.
+ *     `LocalFileContentSource.addLibraryLocation` expects a filesystem path (not a `file://`
+ *     URI) — the `uri` field on the action is platform-bag-of-bytes, not a strict URI.
  *
  * [ChipboxListEntry] reads [LocalTitleBarController] for the screen title; the bind is
  * scoped to this screen so each Voyager destination gets its own controller instance.
@@ -65,10 +69,11 @@ data object SettingsScreen : Screen {
                     )
                 }
                 is ChipboxEvent.CopyToClipboard -> copyToClipboard(event.text)
-                ChipboxEvent.PickFolder -> coroutineScope.launch {
-                    snackbarHostState.showSnackbar(
-                        message = "Desktop folder picker coming soon.",
-                    )
+                ChipboxEvent.PickFolder -> {
+                    val path = pickLibraryFolder()
+                    if (path != null) {
+                        viewModel.sendAction(SettingsAction.FolderPicked(path))
+                    }
                 }
                 is ChipboxEvent.NavigateTo -> Unit
             }
@@ -108,4 +113,15 @@ private fun openUrlIfSupported(url: String) {
 private fun copyToClipboard(text: String) {
     val clipboard = Toolkit.getDefaultToolkit().systemClipboard
     clipboard.setContents(StringSelection(text), null)
+}
+
+private fun pickLibraryFolder(): String? {
+    val chooser = JFileChooser().apply {
+        dialogTitle = "Choose music library folder"
+        fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
+        isMultiSelectionEnabled = false
+    }
+    val result = chooser.showOpenDialog(null)
+    if (result != JFileChooser.APPROVE_OPTION) return null
+    return chooser.selectedFile?.absolutePath
 }
