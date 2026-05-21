@@ -1,9 +1,11 @@
+import net.sigmabeta.sage.plugins.components.chipboxNamespace
+
 plugins {
     alias(libs.plugins.sage.android)
 }
 
 android {
-    namespace = "net.sigmabeta.chipbox.strings"
+    namespace = chipboxNamespace()
 }
 
 dependencies {

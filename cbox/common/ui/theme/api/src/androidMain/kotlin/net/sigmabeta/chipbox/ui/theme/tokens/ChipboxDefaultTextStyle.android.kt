@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.ui.theme.tokens
+package net.sigmabeta.chipbox.ui.theme.api.tokens
 
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle

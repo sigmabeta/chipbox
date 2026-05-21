@@ -9,7 +9,7 @@ import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.repository.Repository
-import net.sigmabeta.chipbox.services.LibraryBrowser
+import net.sigmabeta.chipbox.services.api.LibraryBrowser
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet

@@ -5,7 +5,7 @@ import androidx.compose.ui.Modifier
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.models.Platform
-import net.sigmabeta.chipbox.ui.list.ChipboxListEntry
+import net.sigmabeta.chipbox.ui.list.api.ChipboxListEntry
 
 @Composable
 fun GamesForPlatformRoute(

@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerState
-import net.sigmabeta.chipbox.ui.freeform.ChipboxFreeformViewModel
+import net.sigmabeta.chipbox.ui.freeform.api.ChipboxFreeformViewModel
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet

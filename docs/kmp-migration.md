@@ -657,7 +657,7 @@ remainder, sliced by dependency order.
 
   - **`cbox/android/ui/list/api` → `sage.kmp + sage.compose.kmp`.**
     Plugin swap; namespace stays
-    `net.sigmabeta.chipbox.ui.list`; deps split between
+    `net.sigmabeta.chipbox.ui.list.api`; deps split between
     `commonMain` (sage common types + appcomm + ui/vm +
     lifecycle-viewmodel) and `androidMain` (the Android sage
     list screens, chrome, lifecycle-compose helpers).
@@ -1038,7 +1038,7 @@ remainder, sliced by dependency order.
     All three files (TitleBarController, ChromeController, ScreenChrome)
     hoist straight to commonMain — pure Compose runtime over the
     sage commonMain TitleBarModel. Namespace stays
-    `net.sigmabeta.chipbox.ui.chrome` via `androidLibrary { namespace }`.
+    `net.sigmabeta.chipbox.ui.chrome.api` via `androidLibrary { namespace }`.
     Removes one of ChipboxListEntry's three direct barriers.
   - **6f-pre — `sage/android/ui/icons` → `sage.kmp + sage.compose.kmp`
     (added mid-slice).** The 6f plan as written assumed the icons

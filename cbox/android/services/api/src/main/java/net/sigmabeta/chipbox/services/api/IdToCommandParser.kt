@@ -1,0 +1,48 @@
+package net.sigmabeta.chipbox.services.api
+
+import net.sigmabeta.chipbox.player.common.Session
+import net.sigmabeta.chipbox.player.common.SessionType
+import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.services.api.ChipboxPlaybackService.Companion.ID_ROOT
+import net.sigmabeta.sage.logging.Hatchet
+
+object IdToCommandParser {
+    fun handleCommand(director: Director, mediaId: String, hatchet: Hatchet) {
+        val details = mediaId.substringAfter(ID_ROOT)
+        val detailSplit = details.split(".")
+
+        val type = detailSplit[0]
+        val parentId = detailSplit[1]
+        val trackId = detailSplit[2]
+
+        when (type) {
+            LibraryBrowser.COMMAND_GAMES -> director.start(
+                Session(
+                    SessionType.GAME,
+                    parentId.toLong(),
+                    startingTrackId = trackId.toLong()
+                )
+            )
+
+            LibraryBrowser.COMMAND_ARTISTS -> director.start(
+                Session(
+                    SessionType.ARTIST,
+                    parentId.toLong(),
+                    startingTrackId = trackId.toLong()
+                )
+            )
+
+            LibraryBrowser.COMMAND_TRACKS -> director.start(
+                // contentId is unused for ALL_TRACKS (per SessionType docs); parentId here
+                // is the placeholder "top" segment.
+                Session(
+                    SessionType.ALL_TRACKS,
+                    contentId = 0L,
+                    startingTrackId = trackId.toLong()
+                )
+            )
+
+            else -> hatchet.w("Unhandled media command type '$type' (mediaId=$mediaId); ignoring.")
+        }
+    }
+}

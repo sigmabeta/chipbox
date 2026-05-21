@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.strings
+package net.sigmabeta.chipbox.strings.api
 
 import net.sigmabeta.sage.ui.SageStringId
 

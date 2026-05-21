@@ -1,6 +1,6 @@
 @file:Suppress("MagicNumber")
 
-package net.sigmabeta.chipbox.ui.theme
+package net.sigmabeta.chipbox.ui.theme.api
 
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme

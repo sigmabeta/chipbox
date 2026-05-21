@@ -1,3 +1,5 @@
+import net.sigmabeta.sage.plugins.components.chipboxNamespace
+
 plugins {
     alias(libs.plugins.sage.kmp)
     alias(libs.plugins.sage.compose.kmp)
@@ -7,7 +9,7 @@ plugins {
 // Compose scaffolding that binds a list VM to sage's GridScreen / ListScreen (also commonMain).
 kotlin {
     androidLibrary {
-        namespace = "net.sigmabeta.chipbox.ui.list"
+        namespace = chipboxNamespace()
     }
 
     sourceSets {

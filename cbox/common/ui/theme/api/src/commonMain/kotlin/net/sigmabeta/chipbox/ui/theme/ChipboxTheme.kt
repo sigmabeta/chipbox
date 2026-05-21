@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.ui.theme
+package net.sigmabeta.chipbox.ui.theme.api
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

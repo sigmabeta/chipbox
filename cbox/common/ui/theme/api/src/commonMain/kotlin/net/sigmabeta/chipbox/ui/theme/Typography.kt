@@ -1,9 +1,9 @@
-package net.sigmabeta.chipbox.ui.theme
+package net.sigmabeta.chipbox.ui.theme.api
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.font.FontFamily
-import net.sigmabeta.chipbox.ui.theme.tokens.ChipboxTypeScaleTokens
-import net.sigmabeta.chipbox.ui.theme.tokens.ChipboxTypographyTokens
+import net.sigmabeta.chipbox.ui.theme.api.tokens.ChipboxTypeScaleTokens
+import net.sigmabeta.chipbox.ui.theme.api.tokens.ChipboxTypographyTokens
 
 /**
  * Build a Material3 [Typography] from Chipbox's type scale tokens with caller-supplied font

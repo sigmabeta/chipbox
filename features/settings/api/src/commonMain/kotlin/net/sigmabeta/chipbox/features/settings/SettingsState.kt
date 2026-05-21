@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.features.settings
 
 import kotlinx.collections.immutable.toImmutableList
-import net.sigmabeta.chipbox.strings.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction

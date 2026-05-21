@@ -1,3 +1,5 @@
+import net.sigmabeta.sage.plugins.components.chipboxNamespace
+
 plugins {
     alias(libs.plugins.sage.kmp)
     alias(libs.plugins.sage.compose.kmp)
@@ -5,7 +7,7 @@ plugins {
 
 kotlin {
     androidLibrary {
-        namespace = "net.sigmabeta.chipbox.ui.freeform"
+        namespace = chipboxNamespace()
     }
 
     sourceSets {

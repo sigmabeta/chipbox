@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.features.browsebyartist
 
 import net.sigmabeta.chipbox.models.Artist
-import net.sigmabeta.chipbox.strings.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.ListModel

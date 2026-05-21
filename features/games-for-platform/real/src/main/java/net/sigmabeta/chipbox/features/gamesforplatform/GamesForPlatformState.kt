@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.features.gamesforplatform
 
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
-import net.sigmabeta.chipbox.strings.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.components.EmptyStateListModel
