@@ -42,7 +42,7 @@ import net.sigmabeta.sage.ui.strings.AndroidStringProvider
  * Renders a screen's [ListState] through the real SAGE list pipeline, exactly as the app's
  * navigation entry would, but with no ViewModels/Hilt so it is Paparazzi- and `@Preview`-safe.
  *
- * Chipbox's full chrome ([net.sigmabeta.chipbox.appui.api.ChipboxAppUi]) is ViewModel-bound, so the
+ * Chipbox's full chrome ([net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi]) is ViewModel-bound, so the
  * preview uses a lightweight VM-free [PreviewChrome] (top bar driven by the rendered title).
  */
 @Composable
@@ -171,7 +171,7 @@ private fun ListContent(
 }
 
 /**
- * VM-free stand-in for [net.sigmabeta.chipbox.appui.api.ChipboxAppUi]'s scaffold: a Material3 top
+ * VM-free stand-in for [net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi]'s scaffold: a Material3 top
  * bar showing the screen's title. Nav rail/bar and the player overlay are intentionally omitted
  * because they require Hilt ViewModels and are not what these screenshots regression-test.
  */

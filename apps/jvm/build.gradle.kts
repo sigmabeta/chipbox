@@ -328,14 +328,14 @@ dependencies {
     // The JVM target now reuses the same `ChipboxAppUi` composable as Android — see
     // `cbox/android/appui/api` (now sage.kmp). `appui:api` already pulls in every feature
     // module via `api(...)`, so we don't list them individually here.
-    implementation(projects.cbox.android.appui.api)
+    implementation(projects.cbox.common.appui.api)
 
     // Direct deps for things the JVM-side Metro graph (JvmChipboxGraph) needs that aren't
     // covered transitively by appui.
     implementation(projects.features.settings.real)
     implementation(projects.features.library.real)
-    implementation(projects.cbox.android.ui.list.api)
-    implementation(projects.cbox.android.ui.chrome.api)
+    implementation(projects.cbox.common.ui.list.api)
+    implementation(projects.cbox.common.ui.chrome.api)
     // RealDirector — needed by every feature VM that depends on player.director.api
     // (NowPlaying, GameDetail, ArtistDetail, GamesForPlatform, BrowseAllTracks). All wired
     // into the appui module, so without a Director provider the JvmChipboxGraph fails to

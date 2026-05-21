@@ -6,7 +6,7 @@ import dev.zacsweers.metrox.viewmodel.metroViewModel
 import javax.swing.JFileChooser
 import javax.swing.SwingUtilities
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
-import net.sigmabeta.chipbox.ui.list.api.ChipboxListEntry
+import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListEntry
 
 /**
  * JVM/desktop actual — uses `javax.swing.JFileChooser` in DIRECTORIES_ONLY mode. Deferred

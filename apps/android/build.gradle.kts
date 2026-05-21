@@ -92,7 +92,7 @@ kotlin {
 }
 
 dependencies {
-    implementation(projects.cbox.android.appui.api)
+    implementation(projects.cbox.common.appui.api)
     implementation(projects.cbox.android.strings.api)
     implementation(projects.cbox.android.artworkprovider.api)
     implementation(projects.cbox.android.database.all)

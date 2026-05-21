@@ -8,7 +8,7 @@ kotlin {
             dependencies {
                 api(projects.features.browseByArtist.api)
 
-                implementation(projects.cbox.android.ui.list.api)
+                implementation(projects.cbox.common.ui.list.api)
                 implementation(projects.cbox.common.appcomm.api)
                 implementation(projects.cbox.common.strings.api)
                 implementation(projects.cbox.common.repository.api)
