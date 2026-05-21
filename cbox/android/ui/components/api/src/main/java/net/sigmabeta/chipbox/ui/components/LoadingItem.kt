@@ -19,7 +19,6 @@ import net.sigmabeta.chipbox.ui.components.subs.ElevatedRoundRect
 import net.sigmabeta.chipbox.ui.components.subs.Flasher
 import net.sigmabeta.sage.ui.StringGenerator
 import kotlinx.collections.immutable.toImmutableList
-import net.sigmabeta.sage.android.bitmaps.SheetConstants
 import net.sigmabeta.sage.components.HorizontalScrollerListModel
 import net.sigmabeta.sage.components.LoadingItemListModel
 import net.sigmabeta.sage.components.LoadingType
@@ -38,7 +37,7 @@ fun LoadingItem(
     val randomDelay = randomizer.nextInt(200)
 
     val (width, ratio) = when (loadingType) {
-        LoadingType.PAGE -> SheetConstants.MIN_WIDTH.dp to SheetConstants.ASPECT_RATIO
+        LoadingType.PAGE -> PAGE_MIN_WIDTH.dp to PAGE_ASPECT_RATIO
         LoadingType.SQUARE -> SquareConstants.MIN_WIDTH to SquareConstants.ASPECT_RATIO
         LoadingType.NOTIF -> NotifConstants.MIN_WIDTH to NotifConstants.ASPECT_RATIO
         LoadingType.WIDE_ITEM -> WideItemConstants.MIN_WIDTH to WideItemConstants.ASPECT_RATIO
@@ -128,3 +127,5 @@ private fun ColumnScope.Sample(
 }
 
 private const val RANDOMIZER_SEED = 1231L
+private const val PAGE_MIN_WIDTH = 300
+private const val PAGE_ASPECT_RATIO = 0.77272725f

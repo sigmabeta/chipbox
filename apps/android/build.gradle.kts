@@ -137,6 +137,7 @@ dependencies {
 
     implementation(libs.sage.android.coroutines)
     implementation(libs.sage.android.logging)
+    implementation(libs.sage.android.perf)
     implementation(libs.sage.android.ui.list)
     implementation(libs.sage.android.ui.strings)
     implementation(libs.sage.android.ui.themes)

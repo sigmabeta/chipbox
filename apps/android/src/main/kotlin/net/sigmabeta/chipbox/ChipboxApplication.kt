@@ -5,11 +5,21 @@ import dev.zacsweers.metro.createGraphFactory
 import net.sigmabeta.chipbox.artwork.ArtworkProviderGraph
 import net.sigmabeta.chipbox.di.ChipboxAppGraph
 import net.sigmabeta.chipbox.services.ChipboxServiceGraph
+import net.sigmabeta.sage.android.perf.isPerfMeasurementEnabled
 
 class ChipboxApplication :
     Application(),
     ArtworkProviderGraph,
     ChipboxServiceGraph {
+    override fun onCreate() {
+        super.onCreate()
+        // Release builds skip the measureTime { content() } wrapping in sage.android.perf
+        // so release composition is not paying for two System.nanoTime() calls per item.
+        // (Was a compile-time `BuildConfig.DEBUG` const-fold pre-M9 — AGP 9's KMP Android
+        // Library DSL doesn't expose buildConfig generation, so it's a runtime toggle now.)
+        isPerfMeasurementEnabled = BuildConfig.DEBUG
+    }
+
     /**
      * Application-wide Metro graph. Owned here so any Activity / Service / ContentProvider can
      * pull it via `(application as ChipboxApplication).appGraph` and read the accessors on

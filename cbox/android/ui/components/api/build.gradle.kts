@@ -14,7 +14,6 @@ dependencies {
     implementation(libs.sage.common.appcomm)
     implementation(libs.sage.common.images)
 
-    implementation(libs.sage.android.bitmaps)
     implementation(libs.sage.android.perf)
     implementation(libs.sage.android.ui.icons)
 
