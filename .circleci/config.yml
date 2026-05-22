@@ -51,10 +51,12 @@ workflows:
   version: 2
   build_analyze:
     jobs:
-      # kt-lint is self-contained (no Gradle / submodule) — run it in parallel
-      # with setup rather than gating it behind setup.
-      - kt-lint
       - setup
+      # ktlint runs through Gradle now, so it needs the workspace setup produces
+      # (Gradle home + the sage submodule included build).
+      - kt-lint:
+          requires:
+            - setup
       - detekt:
           requires:
             - setup
@@ -64,8 +66,8 @@ workflows:
       # shared-build compiles the JVM target of every module shared between the
       # JVM and Android apps. It runs in parallel with detekt (both gate the
       # heavy Android jobs via android-lint below) rather than behind it — same
-      # fail-fast guarantee, one less job on the critical path. kt-lint is a cheap
-      # gate; setup supplies the workspace.
+      # fail-fast guarantee, one less job on the critical path. It gates behind
+      # kt-lint as a cheap fail-fast check; setup supplies the workspace.
       - shared-build:
           requires:
             - kt-lint
@@ -154,28 +156,31 @@ jobs:
             - .gradle/wrapper
 
   kt-lint:
+    resource_class: medium
+
     docker:
       - image: cimg/android:2024.04.1
 
     environment:
-      JVM_OPTS: -Xmx2048m
+      JVM_OPTS: -Xmx3200m
 
     steps:
-      # ktlint-check.sh downloads the ktlint binary and lints source directly;
-      # it uses no Gradle, so the sage submodule and Gradle home aren't needed
-      # (and skipping the submodule keeps vendored sage/ out of the lint set).
+      - *attach_ws
       - restore_cache:
           keys:
-            - source-v1-{{ .Branch }}-{{ .Revision }}
-            - source-v1-{{ .Branch }}-
-            - source-v1-
-      - checkout
+            - build-cache-ktlint-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-ktlint-v1-{{ .Branch }}-
+            - build-cache-ktlint-v1-
       - run:
           name: Run Ktlint
-          command: ./ktlint-check.sh
-      - store_artifacts:
-          path: ktlint.html
-          destination: ktlint-reports
+          # ktlint runs through Gradle now (org.jlleitschuh.gradle.ktlint). The vendored sage/
+          # submodule is a separate included build, so it stays out of the lint set.
+          # --continue so a failing module doesn't mask violations in others.
+          command: ./gradlew ktlintCheck --continue --build-cache --configuration-cache --no-daemon --max-workers=2
+      - save_cache:
+          key: build-cache-ktlint-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle/caches/build-cache-1
 
   detekt:
     resource_class: medium
