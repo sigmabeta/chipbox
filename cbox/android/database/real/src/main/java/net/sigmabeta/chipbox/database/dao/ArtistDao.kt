@@ -25,6 +25,9 @@ interface ArtistDao {
     @Insert
     suspend fun insert(artist: ArtistEntity): Long
 
+    @Insert
+    suspend fun insertAll(artists: List<ArtistEntity>): List<Long>
+
     @Query("DELETE FROM artist")
     suspend fun nukeTable()
 }

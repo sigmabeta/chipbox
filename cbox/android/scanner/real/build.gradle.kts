@@ -17,6 +17,7 @@ kotlin {
                 api(projects.cbox.common.repository.api)
                 api(projects.cbox.common.contentsource.api)
                 api(projects.cbox.common.readers.api)
+                implementation(projects.cbox.common.perf.api)
                 implementation(libs.sage.common.logging)
             }
         }
