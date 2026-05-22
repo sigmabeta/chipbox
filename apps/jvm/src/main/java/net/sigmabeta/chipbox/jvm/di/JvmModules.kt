@@ -86,6 +86,9 @@ object JvmDatabaseModule {
         .databaseBuilder<ChipboxDatabase>(name = path)
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
+        // The library is a derived cache; on a schema bump just rebuild it on the next scan rather
+        // than ship migrations. Matches the Android builder.
+        .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 }
 

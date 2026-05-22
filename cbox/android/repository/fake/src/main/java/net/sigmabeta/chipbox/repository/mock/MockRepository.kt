@@ -203,7 +203,9 @@ class MockRepository(
         .firstOrNull { it.id == id }
         ?.toTrack(withGame, withArtists)
 
-    override suspend fun addGame(rawGame: RawGame) = Unit
+    override suspend fun upsertGame(rawGame: RawGame) = Unit
+
+    override suspend fun pruneGames(keptFolderKeys: Set<String>) = Unit
 
     override suspend fun clearLibrary() {
         resetData()

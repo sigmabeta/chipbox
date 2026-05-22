@@ -256,7 +256,11 @@ class MemoryRepository(
         searchHistory.value = searchHistory.value.filterNot { it.id == id }
     }
 
-    override suspend fun addGame(rawGame: RawGame) {
+    // In-memory fake: a plain add is enough for previews/tests; idempotent reconciliation lives in
+    // the real repository.
+    override suspend fun pruneGames(keptFolderKeys: Set<String>) = Unit
+
+    override suspend fun upsertGame(rawGame: RawGame) {
         // Get and convert tracks
         val tracks = rawGame.tracks
             .map { it.toMemoryTrack() }

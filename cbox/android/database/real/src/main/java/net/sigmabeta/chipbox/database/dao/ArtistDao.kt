@@ -28,6 +28,10 @@ interface ArtistDao {
     @Insert
     suspend fun insertAll(artists: List<ArtistEntity>): List<Long>
 
+    // Reconciliation cleanup: drop artists no track points at any more.
+    @Query("DELETE FROM artist WHERE id NOT IN (SELECT DISTINCT artistId FROM track_artist_join)")
+    suspend fun deleteOrphans()
+
     @Query("DELETE FROM artist")
     suspend fun nukeTable()
 }
