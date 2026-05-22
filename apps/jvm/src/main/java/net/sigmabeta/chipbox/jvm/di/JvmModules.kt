@@ -108,7 +108,8 @@ object JvmRepositoryModule {
 object JvmContentSourceModule {
     @Provides
     @SingleIn(AppScope::class)
-    fun provideLocalFileContentSource(): LocalFileContentSource = LocalFileContentSource()
+    fun provideLocalFileContentSource(@Named("workDir") workDir: File): LocalFileContentSource =
+        LocalFileContentSource(File(workDir, "library-locations.txt"))
 
     @Provides @SingleIn(AppScope::class)
     fun provideLibrarySource(impl: LocalFileContentSource): LibrarySource = impl
