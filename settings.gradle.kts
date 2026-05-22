@@ -103,6 +103,7 @@ include(
     ":cbox:common:debug-info:real",
     ":cbox:common:entities:api",
     ":cbox:common:models:api",
+    ":cbox:common:perf:api",
     ":cbox:common:player:buffer:all",
     ":cbox:common:player:buffer:api",
     ":cbox:common:player:buffer:di",
