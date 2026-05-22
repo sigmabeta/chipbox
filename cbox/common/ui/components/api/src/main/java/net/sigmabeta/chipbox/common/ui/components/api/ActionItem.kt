@@ -14,8 +14,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
+import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
+import net.sigmabeta.chipbox.common.ui.components.api.utils.outerFocusPadding
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.ui.Icon
@@ -30,12 +34,14 @@ fun ActionItem(
 ) {
     Row(
         modifier = modifier
+            .padding(padding.outerFocusPadding())
             .fillMaxWidth()
             .wrapContentHeight()
-            .padding(padding)
+            .clip(FocusAreaShape)
             .clickable(
                 onClick = { actionSink.sendAction(model.clickAction) },
             )
+            .padding(padding.innerFocusPadding())
     ) {
         Icon(
             imageVector = model.icon.vector(),

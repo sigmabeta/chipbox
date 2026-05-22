@@ -16,12 +16,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.chipbox.common.ui.components.api.subs.ElevatedCircle
+import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
 import net.sigmabeta.chipbox.common.ui.components.api.utils.ImageSize
+import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
+import net.sigmabeta.chipbox.common.ui.components.api.utils.outerFocusPadding
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.ImageNameListModel
@@ -76,10 +80,12 @@ fun ImageNameListItem(
 
     Row(
         modifier = modifier
+            .padding(padding.outerFocusPadding())
             .fillMaxWidth()
             .wrapContentHeight()
+            .clip(FocusAreaShape)
             .clickable { actionSink.sendAction(clickAction) }
-            .padding(paddingValues = padding)
+            .padding(padding.innerFocusPadding())
             .padding(vertical = 4.dp)
     ) {
         ElevatedCircle(

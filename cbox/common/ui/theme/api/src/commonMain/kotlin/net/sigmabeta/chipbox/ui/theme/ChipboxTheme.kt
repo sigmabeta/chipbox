@@ -1,8 +1,12 @@
 package net.sigmabeta.chipbox.ui.theme.api
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RippleConfiguration
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.text.font.FontFamily
 
 /**
@@ -19,6 +23,7 @@ import androidx.compose.ui.text.font.FontFamily
  * multiplatform (it lives in `androidx.compose.foundation`), so once SageMaterial's scheme pick
  * is replicated here, no Android-only theme dep is needed on the JVM side.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChipboxTheme(
     brand: FontFamily = FontFamily.Default,
@@ -30,10 +35,16 @@ fun ChipboxTheme(
 ) {
     val isDark = darkTheme ?: isSystemInDarkTheme()
     val colors = if (isDark) ChipboxDark else ChipboxLight
+    // Recolors the state-layer overlay the default ripple paints on focus/hover/press for every
+    // clickable. Change this color to restyle the focus state app-wide.
+    val rippleConfiguration = RippleConfiguration(color = colors.primary)
     MaterialTheme(
         colorScheme = colors,
         typography = buildChipboxTypography(brand, plain, brandScale, plainScale),
-        content = content,
-    )
+    ) {
+        CompositionLocalProvider(LocalRippleConfiguration provides rippleConfiguration) {
+            content()
+        }
+    }
 }
 
