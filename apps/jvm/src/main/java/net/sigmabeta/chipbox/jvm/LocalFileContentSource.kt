@@ -18,10 +18,14 @@ import java.io.File
  */
 internal const val SOURCE_ID = "file"
 
-class LocalFileContentSource : LibrarySource {
+class LocalFileContentSource(
+    // Newline-separated absolute paths of the user's library locations, persisted across runs (the
+    // JVM has no SAF permission store like Android's, so we keep our own small file).
+    private val locationsFile: File,
+) : LibrarySource {
     override val sourceId: String = SOURCE_ID
 
-    private val _locations = MutableStateFlow<List<LibraryLocationInfo>>(emptyList())
+    private val _locations = MutableStateFlow(readPersistedLocations())
     override val locations: StateFlow<List<LibraryLocationInfo>> = _locations.asStateFlow()
 
     fun addLocation(dir: File) {
@@ -35,6 +39,24 @@ class LocalFileContentSource : LibrarySource {
         val info = LibraryLocationInfo(file.absolutePath, file.name)
         _locations.update { current ->
             if (current.any { it.identifier == info.identifier }) current else current + info
+        }
+        persistLocations()
+    }
+
+    private fun readPersistedLocations(): List<LibraryLocationInfo> =
+        if (locationsFile.isFile) {
+            locationsFile.readLines()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .map { path -> LibraryLocationInfo(path, File(path).name) }
+        } else {
+            emptyList()
+        }
+
+    private fun persistLocations() {
+        runCatching {
+            locationsFile.parentFile?.mkdirs()
+            locationsFile.writeText(_locations.value.joinToString("\n") { it.identifier })
         }
     }
 

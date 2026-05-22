@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
@@ -42,6 +43,24 @@ class AndroidFileContentSource(
     override val locations: StateFlow<List<LibraryLocationInfo>> = _libraryLocations
         .map { list -> list.map { LibraryLocationInfo(it.uri.toString(), it.displayName) } }
         .stateIn(sourceScope, SharingStarted.Eagerly, emptyList())
+
+    init {
+        // SAF persists the tree-URI read grants taken in addLibraryLocation across restarts (that's
+        // what takePersistableUriPermission does), so the authoritative list of library locations is
+        // already on disk — rebuild the in-memory list from it on startup. No separate store needed.
+        sourceScope.launch {
+            val restored = context.contentResolver.persistedUriPermissions
+                .filter { it.isReadPermission }
+                .map { LibraryLocation(it.uri, queryTreeDisplayName(it.uri)) }
+            if (restored.isNotEmpty()) {
+                _libraryLocations.update { current ->
+                    val known = current.mapTo(mutableSetOf()) { it.uri }
+                    current + restored.filterNot { it.uri in known }
+                }
+                hatchet.i("Restored ${restored.size} persisted library location(s).")
+            }
+        }
+    }
 
     override fun scanFiles(): Flow<LibraryFileInfo> = scanLibraryFiles().map { libFile ->
         LibraryFileInfo(
