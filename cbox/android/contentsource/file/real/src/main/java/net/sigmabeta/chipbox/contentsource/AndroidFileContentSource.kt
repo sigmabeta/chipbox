@@ -51,6 +51,7 @@ class AndroidFileContentSource(
             extension = libFile.extension,
             mimeType = libFile.mimeType,
             sizeBytes = libFile.sizeBytes,
+            lastModifiedMs = libFile.lastModifiedMs,
         )
     }
 
@@ -94,6 +95,7 @@ class AndroidFileContentSource(
                 DocumentsContract.Document.COLUMN_DISPLAY_NAME,
                 DocumentsContract.Document.COLUMN_MIME_TYPE,
                 DocumentsContract.Document.COLUMN_SIZE,
+                DocumentsContract.Document.COLUMN_LAST_MODIFIED,
             ),
             null,
             null,
@@ -104,6 +106,8 @@ class AndroidFileContentSource(
                 val name = cursor.getString(1) ?: continue
                 val mime = cursor.getString(2)
                 val size = if (cursor.isNull(COLUMN_INDEX_SIZE)) 0L else cursor.getLong(COLUMN_INDEX_SIZE)
+                val lastModified =
+                    if (cursor.isNull(COLUMN_INDEX_LAST_MODIFIED)) 0L else cursor.getLong(COLUMN_INDEX_LAST_MODIFIED)
                 if (mime == DocumentsContract.Document.MIME_TYPE_DIR) {
                     walk(treeUri, childDocId)
                 } else {
@@ -116,6 +120,7 @@ class AndroidFileContentSource(
                             extension = name.substringAfterLast('.', "").lowercase(),
                             mimeType = mime,
                             sizeBytes = size,
+                            lastModifiedMs = lastModified,
                         )
                     )
                 }
@@ -141,5 +146,6 @@ class AndroidFileContentSource(
         const val SOURCE_ID = "android-file"
 
         private const val COLUMN_INDEX_SIZE = 3
+        private const val COLUMN_INDEX_LAST_MODIFIED = 4
     }
 }

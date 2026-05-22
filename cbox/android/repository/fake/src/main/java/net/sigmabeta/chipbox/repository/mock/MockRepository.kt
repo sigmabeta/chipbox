@@ -18,6 +18,7 @@ import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.repository.Data
+import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.mock.models.MockArtist
@@ -202,6 +203,8 @@ class MockRepository(
     ) = tracks
         .firstOrNull { it.id == id }
         ?.toTrack(withGame, withArtists)
+
+    override suspend fun folderSnapshots(): Map<String, FolderSnapshot> = emptyMap()
 
     override suspend fun upsertGame(rawGame: RawGame) = Unit
 

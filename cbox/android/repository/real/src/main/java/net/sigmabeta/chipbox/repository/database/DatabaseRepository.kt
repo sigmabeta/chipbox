@@ -27,6 +27,7 @@ import net.sigmabeta.chipbox.models.decodeChainFiles
 import net.sigmabeta.chipbox.models.encodeChainFiles
 import net.sigmabeta.chipbox.perf.traceAsync
 import net.sigmabeta.chipbox.repository.Data
+import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
@@ -143,6 +144,10 @@ class DatabaseRepository(
         .getTrackSync(id)
         ?.toTrack(withGame, withArtists)
 
+    override suspend fun folderSnapshots(): Map<String, FolderSnapshot> = gameDao
+        .getSignatureRows()
+        .associate { it.folderKey to FolderSnapshot(it.signature, it.trackCount) }
+
     override suspend fun upsertGame(rawGame: RawGame) {
         when (val existing = gameDao.getByFolderKeySync(rawGame.folderKey)) {
             null -> insertNewGame(rawGame)
@@ -153,7 +158,12 @@ class DatabaseRepository(
     private suspend fun insertNewGame(rawGame: RawGame) {
         val gameId = traceAsync(TRACE_INSERT_GAME, nextCookie()) {
             gameDao.insert(
-                GameEntity(title = rawGame.title, photoUrl = rawGame.photoUrl, folderKey = rawGame.folderKey)
+                GameEntity(
+                    title = rawGame.title,
+                    photoUrl = rawGame.photoUrl,
+                    folderKey = rawGame.folderKey,
+                    folderSignature = rawGame.folderSignature,
+                )
             )
         }
         val artistsByName = resolveGameArtists(rawGame)
@@ -169,9 +179,15 @@ class DatabaseRepository(
 
     private suspend fun updateExistingGame(existing: GameEntity, rawGame: RawGame) {
         val gameId = existing.id
-        if (existing.title != rawGame.title || existing.photoUrl != rawGame.photoUrl) {
-            gameDao.update(existing.copy(title = rawGame.title, photoUrl = rawGame.photoUrl))
-        }
+        // We only reach the update path because the folder's signature changed, so refresh the row
+        // (title/photo may have changed) and store the new signature for next time.
+        gameDao.update(
+            existing.copy(
+                title = rawGame.title,
+                photoUrl = rawGame.photoUrl,
+                folderSignature = rawGame.folderSignature,
+            )
+        )
 
         val artistsByName = resolveGameArtists(rawGame)
 

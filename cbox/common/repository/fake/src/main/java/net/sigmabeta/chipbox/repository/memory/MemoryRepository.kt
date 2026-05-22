@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.repository.Data
+import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
@@ -256,8 +257,10 @@ class MemoryRepository(
         searchHistory.value = searchHistory.value.filterNot { it.id == id }
     }
 
-    // In-memory fake: a plain add is enough for previews/tests; idempotent reconciliation lives in
-    // the real repository.
+    // In-memory fake: a plain add is enough for previews/tests; idempotent reconciliation and
+    // skip-unchanged-folder logic live in the real repository.
+    override suspend fun folderSnapshots(): Map<String, FolderSnapshot> = emptyMap()
+
     override suspend fun pruneGames(keptFolderKeys: Set<String>) = Unit
 
     override suspend fun upsertGame(rawGame: RawGame) {

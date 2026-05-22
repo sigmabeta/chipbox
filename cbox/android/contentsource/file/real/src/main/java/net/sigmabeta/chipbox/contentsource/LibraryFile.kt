@@ -9,4 +9,5 @@ data class LibraryFile(
     val extension: String,
     val mimeType: String?,
     val sizeBytes: Long,
+    val lastModifiedMs: Long,
 )

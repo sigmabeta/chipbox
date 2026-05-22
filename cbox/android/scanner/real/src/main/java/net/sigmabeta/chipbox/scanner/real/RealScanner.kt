@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.scanner.real
 
+import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineDispatcher
@@ -22,6 +23,7 @@ import net.sigmabeta.chipbox.readers.PsfTagInfo
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.readers.isPsfFamily
 import net.sigmabeta.chipbox.readers.orUnknown
+import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
@@ -90,6 +92,9 @@ class RealScanner(
             }
             val groups = files.groupBy { it.parentFolderId }
             hatchet.d("Found ${files.size} file(s) across ${groups.size} folder(s).")
+            // Pre-scan snapshot of stored folder signatures, so a folder whose files are unchanged
+            // (same paths, sizes, mtimes) is skipped without any reads or parsing.
+            val snapshot = repository.folderSnapshots()
             // Folder ids that produced a game this scan — the "kept" set for the prune sweep below.
             val seenFolderKeys = ConcurrentHashMap.newKeySet<String>()
             // Folders are independent (each scanGroup has its own metadata + tag caches), and most
@@ -100,12 +105,7 @@ class RealScanner(
             total = coroutineScope {
                 groups.map { (folderId, group) ->
                     async {
-                        semaphore.withPermit {
-                            hatchet.d("Scanning folder $folderId (${group.size} file(s)).")
-                            traceAsync(TRACE_SCAN_GROUP, nextCookie()) {
-                                scanGroup(folderId, group.sortedBy { it.name })
-                            }.also { if (it.gamesFound > 0) seenFolderKeys.add(folderId) }
-                        }
+                        semaphore.withPermit { scanFolder(folderId, group, snapshot, seenFolderKeys) }
                     }
                 }.awaitAll().fold(Progress.EMPTY, Progress::plus)
             }
@@ -129,7 +129,36 @@ class RealScanner(
         emitEvent(ScannerEvent.Unknown)
     }
 
-    private suspend fun scanGroup(folderKey: String, files: List<LibraryFileInfo>): Progress {
+    // Scans one folder — unless its file signature matches the stored one, in which case it's
+    // skipped entirely (no reads, parsing, or DB writes) and just recorded as kept. Either way a
+    // folder that has/keeps a game is added to [seenFolderKeys] for the prune sweep.
+    private suspend fun scanFolder(
+        folderId: String,
+        group: List<LibraryFileInfo>,
+        snapshot: Map<String, FolderSnapshot>,
+        seenFolderKeys: MutableSet<String>,
+    ): Progress {
+        val sorted = group.sortedBy { it.name }
+        val signature = folderSignature(sorted)
+        val known = snapshot[folderId]
+        if (known != null && known.signature == signature) {
+            hatchet.d("Folder $folderId unchanged — skipping ${group.size} file(s).")
+            seenFolderKeys.add(folderId)
+            return Progress(1, known.trackCount, 0)
+        }
+        hatchet.d("Scanning folder $folderId (${group.size} file(s)).")
+        return traceAsync(TRACE_SCAN_GROUP, nextCookie()) {
+            scanGroup(folderId, sorted, signature)
+        }.also { if (it.gamesFound > 0) seenFolderKeys.add(folderId) }
+    }
+
+    // [signature] is the folder's precomputed hash (see [folderSignature]); the caller already
+    // decided this folder changed, and it gets persisted on the game for the next scan's skip check.
+    private suspend fun scanGroup(
+        folderKey: String,
+        files: List<LibraryFileInfo>,
+        signature: String,
+    ): Progress {
         var imagePath: String? = null
         val tracksByFilename = LinkedHashMap<String, MutableList<RawTrack>>()
         val m3uFiles = mutableListOf<LibraryFileInfo>()
@@ -280,10 +309,22 @@ class RealScanner(
         val gameName = rawTracks.first().game
         hatchet.i("Adding game \"$gameName\" with ${checked.size} track(s).")
         traceAsync(TRACE_UPSERT_GAME, nextCookie()) {
-            repository.upsertGame(RawGame(gameName, imagePath, folderKey, checked))
+            repository.upsertGame(RawGame(gameName, imagePath, folderKey, signature, checked))
         }
         emitEvent(ScannerEvent.GameFoundEvent(gameName, rawTracks.size, imagePath.orUnknown()))
         return Progress(1, rawTracks.size, failed)
+    }
+
+    // A content-free fingerprint of a folder: every file's identifier, size and mtime, sorted and
+    // hashed. Two scans yield the same value iff the folder's files are unchanged, which lets the
+    // scan skip re-reading it. Computed from discovery metadata alone — no file is opened.
+    private fun folderSignature(files: List<LibraryFileInfo>): String {
+        val joined = files
+            .sortedBy { it.identifier }
+            .joinToString("\n") { "${it.identifier}|${it.sizeBytes}|${it.lastModifiedMs}" }
+        return MessageDigest.getInstance("SHA-256")
+            .digest(joined.encodeToByteArray())
+            .joinToString("") { byte -> "%02x".format(byte.toInt() and BYTE_MASK) }
     }
 
     private suspend fun resolvePsfChain(
@@ -366,6 +407,7 @@ class RealScanner(
         private const val TAG_UNKNOWN = "Unknown"
         private const val MAX_LIB_DEPTH = 8
         private const val DEFAULT_LENGTH_MS = 2L * 60 * 1000 + 30 * 1000
+        private const val BYTE_MASK = 0xFF
 
         // Bounds for [scanParallelism]; see the comment there. MAX is the traced ceiling (going
         // past it oversubscribes the SAF provider); MIN keeps low-core devices usefully concurrent

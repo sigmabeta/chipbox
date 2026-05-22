@@ -19,6 +19,14 @@ interface GameDao {
     @Query("SELECT * FROM game")
     suspend fun getAllSync(): List<GameEntity>
 
+    // Pre-scan snapshot: each game's folder signature + track count, for skip-unchanged decisions.
+    @Query(
+        "SELECT game.folder_key AS folderKey, game.folder_signature AS signature, " +
+            "COUNT(track.id) AS trackCount FROM game " +
+            "LEFT JOIN track ON track.game_id = game.id GROUP BY game.id"
+    )
+    suspend fun getSignatureRows(): List<GameSignatureRow>
+
     @Update
     suspend fun update(game: GameEntity)
 
@@ -48,3 +56,10 @@ interface GameDao {
     @Query("DELETE FROM game")
     suspend fun nukeTable()
 }
+
+/** Projection for [GameDao.getSignatureRows]. */
+data class GameSignatureRow(
+    val folderKey: String,
+    val signature: String,
+    val trackCount: Int,
+)

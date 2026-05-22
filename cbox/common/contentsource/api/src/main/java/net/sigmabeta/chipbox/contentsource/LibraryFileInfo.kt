@@ -13,4 +13,7 @@ data class LibraryFileInfo(
     val extension: String,
     val mimeType: String?,
     val sizeBytes: Long,
+    // Last-modified time (epoch ms, 0 if the source can't report it). Combined with [sizeBytes] it
+    // forms the per-file signature the scanner hashes to detect unchanged folders and skip them.
+    val lastModifiedMs: Long,
 )
