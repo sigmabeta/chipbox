@@ -1,8 +1,9 @@
 # Kotlin Multiplatform migration — plan & status
 
 Status: **Milestone 8 implemented; Milestone 9 in progress (slices
-1–5d done + 6a/6b/6c/6d/6e/6f-pre/6f/6g done — Milestone 9 slice 6
-complete).** JVM is the second
+1–5d done + 6a/6b/6c/6d/6e/6f-pre/6f/6g done + slice 7 done — the
+playback-status port lands the last `sage.android` feature, so every
+chipbox `features/*` module is now `sage.kmp`).** JVM is the second
 target with a real library *and* a
 Compose Multiplatform desktop window with real pixel-art fonts,
 Metro-backed ViewModel scoping, and Voyager-driven navigation. All
@@ -1120,6 +1121,78 @@ remainder, sliced by dependency order.
     KMP, so the build-file comment claiming ChipboxListEntry was pinned
     to androidMain was stale and got rewritten). SettingsRoute is still
     androidMain; promoting it is part of roadmap item 8.
+
+- **Slice 7 — playback-status feature ported (last `sage.android`
+  feature, done).** The debug-only Playback Status diagnostics screen
+  was the final feature module on `sage.android`. It had been orphaned
+  during the Hilt → Metro migration: dropped from the appui graph (its
+  `debug=real`/`release=fake` `PlaybackStatusEntryPoint` variant split
+  is exactly the `@ContributesTo` aggregation Metro 1.1.1 couldn't do
+  reliably), and its `EntryPoint.register(NavGraphBuilder, …)` was the
+  only remaining caller of the AndroidX `navigation-compose` API that
+  Voyager replaced. The port resolved the aggregation problem by
+  *deleting* the obsolete machinery rather than fixing it — the two
+  jobs the EntryPoint did are now done elsewhere:
+
+  - **Navigation** is `ChipboxEvent.NavigateTo(PlaybackStatus)` +
+    `screenFor()` (same as every other feature), so the
+    `NavGraphBuilder.composable<>` registration is gone.
+  - **Debug-gating** is the Settings `shouldShowDebug` flag (the 5-tap
+    build-date toggle) gating the `debugSection` row — a runtime gate,
+    not a build variant. So `features/playback-status/fake` (which
+    existed only to report `isAvailable = false` in release) was
+    **deleted entirely**, along with `PlaybackStatusEntryPoint` /
+    `RealPlaybackStatusEntryPoint` and the real/fake DI containers.
+
+  Conversions:
+  - **`features/playback-status/api` → `sage.feature.api`.** `PlaybackStatus`
+    (`@Serializable data object` route key) `git mv`'d to commonMain;
+    the convention plugin supplies serialization + the derived
+    namespace (`…playbackstatus.api`, matching the old explicit one).
+  - **`features/playback-status/real` → `sage.feature.real`
+    (`sage.kmp + sage.compose.kmp + metro`).** `PlaybackStatusViewModel`
+    / `State` / `Action` stay in `src/main/java` (= `jvmSharedMain`):
+    `PlaybackStatusState` reaches the `jvmSharedMain`-resident
+    `PlaybackDebugInfo` / `VolumeProcessor.KEY_*` types and uses
+    `java.net.URLDecoder` + `String.format`, so commonMain would mean
+    hoisting foundational modules + multiplatform rewrites — the same
+    call SettingsViewModel made. `PlaybackStatusRoute` became
+    `expect`/`actual` (commonMain `expect`, identical androidMain +
+    jvmMain `actual`s) so the shared `screenFor()` can reach it from
+    commonMain while the actuals see the jvmSharedMain VM. Unlike
+    Settings the two actuals are byte-identical (no platform-specific
+    picker) — the split is purely a source-set-visibility bridge.
+  - **appui** re-added `implementation(playbackStatus.api)` +
+    `api(playbackStatus.real)` (the `api` re-exposes the VM's
+    `@ContributesIntoMap` so it aggregates into both `ChipboxAppGraph`
+    and `JvmChipboxGraph`); `screenFor()` maps `PlaybackStatus →
+    PlaybackStatusScreen`.
+  - **Settings** restored the debug-section row (the
+    `SETTINGS_LABEL/CAPTION_PLAYBACK_STATUS` strings already existed in
+    both the Android XML and the JVM strings map) and `PlaybackStatusClicked`
+    now emits `NavigateTo(PlaybackStatus)` instead of a "not implemented"
+    snackbar.
+  - **JVM graph** gained the three things it lacked for
+    `RealDebugInfoManager(director, generator, speaker, bufferDebugSource,
+    scope)`: `apps/jvm` now depends on `cbox.common.debug-info.di`
+    (`sage.di.jvm` — auto-contributes `DebugInfoManager` via
+    `@ContributesTo(AppScope)`, no variant trouble; Android already
+    pulled it), plus a `BufferDebugSource` binding (`RealBufferManager`,
+    mirroring the Android `BufferModule`) and a `JvmCoroutinesModule`
+    `CoroutineScope` (`SupervisorJob() + Dispatchers.Default` — the
+    JVM analog of the `sage.android` `CoroutinesModule` the JVM target
+    can't use). Director/Generator/Speaker were already in the graph.
+
+  With this, **every chipbox `features/*` module is `sage.kmp`**; the
+  remaining `sage.android` modules are all genuine Android-only end
+  states (DI glue, SAF contentsource, `AudioTrack` speaker,
+  artworkprovider, `R.string`/previews, audio service).
+
+  Verified: `:apps:android:assembleDebug` + `:apps:jvm:compileKotlin`
+  green; detekt clean on all six touched modules
+  (`features/playback-status:{api,real}`, `features/settings:{api,real}`,
+  `cbox/common/appui/api`, `apps/jvm`); ktlint clean on touched files.
+  Device/desktop runtime testing of the screen handed to the user.
 
 ## Roadmap (not yet done)
 

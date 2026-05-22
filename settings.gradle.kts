@@ -167,7 +167,6 @@ include(
     ":features:now-playing:api",
     ":features:now-playing:real",
     ":features:playback-status:api",
-    ":features:playback-status:fake",
     ":features:playback-status:real",
     ":features:search:api",
     ":features:search:real",

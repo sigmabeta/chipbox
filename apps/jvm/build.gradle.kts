@@ -370,6 +370,12 @@ dependencies {
     implementation(projects.cbox.common.player.common.api)
     implementation(projects.cbox.common.repository.api)
     implementation(projects.cbox.common.models.api)
+    // DebugInfoModule's `@ContributesTo(AppScope) @Provides` binds DebugInfoManager →
+    // RealDebugInfoManager(director, generator, speaker, bufferDebugSource, scope), reached by
+    // the PlaybackStatusViewModel now wired into the shared shell. `:di` is sage.di.jvm (the
+    // Android app pulls the same module), so no variant-resolution trouble on the JVM classpath.
+    // BufferDebugSource + CoroutineScope are supplied by JvmModules.kt.
+    implementation(projects.cbox.common.debugInfo.di)
 
     // Room KMP database used as the JVM target's real library. `sqlite-bundled` is the
     // cross-platform Room driver Android doesn't need.

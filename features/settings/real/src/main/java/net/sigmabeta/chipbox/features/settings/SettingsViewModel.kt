@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
@@ -99,12 +100,7 @@ class SettingsViewModel @Inject constructor(
 
             SettingsAction.BuildDateClicked -> onBuildDateClicked()
 
-            SettingsAction.PlaybackStatusClicked -> {
-                hatchet.w(
-                    "Playback Status screen not migrated yet — re-link when the feature lands.",
-                )
-                emit(ChipboxEvent.ShowSnackbar("Playback Status: not implemented yet."))
-            }
+            SettingsAction.PlaybackStatusClicked -> emit(ChipboxEvent.NavigateTo(PlaybackStatus))
 
             else -> Unit
         }
