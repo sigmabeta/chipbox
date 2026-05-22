@@ -6,19 +6,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.common.ui.components.api.previews.PreviewActionSink
-import net.sigmabeta.sage.ui.StringGenerator
-import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
 import kotlinx.collections.immutable.toImmutableList
+import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
+import net.sigmabeta.chipbox.common.ui.components.api.previews.PreviewActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.HorizontalScrollerListModel
 import net.sigmabeta.sage.components.SmallTextListModel
+import net.sigmabeta.sage.ui.StringGenerator
 import java.util.Random
 
 @Preview

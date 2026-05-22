@@ -31,19 +31,3 @@ fun AppTheme(
         content = content,
     )
 }
-
-@Composable
-fun AppThemeMenu(
-    brand: ChipboxFont = ChipboxFontDefaults.Brand,
-    plain: ChipboxFont = ChipboxFontDefaults.Plain,
-    fontScale: Float = 1.0f,
-    content: @Composable () -> Unit,
-) {
-    ChipboxThemeMenu(
-        brand = brand.toFontFamily(),
-        plain = plain.toFontFamily(),
-        brandScale = brand.scaleFactor * fontScale,
-        plainScale = plain.scaleFactor * fontScale,
-        content = content,
-    )
-}
