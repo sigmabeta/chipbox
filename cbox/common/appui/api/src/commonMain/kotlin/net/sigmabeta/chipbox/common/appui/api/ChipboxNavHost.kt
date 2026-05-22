@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
 import cafe.adriel.voyager.navigator.tab.CurrentTab
+import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -158,8 +159,21 @@ internal object ChipboxTabsScreen : Screen {
                         topAppBarState.heightOffset = 0f
                     }
 
+                    // Selecting a tab clears that tab's stack and starts a new one. We pop the
+                    // *outgoing* (currently active) tab to its root before switching: because
+                    // every switch resets the tab being left, each tab's saved state stays at
+                    // just its root, so the tab you arrive at is always fresh. Re-tapping the
+                    // current tab pops it to root in place. `popAll()` keeps the root and —
+                    // unlike `popUntilRoot()` — doesn't reach up into the tab/outer navigators.
+                    val selectTab: (Tab) -> Unit = { target ->
+                        activeTabNavigator.navigator?.popAll()
+                        if (tabNavigator.current.key != target.key) {
+                            tabNavigator.current = target
+                        }
+                    }
+
                     NavigationSuiteScaffold(
-                        navigationSuiteItems = navItems(tabNavigator),
+                        navigationSuiteItems = navItems(tabNavigator, activeTabNavigator, selectTab),
                         layoutType = if (chrome.showNavBar) {
                             layoutType
                         } else {
@@ -185,9 +199,7 @@ internal object ChipboxTabsScreen : Screen {
                                         navigationIcon = {
                                             TopAppBarNavIcon(
                                                 shouldShowBack = titleBar.shouldShowBack,
-                                                onMenu = {
-                                                    tabNavigator.current = SettingsTab
-                                                },
+                                                onMenu = { selectTab(SettingsTab) },
                                             )
                                         },
                                         scrollBehavior = scrollBehavior,
@@ -270,11 +282,19 @@ private fun TopAppBarNavIcon(shouldShowBack: Boolean, onMenu: () -> Unit) {
     }
 }
 
-private fun navItems(tabNavigator: TabNavigator): NavigationSuiteScope.() -> Unit = {
+private fun navItems(
+    tabNavigator: TabNavigator,
+    activeTabNavigator: ActiveTabNavigator,
+    onSelectTab: (Tab) -> Unit,
+): NavigationSuiteScope.() -> Unit = {
+    // A pushed [TablessScreen] (e.g. NowPlaying) isn't owned by any tab, so show no tab as
+    // selected while one is on top of the active tab's stack. Reading the active navigator's
+    // `lastItem` here keeps the highlight reactive to push/pop within the tab.
+    val onTablessScreen = activeTabNavigator.navigator?.lastItem is TablessScreen
     AllTabs.forEach { tab ->
         item(
-            selected = tabNavigator.current.key == tab.key,
-            onClick = { tabNavigator.current = tab },
+            selected = !onTablessScreen && tabNavigator.current.key == tab.key,
+            onClick = { onSelectTab(tab) },
             // `Tab.options` is `@Composable get` — read it inside the composable closures
             // (icon/label), not in the outer non-composable lambda body.
             icon = { Icon(painter = tab.options.icon!!, contentDescription = null) },
