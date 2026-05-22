@@ -84,8 +84,8 @@ present (set in CircleCI); local builds fall back to debug signing.
 - **Compose Multiplatform** (Material 3) for the shared UI
 - **Voyager** for navigation
 - **Paparazzi** for screenshot tests (`./gradlew verifyPaparazziDebug`)
-- **ktlint** / **detekt** for static analysis (`./ktlint-check.sh`,
-  `./ktlint-fix.sh`)
+- **ktlint** / **detekt** for static analysis (`./gradlew ktlintCheck detekt`;
+  `./gradlew ktlintFormat` auto-fixes)
 - **CircleCI** for CI (Android and JVM build pipelines)
 
 ## Roadmap
