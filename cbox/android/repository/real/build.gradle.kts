@@ -14,6 +14,7 @@ kotlin {
             dependencies {
                 api(projects.cbox.common.repository.api)
                 api(projects.cbox.android.database.all)
+                implementation(projects.cbox.common.perf.api)
                 implementation(libs.sage.common.logging)
             }
         }

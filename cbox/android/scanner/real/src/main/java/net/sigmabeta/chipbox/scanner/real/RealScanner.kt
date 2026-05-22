@@ -1,12 +1,20 @@
 package net.sigmabeta.chipbox.scanner.real
 
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import net.sigmabeta.chipbox.contentsource.LibraryFileInfo
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.models.ChainFile
+import net.sigmabeta.chipbox.perf.trace
+import net.sigmabeta.chipbox.perf.traceAsync
 import net.sigmabeta.chipbox.readers.EXTENSION_M3U
 import net.sigmabeta.chipbox.readers.LENGTH_UNKNOWN_MS
 import net.sigmabeta.chipbox.readers.PsfTagInfo
@@ -38,8 +46,26 @@ class RealScanner(
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : Scanner(dispatcher) {
 
+    // Scan work spans coroutine suspension points, so a trace section's begin and end can land on
+    // different IO threads — that rules out the thread-bound synchronous `trace` for those spans.
+    // We use `traceAsync` instead, which needs a cookie that's unique across any same-named
+    // sections open at once; this monotonic counter supplies one. The purely in-memory parse calls
+    // (no suspension) stay on `trace`.
+    private val traceCookies = AtomicInteger(0)
+
+    private fun nextCookie() = traceCookies.incrementAndGet()
+
+    // How many folders to scan concurrently. Concurrency is a big win — the work is dominated by
+    // SAF binder-IPC latency — but it's bounded above by the externalstorage provider's binder pool
+    // (IO) and by core count (parsing). A little headroom over the core count covers the latency-
+    // bound reads; the clamp keeps weak devices from thrashing and many-core devices from
+    // oversubscribing the SAF provider, which is the real ceiling regardless of cores. Tracing on a
+    // 6-core device put the sweet spot at 8 (= 6 + 2); 16 oversubscribed both and ran ~11% slower.
+    private val scanParallelism = (Runtime.getRuntime().availableProcessors() + CORE_HEADROOM)
+        .coerceIn(MIN_PARALLELISM, MAX_PARALLELISM)
+
     @OptIn(ExperimentalTime::class)
-    override suspend fun CoroutineScope.scan() {
+    override suspend fun CoroutineScope.scan() = traceAsync(TRACE_SCAN, nextCookie()) {
         hatchet.i("Starting library scan.")
         emitState(ScannerState.Scanning)
 
@@ -48,7 +74,7 @@ class RealScanner(
             hatchet.w("No library locations configured — aborting scan.")
             emitState(ScannerState.Complete(0, 0, 0, 0))
             emitEvent(ScannerEvent.Unknown)
-            return
+            return@traceAsync
         }
 
         hatchet.d(
@@ -58,12 +84,27 @@ class RealScanner(
 
         var total = Progress.EMPTY
         val duration = measureTime {
-            val files = librarySource.scanFiles().toList()
+            val files = traceAsync(TRACE_SCAN_FILES, nextCookie()) {
+                librarySource.scanFiles().toList()
+            }
             val groups = files.groupBy { it.parentFolderId }
             hatchet.d("Found ${files.size} file(s) across ${groups.size} folder(s).")
-            for ((folderId, group) in groups) {
-                hatchet.d("Scanning folder $folderId (${group.size} file(s)).")
-                total += scanGroup(group.sortedBy { it.name })
+            // Folders are independent (each scanGroup has its own metadata + tag caches), and most
+            // of a scan is spent blocked on SAF binder IPC for file reads. Process several folders
+            // at once so those waits overlap and parsing spreads across cores — bounded so we don't
+            // swamp the disk dispatcher or hold too many file buffers in memory at once.
+            val semaphore = Semaphore(scanParallelism)
+            total = coroutineScope {
+                groups.map { (folderId, group) ->
+                    async {
+                        semaphore.withPermit {
+                            hatchet.d("Scanning folder $folderId (${group.size} file(s)).")
+                            traceAsync(TRACE_SCAN_GROUP, nextCookie()) {
+                                scanGroup(group.sortedBy { it.name })
+                            }
+                        }
+                    }
+                }.awaitAll().fold(Progress.EMPTY, Progress::plus)
             }
         }
 
@@ -109,23 +150,27 @@ class RealScanner(
             if (isPsfFamily(ext)) {
                 hatchet.d("Reading ${file.name} (PSF family).")
                 val track = readWithErrorHandling(file) {
-                    val bytes = librarySource.openBytes(file.identifier)
+                    val bytes = traceAsync(TRACE_OPEN_BYTES, nextCookie()) {
+                        librarySource.openBytes(file.identifier)
+                    }
                     if (bytes == null) {
                         hatchet.w("Failed to read ${file.name}: could not open ${file.identifier}.")
                         return@readWithErrorHandling null
                     }
-                    val tagInfo = readers.psf.readTagInfo(bytes)
+                    val tagInfo = trace(TRACE_READ_PSF) { readers.psf.readTagInfo(bytes) }
                         ?: return@readWithErrorHandling null
                     tagInfoCache[file.name.lowercase()] = tagInfo
                     val chain = mutableListOf<ChainFile>()
-                    val chainTags = resolvePsfChain(
-                        tagInfo,
-                        byFilename,
-                        tagInfoCache,
-                        mutableSetOf(file.name.lowercase()),
-                        0,
-                        chain,
-                    )
+                    val chainTags = traceAsync(TRACE_RESOLVE_CHAIN, nextCookie()) {
+                        resolvePsfChain(
+                            tagInfo,
+                            byFilename,
+                            tagInfoCache,
+                            mutableSetOf(file.name.lowercase()),
+                            0,
+                            chain,
+                        )
+                    }
                     val mergedTags = chainTags + tagInfo.tags
                     readers.psf.buildRawTrack(mergedTags, file.identifier, tagInfo.platform)
                         .copy(source = librarySource.sourceId, chainFiles = chain, extension = ext)
@@ -148,9 +193,10 @@ class RealScanner(
 
             hatchet.d("Reading ${file.name}.")
             val tracks = readWithErrorHandling(file) {
-                val bytes = librarySource.openBytes(file.identifier)
-                    ?: return@readWithErrorHandling null
-                reader.readTracksFromFile(bytes, file.identifier)
+                val bytes = traceAsync(TRACE_OPEN_BYTES, nextCookie()) {
+                    librarySource.openBytes(file.identifier)
+                } ?: return@readWithErrorHandling null
+                trace("$TRACE_READ_PREFIX$ext") { reader.readTracksFromFile(bytes, file.identifier) }
                     ?.map { it.copy(source = librarySource.sourceId, extension = ext) }
             }
 
@@ -171,12 +217,14 @@ class RealScanner(
 
         for (m3uFile in m3uFiles) {
             hatchet.d("Applying m3u overlay from ${m3uFile.name}.")
-            val bytes = librarySource.openBytes(m3uFile.identifier)
+            val bytes = traceAsync(TRACE_OPEN_BYTES, nextCookie()) {
+                librarySource.openBytes(m3uFile.identifier)
+            }
             if (bytes == null) {
                 hatchet.w("Failed to open ${m3uFile.name}.")
                 continue
             }
-            for (entry in readers.m3u.parse(bytes)) {
+            for (entry in trace(TRACE_PARSE_M3U) { readers.m3u.parse(bytes) }) {
                 val siblings = tracksByFilename[entry.filename] ?: run {
                     hatchet.v("m3u references '${entry.filename}' which was not scanned — skipping.")
                     continue
@@ -225,7 +273,9 @@ class RealScanner(
 
         val gameName = rawTracks.first().game
         hatchet.i("Adding game \"$gameName\" with ${checked.size} track(s).")
-        repository.addGame(RawGame(gameName, imagePath, checked))
+        traceAsync(TRACE_ADD_GAME, nextCookie()) {
+            repository.addGame(RawGame(gameName, imagePath, checked))
+        }
         emitEvent(ScannerEvent.GameFoundEvent(gameName, rawTracks.size, imagePath.orUnknown()))
         return Progress(1, rawTracks.size, failed)
     }
@@ -310,5 +360,25 @@ class RealScanner(
         private const val TAG_UNKNOWN = "Unknown"
         private const val MAX_LIB_DEPTH = 8
         private const val DEFAULT_LENGTH_MS = 2L * 60 * 1000 + 30 * 1000
+
+        // Bounds for [scanParallelism]; see the comment there. MAX is the traced ceiling (going
+        // past it oversubscribes the SAF provider); MIN keeps low-core devices usefully concurrent
+        // since the work is IO-latency-bound, not compute-bound.
+        private const val CORE_HEADROOM = 2
+        private const val MIN_PARALLELISM = 4
+        private const val MAX_PARALLELISM = 8
+
+        // Perfetto trace section labels. Spans crossing suspension (IO, DB, flow collection) use
+        // `traceAsync`; the in-memory parse spans use the thread-bound `trace`. `TRACE_READ_PREFIX`
+        // is completed with the file extension, e.g. "Scanner:readTracks:nsf".
+        private const val TRACE_SCAN = "Scanner:scan"
+        private const val TRACE_SCAN_FILES = "Scanner:scanFiles"
+        private const val TRACE_SCAN_GROUP = "Scanner:scanGroup"
+        private const val TRACE_OPEN_BYTES = "Scanner:openBytes"
+        private const val TRACE_READ_PSF = "Scanner:readTags:psf"
+        private const val TRACE_READ_PREFIX = "Scanner:readTracks:"
+        private const val TRACE_RESOLVE_CHAIN = "Scanner:resolvePsfChain"
+        private const val TRACE_PARSE_M3U = "Scanner:parseM3u"
+        private const val TRACE_ADD_GAME = "Scanner:addGame"
     }
 }

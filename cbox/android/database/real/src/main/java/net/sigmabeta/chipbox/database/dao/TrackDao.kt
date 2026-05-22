@@ -35,6 +35,9 @@ interface TrackDao {
     @Insert
     suspend fun insert(track: TrackEntity): Long
 
+    @Insert
+    suspend fun insertAll(tracks: List<TrackEntity>): List<Long>
+
     @Query("DELETE FROM track")
     suspend fun nukeTable()
 }

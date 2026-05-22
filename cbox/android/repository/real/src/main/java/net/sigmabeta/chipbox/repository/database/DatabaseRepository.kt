@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.repository.database
 
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -7,6 +8,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.entities.ArtistEntity
@@ -22,6 +25,7 @@ import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.models.decodeChainFiles
 import net.sigmabeta.chipbox.models.encodeChainFiles
+import net.sigmabeta.chipbox.perf.traceAsync
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
@@ -48,6 +52,18 @@ class DatabaseRepository(
     private val trackArtistDao = database.trackArtistDao()
 
     private val searchHistoryDao = database.searchHistoryDao()
+
+    // addGame runs on the scanner's IO coroutine and its DAO calls suspend (Room KMP makes them
+    // suspend off-Android), so begin/end can resume on different threads — trace with `traceAsync`,
+    // which needs a cookie unique among concurrently-open same-named sections.
+    private val traceCookies = AtomicInteger(0)
+
+    private fun nextCookie() = traceCookies.incrementAndGet()
+
+    // Serializes the get-or-create-artist step across concurrent addGame calls. The scanner
+    // processes folders in parallel, and there's no unique index on artist.name, so two games
+    // resolving the same new artist at once would otherwise insert it twice.
+    private val artistWriteMutex = Mutex()
 
     override fun getAllArtists(
         withTracks: Boolean,
@@ -127,19 +143,37 @@ class DatabaseRepository(
         ?.toTrack(withGame, withArtists)
 
     override suspend fun addGame(rawGame: RawGame) {
-        val game = GameEntity(rawGame.title, rawGame.photoUrl)
-        val gameId = gameDao.insert(game)
+        val gameId = traceAsync(TRACE_INSERT_GAME, nextCookie()) {
+            gameDao.insert(GameEntity(rawGame.title, rawGame.photoUrl))
+        }
 
-        val trackAndArtists = rawGame.tracks
-            .suspendMap { it.toTrackEntityWithArtists(gameId) }
+        // Resolve every distinct artist name across the game's tracks once, instead of a DB
+        // lookup per track. Serialized across concurrent addGame calls (the scanner walks
+        // folders in parallel) so two games can't insert the same new artist twice — there's
+        // no unique index on artist.name to lean on.
+        val artistsByName = traceAsync(TRACE_RESOLVE_ARTISTS, nextCookie()) {
+            artistWriteMutex.withLock { resolveArtists(rawGame.tracks) }
+        }
 
-        val gameArtistJoins = trackAndArtists
-            .map { it.second }
-            .flatten()
+        // One batched insert for all the game's tracks (a single transaction / commit) instead
+        // of a row-at-a-time insert; the returned ids line up with rawGame.tracks by index.
+        val trackIds = traceAsync(TRACE_INSERT_TRACKS, nextCookie()) {
+            trackDao.insertAll(rawGame.tracks.map { it.toTrackEntity(gameId) })
+        }
+
+        val trackArtistJoins = rawGame.tracks.zip(trackIds).flatMap { (track, trackId) ->
+            track.artistNames().map { name -> TrackArtistJoin(trackId, artistsByName.getValue(name).id) }
+        }
+        traceAsync(TRACE_LINK_ARTISTS, nextCookie()) {
+            trackArtistDao.insertAll(trackArtistJoins)
+        }
+
+        val gameArtistJoins = artistsByName.values
             .distinctBy { it.id }
             .map { artist -> GameArtistJoin(gameId, artist.id) }
-
-        gameArtistDao.insertAll(gameArtistJoins)
+        traceAsync(TRACE_INSERT_GAME_ARTISTS, nextCookie()) {
+            gameArtistDao.insertAll(gameArtistJoins)
+        }
     }
 
     private suspend fun ArtistEntity.toArtist(
@@ -182,53 +216,45 @@ class DatabaseRepository(
         Platform.valueOf(platform),
     )
 
-    private suspend fun RawTrack.toTrackEntityWithArtists(gameId: Long): Pair<TrackEntity, List<ArtistEntity>> {
-        val trackArtists = getArtistsSplit()
-
-        val tempTrack = TrackEntity(
-            title,
-            path,
-            source,
-            length,
-            trackNumber,
-            fadeLengthMs,
-            gameId,
-            encodeChainFiles(chainFiles),
-            extension,
-            platform.name,
-        )
-
-        val trackId = trackDao.insert(tempTrack)
-        val insertedTrack = tempTrack.copy(id = trackId)
-
-        insertedTrack.linkToTrackFromItsArtists(trackArtists)
-
-        return insertedTrack to trackArtists
+    /**
+     * Look up (or create) each distinct artist name across [tracks], returning a name→entity map.
+     * One [getArtistByNameSync][ArtistDao.getArtistByNameSync] per distinct name (not per track),
+     * and a single batched insert for the names not already in the DB. Caller holds
+     * [artistWriteMutex] so the lookup-then-insert can't race a concurrent game.
+     */
+    private suspend fun resolveArtists(tracks: List<RawTrack>): Map<String, ArtistEntity> {
+        val names = tracks.flatMap { it.artistNames() }.distinct()
+        val resolved = HashMap<String, ArtistEntity>(names.size)
+        val missing = mutableListOf<String>()
+        for (name in names) {
+            val existing = artistDao.getArtistByNameSync(name)
+            if (existing != null) resolved[name] = existing else missing += name
+        }
+        if (missing.isNotEmpty()) {
+            val ids = artistDao.insertAll(missing.map { ArtistEntity(it, null) })
+            missing.forEachIndexed { index, name ->
+                resolved[name] = ArtistEntity(name, null, ids[index])
+            }
+        }
+        return resolved
     }
 
-    private suspend fun RawTrack.getArtistsSplit(): List<ArtistEntity> = artist
+    private fun RawTrack.artistNames(): List<String> = artist
         .split(DELIMITERS_ARTISTS)
         .map { it.trim() }
-        .suspendMap { artistName -> getOrAddArtistByName(artistName) }
 
-    private suspend fun TrackEntity.linkToTrackFromItsArtists(artists: List<ArtistEntity>) {
-        val joins = artists.map { artist -> TrackArtistJoin(this.id, artist.id) }
-        trackArtistDao.insertAll(joins)
-    }
-
-    private suspend fun getOrAddArtistByName(name: String): ArtistEntity {
-        var artist = artistDao.getArtistByNameSync(name)
-
-        if (artist != null) {
-            return artist
-        }
-
-        artist = ArtistEntity(name, null)
-
-        val id = artistDao.insert(artist)
-
-        return artist.copy(id = id)
-    }
+    private fun RawTrack.toTrackEntity(gameId: Long): TrackEntity = TrackEntity(
+        title,
+        path,
+        source,
+        length,
+        trackNumber,
+        fadeLengthMs,
+        gameId,
+        encodeChainFiles(chainFiles),
+        extension,
+        platform.name,
+    )
 
     private suspend fun getGameById(id: Long): Game = gameDao
         .getGameSync(id)
@@ -332,6 +358,15 @@ class DatabaseRepository(
     companion object {
         const val ERR_UNKNOWN = "Unknown Error"
         val DELIMITERS_ARTISTS = Regex(", &|,| or | and |&")
+
+        // Perfetto trace labels for the scan-time insert path. All `traceAsync` because the DAO
+        // calls suspend; the per-track spans (resolve/insert/link) fire once per track, so a slow
+        // scan shows here as a wall of insert spans dominated by whichever sub-step is the cost.
+        private const val TRACE_INSERT_GAME = "Repository:insertGame"
+        private const val TRACE_INSERT_TRACKS = "Repository:insertTracks"
+        private const val TRACE_INSERT_GAME_ARTISTS = "Repository:insertGameArtists"
+        private const val TRACE_RESOLVE_ARTISTS = "Repository:resolveArtists"
+        private const val TRACE_LINK_ARTISTS = "Repository:linkTrackArtists"
     }
 }
 
