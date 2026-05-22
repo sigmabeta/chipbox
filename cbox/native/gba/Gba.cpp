@@ -12,17 +12,20 @@ gsf_loader_state m_rom;
 
 struct gsf_running_state m_output;
 
-// --- Graceful failure on a derailed CPU --------------------------------------
+// --- GBA log shim: silence trace spam, detect a derailed CPU -----------------
 //
-// A corrupt or unsupported GSF ROM sends the emulated ARM core off into
-// unmapped memory, where mGBA reads its 0xE710B710 sentinel and raises an
-// undefined-instruction exception on every step -- GBAIllegal logs
-// "Illegal opcode: %08x" and the track renders pure silence. A healthy track
-// hits exactly zero of these; a derail hits ~10^5 per second. We watch the
-// mGBA log for that storm, swallow the (potentially millions of) repeats, and
-// once it crosses a threshold report it via last_error so the player surfaces a
-// track failure on the very first buffer -- instead of emitting silence (and
-// flooding the log) for the player's whole silence-trim window first.
+// mGBA logs prolifically: per-frame "GBA DMA: Starting DMA ..." (INFO) and
+// "GBA BIOS: SWI: ..." (DEBUG) lines flood the log during normal playback. The
+// shim below drops everything below WARN so only real warnings and errors get
+// through.
+//
+// It also watches for the derail signature: a corrupt or unsupported GSF ROM
+// sends the emulated ARM core off into unmapped memory, where mGBA reads its
+// 0xE710B710 sentinel and raises an undefined-instruction exception on every
+// step -- GBAIllegal logs "Illegal opcode: %08x" (WARN) and the track renders
+// pure silence. A healthy track hits zero of these; a derail hits ~10^5/s. We
+// count them (capping the forwarded copies) so generateBuffer can fail the
+// track via last_error once a buffer is both silent and saw one.
 
 static long illegal_opcode_count = 0;
 static struct mLogger *prev_logger = nullptr;
@@ -34,10 +37,24 @@ static const long kIllegalOpcodeLogLimit = 8;
 static void chipbox_gba_log(struct mLogger *logger, int category,
                             enum mLogLevel level, const char *format,
                             va_list args) {
-    if (format && strncmp(format, "Illegal opcode", 14) == 0 &&
-        ++illegal_opcode_count > kIllegalOpcodeLogLimit) {
-        return; // swallow the storm
+    // Count every illegal opcode (before any drop) so the derail detector in
+    // generateBuffer sees the full rate.
+    const bool illegal = format && strncmp(format, "Illegal opcode", 14) == 0;
+    if (illegal) {
+        ++illegal_opcode_count;
     }
+
+    // Drop mGBA's per-frame trace spam: only WARN and worse (lower enum value =
+    // higher severity) reach the underlying logger.
+    if (level > mLOG_WARN) {
+        return;
+    }
+
+    // Cap the illegal-opcode warnings too -- on a derail there can be millions.
+    if (illegal && illegal_opcode_count > kIllegalOpcodeLogLimit) {
+        return;
+    }
+
     if (prev_logger && prev_logger->log && prev_logger != logger) {
         prev_logger->log(prev_logger, category, level, format, args);
     }
