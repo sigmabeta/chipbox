@@ -22,7 +22,8 @@ import net.sigmabeta.sage.ui.strings.AndroidStringProvider
 object AndroidAppModule {
     @Provides
     @SingleIn(AppScope::class)
-    fun provideStringProvider(context: Context): StringProvider = AndroidStringProvider(context.resources) { (it as ChipboxStringId).id() }
+    fun provideStringProvider(context: Context): StringProvider =
+        AndroidStringProvider(context.resources) { (it as ChipboxStringId).id() }
 
     @Provides
     @SingleIn(AppScope::class)
