@@ -44,6 +44,8 @@ import net.sigmabeta.chipbox.features.library.Library
 import net.sigmabeta.chipbox.features.library.LibraryRoute
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingRoute
+import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
+import net.sigmabeta.chipbox.features.playbackstatus.real.PlaybackStatusRoute
 import net.sigmabeta.chipbox.features.search.Search
 import net.sigmabeta.chipbox.features.search.real.SearchRoute
 import net.sigmabeta.chipbox.features.settings.Settings
@@ -68,6 +70,7 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     Library -> LibraryDeepScreen
     Search -> SearchDeepScreen
     Settings -> SettingsDeepScreen
+    PlaybackStatus -> PlaybackStatusScreen
     NowPlaying -> NowPlayingScreen
     BrowseByGame -> BrowseByGameScreen
     BrowseByPlatform -> BrowseByPlatformScreen
@@ -270,6 +273,17 @@ private object SearchDeepScreen : Screen {
 private object SettingsDeepScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         SettingsRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+/**
+ * Debug-only playback diagnostics, reached from the Settings debug section (which is itself
+ * gated behind the `shouldShowDebug` toggle). Always registered here — the route is only
+ * reachable when the gated Settings row emits `NavigateTo(PlaybackStatus)`.
+ */
+private object PlaybackStatusScreen : Screen {
+    @Composable override fun Content() = ScreenScaffold {
+        PlaybackStatusRoute(onEvent = LocalChipboxEventSink.current)
     }
 }
 

@@ -46,12 +46,13 @@ kotlin {
                 api(projects.features.library.real)
                 implementation(projects.features.nowPlaying.api)
                 api(projects.features.nowPlaying.real)
-                // features.playbackStatus deps dropped during the M5c Hilt → Metro VM sweep.
-                // PlaybackStatusEntryPoint was a variant-selected hook (debug=real,
-                // release=fake) and Metro 1.1.1 doesn't aggregate @ContributesTo across
-                // variant-specific debug/release implementation chains reliably (see
-                // ChipboxNavHost.kt note). Re-add once playback-status' variant aggregation
-                // has a fix.
+                // Re-added after playback-status was ported to sage.kmp. The old debug=real/
+                // release=fake variant split (which Metro 1.1.1 couldn't aggregate) is gone:
+                // the screen is plain `sage.kmp` and the debug gate now lives in Settings'
+                // `shouldShowDebug` section, not a build variant. `api(real)` so its
+                // @ContributesIntoMap VM aggregates into ChipboxAppGraph / JvmChipboxGraph.
+                implementation(projects.features.playbackStatus.api)
+                api(projects.features.playbackStatus.real)
                 implementation(projects.features.search.api)
                 api(projects.features.search.real)
                 implementation(projects.features.settings.api)

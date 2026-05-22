@@ -7,9 +7,9 @@ import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListEntry
 
 @Composable
-fun PlaybackStatusRoute(
+actual fun PlaybackStatusRoute(
     onEvent: (ChipboxEvent) -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier,
 ) {
     val viewModel: PlaybackStatusViewModel = metroViewModel()
     ChipboxListEntry(viewModel, onEvent, modifier)

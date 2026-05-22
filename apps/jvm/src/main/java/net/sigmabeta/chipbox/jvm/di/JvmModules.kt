@@ -8,7 +8,9 @@ import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import java.io.File
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
@@ -20,6 +22,7 @@ import net.sigmabeta.chipbox.jvm.LocalFileContentSource
 import net.sigmabeta.chipbox.jvm.SourceDataLineSpeaker
 import net.sigmabeta.chipbox.jvm.strings.JvmStringProvider
 import net.sigmabeta.chipbox.jvm.strings.chipboxJvmStrings
+import net.sigmabeta.chipbox.player.buffer.BufferDebugSource
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager
@@ -124,6 +127,22 @@ object JvmBufferModule {
 
     @Provides @SingleIn(AppScope::class)
     fun provideConsumer(impl: RealBufferManager): ConsumerBufferManager = impl
+
+    // RealDebugInfoManager (DebugInfoModule, pulled in via :debug-info:di) reads buffer
+    // diagnostics through this — the Android side binds it the same way in BufferModule.
+    @Provides @SingleIn(AppScope::class)
+    fun provideBufferDebugSource(impl: RealBufferManager): BufferDebugSource = impl
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object JvmCoroutinesModule {
+    // App-lifetime scope on the computation dispatcher — the JVM analog of sage.android's
+    // CoroutinesModule (which the JVM target can't use; it's sage.android). Currently only
+    // RealDebugInfoManager injects a CoroutineScope; SupervisorJob so one failing debug-info
+    // child flow can't cancel the whole scope.
+    @Provides @SingleIn(AppScope::class)
+    fun provideCoroutineScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }
 
 @BindingContainer
