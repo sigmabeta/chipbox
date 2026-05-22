@@ -5,30 +5,29 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.collections.immutable.toImmutableList
 import net.sigmabeta.chipbox.common.ui.components.api.LabelCheckboxItem
 import net.sigmabeta.chipbox.common.ui.components.api.LabelDropdownListItem
 import net.sigmabeta.chipbox.common.ui.components.api.LabelNoThingyItem
 import net.sigmabeta.chipbox.common.ui.components.api.LabelRatingListItem
 import net.sigmabeta.chipbox.common.ui.components.api.LabelValueListItem
+import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
 import net.sigmabeta.chipbox.common.ui.components.api.previews.PreviewActionSink
-import kotlinx.collections.immutable.toImmutableList
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.CheckableListModel
 import net.sigmabeta.sage.components.DropdownSettingListModel
 import net.sigmabeta.sage.components.LabelRatingStarListModel
 import net.sigmabeta.sage.components.LabelValueListModel
 import net.sigmabeta.sage.components.SingleTextListModel
-import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 
 @Preview
 @Composable

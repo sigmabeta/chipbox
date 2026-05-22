@@ -9,10 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
-import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreviewMenu
-import net.sigmabeta.chipbox.common.ui.components.api.previews.PreviewActionSink
 import kotlinx.collections.immutable.toImmutableList
+import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
+import net.sigmabeta.chipbox.common.ui.components.api.previews.PreviewActionSink
 import net.sigmabeta.sage.components.DropdownSettingListModel
 
 @Preview
@@ -71,33 +70,6 @@ private fun DarkExpanded() {
     }
 }
 
-@Preview
-@Composable
-private fun Menu() {
-    ChipboxPreviewMenu {
-        Box(
-            modifier = Modifier.background(
-                color = MaterialTheme.colorScheme.background
-            )
-        ) {
-            Sample(false)
-        }
-    }
-}
-
-@Preview
-@Composable
-private fun MenuExpanded() {
-    ChipboxPreviewMenu {
-        Box(
-            modifier = Modifier.background(
-                color = MaterialTheme.colorScheme.background
-            )
-        ) {
-            Sample(true)
-        }
-    }
-}
 
 @Suppress("MagicNumber")
 @Composable

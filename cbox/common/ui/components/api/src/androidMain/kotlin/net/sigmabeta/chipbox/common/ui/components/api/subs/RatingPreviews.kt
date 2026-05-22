@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
-import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreviewMenu
 
 @Preview
 @Composable
@@ -38,19 +37,6 @@ private fun Dark() {
     }
 }
 
-@Preview
-@Composable
-private fun Menu() {
-    ChipboxPreviewMenu {
-        Box(
-            modifier = Modifier.background(
-                color = MaterialTheme.colorScheme.background
-            )
-        ) {
-            Sample()
-        }
-    }
-}
 
 @Composable
 @Suppress("MagicNumber")

@@ -1,15 +1,14 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import net.sigmabeta.sage.components.CollapsibleDetailsListModel
+import kotlinx.collections.immutable.toImmutableList
 import net.sigmabeta.chipbox.common.ui.components.api.previews.FullScreenOf
+import net.sigmabeta.sage.components.CollapsibleDetailsListModel
 import net.sigmabeta.sage.ui.StringGenerator
 import java.util.Random
-import kotlinx.collections.immutable.toImmutableList
 
 @Preview
 @Composable

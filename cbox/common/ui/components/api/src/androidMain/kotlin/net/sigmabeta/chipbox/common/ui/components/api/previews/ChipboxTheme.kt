@@ -7,7 +7,6 @@ import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.chipbox.strings.api.id
 import net.sigmabeta.chipbox.ui.theme.api.AppTheme
-import net.sigmabeta.chipbox.ui.theme.api.AppThemeMenu
 import net.sigmabeta.sage.ui.strings.AndroidStringProvider
 
 @Composable
@@ -15,11 +14,6 @@ fun ChipboxPreview(
     forceDark: Boolean = false,
     content: @Composable () -> Unit,
 ) = AppTheme(forceDark = forceDark) {
-    WithPreviewStringProvider(content)
-}
-
-@Composable
-fun ChipboxPreviewMenu(content: @Composable () -> Unit) = AppThemeMenu {
     WithPreviewStringProvider(content)
 }
 

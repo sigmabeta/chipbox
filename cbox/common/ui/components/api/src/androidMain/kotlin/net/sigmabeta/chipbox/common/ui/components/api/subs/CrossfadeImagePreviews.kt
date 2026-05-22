@@ -7,19 +7,18 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.ImageNameListItem
+import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
 import net.sigmabeta.chipbox.common.ui.components.api.previews.PreviewActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.ImageNameListModel
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
-import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
 
 @Preview
 @Composable
