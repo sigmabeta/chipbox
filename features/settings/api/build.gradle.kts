@@ -23,6 +23,7 @@ kotlin {
                 api(libs.sage.common.ui.components)
                 api(libs.sage.common.ui.strings)
                 api(projects.cbox.common.appcomm.api)
+                api(projects.cbox.common.settings.api)
                 api(projects.cbox.common.strings.api)
                 api(projects.cbox.common.ui.fonts.api)
             }

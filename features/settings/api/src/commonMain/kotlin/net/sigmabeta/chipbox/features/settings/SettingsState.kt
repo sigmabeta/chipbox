@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.features.settings
 
 import kotlinx.collections.immutable.toImmutableList
+import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
 import net.sigmabeta.sage.appcomm.LCE
@@ -21,6 +22,7 @@ import net.sigmabeta.sage.ui.StringProvider
 data class SettingsState(
     val brandFont: String? = null,
     val plainFont: String? = null,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val rescanStatus: LCE<Unit> = LCE.Uninitialized,
     val clearLibraryStatus: LCE<Unit> = LCE.Uninitialized,
     val appInfo: AppInfo? = null,
@@ -40,8 +42,19 @@ data class SettingsState(
 
     private fun appearanceSection(stringProvider: StringProvider): List<ListModel> = listOf(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_APPEARANCE),
-        fontDropdown(stringProvider, ChipboxStringId.SETTINGS_LABEL_BRAND_FONT, brandFont),
-        fontDropdown(stringProvider, ChipboxStringId.SETTINGS_LABEL_PLAIN_FONT, plainFont),
+        themeDropdown(stringProvider),
+        fontDropdown(
+            stringProvider,
+            ChipboxStringId.SETTINGS_LABEL_BRAND_FONT,
+            brandFont,
+            ChipboxFont.DEFAULT_BRAND,
+        ) { SettingsAction.BrandFontSelected(it) },
+        fontDropdown(
+            stringProvider,
+            ChipboxStringId.SETTINGS_LABEL_PLAIN_FONT,
+            plainFont,
+            ChipboxFont.DEFAULT_PLAIN,
+        ) { SettingsAction.PlainFontSelected(it) },
     )
 
     private fun librarySection(stringProvider: StringProvider): List<ListModel> = listOf(
@@ -71,26 +84,43 @@ data class SettingsState(
     private fun sectionHeader(stringProvider: StringProvider, id: ChipboxStringId) =
         SectionHeaderListModel(title = stringProvider.getString(id))
 
-    // No-op selection callback: dropdown renders the current persisted font but
-    // doesn't yet write changes back. Wiring this up requires either routing the
-    // dropdown's `(Int) -> Unit` lambda through the action sink or extending the
-    // sage list-model surface — deferred until the typography layer actually
-    // consumes the picked value.
+    // Light / Dark / Match system. Option order mirrors `ThemeMode.entries`, so the picked
+    // index maps straight back to a `ThemeMode`. The selection is routed through the action
+    // sink (unlike the font dropdowns) and persisted by SettingsViewModel.
+    private fun themeDropdown(stringProvider: StringProvider): ListModel = DropdownSettingListModel(
+        settingId = ChipboxStringId.SETTINGS_LABEL_THEME.name,
+        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_THEME),
+        selectedPosition = themeMode.ordinal,
+        settingsLabels = ThemeMode.entries
+            .map { stringProvider.getString(it.labelId()) }
+            .toImmutableList(),
+        onNewOptionSelected = { index -> SettingsAction.ThemeModeSelected(ThemeMode.entries[index]) },
+    )
+
+    private fun ThemeMode.labelId(): ChipboxStringId = when (this) {
+        ThemeMode.LIGHT -> ChipboxStringId.SETTINGS_THEME_LIGHT
+        ThemeMode.DARK -> ChipboxStringId.SETTINGS_THEME_DARK
+        ThemeMode.SYSTEM -> ChipboxStringId.SETTINGS_THEME_SYSTEM
+    }
+
+    // Renders the persisted font (falling back to [defaultFont] when unset, so the shown
+    // selection matches what ChipboxAppUi actually applies) and dispatches [onSelected] with
+    // the picked entry, which SettingsViewModel persists.
     private fun fontDropdown(
         stringProvider: StringProvider,
         labelId: ChipboxStringId,
         selectedFontName: String?,
+        defaultFont: ChipboxFont,
+        onSelected: (ChipboxFont) -> SettingsAction,
     ): ListModel {
         val fonts = ChipboxFont.entries
-        val selectedIndex = fonts
-            .indexOfFirst { it.name == selectedFontName }
-            .coerceAtLeast(0)
+        val selectedFont = ChipboxFont.fromStorageValue(selectedFontName, defaultFont)
         return DropdownSettingListModel(
             settingId = labelId.name,
             name = stringProvider.getString(labelId),
-            selectedPosition = selectedIndex,
+            selectedPosition = fonts.indexOf(selectedFont),
             settingsLabels = fonts.map { it.fontName }.toImmutableList(),
-            onNewOptionSelected = { },
+            onNewOptionSelected = { index -> onSelected(fonts[index]) },
         )
     }
 

@@ -97,6 +97,14 @@ fun ChipboxStringId.id(): Int = when (this) {
 
     ChipboxStringId.SETTINGS_SECTION_DEBUG -> R.string.settings_section_debug
 
+    ChipboxStringId.SETTINGS_LABEL_THEME -> R.string.settings_label_theme
+
+    ChipboxStringId.SETTINGS_THEME_LIGHT -> R.string.settings_theme_light
+
+    ChipboxStringId.SETTINGS_THEME_DARK -> R.string.settings_theme_dark
+
+    ChipboxStringId.SETTINGS_THEME_SYSTEM -> R.string.settings_theme_system
+
     ChipboxStringId.SETTINGS_LABEL_BRAND_FONT -> R.string.settings_label_brand_font
 
     ChipboxStringId.SETTINGS_LABEL_PLAIN_FONT -> R.string.settings_label_plain_font

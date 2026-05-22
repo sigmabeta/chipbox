@@ -8,7 +8,9 @@ kotlin {
     }
 
     sourceSets {
-        named("jvmSharedMain") {
+        // ChipboxSettingsManager + ThemeMode live in commonMain so the multiplatform
+        // ChipboxAppUi / ChipboxAppUiViewModel (appui commonMain) can read the theme setting.
+        named("commonMain") {
             dependencies {
                 api(libs.kotlinx.coroutines.core)
             }

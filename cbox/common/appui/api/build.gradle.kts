@@ -37,6 +37,9 @@ kotlin {
                 // wrapper in `cbox/android/ui/theme/api` was thin syntactic sugar and is
                 // no longer referenced from this module.
                 implementation(projects.cbox.common.ui.theme.api)
+                // ChipboxSettingsManager + ThemeMode — read by ChipboxAppUiViewModel to pick
+                // the light/dark color scheme passed into ChipboxTheme.
+                implementation(projects.cbox.common.settings.api)
                 // Needed for `GamesForPlatformDeepScreen(val platform: Platform)` — the typed
                 // Voyager Screen that carries the route arg now that AndroidX nav's typesafe
                 // routing is gone.

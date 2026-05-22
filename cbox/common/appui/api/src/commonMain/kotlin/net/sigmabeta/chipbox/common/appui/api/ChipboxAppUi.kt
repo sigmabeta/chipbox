@@ -3,6 +3,8 @@ package net.sigmabeta.chipbox.common.appui.api
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -14,8 +16,8 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
 import net.sigmabeta.chipbox.common.ui.chrome.api.TitleBarController
+import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.ui.theme.api.ChipboxTheme
-import net.sigmabeta.chipbox.ui.theme.api.tokens.ChipboxFontDefaults
 
 /**
  * Cross-platform entry point for the Chipbox Compose UI. Owns the outer Voyager [Navigator]
@@ -43,18 +45,24 @@ fun ChipboxAppUi(
     onCopyToClipboard: (label: String, text: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val brand = ChipboxFontDefaults.Brand
-    val plain = ChipboxFontDefaults.Plain
+    // Materialized before the theme so its persisted theme choice picks the color scheme — and
+    // so Metro multibinding misses surface at launch rather than at the first screen entry.
+    val appUiViewModel = metroViewModel<ChipboxAppUiViewModel>()
+    val themeMode by appUiViewModel.themeMode.collectAsState()
+    val brand by appUiViewModel.brandFont.collectAsState()
+    val plain by appUiViewModel.plainFont.collectAsState()
+
     ChipboxTheme(
         brand = brand.toFontFamily(),
         plain = plain.toFontFamily(),
         brandScale = brand.scaleFactor,
         plainScale = plain.scaleFactor,
+        darkTheme = when (themeMode) {
+            ThemeMode.LIGHT -> false
+            ThemeMode.DARK -> true
+            ThemeMode.SYSTEM -> null
+        },
     ) {
-        // Eagerly materialize the appui-scoped VM so Metro multibinding misses surface at
-        // launch rather than at the first screen entry.
-        metroViewModel<ChipboxAppUiViewModel>()
-
         val titleBarController = remember { TitleBarController() }
         val chromeController = remember { ChromeController() }
         val snackbarHostState = remember { SnackbarHostState() }

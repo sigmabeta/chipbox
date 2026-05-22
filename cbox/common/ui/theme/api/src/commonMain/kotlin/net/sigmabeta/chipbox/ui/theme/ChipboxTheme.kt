@@ -7,10 +7,13 @@ import androidx.compose.ui.text.font.FontFamily
 
 /**
  * Multiplatform Chipbox theme. Wraps Material3 with the Chipbox [ChipboxLight] / [ChipboxDark]
- * color schemes (light/dark picked from [isSystemInDarkTheme], overridable via [forceDark]) and
- * a Chipbox-shaped [androidx.compose.material3.Typography] built from caller-supplied font
- * families. Defaults to [FontFamily.Default] so the JVM/desktop entry can use it directly; the
- * Android `AppTheme()` wraps this one with ChipboxFont-derived families.
+ * color schemes and a Chipbox-shaped [androidx.compose.material3.Typography] built from
+ * caller-supplied font families. Defaults to [FontFamily.Default] so the JVM/desktop entry can
+ * use it directly; the Android `AppTheme()` wraps this one with ChipboxFont-derived families.
+ *
+ * [darkTheme] picks the scheme: `true` forces dark, `false` forces light, and `null` (the
+ * default) follows the OS via [isSystemInDarkTheme]. The Settings "Theme" picker drives this
+ * through `ChipboxAppUi`.
  *
  * Inlines the (Android-only) `SageMaterial` helper's body — `isSystemInDarkTheme()` itself is
  * multiplatform (it lives in `androidx.compose.foundation`), so once SageMaterial's scheme pick
@@ -22,10 +25,11 @@ fun ChipboxTheme(
     plain: FontFamily = FontFamily.Default,
     brandScale: Float = 1.0f,
     plainScale: Float = 1.0f,
-    forceDark: Boolean = false,
+    darkTheme: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
-    val colors = if (!isSystemInDarkTheme() && !forceDark) ChipboxLight else ChipboxDark
+    val isDark = darkTheme ?: isSystemInDarkTheme()
+    val colors = if (isDark) ChipboxDark else ChipboxLight
     MaterialTheme(
         colorScheme = colors,
         typography = buildChipboxTypography(brand, plain, brandScale, plainScale),

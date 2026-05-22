@@ -26,7 +26,8 @@ fun AppTheme(
         plain = plain.toFontFamily(),
         brandScale = brand.scaleFactor * fontScale,
         plainScale = plain.scaleFactor * fontScale,
-        forceDark = forceDark,
+        // Previews force a specific scheme; null lets the runtime follow the system setting.
+        darkTheme = if (forceDark) true else null,
         content = content,
     )
 }

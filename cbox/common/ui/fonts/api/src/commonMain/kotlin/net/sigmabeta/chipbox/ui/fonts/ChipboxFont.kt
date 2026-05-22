@@ -168,4 +168,14 @@ enum class ChipboxFont(
      */
     @androidx.compose.runtime.Composable
     fun toFontFamily(): FontFamily = FontFamily(Font(resource))
+
+    companion object {
+        /** Brand/plain typefaces applied until the user picks otherwise in Settings. */
+        val DEFAULT_BRAND: ChipboxFont = DOUBLE_TOUCH
+        val DEFAULT_PLAIN: ChipboxFont = PLANETARY
+
+        /** Resolves a persisted [ChipboxFont.name] back to an entry, falling back to [default]. */
+        fun fromStorageValue(value: String?, default: ChipboxFont): ChipboxFont =
+            entries.firstOrNull { it.name == value } ?: default
+    }
 }

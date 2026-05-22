@@ -63,6 +63,11 @@ class SettingsViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            settingsManager.getThemeMode().collect { mode ->
+                updateState { it.copy(themeMode = mode) }
+            }
+        }
+        viewModelScope.launch {
             debugSettingsManager.getShouldShowDebug().collect { value ->
                 updateState { it.copy(shouldShowDebug = value) }
             }
@@ -84,6 +89,12 @@ class SettingsViewModel @Inject constructor(
 
     override fun handleAction(action: SageAction) {
         when (action) {
+            is SettingsAction.ThemeModeSelected -> settingsManager.setThemeMode(action.mode)
+
+            is SettingsAction.BrandFontSelected -> settingsManager.setBrandFont(action.font.name)
+
+            is SettingsAction.PlainFontSelected -> settingsManager.setPlainFont(action.font.name)
+
             SettingsAction.AddFolderClicked -> emit(ChipboxEvent.PickFolder)
 
             is SettingsAction.FolderPicked -> onFolderPicked(action.uri)
