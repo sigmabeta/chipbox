@@ -29,9 +29,11 @@ fun normalizationGain(loudnessLufs: Double, truePeakDbtp: Double): Double {
     if (!loudnessLufs.isFinite() || loudnessLufs > 0.0) return 1.0
 
     val loudnessGain = 10.0.pow((NORMALIZATION_TARGET_LUFS - loudnessLufs) / DBFS_VOLTAGE_FACTOR)
-    if (!truePeakDbtp.isFinite()) return loudnessGain
-    val peakCap = 10.0.pow(
-        (NORMALIZATION_TRUE_PEAK_CEILING_DBTP - truePeakDbtp) / DBFS_VOLTAGE_FACTOR
-    )
+    // No measured peak ⇒ no ceiling: an infinite cap leaves the loudness gain untouched by min().
+    val peakCap = if (truePeakDbtp.isFinite()) {
+        10.0.pow((NORMALIZATION_TRUE_PEAK_CEILING_DBTP - truePeakDbtp) / DBFS_VOLTAGE_FACTOR)
+    } else {
+        Double.POSITIVE_INFINITY
+    }
     return min(loudnessGain, peakCap)
 }

@@ -2,6 +2,16 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.metro)
+    alias(libs.plugins.detekt)
+}
+
+// The app module configures AGP directly rather than via a sage convention, so detekt isn't
+// applied for free here the way it is in every library module. Wire it up by hand with the
+// same root config + per-module baseline the sage convention's `configureDetekt()` uses, so
+// `./gradlew detekt` covers the app's own sources too.
+detekt {
+    config.setFrom("$rootDir/detekt-config.yml")
+    baseline = file("detekt-baseline.xml")
 }
 
 // Metro's `interop.includeDagger()` keeps the compiler plugin recognising the existing

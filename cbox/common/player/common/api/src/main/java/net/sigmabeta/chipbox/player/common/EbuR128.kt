@@ -67,18 +67,24 @@ class EbuR128(
             i += channels
             subBlockSums[subBlockPosition] += weightedSquareSum
             subBlockFrameCounter++
-            if (subBlockFrameCounter >= subBlockFrames) {
-                if (filledSubBlocks < SUB_BLOCK_COUNT) filledSubBlocks++
-                if (filledSubBlocks == SUB_BLOCK_COUNT) {
-                    var blockSum = 0.0
-                    for (k in 0 until SUB_BLOCK_COUNT) blockSum += subBlockSums[k]
-                    blockMeanSquares.add(blockSum / (subBlockFrames * SUB_BLOCK_COUNT))
-                }
-                subBlockPosition = (subBlockPosition + 1) % SUB_BLOCK_COUNT
-                subBlockSums[subBlockPosition] = 0.0
-                subBlockFrameCounter = 0
-            }
+            if (subBlockFrameCounter >= subBlockFrames) rotateSubBlock()
         }
+    }
+
+    /**
+     * Close out the current 100 ms sub-block: once the ring holds a full 400 ms (4 sub-blocks),
+     * record that block's mean square, then advance the ring head and clear the slot it now owns.
+     */
+    private fun rotateSubBlock() {
+        if (filledSubBlocks < SUB_BLOCK_COUNT) filledSubBlocks++
+        if (filledSubBlocks == SUB_BLOCK_COUNT) {
+            var blockSum = 0.0
+            for (k in 0 until SUB_BLOCK_COUNT) blockSum += subBlockSums[k]
+            blockMeanSquares.add(blockSum / (subBlockFrames * SUB_BLOCK_COUNT))
+        }
+        subBlockPosition = (subBlockPosition + 1) % SUB_BLOCK_COUNT
+        subBlockSums[subBlockPosition] = 0.0
+        subBlockFrameCounter = 0
     }
 
     /**
@@ -88,30 +94,29 @@ class EbuR128(
      * yet or every block was gated out as silence.
      */
     fun integratedLoudness(): Double {
-        if (blockMeanSquares.isEmpty()) return Double.NaN
         val absoluteThreshold = lufsToMeanSquare(ABSOLUTE_GATE_LUFS)
-        var sumAbs = 0.0
-        var countAbs = 0
+        val absoluteMean = gatedMeanSquare(absoluteThreshold)
+        if (absoluteMean.isNaN()) return Double.NaN
+        val relativeThreshold = lufsToMeanSquare(meanSquareToLufs(absoluteMean) - RELATIVE_GATE_LU)
+        val relativeMean = gatedMeanSquare(maxOf(absoluteThreshold, relativeThreshold))
+        return if (relativeMean.isNaN()) Double.NaN else meanSquareToLufs(relativeMean)
+    }
+
+    /**
+     * Mean of the per-block mean-squares at or above [threshold], or [Double.NaN] if no block
+     * clears it. Both BS.1770 gating passes go through here: the absolute gate, then the relative
+     * gate — for which we pass `max(absolute, relative)` so a kept block must clear both.
+     */
+    private fun gatedMeanSquare(threshold: Double): Double {
+        var sum = 0.0
+        var count = 0
         for (ms in blockMeanSquares) {
-            if (ms >= absoluteThreshold) {
-                sumAbs += ms
-                countAbs++
+            if (ms >= threshold) {
+                sum += ms
+                count++
             }
         }
-        if (countAbs == 0) return Double.NaN
-        val relativeThreshold = lufsToMeanSquare(
-            meanSquareToLufs(sumAbs / countAbs) - RELATIVE_GATE_LU
-        )
-        var sumRel = 0.0
-        var countRel = 0
-        for (ms in blockMeanSquares) {
-            if (ms >= absoluteThreshold && ms >= relativeThreshold) {
-                sumRel += ms
-                countRel++
-            }
-        }
-        if (countRel == 0) return Double.NaN
-        return meanSquareToLufs(sumRel / countRel)
+        return if (count == 0) Double.NaN else sum / count
     }
 
     /**
@@ -189,6 +194,22 @@ internal class Biquad(
     }
 
     companion object {
+        // BS.1770-4 K-weighting stage 1 — high-shelf design parameters (analog prototype, before
+        // the per-rate bilinear transform): +4 dB shelf centred at 1681.974 Hz, Q ≈ 0.707.
+        private const val SHELF_FREQ_HZ = 1681.974450955533
+        private const val SHELF_GAIN_DB = 3.999843853973347
+        private const val SHELF_Q = 0.7071752369554196
+
+        // vb = vh raised to this exponent — the shelf's mid-band gain factor (libebur128's value).
+        private const val SHELF_VB_EXPONENT = 0.4996667741545416
+
+        // BS.1770-4 K-weighting stage 2 — high-pass design parameters: 38.135 Hz, Q ≈ 0.5.
+        private const val HIGH_PASS_FREQ_HZ = 38.13547087602444
+        private const val HIGH_PASS_Q = 0.5003270373238773
+
+        // Amplitude dB conversion divisor (amplitude dB = 20·log10).
+        private const val DB_AMPLITUDE_DIVISOR = 20.0
+
         /**
          * BS.1770-4 stage 1: +4 dB high-shelf at 1681.974 Hz, Q ≈ 0.707. Models the head/torso
          * acoustic shadow's bias toward higher frequencies. Coefficients are derived from the
@@ -196,19 +217,16 @@ internal class Biquad(
          * any rate — not just 48 kHz.
          */
         fun kWeightingShelf(sampleRate: Int): Biquad {
-            val f0 = 1681.974450955533
-            val gainDb = 3.999843853973347
-            val q = 0.7071752369554196
-            val k = tan(PI * f0 / sampleRate)
-            val vh = 10.0.pow(gainDb / 20.0)
-            val vb = vh.pow(0.4996667741545416)
-            val a0 = 1.0 + k / q + k * k
+            val k = tan(PI * SHELF_FREQ_HZ / sampleRate)
+            val vh = 10.0.pow(SHELF_GAIN_DB / DB_AMPLITUDE_DIVISOR)
+            val vb = vh.pow(SHELF_VB_EXPONENT)
+            val a0 = 1.0 + k / SHELF_Q + k * k
             return Biquad(
-                b0 = (vh + vb * k / q + k * k) / a0,
+                b0 = (vh + vb * k / SHELF_Q + k * k) / a0,
                 b1 = 2.0 * (k * k - vh) / a0,
-                b2 = (vh - vb * k / q + k * k) / a0,
+                b2 = (vh - vb * k / SHELF_Q + k * k) / a0,
                 a1 = 2.0 * (k * k - 1.0) / a0,
-                a2 = (1.0 - k / q + k * k) / a0,
+                a2 = (1.0 - k / SHELF_Q + k * k) / a0,
             )
         }
 
@@ -217,16 +235,14 @@ internal class Biquad(
          * sub-bass that would otherwise dominate the mean-square measurement.
          */
         fun kWeightingHighPass(sampleRate: Int): Biquad {
-            val f0 = 38.13547087602444
-            val q = 0.5003270373238773
-            val k = tan(PI * f0 / sampleRate)
-            val a0 = 1.0 + k / q + k * k
+            val k = tan(PI * HIGH_PASS_FREQ_HZ / sampleRate)
+            val a0 = 1.0 + k / HIGH_PASS_Q + k * k
             return Biquad(
                 b0 = 1.0,
                 b1 = -2.0,
                 b2 = 1.0,
                 a1 = 2.0 * (k * k - 1.0) / a0,
-                a2 = (1.0 - k / q + k * k) / a0,
+                a2 = (1.0 - k / HIGH_PASS_Q + k * k) / a0,
             )
         }
     }
@@ -278,6 +294,13 @@ internal class TruePeak(private val channels: Int) {
         private const val PHASES = 4
         private const val TAPS_PER_PHASE = 12
 
+        // Blackman window: w[n] = a0 − a1·cos(2πn/(N−1)) + a2·cos(4πn/(N−1)). The harmonic 4 names
+        // the second cosine's multiplier; the `2` of the first term is detekt-ignored.
+        private const val BLACKMAN_A0 = 0.42
+        private const val BLACKMAN_A1 = 0.5
+        private const val BLACKMAN_A2 = 0.08
+        private const val BLACKMAN_A2_HARMONIC = 4
+
         /**
          * Design a 4-phase × 12-tap polyphase low-pass FIR by Blackman-windowing the
          * theoretical sinc-with-cutoff-π/4 (i.e. the original Nyquist after 4× upsample) and
@@ -294,9 +317,9 @@ internal class TruePeak(private val channels: Int) {
                 val n = i - center
                 val sincArg = PI * n / PHASES
                 val sincVal = if (sincArg == 0.0) 1.0 else sin(sincArg) / sincArg
-                val w = 0.42 -
-                    0.5 * cos(2 * PI * i / (totalTaps - 1)) +
-                    0.08 * cos(4 * PI * i / (totalTaps - 1))
+                val w = BLACKMAN_A0 -
+                    BLACKMAN_A1 * cos(2 * PI * i / (totalTaps - 1)) +
+                    BLACKMAN_A2 * cos(BLACKMAN_A2_HARMONIC * PI * i / (totalTaps - 1))
                 prototype[i] = sincVal * w
             }
             val phases = Array(PHASES) { DoubleArray(TAPS_PER_PHASE) }

@@ -20,11 +20,16 @@ import net.sigmabeta.sage.di.AppScope
  * `ViewModelGraph.metroViewModelFactory` accessor resolves it; `@SingleIn(AppScope::class)`
  * matches the graph's scope.
  */
+// The manual-assisted multibinding-map type exceeds detekt's 120-col limit inline; alias it
+// (transparent to Metro and the MetroViewModelFactory override) so the constructor stays readable.
+private typealias ManualAssistedFactoryProviders =
+    Map<KClass<out ManualViewModelAssistedFactory>, () -> ManualViewModelAssistedFactory>
+
 @Inject
 @SingleIn(AppScope::class)
 @ContributesBinding(AppScope::class)
 class ChipboxMetroViewModelFactory(
     override val viewModelProviders: Map<KClass<out ViewModel>, () -> ViewModel>,
     override val assistedFactoryProviders: Map<KClass<out ViewModel>, () -> ViewModelAssistedFactory>,
-    override val manualAssistedFactoryProviders: Map<KClass<out ManualViewModelAssistedFactory>, () -> ManualViewModelAssistedFactory>,
+    override val manualAssistedFactoryProviders: ManualAssistedFactoryProviders,
 ) : MetroViewModelFactory()
