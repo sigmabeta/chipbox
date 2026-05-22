@@ -1,11 +1,20 @@
 version: 2
 
-# Optimization 2: `setup` is a real setup step — it checks out, inits the
-# `sage` submodule, fetches tags, and resolves dependencies once, then a
-# workspace carries the repo (incl. `sage` and `.git`) and the resolved
-# Gradle dependency cache to every downstream job. Downstream jobs attach the
-# workspace instead of re-cloning / re-resolving. They compile only what they
-# need; native code is built only in the jobs that actually require it.
+# `setup` is a real setup step — it checks out, inits the `sage` submodule,
+# fetches tags, and resolves dependencies once, then a workspace carries the
+# repo (incl. `sage` and `.git`) and the resolved Gradle dependency cache to
+# every downstream job. Downstream jobs attach the workspace instead of
+# re-cloning / re-resolving. They compile only what they need; native code is
+# built only in the jobs that actually require it.
+#
+# Compiled output is carried forward via two independent Gradle build-cache
+# lineages, because a KMP module's jvm-target compile and its android-`release`
+# compile are different tasks (different cache keys) and cannot share an entry:
+#   * build-cache-jvm-v1     : shared-build -> build-release-jvm
+#   * build-cache-release-v1 : android-lint -> build-release-apk
+# Each downstream job restores its lineage and re-saves under the same key (a
+# CircleCI no-op when the upstream job already stored that revision), so the
+# expensive Kotlin compiles happen once per lineage.
 #
 # Workspace root is the home dir so both `project` and `.gradle` fit under it.
 workspace_root: &workspace_root /home/circleci
@@ -26,6 +35,18 @@ install_cmake: &install_cmake
     # absorbs the signal so only sdkmanager's real exit status counts.
     command: (yes || true) | sdkmanager "cmake;3.22.1"
 
+# The JVM target's emulator libs are host-built (host CMake's default Unix
+# Makefiles generator + gcc/g++/make/ar), NOT via the NDK. apps/jvm's build
+# script runs the CMake configure/build Exec tasks during installDist; they
+# resolve the `cmake` binary through $ANDROID_HOME (the SDK 3.22.1 that
+# install_cmake drops in — same version AGP uses), but the compile itself needs
+# a host C/C++ toolchain that the cimg/android image doesn't guarantee. Only
+# build-release-jvm builds host-native code, so only it needs this.
+install_host_toolchain: &install_host_toolchain
+  run:
+    name: Install host C/C++ toolchain (gcc/g++/make for JVM native libs)
+    command: sudo apt-get update && sudo apt-get install -y build-essential
+
 workflows:
   version: 2
   build_analyze:
@@ -37,16 +58,33 @@ workflows:
       - detekt:
           requires:
             - setup
-      - android-lint:
-          requires:
-            - setup
       - screenshot-test:
           requires:
             - setup
-      - build_release_apk:
+      # shared-build compiles the JVM target of every module shared between the
+      # JVM and Android apps. It runs in parallel with detekt (both gate the
+      # heavy Android jobs via android-lint below) rather than behind it — same
+      # fail-fast guarantee, one less job on the critical path. kt-lint is a cheap
+      # gate; setup supplies the workspace.
+      - shared-build:
           requires:
             - kt-lint
+            - setup
+      # Heavy Android jobs start only once the shared code compiles AND detekt
+      # passes — so a `large` box is never spent on lint / APK assembly for code
+      # that already failed static analysis or the shared compile.
+      - android-lint:
+          requires:
+            - shared-build
             - detekt
+      # build-release-jvm finishes the JVM app: it restores shared-build's JVM
+      # build cache (compilation = cache hits) and only adds the host-native libs
+      # + the desktop distribution on top.
+      - build-release-jvm:
+          requires:
+            - shared-build
+      - build-release-apk:
+          requires:
             - android-lint
 
 ##################################################
@@ -79,17 +117,27 @@ jobs:
           # Done here because `setup` has SSH configured by `checkout`;
           # downstream jobs use attach_workspace and have no SSH set up.
           command: git lfs install --local && git lfs pull
+      # Key on every file that can change the resolved dependency set: the root
+      # and both app build scripts, plus the version catalog. The JVM app pulls
+      # deps the Android release graph doesn't (Compose Desktop + Skia, Voyager,
+      # sqlite-bundled, metrox), so a JVM-only bump must bust this cache too.
       - restore_cache:
           keys:
-            - jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "apps/android/build.gradle.kts" }}
+            - jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum "apps/android/build.gradle.kts" }}-{{ checksum "apps/jvm/build.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}
             - jars-v1-
       - run:
-          name: Resolve dependencies
+          name: Resolve Android app dependencies
           # Dependency resolution only — no compilation, so no native build.
           # Populates ~/.gradle so downstream jobs resolve offline.
           command: ./gradlew :apps:android:dependencies --configuration releaseRuntimeClasspath --no-configuration-cache --no-daemon --max-workers=2
+      - run:
+          name: Resolve JVM app dependencies
+          # The JVM/desktop deps aren't in the Android release classpath, so warm
+          # them here too — otherwise shared-build AND build-release-jvm each
+          # re-download them (different boxes, neither persists modules-2).
+          command: ./gradlew :apps:jvm:dependencies --configuration runtimeClasspath --no-configuration-cache --no-daemon --max-workers=2
       - save_cache:
-          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum  "apps/android/build.gradle.kts" }}
+          key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum "apps/android/build.gradle.kts" }}-{{ checksum "apps/jvm/build.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}
           paths:
             - ~/.gradle/caches/modules-2
             - ~/.gradle/wrapper
@@ -154,6 +202,44 @@ jobs:
           paths:
             - ~/.gradle/caches/build-cache-1
 
+  shared-build:
+    # A whole-graph Kotlin compile of every shared module — give it the headroom
+    # the `large` Android jobs get rather than throttling it on `medium`.
+    resource_class: large
+
+    docker:
+      - image: cimg/android:2024.04.1
+
+    environment:
+      JVM_OPTS: -Xms2g -Xmx4g
+
+    steps:
+      - *attach_ws
+      # Dedicated JVM-side build-cache lineage, separate from the Android
+      # `release` lineage: a KMP module's jvm-target compile and its
+      # android-`release` compile are distinct tasks with distinct cache keys, so
+      # they can't share one cache entry. build-release-jvm restores this key.
+      - restore_cache:
+          keys:
+            - build-cache-jvm-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-jvm-v1-{{ .Branch }}-
+            - build-cache-jvm-v1-
+      - run:
+          name: Build shared JVM/Android code
+          # `:apps:jvm:classes` compiles apps/jvm plus, transitively, the JVM
+          # target of every module it depends on — the 55 sage.kmp shared modules
+          # and the pure-JVM sage.jvm modules: as much jvm/android-shared code as
+          # can be built in one target. It stops at compilation: native libs and
+          # the distribution are only wired into run/installDist/dist*, so neither
+          # is triggered here — build-release-jvm adds those. (Pure-JVM modules
+          # have no debug/release split; the Android `release` graph is compiled
+          # in android-lint, which feeds build-release-apk.)
+          command: ./gradlew :apps:jvm:classes --build-cache --configuration-cache --no-daemon --max-workers=4
+      - save_cache:
+          key: build-cache-jvm-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle/caches/build-cache-1
+
   android-lint:
     resource_class: large
 
@@ -169,7 +255,7 @@ jobs:
       # lintRelease pulls dependency AARs, which builds the emulator native libs.
       - *install_cmake
       # Shared release build cache: lintRelease and assembleRelease compile the
-      # same release graph. build_release_apk requires this job, so it restores
+      # same release graph. build-release-apk requires this job, so it restores
       # what we save here (its identical-key save is then a CircleCI no-op).
       - restore_cache:
           keys:
@@ -224,7 +310,7 @@ jobs:
           path: features/game-detail/screenshot/build/paparazzi/failures/
           destination: failure-screenshots/game-detail
 
-  build_release_apk:
+  build-release-apk:
     resource_class: large
 
     docker:
@@ -258,3 +344,39 @@ jobs:
       - store_artifacts:
           path: apps/android/build/outputs/apk/release
           destination: outputs
+
+  build-release-jvm:
+    resource_class: large
+
+    docker:
+      - image: cimg/android:2024.04.1
+
+    environment:
+      JVM_OPTS: -Xms2g -Xmx4g
+
+    steps:
+      - *attach_ws
+      # installDist host-builds the 7 emulator native libs (host CMake + gcc/g++)
+      # and bundles them into the distribution. cmake comes from the SDK package;
+      # the host C/C++ toolchain from apt.
+      - *install_cmake
+      - *install_host_toolchain
+      # Same JVM build-cache lineage shared-build populated: every Kotlin compile
+      # is a cache hit, so this job's real work is just the native build + the
+      # distribution layout. The identical-key save below is a CircleCI no-op when
+      # shared-build already stored this revision.
+      - restore_cache:
+          keys:
+            - build-cache-jvm-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-jvm-v1-{{ .Branch }}-
+            - build-cache-jvm-v1-
+      - run:
+          name: Build Release (JVM desktop app)
+          command: ./gradlew :apps:jvm:installDist --build-cache --configuration-cache --no-daemon --max-workers=4
+      - save_cache:
+          key: build-cache-jvm-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle/caches/build-cache-1
+      - store_artifacts:
+          path: apps/jvm/build/install
+          destination: jvm-dist
