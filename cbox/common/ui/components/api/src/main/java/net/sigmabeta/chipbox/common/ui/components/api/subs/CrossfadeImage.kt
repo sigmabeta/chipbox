@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImagePainter
@@ -42,6 +43,9 @@ fun CrossfadeImage(
     imagePlaceholder: Icon,
     contentDescription: String?,
     modifier: Modifier,
+    // In a preview / Paparazzi render (LocalInspectionMode = true) Coil can't fetch, so render a
+    // deterministic generated gradient via FakeImage instead of the loading/error placeholder.
+    forceGenBitmap: Boolean = LocalInspectionMode.current,
     simulateError: Boolean = false,
     onImageLoadedChange: ((Boolean) -> Unit)? = null,
 ) {
@@ -59,6 +63,8 @@ fun CrossfadeImage(
     ) { current ->
         when {
             current.info == null -> PlaceHolderImage(imagePlaceholder, Modifier.fillMaxSize())
+
+            forceGenBitmap -> FakeImage(current, Modifier.fillMaxSize())
 
             else -> RealImage(
                 sourceInfo = current,
