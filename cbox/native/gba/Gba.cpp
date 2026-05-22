@@ -1,6 +1,10 @@
 #include "Gba.h"
 
-char *last_error;
+#include <cstdarg>
+
+#include <mgba/core/log.h>
+
+static const char *last_error = nullptr;
 
 struct mCore *m_core;
 
@@ -8,8 +12,70 @@ gsf_loader_state m_rom;
 
 struct gsf_running_state m_output;
 
+// --- Graceful failure on a derailed CPU --------------------------------------
+//
+// A corrupt or unsupported GSF ROM sends the emulated ARM core off into
+// unmapped memory, where mGBA reads its 0xE710B710 sentinel and raises an
+// undefined-instruction exception on every step -- GBAIllegal logs
+// "Illegal opcode: %08x" and the track renders pure silence. A healthy track
+// hits exactly zero of these; a derail hits ~10^5 per second. We watch the
+// mGBA log for that storm, swallow the (potentially millions of) repeats, and
+// once it crosses a threshold report it via last_error so the player surfaces a
+// track failure on the very first buffer -- instead of emitting silence (and
+// flooding the log) for the player's whole silence-trim window first.
+
+static long illegal_opcode_count = 0;
+static struct mLogger *prev_logger = nullptr;
+
+// Forward only the first handful of illegal-opcode lines to the underlying
+// logger; the rest are pure noise (and there can be millions).
+static const long kIllegalOpcodeLogLimit = 8;
+
+static void chipbox_gba_log(struct mLogger *logger, int category,
+                            enum mLogLevel level, const char *format,
+                            va_list args) {
+    if (format && strncmp(format, "Illegal opcode", 14) == 0 &&
+        ++illegal_opcode_count > kIllegalOpcodeLogLimit) {
+        return; // swallow the storm
+    }
+    if (prev_logger && prev_logger->log && prev_logger != logger) {
+        prev_logger->log(prev_logger, category, level, format, args);
+    }
+}
+
+static struct mLogger chipbox_gba_logger = { chipbox_gba_log, nullptr };
+
+// Install our counting log shim once, chaining to whatever logger was already
+// active (and reusing its filter, so log volume is unchanged) -- existing
+// routing such as Android logcat is preserved across tracks.
+static void install_log_shim() {
+    if (mLogGetContext() != &chipbox_gba_logger) {
+        prev_logger = mLogGetContext();
+        chipbox_gba_logger.filter = prev_logger ? prev_logger->filter : nullptr;
+        mLogSetDefaultLogger(&chipbox_gba_logger);
+    }
+}
+
+// True if every sample in the just-rendered buffer is zero. Paired with the
+// illegal-opcode signal, this distinguishes a derailed (silent) track from a
+// healthy one that merely tripped -- and recovered from -- a stray opcode.
+static bool is_silent(const int16_t *interleaved, int32_t frames) {
+    for (int32_t i = 0; i < frames * 2; ++i) {
+        if (interleaved[i] != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void loadFile(const char *filename_c_str) {
     teardown();
+
+    // Clear any error carried over from a previous track and arm the
+    // illegal-opcode-storm watch for this one.
+    last_error = nullptr;
+    illegal_opcode_count = 0;
+    install_log_shim();
 
     if (!m_rom.data) {
         int ret = psf_load(
@@ -89,6 +155,8 @@ int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_frames) {
 
     struct mAudioBuffer *src = m_core->getAudioBuffer(m_core);
 
+    const long illegal_before = illegal_opcode_count;
+
     while ((int32_t) mAudioBufferAvailable(&m_output.resampled) < buffer_size_frames) {
         m_core->runFrame(m_core);
         // Re-query the source rate every pass: the GSF driver can reprogram
@@ -98,10 +166,31 @@ int32_t generateBuffer(int16_t *target_array, int32_t buffer_size_frames) {
         mAudioResamplerProcess(&m_output.resampler);
     }
 
-    return mAudioBufferRead(&m_output.resampled, target_array, buffer_size_frames);
+    int32_t frames = mAudioBufferRead(&m_output.resampled, target_array,
+                                      buffer_size_frames);
+
+    // An illegal opcode means the CPU executed something that isn't an
+    // instruction -- in practice a corrupt or unsupported ROM that has run off
+    // into junk memory. Fail as soon as it happens, but only when this buffer
+    // also came out silent: a healthy driver that trips a stray undefined
+    // opcode recovers via the BIOS handler and keeps producing audio, and we
+    // won't kill a track that's actually playing. A derailed ROM hits illegal
+    // opcodes AND emits silence every buffer, so this catches it on the first
+    // one. Returning 0 frames matches the PSF wrapper's on-error convention.
+    if (!last_error && illegal_opcode_count > illegal_before &&
+        is_silent(target_array, frames)) {
+        last_error =
+                "GSF file appears corrupt or unsupported: the emulated GBA CPU "
+                "hit an illegal opcode and produced no audio.";
+        return 0;
+    }
+
+    return frames;
 }
 
 void teardown() {
+    illegal_opcode_count = 0;
+
     if (m_output.audio_inited) {
         mAudioResamplerDeinit(&m_output.resampler);
         mAudioBufferDeinit(&m_output.resampled);
