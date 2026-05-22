@@ -294,13 +294,22 @@ private object PlaybackStatusScreen : Screen {
 }
 
 /**
+ * Marker for a pushed [Screen] that isn't owned by any tab. While one is on top of the
+ * active tab's stack, the navigation bar shows no tab as selected (see `navItems` in
+ * [ChipboxTabsScreen]) — the screen still lives in that tab's back stack; this only clears
+ * the selected highlight.
+ */
+internal interface TablessScreen
+
+/**
  * Pushed onto the *active tab's* inner Navigator (see `PlayerStatus.onClick` in
  * [ChipboxTabsScreen]) so it renders inside the tabs' Scaffold content — the pre-Voyager
  * shape. `NowPlayingRoute` sets [ScreenChrome] to hide the top bar + PlayerStatus while
  * leaving the nav bar, and the Scaffold's own snackbar slot renders snackbars, so this
- * screen needs neither its own bars nor its own host.
+ * screen needs neither its own bars nor its own host. As a [TablessScreen] it deselects all
+ * tabs in the nav bar while it's on top.
  */
-internal object NowPlayingScreen : Screen {
+internal object NowPlayingScreen : Screen, TablessScreen {
     override val key: ScreenKey = "NowPlaying"
 
     @Composable override fun Content() = ScreenScaffold {
