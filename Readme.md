@@ -1,12 +1,14 @@
-# Chipbox — A Chiptune Jukebox for Android
+# Chipbox — A Chiptune Jukebox
 
-Chipbox is a music player for Android that doesn't play MP3s. Instead it plays
-the raw program/data dumps of old video game console sound chips and emulates
-them in real time, reproducing the original soundtracks near-exactly from files
-as small as a few dozen KiB.
+Chipbox is a music player that doesn't play MP3s. Instead it plays the raw
+program/data dumps of old video game console sound chips and emulates them in
+real time, reproducing the original soundtracks near-exactly from files as small
+as a few dozen KiB.
 
-It targets modern Android (minSdk 26 / Android 8.0+, targetSdk 36) and is built
-entirely with Jetpack Compose, Hilt, and Kotlin coroutines.
+It targets modern Android (minSdk 26 / Android 8.0+, targetSdk 36) and also runs
+as a desktop (JVM) application. The codebase is Kotlin Multiplatform, with a
+shared Compose Multiplatform UI, Metro dependency injection, and Kotlin
+coroutines.
 
 ## Supported Music Formats
 
@@ -18,31 +20,38 @@ Playback is provided by several emulator cores wired in via the
 - **VGM/VGZ** — Genesis / Mega Drive, 32X, Arcade and numerous other systems
 - **PSF / miniPSF** (slopsf) — Sony PlayStation
 - **GSF** (mGBA) — Game Boy Advance
+- **USF / miniUSF** — Nintendo 64
 - **SSF** — Sega Saturn
 - **2SF** — Nintendo DS
 
 ## Architecture
 
-Chipbox is modularized on top of the **SAGE** scaffold (included as the `sage`
-git submodule). Modules follow an `api` / `di` / `real` / `fake` split:
+Chipbox is a Kotlin Multiplatform project built on top of the **SAGE** scaffold
+(included as the `sage` git submodule). Most modules follow an
+`api` / `di` / `real` / `fake` split, with an `all` aggregator:
 
-- `app` — application entry point, wires the `:di` modules together
-- `cbox/common/**` — platform-agnostic domain logic (player director, buffer,
-  repository, scanner, settings, entities)
+- `apps/android` — the Android application; `apps/jvm` — the desktop (JVM)
+  application. Both wire the `:di` modules together and host the shared Compose
+  UI.
+- `cbox/common/**` — platform-agnostic, multiplatform code shared by both apps
+  (player director, buffer, repository, scanner, settings, entities, and the
+  Compose UI shell)
 - `cbox/android/**` — Android-specific implementations (database, file content
-  source, emulator JNI bridges, speaker output, UI chrome)
+  source, emulator JNI bridges, speaker output)
 - `features/**` — Compose feature screens (library, browse, search, now-playing,
-  game/artist detail, settings), each with `api` / `real` / `screenshot` modules
+  game/artist detail, settings), most with `api` / `real` / `screenshot` modules
 - `sage/` — build logic and shared infrastructure (submodule)
 
-Native emulator cores are integrated through JNI; everything else is Kotlin.
+Dependency injection is **Metro** (with Dagger-annotation interop). Navigation
+uses **Voyager**. Native emulator cores are integrated through JNI; everything
+else is Kotlin.
 
 ## Building
 
 ```sh
 git clone --recurse-submodules git@github.com:sigmabeta/chipbox.git
 cd chipbox
-./gradlew assembleDebug
+./gradlew :apps:android:assembleDebug
 ```
 
 If you already cloned without submodules, initialize the `sage` submodule first:
@@ -54,7 +63,14 @@ git submodule update --init --recursive
 Install a debug build to a connected device:
 
 ```sh
-./gradlew installDebug
+./gradlew :apps:android:installDebug
+```
+
+Run the desktop app (native emulator libs are host-built via CMake; Linux-only
+for now):
+
+```sh
+./gradlew :apps:jvm:run
 ```
 
 Release builds are signed with `chipbox.jks` when the `CHIPBOX_KEY_ALIAS`,
@@ -64,16 +80,19 @@ present (set in CircleCI); local builds fall back to debug signing.
 ## Tooling
 
 - **Gradle** with the Kotlin DSL, configuration cache, and version catalogs
-- **Hilt** + **KSP** for dependency injection
-- **Jetpack Compose** (Material 3) for the UI
+- **Metro** for dependency injection
+- **Compose Multiplatform** (Material 3) for the shared UI
+- **Voyager** for navigation
+- **Paparazzi** for screenshot tests (`./gradlew verifyPaparazziDebug`)
 - **ktlint** / **detekt** for static analysis (`./ktlint-check.sh`,
   `./ktlint-fix.sh`)
-- **CircleCI** for CI
+- **CircleCI** for CI (Android and JVM build pipelines)
 
 ## Roadmap
 
-- Add support for more emulator cores (USF / Nintendo 64 is scaffolded)
 - Independent tempo & pitch playback controls (see
   `docs/psf-playback-speed-pitch-design.md`)
+- Desktop builds for macOS and Windows (currently Linux-only)
 - Bespoke UI for Android TV
 - Android Auto control support
+- Add support for more emulator cores
