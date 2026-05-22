@@ -59,7 +59,20 @@ interface Repository {
         withGames: Boolean = false
     ): Flow<Data<Artist?>>
 
-    suspend fun addGame(rawGame: RawGame)
+    /**
+     * Idempotently reconcile one scanned game (identified by [RawGame.folderKey]) into the library:
+     * insert it if new, otherwise update its metadata and reconcile its tracks by (path,
+     * trackNumber) — adding new songs, updating changed ones, deleting songs no longer present —
+     * and refresh its artist links. Safe to call concurrently for distinct folders.
+     */
+    suspend fun upsertGame(rawGame: RawGame)
+
+    /**
+     * Sweep step of an idempotent scan: delete every game whose folder was not seen this scan
+     * (cascading its tracks and joins), then drop any artists left with no tracks. [keptFolderKeys]
+     * is the set of [RawGame.folderKey]s that produced a game during the scan.
+     */
+    suspend fun pruneGames(keptFolderKeys: Set<String>)
 
     suspend fun getTrack(
         id: Long,

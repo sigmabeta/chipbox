@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.database.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.entities.TrackEntity
 
@@ -37,6 +38,12 @@ interface TrackDao {
 
     @Insert
     suspend fun insertAll(tracks: List<TrackEntity>): List<Long>
+
+    @Update
+    suspend fun updateAll(tracks: List<TrackEntity>)
+
+    @Query("DELETE FROM track WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 
     @Query("DELETE FROM track")
     suspend fun nukeTable()

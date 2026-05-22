@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.database.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.entities.GameEntity
 
@@ -10,6 +11,19 @@ import net.sigmabeta.chipbox.entities.GameEntity
 interface GameDao {
     @Query("SELECT * FROM game WHERE id = :gameId")
     fun getGame(gameId: Long): Flow<GameEntity?>
+
+    // Reconciliation: match a scanned folder to its existing game row.
+    @Query("SELECT * FROM game WHERE folder_key = :folderKey")
+    suspend fun getByFolderKeySync(folderKey: String): GameEntity?
+
+    @Query("SELECT * FROM game")
+    suspend fun getAllSync(): List<GameEntity>
+
+    @Update
+    suspend fun update(game: GameEntity)
+
+    @Query("DELETE FROM game WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 
     @Query("SELECT * FROM game WHERE id = :gameId")
     suspend fun getGameSync(gameId: Long): GameEntity

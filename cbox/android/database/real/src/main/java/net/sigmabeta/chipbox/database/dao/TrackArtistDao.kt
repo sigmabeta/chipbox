@@ -13,6 +13,10 @@ interface TrackArtistDao {
     @Insert
     suspend fun insertAll(trackArtistJoins: List<TrackArtistJoin>)
 
+    // Reconciliation: clear a track's artist links before rebuilding them on rescan.
+    @Query("DELETE FROM track_artist_join WHERE trackId IN (:trackIds)")
+    suspend fun deleteForTracks(trackIds: List<Long>)
+
     @Query(
         """
             SELECT * FROM artist INNER JOIN track_artist_join

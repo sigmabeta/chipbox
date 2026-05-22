@@ -2,7 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>LongMethod:RealScanner.kt$RealScanner$private suspend fun scanGroup(files: List&lt;LibraryFileInfo&gt;): Progress</ID>
+    <ID>LongMethod:RealScanner.kt$RealScanner$private suspend fun scanGroup(folderKey: String, files: List&lt;LibraryFileInfo&gt;): Progress</ID>
     <ID>LoopWithTooManyJumpStatements:RealScanner.kt$RealScanner$for</ID>
     <ID>TooGenericExceptionCaught:RealScanner.kt$RealScanner$ex: Exception</ID>
   </CurrentIssues>

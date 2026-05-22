@@ -53,16 +53,17 @@ class DatabaseRepository(
 
     private val searchHistoryDao = database.searchHistoryDao()
 
-    // addGame runs on the scanner's IO coroutine and its DAO calls suspend (Room KMP makes them
+    // upsertGame runs on the scanner's IO coroutine and its DAO calls suspend (Room KMP makes them
     // suspend off-Android), so begin/end can resume on different threads — trace with `traceAsync`,
     // which needs a cookie unique among concurrently-open same-named sections.
     private val traceCookies = AtomicInteger(0)
 
     private fun nextCookie() = traceCookies.incrementAndGet()
 
-    // Serializes the get-or-create-artist step across concurrent addGame calls. The scanner
-    // processes folders in parallel, and there's no unique index on artist.name, so two games
-    // resolving the same new artist at once would otherwise insert it twice.
+    // Serializes the get-or-create-artist step across concurrent upsertGame calls. The scanner
+    // processes folders in parallel; the unique index on artist.name is the backstop, and this
+    // mutex keeps the lookup-then-insert from racing (and failing that constraint) in the first
+    // place.
     private val artistWriteMutex = Mutex()
 
     override fun getAllArtists(
@@ -142,28 +143,95 @@ class DatabaseRepository(
         .getTrackSync(id)
         ?.toTrack(withGame, withArtists)
 
-    override suspend fun addGame(rawGame: RawGame) {
+    override suspend fun upsertGame(rawGame: RawGame) {
+        when (val existing = gameDao.getByFolderKeySync(rawGame.folderKey)) {
+            null -> insertNewGame(rawGame)
+            else -> updateExistingGame(existing, rawGame)
+        }
+    }
+
+    private suspend fun insertNewGame(rawGame: RawGame) {
         val gameId = traceAsync(TRACE_INSERT_GAME, nextCookie()) {
-            gameDao.insert(GameEntity(rawGame.title, rawGame.photoUrl))
+            gameDao.insert(
+                GameEntity(title = rawGame.title, photoUrl = rawGame.photoUrl, folderKey = rawGame.folderKey)
+            )
         }
+        val artistsByName = resolveGameArtists(rawGame)
 
-        // Resolve every distinct artist name across the game's tracks once, instead of a DB
-        // lookup per track. Serialized across concurrent addGame calls (the scanner walks
-        // folders in parallel) so two games can't insert the same new artist twice — there's
-        // no unique index on artist.name to lean on.
-        val artistsByName = traceAsync(TRACE_RESOLVE_ARTISTS, nextCookie()) {
-            artistWriteMutex.withLock { resolveArtists(rawGame.tracks) }
-        }
-
-        // One batched insert for all the game's tracks (a single transaction / commit) instead
-        // of a row-at-a-time insert; the returned ids line up with rawGame.tracks by index.
+        // One batched insert for all the game's tracks (a single transaction / commit) instead of a
+        // row-at-a-time insert; the returned ids line up with rawGame.tracks by index.
         val trackIds = traceAsync(TRACE_INSERT_TRACKS, nextCookie()) {
             trackDao.insertAll(rawGame.tracks.map { it.toTrackEntity(gameId) })
         }
+        val idByTrackKey = rawGame.tracks.zip(trackIds).associate { (track, id) -> track.trackKey() to id }
+        linkArtists(gameId, rawGame, idByTrackKey, artistsByName)
+    }
 
-        val trackArtistJoins = rawGame.tracks.zip(trackIds).flatMap { (track, trackId) ->
-            track.artistNames().map { name -> TrackArtistJoin(trackId, artistsByName.getValue(name).id) }
+    private suspend fun updateExistingGame(existing: GameEntity, rawGame: RawGame) {
+        val gameId = existing.id
+        if (existing.title != rawGame.title || existing.photoUrl != rawGame.photoUrl) {
+            gameDao.update(existing.copy(title = rawGame.title, photoUrl = rawGame.photoUrl))
         }
+
+        val artistsByName = resolveGameArtists(rawGame)
+
+        // Reconcile tracks by (path, trackNumber): keep+update existing rows (preserving their ids
+        // so queue/now-playing references survive), insert new ones, delete the ones gone from disk.
+        val existingByKey = trackDao.getTracksForGameSync(gameId).associateBy { it.path to it.trackNumber }
+        val scannedKeys = rawGame.tracks.mapTo(HashSet()) { it.trackKey() }
+
+        val removedIds = existingByKey.values.filterNot { it.trackKey() in scannedKeys }.map { it.id }
+        if (removedIds.isNotEmpty()) {
+            traceAsync(TRACE_DELETE_TRACKS, nextCookie()) { trackDao.deleteByIds(removedIds) }
+        }
+
+        val idByTrackKey = HashMap<Pair<String, Int>, Long>(rawGame.tracks.size)
+        val toUpdate = mutableListOf<TrackEntity>()
+        val toInsert = mutableListOf<RawTrack>()
+        for (raw in rawGame.tracks) {
+            val current = existingByKey[raw.trackKey()]
+            if (current == null) {
+                toInsert += raw
+            } else {
+                val updated = raw.toTrackEntity(gameId).copy(id = current.id)
+                if (updated != current) toUpdate += updated
+                idByTrackKey[raw.trackKey()] = current.id
+            }
+        }
+        if (toUpdate.isNotEmpty()) {
+            traceAsync(TRACE_INSERT_TRACKS, nextCookie()) { trackDao.updateAll(toUpdate) }
+        }
+        if (toInsert.isNotEmpty()) {
+            val ids = traceAsync(TRACE_INSERT_TRACKS, nextCookie()) {
+                trackDao.insertAll(toInsert.map { it.toTrackEntity(gameId) })
+            }
+            toInsert.forEachIndexed { index, raw -> idByTrackKey[raw.trackKey()] = ids[index] }
+        }
+
+        // Rebuild this game's artist links from scratch (joins are tiny, so a diff isn't worth it).
+        trackArtistDao.deleteForTracks(idByTrackKey.values.toList())
+        gameArtistDao.deleteForGame(gameId)
+        linkArtists(gameId, rawGame, idByTrackKey, artistsByName)
+    }
+
+    // Resolve every distinct artist name across the game's tracks once, instead of a DB lookup per
+    // track. Serialized across concurrent upsertGame calls (the scanner walks folders in parallel)
+    // so two games can't insert the same new artist twice.
+    private suspend fun resolveGameArtists(rawGame: RawGame): Map<String, ArtistEntity> =
+        traceAsync(TRACE_RESOLVE_ARTISTS, nextCookie()) {
+            artistWriteMutex.withLock { resolveArtists(rawGame.tracks) }
+        }
+
+    private suspend fun linkArtists(
+        gameId: Long,
+        rawGame: RawGame,
+        idByTrackKey: Map<Pair<String, Int>, Long>,
+        artistsByName: Map<String, ArtistEntity>,
+    ) {
+        val trackArtistJoins = rawGame.tracks.flatMap { track ->
+            val trackId = idByTrackKey.getValue(track.trackKey())
+            track.artistNames().map { name -> TrackArtistJoin(trackId, artistsByName.getValue(name).id) }
+        }.distinct()
         traceAsync(TRACE_LINK_ARTISTS, nextCookie()) {
             trackArtistDao.insertAll(trackArtistJoins)
         }
@@ -174,6 +242,16 @@ class DatabaseRepository(
         traceAsync(TRACE_INSERT_GAME_ARTISTS, nextCookie()) {
             gameArtistDao.insertAll(gameArtistJoins)
         }
+    }
+
+    override suspend fun pruneGames(keptFolderKeys: Set<String>) {
+        val removableIds = gameDao.getAllSync()
+            .filterNot { it.folderKey in keptFolderKeys }
+            .map { it.id }
+        if (removableIds.isNotEmpty()) {
+            traceAsync(TRACE_PRUNE_GAMES, nextCookie()) { gameDao.deleteByIds(removableIds) }
+        }
+        traceAsync(TRACE_PRUNE_ARTISTS, nextCookie()) { artistDao.deleteOrphans() }
     }
 
     private suspend fun ArtistEntity.toArtist(
@@ -242,6 +320,12 @@ class DatabaseRepository(
     private fun RawTrack.artistNames(): List<String> = artist
         .split(DELIMITERS_ARTISTS)
         .map { it.trim() }
+
+    // A track's reconciliation identity: a single file can yield several tracks (NSF/GBS subtracks)
+    // that share a path but differ by trackNumber.
+    private fun RawTrack.trackKey(): Pair<String, Int> = path to trackNumber
+
+    private fun TrackEntity.trackKey(): Pair<String, Int> = path to trackNumber
 
     private fun RawTrack.toTrackEntity(gameId: Long): TrackEntity = TrackEntity(
         title,
@@ -367,6 +451,9 @@ class DatabaseRepository(
         private const val TRACE_INSERT_GAME_ARTISTS = "Repository:insertGameArtists"
         private const val TRACE_RESOLVE_ARTISTS = "Repository:resolveArtists"
         private const val TRACE_LINK_ARTISTS = "Repository:linkTrackArtists"
+        private const val TRACE_DELETE_TRACKS = "Repository:deleteTracks"
+        private const val TRACE_PRUNE_GAMES = "Repository:pruneGames"
+        private const val TRACE_PRUNE_ARTISTS = "Repository:pruneArtists"
     }
 }
 

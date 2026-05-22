@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.entities
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(
@@ -14,6 +15,14 @@ import androidx.room.PrimaryKey
             childColumns = arrayOf("game_id"),
             onDelete = ForeignKey.CASCADE
         )
+    ],
+    indices = [
+        // A track's identity is (path, trackNumber): multi-track files (NSF/GBS/...) emit several
+        // tracks sharing one path, distinguished by trackNumber. Unique so rescans reconcile by
+        // this key and never duplicate.
+        Index(value = ["path", "trackNumber"], unique = true),
+        // FK target; also speeds the per-game reconciliation lookups.
+        Index(value = ["game_id"]),
     ]
 )
 data class TrackEntity(

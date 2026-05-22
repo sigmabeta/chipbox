@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.scanner.real
 
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -89,6 +90,8 @@ class RealScanner(
             }
             val groups = files.groupBy { it.parentFolderId }
             hatchet.d("Found ${files.size} file(s) across ${groups.size} folder(s).")
+            // Folder ids that produced a game this scan — the "kept" set for the prune sweep below.
+            val seenFolderKeys = ConcurrentHashMap.newKeySet<String>()
             // Folders are independent (each scanGroup has its own metadata + tag caches), and most
             // of a scan is spent blocked on SAF binder IPC for file reads. Process several folders
             // at once so those waits overlap and parsing spreads across cores — bounded so we don't
@@ -100,12 +103,15 @@ class RealScanner(
                         semaphore.withPermit {
                             hatchet.d("Scanning folder $folderId (${group.size} file(s)).")
                             traceAsync(TRACE_SCAN_GROUP, nextCookie()) {
-                                scanGroup(group.sortedBy { it.name })
-                            }
+                                scanGroup(folderId, group.sortedBy { it.name })
+                            }.also { if (it.gamesFound > 0) seenFolderKeys.add(folderId) }
                         }
                     }
                 }.awaitAll().fold(Progress.EMPTY, Progress::plus)
             }
+            // Reconcile deletions: drop games whose folder yielded nothing this scan (cascading
+            // their tracks/joins) and any artists left without tracks.
+            traceAsync(TRACE_PRUNE, nextCookie()) { repository.pruneGames(seenFolderKeys) }
         }
 
         hatchet.i(
@@ -123,7 +129,7 @@ class RealScanner(
         emitEvent(ScannerEvent.Unknown)
     }
 
-    private suspend fun scanGroup(files: List<LibraryFileInfo>): Progress {
+    private suspend fun scanGroup(folderKey: String, files: List<LibraryFileInfo>): Progress {
         var imagePath: String? = null
         val tracksByFilename = LinkedHashMap<String, MutableList<RawTrack>>()
         val m3uFiles = mutableListOf<LibraryFileInfo>()
@@ -273,8 +279,8 @@ class RealScanner(
 
         val gameName = rawTracks.first().game
         hatchet.i("Adding game \"$gameName\" with ${checked.size} track(s).")
-        traceAsync(TRACE_ADD_GAME, nextCookie()) {
-            repository.addGame(RawGame(gameName, imagePath, checked))
+        traceAsync(TRACE_UPSERT_GAME, nextCookie()) {
+            repository.upsertGame(RawGame(gameName, imagePath, folderKey, checked))
         }
         emitEvent(ScannerEvent.GameFoundEvent(gameName, rawTracks.size, imagePath.orUnknown()))
         return Progress(1, rawTracks.size, failed)
@@ -379,6 +385,7 @@ class RealScanner(
         private const val TRACE_READ_PREFIX = "Scanner:readTracks:"
         private const val TRACE_RESOLVE_CHAIN = "Scanner:resolvePsfChain"
         private const val TRACE_PARSE_M3U = "Scanner:parseM3u"
-        private const val TRACE_ADD_GAME = "Scanner:addGame"
+        private const val TRACE_UPSERT_GAME = "Scanner:upsertGame"
+        private const val TRACE_PRUNE = "Scanner:pruneGames"
     }
 }

@@ -13,6 +13,10 @@ interface GameArtistDao {
     @Insert
     suspend fun insertAll(gameArtistJoins: List<GameArtistJoin>)
 
+    // Reconciliation: clear a game's artist links before rebuilding them on rescan.
+    @Query("DELETE FROM game_artist_join WHERE gameId = :gameId")
+    suspend fun deleteForGame(gameId: Long)
+
     @Query(
         """ 
             SELECT * FROM artist INNER JOIN game_artist_join 
