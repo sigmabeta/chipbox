@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.chipbox.strings.api.id
 import net.sigmabeta.chipbox.common.ui.components.api.Content
 import net.sigmabeta.chipbox.ui.theme.api.AppTheme
@@ -60,6 +61,10 @@ fun ListScreenPreview(
         CompositionLocalProvider(
             LocalInspectionMode provides true,
             LocalLogger provides BasicHatchet(),
+            // Composables swapped to LocalChipboxStringProvider in M9 slice 6c (SearchBar +
+            // 6 ui/components) read it directly; provide the same Android-resource-backed
+            // StringProvider the preview already uses to build list items.
+            LocalChipboxStringProvider provides stringProvider,
         ) {
             PreviewChrome(titleBarModel = state.title) { innerPadding ->
                 Box(
@@ -101,6 +106,7 @@ fun ScreenPreview(
         CompositionLocalProvider(
             LocalInspectionMode provides true,
             LocalLogger provides BasicHatchet(),
+            LocalChipboxStringProvider provides stringProvider,
         ) {
             Box(
                 modifier = Modifier

@@ -70,6 +70,8 @@ private fun Sample() {
                     sourceInfo = SourceInfo("etc"),
                     imagePlaceholder = Icon.Person,
                     contentDescription = null,
+                    // Show the error path here, not the inspection-mode gradient.
+                    forceGenBitmap = false,
                     simulateError = true,
                     modifier = Modifier,
                 )
@@ -112,6 +114,8 @@ private fun Sample() {
                     sourceInfo = SourceInfo("etc"),
                     imagePlaceholder = Icon.Person,
                     contentDescription = null,
+                    // Show the error path here, not the inspection-mode gradient.
+                    forceGenBitmap = false,
                     simulateError = true,
                     modifier = Modifier,
                 )
