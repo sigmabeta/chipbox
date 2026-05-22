@@ -110,21 +110,21 @@ private fun Sample() {
             padding = padding,
         )
 
-        var selectedPosition by remember { mutableStateOf(3) }
         LabelDropdownListItem(
             model = DropdownSettingListModel(
-                "",
-                "Who the bus is",
-                selectedPosition,
-                listOf(
+                settingId = "",
+                name = "Who the bus is",
+                selectedPosition = 3,
+                settingsLabels = listOf(
                     "Noah",
                     "Lanz",
                     "Taion",
                     "Eunie",
                     "Mio",
                     "Sena",
-                ).toImmutableList()
-            ) { selectedPosition = it },
+                ).toImmutableList(),
+            ),
+            actionSink = PreviewActionSink(),
             defaultExpansion = false,
             modifier = Modifier,
             padding = padding,

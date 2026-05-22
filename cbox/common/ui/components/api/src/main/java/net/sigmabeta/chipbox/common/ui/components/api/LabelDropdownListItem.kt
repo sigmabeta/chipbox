@@ -7,11 +7,13 @@ import net.sigmabeta.chipbox.common.ui.components.api.subs.Dropdown
 import net.sigmabeta.chipbox.common.ui.components.api.subs.LabeledThingy
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.text
+import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.DropdownSettingListModel
 
 @Composable
 fun LabelDropdownListItem(
     model: DropdownSettingListModel,
+    actionSink: ActionSink,
     defaultExpansion: Boolean = false,
     modifier: Modifier,
     padding: PaddingValues,
@@ -23,7 +25,7 @@ fun LabelDropdownListItem(
                 defaultExpansion = defaultExpansion,
                 selectedPosition = model.selectedPosition,
                 settingsLabels = model.settingsLabels,
-                onNewOptionSelected = model.onNewOptionSelected
+                onNewOptionSelected = { index -> actionSink.sendAction(model.onNewOptionSelected(index)) }
             )
         },
         onClick = {},

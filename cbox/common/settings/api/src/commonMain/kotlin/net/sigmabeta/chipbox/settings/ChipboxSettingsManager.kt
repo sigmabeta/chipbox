@@ -8,4 +8,7 @@ interface ChipboxSettingsManager {
 
     fun getPlainFont(): Flow<String?>
     fun setPlainFont(fontName: String)
+
+    fun getThemeMode(): Flow<ThemeMode>
+    fun setThemeMode(mode: ThemeMode)
 }

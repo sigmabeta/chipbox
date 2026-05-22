@@ -9,6 +9,6 @@ import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
  * is now multiplatform (CMP-resource-backed), so both platforms render the same pixel-art font.
  */
 object ChipboxFontDefaults {
-    val Brand: ChipboxFont = ChipboxFont.DOUBLE_TOUCH
-    val Plain: ChipboxFont = ChipboxFont.PLANETARY
+    val Brand: ChipboxFont = ChipboxFont.DEFAULT_BRAND
+    val Plain: ChipboxFont = ChipboxFont.DEFAULT_PLAIN
 }
