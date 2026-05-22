@@ -15,8 +15,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
+import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
+import net.sigmabeta.chipbox.common.ui.components.api.utils.outerFocusPadding
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.SearchHistoryListModel
 
@@ -30,10 +34,12 @@ fun SearchHistoryListItem(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
+            .padding(padding.outerFocusPadding())
             .fillMaxWidth()
             .wrapContentHeight()
-            .padding(padding)
-            .clickable { actionSink.sendAction(model.clickAction) },
+            .clip(FocusAreaShape)
+            .clickable { actionSink.sendAction(model.clickAction) }
+            .padding(padding.innerFocusPadding(omitEnd = true)),
     ) {
         val contentColor = MaterialTheme.colorScheme.onBackground
 

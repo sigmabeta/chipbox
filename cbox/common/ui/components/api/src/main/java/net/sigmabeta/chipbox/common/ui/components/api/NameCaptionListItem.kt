@@ -16,9 +16,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
+import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
+import net.sigmabeta.chipbox.common.ui.components.api.utils.outerFocusPadding
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.NameCaptionListModel
 import androidx.compose.runtime.getValue
@@ -46,10 +50,12 @@ fun NameCaptionListItem(
 
     Row(
         modifier = modifier
+            .padding(padding.outerFocusPadding())
             .fillMaxWidth()
             .wrapContentHeight()
-            .padding(padding)
+            .clip(FocusAreaShape)
             .clickable { actionSink.sendAction(model.clickAction) }
+            .padding(padding.innerFocusPadding())
     ) {
         Column(
             modifier = Modifier

@@ -16,7 +16,6 @@ fun ElevatedCircle(
 ) {
     Surface(
         modifier = modifier
-            .padding(horizontal = 4.dp)
             .aspectRatio(1.0f)
             .shadow(elevation = 4.dp, shape = CircleShape),
         content = content

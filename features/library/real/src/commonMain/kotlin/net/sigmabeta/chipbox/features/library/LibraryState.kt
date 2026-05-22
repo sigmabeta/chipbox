@@ -1,8 +1,8 @@
 package net.sigmabeta.chipbox.features.library
 
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.sage.components.IconNameListModel
 import net.sigmabeta.sage.components.ListModel
-import net.sigmabeta.sage.components.MenuItemListModel
 import net.sigmabeta.sage.components.TitleBarModel
 import net.sigmabeta.sage.list.ColumnType
 import net.sigmabeta.sage.list.ListState
@@ -49,9 +49,9 @@ data object LibraryState : ListState() {
         labelId: ChipboxStringId,
         icon: Icon,
         action: LibraryAction,
-    ) = MenuItemListModel(
+    ) = IconNameListModel(
+        dataId = labelId.hashCode().toLong(),
         name = stringProvider.getString(labelId),
-        caption = null,
         icon = icon,
         clickAction = action,
     )

@@ -32,6 +32,11 @@ kotlin {
             dependencies {
                 implementation(projects.cbox.android.ui.theme.api)
                 implementation(libs.androidx.compose.ui.tooling.preview)
+                // ComposeViewAdapter (the renderer Android Studio's preview panel loads) lives in
+                // ui-tooling, not ui-tooling-preview. Without it on the android classpath the
+                // preview surface throws ClassNotFoundException. KMP androidLibrary has no
+                // debug-only source set, so it rides on androidMain alongside the annotations.
+                implementation(libs.androidx.compose.ui.tooling)
                 // AndroidStringProvider + the ChipboxStringId.id() → R.string mapping: the preview
                 // wrapper (ChipboxPreview) installs an Android-resource-backed StringProvider into
                 // LocalChipboxStringProvider so composables that read the local (M9 slice 6c) render
