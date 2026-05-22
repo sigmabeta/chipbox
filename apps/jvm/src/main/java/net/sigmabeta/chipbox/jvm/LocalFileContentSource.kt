@@ -52,6 +52,7 @@ class LocalFileContentSource : LibrarySource {
                         extension = file.extension.lowercase(),
                         mimeType = null,
                         sizeBytes = file.length(),
+                        lastModifiedMs = file.lastModified(),
                     )
                 )
             }

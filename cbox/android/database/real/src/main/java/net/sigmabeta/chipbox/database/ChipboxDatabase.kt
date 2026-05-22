@@ -33,10 +33,11 @@ import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
         SearchHistoryEntity::class
     ],
     // v8: games gain a unique folder_key; track (path, trackNumber) and artist name become unique.
-    // Upgrade is handled by fallbackToDestructiveMigration (the library is a derived cache and is
+    // v9: games gain folder_signature for skip-unchanged-folder rescans.
+    // Upgrades are handled by fallbackToDestructiveMigration (the library is a derived cache and is
     // rebuilt on the next scan), which also clears any duplicate rows left by older insert-only
     // rescans.
-    version = 8
+    version = 9
 )
 @ConstructedBy(ChipboxDatabaseConstructor::class)
 @Suppress("TooManyFunctions")

@@ -60,6 +60,13 @@ interface Repository {
     ): Flow<Data<Artist?>>
 
     /**
+     * Pre-scan snapshot of every stored game's folder signature and track count, keyed by
+     * [RawGame.folderKey]. The scanner loads this once and uses it to skip re-reading folders whose
+     * recomputed signature matches.
+     */
+    suspend fun folderSnapshots(): Map<String, FolderSnapshot>
+
+    /**
      * Idempotently reconcile one scanned game (identified by [RawGame.folderKey]) into the library:
      * insert it if new, otherwise update its metadata and reconcile its tracks by (path,
      * trackNumber) — adding new songs, updating changed ones, deleting songs no longer present —
