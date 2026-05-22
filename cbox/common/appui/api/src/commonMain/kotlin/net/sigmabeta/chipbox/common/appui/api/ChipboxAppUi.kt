@@ -19,10 +19,10 @@ import net.sigmabeta.chipbox.ui.theme.api.tokens.ChipboxFontDefaults
 
 /**
  * Cross-platform entry point for the Chipbox Compose UI. Owns the outer Voyager [Navigator]
- * whose root is [ChipboxTabsScreen] (chrome + per-tab navigators); pushing onto this
- * navigator covers the whole tab UI — used by `PlayerStatus.onClick` to surface
- * `NowPlayingScreen` as a true full-screen overlay rather than relying on
- * `ChromeController` to hide bars.
+ * whose root is [ChipboxTabsScreen] (chrome + per-tab navigators). `PlayerStatus.onClick`
+ * pushes `NowPlayingScreen` onto the *active tab's* inner Navigator so it renders inside the
+ * scaffold content, leaving `ChromeController` to hide the top bar + PlayerStatus (and keep
+ * the nav bar) — matching the pre-Voyager shell.
  *
  * Platform-specific event handling — opening URLs and copying to the clipboard — comes in
  * as callbacks from each host app. Android `MainActivity` passes
@@ -33,9 +33,9 @@ import net.sigmabeta.chipbox.ui.theme.api.tokens.ChipboxFontDefaults
  * composable live in commonMain.
  *
  * [LocalChipboxEventSink] + [LocalAppSnackbarHostState] are provided *inside* the outer
- * Navigator block but *outside* `SlideTransition` so they remain in scope whether the
- * tabs root or a pushed screen (e.g. NowPlaying) is currently rendered. Providing them
- * any deeper would unmount the locals along with the tab UI when NowPlaying is on top.
+ * Navigator block but *outside* `SlideTransition` so they stay in scope for the tabs root
+ * (the outer sink references this navigator). Providing them any deeper would unmount the
+ * locals during navigation.
  */
 @Composable
 fun ChipboxAppUi(

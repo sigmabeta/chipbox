@@ -1,22 +1,14 @@
 package net.sigmabeta.chipbox.common.appui.api
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import cafe.adriel.voyager.core.screen.Screen
@@ -51,6 +43,7 @@ import net.sigmabeta.chipbox.features.search.real.SearchRoute
 import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.chipbox.features.settings.SettingsRoute
 import net.sigmabeta.chipbox.models.Platform
+import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.text
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
@@ -175,17 +168,30 @@ private fun rememberTabIcon(imageVector: ImageVector) = rememberVectorPainter(im
  * Per-tab Navigator that bridges [LocalChipboxEventSink] from the app-level outer sink
  * (provided in [ChipboxTabsScreen]) to one that pushes/pops the local tab Navigator.
  * `SlideTransition` matches the AndroidX nav-compose default forward/backward animation.
+ *
+ * `onBackPressed` routes the Android system back through [LocalAppActionSink] as a
+ * `DeviceBack` instead of letting Voyager pop directly — so device back and the app-bar up
+ * arrow (`AppBack`) share one handler. Returning `false` declines Voyager's built-in pop,
+ * leaving the actual navigation to that handler. Voyager only invokes this while the tab
+ * (or its parent) `canPop`, so at a tab root the system back still falls through to exit.
  */
 @Composable
 private fun TabNavigatorContent(root: Screen) {
-    Navigator(root) { navigator ->
+    val appActionSink = LocalAppActionSink.current
+    Navigator(
+        root,
+        onBackPressed = {
+            appActionSink.sendAction(SageAction.DeviceBack)
+            false
+        },
+    ) { navigator ->
         val outerSink = LocalChipboxEventSink.current
         val activeTabNavigator = LocalActiveTabNavigator.current
 
-        // Expose this tab's Navigator to the chrome ([ChipboxTabsScreen]) so the TopAppBar
-        // back arrow can pop the deep stack from outside the tab's scope. On tab switch,
-        // Voyager unmounts the old tab's UI (firing onDispose) before mounting the new
-        // tab's, so the registration tracks the currently-rendered tab.
+        // Expose this tab's Navigator to the chrome ([ChipboxTabsScreen]) so the shell's
+        // back handler ([LocalAppActionSink]) can pop the deep stack from outside the tab's
+        // scope. On tab switch, Voyager unmounts the old tab's UI (firing onDispose) before
+        // mounting the new tab's, so the registration tracks the currently-rendered tab.
         DisposableEffect(navigator) {
             activeTabNavigator.navigator = navigator
             onDispose {
@@ -288,27 +294,17 @@ private object PlaybackStatusScreen : Screen {
 }
 
 /**
- * Full-screen overlay pushed onto the *outer* Voyager Navigator (above [ChipboxTabsScreen]).
- * Hosts its own [SnackbarHost] on the shared [LocalAppSnackbarHostState] so snackbars
- * triggered while NowPlaying is on top still render — the tabs' Scaffold isn't composed
- * then, so its host wouldn't show them.
+ * Pushed onto the *active tab's* inner Navigator (see `PlayerStatus.onClick` in
+ * [ChipboxTabsScreen]) so it renders inside the tabs' Scaffold content — the pre-Voyager
+ * shape. `NowPlayingRoute` sets [ScreenChrome] to hide the top bar + PlayerStatus while
+ * leaving the nav bar, and the Scaffold's own snackbar slot renders snackbars, so this
+ * screen needs neither its own bars nor its own host.
  */
 internal object NowPlayingScreen : Screen {
     override val key: ScreenKey = "NowPlaying"
 
     @Composable override fun Content() = ScreenScaffold {
-        Box(Modifier.fillMaxSize()) {
-            NowPlayingRoute(
-                onEvent = LocalChipboxEventSink.current,
-                modifier = Modifier.fillMaxSize(),
-            )
-            SnackbarHost(
-                hostState = LocalAppSnackbarHostState.current,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .windowInsetsPadding(WindowInsets.navigationBars),
-            )
-        }
+        NowPlayingRoute(onEvent = LocalChipboxEventSink.current)
     }
 }
 
