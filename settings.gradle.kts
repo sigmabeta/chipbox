@@ -38,6 +38,7 @@ include(
     // SAGE-aware modules
     ":apps:android",
     ":apps:jvm",
+    ":apps:cli",
     ":benchmark",
 
     ":cbox:common:appui:api",
