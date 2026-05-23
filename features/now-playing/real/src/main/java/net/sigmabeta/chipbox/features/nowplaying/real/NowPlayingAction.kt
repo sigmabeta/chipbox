@@ -11,4 +11,5 @@ sealed class NowPlayingAction : ChipboxAction() {
     data object BackClicked : NowPlayingAction()
     data object PlayerSettingsClicked : NowPlayingAction()
     data class SeekRequested(val positionMs: Long) : NowPlayingAction()
+    data class DismissErrorClicked(val id: Long) : NowPlayingAction()
 }
