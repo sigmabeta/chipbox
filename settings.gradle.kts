@@ -167,6 +167,7 @@ include(
     ":features:library:screenshot",
     ":features:now-playing:api",
     ":features:now-playing:real",
+    ":features:now-playing:screenshot",
     ":features:playback-status:api",
     ":features:playback-status:real",
     ":features:search:api",
