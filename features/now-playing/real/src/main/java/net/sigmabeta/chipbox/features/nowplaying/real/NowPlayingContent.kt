@@ -73,6 +73,8 @@ internal fun NowPlayingContent(
 
         Artwork(model)
 
+        ErrorSection(errors = model.errors, actionSink = actionSink)
+
         Spacer(modifier = Modifier.height(16.dp))
 
         TrackInfo(model)

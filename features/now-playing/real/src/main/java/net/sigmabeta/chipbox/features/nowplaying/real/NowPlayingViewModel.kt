@@ -6,6 +6,8 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.binding
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.player.director.Director
@@ -15,6 +17,19 @@ import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
+
+/** How many recent errors the now-playing error log keeps visible at once. */
+private const val MAX_VISIBLE_ERRORS = 3
+
+/** How long after the most recent error the whole error log clears itself. */
+private const val ERROR_AUTO_CLEAR_MS = 10_000L
+
+/** Max length of the game/title affixes prefixed to an error message before they're ellipsized. */
+private const val ERROR_AFFIX_MAX_LENGTH = 10
+
+/** Cap [this] at [ERROR_AFFIX_MAX_LENGTH] characters, appending an ellipsis when truncated. */
+private fun String.ellipsize(): String =
+    if (length > ERROR_AFFIX_MAX_LENGTH) take(ERROR_AFFIX_MAX_LENGTH) + "…" else this
 
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @ViewModelKey
@@ -27,10 +42,21 @@ class NowPlayingViewModel @Inject constructor(
     stringProvider,
     hatchet,
 ) {
+    /** Monotonic id source for error rows, so each is stably keyed and individually dismissable. */
+    private var nextErrorId = 0L
+
+    /** The pending "clear the whole log" job; restarted on each new error so the 10s window slides. */
+    private var errorClearJob: Job? = null
+
     init {
         viewModelScope.launch {
             director.metadataState().collect { track ->
                 updateState { it.copy(track = track) }
+            }
+        }
+        viewModelScope.launch {
+            director.errorEvents().collect { message ->
+                addError(message)
             }
         }
         viewModelScope.launch {
@@ -75,7 +101,33 @@ class NowPlayingViewModel @Inject constructor(
             )
 
             is NowPlayingAction.SeekRequested -> director.seek(action.positionMs)
+
+            is NowPlayingAction.DismissErrorClicked -> dismissError(action.id)
         }
+    }
+
+    /** Append a new error to the log (capped at [MAX_VISIBLE_ERRORS], newest last) and (re)start
+     *  the sliding auto-clear window so the section disappears [ERROR_AUTO_CLEAR_MS] after the
+     *  most recent error. */
+    private fun addError(message: String) {
+        val track = state.value.track
+        val gameName = track?.game?.title.orEmpty().ellipsize()
+        val title = track?.title.orEmpty().ellipsize()
+        val item = NowPlayingError(
+            id = nextErrorId++,
+            message = "$gameName - $title: $message",
+        )
+        updateState { it.copy(errors = (it.errors + item).takeLast(MAX_VISIBLE_ERRORS)) }
+
+        errorClearJob?.cancel()
+        errorClearJob = viewModelScope.launch {
+            delay(ERROR_AUTO_CLEAR_MS)
+            updateState { it.copy(errors = emptyList()) }
+        }
+    }
+
+    private fun dismissError(id: Long) {
+        updateState { state -> state.copy(errors = state.errors.filterNot { it.id == id }) }
     }
 
     private fun togglePlayPause() {

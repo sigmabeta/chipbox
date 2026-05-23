@@ -17,6 +17,7 @@ data class NowPlayingState(
     val playback: ChipboxPlaybackState? = null,
     val session: Session? = null,
     val repeatMode: RepeatMode = RepeatMode.OFF,
+    val errors: List<NowPlayingError> = emptyList(),
 ) : FreeformState<NowPlayingModel>() {
 
     override fun title(stringProvider: StringProvider) = TitleBarModel(
@@ -41,6 +42,7 @@ data class NowPlayingState(
         errorMessage = playback
             ?.takeIf { it.state == PlayerState.ERROR }
             ?.errorMessage,
+        errors = errors,
     )
 
     /**

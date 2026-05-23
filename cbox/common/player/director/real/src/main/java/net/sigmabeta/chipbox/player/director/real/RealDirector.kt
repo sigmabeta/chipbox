@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -103,6 +104,13 @@ class RealDirector(
 
     // replay = 1 so a debug screen opened mid-playback receives the active session immediately.
     private val sessionStateMutable = MutableSharedFlow<Session?>(replay = 1)
+
+    // No replay: the error log is for errors that happen while a screen is watching, not a
+    // backlog replayed to late subscribers. DROP_OLDEST keeps a burst of rapid failures flowing.
+    private val errorEventsMutable = MutableSharedFlow<String>(
+        extraBufferCapacity = 8,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
 
     init {
         // Seed each replay buffer so a subscriber that attaches before any playback has
@@ -288,6 +296,8 @@ class RealDirector(
 
     override fun sessionState() = sessionStateMutable.asSharedFlow()
 
+    override fun errorEvents() = errorEventsMutable.asSharedFlow()
+
     override fun pauseTemporarily() {
         directorScope.launch {
             speaker.pause()
@@ -433,10 +443,7 @@ class RealDirector(
             )
         }
 
-        val newTrack = getTrack(event.trackId) ?: return oldState.copy(
-            state = PlayerState.ERROR,
-            errorMessage = "Couldn't load track metadata.",
-        )
+        val newTrack = getTrack(event.trackId) ?: return metadataLoadError(oldState)
         metadataStateMutable.emit(newTrack)
         hatchet.i(
             "handleGeneratorLoading(track=${event.trackId}): " +
@@ -512,6 +519,7 @@ class RealDirector(
                         hatchet.w(
                             "Generator error on last track: ${event.message}. Ending session."
                         )
+                        errorEventsMutable.tryEmit(event.message)
                         directorScope.launch {
                             speaker.stop()
                             generator.stop()
@@ -525,6 +533,7 @@ class RealDirector(
                                 "($consecutiveGeneratorFailures/$MAX_CONSECUTIVE_FAILURES): " +
                                 "${event.message}. Skipping to the next track."
                         )
+                        errorEventsMutable.tryEmit(event.message)
                         val nextPosition = (session.currentPosition ?: -1) + 1
                         directorScope.launch {
                             advanceToTrackAt(session, setlist, nextPosition)
@@ -577,10 +586,7 @@ class RealDirector(
     }
 
     private suspend fun updatePlayerMetadata(oldState: ChipboxPlaybackState, newTrackId: Long): ChipboxPlaybackState {
-        val newTrack = getTrack(newTrackId) ?: return oldState.copy(
-            state = PlayerState.ERROR,
-            errorMessage = "Couldn't load track metadata.",
-        )
+        val newTrack = getTrack(newTrackId) ?: return metadataLoadError(oldState)
         hatchet.i(
             "updatePlayerMetadata(track=$newTrackId, ${newTrack.title}): " +
                 "state ${oldState.state}, emitting metadata."
@@ -609,9 +615,19 @@ class RealDirector(
 
     private fun emitError(message: String) {
         hatchet.e("Error: $message")
+        errorEventsMutable.tryEmit(message)
         currentState = currentState.copy(
             state = PlayerState.ERROR,
             errorMessage = message,
         )
+    }
+
+    /** Reduce a failed track-metadata fetch to an ERROR state, logging the message to the error
+     *  stream. Unlike [emitError] this returns the new state for the reducer to assign rather than
+     *  mutating [currentState] directly. */
+    private fun metadataLoadError(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
+        val message = "Couldn't load track metadata."
+        errorEventsMutable.tryEmit(message)
+        return oldState.copy(state = PlayerState.ERROR, errorMessage = message)
     }
 }
