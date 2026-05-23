@@ -433,7 +433,10 @@ class RealDirector(
             )
         }
 
-        val newTrack = getTrack(event.trackId) ?: return oldState.copy(state = PlayerState.ERROR)
+        val newTrack = getTrack(event.trackId) ?: return oldState.copy(
+            state = PlayerState.ERROR,
+            errorMessage = "Couldn't load track metadata.",
+        )
         metadataStateMutable.emit(newTrack)
         hatchet.i(
             "handleGeneratorLoading(track=${event.trackId}): " +
@@ -574,7 +577,10 @@ class RealDirector(
     }
 
     private suspend fun updatePlayerMetadata(oldState: ChipboxPlaybackState, newTrackId: Long): ChipboxPlaybackState {
-        val newTrack = getTrack(newTrackId) ?: return oldState.copy(state = PlayerState.ERROR)
+        val newTrack = getTrack(newTrackId) ?: return oldState.copy(
+            state = PlayerState.ERROR,
+            errorMessage = "Couldn't load track metadata.",
+        )
         hatchet.i(
             "updatePlayerMetadata(track=$newTrackId, ${newTrack.title}): " +
                 "state ${oldState.state}, emitting metadata."

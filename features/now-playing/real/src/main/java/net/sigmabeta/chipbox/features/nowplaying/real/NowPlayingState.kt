@@ -37,6 +37,10 @@ data class NowPlayingState(
         canSkipForward = playback?.skipForwardAllowed == true,
         isShuffled = session?.shuffled == true,
         repeatMode = repeatMode,
+        // Only a fatal ERROR carries a message to surface; other states leave the artwork intact.
+        errorMessage = playback
+            ?.takeIf { it.state == PlayerState.ERROR }
+            ?.errorMessage,
     )
 
     /**

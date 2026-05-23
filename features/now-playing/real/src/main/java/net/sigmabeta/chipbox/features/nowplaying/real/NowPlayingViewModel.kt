@@ -35,6 +35,12 @@ class NowPlayingViewModel @Inject constructor(
         }
         viewModelScope.launch {
             director.playbackState().collect { playback ->
+                // IDLE means no session is live — there's nothing to show here. This usually
+                // reflects the screen being (re)created out of sync with the player (e.g. an
+                // Android lifecycle race), so leave rather than render a blank player.
+                if (playback.state == PlayerState.IDLE) {
+                    emit(ChipboxEvent.NavigateBack)
+                }
                 updateState { it.copy(playback = playback) }
             }
         }
