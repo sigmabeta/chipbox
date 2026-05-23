@@ -150,13 +150,34 @@ private fun ColumnScope.Artwork(model: NowPlayingModel) {
             .weight(1f)
             .clip(RoundedCornerShape(ArtworkCornerRadius)),
     ) {
-        CrossfadeImage(
-            sourceInfo = model.artwork,
-            imagePlaceholder = Icon.MusicNote,
-            contentDescription = null,
-            modifier = Modifier
-                .fillMaxSize(),
-        )
+        val errorMessage = model.errorMessage
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            // On a fatal error, force the artwork into its error treatment and overlay a short
+            // message; the surrounding metadata still names the track that failed. This is a
+            // stand-in for the dedicated artwork-error component, to be swapped in once it lands.
+            CrossfadeImage(
+                sourceInfo = model.artwork,
+                imagePlaceholder = Icon.MusicNote,
+                contentDescription = null,
+                simulateError = errorMessage != null,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(ScreenPadding),
+                )
+            }
+        }
     }
 }
 

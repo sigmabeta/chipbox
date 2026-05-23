@@ -15,6 +15,12 @@ data class NowPlayingModel(
     val canSkipForward: Boolean,
     val isShuffled: Boolean,
     val repeatMode: RepeatMode,
+    /**
+     * Non-null only for a fatal playback error ([PlayerState.ERROR]). When set, the screen
+     * swaps the artwork for its error state with this short message rendered over it, while the
+     * surrounding track metadata still describes the track that failed.
+     */
+    val errorMessage: String? = null,
 ) {
     companion object {
         val Empty = NowPlayingModel(
@@ -30,6 +36,7 @@ data class NowPlayingModel(
             canSkipForward = false,
             isShuffled = false,
             repeatMode = RepeatMode.OFF,
+            errorMessage = null,
         )
     }
 }
