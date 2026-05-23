@@ -38,6 +38,15 @@ class ChipboxLibrary(
 ) {
     private val dbFile = File(workDir, DB_NAME)
 
+    /** Where "Get cover art" reads IGDB credentials from (created as a template if absent). */
+    val coverArtConfigFile = File(workDir, COVER_ART_CONFIG_NAME)
+
+    /** Where "Get cover art" persists IGDB lookup results to skip re-querying on later runs. */
+    val coverArtCacheFile = File(workDir, COVER_ART_CACHE_NAME)
+
+    /** Where manual game→IGDB cover-art links are persisted, taking precedence over the search. */
+    val coverArtOverridesFile = File(workDir, COVER_ART_OVERRIDES_NAME)
+
     private val database: ChipboxDatabase = Room
         .databaseBuilder<ChipboxDatabase>(name = dbFile.absolutePath)
         .setDriver(BundledSQLiteDriver())
@@ -123,6 +132,9 @@ class ChipboxLibrary(
     private companion object {
         const val DB_NAME = "library.sqlite"
         const val LOCATIONS_NAME = "library-locations.txt"
+        const val COVER_ART_CONFIG_NAME = "cover-art.cfg"
+        const val COVER_ART_CACHE_NAME = "cover-art-cache.json"
+        const val COVER_ART_OVERRIDES_NAME = "cover-art-overrides.json"
 
         fun isTerminalState(state: ScannerState): Boolean =
             state is ScannerState.Complete || state is ScannerState.Failed
