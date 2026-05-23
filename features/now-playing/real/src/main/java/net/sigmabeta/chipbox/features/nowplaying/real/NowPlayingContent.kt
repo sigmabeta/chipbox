@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,7 +56,7 @@ private val TransportSkipSize = 64.dp
 private val TransportToggleSize = 48.dp
 
 @Composable
-internal fun NowPlayingContent(
+fun NowPlayingContent(
     model: NowPlayingModel,
     actionSink: ActionSink,
     modifier: Modifier = Modifier,
@@ -153,34 +154,12 @@ private fun ColumnScope.Artwork(model: NowPlayingModel) {
             .weight(1f)
             .clip(RoundedCornerShape(ArtworkCornerRadius)),
     ) {
-        val errorMessage = model.errorMessage
-        Box(
+        CrossfadeImage(
+            sourceInfo = model.artwork,
+            imagePlaceholder = Icon.MusicNote,
+            contentDescription = null,
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            // On a fatal error, force the artwork into its error treatment and overlay a short
-            // message; the surrounding metadata still names the track that failed. This is a
-            // stand-in for the dedicated artwork-error component, to be swapped in once it lands.
-            CrossfadeImage(
-                sourceInfo = model.artwork,
-                imagePlaceholder = Icon.MusicNote,
-                contentDescription = null,
-                simulateError = errorMessage != null,
-                modifier = Modifier.fillMaxSize(),
-            )
-
-            if (errorMessage != null) {
-                Text(
-                    text = errorMessage,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(ScreenPadding),
-                )
-            }
-        }
+        )
     }
 }
 
@@ -315,18 +294,30 @@ private fun ColumnScope.TransportRow(
                 onClick = { actionSink.sendAction(NowPlayingAction.PlayPauseClicked) },
                 modifier = Modifier.fillMaxSize(),
             ) {
-                Icon(
-                    imageVector = when {
-                        isError -> Icon.Warning.vector()
-                        model.isPlaying -> Icons.Filled.Pause
-                        else -> Icons.Filled.PlayArrow
-                    },
-                    contentDescription = null,
-                    tint = if (isError) MaterialTheme.colorScheme.error else accentTint,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(8.dp),
-                )
+                if (model.isBuffering) {
+                    // Speaker is silent while the generator fills buffers. Swap the play/pause
+                    // icon for a spinner so the wait reads as loading — the button still pauses
+                    // on tap.
+                    CircularProgressIndicator(
+                        color = accentTint,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp),
+                    )
+                } else {
+                    Icon(
+                        imageVector = when {
+                            isError -> Icon.Warning.vector()
+                            model.isPlaying -> Icons.Filled.Pause
+                            else -> Icons.Filled.PlayArrow
+                        },
+                        contentDescription = null,
+                        tint = if (isError) MaterialTheme.colorScheme.error else accentTint,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp),
+                    )
+                }
             }
         }
 
