@@ -46,6 +46,7 @@ import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
+import net.sigmabeta.sage.ui.vector
 
 private val ScreenPadding = 24.dp
 private val ArtworkCornerRadius = 16.dp
@@ -306,15 +307,20 @@ private fun ColumnScope.TransportRow(
 
         Spacer(modifier = Modifier.size(16.dp))
 
+        val isError = model.errorMessage != null
         Box(modifier = Modifier.size(TransportPlayPauseSize)) {
             IconButton(
                 onClick = { actionSink.sendAction(NowPlayingAction.PlayPauseClicked) },
                 modifier = Modifier.fillMaxSize(),
             ) {
                 Icon(
-                    imageVector = if (model.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    imageVector = when {
+                        isError -> Icon.Warning.vector()
+                        model.isPlaying -> Icons.Filled.Pause
+                        else -> Icons.Filled.PlayArrow
+                    },
                     contentDescription = null,
-                    tint = accentTint,
+                    tint = if (isError) MaterialTheme.colorScheme.error else accentTint,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(8.dp),
