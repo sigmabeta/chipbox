@@ -33,12 +33,13 @@ data class NowPlayingState(
         artistsCaption = track?.artists?.joinToString(", ") { it.name }.orEmpty(),
         gameTitle = track?.game?.title.orEmpty(),
         isPlaying = playback?.state?.isPlaying() == true,
+        isBuffering = playback?.state == PlayerState.BUFFERING,
         positionMs = playback?.position ?: 0L,
         lengthMs = track?.trackLengthMs ?: 0L,
         canSkipForward = playback?.skipForwardAllowed == true,
         isShuffled = session?.shuffled == true,
         repeatMode = repeatMode,
-        // Only a fatal ERROR carries a message to surface; other states leave the artwork intact.
+        // Only a fatal ERROR carries a message; its presence drives the transport warning icon.
         errorMessage = playback
             ?.takeIf { it.state == PlayerState.ERROR }
             ?.errorMessage,

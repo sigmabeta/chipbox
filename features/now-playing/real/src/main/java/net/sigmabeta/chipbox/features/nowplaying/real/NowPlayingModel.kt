@@ -10,15 +10,20 @@ data class NowPlayingModel(
     val artistsCaption: String,
     val gameTitle: String,
     val isPlaying: Boolean,
+    /**
+     * True only while the player is [PlayerState.BUFFERING] — the speaker is silent waiting for
+     * the generator to fill buffers. The transport button shows a spinner in place of play/pause.
+     */
+    val isBuffering: Boolean = false,
     val positionMs: Long,
     val lengthMs: Long,
     val canSkipForward: Boolean,
     val isShuffled: Boolean,
     val repeatMode: RepeatMode,
     /**
-     * Non-null only for a fatal playback error ([PlayerState.ERROR]). When set, the screen
-     * swaps the artwork for its error state with this short message rendered over it, while the
-     * surrounding track metadata still describes the track that failed.
+     * Non-null only for a fatal playback error ([PlayerState.ERROR]). When set, the transport
+     * play/pause button switches to a warning icon; the error detail itself is surfaced in the
+     * [errors] log shown below the artwork.
      */
     val errorMessage: String? = null,
     /**
@@ -36,6 +41,7 @@ data class NowPlayingModel(
             artistsCaption = "",
             gameTitle = "",
             isPlaying = false,
+            isBuffering = false,
             positionMs = 0L,
             lengthMs = 0L,
             canSkipForward = false,
