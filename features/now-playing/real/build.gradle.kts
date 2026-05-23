@@ -22,6 +22,8 @@ kotlin {
                 implementation(libs.sage.common.images)
                 implementation(libs.sage.common.ui.components)
                 implementation(libs.sage.common.ui.strings)
+                // Icon.vector() to render the sage Icon set (e.g. the error-state warning glyph).
+                implementation(libs.sage.android.ui.icons)
                 implementation(libs.jetbrains.compose.material.icons.extended)
             }
         }
