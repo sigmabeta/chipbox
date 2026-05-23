@@ -32,6 +32,8 @@ class PlayerStatusViewModel @Inject constructor(
             PlayerStatusState(
                 visible = playerState != PlayerState.IDLE && playerState != PlayerState.STOPPED,
                 isPlaying = playerState.isPlaying(),
+                isBuffering = playerState == PlayerState.BUFFERING,
+                isError = playerState == PlayerState.ERROR,
                 title = track.title,
                 artistsCaption = track.artists?.joinToString(", ") { it.name }.orEmpty(),
                 artwork = SourceInfo(info = track.game?.photoUrl),
