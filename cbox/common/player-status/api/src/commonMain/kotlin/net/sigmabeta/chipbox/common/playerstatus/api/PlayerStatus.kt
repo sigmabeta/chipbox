@@ -25,6 +25,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -209,18 +211,34 @@ private fun PlayerStatusCard(
                         .fillMaxHeight()
                         .aspectRatio(1f),
                 ) {
-                    Icon(
-                        imageVector = if (state.isPlaying) {
-                            Icons.Filled.Pause
-                        } else {
-                            Icons.Filled.PlayArrow
-                        },
-                        contentDescription = null,
-                        tint = foregroundColor,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                    )
+                    if (state.isBuffering) {
+                        // Speaker is silent while buffers fill; show a spinner instead of
+                        // play/pause so the wait reads as loading. The button still pauses on
+                        // tap. Mirrors the Now Playing transport treatment.
+                        CircularProgressIndicator(
+                            color = foregroundColor,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                        )
+                    } else {
+                        Icon(
+                            imageVector = when {
+                                state.isError -> Icons.Filled.Warning
+                                state.isPlaying -> Icons.Filled.Pause
+                                else -> Icons.Filled.PlayArrow
+                            },
+                            contentDescription = null,
+                            tint = if (state.isError) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                foregroundColor
+                            },
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                        )
+                    }
                 }
             }
         }
