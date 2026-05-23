@@ -10,8 +10,9 @@ import net.sigmabeta.chipbox.scanner.state.ScannerState
 
 /**
  * Top-level CLI menu. Loops over the available actions, re-evaluating which apply each time:
- * View needs a scanned database, Rescan needs at least one saved location; Add, Remove, and Exit
- * are always offered. Returns when the user picks Exit (or aborts with q / Esc).
+ * View, Get cover art, and the IGDB-link override need a scanned database, Rescan needs at least one
+ * saved location, Organize needs both; Add, Remove, and Exit are always offered. Returns when the
+ * user picks Exit (or aborts with q / Esc).
  */
 class MainMenu(
     private val terminal: Terminal,
@@ -31,6 +32,8 @@ class MainMenu(
         if (hasDatabase) add(VIEW_ROW)
         if (hasLocations) add(RESCAN_ROW)
         if (hasDatabase && hasLocations) add(ORGANIZE_ROW)
+        if (hasDatabase) add(COVER_ART_ROW)
+        if (hasDatabase) add(COVER_ART_OVERRIDE_ROW)
         add(ADD_ROW)
         add(REMOVE_ROW)
         add(EXIT_ROW)
@@ -41,6 +44,8 @@ class MainMenu(
             VIEW_ROW -> viewLibrary()
             RESCAN_ROW -> rescan()
             ORGANIZE_ROW -> OrganizeLibrary(terminal, library).run()
+            COVER_ART_ROW -> GetCoverArt(terminal, library).run()
+            COVER_ART_OVERRIDE_ROW -> OverrideCoverArt(terminal, library).run()
             ADD_ROW -> addLocation()
             REMOVE_ROW -> removeLocation()
             else -> Unit
@@ -100,6 +105,8 @@ class MainMenu(
         const val VIEW_ROW = "View library"
         const val RESCAN_ROW = "Rescan library"
         const val ORGANIZE_ROW = "Organize library"
+        const val COVER_ART_ROW = "Get cover art"
+        const val COVER_ART_OVERRIDE_ROW = "Link a game to an IGDB ID"
         const val ADD_ROW = "Add library location"
         const val REMOVE_ROW = "Remove library location"
         const val EXIT_ROW = "Exit"

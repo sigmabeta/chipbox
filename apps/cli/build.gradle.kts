@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.jvm)
+    alias(libs.plugins.kotlin.serialization)
     application
 }
 
@@ -38,6 +39,10 @@ dependencies {
     implementation(libs.sage.common.ui.strings)
     implementation(libs.sqlite.bundled)
     implementation(libs.kotlinx.coroutines.core)
+    // "Get cover art": OkHttp talks to the Twitch token + IGDB search/image endpoints, and
+    // kotlinx-serialization parses their JSON responses.
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
     // BluntHatchet — the no-op Hatchet logger the scanner/repository/readers need to construct.
     implementation(libs.sage.common.logging)
 }
