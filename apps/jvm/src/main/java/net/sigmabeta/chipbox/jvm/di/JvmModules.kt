@@ -230,7 +230,8 @@ object JvmSpeakerModule {
 @BindingContainer
 @ContributesTo(AppScope::class)
 object JvmStorageModule {
-    @Provides @SingleIn(AppScope::class) fun provideStorage(): Storage = JvmStorage()
+    @Provides @SingleIn(AppScope::class)
+    fun provideStorage(@Named("workDir") workDir: File): Storage = JvmStorage(File(workDir, "settings.properties"))
 }
 
 @BindingContainer
