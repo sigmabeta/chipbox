@@ -16,6 +16,7 @@ import net.sigmabeta.chipbox.perf.trace
 import net.sigmabeta.chipbox.perf.traceAsync
 import net.sigmabeta.chipbox.readers.EXTENSION_M3U
 import net.sigmabeta.chipbox.readers.LENGTH_UNKNOWN_MS
+import net.sigmabeta.chipbox.readers.deriveMetaFromFilename
 import net.sigmabeta.chipbox.readers.PsfTagInfo
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.readers.isPsfFamily
@@ -296,11 +297,30 @@ class RealScanner(
             }
         }
 
+        // Files with no embedded title (e.g. NCSF/PSF rips) but exactly one track: pull the title
+        // and any leading track number from the filename. Multi-track files (NSF subtunes) can't be
+        // named this way, so they keep the "Track N" fallback below.
+        for ((filename, tracks) in tracksByFilename) {
+            if (tracks.size == 1 && tracks[0].title == TAG_UNKNOWN) {
+                val meta = deriveMetaFromFilename(filename)
+                tracks[0] = tracks[0].copy(
+                    title = meta.title,
+                    trackNumber = if (tracks[0].trackNumber < 0) {
+                        meta.trackNumber ?: tracks[0].trackNumber
+                    } else {
+                        tracks[0].trackNumber
+                    },
+                )
+            }
+        }
+
         val rawTracks = tracksByFilename.values.flatten()
 
         if (rawTracks.isEmpty()) {
             return if (failed > 0) Progress(0, 0, failed) else Progress.EMPTY
         }
+
+        val folderName = folderDisplayName(folderKey)
 
         var unknown = 0
         val checked = rawTracks.map {
@@ -310,17 +330,20 @@ class RealScanner(
             } else {
                 it
             }
+            // No game tag (and none from an m3u overlay) — fall back to the folder name, which for
+            // single-album rips is the game/album the files belong to.
+            val gamed = if (titled.game == TAG_UNKNOWN) titled.copy(game = folderName) else titled
             // Reader (or m3u overlay) couldn't determine a length — fall back to a sensible
             // default so the track is still seekable and the now-playing UI can render a
             // progress bar. Accept any non-positive value to absorb reader bugs that emit 0.
-            if (titled.length <= 0L) {
-                titled.copy(length = DEFAULT_LENGTH_MS)
+            if (gamed.length <= 0L) {
+                gamed.copy(length = DEFAULT_LENGTH_MS)
             } else {
-                titled
+                gamed
             }
         }
 
-        val gameName = rawTracks.first().game
+        val gameName = checked.first().game
         hatchet.i("Adding game \"$gameName\" with ${checked.size} track(s).")
         val outcome = traceAsync(TRACE_UPSERT_GAME, nextCookie()) {
             repository.upsertGame(RawGame(gameName, imagePath, folderKey, signature, checked))
@@ -341,6 +364,12 @@ class RealScanner(
     // A content-free fingerprint of a folder: every file's identifier, size and mtime, sorted and
     // hashed. Two scans yield the same value iff the folder's files are unchanged, which lets the
     // scan skip re-reading it. Computed from discovery metadata alone — no file is opened.
+    // A human-readable folder name from a folder identifier — the last path segment of a JVM
+    // absolute path or of a SAF tree document id (e.g. "primary:Music/.../PWAA 3"). Used as the
+    // game-name fallback for files with no game tag.
+    private fun folderDisplayName(folderKey: String): String =
+        folderKey.substringAfterLast('/').substringAfterLast(':').trim().ifEmpty { folderKey }
+
     private fun folderSignature(files: List<LibraryFileInfo>): String {
         val joined = files
             .sortedBy { it.identifier }
