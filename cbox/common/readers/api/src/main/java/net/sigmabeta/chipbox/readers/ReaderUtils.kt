@@ -31,6 +31,37 @@ internal fun ByteBuffer.nextBytesAsInt(numberOfBytes: Int): Int {
     return bigInteger.toInt()
 }
 
+data class FilenameMeta(
+    val trackNumber: Int?,
+    val title: String,
+)
+
+/**
+ * Best-effort title and track number from a filename, for files that carry no embedded metadata —
+ * common for NCSF/PSF rips where the title lives only in the filename, e.g. "01 Prologue.minincsf".
+ * A leading run of digits followed by a separator (space, '-', '.', etc.) is taken as the track
+ * number and stripped; the remainder is the title. With no such prefix the whole base name is the
+ * title and the track number is null. The extension is dropped first.
+ */
+fun deriveMetaFromFilename(filename: String): FilenameMeta {
+    val base = filename.substringBeforeLast('.', filename).trim()
+    if (base.isEmpty()) return FilenameMeta(null, filename)
+
+    val match = FILENAME_TRACK_PREFIX.find(base)
+    if (match != null) {
+        val number = match.groupValues[1].toIntOrNull()
+        val rest = match.groupValues[2].trim()
+        if (number != null && rest.isNotEmpty()) {
+            return FilenameMeta(number, rest)
+        }
+    }
+    return FilenameMeta(null, base)
+}
+
+// Leading 1-4 digit track number, then one or more separators, then the title. Requiring a
+// separator avoids mis-splitting names like "1up" into 1 + "up".
+private val FILENAME_TRACK_PREFIX = Regex("""^(\d{1,4})[\s\-._)\]]+(.+)$""")
+
 fun String?.orUnknown(): String {
     if (this == null) {
         return TAG_UNKNOWN
