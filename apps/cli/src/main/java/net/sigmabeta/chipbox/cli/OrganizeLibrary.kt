@@ -65,7 +65,9 @@ class OrganizeLibrary(
         val result = organizer.commit(moves)
         val failure = if (result.failedFolders > 0) ", ${result.failedFolders} failed" else ""
         terminal.println("Organized ${result.movedFolders} folder(s)$failure.")
-        terminal.println(gray("Run 'Rescan library' to refresh the database with the new paths."))
+        // Files moved, so the database paths are now stale; rescan to pick up the new locations.
+        terminal.println(gray("Refreshing the database with the new paths…"))
+        LibraryScan(terminal, library).run()
         return true
     }
 
