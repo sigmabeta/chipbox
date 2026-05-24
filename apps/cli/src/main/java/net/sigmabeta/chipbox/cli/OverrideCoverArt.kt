@@ -36,8 +36,12 @@ class OverrideCoverArt(
     private fun chooseAndLink(credentials: IgdbCredentials, games: List<Game>) {
         val overrides = CoverArtOverrides(library.coverArtOverridesFile)
         val cache = CoverArtCache(library.coverArtCacheFile)
-        val game = pickGame(games, cache, overrides) ?: return
-        link(credentials, overrides, cache, game)
+        // Loop back to "Link which game?" after each successful link so several games can be linked in
+        // one sitting; the just-linked game drops out of the unlinked list on the next pass.
+        do {
+            val game = pickGame(games, cache, overrides) ?: return
+            val linked = link(credentials, overrides, cache, game)
+        } while (linked)
     }
 
     private fun pickGame(games: List<Game>, cache: CoverArtCache, overrides: CoverArtOverrides): Game? {
@@ -84,16 +88,28 @@ class OverrideCoverArt(
             cache.get(game.title, platforms) is CoverLookup.Found
     }
 
-    private fun link(credentials: IgdbCredentials, overrides: CoverArtOverrides, cache: CoverArtCache, game: Game) {
+    // Returns true only when a new override was successfully applied, so the caller can loop back to
+    // the "Link which game?" menu; cancelling, clearing, or a failed lookup returns to the main menu.
+    private fun link(
+        credentials: IgdbCredentials,
+        overrides: CoverArtOverrides,
+        cache: CoverArtCache,
+        game: Game,
+    ): Boolean {
         val platforms = platformsOf(game)
         overrides.get(game.title, platforms)?.let {
             terminal.println(gray("Current override: IGDB “${it.igdbName}” (#${it.igdbId})."))
         }
         val question = "IGDB id or slug for “${game.title}” (blank to cancel, 'clear' to remove)"
         val input = terminal.prompt(question)?.trim().orEmpty()
-        when {
-            input.isEmpty() -> Unit
-            input.equals(CLEAR, ignoreCase = true) -> clear(overrides, game, platforms)
+        return when {
+            input.isEmpty() -> false
+
+            input.equals(CLEAR, ignoreCase = true) -> {
+                clear(overrides, game, platforms)
+                false
+            }
+
             else -> apply(credentials, overrides, cache, game, platforms, input)
         }
     }
@@ -114,24 +130,31 @@ class OverrideCoverArt(
         game: Game,
         platforms: Set<Platform>,
         idOrSlug: String,
-    ) {
+    ): Boolean {
         val httpClient = OkHttpClient()
         try {
             val igdb = IgdbClient(credentials, httpClient)
             val info = runCatching { igdb.fetchGame(idOrSlug) }.getOrElse { error ->
                 terminal.println(brightRed("IGDB lookup failed: ${error.message}"))
-                return
+                return false
             }
             val imageId = info?.imageId
-            when {
-                info == null -> terminal.println(yellow("No IGDB game found for “$idOrSlug”."))
+            return when {
+                info == null -> {
+                    terminal.println(yellow("No IGDB game found for “$idOrSlug”."))
+                    false
+                }
 
-                imageId == null -> terminal.println(yellow("IGDB “${info.name}” has no cover art."))
+                imageId == null -> {
+                    terminal.println(yellow("IGDB “${info.name}” has no cover art."))
+                    false
+                }
 
                 else -> {
                     overrides.set(game.title, platforms, OverrideEntry(idOrSlug, info.name, imageId))
                     terminal.println(brightGreen("Linked “${game.title}” → IGDB “${info.name}”."))
                     downloadNow(igdb, overrides, cache, game, httpClient)
+                    true
                 }
             }
         } finally {
