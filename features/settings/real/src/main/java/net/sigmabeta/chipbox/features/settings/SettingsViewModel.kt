@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
+import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
@@ -109,6 +110,8 @@ class SettingsViewModel @Inject constructor(
 
             SettingsAction.RescanLibraryClicked -> onRescanClicked()
 
+            SettingsAction.RescanStatusClicked -> emit(ChipboxEvent.NavigateTo(RescanStatus))
+
             SettingsAction.ClearLibraryClicked -> onClearLibraryClicked()
 
             SettingsAction.LicensesClicked -> emit(
@@ -127,12 +130,14 @@ class SettingsViewModel @Inject constructor(
 
     private fun onFolderPicked(uri: String) {
         librarySource.addLibraryLocation(uri)
-        emit(ChipboxEvent.ShowSnackbar("Folder added to library."))
+        // Adding a folder kicks off a scan and opens the live status screen (via onRescanClicked).
+        onRescanClicked()
     }
 
     private fun onRescanClicked() {
         updateState { it.copy(rescanStatus = LCE.Loading(LOAD_OP_RESCAN)) }
         scanner.startScan()
+        emit(ChipboxEvent.NavigateTo(RescanStatus))
     }
 
     @Suppress("TooGenericExceptionCaught")

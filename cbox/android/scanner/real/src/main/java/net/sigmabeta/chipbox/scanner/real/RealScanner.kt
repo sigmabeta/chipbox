@@ -21,6 +21,7 @@ import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.readers.isPsfFamily
 import net.sigmabeta.chipbox.readers.orUnknown
 import net.sigmabeta.chipbox.repository.FolderSnapshot
+import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
@@ -32,7 +33,7 @@ import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
+import kotlin.time.TimeSource
 
 /**
  * The production scanner — drives [readers] over every file [librarySource] exposes,
@@ -70,7 +71,8 @@ class RealScanner(
     @OptIn(ExperimentalTime::class)
     override suspend fun CoroutineScope.scan() = traceAsync(TRACE_SCAN, nextCookie()) {
         hatchet.i("Starting library scan.")
-        emitState(ScannerState.Scanning)
+        val scanStart = TimeSource.Monotonic.markNow()
+        emitState(ScannerState.Scanning())
 
         val locations = librarySource.locations.value
         if (locations.isEmpty()) {
@@ -85,35 +87,48 @@ class RealScanner(
                 locations.joinToString { it.identifier }
         )
 
-        var total = Progress.EMPTY
-        val duration = measureTime {
-            val files = traceAsync(TRACE_SCAN_FILES, nextCookie()) {
-                librarySource.scanFiles().toList()
-            }
-            val groups = files.groupBy { it.parentFolderId }
-            hatchet.d("Found ${files.size} file(s) across ${groups.size} folder(s).")
-            // Pre-scan snapshot of stored folder signatures, so a folder whose files are unchanged
-            // (same paths, sizes, mtimes) is skipped without any reads or parsing.
-            val snapshot = repository.folderSnapshots()
-            // Folder ids that produced a game this scan — the "kept" set for the prune sweep below.
-            val seenFolderKeys = ConcurrentHashMap.newKeySet<String>()
-            // Folders are independent (each scanGroup has its own metadata + tag caches), and most
-            // of a scan is spent blocked on SAF binder IPC for file reads. Process several folders
-            // at once so those waits overlap and parsing spreads across cores — bounded so we don't
-            // swamp the disk dispatcher or hold too many file buffers in memory at once.
-            val semaphore = Semaphore(scanParallelism)
-            total = coroutineScope {
-                groups.map { (folderId, group) ->
-                    async {
-                        semaphore.withPermit { scanFolder(folderId, group, snapshot, seenFolderKeys) }
-                    }
-                }.awaitAll().fold(Progress.EMPTY, Progress::plus)
-            }
-            // Reconcile deletions: drop games whose folder yielded nothing this scan (cascading
-            // their tracks/joins) and any artists left without tracks.
-            traceAsync(TRACE_PRUNE, nextCookie()) { repository.pruneGames(seenFolderKeys) }
+        val files = traceAsync(TRACE_SCAN_FILES, nextCookie()) {
+            librarySource.scanFiles().toList()
         }
+        val groups = files.groupBy { it.parentFolderId }
+        hatchet.d("Found ${files.size} file(s) across ${groups.size} folder(s).")
+        // Pre-scan snapshot of stored folder signatures, so a folder whose files are unchanged
+        // (same paths, sizes, mtimes) is skipped without any reads or parsing.
+        val snapshot = repository.folderSnapshots()
+        // Folder ids that produced a game this scan — the "kept" set for the prune sweep below.
+        val seenFolderKeys = ConcurrentHashMap.newKeySet<String>()
+        // Running totals, so we emit live Scanning progress as each folder completes.
+        val gamesFound = AtomicInteger(0)
+        val tracksFound = AtomicInteger(0)
+        val tracksFailed = AtomicInteger(0)
+        // Folders are independent (each scanGroup has its own metadata + tag caches), and most
+        // of a scan is spent blocked on SAF binder IPC for file reads. Process several folders
+        // at once so those waits overlap and parsing spreads across cores — bounded so we don't
+        // swamp the disk dispatcher or hold too many file buffers in memory at once.
+        val semaphore = Semaphore(scanParallelism)
+        val total = coroutineScope {
+            groups.map { (folderId, group) ->
+                async {
+                    semaphore.withPermit { scanFolder(folderId, group, snapshot, seenFolderKeys) }
+                        .also { progress ->
+                            emitState(
+                                ScannerState.Scanning(
+                                    scanStart.elapsedNow().inWholeSeconds.toInt(),
+                                    gamesFound.addAndGet(progress.gamesFound),
+                                    tracksFound.addAndGet(progress.tracksFound),
+                                    tracksFailed.addAndGet(progress.tracksFailed),
+                                )
+                            )
+                        }
+                }
+            }.awaitAll().fold(Progress.EMPTY, Progress::plus)
+        }
+        // Reconcile deletions: drop games whose folder yielded nothing this scan (cascading
+        // their tracks/joins) and any artists left without tracks. Each removed game becomes an event.
+        val removed = traceAsync(TRACE_PRUNE, nextCookie()) { repository.pruneGames(seenFolderKeys) }
+        removed.forEach { emitEvent(ScannerEvent.GameRemoved(it)) }
 
+        val duration = scanStart.elapsedNow()
         hatchet.i(
             "Scan complete in ${duration.inWholeSeconds}s — " +
                 "${total.gamesFound} game(s), ${total.tracksFound} track(s), ${total.tracksFailed} failure(s)."
@@ -308,10 +323,19 @@ class RealScanner(
 
         val gameName = rawTracks.first().game
         hatchet.i("Adding game \"$gameName\" with ${checked.size} track(s).")
-        traceAsync(TRACE_UPSERT_GAME, nextCookie()) {
+        val outcome = traceAsync(TRACE_UPSERT_GAME, nextCookie()) {
             repository.upsertGame(RawGame(gameName, imagePath, folderKey, signature, checked))
         }
-        emitEvent(ScannerEvent.GameFoundEvent(gameName, rawTracks.size, imagePath.orUnknown()))
+        when (outcome.result) {
+            GameWriteResult.ADDED ->
+                emitEvent(ScannerEvent.GameFoundEvent(outcome.gameId, gameName, rawTracks.size, imagePath.orUnknown()))
+
+            GameWriteResult.UPDATED ->
+                emitEvent(ScannerEvent.GameUpdated(outcome.gameId, gameName, rawTracks.size, imagePath.orUnknown()))
+
+            // Re-scanned but byte-identical (e.g. a touched mtime): no user-visible change.
+            GameWriteResult.UNCHANGED -> Unit
+        }
         return Progress(1, rawTracks.size, failed)
     }
 

@@ -18,6 +18,8 @@ import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.FolderSnapshot
+import net.sigmabeta.chipbox.repository.GameWriteOutcome
+import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
@@ -261,9 +263,9 @@ class MemoryRepository(
     // skip-unchanged-folder logic live in the real repository.
     override suspend fun folderSnapshots(): Map<String, FolderSnapshot> = emptyMap()
 
-    override suspend fun pruneGames(keptFolderKeys: Set<String>) = Unit
+    override suspend fun pruneGames(keptFolderKeys: Set<String>): List<String> = emptyList()
 
-    override suspend fun upsertGame(rawGame: RawGame) {
+    override suspend fun upsertGame(rawGame: RawGame): GameWriteOutcome {
         // Get and convert tracks
         val tracks = rawGame.tracks
             .map { it.toMemoryTrack() }
@@ -308,6 +310,7 @@ class MemoryRepository(
             val data = Data.Succeeded(getLatestAllGames(true, true))
             gamesLoadEvents.emit(data)
         }
+        return GameWriteOutcome(game.id, GameWriteResult.ADDED)
     }
 
     private fun getLatestAllGames(withTracks: Boolean = false, withArtists: Boolean = false) = gamesByTitle

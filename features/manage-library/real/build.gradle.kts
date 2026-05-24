@@ -23,6 +23,9 @@ kotlin {
         named("jvmSharedMain") {
             dependencies {
                 implementation(projects.cbox.common.contentsource.api)
+                // Adding a folder starts a scan and opens the rescan-status screen.
+                implementation(projects.cbox.common.scanner.api)
+                implementation(projects.features.rescanStatus.api)
             }
         }
         named("androidMain") {

@@ -12,6 +12,7 @@ sealed class SettingsAction : ChipboxAction() {
     data object ManageLibraryClicked : SettingsAction()
     data class FolderPicked(val uri: String) : SettingsAction()
     data object RescanLibraryClicked : SettingsAction()
+    data object RescanStatusClicked : SettingsAction()
     data object ClearLibraryClicked : SettingsAction()
     data object LicensesClicked : SettingsAction()
     data object GithubClicked : SettingsAction()

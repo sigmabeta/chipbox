@@ -19,6 +19,8 @@ import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.FolderSnapshot
+import net.sigmabeta.chipbox.repository.GameWriteOutcome
+import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.mock.models.MockArtist
@@ -206,9 +208,9 @@ class MockRepository(
 
     override suspend fun folderSnapshots(): Map<String, FolderSnapshot> = emptyMap()
 
-    override suspend fun upsertGame(rawGame: RawGame) = Unit
+    override suspend fun upsertGame(rawGame: RawGame) = GameWriteOutcome(0L, GameWriteResult.ADDED)
 
-    override suspend fun pruneGames(keptFolderKeys: Set<String>) = Unit
+    override suspend fun pruneGames(keptFolderKeys: Set<String>): List<String> = emptyList()
 
     override suspend fun clearLibrary() {
         resetData()

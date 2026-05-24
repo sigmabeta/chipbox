@@ -10,6 +10,8 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.chipbox.contentsource.LibrarySource
+import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
+import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
@@ -19,6 +21,7 @@ import net.sigmabeta.sage.ui.StringProvider
 @ViewModelKey
 class ManageLibraryViewModel @Inject constructor(
     private val librarySource: LibrarySource,
+    private val scanner: Scanner,
     stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<ManageLibraryState>(
@@ -51,7 +54,9 @@ class ManageLibraryViewModel @Inject constructor(
 
     private fun onFolderPicked(uri: String) {
         librarySource.addLibraryLocation(uri)
-        emit(ChipboxEvent.ShowSnackbar("Folder added to library."))
+        // Adding a folder kicks off a scan and opens the live status screen.
+        scanner.startScan()
+        emit(ChipboxEvent.NavigateTo(RescanStatus))
     }
 
     private fun onFolderRemoved(identifier: String) {

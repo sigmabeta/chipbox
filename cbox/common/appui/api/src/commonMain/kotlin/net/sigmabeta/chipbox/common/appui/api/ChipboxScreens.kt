@@ -36,6 +36,8 @@ import net.sigmabeta.chipbox.features.library.Library
 import net.sigmabeta.chipbox.features.library.LibraryRoute
 import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.managelibrary.ManageLibraryRoute
+import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
+import net.sigmabeta.chipbox.features.rescanstatus.RescanStatusRoute
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingRoute
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
@@ -66,6 +68,7 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     Search -> SearchDeepScreen
     Settings -> SettingsDeepScreen
     ManageLibrary -> ManageLibraryScreen
+    RescanStatus -> RescanStatusScreen
     PlaybackStatus -> PlaybackStatusScreen
     NowPlaying -> NowPlayingScreen
     BrowseByGame -> BrowseByGameScreen
@@ -293,6 +296,16 @@ private object SettingsDeepScreen : Screen {
 private object ManageLibraryScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         ManageLibraryRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+/**
+ * Live scan progress, auto-pushed when a folder is added (from Settings or Manage Library, both of
+ * which kick off a scan) and reachable from the Settings "scan in progress" row while a scan runs.
+ */
+private object RescanStatusScreen : Screen {
+    @Composable override fun Content() = ScreenScaffold {
+        RescanStatusRoute(onEvent = LocalChipboxEventSink.current)
     }
 }
 

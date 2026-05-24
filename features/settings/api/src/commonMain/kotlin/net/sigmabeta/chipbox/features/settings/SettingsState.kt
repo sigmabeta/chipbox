@@ -58,12 +58,25 @@ data class SettingsState(
         ) { SettingsAction.PlainFontSelected(it) },
     )
 
-    private fun librarySection(stringProvider: StringProvider): List<ListModel> = listOf(
+    private fun librarySection(stringProvider: StringProvider): List<ListModel> = listOfNotNull(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_LIBRARY),
         libraryFolderRow(stringProvider),
         rescanRow(stringProvider),
+        rescanStatusRowOrNull(stringProvider),
         clearLibraryRow(stringProvider),
     )
+
+    // Only present while a scan is running (rescanStatus is Loading) — taps open the live scan
+    // progress screen. The rescanRow above shows the inline spinner; this is the way in for detail.
+    private fun rescanStatusRowOrNull(stringProvider: StringProvider): ListModel? {
+        if (rescanStatus !is LCE.Loading) return null
+        return NameCaptionListModel(
+            dataId = ChipboxStringId.SETTINGS_LABEL_RESCAN_STATUS.hashCode().toLong(),
+            name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_RESCAN_STATUS),
+            caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_RESCAN_STATUS),
+            clickAction = SettingsAction.RescanStatusClicked,
+        )
+    }
 
     // Once the library has at least one folder, the "Add folder to library" shortcut becomes a
     // "Manage Library" row that opens the dedicated screen (add via its CTA, remove by tapping a
@@ -145,20 +158,14 @@ data class SettingsState(
         clickAction = SettingsAction.AddFolderClicked,
     )
 
-    private fun rescanRow(stringProvider: StringProvider): ListModel = when (rescanStatus) {
-        is LCE.Loading -> LoadingItemListModel(
-            loadingType = LoadingType.TEXT_CAPTION,
-            loadOperationName = rescanStatus.operationName,
-            loadPositionOffset = 0,
-        )
-
-        else -> NameCaptionListModel(
-            dataId = ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY.hashCode().toLong(),
-            name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY),
-            caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_RESCAN_LIBRARY),
-            clickAction = SettingsAction.RescanLibraryClicked,
-        )
-    }
+    // No inline loading state: tapping this starts a scan and opens the Rescan Status screen, which
+    // is where progress is shown now.
+    private fun rescanRow(stringProvider: StringProvider): ListModel = NameCaptionListModel(
+        dataId = ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY.hashCode().toLong(),
+        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY),
+        caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_RESCAN_LIBRARY),
+        clickAction = SettingsAction.RescanLibraryClicked,
+    )
 
     private fun clearLibraryRow(stringProvider: StringProvider): ListModel = when (clearLibraryStatus) {
         is LCE.Loading -> LoadingItemListModel(

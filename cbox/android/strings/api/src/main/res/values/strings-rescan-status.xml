@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_label_rescan_status">Scan in progress</string>
+    <string name="settings_caption_rescan_status">View the current scan\'s progress.</string>
+
+    <string name="rescan_status_title">Rescan Status</string>
+    <string name="rescan_status_section_progress">Progress</string>
+    <string name="rescan_status_section_events">Changes</string>
+    <string name="rescan_status_label_elapsed">Elapsed (seconds)</string>
+    <string name="rescan_status_label_games">Games found</string>
+    <string name="rescan_status_label_tracks">Tracks found</string>
+    <string name="rescan_status_label_failed">Tracks failed</string>
+    <string name="rescan_status_label_failed_path">Failed at</string>
+    <string name="rescan_status_idle">No scan in progress.</string>
+    <string name="rescan_status_event_added">Added</string>
+    <string name="rescan_status_event_updated">Updated</string>
+    <string name="rescan_status_event_removed">Removed</string>
+</resources>
