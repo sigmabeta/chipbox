@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.previews.CoverArtConstants
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.images.SourceInfo
@@ -145,21 +148,30 @@ private fun ColumnScope.TopBar(model: NowPlayingModel, actionSink: ActionSink) {
 
 @Composable
 private fun ColumnScope.Artwork(model: NowPlayingModel) {
-    Surface(
-        shape = RoundedCornerShape(ArtworkCornerRadius),
-        tonalElevation = 2.dp,
-        shadowElevation = 6.dp,
+    // IGDB covers are 3:4 portrait. Take the available vertical space, then center a 3:4
+    // cover sized off that height so the whole cover shows instead of being cropped.
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .weight(1f)
-            .clip(RoundedCornerShape(ArtworkCornerRadius)),
+            .weight(1f),
+        contentAlignment = Alignment.Center,
     ) {
-        CrossfadeImage(
-            sourceInfo = model.artwork,
-            imagePlaceholder = Icon.MusicNote,
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-        )
+        Surface(
+            shape = RoundedCornerShape(ArtworkCornerRadius),
+            tonalElevation = 2.dp,
+            shadowElevation = 6.dp,
+            modifier = Modifier
+                .fillMaxHeight()
+                .aspectRatio(CoverArtConstants.ASPECT_RATIO)
+                .clip(RoundedCornerShape(ArtworkCornerRadius)),
+        ) {
+            CrossfadeImage(
+                sourceInfo = model.artwork,
+                imagePlaceholder = Icon.MusicNote,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
     }
 }
 
