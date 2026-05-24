@@ -15,14 +15,35 @@ import java.io.IOException
 /** Outcome of an IGDB cover-art lookup for one game. */
 sealed interface CoverLookup {
     /**
-     * A game matched and has cover art with this IGDB [imageId]. The id (not a full URL) is the
+     * A game that matched on IGDB. [igdbId], [igdbName] and [igdbSlug] identify the matched game so
+     * the link can be described in each game's folder — see [IgdbLinkFile] — and read back from there
+     * to skip a future lookup. Any of them may be null for lookups cached or read back before that
+     * data was recorded.
+     */
+    sealed interface Matched : CoverLookup {
+        val igdbId: String?
+        val igdbName: String?
+        val igdbSlug: String?
+    }
+
+    /**
+     * A matched game that has cover art with this IGDB [imageId]. The id (not a full URL) is the
      * stable, size-independent identity of the cover; the sized download URL is derived from it via
      * [IgdbClient.coverUrl], so changing the image size doesn't invalidate cached lookups.
      */
-    data class Found(val imageId: String) : CoverLookup
+    data class Found(
+        val imageId: String,
+        override val igdbId: String? = null,
+        override val igdbName: String? = null,
+        override val igdbSlug: String? = null,
+    ) : Matched
 
-    /** A game matched, but it has no cover art on IGDB. */
-    data object NoCover : CoverLookup
+    /** A matched game that has no cover art on IGDB. */
+    data class NoCover(
+        override val igdbId: String? = null,
+        override val igdbName: String? = null,
+        override val igdbSlug: String? = null,
+    ) : Matched
 
     /** No game on IGDB matched the searched name. */
     data object NoMatch : CoverLookup
@@ -53,8 +74,8 @@ class IgdbClient(
         val imageId = match?.cover?.imageId
         return when {
             match == null -> CoverLookup.NoMatch
-            imageId == null -> CoverLookup.NoCover
-            else -> CoverLookup.Found(imageId)
+            imageId == null -> CoverLookup.NoCover(match.id.toString(), match.name, match.slug)
+            else -> CoverLookup.Found(imageId, match.id.toString(), match.name, match.slug)
         }
     }
 
@@ -68,8 +89,8 @@ class IgdbClient(
      */
     fun fetchGame(idOrSlug: String): IgdbGameInfo? {
         val clause = idOrSlug.toLongOrNull()?.let { "id = $it" } ?: "slug = \"${escape(idOrSlug)}\""
-        val game = queryWithRetry("fields name,cover.image_id; where $clause;").firstOrNull()
-        return game?.let { IgdbGameInfo(it.name, it.cover?.imageId) }
+        val game = queryWithRetry("fields id,name,slug,cover.image_id; where $clause;").firstOrNull()
+        return game?.let { IgdbGameInfo(it.id.toString(), it.name, it.slug, it.cover?.imageId) }
     }
 
     // Search [candidate] across all platforms, then rank to prefer the game's own platforms.
@@ -78,7 +99,7 @@ class IgdbClient(
         queryWithRetry(searchBody(candidate)).takeIf { it.isNotEmpty() }?.let { bestMatch(it, candidate, platformIds) }
 
     private fun searchBody(name: String): String =
-        "fields name,cover.image_id,platforms; search \"${escape(name)}\"; limit $SEARCH_LIMIT;"
+        "fields id,name,slug,cover.image_id,platforms; search \"${escape(name)}\"; limit $SEARCH_LIMIT;"
 
     /**
      * Ranks candidates platform-first: most overlap with the game's [platformIds] wins, then an exact
@@ -200,8 +221,11 @@ class IgdbClient(
     }
 }
 
-/** A single IGDB game resolved by id/slug: its name and cover image id (null if it has no cover). */
-data class IgdbGameInfo(val name: String, val imageId: String?)
+/**
+ * A single IGDB game resolved by id/slug: its numeric [id], [name], URL [slug], and cover image id
+ * ([imageId], null if it has no cover).
+ */
+data class IgdbGameInfo(val id: String, val name: String, val slug: String, val imageId: String?)
 
 @Serializable
 private data class TwitchToken(
@@ -211,7 +235,9 @@ private data class TwitchToken(
 
 @Serializable
 private data class IgdbGame(
+    val id: Long = 0,
     val name: String = "",
+    val slug: String = "",
     val cover: IgdbCover? = null,
     val platforms: List<Int> = emptyList(),
 )

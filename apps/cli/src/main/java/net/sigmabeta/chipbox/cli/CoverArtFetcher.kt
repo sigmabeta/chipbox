@@ -75,10 +75,11 @@ class CoverArtTally {
 /**
  * Drives the "Get cover art" run: for each game, ask [igdb] for a cover, and on a hit download the
  * image into the game's own folder as `<Title>.jpg`, first deleting any existing image there so the
- * scanner (which adopts the first jpg/png it finds) picks up the new cover on the next rescan.
+ * scanner (which adopts the first jpg/png it finds) picks up the new cover on the next rescan. A
+ * human-readable `igdb.txt` describing the match is written alongside it (see [IgdbLinkFile]).
  *
- * A game whose tracks are spread across several folders gets the cover written into each of them.
- * One game's failure (network, bad response) is recorded and the run continues.
+ * A game whose tracks are spread across several folders gets the cover (and descriptor) written into
+ * each of them. One game's failure (network, bad response) is recorded and the run continues.
  *
  * Every successful lookup is read from / written to [cache], so repeat runs skip the rate-limited
  * IGDB search API for games already looked up. Failures aren't cached (they're usually transient).
@@ -103,17 +104,28 @@ class CoverArtFetcher(
         if (folders.isEmpty()) return CoverArtResult(game.title, CoverArtOutcome.NO_FOLDER)
         return try {
             val platforms = game.tracks.orEmpty().map { it.platform }.toSet()
-            // A user override wins over the cache and the automatic name search.
-            val pinned = overrides.imageId(game.title, platforms)?.let { CoverLookup.Found(it) }
-            val cached = pinned ?: cache.get(game.title, platforms)
+            // Resolve the match without touching IGDB if we can: a user override wins, then the cache,
+            // then an igdb.txt already in the game's folder (a prior match that survived a cleared
+            // cache or a moved library). Reading the folder file back into the cache keeps later games
+            // and runs fast and seeds the correct image id for the download step.
+            val pinned = overrides.get(game.title, platforms)
+                ?.let { CoverLookup.Found(it.imageId, it.igdbId, it.igdbName, it.igdbSlug) }
+            val cached = pinned
+                ?: cache.get(game.title, platforms)
+                ?: IgdbLinkFile.read(folders)?.also { cache.recordLookup(game.title, platforms, it) }
             val lookup = cached ?: igdb.lookupCover(game.title, platforms).also {
                 cache.recordLookup(game.title, platforms, it)
             }
             val fromCache = cached != null
             when (lookup) {
                 CoverLookup.NoMatch -> CoverArtResult(game.title, CoverArtOutcome.NO_MATCH, fromCache = fromCache)
-                CoverLookup.NoCover -> CoverArtResult(game.title, CoverArtOutcome.NO_COVER, fromCache = fromCache)
-                is CoverLookup.Found -> obtain(game.title, platforms, lookup.imageId, folders, fromCache)
+
+                is CoverLookup.NoCover -> {
+                    IgdbLinkFile.writeInto(folders, game.title, platforms, lookup, refreshDate = !fromCache)
+                    CoverArtResult(game.title, CoverArtOutcome.NO_COVER, fromCache = fromCache)
+                }
+
+                is CoverLookup.Found -> obtain(game.title, platforms, lookup, folders, fromCache)
             }
         } catch (error: IOException) {
             CoverArtResult(game.title, CoverArtOutcome.FAILED, error.message)
@@ -122,29 +134,35 @@ class CoverArtFetcher(
         }
     }
 
-    // Downloads the cover for [imageId] into every target folder, replacing any existing image —
+    // Downloads the cover for [found] into every target folder, replacing any existing image —
     // unless that exact URL is already the cover on disk in all of them, in which case the bytes are
-    // unchanged (IGDB URLs are content-addressed) and we skip the download entirely.
+    // unchanged (IGDB URLs are content-addressed) and we skip the download entirely. Either way, an
+    // igdb.txt describing the match is (re)written into each folder afterwards.
     private fun obtain(
         title: String,
         platforms: Set<Platform>,
-        imageId: String,
+        found: CoverLookup.Found,
         folders: List<File>,
         fromCache: Boolean,
     ): CoverArtResult {
-        val url = igdb.coverUrl(imageId)
+        val url = igdb.coverUrl(found.imageId)
         val fileName = sanitize(title) + IMAGE_EXTENSION
         val alreadyCurrent = cache.downloadedUrl(title, platforms) == url &&
             folders.all { File(it, fileName).isFile }
-        if (alreadyCurrent) return CoverArtResult(title, CoverArtOutcome.UP_TO_DATE, fileName, fromCache)
-
-        val bytes = download(url)
-        for (folder in folders) {
-            removeExistingImages(folder)
-            File(folder, fileName).writeBytes(bytes)
+        val outcome = if (alreadyCurrent) {
+            CoverArtOutcome.UP_TO_DATE
+        } else {
+            val bytes = download(url)
+            for (folder in folders) {
+                removeExistingImages(folder)
+                File(folder, fileName).writeBytes(bytes)
+            }
+            cache.recordDownload(title, platforms, url)
+            CoverArtOutcome.DOWNLOADED
         }
-        cache.recordDownload(title, platforms, url)
-        return CoverArtResult(title, CoverArtOutcome.DOWNLOADED, fileName, fromCache)
+        // refreshDate when the match came fresh from IGDB (not from a local source); see IgdbLinkFile.
+        IgdbLinkFile.writeInto(folders, title, platforms, found, refreshDate = !fromCache)
+        return CoverArtResult(title, outcome, fileName, fromCache)
     }
 
     private fun download(imageUrl: String): ByteArray {
