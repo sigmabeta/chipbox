@@ -12,6 +12,7 @@ dependencies {
     implementation(projects.cbox.common.player.emulators.fake)
     implementation(projects.cbox.android.player.emulators.gba.real)
     implementation(projects.cbox.android.player.emulators.gme.real)
+    implementation(projects.cbox.android.player.emulators.ncsf.real)
     implementation(projects.cbox.android.player.emulators.psf.real)
     implementation(projects.cbox.android.player.emulators.ssf.real)
     implementation(projects.cbox.android.player.emulators.twosf.real)

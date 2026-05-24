@@ -8,6 +8,7 @@ import net.sigmabeta.chipbox.player.emulators.EmulatorProvider
 import net.sigmabeta.chipbox.player.emulators.fake.FakeEmulator
 import net.sigmabeta.chipbox.player.emulators.gba.GbaEmulator
 import net.sigmabeta.chipbox.player.emulators.gme.GmeEmulator
+import net.sigmabeta.chipbox.player.emulators.ncsf.NcsfEmulator
 import net.sigmabeta.chipbox.player.emulators.psf.PsfEmulator
 import net.sigmabeta.chipbox.player.emulators.ssf.SsfEmulator
 import net.sigmabeta.chipbox.player.emulators.twosf.TwosfEmulator
@@ -25,6 +26,7 @@ object EmulatorModule {
             TwosfEmulator,
             GbaEmulator,
             GmeEmulator,
+            NcsfEmulator,
             PsfEmulator,
             SsfEmulator,
             VgmEmulator,
