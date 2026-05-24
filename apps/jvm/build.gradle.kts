@@ -93,6 +93,7 @@ val nativeEmulators: List<Pair<String, String>> = listOf(
     "2sf" to "twosf",
     "vgm" to "vgm",
     "gba" to "gba",
+    "ncsf" to "ncsf",
 )
 
 // One-time android/log shim — psf's debug probes call `__android_log_print`, which doesn't
@@ -332,6 +333,7 @@ dependencies {
     implementation(projects.cbox.android.player.generator.real)
     implementation(projects.cbox.android.player.emulators.gba.real)
     implementation(projects.cbox.android.player.emulators.gme.real)
+    implementation(projects.cbox.android.player.emulators.ncsf.real)
     implementation(projects.cbox.android.player.emulators.psf.real)
     implementation(projects.cbox.android.player.emulators.ssf.real)
     implementation(projects.cbox.android.player.emulators.twosf.real)

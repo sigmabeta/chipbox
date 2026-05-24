@@ -60,6 +60,8 @@ include(
     ":cbox:android:player:emulators:gba:real",
     ":cbox:android:player:emulators:gme:native",
     ":cbox:android:player:emulators:gme:real",
+    ":cbox:android:player:emulators:ncsf:native",
+    ":cbox:android:player:emulators:ncsf:real",
     ":cbox:android:player:emulators:psf:native",
     ":cbox:android:player:emulators:psf:real",
     ":cbox:android:player:emulators:ssf:native",

@@ -30,6 +30,7 @@ import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.emulators.EmulatorProvider
 import net.sigmabeta.chipbox.player.emulators.gba.GbaEmulator
 import net.sigmabeta.chipbox.player.emulators.gme.GmeEmulator
+import net.sigmabeta.chipbox.player.emulators.ncsf.NcsfEmulator
 import net.sigmabeta.chipbox.player.emulators.psf.PsfEmulator
 import net.sigmabeta.chipbox.player.emulators.ssf.SsfEmulator
 import net.sigmabeta.chipbox.player.emulators.twosf.TwosfEmulator
@@ -160,6 +161,7 @@ object JvmEmulatorsModule {
         listOf<Emulator>(
             GbaEmulator,
             GmeEmulator,
+            NcsfEmulator,
             PsfEmulator,
             SsfEmulator,
             TwosfEmulator,
