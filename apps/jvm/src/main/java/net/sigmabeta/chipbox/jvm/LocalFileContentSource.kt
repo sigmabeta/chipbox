@@ -43,6 +43,11 @@ class LocalFileContentSource(
         persistLocations()
     }
 
+    override fun removeLibraryLocation(identifier: String) {
+        _locations.update { current -> current.filterNot { it.identifier == identifier } }
+        persistLocations()
+    }
+
     private fun readPersistedLocations(): List<LibraryLocationInfo> =
         if (locationsFile.isFile) {
             locationsFile.readLines()

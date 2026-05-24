@@ -34,6 +34,8 @@ import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatform
 import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatformRoute
 import net.sigmabeta.chipbox.features.library.Library
 import net.sigmabeta.chipbox.features.library.LibraryRoute
+import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
+import net.sigmabeta.chipbox.features.managelibrary.ManageLibraryRoute
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingRoute
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
@@ -63,6 +65,7 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     Library -> LibraryDeepScreen
     Search -> SearchDeepScreen
     Settings -> SettingsDeepScreen
+    ManageLibrary -> ManageLibraryScreen
     PlaybackStatus -> PlaybackStatusScreen
     NowPlaying -> NowPlayingScreen
     BrowseByGame -> BrowseByGameScreen
@@ -279,6 +282,17 @@ private object SearchDeepScreen : Screen {
 private object SettingsDeepScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         SettingsRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+/**
+ * Library-folder management, pushed from the Settings "Manage Library" row (which replaces the
+ * "Add folder to library" row once at least one folder exists). Lists the user's folders and
+ * removes one on tap; its own "Add folder to library" CTA reuses the SAF/Swing picker.
+ */
+private object ManageLibraryScreen : Screen {
+    @Composable override fun Content() = ScreenScaffold {
+        ManageLibraryRoute(onEvent = LocalChipboxEventSink.current)
     }
 }
 

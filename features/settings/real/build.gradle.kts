@@ -26,6 +26,8 @@ kotlin {
                 implementation(projects.cbox.common.contentsource.api)
                 // PlaybackStatus route key for SettingsAction.PlaybackStatusClicked -> NavigateTo.
                 implementation(projects.features.playbackStatus.api)
+                // ManageLibrary route key for SettingsAction.ManageLibraryClicked -> NavigateTo.
+                implementation(projects.features.manageLibrary.api)
 
                 implementation(libs.sage.common.appinfo)
                 implementation(libs.sage.common.ui.components)

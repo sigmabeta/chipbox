@@ -9,6 +9,7 @@ sealed class SettingsAction : ChipboxAction() {
     data class BrandFontSelected(val font: ChipboxFont) : SettingsAction()
     data class PlainFontSelected(val font: ChipboxFont) : SettingsAction()
     data object AddFolderClicked : SettingsAction()
+    data object ManageLibraryClicked : SettingsAction()
     data class FolderPicked(val uri: String) : SettingsAction()
     data object RescanLibraryClicked : SettingsAction()
     data object ClearLibraryClicked : SettingsAction()

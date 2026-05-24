@@ -44,7 +44,7 @@ class LocalFileContentSource(
     }
 
     /** Drops the saved location with this absolute-path [identifier], persisting the change. */
-    fun removeLocation(identifier: String) {
+    override fun removeLibraryLocation(identifier: String) {
         _locations.update { current -> current.filterNot { it.identifier == identifier } }
         persistLocations()
     }

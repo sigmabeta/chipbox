@@ -47,6 +47,8 @@ kotlin {
 
                 implementation(projects.features.library.api)
                 api(projects.features.library.real)
+                implementation(projects.features.manageLibrary.api)
+                api(projects.features.manageLibrary.real)
                 implementation(projects.features.nowPlaying.api)
                 api(projects.features.nowPlaying.real)
                 // Re-added after playback-status was ported to sage.kmp. The old debug=real/

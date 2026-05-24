@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
@@ -73,6 +74,11 @@ class SettingsViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            librarySource.locations.collect { locations ->
+                updateState { it.copy(hasLibraryFolders = locations.isNotEmpty()) }
+            }
+        }
+        viewModelScope.launch {
             scanner.state().collect { scannerState ->
                 updateState { current ->
                     val isScanning = scannerState is ScannerState.Scanning
@@ -96,6 +102,8 @@ class SettingsViewModel @Inject constructor(
             is SettingsAction.PlainFontSelected -> settingsManager.setPlainFont(action.font.name)
 
             SettingsAction.AddFolderClicked -> emit(ChipboxEvent.PickFolder)
+
+            SettingsAction.ManageLibraryClicked -> emit(ChipboxEvent.NavigateTo(ManageLibrary))
 
             is SettingsAction.FolderPicked -> onFolderPicked(action.uri)
 
