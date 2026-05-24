@@ -1,8 +1,5 @@
 package net.sigmabeta.chipbox.scanner.real
 
-import java.security.MessageDigest
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,6 +28,9 @@ import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.Hatchet
+import java.security.MessageDigest
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
@@ -183,7 +183,7 @@ class RealScanner(
             }
 
             if (isPsfFamily(ext)) {
-                hatchet.d("Reading ${file.name} (PSF family).")
+//                hatchet.d("Reading ${file.name} (PSF family).")
                 val track = readWithErrorHandling(file) {
                     val bytes = traceAsync(TRACE_OPEN_BYTES, nextCookie()) {
                         librarySource.openBytes(file.identifier)
@@ -214,7 +214,7 @@ class RealScanner(
                     null -> failed++
 
                     else -> {
-                        hatchet.d("${file.name} yielded 1 track.")
+//                        hatchet.d("${file.name} yielded 1 track.")
                         tracksByFilename[file.name] = mutableListOf(track)
                     }
                 }
@@ -226,7 +226,7 @@ class RealScanner(
                 continue
             }
 
-            hatchet.d("Reading ${file.name}.")
+//            hatchet.d("Reading ${file.name}.")
             val tracks = readWithErrorHandling(file) {
                 val bytes = traceAsync(TRACE_OPEN_BYTES, nextCookie()) {
                     librarySource.openBytes(file.identifier)
@@ -244,7 +244,7 @@ class RealScanner(
                 tracks.isEmpty() -> hatchet.d("${file.name} yielded no tracks.")
 
                 else -> {
-                    hatchet.d("${file.name} yielded ${tracks.size} track(s).")
+//                    hatchet.d("${file.name} yielded ${tracks.size} track(s).")
                     tracksByFilename[file.name] = tracks.toMutableList()
                 }
             }
