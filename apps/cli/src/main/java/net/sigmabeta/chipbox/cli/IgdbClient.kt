@@ -30,8 +30,8 @@ sealed interface CoverLookup {
 
 /**
  * Minimal IGDB cover-art lookup. Authenticates against Twitch (client-credentials grant), searches
- * the `games` endpoint by name with progressively simplified fallback names, narrows results to the
- * game's platforms when known, and resolves the best match's cover to an image URL. Calls are
+ * the `games` endpoint by name with progressively simplified fallback names, ranks results to prefer
+ * the game's platforms when known, and resolves the best match's cover to an image URL. Calls are
  * throttled and retried on transient network failures. Not thread-safe: drive it from a single
  * thread.
  */
@@ -72,24 +72,23 @@ class IgdbClient(
         return game?.let { IgdbGameInfo(it.name, it.cover?.imageId) }
     }
 
-    // Search [candidate] filtered by platform; if that finds nothing, retry unfiltered so a real
-    // game isn't lost to a too-strict filter. Returns the best match, or null if none.
-    private fun findGame(candidate: String, platformIds: Set<Int>): IgdbGame? {
-        var results = queryWithRetry(searchBody(candidate, platformIds))
-        if (results.isEmpty() && platformIds.isNotEmpty()) {
-            results = queryWithRetry(searchBody(candidate, emptySet()))
-        }
-        return results.takeIf { it.isNotEmpty() }?.let { bestMatch(it, candidate) }
-    }
+    // Search [candidate] across all platforms, then rank to prefer the game's own platforms.
+    // Returns the best match, or null if none.
+    private fun findGame(candidate: String, platformIds: Set<Int>): IgdbGame? =
+        queryWithRetry(searchBody(candidate)).takeIf { it.isNotEmpty() }?.let { bestMatch(it, candidate, platformIds) }
 
-    private fun searchBody(name: String, platformIds: Set<Int>): String {
-        val where = if (platformIds.isEmpty()) "" else " where platforms = (${platformIds.joinToString(",")});"
-        return "fields name,cover.image_id; search \"${escape(name)}\";$where limit $SEARCH_LIMIT;"
-    }
+    private fun searchBody(name: String): String =
+        "fields name,cover.image_id,platforms; search \"${escape(name)}\"; limit $SEARCH_LIMIT;"
 
-    /** Exact (case-insensitive) name match if there is one, otherwise the first result. */
-    private fun bestMatch(results: List<IgdbGame>, name: String): IgdbGame =
-        results.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: results.first()
+    /**
+     * Ranks candidates platform-first: most overlap with the game's [platformIds] wins, then an exact
+     * (case-insensitive) name match, then IGDB's own relevance order (preserved by the stable sort).
+     */
+    private fun bestMatch(results: List<IgdbGame>, name: String, platformIds: Set<Int>): IgdbGame =
+        results.sortedWith(
+            compareByDescending<IgdbGame> { it.platforms.count(platformIds::contains) }
+                .thenByDescending { it.name.equals(name, ignoreCase = true) },
+        ).first()
 
     private fun queryWithRetry(body: String): List<IgdbGame> {
         var lastError: IOException? = null
@@ -167,7 +166,10 @@ class IgdbClient(
         const val IGDB_API_BASE = "https://api.igdb.com/v4"
         const val IGDB_IMAGE_BASE = "https://images.igdb.com/igdb/image/upload"
         const val IGDB_IMAGE_SIZE = "t_cover_big_2x"
-        const val SEARCH_LIMIT = 10
+
+        // Pulled wider than we need: without a platform `where` filter, platform-correct games must
+        // survive in the relevance-ranked page before bestMatch can rank them to the top.
+        const val SEARCH_LIMIT = 20
         const val MAX_ATTEMPTS = 3
         const val RATE_LIMIT_MS = 300L
         const val RETRY_WAIT_MS = 2_000L
@@ -179,7 +181,7 @@ class IgdbClient(
         val WHITESPACE_REGEX = Regex("\\s+")
 
         // Chipbox platforms mapped to IGDB platform IDs (https://api.igdb.com/v4/platforms), used to
-        // narrow searches. Platform.OTHER has no IGDB equivalent and is intentionally absent.
+        // rank results by platform. Platform.OTHER has no IGDB equivalent and is intentionally absent.
         val IGDB_PLATFORM_IDS: Map<Platform, Int> = mapOf(
             Platform.ARCADE to 52,
             Platform.DREAMCAST to 23,
@@ -211,6 +213,7 @@ private data class TwitchToken(
 private data class IgdbGame(
     val name: String = "",
     val cover: IgdbCover? = null,
+    val platforms: List<Int> = emptyList(),
 )
 
 @Serializable
