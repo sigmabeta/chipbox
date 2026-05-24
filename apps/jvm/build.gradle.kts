@@ -94,6 +94,7 @@ val nativeEmulators: List<Pair<String, String>> = listOf(
     "vgm" to "vgm",
     "gba" to "gba",
     "ncsf" to "ncsf",
+    "vgmstream" to "vgmstream",
 )
 
 // One-time android/log shim — psf's debug probes call `__android_log_print`, which doesn't
@@ -339,6 +340,7 @@ dependencies {
     implementation(projects.cbox.android.player.emulators.twosf.real)
     implementation(projects.cbox.android.player.emulators.usf.real)
     implementation(projects.cbox.android.player.emulators.vgm.real)
+    implementation(projects.cbox.android.player.emulators.vgmstream.real)
     implementation(projects.cbox.common.contentsource.api)
     implementation(projects.cbox.common.strings.api)
     implementation(projects.cbox.common.debug.api)

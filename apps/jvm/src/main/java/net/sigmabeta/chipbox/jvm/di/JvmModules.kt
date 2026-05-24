@@ -36,6 +36,7 @@ import net.sigmabeta.chipbox.player.emulators.ssf.SsfEmulator
 import net.sigmabeta.chipbox.player.emulators.twosf.TwosfEmulator
 import net.sigmabeta.chipbox.player.emulators.usf.UsfEmulator
 import net.sigmabeta.chipbox.player.emulators.vgm.VgmEmulator
+import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamEmulator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Repository
@@ -167,6 +168,8 @@ object JvmEmulatorsModule {
             TwosfEmulator,
             UsfEmulator,
             VgmEmulator,
+            // Last: broad catch-all, so dedicated chiptune emulators win shared extensions.
+            VgmstreamEmulator,
         ),
     )
 }
