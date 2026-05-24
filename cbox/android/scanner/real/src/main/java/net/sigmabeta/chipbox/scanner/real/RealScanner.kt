@@ -20,6 +20,7 @@ import net.sigmabeta.chipbox.readers.deriveMetaFromFilename
 import net.sigmabeta.chipbox.readers.PsfTagInfo
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.readers.isPsfFamily
+import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
@@ -29,6 +30,7 @@ import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.Hatchet
+import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -236,8 +238,25 @@ class RealScanner(
                 continue
             }
 
-            val reader = readers.forExtension(ext) ?: run {
-                hatchet.v("No reader for extension '$ext' — skipping ${file.name}.")
+            val reader = readers.forExtension(ext)
+            if (reader == null) {
+                // No dedicated chiptune reader — fall back to vgmstream for streamed-audio formats
+                // (ADX, HCA, DSP/BRSTM, STRM, ...). Checked last so the readers above win.
+                if (VgmstreamProbe.isSupported(ext)) {
+                    val tracks = readWithErrorHandling(file) { scanVgmstream(file, ext) }
+                    when {
+                        tracks == null -> {
+                            hatchet.w("Failed to read ${file.name}.")
+                            failed++
+                        }
+
+                        tracks.isEmpty() -> hatchet.d("${file.name} yielded no tracks.")
+
+                        else -> tracksByFilename[file.name] = tracks.toMutableList()
+                    }
+                } else {
+                    hatchet.v("No reader for extension '$ext' — skipping ${file.name}.")
+                }
                 continue
             }
 
@@ -377,6 +396,43 @@ class RealScanner(
         return MessageDigest.getInstance("SHA-256")
             .digest(joined.encodeToByteArray())
             .joinToString("") { byte -> "%02x".format(byte.toInt() and BYTE_MASK) }
+    }
+
+    // Streamed-audio path: vgmstream decodes by filesystem path and keys on the extension, so we
+    // stage the bytes to a temp file, then probe it for subsongs + exact length/rate/name. One
+    // RawTrack per subsong (subsong index → trackNumber, so playback reopens the right one).
+    private suspend fun scanVgmstream(file: LibraryFileInfo, ext: String): List<RawTrack>? {
+        val bytes = traceAsync(TRACE_OPEN_BYTES, nextCookie()) {
+            librarySource.openBytes(file.identifier)
+        }
+        if (bytes == null) {
+            hatchet.w("Failed to read ${file.name}: could not open ${file.identifier}.")
+            return null
+        }
+
+        val temp = File.createTempFile("vgmprobe_", ".$ext")
+        return try {
+            temp.writeBytes(bytes)
+            val subsongs = trace("$TRACE_READ_PREFIX$ext") { VgmstreamProbe.probe(temp.absolutePath) }
+            if (subsongs.isEmpty()) {
+                hatchet.v("vgmstream did not recognise ${file.name}.")
+                return emptyList()
+            }
+            subsongs.map { sub ->
+                RawTrack(
+                    file.identifier,
+                    "",
+                    sub.streamName.ifBlank { TAG_UNKNOWN },
+                    TAG_UNKNOWN,
+                    TAG_UNKNOWN,
+                    sub.lengthMs,
+                    sub.subsong,
+                    0L,
+                ).copy(source = librarySource.sourceId, extension = ext)
+            }
+        } finally {
+            temp.delete()
+        }
     }
 
     private suspend fun resolvePsfChain(

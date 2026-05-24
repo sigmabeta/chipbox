@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.player.emulators.ssf.SsfEmulator
 import net.sigmabeta.chipbox.player.emulators.twosf.TwosfEmulator
 import net.sigmabeta.chipbox.player.emulators.usf.UsfEmulator
 import net.sigmabeta.chipbox.player.emulators.vgm.VgmEmulator
+import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamEmulator
 import net.sigmabeta.sage.di.AppScope
 
 @BindingContainer
@@ -31,6 +32,9 @@ object EmulatorModule {
             SsfEmulator,
             VgmEmulator,
             UsfEmulator,
+            // Last among real emulators: a broad catch-all, so dedicated chiptune emulators
+            // win any extension they share with vgmstream.
+            VgmstreamEmulator,
             FakeEmulator
         )
     )

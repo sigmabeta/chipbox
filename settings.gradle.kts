@@ -72,6 +72,8 @@ include(
     ":cbox:android:player:emulators:usf:real",
     ":cbox:android:player:emulators:vgm:native",
     ":cbox:android:player:emulators:vgm:real",
+    ":cbox:android:player:emulators:vgmstream:native",
+    ":cbox:android:player:emulators:vgmstream:real",
     ":cbox:android:player:generator:di",
     ":cbox:android:player:generator:real",
     ":cbox:android:player:speaker:di",
