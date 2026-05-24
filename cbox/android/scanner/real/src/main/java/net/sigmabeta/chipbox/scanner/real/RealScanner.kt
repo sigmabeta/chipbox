@@ -19,7 +19,6 @@ import net.sigmabeta.chipbox.readers.LENGTH_UNKNOWN_MS
 import net.sigmabeta.chipbox.readers.PsfTagInfo
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.readers.isPsfFamily
-import net.sigmabeta.chipbox.readers.orUnknown
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
@@ -328,10 +327,10 @@ class RealScanner(
         }
         when (outcome.result) {
             GameWriteResult.ADDED ->
-                emitEvent(ScannerEvent.GameFoundEvent(outcome.gameId, gameName, rawTracks.size, imagePath.orUnknown()))
+                emitEvent(ScannerEvent.GameFoundEvent(outcome.gameId, gameName, rawTracks.size, imagePath))
 
             GameWriteResult.UPDATED ->
-                emitEvent(ScannerEvent.GameUpdated(outcome.gameId, gameName, rawTracks.size, imagePath.orUnknown()))
+                emitEvent(ScannerEvent.GameUpdated(outcome.gameId, gameName, rawTracks.size, imagePath))
 
             // Re-scanned but byte-identical (e.g. a touched mtime): no user-visible change.
             GameWriteResult.UNCHANGED -> Unit

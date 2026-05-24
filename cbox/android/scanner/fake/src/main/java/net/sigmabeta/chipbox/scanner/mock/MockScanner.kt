@@ -33,7 +33,7 @@ class MockScanner(
                     it.id,
                     it.title,
                     it.tracks?.size ?: 0,
-                    it.photoUrl ?: ""
+                    it.photoUrl
                 )
 
                 gamesFound++
