@@ -25,7 +25,8 @@ class Readers(hatchet: Hatchet) {
         EXT_2SF, EXT_MINI2SF,
         EXT_SSF, EXT_MINISSF,
         EXT_DSF, EXT_MINIDSF,
-        EXT_USF, EXT_MINIUSF -> psf
+        EXT_USF, EXT_MINIUSF,
+        EXT_NCSF, EXT_MININCSF -> psf
 
         EXT_NSF -> nsf
 
@@ -55,6 +56,8 @@ private const val EXT_DSF = "dsf"
 private const val EXT_MINIDSF = "minidsf"
 private const val EXT_USF = "usf"
 private const val EXT_MINIUSF = "miniusf"
+private const val EXT_NCSF = "ncsf"
+private const val EXT_MININCSF = "minincsf"
 private const val EXT_NSF = "nsf"
 private const val EXT_NSFE = "nsfe"
 private const val EXT_GBS = "gbs"
@@ -66,5 +69,5 @@ private val PSF_FAMILY_EXTENSIONS = setOf(
     EXT_PSF, EXT_MINIPSF, EXT_GSF, EXT_MINIGSF,
     EXT_PSF2, EXT_MINIPSF2, EXT_2SF, EXT_MINI2SF,
     EXT_SSF, EXT_MINISSF, EXT_DSF, EXT_MINIDSF,
-    EXT_USF, EXT_MINIUSF,
+    EXT_USF, EXT_MINIUSF, EXT_NCSF, EXT_MININCSF,
 )

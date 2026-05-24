@@ -140,6 +140,9 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
             0x24.toByte() -> Platform.NDS
 
             // 2SF   — Nintendo DS
+            0x25.toByte() -> Platform.NDS
+
+            // NCSF  — Nintendo DS (Nitro Composer)
             else -> null
         }
 
