@@ -92,6 +92,27 @@ class AndroidFileContentSource(
         hatchet.i("Added library location: $uri ($displayName)")
     }
 
+    override fun removeLibraryLocation(identifier: String) {
+        removeLibraryLocation(Uri.parse(identifier))
+    }
+
+    fun removeLibraryLocation(uri: Uri) {
+        if (_libraryLocations.value.none { it.uri == uri }) {
+            hatchet.d("Library location not present: $uri")
+            return
+        }
+        // Release the persisted read grant so we stop holding a slot in the system's limited
+        // persistable-URI table; mirrors the takePersistableUriPermission in addLibraryLocation.
+        runCatching {
+            context.contentResolver.releasePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+            )
+        }.onFailure { hatchet.w("Failed to release permission for $uri: $it") }
+        _libraryLocations.update { list -> list.filterNot { it.uri == uri } }
+        hatchet.i("Removed library location: $uri")
+    }
+
     fun scanLibraryFiles(): Flow<LibraryFile> = flow {
         for (location in _libraryLocations.value) {
             val rootDocId = DocumentsContract.getTreeDocumentId(location.uri)

@@ -27,4 +27,12 @@ interface LibrarySource : ContentSource {
      * the location list across restarts.
      */
     fun addLibraryLocation(identifier: String)
+
+    /**
+     * The inverse of [addLibraryLocation]: drop the library root identified by [identifier],
+     * remove it from [locations], and release any content lock taken when it was added (e.g.
+     * `ContentResolver.releasePersistableUriPermission` on Android). A no-op if [identifier]
+     * isn't a current location. Does not delete already-imported tracks — a rescan prunes those.
+     */
+    fun removeLibraryLocation(identifier: String)
 }

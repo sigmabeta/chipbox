@@ -69,7 +69,7 @@ class ChipboxLibrary(
     fun addLibraryFolder(folder: File) = contentSource.addLocation(folder)
 
     /** Removes the saved library location with the given absolute [path]. */
-    fun removeLibraryFolder(path: String) = contentSource.removeLocation(path)
+    fun removeLibraryFolder(path: String) = contentSource.removeLibraryLocation(path)
 
     /** Absolute paths of every saved library location. */
     fun savedLocations(): List<String> = contentSource.locations.value.map { it.identifier }

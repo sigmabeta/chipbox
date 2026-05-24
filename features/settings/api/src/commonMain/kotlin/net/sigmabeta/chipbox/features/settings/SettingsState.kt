@@ -29,6 +29,7 @@ data class SettingsState(
     val formattedBuildDate: String? = null,
     val debugClickCount: Int = 0,
     val shouldShowDebug: Boolean? = null,
+    val hasLibraryFolders: Boolean = false,
 ) : ListState() {
     override fun title(stringProvider: StringProvider) = TitleBarModel(
         title = stringProvider.getString(ChipboxStringId.SETTINGS_SCREEN_TITLE),
@@ -59,9 +60,22 @@ data class SettingsState(
 
     private fun librarySection(stringProvider: StringProvider): List<ListModel> = listOf(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_LIBRARY),
-        addFolderRow(stringProvider),
+        libraryFolderRow(stringProvider),
         rescanRow(stringProvider),
         clearLibraryRow(stringProvider),
+    )
+
+    // Once the library has at least one folder, the "Add folder to library" shortcut becomes a
+    // "Manage Library" row that opens the dedicated screen (add via its CTA, remove by tapping a
+    // folder). Empty library keeps the one-tap add shortcut.
+    private fun libraryFolderRow(stringProvider: StringProvider): ListModel =
+        if (hasLibraryFolders) manageLibraryRow(stringProvider) else addFolderRow(stringProvider)
+
+    private fun manageLibraryRow(stringProvider: StringProvider) = NameCaptionListModel(
+        dataId = ChipboxStringId.MANAGE_LIBRARY_TITLE.hashCode().toLong(),
+        name = stringProvider.getString(ChipboxStringId.MANAGE_LIBRARY_TITLE),
+        caption = stringProvider.getString(ChipboxStringId.MANAGE_LIBRARY_CAPTION),
+        clickAction = SettingsAction.ManageLibraryClicked,
     )
 
     private fun aboutSection(stringProvider: StringProvider): List<ListModel> = listOf(

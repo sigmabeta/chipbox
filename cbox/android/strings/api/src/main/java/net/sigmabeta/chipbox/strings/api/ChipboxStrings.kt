@@ -135,6 +135,12 @@ fun ChipboxStringId.id(): Int = when (this) {
 
     ChipboxStringId.SETTINGS_CAPTION_PLAYBACK_STATUS -> R.string.settings_caption_playback_status
 
+    ChipboxStringId.MANAGE_LIBRARY_TITLE -> R.string.manage_library_title
+
+    ChipboxStringId.MANAGE_LIBRARY_CAPTION -> R.string.manage_library_caption
+
+    ChipboxStringId.MANAGE_LIBRARY_EMPTY -> R.string.manage_library_empty
+
     ChipboxStringId.PLAYBACK_STATUS_SCREEN_TITLE -> R.string.playback_status_screen_title
 
     ChipboxStringId.PLAYBACK_STATUS_SECTION_TRACK -> R.string.playback_status_section_track

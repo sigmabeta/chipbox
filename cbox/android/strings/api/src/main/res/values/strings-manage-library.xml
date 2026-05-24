@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="manage_library_title">Manage Library</string>
+    <string name="manage_library_caption">Add or remove the folders Chipbox scans for music.</string>
+    <string name="manage_library_empty">No folders in your library. Add one to get started.</string>
+</resources>
