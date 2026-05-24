@@ -2,11 +2,8 @@ package net.sigmabeta.chipbox.cli
 
 import com.github.ajalt.mordant.input.interactiveSelectList
 import com.github.ajalt.mordant.rendering.TextColors.brightCyan
-import com.github.ajalt.mordant.rendering.TextColors.brightGreen
-import com.github.ajalt.mordant.rendering.TextColors.gray
 import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.runBlocking
-import net.sigmabeta.chipbox.scanner.state.ScannerState
 
 /**
  * Top-level CLI menu. Loops over the available actions, re-evaluating which apply each time:
@@ -57,18 +54,7 @@ class MainMenu(
         LibraryBrowser(terminal).browse(root)
     }
 
-    private fun rescan() {
-        val locations = library.savedLocations()
-        terminal.println("Scanning ${locations.size} saved library location(s):")
-        locations.forEach { terminal.println("  ${gray(it)}") }
-
-        val state = runBlocking {
-            library.scan { name, trackCount ->
-                terminal.println("  ${brightGreen("+")} $name ${gray("($trackCount tracks)")}")
-            }
-        }
-        printScanResult(state)
-    }
+    private fun rescan() = LibraryScan(terminal, library).run()
 
     private fun addLocation() {
         val folder = LibraryFolderPicker(terminal).choose() ?: return
@@ -86,17 +72,6 @@ class MainMenu(
         if (choice == null || choice == CANCEL_ROW) return
         library.removeLibraryFolder(choice)
         terminal.println("Removed ${brightCyan(choice)} from the library.")
-    }
-
-    private fun printScanResult(state: ScannerState) = when (state) {
-        is ScannerState.Complete -> terminal.println(
-            "Scan complete: ${state.gamesFound} games, ${state.tracksFound} tracks " +
-                "(${state.tracksFailed} failed) in ${state.timeInSeconds}s.",
-        )
-
-        is ScannerState.Failed -> terminal.println("Scan failed at ${state.path}.")
-
-        else -> Unit
     }
 
     private companion object {
