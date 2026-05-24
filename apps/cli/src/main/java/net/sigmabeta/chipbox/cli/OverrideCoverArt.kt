@@ -151,7 +151,7 @@ class OverrideCoverArt(
                 }
 
                 else -> {
-                    overrides.set(game.title, platforms, OverrideEntry(idOrSlug, info.name, imageId))
+                    overrides.set(game.title, platforms, OverrideEntry(info.id, info.name, imageId, info.slug))
                     terminal.println(brightGreen("Linked “${game.title}” → IGDB “${info.name}”."))
                     downloadNow(igdb, overrides, cache, game, httpClient)
                     true

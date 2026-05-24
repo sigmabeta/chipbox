@@ -17,6 +17,14 @@ internal fun coverArtKey(title: String, platforms: Set<Platform>): String =
     title + "|" + platforms.map { it.name }.sorted().joinToString(",")
 
 /**
+ * How long a recorded cover-art match stays valid before it's re-queried, in days. Applies both to
+ * the [CoverArtCache] json and to the date inside a folder's igdb.txt (see [IgdbLinkFile]), so a
+ * match that hasn't been confirmed against IGDB in this long is looked up again — picking up covers
+ * IGDB has added since.
+ */
+internal const val COVER_ART_TTL_DAYS = 180L
+
+/**
  * Persistent cache of IGDB cover-art lookups, keyed on the inputs to [IgdbClient.lookupCover] (game
  * title + platform set). Lets repeated runs skip the rate-limited IGDB search API for games already
  * looked up. Stored as a small JSON file under the work dir; entries older than [CACHE_TTL_DAYS] are
@@ -75,24 +83,35 @@ class CoverArtCache(private val file: File) {
     private fun keyOf(title: String, platforms: Set<Platform>): String = coverArtKey(title, platforms)
 
     private fun CacheEntry.isFresh(): Boolean =
-        System.currentTimeMillis() - epochMillis <= TimeUnit.DAYS.toMillis(CACHE_TTL_DAYS)
+        System.currentTimeMillis() - epochMillis <= TimeUnit.DAYS.toMillis(COVER_ART_TTL_DAYS)
 
     private fun CacheEntry.isValid(): Boolean = kind != CacheKind.FOUND || imageId != null
 
     private fun CacheEntry.toLookup(): CoverLookup = when (kind) {
-        CacheKind.FOUND -> CoverLookup.Found(imageId.orEmpty())
-        CacheKind.NO_COVER -> CoverLookup.NoCover
+        CacheKind.FOUND -> CoverLookup.Found(imageId.orEmpty(), igdbId, igdbName, igdbSlug)
+        CacheKind.NO_COVER -> CoverLookup.NoCover(igdbId, igdbName, igdbSlug)
         CacheKind.NO_MATCH -> CoverLookup.NoMatch
     }
 
     private fun CoverLookup.toEntry(downloadedUrl: String?): CacheEntry = when (this) {
-        is CoverLookup.Found -> CacheEntry(CacheKind.FOUND, imageId, downloadedUrl)
-        CoverLookup.NoCover -> CacheEntry(CacheKind.NO_COVER, null, downloadedUrl)
-        CoverLookup.NoMatch -> CacheEntry(CacheKind.NO_MATCH, null, downloadedUrl)
-    }
+        is CoverLookup.Found -> CacheEntry(
+            kind = CacheKind.FOUND,
+            imageId = imageId,
+            downloadedUrl = downloadedUrl,
+            igdbId = igdbId,
+            igdbName = igdbName,
+            igdbSlug = igdbSlug,
+        )
 
-    private companion object {
-        const val CACHE_TTL_DAYS = 180L
+        is CoverLookup.NoCover -> CacheEntry(
+            kind = CacheKind.NO_COVER,
+            downloadedUrl = downloadedUrl,
+            igdbId = igdbId,
+            igdbName = igdbName,
+            igdbSlug = igdbSlug,
+        )
+
+        CoverLookup.NoMatch -> CacheEntry(CacheKind.NO_MATCH, null, downloadedUrl)
     }
 }
 
@@ -104,5 +123,8 @@ private data class CacheEntry(
     val kind: CacheKind,
     val imageId: String? = null,
     val downloadedUrl: String? = null,
+    val igdbId: String? = null,
+    val igdbName: String? = null,
+    val igdbSlug: String? = null,
     val epochMillis: Long = System.currentTimeMillis(),
 )
