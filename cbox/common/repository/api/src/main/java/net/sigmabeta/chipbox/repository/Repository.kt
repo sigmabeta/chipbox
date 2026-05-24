@@ -71,15 +71,23 @@ interface Repository {
      * insert it if new, otherwise update its metadata and reconcile its tracks by (path,
      * trackNumber) — adding new songs, updating changed ones, deleting songs no longer present —
      * and refresh its artist links. Safe to call concurrently for distinct folders.
+     *
+     * Returns the game's id plus what actually happened, so the scanner can raise the right
+     * `ScannerEvent` (and carry the id for navigation): [GameWriteResult.ADDED] for a new game,
+     * [GameWriteResult.UPDATED] when an existing game meaningfully changed, [GameWriteResult.UNCHANGED]
+     * when re-scanning produced identical data.
      */
-    suspend fun upsertGame(rawGame: RawGame)
+    suspend fun upsertGame(rawGame: RawGame): GameWriteOutcome
 
     /**
      * Sweep step of an idempotent scan: delete every game whose folder was not seen this scan
      * (cascading its tracks and joins), then drop any artists left with no tracks. [keptFolderKeys]
      * is the set of [RawGame.folderKey]s that produced a game during the scan.
+     *
+     * Returns the titles of the games that were removed, so the scanner can raise a
+     * `ScannerEvent.GameRemoved` for each.
      */
-    suspend fun pruneGames(keptFolderKeys: Set<String>)
+    suspend fun pruneGames(keptFolderKeys: Set<String>): List<String>
 
     suspend fun getTrack(
         id: Long,

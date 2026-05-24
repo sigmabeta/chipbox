@@ -28,6 +28,8 @@ import net.sigmabeta.chipbox.models.encodeChainFiles
 import net.sigmabeta.chipbox.perf.traceAsync
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.FolderSnapshot
+import net.sigmabeta.chipbox.repository.GameWriteOutcome
+import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
@@ -148,14 +150,13 @@ class DatabaseRepository(
         .getSignatureRows()
         .associate { it.folderKey to FolderSnapshot(it.signature, it.trackCount) }
 
-    override suspend fun upsertGame(rawGame: RawGame) {
+    override suspend fun upsertGame(rawGame: RawGame): GameWriteOutcome =
         when (val existing = gameDao.getByFolderKeySync(rawGame.folderKey)) {
-            null -> insertNewGame(rawGame)
-            else -> updateExistingGame(existing, rawGame)
+            null -> GameWriteOutcome(insertNewGame(rawGame), GameWriteResult.ADDED)
+            else -> GameWriteOutcome(existing.id, updateExistingGame(existing, rawGame))
         }
-    }
 
-    private suspend fun insertNewGame(rawGame: RawGame) {
+    private suspend fun insertNewGame(rawGame: RawGame): Long {
         val gameId = traceAsync(TRACE_INSERT_GAME, nextCookie()) {
             gameDao.insert(
                 GameEntity(
@@ -175,12 +176,14 @@ class DatabaseRepository(
         }
         val idByTrackKey = rawGame.tracks.zip(trackIds).associate { (track, id) -> track.trackKey() to id }
         linkArtists(gameId, rawGame, idByTrackKey, artistsByName)
+        return gameId
     }
 
-    private suspend fun updateExistingGame(existing: GameEntity, rawGame: RawGame) {
+    private suspend fun updateExistingGame(existing: GameEntity, rawGame: RawGame): GameWriteResult {
         val gameId = existing.id
         // We only reach the update path because the folder's signature changed, so refresh the row
         // (title/photo may have changed) and store the new signature for next time.
+        val metadataChanged = existing.title != rawGame.title || existing.photoUrl != rawGame.photoUrl
         gameDao.update(
             existing.copy(
                 title = rawGame.title,
@@ -228,6 +231,14 @@ class DatabaseRepository(
         trackArtistDao.deleteForTracks(idByTrackKey.values.toList())
         gameArtistDao.deleteForGame(gameId)
         linkArtists(gameId, rawGame, idByTrackKey, artistsByName)
+
+        // "Meaningfully changed" = the title/photo moved, or a track was added, updated, or removed.
+        // A signature-only change (e.g. a touched mtime with identical bytes) reports UNCHANGED.
+        val changed = metadataChanged ||
+            removedIds.isNotEmpty() ||
+            toUpdate.isNotEmpty() ||
+            toInsert.isNotEmpty()
+        return if (changed) GameWriteResult.UPDATED else GameWriteResult.UNCHANGED
     }
 
     // Resolve every distinct artist name across the game's tracks once, instead of a DB lookup per
@@ -260,14 +271,13 @@ class DatabaseRepository(
         }
     }
 
-    override suspend fun pruneGames(keptFolderKeys: Set<String>) {
-        val removableIds = gameDao.getAllSync()
-            .filterNot { it.folderKey in keptFolderKeys }
-            .map { it.id }
-        if (removableIds.isNotEmpty()) {
-            traceAsync(TRACE_PRUNE_GAMES, nextCookie()) { gameDao.deleteByIds(removableIds) }
+    override suspend fun pruneGames(keptFolderKeys: Set<String>): List<String> {
+        val removable = gameDao.getAllSync().filterNot { it.folderKey in keptFolderKeys }
+        if (removable.isNotEmpty()) {
+            traceAsync(TRACE_PRUNE_GAMES, nextCookie()) { gameDao.deleteByIds(removable.map { it.id }) }
         }
         traceAsync(TRACE_PRUNE_ARTISTS, nextCookie()) { artistDao.deleteOrphans() }
+        return removable.map { it.title }
     }
 
     private suspend fun ArtistEntity.toArtist(

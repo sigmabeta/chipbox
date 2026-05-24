@@ -141,6 +141,34 @@ fun ChipboxStringId.id(): Int = when (this) {
 
     ChipboxStringId.MANAGE_LIBRARY_EMPTY -> R.string.manage_library_empty
 
+    ChipboxStringId.SETTINGS_LABEL_RESCAN_STATUS -> R.string.settings_label_rescan_status
+
+    ChipboxStringId.SETTINGS_CAPTION_RESCAN_STATUS -> R.string.settings_caption_rescan_status
+
+    ChipboxStringId.RESCAN_STATUS_TITLE -> R.string.rescan_status_title
+
+    ChipboxStringId.RESCAN_STATUS_SECTION_PROGRESS -> R.string.rescan_status_section_progress
+
+    ChipboxStringId.RESCAN_STATUS_SECTION_EVENTS -> R.string.rescan_status_section_events
+
+    ChipboxStringId.RESCAN_STATUS_LABEL_ELAPSED -> R.string.rescan_status_label_elapsed
+
+    ChipboxStringId.RESCAN_STATUS_LABEL_GAMES -> R.string.rescan_status_label_games
+
+    ChipboxStringId.RESCAN_STATUS_LABEL_TRACKS -> R.string.rescan_status_label_tracks
+
+    ChipboxStringId.RESCAN_STATUS_LABEL_FAILED -> R.string.rescan_status_label_failed
+
+    ChipboxStringId.RESCAN_STATUS_LABEL_FAILED_PATH -> R.string.rescan_status_label_failed_path
+
+    ChipboxStringId.RESCAN_STATUS_IDLE -> R.string.rescan_status_idle
+
+    ChipboxStringId.RESCAN_STATUS_EVENT_ADDED -> R.string.rescan_status_event_added
+
+    ChipboxStringId.RESCAN_STATUS_EVENT_UPDATED -> R.string.rescan_status_event_updated
+
+    ChipboxStringId.RESCAN_STATUS_EVENT_REMOVED -> R.string.rescan_status_event_removed
+
     ChipboxStringId.PLAYBACK_STATUS_SCREEN_TITLE -> R.string.playback_status_screen_title
 
     ChipboxStringId.PLAYBACK_STATUS_SECTION_TRACK -> R.string.playback_status_section_track

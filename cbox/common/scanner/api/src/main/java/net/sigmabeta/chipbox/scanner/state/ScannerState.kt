@@ -5,7 +5,14 @@ sealed class ScannerState {
 
     object Idle : ScannerState()
 
-    object Scanning : ScannerState()
+    // Same fields as [Complete] so the rescan-status screen can show live running totals while a
+    // scan is in flight. The scanner emits an updated Scanning as each folder finishes.
+    data class Scanning(
+        val timeInSeconds: Int = 0,
+        val gamesFound: Int = 0,
+        val tracksFound: Int = 0,
+        val tracksFailed: Int = 0
+    ) : ScannerState()
 
     data class Complete(
         val timeInSeconds: Int,

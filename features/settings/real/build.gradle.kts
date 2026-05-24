@@ -28,6 +28,8 @@ kotlin {
                 implementation(projects.features.playbackStatus.api)
                 // ManageLibrary route key for SettingsAction.ManageLibraryClicked -> NavigateTo.
                 implementation(projects.features.manageLibrary.api)
+                // RescanStatus route key — navigated to when a scan starts / from the in-progress row.
+                implementation(projects.features.rescanStatus.api)
 
                 implementation(libs.sage.common.appinfo)
                 implementation(libs.sage.common.ui.components)
