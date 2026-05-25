@@ -1,27 +1,37 @@
-package net.sigmabeta.chipbox.cli
+package net.sigmabeta.chipbox.organizer.real
 
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.organizer.FolderMove
+import net.sigmabeta.chipbox.organizer.INVALID_CATEGORY
+import net.sigmabeta.chipbox.organizer.OrganizeResult
 import net.sigmabeta.sage.ui.StringProvider
-import java.io.File
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
+import okio.FileSystem
+import okio.IOException
+import okio.Path
+import okio.Path.Companion.toPath
 
 /**
  * Pure planning + execution for "Organize Library". [plan] turns the scanned games into a list of
  * folder moves toward `$destination/$platform/$game/`; a game whose tracks are split across more
  * than one folder is "invalid" and each of its folders is routed to
  * `$destination/Invalid Folders/$game-$index/` instead. [commit] performs the moves on disk.
+ *
+ * Files are walked and moved through the injected [fileSystem] (okio), so the logic is multiplatform.
+ * [strings] resolves platform display names (the per-platform destination folders), so the layout
+ * matches the labels the apps show. Both are caller-supplied, keeping this free of any single app's
+ * wiring.
  */
 class LibraryOrganizer(
-    private val strings: StringProvider = cliStringProvider,
+    private val fileSystem: FileSystem,
+    private val strings: StringProvider,
 ) {
-    fun plan(games: List<Game>, destination: File, libraryLocations: Set<String>): List<FolderMove> {
-        val roots = libraryLocations.mapNotNull { canonicalOrNull(File(it)) }.toSet()
+    fun plan(games: List<Game>, destination: Path, libraryLocations: Set<String>): List<FolderMove> {
+        val roots = libraryLocations.mapNotNull { canonicalOrNull(it.toPath()) }.toSet()
         val moves = mutableListOf<FolderMove>()
         val usedNamesByCategory = HashMap<String, MutableSet<String>>()
-        val invalidFolders = mutableListOf<Pair<String, File>>()
+        val invalidFolders = mutableListOf<Pair<String, Path>>()
 
         for (game in games) {
             val tracks = game.tracks.orEmpty()
@@ -58,48 +68,55 @@ class LibraryOrganizer(
     private fun folderMove(
         category: String,
         folderName: String,
-        source: File,
-        destination: File,
+        source: Path,
+        destination: Path,
         roots: Set<String>,
     ): FolderMove {
         val sourceIsRoot = canonicalOrNull(source) in roots
-        val children = source.listFiles()?.toList().orEmpty().sortedBy { it.name }
+        val children = fileSystem.listOrNull(source).orEmpty().sortedBy { it.name }
         // A library-location root isn't a game's own folder, so only its loose files belong to the
         // game; its subdirectories are other games and are left for their own moves.
-        val entries = if (sourceIsRoot) children.filter { it.isFile } else children
-        val dest = File(File(destination, category), folderName)
+        val entries = if (sourceIsRoot) children.filter { isRegularFile(it) } else children
+        val dest = destination / category / folderName
         return FolderMove(category, folderName, source, dest, entries, sourceIsRoot)
     }
 
     private fun applyMove(move: FolderMove) {
         if (canonicalOrNull(move.source) == canonicalOrNull(move.destination)) return
-        move.destination.mkdirs()
+        fileSystem.createDirectories(move.destination)
         for (entry in move.entries) {
-            moveInto(entry, File(move.destination, entry.name))
+            moveInto(entry, move.destination / entry.name)
         }
         if (!move.sourceIsRoot) deleteIfEmpty(move.source)
     }
 
-    // Recursive so a directory move works even across filesystems (Files.move of a non-empty dir
-    // across stores fails); files are moved one at a time and emptied dirs removed.
-    private fun moveInto(source: File, dest: File) {
-        if (source.isDirectory) {
-            dest.mkdirs()
-            source.listFiles()?.forEach { moveInto(it, File(dest, it.name)) }
-            source.delete()
+    // Recursive so a directory move works even across filesystems (an atomic rename across stores
+    // fails); files are moved one at a time and emptied dirs removed.
+    private fun moveInto(source: Path, dest: Path) {
+        if (isDirectory(source)) {
+            fileSystem.createDirectories(dest)
+            fileSystem.listOrNull(source).orEmpty().forEach { moveInto(it, dest / it.name) }
+            fileSystem.delete(source)
         } else {
-            dest.parentFile?.mkdirs()
-            Files.move(source.toPath(), dest.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            dest.parent?.let { fileSystem.createDirectories(it) }
+            if (fileSystem.exists(dest)) fileSystem.delete(dest)
+            try {
+                fileSystem.atomicMove(source, dest)
+            } catch (_: IOException) {
+                // Cross-filesystem move: okio can't rename atomically, so copy the bytes then drop the original.
+                fileSystem.copy(source, dest)
+                fileSystem.delete(source)
+            }
         }
     }
 
-    private fun deleteIfEmpty(folder: File) {
-        if (folder.isDirectory && folder.list()?.isEmpty() == true) folder.delete()
+    private fun deleteIfEmpty(folder: Path) {
+        if (isDirectory(folder) && fileSystem.listOrNull(folder).orEmpty().isEmpty()) fileSystem.delete(folder)
     }
 
-    private fun distinctFolders(tracks: List<Track>): List<File> = tracks
-        .mapNotNull { File(it.path).parentFile }
-        .distinctBy { canonicalOrNull(it) ?: it.absolutePath }
+    private fun distinctFolders(tracks: List<Track>): List<Path> = tracks
+        .mapNotNull { it.path.toPath().parent }
+        .distinctBy { canonicalOrNull(it) ?: it.toString() }
 
     private fun mostCommonPlatform(tracks: List<Track>): Platform =
         tracks.groupingBy { it.platform }.eachCount().maxByOrNull { it.value }?.key ?: Platform.OTHER
@@ -124,24 +141,14 @@ class LibraryOrganizer(
         return cleaned.ifBlank { "Unknown" }
     }
 
-    private fun canonicalOrNull(file: File): String? = runCatching { file.canonicalPath }.getOrNull()
+    private fun isDirectory(path: Path): Boolean = fileSystem.metadataOrNull(path)?.isDirectory == true
+
+    private fun isRegularFile(path: Path): Boolean = fileSystem.metadataOrNull(path)?.isRegularFile == true
+
+    private fun canonicalOrNull(path: Path): String? =
+        runCatching { fileSystem.canonicalize(path) }.getOrNull()?.toString()
 
     private companion object {
         val ILLEGAL_CHARS = "\\/:*?\"<>|".toSet()
     }
 }
-
-/** Top-level destination bucket for games whose tracks are split across multiple folders. */
-internal const val INVALID_CATEGORY = "Invalid Folders"
-
-/** One folder's worth of files to relocate, from [source] into [destination]. */
-data class FolderMove(
-    val category: String,
-    val folderName: String,
-    val source: File,
-    val destination: File,
-    val entries: List<File>,
-    val sourceIsRoot: Boolean,
-)
-
-data class OrganizeResult(val movedFolders: Int, val failedFolders: Int)

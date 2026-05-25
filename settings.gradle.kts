@@ -89,6 +89,8 @@ include(
 
     ":cbox:common:appcomm:api",
     ":cbox:common:contentsource:api",
+    ":cbox:common:coverart:api",
+    ":cbox:common:coverart:real",
     ":cbox:common:debug:api",
     ":cbox:common:debug:di",
     ":cbox:common:debug:real",
@@ -97,6 +99,8 @@ include(
     ":cbox:common:debug-info:real",
     ":cbox:common:entities:api",
     ":cbox:common:models:api",
+    ":cbox:common:organizer:api",
+    ":cbox:common:organizer:real",
     ":cbox:common:perf:api",
     ":cbox:common:player:buffer:api",
     ":cbox:common:player:buffer:di",

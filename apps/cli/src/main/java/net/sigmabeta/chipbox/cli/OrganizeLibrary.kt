@@ -4,7 +4,12 @@ import com.github.ajalt.mordant.input.interactiveSelectList
 import com.github.ajalt.mordant.rendering.TextColors.gray
 import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.runBlocking
-import java.io.File
+import net.sigmabeta.chipbox.organizer.FolderMove
+import net.sigmabeta.chipbox.organizer.INVALID_CATEGORY
+import net.sigmabeta.chipbox.organizer.real.LibraryOrganizer
+import okio.FileSystem
+import okio.Path
+import okio.Path.Companion.toPath
 
 /**
  * "Organize Library" flow. Picks a destination library location (only when more than one is
@@ -15,7 +20,7 @@ class OrganizeLibrary(
     private val terminal: Terminal,
     private val library: ChipboxLibrary,
 ) {
-    private val organizer = LibraryOrganizer()
+    private val organizer = LibraryOrganizer(FileSystem.SYSTEM, cliStringProvider)
 
     fun run() {
         val destination = chooseDestination() ?: return
@@ -29,11 +34,11 @@ class OrganizeLibrary(
         LibraryBrowser(terminal).browse(proposalTree(moves), title = PROPOSAL_TITLE, exitLabel = CANCEL_ROW)
     }
 
-    private fun chooseDestination(): File? {
+    private fun chooseDestination(): Path? {
         val locations = library.savedLocations()
-        if (locations.size == 1) return File(locations.first())
+        if (locations.size == 1) return locations.first().toPath()
         val choice = terminal.interactiveSelectList(locations + CANCEL_ROW, title = DESTINATION_TITLE)
-        return if (choice == null || choice == CANCEL_ROW) null else File(choice)
+        return if (choice == null || choice == CANCEL_ROW) null else choice.toPath()
     }
 
     private fun proposalTree(moves: List<FolderMove>): List<MenuNode> {

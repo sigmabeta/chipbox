@@ -1,53 +1,32 @@
-package net.sigmabeta.chipbox.cli
+package net.sigmabeta.chipbox.coverart.real
 
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.serialization.SerializationException
+import net.sigmabeta.chipbox.coverart.CoverArtOutcome
+import net.sigmabeta.chipbox.coverart.CoverArtResult
+import net.sigmabeta.chipbox.coverart.CoverArtSummary
+import net.sigmabeta.chipbox.coverart.CoverLookup
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import java.io.File
-import java.io.IOException
-import java.util.concurrent.atomic.AtomicInteger
-
-/** What happened when fetching cover art for one game. */
-enum class CoverArtOutcome { DOWNLOADED, UP_TO_DATE, NO_MATCH, NO_COVER, NO_FOLDER, FAILED }
-
-/**
- * Per-game cover-art result; [detail] is the saved file name (on success) or an error message.
- * [fromCache] is true when the lookup came from the persistent cache instead of the IGDB API.
- */
-data class CoverArtResult(
-    val title: String,
-    val outcome: CoverArtOutcome,
-    val detail: String? = null,
-    val fromCache: Boolean = false,
-)
-
-/** Aggregate counts across a run (so far). [fromCache] cross-cuts the outcomes, so it's not in [total]. */
-data class CoverArtSummary(
-    val downloaded: Int,
-    val upToDate: Int,
-    val noMatch: Int,
-    val noCover: Int,
-    val skipped: Int,
-    val failed: Int,
-    val fromCache: Int,
-) {
-    val total: Int get() = downloaded + upToDate + noMatch + noCover + skipped + failed
-}
+import okio.FileSystem
+import okio.IOException
+import okio.Path
+import okio.Path.Companion.toPath
 
 /**
  * Thread-safe running tally of per-game outcomes. The fetch loop records into it from one thread
  * while a shutdown hook can [snapshot] it from another to print a summary if the run is cut short.
  */
+@OptIn(ExperimentalAtomicApi::class)
 class CoverArtTally {
-    private val downloaded = AtomicInteger()
-    private val upToDate = AtomicInteger()
-    private val noMatch = AtomicInteger()
-    private val noCover = AtomicInteger()
-    private val skipped = AtomicInteger()
-    private val failed = AtomicInteger()
-    private val fromCache = AtomicInteger()
+    private val downloaded = AtomicInt(0)
+    private val upToDate = AtomicInt(0)
+    private val noMatch = AtomicInt(0)
+    private val noCover = AtomicInt(0)
+    private val skipped = AtomicInt(0)
+    private val failed = AtomicInt(0)
+    private val fromCache = AtomicInt(0)
 
     fun record(result: CoverArtResult) {
         when (result.outcome) {
@@ -57,18 +36,18 @@ class CoverArtTally {
             CoverArtOutcome.NO_COVER -> noCover
             CoverArtOutcome.NO_FOLDER -> skipped
             CoverArtOutcome.FAILED -> failed
-        }.incrementAndGet()
-        if (result.fromCache) fromCache.incrementAndGet()
+        }.addAndFetch(1)
+        if (result.fromCache) fromCache.addAndFetch(1)
     }
 
     fun snapshot(): CoverArtSummary = CoverArtSummary(
-        downloaded.get(),
-        upToDate.get(),
-        noMatch.get(),
-        noCover.get(),
-        skipped.get(),
-        failed.get(),
-        fromCache.get(),
+        downloaded.load(),
+        upToDate.load(),
+        noMatch.load(),
+        noCover.load(),
+        skipped.load(),
+        failed.load(),
+        fromCache.load(),
     )
 }
 
@@ -89,17 +68,20 @@ class CoverArtTally {
  */
 class CoverArtFetcher(
     private val igdb: IgdbClient,
-    private val httpClient: OkHttpClient,
+    private val http: CoverArtHttp,
     private val cache: CoverArtCache,
     private val overrides: CoverArtOverrides,
+    private val fileSystem: FileSystem,
 ) {
-    fun fetch(games: List<Game>, onResult: (CoverArtResult) -> Unit) {
+    private val igdbLinkFile = IgdbLinkFile(fileSystem)
+
+    suspend fun fetch(games: List<Game>, onResult: (CoverArtResult) -> Unit) {
         for (game in games) {
             onResult(process(game))
         }
     }
 
-    private fun process(game: Game): CoverArtResult {
+    private suspend fun process(game: Game): CoverArtResult {
         val folders = trackFolders(game)
         if (folders.isEmpty()) return CoverArtResult(game.title, CoverArtOutcome.NO_FOLDER)
         return try {
@@ -112,7 +94,7 @@ class CoverArtFetcher(
                 ?.let { CoverLookup.Found(it.imageId, it.igdbId, it.igdbName, it.igdbSlug) }
             val cached = pinned
                 ?: cache.get(game.title, platforms)
-                ?: IgdbLinkFile.read(folders)?.also { cache.recordLookup(game.title, platforms, it) }
+                ?: igdbLinkFile.read(folders)?.also { cache.recordLookup(game.title, platforms, it) }
             val lookup = cached ?: igdb.lookupCover(game.title, platforms).also {
                 cache.recordLookup(game.title, platforms, it)
             }
@@ -121,7 +103,7 @@ class CoverArtFetcher(
                 CoverLookup.NoMatch -> CoverArtResult(game.title, CoverArtOutcome.NO_MATCH, fromCache = fromCache)
 
                 is CoverLookup.NoCover -> {
-                    IgdbLinkFile.writeInto(folders, game.title, platforms, lookup, refreshDate = !fromCache)
+                    igdbLinkFile.writeInto(folders, game.title, platforms, lookup, refreshDate = !fromCache)
                     CoverArtResult(game.title, CoverArtOutcome.NO_COVER, fromCache = fromCache)
                 }
 
@@ -142,47 +124,39 @@ class CoverArtFetcher(
         title: String,
         platforms: Set<Platform>,
         found: CoverLookup.Found,
-        folders: List<File>,
+        folders: List<Path>,
         fromCache: Boolean,
     ): CoverArtResult {
         val url = igdb.coverUrl(found.imageId)
         val fileName = sanitize(title) + IMAGE_EXTENSION
         val alreadyCurrent = cache.downloadedUrl(title, platforms) == url &&
-            folders.all { File(it, fileName).isFile }
+            folders.all { fileSystem.metadataOrNull(it / fileName)?.isRegularFile == true }
         val outcome = if (alreadyCurrent) {
             CoverArtOutcome.UP_TO_DATE
         } else {
-            val bytes = download(url)
+            val bytes = http.getBytes(url)
             for (folder in folders) {
                 removeExistingImages(folder)
-                File(folder, fileName).writeBytes(bytes)
+                fileSystem.write(folder / fileName) { write(bytes) }
             }
             cache.recordDownload(title, platforms, url)
             CoverArtOutcome.DOWNLOADED
         }
         // refreshDate when the match came fresh from IGDB (not from a local source); see IgdbLinkFile.
-        IgdbLinkFile.writeInto(folders, title, platforms, found, refreshDate = !fromCache)
+        igdbLinkFile.writeInto(folders, title, platforms, found, refreshDate = !fromCache)
         return CoverArtResult(title, outcome, fileName, fromCache)
     }
 
-    private fun download(imageUrl: String): ByteArray {
-        val request = Request.Builder().url(imageUrl).build()
-        httpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Image download failed: ${response.code}")
-            return response.body.bytes()
-        }
-    }
-
     /** Distinct on-disk folders that hold this game's tracks (usually one). */
-    private fun trackFolders(game: Game): List<File> = game.tracks.orEmpty()
-        .mapNotNull { File(it.path).parentFile }
-        .filter { it.isDirectory }
-        .distinctBy { canonicalOrNull(it) ?: it.absolutePath }
+    private fun trackFolders(game: Game): List<Path> = game.tracks.orEmpty()
+        .mapNotNull { it.path.toPath().parent }
+        .filter { fileSystem.metadataOrNull(it)?.isDirectory == true }
+        .distinctBy { canonicalOrSelf(it) }
 
-    private fun removeExistingImages(folder: File) {
-        folder.listFiles()
-            ?.filter { it.isFile && it.extension.lowercase() in IMAGE_EXTENSIONS }
-            ?.forEach { it.delete() }
+    private fun removeExistingImages(folder: Path) {
+        fileSystem.list(folder)
+            .filter { fileSystem.metadataOrNull(it)?.isRegularFile == true && it.extension in IMAGE_EXTENSIONS }
+            .forEach { fileSystem.delete(it) }
     }
 
     private fun sanitize(name: String): String {
@@ -194,7 +168,11 @@ class CoverArtFetcher(
         return cleaned.ifBlank { "cover" }
     }
 
-    private fun canonicalOrNull(file: File): String? = runCatching { file.canonicalPath }.getOrNull()
+    private fun canonicalOrSelf(path: Path): String =
+        runCatching { fileSystem.canonicalize(path) }.getOrNull()?.toString() ?: path.toString()
+
+    private val Path.extension: String
+        get() = name.substringAfterLast('.', "").lowercase()
 
     private companion object {
         const val IMAGE_EXTENSION = ".jpg"

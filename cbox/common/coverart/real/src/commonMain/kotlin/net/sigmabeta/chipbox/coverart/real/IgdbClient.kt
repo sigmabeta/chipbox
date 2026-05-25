@@ -1,64 +1,32 @@
-package net.sigmabeta.chipbox.cli
+package net.sigmabeta.chipbox.coverart.real
 
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
+import kotlinx.coroutines.delay
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import net.sigmabeta.chipbox.coverart.CoverLookup
+import net.sigmabeta.chipbox.coverart.IgdbCredentials
+import net.sigmabeta.chipbox.coverart.IgdbGameInfo
 import net.sigmabeta.chipbox.models.Platform
-import okhttp3.FormBody
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.IOException
-
-/** Outcome of an IGDB cover-art lookup for one game. */
-sealed interface CoverLookup {
-    /**
-     * A game that matched on IGDB. [igdbId], [igdbName] and [igdbSlug] identify the matched game so
-     * the link can be described in each game's folder — see [IgdbLinkFile] — and read back from there
-     * to skip a future lookup. Any of them may be null for lookups cached or read back before that
-     * data was recorded.
-     */
-    sealed interface Matched : CoverLookup {
-        val igdbId: String?
-        val igdbName: String?
-        val igdbSlug: String?
-    }
-
-    /**
-     * A matched game that has cover art with this IGDB [imageId]. The id (not a full URL) is the
-     * stable, size-independent identity of the cover; the sized download URL is derived from it via
-     * [IgdbClient.coverUrl], so changing the image size doesn't invalidate cached lookups.
-     */
-    data class Found(
-        val imageId: String,
-        override val igdbId: String? = null,
-        override val igdbName: String? = null,
-        override val igdbSlug: String? = null,
-    ) : Matched
-
-    /** A matched game that has no cover art on IGDB. */
-    data class NoCover(
-        override val igdbId: String? = null,
-        override val igdbName: String? = null,
-        override val igdbSlug: String? = null,
-    ) : Matched
-
-    /** No game on IGDB matched the searched name. */
-    data object NoMatch : CoverLookup
-}
+import okio.IOException
 
 /**
  * Minimal IGDB cover-art lookup. Authenticates against Twitch (client-credentials grant), searches
  * the `games` endpoint by name with progressively simplified fallback names, ranks results to prefer
  * the game's platforms when known, and resolves the best match's cover to an image URL. Calls are
  * throttled and retried on transient network failures. Not thread-safe: drive it from a single
- * thread.
+ * coroutine (its token/rate-limit state is plain mutable fields).
+ *
+ * Talks to the network only through [CoverArtHttp], so the logic stays multiplatform; the OkHttp
+ * impl is supplied by the app.
  */
+@OptIn(ExperimentalTime::class)
 class IgdbClient(
     private val credentials: IgdbCredentials,
-    private val httpClient: OkHttpClient,
+    private val http: CoverArtHttp,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -66,7 +34,7 @@ class IgdbClient(
     private var tokenExpiryMs = 0L
     private var lastRequestAtMs = 0L
 
-    fun lookupCover(gameTitle: String, platforms: Set<Platform>): CoverLookup {
+    suspend fun lookupCover(gameTitle: String, platforms: Set<Platform>): CoverLookup {
         val platformIds = platforms.mapNotNull { IGDB_PLATFORM_IDS[it] }.toSet()
         val match = nameCandidates(gameTitle).firstNotNullOfOrNull { candidate ->
             findGame(candidate, platformIds)
@@ -87,7 +55,7 @@ class IgdbClient(
      * overrides where the user already knows which IGDB game to link to. Returns null if no such
      * game exists.
      */
-    fun fetchGame(idOrSlug: String): IgdbGameInfo? {
+    suspend fun fetchGame(idOrSlug: String): IgdbGameInfo? {
         val clause = idOrSlug.toLongOrNull()?.let { "id = $it" } ?: "slug = \"${escape(idOrSlug)}\""
         val game = queryWithRetry("fields id,name,slug,cover.image_id; where $clause;").firstOrNull()
         return game?.let { IgdbGameInfo(it.id.toString(), it.name, it.slug, it.cover?.imageId) }
@@ -95,7 +63,7 @@ class IgdbClient(
 
     // Search [candidate] across all platforms, then rank to prefer the game's own platforms.
     // Returns the best match, or null if none.
-    private fun findGame(candidate: String, platformIds: Set<Int>): IgdbGame? =
+    private suspend fun findGame(candidate: String, platformIds: Set<Int>): IgdbGame? =
         queryWithRetry(searchBody(candidate)).takeIf { it.isNotEmpty() }?.let { bestMatch(it, candidate, platformIds) }
 
     private fun searchBody(name: String): String =
@@ -111,10 +79,10 @@ class IgdbClient(
                 .thenByDescending { it.name.equals(name, ignoreCase = true) },
         ).first()
 
-    private fun queryWithRetry(body: String): List<IgdbGame> {
+    private suspend fun queryWithRetry(body: String): List<IgdbGame> {
         var lastError: IOException? = null
         repeat(MAX_ATTEMPTS) { attempt ->
-            if (attempt > 0) Thread.sleep(RETRY_WAIT_MS)
+            if (attempt > 0) delay(RETRY_WAIT_MS)
             rateLimit()
             try {
                 return query(body)
@@ -126,49 +94,44 @@ class IgdbClient(
     }
 
     private fun query(body: String): List<IgdbGame> {
-        val request = Request.Builder()
-            .url("$IGDB_API_BASE/games")
-            .header("Client-ID", credentials.clientId)
-            .header("Authorization", "Bearer ${ensureToken()}")
-            .post(body.toRequestBody(TEXT_PLAIN))
-            .build()
-        httpClient.newCall(request).execute().use { response ->
-            val payload = response.body.string()
-            if (!response.isSuccessful) throw IOException("IGDB query failed: ${response.code}: $payload")
-            return json.decodeFromString(payload)
-        }
+        val headers = mapOf(
+            "Client-ID" to credentials.clientId,
+            "Authorization" to "Bearer ${ensureToken()}",
+        )
+        val payload = http.post("$IGDB_API_BASE/games", headers, TEXT_PLAIN, body)
+        return json.decodeFromString(payload)
     }
 
     private fun escape(text: String): String = text.replace("\\", "\\\\").replace("\"", "\\\"")
 
     private fun ensureToken(): String {
         val current = cachedToken
-        if (current != null && System.currentTimeMillis() < tokenExpiryMs) return current
+        if (current != null && Clock.System.now().toEpochMilliseconds() < tokenExpiryMs) return current
         return fetchToken()
     }
 
     private fun fetchToken(): String {
-        val body = FormBody.Builder()
-            .add("client_id", credentials.clientId)
-            .add("client_secret", credentials.clientSecret)
-            .add("grant_type", "client_credentials")
-            .build()
-        val request = Request.Builder().url(TWITCH_TOKEN_URL).post(body).build()
-        httpClient.newCall(request).execute().use { response ->
-            val payload = response.body.string()
-            if (!response.isSuccessful) throw IOException("Twitch token request failed: ${response.code}: $payload")
-            val token = json.decodeFromString<TwitchToken>(payload)
-            cachedToken = token.accessToken
-            tokenExpiryMs = System.currentTimeMillis() + (token.expiresIn - TOKEN_BUFFER_SECONDS) * MILLIS_PER_SECOND
-            return token.accessToken
-        }
+        val payload = http.postForm(
+            TWITCH_TOKEN_URL,
+            mapOf(
+                "client_id" to credentials.clientId,
+                "client_secret" to credentials.clientSecret,
+                "grant_type" to "client_credentials",
+            ),
+        )
+        val token = json.decodeFromString<TwitchToken>(payload)
+        cachedToken = token.accessToken
+        tokenExpiryMs = Clock.System.now().toEpochMilliseconds() +
+            (token.expiresIn - TOKEN_BUFFER_SECONDS) * MILLIS_PER_SECOND
+        return token.accessToken
     }
 
     /** Throttle to IGDB's rate limit by spacing successive requests at least [RATE_LIMIT_MS] apart. */
-    private fun rateLimit() {
-        val waitMs = RATE_LIMIT_MS - (System.currentTimeMillis() - lastRequestAtMs)
-        if (waitMs > 0) Thread.sleep(waitMs)
-        lastRequestAtMs = System.currentTimeMillis()
+    private suspend fun rateLimit() {
+        val nowMs = Clock.System.now().toEpochMilliseconds()
+        val waitMs = RATE_LIMIT_MS - (nowMs - lastRequestAtMs)
+        if (waitMs > 0) delay(waitMs)
+        lastRequestAtMs = Clock.System.now().toEpochMilliseconds()
     }
 
     /** Progressively simplified search names: as-is, then without parentheticals, then alnum-only. */
@@ -187,6 +150,7 @@ class IgdbClient(
         const val IGDB_API_BASE = "https://api.igdb.com/v4"
         const val IGDB_IMAGE_BASE = "https://images.igdb.com/igdb/image/upload"
         const val IGDB_IMAGE_SIZE = "t_cover_big_2x"
+        const val TEXT_PLAIN = "text/plain"
 
         // Pulled wider than we need: without a platform `where` filter, platform-correct games must
         // survive in the relevance-ranked page before bestMatch can rank them to the top.
@@ -196,7 +160,6 @@ class IgdbClient(
         const val RETRY_WAIT_MS = 2_000L
         const val TOKEN_BUFFER_SECONDS = 60L
         const val MILLIS_PER_SECOND = 1_000L
-        val TEXT_PLAIN = "text/plain".toMediaType()
         val PARENS_REGEX = Regex("\\s*\\([^)]*\\)")
         val NON_ALNUM_REGEX = Regex("[^a-zA-Z0-9 ]")
         val WHITESPACE_REGEX = Regex("\\s+")
@@ -220,12 +183,6 @@ class IgdbClient(
         )
     }
 }
-
-/**
- * A single IGDB game resolved by id/slug: its numeric [id], [name], URL [slug], and cover image id
- * ([imageId], null if it has no cover).
- */
-data class IgdbGameInfo(val id: String, val name: String, val slug: String, val imageId: String?)
 
 @Serializable
 private data class TwitchToken(

@@ -1,68 +1,58 @@
-package net.sigmabeta.chipbox.cli
+package net.sigmabeta.chipbox.coverart.real
 
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
+import kotlin.time.ExperimentalTime
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import net.sigmabeta.chipbox.coverart.COVER_ART_TTL_DAYS
+import net.sigmabeta.chipbox.coverart.CoverLookup
+import net.sigmabeta.chipbox.coverart.coverArtKey
 import net.sigmabeta.chipbox.models.Platform
-import java.io.File
-import java.util.concurrent.TimeUnit
-
-/**
- * Shared key for cover-art lookups and overrides: a game's title plus its platform set, which
- * together determine which IGDB cover applies. Used by both [CoverArtCache] and [CoverArtOverrides]
- * so an override lines up with the cache entry it supersedes.
- */
-internal fun coverArtKey(title: String, platforms: Set<Platform>): String =
-    title + "|" + platforms.map { it.name }.sorted().joinToString(",")
-
-/**
- * How long a recorded cover-art match stays valid before it's re-queried, in days. Applies both to
- * the [CoverArtCache] json and to the date inside a folder's igdb.txt (see [IgdbLinkFile]), so a
- * match that hasn't been confirmed against IGDB in this long is looked up again — picking up covers
- * IGDB has added since.
- */
-internal const val COVER_ART_TTL_DAYS = 180L
+import okio.FileSystem
+import okio.Path
 
 /**
  * Persistent cache of IGDB cover-art lookups, keyed on the inputs to [IgdbClient.lookupCover] (game
  * title + platform set). Lets repeated runs skip the rate-limited IGDB search API for games already
- * looked up. Stored as a small JSON file under the work dir; entries older than [CACHE_TTL_DAYS] are
+ * looked up. Stored as a small JSON file on [fileSystem]; entries older than [COVER_ART_TTL_DAYS] are
  * treated as misses and re-queried, so titles IGDB adds later eventually get picked up.
  *
- * Thread-safe: the fetch loop reads and writes it while a Ctrl-C shutdown hook may [save] it.
+ * Thread-safe: entries are held in an [AtomicReference] to an immutable map, so the fetch loop reads
+ * and updates them while a Ctrl-C shutdown hook may [save].
  */
-class CoverArtCache(private val file: File) {
+@OptIn(ExperimentalAtomicApi::class, ExperimentalTime::class)
+class CoverArtCache(
+    private val fileSystem: FileSystem,
+    private val file: Path,
+) {
     private val json = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
     }
-    private val lock = Any()
-    private val entries = linkedMapOf<String, CacheEntry>()
-
-    init {
-        if (file.isFile) {
-            runCatching { json.decodeFromString<Map<String, CacheEntry>>(file.readText()) }
-                .getOrNull()
-                ?.let { entries.putAll(it) }
-        }
-    }
+    private val entries = AtomicReference<Map<String, CacheEntry>>(loadFromDisk())
 
     /** Cached lookup for [title]/[platforms], or null on a miss (absent, stale, or malformed). */
-    fun get(title: String, platforms: Set<Platform>): CoverLookup? = synchronized(lock) {
-        entries[keyOf(title, platforms)]?.takeIf { it.isFresh() && it.isValid() }?.toLookup()
-    }
+    fun get(title: String, platforms: Set<Platform>): CoverLookup? =
+        entries.load()[keyOf(title, platforms)]?.takeIf { it.isFresh() && it.isValid() }?.toLookup()
 
     /** Records a lookup result, preserving any previously recorded download URL for this key. */
-    fun recordLookup(title: String, platforms: Set<Platform>, result: CoverLookup) = synchronized(lock) {
+    fun recordLookup(title: String, platforms: Set<Platform>, result: CoverLookup) {
         val key = keyOf(title, platforms)
-        entries[key] = result.toEntry(downloadedUrl = entries[key]?.downloadedUrl)
+        entries.update { it + (key to result.toEntry(downloadedUrl = it[key]?.downloadedUrl)) }
     }
 
     /** Notes that [url]'s bytes are the cover currently on disk for [title]/[platforms]. */
-    fun recordDownload(title: String, platforms: Set<Platform>, url: String) = synchronized(lock) {
+    fun recordDownload(title: String, platforms: Set<Platform>, url: String) {
         val key = keyOf(title, platforms)
-        entries[key] = entries[key]?.copy(downloadedUrl = url) ?: CacheEntry(CacheKind.FOUND, url, url)
+        entries.update {
+            val updated = it[key]?.copy(downloadedUrl = url) ?: CacheEntry(CacheKind.FOUND, url, url)
+            it + (key to updated)
+        }
     }
 
     /**
@@ -70,20 +60,26 @@ class CoverArtCache(private val file: File) {
      * are content-addressed (they embed the image's id), so an unchanged URL means unchanged bytes —
      * the caller can skip re-downloading. Not gated on TTL: the file on disk is valid regardless.
      */
-    fun downloadedUrl(title: String, platforms: Set<Platform>): String? = synchronized(lock) {
-        entries[keyOf(title, platforms)]?.downloadedUrl
-    }
+    fun downloadedUrl(title: String, platforms: Set<Platform>): String? =
+        entries.load()[keyOf(title, platforms)]?.downloadedUrl
 
     /** Persists the current entries to disk. Safe to call more than once. */
-    fun save() = synchronized(lock) {
-        file.parentFile?.mkdirs()
-        file.writeText(json.encodeToString(entries.toMap()))
+    fun save() {
+        file.parent?.let { fileSystem.createDirectories(it) }
+        fileSystem.write(file) { writeUtf8(json.encodeToString(entries.load())) }
+    }
+
+    private fun loadFromDisk(): Map<String, CacheEntry> {
+        if (fileSystem.metadataOrNull(file)?.isRegularFile != true) return emptyMap()
+        return runCatching {
+            json.decodeFromString<Map<String, CacheEntry>>(fileSystem.read(file) { readUtf8() })
+        }.getOrNull() ?: emptyMap()
     }
 
     private fun keyOf(title: String, platforms: Set<Platform>): String = coverArtKey(title, platforms)
 
     private fun CacheEntry.isFresh(): Boolean =
-        System.currentTimeMillis() - epochMillis <= TimeUnit.DAYS.toMillis(COVER_ART_TTL_DAYS)
+        Clock.System.now().toEpochMilliseconds() - epochMillis <= COVER_ART_TTL_DAYS.days.inWholeMilliseconds
 
     private fun CacheEntry.isValid(): Boolean = kind != CacheKind.FOUND || imageId != null
 
@@ -118,6 +114,7 @@ class CoverArtCache(private val file: File) {
 @Serializable
 private enum class CacheKind { FOUND, NO_MATCH, NO_COVER }
 
+@OptIn(ExperimentalTime::class)
 @Serializable
 private data class CacheEntry(
     val kind: CacheKind,
@@ -126,5 +123,5 @@ private data class CacheEntry(
     val igdbId: String? = null,
     val igdbName: String? = null,
     val igdbSlug: String? = null,
-    val epochMillis: Long = System.currentTimeMillis(),
+    val epochMillis: Long = Clock.System.now().toEpochMilliseconds(),
 )

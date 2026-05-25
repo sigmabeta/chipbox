@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.sage.jvm)
-    alias(libs.plugins.kotlin.serialization)
     application
 }
 
@@ -92,10 +91,18 @@ dependencies {
     implementation(libs.sage.common.ui.strings)
     implementation(libs.sqlite.bundled)
     implementation(libs.kotlinx.coroutines.core)
-    // "Get cover art": OkHttp talks to the Twitch token + IGDB search/image endpoints, and
-    // kotlinx-serialization parses their JSON responses.
+    // "Get cover art" + "Organize library": the IGDB cover-art subsystem and the on-disk library
+    // organizer now live in shared modules (cbox/common/coverart, cbox/common/organizer) so the
+    // Android / JVM apps can reuse them too; the CLI just drives them from its Mordant menus.
+    implementation(projects.cbox.common.coverart.api)
+    implementation(projects.cbox.common.coverart.real)
+    implementation(projects.cbox.common.organizer.api)
+    implementation(projects.cbox.common.organizer.real)
+    // GetCoverArt / OverrideCoverArt construct the OkHttpClient + OkHttpCoverArtHttp they hand to the
+    // fetcher / IGDB client; okio Paths + FileSystem.SYSTEM feed the (now multiplatform) cover-art and
+    // organizer modules, whose file I/O is okio rather than java.io.
     implementation(libs.okhttp)
-    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.okio)
     // BluntHatchet — the no-op Hatchet logger the scanner/repository/readers need to construct.
     implementation(libs.sage.common.logging)
 }
