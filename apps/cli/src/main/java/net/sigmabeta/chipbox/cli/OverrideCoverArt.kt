@@ -8,9 +8,22 @@ import com.github.ajalt.mordant.rendering.TextColors.yellow
 import com.github.ajalt.mordant.terminal.Terminal
 import com.github.ajalt.mordant.terminal.prompt
 import kotlinx.coroutines.runBlocking
+import net.sigmabeta.chipbox.coverart.CoverArtOutcome
+import net.sigmabeta.chipbox.coverart.CoverArtResult
+import net.sigmabeta.chipbox.coverart.CoverLookup
+import net.sigmabeta.chipbox.coverart.IgdbCredentials
+import net.sigmabeta.chipbox.coverart.OverrideEntry
+import net.sigmabeta.chipbox.coverart.real.CoverArtCache
+import net.sigmabeta.chipbox.coverart.real.CoverArtConfig
+import net.sigmabeta.chipbox.coverart.real.CoverArtFetcher
+import net.sigmabeta.chipbox.coverart.real.CoverArtHttp
+import net.sigmabeta.chipbox.coverart.real.CoverArtOverrides
+import net.sigmabeta.chipbox.coverart.real.IgdbClient
+import net.sigmabeta.chipbox.coverart.real.OkHttpCoverArtHttp
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
 import okhttp3.OkHttpClient
+import okio.FileSystem
 
 /**
  * "Link a game to an IGDB ID" flow. When the automatic name search picks the wrong game (or none),
@@ -24,7 +37,7 @@ class OverrideCoverArt(
     private val library: ChipboxLibrary,
 ) {
     fun run() {
-        val credentials = CoverArtConfig.load(library.coverArtConfigFile)
+        val credentials = CoverArtConfig.load(FileSystem.SYSTEM, library.coverArtConfigFile)
         val games = if (credentials == null) emptyList() else runBlocking { library.gamesWithTracks() }
         when {
             credentials == null -> reportMissingConfig()
@@ -34,8 +47,8 @@ class OverrideCoverArt(
     }
 
     private fun chooseAndLink(credentials: IgdbCredentials, games: List<Game>) {
-        val overrides = CoverArtOverrides(library.coverArtOverridesFile)
-        val cache = CoverArtCache(library.coverArtCacheFile)
+        val overrides = CoverArtOverrides(FileSystem.SYSTEM, library.coverArtOverridesFile)
+        val cache = CoverArtCache(FileSystem.SYSTEM, library.coverArtCacheFile)
         // Loop back to "Link which game?" after each successful link so several games can be linked in
         // one sitting; the just-linked game drops out of the unlinked list on the next pass.
         do {
@@ -133,8 +146,9 @@ class OverrideCoverArt(
     ): Boolean {
         val httpClient = OkHttpClient()
         try {
-            val igdb = IgdbClient(credentials, httpClient)
-            val info = runCatching { igdb.fetchGame(idOrSlug) }.getOrElse { error ->
+            val http = OkHttpCoverArtHttp(httpClient)
+            val igdb = IgdbClient(credentials, http)
+            val info = runCatching { runBlocking { igdb.fetchGame(idOrSlug) } }.getOrElse { error ->
                 terminal.println(brightRed("IGDB lookup failed: ${error.message}"))
                 return false
             }
@@ -153,7 +167,7 @@ class OverrideCoverArt(
                 else -> {
                     overrides.set(game.title, platforms, OverrideEntry(info.id, info.name, imageId, info.slug))
                     terminal.println(brightGreen("Linked “${game.title}” → IGDB “${info.name}”."))
-                    downloadNow(igdb, overrides, cache, game, httpClient)
+                    downloadNow(igdb, overrides, cache, game, http)
                     true
                 }
             }
@@ -168,9 +182,11 @@ class OverrideCoverArt(
         overrides: CoverArtOverrides,
         cache: CoverArtCache,
         game: Game,
-        httpClient: OkHttpClient,
+        http: CoverArtHttp,
     ) {
-        CoverArtFetcher(igdb, httpClient, cache, overrides).fetch(listOf(game)) { report(it) }
+        runBlocking {
+            CoverArtFetcher(igdb, http, cache, overrides, FileSystem.SYSTEM).fetch(listOf(game)) { report(it) }
+        }
         cache.save()
     }
 
@@ -186,10 +202,10 @@ class OverrideCoverArt(
     }
 
     private fun reportMissingConfig() {
-        CoverArtConfig.writeTemplate(library.coverArtConfigFile)
+        CoverArtConfig.writeTemplate(FileSystem.SYSTEM, library.coverArtConfigFile)
         terminal.println(yellow("IGDB credentials not found."))
         terminal.println("Add your Twitch client_id / client_secret to:")
-        terminal.println("  ${gray(library.coverArtConfigFile.absolutePath)}")
+        terminal.println("  ${gray(library.coverArtConfigFile.toString())}")
         terminal.println("Register an app at ${gray("https://dev.twitch.tv")}, then run this again.")
     }
 

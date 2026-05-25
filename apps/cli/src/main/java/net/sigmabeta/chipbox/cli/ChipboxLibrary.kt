@@ -23,6 +23,8 @@ import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.logging.Hatchet
+import okio.Path
+import okio.Path.Companion.toPath
 import java.io.File
 
 /**
@@ -40,14 +42,15 @@ class ChipboxLibrary(
 ) {
     private val dbFile = File(workDir, DB_NAME)
 
+    // okio Paths: the cover-art module's file I/O is okio (multiplatform), not java.io.
     /** Where "Get cover art" reads IGDB credentials from (created as a template if absent). */
-    val coverArtConfigFile = File(workDir, COVER_ART_CONFIG_NAME)
+    val coverArtConfigFile: Path = File(workDir, COVER_ART_CONFIG_NAME).absolutePath.toPath()
 
     /** Where "Get cover art" persists IGDB lookup results to skip re-querying on later runs. */
-    val coverArtCacheFile = File(workDir, COVER_ART_CACHE_NAME)
+    val coverArtCacheFile: Path = File(workDir, COVER_ART_CACHE_NAME).absolutePath.toPath()
 
     /** Where manual game→IGDB cover-art links are persisted, taking precedence over the search. */
-    val coverArtOverridesFile = File(workDir, COVER_ART_OVERRIDES_NAME)
+    val coverArtOverridesFile: Path = File(workDir, COVER_ART_OVERRIDES_NAME).absolutePath.toPath()
 
     private val database: ChipboxDatabase = Room
         .databaseBuilder<ChipboxDatabase>(name = dbFile.absolutePath)

@@ -6,8 +6,20 @@ import com.github.ajalt.mordant.rendering.TextColors.gray
 import com.github.ajalt.mordant.rendering.TextColors.yellow
 import com.github.ajalt.mordant.terminal.Terminal
 import kotlinx.coroutines.runBlocking
+import net.sigmabeta.chipbox.coverart.CoverArtOutcome
+import net.sigmabeta.chipbox.coverart.CoverArtResult
+import net.sigmabeta.chipbox.coverart.CoverArtSummary
+import net.sigmabeta.chipbox.coverart.IgdbCredentials
+import net.sigmabeta.chipbox.coverart.real.CoverArtCache
+import net.sigmabeta.chipbox.coverart.real.CoverArtConfig
+import net.sigmabeta.chipbox.coverart.real.CoverArtFetcher
+import net.sigmabeta.chipbox.coverart.real.CoverArtOverrides
+import net.sigmabeta.chipbox.coverart.real.CoverArtTally
+import net.sigmabeta.chipbox.coverart.real.IgdbClient
+import net.sigmabeta.chipbox.coverart.real.OkHttpCoverArtHttp
 import net.sigmabeta.chipbox.models.Game
 import okhttp3.OkHttpClient
+import okio.FileSystem
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -25,7 +37,7 @@ class GetCoverArt(
     private val library: ChipboxLibrary,
 ) {
     fun run() {
-        val credentials = CoverArtConfig.load(library.coverArtConfigFile)
+        val credentials = CoverArtConfig.load(FileSystem.SYSTEM, library.coverArtConfigFile)
         if (credentials == null) {
             reportMissingConfig()
             return
@@ -42,8 +54,9 @@ class GetCoverArt(
         terminal.println("Searching IGDB for cover art for ${games.size} game(s)...")
         terminal.println(gray("Press Ctrl-C to stop early and see a summary of what's done."))
         val httpClient = OkHttpClient()
-        val cache = CoverArtCache(library.coverArtCacheFile)
-        val overrides = CoverArtOverrides(library.coverArtOverridesFile)
+        val http = OkHttpCoverArtHttp(httpClient)
+        val cache = CoverArtCache(FileSystem.SYSTEM, library.coverArtCacheFile)
+        val overrides = CoverArtOverrides(FileSystem.SYSTEM, library.coverArtOverridesFile)
         val tally = CoverArtTally()
         val finished = AtomicBoolean(false)
         // On Ctrl-C the JVM runs this before halting; persist the cache and print what's been done so
@@ -57,10 +70,12 @@ class GetCoverArt(
         val runtime = Runtime.getRuntime()
         runtime.addShutdownHook(hook)
         try {
-            val fetcher = CoverArtFetcher(IgdbClient(credentials, httpClient), httpClient, cache, overrides)
-            fetcher.fetch(games) { result ->
-                tally.record(result)
-                synchronized(printLock) { printResult(result) }
+            val fetcher = CoverArtFetcher(IgdbClient(credentials, http), http, cache, overrides, FileSystem.SYSTEM)
+            runBlocking {
+                fetcher.fetch(games) { result ->
+                    tally.record(result)
+                    synchronized(printLock) { printResult(result) }
+                }
             }
             finished.set(true)
             synchronized(printLock) { printSummary(tally.snapshot(), stoppedEarly = false) }
@@ -73,10 +88,10 @@ class GetCoverArt(
     }
 
     private fun reportMissingConfig() {
-        CoverArtConfig.writeTemplate(library.coverArtConfigFile)
+        CoverArtConfig.writeTemplate(FileSystem.SYSTEM, library.coverArtConfigFile)
         terminal.println(yellow("IGDB credentials not found."))
         terminal.println("Add your Twitch client_id / client_secret to:")
-        terminal.println("  ${gray(library.coverArtConfigFile.absolutePath)}")
+        terminal.println("  ${gray(library.coverArtConfigFile.toString())}")
         terminal.println("Register an app at ${gray("https://dev.twitch.tv")}, then run this again.")
     }
 
