@@ -15,6 +15,8 @@ import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
+import okio.FileSystem
+import okio.Path.Companion.toPath
 
 @BindingContainer
 @ContributesTo(AppScope::class)
@@ -33,8 +35,9 @@ object GeneratorModule {
         contentSourceRegistry,
         bufferManager,
         emulatorProvider.emulators,
-        File(context.cacheDir, "playback"),
-        File(context.cacheDir, "pcm-cache"),
+        File(context.cacheDir, "playback").absolutePath.toPath(),
+        File(context.cacheDir, "pcm-cache").absolutePath.toPath(),
+        FileSystem.SYSTEM,
         hatchet,
     )
 

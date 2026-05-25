@@ -12,13 +12,17 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.cache.PcmCacheFormat
 import net.sigmabeta.chipbox.player.cache.PcmCacheKey
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.common.EbuR128
 import net.sigmabeta.chipbox.player.common.isBufferSilent
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.File
-import java.io.RandomAccessFile
+import kotlin.concurrent.Volatile
+import kotlin.time.DurationUnit
+import kotlin.time.TimeSource
+import okio.FileHandle
+import okio.FileSystem
 
 /**
  * Render-ahead [PcmTrackSource]. Owns:
@@ -39,6 +43,7 @@ import java.io.RandomAccessFile
 internal class CachingPcmSource(
     private val emulatorSource: EmulatorPcmSource,
     private val writer: PcmCacheFile.Writer,
+    fileSystem: FileSystem,
     private val track: Track,
     private val key: PcmCacheKey,
     private val hatchet: Hatchet,
@@ -85,10 +90,10 @@ internal class CachingPcmSource(
     @Volatile
     private var lastError: String? = null
 
-    private val readHandle: RandomAccessFile = RandomAccessFile(writer.tempPath, "r")
+    private val readHandle: FileHandle = fileSystem.openReadOnly(writer.tempPath)
 
     private val writerJob: Job = writerScope.launch {
-        val startNanos = System.nanoTime()
+        val writeStart = TimeSource.Monotonic.markNow()
         val scratch = ShortArray(WRITER_BUFFER_FRAMES * 2)
         val zeroBuf = ShortArray(WRITER_BUFFER_FRAMES * 2)
         val silenceTrimFrames = SILENCE_TRIM_SECONDS * emulatorSource.sampleRate
@@ -157,7 +162,7 @@ internal class CachingPcmSource(
                 )
                 writerComplete = true
                 watermark.value = writer.framesWritten
-                logWriteComplete(startNanos)
+                logWriteComplete(writeStart)
                 LoudnessLog.report(hatchet, track.title, measuredLufs, measuredTruePeakDbtp)
                 runCatching { onWriteComplete() }.onFailure {
                     hatchet.w("onWriteComplete callback failed: ${it.message}")
@@ -210,20 +215,22 @@ internal class CachingPcmSource(
             return 0
         }
 
-        val byteCount = available * net.sigmabeta.chipbox.player.cache.PcmCacheFormat.BYTES_PER_FRAME
-        val byteOffset = net.sigmabeta.chipbox.player.cache.PcmCacheFormat.HEADER_SIZE_BYTES.toLong() +
-            cursor * net.sigmabeta.chipbox.player.cache.PcmCacheFormat.BYTES_PER_FRAME
-        val byteBuf = java.nio.ByteBuffer.allocate(byteCount).order(java.nio.ByteOrder.LITTLE_ENDIAN)
-        readHandle.channel.position(byteOffset)
+        val byteCount = available * PcmCacheFormat.BYTES_PER_FRAME
+        val byteOffset = PcmCacheFormat.HEADER_SIZE_BYTES.toLong() +
+            cursor * PcmCacheFormat.BYTES_PER_FRAME
+        val bytes = ByteArray(byteCount)
         var totalRead = 0
         while (totalRead < byteCount) {
-            val n = readHandle.channel.read(byteBuf)
+            val n = readHandle.read(byteOffset + totalRead, bytes, totalRead, byteCount - totalRead)
             if (n < 0) break
             totalRead += n
         }
-        byteBuf.flip()
         val shortsRead = totalRead / 2
-        byteBuf.asShortBuffer().get(buffer, 0, shortsRead)
+        for (i in 0 until shortsRead) {
+            val lo = bytes[i * 2].toInt() and 0xFF
+            val hi = bytes[i * 2 + 1].toInt() and 0xFF
+            buffer[i] = ((hi shl 8) or lo).toShort()
+        }
         val framesRead = shortsRead / 2
         cursor += framesRead.toLong()
         return framesRead
@@ -233,9 +240,9 @@ internal class CachingPcmSource(
         cursor = framePosition.coerceAtLeast(0L)
     }
 
-    private fun logWriteComplete(startNanos: Long) {
+    private fun logWriteComplete(writeStart: TimeSource.Monotonic.ValueTimeMark) {
         val frames = writer.framesWritten
-        val wallSec = (System.nanoTime() - startNanos) / NANOS_PER_SECOND
+        val wallSec = writeStart.elapsedNow().toDouble(DurationUnit.SECONDS)
         val audioSec = if (sampleRate > 0) frames.toDouble() / sampleRate else 0.0
         val ratio = if (wallSec > 0) audioSec / wallSec else 0.0
         hatchet.i(
@@ -296,8 +303,5 @@ internal class CachingPcmSource(
         /** Trailing silence longer than this is dropped from the cache file. Mid-track silent
          *  gaps shorter than this still get persisted so the track plays back in time. */
         private const val SILENCE_TRIM_SECONDS = 5L
-
-        /** Nanoseconds per second, for converting elapsed nanoTime to wall-clock seconds. */
-        private const val NANOS_PER_SECOND = 1_000_000_000.0
     }
 }

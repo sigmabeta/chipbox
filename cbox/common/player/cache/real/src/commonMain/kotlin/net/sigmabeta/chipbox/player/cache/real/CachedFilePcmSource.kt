@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.player.cache.real
 
+import kotlin.concurrent.Volatile
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.sage.logging.Hatchet
 
