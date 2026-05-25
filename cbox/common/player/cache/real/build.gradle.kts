@@ -19,5 +19,13 @@ kotlin {
                 implementation(libs.sage.common.logging)
             }
         }
+
+        named("jvmSharedTest") {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.sage.common.logging)
+            }
+        }
     }
 }
