@@ -4,7 +4,6 @@ import net.sigmabeta.chipbox.models.FADE_LENGTH_MS
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.UnsupportedEncodingException
 
 class NsfReader(private val hatchet: Hatchet) : Reader() {
     @OptIn(ExperimentalStdlibApi::class)
@@ -47,9 +46,6 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
             return tracks
         } catch (iae: IllegalArgumentException) {
             hatchet.w("NSF parse failed: illegal argument — ${iae.message}")
-            return null
-        } catch (e: UnsupportedEncodingException) {
-            hatchet.w("NSF parse failed: unsupported encoding — ${e.message}")
             return null
         }
     }

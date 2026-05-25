@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.readers
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.UnsupportedEncodingException
 
 class SpcReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
@@ -45,9 +44,6 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
             )
         } catch (iae: IllegalArgumentException) {
             hatchet.w("SPC parse failed: illegal argument — ${iae.message}")
-            return null
-        } catch (e: UnsupportedEncodingException) {
-            hatchet.w("SPC parse failed: unsupported encoding — ${e.message}")
             return null
         } catch (e: Exception) {
             hatchet.w("SPC parse failed for $identifier: ${e.message}")
@@ -113,7 +109,7 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
         val buf = bytesAsReader(bytes)
         buf.position(XID6_OFFSET)
         val magic = buf.nextBytes(XID6_MAGIC_SIZE) ?: return null
-        if (!magic.toString(Charsets.US_ASCII).contentEquals(XID6_MAGIC)) return null
+        if (!magic.decodeToString().contentEquals(XID6_MAGIC)) return null
         val chunkSize = buf.nextFourBytesAsInt()
         if (chunkSize <= 0) return null
         val end = (buf.position() + chunkSize).coerceAtMost(bytes.size)
@@ -140,7 +136,7 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
                         buf.nextBytes(pad)
                     }
                     if (type == XID6_TYPE_STRING) {
-                        val str = payload.toString(Charsets.UTF_8)
+                        val str = payload.decodeToString()
                             .substringBefore(0.toChar())
                             .trim()
                         if (str.isNotEmpty()) {

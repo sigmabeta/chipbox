@@ -3,6 +3,8 @@ plugins {
 }
 
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.readers.api"
     }
@@ -15,7 +17,6 @@ kotlin {
                 implementation(projects.cbox.common.models.api)
                 implementation(projects.cbox.common.utils.api)
                 implementation(libs.sage.common.logging)
-                implementation(libs.okio)
             }
         }
 
