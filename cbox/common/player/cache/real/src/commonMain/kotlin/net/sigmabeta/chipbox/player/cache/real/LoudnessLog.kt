@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.player.cache.real
 import net.sigmabeta.chipbox.player.common.NORMALIZATION_TARGET_LUFS
 import net.sigmabeta.chipbox.player.common.NORMALIZATION_TRUE_PEAK_CEILING_DBTP
 import net.sigmabeta.chipbox.player.common.normalizationGain
+import net.sigmabeta.chipbox.utils.formatDecimal
 import net.sigmabeta.sage.logging.Hatchet
 
 /**
@@ -25,14 +26,14 @@ internal object LoudnessLog {
         }
         val gain = normalizationGain(loudnessLufs, truePeakDbtp)
         val peakField = if (truePeakDbtp.isFinite()) {
-            "${"%.1f".format(truePeakDbtp)} dBTP"
+            "${formatDecimal(truePeakDbtp, 1)} dBTP"
         } else {
             "—"
         }
         hatchet.i(
-            "Track $trackTitle: ${"%.1f".format(loudnessLufs)} LUFS, $peakField. " +
-                "Multiply by ${"%.3f".format(gain)}x to reach " +
-                "${"%.0f".format(NORMALIZATION_TARGET_LUFS)} LUFS."
+            "Track $trackTitle: ${formatDecimal(loudnessLufs, 1)} LUFS, $peakField. " +
+                "Multiply by ${formatDecimal(gain, 3)}x to reach " +
+                "${formatDecimal(NORMALIZATION_TARGET_LUFS, 0)} LUFS."
         )
     }
 }

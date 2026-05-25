@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.player.cache.real
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.ensureActive
@@ -17,6 +16,8 @@ import net.sigmabeta.chipbox.player.cache.PcmCacheKey
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.common.EbuR128
 import net.sigmabeta.chipbox.player.common.isBufferSilent
+import net.sigmabeta.chipbox.utils.formatDecimal
+import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
 import kotlin.concurrent.Volatile
 import kotlin.time.DurationUnit
@@ -49,7 +50,7 @@ internal class CachingPcmSource(
     private val hatchet: Hatchet,
     private val onWriteComplete: () -> Unit = {},
     private val onWriteAbort: () -> Unit = {},
-    dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    dispatcher: CoroutineDispatcher = ioDispatcher,
 ) : PcmTrackSource {
 
     override val sampleRate: Int = emulatorSource.sampleRate
@@ -247,8 +248,8 @@ internal class CachingPcmSource(
         val ratio = if (wallSec > 0) audioSec / wallSec else 0.0
         hatchet.i(
             "Cache write complete for ${track.title}: $frames frames " +
-                "(${"%.1f".format(audioSec)}s audio) in ${"%.2f".format(wallSec)}s " +
-                "(${"%.1f".format(ratio)}x realtime)."
+                "(${formatDecimal(audioSec, 1)}s audio) in ${formatDecimal(wallSec, 2)}s " +
+                "(${formatDecimal(ratio, 1)}x realtime)."
         )
     }
 
