@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.repository.memory
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -26,10 +25,10 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.memory.models.MemoryArtist
 import net.sigmabeta.chipbox.repository.memory.models.MemoryGame
 import net.sigmabeta.chipbox.repository.memory.models.MemoryTrack
-import java.util.Locale
+import net.sigmabeta.chipbox.utils.ioDispatcher
 
 class MemoryRepository(
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = ioDispatcher
 ) : Repository {
     private val repositoryScope = CoroutineScope(dispatcher)
 
@@ -92,7 +91,7 @@ class MemoryRepository(
 
                 val artists = artistsByName
                     .values
-                    .sortedBy { it.name.lowercase(Locale.getDefault()) }
+                    .sortedBy { it.name.lowercase() }
                     .map { it.toArtist(withGames, withTracks) }
                 val data = if (artists.isNotEmpty()) {
                     Data.Succeeded(artists)

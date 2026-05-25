@@ -2,10 +2,13 @@ plugins {
     alias(libs.plugins.sage.kmp)
 }
 
-// Room entities. Room 2.7+ is multiplatform, so the `@Entity` / `@PrimaryKey`
-// annotations and `androidx.room.*` types here build for both the android and
-// jvm variants from one module.
+// Room entities — annotations only (@Entity/@PrimaryKey/@ColumnInfo/@Index). Those live in
+// room-common, which (unlike room-runtime) publishes a Kotlin/JS variant, so this module builds
+// for android, jvm AND the js() purity gate. room-compiler still reads the annotations from
+// database/real, which keeps the (jvm/android/native-only) room-runtime.
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.entities.api"
     }
@@ -13,7 +16,7 @@ kotlin {
     sourceSets {
         named("commonMain") {
             dependencies {
-                api(libs.room.runtime)
+                api(libs.room.common)
             }
         }
     }
