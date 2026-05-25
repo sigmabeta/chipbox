@@ -14,12 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
-import net.sigmabeta.chipbox.strings.api.id
+import net.sigmabeta.chipbox.strings.real.rememberChipboxStringProvider
 import net.sigmabeta.chipbox.common.ui.components.api.Content
 import net.sigmabeta.chipbox.ui.theme.api.AppTheme
 import net.sigmabeta.sage.ui.perf.DURATION_THRESHOLD_ERROR_SCREEN_PREVIEW
@@ -37,7 +35,6 @@ import net.sigmabeta.sage.list.ListStateActual
 import net.sigmabeta.sage.list.WidthClass
 import net.sigmabeta.sage.logging.BasicHatchet
 import net.sigmabeta.sage.ui.StringProvider
-import net.sigmabeta.sage.ui.strings.AndroidStringProvider
 
 /**
  * Renders a screen's [ListState] through the real SAGE list pipeline, exactly as the app's
@@ -53,11 +50,10 @@ fun ListScreenPreview(
     syntheticWidthClass: WidthClass,
 ) {
     val actionSink = ActionSink { }
-    val stringProvider =
-        AndroidStringProvider(LocalContext.current.resources) { (it as ChipboxStringId).id() }
+    val stringProvider = rememberChipboxStringProvider()
     val state = screenState.toActual(stringProvider)
 
-    AppTheme(forceDark = darkTheme) {
+    AppTheme(darkTheme = darkTheme) {
         CompositionLocalProvider(
             LocalInspectionMode provides true,
             LocalLogger provides BasicHatchet(),
@@ -99,10 +95,9 @@ fun ScreenPreview(
     screenName: String = "Screen",
     content: @Composable (StringProvider) -> Unit,
 ) {
-    val stringProvider =
-        AndroidStringProvider(LocalContext.current.resources) { (it as ChipboxStringId).id() }
+    val stringProvider = rememberChipboxStringProvider()
 
-    AppTheme(forceDark = darkTheme) {
+    AppTheme(darkTheme = darkTheme) {
         CompositionLocalProvider(
             LocalInspectionMode provides true,
             LocalLogger provides BasicHatchet(),

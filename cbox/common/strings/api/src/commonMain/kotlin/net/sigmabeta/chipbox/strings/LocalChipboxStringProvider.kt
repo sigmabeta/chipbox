@@ -7,10 +7,10 @@ import net.sigmabeta.sage.ui.StringProvider
 
 /**
  * Composable access to the chipbox [StringProvider]. Provided once near the root of each
- * platform's Compose tree — `MainActivity` on Android (Metro-injected `StringProvider`),
- * `DesktopMain` on the JVM target (graph-injected `JvmStringProvider`). Composables that
- * need a string resolve it via [text] / [text1] / [text2] / [textInt] instead of the
- * Android-only `stringResource` factory.
+ * platform's Compose tree — `MainActivity` on Android and `DesktopMain` on the JVM target both
+ * inject the Metro-graph `StringProvider` (a `ChipboxStringProvider` backed by the single
+ * multiplatform string source). Composables resolve a string via [text] / [text1] / [text2] /
+ * [textInt] instead of the Android-only `stringResource` factory.
  */
 val LocalChipboxStringProvider = staticCompositionLocalOf<StringProvider> {
     error(

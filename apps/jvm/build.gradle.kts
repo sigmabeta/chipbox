@@ -342,7 +342,8 @@ dependencies {
     implementation(projects.cbox.common.player.emulators.vgm.real)
     implementation(projects.cbox.common.player.emulators.vgmstream.real)
     implementation(projects.cbox.common.contentsource.api)
-    implementation(projects.cbox.common.strings.api)
+    implementation(projects.cbox.common.contentsource.file.real)
+    implementation(projects.cbox.common.strings.real)
     implementation(projects.cbox.common.debug.api)
     implementation(projects.cbox.common.debug.real)
     implementation(projects.cbox.common.settings.api)
@@ -367,8 +368,9 @@ dependencies {
     // for the Metro graph; without :di the binding isn't on the classpath and feature VMs
     // that take a Director fail to resolve.
     implementation(projects.cbox.common.player.director.di)
-    // SourceDataLineSpeaker extends the Speaker base class — was transitive via
-    // :player:speaker:fake before the CLI WAV-output mode was removed. Explicit now.
+    // SourceDataLineSpeaker (the JVM/desktop Speaker) now lives in the shared player:speaker:real
+    // module's jvmMain alongside the Android AudioTrack impl in androidMain.
+    implementation(projects.cbox.common.player.speaker.real)
     implementation(projects.cbox.common.player.speaker.api)
     implementation(projects.cbox.common.player.buffer.real)
     implementation(projects.cbox.common.player.common.api)

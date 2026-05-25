@@ -39,13 +39,12 @@ kotlin {
                 // preview surface throws ClassNotFoundException. KMP androidLibrary has no
                 // debug-only source set, so it rides on androidMain alongside the annotations.
                 implementation(libs.androidx.compose.ui.tooling)
-                // AndroidStringProvider + the ChipboxStringId.id() → R.string mapping: the preview
-                // wrapper (ChipboxPreview) installs an Android-resource-backed StringProvider into
-                // LocalChipboxStringProvider so composables that read the local (M9 slice 6c) render
-                // in @Preview / Paparazzi the same way MainActivity wires them at runtime. Both are
-                // androidMain-only (preview surface), so the JVM variant is unaffected.
-                implementation(libs.sage.android.ui.strings)
-                implementation(projects.cbox.android.strings.api)
+                // rememberChipboxStringProvider() loads the single multiplatform string source
+                // (composeResources) through the @Composable stringResource API — the same machinery
+                // Font(FontResource) already uses under Paparazzi — so the preview wrapper
+                // (ChipboxPreview) installs a real StringProvider into LocalChipboxStringProvider,
+                // letting M9-slice-6c composables render in @Preview / Paparazzi as at runtime.
+                implementation(projects.cbox.common.strings.real)
                 // BitmapGenerator (android.graphics gradient) for the inspection-mode FakeImage
                 // actual — reused so recorded Paparazzi goldens stay byte-identical to pre-6f.
                 implementation(projects.cbox.android.images.api)

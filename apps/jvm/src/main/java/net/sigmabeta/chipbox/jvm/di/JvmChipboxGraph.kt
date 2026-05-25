@@ -7,8 +7,8 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import java.io.File
-import net.sigmabeta.chipbox.jvm.LocalFileContentSource
-import net.sigmabeta.chipbox.jvm.SourceDataLineSpeaker
+import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
+import net.sigmabeta.chipbox.player.speaker.real.SourceDataLineSpeaker
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.player.speaker.Speaker

@@ -8,5 +8,5 @@ android {
 
 dependencies {
     api(projects.cbox.android.contentsource.file.api)
-    api(projects.cbox.android.contentsource.file.real)
+    api(projects.cbox.common.contentsource.file.real)
 }

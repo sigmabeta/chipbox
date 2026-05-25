@@ -15,7 +15,7 @@ import java.nio.file.StandardCopyOption
  * `$destination/Invalid Folders/$game-$index/` instead. [commit] performs the moves on disk.
  */
 class LibraryOrganizer(
-    private val strings: StringProvider = CliStringProvider,
+    private val strings: StringProvider = cliStringProvider,
 ) {
     fun plan(games: List<Game>, destination: File, libraryLocations: Set<String>): List<FolderMove> {
         val roots = libraryLocations.mapNotNull { canonicalOrNull(File(it)) }.toSet()

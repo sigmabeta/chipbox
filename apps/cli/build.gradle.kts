@@ -80,11 +80,15 @@ dependencies {
     implementation(projects.cbox.common.scanner.api)
     implementation(projects.cbox.common.repository.api)
     implementation(projects.cbox.common.contentsource.api)
+    // LocalFileContentSource (JVM file walker) now lives in the shared contentsource:file:real
+    // module's jvmMain alongside the Android SAF impl in androidMain.
+    implementation(projects.cbox.common.contentsource.file.real)
     implementation(projects.cbox.common.readers.api)
     implementation(projects.cbox.common.models.api)
-    // Platform display names: ChipboxStringId (the Platform.stringId values) + the StringProvider
-    // interface the CLI's CliStringProvider implements.
-    implementation(projects.cbox.common.strings.api)
+    // Platform/section display names: ChipboxStringProvider + loadChipboxStrings() preload the
+    // single multiplatform string source (composeResources); StringProvider is the interface the
+    // menus consume. strings.real exposes strings.api (ChipboxStringId / Platform.stringId) via api().
+    implementation(projects.cbox.common.strings.real)
     implementation(libs.sage.common.ui.strings)
     implementation(libs.sqlite.bundled)
     implementation(libs.kotlinx.coroutines.core)
