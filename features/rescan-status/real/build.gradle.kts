@@ -8,6 +8,8 @@ plugins {
 // serves both the Android and JVM leaf targets — there's no platform-specific UI here (unlike the
 // folder picker), so no per-platform split is needed.
 kotlin {
+    js { nodejs() }
+
     sourceSets {
         named("commonMain") {
             dependencies {
@@ -18,12 +20,10 @@ kotlin {
                 implementation(projects.cbox.common.strings.api)
                 // SourceInfo for the game cover art on each event row.
                 implementation(libs.sage.common.images)
-            }
-        }
-        named("jvmSharedMain") {
-            dependencies {
+
+                // Scanner-driven view model + GameDetail route key — scanner/api is now KMP, so
+                // the view model + route live in commonMain (no jvmShared split needed).
                 implementation(projects.cbox.common.scanner.api)
-                // GameDetail route key — tapping an added/updated game opens its detail screen.
                 implementation(projects.features.gameDetail.api)
             }
         }

@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.features.rescanstatus
+package net.sigmabeta.chipbox.features.managelibrary
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -6,11 +6,13 @@ import dev.zacsweers.metrox.viewmodel.metroViewModel
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListEntry
 
+// JS is an enforcement-only purity target with no folder picker (and no runtime DI graph), so the
+// actual just wires the view model + list entry and forwards every event unchanged.
 @Composable
-fun RescanStatusRoute(
+actual fun ManageLibraryRoute(
     onEvent: (ChipboxEvent) -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier,
 ) {
-    val viewModel: RescanStatusViewModel = metroViewModel()
+    val viewModel: ManageLibraryViewModel = metroViewModel()
     ChipboxListEntry(viewModel, onEvent, modifier)
 }

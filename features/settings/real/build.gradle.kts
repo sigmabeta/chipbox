@@ -2,16 +2,16 @@ plugins {
     alias(libs.plugins.sage.feature.real)
 }
 
-// Source-set placement:
-//   - SettingsViewModel.kt → src/main/java (= jvmSharedMain). Uses `java.time.*` for the build-
-//     date formatter; commonMain would require kotlinx-datetime — out of scope here.
-//   - SettingsRoute.kt → src/androidMain/kotlin. Owns the SAF folder picker
-//     (`rememberLauncherForActivityResult` + `ActivityResultContracts.OpenDocumentTree`) and
-//     consumes ChipboxListEntry which is still androidMain (M9 slice 6 of docs/kmp-migration.md
-//     promotes it). Desktop gets its own route in apps/jvm.
+// SettingsViewModel is commonMain now (its deps are all KMP); the build-date java.time formatting
+// became the formatLongDate expect/actual (jvm java.time + jsMain stub). SettingsRoute stays a
+// commonMain `expect` with platform actuals for the folder picker behind ChipboxEvent.PickFolder:
+// androidMain (SAF OpenDocumentTree), jvmMain (Swing JFileChooser), and an enforcement-only jsMain
+// stub that just forwards events.
 kotlin {
+    js { nodejs() }
+
     sourceSets {
-        named("jvmSharedMain") {
+        named("commonMain") {
             dependencies {
                 api(projects.features.settings.api)
 

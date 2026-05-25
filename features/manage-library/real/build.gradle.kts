@@ -2,14 +2,13 @@ plugins {
     alias(libs.plugins.sage.feature.real)
 }
 
-// Source-set placement mirrors features/settings/real:
-//   - ManageLibraryState / ManageLibraryAction → commonMain (pure renderer + action types).
-//   - ManageLibraryViewModel → src/main/java (= jvmSharedMain). Depends on LibrarySource from
-//     contentsource.api, which is a JVM-only module and so can't be a commonMain dependency.
-//   - ManageLibraryRoute → commonMain `expect` with androidMain (SAF OpenDocumentTree) and
-//     jvmMain (Swing JFileChooser) actuals, since the folder picker for ChipboxEvent.PickFolder
-//     is platform-specific.
+// ManageLibraryState/Action + the ViewModel are commonMain (contentsource/scanner/rescanStatus
+// are all KMP now). ManageLibraryRoute is a commonMain `expect` with platform actuals for the
+// folder picker behind ChipboxEvent.PickFolder: androidMain (SAF OpenDocumentTree), jvmMain
+// (Swing JFileChooser), and an enforcement-only jsMain stub that just forwards events.
 kotlin {
+    js { nodejs() }
+
     sourceSets {
         named("commonMain") {
             dependencies {
@@ -18,10 +17,7 @@ kotlin {
                 implementation(projects.cbox.common.ui.list.api)
                 implementation(projects.cbox.common.appcomm.api)
                 implementation(projects.cbox.common.strings.api)
-            }
-        }
-        named("jvmSharedMain") {
-            dependencies {
+
                 implementation(projects.cbox.common.contentsource.api)
                 // Adding a folder starts a scan and opens the rescan-status screen.
                 implementation(projects.cbox.common.scanner.api)
