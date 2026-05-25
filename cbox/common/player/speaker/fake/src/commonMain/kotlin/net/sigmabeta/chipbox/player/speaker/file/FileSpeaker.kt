@@ -1,12 +1,12 @@
 package net.sigmabeta.chipbox.player.speaker.file
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.common.BYTES_PER_SAMPLE
 import net.sigmabeta.chipbox.player.common.CHANNELS_STEREO
 import net.sigmabeta.chipbox.player.speaker.Speaker
+import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
 import okio.Buffer
 import okio.BufferedSink
@@ -28,7 +28,7 @@ class FileSpeaker(
     private val fileSystem: FileSystem,
     hatchet: Hatchet,
     bufferManager: ConsumerBufferManager,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = ioDispatcher
 ) : Speaker(bufferManager, hatchet, dispatcher) {
     private var bytesWritten = 0
 

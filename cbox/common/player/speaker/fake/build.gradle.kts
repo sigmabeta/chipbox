@@ -3,6 +3,8 @@ plugins {
 }
 
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.player.speaker.fake"
     }
@@ -12,6 +14,7 @@ kotlin {
             dependencies {
                 api(projects.cbox.common.player.speaker.api)
 
+                implementation(projects.cbox.common.utils.api)
                 implementation(libs.sage.common.logging)
                 api(libs.okio)
             }
