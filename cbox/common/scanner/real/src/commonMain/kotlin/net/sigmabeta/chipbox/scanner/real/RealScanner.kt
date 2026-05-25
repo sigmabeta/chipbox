@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.scanner.real
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -20,7 +19,7 @@ import net.sigmabeta.chipbox.readers.deriveMetaFromFilename
 import net.sigmabeta.chipbox.readers.PsfTagInfo
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.readers.isPsfFamily
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
+import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProber
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
@@ -29,11 +28,12 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
+import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.File
-import java.security.MessageDigest
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicInteger
+import okio.ByteString.Companion.toByteString
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.ExperimentalTime
 import kotlin.time.TimeSource
 
@@ -44,12 +44,14 @@ import kotlin.time.TimeSource
  * [LibrarySource] / [LibraryFileInfo] interfaces so both the Android (SAF) and JVM
  * (`java.io.File`) targets share this same code.
  */
+@OptIn(ExperimentalAtomicApi::class)
 class RealScanner(
     private val repository: Repository,
     private val librarySource: LibrarySource,
     private val readers: Readers,
+    private val vgmstreamProbe: VgmstreamProber,
     private val hatchet: Hatchet,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    dispatcher: CoroutineDispatcher = ioDispatcher,
 ) : Scanner(dispatcher) {
 
     // Scan work spans coroutine suspension points, so a trace section's begin and end can land on
@@ -57,9 +59,19 @@ class RealScanner(
     // We use `traceAsync` instead, which needs a cookie that's unique across any same-named
     // sections open at once; this monotonic counter supplies one. The purely in-memory parse calls
     // (no suspension) stay on `trace`.
-    private val traceCookies = AtomicInteger(0)
+    private val traceCookies = AtomicInt(0)
 
-    private fun nextCookie() = traceCookies.incrementAndGet()
+    private fun nextCookie() = traceCookies.fetchAndAdd(1)
+
+    // Thread-safe add to the shared seen-folders set (folders scan in parallel). CAS loop over an
+    // immutable Set — the multiplatform stand-in for ConcurrentHashMap.newKeySet().
+    private fun AtomicReference<Set<String>>.addKey(key: String) {
+        while (true) {
+            val current = load()
+            if (key in current) return
+            if (compareAndSet(current, current + key)) return
+        }
+    }
 
     // How many folders to scan concurrently. Concurrency is a big win — the work is dominated by
     // SAF binder-IPC latency — but it's bounded above by the externalstorage provider's binder pool
@@ -67,7 +79,7 @@ class RealScanner(
     // bound reads; the clamp keeps weak devices from thrashing and many-core devices from
     // oversubscribing the SAF provider, which is the real ceiling regardless of cores. Tracing on a
     // 6-core device put the sweet spot at 8 (= 6 + 2); 16 oversubscribed both and ran ~11% slower.
-    private val scanParallelism = (Runtime.getRuntime().availableProcessors() + CORE_HEADROOM)
+    private val scanParallelism = (availableProcessors() + CORE_HEADROOM)
         .coerceIn(MIN_PARALLELISM, MAX_PARALLELISM)
 
     @OptIn(ExperimentalTime::class)
@@ -98,11 +110,11 @@ class RealScanner(
         // (same paths, sizes, mtimes) is skipped without any reads or parsing.
         val snapshot = repository.folderSnapshots()
         // Folder ids that produced a game this scan — the "kept" set for the prune sweep below.
-        val seenFolderKeys = ConcurrentHashMap.newKeySet<String>()
+        val seenFolderKeys = AtomicReference<Set<String>>(emptySet())
         // Running totals, so we emit live Scanning progress as each folder completes.
-        val gamesFound = AtomicInteger(0)
-        val tracksFound = AtomicInteger(0)
-        val tracksFailed = AtomicInteger(0)
+        val gamesFound = AtomicInt(0)
+        val tracksFound = AtomicInt(0)
+        val tracksFailed = AtomicInt(0)
         // Folders are independent (each scanGroup has its own metadata + tag caches), and most
         // of a scan is spent blocked on SAF binder IPC for file reads. Process several folders
         // at once so those waits overlap and parsing spreads across cores — bounded so we don't
@@ -116,9 +128,9 @@ class RealScanner(
                             emitState(
                                 ScannerState.Scanning(
                                     scanStart.elapsedNow().inWholeSeconds.toInt(),
-                                    gamesFound.addAndGet(progress.gamesFound),
-                                    tracksFound.addAndGet(progress.tracksFound),
-                                    tracksFailed.addAndGet(progress.tracksFailed),
+                                    gamesFound.addAndFetch(progress.gamesFound),
+                                    tracksFound.addAndFetch(progress.tracksFound),
+                                    tracksFailed.addAndFetch(progress.tracksFailed),
                                 )
                             )
                         }
@@ -127,7 +139,7 @@ class RealScanner(
         }
         // Reconcile deletions: drop games whose folder yielded nothing this scan (cascading
         // their tracks/joins) and any artists left without tracks. Each removed game becomes an event.
-        val removed = traceAsync(TRACE_PRUNE, nextCookie()) { repository.pruneGames(seenFolderKeys) }
+        val removed = traceAsync(TRACE_PRUNE, nextCookie()) { repository.pruneGames(seenFolderKeys.load()) }
         removed.forEach { emitEvent(ScannerEvent.GameRemoved(it)) }
 
         val duration = scanStart.elapsedNow()
@@ -153,20 +165,20 @@ class RealScanner(
         folderId: String,
         group: List<LibraryFileInfo>,
         snapshot: Map<String, FolderSnapshot>,
-        seenFolderKeys: MutableSet<String>,
+        seenFolderKeys: AtomicReference<Set<String>>,
     ): Progress {
         val sorted = group.sortedBy { it.name }
         val signature = folderSignature(sorted)
         val known = snapshot[folderId]
         if (known != null && known.signature == signature) {
             hatchet.d("Folder $folderId unchanged — skipping ${group.size} file(s).")
-            seenFolderKeys.add(folderId)
+            seenFolderKeys.addKey(folderId)
             return Progress(1, known.trackCount, 0)
         }
         hatchet.d("Scanning folder $folderId (${group.size} file(s)).")
         return traceAsync(TRACE_SCAN_GROUP, nextCookie()) {
             scanGroup(folderId, sorted, signature)
-        }.also { if (it.gamesFound > 0) seenFolderKeys.add(folderId) }
+        }.also { if (it.gamesFound > 0) seenFolderKeys.addKey(folderId) }
     }
 
     // [signature] is the folder's precomputed hash (see [folderSignature]); the caller already
@@ -242,7 +254,7 @@ class RealScanner(
             if (reader == null) {
                 // No dedicated chiptune reader — fall back to vgmstream for streamed-audio formats
                 // (ADX, HCA, DSP/BRSTM, STRM, ...). Checked last so the readers above win.
-                if (!VgmstreamProbe.isSupported(ext)) {
+                if (!vgmstreamProbe.isSupported(ext)) {
                     hatchet.v("No reader for extension '$ext' — skipping ${file.name}.")
                     continue
                 }
@@ -393,9 +405,7 @@ class RealScanner(
         val joined = files
             .sortedBy { it.identifier }
             .joinToString("\n") { "${it.identifier}|${it.sizeBytes}|${it.lastModifiedMs}" }
-        return MessageDigest.getInstance("SHA-256")
-            .digest(joined.encodeToByteArray())
-            .joinToString("") { byte -> "%02x".format(byte.toInt() and BYTE_MASK) }
+        return joined.encodeToByteArray().toByteString().sha256().hex()
     }
 
     // Streamed-audio path: vgmstream decodes by filesystem path and keys on the extension, so we
@@ -410,29 +420,23 @@ class RealScanner(
             return null
         }
 
-        val temp = File.createTempFile("vgmprobe_", ".$ext")
-        return try {
-            temp.writeBytes(bytes)
-            val subsongs = trace("$TRACE_READ_PREFIX$ext") { VgmstreamProbe.probe(temp.absolutePath) }
-            if (subsongs.isEmpty()) {
-                hatchet.v("vgmstream did not recognise ${file.name}.")
-                emptyList()
-            } else {
-                subsongs.map { sub ->
-                    RawTrack(
-                        file.identifier,
-                        "",
-                        sub.streamName.ifBlank { TAG_UNKNOWN },
-                        TAG_UNKNOWN,
-                        TAG_UNKNOWN,
-                        sub.lengthMs,
-                        sub.subsong,
-                        0L,
-                    ).copy(source = librarySource.sourceId, extension = ext)
-                }
+        val subsongs = trace("$TRACE_READ_PREFIX$ext") { vgmstreamProbe.probe(bytes, ext) }
+        return if (subsongs.isEmpty()) {
+            hatchet.v("vgmstream did not recognise ${file.name}.")
+            emptyList()
+        } else {
+            subsongs.map { sub ->
+                RawTrack(
+                    file.identifier,
+                    "",
+                    sub.streamName.ifBlank { TAG_UNKNOWN },
+                    TAG_UNKNOWN,
+                    TAG_UNKNOWN,
+                    sub.lengthMs,
+                    sub.subsong,
+                    0L,
+                ).copy(source = librarySource.sourceId, extension = ext)
             }
-        } finally {
-            temp.delete()
         }
     }
 
@@ -516,7 +520,6 @@ class RealScanner(
         private const val TAG_UNKNOWN = "Unknown"
         private const val MAX_LIB_DEPTH = 8
         private const val DEFAULT_LENGTH_MS = 2L * 60 * 1000 + 30 * 1000
-        private const val BYTE_MASK = 0xFF
 
         // Bounds for [scanParallelism]; see the comment there. MAX is the traced ceiling (going
         // past it oversubscribes the SAF provider); MIN keeps low-core devices usefully concurrent

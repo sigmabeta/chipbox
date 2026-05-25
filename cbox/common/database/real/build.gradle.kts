@@ -16,6 +16,7 @@ kotlin {
     sourceSets {
         named("jvmSharedMain") {
             dependencies {
+                api(projects.cbox.common.database.api)
                 api(projects.cbox.common.entities.api)
                 api(libs.room.runtime)
                 // Note: dropped `libs.room.ktx` (Android-only artifact); Room

@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
@@ -55,7 +56,15 @@ class ChipboxLibrary(
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 
-    private val repository: Repository = DatabaseRepository(database, hatchet)
+    private val repository: Repository = DatabaseRepository(
+        database.artistDao(),
+        database.gameDao(),
+        database.trackDao(),
+        database.gameArtistDao(),
+        database.trackArtistDao(),
+        database.searchHistoryDao(),
+        hatchet,
+    )
 
     // Saved library locations persist across runs: LocalFileContentSource reads this file when
     // constructed and rewrites it whenever a location is added, so each run adds to the saved
@@ -63,7 +72,7 @@ class ChipboxLibrary(
     // are no longer present.
     private val contentSource = LocalFileContentSource(File(workDir, LOCATIONS_NAME))
 
-    private val scanner = RealScanner(repository, contentSource, Readers(hatchet), hatchet)
+    private val scanner = RealScanner(repository, contentSource, Readers(hatchet), VgmstreamProbe, hatchet)
 
     /** Adds [folder] to the saved library locations (persisted across runs; deduplicated). */
     fun addLibraryFolder(folder: File) = contentSource.addLocation(folder)
