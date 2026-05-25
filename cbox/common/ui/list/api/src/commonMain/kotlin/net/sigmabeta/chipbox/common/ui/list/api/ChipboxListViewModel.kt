@@ -23,8 +23,8 @@ import net.sigmabeta.sage.ui.StringProvider
 
 /**
  * Base ViewModel for any Chipbox screen rendered through [ChipboxListEntry] (i.e. a SAGE
- * [ListState] driving either [net.sigmabeta.sage.android.ui.list.ListScreen] or
- * [net.sigmabeta.sage.android.ui.list.GridScreen]).
+ * [ListState] driving either [net.sigmabeta.sage.ui.list.ListScreen] or
+ * [net.sigmabeta.sage.ui.list.GridScreen]).
  *
  * Subclasses provide their concrete [ListState] subtype as [S], an initial instance, and a
  * [handleAction] implementation. They mutate state via [updateState] and emit user intent by

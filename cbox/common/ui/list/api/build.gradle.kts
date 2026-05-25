@@ -24,7 +24,7 @@ kotlin {
                 api(projects.cbox.common.appcomm.api)
                 api(projects.cbox.common.ui.vm.api)
 
-                implementation(libs.sage.android.ui.list)
+                implementation(libs.sage.common.ui.listScreens)
                 implementation(projects.cbox.common.ui.chrome.api)
                 implementation(projects.cbox.common.ui.components.api)
             }

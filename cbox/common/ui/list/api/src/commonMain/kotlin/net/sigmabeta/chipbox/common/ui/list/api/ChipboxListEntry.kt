@@ -11,8 +11,8 @@ import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
 import net.sigmabeta.chipbox.common.ui.components.api.Content
-import net.sigmabeta.sage.android.ui.list.GridScreen
-import net.sigmabeta.sage.android.ui.list.ListScreen
+import net.sigmabeta.sage.ui.list.GridScreen
+import net.sigmabeta.sage.ui.list.ListScreen
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.list.ColumnType

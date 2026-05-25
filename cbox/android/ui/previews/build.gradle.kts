@@ -15,7 +15,7 @@ dependencies {
     implementation(projects.cbox.common.models.api)
 
     implementation(libs.sage.common.list)
-    implementation(libs.sage.android.ui.list)
+    implementation(libs.sage.common.ui.listScreens)
     implementation(libs.sage.common.appcomm)
     implementation(libs.sage.common.ui.strings)
     implementation(libs.sage.android.ui.strings)
