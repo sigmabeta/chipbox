@@ -118,6 +118,19 @@ internal object ChipboxTabsScreen : Screen {
             }
         }
 
+        // Peripheral "back" inputs (Escape, Backspace, mouse back button) feed the same handler as
+        // the TopAppBar up arrow and Android system back. Keyboard keys arrive as a flow from the
+        // platform's window/activity-level handler (see [LocalPlatformBackKeys]) so they work any
+        // time the window is focused; the mouse back button is handled in-composition below (pointer
+        // events don't need focus).
+        val onBack = remember(appActionSink) { { appActionSink.sendAction(SageAction.DeviceBack) } }
+        val platformBackKeys = LocalPlatformBackKeys.current
+        if (platformBackKeys != null) {
+            LaunchedEffect(platformBackKeys, onBack) {
+                platformBackKeys.collect { onBack() }
+            }
+        }
+
         val titleBar = LocalTitleBarController.current.state
         val chrome = LocalChromeController.current.state
 
@@ -141,7 +154,11 @@ internal object ChipboxTabsScreen : Screen {
         // `LocalConfiguration.current.screenWidthDp` (Android-only) — the latter has no
         // analog on the JVM/desktop target. The reported `maxWidth` is the available width
         // inside this composable, which is the full window once `Box` fills it.
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .backMouseButton(onBack),
+        ) {
             val layoutType = if (maxWidth >= NAV_RAIL_MIN_WIDTH) {
                 NavigationSuiteType.NavigationRail
             } else {

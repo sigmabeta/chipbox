@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,6 +17,7 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
+import kotlinx.coroutines.flow.MutableSharedFlow
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.services.api.ChipboxPlaybackService
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
@@ -23,6 +25,11 @@ import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 class MainActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
+
+    // Hardware-keyboard back keys (Escape/Backspace) for parity with desktop. onKeyDown is reached
+    // only when the focused view didn't consume the key, so a focused text field keeps Backspace
+    // for editing. extraBufferCapacity = 1 lets tryEmit deliver to the shell's collector.
+    private val backKeyEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -36,9 +43,21 @@ class MainActivity : ComponentActivity() {
                 ChipboxAppUi(
                     onOpenUrl = { url -> openUrl(url) },
                     onCopyToClipboard = { label, text -> copyToClipboard(label, text) },
+                    backKeyEvents = backKeyEvents,
                 )
             }
         }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // repeatCount == 0 → only the first event of a held key, so auto-repeat doesn't pop twice.
+        if ((keyCode == KeyEvent.KEYCODE_ESCAPE || keyCode == KeyEvent.KEYCODE_DEL) &&
+            event?.repeatCount == 0
+        ) {
+            backKeyEvents.tryEmit(Unit)
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     override fun onStart() {

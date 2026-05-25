@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
 import dev.zacsweers.metrox.viewmodel.metroViewModel
+import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.common.ui.chrome.api.ChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
@@ -44,6 +45,10 @@ fun ChipboxAppUi(
     onOpenUrl: (String) -> Unit,
     onCopyToClipboard: (label: String, text: String) -> Unit,
     modifier: Modifier = Modifier,
+    // Platform window/activity-level back keys (Escape/Backspace). Routed to the shell's back
+    // handler in [ChipboxTabsScreen] so they fire whenever the window is focused — see
+    // [LocalPlatformBackKeys]. Defaults to null for hosts (and previews) that don't wire keys.
+    backKeyEvents: Flow<Unit>? = null,
 ) {
     // Materialized before the theme so its persisted theme choice picks the color scheme — and
     // so Metro multibinding misses surface at launch rather than at the first screen entry.
@@ -72,6 +77,7 @@ fun ChipboxAppUi(
             LocalTitleBarController provides titleBarController,
             LocalChromeController provides chromeController,
             LocalAppSnackbarHostState provides snackbarHostState,
+            LocalPlatformBackKeys provides backKeyEvents,
         ) {
             Navigator(ChipboxTabsScreen) { navigator ->
                 val outerSink = remember(
