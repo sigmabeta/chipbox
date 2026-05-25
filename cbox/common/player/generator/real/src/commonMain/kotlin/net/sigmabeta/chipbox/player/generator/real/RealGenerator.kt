@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.player.generator.real
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
@@ -9,6 +8,7 @@ import net.sigmabeta.chipbox.player.cache.real.RealPcmTrackSourceFactory
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
 import okio.FileSystem
 import okio.Path
@@ -34,7 +34,7 @@ class RealGenerator(
     pcmCacheDir: Path,
     fileSystem: FileSystem,
     hatchet: Hatchet,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = ioDispatcher
 ) : Generator(repository, contentSourceRegistry, bufferManager, hatchet, dispatcher) {
 
     override val pcmSourceFactory: PcmTrackSource.Factory = RealPcmTrackSourceFactory(

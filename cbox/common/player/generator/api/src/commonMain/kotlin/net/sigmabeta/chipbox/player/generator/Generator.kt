@@ -3,8 +3,6 @@ package net.sigmabeta.chipbox.player.generator
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -28,6 +26,7 @@ import net.sigmabeta.chipbox.player.common.firstAudibleFrame
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.player.common.isBufferSilent
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
 
 /**
@@ -56,7 +55,7 @@ abstract class Generator(
     protected val contentSourceRegistry: ContentSourceRegistry,
     private val bufferManager: ProducerBufferManager,
     protected val hatchet: Hatchet,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = ioDispatcher
 ) {
     private val generatorScope = CoroutineScope(SupervisorJob() + dispatcher)
 

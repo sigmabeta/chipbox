@@ -7,6 +7,8 @@ plugins {
 // caller-supplied config (the two cache dirs) — now passed as plain File params from the
 // Android Hilt module — so this is one KMP module for both variants, no platform seam.
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.player.generator.real"
     }
@@ -17,6 +19,8 @@ kotlin {
                 api(projects.cbox.common.player.generator.api)
                 api(projects.cbox.common.player.emulators.api)
                 api(projects.cbox.common.player.cache.real)
+
+                implementation(projects.cbox.common.utils.api)
             }
         }
     }
