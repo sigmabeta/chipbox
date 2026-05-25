@@ -8,7 +8,7 @@ kotlin {
     }
 
     sourceSets {
-        named("jvmSharedMain") {
+        named("commonMain") {
             dependencies {
                 api(projects.cbox.common.player.emulators.api)
                 api(libs.kotlinx.coroutines.core)

@@ -449,19 +449,14 @@ abstract class Generator(
 
                 firstAudible > 0 -> {
                     val keptShorts = (frames - firstAudible) * SHORTS_PER_FRAME
-                    System.arraycopy(
-                        buffer,
-                        firstAudible * SHORTS_PER_FRAME,
-                        buffer,
-                        0,
-                        keptShorts,
-                    )
+                    val audibleStart = firstAudible * SHORTS_PER_FRAME
+                    buffer.copyInto(buffer, 0, audibleStart, audibleStart + keptShorts)
                     // Refill the freed tail *completely* so we neither drop music nor leave a
                     // gap of pool zeros / stale samples for the consumer to play. fillBuffer
                     // zero-fills its own tail if the source ends mid-refill.
                     val gap = ShortArray(buffer.size - keptShorts)
                     val refilled = fillBuffer(source, gap)
-                    System.arraycopy(gap, 0, buffer, keptShorts, gap.size)
+                    gap.copyInto(buffer, keptShorts)
                     result = TrimResult.Audible((frames - firstAudible) + refilled, firstAudible)
                 }
 
@@ -512,7 +507,7 @@ abstract class Generator(
             val rest = ShortArray(capacityShorts - filledShorts)
             val read = source.readFrames(rest).coerceAtLeast(0)
             if (read == 0) break
-            System.arraycopy(rest, 0, buffer, filledShorts, read * SHORTS_PER_FRAME)
+            rest.copyInto(buffer, filledShorts, 0, read * SHORTS_PER_FRAME)
             filledShorts += read * SHORTS_PER_FRAME
         }
         if (filledShorts in 1 until capacityShorts) {

@@ -1,7 +1,8 @@
 package net.sigmabeta.chipbox.player.common
 
 import net.sigmabeta.sage.logging.Hatchet
-import java.util.concurrent.ConcurrentHashMap
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.roundToInt
 
 /**
@@ -38,9 +39,26 @@ import kotlin.math.roundToInt
  * and mutated from arbitrary threads (audio-focus callbacks land on the main thread; [process]
  * runs on the speaker coroutine), hence the thread-safe registry.
  */
+@OptIn(ExperimentalAtomicApi::class)
 class VolumeProcessor(private val hatchet: Hatchet) {
 
-    private val modifications = ConcurrentHashMap<String, Double>()
+    /**
+     * Keyed gain multipliers, held as an immutable map behind an atomic reference so the registry
+     * stays thread-safe across platforms without `java.util.concurrent`: writers swap in a new map
+     * via compare-and-set ([mutateModifications]); readers ([combinedGain], [debugSnapshot]) load a
+     * consistent immutable snapshot.
+     */
+    private val modifications = AtomicReference<Map<String, Double>>(emptyMap())
+
+    /** Atomically replace the registry via [transform], returning the map as it was before. */
+    private inline fun mutateModifications(
+        transform: (Map<String, Double>) -> Map<String, Double>,
+    ): Map<String, Double> {
+        while (true) {
+            val current = modifications.load()
+            if (modifications.compareAndSet(current, transform(current))) return current
+        }
+    }
 
     /**
      * Smoothed gain actually applied to audio. Chases the target ([combinedGain]) by at most
@@ -67,7 +85,7 @@ class VolumeProcessor(private val hatchet: Hatchet) {
      */
     fun setModification(key: String, scale: Double) {
         val clamped = scale.coerceIn(0.0, MAX_GAIN)
-        val previous = modifications.put(key, clamped)
+        val previous = mutateModifications { it + (key to clamped) }[key]
         if (previous != clamped) {
             hatchet.d(
                 "Volume: '$key' ${fmt(previous ?: 1.0)} -> ${fmt(clamped)} " +
@@ -78,7 +96,7 @@ class VolumeProcessor(private val hatchet: Hatchet) {
 
     /** Remove the modification under [key], if any. Other modifications are unaffected. */
     fun clearModification(key: String) {
-        val previous = modifications.remove(key)
+        val previous = mutateModifications { it - key }[key]
         if (previous != null) {
             hatchet.d(
                 "Volume: cleared '$key' (was ${fmt(previous)}; " +
@@ -89,7 +107,7 @@ class VolumeProcessor(private val hatchet: Hatchet) {
 
     /** Product of every registered modification (the constant, non-fade component of gain). */
     private fun combinedGain(): Double =
-        modifications.values.fold(1.0) { acc, scale -> acc * scale }
+        modifications.load().values.fold(1.0) { acc, scale -> acc * scale }
 
     /**
      * Observational snapshot for the debug PlaybackStatus screen: the target gain (product of
@@ -100,7 +118,7 @@ class VolumeProcessor(private val hatchet: Hatchet) {
         targetGain = combinedGain(),
         actualGain = actualGain,
         maxGain = MAX_GAIN,
-        modifications = modifications.toMap(),
+        modifications = modifications.load(),
     )
 
     private fun fmt(value: Double): String = "%.3f".format(value)
