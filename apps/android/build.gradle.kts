@@ -105,7 +105,7 @@ dependencies {
     implementation(projects.cbox.common.appui.api)
     implementation(projects.cbox.common.strings.real)
     implementation(projects.cbox.android.artworkprovider.api)
-    implementation(projects.cbox.common.database.all)
+    implementation(projects.cbox.common.database.real)
     implementation(projects.cbox.android.database.di)
     implementation(projects.cbox.android.services.api)
     implementation(projects.cbox.android.contentsource.file.di)

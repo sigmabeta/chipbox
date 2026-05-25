@@ -386,7 +386,7 @@ dependencies {
     // Room KMP database used as the JVM target's real library. `sqlite-bundled` is the
     // cross-platform Room driver Android doesn't need.
     implementation(projects.cbox.common.repository.real)
-    implementation(projects.cbox.common.database.all)
+    implementation(projects.cbox.common.database.real)
     implementation(libs.sqlite.bundled)
 
     // Shared scanner — uses the new LibrarySource interface; LocalFileContentSource

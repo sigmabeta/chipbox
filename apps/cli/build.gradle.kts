@@ -76,7 +76,7 @@ dependencies {
     // so its native impl is wired in here (it's no longer pulled transitively via scanner.real).
     implementation(projects.cbox.common.player.emulators.vgmstream.real)
     implementation(projects.cbox.common.repository.real)
-    implementation(projects.cbox.common.database.all)
+    implementation(projects.cbox.common.database.real)
     implementation(projects.cbox.common.scanner.api)
     implementation(projects.cbox.common.repository.api)
     implementation(projects.cbox.common.contentsource.api)
