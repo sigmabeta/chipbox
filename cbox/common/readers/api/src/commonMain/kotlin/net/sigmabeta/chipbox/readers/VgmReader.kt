@@ -4,13 +4,11 @@ import net.sigmabeta.chipbox.models.FADE_LENGTH_MS
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.ByteArrayInputStream
-import java.io.IOException
 import java.io.UnsupportedEncodingException
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import java.util.zip.GZIPInputStream
-import java.util.zip.ZipException
+import okio.Buffer
+import okio.GzipSource
+import okio.IOException
+import okio.buffer
 
 class VgmReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
@@ -22,7 +20,7 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
                 return null
             }
 
-            val buf = bytesAsByteBuffer(vgm)
+            val buf = bytesAsReader(vgm)
             val magic = buf.nextBytes(MAGIC_SIZE)
             if (magic == null || !magic.contentEquals(MAGIC_BYTES)) {
                 hatchet.w("VGM parse failed: bad magic for $identifier.")
@@ -72,12 +70,14 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
     private fun maybeDecompress(bytes: ByteArray, identifier: String): ByteArray? {
         if (bytes.size < 2 || bytes[0] != GZIP_MAGIC_0 || bytes[1] != GZIP_MAGIC_1) return bytes
         return try {
-            GZIPInputStream(ByteArrayInputStream(bytes)).use { it.readBytes() }
-        } catch (e: ZipException) {
-            hatchet.w("VGZ decompress failed (bad gzip) for $identifier: ${e.message}")
-            null
+            val source = GzipSource(Buffer().write(bytes)).buffer()
+            try {
+                source.readByteArray()
+            } finally {
+                source.close()
+            }
         } catch (e: IOException) {
-            hatchet.w("VGZ decompress failed (io) for $identifier: ${e.message}")
+            hatchet.w("VGZ decompress failed for $identifier: ${e.message}")
             null
         }
     }
@@ -87,7 +87,7 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
             hatchet.w("VGM: GD3 offset out of bounds ($absoluteOffset).")
             return null
         }
-        val buf = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+        val buf = ByteReader.wrap(bytes)
         buf.position(absoluteOffset.toInt())
 
         val magic = buf.nextBytes(GD3_MAGIC_SIZE) ?: return null

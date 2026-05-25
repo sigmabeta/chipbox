@@ -4,14 +4,11 @@ import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
-import java.nio.BufferUnderflowException
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 class NsfeReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
-            val fileAsByteBuffer = bytesAsByteBuffer(bytes)
+            val fileAsByteBuffer = bytesAsReader(bytes)
 
             val formatHeader = fileAsByteBuffer.nextBytesAsString(HEADER_MAGIC_SIZE)
             if (formatHeader == null) {
@@ -84,10 +81,10 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
     }
 
     private fun parseTimeChunk(
-        chunk: ByteBuffer?
+        chunk: ByteReader?
     ) = try {
         chunk?.nextFourBytesAsInt()?.toLong()
-    } catch (ex: BufferUnderflowException) {
+    } catch (ex: IndexOutOfBoundsException) {
         null
     }
 
@@ -102,17 +99,17 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
             null
         }
 
-    private fun List<NsfeChunk>.parseChunkAsByteBuffer(chunkName: String): ByteBuffer? = try {
+    private fun List<NsfeChunk>.parseChunkAsByteBuffer(chunkName: String): ByteReader? = try {
             val chunk = first { it.name == chunkName }
             chunk
                 .content
-                .let { ByteBuffer.wrap(it, 0, chunk.length) }
-                .order(ByteOrder.LITTLE_ENDIAN)
+                .let { ByteReader.wrap(it, 0, chunk.length) }
+                
         } catch (ex: NoSuchElementException) {
             null
         }
 
-    private fun readNsfeChunks(fileAsByteBuffer: ByteBuffer): List<NsfeChunk> {
+    private fun readNsfeChunks(fileAsByteBuffer: ByteReader): List<NsfeChunk> {
         val chunks = mutableListOf<NsfeChunk>()
         while (true) {
             try {
@@ -123,7 +120,7 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
                 if (chunk.name == CHUNK_NEND) {
                     break
                 }
-            } catch (ex: BufferUnderflowException) {
+            } catch (ex: IndexOutOfBoundsException) {
                 hatchet.w("NSFE parse failed: buffer underflow reading chunk.")
                 return chunks
             }
@@ -131,7 +128,7 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
         return chunks
     }
 
-    private fun readNextChunk(fileAsByteBuffer: ByteBuffer): NsfeChunk? {
+    private fun readNextChunk(fileAsByteBuffer: ByteReader): NsfeChunk? {
         val length = fileAsByteBuffer.nextFourBytesAsInt()
         val name = fileAsByteBuffer.nextBytesAsString(CHUNK_NAME_SIZE)
         val content = ByteArray(length)

@@ -4,12 +4,11 @@ import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
-import java.nio.ByteBuffer
 
 class SpcReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
-            val fileAsByteBuffer = bytesAsByteBuffer(bytes)
+            val fileAsByteBuffer = bytesAsReader(bytes)
             val formatHeader = fileAsByteBuffer.nextBytesAsString(HEADER_MAGIC_SIZE)
             if (formatHeader == null) {
                 hatchet.w("SPC parse failed: file too small to contain header (${bytes.size} bytes).")
@@ -56,7 +55,7 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
         }
     }
 
-    private fun readMainTag(fileAsByteBuffer: ByteBuffer): SpcMainTag? {
+    private fun readMainTag(fileAsByteBuffer: ByteReader): SpcMainTag? {
         val hasHeaderInfo = fileAsByteBuffer
             .nextBytes(LENGTH_HEADER_INFO_FIELD)
             ?.last()
@@ -111,7 +110,7 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
      */
     private fun readExtendedTag(bytes: ByteArray): SpcExtendedTag? {
         if (bytes.size < XID6_OFFSET + XID6_HEADER_SIZE) return null
-        val buf = bytesAsByteBuffer(bytes)
+        val buf = bytesAsReader(bytes)
         buf.position(XID6_OFFSET)
         val magic = buf.nextBytes(XID6_MAGIC_SIZE) ?: return null
         if (!magic.toString(Charsets.US_ASCII).contentEquals(XID6_MAGIC)) return null
@@ -126,7 +125,7 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
         while (buf.position() + XID6_SUBCHUNK_HEADER_SIZE <= end) {
             val id = buf.get().toInt() and BYTE_MASK
             val type = buf.get().toInt() and BYTE_MASK
-            val data = buf.short.toInt() and SHORT_MASK
+            val data = buf.readShortLe().toInt() and SHORT_MASK
 
             when (type) {
                 XID6_TYPE_INLINE -> Unit

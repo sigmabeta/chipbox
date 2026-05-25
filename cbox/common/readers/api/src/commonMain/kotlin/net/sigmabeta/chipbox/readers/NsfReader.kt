@@ -10,7 +10,7 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
     @OptIn(ExperimentalStdlibApi::class)
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
-            val fileAsByteBuffer = bytesAsByteBuffer(bytes)
+            val fileAsByteBuffer = bytesAsReader(bytes)
 
             val formatHeader = fileAsByteBuffer.nextBytesAsString(HEADER_MAGIC_SIZE)
             if (formatHeader == null) {
