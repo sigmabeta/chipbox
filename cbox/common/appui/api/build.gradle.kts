@@ -1,9 +1,24 @@
+@file:OptIn(
+    dev.zacsweers.metro.gradle.DelicateMetroGradleApi::class,
+    dev.zacsweers.metro.gradle.ExperimentalMetroGradleApi::class,
+    dev.zacsweers.metro.gradle.RequiresIdeSupport::class,
+)
+
 import net.sigmabeta.sage.plugins.components.chipboxNamespace
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 plugins {
     alias(libs.plugins.sage.kmp)
     alias(libs.plugins.sage.compose.kmp)
     alias(libs.plugins.metro)
+}
+
+// Metro KT-82395 workaround (same config as the feature :real convention plugin) — appui applies
+// the metro plugin directly, so gate hint codegen to JVM/Android for the enforcement-only js().
+metro {
+    enableTopLevelFunctionInjection = false
+    generateContributionHintsInFir = false
+    supportedHintContributionPlatforms = setOf(KotlinPlatformType.jvm, KotlinPlatformType.androidJvm)
 }
 
 // Promoted from sage.android → sage.kmp so the same `ChipboxAppUi()` composable drives the
@@ -12,6 +27,8 @@ plugins {
 // `buildOuterSink` (Intent.ACTION_VIEW, ClipboardManager) became platform-callback parameters
 // in [ChipboxAppUi], filled in by each app entry point.
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = chipboxNamespace()
     }
