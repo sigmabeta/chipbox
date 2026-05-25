@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.player.common
 import net.sigmabeta.sage.logging.Hatchet
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -121,7 +122,15 @@ class VolumeProcessor(private val hatchet: Hatchet) {
         modifications = modifications.load(),
     )
 
-    private fun fmt(value: Double): String = "%.3f".format(value)
+    // Fixed 3-decimal formatting for debug logs. The common stdlib has no String.format, so round
+    // to milli-units and split into integer + zero-padded fractional parts by hand.
+    private fun fmt(value: Double): String {
+        val milliUnits = 1_000
+        val decimals = 3
+        val rounded = (abs(value) * milliUnits).roundToInt()
+        val sign = if (value < 0 && rounded != 0) "-" else ""
+        return "$sign${rounded / milliUnits}.${(rounded % milliUnits).toString().padStart(decimals, '0')}"
+    }
 
     /**
      * Convenience wrapper: duck output to [DUCK_SCALE] while [ducked], restoring full volume
