@@ -1,10 +1,10 @@
 package net.sigmabeta.chipbox.player.speaker.text
 
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.speaker.Speaker
+import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
 
 /**
@@ -15,7 +15,7 @@ import net.sigmabeta.sage.logging.Hatchet
 class TextSpeaker(
     hatchet: Hatchet,
         bufferManager: ConsumerBufferManager,
-        dispatcher: CoroutineDispatcher = Dispatchers.IO
+        dispatcher: CoroutineDispatcher = ioDispatcher
 ) : Speaker(bufferManager, hatchet, dispatcher) {
     override fun onAudioReceived(audio: AudioBuffer) {
         logBuffer(audio)
@@ -31,7 +31,7 @@ class TextSpeaker(
         val toString = StringBuilder().also {
             val headerRow = "Frame |  Left  |  Right |"
 
-            it.append("${Thread.currentThread().name}; Outputting frames from buffer:")
+            it.append("Outputting frames from buffer:")
             it.append("\n")
             it.append(headerRow)
             it.append("\n")
@@ -41,19 +41,19 @@ class TextSpeaker(
                 val leftSampleIndex = frameCount * 2
                 val rightSampleIndex = leftSampleIndex + 1
 
-                it.append(String.format("%4d:", frameCount))
+                it.append(frameCount.toString().padStart(FRAME_COLUMN_WIDTH) + ":")
                 it.append(SEPARATOR_DATA_COLUMN)
 
-                it.append(String.format("%6d", data[leftSampleIndex]))
+                it.append(data[leftSampleIndex].toString().padStart(SAMPLE_COLUMN_WIDTH))
                 it.append(SEPARATOR_DATA_COLUMN)
 
-                it.append(String.format("%6d", data[rightSampleIndex]))
+                it.append(data[rightSampleIndex].toString().padStart(SAMPLE_COLUMN_WIDTH))
                 it.append(SEPARATOR_DATA_COLUMN)
 
                 it.append("\n")
             }
 
-            it.append("${Thread.currentThread().name}; End buffer.")
+            it.append("End buffer.")
         }.toString()
         return toString
     }
@@ -64,5 +64,9 @@ class TextSpeaker(
 
     companion object {
         const val SEPARATOR_DATA_COLUMN = " | "
+
+        /** Right-justified column widths, replacing the old String.format("%4d")/("%6d"). */
+        private const val FRAME_COLUMN_WIDTH = 4
+        private const val SAMPLE_COLUMN_WIDTH = 6
     }
 }
