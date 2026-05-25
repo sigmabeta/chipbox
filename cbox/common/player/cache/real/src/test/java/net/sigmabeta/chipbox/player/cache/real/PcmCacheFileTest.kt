@@ -55,7 +55,10 @@ internal class PcmCacheFileTest {
         writer.appendFrames(frames, framesToWrite = 4)
         writer.complete(trackId = 42L, trackLengthMs = 1234L, integratedLufs = -14.5, truePeakDbtp = -1.25)
 
-        val reader = assertNotNull(PcmCacheFile.openForRead(fileSystem, cacheDir, key), "complete file must be readable")
+        val reader = assertNotNull(
+            PcmCacheFile.openForRead(fileSystem, cacheDir, key),
+            "complete file must be readable",
+        )
         try {
             assertEquals(44_100, reader.sampleRate)
             assertEquals(4L, reader.totalFrames)
@@ -125,7 +128,12 @@ internal class PcmCacheFileTest {
         val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 1L, trackLengthMs = 0L)
         assertTrue(fileSystem.exists(cacheDir / key.tempFilename()))
         writer.appendFrames(shortArrayOf(1, 2), framesToWrite = 1)
-        writer.complete(trackId = 1L, trackLengthMs = 0L, integratedLufs = Double.NaN, truePeakDbtp = Double.NEGATIVE_INFINITY)
+        writer.complete(
+            trackId = 1L,
+            trackLengthMs = 0L,
+            integratedLufs = Double.NaN,
+            truePeakDbtp = Double.NEGATIVE_INFINITY,
+        )
 
         assertFalse(fileSystem.exists(cacheDir / key.tempFilename()), "temp file should be gone after complete")
         assertTrue(fileSystem.exists(cacheDir / key.filename()), "final file should exist after complete")
@@ -145,10 +153,18 @@ internal class PcmCacheFileTest {
     fun `reader rejects a complete file whose key does not match`() {
         val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 1L, trackLengthMs = 0L)
         writer.appendFrames(shortArrayOf(1, 2), framesToWrite = 1)
-        writer.complete(trackId = 1L, trackLengthMs = 0L, integratedLufs = Double.NaN, truePeakDbtp = Double.NEGATIVE_INFINITY)
+        writer.complete(
+            trackId = 1L,
+            trackLengthMs = 0L,
+            integratedLufs = Double.NaN,
+            truePeakDbtp = Double.NEGATIVE_INFINITY,
+        )
 
         val mismatchedHash = key.copy(sourceHash = "0000000000000000")
-        assertNull(PcmCacheFile.openForRead(fileSystem, cacheDir, mismatchedHash), "stale source hash must read as a miss")
+        assertNull(
+            PcmCacheFile.openForRead(fileSystem, cacheDir, mismatchedHash),
+            "stale source hash must read as a miss",
+        )
     }
 
     @Test
@@ -156,7 +172,12 @@ internal class PcmCacheFileTest {
         val frames = ShortArray(20) { (it + 1).toShort() } // 10 stereo frames
         val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 1L, trackLengthMs = 0L)
         writer.appendFrames(frames, framesToWrite = 10)
-        writer.complete(trackId = 1L, trackLengthMs = 0L, integratedLufs = Double.NaN, truePeakDbtp = Double.NEGATIVE_INFINITY)
+        writer.complete(
+            trackId = 1L,
+            trackLengthMs = 0L,
+            integratedLufs = Double.NaN,
+            truePeakDbtp = Double.NEGATIVE_INFINITY,
+        )
 
         val reader = assertNotNull(PcmCacheFile.openForRead(fileSystem, cacheDir, key))
         try {

@@ -104,7 +104,6 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
             chunk
                 .content
                 .let { ByteReader.wrap(it, 0, chunk.length) }
-                
         } catch (ex: NoSuchElementException) {
             null
         }

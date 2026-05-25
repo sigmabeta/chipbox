@@ -109,7 +109,12 @@ internal class PcmCacheJanitorTest {
     private fun writeCompleteFile(key: PcmCacheKey, frames: Int, mtime: Long): Path {
         val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 1L, trackLengthMs = 0L)
         writer.appendFrames(ShortArray(frames * 2), frames)
-        writer.complete(trackId = 1L, trackLengthMs = 0L, integratedLufs = Double.NaN, truePeakDbtp = Double.NEGATIVE_INFINITY)
+        writer.complete(
+            trackId = 1L,
+            trackLengthMs = 0L,
+            integratedLufs = Double.NaN,
+            truePeakDbtp = Double.NEGATIVE_INFINITY,
+        )
         val path = cacheDir / key.filename()
         File(path.toString()).setLastModified(mtime)
         return path
