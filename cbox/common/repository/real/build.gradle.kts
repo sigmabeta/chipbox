@@ -13,7 +13,7 @@ kotlin {
         named("jvmSharedMain") {
             dependencies {
                 api(projects.cbox.common.repository.api)
-                api(projects.cbox.android.database.all)
+                api(projects.cbox.common.database.all)
                 implementation(projects.cbox.common.perf.api)
                 implementation(libs.sage.common.logging)
             }

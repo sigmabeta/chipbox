@@ -7,7 +7,6 @@ android {
 }
 
 dependencies {
-    api(projects.cbox.android.repository.api)
-    api(projects.cbox.android.repository.real)
-    api(projects.cbox.android.repository.fake)
+    api(projects.cbox.common.repository.api)
+    api(projects.cbox.common.repository.real)
 }

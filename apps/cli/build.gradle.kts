@@ -71,9 +71,9 @@ dependencies {
     // assembled by hand in ChipboxLibrary (the CLI needs only this slice, not the desktop graph).
     // RealScanner reconciles scanned folders into a bundled-SQLite Room DB via DatabaseRepository;
     // the CLI then queries that repository to browse games / artists / platforms / tracks.
-    implementation(projects.cbox.android.scanner.real)
-    implementation(projects.cbox.android.repository.real)
-    implementation(projects.cbox.android.database.all)
+    implementation(projects.cbox.common.scanner.real)
+    implementation(projects.cbox.common.repository.real)
+    implementation(projects.cbox.common.database.all)
     implementation(projects.cbox.common.scanner.api)
     implementation(projects.cbox.common.repository.api)
     implementation(projects.cbox.common.contentsource.api)
