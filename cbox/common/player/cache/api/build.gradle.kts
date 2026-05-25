@@ -8,7 +8,7 @@ kotlin {
     }
 
     sourceSets {
-        named("jvmSharedMain") {
+        named("commonMain") {
             dependencies {
                 api(projects.cbox.common.models.api)
                 api(projects.cbox.common.player.buffer.api)
