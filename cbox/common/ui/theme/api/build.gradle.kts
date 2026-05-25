@@ -11,6 +11,8 @@ plugins {
 // Multiplatform resources in `cbox/common/ui/fonts/api`, depended on here so the public
 // `ChipboxFontDefaults` (Brand / Plain) can name `ChipboxFont` entries directly.
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.ui.theme.api"
     }
