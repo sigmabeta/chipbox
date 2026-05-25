@@ -21,7 +21,7 @@ dependencies {
     implementation(libs.sage.android.ui.strings)
     implementation(libs.sage.common.ui.components)
     implementation(libs.sage.common.logging)
-    implementation(libs.sage.android.perf)
+    implementation(libs.sage.common.ui.perfCompose)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)

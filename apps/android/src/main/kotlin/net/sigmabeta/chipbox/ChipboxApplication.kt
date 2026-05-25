@@ -5,7 +5,7 @@ import dev.zacsweers.metro.createGraphFactory
 import net.sigmabeta.chipbox.artworkprovider.api.ArtworkProviderGraph
 import net.sigmabeta.chipbox.di.ChipboxAppGraph
 import net.sigmabeta.chipbox.services.api.ChipboxServiceGraph
-import net.sigmabeta.sage.android.perf.isPerfMeasurementEnabled
+import net.sigmabeta.sage.ui.perf.isPerfMeasurementEnabled
 
 class ChipboxApplication :
     Application(),
@@ -13,7 +13,7 @@ class ChipboxApplication :
     ChipboxServiceGraph {
     override fun onCreate() {
         super.onCreate()
-        // Release builds skip the measureTime { content() } wrapping in sage.android.perf
+        // Release builds skip the measureTime { content() } wrapping in sage common/ui/perf-compose
         // so release composition is not paying for two System.nanoTime() calls per item.
         // (Was a compile-time `BuildConfig.DEBUG` const-fold pre-M9 — AGP 9's KMP Android
         // Library DSL doesn't expose buildConfig generation, so it's a runtime toggle now.)

@@ -4,9 +4,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import net.sigmabeta.sage.android.perf.DURATION_THRESHOLD_ERROR_COMPONENT_DEVICE
-import net.sigmabeta.sage.android.perf.DURATION_THRESHOLD_WARNING_COMPONENT_DEVICE
-import net.sigmabeta.sage.android.perf.WithMeasurementComponent
+import net.sigmabeta.sage.ui.perf.DURATION_THRESHOLD_ERROR_COMPONENT_DEVICE
+import net.sigmabeta.sage.ui.perf.DURATION_THRESHOLD_WARNING_COMPONENT_DEVICE
+import net.sigmabeta.sage.ui.perf.WithMeasurementComponent
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.CheckableListModel
 import net.sigmabeta.sage.components.CollapsibleDetailsListModel

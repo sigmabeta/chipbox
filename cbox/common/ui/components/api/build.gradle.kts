@@ -18,8 +18,8 @@ kotlin {
                 implementation(libs.sage.common.appcomm)
                 implementation(libs.sage.common.images)
 
-                implementation(libs.sage.android.perf)
-                implementation(libs.sage.android.ui.icons)
+                implementation(libs.sage.common.ui.perfCompose)
+                implementation(libs.sage.common.ui.iconsReal)
 
                 implementation(projects.cbox.common.strings.api)
                 implementation(projects.cbox.common.ui.fonts.api)

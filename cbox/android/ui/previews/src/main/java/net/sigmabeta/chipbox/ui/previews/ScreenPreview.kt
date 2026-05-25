@@ -22,10 +22,10 @@ import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.chipbox.strings.api.id
 import net.sigmabeta.chipbox.common.ui.components.api.Content
 import net.sigmabeta.chipbox.ui.theme.api.AppTheme
-import net.sigmabeta.sage.android.perf.DURATION_THRESHOLD_ERROR_SCREEN_PREVIEW
-import net.sigmabeta.sage.android.perf.DURATION_THRESHOLD_WARNING_SCREEN_PREVIEW
-import net.sigmabeta.sage.android.perf.LocalLogger
-import net.sigmabeta.sage.android.perf.WithMeasurementScreen
+import net.sigmabeta.sage.ui.perf.DURATION_THRESHOLD_ERROR_SCREEN_PREVIEW
+import net.sigmabeta.sage.ui.perf.DURATION_THRESHOLD_WARNING_SCREEN_PREVIEW
+import net.sigmabeta.sage.ui.perf.LocalLogger
+import net.sigmabeta.sage.ui.perf.WithMeasurementScreen
 import net.sigmabeta.sage.android.ui.list.GridScreen
 import net.sigmabeta.sage.android.ui.list.ListScreen
 import net.sigmabeta.sage.appcomm.ActionSink
