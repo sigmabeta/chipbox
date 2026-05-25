@@ -41,7 +41,13 @@ internal class FileSpeakerTest {
     fun setUp() {
         workDir = Files.createTempDirectory("filespeaker-test-").toFile()
         outputFile = File(File(workDir, FileSpeaker.FOLDER_NAME), "temp.wav")
-        underTest = FileSpeaker(workDir.absolutePath.toPath(), FileSystem.SYSTEM, BluntHatchet(), noopBuffers, Dispatchers.Unconfined)
+        underTest = FileSpeaker(
+            workDir.absolutePath.toPath(),
+            FileSystem.SYSTEM,
+            BluntHatchet(),
+            noopBuffers,
+            Dispatchers.Unconfined,
+        )
     }
 
     @AfterTest
