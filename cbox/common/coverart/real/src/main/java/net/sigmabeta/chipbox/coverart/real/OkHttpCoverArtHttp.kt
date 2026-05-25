@@ -37,7 +37,9 @@ class OkHttpCoverArtHttp(private val client: OkHttpClient) : CoverArtHttp {
     private fun execute(request: Request): String {
         client.newCall(request).execute().use { response ->
             val payload = response.body.string()
-            if (!response.isSuccessful) throw IOException("Request to ${request.url} failed: ${response.code}: $payload")
+            if (!response.isSuccessful) {
+                throw IOException("Request to ${request.url} failed: ${response.code}: $payload")
+            }
             return payload
         }
     }
