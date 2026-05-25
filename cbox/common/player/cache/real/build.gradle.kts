@@ -3,6 +3,8 @@ plugins {
 }
 
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.player.cache.real"
     }
@@ -15,6 +17,7 @@ kotlin {
 
                 implementation(projects.cbox.common.contentsource.api)
                 implementation(projects.cbox.common.player.common.api)
+                implementation(projects.cbox.common.utils.api)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.sage.common.logging)
                 api(libs.okio)
