@@ -43,6 +43,7 @@ class ChipboxLibrary(
     private val dbFile = File(workDir, DB_NAME)
 
     // okio Paths: the cover-art module's file I/O is okio (multiplatform), not java.io.
+
     /** Where "Get cover art" reads IGDB credentials from (created as a template if absent). */
     val coverArtConfigFile: Path = File(workDir, COVER_ART_CONFIG_NAME).absolutePath.toPath()
 
