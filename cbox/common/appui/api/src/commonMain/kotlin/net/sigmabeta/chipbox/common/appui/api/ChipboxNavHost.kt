@@ -65,7 +65,7 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
 import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
-import net.sigmabeta.sage.android.ui.list.LocalListBottomInset
+import net.sigmabeta.sage.ui.list.LocalListBottomInset
 
 private val NAV_RAIL_MIN_WIDTH = 480.dp
 

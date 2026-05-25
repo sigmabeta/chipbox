@@ -83,7 +83,7 @@ kotlin {
                 // doesn't, so it's explicit here. Needed for `ChipboxAppUiViewModel`'s
                 // `@ContributesIntoMap(AppScope::class)`.
                 implementation(libs.sage.common.di)
-                implementation(libs.sage.android.ui.list)
+                implementation(libs.sage.common.ui.listScreens)
                 implementation(libs.jetbrains.compose.material.icons.extended)
                 implementation(libs.jetbrains.compose.material3.adaptive.navigation.suite)
 

@@ -26,8 +26,8 @@ import net.sigmabeta.sage.ui.perf.DURATION_THRESHOLD_ERROR_SCREEN_PREVIEW
 import net.sigmabeta.sage.ui.perf.DURATION_THRESHOLD_WARNING_SCREEN_PREVIEW
 import net.sigmabeta.sage.ui.perf.LocalLogger
 import net.sigmabeta.sage.ui.perf.WithMeasurementScreen
-import net.sigmabeta.sage.android.ui.list.GridScreen
-import net.sigmabeta.sage.android.ui.list.ListScreen
+import net.sigmabeta.sage.ui.list.GridScreen
+import net.sigmabeta.sage.ui.list.ListScreen
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.TitleBarModel
