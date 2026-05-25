@@ -1,41 +1,39 @@
 package net.sigmabeta.chipbox.player.emulators.vgmstream
 
-/** Metadata for one vgmstream subsong, gathered at scan time. */
-data class VgmstreamSubsong(
-    val subsong: Int, // 1-based; matches the value passed to VgmstreamEmulator.setTrackNumber
-    val sampleRate: Int,
-    val lengthMs: Long,
-    val streamName: String,
-)
+import java.io.File
 
 /**
- * Scan-time bridge into the vgmstream native library: enumerates a file's subsongs and their
- * length/rate/name so the scanner can emit accurate tracks. Shares the native lib (and the
- * supported-extension set) with [VgmstreamEmulator]; uses the same loop/fade config so reported
- * lengths match playback.
+ * Native [VgmstreamProber] implementation: enumerates a file's subsongs and their length/rate/name
+ * so the scanner can emit accurate tracks. Shares the native lib (and the supported-extension set)
+ * with [VgmstreamEmulator]; uses the same loop/fade config so reported lengths match playback.
+ *
+ * vgmstream decodes by filesystem path, so [probe] stages the bytes to a temp file first — keeping
+ * all filesystem/JNI work behind the commonMain [VgmstreamProber] interface the scanner depends on.
  */
-object VgmstreamProbe {
+object VgmstreamProbe : VgmstreamProber {
     /** Extensions vgmstream handles (minus generic wav/ogg/mp3), as a fast lookup set. */
-    val supportedExtensions: Set<String> by lazy { VgmstreamEmulator.supportedFileExtensions.toSet() }
+    private val supportedExtensions: Set<String> by lazy { VgmstreamEmulator.supportedFileExtensions.toSet() }
 
-    fun isSupported(extension: String): Boolean = extension in supportedExtensions
+    override fun isSupported(extension: String): Boolean = extension in supportedExtensions
 
-    /**
-     * Probes [path] (a real filesystem path). Returns one entry per subsong, or an empty list if
-     * the file isn't a recognised vgmstream format.
-     */
-    fun probe(path: String): List<VgmstreamSubsong> {
+    override fun probe(bytes: ByteArray, extension: String): List<VgmstreamSubsong> {
         VgmstreamEmulator.loadNativeLib() // idempotent; ensures libvgmstream is available
-        return probeInternal(path).mapIndexedNotNull { index, line ->
-            if (line == null) return@mapIndexedNotNull null
-            val parts = line.split('\t')
-            if (parts.size < PROBE_FIELD_COUNT) return@mapIndexedNotNull null
-            VgmstreamSubsong(
-                subsong = index + 1,
-                sampleRate = parts[0].toIntOrNull() ?: 0,
-                lengthMs = parts[1].toLongOrNull() ?: 0L,
-                streamName = parts[2],
-            )
+        val temp = File.createTempFile("vgmprobe_", ".$extension")
+        return try {
+            temp.writeBytes(bytes)
+            probeInternal(temp.absolutePath).mapIndexedNotNull { index, line ->
+                if (line == null) return@mapIndexedNotNull null
+                val parts = line.split('\t')
+                if (parts.size < PROBE_FIELD_COUNT) return@mapIndexedNotNull null
+                VgmstreamSubsong(
+                    subsong = index + 1,
+                    sampleRate = parts[0].toIntOrNull() ?: 0,
+                    lengthMs = parts[1].toLongOrNull() ?: 0L,
+                    streamName = parts[2],
+                )
+            }
+        } finally {
+            temp.delete()
         }
     }
 

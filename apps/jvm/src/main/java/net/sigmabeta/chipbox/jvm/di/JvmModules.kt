@@ -28,6 +28,7 @@ import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.emulators.EmulatorProvider
+import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
 import net.sigmabeta.chipbox.player.emulators.gba.GbaEmulator
 import net.sigmabeta.chipbox.player.emulators.gme.GmeEmulator
 import net.sigmabeta.chipbox.player.emulators.ncsf.NcsfEmulator
@@ -101,7 +102,15 @@ object JvmDatabaseModule {
 object JvmRepositoryModule {
     @Provides @SingleIn(AppScope::class)
     fun provideDatabaseRepository(database: ChipboxDatabase, hatchet: Hatchet): DatabaseRepository =
-        DatabaseRepository(database, hatchet)
+        DatabaseRepository(
+            database.artistDao(),
+            database.gameDao(),
+            database.trackDao(),
+            database.gameArtistDao(),
+            database.trackArtistDao(),
+            database.searchHistoryDao(),
+            hatchet,
+        )
 
     @Provides @SingleIn(AppScope::class)
     fun provideRepository(impl: DatabaseRepository): Repository = impl
@@ -191,7 +200,7 @@ object JvmScannerModule {
         librarySource: LibrarySource,
         readers: Readers,
         hatchet: Hatchet,
-    ): RealScanner = RealScanner(repository, librarySource, readers, hatchet)
+    ): RealScanner = RealScanner(repository, librarySource, readers, VgmstreamProbe, hatchet)
 
     @Provides @SingleIn(AppScope::class)
     fun provideScanner(impl: RealScanner): Scanner = impl

@@ -72,6 +72,9 @@ dependencies {
     // RealScanner reconciles scanned folders into a bundled-SQLite Room DB via DatabaseRepository;
     // the CLI then queries that repository to browse games / artists / platforms / tracks.
     implementation(projects.cbox.common.scanner.real)
+    // VgmstreamProbe (native subsong probe) — scanner.real takes the VgmstreamProber interface now,
+    // so its native impl is wired in here (it's no longer pulled transitively via scanner.real).
+    implementation(projects.cbox.common.player.emulators.vgmstream.real)
     implementation(projects.cbox.common.repository.real)
     implementation(projects.cbox.common.database.all)
     implementation(projects.cbox.common.scanner.api)

@@ -1,8 +1,10 @@
 package net.sigmabeta.chipbox.repository.database
 
-import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOn
@@ -11,7 +13,12 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import net.sigmabeta.chipbox.database.ChipboxDatabase
+import net.sigmabeta.chipbox.database.dao.ArtistDao
+import net.sigmabeta.chipbox.database.dao.GameArtistDao
+import net.sigmabeta.chipbox.database.dao.GameDao
+import net.sigmabeta.chipbox.database.dao.SearchHistoryDao
+import net.sigmabeta.chipbox.database.dao.TrackArtistDao
+import net.sigmabeta.chipbox.database.dao.TrackDao
 import net.sigmabeta.chipbox.entities.ArtistEntity
 import net.sigmabeta.chipbox.entities.GameEntity
 import net.sigmabeta.chipbox.entities.SearchHistoryEntity
@@ -33,6 +40,7 @@ import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
 
 /**
@@ -42,26 +50,24 @@ import net.sigmabeta.sage.logging.Hatchet
  * standard-library `Iterable.map` can't accept a suspending transform, so [suspendMap] does
  * the obvious `for`-loop equivalent.
  */
+@OptIn(ExperimentalAtomicApi::class, ExperimentalTime::class)
 class DatabaseRepository(
-    database: ChipboxDatabase,
+    private val artistDao: ArtistDao,
+    private val gameDao: GameDao,
+    private val trackDao: TrackDao,
+    private val gameArtistDao: GameArtistDao,
+    private val trackArtistDao: TrackArtistDao,
+    private val searchHistoryDao: SearchHistoryDao,
     private val hatchet: Hatchet,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val dispatcher: CoroutineDispatcher = ioDispatcher
 ) : Repository {
-    private val artistDao = database.artistDao()
-    private val gameDao = database.gameDao()
-    private val trackDao = database.trackDao()
-
-    private val gameArtistDao = database.gameArtistDao()
-    private val trackArtistDao = database.trackArtistDao()
-
-    private val searchHistoryDao = database.searchHistoryDao()
 
     // upsertGame runs on the scanner's IO coroutine and its DAO calls suspend (Room KMP makes them
     // suspend off-Android), so begin/end can resume on different threads — trace with `traceAsync`,
     // which needs a cookie unique among concurrently-open same-named sections.
-    private val traceCookies = AtomicInteger(0)
+    private val traceCookies = AtomicInt(0)
 
-    private fun nextCookie() = traceCookies.incrementAndGet()
+    private fun nextCookie() = traceCookies.fetchAndAdd(1)
 
     // Serializes the get-or-create-artist step across concurrent upsertGame calls. The scanner
     // processes folders in parallel; the unique index on artist.name is the backstop, and this
@@ -493,6 +499,7 @@ private suspend fun <T, R> Iterable<T>.suspendMap(transform: suspend (T) -> R): 
     return out
 }
 
-// kotlin.system.currentTimeMillis() works only on JVM; for KMP both targets get the same via
-// kotlin.time.Clock + nowMilliseconds(). Keep the small platform-neutral helper here.
-private fun currentTimeMillis(): Long = System.currentTimeMillis()
+// Platform-neutral wall clock — System.currentTimeMillis() is JVM-only; kotlin.time.Clock works
+// on all KMP targets (including the js() purity gate).
+@OptIn(ExperimentalTime::class)
+private fun currentTimeMillis(): Long = Clock.System.now().toEpochMilliseconds()

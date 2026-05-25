@@ -21,5 +21,13 @@ object DatabaseRepositoryModule {
     @Provides
     @SingleIn(AppScope::class)
     fun provideDatabaseRepository(database: ChipboxDatabase, hatchet: Hatchet): DatabaseRepository =
-        DatabaseRepository(database, hatchet)
+        DatabaseRepository(
+            database.artistDao(),
+            database.gameDao(),
+            database.trackDao(),
+            database.gameArtistDao(),
+            database.trackArtistDao(),
+            database.searchHistoryDao(),
+            hatchet,
+        )
 }
