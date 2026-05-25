@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.player.buffer.real
 
-import java.util.concurrent.atomic.AtomicInteger
+import kotlin.concurrent.Volatile
+import kotlin.concurrent.atomics.AtomicInt
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.channels.ClosedSendChannelException
@@ -33,6 +35,7 @@ import net.sigmabeta.sage.logging.Hatchet
  * side is injected with the narrower interface so neither can call operations meant for the
  * other.
  */
+@OptIn(ExperimentalAtomicApi::class)
 class RealBufferManager(
     private val hatchet: Hatchet,
 ) : ProducerBufferManager,
@@ -48,13 +51,13 @@ class RealBufferManager(
 
     private var currentSampleRate: Int? = null
 
-    private val fullCount = AtomicInteger(0)
+    private val fullCount = AtomicInt(0)
 
-    private val emptyCount = AtomicInteger(0)
+    private val emptyCount = AtomicInt(0)
 
-    private val capacity = AtomicInteger(0)
+    private val capacity = AtomicInt(0)
 
-    private val drainCount = AtomicInteger(0)
+    private val drainCount = AtomicInt(0)
 
     private val debugInfoMutable = MutableStateFlow(BufferDebugInfo())
 
@@ -63,10 +66,10 @@ class RealBufferManager(
     private fun publishDebug() {
         debugInfoMutable.value = BufferDebugInfo(
             sampleRate = currentSampleRate,
-            capacity = capacity.get(),
-            fullBuffersQueued = fullCount.get(),
-            emptyArraysAvailable = emptyCount.get(),
-            drainCount = drainCount.get(),
+            capacity = capacity.load(),
+            fullBuffersQueued = fullCount.load(),
+            emptyArraysAvailable = emptyCount.load(),
+            drainCount = drainCount.load(),
         )
     }
 
@@ -107,9 +110,9 @@ class RealBufferManager(
         oldArrays?.close()
         oldBuffers?.close()
 
-        capacity.set(bufferCount)
-        emptyCount.set(bufferCount)
-        fullCount.set(0)
+        capacity.store(bufferCount)
+        emptyCount.store(bufferCount)
+        fullCount.store(0)
         publishDebug()
 
         hatchet.i(
@@ -120,13 +123,13 @@ class RealBufferManager(
 
     override suspend fun sendAudioBuffer(audioBuffer: AudioBuffer) {
         fullBuffers?.send(audioBuffer)
-        fullCount.incrementAndGet()
+        fullCount.fetchAndAdd(1)
         publishDebug()
     }
 
     override fun checkForNextAudioBuffer(): AudioBuffer? {
         val buffer = fullBuffers?.tryReceive()?.getOrNull() ?: return null
-        fullCount.decrementAndGet()
+        fullCount.fetchAndAdd(-1)
         publishDebug()
         return buffer
     }
@@ -136,7 +139,7 @@ class RealBufferManager(
             val channel = fullBuffers ?: throw IllegalStateException("Set up buffers first!")
             try {
                 val buffer = channel.receive()
-                fullCount.decrementAndGet()
+                fullCount.fetchAndAdd(-1)
                 publishDebug()
                 return buffer
             } catch (_: ClosedReceiveChannelException) {
@@ -150,7 +153,7 @@ class RealBufferManager(
         data.clear()
         try {
             emptyArrays?.send(data)
-            emptyCount.incrementAndGet()
+            emptyCount.fetchAndAdd(1)
             publishDebug()
         } catch (_: ClosedSendChannelException) {
             // Channels were swapped for a sample rate change; the new pool has its own
@@ -177,13 +180,13 @@ class RealBufferManager(
             val result = full.tryReceive()
             val buffer = result.getOrNull() ?: break
             drained++
-            fullCount.decrementAndGet()
+            fullCount.fetchAndAdd(-1)
             buffer.data.clear()
             val sendResult = empty?.trySend(buffer.data)
             when {
                 sendResult == null -> Unit
 
-                sendResult.isSuccess -> emptyCount.incrementAndGet()
+                sendResult.isSuccess -> emptyCount.fetchAndAdd(1)
 
                 // Closed == the expected case: setSampleRate swapped in a fresh pool and
                 // closed this old channel, so the orphan rightfully falls to GC.
@@ -202,14 +205,14 @@ class RealBufferManager(
                 hatchet.d("drain: $drained buffer(s) so far.")
             }
         }
-        drainCount.incrementAndGet()
+        drainCount.fetchAndAdd(1)
         publishDebug()
         hatchet.d("drain: returned $drained buffer(s) to the old empty pool.")
     }
 
     override suspend fun getNextEmptyBuffer(): ShortArray {
         val array = emptyArrays?.receive() ?: throw IllegalStateException("Set up buffers first!")
-        emptyCount.decrementAndGet()
+        emptyCount.fetchAndAdd(-1)
         publishDebug()
         return array
     }
