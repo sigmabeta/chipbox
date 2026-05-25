@@ -6,7 +6,8 @@ import net.sigmabeta.chipbox.player.cache.PcmCacheKey
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.File
+import okio.FileSystem
+import okio.Path
 
 /**
  * Production [PcmTrackSource.Factory]. Decides per-track whether to serve from a complete
@@ -24,8 +25,9 @@ import java.io.File
  */
 class RealPcmTrackSourceFactory(
     private val emulators: List<Emulator>,
-    private val stagingDir: File,
-    private val pcmCacheDir: File,
+    private val stagingDir: Path,
+    private val pcmCacheDir: Path,
+    private val fileSystem: FileSystem,
     private val contentSourceRegistry: ContentSourceRegistry,
     private val hatchet: Hatchet,
     cacheCapBytes: Long = PcmCacheJanitor.DEFAULT_CAP_BYTES,
@@ -33,7 +35,7 @@ class RealPcmTrackSourceFactory(
 
     private val hasher = PcmCacheHasher(contentSourceRegistry)
 
-    private val janitor = PcmCacheJanitor(pcmCacheDir, cacheCapBytes, hatchet)
+    private val janitor = PcmCacheJanitor(fileSystem, pcmCacheDir, cacheCapBytes, hatchet)
 
     init {
         janitor.runStartupCleanup()
@@ -46,12 +48,13 @@ class RealPcmTrackSourceFactory(
 
         val sourceHash = hasher.hash(track, bytes)
 
-        val stagingTrackDir = File(stagingDir, "track-${track.id}")
+        val stagingTrackDir = stagingDir / "track-${track.id}"
         val stagedFile = stageTrack(
             track = track,
             ext = ext,
             mainBytes = bytes,
             stagingTrackDir = stagingTrackDir,
+            fileSystem = fileSystem,
             contentSourceRegistry = contentSourceRegistry,
             hatchet = hatchet,
         )
@@ -61,6 +64,7 @@ class RealPcmTrackSourceFactory(
             track = track,
             stagedFile = stagedFile,
             stagingTrackDir = stagingTrackDir,
+            fileSystem = fileSystem,
             hatchet = hatchet,
         )
         val key = PcmCacheKey(
@@ -69,8 +73,8 @@ class RealPcmTrackSourceFactory(
             sampleRate = emulatorSource.sampleRate,
         )
 
-        pcmCacheDir.mkdirs()
-        val reader = PcmCacheFile.openForRead(pcmCacheDir, key)
+        fileSystem.createDirectories(pcmCacheDir)
+        val reader = PcmCacheFile.openForRead(fileSystem, pcmCacheDir, key)
         if (reader != null) {
             hatchet.i("Cache hit for ${track.title} (${key.filename()}); using CachedFilePcmSource.")
             try {
@@ -83,6 +87,7 @@ class RealPcmTrackSourceFactory(
 
         hatchet.i("Cache miss for ${track.title}; starting render-ahead.")
         val writer = PcmCacheFile.openForWrite(
+            fileSystem = fileSystem,
             cacheDir = pcmCacheDir,
             key = key,
             trackId = track.id,
@@ -92,6 +97,7 @@ class RealPcmTrackSourceFactory(
         return CachingPcmSource(
             emulatorSource = emulatorSource,
             writer = writer,
+            fileSystem = fileSystem,
             track = track,
             key = key,
             hatchet = hatchet,

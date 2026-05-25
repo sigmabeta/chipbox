@@ -5,7 +5,8 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.File
+import okio.FileSystem
+import okio.Path
 
 /**
  * Cache-bypass [PcmTrackSource.Factory]. Same emulator selection and input staging as
@@ -19,7 +20,8 @@ import java.io.File
  */
 class UncachedPcmTrackSourceFactory(
     private val emulators: List<Emulator>,
-    private val stagingDir: File,
+    private val stagingDir: Path,
+    private val fileSystem: FileSystem,
     private val contentSourceRegistry: ContentSourceRegistry,
     private val hatchet: Hatchet,
 ) : PcmTrackSource.Factory {
@@ -29,12 +31,13 @@ class UncachedPcmTrackSourceFactory(
         val emulator = emulators.firstOrNull { it.isFileExtensionSupported(ext) }
             ?: throw IllegalArgumentException("No emulator found for extension '$ext'.")
 
-        val stagingTrackDir = File(stagingDir, "track-${track.id}")
+        val stagingTrackDir = stagingDir / "track-${track.id}"
         val stagedFile = stageTrack(
             track = track,
             ext = ext,
             mainBytes = bytes,
             stagingTrackDir = stagingTrackDir,
+            fileSystem = fileSystem,
             contentSourceRegistry = contentSourceRegistry,
             hatchet = hatchet,
         )
@@ -44,6 +47,7 @@ class UncachedPcmTrackSourceFactory(
             track = track,
             stagedFile = stagedFile,
             stagingTrackDir = stagingTrackDir,
+            fileSystem = fileSystem,
             hatchet = hatchet,
         )
     }

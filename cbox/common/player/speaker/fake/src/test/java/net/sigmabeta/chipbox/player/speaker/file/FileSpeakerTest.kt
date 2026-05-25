@@ -4,6 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.sage.logging.BluntHatchet
+import okio.FileSystem
+import okio.Path.Companion.toPath
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -39,7 +41,7 @@ internal class FileSpeakerTest {
     fun setUp() {
         workDir = Files.createTempDirectory("filespeaker-test-").toFile()
         outputFile = File(File(workDir, FileSpeaker.FOLDER_NAME), "temp.wav")
-        underTest = FileSpeaker(workDir, BluntHatchet(), noopBuffers, Dispatchers.Unconfined)
+        underTest = FileSpeaker(workDir.absolutePath.toPath(), FileSystem.SYSTEM, BluntHatchet(), noopBuffers, Dispatchers.Unconfined)
     }
 
     @AfterTest

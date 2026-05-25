@@ -12,7 +12,7 @@ kotlin {
     }
 
     sourceSets {
-        named("jvmSharedMain") {
+        named("commonMain") {
             dependencies {
                 api(projects.cbox.common.player.generator.api)
                 api(projects.cbox.common.player.emulators.api)

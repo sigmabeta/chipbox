@@ -14,6 +14,8 @@ import net.sigmabeta.chipbox.player.speaker.real.RealSpeaker
 import net.sigmabeta.chipbox.player.speaker.text.TextSpeaker
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
+import okio.FileSystem
+import okio.Path.Companion.toPath
 
 @BindingContainer
 @ContributesTo(AppScope::class)
@@ -27,7 +29,7 @@ object SpeakerModule {
         externalStorageDir: File,
         hatchet: Hatchet,
         bufferManager: ConsumerBufferManager
-    ): FileSpeaker = FileSpeaker(externalStorageDir, hatchet, bufferManager)
+    ): FileSpeaker = FileSpeaker(externalStorageDir.absolutePath.toPath(), FileSystem.SYSTEM, hatchet, bufferManager)
 
     @Provides
     @SingleIn(AppScope::class)

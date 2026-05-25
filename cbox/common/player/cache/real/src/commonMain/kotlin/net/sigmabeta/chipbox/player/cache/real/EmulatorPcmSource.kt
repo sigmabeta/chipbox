@@ -1,11 +1,13 @@
 package net.sigmabeta.chipbox.player.cache.real
 
+import kotlin.concurrent.Volatile
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.common.EbuR128
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.File
+import okio.FileSystem
+import okio.Path
 
 /**
  * Live-emulator-backed [PcmTrackSource]. Frames are produced one buffer at a time by the
@@ -21,8 +23,9 @@ import java.io.File
 internal class EmulatorPcmSource(
     private val emulator: Emulator,
     private val track: Track,
-    private val stagedFile: File,
-    private val stagingTrackDir: File,
+    private val stagedFile: Path,
+    private val stagingTrackDir: Path,
+    private val fileSystem: FileSystem,
     private val hatchet: Hatchet,
 ) : PcmTrackSource {
 
@@ -54,7 +57,7 @@ internal class EmulatorPcmSource(
         }
         emulator.hatchet = hatchet
         emulator.setTrackNumber(track.trackNumber)
-        emulator.loadTrack(track.copy(path = stagedFile.absolutePath))
+        emulator.loadTrack(track.copy(path = stagedFile.toString()))
 
         sampleRate = emulator.getSampleRateInternal()
         totalFrames = if (track.trackLengthMs > 0) {
@@ -95,7 +98,7 @@ internal class EmulatorPcmSource(
         try {
             emulator.teardown()
         } finally {
-            stagingTrackDir.deleteRecursively()
+            fileSystem.deleteRecursively(stagingTrackDir, mustExist = false)
         }
     }
 

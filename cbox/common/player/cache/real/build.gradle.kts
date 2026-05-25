@@ -8,7 +8,7 @@ kotlin {
     }
 
     sourceSets {
-        named("jvmSharedMain") {
+        named("commonMain") {
             dependencies {
                 api(projects.cbox.common.player.cache.api)
                 api(projects.cbox.common.player.emulators.api)
@@ -17,6 +17,7 @@ kotlin {
                 implementation(projects.cbox.common.player.common.api)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.sage.common.logging)
+                api(libs.okio)
             }
         }
 
@@ -25,6 +26,7 @@ kotlin {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.sage.common.logging)
+                implementation(libs.okio.fakefilesystem)
             }
         }
     }

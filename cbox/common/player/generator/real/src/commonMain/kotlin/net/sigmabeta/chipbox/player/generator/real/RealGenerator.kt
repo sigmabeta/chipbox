@@ -10,7 +10,8 @@ import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.File
+import okio.FileSystem
+import okio.Path
 
 /**
  * Production [Generator] for both targets. Wires a [RealPcmTrackSourceFactory] over the
@@ -18,8 +19,9 @@ import java.io.File
  * staging and the render-ahead PCM cache (the real work lives in the pure-JVM
  * `:cbox:common:player:cache:real`).
  *
- * Takes the staging / PCM-cache directories as plain [File]s. The Android Hilt module derives
- * them from `Context.cacheDir`; the JVM app passes a work dir. The old Android-only twin's
+ * Takes the staging / PCM-cache directories as okio [Path]s plus the [FileSystem] to use. The
+ * Android DI module derives the dirs from `Context.cacheDir` and supplies `FileSystem.SYSTEM`;
+ * the JVM app passes a work dir and the same system filesystem. The old Android-only twin's
  * `Context` parameter was never a platform seam — just these two dirs — so one `sage.kmp`
  * module serves both variants.
  */
@@ -28,8 +30,9 @@ class RealGenerator(
     contentSourceRegistry: ContentSourceRegistry,
     bufferManager: ProducerBufferManager,
     emulators: List<Emulator>,
-    stagingDir: File,
-    pcmCacheDir: File,
+    stagingDir: Path,
+    pcmCacheDir: Path,
+    fileSystem: FileSystem,
     hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : Generator(repository, contentSourceRegistry, bufferManager, hatchet, dispatcher) {
@@ -38,6 +41,7 @@ class RealGenerator(
         emulators = emulators,
         stagingDir = stagingDir,
         pcmCacheDir = pcmCacheDir,
+        fileSystem = fileSystem,
         contentSourceRegistry = contentSourceRegistry,
         hatchet = hatchet,
     )

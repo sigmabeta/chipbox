@@ -51,6 +51,8 @@ import net.sigmabeta.sage.logging.BasicHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.ui.StringProvider
+import okio.FileSystem
+import okio.Path.Companion.toPath
 
 /**
  * Plain-Dagger modules for the headless JVM target. These mirror the Hilt `@Module` classes
@@ -211,8 +213,9 @@ object JvmGeneratorModule {
         contentSources,
         bufferManager,
         emulatorProvider.emulators,
-        File(workDir, "staging"),
-        File(workDir, "pcm-cache"),
+        File(workDir, "staging").absolutePath.toPath(),
+        File(workDir, "pcm-cache").absolutePath.toPath(),
+        FileSystem.SYSTEM,
         hatchet,
     )
 }

@@ -8,11 +8,12 @@ kotlin {
     }
 
     sourceSets {
-        named("jvmSharedMain") {
+        named("commonMain") {
             dependencies {
                 api(projects.cbox.common.player.speaker.api)
 
                 implementation(libs.sage.common.logging)
+                api(libs.okio)
             }
         }
 
