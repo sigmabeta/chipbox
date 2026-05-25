@@ -1,6 +1,12 @@
 package net.sigmabeta.chipbox.jvm
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
@@ -8,6 +14,7 @@ import java.awt.Desktop
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.net.URI
+import kotlinx.coroutines.flow.MutableSharedFlow
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.jvm.di.JvmChipboxGraph
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
@@ -26,7 +33,37 @@ import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
  * `features/settings/real/src/jvmMain` (uses `javax.swing.JFileChooser`).
  */
 fun runDesktop(graph: JvmChipboxGraph) = application {
-    Window(onCloseRequest = ::exitApplication, title = "Chipbox") {
+    // Window-level key handling so Escape/Backspace navigate back whenever the window is focused,
+    // not only after a focusable child is clicked. `onKeyEvent` is the bubble-phase handler — it
+    // sees only keys the focused composable didn't consume, so the Search text field keeps
+    // Backspace for editing. `heldBackKeys` gives a rising-edge guard so auto-repeat (a held key)
+    // fires a single back per physical press. The shell collects this flow (see ChipboxAppUi's
+    // backKeyEvents) and routes each signal to its back handler.
+    val backKeyEvents = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+    val heldBackKeys = remember { mutableSetOf<Key>() }
+    Window(
+        onCloseRequest = ::exitApplication,
+        title = "Chipbox",
+        icon = painterResource("ic_launcher.png"),
+        onKeyEvent = { event ->
+            val isBackKey = event.key == Key.Escape || event.key == Key.Backspace
+            when {
+                !isBackKey -> false
+
+                event.type == KeyEventType.KeyDown -> {
+                    if (heldBackKeys.add(event.key)) backKeyEvents.tryEmit(Unit)
+                    true
+                }
+
+                event.type == KeyEventType.KeyUp -> {
+                    heldBackKeys.remove(event.key)
+                    true
+                }
+
+                else -> false
+            }
+        },
+    ) {
         CompositionLocalProvider(
             LocalMetroViewModelFactory provides graph.metroViewModelFactory,
             LocalChipboxStringProvider provides graph.stringProvider,
@@ -34,6 +71,7 @@ fun runDesktop(graph: JvmChipboxGraph) = application {
             ChipboxAppUi(
                 onOpenUrl = { url -> openUrlIfSupported(url) },
                 onCopyToClipboard = { _, text -> copyToClipboard(text) },
+                backKeyEvents = backKeyEvents,
             )
         }
     }
