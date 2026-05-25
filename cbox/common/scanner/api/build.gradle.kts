@@ -3,6 +3,8 @@ plugins {
 }
 
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.scanner.api"
     }
@@ -13,6 +15,7 @@ kotlin {
                 api(projects.cbox.common.models.api)
                 api(libs.kotlinx.coroutines.core)
 
+                implementation(projects.cbox.common.utils.api)
                 implementation(libs.sage.common.logging)
             }
         }
