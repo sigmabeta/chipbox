@@ -24,11 +24,29 @@ data class BrowseAllTracksState(
         title = stringProvider.getString(ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS),
     )
 
-    override fun toListItems(stringProvider: StringProvider): List<ListModel> = tracks.withStandardErrorAndLoading(
+    override fun toListItems(stringProvider: StringProvider): List<ListModel> {
+        // The shuffle-all CTA isn't gated on the track data finishing loading — show it up
+        // front (during loading too) so the user can act immediately. It's hidden only when
+        // there's nothing to shuffle: a loaded-but-empty library or a load error.
+        val showCta = when (val lce = tracks) {
+            is LCE.Content -> lce.data.isNotEmpty()
+            is LCE.Loading -> true
+            LCE.Uninitialized -> true
+            is LCE.Error -> false
+        }
+        val cta = if (showCta) listOf(shuffleAllCta(stringProvider)) else emptyList()
+        return cta + tracks.withStandardErrorAndLoading(
             loadingType = LoadingType.TEXT_CAPTION,
             loadingItemCount = LOADING_COUNT,
             loadingWithHeader = false,
         ) { content(data, stringProvider) }
+    }
+
+    private fun shuffleAllCta(stringProvider: StringProvider) = CtaListModel(
+        icon = Icon.Shuffle,
+        name = stringProvider.getString(ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS_CTA_SHUFFLE_ALL),
+        clickAction = BrowseAllTracksAction.ShuffleAllClicked,
+    )
 
     private fun content(tracks: List<Track>, stringProvider: StringProvider): List<ListModel> = if (tracks.isEmpty()) {
             listOf(
@@ -38,13 +56,7 @@ data class BrowseAllTracksState(
                 )
             )
         } else {
-            listOf(
-                CtaListModel(
-                    icon = Icon.Shuffle,
-                    name = stringProvider.getString(ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS_CTA_SHUFFLE_ALL),
-                    clickAction = BrowseAllTracksAction.ShuffleAllClicked,
-                ),
-            ) + tracks.mapIndexed(::trackRow)
+            tracks.mapIndexed(::trackRow)
         }
 
     private fun trackRow(index: Int, track: Track): ListModel = NameCaptionValueListModel(
