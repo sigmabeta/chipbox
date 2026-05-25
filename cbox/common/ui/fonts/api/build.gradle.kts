@@ -15,6 +15,8 @@ plugins {
 // under `src/commonMain/composeResources/font/`. Both the Android app and the JVM/desktop entry
 // load them through the generated `Res.font.<filename>` accessors; no more Android `R.font.*`.
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.ui.fonts.api"
         // KMP libraries default to `androidResources.enable = false`; that gates the AAR
