@@ -31,7 +31,7 @@ fun HorizontalScroller(
         items(
             items = model.scrollingItems,
             key = { it.dataId },
-            contentType = { it.javaClass.simpleName },
+            contentType = { it::class.simpleName },
         ) {
             it.Content(
                 sink = actionSink,
