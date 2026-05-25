@@ -8,4 +8,12 @@ kotlin {
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.utils.api"
     }
+
+    sourceSets {
+        named("commonMain") {
+            dependencies {
+                api(libs.kotlinx.coroutines.core)
+            }
+        }
+    }
 }

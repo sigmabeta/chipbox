@@ -4,6 +4,8 @@ plugins {
 }
 
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.strings.api"
     }
