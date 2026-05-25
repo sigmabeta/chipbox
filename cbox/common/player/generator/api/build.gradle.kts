@@ -3,6 +3,8 @@ plugins {
 }
 
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.player.generator.api"
     }
@@ -17,6 +19,8 @@ kotlin {
                 api(projects.cbox.common.contentsource.api)
                 api(libs.kotlinx.coroutines.core)
                 api(libs.sage.common.logging)
+
+                implementation(projects.cbox.common.utils.api)
             }
         }
     }
