@@ -33,5 +33,14 @@ interface AndroidFileContentSourceModule {
             dispatchers: SageDispatchers,
             hatchet: Hatchet,
         ): AndroidFileContentSource = AndroidFileContentSource(context, dispatchers, hatchet)
+
+        // ContentSourceRegistry is a plain (framework-free) type in contentsource:api; build it
+        // from the multibinding Set<ContentSource> here. The JVM app wires its own equivalent in
+        // JvmModules.
+        @Provides
+        @SingleIn(AppScope::class)
+        fun provideContentSourceRegistry(
+            sources: Set<@JvmSuppressWildcards ContentSource>,
+        ): ContentSourceRegistry = ContentSourceRegistry(sources)
     }
 }
