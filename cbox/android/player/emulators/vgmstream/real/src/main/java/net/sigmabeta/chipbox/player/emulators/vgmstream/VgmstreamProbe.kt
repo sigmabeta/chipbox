@@ -29,7 +29,7 @@ object VgmstreamProbe {
         return probeInternal(path).mapIndexedNotNull { index, line ->
             if (line == null) return@mapIndexedNotNull null
             val parts = line.split('\t')
-            if (parts.size < 3) return@mapIndexedNotNull null
+            if (parts.size < PROBE_FIELD_COUNT) return@mapIndexedNotNull null
             VgmstreamSubsong(
                 subsong = index + 1,
                 sampleRate = parts[0].toIntOrNull() ?: 0,
@@ -40,4 +40,7 @@ object VgmstreamProbe {
     }
 
     private external fun probeInternal(path: String): Array<String?>
+
+    // probeInternal lines are "sampleRate\tlengthMs\tstreamName".
+    private const val PROBE_FIELD_COUNT = 3
 }

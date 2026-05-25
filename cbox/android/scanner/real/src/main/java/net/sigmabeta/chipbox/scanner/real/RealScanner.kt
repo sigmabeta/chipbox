@@ -242,20 +242,20 @@ class RealScanner(
             if (reader == null) {
                 // No dedicated chiptune reader — fall back to vgmstream for streamed-audio formats
                 // (ADX, HCA, DSP/BRSTM, STRM, ...). Checked last so the readers above win.
-                if (VgmstreamProbe.isSupported(ext)) {
-                    val tracks = readWithErrorHandling(file) { scanVgmstream(file, ext) }
-                    when {
-                        tracks == null -> {
-                            hatchet.w("Failed to read ${file.name}.")
-                            failed++
-                        }
-
-                        tracks.isEmpty() -> hatchet.d("${file.name} yielded no tracks.")
-
-                        else -> tracksByFilename[file.name] = tracks.toMutableList()
-                    }
-                } else {
+                if (!VgmstreamProbe.isSupported(ext)) {
                     hatchet.v("No reader for extension '$ext' — skipping ${file.name}.")
+                    continue
+                }
+                val tracks = readWithErrorHandling(file) { scanVgmstream(file, ext) }
+                when {
+                    tracks == null -> {
+                        hatchet.w("Failed to read ${file.name}.")
+                        failed++
+                    }
+
+                    tracks.isEmpty() -> hatchet.d("${file.name} yielded no tracks.")
+
+                    else -> tracksByFilename[file.name] = tracks.toMutableList()
                 }
                 continue
             }
@@ -416,19 +416,20 @@ class RealScanner(
             val subsongs = trace("$TRACE_READ_PREFIX$ext") { VgmstreamProbe.probe(temp.absolutePath) }
             if (subsongs.isEmpty()) {
                 hatchet.v("vgmstream did not recognise ${file.name}.")
-                return emptyList()
-            }
-            subsongs.map { sub ->
-                RawTrack(
-                    file.identifier,
-                    "",
-                    sub.streamName.ifBlank { TAG_UNKNOWN },
-                    TAG_UNKNOWN,
-                    TAG_UNKNOWN,
-                    sub.lengthMs,
-                    sub.subsong,
-                    0L,
-                ).copy(source = librarySource.sourceId, extension = ext)
+                emptyList()
+            } else {
+                subsongs.map { sub ->
+                    RawTrack(
+                        file.identifier,
+                        "",
+                        sub.streamName.ifBlank { TAG_UNKNOWN },
+                        TAG_UNKNOWN,
+                        TAG_UNKNOWN,
+                        sub.lengthMs,
+                        sub.subsong,
+                        0L,
+                    ).copy(source = librarySource.sourceId, extension = ext)
+                }
             }
         } finally {
             temp.delete()

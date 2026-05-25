@@ -519,7 +519,7 @@ style:
     maxJumpCount: 1
   MagicNumber:
     active: true
-    excludes: [ '**/com/vgleadsheets/ui/icons/**',  '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
+    excludes: [ '**/com/vgleadsheets/ui/icons/**',  '**/test/**', '**/androidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**', '**/screenshot/**' ]
     ignoreNumbers:
       - '-1'
       - '0'

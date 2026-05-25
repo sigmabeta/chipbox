@@ -42,12 +42,10 @@ fun PaddingValues.outerFocusPadding(): PaddingValues {
 fun PaddingValues.innerFocusPadding(
     omitStart: Boolean = false,
     omitEnd: Boolean = false,
-): PaddingValues {
-    return PaddingValues(
+): PaddingValues = PaddingValues(
         start = unlessOmitted(omitStart),
         end = unlessOmitted(omitEnd),
     )
-}
 
 @Composable
 private fun PaddingValues.unlessOmitted(
@@ -55,6 +53,6 @@ private fun PaddingValues.unlessOmitted(
 ): Dp = if (omit) {
     0.dp
 } else {
-    val layoutDirection =  LocalLayoutDirection.current
+    val layoutDirection = LocalLayoutDirection.current
     (calculateEndPadding(layoutDirection) / 2).coerceAtLeast(MIN_INNER_PADDING)
 }

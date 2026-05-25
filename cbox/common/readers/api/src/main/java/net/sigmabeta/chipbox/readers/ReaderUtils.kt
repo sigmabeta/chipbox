@@ -48,14 +48,13 @@ fun deriveMetaFromFilename(filename: String): FilenameMeta {
     if (base.isEmpty()) return FilenameMeta(null, filename)
 
     val match = FILENAME_TRACK_PREFIX.find(base)
-    if (match != null) {
-        val number = match.groupValues[1].toIntOrNull()
-        val rest = match.groupValues[2].trim()
-        if (number != null && rest.isNotEmpty()) {
-            return FilenameMeta(number, rest)
-        }
+    val number = match?.groupValues?.get(1)?.toIntOrNull()
+    val rest = match?.groupValues?.get(2)?.trim()
+    return if (number != null && !rest.isNullOrEmpty()) {
+        FilenameMeta(number, rest)
+    } else {
+        FilenameMeta(null, base)
     }
-    return FilenameMeta(null, base)
 }
 
 // Leading 1-4 digit track number, then one or more separators, then the title. Requiring a

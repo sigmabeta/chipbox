@@ -52,7 +52,6 @@ private fun Dark() {
     }
 }
 
-
 @Preview(fontScale = 2.0f)
 @Composable
 private fun Beeg() {
