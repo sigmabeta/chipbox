@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.common.appui.api
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -152,11 +153,32 @@ internal object ChipboxTabsScreen : Screen {
                 LocalAppActionSink provides appActionSink,
             ) {
                 TabNavigator(LibraryTab) { tabNavigator ->
-                    // Reset the TopAppBar scroll offset on tab switch (parity with the
-                    // AndroidX backStackEntry-keyed LaunchedEffect the old shell used).
-                    LaunchedEffect(tabNavigator.current.key) {
+                    // Re-extend the TopAppBar on *any* navigation — tab switch, deep push, or
+                    // pop. Keyed on the active route (current tab + the active tab's top screen),
+                    // so it fires whenever the visible screen changes, not just on tab switch.
+                    // `lastItem` reads the tab Navigator's SnapshotStateList, so a push/pop within
+                    // a tab recomposes this and re-runs the effect (the reactive read `navItems`
+                    // already relies on).
+                    val activeRouteKey = activeTabNavigator.navigator?.let { nav ->
+                        "${tabNavigator.current.key}/${nav.lastItem.key}"
+                    } ?: tabNavigator.current.key
+                    LaunchedEffect(activeRouteKey) {
+                        // Animate (not snap) the bar back to fully extended, reusing the scroll
+                        // behavior's own snap spec so it matches a manual release. contentOffset is
+                        // the scroll accumulator (zeroed up front); heightOffset drives the visible
+                        // height, so we tween that down to 0. Re-keying cancels this coroutine, so a
+                        // fast follow-up navigation restarts the animation from the current height.
                         topAppBarState.contentOffset = 0f
-                        topAppBarState.heightOffset = 0f
+                        val spec = scrollBehavior.snapAnimationSpec
+                        if (spec != null) {
+                            animate(
+                                initialValue = topAppBarState.heightOffset,
+                                targetValue = 0f,
+                                animationSpec = spec,
+                            ) { value, _ -> topAppBarState.heightOffset = value }
+                        } else {
+                            topAppBarState.heightOffset = 0f
+                        }
                     }
 
                     // Selecting a tab clears that tab's stack and starts a new one. We pop the
