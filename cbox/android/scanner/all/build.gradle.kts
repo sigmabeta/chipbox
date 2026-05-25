@@ -7,7 +7,6 @@ android {
 }
 
 dependencies {
-    api(projects.cbox.android.scanner.api)
-    api(projects.cbox.android.scanner.real)
-    api(projects.cbox.android.scanner.fake)
+    api(projects.cbox.common.scanner.api)
+    api(projects.cbox.common.scanner.real)
 }

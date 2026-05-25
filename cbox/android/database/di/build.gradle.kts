@@ -8,6 +8,6 @@ android {
 }
 
 dependencies {
-    api(projects.cbox.android.database.api)
-    api(projects.cbox.android.database.real)
+    api(projects.cbox.common.database.api)
+    api(projects.cbox.common.database.real)
 }

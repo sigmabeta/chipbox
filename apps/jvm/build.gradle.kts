@@ -331,16 +331,16 @@ tasks.named<CreateStartScripts>("startScripts") {
 }
 
 dependencies {
-    implementation(projects.cbox.android.player.generator.real)
-    implementation(projects.cbox.android.player.emulators.gba.real)
-    implementation(projects.cbox.android.player.emulators.gme.real)
-    implementation(projects.cbox.android.player.emulators.ncsf.real)
-    implementation(projects.cbox.android.player.emulators.psf.real)
-    implementation(projects.cbox.android.player.emulators.ssf.real)
-    implementation(projects.cbox.android.player.emulators.twosf.real)
-    implementation(projects.cbox.android.player.emulators.usf.real)
-    implementation(projects.cbox.android.player.emulators.vgm.real)
-    implementation(projects.cbox.android.player.emulators.vgmstream.real)
+    implementation(projects.cbox.common.player.generator.real)
+    implementation(projects.cbox.common.player.emulators.gba.real)
+    implementation(projects.cbox.common.player.emulators.gme.real)
+    implementation(projects.cbox.common.player.emulators.ncsf.real)
+    implementation(projects.cbox.common.player.emulators.psf.real)
+    implementation(projects.cbox.common.player.emulators.ssf.real)
+    implementation(projects.cbox.common.player.emulators.twosf.real)
+    implementation(projects.cbox.common.player.emulators.usf.real)
+    implementation(projects.cbox.common.player.emulators.vgm.real)
+    implementation(projects.cbox.common.player.emulators.vgmstream.real)
     implementation(projects.cbox.common.contentsource.api)
     implementation(projects.cbox.common.strings.api)
     implementation(projects.cbox.common.debug.api)
@@ -383,13 +383,13 @@ dependencies {
 
     // Room KMP database used as the JVM target's real library. `sqlite-bundled` is the
     // cross-platform Room driver Android doesn't need.
-    implementation(projects.cbox.android.repository.real)
-    implementation(projects.cbox.android.database.all)
+    implementation(projects.cbox.common.repository.real)
+    implementation(projects.cbox.common.database.all)
     implementation(libs.sqlite.bundled)
 
     // Shared scanner — uses the new LibrarySource interface; LocalFileContentSource
     // is the JVM impl, the Android twin is AndroidFileContentSource (SAF).
-    implementation(projects.cbox.android.scanner.real)
+    implementation(projects.cbox.common.scanner.real)
     implementation(projects.cbox.common.readers.api)
 
     // Metro DI — JvmChipboxGraph is the runtime DI root (replaces the plain-Dagger

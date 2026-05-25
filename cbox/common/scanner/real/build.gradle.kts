@@ -20,7 +20,7 @@ kotlin {
                 implementation(projects.cbox.common.perf.api)
                 // vgmstream metadata probe (native): enumerates subsongs + exact lengths at scan
                 // time. The shared .so is packaged by the app via emulators:di → vgmstream:native.
-                implementation(projects.cbox.android.player.emulators.vgmstream.real)
+                implementation(projects.cbox.common.player.emulators.vgmstream.real)
                 implementation(libs.sage.common.logging)
             }
         }
