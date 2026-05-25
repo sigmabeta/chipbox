@@ -2,6 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>LongMethod:RealScanner.kt$RealScanner$@OptIn(ExperimentalTime::class) override suspend fun CoroutineScope.scan()</ID>
     <ID>LongMethod:RealScanner.kt$RealScanner$private suspend fun scanGroup( folderKey: String, files: List&lt;LibraryFileInfo&gt;, signature: String, ): Progress</ID>
     <ID>LoopWithTooManyJumpStatements:RealScanner.kt$RealScanner$for</ID>
     <ID>TooGenericExceptionCaught:RealScanner.kt$RealScanner$ex: Exception</ID>

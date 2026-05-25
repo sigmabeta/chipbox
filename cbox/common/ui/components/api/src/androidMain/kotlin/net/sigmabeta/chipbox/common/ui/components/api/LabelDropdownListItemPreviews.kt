@@ -70,7 +70,6 @@ private fun DarkExpanded() {
     }
 }
 
-
 @Suppress("MagicNumber")
 @Composable
 private fun Sample(expanded: Boolean) {
