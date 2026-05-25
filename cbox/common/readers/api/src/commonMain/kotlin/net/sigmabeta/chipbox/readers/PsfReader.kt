@@ -6,8 +6,6 @@ import net.sigmabeta.chipbox.utils.convert
 import net.sigmabeta.chipbox.utils.convertUtf
 import net.sigmabeta.sage.logging.Hatchet
 import java.io.UnsupportedEncodingException
-import java.nio.BufferUnderflowException
-import java.nio.ByteBuffer
 
 data class PsfTagInfo(
     val tags: Map<String, String>,
@@ -21,7 +19,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
         readTagInfo(bytes)?.let { listOf(buildRawTrack(it.tags, identifier, it.platform)) }
 
     fun readTagInfo(bytes: ByteArray): PsfTagInfo? {
-        val fileAsByteBuffer = bytesAsByteBuffer(bytes)
+        val fileAsByteBuffer = bytesAsReader(bytes)
         val formatHeader = fileAsByteBuffer.nextBytesAsString(SIGNATURE_SIZE)
 
         if (formatHeader == null) {
@@ -46,7 +44,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
             val programAreaSize = fileAsByteBuffer.nextFourBytesAsInt()
 
             val dataSize = reservedAreaSize + programAreaSize
-            val tagsAreaSize = fileAsByteBuffer.array().size - dataSize - COMBINED_HEADER_SIZE
+            val tagsAreaSize = fileAsByteBuffer.size - dataSize - COMBINED_HEADER_SIZE
 
             val tagSectionStart = dataSize + FILE_HEADER_SIZE
             if (tagSectionStart > bytes.size) {
@@ -93,7 +91,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
         } catch (e: UnsupportedEncodingException) {
             hatchet.w("PSF parse failed: unsupported encoding — ${e.message}")
             null
-        } catch (e: BufferUnderflowException) {
+        } catch (e: IndexOutOfBoundsException) {
             hatchet.w("PSF parse failed: buffer underflow (truncated file, ${bytes.size} bytes).")
             null
         }
@@ -148,7 +146,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
 
     private fun readAllTags(
         tagsAreaSize: Int,
-        wrappedBuffer: ByteBuffer,
+        wrappedBuffer: ByteReader,
         tagMap: HashMap<String, String>
     ) {
         val tagData = ByteArray(tagsAreaSize)
@@ -178,7 +176,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
         tagMap[line.substringBefore('=')] = line.substringAfter('=')
     }
 
-    private fun isPsfTagValid(wrappedBuffer: ByteBuffer): Boolean {
+    private fun isPsfTagValid(wrappedBuffer: ByteReader): Boolean {
         val tagHeader = ByteArray(TAG_HEADER_SIZE)
         wrappedBuffer.get(tagHeader)
 

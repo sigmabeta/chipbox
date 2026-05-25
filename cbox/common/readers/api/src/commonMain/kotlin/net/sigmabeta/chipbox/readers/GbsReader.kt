@@ -9,7 +9,7 @@ import java.io.UnsupportedEncodingException
 class GbsReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
-            val fileAsByteBuffer = bytesAsByteBuffer(bytes)
+            val fileAsByteBuffer = bytesAsReader(bytes)
 
             val formatHeader = fileAsByteBuffer.nextBytesAsString(HEADER_READ_SIZE)
             if (formatHeader == null) {

@@ -1,34 +1,29 @@
 package net.sigmabeta.chipbox.readers
 
-import java.math.BigInteger
-import java.nio.BufferUnderflowException
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
+internal fun ByteReader.nextFourBytesAsInt() = readIntLe()
 
-internal fun ByteBuffer.nextFourBytesAsInt() = int
+internal fun ByteReader.nextBytes(numberOfBytes: Int): ByteArray? = readBytes(numberOfBytes)
 
-internal fun ByteBuffer.nextBytes(numberOfBytes: Int): ByteArray? {
-    val headerArray = ByteArray(numberOfBytes)
-
-    try {
-        get(headerArray)
-    } catch (ex: BufferUnderflowException) {
-        return null
-    }
-
-    return headerArray
-}
-
-internal fun ByteBuffer.nextBytesAsString(numberOfBytes: Int) = nextBytes(numberOfBytes)
-    ?.toString(Charsets.UTF_8)
+internal fun ByteReader.nextBytesAsString(numberOfBytes: Int) = nextBytes(numberOfBytes)
+    ?.decodeToString()
     ?.substringBefore(0.toChar())
     ?.trim()
 
-internal fun ByteBuffer.nextBytesAsInt(numberOfBytes: Int): Int {
-    val lengthSecondsBytes = nextBytes(numberOfBytes)
+internal fun ByteReader.nextBytesAsInt(numberOfBytes: Int): Int {
+    val valueBytes = nextBytes(numberOfBytes) ?: return 0
+    return signedBigEndianInt(valueBytes)
+}
 
-    val bigInteger = BigInteger(lengthSecondsBytes)
-    return bigInteger.toInt()
+/**
+ * Interpret [bytes] as a big-endian two's-complement integer — matches the old
+ * `BigInteger(ByteArray).toInt()`: sign-extend from the most significant byte, then fold in
+ * each byte. Only the low 32 bits are kept (as `toInt()` did).
+ */
+private fun signedBigEndianInt(bytes: ByteArray): Int {
+    if (bytes.isEmpty()) return 0
+    var result = if (bytes[0] < 0) -1 else 0
+    for (b in bytes) result = (result shl 8) or (b.toInt() and 0xFF)
+    return result
 }
 
 data class FilenameMeta(
@@ -77,8 +72,7 @@ fun String?.orUnknown(): String {
     return this
 }
 
-internal fun bytesAsByteBuffer(bytes: ByteArray): ByteBuffer =
-    ByteBuffer.wrap(bytes, 0, bytes.size).order(ByteOrder.LITTLE_ENDIAN)
+internal fun bytesAsReader(bytes: ByteArray): ByteReader = ByteReader.wrap(bytes)
 
 internal fun String.toLengthMillis(): Long {
     val splitText = split(":")
