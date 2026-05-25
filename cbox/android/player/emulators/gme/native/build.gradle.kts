@@ -1,3 +1,3 @@
 plugins {
-    alias(libs.plugins.sage.emulator.native)
+    id("chipbox.emulator.native")
 }

@@ -4,7 +4,7 @@
     dev.zacsweers.metro.gradle.RequiresIdeSupport::class,
 )
 
-import net.sigmabeta.sage.plugins.components.chipboxNamespace
+import net.sigmabeta.sage.plugins.components.namespaceFromPath
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 plugins {
@@ -33,7 +33,7 @@ kotlin {
     js { nodejs() }
 
     androidLibrary {
-        namespace = chipboxNamespace()
+        namespace = namespaceFromPath()
     }
 
     sourceSets {

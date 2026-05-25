@@ -1,4 +1,4 @@
-import net.sigmabeta.sage.plugins.components.chipboxNamespace
+import net.sigmabeta.sage.plugins.components.namespaceFromPath
 
 plugins {
     alias(libs.plugins.sage.kmp)
@@ -11,7 +11,7 @@ kotlin {
     js { nodejs() }
 
     androidLibrary {
-        namespace = chipboxNamespace()
+        namespace = namespaceFromPath()
     }
 
     sourceSets {

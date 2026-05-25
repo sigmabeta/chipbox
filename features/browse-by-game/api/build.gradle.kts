@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.sage.feature.api)
+    id("chipbox.feature.api")
 }
 
 kotlin {
