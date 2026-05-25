@@ -1,8 +1,17 @@
 plugins {
-    alias(libs.plugins.sage.jvm)
-    alias(libs.plugins.sage.di.jvm)
+    alias(libs.plugins.sage.kmp)
 }
 
-dependencies {
-    api(libs.sage.common.coroutines)
+kotlin {
+    androidLibrary {
+        namespace = "net.sigmabeta.chipbox.common.contentsource.api"
+    }
+
+    sourceSets {
+        named("commonMain") {
+            dependencies {
+                api(libs.sage.common.coroutines)
+            }
+        }
+    }
 }
