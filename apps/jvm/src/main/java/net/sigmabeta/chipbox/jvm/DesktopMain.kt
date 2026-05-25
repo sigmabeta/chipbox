@@ -10,14 +10,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
-import java.awt.Desktop
-import java.awt.Toolkit
-import java.awt.datatransfer.StringSelection
-import java.net.URI
 import kotlinx.coroutines.flow.MutableSharedFlow
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.jvm.di.JvmChipboxGraph
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
+import java.awt.Desktop
+import java.awt.Toolkit
+import java.awt.datatransfer.StringSelection
+import java.net.URI
 
 /**
  * Compose Multiplatform entry point for the JVM/desktop target. Calls the same
@@ -44,7 +44,7 @@ fun runDesktop(graph: JvmChipboxGraph) = application {
     Window(
         onCloseRequest = ::exitApplication,
         title = "Chipbox",
-        icon = painterResource("ic_launcher.png"),
+        icon = painterResource("ic_launcher.webp"),
         onKeyEvent = { event ->
             val isBackKey = event.key == Key.Escape || event.key == Key.Backspace
             when {
