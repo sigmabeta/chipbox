@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.sage.android)
-    alias(libs.plugins.sage.di.android)
+    alias(libs.plugins.sage.di)
 }
 
 android {
@@ -13,5 +13,5 @@ dependencies {
     // ChipboxDatabase (Room @Database) — this module extracts its DAOs to construct
     // DatabaseRepository. repository/real now depends only on database/api (the DAO interfaces),
     // so the concrete Room database is pulled in here, at the DI seam.
-    implementation(projects.cbox.common.database.all)
+    implementation(projects.cbox.common.database.real)
 }

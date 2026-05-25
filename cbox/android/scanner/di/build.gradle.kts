@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.sage.android)
-    alias(libs.plugins.sage.di.android)
+    alias(libs.plugins.sage.di)
 }
 
 android {
@@ -12,8 +12,8 @@ dependencies {
     api(projects.cbox.common.scanner.real)
     // scanner.real is now KMP and takes the platform-neutral LibrarySource interface;
     // the Android Hilt module here picks the concrete AndroidFileContentSource impl,
-    // so it must depend on contentsource:file:all directly (no longer pulled transitively).
-    implementation(projects.cbox.android.contentsource.file.all)
+    // so it depends on contentsource:file:real directly (no longer pulled transitively).
+    implementation(projects.cbox.common.contentsource.file.real)
     // VgmstreamProbe (native subsong probe) — scanner.real now takes the VgmstreamProber interface;
     // its native impl is wired in here at the DI seam.
     implementation(projects.cbox.common.player.emulators.vgmstream.real)
