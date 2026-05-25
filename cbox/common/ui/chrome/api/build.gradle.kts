@@ -6,6 +6,8 @@ plugins {
 }
 
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = chipboxNamespace()
     }

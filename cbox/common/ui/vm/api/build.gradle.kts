@@ -17,6 +17,8 @@ plugins {
 // provider, or a sibling `expect`/`actual` directly wrapping `hiltViewModel<T>()`) lands when
 // the first real Android Compose screen ports to this module — there's no consumer today.
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.ui.vm.api"
     }
