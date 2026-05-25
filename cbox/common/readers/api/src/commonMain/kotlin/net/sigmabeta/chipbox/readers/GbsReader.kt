@@ -4,7 +4,6 @@ import net.sigmabeta.chipbox.models.FADE_LENGTH_MS
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.UnsupportedEncodingException
 
 class GbsReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
@@ -46,9 +45,6 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
             return tracks
         } catch (iae: IllegalArgumentException) {
             hatchet.w("GBS parse failed: illegal argument — ${iae.message}")
-            return null
-        } catch (e: UnsupportedEncodingException) {
-            hatchet.w("GBS parse failed: unsupported encoding — ${e.message}")
             return null
         }
     }

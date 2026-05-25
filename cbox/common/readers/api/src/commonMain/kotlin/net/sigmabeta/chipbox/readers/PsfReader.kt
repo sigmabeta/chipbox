@@ -5,7 +5,6 @@ import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.utils.convert
 import net.sigmabeta.chipbox.utils.convertUtf
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.UnsupportedEncodingException
 
 data class PsfTagInfo(
     val tags: Map<String, String>,
@@ -32,10 +31,11 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
             return null
         }
 
-        val platformCode = formatHeader.toByteArray(Charsets.US_ASCII)[SIGNATURE_INDEX_PLATFORM_CODE]
+        val platformCode = formatHeader.encodeToByteArray()[SIGNATURE_INDEX_PLATFORM_CODE]
         val platform = platformForCode(platformCode)
         if (platform == null) {
-            hatchet.w("PSF parse failed: unsupported platform code 0x%02X.".format(platformCode))
+            val hex = (platformCode.toInt() and 0xFF).toString(radix = 16).padStart(2, '0').uppercase()
+            hatchet.w("PSF parse failed: unsupported platform code 0x$hex.")
             return null
         }
 
@@ -87,9 +87,6 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
             PsfTagInfo(tagMap, libRefs, platform)
         } catch (iae: IllegalArgumentException) {
             hatchet.w("PSF parse failed: illegal argument — ${iae.message}")
-            null
-        } catch (e: UnsupportedEncodingException) {
-            hatchet.w("PSF parse failed: unsupported encoding — ${e.message}")
             null
         } catch (e: IndexOutOfBoundsException) {
             hatchet.w("PSF parse failed: buffer underflow (truncated file, ${bytes.size} bytes).")
@@ -180,7 +177,7 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
         val tagHeader = ByteArray(TAG_HEADER_SIZE)
         wrappedBuffer.get(tagHeader)
 
-        return String(tagHeader) == PSF_TAG_HEADER
+        return tagHeader.decodeToString() == PSF_TAG_HEADER
     }
 
     private fun isPsfFile(header: String) = header.startsWith("PSF")

@@ -4,11 +4,6 @@ import net.sigmabeta.chipbox.models.FADE_LENGTH_MS
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.UnsupportedEncodingException
-import okio.Buffer
-import okio.GzipSource
-import okio.IOException
-import okio.buffer
 
 class VgmReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
@@ -58,9 +53,6 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
         } catch (iae: IllegalArgumentException) {
             hatchet.w("VGM parse failed: illegal argument — ${iae.message}")
             return null
-        } catch (e: UnsupportedEncodingException) {
-            hatchet.w("VGM parse failed: unsupported encoding — ${e.message}")
-            return null
         } catch (e: Exception) {
             hatchet.w("VGM parse failed for $identifier: ${e.message}")
             return null
@@ -69,17 +61,9 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
 
     private fun maybeDecompress(bytes: ByteArray, identifier: String): ByteArray? {
         if (bytes.size < 2 || bytes[0] != GZIP_MAGIC_0 || bytes[1] != GZIP_MAGIC_1) return bytes
-        return try {
-            val source = GzipSource(Buffer().write(bytes)).buffer()
-            try {
-                source.readByteArray()
-            } finally {
-                source.close()
-            }
-        } catch (e: IOException) {
-            hatchet.w("VGZ decompress failed for $identifier: ${e.message}")
-            null
-        }
+        val decompressed = gunzip(bytes)
+        if (decompressed == null) hatchet.w("VGZ decompress failed for $identifier.")
+        return decompressed
     }
 
     private fun readGd3(bytes: ByteArray, absoluteOffset: Long): Gd3Tag? {
@@ -107,7 +91,7 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
             while (end + 2 <= payloadEnd && !(bytes[end] == 0.toByte() && bytes[end + 1] == 0.toByte())) {
                 end += 2
             }
-            strings.add(String(bytes, cursor, end - cursor, Charsets.UTF_16LE).trim())
+            strings.add(decodeUtf16Le(bytes, cursor, end).trim())
             cursor = end + 2
         }
         if (strings.size < GD3_STRING_COUNT) {
@@ -168,6 +152,16 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
                 hatchet.w("VGM: unmapped GD3 system name '$system' — defaulting to OTHER.")
                 Platform.OTHER
             }
+        }
+    }
+
+    // Decode a UTF-16LE slice [start, end) by hand — the common stdlib has no String(bytes,charset).
+    // Each little-endian 16-bit unit maps straight to a Char (surrogate pairs survive as-is).
+    private fun decodeUtf16Le(bytes: ByteArray, start: Int, end: Int): String = buildString {
+        var i = start
+        while (i + 1 < end) {
+            append(((bytes[i].toInt() and 0xFF) or ((bytes[i + 1].toInt() and 0xFF) shl 8)).toChar())
+            i += 2
         }
     }
 

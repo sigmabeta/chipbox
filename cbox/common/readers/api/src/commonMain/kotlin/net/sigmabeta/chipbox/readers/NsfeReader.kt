@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.readers
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
-import java.io.UnsupportedEncodingException
 
 class NsfeReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
@@ -74,9 +73,6 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
         } catch (iae: IllegalArgumentException) {
             hatchet.w("NSFE parse failed: illegal argument — ${iae.message}")
             return null
-        } catch (e: UnsupportedEncodingException) {
-            hatchet.w("NSFE parse failed: unsupported encoding — ${e.message}")
-            return null
         }
     }
 
@@ -91,7 +87,7 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
     private fun List<NsfeChunk>.parseChunkAsStrings(chunkName: String): List<String>? = try {
             first { it.name == chunkName }
                 .content
-                .toString(Charsets.UTF_8)
+                .decodeToString()
                 .split(0.toChar())
                 .map { it.trim() }
                 .map { it.orUnknown() }
@@ -170,9 +166,7 @@ data class NsfeChunk(
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as NsfeChunk
+        if (other !is NsfeChunk) return false
 
         if (length != other.length) return false
         if (name != other.name) return false
