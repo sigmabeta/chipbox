@@ -148,11 +148,7 @@ private fun EmptyListIndicator(
 
         val shouldShowError = showDebug || LocalInspectionMode.current
         if (shouldShowError && error != null) {
-            val firstStackElement = error.stackTrace.first()
-            val className = firstStackElement.fileName
-            val methodName = firstStackElement.methodName
-            val lineNumber = firstStackElement.lineNumber
-            val summary = "$className: $lineNumber ($methodName)"
+            val summary = error.firstFrameSummary()
             DebugText(summary, color)
 
             AnimatedVisibility(visible = !showDetails) {
