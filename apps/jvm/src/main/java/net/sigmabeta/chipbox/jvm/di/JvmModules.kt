@@ -11,6 +11,7 @@ import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
@@ -18,10 +19,10 @@ import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
 import net.sigmabeta.chipbox.jvm.JvmStorage
-import net.sigmabeta.chipbox.jvm.LocalFileContentSource
-import net.sigmabeta.chipbox.jvm.SourceDataLineSpeaker
-import net.sigmabeta.chipbox.jvm.strings.JvmStringProvider
-import net.sigmabeta.chipbox.jvm.strings.chipboxJvmStrings
+import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
+import net.sigmabeta.chipbox.player.speaker.real.SourceDataLineSpeaker
+import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
+import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
 import net.sigmabeta.chipbox.player.buffer.BufferDebugSource
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
@@ -79,8 +80,9 @@ object HatchetModule {
 @BindingContainer
 @ContributesTo(AppScope::class)
 object JvmStringsModule {
+    // Single multiplatform source: cbox/common/strings/real's composeResources, preloaded once.
     @Provides @SingleIn(AppScope::class)
-    fun provideStringProvider(): StringProvider = JvmStringProvider(chipboxJvmStrings)
+    fun provideStringProvider(): StringProvider = runBlocking { ChipboxStringProvider(loadChipboxStrings()) }
 }
 
 @BindingContainer

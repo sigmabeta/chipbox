@@ -16,5 +16,4 @@ dependencies {
     implementation(projects.cbox.common.player.common.api)
     implementation(projects.cbox.common.player.director.api)
     implementation(projects.cbox.common.repository.api)
-    implementation(projects.cbox.android.strings.api)
 }

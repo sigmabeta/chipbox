@@ -16,7 +16,7 @@ import net.sigmabeta.sage.ui.StringProvider
  */
 class LibraryMenu(
     private val library: ChipboxLibrary,
-    private val strings: StringProvider = CliStringProvider,
+    private val strings: StringProvider = cliStringProvider,
 ) {
     suspend fun root(): List<MenuNode> = listOf(
         section("Games", library.games().map { gameNode(it) }),

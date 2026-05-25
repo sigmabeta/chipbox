@@ -1,29 +1,30 @@
 package net.sigmabeta.chipbox.di
 
-import android.content.Context
 import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibrarySource
-import net.sigmabeta.chipbox.strings.api.ChipboxStringId
-import net.sigmabeta.chipbox.strings.api.id
+import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
+import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
 import net.sigmabeta.sage.android.logging.AndroidHatchet
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
-import net.sigmabeta.sage.ui.strings.AndroidStringProvider
 
 @BindingContainer
 @ContributesTo(AppScope::class)
 object AndroidAppModule {
+    // Strings now come from the single multiplatform source (cbox/common/strings/real's
+    // composeResources), preloaded once into an in-memory map. runBlocking is fine here: it's a
+    // one-time app-scope construction reading bundled resources, off the UI critical path.
     @Provides
     @SingleIn(AppScope::class)
-    fun provideStringProvider(context: Context): StringProvider =
-        AndroidStringProvider(context.resources) { (it as ChipboxStringId).id() }
+    fun provideStringProvider(): StringProvider = runBlocking { ChipboxStringProvider(loadChipboxStrings()) }
 
     @Provides
     @SingleIn(AppScope::class)

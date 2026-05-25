@@ -10,7 +10,7 @@ android {
 dependencies {
     implementation(projects.cbox.android.ui.theme.api)
     implementation(projects.cbox.common.ui.components.api)
-    implementation(projects.cbox.android.strings.api)
+    implementation(projects.cbox.common.strings.real)
     implementation(projects.cbox.common.strings.api)
     implementation(projects.cbox.common.models.api)
 
@@ -18,7 +18,6 @@ dependencies {
     implementation(libs.sage.common.ui.listScreens)
     implementation(libs.sage.common.appcomm)
     implementation(libs.sage.common.ui.strings)
-    implementation(libs.sage.android.ui.strings)
     implementation(libs.sage.common.ui.components)
     implementation(libs.sage.common.logging)
     implementation(libs.sage.common.ui.perfCompose)

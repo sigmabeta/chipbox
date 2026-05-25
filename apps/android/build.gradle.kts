@@ -103,7 +103,7 @@ kotlin {
 
 dependencies {
     implementation(projects.cbox.common.appui.api)
-    implementation(projects.cbox.android.strings.api)
+    implementation(projects.cbox.common.strings.real)
     implementation(projects.cbox.android.artworkprovider.api)
     implementation(projects.cbox.common.database.all)
     implementation(projects.cbox.android.database.di)
@@ -142,7 +142,6 @@ dependencies {
     implementation(libs.sage.android.logging)
     implementation(libs.sage.common.ui.perfCompose)
     implementation(libs.sage.common.ui.listScreens)
-    implementation(libs.sage.android.ui.strings)
     implementation(libs.sage.android.ui.themes)
 
     implementation(libs.sage.fake.analytics)

@@ -18,7 +18,7 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
 import net.sigmabeta.chipbox.common.ui.chrome.api.TitleBarController
 import net.sigmabeta.chipbox.settings.ThemeMode
-import net.sigmabeta.chipbox.ui.theme.api.ChipboxTheme
+import net.sigmabeta.chipbox.ui.theme.api.AppTheme
 
 /**
  * Cross-platform entry point for the Chipbox Compose UI. Owns the outer Voyager [Navigator]
@@ -57,11 +57,9 @@ fun ChipboxAppUi(
     val brand by appUiViewModel.brandFont.collectAsState()
     val plain by appUiViewModel.plainFont.collectAsState()
 
-    ChipboxTheme(
-        brand = brand.toFontFamily(),
-        plain = plain.toFontFamily(),
-        brandScale = brand.scaleFactor,
-        plainScale = plain.scaleFactor,
+    AppTheme(
+        brand = brand,
+        plain = plain,
         darkTheme = when (themeMode) {
             ThemeMode.LIGHT -> false
             ThemeMode.DARK -> true
