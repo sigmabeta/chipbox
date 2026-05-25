@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.sage.feature.real)
+    id("chipbox.feature.real")
 }
 
 // LibraryViewModel + state/action are pure-Kotlin commonMain; LibraryRoute is androidMain

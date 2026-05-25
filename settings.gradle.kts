@@ -6,6 +6,7 @@ if (!sageLocalProps.exists()) {
     }
 }
 
+includeBuild("build-logic")
 includeBuild("sage/sage-build-logic")
 includeBuild("sage")
 

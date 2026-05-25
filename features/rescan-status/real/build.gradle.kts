@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.sage.feature.real)
+    id("chipbox.feature.real")
 }
 
 // RescanStatusState / the route `expect` are commonMain (pure renderer + entry point). The

@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.sage.screenshot)
+    id("chipbox.screenshot")
 }
 
 dependencies {

@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.sage.feature.real)
+    id("chipbox.feature.real")
 }
 
 // SettingsViewModel is commonMain now (its deps are all KMP); the build-date java.time formatting
