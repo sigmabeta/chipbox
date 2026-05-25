@@ -8,6 +8,8 @@ plugins {
 // ChipboxListViewModel + ChipboxListEntry both live in commonMain — ChipboxListEntry is the
 // Compose scaffolding that binds a list VM to sage's GridScreen / ListScreen (also commonMain).
 kotlin {
+    js { nodejs() }
+
     androidLibrary {
         namespace = chipboxNamespace()
     }
