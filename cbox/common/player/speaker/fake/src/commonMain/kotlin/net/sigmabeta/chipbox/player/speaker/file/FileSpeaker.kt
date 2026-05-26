@@ -5,7 +5,7 @@ import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.common.BYTES_PER_SAMPLE
 import net.sigmabeta.chipbox.player.common.CHANNELS_STEREO
-import net.sigmabeta.chipbox.player.speaker.Speaker
+import net.sigmabeta.chipbox.player.speaker.BaseSpeaker
 import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
 import okio.Buffer
@@ -29,7 +29,7 @@ class FileSpeaker(
     hatchet: Hatchet,
     bufferManager: ConsumerBufferManager,
     dispatcher: CoroutineDispatcher = ioDispatcher
-) : Speaker(bufferManager, hatchet, dispatcher) {
+) : BaseSpeaker(bufferManager, hatchet, dispatcher) {
     private var bytesWritten = 0
 
     private var sink: BufferedSink? = null

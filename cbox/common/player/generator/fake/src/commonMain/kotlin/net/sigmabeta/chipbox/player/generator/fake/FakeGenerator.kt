@@ -6,7 +6,7 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.emulators.fake.FakeEmulator
-import net.sigmabeta.chipbox.player.generator.Generator
+import net.sigmabeta.chipbox.player.generator.BaseGenerator
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
@@ -25,7 +25,7 @@ class FakeGenerator(
     bufferManager: ProducerBufferManager,
     hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = ioDispatcher
-) : Generator(repository, contentSourceRegistry, bufferManager, hatchet, dispatcher) {
+) : BaseGenerator(repository, contentSourceRegistry, bufferManager, hatchet, dispatcher) {
 
     override val pcmSourceFactory: PcmTrackSource.Factory = FakePcmTrackSourceFactory(hatchet)
 }

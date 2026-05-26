@@ -8,7 +8,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
-import net.sigmabeta.chipbox.player.speaker.Speaker
+import net.sigmabeta.chipbox.player.speaker.BaseSpeaker
 import net.sigmabeta.sage.logging.Hatchet
 
 /**
@@ -36,7 +36,7 @@ class SourceDataLineSpeaker(
     bufferManager: ConsumerBufferManager,
     hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
-) : Speaker(bufferManager, hatchet, dispatcher) {
+) : BaseSpeaker(bufferManager, hatchet, dispatcher) {
 
     private var line: SourceDataLine? = null
     private var lineSampleRate: Int = 0
