@@ -138,6 +138,7 @@ include(
     ":cbox:common:strings:api",
     ":cbox:common:strings:real",
     ":cbox:common:ui:fonts:api",
+    ":cbox:common:ui:fonts:real",
     ":cbox:common:ui:theme:api",
     ":cbox:common:ui:vm:api",
     ":cbox:common:utils:api",
