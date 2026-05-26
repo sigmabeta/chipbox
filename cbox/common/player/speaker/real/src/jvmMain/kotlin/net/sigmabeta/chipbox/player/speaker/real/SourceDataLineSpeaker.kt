@@ -93,7 +93,11 @@ class SourceDataLineSpeaker(
 
         hatchet.i("Tearing down SourceDataLine.")
         runCatching {
-            current.drain()
+            // No drain(): on Linux backends (PipeWire/ALSA via javax.sound) drain() can hang
+            // indefinitely after a flushed or about-to-change-rate line, wedging the consume
+            // loop. We drop whatever's still in the line's ~LINE_BUFFER_BYTES hardware buffer
+            // (~tens of ms) — fine for a stop (the user wanted silence) and a fast cut at rate
+            // transitions, where any tail audio would have to be torn up anyway.
             current.stop()
             current.close()
         }.onFailure { hatchet.w("SourceDataLine teardown threw: ${it.message}") }

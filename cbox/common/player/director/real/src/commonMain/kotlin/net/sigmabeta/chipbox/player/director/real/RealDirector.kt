@@ -19,6 +19,7 @@ import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.GeneratorEvent
@@ -107,7 +108,7 @@ class RealDirector(
 
     // No replay: the error log is for errors that happen while a screen is watching, not a
     // backlog replayed to late subscribers. DROP_OLDEST keeps a burst of rapid failures flowing.
-    private val errorEventsMutable = MutableSharedFlow<String>(
+    private val errorEventsMutable = MutableSharedFlow<PlayerErrorEvent>(
         extraBufferCapacity = 8,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
@@ -172,11 +173,12 @@ class RealDirector(
                 startTrack(firstTrackId)
                 if (wasPaused) {
                     // Drop the audio queued from the paused session and restart the speaker's
-                    // consume loop. Without this, the generator stays blocked filling buffers
-                    // nobody is reading, so the new session never becomes audible. Skipped on
-                    // cold start because the buffer manager isn't initialised until the
-                    // generator's first setSampleRate call lands.
-                    speaker.seek()
+                    // consume loop, switching it onto the new track so any buffer left from the
+                    // paused session's track is discarded rather than played. Without this, the
+                    // generator stays blocked filling buffers nobody is reading, so the new
+                    // session never becomes audible. Skipped on cold start because the buffer
+                    // manager isn't initialised until the generator's first setSampleRate lands.
+                    speaker.switchTo(firstTrackId)
                 }
             }
         }
@@ -239,13 +241,15 @@ class RealDirector(
             if (isCurrentTrackLastInSetlist(session, setlist)) return@launch
 
             val nextPosition = (session.currentPosition ?: -1) + 1
+            val nextTrackId = setlist[nextPosition]
             hatchet.i("skipForward: advancing to position $nextPosition (state=${currentState.state}).")
             advanceToTrackAt(session, setlist, nextPosition)
-            // Drop the play-out buffer so the audible track switches immediately; the
-            // auto-advance path naturally arrives at end-of-buffer so doesn't need this.
-            hatchet.i("skipForward: generator.startTrack returned; calling speaker.seek().")
-            speaker.seek()
-            hatchet.i("skipForward: speaker.seek returned (state=${currentState.state}).")
+            // Cut over to the new track immediately: drop the play-out buffer and have the
+            // speaker discard any straggler from the outgoing track until the new one's audio
+            // arrives. The auto-advance path naturally reaches end-of-buffer so doesn't need this.
+            hatchet.i("skipForward: generator.startTrack returned; calling speaker.switchTo($nextTrackId).")
+            speaker.switchTo(nextTrackId)
+            hatchet.i("skipForward: speaker.switchTo returned (state=${currentState.state}).")
         }
     }
 
@@ -257,13 +261,15 @@ class RealDirector(
             val setlistPosition = session.currentPosition ?: 0
 
             if (withinTrackPosition > SKIP_BACK_THRESHOLD_MS || setlistPosition <= 0) {
+                // Restart of the current track — no track change, so a plain in-track seek.
                 generator.seek(0L)
                 speaker.seek()
                 return@launch
             }
 
+            val previousTrackId = setlist[setlistPosition - 1]
             advanceToTrackAt(session, setlist, setlistPosition - 1)
-            speaker.seek()
+            speaker.switchTo(previousTrackId)
         }
     }
 
@@ -431,19 +437,24 @@ class RealDirector(
             )
         }
 
-        if (oldState.state == PlayerState.PLAYING) {
+        // Already mid-playback (audio flowing) or mid-buffer (starved): a track change is in
+        // flight. Don't force a state — the speaker decides PLAYING vs BUFFERING by whether audio
+        // keeps flowing, and the now-playing metadata updates when the new track's first buffer
+        // plays (SpeakerEvent.TrackChange). Just reset the high-water mark and skip-forward gate.
+        if (oldState.state == PlayerState.PLAYING || oldState.state == PlayerState.BUFFERING) {
             hatchet.i(
                 "handleGeneratorLoading(track=${event.trackId}): " +
-                    "PLAYING -> PRELOADING (await SpeakerEvent.TrackChange)."
+                    "track change while ${oldState.state}; awaiting audio."
             )
             return oldState.copy(
-                state = PlayerState.PRELOADING,
                 generatorProducedMs = 0L,
-                skipForwardAllowed = !isCurrentTrackLastInSetlist(session, setlist)
+                skipForwardAllowed = !isCurrentTrackLastInSetlist(session, setlist),
             )
         }
 
-        val newTrack = getTrack(event.trackId) ?: return metadataLoadError(oldState)
+        // Nothing playing yet (cold start / resumed from a stopped-ish state): show the spinner
+        // with this track's metadata and wait for the first buffer.
+        val newTrack = getTrack(event.trackId) ?: return metadataLoadError(oldState, event.trackId)
         metadataStateMutable.emit(newTrack)
         hatchet.i(
             "handleGeneratorLoading(track=${event.trackId}): " +
@@ -453,7 +464,7 @@ class RealDirector(
         return oldState.copy(
             state = PlayerState.BUFFERING,
             generatorProducedMs = 0L,
-            skipForwardAllowed = !isCurrentTrackLastInSetlist(session, setlist)
+            skipForwardAllowed = !isCurrentTrackLastInSetlist(session, setlist),
         )
     }
 
@@ -461,6 +472,15 @@ class RealDirector(
         oldState: ChipboxPlaybackState,
         event: GeneratorEvent.Emitting,
     ): ChipboxPlaybackState {
+        // Ignore a straggler buffer from a track we've already skipped past: applying it would
+        // rewind generatorProducedMs and clear the failure streak against audio the user is no
+        // longer hearing. currentTrackId() is null only before a setlist exists, where there's
+        // nothing to skip past, so fall through.
+        val currentTrackId = currentTrackId()
+        if (currentTrackId != null && event.trackId != currentTrackId) {
+            return oldState
+        }
+
         if (oldState.state == PlayerState.BUFFERING) {
             speaker.play()
         }
@@ -469,6 +489,13 @@ class RealDirector(
         consecutiveGeneratorFailures = 0
 
         return oldState.copy(generatorProducedMs = event.producedMs)
+    }
+
+    /** Track id the director currently considers active, from the live setlist position.
+     *  Null until a session + setlist are established. */
+    private fun currentTrackId(): Long? {
+        val position = currentSession?.currentPosition ?: return null
+        return currentSetlist?.getOrNull(position)
     }
 
     private fun handleGeneratorTrackChange(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
@@ -484,7 +511,7 @@ class RealDirector(
      * track was the last one, or [MAX_CONSECUTIVE_FAILURES] tracks have failed in a row with
      * no audio in between (the streak resets in [handleGeneratorEmitting]).
      */
-    private fun handleGeneratorError(
+    private suspend fun handleGeneratorError(
         event: GeneratorEvent.Error,
         oldState: ChipboxPlaybackState,
     ): ChipboxPlaybackState {
@@ -519,7 +546,7 @@ class RealDirector(
                         hatchet.w(
                             "Generator error on last track: ${event.message}. Ending session."
                         )
-                        errorEventsMutable.tryEmit(event.message)
+                        publishError(event.message)
                         directorScope.launch {
                             speaker.stop()
                             generator.stop()
@@ -533,11 +560,12 @@ class RealDirector(
                                 "($consecutiveGeneratorFailures/$MAX_CONSECUTIVE_FAILURES): " +
                                 "${event.message}. Skipping to the next track."
                         )
-                        errorEventsMutable.tryEmit(event.message)
+                        publishError(event.message)
                         val nextPosition = (session.currentPosition ?: -1) + 1
+                        val nextTrackId = setlist[nextPosition]
                         directorScope.launch {
                             advanceToTrackAt(session, setlist, nextPosition)
-                            speaker.seek()
+                            speaker.switchTo(nextTrackId)
                         }
                         oldState
                     }
@@ -554,53 +582,48 @@ class RealDirector(
     }
 
     private fun handleSpeakerBuffering(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
-        if (oldState.state == PlayerState.PLAYING) {
-            hatchet.w("Buffer underrun.")
-            return oldState
-        }
-
         if (oldState.state == PlayerState.ENDING) {
             hatchet.i("Setlist complete.")
             stop()
             return oldState.copy(state = PlayerState.STOPPED)
         }
 
-//        emitError("SpeakerEvent.BUFFERING not expected in state $oldState.")
+        // Speaker ran dry — a mid-track underrun or the gap while a skipped-to track loads.
+        // Either way audio has stopped, so surface it; recovers on the next SpeakerEvent.Playing.
+        if (oldState.state == PlayerState.PLAYING) {
+            hatchet.w("Speaker starved -> BUFFERING.")
+            return oldState.copy(state = PlayerState.BUFFERING)
+        }
+
         return oldState
     }
 
     private fun handleSpeakerPlaying(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
-        if (oldState.state == PlayerState.BUFFERING) {
-            hatchet.i("Underrun resolved.")
-        }
+        // Audio is flowing again. Only BUFFERING needs flipping; ENDING rides out its tail, and
+        // paused/stopped/idle/error have no consume loop so a Playing event there would be a
+        // stray we deliberately ignore rather than resurrecting playback.
+        return when (oldState.state) {
+            PlayerState.BUFFERING -> {
+                hatchet.i("Buffering resolved -> PLAYING.")
+                oldState.copy(state = PlayerState.PLAYING)
+            }
 
-        if (oldState.state == PlayerState.ENDING) {
-            return oldState
+            else -> oldState
         }
-
-        if (oldState.state == PlayerState.PRELOADING) {
-            return oldState
-        }
-
-        return oldState.copy(state = PlayerState.PLAYING)
     }
 
     private suspend fun updatePlayerMetadata(oldState: ChipboxPlaybackState, newTrackId: Long): ChipboxPlaybackState {
-        val newTrack = getTrack(newTrackId) ?: return metadataLoadError(oldState)
+        val newTrack = getTrack(newTrackId) ?: return metadataLoadError(oldState, newTrackId)
         hatchet.i(
-            "updatePlayerMetadata(track=$newTrackId, ${newTrack.title}): " +
-                "state ${oldState.state}, emitting metadata."
+            "updatePlayerMetadata(track=$newTrackId, ${newTrack.title}): emitting metadata."
         )
         metadataStateMutable.emit(newTrack)
-        return if (oldState.state == PlayerState.PRELOADING) {
-            hatchet.i("updatePlayerMetadata: PRELOADING -> PLAYING.")
-            oldState.copy(state = PlayerState.PLAYING)
-        } else {
-            oldState
-        }
+        // State follows the speaker's Playing/Buffering flow, not metadata: a TrackChange is
+        // always immediately followed by a Playing event that flips BUFFERING -> PLAYING.
+        return oldState
     }
 
-    private fun handleSpeakerError(event: SpeakerEvent.Error, oldState: ChipboxPlaybackState): ChipboxPlaybackState {
+    private suspend fun handleSpeakerError(event: SpeakerEvent.Error, oldState: ChipboxPlaybackState): ChipboxPlaybackState {
         emitError(event.message)
 
         directorScope.launch {
@@ -613,9 +636,23 @@ class RealDirector(
 
     private suspend fun getTrack(id: Long) = repository.getTrack(id, withArtists = true, withGame = true)
 
-    private fun emitError(message: String) {
+    /**
+     * Publish a non-fatal error to [errorEventsMutable], attaching the [Track] currently
+     * associated with [trackId] (defaulting to the director's active track id) so consumers can
+     * attribute the error to the right track even when the speaker hasn't caught up yet. The
+     * repository lookup is best-effort: if it fails we still publish the message with a null
+     * track rather than dropping the event.
+     */
+    private suspend fun publishError(message: String, trackId: Long? = currentTrackId()) {
+        val track = trackId?.let { runCatching { getTrack(it) }.getOrNull() }
+        errorEventsMutable.tryEmit(PlayerErrorEvent(message, track))
+    }
+
+    /** Publish [message] and transition the session to [PlayerState.ERROR]. Track attribution
+     *  follows [publishError]. */
+    private suspend fun emitError(message: String, trackId: Long? = currentTrackId()) {
         hatchet.e("Error: $message")
-        errorEventsMutable.tryEmit(message)
+        publishError(message, trackId)
         currentState = currentState.copy(
             state = PlayerState.ERROR,
             errorMessage = message,
@@ -624,10 +661,15 @@ class RealDirector(
 
     /** Reduce a failed track-metadata fetch to an ERROR state, logging the message to the error
      *  stream. Unlike [emitError] this returns the new state for the reducer to assign rather than
-     *  mutating [currentState] directly. */
-    private fun metadataLoadError(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
+     *  mutating [currentState] directly. [trackId] is the id that failed to resolve; we still pass
+     *  it to [publishError], which will attempt (and likely also fail) to load it — yielding a
+     *  null track in the event, which the UI treats as "no track prefix". */
+    private suspend fun metadataLoadError(
+        oldState: ChipboxPlaybackState,
+        trackId: Long?,
+    ): ChipboxPlaybackState {
         val message = "Couldn't load track metadata."
-        errorEventsMutable.tryEmit(message)
+        publishError(message, trackId)
         return oldState.copy(state = PlayerState.ERROR, errorMessage = message)
     }
 }

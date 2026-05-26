@@ -80,6 +80,19 @@ abstract class Speaker(
     private var playingTrackId: Long? = null
 
     /**
+     * Set by [switchTo] for the duration of a forced track change (skip / error-skip / a
+     * resumed session jumping tracks). While non-null the consume loop discards — and recycles —
+     * every dequeued buffer whose `trackId` doesn't match, until the target track's first buffer
+     * arrives. That's what makes a skip robust against a stale buffer from the *outgoing* track
+     * leaking past the director's drain: the speaker never writes an old-track buffer to a sink
+     * that's mid-rate-swap, which is what used to wedge `SourceDataLine.write()` and strand the
+     * director waiting for audio that never came. Cleared the instant the target is reached. Only touched on the
+     * consume coroutine and in [switchTo] (which has cancel-joined that coroutine first), so a
+     * plain var is safe.
+     */
+    private var pendingTargetTrackId: Long? = null
+
+    /**
      * (LUFS, dBTP) pair the [volumeProcessor]'s normalization is currently configured for. The
      * generator stamps live BS.1770 figures on every buffer — for a render-ahead source they
      * climb over the first 400 ms then settle — so the gain is re-derived whenever either
@@ -128,6 +141,7 @@ abstract class Speaker(
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = null
         playingTrackId = null
+        pendingTargetTrackId = null
         appliedNormalizationLufs = Double.NaN
         appliedNormalizationTruePeakDbtp = Double.NaN
 
@@ -153,20 +167,34 @@ abstract class Speaker(
 
     /**
      * Cancel the consume loop, drain queued buffers, flush the sink, and restart consumption.
-     * Used by the director during seek so the next buffer the consumer sees is from the
-     * post-seek position. Pre-seek audio that was already in flight is discarded.
+     * Used by the director during an in-track seek so the next buffer the consumer sees is from
+     * the post-seek position. Pre-seek audio that was already in flight is discarded. The track
+     * isn't changing, so no buffer is filtered out.
      */
-    suspend fun seek() {
-        hatchet.i("seek(): cancelling consume loop.")
+    suspend fun seek() = drainAndRestart(targetTrackId = null, label = "seek")
+
+    /**
+     * Like [seek], but for a forced *track* change (skip, error-skip, resumed session jumping
+     * tracks): the consume loop discards every buffer that isn't [trackId] until that track's
+     * first buffer arrives, then announces the change. Lets the director cut over immediately
+     * without racing the generator's track load / sample-rate swap — a straggler buffer from the
+     * outgoing track is dropped rather than written to a sink that's about to change rate.
+     */
+    suspend fun switchTo(trackId: Long) =
+        drainAndRestart(targetTrackId = trackId, label = "switchTo($trackId)")
+
+    private suspend fun drainAndRestart(targetTrackId: Long?, label: String) {
+        hatchet.i("$label: cancelling consume loop.")
         ongoingPlaybackJob?.cancelAndJoin()
         ongoingPlaybackJob = null
-        hatchet.i("seek(): consume loop cancelled, draining buffers.")
+        hatchet.i("$label: consume loop cancelled, draining buffers.")
         bufferManager.drain()
-        hatchet.i("seek(): drained, flushing sink.")
+        hatchet.i("$label: drained, flushing sink.")
         flushSink()
-        hatchet.i("seek(): sink flushed, restarting consume loop (playingTrackId=$playingTrackId).")
+        pendingTargetTrackId = targetTrackId
+        hatchet.i("$label: sink flushed, restarting consume loop (playingTrackId=$playingTrackId).")
         startPlayback()
-        hatchet.i("seek(): startPlayback returned.")
+        hatchet.i("$label: startPlayback returned.")
     }
 
     protected fun emitError(error: String) {
@@ -196,7 +224,25 @@ abstract class Speaker(
             while (true) {
                 yield()
                 val audioBuffer = nextBufferOrAwait()
-                emitTrackChangeIfNeeded(audioBuffer)
+
+                val target = pendingTargetTrackId
+                if (target != null) {
+                    if (audioBuffer.trackId != target) {
+                        hatchet.d(
+                            "Discarding pre-switch buffer (track=${audioBuffer.trackId}, " +
+                                "awaiting target $target)."
+                        )
+                        bufferManager.recycleShortArray(audioBuffer.data)
+                        continue
+                    }
+                    // Reached the track we were told to switch to. Stop filtering and announce
+                    // the change unconditionally so the now-playing metadata refreshes even if the
+                    // id coincides with the outgoing one (e.g. the same track twice in a setlist).
+                    pendingTargetTrackId = null
+                    announceTrackChange(audioBuffer.trackId)
+                } else {
+                    emitTrackChangeIfNeeded(audioBuffer)
+                }
 
                 val playingEvent = SpeakerEvent.Playing(currentPositionMs())
                 updateDebug {
@@ -284,5 +330,20 @@ abstract class Speaker(
 
         playingTrackId = audioBuffer.trackId
         updateDebug { it.copy(playingTrackId = audioBuffer.trackId) }
+    }
+
+    /**
+     * Unconditionally emit [SpeakerEvent.TrackChange] for [trackId] at the end of a [switchTo].
+     * Unlike [emitTrackChangeIfNeeded] this never suppresses the emit — the director uses it to
+     * refresh the now-playing metadata, so a coincidental match with the previous [playingTrackId]
+     * must still be announced. Resets the gain ramp so the new track fades in from unity.
+     */
+    private suspend fun announceTrackChange(trackId: Long) {
+        volumeProcessor.resetGain()
+        hatchet.i("Announcing switch TrackChange: $playingTrackId -> $trackId.")
+        val trackChangeEvent = SpeakerEvent.TrackChange(trackId)
+        updateDebug { it.copy(lastEvent = trackChangeEvent, playingTrackId = trackId) }
+        eventSink.emit(trackChangeEvent)
+        playingTrackId = trackId
     }
 }

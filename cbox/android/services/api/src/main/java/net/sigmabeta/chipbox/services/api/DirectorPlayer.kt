@@ -53,9 +53,6 @@ class DirectorPlayer(
                 requestedPlayWhenReady = when (state.state) {
                     PlayerState.PLAYING,
                     PlayerState.BUFFERING,
-                    PlayerState.PRELOADING,
-                    PlayerState.FAST_FORWARDING,
-                    PlayerState.REWINDING,
                     PlayerState.ENDING -> true
 
                     PlayerState.PAUSED,
@@ -253,10 +250,7 @@ class DirectorPlayer(
 
         PlayerState.BUFFERING -> Player.STATE_BUFFERING
 
-        PlayerState.PRELOADING,
         PlayerState.PLAYING,
-        PlayerState.FAST_FORWARDING,
-        PlayerState.REWINDING,
         PlayerState.PAUSED,
         PlayerState.ENDING -> Player.STATE_READY
     }

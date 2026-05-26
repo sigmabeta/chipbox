@@ -4,9 +4,9 @@ package net.sigmabeta.chipbox.player.director
  * High-level lifecycle of a playback session as seen by observers of [Director.playbackState].
  *
  * The director derives this enum by reducing events from both the generator and the speaker, so
- * a single value here may correspond to different combinations of producer/consumer activity:
- * for example [PRELOADING] means the speaker is still emitting audio for the *current* track
- * while the generator has begun loading the *next* one.
+ * a single value may correspond to different producer/consumer combinations: [BUFFERING], for
+ * instance, covers both the initial load before any audio and a mid-track underrun while the
+ * generator catches back up.
  */
 enum class PlayerState {
     /** No session has started yet in this Director's lifetime. */
@@ -15,21 +15,12 @@ enum class PlayerState {
     /** A session ran but has been torn down. Generator and speaker are both stopped. */
     STOPPED,
 
-    /** Speaker is silent and waiting for the generator to fill enough buffers to start. */
+    /** Speaker is starved: no audio is flowing while it waits for buffers. Covers the initial
+     *  load, a mid-track underrun, and the gap while a skipped-to track loads. */
     BUFFERING,
 
-    /** Audio is playing; the generator is concurrently loading the next track in the setlist. */
-    PRELOADING,
-
-    /** Steady-state playback. */
+    /** Steady-state playback — audio is flowing. */
     PLAYING,
-
-    /** Seeking forward. Should be quick. */
-    FAST_FORWARDING,
-
-    /** Seeking backward. Usually takes longer because most emulators can't rewind — they
-     *  re-load the track and fast-forward to the target position. */
-    REWINDING,
 
     /** User-initiated pause. The generator may keep producing buffers; the speaker is stopped. */
     PAUSED,

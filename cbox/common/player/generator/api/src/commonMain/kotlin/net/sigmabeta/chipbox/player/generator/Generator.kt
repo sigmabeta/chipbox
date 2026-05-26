@@ -272,7 +272,10 @@ abstract class Generator(
                     hatchet.d("First buffer for track ${track.id} delivered to buffer manager.")
                 }
 
-                val emittingEvent = GeneratorEvent.Emitting(framesPlayed.framesToMillis(rate).toLong())
+                val emittingEvent = GeneratorEvent.Emitting(
+                    producedMs = framesPlayed.framesToMillis(rate).toLong(),
+                    trackId = track.id,
+                )
                 updateDebug {
                     it.copy(
                         producedMs = emittingEvent.producedMs,

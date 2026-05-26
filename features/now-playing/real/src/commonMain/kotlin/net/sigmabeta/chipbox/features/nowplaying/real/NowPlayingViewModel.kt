@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.common.ui.freeform.api.ChipboxFreeformViewModel
 import net.sigmabeta.sage.appcomm.SageAction
@@ -55,8 +56,8 @@ class NowPlayingViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            director.errorEvents().collect { message ->
-                addError(message)
+            director.errorEvents().collect { event ->
+                addError(event)
             }
         }
         viewModelScope.launch {
@@ -108,14 +109,19 @@ class NowPlayingViewModel @Inject constructor(
 
     /** Append a new error to the log (capped at [MAX_VISIBLE_ERRORS], newest last) and (re)start
      *  the sliding auto-clear window so the section disappears [ERROR_AUTO_CLEAR_MS] after the
-     *  most recent error. */
-    private fun addError(message: String) {
-        val track = state.value.track
-        val gameName = track?.game?.title.orEmpty().ellipsize()
-        val title = track?.title.orEmpty().ellipsize()
+     *  most recent error. Uses the [PlayerErrorEvent.track] the director resolved at emit time
+     *  rather than the on-screen track — those can disagree when the speaker hasn't yet emitted
+     *  a `TrackChange` for the failing track. */
+    private fun addError(event: PlayerErrorEvent) {
+        val track = event.track
+        val gameName = track?.game?.title?.takeIf { it.isNotBlank() }?.ellipsize()
+        val title = track?.title?.takeIf { it.isNotBlank() }?.ellipsize()
+        val prefix = listOfNotNull(gameName, title)
+            .joinToString(" - ")
+            .let { if (it.isNotEmpty()) "$it: " else "" }
         val item = NowPlayingError(
             id = nextErrorId++,
-            message = "$gameName - $title: $message",
+            message = "$prefix${event.message}",
         )
         updateState { it.copy(errors = (it.errors + item).takeLast(MAX_VISIBLE_ERRORS)) }
 
@@ -137,10 +143,7 @@ class NowPlayingViewModel @Inject constructor(
 
     private fun PlayerState.isPlaying(): Boolean = when (this) {
         PlayerState.PLAYING,
-        PlayerState.PRELOADING,
         PlayerState.BUFFERING,
-        PlayerState.FAST_FORWARDING,
-        PlayerState.REWINDING,
         PlayerState.ENDING -> true
 
         PlayerState.PAUSED,
