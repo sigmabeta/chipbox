@@ -25,6 +25,21 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
             }
         }
+        named("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.okio.fakefilesystem)
+                // okio-fakefilesystem 3.9.1's FakeFileSystem.<init> references
+                // kotlinx.datetime.Clock.System, which was removed in kotlinx-datetime 0.7.x
+                // (Clock moved into kotlin.time in stdlib). Compose's transitive datetime is
+                // 0.7.1; we strictly downgrade to 0.6.1 on the *test* classpath only so okio's
+                // bytecode can resolve, without affecting main runtime.
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1") {
+                    version { strictly("0.6.1") }
+                }
+            }
+        }
+
         named("jvmSharedMain") {
             dependencies {
                 implementation(libs.okhttp)
