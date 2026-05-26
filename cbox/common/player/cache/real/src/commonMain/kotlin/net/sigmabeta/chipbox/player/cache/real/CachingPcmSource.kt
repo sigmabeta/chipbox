@@ -42,7 +42,7 @@ import okio.FileSystem
  * file and returns a [CachedFilePcmSource] instead of going through this class.
  */
 internal class CachingPcmSource(
-    private val emulatorSource: EmulatorPcmSource,
+    private val emulatorSource: PcmTrackSource,
     private val writer: PcmCacheFile.Writer,
     fileSystem: FileSystem,
     private val track: Track,
@@ -108,7 +108,7 @@ internal class CachingPcmSource(
                 ensureActive()
                 val framesGenerated = emulatorSource.readFrames(scratch)
                 if (framesGenerated <= 0) {
-                    if (emulatorSource.isTrackOver()) break
+                    if (emulatorSource.isOver) break
                     val emuError = emulatorSource.getLastError()
                     if (emuError != null) {
                         writerError = emuError
