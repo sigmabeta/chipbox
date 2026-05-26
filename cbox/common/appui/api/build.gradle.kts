@@ -125,3 +125,16 @@ kotlin {
         }
     }
 }
+
+// appui's commonMain has four top-level `staticCompositionLocalOf<MaterialType>` declarations
+// (LocalActiveTabNavigator, LocalAppActionSink, LocalAppSnackbarHostState, LocalPlatformBackKeys).
+// Those force the Material3 / Compose UI runtime to link at class-init on Kotlin/JS — which
+// drags Skiko, whose JS distribution ships only browser/WASM builds, not a Node loader. The
+// VM is fully covered by jvmTest; jsTest on every other module guards the cross-platform
+// contract. Disable jsTest here rather than restructure the host-UI module.
+//
+// Today ChipboxAppUiViewModel just stitches together three settings flows — small enough that
+// jvm coverage alone is fine. If it ever grows real logic (route stack reducers, app-lifecycle
+// gating, anything subtle enough that JS-vs-JVM divergence could bite), carve the VM out into
+// its own pure-Kotlin sibling (`cbox/common/appui/vm`) so it can be tested on JS too.
+tasks.matching { it.name == "jsTest" || it.name == "jsNodeTest" }.configureEach { enabled = false }

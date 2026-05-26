@@ -9,6 +9,24 @@ plugins {
     alias(libs.plugins.ktlint) apply false
 }
 
+// Use the system Node + Yarn (chipbox dev box has Node 22 and yarn 1.x installed) rather than
+// letting Kotlin's JS plugin download its own. The plugin's download paths auto-add project-
+// level `https://nodejs.org/dist` and `https://github.com/yarnpkg/yarn/releases/download`
+// repos, which `RepositoriesMode.FAIL_ON_PROJECT_REPOS` in settings.gradle.kts rejects —
+// `kotlinNodeJsSetup` / `kotlinYarnSetup` fail before any jsTest can run.
+//
+// Kotlin 2.3 deprecated the old NodeJsRootExtension.download — the new API is the EnvSpec
+// types registered per-project by NodeJsPlugin / YarnPlugin (each KMP module with a js()
+// target applies them locally, so we configure on every subproject, not just root).
+allprojects {
+    plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin> {
+        the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().download.set(false)
+    }
+    plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
+        the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec>().download.set(false)
+    }
+}
+
 // ktlint via the Gradle plugin, replacing the old ktlint-check.sh / ktlint-fix.sh that
 // downloaded the ktlint binary and ran it outside Gradle. Applied to every chipbox module;
 // the vendored sage/ submodule is a separate included build and keeps its own lint config.

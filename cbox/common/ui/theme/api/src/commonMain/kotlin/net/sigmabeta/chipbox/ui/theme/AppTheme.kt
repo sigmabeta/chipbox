@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.ui.theme.api
 
 import androidx.compose.runtime.Composable
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
+import net.sigmabeta.chipbox.ui.fonts.real.toFontFamily
 import net.sigmabeta.chipbox.ui.theme.api.tokens.ChipboxFontDefaults
 
 /**

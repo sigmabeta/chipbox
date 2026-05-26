@@ -7,9 +7,10 @@ plugins {
 // `ChipboxTheme()` composable that wraps Material3. Pure Compose, no Android dependencies.
 // The Android `AppTheme()` (in cbox/android/ui/theme/api) is a thin wrapper that supplies
 // ChipboxFont-derived font families to this module's `ChipboxTheme`; the JVM/desktop entry
-// calls `ChipboxTheme()` with the same defaults. Custom Chipbox fonts now ship as Compose
-// Multiplatform resources in `cbox/common/ui/fonts/api`, depended on here so the public
-// `ChipboxFontDefaults` (Brand / Plain) can name `ChipboxFont` entries directly.
+// calls `ChipboxTheme()` with the same defaults.
+//
+// `:ui:fonts:real` (not `:api`) because `AppTheme()` calls `ChipboxFont.toFontFamily()` — the
+// Compose binding extension lives there. The `:api` enum alone wouldn't be enough.
 kotlin {
     js { nodejs() }
 
@@ -20,7 +21,7 @@ kotlin {
     sourceSets {
         named("commonMain") {
             dependencies {
-                api(projects.cbox.common.ui.fonts.api)
+                api(projects.cbox.common.ui.fonts.real)
             }
         }
     }
