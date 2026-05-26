@@ -22,5 +22,18 @@ kotlin {
                 implementation(libs.sage.common.ui.strings)
             }
         }
+
+        named("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.okio.fakefilesystem)
+                // okio-fakefilesystem 3.9.1 was built against pre-0.7 kotlinx-datetime — see
+                // cbox/common/coverart/real for the same pin. Restricting to the test classpath
+                // so the production runtime stays on whatever the rest of the build resolves.
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1") {
+                    version { strictly("0.6.1") }
+                }
+            }
+        }
     }
 }

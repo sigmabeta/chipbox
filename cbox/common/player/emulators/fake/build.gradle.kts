@@ -18,5 +18,12 @@ kotlin {
                 implementation(projects.cbox.common.repository.api)
             }
         }
+
+        named("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.sage.common.logging)
+            }
+        }
     }
 }
