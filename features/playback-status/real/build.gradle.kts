@@ -1,5 +1,6 @@
 plugins {
     id("chipbox.feature.real")
+    id("chipbox.kmp.test")
 }
 
 // ViewModel/State/Action + the (previously expect/actual) PlaybackStatusRoute are all commonMain
@@ -23,6 +24,12 @@ kotlin {
                 implementation(projects.cbox.common.utils.api)
 
                 implementation(libs.sage.common.ui.components)
+            }
+        }
+
+        named("commonTest") {
+            dependencies {
+                implementation(projects.cbox.common.debugInfo.fake)
             }
         }
     }

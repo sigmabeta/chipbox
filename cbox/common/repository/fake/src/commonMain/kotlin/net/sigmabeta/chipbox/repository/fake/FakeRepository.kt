@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.player.director.real.fakes
+package net.sigmabeta.chipbox.repository.fake
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -15,13 +15,16 @@ import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.Repository
 
 /**
- * Minimal [Repository] for Director tests. Only [getTrack] is implemented — the Director uses it
- * to look up the [Track] for each [GeneratorEvent.Loading] / [SpeakerEvent.TrackChange] it
- * processes. Setlist resolution is bypassed by sticking to [SessionType.SETLIST] sessions, which
- * carry their setlist explicitly.
+ * Minimal test [Repository] — looks up tracks by id from a caller-supplied map, throws
+ * [NotImplementedError] on every list / Flow / search method.
  *
- * Everything else throws [NotImplementedError]; if a test path needs a method we haven't covered,
- * the failure points straight at the missing fake instead of silently returning an empty Flow.
+ * Used by Director tests, which only need `getTrack(id)` to resolve metadata for the trackIds
+ * the test pushes through Generator / Speaker events; setlist resolution is bypassed by sticking
+ * to [net.sigmabeta.chipbox.player.common.SessionType.SETLIST] sessions whose ids are carried
+ * explicitly. The other ([net.sigmabeta.chipbox.repository.memory.MemoryRepository]) in this
+ * module is the full in-memory preview/screenshot fake — this one is the test-only stub. If a
+ * test path needs a list query, the TODO fires and points at the missing implementation rather
+ * than silently returning an empty Flow.
  */
 class FakeRepository(private val tracksById: Map<Long, Track>) : Repository {
 

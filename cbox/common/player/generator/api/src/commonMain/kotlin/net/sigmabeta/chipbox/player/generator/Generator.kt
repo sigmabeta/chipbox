@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
  * Production wiring (Android + JVM apps) goes through [BaseGenerator], whose two subclasses
  * pick the decoding path: [net.sigmabeta.chipbox.player.generator.real.RealGenerator] dispatches
  * across the available native emulators with a render-ahead cache;
- * [net.sigmabeta.chipbox.player.generator.fake.FakeGenerator] uses an in-process synth. Tests
+ * [net.sigmabeta.chipbox.player.generator.fake.SynthGenerator] uses an in-process synth. Tests
  * can implement this interface directly to drive the
  * [net.sigmabeta.chipbox.player.director.Director] without dragging the rest of the pipeline in.
  *

@@ -10,9 +10,9 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.PlayerState
-import net.sigmabeta.chipbox.player.director.real.fakes.FakeGenerator
-import net.sigmabeta.chipbox.player.director.real.fakes.FakeRepository
-import net.sigmabeta.chipbox.player.director.real.fakes.FakeSpeaker
+import net.sigmabeta.chipbox.player.generator.fake.FakeGenerator
+import net.sigmabeta.chipbox.player.speaker.fake.FakeSpeaker
+import net.sigmabeta.chipbox.repository.fake.FakeRepository
 import net.sigmabeta.chipbox.player.generator.GeneratorEvent
 import net.sigmabeta.chipbox.player.speaker.SpeakerEvent
 import net.sigmabeta.sage.logging.BluntHatchet

@@ -10,7 +10,7 @@ import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.emulators.EmulatorProvider
 import net.sigmabeta.chipbox.player.generator.Generator
-import net.sigmabeta.chipbox.player.generator.fake.FakeGenerator
+import net.sigmabeta.chipbox.player.generator.fake.SynthGenerator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.di.AppScope
@@ -43,17 +43,17 @@ object GeneratorModule {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideFakeGenerator(
+    fun provideSynthGenerator(
         repository: Repository,
         bufferManager: ProducerBufferManager,
         contentSourceRegistry: ContentSourceRegistry,
         hatchet: Hatchet,
-    ): FakeGenerator = FakeGenerator(repository, contentSourceRegistry, bufferManager, hatchet)
+    ): SynthGenerator = SynthGenerator(repository, contentSourceRegistry, bufferManager, hatchet)
 
     @Provides
     @SingleIn(AppScope::class)
     fun provideGenerator(
-        fakeGenerator: FakeGenerator,
+        synthGenerator: SynthGenerator,
         realGenerator: RealGenerator
     ): Generator = realGenerator
 }

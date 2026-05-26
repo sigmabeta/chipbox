@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.player.director.real.fakes
+package net.sigmabeta.chipbox.player.speaker.fake
 
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -10,9 +10,14 @@ import net.sigmabeta.chipbox.player.speaker.SpeakerDebugInfo
 import net.sigmabeta.chipbox.player.speaker.SpeakerEvent
 
 /**
- * Test [Speaker] — same shape as [FakeGenerator]: events pushed by tests via [emit], every other
- * method records the call. [currentPositionMsValue] is settable so tests can verify the Director
- * stamps the right position on emitted [ChipboxPlaybackState]s.
+ * Test [Speaker] — same shape as the test [net.sigmabeta.chipbox.player.generator.fake.FakeGenerator]:
+ * events pushed by tests via [emit], every other method records the call. The other classes in
+ * this module ([net.sigmabeta.chipbox.player.speaker.file.FileSpeaker],
+ * [net.sigmabeta.chipbox.player.speaker.text.TextSpeaker]) are production-quality runtime sinks;
+ * this one is a test-only stub that records what the Director called.
+ *
+ * [currentPositionMsValue] is settable so tests can verify the Director stamps the right
+ * position on emitted [net.sigmabeta.chipbox.player.director.ChipboxPlaybackState]s.
  */
 class FakeSpeaker : Speaker {
 

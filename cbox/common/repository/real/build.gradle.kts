@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    id("chipbox.kmp.test")
 }
 
 // DatabaseRepository is pure Kotlin — it now takes the @Dao interfaces (database/api, which is
@@ -26,11 +27,7 @@ kotlin {
 
         named("commonTest") {
             dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.kotlinx.coroutines.core)
-                // No alias in libs.versions.toml yet; pin to the same coroutines version as core
-                // so runTest / TestScope APIs line up exactly with the production runtime.
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
+                implementation(projects.cbox.common.database.fake)
             }
         }
     }

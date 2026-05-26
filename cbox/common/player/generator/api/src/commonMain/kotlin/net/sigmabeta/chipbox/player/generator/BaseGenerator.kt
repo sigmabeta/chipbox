@@ -35,7 +35,7 @@ import net.sigmabeta.sage.logging.Hatchet
  * plumbing; subclasses only have to supply a [PcmTrackSource.Factory] that decides how each
  * track is decoded ([net.sigmabeta.chipbox.player.generator.real.RealGenerator] dispatches
  * across native emulators with a render-ahead cache;
- * [net.sigmabeta.chipbox.player.generator.fake.FakeGenerator] uses an in-process synth).
+ * [net.sigmabeta.chipbox.player.generator.fake.SynthGenerator] uses an in-process synth).
  *
  * The interface itself is in [Generator] — tests can implement that directly to avoid dragging
  * a [Repository] / [ContentSourceRegistry] / [ProducerBufferManager] into their fixtures.

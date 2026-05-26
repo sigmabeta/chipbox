@@ -1,5 +1,6 @@
 plugins {
     id("chipbox.feature.real")
+    id("chipbox.kmp.test")
 }
 
 // LibraryViewModel + state/action are pure-Kotlin commonMain; LibraryRoute is androidMain
@@ -23,5 +24,6 @@ kotlin {
                 implementation(projects.features.browseByPlatform.api)
             }
         }
+
     }
 }

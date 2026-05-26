@@ -10,7 +10,7 @@ import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
-import net.sigmabeta.chipbox.repository.database.fakes.FakeDatabase
+import net.sigmabeta.chipbox.database.fake.FakeDatabase
 import net.sigmabeta.sage.logging.BluntHatchet
 import kotlin.test.Test
 import kotlin.test.assertEquals
