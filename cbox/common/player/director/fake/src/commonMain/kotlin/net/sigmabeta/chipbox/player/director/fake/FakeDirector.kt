@@ -21,7 +21,7 @@ import net.sigmabeta.chipbox.player.director.PlayerState
  * replay so a freshly-subscribed collector immediately sees the seeded "nothing playing"
  * baseline rather than waiting indefinitely for the first emission.
  */
-class FakeDirector : Director {
+open class FakeDirector : Director {
 
     private val metadataSink = MutableSharedFlow<Track?>(
         replay = 1,
@@ -63,6 +63,8 @@ class FakeDirector : Director {
 
     suspend fun emitMetadata(track: Track?) = metadataSink.emit(track)
     suspend fun emitPlayback(state: ChipboxPlaybackState) = playbackSink.emit(state)
+    suspend fun emitSession(session: Session?) = sessionSink.emit(session)
+    suspend fun emitErrorSink(event: PlayerErrorEvent) = errorSink.emit(event)
 
     /** Convenience: emit a playback state with only [state] varied; other fields default. */
     suspend fun emitPlayback(state: PlayerState) = emitPlayback(
@@ -93,6 +95,8 @@ class FakeDirector : Director {
 
     override fun start(session: Session) = Unit
     override fun start(setlist: List<Long>, startingPosition: Int, sourceName: String?, shuffled: Boolean) = Unit
+    // Director overrides above stay non-final on the bookkeeping methods that some tests want to
+    // record (e.g. SearchVM's setlist path); the rest stay as no-ops/counters.
     override fun play() { playCalls++ }
     override fun pause() { pauseCalls++ }
     override fun stop() { stopCalls++ }

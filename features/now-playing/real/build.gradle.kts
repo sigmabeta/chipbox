@@ -1,5 +1,6 @@
 plugins {
     id("chipbox.feature.real")
+    id("chipbox.kmp.test")
 }
 
 kotlin {
@@ -27,6 +28,12 @@ kotlin {
                 // Icon.vector() to render the sage Icon set (e.g. the error-state warning glyph).
                 implementation(libs.sage.common.ui.iconsReal)
                 implementation(libs.jetbrains.compose.material.icons.extended)
+            }
+        }
+
+        named("commonTest") {
+            dependencies {
+                implementation(projects.cbox.common.player.director.fake)
             }
         }
     }
