@@ -145,10 +145,7 @@ data class NowPlayingState(
     // Mirrors PlayerStatusViewModel.isPlaying() so the play/pause icon agrees with the mini-bar.
     private fun PlayerState.isPlaying(): Boolean = when (this) {
         PlayerState.PLAYING,
-        PlayerState.PRELOADING,
         PlayerState.BUFFERING,
-        PlayerState.FAST_FORWARDING,
-        PlayerState.REWINDING,
         PlayerState.ENDING -> true
 
         PlayerState.PAUSED,

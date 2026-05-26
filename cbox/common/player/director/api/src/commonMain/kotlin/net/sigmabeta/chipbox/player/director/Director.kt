@@ -99,12 +99,14 @@ interface Director {
     fun sessionState(): SharedFlow<Session?>
 
     /**
-     * Hot stream of human-readable playback error messages — both recoverable (the failed track
-     * was skipped and playback continued) and fatal (the session stopped). One message is emitted
-     * per occurrence with no replay, so observers see only errors that happen while subscribed.
-     * Distinct from [ChipboxPlaybackState.errorMessage], which holds the single latest fatal error.
+     * Hot stream of playback errors — both recoverable (the failed track was skipped and
+     * playback continued) and fatal (the session stopped). One [PlayerErrorEvent] is emitted per
+     * occurrence with no replay, so observers see only errors that happen while subscribed; each
+     * carries the resolved [Track] the error is attributed to so consumers don't have to guess
+     * from [metadataState] (which can lag the actual erroring track). Distinct from
+     * [ChipboxPlaybackState.errorMessage], which holds the single latest fatal error.
      */
-    fun errorEvents(): SharedFlow<String>
+    fun errorEvents(): SharedFlow<PlayerErrorEvent>
 
     // Audio Focus
 

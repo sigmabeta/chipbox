@@ -55,10 +55,7 @@ class PlayerStatusViewModel @Inject constructor(
 
     private fun PlayerState.isPlaying(): Boolean = when (this) {
         PlayerState.PLAYING,
-        PlayerState.PRELOADING,
         PlayerState.BUFFERING,
-        PlayerState.FAST_FORWARDING,
-        PlayerState.REWINDING,
         PlayerState.ENDING -> true
 
         PlayerState.PAUSED,
