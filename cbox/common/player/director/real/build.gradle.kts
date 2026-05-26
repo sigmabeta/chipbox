@@ -21,5 +21,15 @@ kotlin {
                 implementation(libs.sage.common.logging)
             }
         }
+
+        named("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.core)
+                // No alias in libs.versions.toml yet; pin to the same coroutines version as
+                // core so runTest / TestScope APIs line up with the production runtime.
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
+            }
+        }
     }
 }
