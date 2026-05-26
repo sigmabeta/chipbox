@@ -24,5 +24,11 @@ kotlin {
                 implementation(libs.kotlinx.serialization.core)
             }
         }
+
+        named("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }

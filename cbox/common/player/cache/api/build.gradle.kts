@@ -18,5 +18,11 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.core)
             }
         }
+
+        named("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }

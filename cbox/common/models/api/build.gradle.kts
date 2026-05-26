@@ -15,5 +15,11 @@ kotlin {
                 api(projects.cbox.common.strings.api)
             }
         }
+
+        named("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }
