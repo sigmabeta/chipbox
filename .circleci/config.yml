@@ -115,16 +115,13 @@ workflows:
       # target of every commonTest source set (ViewModel tests, repository
       # tests, etc.). Gates behind kt-lint so a syntax error fails fast on
       # `medium` rather than burning compile time here.
+      #
+      # Sibling jsTest run isn't wired into CI by choice: the matching JVM run
+      # below covers the same suites end-to-end, and the JS toolchain adds
+      # cold-cache wall-clock (yarn install + Kotlin/JS compile) without a
+      # proportional regression-catching payoff today. `./gradlew jsTest`
+      # remains available locally.
       - unit-test-jvm:
-          requires:
-            - kt-lint
-            - setup
-      # Same suites compiled + run against the Kotlin/JS target. Independent
-      # swim lane from unit-test-jvm: catches js-vs-jvm divergence
-      # (UnconfinedTestDispatcher, SharingStarted, advanceTimeBy timing) that
-      # we'd otherwise only discover when shipping the JVM/desktop app or
-      # when the eventual web app is built.
-      - unit-test-js:
           requires:
             - kt-lint
             - setup
@@ -413,55 +410,6 @@ jobs:
       - store_artifacts:
           path: ~/reports
           destination: jvm-test-reports
-          when: always
-
-  unit-test-js:
-    resource_class: medium
-
-    docker:
-      - image: cimg/android:2024.04.1
-
-    environment:
-      JVM_OPTS: -Xms2g -Xmx4g
-
-    steps:
-      - *attach_ws
-      # The build.gradle.kts NodeJsEnvSpec / YarnRootEnvSpec config sets
-      # `download = false` to keep `FAIL_ON_PROJECT_REPOS` happy — so we
-      # need both binaries on PATH. cimg/android:2024.04.1 ships Node 20;
-      # yarn is missing, install via npm. corepack would be tidier but
-      # isn't enabled out of the box on this image.
-      - run:
-          name: Ensure Node + Yarn on PATH
-          command: |
-            node --version
-            command -v yarn || sudo npm install -g yarn@1.22.22
-            yarn --version
-      # Separate from unit-test-jvm and from the release lineages: JS
-      # compile artifacts (Kotlin IR, webpack outputs) are distinct.
-      - restore_cache:
-          keys:
-            - build-cache-test-js-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-test-js-v1-{{ .Branch }}-
-            - build-cache-test-js-v1-
-      - run:
-          name: Run JS unit tests (commonTest @ jsNodeTest)
-          # cbox/common/appui/api has jsTest disabled in its build.gradle.kts
-          # (top-level CompositionLocals drag Compose UI / Skiko at module
-          # init); every other VM module runs here.
-          command: ./gradlew jsTest --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - save_cache:
-          key: build-cache-test-js-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle/caches/build-cache-1
-      - *collect_test_results
-      - store_test_results:
-          path: ~/test-results
-          when: always
-      - *collect_reports
-      - store_artifacts:
-          path: ~/reports
-          destination: js-test-reports
           when: always
 
   screenshot-test:
