@@ -1,5 +1,6 @@
 plugins {
     id("chipbox.feature.real")
+    id("chipbox.kmp.test")
 }
 
 kotlin {
@@ -27,6 +28,13 @@ kotlin {
                 implementation(libs.sage.common.ui.components)
                 implementation(libs.sage.common.ui.strings)
                 implementation(libs.jetbrains.compose.material.icons.extended)
+            }
+        }
+
+        named("commonTest") {
+            dependencies {
+                implementation(projects.cbox.common.repository.fake)
+                implementation(projects.cbox.common.player.director.fake)
             }
         }
     }

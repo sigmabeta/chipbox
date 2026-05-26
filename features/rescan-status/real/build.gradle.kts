@@ -1,5 +1,6 @@
 plugins {
     id("chipbox.feature.real")
+    id("chipbox.kmp.test")
 }
 
 // RescanStatusState / the route `expect` are commonMain (pure renderer + entry point). The
@@ -25,6 +26,12 @@ kotlin {
                 // the view model + route live in commonMain (no jvmShared split needed).
                 implementation(projects.cbox.common.scanner.api)
                 implementation(projects.features.gameDetail.api)
+            }
+        }
+
+        named("commonTest") {
+            dependencies {
+                implementation(projects.cbox.common.scanner.fake)
             }
         }
     }
