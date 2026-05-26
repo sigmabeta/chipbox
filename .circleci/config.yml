@@ -47,6 +47,54 @@ install_host_toolchain: &install_host_toolchain
     name: Install host C/C++ toolchain (gcc/g++/make for JVM native libs)
     command: sudo apt-get update && sudo apt-get install -y build-essential
 
+# Sweep every module's `build/reports/` (ktlint, detekt, html test reports, lint,
+# whatever lives there) into one tree keyed by module path. Runs `when: always`
+# so a failing check still ships its report. `./sage` is the vendored submodule
+# (its own included build) — its reports come from a separate build invocation,
+# don't collect them. The matched dir is `-prune`d so find doesn't descend back
+# into it; the cp -r grabs the whole tree.
+collect_reports: &collect_reports
+  run:
+    name: Collect build/reports from every module
+    when: always
+    command: |
+      mkdir -p ~/reports
+      find . -path './sage' -prune -o \
+             -path '*/build/reports' -type d -print -prune | while read d; do
+        mod=$(echo "$d" | sed 's|^\./||;s|/build/reports$||;s|/|-|g')
+        mkdir -p ~/reports/"$mod" && cp -r "$d"/. ~/reports/"$mod"/
+      done
+
+# Sweep every module's JUnit-format `TEST-*.xml` into one tree CircleCI can
+# parse into the Tests tab. Per-module subdir so each suite shows up
+# separately. Same `when: always` + sage-exclusion rationale as collect_reports.
+collect_test_results: &collect_test_results
+  run:
+    name: Collect JUnit XML test results from every module
+    when: always
+    command: |
+      mkdir -p ~/test-results
+      find . -path './sage' -prune -o \
+             -path '*/build/test-results/*' -name 'TEST-*.xml' -print | while read f; do
+        mod=$(echo "$f" | sed 's|^\./||;s|/build/test-results/.*$||;s|/|-|g')
+        mkdir -p ~/test-results/"$mod" && cp "$f" ~/test-results/"$mod"/
+      done
+
+# Paparazzi's failure / diff images live under `build/paparazzi/`, NOT under
+# `build/reports/`, so collect_reports misses them. Each screenshot module
+# gets its own subdir in the artifact tree so a regression is one click away.
+collect_paparazzi: &collect_paparazzi
+  run:
+    name: Collect Paparazzi failure / diff images from every screenshot module
+    when: always
+    command: |
+      mkdir -p ~/paparazzi
+      find . -path './sage' -prune -o \
+             -path '*/build/paparazzi' -type d -print -prune | while read d; do
+        mod=$(echo "$d" | sed 's|^\./||;s|/build/paparazzi$||;s|/|-|g')
+        mkdir -p ~/paparazzi/"$mod" && cp -r "$d"/. ~/paparazzi/"$mod"/
+      done
+
 workflows:
   version: 2
   build_analyze:
@@ -62,6 +110,23 @@ workflows:
             - setup
       - screenshot-test:
           requires:
+            - setup
+      # commonTest unit tests for the chipbox.kmp.test modules — runs the JVM
+      # target of every commonTest source set (ViewModel tests, repository
+      # tests, etc.). Gates behind kt-lint so a syntax error fails fast on
+      # `medium` rather than burning compile time here.
+      - unit-test-jvm:
+          requires:
+            - kt-lint
+            - setup
+      # Same suites compiled + run against the Kotlin/JS target. Independent
+      # swim lane from unit-test-jvm: catches js-vs-jvm divergence
+      # (UnconfinedTestDispatcher, SharingStarted, advanceTimeBy timing) that
+      # we'd otherwise only discover when shipping the JVM/desktop app or
+      # when the eventual web app is built.
+      - unit-test-js:
+          requires:
+            - kt-lint
             - setup
       # shared-build compiles the JVM target of every module shared between the
       # JVM and Android apps. It runs in parallel with detekt (both gate the
@@ -181,6 +246,11 @@ jobs:
           key: build-cache-ktlint-v1-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle/caches/build-cache-1
+      - *collect_reports
+      - store_artifacts:
+          path: ~/reports
+          destination: ktlint-reports
+          when: always
 
   detekt:
     resource_class: medium
@@ -206,6 +276,11 @@ jobs:
           key: build-cache-detekt-v1-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle/caches/build-cache-1
+      - *collect_reports
+      - store_artifacts:
+          path: ~/reports
+          destination: detekt-reports
+          when: always
 
   shared-build:
     # A whole-graph Kotlin compile of every shared module — give it the headroom
@@ -274,9 +349,107 @@ jobs:
           key: build-cache-release-v1-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle/caches/build-cache-1
+      # Existing apps/android/build/reports/ kept verbatim so its CircleCI URL
+      # stays stable for anyone with a bookmark; the broader collect_reports
+      # below picks up any other module that produced reports during lintRelease
+      # (e.g. transitive android-resource validation reports).
       - store_artifacts:
           path: apps/android/build/reports/
           destination: reports
+          when: always
+      - *collect_reports
+      - store_artifacts:
+          path: ~/reports
+          destination: lint-reports
+          when: always
+
+  unit-test-jvm:
+    resource_class: medium
+
+    docker:
+      - image: cimg/android:2024.04.1
+
+    environment:
+      JVM_OPTS: -Xms2g -Xmx4g
+
+    steps:
+      - *attach_ws
+      # Own build-cache lineage: unit-test compiles the commonTest source set
+      # which shared-build's `:apps:jvm:classes` never touches. A shared key
+      # would still work (different task hashes, no collisions) but separation
+      # keeps the cache rotation easier to reason about.
+      - restore_cache:
+          keys:
+            - build-cache-test-jvm-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-test-jvm-v1-{{ .Branch }}-
+            - build-cache-test-jvm-v1-
+      - run:
+          name: Run JVM unit tests (commonTest @ jvmTest)
+          command: ./gradlew jvmTest --continue --build-cache --configuration-cache --no-daemon --max-workers=2
+      - save_cache:
+          key: build-cache-test-jvm-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle/caches/build-cache-1
+      # JUnit XMLs for the CircleCI Tests tab (pass/fail counts, suite drilldown).
+      - *collect_test_results
+      - store_test_results:
+          path: ~/test-results
+          when: always
+      # HTML test reports + any other build/reports/ output for download.
+      - *collect_reports
+      - store_artifacts:
+          path: ~/reports
+          destination: jvm-test-reports
+          when: always
+
+  unit-test-js:
+    resource_class: medium
+
+    docker:
+      - image: cimg/android:2024.04.1
+
+    environment:
+      JVM_OPTS: -Xms2g -Xmx4g
+
+    steps:
+      - *attach_ws
+      # The build.gradle.kts NodeJsEnvSpec / YarnRootEnvSpec config sets
+      # `download = false` to keep `FAIL_ON_PROJECT_REPOS` happy — so we
+      # need both binaries on PATH. cimg/android:2024.04.1 ships Node 20;
+      # yarn is missing, install via npm. corepack would be tidier but
+      # isn't enabled out of the box on this image.
+      - run:
+          name: Ensure Node + Yarn on PATH
+          command: |
+            node --version
+            command -v yarn || sudo npm install -g yarn@1.22.22
+            yarn --version
+      # Separate from unit-test-jvm and from the release lineages: JS
+      # compile artifacts (Kotlin IR, webpack outputs) are distinct.
+      - restore_cache:
+          keys:
+            - build-cache-test-js-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-test-js-v1-{{ .Branch }}-
+            - build-cache-test-js-v1-
+      - run:
+          name: Run JS unit tests (commonTest @ jsNodeTest)
+          # cbox/common/appui/api has jsTest disabled in its build.gradle.kts
+          # (top-level CompositionLocals drag Compose UI / Skiko at module
+          # init); every other VM module runs here.
+          command: ./gradlew jsTest --continue --build-cache --configuration-cache --no-daemon --max-workers=2
+      - save_cache:
+          key: build-cache-test-js-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle/caches/build-cache-1
+      - *collect_test_results
+      - store_test_results:
+          path: ~/test-results
+          when: always
+      - *collect_reports
+      - store_artifacts:
+          path: ~/reports
+          destination: js-test-reports
+          when: always
 
   screenshot-test:
     resource_class: large
@@ -300,20 +473,28 @@ jobs:
             - build-cache-screenshot-v1-
       - run:
           name: Compare screenshot tests
-          command: ./gradlew verifyPaparazziDebug --build-cache --configuration-cache --no-daemon --max-workers=2
+          command: ./gradlew verifyPaparazziDebug --continue --build-cache --configuration-cache --no-daemon --max-workers=2
       - save_cache:
           key: build-cache-screenshot-v1-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle/caches/build-cache-1
+      # JUnit XML for the Tests tab (Paparazzi runs as a JUnit test under the hood).
+      - *collect_test_results
+      - store_test_results:
+          path: ~/test-results
+          when: always
+      # Build-reports (html test reports, lint, etc) and the paparazzi failure
+      # images themselves — different roots, different collectors.
+      - *collect_reports
       - store_artifacts:
-          path: features/search/screenshot/build/paparazzi/failures/
-          destination: failure-screenshots/search
+          path: ~/reports
+          destination: screenshot-reports
+          when: always
+      - *collect_paparazzi
       - store_artifacts:
-          path: features/artist-detail/screenshot/build/paparazzi/failures/
-          destination: failure-screenshots/artist-detail
-      - store_artifacts:
-          path: features/game-detail/screenshot/build/paparazzi/failures/
-          destination: failure-screenshots/game-detail
+          path: ~/paparazzi
+          destination: paparazzi-images
+          when: always
 
   build-release-apk:
     resource_class: large
@@ -349,6 +530,14 @@ jobs:
       - store_artifacts:
           path: apps/android/build/outputs/apk/release
           destination: outputs
+          when: always
+      # Report sweep so any module-level build-time report from the release
+      # graph (e.g. resource shrinker, R8 mapping reports) is downloadable.
+      - *collect_reports
+      - store_artifacts:
+          path: ~/reports
+          destination: release-apk-reports
+          when: always
 
   build-release-jvm:
     resource_class: large
@@ -385,3 +574,9 @@ jobs:
       - store_artifacts:
           path: apps/jvm/build/install
           destination: jvm-dist
+          when: always
+      - *collect_reports
+      - store_artifacts:
+          path: ~/reports
+          destination: release-jvm-reports
+          when: always
