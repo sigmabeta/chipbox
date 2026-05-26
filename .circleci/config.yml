@@ -175,7 +175,20 @@ jobs:
       - checkout
       - run:
           name: Initialize submodules
-          command: git submodule sync && git submodule update --init --recursive
+          # `submodule sync` realigns each submodule's recorded URL with whatever .gitmodules
+          # currently declares — guards against URL drift on a restored cached `.git`. The
+          # explicit `foreach … fetch origin` then pulls every ref tip from each submodule's
+          # remote before `submodule update` tries to check out the target SHA. Without that
+          # foreach, a SHA pushed after the cache was last saved surfaces as a fetch-by-SHA
+          # in `submodule update` and GitHub refuses it with `upload-pack: not our ref`
+          # (sage's main moved without the cached submodule clone knowing). With the foreach,
+          # the SHA arrives via a normal `refs/heads/*` fetch and the checkout finds it
+          # locally. `|| true` on the foreach so a brand-new fresh-clone setup (where there's
+          # no submodule clone yet to fetch into) doesn't fail the step.
+          command: |
+            git submodule sync
+            git submodule foreach --recursive 'git fetch origin' || true
+            git submodule update --init --recursive
       - run:
           name: Get all Git tags
           command: git fetch --prune --prune-tags && git fetch --tags -f
