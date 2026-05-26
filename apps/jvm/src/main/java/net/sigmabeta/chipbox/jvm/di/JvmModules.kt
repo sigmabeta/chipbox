@@ -19,6 +19,7 @@ import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
 import net.sigmabeta.chipbox.jvm.JvmStorage
+import net.sigmabeta.chipbox.jvm.logging.JvmHatchet
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.player.speaker.real.SourceDataLineSpeaker
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
@@ -49,7 +50,6 @@ import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.chipbox.settings.real.RealChipboxSettingsManager
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
-import net.sigmabeta.sage.logging.BasicHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.ui.StringProvider
@@ -74,7 +74,9 @@ import okio.Path.Companion.toPath
 @BindingContainer
 @ContributesTo(AppScope::class)
 object HatchetModule {
-    @Provides @SingleIn(AppScope::class) fun provideHatchet(): Hatchet = BasicHatchet()
+    // JvmHatchet mirrors AndroidHatchet (caller-derived tag, Thr/Msg body, Log.* severity ints).
+    // Routed through stdout/stderr instead of logcat.
+    @Provides @SingleIn(AppScope::class) fun provideHatchet(): Hatchet = JvmHatchet()
 }
 
 @BindingContainer
