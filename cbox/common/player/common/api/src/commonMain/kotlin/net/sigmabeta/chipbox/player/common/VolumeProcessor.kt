@@ -66,15 +66,15 @@ class VolumeProcessor(private val hatchet: Hatchet) {
      * [MAX_GAIN_CHANGE_PER_FRAME] per frame. Only touched from [process] and [resetGain], both
      * driven by the single speaker coroutine, so it needs no synchronization of its own.
      */
-    private var actualGain: Double = 1.0
+    private var actualGain: Double = STARTING_GAIN
 
     /**
      * Snap the smoothed gain back to unity. The speaker calls this when a new track begins so
      * the new track's gain (normalization, plus any active duck/master) ramps in cleanly from
-     * 1.0 rather than continuing from the previous track's ramp state.
+     * STARTING_GAIN rather than continuing from the previous track's ramp state.
      */
     fun resetGain() {
-        actualGain = 1.0
+        actualGain = STARTING_GAIN
     }
 
     /**
@@ -242,6 +242,9 @@ class VolumeProcessor(private val hatchet: Hatchet) {
             .toShort()
 
     companion object {
+        // TODO We should expose an option in the settings menu so users can choose fade-from-zero
+        const val STARTING_GAIN = 0.5
+
         /** Registry key for OS-driven transient ducking. */
         const val KEY_DUCK = "duck"
 

@@ -92,9 +92,19 @@ class VolumeProcessorTest {
 
     @Test
     fun `process with unity gain and no fade leaves the buffer untouched`() {
-        // Documented fast-path: no fade, target == actual == 1.0 → return immediately. Verify the
-        // buffer comes back byte-identical so the consumer can rely on the path.
+        // Documented fast-path: no fade, target == actual == 1.0 → return immediately. Verify
+        // the buffer comes back byte-identical so the consumer can rely on the path.
+        //
+        // actualGain starts at STARTING_GAIN (intentional fade-from-half on a new processor —
+        // see VolumeProcessor.STARTING_GAIN), so warm up first by processing enough frames at
+        // unity target for the smoothed gain to ramp to 1.0: (1.0 - STARTING_GAIN) /
+        // MAX_GAIN_CHANGE_PER_FRAME_UP frames. Once we're there, the fast-path applies.
         val processor = newProcessor()
+        val warmupFrames = ((1.0 - VolumeProcessor.STARTING_GAIN) / VolumeProcessor.MAX_GAIN_CHANGE_PER_FRAME_UP)
+            .toInt() + 1
+        processor.process(ShortArray(warmupFrames * 2), 48_000, 0.0, 0.0, 0.0)
+        assertEquals(1.0, processor.debugSnapshot().actualGain, "sanity: warmup should land us at unity")
+
         val frames = 64
         val original = sineBuffer(frames, amplitude = 0.5)
         val copy = original.copyOf()
@@ -103,30 +113,33 @@ class VolumeProcessorTest {
     }
 
     @Test
-    fun `resetGain snaps the smoothed gain back to unity`() {
-        // After running enough frames that the smoothed gain has drifted from 1.0, resetGain
-        // jumps it back so a new track's normalization ramps in from 1.0 rather than continuing
-        // from wherever the previous track left it.
+    fun `resetGain snaps the smoothed gain back to STARTING_GAIN`() {
+        // After running enough frames that the smoothed gain has drifted from STARTING_GAIN,
+        // resetGain jumps it back so a new track's normalization ramps in from STARTING_GAIN
+        // rather than continuing from wherever the previous track left it. STARTING_GAIN is
+        // currently 0.5 — the documented "fade in from half-volume" behaviour on a fresh
+        // processor / track boundary.
         val processor = newProcessor()
         processor.setMasterVolume(0.0) // force a long downward ramp target
         val frames = 5_000
         val buffer = sineBuffer(frames, amplitude = 0.5)
         processor.process(buffer, sampleRate = 48_000, inputStartMillis = 0.0, fadeStartMillis = 0.0, fadeLengthMillis = 0.0)
         val actualAfter = processor.debugSnapshot().actualGain
-        assertTrue(actualAfter < 1.0, "expected smoothed gain to have decayed; was $actualAfter")
+        assertTrue(actualAfter < VolumeProcessor.STARTING_GAIN, "expected smoothed gain to have decayed; was $actualAfter")
         processor.resetGain()
-        assertEquals(1.0, processor.debugSnapshot().actualGain)
+        assertEquals(VolumeProcessor.STARTING_GAIN, processor.debugSnapshot().actualGain)
     }
 
     @Test
     fun `smoothed gain decays toward zero by MAX_GAIN_CHANGE_PER_FRAME_DOWN per frame`() {
-        // Drop target to 0 and process exactly N frames; the smoothed gain should land within one
-        // step of (1.0 - N * MAX_GAIN_CHANGE_PER_FRAME_DOWN). Locks in the asymmetric fast-decay
-        // behaviour the speaker relies on for clean ducks.
+        // Drop target to 0 and process exactly N frames; the smoothed gain should land within
+        // one step of (STARTING_GAIN - N * MAX_GAIN_CHANGE_PER_FRAME_DOWN). Locks in the
+        // asymmetric fast-decay behaviour the speaker relies on for clean ducks. Start is
+        // STARTING_GAIN (0.5 today), not 1.0 — see VolumeProcessor.STARTING_GAIN.
         val processor = newProcessor()
         processor.setMasterVolume(0.0)
         val frames = 1_000
-        val expectedAfter = 1.0 - frames * VolumeProcessor.MAX_GAIN_CHANGE_PER_FRAME_DOWN
+        val expectedAfter = VolumeProcessor.STARTING_GAIN - frames * VolumeProcessor.MAX_GAIN_CHANGE_PER_FRAME_DOWN
         processor.process(sineBuffer(frames, amplitude = 0.5), 48_000, 0.0, 0.0, 0.0)
         val actual = processor.debugSnapshot().actualGain
         assertTrue(
