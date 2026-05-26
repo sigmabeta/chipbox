@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.repository.database.fakes
+package net.sigmabeta.chipbox.database.fake
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,18 +18,20 @@ import net.sigmabeta.chipbox.entities.joins.GameArtistJoin
 import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
 
 /**
- * In-memory backing for the 6 DAO fakes [DatabaseRepository] consumes. One bag of maps + a
- * shared "data changed" trigger — every write bumps the trigger, and Flow-returning DAO
- * methods derive from it so subscribers re-emit, the same way production Room re-emits when
- * an underlying table changes.
+ * In-memory backing for the 6 DAO fakes the production Room runtime in `:database:real`
+ * implements. One bag of maps + a shared "data changed" trigger — every write bumps the
+ * trigger, and Flow-returning DAO methods derive from it so subscribers re-emit, the same way
+ * production Room re-emits when an underlying table changes.
  *
- * Not threadsafe — tests run on a single coroutine via [kotlinx.coroutines.test.runTest] +
- * `UnconfinedTestDispatcher`. That keeps the fakes simple and the assertions deterministic.
+ * Not threadsafe — callers run on a single coroutine (typically via
+ * [kotlinx.coroutines.test.runTest] + `UnconfinedTestDispatcher`). That keeps the fakes simple
+ * and the assertions deterministic.
  *
- * No attempt to enforce SQL constraints (unique indexes, FK cascades on delete, etc.) — the
- * production code never relies on the DB rejecting bad input; it serialises writes through
- * the `artistWriteMutex` and does its own lookup-before-insert. If a test path exercises
- * cascade behaviour, the assertion calls out the missing cascade explicitly.
+ * No attempt to enforce SQL constraints (unique indexes, etc.) — the production code never
+ * relies on the DB rejecting bad input; it serialises writes through `artistWriteMutex` and
+ * does its own lookup-before-insert. FK cascades on delete *are* mimicked because production
+ * code relies on them ([gameDao.deleteByIds] cascades to tracks and track_artist_join so
+ * `artistDao.deleteOrphans()` correctly sees zero references).
  */
 class FakeDatabase {
 

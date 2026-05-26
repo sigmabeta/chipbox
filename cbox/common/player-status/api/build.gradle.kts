@@ -11,6 +11,7 @@ plugins {
     alias(libs.plugins.sage.kmp)
     alias(libs.plugins.sage.compose.kmp)
     alias(libs.plugins.metro)
+    id("chipbox.kmp.test")
 }
 
 // Metro's contribution-hint codegen emits top-level declarations that Kotlin/JS incremental
@@ -49,6 +50,12 @@ kotlin {
                 implementation(libs.metrox.viewmodel)
                 implementation(libs.metrox.viewmodel.compose)
                 implementation(libs.jetbrains.compose.material.icons.extended)
+            }
+        }
+
+        named("commonTest") {
+            dependencies {
+                implementation(projects.cbox.common.player.director.fake)
             }
         }
     }

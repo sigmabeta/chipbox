@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    id("chipbox.kmp.test")
 }
 
 kotlin {
@@ -24,29 +25,19 @@ kotlin {
             }
         }
 
-        named("commonTest") {
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.kotlinx.coroutines.core)
-                implementation(libs.sage.common.logging)
-                // No alias in libs.versions.toml yet; pin to the same coroutines version as core
-                // so runTest / TestScope APIs line up exactly with the production runtime.
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-            }
-        }
-
         named("jvmSharedTest") {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlinx.coroutines.test)
                 implementation(libs.sage.common.logging)
                 implementation(libs.okio.fakefilesystem)
-                // CachingPcmSourceTest needs runTest + TestScope; pinned to the core coroutines
-                // version. CachingPcmSource holds concurrent read+write handles on the same .pcm.tmp,
-                // which okio's FakeFileSystem refuses ("file is already open for writing"); the
-                // test therefore runs against FileSystem.SYSTEM in jvmSharedTest, alongside the
-                // existing PcmCacheFile / PcmCacheJanitor JVM-only tests.
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
+                // CachingPcmSourceTest needs runTest + TestScope. CachingPcmSource holds
+                // concurrent read+write handles on the same .pcm.tmp, which okio's FakeFileSystem
+                // refuses ("file is already open for writing"); the test therefore runs against
+                // FileSystem.SYSTEM in jvmSharedTest, alongside the existing PcmCacheFile /
+                // PcmCacheJanitor JVM-only tests.
+                implementation(projects.cbox.common.player.cache.fake)
             }
         }
     }

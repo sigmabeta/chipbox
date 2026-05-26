@@ -59,5 +59,9 @@ gradlePlugin {
             id = "chipbox.screenshot"
             implementationClass = "ChipboxScreenshotPlugin"
         }
+        register("chipboxKmpTest") {
+            id = "chipbox.kmp.test"
+            implementationClass = "ChipboxKmpTestPlugin"
+        }
     }
 }

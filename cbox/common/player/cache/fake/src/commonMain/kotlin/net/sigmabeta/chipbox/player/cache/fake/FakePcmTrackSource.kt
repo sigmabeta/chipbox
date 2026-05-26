@@ -1,18 +1,17 @@
-package net.sigmabeta.chipbox.player.cache.real.fakes
+package net.sigmabeta.chipbox.player.cache.fake
 
 import kotlinx.coroutines.suspendCancellableCoroutine
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 
 /**
- * Scriptable [PcmTrackSource] for [CachingPcmSource] tests. Each enqueued chunk supplies a fixed
- * number of frames either filled with [Chunk.Audible.pattern] or zeroed for [Chunk.Silent]. When
- * the queue is drained the source either reports end-of-track ([isOver] becomes true) or — if
- * [suspendOnEmpty] is set — suspends in a cancellable way so a test can exercise the writer-loop
- * cancellation path.
+ * Scriptable [PcmTrackSource] for tests. Each enqueued chunk supplies a fixed number of frames
+ * either filled with [Chunk.Audible.pattern] or zeroed for [Chunk.Silent]. When the queue is
+ * drained the source either reports end-of-track ([isOver] becomes true) or — if
+ * [parkOnEmpty] has been called — suspends in a cancellable way so a test can exercise the
+ * caller's cancellation path (e.g. CachingPcmSource's writer-loop cancel-mid-render).
  *
- * The writer reads up to [net.sigmabeta.chipbox.player.cache.real.CachingPcmSource]'s
- * `WRITER_BUFFER_FRAMES` (4096) per call; a single enqueued chunk larger than that is split
- * across iterations automatically.
+ * A single enqueued chunk larger than the caller's buffer is split across iterations
+ * automatically; the leftover frames stay at the head of the queue for the next read.
  */
 class FakePcmTrackSource(
     override val sampleRate: Int = 44_100,
@@ -41,8 +40,8 @@ class FakePcmTrackSource(
         chunks.add(Chunk.Silent(frames))
     }
 
-    /** Park the writer's next [readFrames] indefinitely when the queue empties — used by tests
-     *  that exercise the cancel-mid-render path via [CachingPcmSource.close]. */
+    /** Park the next [readFrames] indefinitely (and cancellably) when the queue empties — used
+     *  by tests that exercise the cancel-mid-read path on the caller side. */
     fun parkOnEmpty() {
         suspendOnEmpty = true
     }
@@ -58,7 +57,7 @@ class FakePcmTrackSource(
     override suspend fun readFrames(buffer: ShortArray): Int {
         if (chunks.isEmpty()) {
             if (suspendOnEmpty) {
-                // Cancellable park — when the writer job is cancelled, this resumes with
+                // Cancellable park — when the caller's job is cancelled, this resumes with
                 // CancellationException, which CachingPcmSource handles in its writer's catch.
                 suspendCancellableCoroutine<Nothing> { /* never resumed */ }
             }

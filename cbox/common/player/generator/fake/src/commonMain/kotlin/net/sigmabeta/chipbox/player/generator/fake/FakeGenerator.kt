@@ -1,62 +1,49 @@
 package net.sigmabeta.chipbox.player.generator.fake
 
-import kotlinx.coroutines.CoroutineDispatcher
-import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
-import net.sigmabeta.chipbox.models.Track
-import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
-import net.sigmabeta.chipbox.player.cache.PcmTrackSource
-import net.sigmabeta.chipbox.player.emulators.fake.FakeEmulator
-import net.sigmabeta.chipbox.player.generator.BaseGenerator
-import net.sigmabeta.chipbox.repository.Repository
-import net.sigmabeta.chipbox.utils.ioDispatcher
-import net.sigmabeta.sage.logging.Hatchet
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import net.sigmabeta.chipbox.player.generator.Generator
+import net.sigmabeta.chipbox.player.generator.GeneratorDebugInfo
+import net.sigmabeta.chipbox.player.generator.GeneratorEvent
 
 /**
- * Development-only [Generator] that bypasses all native emulators in favor of the in-process
- * [FakeEmulator] (sine/square synth driven by procedurally generated tracks). Useful for
- * exercising the pipeline without dragging in JNI dependencies.
+ * Test [Generator] that lets tests push [GeneratorEvent]s through [emit] and inspect what the
+ * Director called on it. No real production loop — exactly what's needed to drive the Director's
+ * reducer in isolation. The synth-backed runtime fallback is [SynthGenerator] in this same
+ * module; this `Fake*` class is reserved for test stubs.
  *
- * The fake path skips the PCM cache entirely — there's no value in caching the synth's output,
- * and avoiding it keeps the fake harness self-contained.
+ * Event buffer matches the production [net.sigmabeta.chipbox.player.generator.BaseGenerator]
+ * shape (replay=0, suspend on overflow, 10+ extra capacity) so a test that floods events without
+ * waiting for a collector doesn't deadlock on the very first emit.
  */
-class FakeGenerator(
-    repository: Repository,
-    contentSourceRegistry: ContentSourceRegistry,
-    bufferManager: ProducerBufferManager,
-    hatchet: Hatchet,
-    dispatcher: CoroutineDispatcher = ioDispatcher
-) : BaseGenerator(repository, contentSourceRegistry, bufferManager, hatchet, dispatcher) {
+class FakeGenerator : Generator {
 
-    override val pcmSourceFactory: PcmTrackSource.Factory = FakePcmTrackSourceFactory(hatchet)
-}
+    private val eventSink = MutableSharedFlow<GeneratorEvent>(
+        replay = 0,
+        onBufferOverflow = BufferOverflow.SUSPEND,
+        extraBufferCapacity = 16,
+    )
+    private val debugInfo = MutableStateFlow(GeneratorDebugInfo())
 
-private class FakePcmTrackSourceFactory(private val hatchet: Hatchet) : PcmTrackSource.Factory {
-    override suspend fun open(track: Track, bytes: ByteArray): PcmTrackSource {
-        FakeEmulator.hatchet = hatchet
-        FakeEmulator.loadTrack(track)
-        return FakePcmTrackSource()
-    }
-}
+    val startTrackCalls = mutableListOf<Long>()
+    var playCalls: Int = 0
+    var pauseCalls: Int = 0
+    var stopCalls: Int = 0
+    val seekCalls = mutableListOf<Long>()
+    var releaseCalls: Int = 0
 
-private class FakePcmTrackSource : PcmTrackSource {
-    override val sampleRate: Int = FakeEmulator.getSampleRateInternal()
+    /** Push [event] into the events flow that the Director subscribes to in its `init`. */
+    suspend fun emit(event: GeneratorEvent) = eventSink.emit(event)
 
-    override val totalFrames: Long? = null
-
-    override val isOver: Boolean get() = FakeEmulator.trackOver
-
-    override suspend fun readFrames(buffer: ShortArray): Int {
-        val framesGenerated = FakeEmulator.generateBuffer(buffer)
-        return if (framesGenerated < 0) 0 else framesGenerated
-    }
-
-    override suspend fun seek(framePosition: Long) {
-        // Fake emulator doesn't support seek.
-    }
-
-    override fun getLastError(): String? = FakeEmulator.getLastError()
-
-    override suspend fun close() {
-        FakeEmulator.teardown()
-    }
+    override fun events() = eventSink.asSharedFlow()
+    override fun debugInfo() = debugInfo.asStateFlow()
+    override fun release() { releaseCalls++ }
+    override suspend fun startTrack(trackId: Long) { startTrackCalls += trackId }
+    override fun play() { playCalls++ }
+    override fun pause() { pauseCalls++ }
+    override suspend fun stop() { stopCalls++ }
+    override suspend fun seek(positionMs: Long) { seekCalls += positionMs }
 }

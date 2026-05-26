@@ -10,7 +10,7 @@ import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmCacheKey
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
-import net.sigmabeta.chipbox.player.cache.real.fakes.FakePcmTrackSource
+import net.sigmabeta.chipbox.player.cache.fake.FakePcmTrackSource
 import net.sigmabeta.sage.logging.BluntHatchet
 import okio.FileSystem
 import okio.Path
