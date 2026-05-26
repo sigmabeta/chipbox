@@ -11,6 +11,7 @@ plugins {
     alias(libs.plugins.sage.kmp)
     alias(libs.plugins.sage.compose.kmp)
     alias(libs.plugins.metro)
+    id("chipbox.kmp.test")
 }
 
 // Metro KT-82395 workaround (same config as the feature :real convention plugin) — appui applies
@@ -114,6 +115,12 @@ kotlin {
                 implementation(libs.voyager.transitions)
                 implementation(libs.metrox.viewmodel)
                 implementation(libs.metrox.viewmodel.compose)
+            }
+        }
+
+        named("commonTest") {
+            dependencies {
+                implementation(projects.cbox.common.settings.fake)
             }
         }
     }

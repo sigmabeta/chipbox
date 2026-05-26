@@ -1,5 +1,6 @@
 plugins {
     id("chipbox.feature.real")
+    id("chipbox.kmp.test")
 }
 
 kotlin {
@@ -17,6 +18,12 @@ kotlin {
                 implementation(projects.cbox.common.models.api)
 
                 implementation(projects.features.gameDetail.api)
+            }
+        }
+
+        named("commonTest") {
+            dependencies {
+                implementation(projects.cbox.common.repository.fake)
             }
         }
     }

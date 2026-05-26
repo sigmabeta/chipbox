@@ -1,5 +1,6 @@
 plugins {
     id("chipbox.feature.real")
+    id("chipbox.kmp.test")
 }
 
 // SettingsViewModel is commonMain now (its deps are all KMP); the build-date java.time formatting
@@ -39,6 +40,16 @@ kotlin {
         named("androidMain") {
             dependencies {
                 implementation(libs.androidx.activity.compose)
+            }
+        }
+
+        named("commonTest") {
+            dependencies {
+                implementation(projects.cbox.common.settings.fake)
+                implementation(projects.cbox.common.debug.fake)
+                implementation(projects.cbox.common.repository.fake)
+                implementation(projects.cbox.common.scanner.fake)
+                implementation(projects.cbox.common.contentsource.fake)
             }
         }
     }
