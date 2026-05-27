@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_section_random_games">Games of the day</string>
+    <string name="home_section_rng">RNG Take the Wheel</string>
+    <string name="home_rng_random_song">Random Song</string>
+    <string name="home_rng_random_game">Random Game</string>
+    <string name="home_rng_random_artist">Random Artist</string>
+</resources>

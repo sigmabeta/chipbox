@@ -63,6 +63,8 @@ kotlin {
                 // routing is gone.
                 implementation(projects.cbox.common.models.api)
 
+                implementation(projects.features.home.api)
+                api(projects.features.home.real)
                 implementation(projects.features.library.api)
                 api(projects.features.library.real)
                 implementation(projects.features.manageLibrary.api)
@@ -108,7 +110,7 @@ kotlin {
                 // Voyager — single Compose Multiplatform nav stack shared with apps/jvm.
                 // Replaces androidx.navigation:navigation-compose (the AndroidX CMP fork
                 // publishes JVM stubs only). Three artifacts: navigator (per-stack push/pop),
-                // tab-navigator (per-tab back stacks for Library/Search/Settings —
+                // tab-navigator (per-tab back stacks for Home/Library/Search —
                 // saveState + restoreState equivalent), transitions (SlideTransition).
                 implementation(libs.voyager.navigator)
                 implementation(libs.voyager.tab.navigator)

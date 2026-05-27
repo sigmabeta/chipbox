@@ -14,4 +14,5 @@
     <string name="now_playing_session_type_platform_shuffling">Shuffling from platform</string>
     <string name="now_playing_session_type_setlist_playing">Playing search results for</string>
     <string name="now_playing_session_type_setlist_shuffling">Shuffling search results for</string>
+    <string name="now_playing_session_type_single_track_playing">Playing a random song</string>
 </resources>

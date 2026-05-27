@@ -58,4 +58,15 @@ subprojects {
     tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.BaseKtLintCheckTask>().configureEach {
         exclude { it.file.path.contains("/build/") }
     }
+    // Mirror the ktlint exclusion for detekt: Compose-resource codegen produces source files
+    // ([commonMain]Strings*.kt, Res.kt) that violate detekt's LongMethod/MaxLineLength/
+    // FunctionNaming rules. The same `it.file.path.contains("/build/")` predicate the ktlint
+    // exclusion above uses works on Detekt (SourceTask) and survives the absolute-path source
+    // entries Compose's resourceGenerator registers — `exclude("**/build/**")` only matches
+    // paths relative to the source roots and doesn't catch them.
+    plugins.withId("io.gitlab.arturbosch.detekt") {
+        tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+            exclude { it.file.path.contains("/build/") }
+        }
+    }
 }

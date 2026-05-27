@@ -156,6 +156,11 @@ class RealDirector(
 
                 session.startingPosition != null -> setlistForSession[session.startingPosition!!]
 
+                // SINGLE_TRACK is a self-contained "play this one track" session — contentId is
+                // already the track id, no position hint needed from the caller. Default to
+                // position 0 so the rest of the start flow has a valid index into the 1-item setlist.
+                session.type == SessionType.SINGLE_TRACK -> session.contentId
+
                 else -> {
                     emitError("Unable to find a track id to play.")
                     return@launch
@@ -382,6 +387,7 @@ class RealDirector(
         SessionType.ALL_TRACKS -> getTrackListForAllTracks()
         SessionType.PLATFORM -> getTrackListForPlatform(session.contentId)
         SessionType.SETLIST -> session.explicitSetlist.orEmpty()
+        SessionType.SINGLE_TRACK -> listOf(session.contentId)
     }
 
     private suspend fun getTrackListForPlatform(contentId: Long) = repository
@@ -623,7 +629,10 @@ class RealDirector(
         return oldState
     }
 
-    private suspend fun handleSpeakerError(event: SpeakerEvent.Error, oldState: ChipboxPlaybackState): ChipboxPlaybackState {
+    private suspend fun handleSpeakerError(
+        event: SpeakerEvent.Error,
+        oldState: ChipboxPlaybackState,
+    ): ChipboxPlaybackState {
         emitError(event.message)
 
         directorScope.launch {

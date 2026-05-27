@@ -60,6 +60,16 @@ class RealDirectorTest {
     }
 
     @Test
+    fun `start with a SINGLE_TRACK session uses contentId as the track id with no position hint`() = runTest {
+        // SINGLE_TRACK sessions are self-contained — contentId is the track, the resolved
+        // setlist has one entry, no startingPosition needs to be passed.
+        val (director, gen, _, _) = newDirector(listOf(track1, track2, track3))
+        director.start(Session(type = SessionType.SINGLE_TRACK, contentId = 2L))
+        assertEquals(listOf(2L), gen.startTrackCalls)
+        director.release()
+    }
+
+    @Test
     fun `Generator Loading from IDLE transitions to BUFFERING and emits metadata`() = runTest {
         // Cold path: state was IDLE, so the reducer emits the loading track's metadata and
         // flips to BUFFERING. This is what the now-playing UI subscribes to on first start.

@@ -98,6 +98,10 @@ data class NowPlayingState(
                     } else {
                         ChipboxStringId.NOW_PLAYING_SESSION_TYPE_SETLIST_PLAYING
                     }
+
+                // A one-off random pick — no shuffle distinction (the setlist has one entry).
+                SessionType.SINGLE_TRACK ->
+                    ChipboxStringId.NOW_PLAYING_SESSION_TYPE_SINGLE_TRACK_PLAYING
             }
         )
     }
@@ -137,6 +141,9 @@ data class NowPlayingState(
                 Platform.entries.getOrNull(session.contentId.toInt())
                     ?.let { stringProvider.getString(it.stringId) }
                     ?: ""
+
+            // No backing source — just one track, label-only header.
+            SessionType.SINGLE_TRACK -> ""
         }
     }
 
