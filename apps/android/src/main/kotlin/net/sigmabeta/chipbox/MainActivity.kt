@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.services.api.ChipboxPlaybackService
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
+import net.sigmabeta.sage.ui.perf.LocalLogger
 
 class MainActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -39,6 +40,7 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(
                 LocalMetroViewModelFactory provides appGraph.metroViewModelFactory,
                 LocalChipboxStringProvider provides appGraph.stringProvider,
+                LocalLogger provides appGraph.hatchet,
             ) {
                 ChipboxAppUi(
                     onOpenUrl = { url -> openUrl(url) },

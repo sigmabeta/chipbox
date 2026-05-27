@@ -1,7 +1,9 @@
 package net.sigmabeta.chipbox.jvm.logging
 
+import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
 import net.sigmabeta.sage.logging.Hatchet
+import net.sigmabeta.sage.logging.HatchetError
 
 /**
  * JVM-desktop counterpart of `AndroidHatchet`. Mirrors its behaviour as closely as the JVM
@@ -10,11 +12,15 @@ import net.sigmabeta.sage.logging.Hatchet
  *  - Severity ints match `android.util.Log` constants (2..7), so the `log(severity, …)`
  *    overload and any call site that passes a raw int stays portable.
  *  - The tag is derived from the first non-Hatchet stack frame, with anonymous-class suffixes
- *    (`Foo$1`) stripped and the result capped at 23 chars — same convention Android enforces,
- *    kept here for visual parity when logs from both targets sit side-by-side.
- *  - The body is `Thr: <thread> | Msg: <message>`, line-split so multi-line messages keep the
- *    same `LEVEL/Tag:` prefix on each emitted line (logcat does this implicitly via separate
- *    `Log.println` calls; here it has to be explicit).
+ *    (`Foo$1`) stripped and the result pad/center-ellipsized to a fixed 16-char width so logs
+ *    align column-wise. Same convention applied in `AndroidHatchet`.
+ *  - The body is `<thread> || <message>` with the thread name pad/center-ellipsized to
+ *    16 chars, line-split so multi-line messages keep the same `LEVEL/Tag:` prefix on each
+ *    emitted line (logcat does this implicitly via separate `Log.println` calls; here it has
+ *    to be explicit).
+ *  - Errors (severity ≥ ERROR) are also recorded into a 16-deep ring buffer exposed via
+ *    [recentErrors] so a debug UI / crash reporter can surface them. Stored with raw (unpadded)
+ *    tag + thread to keep the captured data dense.
  *  - Logging is debug-gated like Android's `BuildConfig.DEBUG` short-circuit. The flag is
  *    constructor-supplied because there's no per-target `BuildConfig` in commonMain and the
  *    JVM app may want to flip it independently of `AppInfo.isDebug`.
@@ -38,12 +44,21 @@ class JvmHatchet(private val debug: Boolean = true) : Hatchet {
 
     override fun log(severity: Int, message: String) = logInternal(severity, message)
 
+    private val errorQueueLock = Any()
+    private val errorQueue = ArrayDeque<HatchetError>()
+
+    override val recentErrors: List<HatchetError>
+        get() = synchronized(errorQueueLock) { errorQueue.toList() }
+
+    @Suppress("ThrowingExceptionsWithoutMessageOrCause")
     private fun logInternal(severity: Int, message: String) {
         if (!debug) return
 
-        val tag = currentTag ?: FALLBACK_TAG
-        val threadName = Thread.currentThread().name
-        val body = "Thr: $threadName | Msg: $message"
+        val element = Throwable().stackTrace.firstOrNull { it.className !in fqcnIgnore }
+        val tagPair = element?.let(::resolveTag)
+        val tag = tagPair?.formatted ?: FALLBACK_TAG
+        val threadName = currentFormattedThreadName()
+        val body = "$threadName || $message"
         val levelChar = severity.toLevelChar()
         val sink = if (severity >= WARN) System.err else System.out
 
@@ -52,6 +67,51 @@ class JvmHatchet(private val debug: Boolean = true) : Hatchet {
         for (line in body.lineSequence()) {
             sink.println("$levelChar/$tag: $line")
         }
+
+        if (severity >= ERROR) {
+            recordError(message, tagPair?.raw ?: FALLBACK_TAG_RAW)
+        }
+    }
+
+    private fun recordError(message: String, rawTag: String) {
+        val entry = HatchetError(
+            timestamp = System.currentTimeMillis(),
+            tag = rawTag,
+            thread = Thread.currentThread().name,
+            message = message,
+        )
+        synchronized(errorQueueLock) {
+            errorQueue.addLast(entry)
+            if (errorQueue.size > MAX_RECENT_ERRORS) errorQueue.removeFirst()
+        }
+    }
+
+    // Per-thread cache of the padded/ellipsized name so we only rebuild when the thread is
+    // renamed (e.g. coroutine dispatchers reusing pool threads with different names).
+    private val cachedThreadName = ThreadLocal<Pair<String, String>>()
+
+    private fun currentFormattedThreadName(): String {
+        val current = Thread.currentThread().name
+        val cached = cachedThreadName.get()
+        if (cached != null && cached.first == current) return cached.second
+        val formatted = formatThreadName(current)
+        cachedThreadName.set(current to formatted)
+        return formatted
+    }
+
+    private fun formatThreadName(name: String): String = formatFixedWidth(name, THREAD_NAME_WIDTH)
+
+    private fun formatFixedWidth(text: String, width: Int): String = when {
+        text.length == width -> text
+
+        text.length < width -> text.padEnd(width)
+
+        else -> {
+            val keep = width - ELLIPSIS.length
+            val head = (keep + 1) / 2
+            val tail = keep / 2
+            text.substring(0, head) + ELLIPSIS + text.substring(text.length - tail)
+        }
     }
 
     private val fqcnIgnore = listOf(
@@ -59,25 +119,22 @@ class JvmHatchet(private val debug: Boolean = true) : Hatchet {
         JvmHatchet::class.java.name,
     )
 
-    @Suppress("ThrowingExceptionsWithoutMessageOrCause")
-    private val currentTag: String?
-        get() = Throwable().stackTrace
-            .firstOrNull { it.className !in fqcnIgnore }
-            ?.let(::createStackElementTag)
+    // Per-className cache of (raw, formatted) tags. `raw` is the bare class name with any
+    // anonymous-class suffix stripped — fed into [recordError] so the queue stays dense.
+    // `formatted` is `raw` pad/center-ellipsized to a fixed 16-char width for output alignment.
+    private val cachedTag = ConcurrentHashMap<String, TagPair>()
 
-    /**
-     * Derive a tag from the caller frame's class name: drop the package, strip any anonymous-
-     * class suffix (`Foo$1`, `Foo$1$2`), and truncate to Android's 23-char limit. Kept identical
-     * to `AndroidHatchet.createStackElementTag` so identical call sites produce identical tags.
-     */
-    private fun createStackElementTag(element: StackTraceElement): String {
-        var tag = element.className.substringAfterLast('.')
-        val m = ANONYMOUS_CLASS.matcher(tag)
-        if (m.find()) {
-            tag = m.replaceAll("")
+    private data class TagPair(val raw: String, val formatted: String)
+
+    private fun resolveTag(element: StackTraceElement): TagPair =
+        cachedTag.getOrPut(element.className) {
+            var raw = element.className.substringAfterLast('.')
+            val m = ANONYMOUS_CLASS.matcher(raw)
+            if (m.find()) {
+                raw = m.replaceAll("")
+            }
+            TagPair(raw = raw, formatted = formatFixedWidth(raw, TAG_WIDTH))
         }
-        return if (tag.length <= MAX_TAG_LENGTH) tag else tag.substring(0, MAX_TAG_LENGTH)
-    }
 
     @Suppress("MagicNumber")
     private fun Int.toLevelChar() = when (this) {
@@ -96,8 +153,12 @@ class JvmHatchet(private val debug: Boolean = true) : Hatchet {
         private const val INFO = 4
         private const val WARN = 5
         private const val ERROR = 6
-        private const val MAX_TAG_LENGTH = 23
-        private const val FALLBACK_TAG = "Chipbox"
+        private const val TAG_WIDTH = 16
+        private const val THREAD_NAME_WIDTH = 16
+        private const val MAX_RECENT_ERRORS = 16
+        private const val ELLIPSIS = "..."
+        private const val FALLBACK_TAG_RAW = "Chipbox"
+        private val FALLBACK_TAG = FALLBACK_TAG_RAW.padEnd(TAG_WIDTH)
         private val ANONYMOUS_CLASS = Pattern.compile("(\\$\\d+)+$")
     }
 }

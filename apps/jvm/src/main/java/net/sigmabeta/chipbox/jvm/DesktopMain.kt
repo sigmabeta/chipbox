@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.jvm.di.JvmChipboxGraph
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
+import net.sigmabeta.sage.ui.perf.LocalLogger
 import java.awt.Desktop
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
@@ -67,6 +68,7 @@ fun runDesktop(graph: JvmChipboxGraph) = application {
         CompositionLocalProvider(
             LocalMetroViewModelFactory provides graph.metroViewModelFactory,
             LocalChipboxStringProvider provides graph.stringProvider,
+            LocalLogger provides graph.hatchet,
         ) {
             ChipboxAppUi(
                 onOpenUrl = { url -> openUrlIfSupported(url) },

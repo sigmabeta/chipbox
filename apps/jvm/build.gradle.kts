@@ -402,6 +402,8 @@ dependencies {
     implementation(libs.metrox.viewmodel.compose)
 
     implementation(libs.sage.common.logging)
+    // LocalLogger composition local (provided in DesktopMain) lives here.
+    implementation(libs.sage.common.ui.perfCompose)
     implementation(libs.sage.common.appinfo)
     implementation(libs.sage.common.storage.common)
     implementation(libs.kotlinx.coroutines.core)
