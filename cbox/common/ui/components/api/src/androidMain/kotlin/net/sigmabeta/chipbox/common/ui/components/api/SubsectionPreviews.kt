@@ -14,7 +14,7 @@ import kotlinx.collections.immutable.toImmutableList
 import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
 import net.sigmabeta.chipbox.common.ui.components.api.previews.PreviewActionSink
 import net.sigmabeta.sage.appcomm.SageAction
-import net.sigmabeta.sage.components.SquareItemListModel
+import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.components.SubsectionHeaderListModel
 import net.sigmabeta.sage.components.SubsectionListModel
 import net.sigmabeta.sage.components.WideItemListModel
@@ -136,7 +136,7 @@ private fun SampleSquare() {
                 "Composers for this game on VGLS",
             ),
             listOf(
-                SquareItemListModel(
+                GridImageListModel(
                     2345L,
                     "Manami Kiyota",
                     null,
@@ -144,7 +144,7 @@ private fun SampleSquare() {
                     actionableId = null,
                     clickAction = SageAction.Noop,
                 ),
-                SquareItemListModel(
+                GridImageListModel(
                     3456L,
                     "Yasunori Mitsuda",
                     null,
@@ -152,7 +152,7 @@ private fun SampleSquare() {
                     actionableId = null,
                     clickAction = SageAction.Noop,
                 ),
-                SquareItemListModel(
+                GridImageListModel(
                     4567L,
                     "ACE+",
                     null,

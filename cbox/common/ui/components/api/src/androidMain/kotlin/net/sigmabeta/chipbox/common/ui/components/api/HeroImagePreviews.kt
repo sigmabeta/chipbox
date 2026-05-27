@@ -14,7 +14,7 @@ import net.sigmabeta.sage.ui.Icon
 @Preview
 @Composable
 private fun LoadingGame() {
-    BigImage(
+    HeroImage(
         HeroImageListModel(
             sourceInfo = SourceInfo("whatever"),
             imagePlaceholder = Icon.Album,
@@ -30,7 +30,7 @@ private fun LoadingGame() {
 @Preview
 @Composable
 private fun SuccessGame() {
-    BigImage(
+    HeroImage(
         HeroImageListModel(
             sourceInfo = SourceInfo("whatever"),
             imagePlaceholder = Icon.Description,
@@ -46,7 +46,7 @@ private fun SuccessGame() {
 @Preview
 @Composable
 private fun SuccessGameWithLabel() {
-    BigImage(
+    HeroImage(
         HeroImageListModel(
             sourceInfo = SourceInfo("whatever"),
             imagePlaceholder = Icon.Description,

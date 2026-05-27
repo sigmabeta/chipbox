@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.previews.BigImageConstants
+import net.sigmabeta.chipbox.common.ui.components.api.previews.CoverArtConstants
 import net.sigmabeta.chipbox.common.ui.components.api.previews.NotifConstants
 import net.sigmabeta.chipbox.common.ui.components.api.previews.SquareConstants
 import net.sigmabeta.chipbox.common.ui.components.api.previews.WideItemConstants
@@ -30,6 +31,9 @@ fun LoadingItem(
     val (width, ratio) = when (loadingType) {
         LoadingType.PAGE -> PAGE_MIN_WIDTH.dp to PAGE_ASPECT_RATIO
         LoadingType.SQUARE -> SquareConstants.MIN_WIDTH to SquareConstants.ASPECT_RATIO
+        // Same minimum width as SQUARE, but the cover-art 3:4 ratio so games' loading
+        // placeholders don't pop from square → portrait when the data arrives.
+        LoadingType.COVER -> SquareConstants.MIN_WIDTH to CoverArtConstants.ASPECT_RATIO
         LoadingType.NOTIF -> NotifConstants.MIN_WIDTH to NotifConstants.ASPECT_RATIO
         LoadingType.WIDE_ITEM -> WideItemConstants.MIN_WIDTH to WideItemConstants.ASPECT_RATIO
         LoadingType.BIG_IMAGE -> BigImageConstants.MIN_WIDTH to BigImageConstants.ASPECT_RATIO

@@ -34,7 +34,7 @@ import net.sigmabeta.sage.components.SectionHeaderListModel
 import net.sigmabeta.sage.components.SectionListModel
 import net.sigmabeta.sage.components.SingleTextListModel
 import net.sigmabeta.sage.components.SmallTextListModel
-import net.sigmabeta.sage.components.SquareItemListModel
+import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.components.SubsectionHeaderListModel
 import net.sigmabeta.sage.components.SubsectionListModel
 import net.sigmabeta.sage.components.WideItemListModel
@@ -65,7 +65,7 @@ fun ListModel.Content(
 
             is ErrorStateListModel -> EmptyListIndicator(model = this, showDebug = debug, modifier = mod)
 
-            is HeroImageListModel -> BigImage(model = this, actionSink = sink, modifier = mod, padding = pad)
+            is HeroImageListModel -> HeroImage(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is HorizontalScrollerListModel -> HorizontalScroller(model = this, actionSink = sink, showDebug = debug, modifier = mod, padding = pad)
 
@@ -99,7 +99,7 @@ fun ListModel.Content(
 
             is SmallTextListModel -> SmallText(model = this, actionSink = sink, modifier = mod, padding = pad)
 
-            is SquareItemListModel -> SquareItem(model = this, actionSink = sink, modifier = mod, padding = pad)
+            is GridImageListModel -> GridImage(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is SubsectionHeaderListModel -> SubsectionHeader(model = this, modifier = mod)
 
@@ -109,7 +109,12 @@ fun ListModel.Content(
 
             is LoadingItemListModel -> {
                 when (loadingType) {
-                    LoadingType.PAGE, LoadingType.SQUARE, LoadingType.NOTIF, LoadingType.WIDE_ITEM, LoadingType.BIG_IMAGE -> LoadingItem(
+                    LoadingType.PAGE,
+                    LoadingType.SQUARE,
+                    LoadingType.COVER,
+                    LoadingType.NOTIF,
+                    LoadingType.WIDE_ITEM,
+                    LoadingType.BIG_IMAGE -> LoadingItem(
                         seed = dataId,
                         loadingType = loadingType,
                         modifier = mod,

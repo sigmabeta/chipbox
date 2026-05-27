@@ -26,13 +26,13 @@ import net.sigmabeta.chipbox.common.ui.components.api.previews.SquareConstants
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.chipbox.common.ui.components.api.subs.ElevatedRoundRect
 import net.sigmabeta.sage.appcomm.ActionSink
-import net.sigmabeta.sage.components.SquareItemListModel
+import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.images.SourceInfo
 import androidx.compose.runtime.getValue
 
 @Composable
-fun SquareItem(
-    model: SquareItemListModel,
+fun GridImage(
+    model: GridImageListModel,
     actionSink: ActionSink,
     modifier: Modifier,
     padding: PaddingValues,
@@ -45,11 +45,11 @@ fun SquareItem(
         } else {
             Color.White
         },
-        label = "SquareItem.textColor",
+        label = "GridImage.textColor",
     )
     val fontWeightValue by animateIntAsState(
         targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
-        label = "SquareItem.fontWeight",
+        label = "GridImage.fontWeight",
     )
     val fontWeight = FontWeight(fontWeightValue)
 
@@ -57,7 +57,7 @@ fun SquareItem(
         modifier = modifier
             .padding(paddingValues = padding)
             .defaultMinSize(minWidth = SquareConstants.MIN_WIDTH)
-            .aspectRatio(SquareConstants.ASPECT_RATIO)
+            .aspectRatio(model.aspectRatio)
             .clickable { actionSink.sendAction(model.clickAction) }
     ) {
         Box {

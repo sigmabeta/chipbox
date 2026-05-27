@@ -14,7 +14,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Scrolls the BrowseByGame screen — chipbox's main `SquareItem` surface — and
+ * Scrolls the BrowseByGame screen — chipbox's main `GridImage` surface — and
  * records frame timing plus a few targeted Compose section metrics. Run via:
  *
  *   ./gradlew :benchmark:connectedBenchmarkAndroidTest
@@ -24,7 +24,7 @@ import org.junit.runner.RunWith
  * and can be opened directly in https://ui.perfetto.dev.
  */
 @RunWith(AndroidJUnit4::class)
-class SquareItemScrollBenchmark {
+class GridImageScrollBenchmark {
 
     @get:Rule
     val rule = MacrobenchmarkRule()
@@ -36,7 +36,7 @@ class SquareItemScrollBenchmark {
         metrics = listOf(
             FrameTimingMetric(),
             // Mode.Sum totals time spent in this section across the iteration.
-            TraceSectionMetric("SquareItem", TraceSectionMetric.Mode.Sum),
+            TraceSectionMetric("GridImage", TraceSectionMetric.Mode.Sum),
             TraceSectionMetric("CrossfadeImage", TraceSectionMetric.Mode.Sum),
         ),
         iterations = ITERATIONS,
@@ -51,7 +51,7 @@ class SquareItemScrollBenchmark {
             ) ?: error("Could not find 'Browse by Game' on Library screen")
             byGame.click()
 
-            // Wait for the SquareItem grid to appear and settle.
+            // Wait for the GridImage grid to appear and settle.
             device.wait(Until.hasObject(By.scrollable(true)), NAV_TIMEOUT_MS)
             device.waitForIdle()
         },

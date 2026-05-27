@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.sage.appcomm.ActionSink
-import net.sigmabeta.sage.components.SquareItemListModel
+import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.components.SubsectionListModel
 import net.sigmabeta.sage.components.WideItemListModel
 
@@ -53,7 +53,7 @@ fun Subsection(
                     padding = PaddingValues()
                 )
 
-                is SquareItemListModel -> SquareItem(
+                is GridImageListModel -> GridImage(
                     model = it,
                     actionSink = actionSink,
                     modifier = Modifier,
