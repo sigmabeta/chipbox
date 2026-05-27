@@ -55,6 +55,8 @@ node_modules/
 apps/jvm/libs/
 apps/jvm/native-build/
 apps/jvm/.chipbox-jvm/
+# Same cache dir under whatever working directory the JVM app is launched from (e.g. repo root).
+.chipbox-jvm/
 apps/jvm/Chipbox Output Files/
 # CLI app: per-working-directory library DB + saved scan locations (created wherever it's run)
 .chipbox-cli/
