@@ -49,6 +49,7 @@ data class BrowseByGameState(
 
     private companion object {
         const val SQUARE_SIZE_DP = 160
+
         // 3:4 — IGDB serves covers at 528×704. Kept literal here because the feature
         // layer doesn't depend on the cbox UI module where CoverArtConstants lives.
         const val GAME_COVER_ASPECT_RATIO = 0.75f
