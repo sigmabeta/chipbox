@@ -11,7 +11,6 @@ import net.sigmabeta.chipbox.features.home.HomeSectionState
 import net.sigmabeta.chipbox.features.home.HomeState
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
 import net.sigmabeta.chipbox.models.Game
-import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.chipbox.ui.previews.DevicePreviews
 import net.sigmabeta.chipbox.ui.previews.ListScreenPreview
 import net.sigmabeta.chipbox.ui.previews.fake.FakeModelGenerator
@@ -20,6 +19,7 @@ import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.components.ListModel
+import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.list.WidthClass
 import net.sigmabeta.sage.ui.Icon
 
@@ -70,7 +70,13 @@ private fun homeState(): HomeState {
         sections = persistentListOf(
             // showHeader = false mirrors NowPlayingHomeModule's override — the card carries
             // its own title, so the section header would just duplicate it.
-            section(NOW_PLAYING_ID, NOW_PLAYING_PRIORITY, "Now playing", nowPlayingItem(games.first()), showHeader = false),
+            section(
+                NOW_PLAYING_ID,
+                NOW_PLAYING_PRIORITY,
+                "Now playing",
+                nowPlayingItem(games.first()),
+                showHeader = false
+            ),
             section(RANDOM_GAMES_ID, RANDOM_GAMES_PRIORITY, "Games of the day", gameCards(games)),
             section(SOLO_ID, SOLO_PRIORITY, "Featured", soloItem(games.first())),
             section(RNG_ID, RNG_PRIORITY, "RNG Take the Wheel", rngCards()),
