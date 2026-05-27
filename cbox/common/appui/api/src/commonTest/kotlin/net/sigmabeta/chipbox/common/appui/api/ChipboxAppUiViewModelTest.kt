@@ -24,8 +24,13 @@ import kotlin.test.assertEquals
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChipboxAppUiViewModelTest {
 
-    @BeforeTest fun setUp() { Dispatchers.setMain(UnconfinedTestDispatcher()) }
-    @AfterTest fun tearDown() { Dispatchers.resetMain() }
+    @BeforeTest fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+    }
+
+    @AfterTest fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun `themeMode seeds with the settings manager's initial value`() = runTest {

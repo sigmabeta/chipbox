@@ -32,7 +32,9 @@ class FakeLibrarySource(
     val addedLocations: MutableList<String> = mutableListOf()
     val removedLocations: MutableList<String> = mutableListOf()
 
-    fun setLocations(locations: List<LibraryLocationInfo>) { _locations.value = locations }
+    fun setLocations(locations: List<LibraryLocationInfo>) {
+        _locations.value = locations
+    }
 
     override suspend fun openBytes(identifier: String): ByteArray? = null
     override fun scanFiles(): Flow<LibraryFileInfo> = emptyFlow()

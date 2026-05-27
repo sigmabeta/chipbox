@@ -80,8 +80,8 @@ class RealDirectorTest {
     fun `Speaker Playing after BUFFERING transitions to PLAYING`() = runTest {
         val (director, gen, speaker, _) = newDirector(listOf(track1))
         director.start(setlistSession(listOf(1L)))
-        gen.emit(GeneratorEvent.Loading(1L))           // -> BUFFERING
-        speaker.emit(SpeakerEvent.Playing(positionMs = 0L))  // -> PLAYING
+        gen.emit(GeneratorEvent.Loading(1L)) // -> BUFFERING
+        speaker.emit(SpeakerEvent.Playing(positionMs = 0L)) // -> PLAYING
 
         val state = director.playbackState().first { it.state == PlayerState.PLAYING }
         assertEquals(PlayerState.PLAYING, state.state)
@@ -95,8 +95,8 @@ class RealDirectorTest {
         val (director, gen, speaker, _) = newDirector(listOf(track1))
         director.start(setlistSession(listOf(1L)))
         gen.emit(GeneratorEvent.Loading(1L))
-        speaker.emit(SpeakerEvent.Playing(0L))         // BUFFERING -> PLAYING
-        speaker.emit(SpeakerEvent.Buffering(100L))     // PLAYING -> BUFFERING
+        speaker.emit(SpeakerEvent.Playing(0L)) // BUFFERING -> PLAYING
+        speaker.emit(SpeakerEvent.Buffering(100L)) // PLAYING -> BUFFERING
 
         val state = director.playbackState().first { it.state == PlayerState.BUFFERING }
         assertEquals(PlayerState.BUFFERING, state.state)
@@ -159,8 +159,10 @@ class RealDirectorTest {
 
         val state = director.playbackState().first { it.state == PlayerState.ERROR }
         assertEquals(PlayerState.ERROR, state.state)
-        assertTrue(state.errorMessage?.contains("consecutive track failures") == true,
-            "expected the give-up message; got '${state.errorMessage}'")
+        assertTrue(
+            state.errorMessage?.contains("consecutive track failures") == true,
+            "expected the give-up message; got '${state.errorMessage}'"
+        )
         director.release()
     }
 
@@ -172,15 +174,17 @@ class RealDirectorTest {
         val (director, gen, _, _) = newDirector(tracks)
         director.start(setlistSession((1L..6L).toList(), startingPosition = 0))
 
-        gen.emit(GeneratorEvent.Error("first hiccup"))      // streak = 1
+        gen.emit(GeneratorEvent.Error("first hiccup")) // streak = 1
         gen.emit(GeneratorEvent.Emitting(producedMs = 1L, trackId = 2L)) // streak reset
-        gen.emit(GeneratorEvent.Error("second hiccup"))     // streak = 1 again
-        gen.emit(GeneratorEvent.Error("third hiccup"))      // streak = 2 (NOT >= 3)
+        gen.emit(GeneratorEvent.Error("second hiccup")) // streak = 1 again
+        gen.emit(GeneratorEvent.Error("third hiccup")) // streak = 2 (NOT >= 3)
 
         // No ERROR state — director should still be advancing. Verify by checking it isn't ERROR.
         val state = director.playbackState().first()
-        assertTrue(state.state != PlayerState.ERROR,
-            "streak should have reset on the successful Emitting; got ${state.state}")
+        assertTrue(
+            state.state != PlayerState.ERROR,
+            "streak should have reset on the successful Emitting; got ${state.state}"
+        )
         director.release()
     }
 
@@ -235,7 +239,7 @@ class RealDirectorTest {
         val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
         director.start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 1))
         gen.emit(GeneratorEvent.Loading(2L))
-        speaker.currentPositionMsValue = 500L            // under SKIP_BACK_THRESHOLD_MS
+        speaker.currentPositionMsValue = 500L // under SKIP_BACK_THRESHOLD_MS
         speaker.emit(SpeakerEvent.Playing(500L))
 
         director.skipBack()

@@ -46,8 +46,13 @@ class NowPlayingViewModelTest {
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = UnconfinedTestDispatcher(scheduler)
 
-    @BeforeTest fun setUp() { Dispatchers.setMain(dispatcher) }
-    @AfterTest fun tearDown() { Dispatchers.resetMain() }
+    @BeforeTest fun setUp() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @AfterTest fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     // ---- init-time wire-up ----
 

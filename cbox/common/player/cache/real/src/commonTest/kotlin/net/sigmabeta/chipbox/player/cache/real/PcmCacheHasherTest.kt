@@ -19,10 +19,17 @@ import kotlin.test.assertTrue
  */
 class PcmCacheHasherTest {
 
-    private val registry = ContentSourceRegistry(setOf(FakeSource("test", mapOf(
+    private val registry = ContentSourceRegistry(
+        setOf(
+            FakeSource(
+                "test",
+                mapOf(
         "lib-a" to byteArrayOf(0x01, 0x02),
         "lib-b" to byteArrayOf(0x03, 0x04),
-    ))))
+    )
+            )
+        )
+    )
     private val hasher = PcmCacheHasher(registry)
 
     @Test

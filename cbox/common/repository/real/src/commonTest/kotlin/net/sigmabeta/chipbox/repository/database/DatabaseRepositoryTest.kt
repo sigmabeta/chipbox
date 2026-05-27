@@ -181,8 +181,11 @@ class DatabaseRepositoryTest {
         assertEquals(1, db.gameArtistJoins.count { it.gameId == gameId })
 
         repo.upsertGame(rawGame("Game", "/library/x", tracks = listOf(rawTrack("T", artist = "A & B"))))
-        assertEquals(2, db.gameArtistJoins.count { it.gameId == gameId },
-            "the new artist should appear in the game-artist join set")
+        assertEquals(
+            2,
+            db.gameArtistJoins.count { it.gameId == gameId },
+            "the new artist should appear in the game-artist join set"
+        )
     }
 
     // ---- prune ----
@@ -489,7 +492,7 @@ class DatabaseRepositoryTest {
     private fun rawTrack(
         title: String,
         artist: String = "Unknown",
-        path: String = "/library/${title}.psf",
+        path: String = "/library/$title.psf",
         trackNumber: Int = 0,
         length: Long = 60_000L,
         platform: Platform = Platform.OTHER,

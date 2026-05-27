@@ -40,10 +40,22 @@ class FakeGenerator : Generator {
 
     override fun events() = eventSink.asSharedFlow()
     override fun debugInfo() = debugInfo.asStateFlow()
-    override fun release() { releaseCalls++ }
-    override suspend fun startTrack(trackId: Long) { startTrackCalls += trackId }
-    override fun play() { playCalls++ }
-    override fun pause() { pauseCalls++ }
-    override suspend fun stop() { stopCalls++ }
-    override suspend fun seek(positionMs: Long) { seekCalls += positionMs }
+    override fun release() {
+        releaseCalls++
+    }
+    override suspend fun startTrack(trackId: Long) {
+        startTrackCalls += trackId
+    }
+    override fun play() {
+        playCalls++
+    }
+    override fun pause() {
+        pauseCalls++
+    }
+    override suspend fun stop() {
+        stopCalls++
+    }
+    override suspend fun seek(positionMs: Long) {
+        seekCalls += positionMs
+    }
 }

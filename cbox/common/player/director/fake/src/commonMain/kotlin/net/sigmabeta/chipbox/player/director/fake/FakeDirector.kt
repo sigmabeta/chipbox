@@ -95,17 +95,36 @@ open class FakeDirector : Director {
 
     override fun start(session: Session) = Unit
     override fun start(setlist: List<Long>, startingPosition: Int, sourceName: String?, shuffled: Boolean) = Unit
+
     // Director overrides above stay non-final on the bookkeeping methods that some tests want to
     // record (e.g. SearchVM's setlist path); the rest stay as no-ops/counters.
-    override fun play() { playCalls++ }
-    override fun pause() { pauseCalls++ }
-    override fun stop() { stopCalls++ }
-    override fun seek(positionMs: Long) { seekCalls += positionMs }
-    override fun skipForward() { skipForwardCalls++ }
-    override fun skipBack() { skipBackCalls++ }
-    override fun setShuffled(shuffled: Boolean) { setShuffledCalls += shuffled }
+    override fun play() {
+        playCalls++
+    }
+    override fun pause() {
+        pauseCalls++
+    }
+    override fun stop() {
+        stopCalls++
+    }
+    override fun seek(positionMs: Long) {
+        seekCalls += positionMs
+    }
+    override fun skipForward() {
+        skipForwardCalls++
+    }
+    override fun skipBack() {
+        skipBackCalls++
+    }
+    override fun setShuffled(shuffled: Boolean) {
+        setShuffledCalls += shuffled
+    }
     override fun pauseTemporarily() = Unit
-    override fun duck() { duckCalls += Unit }
+    override fun duck() {
+        duckCalls += Unit
+    }
     override fun resumeFocus() = Unit
-    override fun setVolume(scale: Double) { setVolumeCalls += scale }
+    override fun setVolume(scale: Double) {
+        setVolumeCalls += scale
+    }
 }

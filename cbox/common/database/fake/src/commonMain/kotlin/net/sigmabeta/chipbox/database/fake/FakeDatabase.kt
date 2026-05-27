@@ -48,7 +48,9 @@ class FakeDatabase {
     // Bumped on every write. Flow-returning DAO methods .map over this so the next emission
     // recomputes from current table state — mirrors Room's "Flow re-emits on table change".
     private val trigger = MutableStateFlow(0L)
-    private fun bump() { trigger.value = trigger.value + 1L }
+    private fun bump() {
+        trigger.value = trigger.value + 1L
+    }
 
     private fun <T> observe(compute: () -> T): Flow<T> = trigger.map { compute() }
 
@@ -75,7 +77,10 @@ class FakeDatabase {
             artists.keys.toList().forEach { if (it !in referenced) artists.remove(it) }
             bump()
         }
-        override suspend fun nukeTable() { artists.clear(); bump() }
+        override suspend fun nukeTable() {
+            artists.clear()
+            bump()
+        }
     }
 
     val gameDao: GameDao = object : GameDao {
@@ -124,7 +129,10 @@ class FakeDatabase {
             bump()
             return id
         }
-        override suspend fun nukeTable() { games.clear(); bump() }
+        override suspend fun nukeTable() {
+            games.clear()
+            bump()
+        }
     }
 
     val trackDao: TrackDao = object : TrackDao {
@@ -163,7 +171,10 @@ class FakeDatabase {
             ids.forEach { tracks.remove(it) }
             bump()
         }
-        override suspend fun nukeTable() { tracks.clear(); bump() }
+        override suspend fun nukeTable() {
+            tracks.clear()
+            bump()
+        }
     }
 
     val gameArtistDao: GameArtistDao = object : GameArtistDao {
@@ -190,7 +201,10 @@ class FakeDatabase {
                 .mapNotNull { games[it.gameId] }
                 .sortedBy { it.title.lowercase() }
         }
-        override suspend fun nukeTable() { gameArtistJoins.clear(); bump() }
+        override suspend fun nukeTable() {
+            gameArtistJoins.clear()
+            bump()
+        }
 
         private fun artistsForGameSync(gameId: Long): List<ArtistEntity> = gameArtistJoins
             .filter { it.gameId == gameId }
@@ -221,7 +235,10 @@ class FakeDatabase {
                 .mapNotNull { tracks[it.trackId] }
                 .sortedBy { it.title.lowercase() }
         }
-        override suspend fun nukeTable() { trackArtistJoins.clear(); bump() }
+        override suspend fun nukeTable() {
+            trackArtistJoins.clear()
+            bump()
+        }
 
         private fun artistsForTrackSync(trackId: Long): List<ArtistEntity> = trackArtistJoins
             .filter { it.trackId == trackId }

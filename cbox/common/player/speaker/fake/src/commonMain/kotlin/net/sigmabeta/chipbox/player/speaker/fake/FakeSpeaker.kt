@@ -45,14 +45,30 @@ class FakeSpeaker : Speaker {
     override fun events() = eventSink.asSharedFlow()
     override fun debugInfo() = debugInfo.asStateFlow()
     override fun currentPositionMs(): Long = currentPositionMsValue
-    override fun release() { releaseCalls++ }
-    override fun play() { playCalls++ }
-    override suspend fun pause() { pauseCalls++ }
-    override suspend fun stop() { stopCalls++ }
-    override suspend fun seek() { seekCalls++ }
-    override suspend fun switchTo(trackId: Long) { switchToCalls += trackId }
-    override fun setDucked(ducked: Boolean) { setDuckedCalls += ducked }
-    override fun setVolume(scale: Double) { setVolumeCalls += scale }
+    override fun release() {
+        releaseCalls++
+    }
+    override fun play() {
+        playCalls++
+    }
+    override suspend fun pause() {
+        pauseCalls++
+    }
+    override suspend fun stop() {
+        stopCalls++
+    }
+    override suspend fun seek() {
+        seekCalls++
+    }
+    override suspend fun switchTo(trackId: Long) {
+        switchToCalls += trackId
+    }
+    override fun setDucked(ducked: Boolean) {
+        setDuckedCalls += ducked
+    }
+    override fun setVolume(scale: Double) {
+        setVolumeCalls += scale
+    }
     override fun setVolumeModification(key: String, scale: Double) = Unit
     override fun clearVolumeModification(key: String) = Unit
 }
