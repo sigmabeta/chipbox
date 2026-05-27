@@ -34,13 +34,20 @@ data class HomeState(
         loadingHorizScrollable = true,
         loadingOperationNameOverride = "home.$id.load",
     ) {
-        listOf(
-            SectionHeaderListModel(data.title),
-            HorizontalScrollerListModel(
-                dataId = "home.$id.scroller".hashCode().toLong(),
-                scrollingItems = data.items,
-            ),
-        )
+        // Modules emitting a single item get the full screen width for that item — no carousel
+        // wrapping — so a one-of-a-kind tile (e.g. a hero "now playing" card) can stand alone.
+        val header = SectionHeaderListModel(data.title)
+        if (data.items.size == 1) {
+            listOf<ListModel>(header) + data.items
+        } else {
+            listOf(
+                header,
+                HorizontalScrollerListModel(
+                    dataId = "home.$id.scroller".hashCode().toLong(),
+                    scrollingItems = data.items,
+                ),
+            )
+        }
     }
 }
 
