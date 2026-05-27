@@ -5,11 +5,13 @@ import androidx.compose.runtime.Composable
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import net.sigmabeta.chipbox.common.ui.components.api.NowPlayingHomeCardListModel
 import net.sigmabeta.chipbox.features.home.HomeAction
 import net.sigmabeta.chipbox.features.home.HomeSectionState
 import net.sigmabeta.chipbox.features.home.HomeState
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
 import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.chipbox.ui.previews.DevicePreviews
 import net.sigmabeta.chipbox.ui.previews.ListScreenPreview
 import net.sigmabeta.chipbox.ui.previews.fake.FakeModelGenerator
@@ -33,6 +35,8 @@ private const val RNG_ARTIST_DATA_ID = -1003L
 private const val SOLO_ID = "solo_demo"
 private const val SOLO_PRIORITY = 200
 private const val SOLO_DATA_ID = -4001L
+private const val NOW_PLAYING_ID = "now_playing"
+private const val NOW_PLAYING_PRIORITY = 0
 
 @DevicePreviews
 @Composable
@@ -64,12 +68,26 @@ private fun homeState(): HomeState {
     val games = FakeModelGenerator().randomGames()
     return HomeState(
         sections = persistentListOf(
+            section(NOW_PLAYING_ID, NOW_PLAYING_PRIORITY, "Now playing", nowPlayingItem(games.first())),
             section(RANDOM_GAMES_ID, RANDOM_GAMES_PRIORITY, "Games of the day", gameCards(games)),
             section(SOLO_ID, SOLO_PRIORITY, "Featured", soloItem(games.first())),
             section(RNG_ID, RNG_PRIORITY, "RNG Take the Wheel", rngCards()),
         ),
     )
 }
+
+private fun nowPlayingItem(game: Game): ImmutableList<ListModel> = persistentListOf(
+    NowPlayingHomeCardListModel(
+        title = "Robotnik's Theme",
+        artistsCaption = "Howard Drossin, Brad Buxer",
+        artwork = SourceInfo(info = game.photoUrl),
+        isPlaying = true,
+        isBuffering = false,
+        isError = false,
+        clickAction = HomeAction.NowPlayingCardClicked,
+        playPauseAction = HomeAction.NowPlayingPlayPauseClicked,
+    ),
+)
 
 private fun homeLoadingState(): HomeState = HomeState(
     sections = persistentListOf(

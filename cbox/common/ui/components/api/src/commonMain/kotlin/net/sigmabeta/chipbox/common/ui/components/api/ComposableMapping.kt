@@ -87,6 +87,8 @@ fun ListModel.Content(
 
             is NotifListModel -> NotifListItem(model = this, actionSink = sink, modifier = mod)
 
+            is NowPlayingHomeCardListModel -> NowPlayingHomeCard(model = this, actionSink = sink, modifier = mod, padding = pad)
+
             is SearchResultListModel -> ImageNameCaptionListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is SectionListModel -> SectionListItem(model = this, actionSink = sink, showDebug = debug, modifier = mod, padding = pad)

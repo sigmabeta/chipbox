@@ -15,9 +15,11 @@ import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.home.module.HomeModule
+import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.appcomm.LCE
@@ -69,7 +71,20 @@ class HomeViewModel @Inject constructor(
             HomeAction.RandomSongClicked -> playRandomSong()
             HomeAction.RandomGameClicked -> navigateToRandomGame()
             HomeAction.RandomArtistClicked -> navigateToRandomArtist()
+            HomeAction.NowPlayingCardClicked -> emit(NavigateTo(NowPlaying))
+            HomeAction.NowPlayingPlayPauseClicked -> togglePlayPause()
             else -> Unit
+        }
+    }
+
+    private fun togglePlayPause() = viewModelScope.launch {
+        // Read playback state once via .first() since the director's StateFlow is shared and
+        // replays its latest value to a fresh collector immediately. Matches the toggle logic
+        // in PlayerStatusViewModel (PLAYING/BUFFERING/ENDING → pause, otherwise → play).
+        val state = director.playbackState().firstOrNull()?.state ?: return@launch
+        when (state) {
+            PlayerState.PLAYING, PlayerState.BUFFERING, PlayerState.ENDING -> director.pause()
+            PlayerState.PAUSED, PlayerState.IDLE, PlayerState.STOPPED, PlayerState.ERROR -> director.play()
         }
     }
 

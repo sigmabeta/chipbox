@@ -12,4 +12,7 @@ dependencies {
     // ChipboxAction (HomeAction's parent) — without it the compiler can't see GameClicked
     // is-a SageAction when assigning it as a click action.
     implementation(projects.cbox.common.appcomm.api)
+    // NowPlayingHomeCardListModel — chipbox-specific ListModel used by the NowPlayingHomeModule
+    // preview alongside sage's stock ListModel set.
+    implementation(projects.cbox.common.ui.components.api)
 }
