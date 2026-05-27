@@ -20,12 +20,14 @@ import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
+import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
+import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
@@ -108,6 +110,34 @@ class HomeViewModelTest {
         val session = director.startSessionCalls.single()
         assertEquals(SessionType.SINGLE_TRACK, session.type)
         assertTrue(session.contentId in setOf(11L, 12L))
+    }
+
+    @Test
+    fun `NowPlayingCardClicked emits NavigateTo NowPlaying`() = runTest {
+        val vm = newVm()
+        val event = collectAndDispatch(vm, HomeAction.NowPlayingCardClicked)
+        assertTrue(event is ChipboxEvent.NavigateTo)
+        assertEquals(NowPlaying, event.destination)
+    }
+
+    @Test
+    fun `NowPlayingPlayPauseClicked pauses when playing`() = runTest {
+        val director = RecordingDirector()
+        director.emitPlayback(PlayerState.PLAYING)
+        val vm = newVm(director = director)
+        vm.sendAction(HomeAction.NowPlayingPlayPauseClicked)
+        assertEquals(1, director.pauseCalls)
+        assertEquals(0, director.playCalls)
+    }
+
+    @Test
+    fun `NowPlayingPlayPauseClicked plays when paused`() = runTest {
+        val director = RecordingDirector()
+        director.emitPlayback(PlayerState.PAUSED)
+        val vm = newVm(director = director)
+        vm.sendAction(HomeAction.NowPlayingPlayPauseClicked)
+        assertEquals(1, director.playCalls)
+        assertEquals(0, director.pauseCalls)
     }
 
     @Test

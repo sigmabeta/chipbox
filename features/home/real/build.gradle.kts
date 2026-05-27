@@ -11,6 +11,7 @@ kotlin {
             dependencies {
                 api(projects.features.home.api)
 
+                implementation(projects.cbox.common.ui.components.api)
                 implementation(projects.cbox.common.ui.list.api)
                 implementation(projects.cbox.common.appcomm.api)
                 implementation(projects.cbox.common.strings.api)
@@ -21,6 +22,7 @@ kotlin {
 
                 implementation(projects.features.artistDetail.api)
                 implementation(projects.features.gameDetail.api)
+                implementation(projects.features.nowPlaying.api)
             }
         }
 
