@@ -86,13 +86,7 @@ class VolumeProcessor(private val hatchet: Hatchet) {
      */
     fun setModification(key: String, scale: Double) {
         val clamped = scale.coerceIn(0.0, MAX_GAIN)
-        val previous = mutateModifications { it + (key to clamped) }[key]
-        if (previous != clamped) {
-            hatchet.d(
-                "Volume: '$key' ${fmt(previous ?: 1.0)} -> ${fmt(clamped)} " +
-                    "(target gain ${fmt(combinedGain())}, actual gain ${fmt(actualGain)})."
-            )
-        }
+        mutateModifications { it + (key to clamped) }[key]
     }
 
     /** Remove the modification under [key], if any. Other modifications are unaffected. */
