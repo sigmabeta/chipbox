@@ -27,6 +27,19 @@ allprojects {
     }
 }
 
+// Force-bump npm transitives Kotlin's mocha 11.x test-runner drags in. Both packages
+// here are flagged by Dependabot — RCE in serialize-javascript (GHSA-RegExp.flags/Date)
+// is fixed in 7.x, DoS in `diff` (jsdiff) is fixed in 8.x — but mocha declares the old
+// majors (^6.0.2 / ^7.0.0), so yarn won't pick up the fix without an explicit
+// resolution. The :unit-test-js workflow has been dropped from CI, so a mocha-major-
+// bump regression here would only surface in local jsTest invocations.
+plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
+    rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().apply {
+        resolution("serialize-javascript", "^7.0.5")
+        resolution("diff", "^8.0.4")
+    }
+}
+
 // ktlint via the Gradle plugin, replacing the old ktlint-check.sh / ktlint-fix.sh that
 // downloaded the ktlint binary and ran it outside Gradle. Applied to every chipbox module;
 // the vendored sage/ submodule is a separate included build and keeps its own lint config.
