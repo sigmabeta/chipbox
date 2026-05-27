@@ -374,7 +374,7 @@ jobs:
           when: always
 
   unit-test-jvm:
-    resource_class: medium
+    resource_class: large
 
     docker:
       - image: cimg/android:2024.04.1
