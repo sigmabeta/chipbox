@@ -11,7 +11,6 @@ kotlin {
             dependencies {
                 api(projects.features.search.api)
 
-                implementation(projects.cbox.common.ui.chrome.api)
                 implementation(projects.cbox.common.ui.list.api)
                 implementation(projects.cbox.common.ui.components.api)
                 implementation(projects.cbox.common.appcomm.api)

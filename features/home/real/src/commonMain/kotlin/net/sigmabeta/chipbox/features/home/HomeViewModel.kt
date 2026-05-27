@@ -10,6 +10,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
@@ -40,7 +41,7 @@ class HomeViewModel @Inject constructor(
     HomeState(
         sections = modules
             .sortedBy { it.priority }
-            .map { HomeSectionState(it.id, it.priority, LCE.Uninitialized) }
+            .map { HomeSectionState(it.id, it.priority, LCE.Uninitialized, it.showHeader) }
             .toImmutableList(),
     ),
     stringProvider,
@@ -68,11 +69,26 @@ class HomeViewModel @Inject constructor(
     override fun handleAction(action: SageAction) {
         when (action) {
             is HomeAction.GameClicked -> emit(NavigateTo(GameDetail(action.id)))
+
             HomeAction.RandomSongClicked -> playRandomSong()
+
             HomeAction.RandomGameClicked -> navigateToRandomGame()
+
             HomeAction.RandomArtistClicked -> navigateToRandomArtist()
+
             HomeAction.NowPlayingCardClicked -> emit(NavigateTo(NowPlaying))
+
             HomeAction.NowPlayingPlayPauseClicked -> togglePlayPause()
+
+            // The VM doesn't decide what "card visible" means for the rest of the app — it
+            // just publishes the request. Someone upstream listens and chooses whether to
+            // honour it (in practice, the chrome controller in ChipboxAppUi).
+            HomeAction.NowPlayingCardAppeared ->
+                emit(ChipboxEvent.RequestMiniPlayerVisibility(visible = false))
+
+            HomeAction.NowPlayingCardDisappeared ->
+                emit(ChipboxEvent.RequestMiniPlayerVisibility(visible = true))
+
             else -> Unit
         }
     }

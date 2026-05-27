@@ -11,7 +11,6 @@ kotlin {
             dependencies {
                 api(projects.features.nowPlaying.api)
 
-                implementation(projects.cbox.common.ui.chrome.api)
                 implementation(projects.cbox.common.ui.freeform.api)
                 implementation(projects.cbox.common.ui.components.api)
                 implementation(projects.cbox.common.appcomm.api)

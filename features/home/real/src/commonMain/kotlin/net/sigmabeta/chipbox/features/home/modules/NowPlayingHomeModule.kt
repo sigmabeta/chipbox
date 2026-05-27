@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.features.home.HomeAction
 import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
@@ -33,6 +34,10 @@ class NowPlayingHomeModule @Inject constructor(
     override val id = ID
     override val priority = PRIORITY
 
+    // The card itself shows the track title prominently, so a separate "Now playing" header
+    // would just duplicate it. Suppress it.
+    override val showHeader = false
+
     override fun state(): Flow<LCE<HomeModuleSection>> = combine(
         director.metadataState(),
         director.playbackState(),
@@ -40,20 +45,23 @@ class NowPlayingHomeModule @Inject constructor(
         if (track == null || !playback.state.isLive()) {
             LCE.Uninitialized
         } else {
-            LCE.Content(sectionFor(track, playback.state))
+            LCE.Content(sectionFor(track, playback))
         }
     }
 
-    private fun sectionFor(track: Track, state: PlayerState): HomeModuleSection {
+    private fun sectionFor(track: Track, playback: ChipboxPlaybackState): HomeModuleSection {
         val card = NowPlayingHomeCardListModel(
             title = track.title,
             artistsCaption = track.artists?.joinToString(", ") { it.name }.orEmpty(),
             artwork = SourceInfo(info = track.game?.photoUrl),
-            isPlaying = state.isPlayingLike(),
-            isBuffering = state == PlayerState.BUFFERING,
-            isError = state == PlayerState.ERROR,
+            isPlaying = playback.state.isPlayingLike(),
+            isBuffering = playback.state == PlayerState.BUFFERING,
+            isError = playback.state == PlayerState.ERROR,
+            progressFraction = progressFractionOf(playback.position, track.trackLengthMs),
             clickAction = HomeAction.NowPlayingCardClicked,
             playPauseAction = HomeAction.NowPlayingPlayPauseClicked,
+            appearAction = HomeAction.NowPlayingCardAppeared,
+            disappearAction = HomeAction.NowPlayingCardDisappeared,
         )
         return HomeModuleSection(
             title = stringProvider.getString(ChipboxStringId.HOME_SECTION_NOW_PLAYING),
@@ -62,6 +70,14 @@ class NowPlayingHomeModule @Inject constructor(
     }
 
     private fun PlayerState.isLive(): Boolean = this != PlayerState.IDLE && this != PlayerState.STOPPED
+
+    // 0..1, with 0 for "unknown length" so the indicator sits empty rather than full or NaN.
+    private fun progressFractionOf(positionMs: Long, trackLengthMs: Long): Float =
+        if (trackLengthMs <= 0L) {
+            0f
+        } else {
+            (positionMs.toFloat() / trackLengthMs.toFloat()).coerceIn(0f, 1f)
+        }
 
     // Mirrors PlayerStatusViewModel.isPlaying — BUFFERING/ENDING count as "playing" so the
     // pause icon stays visible across short transitions instead of flipping to play and back.

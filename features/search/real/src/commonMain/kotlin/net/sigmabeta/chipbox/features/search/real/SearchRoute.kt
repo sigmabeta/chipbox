@@ -7,19 +7,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.collectAsState
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
-import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
-import net.sigmabeta.chipbox.common.ui.chrome.api.ScreenChrome
 
 @Composable
 fun SearchRoute(
     onEvent: (ChipboxEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Hide the app top bar — the in-screen SearchBar replaces it. Keep the nav bar and
-    // player status (defaults) so Search stays a normal top-level tab.
-    val chromeController = LocalChromeController.current
+    // Hide the app top bar — the in-screen SearchBar replaces it. The next screen's
+    // scaffold resets chrome to default, so no `true` is emitted on disposal here.
     LaunchedEffect(Unit) {
-        chromeController.set(ScreenChrome(showTopBar = false))
+        onEvent(ChipboxEvent.RequestTopBarVisibility(visible = false))
     }
 
     val viewModel: SearchViewModel = metroViewModel()

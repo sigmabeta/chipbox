@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.common.appui.api
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -12,6 +13,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.Flow
+import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.chrome.api.ChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
@@ -40,6 +42,7 @@ import net.sigmabeta.chipbox.ui.theme.api.AppTheme
  * (the outer sink references this navigator). Providing them any deeper would unmount the
  * locals during navigation.
  */
+@Suppress("LongMethod")
 @Composable
 fun ChipboxAppUi(
     onOpenUrl: (String) -> Unit,
@@ -76,14 +79,23 @@ fun ChipboxAppUi(
             LocalChromeController provides chromeController,
             LocalAppSnackbarHostState provides snackbarHostState,
             LocalPlatformBackKeys provides backKeyEvents,
+            // Expose the singleton VM so the shell (which lives inside Voyager and resolves
+            // its own ViewModelStoreOwner) can reach the same instance rather than getting
+            // a fresh one from `metroViewModel<…>()`.
+            LocalChipboxAppUiViewModel provides appUiViewModel,
         ) {
             Navigator(ChipboxTabsScreen) { navigator ->
-                val outerSink = remember(
+                // Single dispatcher for "do the side effect" — same shape as before, but
+                // now invoked by a collector on the VM's [effects] flow rather than directly
+                // by the LocalChipboxEventSink. Policy decisions (what to honour, what to
+                // drop) live in the VM; this layer just executes whatever the VM forwards.
+                val applyEffect = remember(
                     navigator,
                     snackbarHostState,
                     snackbarScope,
                     onOpenUrl,
                     onCopyToClipboard,
+                    chromeController,
                 ) {
                     buildOuterSink(
                         snackbarHostState = snackbarHostState,
@@ -94,8 +106,31 @@ fun ChipboxAppUi(
                         onNavigateBack = { navigator.pop() },
                         onOpenUrl = onOpenUrl,
                         onCopyToClipboard = onCopyToClipboard,
+                        onRequestMiniPlayerVisibility = { visible ->
+                            chromeController.set(
+                                chromeController.state.copy(showPlayerStatus = visible),
+                            )
+                        },
+                        onRequestTopBarVisibility = { visible ->
+                            chromeController.set(
+                                chromeController.state.copy(showTopBar = visible),
+                            )
+                        },
                     )
                 }
+
+                // Drain the VM's effect stream into the dispatcher above. Collect runs on
+                // the main dispatcher (LaunchedEffect's default), which is what Voyager /
+                // ChromeController / SnackbarHostState all expect.
+                LaunchedEffect(appUiViewModel, applyEffect) {
+                    appUiViewModel.effects.collect(applyEffect)
+                }
+
+                // Screens emit events into this sink — which is just a method call on the
+                // VM. The VM decides whether to forward (or alter) each event by re-emitting
+                // it on [effects].
+                val outerSink: (ChipboxEvent) -> Unit =
+                    remember(appUiViewModel) { appUiViewModel::handleEvent }
                 CompositionLocalProvider(LocalChipboxEventSink provides outerSink) {
                     SlideTransition(navigator, modifier = modifier)
                 }

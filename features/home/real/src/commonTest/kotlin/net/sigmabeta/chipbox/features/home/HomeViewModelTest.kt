@@ -141,6 +141,22 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `NowPlayingCardAppeared emits RequestMiniPlayerVisibility(false)`() = runTest {
+        val vm = newVm()
+        val event = collectAndDispatch(vm, HomeAction.NowPlayingCardAppeared)
+        assertTrue(event is ChipboxEvent.RequestMiniPlayerVisibility)
+        assertEquals(false, event.visible)
+    }
+
+    @Test
+    fun `NowPlayingCardDisappeared emits RequestMiniPlayerVisibility(true)`() = runTest {
+        val vm = newVm()
+        val event = collectAndDispatch(vm, HomeAction.NowPlayingCardDisappeared)
+        assertTrue(event is ChipboxEvent.RequestMiniPlayerVisibility)
+        assertEquals(true, event.visible)
+    }
+
+    @Test
     fun `Random clicks no-op when the repository returns Empty`() = runTest {
         val director = RecordingDirector()
         val vm = newVm(
