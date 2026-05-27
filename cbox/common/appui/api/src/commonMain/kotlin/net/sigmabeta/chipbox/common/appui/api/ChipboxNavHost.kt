@@ -38,6 +38,7 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -72,7 +73,8 @@ private val NAV_RAIL_MIN_WIDTH = 480.dp
 /**
  * Root of the outer Voyager Navigator owned by [ChipboxAppUi]. Renders the chrome
  * (TopAppBar + NavigationSuiteScaffold + PlayerStatus overlay) and a [TabNavigator] for
- * the three top-level tabs.
+ * the top-level tabs (Home/Library/Search). Settings is reached via the top-bar
+ * hamburger button (see [TopAppBarNavIcon]), pushed onto the active tab's deep stack.
  *
  * Deep navigation *within* a tab is handled by each tab's inner Navigator (see
  * `TabNavigatorContent` in [ChipboxScreens]); the inner sink rebind there short-circuits
@@ -97,19 +99,29 @@ internal object ChipboxTabsScreen : Screen {
         // within a tab — see [ActiveTabNavigator] for the registration shape.
         val activeTabNavigator = remember { ActiveTabNavigator() }
 
+        // Tracks the outer TabNavigator so the back handler (created here, outside the
+        // TabNavigator content block) can read/mutate the current tab — see [TabRouter].
+        val tabRouter = remember { TabRouter() }
+
         // The single back-routing handler for the whole shell. Both back affordances report
         // *what happened* — `AppBack` from the TopAppBar up arrow, `DeviceBack` from each tab
         // Navigator's `onBackPressed` (see `TabNavigatorContent`) — and this decides the
-        // navigation: pop the active tab's deep stack, else fall back to the outer Navigator.
-        val appActionSink = remember(activeTabNavigator, outerSink) {
+        // navigation: pop the active tab's deep stack, else (if on a non-Home tab root)
+        // switch to the Home tab, else fall back to the outer Navigator.
+        val appActionSink = remember(activeTabNavigator, tabRouter, outerSink) {
             ActionSink { action ->
                 when (action) {
                     SageAction.AppBack, SageAction.DeviceBack -> {
                         val tabNav = activeTabNavigator.navigator
-                        if (tabNav != null && tabNav.canPop) {
-                            tabNav.pop()
-                        } else {
-                            outerSink(ChipboxEvent.NavigateBack)
+                        val outerTabNav = tabRouter.tabNavigator
+                        when {
+                            tabNav != null && tabNav.canPop -> tabNav.pop()
+                            outerTabNav != null &&
+                                outerTabNav.current.key == SearchTab.key -> {
+                                tabNav?.popAll()
+                                outerTabNav.current = HomeTab
+                            }
+                            else -> outerSink(ChipboxEvent.NavigateBack)
                         }
                     }
 
@@ -169,7 +181,18 @@ internal object ChipboxTabsScreen : Screen {
                 LocalActiveTabNavigator provides activeTabNavigator,
                 LocalAppActionSink provides appActionSink,
             ) {
-                TabNavigator(LibraryTab) { tabNavigator ->
+                TabNavigator(HomeTab) { tabNavigator ->
+                    // Expose the TabNavigator to [appActionSink] so back-handling above can
+                    // read the current tab and switch tabs.
+                    DisposableEffect(tabNavigator) {
+                        tabRouter.tabNavigator = tabNavigator
+                        onDispose {
+                            if (tabRouter.tabNavigator === tabNavigator) {
+                                tabRouter.tabNavigator = null
+                            }
+                        }
+                    }
+
                     // Re-extend the TopAppBar on *any* navigation — tab switch, deep push, or
                     // pop. Keyed on the active route (current tab + the active tab's top screen),
                     // so it fires whenever the visible screen changes, not just on tab switch.
@@ -238,7 +261,10 @@ internal object ChipboxTabsScreen : Screen {
                                         navigationIcon = {
                                             TopAppBarNavIcon(
                                                 shouldShowBack = titleBar.shouldShowBack,
-                                                onMenu = { selectTab(SettingsTab) },
+                                                onMenu = {
+                                                    activeTabNavigator.navigator
+                                                        ?.push(SettingsDeepScreen)
+                                                },
                                             )
                                         },
                                         scrollBehavior = scrollBehavior,
@@ -297,7 +323,8 @@ internal object ChipboxTabsScreen : Screen {
  * The TopAppBar up arrow reports an `AppBack` to [LocalAppActionSink], which owns the
  * decision of *which* navigator to pop (active tab's deep stack, else the outer Navigator) —
  * the same handler the Android system back feeds via `DeviceBack`. When there's nothing to
- * go back to, the icon is the hamburger menu instead (jumps to the Settings tab).
+ * go back to, the icon is the hamburger menu instead (pushes Settings onto the active
+ * tab's deep stack — Settings is no longer a top-level tab).
  */
 @Composable
 private fun TopAppBarNavIcon(shouldShowBack: Boolean, onMenu: () -> Unit) {

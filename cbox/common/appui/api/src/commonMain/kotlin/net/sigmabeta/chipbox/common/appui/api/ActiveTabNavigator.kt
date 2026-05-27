@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.navigator.tab.TabNavigator
 
 /**
  * Holds a reference to the currently-active tab's inner [Navigator] so the shell's back
@@ -25,4 +26,15 @@ internal class ActiveTabNavigator {
 
 internal val LocalActiveTabNavigator = staticCompositionLocalOf<ActiveTabNavigator> {
     error("LocalActiveTabNavigator not provided")
+}
+
+/**
+ * Holds a reference to the outer [TabNavigator] so the shell's back handler — created
+ * *outside* the TabNavigator content block, where `tabNavigator` is not in scope — can
+ * read the current tab and switch tabs. Mirrors [ActiveTabNavigator]; registered via
+ * `DisposableEffect` inside the TabNavigator block.
+ */
+@Stable
+internal class TabRouter {
+    var tabNavigator: TabNavigator? by mutableStateOf(null)
 }

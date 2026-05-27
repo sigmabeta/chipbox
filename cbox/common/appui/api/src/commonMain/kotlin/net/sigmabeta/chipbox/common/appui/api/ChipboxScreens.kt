@@ -1,9 +1,9 @@
 package net.sigmabeta.chipbox.common.appui.api
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -32,6 +32,8 @@ import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetailRoute
 import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatform
 import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatformRoute
+import net.sigmabeta.chipbox.features.home.Home
+import net.sigmabeta.chipbox.features.home.HomeRoute
 import net.sigmabeta.chipbox.features.library.Library
 import net.sigmabeta.chipbox.features.library.LibraryRoute
 import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
@@ -64,6 +66,7 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.ScreenChrome
  * frequent source of confusion under the AndroidX nav graph.
  */
 internal fun screenFor(destination: Any): Screen = when (destination) {
+    Home -> HomeDeepScreen
     Library -> LibraryDeepScreen
     Search -> SearchDeepScreen
     Settings -> SettingsDeepScreen
@@ -110,6 +113,23 @@ private fun ScreenScaffold(content: @Composable () -> Unit) {
  * push/pop the *local* tab Navigator while system events (snackbar/clipboard/openUrl/picker)
  * bubble to the app-level sink set up in [ChipboxTabsScreen].
  */
+internal object HomeTab : Tab {
+
+    override val key: ScreenKey = "HomeTab"
+
+    override val options: TabOptions
+        @Composable get() = TabOptions(
+            index = HOME_TAB_INDEX,
+            title = ChipboxStringId.APPUI_TAB_HOME.text(),
+            icon = rememberTabIcon(Icons.Filled.Home),
+        )
+
+    @Composable
+    override fun Content() {
+        TabNavigatorContent(HomeTabRoot)
+    }
+}
+
 internal object LibraryTab : Tab {
 
     override val key: ScreenKey = "LibraryTab"
@@ -144,28 +164,11 @@ internal object SearchTab : Tab {
     }
 }
 
-internal object SettingsTab : Tab {
+internal val AllTabs: List<Tab> = listOf(HomeTab, LibraryTab, SearchTab)
 
-    override val key: ScreenKey = "SettingsTab"
-
-    override val options: TabOptions
-        @Composable get() = TabOptions(
-            index = SETTINGS_TAB_INDEX,
-            title = ChipboxStringId.APPUI_TAB_SETTINGS.text(),
-            icon = rememberTabIcon(Icons.Filled.Settings),
-        )
-
-    @Composable
-    override fun Content() {
-        TabNavigatorContent(SettingsTabRoot)
-    }
-}
-
-internal val AllTabs: List<Tab> = listOf(LibraryTab, SearchTab, SettingsTab)
-
-private const val LIBRARY_TAB_INDEX: UShort = 0u
-private const val SEARCH_TAB_INDEX: UShort = 1u
-private const val SETTINGS_TAB_INDEX: UShort = 2u
+private const val HOME_TAB_INDEX: UShort = 0u
+private const val LIBRARY_TAB_INDEX: UShort = 1u
+private const val SEARCH_TAB_INDEX: UShort = 2u
 
 @Composable
 private fun rememberTabIcon(imageVector: ImageVector) = rememberVectorPainter(imageVector)
@@ -209,14 +212,18 @@ private fun TabNavigatorContent(root: Screen) {
 
         // Explicit `Unit` return — `navigator.pop()` returns Boolean (true if popped) and
         // `navigator.push()` returns Unit, which Kotlin would otherwise infer as `Any`.
-        val sink: (ChipboxEvent) -> Unit = remember(navigator, outerSink) {
+        val sink: (ChipboxEvent) -> Unit = remember(navigator, outerSink, appActionSink) {
             { event ->
                 when (event) {
                     is ChipboxEvent.NavigateTo -> navigator.push(screenFor(event.destination))
 
+                    // VM-driven back: pop the deep stack if we can; otherwise escalate to
+                    // the shell back handler so we share its logic with system back / the
+                    // TopAppBar up arrow (Search tab root → Home, every other tab root → outer).
                     ChipboxEvent.NavigateBack -> {
-                        navigator.pop()
-                        Unit
+                        if (!navigator.pop()) {
+                            appActionSink.sendAction(SageAction.AppBack)
+                        }
                     }
 
                     else -> outerSink(event)
@@ -232,6 +239,15 @@ private fun TabNavigatorContent(root: Screen) {
 // endregion
 
 // region Tab root screens (top of each tab's per-tab back stack) -------------------------------
+
+private object HomeTabRoot : Screen {
+    override val key: ScreenKey = "HomeTabRoot"
+
+    @Composable
+    override fun Content() = ScreenScaffold {
+        HomeRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
 
 private object LibraryTabRoot : Screen {
     override val key: ScreenKey = "LibraryTabRoot"
@@ -251,25 +267,24 @@ private object SearchTabRoot : Screen {
     }
 }
 
-private object SettingsTabRoot : Screen {
-    override val key: ScreenKey = "SettingsTabRoot"
-
-    @Composable
-    override fun Content() = ScreenScaffold {
-        SettingsRoute(onEvent = LocalChipboxEventSink.current)
-    }
-}
-
 // endregion
 
 // region Deep screens — pushed by `screenFor()` --------------------------------------------------
 
 /**
- * `Library`/`Search`/`Settings` as a *deep push* (not a tab switch): a VM emits
+ * `Home`/`Library`/`Search` as a *deep push* (not a tab switch): a VM emits
  * `NavigateTo(Library)` and the current tab's Navigator stacks the same root composable.
  * Rare in practice (TopLevelDestinations are usually reached via the tab bar), but kept
- * for parity with the AndroidX graph that registered them as composables.
+ * for parity with the AndroidX graph that registered them as composables. `Settings`
+ * isn't a tab anymore — it's reached via the top-bar hamburger button, which pushes
+ * [SettingsDeepScreen] onto the active tab's stack.
  */
+private object HomeDeepScreen : Screen {
+    @Composable override fun Content() = ScreenScaffold {
+        HomeRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
 private object LibraryDeepScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         LibraryRoute(onEvent = LocalChipboxEventSink.current)
@@ -282,7 +297,7 @@ private object SearchDeepScreen : Screen {
     }
 }
 
-private object SettingsDeepScreen : Screen {
+internal object SettingsDeepScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         SettingsRoute(onEvent = LocalChipboxEventSink.current)
     }
