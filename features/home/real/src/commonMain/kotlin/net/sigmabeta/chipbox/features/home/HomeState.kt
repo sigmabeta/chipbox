@@ -30,22 +30,23 @@ data class HomeState(
     private fun HomeSectionState.toListItems(): List<ListModel> = lce.withStandardErrorAndLoading(
         loadingType = LoadingType.COVER,
         loadingItemCount = HOME_LOADING_ITEMS,
-        loadingWithHeader = true,
+        loadingWithHeader = showHeader,
         loadingHorizScrollable = true,
         loadingOperationNameOverride = "home.$id.load",
     ) {
         // Modules emitting a single item get the full screen width for that item — no carousel
         // wrapping — so a one-of-a-kind tile (e.g. a hero "now playing" card) can stand alone.
-        val header = SectionHeaderListModel(data.title)
-        if (data.items.size == 1) {
-            listOf<ListModel>(header) + data.items
+        val header: List<ListModel> = if (showHeader) {
+            listOf(SectionHeaderListModel(data.title))
         } else {
-            listOf(
-                header,
-                HorizontalScrollerListModel(
-                    dataId = "home.$id.scroller".hashCode().toLong(),
-                    scrollingItems = data.items,
-                ),
+            emptyList()
+        }
+        if (data.items.size == 1) {
+            header + data.items
+        } else {
+            header + HorizontalScrollerListModel(
+                dataId = "home.$id.scroller".hashCode().toLong(),
+                scrollingItems = data.items,
             )
         }
     }
@@ -55,6 +56,7 @@ data class HomeSectionState(
     val id: String,
     val priority: Int,
     val lce: LCE<HomeModuleSection>,
+    val showHeader: Boolean = true,
 )
 
 private const val HOME_LOADING_ITEMS = 6

@@ -116,11 +116,13 @@ internal object ChipboxTabsScreen : Screen {
                         val outerTabNav = tabRouter.tabNavigator
                         when {
                             tabNav != null && tabNav.canPop -> tabNav.pop()
+
                             outerTabNav != null &&
                                 outerTabNav.current.key == SearchTab.key -> {
                                 tabNav?.popAll()
                                 outerTabNav.current = HomeTab
                             }
+
                             else -> outerSink(ChipboxEvent.NavigateBack)
                         }
                     }
@@ -202,6 +204,13 @@ internal object ChipboxTabsScreen : Screen {
                     val activeRouteKey = activeTabNavigator.navigator?.let { nav ->
                         "${tabNavigator.current.key}/${nav.lastItem.key}"
                     } ?: tabNavigator.current.key
+                    // Push the visible route into the app-level VM so cross-cutting policy
+                    // (e.g. event-honour decisions) can read it. The composed key carries
+                    // both the active tab and the top of its deep stack.
+                    val appUiViewModel = LocalChipboxAppUiViewModel.current
+                    LaunchedEffect(activeRouteKey) {
+                        appUiViewModel.setCurrentRoute(activeRouteKey)
+                    }
                     LaunchedEffect(activeRouteKey) {
                         // Animate (not snap) the bar back to fully extended, reusing the scroll
                         // behavior's own snap spec so it matches a manual release. contentOffset is
@@ -388,6 +397,8 @@ internal fun buildOuterSink(
     onNavigateBack: () -> Unit,
     onOpenUrl: (String) -> Unit,
     onCopyToClipboard: (label: String, text: String) -> Unit,
+    onRequestMiniPlayerVisibility: (Boolean) -> Unit,
+    onRequestTopBarVisibility: (Boolean) -> Unit,
 ): (ChipboxEvent) -> Unit = { event ->
     when (event) {
         is ChipboxEvent.NavigateTo -> onNavigateTo(event.destination)
@@ -414,6 +425,14 @@ internal fun buildOuterSink(
                 )
             }
         }
+
+        // Forwarded to the caller — the sink doesn't decide whether to honour the request.
+        // Today the host (ChipboxAppUi) just sets the chrome controller's `showPlayerStatus`
+        // unconditionally, but the indirection lets a future host gate it (e.g. ignore
+        // hide-requests while a "pin mini-player" debug toggle is on).
+        is ChipboxEvent.RequestMiniPlayerVisibility -> onRequestMiniPlayerVisibility(event.visible)
+
+        is ChipboxEvent.RequestTopBarVisibility -> onRequestTopBarVisibility(event.visible)
 
         // Screen-local effects intercepted by their owning route (see SettingsRoute on
         // Android — SAF folder picker); anything reaching here is a routing bug, but

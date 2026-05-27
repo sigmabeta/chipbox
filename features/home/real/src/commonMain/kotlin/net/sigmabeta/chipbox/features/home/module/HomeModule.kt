@@ -18,6 +18,14 @@ interface HomeModule {
     /** Lower values render earlier on screen. */
     val priority: Int
 
+    /**
+     * Whether to prepend a [net.sigmabeta.sage.components.SectionHeaderListModel] above the
+     * module's items. Defaults to true; override to false for modules whose content already
+     * carries its own heading (e.g. a now-playing card with the track title on it).
+     */
+    val showHeader: Boolean
+        get() = true
+
     fun state(): Flow<LCE<HomeModuleSection>>
 }
 

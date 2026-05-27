@@ -68,7 +68,9 @@ private fun homeState(): HomeState {
     val games = FakeModelGenerator().randomGames()
     return HomeState(
         sections = persistentListOf(
-            section(NOW_PLAYING_ID, NOW_PLAYING_PRIORITY, "Now playing", nowPlayingItem(games.first())),
+            // showHeader = false mirrors NowPlayingHomeModule's override — the card carries
+            // its own title, so the section header would just duplicate it.
+            section(NOW_PLAYING_ID, NOW_PLAYING_PRIORITY, "Now playing", nowPlayingItem(games.first()), showHeader = false),
             section(RANDOM_GAMES_ID, RANDOM_GAMES_PRIORITY, "Games of the day", gameCards(games)),
             section(SOLO_ID, SOLO_PRIORITY, "Featured", soloItem(games.first())),
             section(RNG_ID, RNG_PRIORITY, "RNG Take the Wheel", rngCards()),
@@ -84,8 +86,11 @@ private fun nowPlayingItem(game: Game): ImmutableList<ListModel> = persistentLis
         isPlaying = true,
         isBuffering = false,
         isError = false,
+        progressFraction = 0.4f,
         clickAction = HomeAction.NowPlayingCardClicked,
         playPauseAction = HomeAction.NowPlayingPlayPauseClicked,
+        appearAction = HomeAction.NowPlayingCardAppeared,
+        disappearAction = HomeAction.NowPlayingCardDisappeared,
     ),
 )
 
@@ -104,10 +109,12 @@ private fun section(
     priority: Int,
     title: String,
     items: ImmutableList<ListModel>,
+    showHeader: Boolean = true,
 ) = HomeSectionState(
     id = id,
     priority = priority,
     lce = LCE.Content(HomeModuleSection(title = title, items = items)),
+    showHeader = showHeader,
 )
 
 private fun gameCards(games: List<Game>): ImmutableList<ListModel> = games.map { game ->

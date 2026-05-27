@@ -20,8 +20,17 @@ data class NowPlayingHomeCardListModel(
     val isPlaying: Boolean,
     val isBuffering: Boolean,
     val isError: Boolean,
+    // Track playback progress in the unit interval — 0f for "no progress yet" / "unknown
+    // length". Only rendered on screens wide enough to comfortably fit a progress bar
+    // between the title block and the play/pause button.
+    val progressFraction: Float,
     val clickAction: SageAction,
     val playPauseAction: SageAction,
+    // Lifecycle actions dispatched as the card enters and leaves composition. Lets the
+    // host (HomeViewModel) react to the card being on/off-screen without the renderer
+    // having to know what reaction it triggers (e.g. suppressing the bottom mini-player).
+    val appearAction: SageAction,
+    val disappearAction: SageAction,
 ) : ListModel() {
     // Single-instance model — there's only ever one "now playing" card on Home at a time.
     override val dataId: Long = 0L

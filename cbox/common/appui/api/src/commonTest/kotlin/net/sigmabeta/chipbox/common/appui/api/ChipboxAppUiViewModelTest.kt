@@ -1,19 +1,27 @@
 package net.sigmabeta.chipbox.common.appui.api
 
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
+import net.sigmabeta.sage.logging.BluntHatchet
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * [ChipboxAppUiViewModel] is a thin wrapper that exposes three [ChipboxSettingsManager] streams
@@ -35,14 +43,14 @@ class ChipboxAppUiViewModelTest {
     @Test
     fun `themeMode seeds with the settings manager's initial value`() = runTest {
         val settings = FakeChipboxSettingsManager(initialThemeMode = ThemeMode.LIGHT)
-        val vm = ChipboxAppUiViewModel(settings)
+        val vm = ChipboxAppUiViewModel(settings, BluntHatchet())
         assertEquals(ThemeMode.LIGHT, vm.themeMode.first())
     }
 
     @Test
     fun `themeMode updates as the settings flow emits`() = runTest {
         val settings = FakeChipboxSettingsManager(initialThemeMode = ThemeMode.SYSTEM)
-        val vm = ChipboxAppUiViewModel(settings)
+        val vm = ChipboxAppUiViewModel(settings, BluntHatchet())
         assertEquals(ThemeMode.SYSTEM, vm.themeMode.first())
 
         settings.setThemeMode(ThemeMode.DARK)
@@ -55,7 +63,7 @@ class ChipboxAppUiViewModelTest {
         // (the cold-install case) should land on DEFAULT_BRAND, not crash or return some
         // arbitrary first-alphabetical entry.
         val settings = FakeChipboxSettingsManager(initialBrandFont = null)
-        val vm = ChipboxAppUiViewModel(settings)
+        val vm = ChipboxAppUiViewModel(settings, BluntHatchet())
         assertEquals(ChipboxFont.DEFAULT_BRAND, vm.brandFont.first())
     }
 
@@ -64,7 +72,7 @@ class ChipboxAppUiViewModelTest {
         // Same mapping path: if the persisted string doesn't match any enum entry,
         // fromStorageValue returns the supplied default rather than throwing.
         val settings = FakeChipboxSettingsManager(initialBrandFont = "a-font-that-was-removed")
-        val vm = ChipboxAppUiViewModel(settings)
+        val vm = ChipboxAppUiViewModel(settings, BluntHatchet())
         assertEquals(ChipboxFont.DEFAULT_BRAND, vm.brandFont.first())
     }
 
@@ -73,21 +81,64 @@ class ChipboxAppUiViewModelTest {
         // Pick any enum entry and feed its name; the VM should resolve to that entry.
         val target = ChipboxFont.entries.first { it != ChipboxFont.DEFAULT_BRAND }
         val settings = FakeChipboxSettingsManager(initialBrandFont = target.name)
-        val vm = ChipboxAppUiViewModel(settings)
+        val vm = ChipboxAppUiViewModel(settings, BluntHatchet())
         assertEquals(target, vm.brandFont.first())
     }
 
     @Test
     fun `null plain font name resolves to DEFAULT_PLAIN`() = runTest {
         val settings = FakeChipboxSettingsManager(initialPlainFont = null)
-        val vm = ChipboxAppUiViewModel(settings)
+        val vm = ChipboxAppUiViewModel(settings, BluntHatchet())
         assertEquals(ChipboxFont.DEFAULT_PLAIN, vm.plainFont.first())
+    }
+
+    @Test
+    fun `currentRoute starts null and updates on setCurrentRoute`() = runTest {
+        val vm = ChipboxAppUiViewModel(FakeChipboxSettingsManager(), BluntHatchet())
+        assertNull(vm.currentRoute.value)
+
+        vm.setCurrentRoute("HomeTab/HomeTabRoot")
+        assertEquals("HomeTab/HomeTabRoot", vm.currentRoute.value)
+
+        vm.setCurrentRoute("LibraryTab/GameDetail:42")
+        assertEquals("LibraryTab/GameDetail:42", vm.currentRoute.value)
+
+        vm.setCurrentRoute(null)
+        assertNull(vm.currentRoute.value)
+    }
+
+    @Test
+    fun `handleEvent forwards events through effects`() = runTest {
+        val vm = ChipboxAppUiViewModel(FakeChipboxSettingsManager(), BluntHatchet())
+        // Subscribe first so the SharedFlow has a collector when we emit — same pattern as
+        // the screen sink/applyEffect collector wiring in production.
+        val collected = async(start = CoroutineStart.UNDISPATCHED) { vm.effects.first() }
+        vm.handleEvent(ChipboxEvent.RequestMiniPlayerVisibility(visible = false))
+        val event = collected.await()
+        assertTrue(event is ChipboxEvent.RequestMiniPlayerVisibility)
+        assertEquals(false, event.visible)
+    }
+
+    @Test
+    fun `handleEvent passes every event type through verbatim today`() = runTest {
+        val vm = ChipboxAppUiViewModel(FakeChipboxSettingsManager(), BluntHatchet())
+        val ordered = listOf<ChipboxEvent>(
+            ChipboxEvent.NavigateBack,
+            ChipboxEvent.OpenUrl("https://example.com"),
+            ChipboxEvent.RequestTopBarVisibility(visible = false),
+            ChipboxEvent.RequestMiniPlayerVisibility(visible = true),
+        )
+        val collected = async(start = CoroutineStart.UNDISPATCHED) {
+            vm.effects.take(ordered.size).toList()
+        }
+        ordered.forEach(vm::handleEvent)
+        assertEquals(ordered, collected.await())
     }
 
     @Test
     fun `font flows update as the underlying settings stream emits`() = runTest {
         val settings = FakeChipboxSettingsManager(initialBrandFont = null, initialPlainFont = null)
-        val vm = ChipboxAppUiViewModel(settings)
+        val vm = ChipboxAppUiViewModel(settings, BluntHatchet())
 
         val targetBrand = ChipboxFont.entries.first { it != ChipboxFont.DEFAULT_BRAND }
         settings.setBrandFont(targetBrand.name)
