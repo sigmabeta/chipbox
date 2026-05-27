@@ -12,7 +12,7 @@ import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.LoadingType
 import net.sigmabeta.sage.components.SearchHistoryListModel
 import net.sigmabeta.sage.components.SectionHeaderListModel
-import net.sigmabeta.sage.components.SquareItemListModel
+import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.components.TitleBarModel
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.list.ListState
@@ -84,7 +84,7 @@ data class SearchState(
     }
 
     private fun gameItems(stringProvider: StringProvider): List<ListModel> = gameResults.withStandardErrorAndLoading(
-            loadingType = LoadingType.SQUARE,
+            loadingType = LoadingType.COVER,
             loadingItemCount = RESULT_LOADING_COUNT,
         ) {
             if (data.isEmpty()) {
@@ -95,12 +95,13 @@ data class SearchState(
                         stringProvider.getString(ChipboxStringId.SEARCH_SECTION_GAMES),
                     ),
                 ) + data.map { game ->
-                    SquareItemListModel(
+                    GridImageListModel(
                         dataId = game.id + ID_OFFSET_GAME,
                         name = game.title,
                         sourceInfo = game.photoUrl,
                         imagePlaceholder = Icon.Album,
                         clickAction = SearchAction.GameClicked(game.id),
+                        aspectRatio = GAME_COVER_ASPECT_RATIO,
                     )
                 }
             }
@@ -143,7 +144,7 @@ data class SearchState(
                         stringProvider.getString(ChipboxStringId.SEARCH_SECTION_ARTISTS),
                     ),
                 ) + data.map { artist ->
-                    SquareItemListModel(
+                    GridImageListModel(
                         dataId = artist.id + ID_OFFSET_ARTIST,
                         name = artist.name,
                         sourceInfo = artist.photoUrl,
@@ -162,5 +163,9 @@ data class SearchState(
         // Keep dataIds unique across sections (game/song/artist ids can overlap).
         const val ID_OFFSET_GAME = 1_000_000_000L
         const val ID_OFFSET_ARTIST = 2_000_000_000L
+
+        // 3:4 — IGDB serves covers at 528×704. Kept literal here because the feature
+        // layer doesn't depend on the cbox UI module where CoverArtConstants lives.
+        const val GAME_COVER_ASPECT_RATIO = 0.75f
     }
 }

@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
 import net.sigmabeta.chipbox.common.ui.components.api.previews.PreviewActionSink
 import net.sigmabeta.sage.appcomm.SageAction
-import net.sigmabeta.sage.components.SquareItemListModel
+import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.ui.Icon
 
 @Preview
@@ -67,8 +67,8 @@ private fun Sample() {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            SquareItem(
-                SquareItemListModel(
+            GridImage(
+                GridImageListModel(
                     dataId = 1234L,
                     name = "Xenoblade Chronicles 3",
                     sourceInfo = "https://randomfox.ca/images/12.jpg",
@@ -82,8 +82,8 @@ private fun Sample() {
                 PaddingValues(horizontal = 8.dp)
             )
 
-            SquareItem(
-                SquareItemListModel(
+            GridImage(
+                GridImageListModel(
                     dataId = 1235L,
                     name = "Xenoblade Chronicles 3: Future Redeemed Some More",
                     sourceInfo = "https://randomfox.ca/images/1235.jpg",

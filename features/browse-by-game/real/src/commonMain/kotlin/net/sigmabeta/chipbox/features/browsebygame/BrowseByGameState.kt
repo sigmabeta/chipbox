@@ -6,7 +6,7 @@ import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.LoadingType
-import net.sigmabeta.sage.components.SquareItemListModel
+import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.components.TitleBarModel
 import net.sigmabeta.sage.list.ColumnType
 import net.sigmabeta.sage.list.ListState
@@ -23,7 +23,7 @@ data class BrowseByGameState(
     )
 
     override fun toListItems(stringProvider: StringProvider): List<ListModel> = games.withStandardErrorAndLoading(
-            loadingType = LoadingType.SQUARE,
+            loadingType = LoadingType.COVER,
             loadingWithHeader = false,
         ) { content(data, stringProvider) }
 
@@ -36,17 +36,21 @@ data class BrowseByGameState(
         )
     } else {
         games.map { game ->
-            SquareItemListModel(
+            GridImageListModel(
                 dataId = game.id,
                 name = game.title,
                 sourceInfo = game.photoUrl,
                 imagePlaceholder = Icon.Album,
                 clickAction = BrowseByGameAction.GameClicked(game.id),
+                aspectRatio = GAME_COVER_ASPECT_RATIO,
             )
         }
     }
 
     private companion object {
         const val SQUARE_SIZE_DP = 160
+        // 3:4 — IGDB serves covers at 528×704. Kept literal here because the feature
+        // layer doesn't depend on the cbox UI module where CoverArtConstants lives.
+        const val GAME_COVER_ASPECT_RATIO = 0.75f
     }
 }

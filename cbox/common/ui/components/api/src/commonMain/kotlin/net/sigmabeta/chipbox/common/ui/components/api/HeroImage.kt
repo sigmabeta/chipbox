@@ -15,7 +15,7 @@ import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.HeroImageListModel
 
 @Composable
-fun BigImage(
+fun HeroImage(
     model: HeroImageListModel,
     actionSink: ActionSink,
     modifier: Modifier,
@@ -35,6 +35,7 @@ fun BigImage(
             imagePlaceholder = model.imagePlaceholder,
             contentDescription = model.contentDescription,
             modifier = Modifier.fillMaxSize(),
+            loadOriginalSize = true,
         )
     }
 }

@@ -6,7 +6,7 @@ import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.LoadingType
-import net.sigmabeta.sage.components.SquareItemListModel
+import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.components.TitleBarModel
 import net.sigmabeta.sage.list.ColumnType
 import net.sigmabeta.sage.list.ListState
@@ -36,7 +36,7 @@ data class BrowseByArtistState(
         )
     } else {
         artists.map { artist ->
-            SquareItemListModel(
+            GridImageListModel(
                 dataId = artist.id,
                 name = artist.name,
                 sourceInfo = artist.photoUrl,
