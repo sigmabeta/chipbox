@@ -24,6 +24,5 @@ kotlin {
                 implementation(projects.features.browseByPlatform.api)
             }
         }
-
     }
 }

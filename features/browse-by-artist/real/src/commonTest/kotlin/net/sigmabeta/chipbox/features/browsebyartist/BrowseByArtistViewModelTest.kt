@@ -40,8 +40,13 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class BrowseByArtistViewModelTest {
 
-    @BeforeTest fun setUp() { Dispatchers.setMain(UnconfinedTestDispatcher()) }
-    @AfterTest fun tearDown() { Dispatchers.resetMain() }
+    @BeforeTest fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+    }
+
+    @AfterTest fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun `Data Empty maps to LCE Content with an empty list`() = runTest {

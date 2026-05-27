@@ -55,8 +55,13 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
 
-    @BeforeTest fun setUp() { Dispatchers.setMain(UnconfinedTestDispatcher()) }
-    @AfterTest fun tearDown() { Dispatchers.resetMain() }
+    @BeforeTest fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+    }
+
+    @AfterTest fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     // ---- init-time wire-up ----
 
@@ -191,7 +196,7 @@ class SettingsViewModelTest {
         // the row renders in failed state, and a distinct snackbar so the user sees what went
         // wrong without having to open the row.
         val repository = object : Repository by FakeRepository(emptyMap()) {
-            override suspend fun clearLibrary() { throw IllegalStateException("disk full") }
+            override suspend fun clearLibrary(): Unit = throw IllegalStateException("disk full")
         }
         val vm = newViewModel(repository = repository)
         val event = collectAndDispatch(vm, SettingsAction.ClearLibraryClicked)

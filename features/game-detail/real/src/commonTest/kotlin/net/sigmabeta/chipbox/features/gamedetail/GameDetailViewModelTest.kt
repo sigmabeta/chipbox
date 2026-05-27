@@ -47,8 +47,13 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class GameDetailViewModelTest {
 
-    @BeforeTest fun setUp() { Dispatchers.setMain(UnconfinedTestDispatcher()) }
-    @AfterTest fun tearDown() { Dispatchers.resetMain() }
+    @BeforeTest fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+    }
+
+    @AfterTest fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun `Data Succeeded fans the loaded game across all three LCE slots`() = runTest {

@@ -74,6 +74,7 @@ class FakePcmTrackSource(
                     buffer[i * 2 + 1] = chunk.pattern
                 }
             }
+
             is Chunk.Silent -> {
                 for (i in 0 until frames * 2) buffer[i] = 0
             }
@@ -90,11 +91,11 @@ class FakePcmTrackSource(
         return frames
     }
 
-    override suspend fun seek(framePosition: Long) {
-        throw UnsupportedOperationException("FakePcmTrackSource doesn't support seek.")
-    }
+    override suspend fun seek(framePosition: Long): Unit = throw UnsupportedOperationException("FakePcmTrackSource doesn't support seek.")
 
     override fun getLastError(): String? = lastError
     override fun getDiagnostics(): String? = null
-    override suspend fun close() { closed = true }
+    override suspend fun close() {
+        closed = true
+    }
 }

@@ -50,8 +50,13 @@ class RescanStatusViewModelTest {
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = UnconfinedTestDispatcher(scheduler)
 
-    @BeforeTest fun setUp() { Dispatchers.setMain(dispatcher) }
-    @AfterTest fun tearDown() { Dispatchers.resetMain() }
+    @BeforeTest fun setUp() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @AfterTest fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     @Test
     fun `initial state shows IDLE phase with zero progress and no events`() = rescanTest { vm, _ ->

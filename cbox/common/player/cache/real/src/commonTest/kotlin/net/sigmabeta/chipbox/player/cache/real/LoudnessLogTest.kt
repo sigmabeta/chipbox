@@ -55,11 +55,23 @@ class LoudnessLogTest {
      *  Each entry is "<level>: <message>" so a one-line assert can cover both fields. */
     private class CapturingHatchet : Hatchet {
         val messages = mutableListOf<String>()
-        override fun v(message: String) { messages += "v: $message" }
-        override fun d(message: String) { messages += "d: $message" }
-        override fun i(message: String) { messages += "i: $message" }
-        override fun w(message: String) { messages += "w: $message" }
-        override fun e(message: String) { messages += "e: $message" }
-        override fun log(severity: Int, message: String) { messages += "log[$severity]: $message" }
+        override fun v(message: String) {
+            messages += "v: $message"
+        }
+        override fun d(message: String) {
+            messages += "d: $message"
+        }
+        override fun i(message: String) {
+            messages += "i: $message"
+        }
+        override fun w(message: String) {
+            messages += "w: $message"
+        }
+        override fun e(message: String) {
+            messages += "e: $message"
+        }
+        override fun log(severity: Int, message: String) {
+            messages += "log[$severity]: $message"
+        }
     }
 }

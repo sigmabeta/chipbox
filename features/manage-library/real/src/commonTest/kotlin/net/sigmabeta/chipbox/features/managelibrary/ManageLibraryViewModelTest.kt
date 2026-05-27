@@ -50,10 +50,12 @@ class ManageLibraryViewModelTest {
 
     @Test
     fun `init populates the folder list from LibrarySource locations`() = runTest {
-        val source = FakeLibrarySource(initial = listOf(
+        val source = FakeLibrarySource(
+            initial = listOf(
             LibraryLocationInfo("file:///music/SNES", "SNES"),
             LibraryLocationInfo("file:///music/NES", "NES"),
-        ))
+        )
+        )
         val vm = newViewModel(source = source)
         val state = vm.state.first { it.folders.size == 2 }
         assertEquals(

@@ -54,8 +54,13 @@ class SearchViewModelTest {
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = UnconfinedTestDispatcher(scheduler)
 
-    @BeforeTest fun setUp() { Dispatchers.setMain(dispatcher) }
-    @AfterTest fun tearDown() { Dispatchers.resetMain() }
+    @BeforeTest fun setUp() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @AfterTest fun tearDown() {
+        Dispatchers.resetMain()
+    }
 
     // ---- history flow ----
 
@@ -191,7 +196,9 @@ class SearchViewModelTest {
         val gameHits = listOf(gameOf(1, "Chrono Trigger"))
         val repo = object : Repository by FakeRepository(emptyMap()) {
             override fun searchGames(query: String) = flowOnce<Data<List<Game>>>(Data.Succeeded(gameHits))
-            override suspend fun addSearchHistory(query: String) { historyAdds += query }
+            override suspend fun addSearchHistory(query: String) {
+                historyAdds += query
+            }
         }
         val vm = newViewModel(repository = repo)
 
@@ -214,7 +221,9 @@ class SearchViewModelTest {
         // `hasAnyResults` check.
         val historyAdds = mutableListOf<String>()
         val repo = object : Repository by FakeRepository(emptyMap()) {
-            override suspend fun addSearchHistory(query: String) { historyAdds += query }
+            override suspend fun addSearchHistory(query: String) {
+                historyAdds += query
+            }
         }
         val vm = newViewModel(repository = repo)
 
@@ -231,7 +240,9 @@ class SearchViewModelTest {
         val gameHits = listOf(gameOf(1, "X"))
         val repo = object : Repository by FakeRepository(emptyMap()) {
             override fun searchGames(query: String) = flowOnce<Data<List<Game>>>(Data.Succeeded(gameHits))
-            override suspend fun addSearchHistory(query: String) { historyAdds += query }
+            override suspend fun addSearchHistory(query: String) {
+                historyAdds += query
+            }
         }
         val vm = newViewModel(repository = repo)
 
@@ -261,7 +272,9 @@ class SearchViewModelTest {
     fun `HistoryRemoved forwards the id to the repository removeSearchHistory call`() = runTest(dispatcher) {
         val removed = mutableListOf<Long>()
         val repo = object : Repository by FakeRepository(emptyMap()) {
-            override suspend fun removeSearchHistory(id: Long) { removed += id }
+            override suspend fun removeSearchHistory(id: Long) {
+                removed += id
+            }
         }
         val vm = newViewModel(repository = repo)
         vm.sendAction(SearchAction.HistoryRemoved(id = 99L))

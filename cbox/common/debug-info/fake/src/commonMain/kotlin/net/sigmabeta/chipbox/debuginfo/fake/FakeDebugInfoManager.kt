@@ -15,5 +15,7 @@ import net.sigmabeta.chipbox.debuginfo.PlaybackDebugInfo
 class FakeDebugInfoManager : DebugInfoManager {
     private val sink = MutableStateFlow(PlaybackDebugInfo())
     override fun debugInfo(): StateFlow<PlaybackDebugInfo> = sink.asStateFlow()
-    fun emit(info: PlaybackDebugInfo) { sink.value = info }
+    fun emit(info: PlaybackDebugInfo) {
+        sink.value = info
+    }
 }
