@@ -8,10 +8,10 @@ import net.sigmabeta.chipbox.ui.theme.api.tokens.ChipboxFontDefaults
 /**
  * High-level Chipbox theme entry point — the `ChipboxFont`-typed convenience over [ChipboxTheme]
  * (which takes raw `FontFamily`). Converts the picked `ChipboxFont`s to `FontFamily`s via the
- * multiplatform `ChipboxFont.toFontFamily()` (loading each Compose Multiplatform font resource)
- * and folds their per-font `scaleFactor`s into the scales. Multiplatform — used by both the shared
- * `ChipboxAppUi` (Android + desktop) and Compose previews. [darkTheme] is `null` to follow the
- * system setting, or `true`/`false` to force a scheme.
+ * multiplatform `ChipboxFont.toFontFamily()` (loading each Compose Multiplatform font resource).
+ * Multiplatform — used by both the shared `ChipboxAppUi` (Android + desktop) and Compose
+ * previews. [darkTheme] is `null` to follow the system setting, or `true`/`false` to force a
+ * scheme.
  */
 @Composable
 fun AppTheme(
@@ -24,8 +24,7 @@ fun AppTheme(
     ChipboxTheme(
         brand = brand.toFontFamily(),
         plain = plain.toFontFamily(),
-        brandScale = brand.scaleFactor * fontScale,
-        plainScale = plain.scaleFactor * fontScale,
+        scale = fontScale,
         darkTheme = darkTheme,
         content = content,
     )

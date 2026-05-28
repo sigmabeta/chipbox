@@ -12,90 +12,88 @@ import net.sigmabeta.chipbox.ui.theme.api.tokens.ChipboxTypographyTokens
  * the font-resource story (Compose-MP resources vs `expect`/`actual` `FontFamily`) hasn't been
  * picked yet — only the type *structure* (sizes, weights, line heights) is shared today.
  *
- * `brandScale` / `plainScale` are caller-computed so each platform can fold its own
- * per-font scale factor in (Android multiplies the picked `ChipboxFont.scaleFactor` by a
- * user-facing `fontScale`; JVM just passes `fontScale` directly).
+ * `scale` is caller-supplied so each platform can apply a user-facing font scale uniformly
+ * (system accessibility scale on Android; passed through on JVM).
  */
 @Suppress("LongMethod")
 fun buildChipboxTypography(
     brand: FontFamily = FontFamily.Default,
     plain: FontFamily = FontFamily.Default,
-    brandScale: Float = 1.0f,
-    plainScale: Float = 1.0f,
+    scale: Float = 1.0f,
 ): Typography = Typography(
     displayLarge = ChipboxTypographyTokens.DisplayLarge.copy(
         fontFamily = brand,
-        fontSize = ChipboxTypeScaleTokens.DisplayLargeSize * brandScale,
-        lineHeight = ChipboxTypeScaleTokens.DisplayLargeLineHeight * brandScale,
+        fontSize = ChipboxTypeScaleTokens.DisplayLargeSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.DisplayLargeLineHeight * scale,
     ),
     displayMedium = ChipboxTypographyTokens.DisplayMedium.copy(
         fontFamily = brand,
-        fontSize = ChipboxTypeScaleTokens.DisplayMediumSize * brandScale,
-        lineHeight = ChipboxTypeScaleTokens.DisplayMediumLineHeight * brandScale,
+        fontSize = ChipboxTypeScaleTokens.DisplayMediumSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.DisplayMediumLineHeight * scale,
     ),
     displaySmall = ChipboxTypographyTokens.DisplaySmall.copy(
         fontFamily = brand,
-        fontSize = ChipboxTypeScaleTokens.DisplaySmallSize * brandScale,
-        lineHeight = ChipboxTypeScaleTokens.DisplaySmallLineHeight * brandScale,
+        fontSize = ChipboxTypeScaleTokens.DisplaySmallSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.DisplaySmallLineHeight * scale,
     ),
     headlineLarge = ChipboxTypographyTokens.HeadlineLarge.copy(
         fontFamily = brand,
-        fontSize = ChipboxTypeScaleTokens.HeadlineLargeSize * brandScale,
-        lineHeight = ChipboxTypeScaleTokens.HeadlineLargeLineHeight * brandScale,
+        fontSize = ChipboxTypeScaleTokens.HeadlineLargeSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.HeadlineLargeLineHeight * scale,
     ),
     headlineMedium = ChipboxTypographyTokens.HeadlineMedium.copy(
         fontFamily = brand,
-        fontSize = ChipboxTypeScaleTokens.HeadlineMediumSize * brandScale,
-        lineHeight = ChipboxTypeScaleTokens.HeadlineMediumLineHeight * brandScale,
+        fontSize = ChipboxTypeScaleTokens.HeadlineMediumSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.HeadlineMediumLineHeight * scale,
     ),
     headlineSmall = ChipboxTypographyTokens.HeadlineSmall.copy(
         fontFamily = brand,
-        fontSize = ChipboxTypeScaleTokens.HeadlineSmallSize * brandScale,
-        lineHeight = ChipboxTypeScaleTokens.HeadlineSmallLineHeight * brandScale,
+        fontSize = ChipboxTypeScaleTokens.HeadlineSmallSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.HeadlineSmallLineHeight * scale,
     ),
     titleLarge = ChipboxTypographyTokens.TitleLarge.copy(
         fontFamily = brand,
-        fontSize = ChipboxTypeScaleTokens.TitleLargeSize * brandScale,
-        lineHeight = ChipboxTypeScaleTokens.TitleLargeLineHeight * brandScale,
+        fontSize = ChipboxTypeScaleTokens.TitleLargeSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.TitleLargeLineHeight * scale,
     ),
     titleMedium = ChipboxTypographyTokens.TitleMedium.copy(
         fontFamily = plain,
-        fontSize = ChipboxTypeScaleTokens.TitleMediumSize * plainScale,
-        lineHeight = ChipboxTypeScaleTokens.TitleMediumLineHeight * plainScale,
+        fontSize = ChipboxTypeScaleTokens.TitleMediumSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.TitleMediumLineHeight * scale,
     ),
     titleSmall = ChipboxTypographyTokens.TitleSmall.copy(
         fontFamily = plain,
-        fontSize = ChipboxTypeScaleTokens.TitleSmallSize * plainScale,
-        lineHeight = ChipboxTypeScaleTokens.TitleSmallLineHeight * plainScale,
+        fontSize = ChipboxTypeScaleTokens.TitleSmallSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.TitleSmallLineHeight * scale,
     ),
     bodyLarge = ChipboxTypographyTokens.BodyLarge.copy(
         fontFamily = plain,
-        fontSize = ChipboxTypeScaleTokens.BodyLargeSize * plainScale,
-        lineHeight = ChipboxTypeScaleTokens.BodyLargeLineHeight * plainScale,
+        fontSize = ChipboxTypeScaleTokens.BodyLargeSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.BodyLargeLineHeight * scale,
     ),
     bodyMedium = ChipboxTypographyTokens.BodyMedium.copy(
         fontFamily = plain,
-        fontSize = ChipboxTypeScaleTokens.BodyMediumSize * plainScale,
-        lineHeight = ChipboxTypeScaleTokens.BodyMediumLineHeight * plainScale,
+        fontSize = ChipboxTypeScaleTokens.BodyMediumSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.BodyMediumLineHeight * scale,
     ),
     bodySmall = ChipboxTypographyTokens.BodySmall.copy(
         fontFamily = plain,
-        fontSize = ChipboxTypeScaleTokens.BodySmallSize * plainScale,
-        lineHeight = ChipboxTypeScaleTokens.BodySmallLineHeight * plainScale,
+        fontSize = ChipboxTypeScaleTokens.BodySmallSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.BodySmallLineHeight * scale,
     ),
     labelLarge = ChipboxTypographyTokens.LabelLarge.copy(
         fontFamily = plain,
-        fontSize = ChipboxTypeScaleTokens.LabelLargeSize * plainScale,
-        lineHeight = ChipboxTypeScaleTokens.LabelLargeLineHeight * plainScale,
+        fontSize = ChipboxTypeScaleTokens.LabelLargeSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.LabelLargeLineHeight * scale,
     ),
     labelMedium = ChipboxTypographyTokens.LabelMedium.copy(
         fontFamily = plain,
-        fontSize = ChipboxTypeScaleTokens.LabelMediumSize * plainScale,
-        lineHeight = ChipboxTypeScaleTokens.LabelMediumLineHeight * plainScale,
+        fontSize = ChipboxTypeScaleTokens.LabelMediumSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.LabelMediumLineHeight * scale,
     ),
     labelSmall = ChipboxTypographyTokens.LabelSmall.copy(
         fontFamily = plain,
-        fontSize = ChipboxTypeScaleTokens.LabelSmallSize * plainScale,
-        lineHeight = ChipboxTypeScaleTokens.LabelSmallLineHeight * plainScale,
+        fontSize = ChipboxTypeScaleTokens.LabelSmallSize * scale,
+        lineHeight = ChipboxTypeScaleTokens.LabelSmallLineHeight * scale,
     ),
 )
