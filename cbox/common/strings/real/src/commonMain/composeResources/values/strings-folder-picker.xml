@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="folder_picker_title">Pick a folder</string>
+    <string name="folder_picker_cta_add">Add this folder</string>
+    <string name="folder_picker_cta_cancel">Cancel and exit</string>
+    <string name="folder_picker_value_empty">Empty</string>
+    <string name="folder_picker_value_folders">%d folders</string>
+    <string name="folder_picker_value_files">%d files</string>
+    <string name="folder_picker_value_folders_and_files">%1$s, %2$s</string>
+</resources>

@@ -3,17 +3,16 @@ package net.sigmabeta.chipbox.features.managelibrary
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import dev.zacsweers.metrox.viewmodel.metroViewModel
-import javax.swing.JFileChooser
-import javax.swing.SwingUtilities
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListEntry
+import net.sigmabeta.chipbox.features.folderpicker.FolderPicker
 
 /**
- * JVM/desktop actual — picks a folder with `javax.swing.JFileChooser` in DIRECTORIES_ONLY mode,
- * deferred via `SwingUtilities.invokeLater` so the dialog's nested EDT pump runs on a fresh
- * event-queue task instead of nesting inside the dispatched coroutine continuation (see the same
- * note on `SettingsRoute`'s JVM actual). `LocalFileContentSource.addLibraryLocation` expects a
- * filesystem path, so the picked `absolutePath` flows straight into `FolderPicked`.
+ * JVM/desktop actual — intercepts [ChipboxEvent.PickFolder] and pushes the in-app
+ * [FolderPicker] screen instead of opening a system dialog. The picker is self-contained: it
+ * commits the chosen path to `LibrarySource` and starts a scan itself, so we never see a
+ * [ManageLibraryAction.FolderPicked] action come back through this route — that handler is
+ * still on the [ManageLibraryViewModel] for the Android SAF flow.
  */
 @Composable
 actual fun ManageLibraryRoute(
@@ -24,26 +23,10 @@ actual fun ManageLibraryRoute(
 
     val routedOnEvent: (ChipboxEvent) -> Unit = { event ->
         when (event) {
-            ChipboxEvent.PickFolder -> pickLibraryFolderAsync { path ->
-                viewModel.sendAction(ManageLibraryAction.FolderPicked(path))
-            }
-
+            ChipboxEvent.PickFolder -> onEvent(ChipboxEvent.NavigateTo(FolderPicker))
             else -> onEvent(event)
         }
     }
 
     ChipboxListEntry(viewModel, routedOnEvent, modifier)
-}
-
-private fun pickLibraryFolderAsync(onResult: (String) -> Unit) {
-    SwingUtilities.invokeLater {
-        val chooser = JFileChooser().apply {
-            dialogTitle = "Choose music library folder"
-            fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
-            isMultiSelectionEnabled = false
-        }
-        val approved = chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION
-        val path = if (approved) chooser.selectedFile?.absolutePath else null
-        if (path != null) onResult(path)
-    }
 }

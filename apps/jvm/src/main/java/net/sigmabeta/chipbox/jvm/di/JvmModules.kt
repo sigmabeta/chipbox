@@ -138,6 +138,17 @@ object JvmContentSourceModule {
 
 @BindingContainer
 @ContributesTo(AppScope::class)
+object JvmFileSystemModule {
+    // FolderPicker's OkioFolderLister @Inject ctor takes a FileSystem; pin it to the live
+    // platform filesystem. Other call sites that need a FileSystem (PCM cache, FileSpeaker,
+    // …) currently pass FileSystem.SYSTEM inline in their @Provides — this is the first one
+    // that injects it as a graph type.
+    @Provides @SingleIn(AppScope::class)
+    fun provideFileSystem(): FileSystem = FileSystem.SYSTEM
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
 object JvmBufferModule {
     @Provides
     @SingleIn(AppScope::class)
