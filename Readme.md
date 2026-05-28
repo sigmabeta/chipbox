@@ -22,7 +22,10 @@ Playback is provided by several emulator cores wired in via the
 - **GSF** (mGBA) — Game Boy Advance
 - **USF / miniUSF** — Nintendo 64
 - **SSF** — Sega Saturn
-- **2SF** — Nintendo DS
+- **2SF** — Nintendo DS (DS Sound Format)
+- **NCSF / miniNCSF** (SSEQ-Player) — Nintendo DS (Nitro Composer)
+- **vgmstream** — streamed game audio (ADX, HCA, DSP, STRM, and many more
+  single-file formats)
 
 ## Architecture
 
