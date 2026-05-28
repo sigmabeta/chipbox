@@ -28,8 +28,7 @@ import androidx.compose.ui.text.font.FontFamily
 fun ChipboxTheme(
     brand: FontFamily = FontFamily.Default,
     plain: FontFamily = FontFamily.Default,
-    brandScale: Float = 1.0f,
-    plainScale: Float = 1.0f,
+    scale: Float = 1.0f,
     darkTheme: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
@@ -40,7 +39,7 @@ fun ChipboxTheme(
     val rippleConfiguration = RippleConfiguration(color = colors.primary)
     MaterialTheme(
         colorScheme = colors,
-        typography = buildChipboxTypography(brand, plain, brandScale, plainScale),
+        typography = buildChipboxTypography(brand, plain, scale),
     ) {
         CompositionLocalProvider(LocalRippleConfiguration provides rippleConfiguration) {
             content()
