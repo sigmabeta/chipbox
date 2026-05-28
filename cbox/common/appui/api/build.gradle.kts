@@ -67,6 +67,8 @@ kotlin {
                 api(projects.features.home.real)
                 implementation(projects.features.library.api)
                 api(projects.features.library.real)
+                implementation(projects.features.folderPicker.api)
+                api(projects.features.folderPicker.real)
                 implementation(projects.features.manageLibrary.api)
                 api(projects.features.manageLibrary.real)
                 implementation(projects.features.rescanStatus.api)

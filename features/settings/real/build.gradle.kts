@@ -6,8 +6,9 @@ plugins {
 // SettingsViewModel is commonMain now (its deps are all KMP); the build-date java.time formatting
 // became the formatLongDate expect/actual (jvm java.time + jsMain stub). SettingsRoute stays a
 // commonMain `expect` with platform actuals for the folder picker behind ChipboxEvent.PickFolder:
-// androidMain (SAF OpenDocumentTree), jvmMain (Swing JFileChooser), and an enforcement-only jsMain
-// stub that just forwards events.
+// androidMain (SAF OpenDocumentTree), jvmMain (push the in-app :features:folder-picker screen —
+// replaces the old Swing JFileChooser), and an enforcement-only jsMain stub that just forwards
+// events.
 kotlin {
     js { nodejs() }
 
@@ -40,6 +41,13 @@ kotlin {
         named("androidMain") {
             dependencies {
                 implementation(libs.androidx.activity.compose)
+            }
+        }
+        named("jvmMain") {
+            dependencies {
+                // FolderPicker route key — the JVM actual routes PickFolder to it instead of
+                // launching JFileChooser.
+                implementation(projects.features.folderPicker.api)
             }
         }
 

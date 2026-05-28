@@ -15,6 +15,7 @@ import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
+import okio.FileSystem
 
 @BindingContainer
 @ContributesTo(AppScope::class)
@@ -46,4 +47,12 @@ object AndroidAppModule {
     @Provides
     @SingleIn(AppScope::class)
     fun provideLibrarySource(impl: AndroidFileContentSource): LibrarySource = impl
+
+    // FolderPicker's OkioFolderLister @Inject ctor takes a FileSystem; pin it to the live
+    // platform filesystem. Other call sites that need a FileSystem (PCM cache, FileSpeaker,
+    // …) currently pass FileSystem.SYSTEM inline in their @Provides — this is the first one
+    // that injects it as a graph type.
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideFileSystem(): FileSystem = FileSystem.SYSTEM
 }

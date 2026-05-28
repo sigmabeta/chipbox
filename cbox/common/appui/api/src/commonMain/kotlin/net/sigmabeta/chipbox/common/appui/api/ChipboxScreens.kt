@@ -36,6 +36,8 @@ import net.sigmabeta.chipbox.features.home.Home
 import net.sigmabeta.chipbox.features.home.HomeRoute
 import net.sigmabeta.chipbox.features.library.Library
 import net.sigmabeta.chipbox.features.library.LibraryRoute
+import net.sigmabeta.chipbox.features.folderpicker.FolderPicker
+import net.sigmabeta.chipbox.features.folderpicker.FolderPickerRoute
 import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.managelibrary.ManageLibraryRoute
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
@@ -71,6 +73,7 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     Search -> SearchDeepScreen
     Settings -> SettingsDeepScreen
     ManageLibrary -> ManageLibraryScreen
+    FolderPicker -> FolderPickerScreen
     RescanStatus -> RescanStatusScreen
     PlaybackStatus -> PlaybackStatusScreen
     NowPlaying -> NowPlayingScreen
@@ -311,6 +314,17 @@ internal object SettingsDeepScreen : Screen {
 private object ManageLibraryScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         ManageLibraryRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+/**
+ * In-app folder picker for platforms without (or opting out of) an OS-delegated picker — JVM and
+ * pre-SAF Android. Self-contained: on "Add this folder" it commits the picked path to
+ * [LibrarySource] and routes to [RescanStatusScreen] like ManageLibrary's `FolderPicked` flow.
+ */
+private object FolderPickerScreen : Screen {
+    @Composable override fun Content() = ScreenScaffold {
+        FolderPickerRoute(onEvent = LocalChipboxEventSink.current)
     }
 }
 

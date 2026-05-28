@@ -6,7 +6,8 @@ plugins {
 // ManageLibraryState/Action + the ViewModel are commonMain (contentsource/scanner/rescanStatus
 // are all KMP now). ManageLibraryRoute is a commonMain `expect` with platform actuals for the
 // folder picker behind ChipboxEvent.PickFolder: androidMain (SAF OpenDocumentTree), jvmMain
-// (Swing JFileChooser), and an enforcement-only jsMain stub that just forwards events.
+// (push the in-app :features:folder-picker screen — replaces the old Swing JFileChooser), and
+// an enforcement-only jsMain stub that just forwards events.
 kotlin {
     js { nodejs() }
 
@@ -28,6 +29,13 @@ kotlin {
         named("androidMain") {
             dependencies {
                 implementation(libs.androidx.activity.compose)
+            }
+        }
+        named("jvmMain") {
+            dependencies {
+                // FolderPicker route key — the JVM actual routes PickFolder to it instead of
+                // launching JFileChooser.
+                implementation(projects.features.folderPicker.api)
             }
         }
 
