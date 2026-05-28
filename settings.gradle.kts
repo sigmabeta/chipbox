@@ -39,6 +39,7 @@ include(
     // SAGE-aware modules
     ":apps:android",
     ":apps:jvm",
+    ":apps:js",
     ":apps:cli",
     ":benchmark",
 
