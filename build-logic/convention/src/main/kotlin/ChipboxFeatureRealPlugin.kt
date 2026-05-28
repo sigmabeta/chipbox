@@ -1,8 +1,4 @@
 import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryExtension
-import dev.zacsweers.metro.gradle.DelicateMetroGradleApi
-import dev.zacsweers.metro.gradle.ExperimentalMetroGradleApi
-import dev.zacsweers.metro.gradle.MetroPluginExtension
-import dev.zacsweers.metro.gradle.RequiresIdeSupport
 import net.sigmabeta.sage.plugins.components.namespaceFromPath
 import net.sigmabeta.sage.plugins.components.libs
 import org.gradle.api.Plugin
@@ -10,7 +6,6 @@ import org.gradle.api.Project
 import org.gradle.api.plugins.ExtensionAware
 import org.gradle.kotlin.dsl.configure
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 /**
  * Convention for `:features:<x>:real` modules.
@@ -24,7 +19,6 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
  * file — they differ enough that consolidating them would hide real coupling.
  */
 class ChipboxFeatureRealPlugin : Plugin<Project> {
-    @OptIn(DelicateMetroGradleApi::class, ExperimentalMetroGradleApi::class, RequiresIdeSupport::class)
     override fun apply(target: Project) {
         with(target) {
             with(pluginManager) {
@@ -33,17 +27,12 @@ class ChipboxFeatureRealPlugin : Plugin<Project> {
                 apply("dev.zacsweers.metro")
             }
 
-            // Metro's hint / top-level-injection codegen emits top-level declarations that
-            // Kotlin/JS incremental compilation rejects (KT-82395). Every feature :real module
-            // carries an enforcement-only js() purity gate, so gate hint generation to the real
-            // JVM/Android targets (omitting JS, which has no runtime DI graph here).
-            extensions.configure<MetroPluginExtension> {
-                enableTopLevelFunctionInjection.set(false)
-                generateContributionHintsInFir.set(false)
-                supportedHintContributionPlatforms.set(
-                    setOf(KotlinPlatformType.jvm, KotlinPlatformType.androidJvm),
-                )
-            }
+            // KT-82395 ("Kotlin/JS does not support generating top-level declarations with
+            // incremental compilation enabled") was fixed in Kotlin 2.3.21. Before that, every
+            // feature :real module gated `supportedHintContributionPlatforms` to {jvm, androidJvm}
+            // and disabled the related codegen flags. Now that the underlying compiler bug is
+            // gone, JS hints can generate alongside JVM/Android — which is what lets `apps/js`
+            // build a real Metro `@DependencyGraph` instead of hand-wiring providers.
 
             val derivedNamespace = namespaceFromPath()
             extensions.configure<KotlinMultiplatformExtension> {
