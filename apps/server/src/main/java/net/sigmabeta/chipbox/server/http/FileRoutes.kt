@@ -121,10 +121,21 @@ private suspend fun io.ktor.server.routing.RoutingContext.respondViaContentSourc
         ?: return call.respond(HttpStatusCode.NotFound, ErrorResponse("No content source for '$sourceId'"))
     val bytes = source.openBytes(path)
         ?: return call.respond(HttpStatusCode.NotFound, ErrorResponse("File missing"))
-    val filename = path.substringAfterLast('/').substringAfterLast('\\')
-    call.attachAs(filename)
-    call.respondBytes(bytes, contentType = ContentType.Application.OctetStream)
+    // Image endpoints (game cover, artist photo) — derive Content-Type from the extension and
+    // skip Content-Disposition: attachment so the browser / `navigator.mediaSession` artwork
+    // fetcher treats the response as a renderable image rather than a download.
+    call.respondBytes(bytes, contentType = imageContentType(path))
 }
+
+private fun imageContentType(path: String): ContentType =
+    when (path.substringAfterLast('.').lowercase()) {
+        "jpg", "jpeg" -> ContentType.Image.JPEG
+        "png" -> ContentType.Image.PNG
+        "gif" -> ContentType.Image.GIF
+        "webp" -> ContentType("image", "webp")
+        "svg" -> ContentType.Image.SVG
+        else -> ContentType.Application.OctetStream
+    }
 
 /** `Content-Disposition: attachment; filename="…"` so browsers don't try to navigate to the bytes. */
 private fun io.ktor.server.application.ApplicationCall.attachAs(filename: String) {

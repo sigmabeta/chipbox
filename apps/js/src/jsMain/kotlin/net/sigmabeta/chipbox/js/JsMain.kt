@@ -12,6 +12,7 @@ import kotlinx.browser.document
 import kotlinx.browser.window
 import net.sigmabeta.chipbox.js.analytics.WebAnalytics
 import net.sigmabeta.chipbox.js.image.buildWebImageLoader
+import net.sigmabeta.chipbox.js.mediasession.WebMediaSession
 import net.sigmabeta.chipbox.js.repository.RemoteRepository
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -112,6 +113,10 @@ fun main() {
             hatchet = hatchet,
             stringProvider = stringProvider,
         )
+
+        // Hook the browser's media-session API into the player so OS-level transport (media keys,
+        // lock-screen controls, Bluetooth headset buttons) drives the same Director.
+        WebMediaSession(graph.director, apiBaseUrl).install(graph.appScope)
 
         document.getElementById("splash")?.remove()
 
