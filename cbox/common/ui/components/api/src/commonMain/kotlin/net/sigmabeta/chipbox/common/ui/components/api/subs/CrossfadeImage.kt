@@ -64,33 +64,72 @@ fun CrossfadeImage(
     // AsyncImagePainter fall back to SizeResolver.ORIGINAL.
     loadOriginalSize: Boolean = false,
 ) {
-    // AnimatedContent gives each `sourceInfo` its own composition scope so the
-    // outgoing branch can keep rendering the previous painter (and its loaded
-    // image) while the incoming branch starts a fresh Coil load. Without this,
-    // a re-keyed request mutates the same AsyncImagePainter and we lose the
-    // old frame the moment the source changes.
-    AnimatedContent(
-        targetState = sourceInfo,
-        contentKey = { it.info },
-        transitionSpec = { fadeIn() togetherWith fadeOut() },
-        modifier = modifier,
-        label = "CrossfadeImage.source",
-    ) { current ->
-        when {
-            current.info == null -> PlaceHolderImage(imagePlaceholder, Modifier.fillMaxSize())
-
-            forceGenBitmap -> FakeImage(current, Modifier.fillMaxSize())
-
-            else -> RealImage(
-                sourceInfo = current,
+    // AnimatedContent gives each `sourceInfo` its own composition scope so the outgoing
+    // branch can keep rendering the previous painter (and its loaded image) while the
+    // incoming branch starts a fresh Coil load. Without this, a re-keyed request mutates the
+    // same AsyncImagePainter and we lose the old frame the moment the source changes.
+    //
+    // [crossfadeImagesEnabled] is false on JS — the AnimatedContent slot footprint compounds
+    // with Kotlin/JS's emulated `Long` ops during grid scroll. JS skips the wrapper entirely
+    // and renders the active branch directly; source-change transitions become hard cuts.
+    if (crossfadeImagesEnabled) {
+        AnimatedContent(
+            targetState = sourceInfo,
+            contentKey = { it.info },
+            transitionSpec = { fadeIn() togetherWith fadeOut() },
+            modifier = modifier,
+            label = "CrossfadeImage.source",
+        ) { current ->
+            sourceBranch(
+                current = current,
                 imagePlaceholder = imagePlaceholder,
                 contentDescription = contentDescription,
+                forceGenBitmap = forceGenBitmap,
                 simulateError = simulateError,
                 onImageLoadedChange = onImageLoadedChange,
-                modifier = Modifier.fillMaxSize(),
                 loadOriginalSize = loadOriginalSize,
             )
         }
+    } else {
+        Box(modifier = modifier) {
+            sourceBranch(
+                current = sourceInfo,
+                imagePlaceholder = imagePlaceholder,
+                contentDescription = contentDescription,
+                forceGenBitmap = forceGenBitmap,
+                simulateError = simulateError,
+                onImageLoadedChange = onImageLoadedChange,
+                loadOriginalSize = loadOriginalSize,
+            )
+        }
+    }
+}
+
+/** Pulled out so both the animated + plain branches above share the dispatch logic. */
+@Composable
+private fun sourceBranch(
+    current: SourceInfo,
+    imagePlaceholder: Icon,
+    contentDescription: String?,
+    forceGenBitmap: Boolean,
+    simulateError: Boolean,
+    onImageLoadedChange: ((Boolean) -> Unit)?,
+    loadOriginalSize: Boolean,
+) {
+    when {
+        current.info == null -> PlaceHolderImage(imagePlaceholder, Modifier.fillMaxSize())
+
+        forceGenBitmap -> FakeImage(current, Modifier.fillMaxSize())
+
+        else -> RealImage(
+            sourceInfo = current,
+            imagePlaceholder = imagePlaceholder,
+            contentDescription = contentDescription,
+            simulateError = simulateError,
+            onImageLoadedChange = onImageLoadedChange,
+            modifier = Modifier.fillMaxSize(),
+            loadOriginalSize = loadOriginalSize,
+        )
     }
 }
 
@@ -216,28 +255,46 @@ fun RealStandardImage(
     }
     val crossfadeSpec = if (sawLoading) tween<Float>() else snap()
 
-    Crossfade(
-        targetState = state,
-        animationSpec = crossfadeSpec,
-        label = "Image Crossfade",
-        modifier = modifier,
-    ) { loadingState ->
-        when (loadingState) {
-            is AsyncImagePainter.State.Success -> Image(
-                painter = asyncPainter,
-                contentDescription = contentDescription,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-
-            is AsyncImagePainter.State.Error -> ErrorImage(
-                imagePlaceholder,
-                contentDescription,
-                Modifier.fillMaxSize(),
-            )
-
-            else -> PlaceHolderImage(imagePlaceholder, Modifier.fillMaxSize())
+    if (crossfadeImagesEnabled) {
+        Crossfade(
+            targetState = state,
+            animationSpec = crossfadeSpec,
+            label = "Image Crossfade",
+            modifier = modifier,
+        ) { loadingState ->
+            stateBranch(loadingState, asyncPainter, imagePlaceholder, contentDescription)
         }
+    } else {
+        // JS: skip the Crossfade slot footprint, render the active state directly.
+        Box(modifier = modifier) {
+            stateBranch(state, asyncPainter, imagePlaceholder, contentDescription)
+        }
+    }
+}
+
+/** Pulled out so both the Crossfade'd + plain branches above share the state dispatch. */
+@Composable
+private fun stateBranch(
+    loadingState: AsyncImagePainter.State,
+    asyncPainter: AsyncImagePainter,
+    imagePlaceholder: Icon,
+    contentDescription: String?,
+) {
+    when (loadingState) {
+        is AsyncImagePainter.State.Success -> Image(
+            painter = asyncPainter,
+            contentDescription = contentDescription,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        is AsyncImagePainter.State.Error -> ErrorImage(
+            imagePlaceholder,
+            contentDescription,
+            Modifier.fillMaxSize(),
+        )
+
+        else -> PlaceHolderImage(imagePlaceholder, Modifier.fillMaxSize())
     }
 }
 
