@@ -5,7 +5,6 @@ package net.sigmabeta.chipbox.js.speaker
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.js.Promise
-import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -14,32 +13,13 @@ import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.speaker.BaseSpeaker
 import net.sigmabeta.sage.logging.Hatchet
-import org.khronos.webgl.ArrayBuffer
 import org.khronos.webgl.Float32Array
-import org.khronos.webgl.set
 import org.w3c.dom.MessagePort
 
 /**
- * [BaseSpeaker] subclass that pumps PCM to the browser's Web Audio output via an
- * [AudioWorkletNode]. The worklet processor (`chipbox-audio-worklet.js`) runs on the dedicated
- * audio thread; this class converts each incoming [AudioBuffer]'s S16 PCM to Float32 and
- * `postMessage`s it to the worklet, which fills the output AudioBuffer from the queue.
- *
- * #### Sample rate
- * The AudioContext's native rate (hardware-dependent, usually 44100 or 48000) is what the
- * worklet must output. For v1 we don't resample — chiptune emulators output 44100 or 32000
- * (SPC). When the rates match the output is correct; when they don't, the track plays at the
- * wrong speed. Adding a simple linear or cubic resampler in [onAudioReceived] is a follow-up.
- *
- * #### User-gesture gating
- * Browsers refuse to start an AudioContext outside a user-initiated event. We construct the
- * context lazily on first [play] — by then a click in the UI has unlocked audio. If the context
- * starts in `suspended` state we call `resume()`.
- *
- * #### Lifecycle
- * `BaseSpeaker.release()` cancels the consume scope but doesn't close the AudioContext (the
- * page might still want audio later). [stop] closes the worklet's port; a full app teardown
- * would also `audioContext.close()`, but that's not currently triggered anywhere.
+ * [BaseSpeaker] backed by Web Audio. Converts each [AudioBuffer]'s S16 PCM to Float32 and
+ * posts it to `chipbox-audio-worklet.js`, which resamples to the AudioContext's native rate.
+ * AudioContext is created lazily on first audio — browsers require a user gesture.
  */
 class WebAudioSpeaker(
     bufferManager: ConsumerBufferManager,
@@ -51,30 +31,34 @@ class WebAudioSpeaker(
     private var workletNode: AudioWorkletNode? = null
     private var workletPort: MessagePort? = null
 
-    /**
-     * Tracks "have we kicked off the async init yet?" — the actual context+worklet construction
-     * is suspend (`audioWorklet.addModule` returns a Promise), but BaseSpeaker.play() is sync.
-     * First call to onAudioReceived triggers the init coroutine if not already running; until
-     * it completes, the first few buffers are dropped (acceptable — they're silent during
-     * leading-silence trim anyway).
-     */
+    // Set once on the first post-flush buffer; AudioContext.currentTime then drives the position
+    // at realtime. Re-armed by flushSink (seek + track change). Updating per-buffer would race
+    // ahead of playback because the consume loop drains BufferManager faster than realtime when
+    // the cache is far render-ahead.
+    private var referenceContextTime: Double = 0.0
+    private var referenceTrackFrame: Long = 0L
+    private var referenceSampleRate: Int = 0
+    private var needsReferenceUpdate: Boolean = true
+
     private var initStarted = false
 
     override fun onAudioReceived(audio: AudioBuffer) {
         ensureAudioInitialized()
         val port = workletPort ?: return
+        val ctx = audioContext
 
-        // Convert S16 LE → F32 in [-1, 1]. Allocate a fresh Float32Array per buffer — postMessage
-        // will structured-clone it (or we could transfer it; cloning is fine, GC handles cleanup).
+        if (ctx != null && needsReferenceUpdate) {
+            referenceContextTime = ctx.currentTime
+            referenceTrackFrame = audio.frameIndex
+            referenceSampleRate = audio.sampleRate
+            needsReferenceUpdate = false
+        }
+
         val pcm = audio.data
         val floats = Float32Array(pcm.size)
         for (i in pcm.indices) {
             floats.asDynamic()[i] = pcm[i].toFloat() / Short.MAX_VALUE.toFloat()
         }
-        // Tag every buffer with the emulator's source rate; the worklet linear-interp resamples
-        // to the AudioContext rate per output frame. Different emulators output different rates
-        // (libgme: 44100 for most, 32000 for SPC); the rate can change between consecutive
-        // buffers when the director switches tracks.
         val message = js("{}")
         message.type = "buffer"
         message.samples = floats
@@ -83,10 +67,21 @@ class WebAudioSpeaker(
     }
 
     override fun flushSink() {
+        needsReferenceUpdate = true
         val port = workletPort ?: return
         val flush = js("{}")
         flush.type = "flush"
         port.postMessage(flush)
+    }
+
+    override fun onPaused() {
+        // AudioContext.currentTime freezes under suspend(), so the position reference stays
+        // valid across pause without any tracking on our end.
+        audioContext?.suspend()
+    }
+
+    override fun onResumed() {
+        audioContext?.resume()
     }
 
     override fun teardown() {
@@ -94,52 +89,55 @@ class WebAudioSpeaker(
         workletNode = null
         workletPort?.close()
         workletPort = null
-        // Leave the AudioContext alive — next play() will reuse it. Closing+reopening the
-        // context per session would re-trigger the user-gesture gate.
+        referenceSampleRate = 0
+        needsReferenceUpdate = true
+        // AudioContext stays alive — closing it would re-trigger the user-gesture gate, so the
+        // next track wouldn't play without another click.
     }
 
     override fun currentPositionMs(): Long {
-        // The worklet exposes its play head via postMessage in principle; for v1 we don't track
-        // it. BaseSpeaker uses 0 by default — return the same to be explicit.
-        return 0L
+        val ctx = audioContext ?: return 0L
+        val rate = referenceSampleRate
+        if (rate <= 0) return 0L
+        val elapsedSeconds = (ctx.currentTime - referenceContextTime).coerceAtLeast(0.0)
+        val frame = referenceTrackFrame + (elapsedSeconds * rate).toLong()
+        return frame * MILLIS_PER_SECOND / rate
     }
 
     private fun ensureAudioInitialized() {
+        // BaseSpeaker.play() is synchronous, but `audioWorklet.addModule` returns a Promise —
+        // launch the init on the side and accept that the first few buffers arrive before the
+        // worklet is ready and get dropped. They're silent (leading-silence trim) anyway.
         if (initStarted) return
         initStarted = true
         initScope.launch {
-            try {
-                val ctx = AudioContext()
-                ctx.audioWorklet.addModule(WORKLET_URL).await()
-                val node = AudioWorkletNode(ctx, "chipbox-audio")
-                node.connect(ctx.destination)
-                if (ctx.state == "suspended") {
-                    ctx.resume().await()
-                }
-                audioContext = ctx
-                workletNode = node
-                workletPort = node.port
-            } catch (t: Throwable) {
-                emitError("WebAudioSpeaker init failed: ${t.message}")
-                initStarted = false  // allow retry on next play
-            }
+            val ctx = AudioContext()
+            ctx.audioWorklet.addModule(WORKLET_URL).await()
+            val node = AudioWorkletNode(ctx, "chipbox-audio")
+            node.connect(ctx.destination)
+            // Modern browsers start the context suspended until a user gesture has run.
+            if (ctx.state == "suspended") ctx.resume().await()
+            audioContext = ctx
+            workletNode = node
+            workletPort = node.port
         }
     }
 
     private companion object {
         const val WORKLET_URL = "/wasm/chipbox-audio-worklet.js"
+        const val MILLIS_PER_SECOND = 1_000L
     }
 }
 
-// ---------------------------------------------------------------------------------------------
-// Web Audio API — minimum-surface external declarations. Kotlin's web stdlib has these in
-// org.w3c.dom but they're spread across packages we'd need to opt into individually.
+// Web Audio API — minimum surface. Kotlin/JS stdlib's bindings don't cover audioWorklet/suspend.
 
 private external class AudioContext {
     val destination: AudioDestinationNode
     val audioWorklet: AudioWorklet
     val state: String
+    val currentTime: Double
     fun resume(): Promise<Unit>
+    fun suspend(): Promise<Unit>
 }
 
 private external class AudioDestinationNode
@@ -148,16 +146,12 @@ private external class AudioWorklet {
     fun addModule(moduleUrl: String): Promise<Unit>
 }
 
-private external class AudioWorkletNode(
-    context: AudioContext,
-    name: String,
-) {
+private external class AudioWorkletNode(context: AudioContext, name: String) {
     val port: MessagePort
     fun connect(destination: AudioDestinationNode)
     fun disconnect()
 }
 
-// Helper to convert a JS Promise to a suspend call.
 private suspend fun <T> Promise<T>.await(): T = suspendCancellableCoroutine { cont ->
     then(
         { value -> cont.resume(value); undefined },

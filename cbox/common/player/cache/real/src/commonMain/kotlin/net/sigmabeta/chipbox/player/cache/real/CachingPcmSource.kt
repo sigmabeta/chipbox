@@ -5,7 +5,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -102,10 +102,13 @@ internal class CachingPcmSource(
         try {
             while (true) {
                 // emulatorSource.readFrames and writer.appendFrames are synchronous, so without
-                // an explicit cancellation point the loop never observes cancelAndJoin from
+                // an explicit cooperation point the loop never observes cancelAndJoin from
                 // close() — the user's skip-track request would stall until the whole track
-                // finished rendering.
-                ensureActive()
+                // finished rendering. `yield()` also gives the consumer coroutine + the UI
+                // event loop a chance to run between buffers, which matters on Kotlin/JS where
+                // all coroutines share the main event loop (without it, render-ahead hogs the
+                // thread until the whole track is rendered before playback can even start).
+                yield()
                 val framesGenerated = emulatorSource.readFrames(scratch)
                 if (framesGenerated <= 0) {
                     if (emulatorSource.isOver) break

@@ -20,28 +20,21 @@ class ChipboxAudioProcessor extends AudioWorkletProcessor {
         super();
         // FIFO of { samples: Float32Array (interleaved L/R), srcRate: number (Hz) }.
         this.queue = [];
-        // Read cursor inside the head buffer, in *source* frames (one frame = two samples L+R).
+        // Read cursor inside the head buffer, in *source* frames (one frame = two samples L+R)
+        // plus a fractional offset in [0, 1) that drives the linear interp.
         this.readFrame = 0;
-        // Fractional offset between source frames, in [0, 1). Drives linear interp between
-        // source frame N and N+1.
         this.readFraction = 0;
-        // Set by 'flush' messages: discard everything pending and emit silence until the next
-        // 'buffer'. Used by seek/stop so post-flush audio doesn't get prefixed by pre-flush
-        // frames still queued in the worklet.
-        this.flushPending = false;
 
         this.port.onmessage = (e) => {
             const msg = e.data;
             switch (msg && msg.type) {
                 case 'buffer':
-                    if (this.flushPending) this.flushPending = false;
                     this.queue.push({ samples: msg.samples, srcRate: msg.srcRate });
                     break;
                 case 'flush':
                     this.queue = [];
                     this.readFrame = 0;
                     this.readFraction = 0;
-                    this.flushPending = true;
                     break;
             }
         };

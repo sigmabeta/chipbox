@@ -26,7 +26,7 @@ import net.sigmabeta.chipbox.js.emulators.WasmPsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmSsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmUsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmEmulator
-import net.sigmabeta.chipbox.js.generator.WasmGenerator
+import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.js.repository.RemoteRepository
 import net.sigmabeta.chipbox.js.speaker.WebAudioSpeaker
 import net.sigmabeta.chipbox.player.buffer.BufferDebugSource
@@ -161,35 +161,40 @@ object WebEmulatorsModule {
 @BindingContainer
 @ContributesTo(AppScope::class)
 object WebGeneratorModule {
-    // [WasmGenerator] uses the uncached factory (no PCM cache layer). The cache fights
-    // FakeFileSystem's "file is open" semantics and earns nothing in-memory anyway — WASM
-    // decoders are quick and the FakeFS doesn't persist across page reloads.
+    // Reuses [RealGenerator] verbatim (same as JVM + Android). The cache layer enables seek
+    // (live emulators can't fast-forward; the cache holds rendered PCM the speaker can rewind
+    // into) and idempotent re-plays. Both `stagingDir` and `pcmCacheDir` are paths into the
+    // `FakeFileSystem` from `WebFileSystemModule` — in-memory, doesn't persist across reloads,
+    // which is fine: every browser session restages and re-renders.
     @Provides @SingleIn(AppScope::class)
-    fun provideWasmGenerator(
+    fun provideRealGenerator(
         repository: Repository,
         contentSources: ContentSourceRegistry,
         bufferManager: ProducerBufferManager,
         emulators: List<Emulator>,
         fileSystem: FileSystem,
         hatchet: Hatchet,
-    ): WasmGenerator {
-        // Staging dir for input file bytes — paths are arbitrary keys into the FakeFS map but
-        // must be valid POSIX paths and the parent must exist (FakeFS doesn't auto-mkdir).
+    ): RealGenerator {
+        // Paths are arbitrary keys into the FakeFS map but must be valid POSIX paths and the
+        // parents must exist (FakeFS doesn't auto-mkdir at write time).
         val stagingDir = "/chipbox/staging".toPath()
+        val pcmCacheDir = "/chipbox/pcm-cache".toPath()
         fileSystem.createDirectories(stagingDir)
-        return WasmGenerator(
+        fileSystem.createDirectories(pcmCacheDir)
+        return RealGenerator(
             repository = repository,
             contentSourceRegistry = contentSources,
             bufferManager = bufferManager,
             emulators = emulators,
             stagingDir = stagingDir,
+            pcmCacheDir = pcmCacheDir,
             fileSystem = fileSystem,
             hatchet = hatchet,
         )
     }
 
     @Provides @SingleIn(AppScope::class)
-    fun provideGenerator(impl: WasmGenerator): Generator = impl
+    fun provideGenerator(impl: RealGenerator): Generator = impl
 }
 
 @BindingContainer
@@ -251,8 +256,24 @@ object WebFileSystemModule {
     // serves as an in-memory shim so the okio-based staging code works unchanged. Single
     // singleton so staging writes from RealGenerator and reads from WasmGmeEmulator hit the
     // same FS instance.
+    //
+    // Every "concurrent access" flag is enabled so `CachingPcmSource`'s render-ahead pattern
+    // works the same way it does against a real filesystem:
+    //  - reads + writes overlap: the consumer reads frames as the writer produces them.
+    //  - atomic rename happens while the reader still holds the `.tmp` open: the writer
+    //    completes ahead of playback and renames `<key>.pcm.tmp` → `<key>.pcm` mid-read.
+    //  - delete-on-cleanup may race the reader holding the staging file or cache `.tmp`.
+    //  - clobbering: not strictly needed today, enabled defensively.
+    // The real filesystems used by JVM/Android allow all of these natively; FakeFileSystem
+    // gates them behind individual flags so test code can opt into stricter checking.
     @Provides @SingleIn(AppScope::class)
-    fun provideFileSystem(): FileSystem = FakeFileSystem()
+    fun provideFileSystem(): FileSystem = FakeFileSystem().apply {
+        allowWritesWhileWriting = true
+        allowReadsWhileWriting = true
+        allowMovingOpenFiles = true
+        allowDeletingOpenFiles = true
+        allowClobberingEmptyDirectories = true
+    }
 }
 
 @BindingContainer
