@@ -221,11 +221,26 @@ kotlin {
                 implementation(npm("os-browserify", "0.3.0"))
 
                 // Ktor JS HTTP client + JSON content negotiation — RemoteRepository fans every
-                // Repository call out to GET/POST/DELETE against chipbox-server.
+                // Repository call out to GET/POST/DELETE against chipbox-server. The same client
+                // engine backs Coil's network image fetcher below.
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.js)
                 implementation(libs.ktor.client.content.negotiation)
                 implementation(libs.ktor.serialization.kotlinx.json)
+
+                // Coil's Ktor3-backed network image fetcher. The default Coil ImageLoader on JS
+                // has no fetcher for http(s) URLs, so without this every photo request errors.
+                // Configured in `WebImageLoader.kt` together with a Mapper that rewrites the
+                // server-side local file paths the scanner stored into `/api/files/by-path`.
+                // The `coil` meta artifact carries `SingletonImageLoader` which `JsMain.kt`
+                // installs the configured loader into. `cbox.android.images.api` is now a KMP
+                // module — its commonMain holds `HatchetCoilLogger` which we route Coil's
+                // diagnostics through so image-load failures land in the same console stream
+                // as the rest of the app's logging.
+                implementation(libs.coil.kt.core)
+                implementation(libs.coil.kt.meta)
+                implementation(libs.coil.kt.ktor3)
+                implementation(projects.cbox.android.images.api)
 
                 implementation(libs.jetbrains.compose.runtime)
                 implementation(libs.jetbrains.compose.foundation)
