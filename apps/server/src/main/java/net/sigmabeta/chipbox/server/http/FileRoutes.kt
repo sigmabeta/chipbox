@@ -67,7 +67,10 @@ internal fun Route.fileRoutes(repository: Repository, contentSources: ContentSou
             // Game/Artist cover images are scanned out of the filesystem alongside their tracks,
             // so they live under the same `LocalFileContentSource` ("file"). Hardcoded here since
             // the Game/Artist models don't carry a `source` field of their own.
-            respondViaContentSource(contentSources, sourceId = "file", path = photoUrl)
+            respondViaContentSource(
+                contentSources, sourceId = "file", path = photoUrl,
+                resizeMaxDim = call.imageSizeParam(),
+            )
         }
     }
 
@@ -79,7 +82,10 @@ internal fun Route.fileRoutes(repository: Repository, contentSources: ContentSou
                 ?: return@get call.respond(HttpStatusCode.NotFound, ErrorResponse("Unknown artist $id"))
             val photoUrl = artist.photoUrl
                 ?: return@get call.respond(HttpStatusCode.NotFound, ErrorResponse("Artist $id has no photo"))
-            respondViaContentSource(contentSources, sourceId = "file", path = photoUrl)
+            respondViaContentSource(
+                contentSources, sourceId = "file", path = photoUrl,
+                resizeMaxDim = call.imageSizeParam(),
+            )
         }
     }
 
@@ -116,16 +122,50 @@ private suspend fun io.ktor.server.routing.RoutingContext.respondViaContentSourc
     contentSources: ContentSourceRegistry,
     sourceId: String,
     path: String,
+    resizeMaxDim: Int? = null,
 ) {
     val source = contentSources.get(sourceId)
         ?: return call.respond(HttpStatusCode.NotFound, ErrorResponse("No content source for '$sourceId'"))
-    val bytes = source.openBytes(path)
+    val originalBytes = source.openBytes(path)
         ?: return call.respond(HttpStatusCode.NotFound, ErrorResponse("File missing"))
+
     // Image endpoints (game cover, artist photo) — derive Content-Type from the extension and
     // skip Content-Disposition: attachment so the browser / `navigator.mediaSession` artwork
     // fetcher treats the response as a renderable image rather than a download.
-    call.respondBytes(bytes, contentType = imageContentType(path))
+    //
+    // Cache-Control: covers are addressed by an opaque record-id URL (`/api/games/{id}/cover`)
+    // and rarely change; let the browser serve subsequent loads from its HTTP cache without
+    // round-tripping. `stale-while-revalidate` lets it return the cached bytes immediately
+    // even past max-age while a background refresh runs — keeps the grid snappy when scrolling
+    // back through already-seen rows. If a cover does update, it'll propagate within ~1 day.
+    call.response.header(HttpHeaders.CacheControl, IMAGE_CACHE_CONTROL)
+
+    if (resizeMaxDim != null) {
+        val resized = ImageResizer.resize(originalBytes, resizeMaxDim)
+        if (resized != null) {
+            val (resizedBytes, mime) = resized
+            call.respondBytes(resizedBytes, contentType = ContentType.parse(mime))
+            return
+        }
+        // Resize failed (couldn't decode); fall through to the unresized passthrough below.
+    }
+    call.respondBytes(originalBytes, contentType = imageContentType(path))
 }
+
+/**
+ * Parse `?size=<int>` for image endpoints. Returns null when absent or out of range. Clamped to
+ * a sane ceiling so a malicious / buggy caller can't ask the server to allocate a gigantic
+ * BufferedImage by passing `?size=99999`.
+ */
+private fun io.ktor.server.application.ApplicationCall.imageSizeParam(): Int? {
+    val raw = request.queryParameters["size"]?.toIntOrNull() ?: return null
+    if (raw <= 0) return null
+    return raw.coerceAtMost(MAX_RESIZE_DIM)
+}
+
+private const val MAX_RESIZE_DIM = 4096
+private const val IMAGE_CACHE_CONTROL =
+    "public, max-age=86400, stale-while-revalidate=604800"
 
 private fun imageContentType(path: String): ContentType =
     when (path.substringAfterLast('.').lowercase()) {
