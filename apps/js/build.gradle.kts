@@ -165,11 +165,15 @@ kotlin {
                 implementation(projects.cbox.common.player.cache.real)
                 implementation(projects.cbox.common.player.common.api)
                 implementation(projects.cbox.common.settings.api)
-                implementation(projects.cbox.common.settings.fake)
+                implementation(projects.cbox.common.settings.real)
                 implementation(projects.cbox.common.debug.api)
-                implementation(projects.cbox.common.debug.fake)
+                implementation(projects.cbox.common.debug.real)
+                // sage's `Storage` interface — `LocalStorageStorage` implements it for the
+                // browser so the commonMain `RealChipboxSettingsManager` / `RealDebugSettingsManager`
+                // drop in unchanged. Persistence is `window.localStorage`.
+                implementation(libs.sage.common.storage.common)
                 implementation(projects.cbox.common.debugInfo.api)
-                implementation(projects.cbox.common.debugInfo.fake)
+                implementation(projects.cbox.common.debugInfo.real)
                 implementation(projects.cbox.common.scanner.api)
                 implementation(projects.cbox.common.scanner.fake)
                 implementation(projects.cbox.common.models.api)
