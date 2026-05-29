@@ -249,6 +249,10 @@ kotlin {
                 implementation(libs.coil.kt.meta)
                 implementation(libs.coil.kt.ktor3)
                 implementation(projects.cbox.android.images.api)
+                // GridImageSize bucket enum — the WebImageLoader Mapper appends ?size=<bucket>
+                // to image URLs so the server can serve a pre-resized thumbnail rather than
+                // the full-res cover.
+                implementation(libs.sage.common.ui.components)
 
                 implementation(libs.jetbrains.compose.runtime)
                 implementation(libs.jetbrains.compose.foundation)
