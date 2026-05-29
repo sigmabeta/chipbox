@@ -49,23 +49,43 @@ add_subdirectory(utils)
 add_subdirectory(emu)
 add_subdirectory(player)
 
-# Shared header-only JNI bridge (no psflib: vgm is not a PSF format).
-add_subdirectory(
-        ${CMAKE_CURRENT_SOURCE_DIR}/../native-common
-        ${CMAKE_BINARY_DIR}/native-common
-)
-
-# Our shared library that Android loads via System.loadLibrary("vgm").
-add_library(${library_name} SHARED
-        kotlin-jni.cpp
-        Vgm.cpp
-        cpconv_stub.c
-)
-
-target_link_libraries(${library_name} PRIVATE
-        vgm-player
-        vgm-emu
-        vgm-utils
-        z
-        chipbox_jni_bridge
-)
+if (EMSCRIPTEN)
+    # WASM build: no JNI, no filesystem. Loads from a memory buffer instead of `fopen(path)`
+    # via libvgm's `MemoryLoader_Init`. zlib comes from `-sUSE_ZLIB=1` (Emscripten ports);
+    # libvgm's util/ links against it for compressed-VGZ support.
+    add_executable(${library_name} Vgm_Web.cpp cpconv_stub.c)
+    set_target_properties(${library_name} PROPERTIES
+            OUTPUT_NAME chipbox_vgm
+            SUFFIX ".js")
+    target_link_libraries(${library_name} PRIVATE vgm-player vgm-emu vgm-utils)
+    target_link_options(${library_name} PRIVATE
+            "-sMODULARIZE=1"
+            "-sEXPORT_ES6=0"
+            "-sEXPORT_NAME=chipboxVgm"
+            "-sENVIRONMENT=web,worker"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "-sUSE_ZLIB=1"
+            "-sEXPORTED_FUNCTIONS=['_malloc','_free']"
+            "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','HEAP8','HEAPU8','HEAP16','HEAPU16','HEAP32','HEAPU32']"
+            "-Oz"
+    )
+    target_compile_options(${library_name} PRIVATE "-Oz" "-sUSE_ZLIB=1")
+else ()
+    # JNI / host shared library — the existing Android NDK + apps/jvm host-CMake build path.
+    add_subdirectory(
+            ${CMAKE_CURRENT_SOURCE_DIR}/../native-common
+            ${CMAKE_BINARY_DIR}/native-common
+    )
+    add_library(${library_name} SHARED
+            kotlin-jni.cpp
+            Vgm.cpp
+            cpconv_stub.c
+    )
+    target_link_libraries(${library_name} PRIVATE
+            vgm-player
+            vgm-emu
+            vgm-utils
+            z
+            chipbox_jni_bridge
+    )
+endif ()

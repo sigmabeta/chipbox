@@ -29,71 +29,94 @@ plugins {
 val emsdkDir: Provider<String> = providers.gradleProperty("chipbox.js.emsdk")
     .orElse(providers.environmentVariable("EMSDK"))
 
-val nativeGmeDirPath: String =
-    rootProject.layout.projectDirectory.dir("cbox/native/gme").asFile.absolutePath
-val wasmGmeBuildDirPath: String = layout.buildDirectory.dir("wasm/gme").get().asFile.absolutePath
 val wasmResourcesDirPath: String =
     layout.projectDirectory.dir("src/jsMain/resources/wasm").asFile.absolutePath
+val nativeRootDir: String = rootProject.layout.projectDirectory.dir("cbox/native").asFile.absolutePath
+val wasmBuildRootDir: String = layout.buildDirectory.dir("wasm").get().asFile.absolutePath
 
-val configureGmeWasm = tasks.register<Exec>("configureGmeWasm") {
-    description = "Configures the Emscripten WASM build for libgme. Needs \$EMSDK or " +
-        "-Pchipbox.js.emsdk."
-    group = "wasm"
-    inputs.file(File(nativeGmeDirPath, "CMakeLists.txt"))
-    outputs.file(File(wasmGmeBuildDirPath, "CMakeCache.txt"))
+// Each emulator that ships a WASM build is one line here. The CMakeLists in
+// `cbox/native/<dir>/` must have an `if(EMSCRIPTEN)` branch that produces a target named
+// `chipbox_<output>` (Emscripten emits `.js` + `.wasm` for executable targets). The Kotlin
+// side loads each via a `<Capitalized>Wasm.kt` module-loader file. New emulator → one entry
+// here, one CMake branch, one `<Name>_Web.cpp` wrapper, one `Wasm<Name>Emulator.kt` subclass.
+data class WasmEmulator(val dir: String, val output: String, val displayName: String)
+val wasmEmulators = listOf(
+    WasmEmulator(dir = "gme", output = "chipbox_gme", displayName = "libgme"),
+    WasmEmulator(dir = "vgm", output = "chipbox_vgm", displayName = "libvgm"),
+    // ssf/usf/psf land here as their CMakeLists EMSCRIPTEN branches go in. They each need
+    // chain-file handling (psflib's I/O callbacks normally `fopen` referenced library files —
+    // those bytes live in `okio.FakeFileSystem` in the browser, not where `fopen` can reach).
+)
 
-    // Capture into locals so the doFirst closure only references config-cache-safe values
-    // (String paths and a Provider<String>) — not script-level fields or methods.
-    val capturedEmsdk = emsdkDir
-    val buildDir = wasmGmeBuildDirPath
-    val srcDir = nativeGmeDirPath
-    doFirst {
-        val emsdk = capturedEmsdk.orNull
-            ?: error("Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
-                "-Pchipbox.js.emsdk=/path/to/emsdk.")
-        require(File(emsdk, "emsdk_env.sh").isFile) {
-            "EMSDK=$emsdk does not look like an emsdk checkout (no emsdk_env.sh)."
+val buildTaskNames = wasmEmulators.map { emu ->
+    val cap = emu.dir.replaceFirstChar { it.uppercaseChar() }
+    val srcDir = "$nativeRootDir/${emu.dir}"
+    val buildDir = "$wasmBuildRootDir/${emu.dir}"
+
+    val configureTask = tasks.register<Exec>("configure${cap}Wasm") {
+        description = "Configures the Emscripten WASM build for ${emu.displayName}. Needs " +
+            "\$EMSDK or -Pchipbox.js.emsdk."
+        group = "wasm"
+        inputs.file(File(srcDir, "CMakeLists.txt"))
+        outputs.file(File(buildDir, "CMakeCache.txt"))
+
+        val capturedEmsdk = emsdkDir
+        val buildDirLocal = buildDir
+        val srcDirLocal = srcDir
+        doFirst {
+            val emsdk = capturedEmsdk.orNull
+                ?: error("Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
+                    "-Pchipbox.js.emsdk=/path/to/emsdk.")
+            require(File(emsdk, "emsdk_env.sh").isFile) {
+                "EMSDK=$emsdk does not look like an emsdk checkout (no emsdk_env.sh)."
+            }
+            File(buildDirLocal).mkdirs()
+            val envScript = File(emsdk, "emsdk_env.sh").absolutePath
+            commandLine(
+                "bash", "-c",
+                "source '$envScript' >/dev/null 2>&1 && " +
+                    "emcmake cmake -B '$buildDirLocal' -S '$srcDirLocal' -DCMAKE_BUILD_TYPE=Release",
+            )
         }
-        File(buildDir).mkdirs()
-        val envScript = File(emsdk, "emsdk_env.sh").absolutePath
-        commandLine(
-            "bash", "-c",
-            "source '$envScript' >/dev/null 2>&1 && " +
-                "emcmake cmake -B '$buildDir' -S '$srcDir' -DCMAKE_BUILD_TYPE=Release",
-        )
     }
-}
 
-val buildGmeWasm = tasks.register<Exec>("buildGmeWasm") {
-    description = "Builds chipbox_gme.wasm + chipbox_gme.js via Emscripten."
-    group = "wasm"
-    dependsOn(configureGmeWasm)
-    inputs.dir(File(nativeGmeDirPath, "gme"))
-    inputs.file(File(nativeGmeDirPath, "Gme_Web.cpp"))
-    outputs.file(File(wasmGmeBuildDirPath, "chipbox_gme.wasm"))
-    outputs.file(File(wasmGmeBuildDirPath, "chipbox_gme.js"))
+    val buildTask = tasks.register<Exec>("build${cap}Wasm") {
+        description = "Builds ${emu.output}.wasm + ${emu.output}.js via Emscripten."
+        group = "wasm"
+        dependsOn(configureTask)
+        // Source-tree inputs that should trigger a rebuild. The entire native dir minus the
+        // build dir would be most robust, but per-emulator we only need to retrigger when the
+        // C/C++ sources or the Web wrapper change — Gradle's `inputs.dir` recurses anyway.
+        inputs.dir(srcDir).withPathSensitivity(PathSensitivity.RELATIVE)
+        outputs.file(File(buildDir, "${emu.output}.wasm"))
+        outputs.file(File(buildDir, "${emu.output}.js"))
 
-    val capturedEmsdk = emsdkDir
-    val buildDir = wasmGmeBuildDirPath
-    doFirst {
-        val emsdk = capturedEmsdk.orNull
-            ?: error("Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
-                "-Pchipbox.js.emsdk=/path/to/emsdk.")
-        val envScript = File(emsdk, "emsdk_env.sh").absolutePath
-        commandLine(
-            "bash", "-c",
-            "source '$envScript' >/dev/null 2>&1 && emmake make -C '$buildDir' -j",
-        )
+        val capturedEmsdk = emsdkDir
+        val buildDirLocal = buildDir
+        doFirst {
+            val emsdk = capturedEmsdk.orNull
+                ?: error("Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
+                    "-Pchipbox.js.emsdk=/path/to/emsdk.")
+            val envScript = File(emsdk, "emsdk_env.sh").absolutePath
+            commandLine(
+                "bash", "-c",
+                "source '$envScript' >/dev/null 2>&1 && emmake make -C '$buildDirLocal' -j",
+            )
+        }
     }
+
+    buildTask.name
 }
 
 val copyEmulatorWasm = tasks.register<Copy>("copyEmulatorWasm") {
-    description = "Copies built emulator WASM blobs into apps/js resources so webpack bundles " +
-        "them with the JS app (served at /wasm/<name>.{js,wasm} runtime)."
+    description = "Copies every built emulator WASM blob into apps/js resources so webpack " +
+        "bundles them with the JS app (served at /wasm/<name>.{js,wasm} runtime)."
     group = "wasm"
-    dependsOn(buildGmeWasm)
-    from(wasmGmeBuildDirPath) {
-        include("chipbox_gme.js", "chipbox_gme.wasm")
+    dependsOn(buildTaskNames)
+    wasmEmulators.forEach { emu ->
+        from("$wasmBuildRootDir/${emu.dir}") {
+            include("${emu.output}.js", "${emu.output}.wasm")
+        }
     }
     into(wasmResourcesDirPath)
 }
