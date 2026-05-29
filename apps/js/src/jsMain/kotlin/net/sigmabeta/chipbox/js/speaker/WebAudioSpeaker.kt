@@ -176,10 +176,14 @@ class WebAudioSpeaker(
         const val WORKLET_URL = "/wasm/chipbox-audio-worklet.js"
         const val MILLIS_PER_SECOND = 1_000L
 
-        // Target queue depth in source-frames. ~200 ms at 44.1 kHz — small enough that the
-        // visual track change is indistinguishable from the audio change, large enough to
-        // absorb scheduling jitter on the producer side without underrunning.
-        const val MAX_QUEUE_DEPTH_FRAMES = 9000L
+        // Target queue depth in source-frames. ~1 second at 44.1 kHz — large enough that the
+        // worklet has audio to play through significant main-thread stalls (e.g. Coil image
+        // decode while scrolling a grid), small enough that the visual track-change lag stays
+        // imperceptible (the consume loop's `awaitSinkCapacity` keeps `emitTrackChangeIfNeeded`
+        // within this window of actual audio output).
+        //
+        // 200 ms was the original tuning but starved the worklet during scroll-heavy use.
+        const val MAX_QUEUE_DEPTH_FRAMES = 44_100L
     }
 }
 

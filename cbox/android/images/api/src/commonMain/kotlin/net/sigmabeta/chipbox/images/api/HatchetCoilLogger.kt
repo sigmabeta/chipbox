@@ -9,7 +9,11 @@ class HatchetCoilLogger @Inject constructor(
     private val hatchet: Hatchet,
     private val analytics: Analytics,
 ) : Logger {
-    override var minLevel = Logger.Level.Verbose
+    // Warn (not Verbose) — Coil logs every cache check / pipeline-stage entry / request
+    // lifecycle event at Verbose, which on Kotlin/JS turns into Hatchet calls that pile up
+    // visibly during grid scroll. Warn still captures real failures (the `if (throwable != null
+    // || ...)` branch above always fires regardless of level).
+    override var minLevel = Logger.Level.Warn
 
     override fun log(tag: String, level: Logger.Level, message: String?, throwable: Throwable?) {
         if (throwable != null || message?.contains("Exception") == true) {

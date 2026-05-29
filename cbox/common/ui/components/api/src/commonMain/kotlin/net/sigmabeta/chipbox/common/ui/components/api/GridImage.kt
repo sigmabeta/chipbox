@@ -19,6 +19,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,6 +60,13 @@ fun GridImage(
             .padding(paddingValues = padding)
             .defaultMinSize(minWidth = SquareConstants.MIN_WIDTH)
             .aspectRatio(model.aspectRatio)
+            // Cache the cell's rasterized contents into an offscreen Skia / GPU layer so scroll
+            // translates the layer instead of re-rasterizing the image + scrim + text on every
+            // frame. The cell's content only redraws when state inside it changes (model.active
+            // flip, image load completion); during scroll the contents are static and the
+            // layer is just translated — cheap on every backend. Big win on Skiko (web + JVM),
+            // standard pattern on Android.
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
             .clickable { actionSink.sendAction(model.clickAction) }
     ) {
         Box {
