@@ -1,8 +1,11 @@
 package net.sigmabeta.chipbox.models
 
+import kotlinx.serialization.Serializable
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.ui.SageStringId
 
+// Enum serializes by name (e.g. "NES"); the SageStringId constructor arg is metadata, ignored.
+@Serializable
 enum class Platform(val stringId: SageStringId) {
     ARCADE(ChipboxStringId.PLATFORM_ARCADE),
     DREAMCAST(ChipboxStringId.PLATFORM_DREAMCAST),

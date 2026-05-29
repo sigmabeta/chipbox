@@ -1,5 +1,8 @@
 package net.sigmabeta.chipbox.models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Track(
     val id: Long,
     val path: String,

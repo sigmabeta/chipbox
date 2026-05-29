@@ -1,0 +1,4 @@
+# Default work dir for `./gradlew :apps:server:run` — holds the scanned library SQLite + the
+# library-locations.txt LocalFileContentSource state. Per-machine runtime state; never commit.
+# (Production deployments use CHIPBOX_WORK_DIR / CHIPBOX_DB_PATH to put these somewhere else.)
+/.chipbox-server/

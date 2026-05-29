@@ -1,5 +1,8 @@
 package net.sigmabeta.chipbox.models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Game(
     val id: Long,
     val title: String,

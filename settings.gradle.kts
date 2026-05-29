@@ -41,6 +41,7 @@ include(
     ":apps:jvm",
     ":apps:js",
     ":apps:cli",
+    ":apps:server",
     ":benchmark",
 
     ":cbox:common:appui:api",
