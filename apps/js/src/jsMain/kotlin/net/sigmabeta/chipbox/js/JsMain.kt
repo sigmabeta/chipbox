@@ -4,10 +4,15 @@ package net.sigmabeta.chipbox.js
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.window.ComposeViewport
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
 import dev.zacsweers.metro.createGraphFactory
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 import kotlinx.browser.document
 import kotlinx.browser.window
+import net.sigmabeta.chipbox.js.analytics.WebAnalytics
+import net.sigmabeta.chipbox.js.image.buildWebImageLoader
+import net.sigmabeta.chipbox.js.repository.RemoteRepository
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
@@ -50,6 +55,22 @@ import net.sigmabeta.sage.ui.perf.LocalLogger
  */
 fun main() {
     val hatchet = WebHatchet()
+    // Install Coil's image loader before any Composable touches `LocalAsyncImagePainter` /
+    // `rememberAsyncImagePainter`. Without this, JS has no http(s) fetcher and a Mapper to
+    // rewrite the scanner's host-side photoUrl paths into `/api/files/by-path` URLs, so every
+    // `GridImage` renders its error state.
+    val analytics = WebAnalytics(hatchet)
+    // Reuse the same baseUrl logic RemoteRepository + HttpContentSource use — handles the
+    // webpack-devserver-on-:8081 → API-on-:8080 swap so images load in dev too.
+    val apiBaseUrl = RemoteRepository.resolveBaseUrl()
+    SingletonImageLoader.setSafe { context: PlatformContext ->
+        buildWebImageLoader(
+            context = context,
+            baseUrl = apiBaseUrl,
+            hatchet = hatchet,
+            analytics = analytics,
+        )
+    }
     MainScope().launch {
         // Pre-load every WASM emulator module before constructing the graph: the chipbox
         // Emulator contract's `loadNativeLib()` is synchronous, so each WASM instance must
