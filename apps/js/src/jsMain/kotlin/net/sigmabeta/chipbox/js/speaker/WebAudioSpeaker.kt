@@ -5,6 +5,7 @@ package net.sigmabeta.chipbox.js.speaker
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.js.Promise
+import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -162,6 +163,12 @@ class WebAudioSpeaker(
             audioContext = ctx
             workletNode = node
             workletPort = node.port
+            // Release the AudioContext + worklet when the page goes away. `pagehide` fires
+            // reliably on tab close, navigation, and the bf-cache transition; `beforeunload`
+            // would block on user prompts in some configurations. Without this, the
+            // AudioContext + worklet thread + MediaStreamAudioDestinationNode leak until
+            // garbage collection picks them up (often never, for a closing tab).
+            window.addEventListener("pagehide", { _ -> ctx.close() })
         }
     }
 
@@ -185,6 +192,7 @@ private external class AudioContext {
     val currentTime: Double
     fun resume(): Promise<Unit>
     fun suspend(): Promise<Unit>
+    fun close(): Promise<Unit>
 }
 
 private external class AudioDestinationNode
