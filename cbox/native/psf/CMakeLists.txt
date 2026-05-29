@@ -50,23 +50,39 @@ add_subdirectory(
 # and CMake builds them for you. When you build your app, Gradle
 # automatically packages shared libraries with your APK.
 
-add_library( # Specifies the name of the library.
-        ${library_name}
-
-        # Sets the library as a shared library.
-        SHARED
-
-        # Provides a relative path to your source file(s).
-        ${slopsf_SRCS})
-
-# Libraries must be listed in here to be accessible in C/C++ code.
-target_link_libraries(
-        ${library_name}
-
-        # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress
-        # PSF sections, so this also links libz transitively.
-        chipbox_native_common
-
-        # __android_log_print, used by debug probes in psx_hw.c and spu/spu.c.
-        log
-)
+if (EMSCRIPTEN)
+    # WASM build — drop `kotlin-jni.cpp` (JNI surface, Android-only). slop/* compiles unchanged
+    # since `hle_ps2_compat.h` already stubs `__android_log_print` to a no-op on non-Android
+    # hosts (and now also stubs `ANDROID_LOG_*` priority constants), so no `-llog` dep is needed.
+    list(REMOVE_ITEM slopsf_SRCS kotlin-jni.cpp)
+    add_executable(${library_name} ${slopsf_SRCS} Psf_Web.cpp)
+    set_target_properties(${library_name} PROPERTIES
+            OUTPUT_NAME chipbox_psf
+            SUFFIX ".js")
+    target_link_libraries(${library_name} PRIVATE chipbox_native_common)
+    target_link_options(${library_name} PRIVATE
+            "-sMODULARIZE=1"
+            "-sEXPORT_ES6=0"
+            "-sEXPORT_NAME=chipboxPsf"
+            "-sENVIRONMENT=web,worker"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "-sFORCE_FILESYSTEM=1"
+            "-sUSE_ZLIB=1"
+            # PSF2 wavebanks for big games (Valkyrie Profile 2, FF X) cross 30 MB; PSX state
+            # + audio buffers add ~5 MB. 64 MB initial keeps malloc on the happy path.
+            "-sINITIAL_MEMORY=67108864"
+            "-sEXPORTED_FUNCTIONS=['_malloc','_free']"
+            "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','UTF8ToString','stringToUTF8','lengthBytesUTF8','HEAP8','HEAPU8','HEAP16','HEAPU16','HEAP32','HEAPU32','FS']"
+            "-O2"
+    )
+    target_compile_options(${library_name} PRIVATE "-O2" "-sUSE_ZLIB=1")
+else ()
+    add_library(${library_name} SHARED ${slopsf_SRCS})
+    target_link_libraries(${library_name}
+            # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress PSF sections,
+            # so this also links libz transitively.
+            chipbox_native_common
+            # __android_log_print, used by debug probes in psx_hw.c and spu/spu.c.
+            log
+    )
+endif ()

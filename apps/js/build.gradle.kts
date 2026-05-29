@@ -43,9 +43,9 @@ data class WasmEmulator(val dir: String, val output: String, val displayName: St
 val wasmEmulators = listOf(
     WasmEmulator(dir = "gme", output = "chipbox_gme", displayName = "libgme"),
     WasmEmulator(dir = "vgm", output = "chipbox_vgm", displayName = "libvgm"),
-    // ssf/usf/psf land here as their CMakeLists EMSCRIPTEN branches go in. They each need
-    // chain-file handling (psflib's I/O callbacks normally `fopen` referenced library files —
-    // those bytes live in `okio.FakeFileSystem` in the browser, not where `fopen` can reach).
+    WasmEmulator(dir = "ssf", output = "chipbox_ssf", displayName = "ssf core"),
+    WasmEmulator(dir = "usf", output = "chipbox_usf", displayName = "lazyusf2"),
+    WasmEmulator(dir = "psf", output = "chipbox_psf", displayName = "slopsf"),
 )
 
 val buildTaskNames = wasmEmulators.map { emu ->

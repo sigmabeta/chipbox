@@ -42,26 +42,37 @@ add_subdirectory(
         ${CMAKE_BINARY_DIR}/native-common
 )
 
-# Specifies a library name, specifies whether the library is STATIC or
-# SHARED, and provides relative paths to the source code. You can
-# define multiple libraries by adding multiple add_library() commands,
-# and CMake builds them for you. When you build your app, Gradle
-# automatically packages shared libraries with your APK.
-
-add_library( # Specifies the name of the library.
-        ${library_name}
-
-        # Sets the library as a shared library.
-        SHARED
-
-        # Provides a relative path to your source file(s).
-        ${libssf_SRCS})
-
-# Libraries must be listed in here to be accessible in C/C++ code.
-target_link_libraries(
-        ${library_name}
-
-        # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress
-        # PSF sections, so this also links libz transitively.
-        chipbox_native_common
-)
+if (EMSCRIPTEN)
+    # WASM build — `Ssf.cpp` keeps its existing `loadFile(const char*)` C API; psflib's
+    # internal `fopen` calls resolve against Emscripten's MEMFS. zlib comes from `-sUSE_ZLIB=1`
+    # at link time. The thin `Ssf_Web.cpp` shim provides `EMSCRIPTEN_KEEPALIVE` exports.
+    add_executable(${library_name}
+            Ssf.cpp Ssf_Web.cpp
+            Core/arm.c Core/dcsound.c Core/satsound.c Core/sega.c Core/yam.c
+            Core/m68k/m68kops.c Core/m68k/m68kcpu.c
+    )
+    set_target_properties(${library_name} PROPERTIES
+            OUTPUT_NAME chipbox_ssf
+            SUFFIX ".js")
+    target_link_libraries(${library_name} PRIVATE chipbox_native_common)
+    target_link_options(${library_name} PRIVATE
+            "-sMODULARIZE=1"
+            "-sEXPORT_ES6=0"
+            "-sEXPORT_NAME=chipboxSsf"
+            "-sENVIRONMENT=web,worker"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "-sFORCE_FILESYSTEM=1"
+            "-sUSE_ZLIB=1"
+            "-sEXPORTED_FUNCTIONS=['_malloc','_free']"
+            "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','UTF8ToString','stringToUTF8','lengthBytesUTF8','HEAP8','HEAPU8','HEAP16','HEAPU16','HEAP32','HEAPU32','FS']"
+            "-Oz"
+    )
+    target_compile_options(${library_name} PRIVATE "-Oz" "-sUSE_ZLIB=1")
+else ()
+    add_library(${library_name} SHARED ${libssf_SRCS})
+    target_link_libraries(${library_name}
+            # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress PSF sections,
+            # so this also links libz transitively.
+            chipbox_native_common
+    )
+endif ()

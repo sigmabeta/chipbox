@@ -82,12 +82,39 @@ add_subdirectory(
         ${CMAKE_BINARY_DIR}/native-common
 )
 
-add_library(${library_name} SHARED ${usf_SRCS})
-
-target_link_libraries(
-        ${library_name}
-
-        # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress
-        # PSF sections, so this also links libz transitively.
-        chipbox_native_common
-)
+if (EMSCRIPTEN)
+    # WASM build — drop `kotlin-jni.cpp` (JNI surface, not used by the browser), keep every
+    # other source so the cached-interpreter still has its full set. Add `Usf_Web.cpp` for the
+    # `EMSCRIPTEN_KEEPALIVE` exports. `Usf.cpp`'s existing `loadFile(const char*)` is unchanged;
+    # psflib's `fopen` calls go to Emscripten MEMFS (Kotlin pre-populates it per track).
+    list(REMOVE_ITEM usf_SRCS kotlin-jni.cpp)
+    add_executable(${library_name} ${usf_SRCS} Usf_Web.cpp)
+    set_target_properties(${library_name} PROPERTIES
+            OUTPUT_NAME chipbox_usf
+            SUFFIX ".js")
+    target_link_libraries(${library_name} PRIVATE chipbox_native_common)
+    target_link_options(${library_name} PRIVATE
+            "-sMODULARIZE=1"
+            "-sEXPORT_ES6=0"
+            "-sEXPORT_NAME=chipboxUsf"
+            "-sENVIRONMENT=web,worker"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "-sFORCE_FILESYSTEM=1"
+            "-sUSE_ZLIB=1"
+            # USF cached-interpreter holds a couple-MB R4300 working set + audio buffers; +
+            # the larger PSF chain files for big games (Mario 64, Goldeneye) easily allocate
+            # > 16 MB at peak. 64 MB initial keeps `_malloc` failures off the happy path.
+            "-sINITIAL_MEMORY=67108864"
+            "-sEXPORTED_FUNCTIONS=['_malloc','_free']"
+            "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','UTF8ToString','stringToUTF8','lengthBytesUTF8','HEAP8','HEAPU8','HEAP16','HEAPU16','HEAP32','HEAPU32','FS']"
+            "-O2"
+    )
+    target_compile_options(${library_name} PRIVATE "-O2" "-sUSE_ZLIB=1")
+else ()
+    add_library(${library_name} SHARED ${usf_SRCS})
+    target_link_libraries(${library_name}
+            # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress PSF sections,
+            # so this also links libz transitively.
+            chipbox_native_common
+    )
+endif ()

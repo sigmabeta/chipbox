@@ -13,9 +13,15 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.js.di.WebChipboxGraph
 import net.sigmabeta.chipbox.js.emulators.WasmGmeEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmPsfEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmSsfEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmUsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmEmulator
 import net.sigmabeta.chipbox.js.logging.WebHatchet
 import net.sigmabeta.chipbox.js.wasm.loadChipboxGme
+import net.sigmabeta.chipbox.js.wasm.loadChipboxPsf
+import net.sigmabeta.chipbox.js.wasm.loadChipboxSsf
+import net.sigmabeta.chipbox.js.wasm.loadChipboxUsf
 import net.sigmabeta.chipbox.js.wasm.loadChipboxVgm
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -53,9 +59,15 @@ fun main() {
         coroutineScope {
             val gme = async { loadChipboxGme() }
             val vgm = async { loadChipboxVgm() }
-            val (g, v) = awaitAll(gme, vgm)
-            WasmGmeEmulator.setLoadedModule(g.unsafeCast<net.sigmabeta.chipbox.js.wasm.ChipboxGmeModule>())
-            WasmVgmEmulator.setLoadedModule(v.unsafeCast<net.sigmabeta.chipbox.js.wasm.ChipboxVgmModule>())
+            val ssf = async { loadChipboxSsf() }
+            val usf = async { loadChipboxUsf() }
+            val psf = async { loadChipboxPsf() }
+            awaitAll(gme, vgm, ssf, usf, psf)
+            WasmGmeEmulator.setLoadedModule(gme.getCompleted())
+            WasmVgmEmulator.setLoadedModule(vgm.getCompleted())
+            WasmSsfEmulator.setLoadedModule(ssf.getCompleted())
+            WasmUsfEmulator.setLoadedModule(usf.getCompleted())
+            WasmPsfEmulator.setLoadedModule(psf.getCompleted())
         }
 
         val stringProvider = ChipboxStringProvider(loadChipboxStrings())

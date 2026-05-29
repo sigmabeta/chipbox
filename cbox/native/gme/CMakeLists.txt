@@ -72,7 +72,7 @@ if (EMSCRIPTEN)
             "-sENVIRONMENT=web,worker"
             "-sALLOW_MEMORY_GROWTH=1"
             "-sEXPORTED_FUNCTIONS=['_malloc','_free']"
-            "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','HEAP8','HEAPU8','HEAP16','HEAPU16','HEAP32','HEAPU32']"
+            "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','UTF8ToString','stringToUTF8','lengthBytesUTF8','HEAP8','HEAPU8','HEAP16','HEAPU16','HEAP32','HEAPU32']"
             "-Oz"
     )
     target_compile_options(${library_name} PRIVATE "-Oz")
