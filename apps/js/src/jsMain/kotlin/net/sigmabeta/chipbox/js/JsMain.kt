@@ -40,6 +40,10 @@ import net.sigmabeta.chipbox.js.wasm.loadChipboxVgmstream
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import org.w3c.dom.HTMLInputElement
+import org.w3c.dom.HTMLTextAreaElement
+import org.w3c.dom.events.KeyboardEvent
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
 import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
@@ -58,9 +62,11 @@ import net.sigmabeta.sage.ui.perf.LocalLogger
  *  - `onOpenUrl` -> `window.open(url, "_blank")` (new tab).
  *  - `onCopyToClipboard` -> `navigator.clipboard.writeText(text)` (modern Clipboard API; requires
  *    a secure context, which `localhost` and `https://` both satisfy).
- *  - `backKeyEvents` -> `null`; there's no window-level back-key concept in the browser. (Browser
- *    back/forward maps to history navigation, not in-app navigation — wiring it would conflict
- *    with the host page's URL bar.)
+ *  - `backKeyEvents` -> Escape keypresses on `window`. Mirrors desktop's
+ *    `Key.Escape`-only back affordance (no Backspace — the browser already uses Backspace for
+ *    URL back-navigation when no text input is focused, and we don't want to intercept that).
+ *    The actual browser back/forward buttons stay native — intercepting them via `popstate` /
+ *    `pushState` would conflict with the URL bar and break the user's expected behavior.
  */
 fun main() {
     val hatchet = WebHatchet()
@@ -118,6 +124,18 @@ fun main() {
         // lock-screen controls, Bluetooth headset buttons) drives the same Director.
         WebMediaSession(graph.director, apiBaseUrl).install(graph.appScope)
 
+        // Back-key stream — fed by window-level Escape keypresses (Backspace is browser-back
+        // navigation, leave it alone). Skip events whose target is a text input so the field
+        // can still clear / lose focus naturally.
+        val backKeyEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+        window.addEventListener("keydown", { rawEvent ->
+            val event = rawEvent.unsafeCast<KeyboardEvent>()
+            if (event.key != "Escape") return@addEventListener
+            val target = event.target
+            if (target is HTMLInputElement || target is HTMLTextAreaElement) return@addEventListener
+            backKeyEvents.tryEmit(Unit)
+        })
+
         document.getElementById("splash")?.remove()
 
         ComposeViewport(document.body!!) {
@@ -129,7 +147,7 @@ fun main() {
                 ChipboxAppUi(
                     onOpenUrl = { url -> window.open(url, "_blank") },
                     onCopyToClipboard = { _, text -> window.navigator.clipboard.writeText(text) },
-                    backKeyEvents = null,
+                    backKeyEvents = backKeyEvents,
                 )
             }
         }
