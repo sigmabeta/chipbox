@@ -13,8 +13,13 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.js.di.WebChipboxGraph
 import net.sigmabeta.chipbox.js.emulators.WasmGmeEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmVgmEmulator
 import net.sigmabeta.chipbox.js.logging.WebHatchet
 import net.sigmabeta.chipbox.js.wasm.loadChipboxGme
+import net.sigmabeta.chipbox.js.wasm.loadChipboxVgm
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
 import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
@@ -40,10 +45,18 @@ import net.sigmabeta.sage.ui.perf.LocalLogger
 fun main() {
     val hatchet = WebHatchet()
     MainScope().launch {
-        // Pre-load the libgme WASM module before constructing the graph: the chipbox Emulator
-        // contract's `loadNativeLib()` is synchronous, so the WASM instance must already be
-        // resolved by the time a Director starts a track and reaches WasmGmeEmulator.loadNativeLib.
-        WasmGmeEmulator.setLoadedModule(loadChipboxGme())
+        // Pre-load every WASM emulator module before constructing the graph: the chipbox
+        // Emulator contract's `loadNativeLib()` is synchronous, so each WASM instance must
+        // already be resolved by the time a Director starts a track and reaches
+        // `Wasm<Name>Emulator.loadNativeLib`. Done in parallel — the modules are small
+        // (libgme ~91 KB, libvgm ~few hundred KB) and independent.
+        coroutineScope {
+            val gme = async { loadChipboxGme() }
+            val vgm = async { loadChipboxVgm() }
+            val (g, v) = awaitAll(gme, vgm)
+            WasmGmeEmulator.setLoadedModule(g.unsafeCast<net.sigmabeta.chipbox.js.wasm.ChipboxGmeModule>())
+            WasmVgmEmulator.setLoadedModule(v.unsafeCast<net.sigmabeta.chipbox.js.wasm.ChipboxVgmModule>())
+        }
 
         val stringProvider = ChipboxStringProvider(loadChipboxStrings())
         val graph = createGraphFactory<WebChipboxGraph.Factory>().create(

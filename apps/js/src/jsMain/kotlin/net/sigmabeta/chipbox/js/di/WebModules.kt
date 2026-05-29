@@ -22,6 +22,7 @@ import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
 import net.sigmabeta.chipbox.debuginfo.fake.FakeDebugInfoManager
 import net.sigmabeta.chipbox.js.contentsource.HttpContentSource
 import net.sigmabeta.chipbox.js.emulators.WasmGmeEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmVgmEmulator
 import net.sigmabeta.chipbox.js.generator.WasmGenerator
 import net.sigmabeta.chipbox.js.repository.RemoteRepository
 import net.sigmabeta.chipbox.js.speaker.WebAudioSpeaker
@@ -125,14 +126,21 @@ object WebBufferModule {
 @BindingContainer
 @ContributesTo(AppScope::class)
 object WebEmulatorsModule {
-    // Today only libgme (NSF/NSFE/SPC/GBS). PSF/VGM/etc. become additional Emulator subclasses
-    // appended to the list as their WASM ports land. The List<Emulator> shape mirrors the JVM
-    // EmulatorProvider — same wiring, different concrete impls.
+    // Each chiptune emulator is one WASM module + one Emulator subclass; the List<Emulator>
+    // shape mirrors the JVM EmulatorProvider, so new ports just append here. JsMain's
+    // pre-startup `loadChipboxXxx()` resolves each module before the chain hands an Emulator
+    // its first track.
     @Provides @SingleIn(AppScope::class)
     fun provideWasmGmeEmulator(fileSystem: FileSystem): WasmGmeEmulator = WasmGmeEmulator(fileSystem)
 
     @Provides @SingleIn(AppScope::class)
-    fun provideEmulators(gme: WasmGmeEmulator): List<Emulator> = listOf<Emulator>(gme)
+    fun provideWasmVgmEmulator(fileSystem: FileSystem): WasmVgmEmulator = WasmVgmEmulator(fileSystem)
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideEmulators(
+        gme: WasmGmeEmulator,
+        vgm: WasmVgmEmulator,
+    ): List<Emulator> = listOf<Emulator>(gme, vgm)
 }
 
 @BindingContainer
