@@ -19,6 +19,10 @@ import net.sigmabeta.chipbox.repository.Repository
  * returns games with tracks, but those tracks' `game` field is null. The nested model's
  * back-link is just dropped — the existing Repository contract already nulls out anything not
  * requested via a `withX` flag, so the contract holds.
+ *
+ * Every returned model passes through [withPublicUrls] before serialization so the JSON the
+ * browser receives contains opaque `/api/…` endpoint URLs instead of the host's filesystem
+ * paths — see [PublicUrls] for the full mapping.
  */
 internal fun Route.libraryRoutes(repository: Repository) {
     route("/api") {
@@ -35,7 +39,7 @@ private fun Route.artistRoutes(repository: Repository) {
         get {
             val withTracks = call.boolParam("withTracks")
             val withGames = call.boolParam("withGames")
-            call.respond(repository.getAllArtists(withTracks, withGames).firstSettled())
+            call.respond(repository.getAllArtists(withTracks, withGames).firstSettled().map { it.withPublicUrls() })
         }
         get("/{id}") {
             val id = call.longPathParam("id") ?: return@get call.notFound()
@@ -43,13 +47,13 @@ private fun Route.artistRoutes(repository: Repository) {
             val withGames = call.boolParam("withGames")
             val artist = repository.getArtist(id, withTracks, withGames).firstSettledSingle()
                 ?: return@get call.notFound()
-            call.respond(artist)
+            call.respond(artist.withPublicUrls())
         }
         get("/{id}/tracks") {
             val id = call.longPathParam("id") ?: return@get call.notFound()
             val withGame = call.boolParam("withGame")
             val withArtists = call.boolParam("withArtists")
-            call.respond(repository.getTracksForArtist(id, withGame, withArtists))
+            call.respond(repository.getTracksForArtist(id, withGame, withArtists).map { it.withPublicUrls() })
         }
     }
 }
@@ -59,7 +63,7 @@ private fun Route.gameRoutes(repository: Repository) {
         get {
             val withTracks = call.boolParam("withTracks")
             val withArtists = call.boolParam("withArtists")
-            call.respond(repository.getAllGames(withTracks, withArtists).firstSettled())
+            call.respond(repository.getAllGames(withTracks, withArtists).firstSettled().map { it.withPublicUrls() })
         }
         get("/{id}") {
             val id = call.longPathParam("id") ?: return@get call.notFound()
@@ -67,13 +71,13 @@ private fun Route.gameRoutes(repository: Repository) {
             val withArtists = call.boolParam("withArtists")
             val game = repository.getGame(id, withTracks, withArtists).firstSettledSingle()
                 ?: return@get call.notFound()
-            call.respond(game)
+            call.respond(game.withPublicUrls())
         }
         get("/{id}/tracks") {
             val id = call.longPathParam("id") ?: return@get call.notFound()
             val withGame = call.boolParam("withGame")
             val withArtists = call.boolParam("withArtists")
-            call.respond(repository.getTracksForGame(id, withGame, withArtists))
+            call.respond(repository.getTracksForGame(id, withGame, withArtists).map { it.withPublicUrls() })
         }
     }
 }
@@ -83,14 +87,14 @@ private fun Route.trackRoutes(repository: Repository) {
         get {
             val withGame = call.boolParam("withGame")
             val withArtists = call.boolParam("withArtists")
-            call.respond(repository.getAllTracks(withGame, withArtists).firstSettled())
+            call.respond(repository.getAllTracks(withGame, withArtists).firstSettled().map { it.withPublicUrls() })
         }
         get("/{id}") {
             val id = call.longPathParam("id") ?: return@get call.notFound()
             val withGame = call.boolParam("withGame")
             val withArtists = call.boolParam("withArtists")
             val track = repository.getTrack(id, withGame, withArtists) ?: return@get call.notFound()
-            call.respond(track)
+            call.respond(track.withPublicUrls())
         }
     }
 }
@@ -100,13 +104,13 @@ private fun Route.platformRoutes(repository: Repository) {
         get { call.respond(repository.getAvailablePlatforms().firstSettled()) }
         get("/{platform}/games") {
             val platform = call.platformPathParam() ?: return@get call.notFound()
-            call.respond(repository.getGamesForPlatform(platform).firstSettled())
+            call.respond(repository.getGamesForPlatform(platform).firstSettled().map { it.withPublicUrls() })
         }
         get("/{platform}/tracks") {
             val platform = call.platformPathParam() ?: return@get call.notFound()
             val withGame = call.boolParam("withGame")
             val withArtists = call.boolParam("withArtists")
-            call.respond(repository.getTracksForPlatform(platform, withGame, withArtists))
+            call.respond(repository.getTracksForPlatform(platform, withGame, withArtists).map { it.withPublicUrls() })
         }
     }
 }
@@ -115,15 +119,15 @@ private fun Route.searchRoutes(repository: Repository) {
     route("/search") {
         get("/games") {
             val q = call.queryParam("q") ?: return@get call.badRequest("`q` required")
-            call.respond(repository.searchGames(q).firstSettled())
+            call.respond(repository.searchGames(q).firstSettled().map { it.withPublicUrls() })
         }
         get("/tracks") {
             val q = call.queryParam("q") ?: return@get call.badRequest("`q` required")
-            call.respond(repository.searchSongs(q).firstSettled())
+            call.respond(repository.searchSongs(q).firstSettled().map { it.withPublicUrls() })
         }
         get("/artists") {
             val q = call.queryParam("q") ?: return@get call.badRequest("`q` required")
-            call.respond(repository.searchArtists(q).firstSettled())
+            call.respond(repository.searchArtists(q).firstSettled().map { it.withPublicUrls() })
         }
         route("/history") {
             get { call.respond(repository.getSearchHistory().firstSettled()) }

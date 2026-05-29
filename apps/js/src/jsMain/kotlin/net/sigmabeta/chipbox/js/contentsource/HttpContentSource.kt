@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.js.contentsource
 
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
-import io.ktor.client.request.parameter
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.HttpStatusCode
@@ -10,15 +9,15 @@ import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.js.repository.RemoteRepository
 
 /**
- * Browser-side [ContentSource] backed by the chipbox-server. `openBytes(path)` round-trips
- * through the server's `/api/files/by-path?path=…&source=…` endpoint — the path the
- * `BaseGenerator` hands us is whatever the server-side scanner stored (an absolute filesystem
- * path on the host), and the server resolves it back into bytes via the same
- * `LocalFileContentSource` it used during the scan.
+ * Browser-side [ContentSource] backed by chipbox-server. The server's JSON serialization layer
+ * rewrites `Track.path` / `ChainFile.uri` into opaque `/api/files/{trackId}` /
+ * `/api/tracks/{trackId}/chain/{filename}` endpoint URLs (see server `PublicUrls`), so
+ * [openBytes] just prepends [baseUrl] and fetches — no path parameter, no source parameter,
+ * nothing about the host's filesystem ever appears.
  *
- * [sourceId] mirrors the JVM `LocalFileContentSource`'s value (`"file"`) so the
- * `ContentSourceRegistry` lookup the generator performs (`registry.get(track.source)`)
- * finds this instance for any track scanned by the desktop/server `apps/server`.
+ * [sourceId] still mirrors the JVM `LocalFileContentSource`'s value (`"file"`) so the
+ * `ContentSourceRegistry` dispatch the generator performs (`registry.get(track.source)`)
+ * finds this instance for any track scanned by the server.
  */
 class HttpContentSource(
     private val client: HttpClient,
@@ -27,10 +26,7 @@ class HttpContentSource(
 ) : ContentSource {
 
     override suspend fun openBytes(identifier: String): ByteArray? {
-        val response: HttpResponse = client.get("$baseUrl/api/files/by-path") {
-            parameter("path", identifier)
-            parameter("source", sourceId)
-        }
+        val response: HttpResponse = client.get("$baseUrl$identifier")
         if (response.status == HttpStatusCode.NotFound) return null
         return response.bodyAsBytes()
     }
