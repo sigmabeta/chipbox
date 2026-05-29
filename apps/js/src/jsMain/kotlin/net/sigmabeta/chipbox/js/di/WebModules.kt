@@ -17,9 +17,9 @@ import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
-import net.sigmabeta.chipbox.debug.fake.FakeDebugSettingsManager
+import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
 import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
-import net.sigmabeta.chipbox.debuginfo.fake.FakeDebugInfoManager
+import net.sigmabeta.chipbox.debuginfo.real.RealDebugInfoManager
 import net.sigmabeta.chipbox.js.contentsource.HttpContentSource
 import net.sigmabeta.chipbox.js.emulators.WasmGbaEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmGmeEmulator
@@ -45,8 +45,10 @@ import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
+import net.sigmabeta.chipbox.js.storage.LocalStorageStorage
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
-import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
+import net.sigmabeta.chipbox.settings.real.RealChipboxSettingsManager
+import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
@@ -254,18 +256,41 @@ object WebScannerModule {
 @BindingContainer
 @ContributesTo(AppScope::class)
 object WebDebugInfoModule {
+    // [RealDebugInfoManager] combines Director + Generator + Speaker + BufferDebugSource flows
+    // into one PlaybackDebugInfo state. Every dep is already wired (see modules above);
+    // the JS app just needs to bind the real impl instead of the fake.
     @Provides @SingleIn(AppScope::class)
-    fun provideDebugInfoManager(): DebugInfoManager = FakeDebugInfoManager()
+    fun provideDebugInfoManager(
+        director: Director,
+        generator: Generator,
+        speaker: Speaker,
+        bufferDebugSource: BufferDebugSource,
+        scope: CoroutineScope,
+    ): DebugInfoManager = RealDebugInfoManager(
+        director = director,
+        generator = generator,
+        speaker = speaker,
+        bufferDebugSource = bufferDebugSource,
+        scope = scope,
+    )
 }
 
 @BindingContainer
 @ContributesTo(AppScope::class)
 object WebSettingsModule {
+    // Browser settings persist via `window.localStorage` — the commonMain `RealChipboxSettingsManager`
+    // / `RealDebugSettingsManager` work against any `Storage` impl; the JS-specific piece is
+    // just the [LocalStorageStorage] adapter.
     @Provides @SingleIn(AppScope::class)
-    fun provideChipboxSettingsManager(): ChipboxSettingsManager = FakeChipboxSettingsManager()
+    fun provideStorage(): Storage = LocalStorageStorage()
 
     @Provides @SingleIn(AppScope::class)
-    fun provideDebugSettingsManager(): DebugSettingsManager = FakeDebugSettingsManager()
+    fun provideChipboxSettingsManager(storage: Storage): ChipboxSettingsManager =
+        RealChipboxSettingsManager(storage)
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideDebugSettingsManager(storage: Storage): DebugSettingsManager =
+        RealDebugSettingsManager(storage)
 }
 
 @BindingContainer
