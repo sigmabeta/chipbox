@@ -17,17 +17,25 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.js.di.WebChipboxGraph
+import net.sigmabeta.chipbox.js.emulators.WasmGbaEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmGmeEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmNcsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmPsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmSsfEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmTwosfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmUsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmVgmstreamEmulator
 import net.sigmabeta.chipbox.js.logging.WebHatchet
+import net.sigmabeta.chipbox.js.wasm.loadChipboxGba
 import net.sigmabeta.chipbox.js.wasm.loadChipboxGme
+import net.sigmabeta.chipbox.js.wasm.loadChipboxNcsf
 import net.sigmabeta.chipbox.js.wasm.loadChipboxPsf
 import net.sigmabeta.chipbox.js.wasm.loadChipboxSsf
+import net.sigmabeta.chipbox.js.wasm.loadChipboxTwosf
 import net.sigmabeta.chipbox.js.wasm.loadChipboxUsf
 import net.sigmabeta.chipbox.js.wasm.loadChipboxVgm
+import net.sigmabeta.chipbox.js.wasm.loadChipboxVgmstream
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -83,12 +91,20 @@ fun main() {
             val ssf = async { loadChipboxSsf() }
             val usf = async { loadChipboxUsf() }
             val psf = async { loadChipboxPsf() }
-            awaitAll(gme, vgm, ssf, usf, psf)
+            val ncsf = async { loadChipboxNcsf() }
+            val twosf = async { loadChipboxTwosf() }
+            val gba = async { loadChipboxGba() }
+            val vgmstream = async { loadChipboxVgmstream() }
+            awaitAll(gme, vgm, ssf, usf, psf, ncsf, twosf, gba, vgmstream)
             WasmGmeEmulator.setLoadedModule(gme.getCompleted())
             WasmVgmEmulator.setLoadedModule(vgm.getCompleted())
             WasmSsfEmulator.setLoadedModule(ssf.getCompleted())
             WasmUsfEmulator.setLoadedModule(usf.getCompleted())
             WasmPsfEmulator.setLoadedModule(psf.getCompleted())
+            WasmNcsfEmulator.setLoadedModule(ncsf.getCompleted())
+            WasmTwosfEmulator.setLoadedModule(twosf.getCompleted())
+            WasmGbaEmulator.setLoadedModule(gba.getCompleted())
+            WasmVgmstreamEmulator.setLoadedModule(vgmstream.getCompleted())
         }
 
         val stringProvider = ChipboxStringProvider(loadChipboxStrings())

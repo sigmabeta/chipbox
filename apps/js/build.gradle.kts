@@ -46,6 +46,10 @@ val wasmEmulators = listOf(
     WasmEmulator(dir = "ssf", output = "chipbox_ssf", displayName = "ssf core"),
     WasmEmulator(dir = "usf", output = "chipbox_usf", displayName = "lazyusf2"),
     WasmEmulator(dir = "psf", output = "chipbox_psf", displayName = "slopsf"),
+    WasmEmulator(dir = "ncsf", output = "chipbox_ncsf", displayName = "ncsf"),
+    WasmEmulator(dir = "2sf", output = "chipbox_twosf", displayName = "vio2sf"),
+    WasmEmulator(dir = "vgmstream", output = "chipbox_vgmstream", displayName = "vgmstream"),
+    WasmEmulator(dir = "gba", output = "chipbox_gba", displayName = "mgba"),
 )
 
 val buildTaskNames = wasmEmulators.map { emu ->

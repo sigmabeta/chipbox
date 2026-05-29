@@ -55,20 +55,34 @@ add_subdirectory(
 # and CMake builds them for you. When you build your app, Gradle
 # automatically packages shared libraries with your APK.
 
-add_library( # Specifies the name of the library.
-        ${library_name}
-
-        # Sets the library as a shared library.
-        SHARED
-
-        # Provides a relative path to your source file(s).
-        ${libtwosf_SRCS})
-
-# Libraries must be listed in here to be accessible in C/C++ code.
-target_link_libraries(
-        ${library_name}
-
-        # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress
-        # PSF sections, so this also links libz transitively.
-        chipbox_native_common
-)
+if (EMSCRIPTEN)
+    # WASM build — drop `kotlin-jni.cpp` (Android-only JNI surface). psflib's `fopen` chain-file
+    # loader resolves against Emscripten MEMFS, populated per-track by `WasmTwosfEmulator`.
+    # NDS state + sample buffers are modest (~1 MB peak); the default initial heap is enough.
+    list(REMOVE_ITEM libtwosf_SRCS kotlin-jni.cpp)
+    add_executable(${library_name} ${libtwosf_SRCS} Twosf_Web.cpp)
+    set_target_properties(${library_name} PROPERTIES
+            OUTPUT_NAME chipbox_twosf
+            SUFFIX ".js")
+    target_link_libraries(${library_name} PRIVATE chipbox_native_common)
+    target_link_options(${library_name} PRIVATE
+            "-sMODULARIZE=1"
+            "-sEXPORT_ES6=0"
+            "-sEXPORT_NAME=chipboxTwosf"
+            "-sENVIRONMENT=web,worker"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "-sFORCE_FILESYSTEM=1"
+            "-sUSE_ZLIB=1"
+            "-sEXPORTED_FUNCTIONS=['_malloc','_free']"
+            "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','UTF8ToString','stringToUTF8','lengthBytesUTF8','HEAP8','HEAPU8','HEAP16','HEAPU16','HEAP32','HEAPU32','FS']"
+            "-O2"
+    )
+    target_compile_options(${library_name} PRIVATE "-O2" "-sUSE_ZLIB=1")
+else ()
+    add_library(${library_name} SHARED ${libtwosf_SRCS})
+    target_link_libraries(${library_name}
+            # Shared psflib + PSF file-I/O. psflib calls into zlib to decompress PSF sections,
+            # so this also links libz transitively.
+            chipbox_native_common
+    )
+endif ()

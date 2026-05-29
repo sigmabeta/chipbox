@@ -21,11 +21,15 @@ import net.sigmabeta.chipbox.debug.fake.FakeDebugSettingsManager
 import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
 import net.sigmabeta.chipbox.debuginfo.fake.FakeDebugInfoManager
 import net.sigmabeta.chipbox.js.contentsource.HttpContentSource
+import net.sigmabeta.chipbox.js.emulators.WasmGbaEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmGmeEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmNcsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmPsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmSsfEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmTwosfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmUsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmVgmstreamEmulator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.js.repository.RemoteRepository
 import net.sigmabeta.chipbox.js.speaker.WebAudioSpeaker
@@ -149,13 +153,29 @@ object WebEmulatorsModule {
     fun provideWasmPsfEmulator(fileSystem: FileSystem): WasmPsfEmulator = WasmPsfEmulator(fileSystem)
 
     @Provides @SingleIn(AppScope::class)
+    fun provideWasmNcsfEmulator(fileSystem: FileSystem): WasmNcsfEmulator = WasmNcsfEmulator(fileSystem)
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideWasmTwosfEmulator(fileSystem: FileSystem): WasmTwosfEmulator = WasmTwosfEmulator(fileSystem)
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideWasmVgmstreamEmulator(fileSystem: FileSystem): WasmVgmstreamEmulator = WasmVgmstreamEmulator(fileSystem)
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideWasmGbaEmulator(fileSystem: FileSystem): WasmGbaEmulator = WasmGbaEmulator(fileSystem)
+
+    @Provides @SingleIn(AppScope::class)
     fun provideEmulators(
         gme: WasmGmeEmulator,
         vgm: WasmVgmEmulator,
         ssf: WasmSsfEmulator,
         usf: WasmUsfEmulator,
         psf: WasmPsfEmulator,
-    ): List<Emulator> = listOf<Emulator>(gme, vgm, ssf, usf, psf)
+        ncsf: WasmNcsfEmulator,
+        twosf: WasmTwosfEmulator,
+        gba: WasmGbaEmulator,
+        vgmstream: WasmVgmstreamEmulator,
+    ): List<Emulator> = listOf<Emulator>(gme, vgm, ssf, usf, psf, ncsf, twosf, gba, vgmstream)
 }
 
 @BindingContainer

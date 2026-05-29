@@ -227,6 +227,14 @@ elseif(UNIX)
 		add_definitions(-D_GNU_SOURCE)
 	endif()
 
+	# Emscripten libc has strlcpy / strdup / strndup linkable, but their declarations are
+	# gated in <string.h> behind BSD/GNU feature macros. Without this, find_function reports
+	# `HAVE_STRLCPY=1` (link succeeds) and mgba's fallback prototype gets compiled out,
+	# leaving call sites with "call to undeclared function 'strlcpy'" errors.
+	if(EMSCRIPTEN)
+		add_definitions(-D_GNU_SOURCE)
+	endif()
+
 	list(APPEND CORE_VFS_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/util/vfs/vfs-fd.c ${CMAKE_CURRENT_SOURCE_DIR}/src/util/vfs/vfs-dirent.c)
 	file(GLOB OS_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/platform/posix/*.c)
 	source_group("POSIX-specific code" FILES ${OS_SRC})
@@ -1297,23 +1305,38 @@ add_subdirectory(
 		${CMAKE_BINARY_DIR}/native-common
 )
 
-add_library( # Specifies the name of the library.
-		${library_name}
-
-		# Sets the library as a shared library.
-		SHARED
-
-		# Provides a relative path to your source file(s).
-		${libgba_SRCS})
-
-# Libraries must be listed in here to be accessible in C/C++ code.
-target_link_libraries(
-		${library_name}
-
-		# Shared psflib + PSF file-I/O. psflib calls into zlib to decompress
-		# PSF sections, so this also links libz transitively.
-		chipbox_native_common
-
-		# The library we just built, hopefully
-		mgba
-)
+if (EMSCRIPTEN)
+	# WASM build — drop `kotlin-jni.cpp` (Android-only JNI surface). mgba is built above as a
+	# STATIC library (no SHARED libs in WASM); the chipbox wrapper becomes an Emscripten
+	# executable that links it. psflib + GBA save-state RAM together push the working set into
+	# the tens of MB for some GSF chains, so the initial heap is bumped accordingly.
+	list(REMOVE_ITEM libgba_SRCS kotlin-jni.cpp)
+	add_executable(${library_name} ${libgba_SRCS} Gba_Web.cpp)
+	set_target_properties(${library_name} PROPERTIES
+			OUTPUT_NAME chipbox_gba
+			SUFFIX ".js")
+	target_link_libraries(${library_name} PRIVATE chipbox_native_common mgba)
+	target_link_options(${library_name} PRIVATE
+			"-sMODULARIZE=1"
+			"-sEXPORT_ES6=0"
+			"-sEXPORT_NAME=chipboxGba"
+			"-sENVIRONMENT=web,worker"
+			"-sALLOW_MEMORY_GROWTH=1"
+			"-sFORCE_FILESYSTEM=1"
+			"-sUSE_ZLIB=1"
+			"-sINITIAL_MEMORY=67108864"
+			"-sEXPORTED_FUNCTIONS=['_malloc','_free']"
+			"-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','UTF8ToString','stringToUTF8','lengthBytesUTF8','HEAP8','HEAPU8','HEAP16','HEAPU16','HEAP32','HEAPU32','FS']"
+			"-O2"
+	)
+	target_compile_options(${library_name} PRIVATE "-O2" "-sUSE_ZLIB=1")
+else ()
+	add_library(${library_name} SHARED ${libgba_SRCS})
+	target_link_libraries(${library_name}
+			# Shared psflib + PSF file-I/O. psflib calls into zlib to decompress PSF sections,
+			# so this also links libz transitively.
+			chipbox_native_common
+			# The mgba library built above.
+			mgba
+	)
+endif ()

@@ -31,16 +31,48 @@ add_library(vgmcore STATIC ${vgmcore_SRCS})
 target_include_directories(vgmcore PRIVATE ${VG}/src ${VG}/ext_includes)
 target_compile_definitions(vgmcore PRIVATE VGM_LOG_OUTPUT)
 
-# The chipbox JNI wrapper. Pulls the vendored libvgmstream.h (Core/vgmstream/src) and the shared
-# JNI bridge header (native-common/include); links the core static lib + libm.
-add_library(${library_name} SHARED
-        chipbox_vgmstream.cpp
-        kotlin-jni.cpp
-        )
+if (EMSCRIPTEN)
+    # WASM build — drop `kotlin-jni.cpp` (JNI surface). vgmstream's libstreamfile uses stdio
+    # `fopen`, which resolves against Emscripten MEMFS. `WasmVgmstreamEmulator` mirrors the
+    # staged track dir into MEMFS before calling `chipbox_vgmstream_load_file`. INITIAL_MEMORY
+    # bumped because some vgmstream formats (FSB banks, large HCA streams) decode multi-MB
+    # bitstreams in one shot.
+    add_executable(${library_name}
+            chipbox_vgmstream.cpp Vgmstream_Web.cpp
+    )
+    set_target_properties(${library_name} PROPERTIES
+            OUTPUT_NAME chipbox_vgmstream
+            SUFFIX ".js")
+    target_include_directories(${library_name} PRIVATE
+            ${VG}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/../native-common/include
+    )
+    target_link_libraries(${library_name} PRIVATE vgmcore m)
+    target_link_options(${library_name} PRIVATE
+            "-sMODULARIZE=1"
+            "-sEXPORT_ES6=0"
+            "-sEXPORT_NAME=chipboxVgmstream"
+            "-sENVIRONMENT=web,worker"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "-sFORCE_FILESYSTEM=1"
+            "-sINITIAL_MEMORY=33554432"
+            "-sEXPORTED_FUNCTIONS=['_malloc','_free']"
+            "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','UTF8ToString','stringToUTF8','lengthBytesUTF8','HEAP8','HEAPU8','HEAP16','HEAPU16','HEAP32','HEAPU32','FS']"
+            "-O2"
+    )
+    target_compile_options(${library_name} PRIVATE "-O2")
+else ()
+    # The chipbox JNI wrapper. Pulls the vendored libvgmstream.h (Core/vgmstream/src) and the
+    # shared JNI bridge header (native-common/include); links the core static lib + libm.
+    add_library(${library_name} SHARED
+            chipbox_vgmstream.cpp
+            kotlin-jni.cpp
+    )
 
-target_include_directories(${library_name} PRIVATE
-        ${VG}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/../native-common/include
-        )
+    target_include_directories(${library_name} PRIVATE
+            ${VG}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/../native-common/include
+    )
 
-target_link_libraries(${library_name} vgmcore m)
+    target_link_libraries(${library_name} vgmcore m)
+endif ()
