@@ -230,6 +230,15 @@ class MemoryRepository(
         withArtists: Boolean
     ) = tracksById[id]?.toTrack(withGame, withArtists)
 
+    override suspend fun getRandomTrack(): Track? =
+        tracksById.values.randomOrNull()?.toTrack(withGame = false, withArtists = false)
+
+    override suspend fun getRandomGame(): Game? =
+        gamesById.values.randomOrNull()?.toGame(withTracks = false, withArtists = false)
+
+    override suspend fun getRandomArtist(): Artist? =
+        artistsById.values.randomOrNull()?.toArtist(withTracks = false, withGames = false)
+
     override suspend fun clearLibrary() {
         resetData()
     }

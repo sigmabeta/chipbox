@@ -50,6 +50,9 @@ interface GameDao {
     @Query("SELECT * FROM game WHERE title LIKE :title ORDER BY title COLLATE NOCASE")
     fun searchGamesByTitle(title: String): Flow<List<GameEntity>>
 
+    @Query("SELECT * FROM game ORDER BY RANDOM() LIMIT 1")
+    suspend fun getRandom(): GameEntity?
+
     @Insert
     suspend fun insert(game: GameEntity): Long
 

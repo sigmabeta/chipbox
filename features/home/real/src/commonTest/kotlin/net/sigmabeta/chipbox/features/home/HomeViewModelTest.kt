@@ -77,7 +77,7 @@ class HomeViewModelTest {
     @Test
     fun `RandomGameClicked picks one of the loaded games and navigates`() = runTest {
         val games = listOf(gameOf(7L), gameOf(8L))
-        val vm = newVm(repository = repoWithGames(flowOf(Data.Succeeded(games))))
+        val vm = newVm(repository = repoWithRandomGames(games))
         val event = collectAndDispatch(vm, HomeAction.RandomGameClicked)
         assertTrue(event is ChipboxEvent.NavigateTo)
         val destination = event.destination
@@ -88,7 +88,7 @@ class HomeViewModelTest {
     @Test
     fun `RandomArtistClicked picks one of the loaded artists and navigates`() = runTest {
         val artists = listOf(artistOf(3L), artistOf(4L))
-        val vm = newVm(repository = repoWithArtists(flowOf(Data.Succeeded(artists))))
+        val vm = newVm(repository = repoWithRandomArtists(artists))
         val event = collectAndDispatch(vm, HomeAction.RandomArtistClicked)
         assertTrue(event is ChipboxEvent.NavigateTo)
         val destination = event.destination
@@ -101,7 +101,7 @@ class HomeViewModelTest {
         val tracks = listOf(trackOf(11L), trackOf(12L))
         val director = RecordingDirector()
         val vm = newVm(
-            repository = repoWithTracks(flowOf(Data.Succeeded(tracks))),
+            repository = repoWithRandomTracks(tracks),
             director = director,
         )
         vm.sendAction(HomeAction.RandomSongClicked)
@@ -235,6 +235,21 @@ class HomeViewModelTest {
     private fun repoWithTracks(flow: Flow<Data<List<Track>>>): Repository =
         object : Repository by FakeRepository(emptyMap()) {
             override fun getAllTracks(withGame: Boolean, withArtists: Boolean) = flow
+        }
+
+    private fun repoWithRandomGames(games: List<Game>): Repository =
+        object : Repository by FakeRepository(emptyMap()) {
+            override suspend fun getRandomGame(): Game? = games.randomOrNull()
+        }
+
+    private fun repoWithRandomArtists(artists: List<Artist>): Repository =
+        object : Repository by FakeRepository(emptyMap()) {
+            override suspend fun getRandomArtist(): Artist? = artists.randomOrNull()
+        }
+
+    private fun repoWithRandomTracks(tracks: List<Track>): Repository =
+        object : Repository by FakeRepository(emptyMap()) {
+            override suspend fun getRandomTrack(): Track? = tracks.randomOrNull()
         }
 
     private fun repoWithEverythingEmpty(): Repository = FakeRepository(emptyMap())
