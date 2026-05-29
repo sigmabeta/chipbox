@@ -33,6 +33,9 @@ interface TrackDao {
     @Query("SELECT * FROM track WHERE title LIKE :title ORDER BY title COLLATE NOCASE")
     fun searchTracksByTitle(title: String): Flow<List<TrackEntity>>
 
+    @Query("SELECT * FROM track ORDER BY RANDOM() LIMIT 1")
+    suspend fun getRandom(): TrackEntity?
+
     @Insert
     suspend fun insert(track: TrackEntity): Long
 

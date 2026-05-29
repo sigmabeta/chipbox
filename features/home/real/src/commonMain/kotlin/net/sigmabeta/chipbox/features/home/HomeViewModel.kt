@@ -104,21 +104,22 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    // The repository handles the random pick itself (Room: `ORDER BY RANDOM() LIMIT 1`,
+    // RemoteRepository: GET /api/random/<thing>). The earlier `getAllX().randomOrNull()`
+    // would round-trip the entire catalog on every click — fine against a local DB, a
+    // multi-MB transfer over HTTP against the server-backed JS target.
     private fun playRandomSong() = viewModelScope.launch {
-        val pick = repository.getAllTracks(withGame = false, withArtists = false)
-            .firstSucceeded()?.randomOrNull() ?: return@launch
+        val pick = repository.getRandomTrack() ?: return@launch
         director.start(Session(type = SessionType.SINGLE_TRACK, contentId = pick.id))
     }
 
     private fun navigateToRandomGame() = viewModelScope.launch {
-        val pick = repository.getAllGames(withTracks = false, withArtists = false)
-            .firstSucceeded()?.randomOrNull() ?: return@launch
+        val pick = repository.getRandomGame() ?: return@launch
         emit(NavigateTo(GameDetail(pick.id)))
     }
 
     private fun navigateToRandomArtist() = viewModelScope.launch {
-        val pick = repository.getAllArtists(withTracks = false, withGames = false)
-            .firstSucceeded()?.randomOrNull() ?: return@launch
+        val pick = repository.getRandomArtist() ?: return@launch
         emit(NavigateTo(ArtistDetail(pick.id)))
     }
 }

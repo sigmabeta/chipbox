@@ -31,6 +31,27 @@ internal fun Route.libraryRoutes(repository: Repository) {
         trackRoutes(repository)
         platformRoutes(repository)
         searchRoutes(repository)
+        randomRoutes(repository)
+    }
+}
+
+private fun Route.randomRoutes(repository: Repository) {
+    route("/random") {
+        get("/track") {
+            val track = repository.getRandomTrack()
+                ?: return@get call.respond(HttpStatusCode.NotFound, ErrorResponse("No tracks in library"))
+            call.respond(track.withPublicUrls())
+        }
+        get("/game") {
+            val game = repository.getRandomGame()
+                ?: return@get call.respond(HttpStatusCode.NotFound, ErrorResponse("No games in library"))
+            call.respond(game.withPublicUrls())
+        }
+        get("/artist") {
+            val artist = repository.getRandomArtist()
+                ?: return@get call.respond(HttpStatusCode.NotFound, ErrorResponse("No artists in library"))
+            call.respond(artist.withPublicUrls())
+        }
     }
 }
 

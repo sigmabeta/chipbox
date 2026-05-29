@@ -152,6 +152,18 @@ class DatabaseRepository(
         .getTrackSync(id)
         ?.toTrack(withGame, withArtists)
 
+    // Random picks — `ORDER BY RANDOM() LIMIT 1` is constant-roundtrip vs the
+    // fetch-everything-then-randomOrNull anti-pattern Home used to do. Returns null only when
+    // the table is empty.
+    override suspend fun getRandomTrack(): Track? =
+        trackDao.getRandom()?.toTrack(withGame = false, withArtists = false)
+
+    override suspend fun getRandomGame(): Game? =
+        gameDao.getRandom()?.toGame(withTracks = false, withArtists = false)
+
+    override suspend fun getRandomArtist(): Artist? =
+        artistDao.getRandom()?.toArtist(withTracks = false, withGames = false)
+
     override suspend fun folderSnapshots(): Map<String, FolderSnapshot> = gameDao
         .getSignatureRows()
         .associate { it.folderKey to FolderSnapshot(it.signature, it.trackCount) }

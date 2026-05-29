@@ -52,6 +52,9 @@ class FakeRepository(private val tracksById: Map<Long, Track>) : Repository {
         GameWriteOutcome(0L, GameWriteResult.UNCHANGED)
     override suspend fun pruneGames(keptFolderKeys: Set<String>): List<String> = emptyList()
     override suspend fun clearLibrary() = Unit
+    override suspend fun getRandomTrack(): Track? = tracksById.values.randomOrNull()
+    override suspend fun getRandomGame(): Game? = null
+    override suspend fun getRandomArtist(): Artist? = null
     override fun searchGames(query: String): Flow<Data<List<Game>>> = flowOf(Data.Empty)
     override fun searchSongs(query: String): Flow<Data<List<Track>>> = flowOf(Data.Empty)
     override fun searchArtists(query: String): Flow<Data<List<Artist>>> = flowOf(Data.Empty)

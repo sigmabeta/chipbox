@@ -95,6 +95,19 @@ interface Repository {
         withArtists: Boolean = false
     ): Track?
 
+    /**
+     * One-shot uniform-random pick across the catalog. Returns null only when the catalog is
+     * empty — the random "shuffle me one thing" UX (Home RNG row, etc.) calls these every tap.
+     * Bytes-served Repositories (RemoteRepository over HTTP) must do the random pick
+     * server-side; the alternative (fetch everything, randomOrNull locally) would round-trip
+     * the whole catalog on every click.
+     */
+    suspend fun getRandomTrack(): Track?
+
+    suspend fun getRandomGame(): Game?
+
+    suspend fun getRandomArtist(): Artist?
+
     suspend fun clearLibrary()
 
     // Search

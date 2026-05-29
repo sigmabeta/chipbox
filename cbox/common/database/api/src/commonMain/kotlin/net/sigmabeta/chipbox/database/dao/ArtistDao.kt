@@ -22,6 +22,9 @@ interface ArtistDao {
     @Query("SELECT * FROM artist WHERE name LIKE :name ORDER BY name COLLATE NOCASE")
     fun searchArtistsByName(name: String): Flow<List<ArtistEntity>>
 
+    @Query("SELECT * FROM artist ORDER BY RANDOM() LIMIT 1")
+    suspend fun getRandom(): ArtistEntity?
+
     @Insert
     suspend fun insert(artist: ArtistEntity): Long
 

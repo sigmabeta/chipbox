@@ -127,6 +127,20 @@ class RemoteRepository(
         return response.bodyOrNull<Track>()
     }
 
+    // ---------- random ----------
+    // Server-side `ORDER BY RANDOM() LIMIT 1` — single round trip, returns just the one item.
+    // The earlier in-app `getAllX().randomOrNull()` chain would pull the entire catalog over
+    // HTTP on every RNG-button click, which timed out on libraries past a few hundred tracks.
+
+    override suspend fun getRandomTrack(): Track? =
+        client.get("$baseUrl/api/random/track").bodyOrNull()
+
+    override suspend fun getRandomGame(): Game? =
+        client.get("$baseUrl/api/random/game").bodyOrNull()
+
+    override suspend fun getRandomArtist(): Artist? =
+        client.get("$baseUrl/api/random/artist").bodyOrNull()
+
     // ---------- search ----------
 
     override fun searchGames(query: String): Flow<Data<List<Game>>> = listFlow {
