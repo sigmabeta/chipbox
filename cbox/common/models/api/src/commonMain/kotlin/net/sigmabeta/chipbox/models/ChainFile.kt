@@ -1,5 +1,8 @@
 package net.sigmabeta.chipbox.models
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class ChainFile(
     val filename: String,
     val uri: String,

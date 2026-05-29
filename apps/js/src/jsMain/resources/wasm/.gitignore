@@ -1,0 +1,7 @@
+# Default to "everything in this dir is build output, don't commit." Emscripten emits
+# chipbox_<emulator>.{js,wasm} into here via `:apps:js:copyEmulatorWasm`; webpack picks them up
+# at bundle time and serves at /wasm/<name>.{js,wasm} runtime. The hand-authored audio worklet
+# is the one exception — it's source code, not a build artifact.
+*
+!.gitignore
+!chipbox-audio-worklet.js

@@ -13,10 +13,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Name the library.
 set(library_name gme)
 
-# List of source files that make up gme
+# libgme itself — vendored sources used by both the JNI/host build (apps/jvm, Android) and the
+# Emscripten/WASM build (apps/js). The platform-specific wrappers (kotlin-jni.cpp + Gme.cpp for
+# JNI; Gme_Web.cpp for WASM) are conditional below.
 set(libgme_SRCS
-        kotlin-jni.cpp
-        Gme.cpp
         gme/Blip_Buffer.cpp
         gme/Classic_Emu.cpp
         gme/Data_Reader.cpp
@@ -56,34 +56,42 @@ set(libgme_SRCS
 # Appears to just be a flag telling the code we want it to compile...?
 add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN)
 
-# Shared header-only JNI bridge (no psflib: gme is not a PSF format).
-add_subdirectory(
-        ${CMAKE_CURRENT_SOURCE_DIR}/../native-common
-        ${CMAKE_BINARY_DIR}/native-common
-)
+if (EMSCRIPTEN)
+    # WASM build: the browser has no JNI and no filesystem, so we use the byte-buffer wrapper
+    # (Gme_Web.cpp → gme_open_data) instead of the JNI shim (kotlin-jni.cpp + Gme.cpp →
+    # gme_load_file). No PSF/zlib glue — gme isn't a PSF format. Emit a single self-contained
+    # `.js`+`.wasm` pair the Kotlin/JS bindings can `require()`.
+    add_executable(${library_name} ${libgme_SRCS} Gme_Web.cpp)
+    set_target_properties(${library_name} PROPERTIES
+            OUTPUT_NAME chipbox_gme
+            SUFFIX ".js")
+    target_link_options(${library_name} PRIVATE
+            "-sMODULARIZE=1"
+            "-sEXPORT_ES6=0"
+            "-sEXPORT_NAME=chipboxGme"
+            "-sENVIRONMENT=web,worker"
+            "-sALLOW_MEMORY_GROWTH=1"
+            "-sEXPORTED_FUNCTIONS=['_malloc','_free']"
+            "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap','getValue','HEAP8','HEAPU8','HEAP16','HEAPU16','HEAP32','HEAPU32']"
+            "-Oz"
+    )
+    target_compile_options(${library_name} PRIVATE "-Oz")
+else ()
+    # JNI / host shared library — the existing Android NDK + apps/jvm host-CMake build path.
+    list(APPEND libgme_SRCS kotlin-jni.cpp Gme.cpp)
 
-# Specifies a library name, specifies whether the library is STATIC or
-# SHARED, and provides relative paths to the source code. You can
-# define multiple libraries by adding multiple add_library() commands,
-# and CMake builds them for you. When you build your app, Gradle
-# automatically packages shared libraries with your APK.
+    # Shared header-only JNI bridge (no psflib: gme is not a PSF format).
+    add_subdirectory(
+            ${CMAKE_CURRENT_SOURCE_DIR}/../native-common
+            ${CMAKE_BINARY_DIR}/native-common
+    )
 
-add_library( # Specifies the name of the library.
-        ${library_name}
+    add_library(${library_name} SHARED ${libgme_SRCS})
 
-        # Sets the library as a shared library.
-        SHARED
-
-        # Provides a relative path to your source file(s).
-        ${libgme_SRCS})
-
-# Libraries must be listed in here to be accessible in C/C++ code.
-target_link_libraries(
-        ${library_name}
-
-        # PSFLib wants to know how to unzip stuff.
-        z
-
-        # Shared header-only JNI bridge.
-        chipbox_jni_bridge
-)
+    target_link_libraries(${library_name}
+            # PSFLib wants to know how to unzip stuff.
+            z
+            # Shared header-only JNI bridge.
+            chipbox_jni_bridge
+    )
+endif ()
