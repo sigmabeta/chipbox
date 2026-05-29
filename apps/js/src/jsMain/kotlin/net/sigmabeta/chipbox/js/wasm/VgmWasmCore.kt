@@ -58,8 +58,3 @@ class VgmWasmCore(private val module: ChipboxVgmModule) {
     private fun lastError(): String = module.UTF8ToString(module._chipbox_vgm_last_error())
 }
 
-// Same `Int8Array` shim as in `GmeWasmCore` — let us reinterpret a Kotlin `ByteArray`'s backing
-// buffer as Uint8Array for bulk `Uint8Array.set` copies into the WASM heap.
-private external class Int8ArrayShim {
-    val buffer: org.khronos.webgl.ArrayBuffer
-}

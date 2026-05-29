@@ -22,6 +22,9 @@ import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
 import net.sigmabeta.chipbox.debuginfo.fake.FakeDebugInfoManager
 import net.sigmabeta.chipbox.js.contentsource.HttpContentSource
 import net.sigmabeta.chipbox.js.emulators.WasmGmeEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmPsfEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmSsfEmulator
+import net.sigmabeta.chipbox.js.emulators.WasmUsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmEmulator
 import net.sigmabeta.chipbox.js.generator.WasmGenerator
 import net.sigmabeta.chipbox.js.repository.RemoteRepository
@@ -137,10 +140,22 @@ object WebEmulatorsModule {
     fun provideWasmVgmEmulator(fileSystem: FileSystem): WasmVgmEmulator = WasmVgmEmulator(fileSystem)
 
     @Provides @SingleIn(AppScope::class)
+    fun provideWasmSsfEmulator(fileSystem: FileSystem): WasmSsfEmulator = WasmSsfEmulator(fileSystem)
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideWasmUsfEmulator(fileSystem: FileSystem): WasmUsfEmulator = WasmUsfEmulator(fileSystem)
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideWasmPsfEmulator(fileSystem: FileSystem): WasmPsfEmulator = WasmPsfEmulator(fileSystem)
+
+    @Provides @SingleIn(AppScope::class)
     fun provideEmulators(
         gme: WasmGmeEmulator,
         vgm: WasmVgmEmulator,
-    ): List<Emulator> = listOf<Emulator>(gme, vgm)
+        ssf: WasmSsfEmulator,
+        usf: WasmUsfEmulator,
+        psf: WasmPsfEmulator,
+    ): List<Emulator> = listOf<Emulator>(gme, vgm, ssf, usf, psf)
 }
 
 @BindingContainer

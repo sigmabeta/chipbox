@@ -170,6 +170,17 @@ static EMU_INLINE void printlog(PSX_STATE *psx, const char *fmt, ...) {
 
 #ifndef __android_log_print
 #define __android_log_print(...) ((void)0)
+// `ANDROID_LOG_WARN` / `_INFO` etc. come from `<android/log.h>` on Android; on hosts
+// (WASM, x86 Linux) we don't include that header, so define harmless ints for the
+// log-priority arguments referenced inside the (now no-op) `__android_log_print` calls.
+#ifndef ANDROID_LOG_VERBOSE
+#define ANDROID_LOG_VERBOSE 0
+#define ANDROID_LOG_DEBUG   0
+#define ANDROID_LOG_INFO    0
+#define ANDROID_LOG_WARN    0
+#define ANDROID_LOG_ERROR   0
+#define ANDROID_LOG_FATAL   0
+#endif
 #endif
 
 // Bridges implemented in hle.c (HE-owned hardware).
