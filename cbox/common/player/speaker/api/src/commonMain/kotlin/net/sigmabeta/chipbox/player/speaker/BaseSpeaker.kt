@@ -163,6 +163,14 @@ abstract class BaseSpeaker(
      *  synchronously — `audio.data` is recycled as soon as this returns. */
     abstract fun onAudioReceived(audio: AudioBuffer)
 
+    /**
+     * Suspend until the underlying sink has room for more audio. The consume loop calls this
+     * after [onAudioReceived] so the next iteration's `emitTrackChangeIfNeeded` / `Playing`
+     * events stay aligned with actual playback. Default no-op for sinks whose `onAudioReceived`
+     * already provides natural backpressure (e.g. `SourceDataLine.write` blocks on JVM).
+     */
+    protected open suspend fun awaitSinkCapacity() = Unit
+
     /** Release any sink-specific resources (audio track, file handle, etc). Called from
      *  [stop] after the consume loop is cancelled. */
     abstract fun teardown()
@@ -279,6 +287,13 @@ abstract class BaseSpeaker(
 
                 onAudioReceived(audioBuffer)
                 bufferManager.recycleShortArray(audioBuffer.data)
+                // Throttle the loop to actual playback rate. Sinks whose `onAudioReceived` already
+                // blocks (e.g. SourceDataLine.write) leave this as a no-op; sinks with an
+                // unbounded downstream queue (WebAudioSpeaker → AudioWorklet via postMessage)
+                // override it to suspend until the queue drains below a threshold. Without this,
+                // `emitTrackChangeIfNeeded` fires when we *pull* the next track's first buffer,
+                // which on JS is many seconds before the audio for it actually plays.
+                awaitSinkCapacity()
             }
         } finally {
             hatchet.i("Consume loop exiting (playingTrackId=$playingTrackId).")
