@@ -24,6 +24,10 @@ class ChipboxAudioProcessor extends AudioWorkletProcessor {
         // plus a fractional offset in [0, 1) that drives the linear interp.
         this.readFrame = 0;
         this.readFraction = 0;
+        // Cumulative count of fully-consumed source frames since the last flush. Posted back to
+        // the Kotlin side after each head-buffer shift so `WebAudioSpeaker.awaitSinkCapacity`
+        // can throttle the consume loop to actual playback rate.
+        this.consumedSinceFlush = 0;
 
         this.port.onmessage = (e) => {
             const msg = e.data;
@@ -35,6 +39,8 @@ class ChipboxAudioProcessor extends AudioWorkletProcessor {
                     this.queue = [];
                     this.readFrame = 0;
                     this.readFraction = 0;
+                    this.consumedSinceFlush = 0;
+                    this.port.postMessage({ type: 'consumed', frames: 0 });
                     break;
             }
         };
@@ -98,12 +104,17 @@ class ChipboxAudioProcessor extends AudioWorkletProcessor {
             }
             // Drain consumed source buffers. `while` (not `if`) because at high downsampling
             // ratios a single output frame could in principle stride past more than one buffer.
+            // Each shift reports cumulative consumption back to the main thread so the
+            // WebAudioSpeaker side can throttle its consume loop.
             while (
                 this.queue.length > 0 &&
                 this.readFrame >= (this.queue[0].samples.length >>> 1)
             ) {
-                this.readFrame -= this.queue[0].samples.length >>> 1;
+                const headFramesConsumed = this.queue[0].samples.length >>> 1;
+                this.readFrame -= headFramesConsumed;
                 this.queue.shift();
+                this.consumedSinceFlush += headFramesConsumed;
+                this.port.postMessage({ type: 'consumed', frames: this.consumedSinceFlush });
             }
         }
         return true;
