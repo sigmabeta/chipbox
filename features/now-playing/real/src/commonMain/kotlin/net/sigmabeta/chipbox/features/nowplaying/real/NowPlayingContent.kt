@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.features.nowplaying.real
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -222,21 +225,31 @@ private fun ColumnScope.ProgressSection(
     var dragValue by remember { mutableStateOf<Float?>(null) }
     val maxValue = model.lengthMs.coerceAtLeast(1L).toFloat()
     val displayValue = (dragValue ?: model.positionMs.toFloat()).coerceIn(0f, maxValue)
+    val cacheFraction = (model.cachedMs.toFloat() / maxValue).coerceIn(0f, 1f)
 
-    Slider(
-        value = displayValue,
-        onValueChange = { dragValue = it },
-        onValueChangeFinished = {
-            val finalValue = dragValue
-            dragValue = null
-            if (finalValue != null) {
-                actionSink.sendAction(NowPlayingAction.SeekRequested(finalValue.toLong()))
-            }
-        },
-        valueRange = 0f..maxValue,
-        enabled = model.lengthMs > 0L,
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier.fillMaxWidth(),
-    )
+    ) {
+        Slider(
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.secondary,
+            ),
+            value = displayValue,
+            onValueChange = { dragValue = it },
+            onValueChangeFinished = {
+                val finalValue = dragValue
+                dragValue = null
+                if (finalValue != null) {
+                    actionSink.sendAction(NowPlayingAction.SeekRequested(finalValue.toLong()))
+                }
+            },
+            valueRange = 0f..maxValue,
+            enabled = model.lengthMs > 0L,
+        )
+
+        CacheFillIndicator(cacheFraction = cacheFraction)
+    }
 
     Row(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -252,6 +265,34 @@ private fun ColumnScope.ProgressSection(
         )
     }
 }
+
+/**
+ * Thin secondary track below the seek slider showing how much of the active track is rendered
+ * to the local cache and instantly readable. Horizontally padded by the slider's thumb radius
+ * (~10dp in Material3) so its endpoints sit under the same x-range the active slider track uses.
+ */
+@Composable
+private fun CacheFillIndicator(cacheFraction: Float) {
+    val fillColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.80f)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 2.dp)
+            .height(CacheBarHeight)
+            .clip(RoundedCornerShape(CacheBarHeight / 2))
+    ) {
+        if (cacheFraction > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(cacheFraction)
+                    .background(fillColor),
+            )
+        }
+    }
+}
+
+private val CacheBarHeight = 15.dp
 
 @Suppress("LongMethod")
 @Composable

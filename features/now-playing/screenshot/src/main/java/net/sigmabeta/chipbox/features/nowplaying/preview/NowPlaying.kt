@@ -101,6 +101,8 @@ private fun sampleModel(
     isBuffering = isBuffering,
     positionMs = 72_000L,
     lengthMs = 154_000L,
+    // Render-ahead has cached most of the track — the secondary fill runs ahead of the playhead.
+    cachedMs = 120_000L,
     canSkipForward = true,
     isShuffled = false,
     repeatMode = RepeatMode.OFF,

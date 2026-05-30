@@ -446,7 +446,8 @@ class RealDirector(
         // Already mid-playback (audio flowing) or mid-buffer (starved): a track change is in
         // flight. Don't force a state — the speaker decides PLAYING vs BUFFERING by whether audio
         // keeps flowing, and the now-playing metadata updates when the new track's first buffer
-        // plays (SpeakerEvent.TrackChange). Just reset the high-water mark and skip-forward gate.
+        // plays (SpeakerEvent.TrackChange). Just reset the high-water mark, cache progress, and
+        // skip-forward gate.
         if (oldState.state == PlayerState.PLAYING || oldState.state == PlayerState.BUFFERING) {
             hatchet.i(
                 "handleGeneratorLoading(track=${event.trackId}): " +
@@ -454,6 +455,7 @@ class RealDirector(
             )
             return oldState.copy(
                 generatorProducedMs = 0L,
+                cachedMs = 0L,
                 skipForwardAllowed = !isCurrentTrackLastInSetlist(session, setlist),
             )
         }
@@ -470,6 +472,7 @@ class RealDirector(
         return oldState.copy(
             state = PlayerState.BUFFERING,
             generatorProducedMs = 0L,
+            cachedMs = 0L,
             skipForwardAllowed = !isCurrentTrackLastInSetlist(session, setlist),
         )
     }
@@ -494,7 +497,10 @@ class RealDirector(
         // The current track is producing audio — the failure streak is broken.
         consecutiveGeneratorFailures = 0
 
-        return oldState.copy(generatorProducedMs = event.producedMs)
+        return oldState.copy(
+            generatorProducedMs = event.producedMs,
+            cachedMs = event.cachedMs,
+        )
     }
 
     /** Track id the director currently considers active, from the live setlist position.

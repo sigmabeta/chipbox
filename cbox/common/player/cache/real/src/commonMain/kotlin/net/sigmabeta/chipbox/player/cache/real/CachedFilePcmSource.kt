@@ -33,6 +33,9 @@ internal class CachedFilePcmSource(
 
     override val isOver: Boolean get() = cursor >= reader.totalFrames
 
+    /** The whole file is already on disk — the entire track is "cached" from frame zero. */
+    override val cachedFrames: Long = reader.totalFrames
+
     override val loudnessLufs: Double = reader.header.integratedLufs
 
     override val truePeakDbtp: Double = reader.header.truePeakDbtp

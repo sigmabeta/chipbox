@@ -20,6 +20,12 @@ kotlin {
     }
 
     sourceSets {
+        named("androidMain") {
+            dependencies {
+                implementation(libs.androidx.core.ktx)
+            }
+        }
+
         named("commonMain") {
             dependencies {
                 api(libs.coil.kt.core)
@@ -33,7 +39,6 @@ kotlin {
             dependencies {
                 api(libs.coil.kt.compose)
                 api(libs.coil.kt.okhttp)
-                implementation(libs.androidx.core.ktx)
                 implementation(libs.sage.common.images)
             }
         }

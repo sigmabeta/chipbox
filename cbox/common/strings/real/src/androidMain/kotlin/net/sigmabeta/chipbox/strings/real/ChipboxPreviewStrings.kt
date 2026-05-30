@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.strings.real
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import net.sigmabeta.chipbox.common.strings.real.generated.resources.Res
 import net.sigmabeta.chipbox.common.strings.real.generated.resources.allStringResources
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
@@ -30,6 +31,24 @@ import java.io.InputStream
 @OptIn(ExperimentalResourceApi::class)
 @Composable
 fun rememberChipboxStringProvider(): StringProvider {
+    // Android Studio's Compose Preview renders under Layoutlib, whose classloader doesn't
+    // expose the strings:real AAR's java-resources to `ClassLoader.getResourceAsStream` — so a
+    // .cvr lookup throws `MissingResourceException` mid-composition. Compose forbids
+    // try/catch around composable invocations, so we probe the classpath ONCE here and skip the
+    // real-string path entirely when the resources aren't reachable. Paparazzi's JVM test
+    // classpath does expose the .cvr files, so its snapshots still resolve real text; runtime
+    // apps preload via [loadChipboxStrings] and never reach this function.
+    val resourcesReachable = remember { hasComposeStringsOnClasspath() }
+    if (!resourcesReachable) {
+        return remember {
+            val placeholders = mutableMapOf<SageStringId, String>()
+            for (id in ChipboxStringId.entries) {
+                placeholders[id] = id.name
+            }
+            ChipboxStringProvider(placeholders)
+        }
+    }
+
     lateinit var provider: StringProvider
     CompositionLocalProvider(LocalResourceReader provides ClasspathResourceReader) {
         val strings = mutableMapOf<SageStringId, String>()
@@ -40,6 +59,17 @@ fun rememberChipboxStringProvider(): StringProvider {
     }
     return provider
 }
+
+/** Single .cvr we probe before composition decides which provider to install. If this one isn't
+ *  reachable via the classloader, none of the others are either — pick a stable file that has
+ *  been around since the migration to Compose resources. */
+private const val SENTINEL_RESOURCE_PATH =
+    "composeResources/net.sigmabeta.chipbox.common.strings.real.generated.resources/" +
+        "values/strings-accessibility.commonMain.cvr"
+
+private fun hasComposeStringsOnClasspath(): Boolean =
+    ClasspathResourceReader::class.java.classLoader
+        ?.getResource(SENTINEL_RESOURCE_PATH) != null
 
 /**
  * A [ResourceReader] that reads Compose resources purely from the JVM classpath, with no Android
