@@ -1,6 +1,12 @@
 package net.sigmabeta.chipbox.js.emulators
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import net.sigmabeta.chipbox.js.wasm.ChipboxVgmstreamModule
+import net.sigmabeta.chipbox.js.wasm.loadChipboxVgmstream
 import net.sigmabeta.chipbox.js.wasm.VgmstreamWasmCore
 import net.sigmabeta.chipbox.js.wasm.mirrorDirToMemfs
 import net.sigmabeta.chipbox.player.emulators.Emulator
@@ -31,11 +37,18 @@ class WasmVgmstreamEmulator(private val fileSystem: FileSystem) : Emulator() {
         VgmstreamWasmCore(module).supportedExtensions()
     }
 
+    override suspend fun ensureNativeLibReady() {
+        if (loadedModule != null) return
+        val pending = loadInProgress ?: loadScope.async { loadChipboxVgmstream() }.also { loadInProgress = it }
+        loadedModule = pending.await()
+    }
+
     override fun loadNativeLib() {
-        check(loadedModule != null) {
-            "WasmVgmstreamEmulator.loadNativeLib() called before the WASM module was set."
+        val module = checkNotNull(loadedModule) {
+            "WasmVgmstreamEmulator.loadNativeLib() called before ensureNativeLibReady() — the " +
+                "PcmTrackSource factory should have awaited it before reaching here."
         }
-        core = VgmstreamWasmCore(loadedModule!!)
+        core = VgmstreamWasmCore(module)
     }
 
     override fun setTrackNumber(number: Int) {
@@ -81,7 +94,9 @@ class WasmVgmstreamEmulator(private val fileSystem: FileSystem) : Emulator() {
         return toCopy / SHORTS_PER_FRAME
     }
 
-    override fun teardownInternal() { core?.teardown() }
+    override fun teardownInternal() {
+        core?.teardown()
+    }
 
     override fun getLastError(): String? = lastErrorMessage
 
@@ -93,6 +108,10 @@ class WasmVgmstreamEmulator(private val fileSystem: FileSystem) : Emulator() {
         @Suppress("ObjectPropertyName")
         private var loadedModule: ChipboxVgmstreamModule? = null
 
-        fun setLoadedModule(module: ChipboxVgmstreamModule) { loadedModule = module }
+        @Suppress("ObjectPropertyName")
+        private var loadInProgress: Deferred<ChipboxVgmstreamModule>? = null
+
+        @Suppress("OPT_IN_USAGE")
+        private val loadScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 }

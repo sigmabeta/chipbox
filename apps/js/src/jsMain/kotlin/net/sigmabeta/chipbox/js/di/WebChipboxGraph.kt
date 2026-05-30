@@ -28,6 +28,7 @@ import net.sigmabeta.sage.ui.StringProvider
 interface WebChipboxGraph : ViewModelGraph {
     val hatchet: Hatchet
     val stringProvider: StringProvider
+
     // Exposed so `JsMain` can wire the browser-only `WebMediaSession` to the player without
     // creating a parallel composition root. The app-scope CoroutineScope is the same one
     // `RealDebugInfoManager` uses for its hot state.

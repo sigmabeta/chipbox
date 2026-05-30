@@ -1,6 +1,12 @@
 package net.sigmabeta.chipbox.js.emulators
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import net.sigmabeta.chipbox.js.wasm.ChipboxUsfModule
+import net.sigmabeta.chipbox.js.wasm.loadChipboxUsf
 import net.sigmabeta.chipbox.js.wasm.UsfWasmCore
 import net.sigmabeta.chipbox.js.wasm.mirrorDirToMemfs
 import net.sigmabeta.chipbox.player.emulators.Emulator
@@ -21,15 +27,22 @@ class WasmUsfEmulator(private val fileSystem: FileSystem) : Emulator() {
     private var lastErrorMessage: String? = null
 
     override val supportedFileExtensions: List<String> = listOf(
-        "usf",      // Ultra Sound Format (Nintendo 64)
-        "miniusf",  // USF that depends on a `_lib.usf` sibling
+        "usf", // Ultra Sound Format (Nintendo 64)
+        "miniusf", // USF that depends on a `_lib.usf` sibling
     )
 
+    override suspend fun ensureNativeLibReady() {
+        if (loadedModule != null) return
+        val pending = loadInProgress ?: loadScope.async { loadChipboxUsf() }.also { loadInProgress = it }
+        loadedModule = pending.await()
+    }
+
     override fun loadNativeLib() {
-        check(loadedModule != null) {
-            "WasmUsfEmulator.loadNativeLib() called before the WASM module was set."
+        val module = checkNotNull(loadedModule) {
+            "WasmUsfEmulator.loadNativeLib() called before ensureNativeLibReady() — the " +
+                "PcmTrackSource factory should have awaited it before reaching here."
         }
-        core = UsfWasmCore(loadedModule!!)
+        core = UsfWasmCore(module)
     }
 
     override fun loadTrackInternal(path: String) {
@@ -71,7 +84,9 @@ class WasmUsfEmulator(private val fileSystem: FileSystem) : Emulator() {
         return toCopy / SHORTS_PER_FRAME
     }
 
-    override fun teardownInternal() { core?.teardown() }
+    override fun teardownInternal() {
+        core?.teardown()
+    }
 
     override fun getLastError(): String? = lastErrorMessage
 
@@ -83,6 +98,10 @@ class WasmUsfEmulator(private val fileSystem: FileSystem) : Emulator() {
         @Suppress("ObjectPropertyName")
         private var loadedModule: ChipboxUsfModule? = null
 
-        fun setLoadedModule(module: ChipboxUsfModule) { loadedModule = module }
+        @Suppress("ObjectPropertyName")
+        private var loadInProgress: Deferred<ChipboxUsfModule>? = null
+
+        @Suppress("OPT_IN_USAGE")
+        private val loadScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 }

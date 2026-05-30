@@ -44,6 +44,15 @@ abstract class Emulator {
     /** Load the JNI library backing this emulator. Called at most once per process. */
     abstract fun loadNativeLib()
 
+    /**
+     * Suspend hook invoked from the [net.sigmabeta.chipbox.player.cache.PcmTrackSource.Factory]
+     * just before the source is constructed (and therefore before [loadNativeLib]). Lets
+     * platform impls do async-only work that must complete before [loadNativeLib]'s synchronous
+     * contract holds — chiefly the JS WASM emulators, where the per-emulator wasm module is
+     * fetched + instantiated on first use rather than at app startup. Default no-op.
+     */
+    open suspend fun ensureNativeLibReady() = Unit
+
     /** Hand the staged file path to the native side and prepare it for [generateBufferInternal]. */
     abstract fun loadTrackInternal(path: String)
 

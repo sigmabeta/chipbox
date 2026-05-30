@@ -57,4 +57,3 @@ class VgmWasmCore(private val module: ChipboxVgmModule) {
 
     private fun lastError(): String = module.UTF8ToString(module._chipbox_vgm_last_error())
 }
-

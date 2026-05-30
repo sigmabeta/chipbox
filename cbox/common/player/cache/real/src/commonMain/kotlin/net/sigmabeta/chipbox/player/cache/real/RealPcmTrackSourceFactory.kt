@@ -46,6 +46,10 @@ class RealPcmTrackSourceFactory(
         val emulator = emulators.firstOrNull { it.isFileExtensionSupported(ext) }
             ?: throw IllegalArgumentException("No emulator found for extension '$ext'.")
 
+        // JS emulators fetch + instantiate their WASM module here on first use; deferring lets
+        // the page load skip ~4 MB of upfront WASM transfer. No-op on JVM/Android.
+        emulator.ensureNativeLibReady()
+
         val sourceHash = hasher.hash(track, bytes)
 
         val stagingTrackDir = stagingDir / "track-${track.id}"

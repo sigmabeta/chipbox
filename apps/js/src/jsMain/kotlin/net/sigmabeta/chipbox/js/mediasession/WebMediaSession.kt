@@ -151,7 +151,7 @@ class WebMediaSession(
 
 private external interface MediaSession {
     var metadata: MediaMetadata?
-    var playbackState: String  // "none" | "paused" | "playing"
+    var playbackState: String // "none" | "paused" | "playing"
     fun setActionHandler(action: String, handler: ((MediaSessionActionDetails?) -> Unit)?)
     fun setPositionState(state: dynamic)
 }

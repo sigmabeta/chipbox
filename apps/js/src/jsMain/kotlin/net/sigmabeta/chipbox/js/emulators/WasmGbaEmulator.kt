@@ -1,6 +1,12 @@
 package net.sigmabeta.chipbox.js.emulators
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import net.sigmabeta.chipbox.js.wasm.ChipboxGbaModule
+import net.sigmabeta.chipbox.js.wasm.loadChipboxGba
 import net.sigmabeta.chipbox.js.wasm.GbaWasmCore
 import net.sigmabeta.chipbox.js.wasm.mirrorDirToMemfs
 import net.sigmabeta.chipbox.player.emulators.Emulator
@@ -17,15 +23,22 @@ class WasmGbaEmulator(private val fileSystem: FileSystem) : Emulator() {
     private var lastErrorMessage: String? = null
 
     override val supportedFileExtensions: List<String> = listOf(
-        "gsf",      // GBA Sound Format
-        "minigsf",  // GSF that depends on a `_lib.gsf` sibling
+        "gsf", // GBA Sound Format
+        "minigsf", // GSF that depends on a `_lib.gsf` sibling
     )
 
+    override suspend fun ensureNativeLibReady() {
+        if (loadedModule != null) return
+        val pending = loadInProgress ?: loadScope.async { loadChipboxGba() }.also { loadInProgress = it }
+        loadedModule = pending.await()
+    }
+
     override fun loadNativeLib() {
-        check(loadedModule != null) {
-            "WasmGbaEmulator.loadNativeLib() called before the WASM module was set."
+        val module = checkNotNull(loadedModule) {
+            "WasmGbaEmulator.loadNativeLib() called before ensureNativeLibReady() — the " +
+                "PcmTrackSource factory should have awaited it before reaching here."
         }
-        core = GbaWasmCore(loadedModule!!)
+        core = GbaWasmCore(module)
     }
 
     override fun loadTrackInternal(path: String) {
@@ -67,7 +80,9 @@ class WasmGbaEmulator(private val fileSystem: FileSystem) : Emulator() {
         return toCopy / SHORTS_PER_FRAME
     }
 
-    override fun teardownInternal() { core?.teardown() }
+    override fun teardownInternal() {
+        core?.teardown()
+    }
 
     override fun getLastError(): String? = lastErrorMessage
 
@@ -79,6 +94,10 @@ class WasmGbaEmulator(private val fileSystem: FileSystem) : Emulator() {
         @Suppress("ObjectPropertyName")
         private var loadedModule: ChipboxGbaModule? = null
 
-        fun setLoadedModule(module: ChipboxGbaModule) { loadedModule = module }
+        @Suppress("ObjectPropertyName")
+        private var loadInProgress: Deferred<ChipboxGbaModule>? = null
+
+        @Suppress("OPT_IN_USAGE")
+        private val loadScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 }

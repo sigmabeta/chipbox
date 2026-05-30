@@ -31,6 +31,11 @@ class UncachedPcmTrackSourceFactory(
         val emulator = emulators.firstOrNull { it.isFileExtensionSupported(ext) }
             ?: throw IllegalArgumentException("No emulator found for extension '$ext'.")
 
+        // JS emulators fetch + instantiate their WASM module here on first use; deferring lets
+        // the page load skip ~4 MB of upfront WASM transfer. No-op on JVM/Android (the
+        // synchronous System.loadLibrary runs in [loadNativeLib] below).
+        emulator.ensureNativeLibReady()
+
         val stagingTrackDir = stagingDir / "track-${track.id}"
         val stagedFile = stageTrack(
             track = track,

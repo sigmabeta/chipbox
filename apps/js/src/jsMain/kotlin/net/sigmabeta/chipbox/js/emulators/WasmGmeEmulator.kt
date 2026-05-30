@@ -1,7 +1,13 @@
 package net.sigmabeta.chipbox.js.emulators
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import net.sigmabeta.chipbox.js.wasm.ChipboxGmeModule
 import net.sigmabeta.chipbox.js.wasm.GmeWasmCore
+import net.sigmabeta.chipbox.js.wasm.loadChipboxGme
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import okio.FileSystem
 import okio.Path.Companion.toPath
@@ -24,9 +30,10 @@ import okio.Path.Companion.toPath
  *
  * #### Native-lib lifecycle
  * The WASM module load is async (script tag + `chipboxGme()` promise) but [Emulator.loadNativeLib]
- * is a synchronous hook. Resolution: `JsMain` calls [setLoadedModule] from inside the startup
- * coroutine *before* the graph hands the emulator to anything that might play audio. If
- * `loadNativeLib` runs before the module is set, it throws — that's a wiring bug.
+ * is a synchronous hook. [ensureNativeLibReady] (suspending) drives the load lazily on first
+ * use — the factory calls it before constructing the source. Subsequent track loads short-circuit
+ * once [loadedModule] is set. Concurrent first-uses dedupe via [loadInProgress] so we don't fire
+ * the script-tag fetch twice.
  */
 class WasmGmeEmulator(private val fileSystem: FileSystem) : Emulator() {
 
@@ -37,19 +44,24 @@ class WasmGmeEmulator(private val fileSystem: FileSystem) : Emulator() {
     private var loadedSampleRate: Int = 44100
 
     override val supportedFileExtensions: List<String> = listOf(
-        "gbs",      // Game Boy Sound System
-        "nsf",      // NES Sound Format
-        "nsfe",     // NES Sound Format Extended
-        "spc",      // Super NES SPC700
+        "gbs", // Game Boy Sound System
+        "nsf", // NES Sound Format
+        "nsfe", // NES Sound Format Extended
+        "spc", // Super NES SPC700
     )
 
+    override suspend fun ensureNativeLibReady() {
+        if (loadedModule != null) return
+        val pending = loadInProgress ?: loadScope.async { loadChipboxGme() }.also { loadInProgress = it }
+        loadedModule = pending.await()
+    }
+
     override fun loadNativeLib() {
-        check(loadedModule != null) {
-            "WasmGmeEmulator.loadNativeLib() called before the WASM module was set. " +
-                "JsMain must call WasmGmeEmulator.setLoadedModule(loadChipboxGme()) before " +
-                "audio playback starts."
+        val module = checkNotNull(loadedModule) {
+            "WasmGmeEmulator.loadNativeLib() called before ensureNativeLibReady() — the " +
+                "PcmTrackSource factory should have awaited it before reaching here."
         }
-        core = GmeWasmCore(loadedModule!!)
+        core = GmeWasmCore(module)
     }
 
     override fun setTrackNumber(number: Int) {
@@ -97,18 +109,20 @@ class WasmGmeEmulator(private val fileSystem: FileSystem) : Emulator() {
     companion object {
         private const val SHORTS_PER_FRAME = 2
 
-        // Cached module reference, populated by JsMain after the startup `loadChipboxGme()`
-        // completes. Held statically so every WasmGmeEmulator instance shares the same WASM
-        // module — libgme is one library; multiple JS-side objects, one C-side singleton.
+        // Cached module reference, populated by the first successful `loadChipboxGme()`. Held
+        // statically so every WasmGmeEmulator instance shares the same WASM module — libgme is
+        // one library; multiple Kotlin objects, one C-side singleton.
         @Suppress("ObjectPropertyName")
         private var loadedModule: ChipboxGmeModule? = null
 
-        /**
-         * Set the WASM module reference. Called from JsMain after the async `loadChipboxGme()`
-         * resolves. Safe to call repeatedly — overwriting with the same module is a no-op.
-         */
-        fun setLoadedModule(module: ChipboxGmeModule) {
-            loadedModule = module
-        }
+        // Single-flight deferred for concurrent first-uses (e.g. user queues two GME tracks
+        // back-to-back). Kotlin/JS is single-threaded, so a simple check-and-assign is safe.
+        @Suppress("ObjectPropertyName")
+        private var loadInProgress: Deferred<ChipboxGmeModule>? = null
+
+        // Lifecycle-scoped to the app session — the load coroutines outlive any single
+        // playback session and don't need cancellation tied to a particular Director call.
+        @Suppress("OPT_IN_USAGE")
+        private val loadScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 }

@@ -70,8 +70,14 @@ private fun <T : Any> injectAndInstantiate(
                 "load",
                 {
                     factory().then(
-                        { module -> resolve(module); undefined },
-                        { err -> reject(Throwable("$name factory rejected: $err")); undefined },
+                        { module ->
+                            resolve(module)
+                            undefined
+                        },
+                        { err ->
+                            reject(Throwable("$name factory rejected: $err"))
+                            undefined
+                        },
                     )
                 },
             )

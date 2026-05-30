@@ -69,15 +69,18 @@ val buildTaskNames = wasmEmulators.map { emu ->
         val srcDirLocal = srcDir
         doFirst {
             val emsdk = capturedEmsdk.orNull
-                ?: error("Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
-                    "-Pchipbox.js.emsdk=/path/to/emsdk.")
+                ?: error(
+                    "Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
+                    "-Pchipbox.js.emsdk=/path/to/emsdk."
+                )
             require(File(emsdk, "emsdk_env.sh").isFile) {
                 "EMSDK=$emsdk does not look like an emsdk checkout (no emsdk_env.sh)."
             }
             File(buildDirLocal).mkdirs()
             val envScript = File(emsdk, "emsdk_env.sh").absolutePath
             commandLine(
-                "bash", "-c",
+                "bash",
+                "-c",
                 "source '$envScript' >/dev/null 2>&1 && " +
                     "emcmake cmake -B '$buildDirLocal' -S '$srcDirLocal' -DCMAKE_BUILD_TYPE=Release",
             )
@@ -99,11 +102,14 @@ val buildTaskNames = wasmEmulators.map { emu ->
         val buildDirLocal = buildDir
         doFirst {
             val emsdk = capturedEmsdk.orNull
-                ?: error("Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
-                    "-Pchipbox.js.emsdk=/path/to/emsdk.")
+                ?: error(
+                    "Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
+                    "-Pchipbox.js.emsdk=/path/to/emsdk."
+                )
             val envScript = File(emsdk, "emsdk_env.sh").absolutePath
             commandLine(
-                "bash", "-c",
+                "bash",
+                "-c",
                 "source '$envScript' >/dev/null 2>&1 && emmake make -C '$buildDirLocal' -j",
             )
         }

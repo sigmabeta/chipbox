@@ -1,6 +1,12 @@
 package net.sigmabeta.chipbox.js.emulators
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import net.sigmabeta.chipbox.js.wasm.ChipboxVgmModule
+import net.sigmabeta.chipbox.js.wasm.loadChipboxVgm
 import net.sigmabeta.chipbox.js.wasm.VgmWasmCore
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import okio.FileSystem
@@ -22,17 +28,22 @@ class WasmVgmEmulator(private val fileSystem: FileSystem) : Emulator() {
     private var loadedSampleRate: Int = 44100
 
     override val supportedFileExtensions: List<String> = listOf(
-        "vgm",   // Video Game Music — uncompressed
-        "vgz",   // Video Game Music — gzip-wrapped (libvgm's MemoryLoader handles decompression)
+        "vgm", // Video Game Music — uncompressed
+        "vgz", // Video Game Music — gzip-wrapped (libvgm's MemoryLoader handles decompression)
     )
 
+    override suspend fun ensureNativeLibReady() {
+        if (loadedModule != null) return
+        val pending = loadInProgress ?: loadScope.async { loadChipboxVgm() }.also { loadInProgress = it }
+        loadedModule = pending.await()
+    }
+
     override fun loadNativeLib() {
-        check(loadedModule != null) {
-            "WasmVgmEmulator.loadNativeLib() called before the WASM module was set. " +
-                "JsMain must call WasmVgmEmulator.setLoadedModule(loadChipboxVgm()) before " +
-                "audio playback starts."
+        val module = checkNotNull(loadedModule) {
+            "WasmVgmEmulator.loadNativeLib() called before ensureNativeLibReady() — the " +
+                "PcmTrackSource factory should have awaited it before reaching here."
         }
-        core = VgmWasmCore(loadedModule!!)
+        core = VgmWasmCore(module)
     }
 
     override fun loadTrackInternal(path: String) {
@@ -64,7 +75,9 @@ class WasmVgmEmulator(private val fileSystem: FileSystem) : Emulator() {
         return toCopy / SHORTS_PER_FRAME
     }
 
-    override fun teardownInternal() { core?.teardown() }
+    override fun teardownInternal() {
+        core?.teardown()
+    }
 
     override fun getLastError(): String? = lastErrorMessage
 
@@ -76,8 +89,10 @@ class WasmVgmEmulator(private val fileSystem: FileSystem) : Emulator() {
         @Suppress("ObjectPropertyName")
         private var loadedModule: ChipboxVgmModule? = null
 
-        fun setLoadedModule(module: ChipboxVgmModule) {
-            loadedModule = module
-        }
+        @Suppress("ObjectPropertyName")
+        private var loadInProgress: Deferred<ChipboxVgmModule>? = null
+
+        @Suppress("OPT_IN_USAGE")
+        private val loadScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 }

@@ -56,6 +56,12 @@ internal fun Route.fileRoutes(repository: Repository, contentSources: ContentSou
         }
     }
 
+    gameCoverRoute(repository, contentSources)
+    artistPhotoRoute(repository, contentSources)
+    chainFileRoute(repository, contentSources)
+}
+
+private fun Route.gameCoverRoute(repository: Repository, contentSources: ContentSourceRegistry) {
     route("/api/games") {
         get("/{id}/cover") {
             val id = call.parameters["id"]?.toLongOrNull()
@@ -68,12 +74,16 @@ internal fun Route.fileRoutes(repository: Repository, contentSources: ContentSou
             // so they live under the same `LocalFileContentSource` ("file"). Hardcoded here since
             // the Game/Artist models don't carry a `source` field of their own.
             respondViaContentSource(
-                contentSources, sourceId = "file", path = photoUrl,
+                contentSources,
+                sourceId = "file",
+                path = photoUrl,
                 resizeMaxDim = call.imageSizeParam(),
             )
         }
     }
+}
 
+private fun Route.artistPhotoRoute(repository: Repository, contentSources: ContentSourceRegistry) {
     route("/api/artists") {
         get("/{id}/photo") {
             val id = call.parameters["id"]?.toLongOrNull()
@@ -83,12 +93,16 @@ internal fun Route.fileRoutes(repository: Repository, contentSources: ContentSou
             val photoUrl = artist.photoUrl
                 ?: return@get call.respond(HttpStatusCode.NotFound, ErrorResponse("Artist $id has no photo"))
             respondViaContentSource(
-                contentSources, sourceId = "file", path = photoUrl,
+                contentSources,
+                sourceId = "file",
+                path = photoUrl,
                 resizeMaxDim = call.imageSizeParam(),
             )
         }
     }
+}
 
+private fun Route.chainFileRoute(repository: Repository, contentSources: ContentSourceRegistry) {
     route("/api/tracks") {
         get("/{id}/chain/{filename}") {
             val trackId = call.parameters["id"]?.toLongOrNull()
@@ -118,6 +132,7 @@ internal fun Route.fileRoutes(repository: Repository, contentSources: ContentSou
     }
 }
 
+@Suppress("ReturnCount")
 private suspend fun io.ktor.server.routing.RoutingContext.respondViaContentSource(
     contentSources: ContentSourceRegistry,
     sourceId: String,
@@ -157,6 +172,7 @@ private suspend fun io.ktor.server.routing.RoutingContext.respondViaContentSourc
  * a sane ceiling so a malicious / buggy caller can't ask the server to allocate a gigantic
  * BufferedImage by passing `?size=99999`.
  */
+@Suppress("ReturnCount")
 private fun io.ktor.server.application.ApplicationCall.imageSizeParam(): Int? {
     val raw = request.queryParameters["size"]?.toIntOrNull() ?: return null
     if (raw <= 0) return null
