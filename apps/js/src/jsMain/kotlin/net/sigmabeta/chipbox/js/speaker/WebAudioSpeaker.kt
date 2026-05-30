@@ -213,7 +213,13 @@ private external class AudioWorkletNode(context: AudioContext, name: String) {
 
 private suspend fun <T> Promise<T>.await(): T = suspendCancellableCoroutine { cont ->
     then(
-        { value -> cont.resume(value); undefined },
-        { err -> cont.resumeWithException(RuntimeException("Promise rejected: $err")); undefined },
+        { value ->
+            cont.resume(value)
+            undefined
+        },
+        { err ->
+            cont.resumeWithException(RuntimeException("Promise rejected: $err"))
+            undefined
+        },
     )
 }

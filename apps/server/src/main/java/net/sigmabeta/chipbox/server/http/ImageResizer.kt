@@ -23,6 +23,7 @@ internal object ImageResizer {
     private const val OUTPUT_MIME = "image/jpeg"
 
     /** Returns (bytes, mimeType). Null if [bytes] doesn't decode as an image. */
+    @Suppress("ReturnCount")
     fun resize(bytes: ByteArray, maxDimension: Int): Pair<ByteArray, String>? {
         val original = ByteArrayInputStream(bytes).use { ImageIO.read(it) } ?: return null
         val srcW = original.width

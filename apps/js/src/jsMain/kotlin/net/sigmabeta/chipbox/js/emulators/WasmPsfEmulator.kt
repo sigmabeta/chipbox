@@ -1,6 +1,12 @@
 package net.sigmabeta.chipbox.js.emulators
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import net.sigmabeta.chipbox.js.wasm.ChipboxPsfModule
+import net.sigmabeta.chipbox.js.wasm.loadChipboxPsf
 import net.sigmabeta.chipbox.js.wasm.PsfWasmCore
 import net.sigmabeta.chipbox.js.wasm.mirrorDirToMemfs
 import net.sigmabeta.chipbox.player.emulators.Emulator
@@ -22,17 +28,24 @@ class WasmPsfEmulator(private val fileSystem: FileSystem) : Emulator() {
     private var lastErrorMessage: String? = null
 
     override val supportedFileExtensions: List<String> = listOf(
-        "psf",      // PlayStation Sound Format (PSX)
-        "minipsf",  // PSF that depends on a `_lib.psf` sibling
-        "psf2",     // PlayStation 2 Sound Format
+        "psf", // PlayStation Sound Format (PSX)
+        "minipsf", // PSF that depends on a `_lib.psf` sibling
+        "psf2", // PlayStation 2 Sound Format
         "minipsf2", // PSF2 that depends on a `_lib.psf2` sibling
     )
 
+    override suspend fun ensureNativeLibReady() {
+        if (loadedModule != null) return
+        val pending = loadInProgress ?: loadScope.async { loadChipboxPsf() }.also { loadInProgress = it }
+        loadedModule = pending.await()
+    }
+
     override fun loadNativeLib() {
-        check(loadedModule != null) {
-            "WasmPsfEmulator.loadNativeLib() called before the WASM module was set."
+        val module = checkNotNull(loadedModule) {
+            "WasmPsfEmulator.loadNativeLib() called before ensureNativeLibReady() — the " +
+                "PcmTrackSource factory should have awaited it before reaching here."
         }
-        core = PsfWasmCore(loadedModule!!)
+        core = PsfWasmCore(module)
     }
 
     override fun loadTrackInternal(path: String) {
@@ -74,7 +87,9 @@ class WasmPsfEmulator(private val fileSystem: FileSystem) : Emulator() {
         return toCopy / SHORTS_PER_FRAME
     }
 
-    override fun teardownInternal() { core?.teardown() }
+    override fun teardownInternal() {
+        core?.teardown()
+    }
 
     override fun getLastError(): String? = lastErrorMessage
 
@@ -86,6 +101,10 @@ class WasmPsfEmulator(private val fileSystem: FileSystem) : Emulator() {
         @Suppress("ObjectPropertyName")
         private var loadedModule: ChipboxPsfModule? = null
 
-        fun setLoadedModule(module: ChipboxPsfModule) { loadedModule = module }
+        @Suppress("ObjectPropertyName")
+        private var loadInProgress: Deferred<ChipboxPsfModule>? = null
+
+        @Suppress("OPT_IN_USAGE")
+        private val loadScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 }

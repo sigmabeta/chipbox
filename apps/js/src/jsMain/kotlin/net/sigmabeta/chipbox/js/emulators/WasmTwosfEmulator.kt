@@ -1,6 +1,12 @@
 package net.sigmabeta.chipbox.js.emulators
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import net.sigmabeta.chipbox.js.wasm.ChipboxTwosfModule
+import net.sigmabeta.chipbox.js.wasm.loadChipboxTwosf
 import net.sigmabeta.chipbox.js.wasm.TwosfWasmCore
 import net.sigmabeta.chipbox.js.wasm.mirrorDirToMemfs
 import net.sigmabeta.chipbox.player.emulators.Emulator
@@ -17,15 +23,22 @@ class WasmTwosfEmulator(private val fileSystem: FileSystem) : Emulator() {
     private var lastErrorMessage: String? = null
 
     override val supportedFileExtensions: List<String> = listOf(
-        "2sf",      // Nintendo DS Sound Format
-        "mini2sf",  // 2SF that depends on a `_lib.2sf` sibling
+        "2sf", // Nintendo DS Sound Format
+        "mini2sf", // 2SF that depends on a `_lib.2sf` sibling
     )
 
+    override suspend fun ensureNativeLibReady() {
+        if (loadedModule != null) return
+        val pending = loadInProgress ?: loadScope.async { loadChipboxTwosf() }.also { loadInProgress = it }
+        loadedModule = pending.await()
+    }
+
     override fun loadNativeLib() {
-        check(loadedModule != null) {
-            "WasmTwosfEmulator.loadNativeLib() called before the WASM module was set."
+        val module = checkNotNull(loadedModule) {
+            "WasmTwosfEmulator.loadNativeLib() called before ensureNativeLibReady() — the " +
+                "PcmTrackSource factory should have awaited it before reaching here."
         }
-        core = TwosfWasmCore(loadedModule!!)
+        core = TwosfWasmCore(module)
     }
 
     override fun loadTrackInternal(path: String) {
@@ -67,7 +80,9 @@ class WasmTwosfEmulator(private val fileSystem: FileSystem) : Emulator() {
         return toCopy / SHORTS_PER_FRAME
     }
 
-    override fun teardownInternal() { core?.teardown() }
+    override fun teardownInternal() {
+        core?.teardown()
+    }
 
     override fun getLastError(): String? = lastErrorMessage
 
@@ -79,6 +94,10 @@ class WasmTwosfEmulator(private val fileSystem: FileSystem) : Emulator() {
         @Suppress("ObjectPropertyName")
         private var loadedModule: ChipboxTwosfModule? = null
 
-        fun setLoadedModule(module: ChipboxTwosfModule) { loadedModule = module }
+        @Suppress("ObjectPropertyName")
+        private var loadInProgress: Deferred<ChipboxTwosfModule>? = null
+
+        @Suppress("OPT_IN_USAGE")
+        private val loadScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     }
 }

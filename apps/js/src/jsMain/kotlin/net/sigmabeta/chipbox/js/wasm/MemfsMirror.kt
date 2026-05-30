@@ -45,7 +45,7 @@ fun mirrorDirToMemfs(
     val entries = sourceFs.listOrNull(sourceDir) ?: return
     for (entry in entries) {
         val md = sourceFs.metadataOrNull(entry) ?: continue
-        if (md.isDirectory) continue   // TrackStager doesn't nest; refuse rather than recurse blindly.
+        if (md.isDirectory) continue // TrackStager doesn't nest; refuse rather than recurse blindly.
         val bytes = sourceFs.read(entry) { readByteArray() }
         val view = byteArrayToUint8Array(bytes)
         targetFs.writeFile(entry.toString(), view)

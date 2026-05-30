@@ -87,32 +87,9 @@ fun main() {
         )
     }
     MainScope().launch {
-        // Pre-load every WASM emulator module before constructing the graph: the chipbox
-        // Emulator contract's `loadNativeLib()` is synchronous, so each WASM instance must
-        // already be resolved by the time a Director starts a track and reaches
-        // `Wasm<Name>Emulator.loadNativeLib`. Done in parallel — the modules are small
-        // (libgme ~91 KB, libvgm ~few hundred KB) and independent.
-        coroutineScope {
-            val gme = async { loadChipboxGme() }
-            val vgm = async { loadChipboxVgm() }
-            val ssf = async { loadChipboxSsf() }
-            val usf = async { loadChipboxUsf() }
-            val psf = async { loadChipboxPsf() }
-            val ncsf = async { loadChipboxNcsf() }
-            val twosf = async { loadChipboxTwosf() }
-            val gba = async { loadChipboxGba() }
-            val vgmstream = async { loadChipboxVgmstream() }
-            awaitAll(gme, vgm, ssf, usf, psf, ncsf, twosf, gba, vgmstream)
-            WasmGmeEmulator.setLoadedModule(gme.getCompleted())
-            WasmVgmEmulator.setLoadedModule(vgm.getCompleted())
-            WasmSsfEmulator.setLoadedModule(ssf.getCompleted())
-            WasmUsfEmulator.setLoadedModule(usf.getCompleted())
-            WasmPsfEmulator.setLoadedModule(psf.getCompleted())
-            WasmNcsfEmulator.setLoadedModule(ncsf.getCompleted())
-            WasmTwosfEmulator.setLoadedModule(twosf.getCompleted())
-            WasmGbaEmulator.setLoadedModule(gba.getCompleted())
-            WasmVgmstreamEmulator.setLoadedModule(vgmstream.getCompleted())
-        }
+        // Each WasmXxxEmulator lazy-loads its WASM module on first use via
+        // `Emulator.ensureNativeLibReady()` — the factory awaits it before the source is
+        // constructed. Page-load no longer pulls down all ~4 MB of WASM up front.
 
         val stringProvider = ChipboxStringProvider(loadChipboxStrings())
         val graph = createGraphFactory<WebChipboxGraph.Factory>().create(

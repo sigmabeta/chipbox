@@ -34,6 +34,7 @@ import net.sigmabeta.chipbox.server.http.staticRoutes
  *
  * Static apps/js bundle serving lands in Phase F.
  */
+@Suppress("LongMethod")
 fun main() {
     val config = ServerConfig.fromEnv()
     println("chipbox-server: starting on http://${config.bindHost}:${config.port}")
