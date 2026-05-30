@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.database.fake
 
+import kotlin.random.Random
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -32,8 +33,12 @@ import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
  * does its own lookup-before-insert. FK cascades on delete *are* mimicked because production
  * code relies on them ([gameDao.deleteByIds] cascades to tracks and track_artist_join so
  * `artistDao.deleteOrphans()` correctly sees zero references).
+ *
+ * The `getRandom()` DAO methods draw from [random], which defaults to a fixed-seed generator so
+ * tests stay deterministic (mirroring the rest of this fake); pass a different [Random] when a
+ * test needs to control or vary the draw.
  */
-class FakeDatabase {
+class FakeDatabase(private val random: Random = Random(0)) {
 
     val artists: MutableMap<Long, ArtistEntity> = mutableMapOf()
     val games: MutableMap<Long, GameEntity> = mutableMapOf()
@@ -58,6 +63,7 @@ class FakeDatabase {
         override fun getArtist(artistId: Long): Flow<ArtistEntity?> = observe { artists[artistId] }
         override suspend fun getArtistByNameSync(name: String): ArtistEntity? =
             artists.values.firstOrNull { it.name == name }
+        override suspend fun getRandom(): ArtistEntity? = artists.values.randomOrNull(random)
         override fun getAll(): Flow<List<ArtistEntity>> = observe {
             artists.values.sortedBy { it.name.lowercase() }
         }
@@ -87,6 +93,7 @@ class FakeDatabase {
         override fun getGame(gameId: Long): Flow<GameEntity?> = observe { games[gameId] }
         override suspend fun getByFolderKeySync(folderKey: String): GameEntity? =
             games.values.firstOrNull { it.folderKey == folderKey }
+        override suspend fun getRandom(): GameEntity? = games.values.randomOrNull(random)
         override suspend fun getAllSync(): List<GameEntity> = games.values.toList()
         override suspend fun getSignatureRows(): List<GameSignatureRow> = games.values.map { g ->
             GameSignatureRow(
@@ -151,6 +158,7 @@ class FakeDatabase {
         }
         override fun getTrack(trackId: Long): Flow<TrackEntity> = observe { tracks.getValue(trackId) }
         override suspend fun getTrackSync(trackId: Long): TrackEntity? = tracks[trackId]
+        override suspend fun getRandom(): TrackEntity? = tracks.values.randomOrNull(random)
         override fun searchTracksByTitle(title: String): Flow<List<TrackEntity>> = observe {
             tracks.values.filter { sqlLike(title, it.title) }.sortedBy { it.title.lowercase() }
         }
