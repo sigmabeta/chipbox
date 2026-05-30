@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_log_screen_title">Error log</string>
+    <string name="error_log_empty">No errors recorded this session.</string>
+</resources>

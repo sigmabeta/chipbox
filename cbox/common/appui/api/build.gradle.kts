@@ -67,6 +67,10 @@ kotlin {
                 // @ContributesIntoMap VM aggregates into ChipboxAppGraph / JvmChipboxGraph.
                 implementation(projects.features.playbackStatus.api)
                 api(projects.features.playbackStatus.real)
+                // Debug-only error log reached from Settings' shouldShowDebug section. `api(real)`
+                // so its @ContributesIntoMap VM aggregates into ChipboxAppGraph / JvmChipboxGraph
+                // (and transitively exposes :error-log:api, which :real already api()s).
+                api(projects.features.errorLog.real)
                 implementation(projects.features.search.api)
                 api(projects.features.search.real)
                 implementation(projects.features.settings.api)

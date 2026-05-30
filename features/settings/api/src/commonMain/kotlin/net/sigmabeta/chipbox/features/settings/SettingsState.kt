@@ -103,6 +103,7 @@ data class SettingsState(
         return listOf(
             sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_DEBUG),
             playbackStatusRow(stringProvider),
+            errorLogRow(stringProvider),
             appBranchRow(stringProvider),
             versionCodeRow(stringProvider),
         )
@@ -204,6 +205,13 @@ data class SettingsState(
         name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_PLAYBACK_STATUS),
         caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_PLAYBACK_STATUS),
         clickAction = SettingsAction.PlaybackStatusClicked,
+    )
+
+    private fun errorLogRow(stringProvider: StringProvider) = NameCaptionListModel(
+        dataId = ChipboxStringId.SETTINGS_LABEL_ERROR_LOG.hashCode().toLong(),
+        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_ERROR_LOG),
+        caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_ERROR_LOG),
+        clickAction = SettingsAction.ErrorLogClicked,
     )
 
     private fun appBranchRow(stringProvider: StringProvider) = LabelValueListModel(

@@ -31,4 +31,7 @@
 
     <string name="settings_label_playback_status">Playback status</string>
     <string name="settings_caption_playback_status">Inspect current player state (debug only).</string>
+
+    <string name="settings_label_error_log">Error log</string>
+    <string name="settings_caption_error_log">Recent errors logged this session (debug only).</string>
 </resources>
