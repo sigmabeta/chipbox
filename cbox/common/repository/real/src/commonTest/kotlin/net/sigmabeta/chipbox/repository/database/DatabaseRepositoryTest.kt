@@ -458,6 +458,63 @@ class DatabaseRepositoryTest {
         assertEquals(chain, decoded.chainFiles)
     }
 
+    // ---- random picks ----
+
+    @Test
+    fun `getRandomTrack, getRandomGame, getRandomArtist all return null on an empty library`() = runTest {
+        val (repo, _) = newRepo()
+        assertNull(repo.getRandomTrack())
+        assertNull(repo.getRandomGame())
+        assertNull(repo.getRandomArtist())
+    }
+
+    @Test
+    fun `getRandomTrack returns one of the library's tracks`() = runTest {
+        val (repo, _) = newRepo()
+        repo.upsertGame(
+            rawGame("Game", "/library/x", tracks = listOf(rawTrack("A1"), rawTrack("A2"), rawTrack("A3"))),
+        )
+        val pick = repo.getRandomTrack()
+        assertNotNull(pick)
+        assertTrue(pick.title in setOf("A1", "A2", "A3"), "expected a track from the library; got ${pick.title}")
+    }
+
+    @Test
+    fun `getRandomGame returns one of the library's games`() = runTest {
+        val (repo, _) = newRepo()
+        repo.upsertGame(rawGame("Game A", "/library/a"))
+        repo.upsertGame(rawGame("Game B", "/library/b"))
+        val pick = repo.getRandomGame()
+        assertNotNull(pick)
+        assertTrue(pick.title in setOf("Game A", "Game B"), "expected a game from the library; got ${pick.title}")
+    }
+
+    @Test
+    fun `getRandomArtist returns one of the library's artists`() = runTest {
+        val (repo, _) = newRepo()
+        repo.upsertGame(
+            rawGame("Game", "/library/x", tracks = listOf(rawTrack("T", artist = "Composer A & Composer B"))),
+        )
+        val pick = repo.getRandomArtist()
+        assertNotNull(pick)
+        assertTrue(pick.name in setOf("Composer A", "Composer B"), "expected an artist from the library; got ${pick.name}")
+    }
+
+    @Test
+    fun `getRandom picks are reproducible for the default fixed seed`() = runTest {
+        // FakeDatabase defaults to a fixed-seed Random so getRandom() picks are deterministic
+        // across runs (matching the rest of this fake) — two identically-populated fakes return
+        // the same row. Locks in the seeded-Random contract.
+        suspend fun pick(): String? {
+            val (repo, _) = newRepo()
+            repo.upsertGame(
+                rawGame("Game", "/library/x", tracks = listOf(rawTrack("A1"), rawTrack("A2"), rawTrack("A3"))),
+            )
+            return repo.getRandomTrack()?.title
+        }
+        assertEquals(pick(), pick())
+    }
+
     // ---- helpers ----
 
     private fun newRepo(): Pair<DatabaseRepository, FakeDatabase> {
