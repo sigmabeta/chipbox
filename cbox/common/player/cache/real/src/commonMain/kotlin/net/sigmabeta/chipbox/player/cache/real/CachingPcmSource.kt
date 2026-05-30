@@ -60,6 +60,12 @@ internal class CachingPcmSource(
     override val isOver: Boolean
         get() = writerComplete && cursor >= writer.framesWritten
 
+    /** Writer's high-water mark in frames — how much of this track is on disk and instantly
+     *  readable. Reads cleanly even mid-render: the writer publishes to [watermark] after each
+     *  buffer it appends. */
+    override val cachedFrames: Long
+        get() = watermark.value.coerceAtLeast(0L)
+
     // BS.1770 measurer fed every committed (non-trimmed-silence) buffer. The writer races well
     // past the play head, so [loudnessLufs]/[truePeakDbtp] settle within the first 400 ms of
     // playback; until then they're NaN / -Infinity and the speaker leaves audio un-normalized.

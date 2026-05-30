@@ -17,6 +17,13 @@ data class NowPlayingModel(
     val isBuffering: Boolean = false,
     val positionMs: Long,
     val lengthMs: Long,
+    /**
+     * How much of the active track is already rendered to local cache, in ms. Shown as a
+     * subtle secondary fill behind the seek bar so the user can see how much of the track
+     * is instantly available. Bounded by [lengthMs]; a cached-file source reports the whole
+     * track length here from the first emission.
+     */
+    val cachedMs: Long = 0L,
     val canSkipForward: Boolean,
     val isShuffled: Boolean,
     val repeatMode: RepeatMode,
@@ -44,6 +51,7 @@ data class NowPlayingModel(
             isBuffering = false,
             positionMs = 0L,
             lengthMs = 0L,
+            cachedMs = 0L,
             canSkipForward = false,
             isShuffled = false,
             repeatMode = RepeatMode.OFF,

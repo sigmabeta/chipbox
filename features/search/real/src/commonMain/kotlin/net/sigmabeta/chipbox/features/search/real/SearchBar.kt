@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.text
@@ -71,7 +72,15 @@ fun SearchBar(
                     .padding(vertical = 4.dp),
             ) {
                 val focusRequester = remember { FocusRequester() }
-                LaunchedEffect(Unit) { focusRequester.requestFocus() }
+                // Skip the auto-focus under Paparazzi / @Preview: the IME show that follows
+                // routes through Layoutlib's HandlerThread mock, which calls
+                // Thread.setPosixNicenessInternal(int) and crashes on JDK ≥ 25 (Paparazzi
+                // 2.0.0-alpha04 / layoutlib-runtime-16.2.1). LocalInspectionMode is true under
+                // both Paparazzi and AS Preview; runtime stays unaffected.
+                val skipFocus = LocalInspectionMode.current
+                LaunchedEffect(Unit) {
+                    if (!skipFocus) focusRequester.requestFocus()
+                }
 
                 BasicTextField(
                     value = text,

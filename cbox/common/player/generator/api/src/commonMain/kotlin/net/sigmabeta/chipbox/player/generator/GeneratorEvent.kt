@@ -20,8 +20,14 @@ sealed class GeneratorEvent {
      *  [net.sigmabeta.chipbox.player.director.PlayerState.BUFFERING] → `PLAYING`. [producedMs]
      *  is the generator's high-water mark within the current track — the time-offset of the
      *  last frame just handed to the buffer manager. [trackId] identifies which track those
-     *  frames belong to, so the director can ignore stragglers from a track it has skipped past. */
-    data class Emitting(val producedMs: Long, val trackId: Long) : GeneratorEvent()
+     *  frames belong to, so the director can ignore stragglers from a track it has skipped past.
+     *  [cachedMs] mirrors [net.sigmabeta.chipbox.player.cache.PcmTrackSource.cachedFrames] in ms
+     *  so the now-playing UI can show how much of the active track sits in the cache. */
+    data class Emitting(
+        val producedMs: Long,
+        val trackId: Long,
+        val cachedMs: Long = 0L,
+    ) : GeneratorEvent()
 
     /** The current track has finished and the generator is blocked waiting for the next
      *  track id. The director is expected to respond with [Generator.startTrack]. */

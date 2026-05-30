@@ -12,6 +12,12 @@ fun Double.millisToFrames(sampleRate: Int) = (this * sampleRate.rateInMillis()).
 
 fun Int.framesToMillis(sampleRate: Int) = this / (sampleRate.rateInMillis())
 
+fun Long.framesToMillis(sampleRate: Int): Long = if (sampleRate > 0) {
+    (this * MILLIS_PER_SECOND.toLong()) / sampleRate
+} else {
+    0L
+}
+
 fun Int.framesToSamples() = (this * SHORTS_PER_FRAME)
 
 fun Int.samplesToFrames() = (this / SHORTS_PER_FRAME)

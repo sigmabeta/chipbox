@@ -36,6 +36,7 @@ data class NowPlayingState(
         isBuffering = playback?.state == PlayerState.BUFFERING,
         positionMs = playback?.position ?: 0L,
         lengthMs = track?.trackLengthMs ?: 0L,
+        cachedMs = playback?.cachedMs ?: 0L,
         canSkipForward = playback?.skipForwardAllowed == true,
         isShuffled = session?.shuffled == true,
         repeatMode = repeatMode,

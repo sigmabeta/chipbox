@@ -276,6 +276,10 @@ abstract class BaseGenerator(
                 val emittingEvent = GeneratorEvent.Emitting(
                     producedMs = framesPlayed.framesToMillis(rate).toLong(),
                     trackId = track.id,
+                    // Snapshot the source's cache watermark each cycle so the now-playing screen
+                    // can render a cached-portion overlay. Live caching sources publish how much
+                    // is on disk; cached-file sources return totalFrames (already complete).
+                    cachedMs = source.cachedFrames.framesToMillis(rate),
                 )
                 updateDebug {
                     it.copy(

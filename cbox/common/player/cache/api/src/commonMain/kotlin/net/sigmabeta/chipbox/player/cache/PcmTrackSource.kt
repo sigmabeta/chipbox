@@ -30,6 +30,18 @@ interface PcmTrackSource {
     val totalFrames: Long?
 
     /**
+     * Frames already rendered to local storage and immediately readable without re-running the
+     * emulator — the "cached portion" of the track. Snapshotted by the generator each buffer
+     * cycle and surfaced through [net.sigmabeta.chipbox.player.director.ChipboxPlaybackState]
+     * so the now-playing screen can show how much of the current track is on disk.
+     *
+     * Cached-file sources return [totalFrames] (the whole file is already there); live
+     * caching sources return their writer's watermark; bare emulator sources have no cache
+     * and stay at 0.
+     */
+    val cachedFrames: Long get() = 0L
+
+    /**
      * Fill [buffer] with up to its capacity in stereo frames, starting at the source's current
      * read cursor. Returns the number of frames actually read (0 if end-of-track is reached
      * before any frames could be produced).
