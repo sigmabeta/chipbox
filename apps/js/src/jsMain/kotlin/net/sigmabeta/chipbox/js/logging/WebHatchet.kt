@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:class-naming")
+
 package net.sigmabeta.chipbox.js.logging
 
 import net.sigmabeta.sage.logging.Hatchet
