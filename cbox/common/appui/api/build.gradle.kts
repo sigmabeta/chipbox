@@ -48,46 +48,30 @@ kotlin {
                 // routing is gone.
                 implementation(projects.cbox.common.models.api)
 
-                implementation(projects.features.home.api)
-                api(projects.features.home.real)
-                implementation(projects.features.library.api)
-                api(projects.features.library.real)
-                implementation(projects.features.folderPicker.api)
-                api(projects.features.folderPicker.real)
-                implementation(projects.features.manageLibrary.api)
-                api(projects.features.manageLibrary.real)
-                implementation(projects.features.rescanStatus.api)
-                api(projects.features.rescanStatus.real)
-                implementation(projects.features.nowPlaying.api)
-                api(projects.features.nowPlaying.real)
-                // Re-added after playback-status was ported to sage.kmp. The old debug=real/
-                // release=fake variant split (which Metro 1.1.1 couldn't aggregate) is gone:
-                // the screen is plain `sage.kmp` and the debug gate now lives in Settings'
-                // `shouldShowDebug` section, not a build variant. `api(real)` so its
+                // Each feature's `:real` already `api()`s its own `:api`, so depending on `:real`
+                // alone transitively exposes the `:api` nav markers (Home, GameDetail, …) that
+                // ChipboxScreens references. `api(real)` (not implementation) so every feature's
                 // @ContributesIntoMap VM aggregates into ChipboxAppGraph / JvmChipboxGraph.
-                implementation(projects.features.playbackStatus.api)
+                api(projects.features.home.real)
+                api(projects.features.library.real)
+                api(projects.features.folderPicker.real)
+                api(projects.features.manageLibrary.real)
+                api(projects.features.rescanStatus.real)
+                api(projects.features.nowPlaying.real)
+                // playback-status is plain `sage.kmp` now (the old debug=real/release=fake variant
+                // split Metro 1.1.1 couldn't aggregate is gone); the debug gate lives in Settings'
+                // `shouldShowDebug` section, not a build variant.
                 api(projects.features.playbackStatus.real)
-                // Debug-only error log reached from Settings' shouldShowDebug section. `api(real)`
-                // so its @ContributesIntoMap VM aggregates into ChipboxAppGraph / JvmChipboxGraph
-                // (and transitively exposes :error-log:api, which :real already api()s).
+                // Debug-only error log reached from that same Settings debug section.
                 api(projects.features.errorLog.real)
-                implementation(projects.features.search.api)
                 api(projects.features.search.real)
-                implementation(projects.features.settings.api)
                 api(projects.features.settings.real)
-                implementation(projects.features.browseAllTracks.api)
                 api(projects.features.browseAllTracks.real)
-                implementation(projects.features.browseByArtist.api)
                 api(projects.features.browseByArtist.real)
-                implementation(projects.features.browseByGame.api)
                 api(projects.features.browseByGame.real)
-                implementation(projects.features.browseByPlatform.api)
                 api(projects.features.browseByPlatform.real)
-                implementation(projects.features.gamesForPlatform.api)
                 api(projects.features.gamesForPlatform.real)
-                implementation(projects.features.gameDetail.api)
                 api(projects.features.gameDetail.real)
-                implementation(projects.features.artistDetail.api)
                 api(projects.features.artistDetail.real)
 
                 // `sage.di.android` plugin auto-included this; the sage.kmp + metro combo
