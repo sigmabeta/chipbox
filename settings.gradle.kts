@@ -186,6 +186,8 @@ include(
     ":features:now-playing:screenshot",
     ":features:playback-status:api",
     ":features:playback-status:real",
+    ":features:error-log:api",
+    ":features:error-log:real",
     ":features:search:api",
     ":features:search:real",
     ":features:search:screenshot",

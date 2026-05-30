@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.features.errorlog.ErrorLog
 import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
@@ -119,6 +120,8 @@ class SettingsViewModel @Inject constructor(
             SettingsAction.BuildDateClicked -> onBuildDateClicked()
 
             SettingsAction.PlaybackStatusClicked -> emit(ChipboxEvent.NavigateTo(PlaybackStatus))
+
+            SettingsAction.ErrorLogClicked -> emit(ChipboxEvent.NavigateTo(ErrorLog))
 
             else -> Unit
         }

@@ -46,6 +46,8 @@ import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingRoute
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.playbackstatus.real.PlaybackStatusRoute
+import net.sigmabeta.chipbox.features.errorlog.ErrorLog
+import net.sigmabeta.chipbox.features.errorlog.real.ErrorLogRoute
 import net.sigmabeta.chipbox.features.search.Search
 import net.sigmabeta.chipbox.features.search.real.SearchRoute
 import net.sigmabeta.chipbox.features.settings.Settings
@@ -76,6 +78,7 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     FolderPicker -> FolderPickerScreen
     RescanStatus -> RescanStatusScreen
     PlaybackStatus -> PlaybackStatusScreen
+    ErrorLog -> ErrorLogScreen
     NowPlaying -> NowPlayingScreen
     BrowseByGame -> BrowseByGameScreen
     BrowseByPlatform -> BrowseByPlatformScreen
@@ -346,6 +349,17 @@ private object RescanStatusScreen : Screen {
 private object PlaybackStatusScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         PlaybackStatusRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+/**
+ * Debug-only error log, reached from the Settings debug section (gated behind `shouldShowDebug`).
+ * Surfaces the Hatchet's in-memory recent-errors buffer; the route is only reachable when the
+ * gated Settings row emits `NavigateTo(ErrorLog)`.
+ */
+private object ErrorLogScreen : Screen {
+    @Composable override fun Content() = ScreenScaffold {
+        ErrorLogRoute(onEvent = LocalChipboxEventSink.current)
     }
 }
 

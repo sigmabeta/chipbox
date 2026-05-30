@@ -28,6 +28,8 @@ kotlin {
                 implementation(projects.cbox.common.contentsource.api)
                 // PlaybackStatus route key for SettingsAction.PlaybackStatusClicked -> NavigateTo.
                 implementation(projects.features.playbackStatus.api)
+                // ErrorLog route key for SettingsAction.ErrorLogClicked -> NavigateTo.
+                implementation(projects.features.errorLog.api)
                 // ManageLibrary route key for SettingsAction.ManageLibraryClicked -> NavigateTo.
                 implementation(projects.features.manageLibrary.api)
                 // RescanStatus route key — navigated to when a scan starts / from the in-progress row.
