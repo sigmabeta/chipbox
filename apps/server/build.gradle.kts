@@ -66,7 +66,14 @@ sourceSets {
         resources.srcDir(layout.buildDirectory.dir("generated/static"))
     }
 }
-tasks.named("processResources") { dependsOn(copyJsBundle) }
+tasks.named("processResources") {
+    dependsOn(copyJsBundle)
+    // installProdBundle (declared below) writes into the same `generated/static/static`
+    // directory. Gradle 9 wants the relationship declared explicitly even though
+    // installProdBundle is only in the graph for installDist/distZip/distTar. mustRunAfter
+    // gives the ordering without forcing installProdBundle into every `:apps:server:run`.
+    mustRunAfter(installProdBundle)
+}
 
 tasks.named<JavaExec>("run") {
     dependsOn(buildVgmstreamLib)

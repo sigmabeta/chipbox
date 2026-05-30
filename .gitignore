@@ -65,3 +65,4 @@ apps/jvm/Chipbox Output Files/
 # JVM crash dumps from the headless app
 apps/jvm/hs_err_pid*.log
 apps/jvm/core.*
+.chipbox-server/
