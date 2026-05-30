@@ -1,4 +1,4 @@
-@file:Suppress("FunctionName", "VariableNaming", "PropertyName")
+@file:Suppress("FunctionName", "VariableNaming", "PropertyName", "ktlint:standard:filename")
 
 package net.sigmabeta.chipbox.js.wasm
 
