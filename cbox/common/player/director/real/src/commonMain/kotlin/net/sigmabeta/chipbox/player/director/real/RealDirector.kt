@@ -310,6 +310,12 @@ class RealDirector(
         PlayerState.IDLE, PlayerState.STOPPED, PlayerState.ERROR -> false
     }
 
+    /** States where the generator is expected to be feeding audio, so a gap in its output is a
+     *  fault worth a stall guard. PAUSED/STOPPED/ENDING/ERROR/IDLE expect silence, so the guard
+     *  stays off there. */
+    private fun PlayerState.expectsAudioFlow(): Boolean =
+        this == PlayerState.PLAYING || this == PlayerState.BUFFERING
+
     override fun start(
         setlist: List<Long>,
         startingPosition: Int,
@@ -374,6 +380,12 @@ class RealDirector(
      *  consumer, so a stall is handled by the same skip-or-stop policy as any other bad track. */
     private fun armStallWatchdog() {
         stallWatchdogJob?.cancel()
+        stallWatchdogJob = null
+        // Only guard while audio is meant to be flowing. After a pause the generator keeps emitting
+        // for a moment as it drains its render-ahead buffer; those Emittings must not re-arm the
+        // watchdog, or it fires partway through an intentional pause and "recovers" by skipping to
+        // the next track.
+        if (!model.playback.state.expectsAudioFlow()) return
         stallWatchdogJob = directorScope.launch {
             delay(STALL_TIMEOUT_MS)
             hatchet.w(
@@ -399,9 +411,12 @@ class RealDirector(
         directorScope.launch {
             // Paused audio is meant to be silent — don't let that read as a stall. (The generator
             // keeps running until its buffers back up, so it isn't stopped here.)
-            cancelStallWatchdog()
             speaker.pause()
             commit(model.copy(playback = model.playback.copy(state = PlayerState.PAUSED)))
+            // Cancel AFTER committing PAUSED: a generator Emitting can slip in while speaker.pause()
+            // suspends and re-arm the guard (we were still PLAYING then). With PAUSED now committed,
+            // clear it here — and armStallWatchdog() won't re-arm while paused.
+            cancelStallWatchdog()
         }
     }
 
@@ -504,9 +519,10 @@ class RealDirector(
         directorScope.launch {
             // A transient audio-focus loss stops the consume loop just like a real pause, so
             // reflect it as PAUSED (the UI was previously left showing PLAYING with no audio).
-            cancelStallWatchdog()
             speaker.pause()
             commit(model.copy(playback = model.playback.copy(state = PlayerState.PAUSED)))
+            // Cancel after committing PAUSED (see pause()).
+            cancelStallWatchdog()
         }
     }
 
