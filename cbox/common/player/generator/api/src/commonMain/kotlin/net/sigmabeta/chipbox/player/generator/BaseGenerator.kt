@@ -7,6 +7,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -17,12 +18,14 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
+import kotlin.concurrent.Volatile
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.common.SHORTS_PER_FRAME
+import net.sigmabeta.chipbox.player.common.STALL_TIMEOUT_MS
 import net.sigmabeta.chipbox.player.common.firstAudibleFrame
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.chipbox.player.common.isBufferSilent
@@ -64,6 +67,11 @@ abstract class BaseGenerator(
         generatorScope.cancel()
     }
 
+    // @Volatile: written by transport calls (play/pause/stop, on the director's thread) and read
+    // back by a concurrent loop self-teardown, so the null-on-teardown must be visible across
+    // threads. Atomicity of the check-then-launch in play() is provided by the director
+    // serializing its generator calls plus always stop()-ing before relaunching in recovery.
+    @Volatile
     private var ongoingGenerationJob: Job? = null
 
     private var framesPlayed: Int = 0
@@ -437,7 +445,7 @@ abstract class BaseGenerator(
      * the freed space refilled so the buffer stays a full, contiguous block (the pipeline
      * always plays the whole array).
      *
-     * Aborts via [TrimResult.Aborted] if no audio appears within [SILENCE_TIMEOUT_SECONDS].
+     * Aborts via [TrimResult.Aborted] if no audio appears within [STALL_TIMEOUT_MS].
      */
     private suspend fun trimLeadingSilence(
         source: PcmTrackSource,
@@ -470,11 +478,12 @@ abstract class BaseGenerator(
                 else -> {
                     // Whole buffer silent.
                     silentLeadFrames += frames
+                    val silenceTimeoutFrames = sampleRate.toLong() * STALL_TIMEOUT_MS / MILLIS_PER_SECOND
                     when {
-                        silentLeadFrames >= sampleRate * SILENCE_TIMEOUT_SECONDS ->
+                        silentLeadFrames.toLong() >= silenceTimeoutFrames ->
                             result = TrimResult.Aborted(
                                 "Track produced no audio within the first " +
-                                    "$SILENCE_TIMEOUT_SECONDS seconds."
+                                    "${STALL_TIMEOUT_MS / MILLIS_PER_SECOND} seconds."
                             )
 
                         source.isOver -> result = TrimResult.PassThrough(frames)
@@ -491,6 +500,28 @@ abstract class BaseGenerator(
     }
 
     /**
+     * Read at least one frame, transparently waiting out render-ahead starvation. A render-ahead
+     * caching source returns 0 with [PcmTrackSource.awaitingRender] true while its writer hasn't
+     * yet produced the frame under the cursor (e.g. right after a seek into an un-rendered
+     * region). Rather than treat that as an error, emit a [GeneratorEvent.Rendering] heartbeat —
+     * so the director can apply its own stall timeout against actual render progress — then poll
+     * until frames arrive. Returns 0 only on a genuine end-of-track, a source error, or a
+     * non-render 0 (from a source that never lags the cursor), which the caller surfaces as an
+     * error. Cancellation while polling unwinds normally via [delay].
+     */
+    private suspend fun readWaitingForRender(source: PcmTrackSource, buffer: ShortArray): Int {
+        while (true) {
+            val frames = source.readFrames(buffer).coerceAtLeast(0)
+            if (frames > 0) return frames
+            if (source.isOver || source.getLastError() != null || !source.awaitingRender) {
+                return 0
+            }
+            eventSink.emit(GeneratorEvent.Rendering(source.cachedFrames.framesToMillis(source.sampleRate)))
+            delay(RENDER_POLL_MS)
+        }
+    }
+
+    /**
      * Fill [buffer] to its full capacity, reading [source] repeatedly until it's full, the
      * track ends, or the source errors. Returns the number of frames actually produced.
      *
@@ -499,17 +530,17 @@ abstract class BaseGenerator(
      * fraction of the buffer. The pipeline plays the whole fixed-size array (no per-buffer
      * frame count travels on [net.sigmabeta.chipbox.player.buffer.AudioBuffer]), so emitting a
      * partially-filled buffer plays its untouched tail — pool zeros or a recycled buffer's
-     * stale audio — as a mid-stream gap/glitch. Looping here keeps the caching source's
-     * `readFrames` (which blocks for at least one new frame) feeding until the buffer is whole,
-     * so every emitted buffer is one contiguous block. Cached-file sources already return full
-     * reads, so for them the first read fills the buffer and the loop is a no-op.
+     * stale audio — as a mid-stream gap/glitch. The first read goes through [readWaitingForRender]
+     * so render-ahead starvation is waited out; subsequent reads top the buffer up until it's
+     * whole, so every emitted buffer is one contiguous block. Cached-file sources already return
+     * full reads, so for them the first read fills the buffer and the loop is a no-op.
      *
      * Only a genuine end-of-track (or error) ends the fill early; whatever tail is left unread
      * is zeroed so the final buffer can't replay stale samples.
      */
     private suspend fun fillBuffer(source: PcmTrackSource, buffer: ShortArray): Int {
         val capacityShorts = buffer.size
-        var filledShorts = source.readFrames(buffer).coerceAtLeast(0) * SHORTS_PER_FRAME
+        var filledShorts = readWaitingForRender(source, buffer) * SHORTS_PER_FRAME
         while (filledShorts in 1 until capacityShorts) {
             val rest = ShortArray(capacityShorts - filledShorts)
             val read = source.readFrames(rest).coerceAtLeast(0)
@@ -526,7 +557,10 @@ abstract class BaseGenerator(
     companion object {
         private const val MILLIS_PER_SECOND = 1_000L
 
-        /** Abort a track that produces no audio within this many seconds of generation. */
-        private const val SILENCE_TIMEOUT_SECONDS = 5
+        /** How often to re-check a render-ahead source (and emit a [GeneratorEvent.Rendering]
+         *  heartbeat) while it's still rendering toward the read cursor. Purely a poll cadence —
+         *  the wake latency once frames are ready, well within the buffer manager's headroom — not
+         *  a failure deadline; the director decides when a render wait has stalled. */
+        private const val RENDER_POLL_MS = 100L
     }
 }

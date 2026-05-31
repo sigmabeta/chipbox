@@ -3,8 +3,11 @@ package net.sigmabeta.chipbox.player.director.real
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -15,6 +18,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.common.STALL_TIMEOUT_MS
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
@@ -35,6 +39,8 @@ private const val SKIP_BACK_THRESHOLD_MS = 3_000L
  *  gives up and stops the session instead of skipping to yet another track. */
 private const val MAX_CONSECUTIVE_FAILURES = 3
 
+private const val MILLIS_PER_SECOND = 1_000L
+
 /**
  * Production [Director] implementation.
  *
@@ -50,13 +56,22 @@ private const val MAX_CONSECUTIVE_FAILURES = 3
  * also decides when to advance tracks — the generator emits [GeneratorEvent.TrackChange] when
  * its current track ends, and the director responds by feeding it the next track id from the
  * setlist (or transitioning to [PlayerState.ENDING] if the setlist is exhausted).
+ *
+ * ### Threading
+ * The default [dispatcher] is single-threaded ([CoroutineDispatcher.limitedParallelism]`(1)` over
+ * [Dispatchers.Default]) and is the whole point: the two event collectors, every transport
+ * method, and the stall watchdog all mutate the same unguarded state ([currentState], the failure
+ * counter, the render-progress mark, the watchdog handle). Serializing them onto one thread makes
+ * those read-modify-writes safe without a lock — the state machine is processed one event at a
+ * time. Tests inject a single-threaded test dispatcher, which models the same guarantee.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class RealDirector(
     private val generator: Generator,
     private val speaker: Speaker,
     private val repository: Repository,
     private val hatchet: Hatchet,
-    dispatcher: CoroutineDispatcher = Dispatchers.Default
+    dispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1)
 ) : Director {
     private val directorScope = CoroutineScope(SupervisorJob() + dispatcher)
 
@@ -77,6 +92,16 @@ class RealDirector(
     /** Number of generator errors since the last successful audio emission. Reset whenever a
      *  track actually produces audio (or a fresh session starts); drives the give-up cutoff. */
     private var consecutiveGeneratorFailures: Int = 0
+
+    /** Pending [STALL_TIMEOUT_MS] timer. Re-armed on every progress signal (audio
+     *  produced, or the render watermark advancing); fires only if the generator goes silent for
+     *  the whole window while audio is meant to be flowing. Null while disarmed (paused, stopped,
+     *  ending, idle). */
+    private var stallWatchdogJob: Job? = null
+
+    /** Highest render watermark (ms) seen for the current track, so a render that's still
+     *  advancing (healthy uncached seek) can be told apart from a wedged one. Reset per track. */
+    private var lastRenderProgressMs: Long = 0L
 
     private var currentState: ChipboxPlaybackState = ChipboxPlaybackState(
         state = PlayerState.IDLE,
@@ -208,15 +233,90 @@ class RealDirector(
     }
 
     override fun play() {
-        if (currentState.state == PlayerState.PAUSED) {
-            speaker.play()
-            currentState = currentState.copy(state = PlayerState.PLAYING)
+        when (currentState.state) {
+            PlayerState.PAUSED -> {
+                speaker.play()
+                currentState = currentState.copy(state = PlayerState.PLAYING)
+                generator.play()
+                // Audio should resume flowing, so guard for a stall again until it does.
+                armStallWatchdog()
+            }
+
+            // A finished setlist ends in STOPPED with the generator loop and speaker sink both
+            // torn down, but currentSession/currentSetlist still pointing at the last track the UI
+            // is showing. There's nothing queued for a bare generator.play() to pick up — its loop
+            // would just block on an empty channel forever — so re-issue the current track from the
+            // top, matching the user's expectation that play restarts the track on screen.
+            PlayerState.STOPPED -> restartCurrentTrack()
+
+            else -> generator.play()
         }
-        generator.play()
+    }
+
+    /**
+     * Reload and restart the track at the current setlist position from the beginning. Unlike a
+     * paused resume there's nothing to un-pause — after a setlist completes the generator and
+     * speaker have been torn down — so the track has to be queued afresh, which re-spins both the
+     * generation and consume loops (and walks the state back through BUFFERING -> PLAYING via the
+     * usual Loading/Emitting reducers). No-op if there's no session to restart.
+     */
+    private fun restartCurrentTrack() {
+        directorScope.launch {
+            val setlist = currentSetlist
+            val trackId = currentSession?.currentPosition?.let { setlist?.getOrNull(it) }
+            if (trackId == null) {
+                hatchet.w("play() while STOPPED but no current track to restart.")
+                return@launch
+            }
+            consecutiveGeneratorFailures = 0
+            startTrack(trackId)
+        }
+    }
+
+    /** (Re)start the stall timer. Called on every progress signal while audio should be flowing,
+     *  so a healthy stream — or a render-ahead wait that keeps advancing — perpetually pushes the
+     *  deadline out and never trips. */
+    private fun armStallWatchdog() {
+        stallWatchdogJob?.cancel()
+        stallWatchdogJob = directorScope.launch {
+            delay(STALL_TIMEOUT_MS)
+            onGeneratorStalled()
+        }
+    }
+
+    /** Stop guarding for a stall (paused / stopped / ending / errored — anywhere audio isn't
+     *  expected to flow, so silence is normal rather than a fault). */
+    private fun cancelStallWatchdog() {
+        stallWatchdogJob?.cancel()
+        stallWatchdogJob = null
+    }
+
+    /**
+     * The generator made no progress for [STALL_TIMEOUT_MS] while audio was meant to be
+     * flowing. The loop is parked on frames that aren't coming, so cancel it (unsticking the
+     * read) and run the same skip-or-stop policy a real generator error would — treating the
+     * stall as just another bad track.
+     */
+    private suspend fun onGeneratorStalled() {
+        hatchet.w(
+            "Generator made no progress for $STALL_TIMEOUT_MS ms; " +
+                "treating the current track as stalled."
+        )
+        generator.stop()
+        currentState = handleGeneratorError(
+            GeneratorEvent.Error(
+                "Playback stalled: no audio for " +
+                    "${STALL_TIMEOUT_MS / MILLIS_PER_SECOND} seconds."
+            ),
+            currentState,
+        )
     }
 
     override fun pause() {
         directorScope.launch {
+            // Paused audio is meant to be silent — don't let that read as a stall. (The generator
+            // keeps running until its buffers back up, so it isn't stopped here.)
+            cancelStallWatchdog()
             speaker.pause()
 
             currentState = currentState.copy(state = PlayerState.PAUSED)
@@ -225,6 +325,7 @@ class RealDirector(
 
     override fun stop() {
         directorScope.launch {
+            cancelStallWatchdog()
             speaker.stop()
             generator.stop()
 
@@ -311,7 +412,11 @@ class RealDirector(
 
     override fun pauseTemporarily() {
         directorScope.launch {
+            // A transient audio-focus loss stops the consume loop just like a real pause, so
+            // reflect it as PAUSED (the UI was previously left showing PLAYING with no audio).
+            cancelStallWatchdog()
             speaker.pause()
+            currentState = currentState.copy(state = PlayerState.PAUSED)
         }
     }
 
@@ -324,10 +429,19 @@ class RealDirector(
     }
 
     override fun resumeFocus() {
-        // Undo a duck() (no-op if we weren't ducked) and restart the consume loop if a
-        // pauseTemporarily() had stopped it (no-op if it's already running).
-        speaker.setDucked(false)
-        speaker.play()
+        directorScope.launch {
+            // Undo a duck() (no-op if we weren't ducked) and restart the consume loop if a
+            // pauseTemporarily() had stopped it (no-op if it's already running).
+            speaker.setDucked(false)
+            speaker.play()
+            // Counterpart to pauseTemporarily()'s PAUSED: if a transient focus loss had paused us,
+            // come back to PLAYING and guard for stalls again. State-wise a no-op if we were only
+            // ducked (already PLAYING).
+            if (currentState.state == PlayerState.PAUSED) {
+                currentState = currentState.copy(state = PlayerState.PLAYING)
+                armStallWatchdog()
+            }
+        }
     }
 
     override fun setVolume(scale: Double) {
@@ -356,6 +470,9 @@ class RealDirector(
             if (isCurrentTrackLastInSetlist(session, setlist)) {
                 // TODO This should also have a reducer.
                 hatchet.d("Generator requested next track, but no more exist.")
+                // The setlist is over and the generator is being stopped — silence from here on
+                // is expected, so stop guarding for a stall.
+                cancelStallWatchdog()
                 currentState = currentState.copy(state = PlayerState.ENDING)
                 generator.stop()
                 return@launch
@@ -417,7 +534,26 @@ class RealDirector(
         is GeneratorEvent.Error -> handleGeneratorError(event, oldState)
         is GeneratorEvent.Loading -> handleGeneratorLoading(oldState, event)
         is GeneratorEvent.Emitting -> handleGeneratorEmitting(oldState, event)
+        is GeneratorEvent.Rendering -> handleGeneratorRendering(oldState, event)
         GeneratorEvent.TrackChange -> handleGeneratorTrackChange(oldState)
+    }
+
+    /**
+     * The generator is waiting on the writer to render past the play cursor (e.g. an uncached
+     * seek). Treat an advancing watermark as liveness: re-arm the stall watchdog whenever
+     * [GeneratorEvent.Rendering.cachedMs] climbs, and leave it running (counting down) when it
+     * doesn't — so a wedged render trips the guard but a slow-but-progressing one never does.
+     * Also surface the growing cache to the now-playing UI.
+     */
+    private fun handleGeneratorRendering(
+        oldState: ChipboxPlaybackState,
+        event: GeneratorEvent.Rendering,
+    ): ChipboxPlaybackState {
+        if (event.cachedMs > lastRenderProgressMs) {
+            lastRenderProgressMs = event.cachedMs
+            armStallWatchdog()
+        }
+        return oldState.copy(cachedMs = event.cachedMs)
     }
 
     private suspend fun handleGeneratorLoading(
@@ -429,6 +565,7 @@ class RealDirector(
 
         if (session == null) {
             emitError("Invalid session.")
+            cancelStallWatchdog()
             return oldState.copy(
                 state = PlayerState.ERROR,
                 errorMessage = "Unable to determine if next track available."
@@ -437,11 +574,17 @@ class RealDirector(
 
         if (setlist == null) {
             emitError("Invalid setlist.")
+            cancelStallWatchdog()
             return oldState.copy(
                 state = PlayerState.ERROR,
                 errorMessage = "Unable to determine if next track available."
             )
         }
+
+        // A new track is loading: we now expect audio, so start guarding for a stall and reset
+        // the render-progress mark this track will be measured against.
+        lastRenderProgressMs = 0L
+        armStallWatchdog()
 
         // Already mid-playback (audio flowing) or mid-buffer (starved): a track change is in
         // flight. Don't force a state — the speaker decides PLAYING vs BUFFERING by whether audio
@@ -494,8 +637,12 @@ class RealDirector(
             speaker.play()
         }
 
-        // The current track is producing audio — the failure streak is broken.
+        // The current track is producing audio — the failure streak is broken and the stall
+        // guard resets (playback progressed). Track the watermark so a later render wait is
+        // measured against the furthest point already rendered.
         consecutiveGeneratorFailures = 0
+        lastRenderProgressMs = maxOf(lastRenderProgressMs, event.cachedMs)
+        armStallWatchdog()
 
         return oldState.copy(
             generatorProducedMs = event.producedMs,
@@ -527,6 +674,10 @@ class RealDirector(
         event: GeneratorEvent.Error,
         oldState: ChipboxPlaybackState,
     ): ChipboxPlaybackState {
+        // This track's progress tracking is moot now; a skip re-arms the guard when the next
+        // track starts loading, a stop/give-up leaves it disarmed.
+        cancelStallWatchdog()
+
         val session = currentSession
         val setlist = currentSetlist
 
@@ -576,6 +727,12 @@ class RealDirector(
                         val nextPosition = (session.currentPosition ?: -1) + 1
                         val nextTrackId = setlist[nextPosition]
                         directorScope.launch {
+                            // Fully tear down the failed track's loop before relaunching on the
+                            // next one. The loop self-terminates on error, but racing that against
+                            // startTrack()'s play() can leave play() seeing a not-yet-cleared job
+                            // ("Already looping") so the queued track never starts. Mirrors the
+                            // stall-recovery path.
+                            generator.stop()
                             advanceToTrackAt(session, setlist, nextPosition)
                             speaker.switchTo(nextTrackId)
                         }
@@ -596,6 +753,7 @@ class RealDirector(
     private fun handleSpeakerBuffering(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
         if (oldState.state == PlayerState.ENDING) {
             hatchet.i("Setlist complete.")
+            cancelStallWatchdog()
             stop()
             return oldState.copy(state = PlayerState.STOPPED)
         }
@@ -640,6 +798,7 @@ class RealDirector(
         oldState: ChipboxPlaybackState,
     ): ChipboxPlaybackState {
         emitError(event.message)
+        cancelStallWatchdog()
 
         directorScope.launch {
             speaker.stop()
@@ -685,6 +844,7 @@ class RealDirector(
     ): ChipboxPlaybackState {
         val message = "Couldn't load track metadata."
         publishError(message, trackId)
+        cancelStallWatchdog()
         return oldState.copy(state = PlayerState.ERROR, errorMessage = message)
     }
 }

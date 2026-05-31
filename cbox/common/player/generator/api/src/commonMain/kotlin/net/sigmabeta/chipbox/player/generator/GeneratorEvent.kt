@@ -29,6 +29,17 @@ sealed class GeneratorEvent {
         val cachedMs: Long = 0L,
     ) : GeneratorEvent()
 
+    /** The generator is waiting on the source to render the frames under the play cursor — a
+     *  render-ahead writer that hasn't caught up yet, typically a seek into an un-rendered
+     *  region. No new audio was produced this cycle; [cachedMs] is how far the writer has
+     *  rendered so far (mirrors [Emitting.cachedMs]). The director treats this as a liveness
+     *  signal: while [cachedMs] keeps advancing the wait is healthy, but if it stops advancing
+     *  the director's stall guard fires. Kept distinct from [Emitting] precisely so a render
+     *  wait doesn't read as playback progress. */
+    data class Rendering(
+        val cachedMs: Long,
+    ) : GeneratorEvent()
+
     /** The current track has finished and the generator is blocked waiting for the next
      *  track id. The director is expected to respond with [Generator.startTrack]. */
     object TrackChange : GeneratorEvent()
