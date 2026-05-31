@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
@@ -44,26 +45,29 @@ private const val MILLIS_PER_SECOND = 1_000L
 /**
  * Production [Director] implementation.
  *
- * On construction, two coroutines are launched on [directorScope] that subscribe to
- * [Generator.events] and [Speaker.events] for the lifetime of this object. Each event is fed
- * through a `reduce(state, event)` function (one overload per event type) that returns the next
- * [ChipboxPlaybackState]. Assigning to [currentState] re-emits the new value to observers via
- * the property's setter.
+ * ### Model / reduce / effects
+ * All playback state lives in a single immutable [Model] (the public [ChipboxPlaybackState] plus
+ * the internal bookkeeping the state machine needs — session, setlist, failure streak, render
+ * watermark). Generator and speaker events are merged into one stream and fed through pure
+ * `reduce(model, event)` functions that return `(nextModel, effects)`: the next model and a list
+ * of [Effect]s describing the I/O to perform (start/stop a track, switch the speaker, arm the
+ * watchdog, emit metadata, …). [commit] publishes the new model; [apply] performs the effects in
+ * order. Reducers issue no I/O and launch nothing themselves — which is what keeps track-advance
+ * readable as data (`TrackChange` is "last → ENDING + stop, else → advance + start track") and
+ * makes them unit-testable by asserting the returned effect list.
  *
- * Setlist resolution is driven by [Session.type]: `GAME`, `ARTIST`, and `ALL_TRACKS` sessions
- * pull tracks for the given scope from the repository; `PLAYLIST` is not yet implemented. The
- * director
- * also decides when to advance tracks — the generator emits [GeneratorEvent.TrackChange] when
- * its current track ends, and the director responds by feeding it the next track id from the
- * setlist (or transitioning to [PlayerState.ENDING] if the setlist is exhausted).
+ * Transport methods ([play], [pause], [seek], [skipForward], …) are imperative entry points: they
+ * update the model and call the generator/speaker directly, since they're driven by the UI rather
+ * than the event stream.
+ *
+ * Setlist resolution is driven by [Session.type]: `GAME`, `ARTIST`, and `ALL_TRACKS` sessions pull
+ * tracks for the given scope from the repository; `PLAYLIST` is not yet implemented.
  *
  * ### Threading
  * The default [dispatcher] is single-threaded ([CoroutineDispatcher.limitedParallelism]`(1)` over
- * [Dispatchers.Default]) and is the whole point: the two event collectors, every transport
- * method, and the stall watchdog all mutate the same unguarded state ([currentState], the failure
- * counter, the render-progress mark, the watchdog handle). Serializing them onto one thread makes
- * those read-modify-writes safe without a lock — the state machine is processed one event at a
- * time. Tests inject a single-threaded test dispatcher, which models the same guarantee.
+ * [Dispatchers.Default]). A single consumer processes one event at a time, and the single thread
+ * keeps transport methods from racing the consumer, so the unguarded [model] mutations are safe
+ * without a lock. Tests inject a single-threaded test dispatcher, which models the same guarantee.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class RealDirector(
@@ -79,48 +83,55 @@ class RealDirector(
         directorScope.cancel()
     }
 
-    private var currentSession: Session? = null
-        set(value) {
-            field = value
-            directorScope.launch {
-                sessionStateMutable.emit(value)
-            }
-        }
-
-    private var currentSetlist: List<Long>? = null
-
-    /** Number of generator errors since the last successful audio emission. Reset whenever a
-     *  track actually produces audio (or a fresh session starts); drives the give-up cutoff. */
-    private var consecutiveGeneratorFailures: Int = 0
-
-    /** Pending [STALL_TIMEOUT_MS] timer. Re-armed on every progress signal (audio
-     *  produced, or the render watermark advancing); fires only if the generator goes silent for
-     *  the whole window while audio is meant to be flowing. Null while disarmed (paused, stopped,
-     *  ending, idle). */
-    private var stallWatchdogJob: Job? = null
-
-    /** Highest render watermark (ms) seen for the current track, so a render that's still
-     *  advancing (healthy uncached seek) can be told apart from a wedged one. Reset per track. */
-    private var lastRenderProgressMs: Long = 0L
-
-    private var currentState: ChipboxPlaybackState = ChipboxPlaybackState(
-        state = PlayerState.IDLE,
-        position = 0L,
-        generatorProducedMs = 0L,
-        playbackSpeed = 1.0f,
-        skipForwardAllowed = false,
-        errorMessage = null,
+    /** The complete state of the playback machine. [playback] is the public, UI-facing slice; the
+     *  rest is internal bookkeeping the reducers thread through so they stay pure. Visible to tests
+     *  so reducers can be exercised directly by asserting the returned (model, effects). */
+    internal data class Model(
+        val playback: ChipboxPlaybackState,
+        val session: Session?,
+        val setlist: List<Long>?,
+        /** Generator errors since the last successful audio emission; drives the give-up cutoff. */
+        val consecutiveFailures: Int,
+        /** Highest render watermark (ms) seen for the current track, so a render that's still
+         *  advancing (healthy uncached seek) can be told apart from a wedged one. */
+        val lastRenderProgressMs: Long,
     )
-        set(value) {
-            // Stamp the speaker's current position on every emission so pause/resume and
-            // track-change reports anchor the notification's progress bar to actual played
-            // audio. During PLAYING the Android framework extrapolates forward from the last
-            // anchor, so this only needs to be right at state-transition moments.
-            field = value.copy(position = speaker.currentPositionMs())
-            directorScope.launch {
-                playbackStateMutable.emit(currentState)
-            }
-        }
+
+    private var model = Model(
+        playback = ChipboxPlaybackState(
+            state = PlayerState.IDLE,
+            position = 0L,
+            generatorProducedMs = 0L,
+            playbackSpeed = 1.0f,
+            skipForwardAllowed = false,
+            errorMessage = null,
+        ),
+        session = null,
+        setlist = null,
+        consecutiveFailures = 0,
+        lastRenderProgressMs = 0L,
+    )
+
+    /** The I/O a reducer asks for. Reducers return these instead of performing them, so they stay
+     *  pure and [apply] can run the sequence in order on the consumer. Visible to tests. */
+    internal sealed interface Effect {
+        data class StartTrack(val trackId: Long) : Effect
+        data object StopGenerator : Effect
+        data object StopSpeaker : Effect
+        data object SpeakerPlay : Effect
+        data class SwitchSpeaker(val trackId: Long) : Effect
+        data object ArmWatchdog : Effect
+        data object CancelWatchdog : Effect
+        data class EmitMetadata(val track: Track) : Effect
+        data class PublishError(val message: String, val trackId: Long?) : Effect
+    }
+
+    private fun Model.with(vararg effects: Effect): Pair<Model, List<Effect>> = this to effects.asList()
+
+    /** Pending [STALL_TIMEOUT_MS] timer. Re-armed on every progress signal (audio produced, or the
+     *  render watermark advancing); fires only if the generator goes silent for the whole window
+     *  while audio is meant to be flowing. Null while disarmed (paused, stopped, ending, idle). */
+    private var stallWatchdogJob: Job? = null
 
     // replay = 1 so late subscribers (e.g. a screen opened mid-playback) immediately
     // receive the current track / state instead of waiting for the next change.
@@ -138,41 +149,77 @@ class RealDirector(
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
 
+    // The stall watchdog feeds a synthetic generator Error in here rather than touching the model
+    // directly, so it joins the same single-consumer pipeline and can't race it.
+    private val internalEvents = MutableSharedFlow<GeneratorEvent>(extraBufferCapacity = 4)
+
+    private sealed interface Input {
+        data class Gen(val event: GeneratorEvent) : Input
+        data class Spk(val event: SpeakerEvent) : Input
+    }
+
     init {
         // Seed each replay buffer so a subscriber that attaches before any playback has
         // happened gets a meaningful "nothing playing" emission instead of hanging on an
         // empty flow.
         metadataStateMutable.tryEmit(null)
-        playbackStateMutable.tryEmit(currentState)
+        playbackStateMutable.tryEmit(model.playback)
         sessionStateMutable.tryEmit(null)
 
+        // One consumer for both event sources (plus the watchdog's internal events), so events are
+        // processed strictly one at a time and never interleave on the model.
         directorScope.launch {
-            generator
-                .events()
-                .distinctUntilChanged()
-                .collect {
-                    currentState = reduce(currentState, it)
-                }
+            merge(
+                merge(generator.events().distinctUntilChanged(), internalEvents).map { Input.Gen(it) },
+                speaker.events().distinctUntilChanged().map { Input.Spk(it) },
+            ).collect(::process)
         }
+    }
 
-        directorScope.launch {
-            speaker
-                .events()
-                .distinctUntilChanged()
-                .collect {
-                    currentState = reduce(currentState, it)
-                }
+    private suspend fun process(input: Input) {
+        val (nextModel, effects) = when (input) {
+            is Input.Gen -> reduce(model, input.event)
+            is Input.Spk -> reduce(model, input.event)
+        }
+        commit(nextModel)
+        apply(effects)
+    }
+
+    /** Publish [next] as the live model: stamp the speaker's position onto the playback slice (so
+     *  pause/resume and track-change reports anchor the notification's progress bar to actual
+     *  played audio) and re-emit the playback (and, when it changed, the session). */
+    private fun commit(next: Model) {
+        val sessionChanged = model.session != next.session
+        val stampedPlayback = next.playback.copy(position = speaker.currentPositionMs())
+        model = next.copy(playback = stampedPlayback)
+        directorScope.launch { playbackStateMutable.emit(stampedPlayback) }
+        if (sessionChanged) {
+            directorScope.launch { sessionStateMutable.emit(next.session) }
+        }
+    }
+
+    private suspend fun apply(effects: List<Effect>) {
+        effects.forEach { effect ->
+            when (effect) {
+                is Effect.StartTrack -> generator.startTrack(effect.trackId)
+                Effect.StopGenerator -> generator.stop()
+                Effect.StopSpeaker -> speaker.stop()
+                Effect.SpeakerPlay -> speaker.play()
+                is Effect.SwitchSpeaker -> speaker.switchTo(effect.trackId)
+                Effect.ArmWatchdog -> armStallWatchdog()
+                Effect.CancelWatchdog -> cancelStallWatchdog()
+                is Effect.EmitMetadata -> metadataStateMutable.emit(effect.track)
+                is Effect.PublishError -> publishError(effect.message, effect.trackId)
+            }
         }
     }
 
     override fun start(session: Session) {
         directorScope.launch {
-            consecutiveGeneratorFailures = 0
             val setlistForSession = getSetlistForSession(session)
                 .let { if (session.shuffled) it.shuffled() else it }
 
-            currentSession = session
-            currentSetlist = setlistForSession
+            commit(model.copy(session = session, setlist = setlistForSession, consecutiveFailures = 0))
 
             val firstTrackId = when {
                 session.startingTrackId != null -> session.startingTrackId
@@ -196,11 +243,9 @@ class RealDirector(
                 val startingPosition = session.startingPosition
                     ?: setlistForSession.indexOfFirst { it == firstTrackId }
 
-                val wasPaused = currentState.state == PlayerState.PAUSED
-                currentSession = session.copy(
-                    currentPosition = startingPosition
-                )
-                startTrack(firstTrackId)
+                val wasPaused = model.playback.state == PlayerState.PAUSED
+                commit(model.copy(session = session.copy(currentPosition = startingPosition)))
+                generator.startTrack(firstTrackId)
                 if (wasPaused) {
                     // Drop the audio queued from the paused session and restart the speaker's
                     // consume loop, switching it onto the new track so any buffer left from the
@@ -233,23 +278,25 @@ class RealDirector(
     }
 
     override fun play() {
-        when (currentState.state) {
-            PlayerState.PAUSED -> {
-                speaker.play()
-                currentState = currentState.copy(state = PlayerState.PLAYING)
-                generator.play()
-                // Audio should resume flowing, so guard for a stall again until it does.
-                armStallWatchdog()
+        directorScope.launch {
+            when (model.playback.state) {
+                PlayerState.PAUSED -> {
+                    speaker.play()
+                    commit(model.copy(playback = model.playback.copy(state = PlayerState.PLAYING)))
+                    generator.play()
+                    // Audio should resume flowing, so guard for a stall again until it does.
+                    armStallWatchdog()
+                }
+
+                // A finished setlist ends in STOPPED with the generator loop and speaker sink both
+                // torn down, but the session/setlist still point at the last track the UI is
+                // showing. There's nothing queued for a bare generator.play() to pick up — its loop
+                // would just block on an empty channel forever — so re-issue the current track from
+                // the top, matching the user's expectation that play restarts the track on screen.
+                PlayerState.STOPPED -> restartCurrentTrack()
+
+                else -> generator.play()
             }
-
-            // A finished setlist ends in STOPPED with the generator loop and speaker sink both
-            // torn down, but currentSession/currentSetlist still pointing at the last track the UI
-            // is showing. There's nothing queued for a bare generator.play() to pick up — its loop
-            // would just block on an empty channel forever — so re-issue the current track from the
-            // top, matching the user's expectation that play restarts the track on screen.
-            PlayerState.STOPPED -> restartCurrentTrack()
-
-            else -> generator.play()
         }
     }
 
@@ -260,27 +307,33 @@ class RealDirector(
      * generation and consume loops (and walks the state back through BUFFERING -> PLAYING via the
      * usual Loading/Emitting reducers). No-op if there's no session to restart.
      */
-    private fun restartCurrentTrack() {
-        directorScope.launch {
-            val setlist = currentSetlist
-            val trackId = currentSession?.currentPosition?.let { setlist?.getOrNull(it) }
-            if (trackId == null) {
-                hatchet.w("play() while STOPPED but no current track to restart.")
-                return@launch
-            }
-            consecutiveGeneratorFailures = 0
-            startTrack(trackId)
+    private suspend fun restartCurrentTrack() {
+        val trackId = model.session?.currentPosition?.let { model.setlist?.getOrNull(it) }
+        if (trackId == null) {
+            hatchet.w("play() while STOPPED but no current track to restart.")
+            return
         }
+        commit(model.copy(consecutiveFailures = 0))
+        generator.startTrack(trackId)
     }
 
     /** (Re)start the stall timer. Called on every progress signal while audio should be flowing,
      *  so a healthy stream — or a render-ahead wait that keeps advancing — perpetually pushes the
-     *  deadline out and never trips. */
+     *  deadline out and never trips. When it fires it feeds a synthetic generator error into the
+     *  consumer, so a stall is handled by the same skip-or-stop policy as any other bad track. */
     private fun armStallWatchdog() {
         stallWatchdogJob?.cancel()
         stallWatchdogJob = directorScope.launch {
             delay(STALL_TIMEOUT_MS)
-            onGeneratorStalled()
+            hatchet.w(
+                "Generator made no progress for $STALL_TIMEOUT_MS ms; " +
+                    "treating the current track as stalled."
+            )
+            internalEvents.emit(
+                GeneratorEvent.Error(
+                    "Playback stalled: no audio for ${STALL_TIMEOUT_MS / MILLIS_PER_SECOND} seconds."
+                )
+            )
         }
     }
 
@@ -291,35 +344,13 @@ class RealDirector(
         stallWatchdogJob = null
     }
 
-    /**
-     * The generator made no progress for [STALL_TIMEOUT_MS] while audio was meant to be
-     * flowing. The loop is parked on frames that aren't coming, so cancel it (unsticking the
-     * read) and run the same skip-or-stop policy a real generator error would — treating the
-     * stall as just another bad track.
-     */
-    private suspend fun onGeneratorStalled() {
-        hatchet.w(
-            "Generator made no progress for $STALL_TIMEOUT_MS ms; " +
-                "treating the current track as stalled."
-        )
-        generator.stop()
-        currentState = handleGeneratorError(
-            GeneratorEvent.Error(
-                "Playback stalled: no audio for " +
-                    "${STALL_TIMEOUT_MS / MILLIS_PER_SECOND} seconds."
-            ),
-            currentState,
-        )
-    }
-
     override fun pause() {
         directorScope.launch {
             // Paused audio is meant to be silent — don't let that read as a stall. (The generator
             // keeps running until its buffers back up, so it isn't stopped here.)
             cancelStallWatchdog()
             speaker.pause()
-
-            currentState = currentState.copy(state = PlayerState.PAUSED)
+            commit(model.copy(playback = model.playback.copy(state = PlayerState.PAUSED)))
         }
     }
 
@@ -328,8 +359,7 @@ class RealDirector(
             cancelStallWatchdog()
             speaker.stop()
             generator.stop()
-
-            currentState = currentState.copy(state = PlayerState.STOPPED)
+            commit(model.copy(playback = model.playback.copy(state = PlayerState.STOPPED)))
         }
     }
 
@@ -342,28 +372,27 @@ class RealDirector(
 
     override fun skipForward() {
         directorScope.launch {
-            val session = currentSession ?: return@launch
-            val setlist = currentSetlist ?: return@launch
-            if (isCurrentTrackLastInSetlist(session, setlist)) return@launch
+            val session = model.session ?: return@launch
+            val setlist = model.setlist ?: return@launch
+            if (isLast(session, setlist)) return@launch
 
             val nextPosition = (session.currentPosition ?: -1) + 1
             val nextTrackId = setlist[nextPosition]
-            hatchet.i("skipForward: advancing to position $nextPosition (state=${currentState.state}).")
-            advanceToTrackAt(session, setlist, nextPosition)
+            hatchet.i("skipForward: advancing to position $nextPosition (state=${model.playback.state}).")
+            commit(model.copy(session = session.copy(currentPosition = nextPosition)))
+            generator.startTrack(nextTrackId)
             // Cut over to the new track immediately: drop the play-out buffer and have the
             // speaker discard any straggler from the outgoing track until the new one's audio
             // arrives. The auto-advance path naturally reaches end-of-buffer so doesn't need this.
-            hatchet.i("skipForward: generator.startTrack returned; calling speaker.switchTo($nextTrackId).")
             speaker.switchTo(nextTrackId)
-            hatchet.i("skipForward: speaker.switchTo returned (state=${currentState.state}).")
         }
     }
 
     override fun skipBack() {
         directorScope.launch {
-            val session = currentSession ?: return@launch
-            val setlist = currentSetlist ?: return@launch
-            val withinTrackPosition = currentState.position
+            val session = model.session ?: return@launch
+            val setlist = model.setlist ?: return@launch
+            val withinTrackPosition = model.playback.position
             val setlistPosition = session.currentPosition ?: 0
 
             if (withinTrackPosition > SKIP_BACK_THRESHOLD_MS || setlistPosition <= 0) {
@@ -374,18 +403,19 @@ class RealDirector(
             }
 
             val previousTrackId = setlist[setlistPosition - 1]
-            advanceToTrackAt(session, setlist, setlistPosition - 1)
+            commit(model.copy(session = session.copy(currentPosition = setlistPosition - 1)))
+            generator.startTrack(previousTrackId)
             speaker.switchTo(previousTrackId)
         }
     }
 
     override fun setShuffled(shuffled: Boolean) {
         directorScope.launch {
-            val session = currentSession ?: return@launch
+            val session = model.session ?: return@launch
             if (session.shuffled == shuffled) return@launch
 
             // Remember which track is playing so we can find it in the new ordering.
-            val playingTrackId = currentSetlist
+            val playingTrackId = model.setlist
                 ?.let { setlist -> session.currentPosition?.let(setlist::getOrNull) }
 
             val newSetlist = getSetlistForSession(session)
@@ -394,10 +424,11 @@ class RealDirector(
                 ?.let { id -> newSetlist.indexOf(id).takeIf { it >= 0 } }
                 ?: 0
 
-            currentSetlist = newSetlist
-            currentSession = session.copy(
-                shuffled = shuffled,
-                currentPosition = newPosition,
+            commit(
+                model.copy(
+                    setlist = newSetlist,
+                    session = session.copy(shuffled = shuffled, currentPosition = newPosition),
+                )
             )
         }
     }
@@ -416,7 +447,7 @@ class RealDirector(
             // reflect it as PAUSED (the UI was previously left showing PLAYING with no audio).
             cancelStallWatchdog()
             speaker.pause()
-            currentState = currentState.copy(state = PlayerState.PAUSED)
+            commit(model.copy(playback = model.playback.copy(state = PlayerState.PAUSED)))
         }
     }
 
@@ -437,8 +468,8 @@ class RealDirector(
             // Counterpart to pauseTemporarily()'s PAUSED: if a transient focus loss had paused us,
             // come back to PLAYING and guard for stalls again. State-wise a no-op if we were only
             // ducked (already PLAYING).
-            if (currentState.state == PlayerState.PAUSED) {
-                currentState = currentState.copy(state = PlayerState.PLAYING)
+            if (model.playback.state == PlayerState.PAUSED) {
+                commit(model.copy(playback = model.playback.copy(state = PlayerState.PLAYING)))
                 armStallWatchdog()
             }
         }
@@ -448,53 +479,16 @@ class RealDirector(
         speaker.setVolume(scale)
     }
 
-    private suspend fun startTrack(trackId: Long) {
-        generator.startTrack(trackId)
-    }
-
-    private fun nextTrack() {
-        directorScope.launch {
-            val session = currentSession
-            val setlist = currentSetlist
-
-            if (session == null) {
-                emitError("Invalid session.")
-                return@launch
-            }
-
-            if (setlist == null) {
-                emitError("Invalid setlist.")
-                return@launch
-            }
-
-            if (isCurrentTrackLastInSetlist(session, setlist)) {
-                // TODO This should also have a reducer.
-                hatchet.d("Generator requested next track, but no more exist.")
-                // The setlist is over and the generator is being stopped — silence from here on
-                // is expected, so stop guarding for a stall.
-                cancelStallWatchdog()
-                currentState = currentState.copy(state = PlayerState.ENDING)
-                generator.stop()
-                return@launch
-            }
-
-            val nextTrackPosition = (session.currentPosition ?: -1) + 1
-            advanceToTrackAt(session, setlist, nextTrackPosition)
-        }
-    }
-
-    private suspend fun advanceToTrackAt(
-        session: Session,
-        setlist: List<Long>,
-        newPosition: Int,
-    ) {
-        currentSession = session.copy(currentPosition = newPosition)
-        startTrack(setlist[newPosition])
-    }
-
-    private fun isCurrentTrackLastInSetlist(session: Session, setlist: List<Long>): Boolean {
+    private fun isLast(session: Session, setlist: List<Long>): Boolean {
         val nextTrackPosition = (session.currentPosition ?: -1) + 1
         return nextTrackPosition >= setlist.size
+    }
+
+    /** Track id the director currently considers active, from the live setlist position.
+     *  Null until a session + setlist are established. */
+    private fun currentTrackId(m: Model): Long? {
+        val position = m.session?.currentPosition ?: return null
+        return m.setlist?.getOrNull(position)
     }
 
     private suspend fun getSetlistForSession(session: Session) = when (session.type) {
@@ -530,12 +524,14 @@ class RealDirector(
         .first()
         .map { it.id }
 
-    private suspend fun reduce(oldState: ChipboxPlaybackState, event: GeneratorEvent) = when (event) {
-        is GeneratorEvent.Error -> handleGeneratorError(event, oldState)
-        is GeneratorEvent.Loading -> handleGeneratorLoading(oldState, event)
-        is GeneratorEvent.Emitting -> handleGeneratorEmitting(oldState, event)
-        is GeneratorEvent.Rendering -> handleGeneratorRendering(oldState, event)
-        GeneratorEvent.TrackChange -> handleGeneratorTrackChange(oldState)
+    // ---- generator-event reducers ----
+
+    internal suspend fun reduce(m: Model, event: GeneratorEvent): Pair<Model, List<Effect>> = when (event) {
+        is GeneratorEvent.Error -> reduceGeneratorError(m, event)
+        is GeneratorEvent.Loading -> reduceGeneratorLoading(m, event)
+        is GeneratorEvent.Emitting -> reduceGeneratorEmitting(m, event)
+        is GeneratorEvent.Rendering -> reduceGeneratorRendering(m, event)
+        GeneratorEvent.TrackChange -> reduceTrackChange(m)
     }
 
     /**
@@ -545,306 +541,297 @@ class RealDirector(
      * doesn't — so a wedged render trips the guard but a slow-but-progressing one never does.
      * Also surface the growing cache to the now-playing UI.
      */
-    private fun handleGeneratorRendering(
-        oldState: ChipboxPlaybackState,
+    private fun reduceGeneratorRendering(
+        m: Model,
         event: GeneratorEvent.Rendering,
-    ): ChipboxPlaybackState {
-        if (event.cachedMs > lastRenderProgressMs) {
-            lastRenderProgressMs = event.cachedMs
-            armStallWatchdog()
+    ): Pair<Model, List<Effect>> {
+        val withCache = m.copy(playback = m.playback.copy(cachedMs = event.cachedMs))
+        return if (event.cachedMs > m.lastRenderProgressMs) {
+            withCache.copy(lastRenderProgressMs = event.cachedMs).with(Effect.ArmWatchdog)
+        } else {
+            withCache.with()
         }
-        return oldState.copy(cachedMs = event.cachedMs)
     }
 
-    private suspend fun handleGeneratorLoading(
-        oldState: ChipboxPlaybackState,
+    private suspend fun reduceGeneratorLoading(
+        m: Model,
         event: GeneratorEvent.Loading,
-    ): ChipboxPlaybackState {
-        val session = currentSession
-        val setlist = currentSetlist
-
-        if (session == null) {
-            emitError("Invalid session.")
-            cancelStallWatchdog()
-            return oldState.copy(
-                state = PlayerState.ERROR,
-                errorMessage = "Unable to determine if next track available."
-            )
+    ): Pair<Model, List<Effect>> {
+        val session = m.session
+        val setlist = m.setlist
+        if (session == null || setlist == null) {
+            val detail = if (session == null) "Invalid session." else "Invalid setlist."
+            hatchet.e("Error: $detail")
+            return m.copy(
+                playback = m.playback.copy(
+                    state = PlayerState.ERROR,
+                    errorMessage = "Unable to determine if next track available.",
+                ),
+            ).with(Effect.CancelWatchdog, Effect.PublishError(detail, currentTrackId(m)))
         }
 
-        if (setlist == null) {
-            emitError("Invalid setlist.")
-            cancelStallWatchdog()
-            return oldState.copy(
-                state = PlayerState.ERROR,
-                errorMessage = "Unable to determine if next track available."
-            )
-        }
-
-        // A new track is loading: we now expect audio, so start guarding for a stall and reset
-        // the render-progress mark this track will be measured against.
-        lastRenderProgressMs = 0L
-        armStallWatchdog()
+        // A new track is loading: we now expect audio, so start guarding for a stall and reset the
+        // render-progress mark this track will be measured against.
+        val armed = m.copy(lastRenderProgressMs = 0L)
+        val skipForwardAllowed = !isLast(session, setlist)
 
         // Already mid-playback (audio flowing) or mid-buffer (starved): a track change is in
         // flight. Don't force a state — the speaker decides PLAYING vs BUFFERING by whether audio
         // keeps flowing, and the now-playing metadata updates when the new track's first buffer
         // plays (SpeakerEvent.TrackChange). Just reset the high-water mark, cache progress, and
         // skip-forward gate.
-        if (oldState.state == PlayerState.PLAYING || oldState.state == PlayerState.BUFFERING) {
+        if (m.playback.state == PlayerState.PLAYING || m.playback.state == PlayerState.BUFFERING) {
             hatchet.i(
                 "handleGeneratorLoading(track=${event.trackId}): " +
-                    "track change while ${oldState.state}; awaiting audio."
+                    "track change while ${m.playback.state}; awaiting audio."
             )
-            return oldState.copy(
-                generatorProducedMs = 0L,
-                cachedMs = 0L,
-                skipForwardAllowed = !isCurrentTrackLastInSetlist(session, setlist),
-            )
+            return armed.copy(
+                playback = m.playback.copy(
+                    generatorProducedMs = 0L,
+                    cachedMs = 0L,
+                    skipForwardAllowed = skipForwardAllowed,
+                ),
+            ).with(Effect.ArmWatchdog)
         }
 
         // Nothing playing yet (cold start / resumed from a stopped-ish state): show the spinner
         // with this track's metadata and wait for the first buffer.
-        val newTrack = getTrack(event.trackId) ?: return metadataLoadError(oldState, event.trackId)
-        metadataStateMutable.emit(newTrack)
+        val newTrack = getTrack(event.trackId) ?: return metadataLoadError(m, event.trackId)
         hatchet.i(
             "handleGeneratorLoading(track=${event.trackId}): " +
-                "${oldState.state} -> BUFFERING (metadata emitted)."
+                "${m.playback.state} -> BUFFERING (metadata emitted)."
         )
-
-        return oldState.copy(
-            state = PlayerState.BUFFERING,
-            generatorProducedMs = 0L,
-            cachedMs = 0L,
-            skipForwardAllowed = !isCurrentTrackLastInSetlist(session, setlist),
-        )
+        return armed.copy(
+            playback = m.playback.copy(
+                state = PlayerState.BUFFERING,
+                generatorProducedMs = 0L,
+                cachedMs = 0L,
+                skipForwardAllowed = skipForwardAllowed,
+            ),
+        ).with(Effect.ArmWatchdog, Effect.EmitMetadata(newTrack))
     }
 
-    private fun handleGeneratorEmitting(
-        oldState: ChipboxPlaybackState,
+    private fun reduceGeneratorEmitting(
+        m: Model,
         event: GeneratorEvent.Emitting,
-    ): ChipboxPlaybackState {
+    ): Pair<Model, List<Effect>> {
         // Ignore a straggler buffer from a track we've already skipped past: applying it would
         // rewind generatorProducedMs and clear the failure streak against audio the user is no
-        // longer hearing. currentTrackId() is null only before a setlist exists, where there's
+        // longer hearing. currentTrackId is null only before a setlist exists, where there's
         // nothing to skip past, so fall through.
-        val currentTrackId = currentTrackId()
+        val currentTrackId = currentTrackId(m)
         if (currentTrackId != null && event.trackId != currentTrackId) {
-            return oldState
+            return m.with()
         }
 
-        if (oldState.state == PlayerState.BUFFERING) {
-            speaker.play()
+        // The current track is producing audio — the failure streak is broken and the stall guard
+        // resets (playback progressed). Track the watermark so a later render wait is measured
+        // against the furthest point already rendered. If we were buffering, kick the speaker.
+        val effects = buildList {
+            if (m.playback.state == PlayerState.BUFFERING) add(Effect.SpeakerPlay)
+            add(Effect.ArmWatchdog)
         }
-
-        // The current track is producing audio — the failure streak is broken and the stall
-        // guard resets (playback progressed). Track the watermark so a later render wait is
-        // measured against the furthest point already rendered.
-        consecutiveGeneratorFailures = 0
-        lastRenderProgressMs = maxOf(lastRenderProgressMs, event.cachedMs)
-        armStallWatchdog()
-
-        return oldState.copy(
-            generatorProducedMs = event.producedMs,
-            cachedMs = event.cachedMs,
-        )
-    }
-
-    /** Track id the director currently considers active, from the live setlist position.
-     *  Null until a session + setlist are established. */
-    private fun currentTrackId(): Long? {
-        val position = currentSession?.currentPosition ?: return null
-        return currentSetlist?.getOrNull(position)
-    }
-
-    private fun handleGeneratorTrackChange(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
-        nextTrack()
-        return oldState
+        return m.copy(
+            consecutiveFailures = 0,
+            lastRenderProgressMs = maxOf(m.lastRenderProgressMs, event.cachedMs),
+            playback = m.playback.copy(
+                generatorProducedMs = event.producedMs,
+                cachedMs = event.cachedMs,
+            ),
+        ) to effects
     }
 
     /**
-     * A generator error is treated as a bad track, not a fatal session error: log it and skip
-     * to the next track in the setlist (mirroring the user-initiated [skipForward] path so the
-     * failed track's queued audio is dropped and playback switches promptly). The session is
-     * only stopped when there's nothing left to try: no setlist to recover within, the failed
-     * track was the last one, or [MAX_CONSECUTIVE_FAILURES] tracks have failed in a row with
-     * no audio in between (the streak resets in [handleGeneratorEmitting]).
+     * The generator's current track ended. With a track still to come, advance the setlist position
+     * and start it (the speaker rides into the next track's buffers on its own — no forced switch).
+     * With the setlist exhausted, transition to [PlayerState.ENDING] and stop the generator while
+     * the speaker plays out what's buffered; [reduceSpeakerBuffering] completes the session once it
+     * drains.
      */
-    private suspend fun handleGeneratorError(
+    private fun reduceTrackChange(m: Model): Pair<Model, List<Effect>> {
+        val session = m.session
+        val setlist = m.setlist
+        if (session == null || setlist == null) {
+            val detail = if (session == null) "Invalid session." else "Invalid setlist."
+            hatchet.e("Error: $detail")
+            return m.copy(
+                playback = m.playback.copy(state = PlayerState.ERROR, errorMessage = detail),
+            ).with(Effect.PublishError(detail, currentTrackId(m)))
+        }
+
+        return if (isLast(session, setlist)) {
+            hatchet.d("Generator requested next track, but no more exist.")
+            m.copy(playback = m.playback.copy(state = PlayerState.ENDING))
+                .with(Effect.CancelWatchdog, Effect.StopGenerator)
+        } else {
+            val nextPosition = (session.currentPosition ?: -1) + 1
+            m.copy(session = session.copy(currentPosition = nextPosition))
+                .with(Effect.StartTrack(setlist[nextPosition]))
+        }
+    }
+
+    /**
+     * A generator error is treated as a bad track, not a fatal session error: log it and skip to
+     * the next track in the setlist (dropping the failed track's queued audio and switching the
+     * speaker over promptly). The generator is stopped before the relaunch so its self-terminating
+     * loop can't race startTrack into an "Already looping" no-op. The session is only stopped when
+     * there's nothing left to try: no setlist to recover within, the failed track was the last one,
+     * or [MAX_CONSECUTIVE_FAILURES] tracks failed in a row with no audio in between (the streak
+     * resets in [reduceGeneratorEmitting]).
+     */
+    private fun reduceGeneratorError(
+        m: Model,
         event: GeneratorEvent.Error,
-        oldState: ChipboxPlaybackState,
-    ): ChipboxPlaybackState {
-        // This track's progress tracking is moot now; a skip re-arms the guard when the next
-        // track starts loading, a stop/give-up leaves it disarmed.
-        cancelStallWatchdog()
+    ): Pair<Model, List<Effect>> {
+        val session = m.session
+        val setlist = m.setlist
+        val failedTrackId = currentTrackId(m)
 
-        val session = currentSession
-        val setlist = currentSetlist
+        if (session == null || setlist == null) {
+            hatchet.e("Error: ${event.message}")
+            return m.copy(
+                playback = m.playback.copy(state = PlayerState.ERROR, errorMessage = event.message),
+            ).with(
+                Effect.CancelWatchdog,
+                Effect.PublishError(event.message, failedTrackId),
+                Effect.StopSpeaker,
+                Effect.StopGenerator,
+            )
+        }
 
+        val failures = m.consecutiveFailures + 1
+        val withFailure = m.copy(consecutiveFailures = failures)
         return when {
-            session == null || setlist == null -> {
-                emitError(event.message)
-                directorScope.launch {
-                    speaker.stop()
-                    generator.stop()
-                }
-                oldState.copy(state = PlayerState.ERROR, errorMessage = event.message)
+            failures >= MAX_CONSECUTIVE_FAILURES -> {
+                val message = "Playback stopped after $MAX_CONSECUTIVE_FAILURES " +
+                    "consecutive track failures. Last error: ${event.message}"
+                hatchet.e("Error: $message")
+                withFailure.copy(
+                    playback = m.playback.copy(state = PlayerState.ERROR, errorMessage = message),
+                ).with(
+                    Effect.CancelWatchdog,
+                    Effect.PublishError(message, failedTrackId),
+                    Effect.StopSpeaker,
+                    Effect.StopGenerator,
+                )
+            }
+
+            isLast(session, setlist) -> {
+                hatchet.w("Generator error on last track: ${event.message}. Ending session.")
+                withFailure.copy(playback = m.playback.copy(state = PlayerState.STOPPED)).with(
+                    Effect.CancelWatchdog,
+                    Effect.PublishError(event.message, failedTrackId),
+                    Effect.StopSpeaker,
+                    Effect.StopGenerator,
+                )
             }
 
             else -> {
-                consecutiveGeneratorFailures += 1
-                when {
-                    consecutiveGeneratorFailures >= MAX_CONSECUTIVE_FAILURES -> {
-                        val message = "Playback stopped after $MAX_CONSECUTIVE_FAILURES " +
-                            "consecutive track failures. Last error: ${event.message}"
-                        emitError(message)
-                        directorScope.launch {
-                            speaker.stop()
-                            generator.stop()
-                        }
-                        oldState.copy(state = PlayerState.ERROR, errorMessage = message)
-                    }
-
-                    isCurrentTrackLastInSetlist(session, setlist) -> {
-                        hatchet.w(
-                            "Generator error on last track: ${event.message}. Ending session."
-                        )
-                        publishError(event.message)
-                        directorScope.launch {
-                            speaker.stop()
-                            generator.stop()
-                        }
-                        oldState.copy(state = PlayerState.STOPPED)
-                    }
-
-                    else -> {
-                        hatchet.w(
-                            "Generator error " +
-                                "($consecutiveGeneratorFailures/$MAX_CONSECUTIVE_FAILURES): " +
-                                "${event.message}. Skipping to the next track."
-                        )
-                        publishError(event.message)
-                        val nextPosition = (session.currentPosition ?: -1) + 1
-                        val nextTrackId = setlist[nextPosition]
-                        directorScope.launch {
-                            // Fully tear down the failed track's loop before relaunching on the
-                            // next one. The loop self-terminates on error, but racing that against
-                            // startTrack()'s play() can leave play() seeing a not-yet-cleared job
-                            // ("Already looping") so the queued track never starts. Mirrors the
-                            // stall-recovery path.
-                            generator.stop()
-                            advanceToTrackAt(session, setlist, nextPosition)
-                            speaker.switchTo(nextTrackId)
-                        }
-                        oldState
-                    }
-                }
+                hatchet.w(
+                    "Generator error ($failures/$MAX_CONSECUTIVE_FAILURES): " +
+                        "${event.message}. Skipping to the next track."
+                )
+                val nextPosition = (session.currentPosition ?: -1) + 1
+                val nextTrackId = setlist[nextPosition]
+                withFailure.copy(session = session.copy(currentPosition = nextPosition)).with(
+                    Effect.CancelWatchdog,
+                    Effect.PublishError(event.message, failedTrackId),
+                    Effect.StopGenerator,
+                    Effect.StartTrack(nextTrackId),
+                    Effect.SwitchSpeaker(nextTrackId),
+                )
             }
         }
     }
 
-    private suspend fun reduce(oldState: ChipboxPlaybackState, event: SpeakerEvent) = when (event) {
-        is SpeakerEvent.Buffering -> handleSpeakerBuffering(oldState)
-        is SpeakerEvent.Playing -> handleSpeakerPlaying(oldState)
-        is SpeakerEvent.TrackChange -> updatePlayerMetadata(oldState, event.trackId)
-        is SpeakerEvent.Error -> handleSpeakerError(event, oldState)
+    // ---- speaker-event reducers ----
+
+    internal suspend fun reduce(m: Model, event: SpeakerEvent): Pair<Model, List<Effect>> = when (event) {
+        is SpeakerEvent.Buffering -> reduceSpeakerBuffering(m)
+        is SpeakerEvent.Playing -> reduceSpeakerPlaying(m)
+        is SpeakerEvent.TrackChange -> reduceSpeakerTrackChange(m, event.trackId)
+        is SpeakerEvent.Error -> reduceSpeakerError(m, event)
     }
 
-    private fun handleSpeakerBuffering(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
-        if (oldState.state == PlayerState.ENDING) {
+    private fun reduceSpeakerBuffering(m: Model): Pair<Model, List<Effect>> = when (m.playback.state) {
+        PlayerState.ENDING -> {
+            // The tail of the final track has drained — the setlist is complete.
             hatchet.i("Setlist complete.")
-            cancelStallWatchdog()
-            stop()
-            return oldState.copy(state = PlayerState.STOPPED)
+            m.copy(playback = m.playback.copy(state = PlayerState.STOPPED))
+                .with(Effect.CancelWatchdog, Effect.StopSpeaker, Effect.StopGenerator)
         }
 
         // Speaker ran dry — a mid-track underrun or the gap while a skipped-to track loads.
         // Either way audio has stopped, so surface it; recovers on the next SpeakerEvent.Playing.
-        if (oldState.state == PlayerState.PLAYING) {
+        PlayerState.PLAYING -> {
             hatchet.w("Speaker starved -> BUFFERING.")
-            return oldState.copy(state = PlayerState.BUFFERING)
+            m.copy(playback = m.playback.copy(state = PlayerState.BUFFERING)).with()
         }
 
-        return oldState
+        else -> m.with()
     }
 
-    private fun handleSpeakerPlaying(oldState: ChipboxPlaybackState): ChipboxPlaybackState {
+    private fun reduceSpeakerPlaying(m: Model): Pair<Model, List<Effect>> = when (m.playback.state) {
         // Audio is flowing again. Only BUFFERING needs flipping; ENDING rides out its tail, and
         // paused/stopped/idle/error have no consume loop so a Playing event there would be a
         // stray we deliberately ignore rather than resurrecting playback.
-        return when (oldState.state) {
-            PlayerState.BUFFERING -> {
-                hatchet.i("Buffering resolved -> PLAYING.")
-                oldState.copy(state = PlayerState.PLAYING)
-            }
-
-            else -> oldState
+        PlayerState.BUFFERING -> {
+            hatchet.i("Buffering resolved -> PLAYING.")
+            m.copy(playback = m.playback.copy(state = PlayerState.PLAYING)).with()
         }
+
+        else -> m.with()
     }
 
-    private suspend fun updatePlayerMetadata(oldState: ChipboxPlaybackState, newTrackId: Long): ChipboxPlaybackState {
-        val newTrack = getTrack(newTrackId) ?: return metadataLoadError(oldState, newTrackId)
-        hatchet.i(
-            "updatePlayerMetadata(track=$newTrackId, ${newTrack.title}): emitting metadata."
-        )
-        metadataStateMutable.emit(newTrack)
+    private suspend fun reduceSpeakerTrackChange(m: Model, newTrackId: Long): Pair<Model, List<Effect>> {
+        val newTrack = getTrack(newTrackId) ?: return metadataLoadError(m, newTrackId)
+        hatchet.i("updatePlayerMetadata(track=$newTrackId, ${newTrack.title}): emitting metadata.")
         // State follows the speaker's Playing/Buffering flow, not metadata: a TrackChange is
         // always immediately followed by a Playing event that flips BUFFERING -> PLAYING.
-        return oldState
+        return m.with(Effect.EmitMetadata(newTrack))
     }
 
-    private suspend fun handleSpeakerError(
-        event: SpeakerEvent.Error,
-        oldState: ChipboxPlaybackState,
-    ): ChipboxPlaybackState {
-        emitError(event.message)
-        cancelStallWatchdog()
-
-        directorScope.launch {
-            speaker.stop()
-            generator.stop()
-        }
-
-        return oldState.copy(state = PlayerState.ERROR, errorMessage = event.message)
+    private fun reduceSpeakerError(m: Model, event: SpeakerEvent.Error): Pair<Model, List<Effect>> {
+        hatchet.e("Error: ${event.message}")
+        return m.copy(
+            playback = m.playback.copy(state = PlayerState.ERROR, errorMessage = event.message),
+        ).with(
+            Effect.CancelWatchdog,
+            Effect.PublishError(event.message, currentTrackId(m)),
+            Effect.StopSpeaker,
+            Effect.StopGenerator,
+        )
     }
 
     private suspend fun getTrack(id: Long) = repository.getTrack(id, withArtists = true, withGame = true)
 
     /**
-     * Publish a non-fatal error to [errorEventsMutable], attaching the [Track] currently
-     * associated with [trackId] (defaulting to the director's active track id) so consumers can
-     * attribute the error to the right track even when the speaker hasn't caught up yet. The
-     * repository lookup is best-effort: if it fails we still publish the message with a null
-     * track rather than dropping the event.
+     * Publish a non-fatal error to [errorEventsMutable], attaching the [Track] for [trackId] so
+     * consumers can attribute the error to the right track even when the speaker hasn't caught up
+     * yet. The repository lookup is best-effort: if it fails we still publish the message with a
+     * null track rather than dropping the event.
      */
-    private suspend fun publishError(message: String, trackId: Long? = currentTrackId()) {
+    private suspend fun publishError(message: String, trackId: Long?) {
         val track = trackId?.let { runCatching { getTrack(it) }.getOrNull() }
         errorEventsMutable.tryEmit(PlayerErrorEvent(message, track))
     }
 
-    /** Publish [message] and transition the session to [PlayerState.ERROR]. Track attribution
-     *  follows [publishError]. */
-    private suspend fun emitError(message: String, trackId: Long? = currentTrackId()) {
+    /** Imperative-path error: publish [message], log it, and move the live model to
+     *  [PlayerState.ERROR]. Used by transport methods (which aren't reducers). */
+    private suspend fun emitError(message: String, trackId: Long? = currentTrackId(model)) {
         hatchet.e("Error: $message")
         publishError(message, trackId)
-        currentState = currentState.copy(
-            state = PlayerState.ERROR,
-            errorMessage = message,
-        )
+        commit(model.copy(playback = model.playback.copy(state = PlayerState.ERROR, errorMessage = message)))
     }
 
     /** Reduce a failed track-metadata fetch to an ERROR state, logging the message to the error
-     *  stream. Unlike [emitError] this returns the new state for the reducer to assign rather than
-     *  mutating [currentState] directly. [trackId] is the id that failed to resolve; we still pass
-     *  it to [publishError], which will attempt (and likely also fail) to load it — yielding a
-     *  null track in the event, which the UI treats as "no track prefix". */
-    private suspend fun metadataLoadError(
-        oldState: ChipboxPlaybackState,
-        trackId: Long?,
-    ): ChipboxPlaybackState {
+     *  stream. [trackId] is the id that failed to resolve; we still pass it to the [Effect.PublishError]
+     *  attribution, which will attempt (and likely also fail) to load it — yielding a null track in
+     *  the event, which the UI treats as "no track prefix". */
+    private fun metadataLoadError(m: Model, trackId: Long?): Pair<Model, List<Effect>> {
         val message = "Couldn't load track metadata."
-        publishError(message, trackId)
-        cancelStallWatchdog()
-        return oldState.copy(state = PlayerState.ERROR, errorMessage = message)
+        return m.copy(
+            playback = m.playback.copy(state = PlayerState.ERROR, errorMessage = message),
+        ).with(Effect.CancelWatchdog, Effect.PublishError(message, trackId))
     }
 }
