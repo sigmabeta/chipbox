@@ -143,6 +143,14 @@ abstract class BaseGenerator(
         ongoingGenerationJob?.cancelAndJoin()
         ongoingGenerationJob = null
 
+        // Drop any track id queued but not yet consumed — e.g. a track requested while the loop was
+        // stuck rendering the previous one. Otherwise the stale id wedges the 1-slot channel (the
+        // next startTrack's send would block behind it) or gets picked up ahead of the real next
+        // track when the loop restarts.
+        while (nextTrackIdChannel.tryReceive().isSuccess) {
+            // draining
+        }
+
         teardownHelper()
     }
 

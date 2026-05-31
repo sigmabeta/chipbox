@@ -73,6 +73,39 @@ class RealDirectorTest {
     }
 
     @Test
+    fun `starting a new session while audio is flowing abandons the in-flight render and cuts over`() = runTest {
+        // Regression: clicking a track starts a fresh session. If the generator is mid-render on a
+        // slow/silent track, the new track must not be queued behind it — otherwise the stuck
+        // track's eventual failure/stall is misattributed to, and skips, the just-clicked track.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+        director.start(setlistSession(listOf(1L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L)) // session A is playing
+
+        val stopsBefore = gen.stopCalls
+        director.start(setlistSession(listOf(2L, 3L), startingPosition = 0)) // user clicks a new track
+
+        assertTrue(gen.stopCalls > stopsBefore, "the in-flight render must be abandoned, not queued behind")
+        assertEquals(2L, gen.startTrackCalls.last(), "the new track is started")
+        assertEquals(listOf(2L), speaker.switchToCalls, "speaker cuts over to the new track")
+        director.release()
+    }
+
+    @Test
+    fun `a cold start does not stop the generator or cut the speaker over`() = runTest {
+        // Cold start has nothing to abandon, and switching the speaker before the buffer manager is
+        // initialised would start a consume loop with no pool — so the handoff is gated on there
+        // being active audio.
+        val (director, gen, speaker, _) = newDirector(listOf(track1))
+        director.start(setlistSession(listOf(1L)))
+
+        assertEquals(0, gen.stopCalls, "nothing to abandon on a cold start")
+        assertTrue(speaker.switchToCalls.isEmpty(), "no cut-over before the buffer manager is initialised")
+        assertEquals(listOf(1L), gen.startTrackCalls)
+        director.release()
+    }
+
+    @Test
     fun `Generator Loading from IDLE transitions to BUFFERING and emits metadata`() = runTest {
         // Cold path: state was IDLE, so the reducer emits the loading track's metadata and
         // flips to BUFFERING. This is what the now-playing UI subscribes to on first start.
