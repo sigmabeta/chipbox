@@ -66,3 +66,6 @@ apps/jvm/Chipbox Output Files/
 apps/jvm/hs_err_pid*.log
 apps/jvm/core.*
 .chipbox-server/
+
+# Claude Code local state
+.claude/
