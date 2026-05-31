@@ -428,14 +428,8 @@ class RealDirector(
             if (isLast(session, setlist)) return@launch
 
             val nextPosition = (session.currentPosition ?: -1) + 1
-            val nextTrackId = setlist[nextPosition]
             hatchet.i("skipForward: advancing to position $nextPosition (state=${model.playback.state}).")
-            commit(model.copy(session = session.copy(currentPosition = nextPosition)))
-            generator.startTrack(nextTrackId)
-            // Cut over to the new track immediately: drop the play-out buffer and have the
-            // speaker discard any straggler from the outgoing track until the new one's audio
-            // arrives. The auto-advance path naturally reaches end-of-buffer so doesn't need this.
-            speaker.switchTo(nextTrackId)
+            switchToTrack(model.copy(session = session.copy(currentPosition = nextPosition)), setlist[nextPosition])
         }
     }
 
@@ -453,11 +447,25 @@ class RealDirector(
                 return@launch
             }
 
-            val previousTrackId = setlist[setlistPosition - 1]
-            commit(model.copy(session = session.copy(currentPosition = setlistPosition - 1)))
-            generator.startTrack(previousTrackId)
-            speaker.switchTo(previousTrackId)
+            val previousPosition = setlistPosition - 1
+            switchToTrack(model.copy(session = session.copy(currentPosition = previousPosition)), setlist[previousPosition])
         }
+    }
+
+    /**
+     * Cleanly switch the generator and speaker onto [trackId] for a user-initiated jump (skip
+     * forward/back), with [advanced] holding the model whose session position has already moved to
+     * the new track. Like [start]'s handoff, it abandons any in-flight render first — so a generator
+     * stuck on a slow/silent track can't hold the new track in its channel while the model moves on,
+     * which would misattribute the stuck track's failure to the jumped-to track — then cuts the
+     * speaker over, discarding the outgoing track's queued audio.
+     */
+    private suspend fun switchToTrack(advanced: Model, trackId: Long) {
+        cancelStallWatchdog()
+        generator.stop()
+        commit(advanced)
+        generator.startTrack(trackId)
+        speaker.switchTo(trackId)
     }
 
     override fun setShuffled(shuffled: Boolean) {
