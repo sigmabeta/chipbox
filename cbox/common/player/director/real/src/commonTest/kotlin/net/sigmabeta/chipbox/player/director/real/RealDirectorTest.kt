@@ -456,6 +456,24 @@ class RealDirectorTest {
     }
 
     @Test
+    fun `skipForward abandons the in-flight render before starting the next track`() = runTest {
+        // Same clean-handoff as start(): a skip must stop the current render rather than queue the
+        // next track behind a possibly-stuck one, keeping the model and generator in sync.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+        director.start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L)) // track 1 playing
+
+        val stopsBefore = gen.stopCalls
+        director.skipForward()
+
+        assertTrue(gen.stopCalls > stopsBefore, "skip must abandon the current render, not queue behind it")
+        assertEquals(listOf(1L, 2L), gen.startTrackCalls)
+        assertEquals(listOf(2L), speaker.switchToCalls)
+        director.release()
+    }
+
+    @Test
     fun `skipBack past the 3 second threshold seeks the current track to zero`() = runTest {
         // Standard music-player semantics: enough into the track and "back" restarts it rather
         // than crossing a track boundary.
