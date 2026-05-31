@@ -411,6 +411,29 @@ class RealDirectorTest {
     }
 
     @Test
+    fun `an Emitting arriving after a pause does not re-arm the stall watchdog`() = runTest {
+        // Regression: pause() only pauses the speaker, so the generator keeps emitting for a moment
+        // as it drains its render-ahead buffer. Those Emittings must not re-arm the watchdog while
+        // PAUSED — otherwise it fires 5s into an intentional pause and "recovers" by skipping ahead.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2))
+        director.start(setlistSession(listOf(1L, 2L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L)) // PLAYING
+
+        director.pause() // -> PAUSED, watchdog cancelled
+        // The render-ahead buffer drains: a straggler Emitting lands while PAUSED.
+        gen.emit(GeneratorEvent.Emitting(producedMs = 100L, trackId = 1L))
+
+        advanceUntilIdle() // a watchdog (incorrectly) armed by that Emitting would fire here
+
+        val state = director.playbackState().first()
+        assertEquals(PlayerState.PAUSED, state.state, "an intentional pause must not stall and skip")
+        assertEquals(listOf(1L), gen.startTrackCalls, "no skip to the next track")
+        assertTrue(speaker.switchToCalls.isEmpty())
+        director.release()
+    }
+
+    @Test
     fun `a paused session is not mistaken for a stall`() = runTest {
         // Paused audio is meant to be silent; the watchdog must be disarmed so the gap isn't read
         // as a fault.
