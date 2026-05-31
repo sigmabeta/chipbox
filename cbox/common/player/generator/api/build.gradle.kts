@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    id("chipbox.kmp.test")
 }
 
 kotlin {
@@ -21,6 +22,12 @@ kotlin {
                 api(libs.sage.common.logging)
 
                 implementation(projects.cbox.common.utils.api)
+            }
+        }
+
+        named("commonTest") {
+            dependencies {
+                implementation(projects.cbox.common.repository.fake)
             }
         }
     }

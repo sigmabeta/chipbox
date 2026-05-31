@@ -339,6 +339,9 @@ abstract class BaseGenerator(
 
         if (currentSource != null) {
             try {
+                // Awaited: the emulator is a process-wide singleton, so the outgoing source's
+                // teardown must finish before the next source loads it. close() already joins the
+                // render-ahead writer and then tears the emulator down (see CachingPcmSource.close).
                 currentSource?.close()
             } catch (t: Throwable) {
                 hatchet.w("Error closing previous source: ${t.message}")
@@ -383,17 +386,21 @@ abstract class BaseGenerator(
         return pcmSource.getLastError()
     }
 
-    private fun teardownHelper() {
+    private suspend fun teardownHelper() {
         hatchet.d("Tearing down track ${currentTrack?.title}...")
         val source = currentSource
         currentSource = null
         if (source != null) {
-            generatorScope.launch {
-                try {
-                    source.close()
-                } catch (t: Throwable) {
-                    hatchet.w("Error closing PCM source: ${t.message}")
-                }
+            try {
+                // Await close() rather than fire-and-forget on generatorScope. The emulator is a
+                // process-wide singleton; close() tears it down (after joining the render-ahead
+                // writer). stop() calls this before the director starts the next track, so if we
+                // didn't wait, the outgoing track's native teardown (free) would race the incoming
+                // track's load on another ioDispatcher worker — a use-after-free that crashed the
+                // PSF core (SIGSEGV in r3000_setreg) on skip. Bounded by one in-flight buffer decode.
+                source.close()
+            } catch (t: Throwable) {
+                hatchet.w("Error closing PCM source: ${t.message}")
             }
         }
         currentTrack = null
