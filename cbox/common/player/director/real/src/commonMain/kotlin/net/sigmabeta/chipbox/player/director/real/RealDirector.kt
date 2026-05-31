@@ -177,12 +177,49 @@ class RealDirector(
     }
 
     private suspend fun process(input: Input) {
+        val before = model.playback.state
         val (nextModel, effects) = when (input) {
             is Input.Gen -> reduce(model, input.event)
             is Input.Spk -> reduce(model, input.event)
         }
         commit(nextModel)
         apply(effects)
+        traceTransition(input, before, model.playback.state, effects)
+    }
+
+    /**
+     * One debug line per processed event: the event, the player-state transition, and the effects
+     * the reducer decided to run — the director's orchestration view, to correlate against the
+     * generator's and speaker's own logs. Skips the per-buffer heartbeats (an Emitting/Rendering
+     * that neither moved the state nor issued anything beyond (re)arming the watchdog) so the trace
+     * stays signal rather than spam.
+     */
+    private fun traceTransition(
+        input: Input,
+        before: PlayerState,
+        after: PlayerState,
+        effects: List<Effect>,
+    ) {
+        val onlyWatchdog = effects.all { it == Effect.ArmWatchdog || it == Effect.CancelWatchdog }
+        if (before == after && onlyWatchdog) return
+        val event = when (input) {
+            is Input.Gen -> input.event
+            is Input.Spk -> input.event
+        }
+        hatchet.d("reduce($event): $before -> $after; effects=${effects.map { it.label() }}")
+    }
+
+    /** Compact log label — keeps [Effect.EmitMetadata] from dumping a whole [Track] into the line. */
+    private fun Effect.label(): String = when (this) {
+        is Effect.StartTrack -> "StartTrack($trackId)"
+        Effect.StopGenerator -> "StopGenerator"
+        Effect.StopSpeaker -> "StopSpeaker"
+        Effect.SpeakerPlay -> "SpeakerPlay"
+        is Effect.SwitchSpeaker -> "SwitchSpeaker($trackId)"
+        Effect.ArmWatchdog -> "ArmWatchdog"
+        Effect.CancelWatchdog -> "CancelWatchdog"
+        is Effect.EmitMetadata -> "EmitMetadata(${track.id})"
+        is Effect.PublishError -> "PublishError"
     }
 
     /** Publish [next] as the live model: stamp the speaker's position onto the playback slice (so
