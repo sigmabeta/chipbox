@@ -44,7 +44,15 @@ distributions {
     }
 }
 listOf("installDist", "distZip", "distTar").forEach { taskName ->
-    tasks.named(taskName) { dependsOn(buildVgmstreamLib) }
+    tasks.named<AbstractCopyTask>(taskName) {
+        dependsOn(buildVgmstreamLib)
+        // Excluding the Compose UI/skiko groups (see the runtimeClasspath block above) shifts version
+        // resolution so org.jetbrains.compose.runtime and androidx.compose.runtime can both land on
+        // runtime-desktop at the same version — two artifacts, one jar filename. The dist Copy then
+        // sees a duplicate entry and fails. They're the same bytes for our purposes (we don't render
+        // Compose), so collapse duplicates rather than fail.
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
 }
 tasks.named<CreateStartScripts>("startScripts") {
     doLast {
@@ -61,6 +69,25 @@ tasks.named<CreateStartScripts>("startScripts") {
             )
         )
     }
+}
+
+// The CLI is a headless Mordant app — it never renders Compose. But many cbox modules it depends on
+// (strings.api/real and, transitively, models.api -> scanner/repository/...) declare Compose UI
+// dependencies via the sage.compose.kmp convention plugin, so foundation + material3 + compose-ui
+// drag the whole desktop Compose runtime AND skiko (~13 MB native blob) onto the CLI's runtime
+// classpath. None of it is reachable from the CLI's code paths: string values are read straight from
+// the packaged .cvr files (see CliStringLoader), never through Compose Resources' getString(), which
+// is the only thing that would touch skiko. Excluding these Compose groups at the configuration level
+// keeps the slimming in one place instead of repeating per-dependency excludes across the many
+// modules that transitively pull them in.
+configurations.runtimeClasspath {
+    exclude(group = "org.jetbrains.compose.foundation")
+    exclude(group = "org.jetbrains.compose.material")
+    exclude(group = "org.jetbrains.compose.material3")
+    exclude(group = "org.jetbrains.compose.ui")
+    exclude(group = "org.jetbrains.compose.animation")
+    exclude(group = "org.jetbrains.compose.components", module = "components-resources")
+    exclude(group = "org.jetbrains.skiko")
 }
 
 dependencies {
