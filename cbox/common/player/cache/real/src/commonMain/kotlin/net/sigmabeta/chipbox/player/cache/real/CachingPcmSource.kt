@@ -7,9 +7,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.yield
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmCacheFormat
 import net.sigmabeta.chipbox.player.cache.PcmCacheKey
@@ -34,8 +32,8 @@ import okio.FileSystem
  *
  * The Generator's read loop calls [readFrames]; if the requested range is already on disk,
  * the call is a direct file read. If the cursor has caught up to the watermark, [readFrames]
- * suspends on the watermark flow until the writer produces more (or surfaces an error if the
- * writer falls dramatically behind).
+ * returns 0 without blocking and reports [awaitingRender]; the generator polls and surfaces
+ * render progress so the director — not this source — decides when a wait has stalled.
  *
  * On track end, the writer flips the header to "complete" and atomically renames `.pcm.tmp`
  * to `.pcm`. The next time this track plays, [RealPcmTrackSourceFactory] finds the complete
@@ -179,10 +177,9 @@ internal class CachingPcmSource(
                 }
             } else {
                 writer.abort()
-                // The watermark flow only re-checks its predicate on emission, and an
-                // all-silent track never wrote a frame to bump it. Nudge it so a reader
-                // parked in readFrames() wakes with this error rather than waiting out
-                // READ_WAIT_TIMEOUT_MS and reporting the misleading "fell behind" timeout.
+                // Bump the watermark so the writer's failure is observable: a reader (or the
+                // generator's render-progress poll) re-reads state and surfaces writerError
+                // instead of spinning on a watermark that an all-silent track never moved.
                 watermark.value = -1L
                 runCatching { onWriteAbort() }
             }
@@ -199,20 +196,11 @@ internal class CachingPcmSource(
         }
     }
 
+    override val awaitingRender: Boolean
+        get() = writerError == null && !writerComplete && watermark.value < cursor + 1L
+
     override suspend fun readFrames(buffer: ShortArray): Int {
         val maxFramesPerCall = (buffer.size / 2).toLong()
-        val targetFrame = cursor + 1L
-
-        // Wait for at least one frame past the cursor, or for the writer to declare completion.
-        if (watermark.value < targetFrame && !writerComplete) {
-            val arrived = withTimeoutOrNull(READ_WAIT_TIMEOUT_MS) {
-                watermark.first { it >= targetFrame || writerComplete || writerError != null }
-            }
-            if (arrived == null) {
-                lastError = "Cache writer fell behind reader (waited ${READ_WAIT_TIMEOUT_MS} ms)."
-                return 0
-            }
-        }
 
         if (writerError != null) {
             lastError = writerError
@@ -221,7 +209,11 @@ internal class CachingPcmSource(
 
         val available = (watermark.value - cursor).coerceAtMost(maxFramesPerCall).toInt()
         if (available <= 0) {
-            // Writer is complete and we're at end-of-stream.
+            // Nothing to hand back yet. Either the writer has sealed the track and we're at
+            // end-of-stream (writerComplete -> isOver), or it simply hasn't rendered past the
+            // cursor yet (awaitingRender). Either way return without blocking — the generator
+            // polls and the director owns the "waited too long" decision, so a long-but-
+            // progressing wait (an uncached seek rendering forward) isn't cut off here.
             return 0
         }
 
@@ -306,9 +298,6 @@ internal class CachingPcmSource(
         /** ~93 ms @ 44.1 kHz; same shape as the existing buffer manager so writer throughput
          *  isn't bottlenecked by tiny native calls. */
         private const val WRITER_BUFFER_FRAMES = 4096
-
-        /** If the writer fails to produce a frame within this window, surface as an error. */
-        private const val READ_WAIT_TIMEOUT_MS = 5_000L
 
         /** Trailing silence longer than this is dropped from the cache file. Mid-track silent
          *  gaps shorter than this still get persisted so the track plays back in time. */

@@ -41,13 +41,20 @@ class RealBufferManager(
 ) : ProducerBufferManager,
     ConsumerBufferManager,
     BufferDebugSource {
-    // @Volatile so a consumer that wakes from a ClosedReceiveChannelException after
-    // setSampleRate swaps channels sees the post-swap value when it retries.
+    /** The empty-array pool and the full-buffer queue, held together so they're swapped as one
+     *  unit on a sample-rate change. A reader can therefore never observe a half-swapped
+     *  (old-full, new-empty) pair — the race that let [drain] pour old-rate buffers into a fresh
+     *  full pool and leak live-pool arrays to GC during a seek that coincided with a rate change.
+     *
+     *  @Volatile so a consumer that wakes from a ClosedReceiveChannelException after the swap sees
+     *  the post-swap pool when it retries. */
     @Volatile
-    private var emptyArrays: Channel<ShortArray>? = null
+    private var pool: Pool? = null
 
-    @Volatile
-    private var fullBuffers: Channel<AudioBuffer>? = null
+    private class Pool(
+        val empty: Channel<ShortArray>,
+        val full: Channel<AudioBuffer>,
+    )
 
     private var currentSampleRate: Int? = null
 
@@ -97,18 +104,17 @@ class RealBufferManager(
             arrays.send(ShortArray(bufferSizeShorts))
         }
 
-        val oldArrays = emptyArrays
-        val oldBuffers = fullBuffers
+        val old = pool
 
-        emptyArrays = arrays
-        fullBuffers = buffers
+        // Publish both channels in one write so no reader can catch a mismatched pair.
+        pool = Pool(empty = arrays, full = buffers)
 
         // Close the old channels AFTER publishing the new ones — closing wakes any
         // consumer suspended in receive() with ClosedReceiveChannelException, and the
-        // retry loops below re-read the field, which by then points at the new channel.
+        // retry loops below re-read `pool`, which by then points at the new channels.
         // Otherwise the consumer stays parked on the orphaned old channel forever.
-        oldArrays?.close()
-        oldBuffers?.close()
+        old?.empty?.close()
+        old?.full?.close()
 
         capacity.store(bufferCount)
         emptyCount.store(bufferCount)
@@ -117,18 +123,18 @@ class RealBufferManager(
 
         hatchet.i(
             "setSampleRate: $previousRate Hz -> $sampleRate Hz " +
-                "(bufferCount=$bufferCount, oldChannelsClosed=${oldArrays != null})."
+                "(bufferCount=$bufferCount, oldChannelsClosed=${old != null})."
         )
     }
 
     override suspend fun sendAudioBuffer(audioBuffer: AudioBuffer) {
-        fullBuffers?.send(audioBuffer)
+        pool?.full?.send(audioBuffer)
         fullCount.fetchAndAdd(1)
         publishDebug()
     }
 
     override fun checkForNextAudioBuffer(): AudioBuffer? {
-        val buffer = fullBuffers?.tryReceive()?.getOrNull() ?: return null
+        val buffer = pool?.full?.tryReceive()?.getOrNull() ?: return null
         fullCount.fetchAndAdd(-1)
         publishDebug()
         return buffer
@@ -136,7 +142,7 @@ class RealBufferManager(
 
     override suspend fun waitForNextAudioBuffer(): AudioBuffer {
         while (true) {
-            val channel = fullBuffers ?: throw IllegalStateException("Set up buffers first!")
+            val channel = pool?.full ?: throw IllegalStateException("Set up buffers first!")
             try {
                 val buffer = channel.receive()
                 fullCount.fetchAndAdd(-1)
@@ -152,7 +158,7 @@ class RealBufferManager(
     override suspend fun recycleShortArray(data: ShortArray) {
         data.clear()
         try {
-            emptyArrays?.send(data)
+            pool?.empty?.send(data)
             emptyCount.fetchAndAdd(1)
             publishDebug()
         } catch (_: ClosedSendChannelException) {
@@ -163,17 +169,18 @@ class RealBufferManager(
 
     override suspend fun drain() {
         // drain() exists only to discard queued audio so a seek/skip starts clean; it must
-        // never suspend. Capture both channel references at entry — setSampleRate runs
-        // concurrently (the generator's loadNextTrack races the director's drain) and
-        // re-reading the field mid-loop would race into the freshly-allocated NEW
-        // emptyArrays. Recycling old-pool arrays is a pure optimization, so use the
-        // non-blocking trySend: if the old empty channel is at capacity (nobody receives
-        // from it once setSampleRate swaps in a new pool) or already closed, let the
-        // array fall to GC. A suspending send here would park forever and deadlock
+        // never suspend. Snapshot the pool once at entry — setSampleRate runs concurrently
+        // (the generator's loadNextTrack races the director's drain), and the single read
+        // guarantees `full` and `empty` belong to the SAME generation rather than a
+        // half-swapped (old-full, new-empty) pair. Recycling old-pool arrays is a pure
+        // optimization, so use the non-blocking trySend: if the empty channel is at capacity
+        // (nobody receives from it once setSampleRate swaps in a new pool) or already closed,
+        // let the array fall to GC. A suspending send here would park forever and deadlock
         // speaker.seek so it never reaches flushSink/startPlayback and the consume loop
         // never restarts.
-        val full = fullBuffers ?: return
-        val empty = emptyArrays
+        val snapshot = pool ?: return
+        val full = snapshot.full
+        val empty = snapshot.empty
         hatchet.d("drain: entering.")
         var drained = 0
         while (true) {
@@ -182,22 +189,20 @@ class RealBufferManager(
             drained++
             fullCount.fetchAndAdd(-1)
             buffer.data.clear()
-            val sendResult = empty?.trySend(buffer.data)
+            val sendResult = empty.trySend(buffer.data)
             when {
-                sendResult == null -> Unit
-
                 sendResult.isSuccess -> emptyCount.fetchAndAdd(1)
 
                 // Closed == the expected case: setSampleRate swapped in a fresh pool and
-                // closed this old channel, so the orphan rightfully falls to GC.
+                // closed this (snapshotted) old channel, so the orphan rightfully falls to GC.
                 sendResult.isClosed -> Unit
 
-                // Failure on a still-open channel should be impossible: during seek the
-                // consume loop is cancelled, so drain() is the sole sender into a channel
-                // whose capacity equals the (conserved) array count. If this ever fires,
+                // Failure on a still-open channel should now be impossible: `full` and `empty`
+                // are snapshotted from the same pool generation, so their array count is
+                // conserved and the empty channel can't be over capacity. If this ever fires,
                 // an unforeseen path is permanently shrinking the live buffer pool.
                 else -> hatchet.w(
-                    "drain: trySend failed on an open emptyArrays channel; " +
+                    "drain: trySend failed on an open empty channel; " +
                         "live-pool array dropped to GC ($sendResult)."
                 )
             }
@@ -211,7 +216,7 @@ class RealBufferManager(
     }
 
     override suspend fun getNextEmptyBuffer(): ShortArray {
-        val array = emptyArrays?.receive() ?: throw IllegalStateException("Set up buffers first!")
+        val array = pool?.empty?.receive() ?: throw IllegalStateException("Set up buffers first!")
         emptyCount.fetchAndAdd(-1)
         publishDebug()
         return array

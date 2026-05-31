@@ -43,25 +43,37 @@ interface PcmTrackSource {
 
     /**
      * Fill [buffer] with up to its capacity in stereo frames, starting at the source's current
-     * read cursor. Returns the number of frames actually read (0 if end-of-track is reached
-     * before any frames could be produced).
+     * read cursor. Returns the number of frames actually read.
      *
-     * For caching sources, this may suspend briefly if the writer hasn't produced the requested
-     * range yet. Implementations should bound the wait and surface a stalled writer as an
-     * exception, not a hang.
+     * Non-blocking: a return of 0 means "no frames available right now", which the caller
+     * disambiguates via [isOver] (end-of-track), [getLastError] (failure), and [awaitingRender]
+     * (a render-ahead writer that simply hasn't caught up to the cursor yet). The source never
+     * decides *how long* to wait for a slow writer — it returns promptly and lets the caller
+     * (and ultimately the director's stall guard) own that policy.
      */
     suspend fun readFrames(buffer: ShortArray): Int
 
     /**
      * Reposition the read cursor to [framePosition]. Subsequent [readFrames] calls produce
-     * audio starting at that position. May suspend if the position is past what's currently
-     * available (caching sources block on the writer; cached-file sources never block).
+     * audio starting at that position. Non-blocking even when the position is past what's been
+     * rendered so far — the following [readFrames] simply reports [awaitingRender] until the
+     * writer catches up.
      */
     suspend fun seek(framePosition: Long)
 
     /** True when no further frames will be produced — track has reached its end. The Generator
      *  polls this between buffers to know when to advance the setlist. */
     val isOver: Boolean
+
+    /**
+     * True when [readFrames] is returning 0 only because the source hasn't yet rendered the
+     * frames under the read cursor — a render-ahead writer that hasn't caught up (e.g. right
+     * after a seek into an un-rendered region), as opposed to a genuine end-of-track or error.
+     * The generator polls this to know it should keep waiting (and report render progress)
+     * rather than abort, while leaving the actual stall timeout to the director. Always false for
+     * sources that never lag the cursor (complete cache files, bare emulators).
+     */
+    val awaitingRender: Boolean get() = false
 
     /** Integrated BS.1770 loudness across the track in LUFS, or [Double.NaN] until enough audio
      *  has been measured (the first valid value appears after the first 400 ms). For a render-

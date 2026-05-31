@@ -4,6 +4,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
@@ -125,6 +128,112 @@ class RealDirectorTest {
         director.release()
     }
 
+    // ---- auto-advance / setlist scheduling ----
+
+    @Test
+    fun `Generator TrackChange mid-setlist auto-advances to the next track without a speaker switch`() = runTest {
+        // The core scheduling path: when a track ends naturally the generator emits TrackChange and
+        // the director queues the next setlist id. Unlike skip/error-skip this is NOT a forced cut
+        // — playback has already reached end-of-buffer — so the speaker is left to roll into the
+        // next track's buffers on its own (no switchTo, which would drop in-flight audio).
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+        director.start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+
+        gen.emit(GeneratorEvent.TrackChange)
+
+        assertEquals(listOf(1L, 2L), gen.startTrackCalls, "natural end should queue the next id")
+        assertTrue(speaker.switchToCalls.isEmpty(), "auto-advance must not force a speaker switch")
+        director.release()
+    }
+
+    @Test
+    fun `Generator TrackChange on the last track transitions to ENDING and stops the generator`() = runTest {
+        // Setlist exhausted: there's no next id to queue, so the director flips to ENDING and stops
+        // the generator while the speaker plays out the audio already buffered. STOPPED comes later,
+        // once the speaker drains (covered separately).
+        val (director, gen, speaker, _) = newDirector(listOf(track1))
+        director.start(setlistSession(listOf(1L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+
+        gen.emit(GeneratorEvent.TrackChange)
+
+        val state = director.playbackState().first { it.state == PlayerState.ENDING }
+        assertEquals(PlayerState.ENDING, state.state)
+        assertEquals(listOf(1L), gen.startTrackCalls, "no further track should be queued")
+        assertTrue(gen.stopCalls >= 1, "generator should be stopped once the setlist is exhausted")
+        director.release()
+    }
+
+    @Test
+    fun `the speaker draining while ENDING completes the setlist into STOPPED and tears both down`() = runTest {
+        // The tail of the final track: ENDING + the speaker reporting it ran dry (Buffering) is the
+        // signal that everything queued has now played. The director completes the session into
+        // STOPPED and tears down both halves of the pipeline.
+        val (director, gen, speaker, _) = newDirector(listOf(track1))
+        director.start(setlistSession(listOf(1L)))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+        gen.emit(GeneratorEvent.TrackChange) // -> ENDING
+
+        speaker.emit(SpeakerEvent.Buffering(0L)) // speaker drained -> Setlist complete
+
+        val state = director.playbackState().first { it.state == PlayerState.STOPPED }
+        assertEquals(PlayerState.STOPPED, state.state)
+        assertEquals(1, speaker.stopCalls, "speaker sink torn down on completion")
+        assertTrue(gen.stopCalls >= 1, "generator torn down on completion")
+        director.release()
+    }
+
+    @Test
+    fun `a straggler Emitting from a track already advanced past is ignored`() = runTest {
+        // After auto-advancing, a late buffer from the outgoing track can still surface. It must be
+        // dropped: applying it would rewind the high-water mark (and clear the failure streak)
+        // against audio the user is no longer hearing.
+        val (director, gen, _, _) = newDirector(listOf(track1, track2, track3))
+        director.start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L))
+        gen.emit(GeneratorEvent.TrackChange) // now on track 2
+
+        // A real buffer for the current track advances the high-water mark.
+        gen.emit(GeneratorEvent.Emitting(producedMs = 5_000L, trackId = 2L))
+        val afterCurrent = director.playbackState().first { it.generatorProducedMs == 5_000L }
+        assertEquals(5_000L, afterCurrent.generatorProducedMs)
+
+        // A straggler from the already-finished track 1 must not move it.
+        gen.emit(GeneratorEvent.Emitting(producedMs = 999_999L, trackId = 1L))
+        val afterStraggler = director.playbackState().first()
+        assertEquals(
+            5_000L,
+            afterStraggler.generatorProducedMs,
+            "a buffer from a passed track must not move the high-water mark",
+        )
+        director.release()
+    }
+
+    @Test
+    fun `loading the final track during a track change disallows skip-forward`() = runTest {
+        // skipForwardAllowed gates the UI's skip button. It must track the live setlist position
+        // across an in-flight track change, not just the cold-start load — otherwise the button
+        // stays enabled on the last track and skipForward walks off the end.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2))
+        director.start(setlistSession(listOf(1L, 2L), startingPosition = 0))
+
+        gen.emit(GeneratorEvent.Loading(1L))
+        val early = director.playbackState().first { it.state == PlayerState.BUFFERING }
+        assertTrue(early.skipForwardAllowed, "skip-forward allowed while a later track remains")
+
+        speaker.emit(SpeakerEvent.Playing(0L))
+        gen.emit(GeneratorEvent.TrackChange) // advance to the final track
+        gen.emit(GeneratorEvent.Loading(2L)) // track change in flight, from PLAYING
+
+        val onLast = director.playbackState().first { !it.skipForwardAllowed }
+        assertTrue(!onLast.skipForwardAllowed, "skip-forward disallowed once the final track loads")
+        director.release()
+    }
+
     // ---- generator-error recovery ----
 
     @Test
@@ -198,6 +307,93 @@ class RealDirectorTest {
         director.release()
     }
 
+    // ---- stall watchdog ----
+
+    @Test
+    fun `no generator progress for the stall timeout skips the track`() = runTest {
+        // The director (not the speaker / PCM source) owns the "no audio for too long" guard. With
+        // the generator silent past the timeout, the stalled track is skipped like any bad track.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+        director.start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L)) // arms the watchdog
+        speaker.emit(SpeakerEvent.Playing(0L))
+
+        advanceUntilIdle() // let the 5s stall timer fire
+
+        assertEquals(listOf(1L, 2L), gen.startTrackCalls, "stall should skip to the next track")
+        assertEquals(listOf(2L), speaker.switchToCalls)
+        assertTrue(gen.stopCalls >= 1, "the wedged generator loop must be cancelled before the skip")
+        director.release()
+    }
+
+    @Test
+    fun `a stall on the last track stops the session`() = runTest {
+        val (director, gen, _, _) = newDirector(listOf(track1))
+        director.start(setlistSession(listOf(1L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L)) // arms the watchdog
+
+        advanceUntilIdle()
+
+        val state = director.playbackState().first { it.state == PlayerState.STOPPED }
+        assertEquals(PlayerState.STOPPED, state.state, "no track to skip to -> stop")
+        assertEquals(listOf(1L), gen.startTrackCalls, "nothing new queued")
+        director.release()
+    }
+
+    @Test
+    fun `render progress keeps resetting the watchdog so a long uncached seek does not stall`() = runTest {
+        // The key seek case: the writer renders forward (cachedMs climbs) for far longer than the
+        // stall timeout, but because progress keeps arriving the guard never trips.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2))
+        director.start(setlistSession(listOf(1L, 2L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+
+        repeat(10) { i ->
+            advanceTimeBy(3_000) // each gap is < 5s, but they sum to 30s
+            gen.emit(GeneratorEvent.Rendering(cachedMs = (i + 1) * 1_000L))
+        }
+        runCurrent()
+
+        assertEquals(listOf(1L), gen.startTrackCalls, "a progressing render must not be treated as a stall")
+        assertTrue(speaker.switchToCalls.isEmpty())
+        director.release()
+    }
+
+    @Test
+    fun `a render that stops progressing eventually trips the watchdog`() = runTest {
+        // Same render-wait, but the watermark wedges: identical (non-advancing) progress doesn't
+        // reset the timer, so the guard still fires.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2))
+        director.start(setlistSession(listOf(1L, 2L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+        gen.emit(GeneratorEvent.Rendering(cachedMs = 1_000L)) // some progress, then nothing more
+
+        advanceUntilIdle()
+
+        assertEquals(listOf(1L, 2L), gen.startTrackCalls, "a wedged render should still be caught")
+        assertEquals(listOf(2L), speaker.switchToCalls)
+        director.release()
+    }
+
+    @Test
+    fun `a paused session is not mistaken for a stall`() = runTest {
+        // Paused audio is meant to be silent; the watchdog must be disarmed so the gap isn't read
+        // as a fault.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2))
+        director.start(setlistSession(listOf(1L, 2L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+
+        director.pause()
+        advanceUntilIdle()
+
+        assertEquals(listOf(1L), gen.startTrackCalls, "pause must not skip")
+        assertTrue(speaker.switchToCalls.isEmpty())
+        director.release()
+    }
+
     // ---- skip controls ----
 
     @Test
@@ -260,6 +456,42 @@ class RealDirectorTest {
         director.release()
     }
 
+    @Test
+    fun `skipBack on the first track within the threshold restarts it instead of underflowing`() = runTest {
+        // Even under the 3s threshold, there's no previous track to cross to at position 0, so
+        // "back" must restart the current track (seek 0) rather than indexing to -1.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2))
+        director.start(setlistSession(listOf(1L, 2L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.currentPositionMsValue = 500L // under SKIP_BACK_THRESHOLD_MS
+        speaker.emit(SpeakerEvent.Playing(500L))
+
+        director.skipBack()
+
+        assertEquals(listOf(0L), gen.seekCalls, "first-track back restarts via generator.seek(0)")
+        assertEquals(1, speaker.seekCalls)
+        assertTrue(speaker.switchToCalls.isEmpty(), "no track change off the first track")
+        assertEquals(listOf(1L), gen.startTrackCalls, "no previous track should be loaded")
+        director.release()
+    }
+
+    @Test
+    fun `skipForward after auto-advancing to the last track is a no-op`() = runTest {
+        // Position is tracked through auto-advance, so skipForward respects the end of the setlist
+        // even when we arrived at the last track by natural progression rather than a cold start.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2))
+        director.start(setlistSession(listOf(1L, 2L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+        gen.emit(GeneratorEvent.TrackChange) // auto-advance to the final track (position 1)
+
+        director.skipForward()
+
+        assertEquals(listOf(1L, 2L), gen.startTrackCalls, "no extra startTrack past the last track")
+        assertTrue(speaker.switchToCalls.isEmpty(), "no forced switch on a no-op skip")
+        director.release()
+    }
+
     // ---- transport ----
 
     @Test
@@ -289,6 +521,93 @@ class RealDirectorTest {
         assertEquals(PlayerState.STOPPED, state.state)
         assertEquals(1, speaker.stopCalls)
         assertEquals(1, gen.stopCalls)
+        director.release()
+    }
+
+    @Test
+    fun `play after a setlist completes restarts the final track from the beginning`() = runTest {
+        // Regression: finishing a setlist leaves the director STOPPED with the generator loop and
+        // speaker sink torn down, but the now-playing UI still shows the last track. Tapping play
+        // used to call only generator.play(), which spins the (re-launched) generation loop on an
+        // empty channel forever because no track was ever queued — so nothing played. play() must
+        // re-issue the current track via startTrack instead.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2))
+        director.start(setlistSession(listOf(1L, 2L), startingPosition = 0))
+        gen.emit(GeneratorEvent.Loading(1L)) // -> BUFFERING (track 1)
+        speaker.emit(SpeakerEvent.Playing(0L)) // -> PLAYING
+
+        // Track 1 ends; director auto-advances to the final track (track 2).
+        gen.emit(GeneratorEvent.TrackChange)
+        gen.emit(GeneratorEvent.Loading(2L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+        assertEquals(listOf(1L, 2L), gen.startTrackCalls, "should have advanced to the last track")
+
+        // Final track ends: TrackChange with no track left -> ENDING, then the speaker drains and
+        // emits Buffering -> the director completes the setlist into STOPPED.
+        gen.emit(GeneratorEvent.TrackChange)
+        speaker.emit(SpeakerEvent.Buffering(0L))
+        val stopped = director.playbackState().first { it.state == PlayerState.STOPPED }
+        assertEquals(PlayerState.STOPPED, stopped.state, "setlist should complete into STOPPED")
+
+        // The user taps play. The director must re-queue the track still on screen (track 2),
+        // not merely poke the idle generator.
+        director.play()
+
+        assertEquals(
+            listOf(1L, 2L, 2L),
+            gen.startTrackCalls,
+            "play() after completion should restart the final track via startTrack",
+        )
+        director.release()
+    }
+
+    @Test
+    fun `pauseTemporarily pauses the speaker and reports PAUSED`() = runTest {
+        // A transient audio-focus loss stops the consume loop, so the state must reflect PAUSED
+        // rather than leaving the UI showing PLAYING with no audio.
+        val (director, gen, speaker, _) = newDirector(listOf(track1))
+        director.start(setlistSession(listOf(1L)))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+
+        director.pauseTemporarily()
+
+        val state = director.playbackState().first { it.state == PlayerState.PAUSED }
+        assertEquals(PlayerState.PAUSED, state.state)
+        assertEquals(1, speaker.pauseCalls)
+        director.release()
+    }
+
+    @Test
+    fun `resumeFocus after a temporary pause returns to PLAYING`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1))
+        director.start(setlistSession(listOf(1L)))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+        director.pauseTemporarily()
+        director.playbackState().first { it.state == PlayerState.PAUSED }
+
+        director.resumeFocus()
+
+        val state = director.playbackState().first { it.state == PlayerState.PLAYING }
+        assertEquals(PlayerState.PLAYING, state.state)
+        assertTrue(speaker.playCalls >= 1, "resumeFocus should restart the consume loop")
+        director.release()
+    }
+
+    @Test
+    fun `error-skip stops the failed generator loop before relaunching the next track`() = runTest {
+        // Regression: relaunching via startTrack without first tearing down the failed loop can
+        // race play() into an "Already looping" no-op, stranding the queued track. The skip must
+        // stop the generator first.
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+        director.start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 0))
+
+        gen.emit(GeneratorEvent.Error("emulator crashed"))
+
+        assertEquals(listOf(1L, 2L), gen.startTrackCalls, "skip should still queue the next track")
+        assertEquals(listOf(2L), speaker.switchToCalls)
+        assertTrue(gen.stopCalls >= 1, "the failed loop must be stopped before the relaunch")
         director.release()
     }
 
