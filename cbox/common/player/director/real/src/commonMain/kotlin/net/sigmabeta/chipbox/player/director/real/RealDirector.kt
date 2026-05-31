@@ -253,6 +253,18 @@ class RealDirector(
 
     override fun start(session: Session) {
         directorScope.launch {
+            // A fresh session must take over cleanly rather than queue behind whatever the
+            // generator is currently doing. If we only queued the new track, a generator stuck
+            // rendering a slow or silent track would hold it in its channel while the model (and
+            // the stall watchdog) have already moved on — so the stuck track's eventual failure
+            // gets misattributed to, and skips, the track the user just asked for. When audio was
+            // flowing, abandon the in-flight render so the model and the generator stay in sync.
+            val wasActive = model.playback.state.hasActiveAudio()
+            if (wasActive) {
+                cancelStallWatchdog()
+                generator.stop()
+            }
+
             val setlistForSession = getSetlistForSession(session)
                 .let { if (session.shuffled) it.shuffled() else it }
 
@@ -280,20 +292,22 @@ class RealDirector(
                 val startingPosition = session.startingPosition
                     ?: setlistForSession.indexOfFirst { it == firstTrackId }
 
-                val wasPaused = model.playback.state == PlayerState.PAUSED
                 commit(model.copy(session = session.copy(currentPosition = startingPosition)))
                 generator.startTrack(firstTrackId)
-                if (wasPaused) {
-                    // Drop the audio queued from the paused session and restart the speaker's
-                    // consume loop, switching it onto the new track so any buffer left from the
-                    // paused session's track is discarded rather than played. Without this, the
-                    // generator stays blocked filling buffers nobody is reading, so the new
-                    // session never becomes audible. Skipped on cold start because the buffer
+                if (wasActive) {
+                    // Cut the speaker over to the new track, discarding any audio still queued from
+                    // the outgoing session and restarting the consume loop on the new track.
+                    // Skipped on a cold start, where the consume loop isn't running and the buffer
                     // manager isn't initialised until the generator's first setSampleRate lands.
                     speaker.switchTo(firstTrackId)
                 }
             }
         }
+    }
+
+    private fun PlayerState.hasActiveAudio(): Boolean = when (this) {
+        PlayerState.PLAYING, PlayerState.BUFFERING, PlayerState.PAUSED, PlayerState.ENDING -> true
+        PlayerState.IDLE, PlayerState.STOPPED, PlayerState.ERROR -> false
     }
 
     override fun start(
