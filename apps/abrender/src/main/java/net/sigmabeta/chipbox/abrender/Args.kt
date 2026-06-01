@@ -18,6 +18,8 @@ class Args(
     val limit: Int?,
     val overwrite: Boolean,
     val maxWallMillis: Long,
+    val shards: Int,
+    val shard: Int,
     val runA: String?,
     val runB: String?,
     val topN: Int,

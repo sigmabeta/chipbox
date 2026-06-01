@@ -50,11 +50,13 @@ set(usf_SRCS
         rsp_hle/audio.c
         rsp_hle/cicx105.c
         rsp_hle/hle.c
+        rsp_hle/hvqm.c
         rsp_hle/jpeg.c
         rsp_hle/memory.c
         rsp_hle/mp3.c
         rsp_hle/musyx.c
         rsp_hle/plugin.c
+        rsp_hle/re2.c
         rsp_lle/rsp.c
         si/cic.c
         si/game_controller.c
