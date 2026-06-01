@@ -100,25 +100,42 @@ DLists use the HLE engine. **Consequence:** the Cog RSP-HLE alist rewrite
 (`alist*.c`, `audio.c`, `musyx.c`, …) does **not** affect USF audio output here —
 it is on a path chipbox doesn't take for audio.
 
-Every audibly-changed track was bisected (revert one file, rebuild, compare PCM
-hashes to the pre-sync render). All of them trace to a single commit,
-**`421f00b` "Fix playback for several USFs"**, via two changes the Wothke fork
-had disabled and this sync restores:
+The audible changes are confined to **re-ripped sets** and trace to a single
+upstream commit, **`421f00b` "Fix playback for several USFs."** Bisection
+(revert one file, rebuild, compare PCM hashes to the pre-sync render) ties them
+to two things the Wothke fork had disabled and this sync restores:
 
-1. **`rsp_lle/execute.h`** — re-enables two `check_interupt(state)` calls inside
-   the LLE RSP execution loop (the fork had them commented out). Reverting just
-   this restores **Zelda OoT v1.0 & v1.2, Majora's Mask, and Star Fox 64**
-   bit-for-bit to the pre-sync output.
-2. **`main/main.c`** — sets the `g_delay_si/ai/pi/dp` timing flags when a USF's
-   `_enablecompare` **and** `_enablefifofull` tags are both set (chipbox reads
-   these tags in `Usf.cpp`). Reverting just this restores **Doshin the Giant and
-   Mario Artist**. **Mario Kart 64 and Super Mario 64** need *both* reverts.
+- **`rsp_lle/execute.h`** — two `check_interupt(state)` calls in the LLE RSP
+  execution loop the fork had commented out.
+- **`main/main.c`** — the AI FIFO-full interrupt setup and the SI/AI/PI/DP
+  `g_delay_*` timing block (the latter gated on `_enablecompare && _enablefifofull`).
 
-So the audible differences are a deliberate upstream playback/interrupt-timing
-fix restoring behaviour the fork had removed — not a regression. (This is the
-strongest claim the corpus supports; it is *not* a measurement against real N64
-hardware. The in-tree LLE can't serve as an independent oracle — forcing it for
-all tasks deadlocks, since it's wired only as a fallback for unknown ucodes.)
+**Why only re-rips change: they opt into hardware-accurate interrupt timing; the
+originals don't.** Reading the USF tags directly, original rips carry no accuracy
+tags, while `[fixed]`/`[rr]`/`[rerip]` rips set one or both of (chipbox reads
+both in `Usf.cpp` → `usf_set_compare`/`usf_set_fifo_full`):
+
+- **`_enablecompare`** → enables the R4300 Count/Compare **timer interrupt**
+  (`interupt.c` `compare_int_handler` → `raise_maskable_interrupt`).
+- **`_enablefifofull`** → enables the AI (audio) **FIFO-full** interrupt + status,
+  and with `_enablecompare` the delay-slot timing above.
+
+A music driver that waits on those interrupts only plays right when the emulator
+services them; the fork's disabled servicing ignored the re-rips' request, and
+`421f00b` restores it. Over all 1022 tracks of the affected games the split is
+sharp: **≈100% of `[fixed]`/`[rr]`/`[rerip]` tracks change** (Majora's Mask
+[fixed] 117/118, OoT [fixed] 109/109, Star Fox 64 [fixed] 45/45) and **≈0% of the
+original rips do** (Majora's 0/118, Mario Kart original 0/58, SM64 1996 0/38).
+The differences are timing/phase-level — coherent music shifted slightly, not
+tonal — i.e. the intended accurate-timing playback, not a regression.
+
+This is the strongest claim the corpus supports; it is *not* a measurement
+against real N64 hardware (the in-tree LLE can't serve as an oracle — forcing it
+for all tasks deadlocks, as it's wired only as a fallback for unknown ucodes).
+The exact path is entangled — a `_enablecompare` IRQ is *raised* in `interupt.c`
+but only matters once `execute.h` *services* it — so we don't claim a clean
+one-file-per-game mapping, only that all of it is `421f00b`'s restored interrupt
+handling acting on the re-rips' accuracy flags.
 
 **Per-architecture note:** `ac47dbe`'s VNE fix in `rsp_lle/vu/vne.h` is inside
 `#ifdef ARCH_MIN_ARM_NEON`, so it only affects **Android/ARM** builds (it is
