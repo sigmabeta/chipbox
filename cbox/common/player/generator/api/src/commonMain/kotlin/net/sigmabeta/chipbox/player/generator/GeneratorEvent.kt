@@ -42,5 +42,5 @@ sealed class GeneratorEvent {
 
     /** The current track has finished and the generator is blocked waiting for the next
      *  track id. The director is expected to respond with [Generator.startTrack]. */
-    object TrackChange : GeneratorEvent()
+    data object TrackChange : GeneratorEvent()
 }
