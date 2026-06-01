@@ -45,7 +45,7 @@ fun SearchBar(
     // Compose's `shadow` modifier is available cross-platform; the older SDK_INT < Q gate
     // (pre-Renderscript path that fell back to `clip(shape)` on KitKat-Pi) is no longer
     // needed — minSdk is well past Q by now, and the gate blocks the shared appui scaffold
-    // from compiling on JVM/desktop. See the M9 nav-unification commit in docs/kmp-migration.md.
+    // from compiling on JVM/desktop.
     val actualModifier = modifier
         .fillMaxWidth()
         .padding(horizontal = SidePadding)
