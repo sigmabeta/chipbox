@@ -33,16 +33,28 @@ allprojects {
     }
 }
 
-// Force-bump npm transitives Kotlin's mocha 11.x test-runner drags in. Both packages
-// here are flagged by Dependabot — RCE in serialize-javascript (GHSA-RegExp.flags/Date)
-// is fixed in 7.x, DoS in `diff` (jsdiff) is fixed in 8.x — but mocha declares the old
-// majors (^6.0.2 / ^7.0.0), so yarn won't pick up the fix without an explicit
-// resolution. The :unit-test-js workflow has been dropped from CI, so a mocha-major-
-// bump regression here would only surface in local jsTest invocations.
+// Force-bump npm transitives the Kotlin/JS toolchain drags in that Dependabot flags. yarn won't
+// pick these up on its own because the parents declare older ranges, so each needs an explicit
+// resolution; `kotlinUpgradeYarnLock` rewrites kotlin-js-store/yarn.lock to honor them.
+//
+//  - serialize-javascript / diff: RCE / DoS via mocha's 11.x test-runner (fixed in 7.x / 8.x). The
+//    :unit-test-js workflow has been dropped from CI, so a mocha-major-bump regression here would
+//    only surface in local jsTest invocations.
+//  - webpack / webpack-dev-server / ws: the webpack bundler + dev-server stack. All same-major,
+//    forward-compatible bumps to the patched releases — the buildHttp redirect allow-list bypass,
+//    the dev-server cross-origin-over-HTTP bundle-load bypass, and the ws TypedArray-`reason`
+//    uninitialized-memory read.
+//
+// uuid is intentionally NOT pinned: the flagged path is uuid.v3/v5/v6 with external buffers, but
+// its only consumer here (sockjs, via webpack-dev-server) uses uuid.v4 (unaffected), and forcing
+// uuid 11+ would break sockjs's CommonJS `require('uuid')`.
 plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
     rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().apply {
         resolution("serialize-javascript", "^7.0.5")
         resolution("diff", "^8.0.4")
+        resolution("webpack", "^5.102.0")
+        resolution("webpack-dev-server", "^5.2.4")
+        resolution("ws", "^8.21.0")
     }
 }
 

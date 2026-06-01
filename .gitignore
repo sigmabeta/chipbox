@@ -63,6 +63,10 @@ apps/jvm/Chipbox Output Files/
 # A/B render harness: per-run WAV + metrics output (default --out dir, created wherever it's run)
 ab-runs/
 *.so
+# Stray top-level yarn.lock (only locks `yarn` itself) that a bare `yarn` run in the repo root
+# leaves behind. It shadows kotlin-js-store/yarn.lock and breaks Dependabot's JS evaluation.
+# The real Kotlin/JS lockfile lives at kotlin-js-store/yarn.lock and is committed.
+/yarn.lock
 
 # JVM crash dumps from the headless app
 apps/jvm/hs_err_pid*.log

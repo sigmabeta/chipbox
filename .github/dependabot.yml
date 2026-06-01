@@ -1,0 +1,20 @@
+# Dependabot configuration.
+#
+# This is a Kotlin Multiplatform project with a `js()` target. The Kotlin Gradle plugin generates
+# the JavaScript dependency lockfile at `kotlin-js-store/yarn.lock` (committed). Dependabot's npm
+# updater discovers that lockfile when the npm ecosystem is rooted at "/", which is why the npm
+# entry below uses `directory: "/"` rather than pointing inside `kotlin-js-store` directly.
+#
+# A stray top-level `yarn.lock` (one that only locks `yarn` itself, with no `package.json`) will
+# shadow this and make Dependabot fail with "couldn't find a kotlin-js-store" — `/yarn.lock` is
+# git-ignored to stop that from coming back.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "javascript"
