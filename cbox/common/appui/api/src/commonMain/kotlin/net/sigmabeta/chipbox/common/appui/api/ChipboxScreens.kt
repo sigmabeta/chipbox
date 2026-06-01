@@ -28,6 +28,11 @@ import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGameRoute
 import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatform
 import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatformRoute
+import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibrary
+import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibraryMode
+import net.sigmabeta.chipbox.features.componentlibrary.LibraryMode
+import net.sigmabeta.chipbox.features.componentlibrary.real.ComponentLibraryModeRoute
+import net.sigmabeta.chipbox.features.componentlibrary.real.ComponentLibraryRoute
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetailRoute
 import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatform
@@ -79,6 +84,8 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     RescanStatus -> RescanStatusScreen
     PlaybackStatus -> PlaybackStatusScreen
     ErrorLog -> ErrorLogScreen
+    ComponentLibrary -> ComponentLibraryMenuScreen
+    is ComponentLibraryMode -> ComponentLibraryModeScreen(destination.mode)
     NowPlaying -> NowPlayingScreen
     BrowseByGame -> BrowseByGameScreen
     BrowseByPlatform -> BrowseByPlatformScreen
@@ -360,6 +367,28 @@ private object PlaybackStatusScreen : Screen {
 private object ErrorLogScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         ErrorLogRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+/**
+ * Debug-only component gallery menu, reached from the Settings debug section (gated behind
+ * `shouldShowDebug`). Picking a mode pushes a [ComponentLibraryModeScreen].
+ */
+private object ComponentLibraryMenuScreen : Screen {
+    @Composable override fun Content() = ScreenScaffold {
+        ComponentLibraryRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+/**
+ * One gallery sub-screen per [LibraryMode]. The key embeds the mode so List/Grid/Columns each get
+ * their own ViewModelStore (and thus their own assisted VM) — see the [GameDetailDeepScreen] note.
+ */
+private data class ComponentLibraryModeScreen(val mode: LibraryMode) : Screen {
+    override val key: ScreenKey = "ComponentLibrary:${mode.name}"
+
+    @Composable override fun Content() = ScreenScaffold {
+        ComponentLibraryModeRoute(mode = mode, onEvent = LocalChipboxEventSink.current)
     }
 }
 

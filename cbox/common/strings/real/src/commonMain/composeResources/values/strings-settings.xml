@@ -34,4 +34,7 @@
 
     <string name="settings_label_error_log">Error log</string>
     <string name="settings_caption_error_log">Recent errors logged this session (debug only).</string>
+
+    <string name="settings_label_component_library">Component library</string>
+    <string name="settings_caption_component_library">Browse the app\'s UI components (debug only).</string>
 </resources>

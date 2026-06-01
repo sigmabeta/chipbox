@@ -188,6 +188,8 @@ include(
     ":features:playback-status:real",
     ":features:error-log:api",
     ":features:error-log:real",
+    ":features:component-library:api",
+    ":features:component-library:real",
     ":features:search:api",
     ":features:search:real",
     ":features:search:screenshot",
