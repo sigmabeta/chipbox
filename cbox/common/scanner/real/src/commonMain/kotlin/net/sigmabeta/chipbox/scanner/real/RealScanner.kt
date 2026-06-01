@@ -11,6 +11,7 @@ import kotlinx.coroutines.sync.withPermit
 import net.sigmabeta.chipbox.contentsource.LibraryFileInfo
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.models.ChainFile
+import net.sigmabeta.chipbox.models.FADE_LENGTH_MS
 import net.sigmabeta.chipbox.perf.trace
 import net.sigmabeta.chipbox.perf.traceAsync
 import net.sigmabeta.chipbox.readers.EXTENSION_M3U
@@ -368,7 +369,13 @@ class RealScanner(
             // default so the track is still seekable and the now-playing UI can render a
             // progress bar. Accept any non-positive value to absorb reader bugs that emit 0.
             if (gamed.length <= 0L) {
-                gamed.copy(length = DEFAULT_LENGTH_MS)
+                // No real length means no real fade window either, so also give the track the
+                // default fade-out — otherwise it ends abruptly at DEFAULT_LENGTH_MS. Keep any
+                // fade the reader/m3u already supplied.
+                gamed.copy(
+                    length = DEFAULT_LENGTH_MS,
+                    fadeLengthMs = if (gamed.fadeLengthMs > 0L) gamed.fadeLengthMs else FADE_LENGTH_MS,
+                )
             } else {
                 gamed
             }
