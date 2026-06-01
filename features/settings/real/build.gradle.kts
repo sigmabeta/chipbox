@@ -30,6 +30,8 @@ kotlin {
                 implementation(projects.features.playbackStatus.api)
                 // ErrorLog route key for SettingsAction.ErrorLogClicked -> NavigateTo.
                 implementation(projects.features.errorLog.api)
+                // ComponentLibrary route key for SettingsAction.ComponentLibraryClicked -> NavigateTo.
+                implementation(projects.features.componentLibrary.api)
                 // ManageLibrary route key for SettingsAction.ManageLibraryClicked -> NavigateTo.
                 implementation(projects.features.manageLibrary.api)
                 // RescanStatus route key — navigated to when a scan starts / from the in-progress row.
