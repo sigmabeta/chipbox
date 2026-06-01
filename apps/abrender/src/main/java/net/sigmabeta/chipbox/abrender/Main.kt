@@ -50,6 +50,8 @@ private fun buildArgs(command: String, opts: Map<String, String>): Args {
         overwrite = opts.containsKey("overwrite"),
         maxWallMillis = opts["max-wall-seconds"]?.toLongOrNull()?.times(MILLIS_PER_SECOND)
             ?: DEFAULT_MAX_WALL_MILLIS,
+        shards = opts["shards"]?.toIntOrNull() ?: 1,
+        shard = opts["shard"]?.toIntOrNull() ?: 0,
         runA = opts["a"],
         runB = opts["b"],
         topN = opts["top"]?.toIntOrNull() ?: DEFAULT_TOP_N,
@@ -64,6 +66,8 @@ private fun validate(args: Args) {
         require(args.corpusDir.isDirectory) {
             "Corpus directory not found: ${args.corpusDir.absolutePath}\nPass --dir <folder of audio files>."
         }
+        require(args.shards >= 1) { "--shards must be >= 1" }
+        require(args.shard in 0 until args.shards) { "--shard must be in 0..${args.shards - 1}" }
     }
 }
 
@@ -116,7 +120,14 @@ private fun printUsage() {
           --limit <n>          cap the number of tracks (quick checks)
           --overwrite          re-render tracks already present                (default: resume/skip)
           --max-wall-seconds   per-track wall-clock cap                        (default: $DEFAULT_MAX_WALL_SECONDS)
+          --shards <n>         partition the corpus into n disjoint slices     (default: 1)
+          --shard <i>          render only slice i (0-based) of --shards        (default: 0)
           --out <dir>          runs root                                       (default: ab-runs)
+
+        Parallelism: one JVM can't render concurrently (singleton native state per backend), so run
+        n processes — one per logical core — each over a disjoint --shard of the corpus. A track that
+        wedges in an uninterruptible native call only halts its own shard; a watchdog records it as
+        WEDGED and exits so a relaunch resumes past it. See render-parallel.sh.
 
         diff --a <run> --b <run> [options]
           --a <run>            baseline run (label under <out>, or a path)
