@@ -41,6 +41,7 @@ include(
     ":apps:jvm",
     ":apps:js",
     ":apps:cli",
+    ":apps:abrender",
     ":apps:server",
     ":benchmark",
 
