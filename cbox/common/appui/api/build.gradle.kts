@@ -28,8 +28,7 @@ kotlin {
                 // module compiles. Gradle's `implementation` hides transitive types from
                 // second-level consumers — Metro's FIR pass then doesn't see those hints in
                 // the app module. Promoting to `api` re-exposes them. Discovered when
-                // LibraryViewModel started crashing at runtime with `Unknown model class`
-                // (M9 slice 5d of docs/kmp-migration.md).
+                // LibraryViewModel started crashing at runtime with `Unknown model class`.
                 api(projects.cbox.common.playerStatus.api)
                 implementation(projects.cbox.common.ui.chrome.api)
                 implementation(projects.cbox.common.ui.components.api)

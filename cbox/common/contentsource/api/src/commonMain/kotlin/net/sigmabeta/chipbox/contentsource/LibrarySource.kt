@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
  * without knowing which platform produced them.
  *
  * Existed to decouple the shared `RealScanner` from `AndroidFileContentSource`'s concrete
- * SAF type: roadmap item 4 in `docs/kmp-migration.md`.
+ * SAF type.
  */
 interface LibrarySource : ContentSource {
     val locations: StateFlow<List<LibraryLocationInfo>>

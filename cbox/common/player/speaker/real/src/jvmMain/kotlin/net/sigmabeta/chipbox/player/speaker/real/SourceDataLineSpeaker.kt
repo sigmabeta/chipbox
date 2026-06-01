@@ -27,7 +27,7 @@ import net.sigmabeta.sage.logging.Hatchet
  * `close()`, not `flush()`). When no line is open (between teardown and the first new buffer)
  * it returns 0.
  *
- * Live audio on the JVM target — addresses roadmap item 2 in `docs/kmp-migration.md`. Heavy
+ * Live audio on the JVM target. Heavy
  * emulator cores can emit a terminal `GeneratorEvent.Error` on a cold render-ahead cache; the
  * speaker survives this in the sense that it just stops getting buffers, but the user-visible
  * track will appear to halt. Tuning the render-ahead window is a separate change.
