@@ -792,7 +792,7 @@ class RealDirector(
             }
 
             isLast(session, setlist) -> {
-                hatchet.w("Generator error on last track: ${event.message}. Ending session.")
+                hatchet.e("Generator error on last track: ${event.message}. Ending session.")
                 withFailure.copy(playback = m.playback.copy(state = PlayerState.STOPPED)).with(
                     Effect.CancelWatchdog,
                     Effect.PublishError(event.message, failedTrackId),
@@ -802,7 +802,7 @@ class RealDirector(
             }
 
             else -> {
-                hatchet.w(
+                hatchet.e(
                     "Generator error ($failures/$MAX_CONSECUTIVE_FAILURES): " +
                         "${event.message}. Skipping to the next track."
                 )
