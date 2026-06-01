@@ -70,3 +70,5 @@ targets too.
   (overwrites) them (git-LFS). Use verify unless intentionally re-recording.
 - Don't boot an AVD to verify — stop after build + lint and hand device testing
   to the user. Don't `git commit`/`push` unless explicitly asked.
+- A/B-testing a native emulator change (USF/PSF/SSF/…): `apps/abrender` renders a
+  corpus to WAV + RMS metrics and diffs two runs. See `apps/abrender/README.md`.

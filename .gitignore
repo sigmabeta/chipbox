@@ -60,6 +60,8 @@ apps/jvm/.chipbox-jvm/
 apps/jvm/Chipbox Output Files/
 # CLI app: per-working-directory library DB + saved scan locations (created wherever it's run)
 .chipbox-cli/
+# A/B render harness: per-run WAV + metrics output (default --out dir, created wherever it's run)
+ab-runs/
 *.so
 
 # JVM crash dumps from the headless app
