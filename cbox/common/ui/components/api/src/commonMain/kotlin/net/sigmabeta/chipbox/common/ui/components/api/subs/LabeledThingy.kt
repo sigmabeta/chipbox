@@ -13,12 +13,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
+import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
+import net.sigmabeta.chipbox.common.ui.components.api.utils.outerFocusPadding
 
 @Composable
 @Suppress("LongParameterList")
@@ -36,12 +40,14 @@ fun LabeledThingy(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
+            .padding(padding.outerFocusPadding())
             .fillMaxWidth()
+            .clip(FocusAreaShape)
             .clickable(
                 onClick = onClick,
                 onClickLabel = onClickLabel,
             )
-            .padding(padding)
+            .padding(padding.innerFocusPadding())
             .semantics {
                 accyStateDescription?.let { stateDescription = it }
             },
