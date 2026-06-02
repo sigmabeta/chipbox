@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.features.nowplaying.real
 
+import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.sage.images.SourceInfo
 
 data class NowPlayingModel(

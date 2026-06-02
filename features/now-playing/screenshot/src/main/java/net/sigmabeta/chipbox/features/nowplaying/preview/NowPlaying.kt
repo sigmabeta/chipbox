@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingContent
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingError
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingModel
-import net.sigmabeta.chipbox.features.nowplaying.real.RepeatMode
+import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.ui.previews.DevicePreviews
 import net.sigmabeta.chipbox.ui.previews.ScreenPreview
 import net.sigmabeta.chipbox.ui.previews.previewWidthClass

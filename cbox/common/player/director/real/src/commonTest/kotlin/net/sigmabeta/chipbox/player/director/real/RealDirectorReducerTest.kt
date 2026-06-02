@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
@@ -54,6 +55,44 @@ class RealDirectorReducerTest {
             listOf(RealDirector.Effect.CancelWatchdog, RealDirector.Effect.StopGenerator),
             effects,
         )
+        director.release()
+    }
+
+    @Test
+    fun `TrackChange with repeat-one restarts the current track without advancing`() = runTest {
+        val director = newDirector(tracks = 3)
+        val model = playingModel(setlist = listOf(1L, 2L, 3L), position = 1, repeatMode = RepeatMode.ONE)
+
+        val (next, effects) = director.reduce(model, GeneratorEvent.TrackChange)
+
+        assertEquals(1, next.session?.currentPosition, "repeat-one leaves the position put")
+        assertEquals(listOf(RealDirector.Effect.StartTrack(2L)), effects, "restart the same track")
+        director.release()
+    }
+
+    @Test
+    fun `TrackChange on the last track with repeat-all wraps back to the first track`() = runTest {
+        val director = newDirector(tracks = 3)
+        val model = playingModel(setlist = listOf(1L, 2L, 3L), position = 2, repeatMode = RepeatMode.ALL)
+
+        val (next, effects) = director.reduce(model, GeneratorEvent.TrackChange)
+
+        assertEquals(0, next.session?.currentPosition, "wrap back to the top")
+        assertEquals(listOf(RealDirector.Effect.StartTrack(1L)), effects, "start the first track again")
+        assertEquals(PlayerState.PLAYING, next.playback.state, "no ENDING transition while wrapping")
+        director.release()
+    }
+
+    @Test
+    fun `TrackChange mid-setlist with repeat-all still advances normally`() = runTest {
+        // Repeat-all only changes the end-of-setlist behaviour; mid-setlist it's a plain advance.
+        val director = newDirector(tracks = 3)
+        val model = playingModel(setlist = listOf(1L, 2L, 3L), position = 0, repeatMode = RepeatMode.ALL)
+
+        val (next, effects) = director.reduce(model, GeneratorEvent.TrackChange)
+
+        assertEquals(1, next.session?.currentPosition)
+        assertEquals(listOf(RealDirector.Effect.StartTrack(2L)), effects)
         director.release()
     }
 
@@ -144,7 +183,11 @@ class RealDirectorReducerTest {
         )
     }
 
-    private fun playingModel(setlist: List<Long>, position: Int): RealDirector.Model = RealDirector.Model(
+    private fun playingModel(
+        setlist: List<Long>,
+        position: Int,
+        repeatMode: RepeatMode = RepeatMode.OFF,
+    ): RealDirector.Model = RealDirector.Model(
         playback = ChipboxPlaybackState(
             state = PlayerState.PLAYING,
             position = 0L,
@@ -157,6 +200,7 @@ class RealDirectorReducerTest {
             contentId = 0L,
             explicitSetlist = setlist,
             currentPosition = position,
+            repeatMode = repeatMode,
         ),
         setlist = setlist,
         consecutiveFailures = 0,

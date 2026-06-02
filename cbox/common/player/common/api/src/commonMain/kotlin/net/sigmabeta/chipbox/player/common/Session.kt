@@ -28,6 +28,9 @@ import kotlin.random.Random
  * @property shuffled When true the director randomises the resolved setlist before assigning
  *           it; the starting hints then index into the shuffled order. The shuffled order is
  *           stable for the lifetime of the session (it's not reshuffled on track change).
+ * @property repeatMode What the director does when the current track ends — play through and
+ *           stop ([RepeatMode.OFF]), wrap back to the first track ([RepeatMode.ALL]), or restart
+ *           the current track ([RepeatMode.ONE]). Consulted on generator-driven auto-advance.
  * @property id Random session identifier; lets observers tell two unrelated sessions apart.
  */
 data class Session(
@@ -39,5 +42,6 @@ data class Session(
     val startingPosition: Int? = null,
     val currentPosition: Int? = null,
     val shuffled: Boolean = false,
+    val repeatMode: RepeatMode = RepeatMode.OFF,
     val id: Long = Random.nextLong()
 )

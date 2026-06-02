@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.player.director
 
 import kotlinx.coroutines.flow.SharedFlow
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.player.common.Session
 
 /**
@@ -80,6 +81,15 @@ interface Director {
      * already in the requested mode.
      */
     fun setShuffled(shuffled: Boolean)
+
+    /**
+     * Set the repeat behaviour for the current session. Takes effect on the next generator-driven
+     * track change: [RepeatMode.ONE] restarts the current track when it ends, [RepeatMode.ALL]
+     * wraps back to the first track after the last one, [RepeatMode.OFF] plays through and stops.
+     * Does not interrupt the track currently playing; only changes what happens when it finishes.
+     * No-op if there's no active session or if the mode is already set to [mode].
+     */
+    fun setRepeatMode(mode: RepeatMode)
 
     // State Updates
 
