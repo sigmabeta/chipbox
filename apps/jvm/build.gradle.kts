@@ -376,6 +376,8 @@ dependencies {
     implementation(projects.cbox.common.player.common.api)
     implementation(projects.cbox.common.repository.api)
     implementation(projects.cbox.common.models.api)
+    // appDataDir() — resolves the standardized per-OS data directory under the user's home.
+    implementation(projects.cbox.common.utils.api)
     // DebugInfoModule's `@ContributesTo(AppScope) @Provides` binds DebugInfoManager →
     // RealDebugInfoManager(director, generator, speaker, bufferDebugSource, scope), reached by
     // the PlaybackStatusViewModel now wired into the shared shell. `:di` is sage.di.jvm (the
