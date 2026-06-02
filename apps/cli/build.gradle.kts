@@ -111,6 +111,8 @@ dependencies {
     implementation(projects.cbox.common.contentsource.file.real)
     implementation(projects.cbox.common.readers.api)
     implementation(projects.cbox.common.models.api)
+    // appDataDir() — resolves the standardized per-OS data directory under the user's home.
+    implementation(projects.cbox.common.utils.api)
     // Platform/section display names: ChipboxStringProvider + loadChipboxStrings() preload the
     // single multiplatform string source (composeResources); StringProvider is the interface the
     // menus consume. strings.real exposes strings.api (ChipboxStringId / Platform.stringId) via api().
