@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.Director
@@ -86,6 +87,7 @@ open class FakeDirector : Director {
     val seekCalls: MutableList<Long> = mutableListOf()
     val setVolumeCalls: MutableList<Double> = mutableListOf()
     val setShuffledCalls: MutableList<Boolean> = mutableListOf()
+    val setRepeatModeCalls: MutableList<RepeatMode> = mutableListOf()
     val duckCalls: MutableList<Unit> = mutableListOf()
 
     override fun metadataState(): SharedFlow<Track?> = metadataSink.asSharedFlow()
@@ -118,6 +120,9 @@ open class FakeDirector : Director {
     }
     override fun setShuffled(shuffled: Boolean) {
         setShuffledCalls += shuffled
+    }
+    override fun setRepeatMode(mode: RepeatMode) {
+        setRepeatModeCalls += mode
     }
     override fun pauseTemporarily() = Unit
     override fun duck() {

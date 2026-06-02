@@ -10,6 +10,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
@@ -91,7 +92,8 @@ class NowPlayingViewModel @Inject constructor(
             }
 
             NowPlayingAction.RepeatClicked -> {
-                updateState { it.copy(repeatMode = it.repeatMode.next()) }
+                val current = state.value.session?.repeatMode ?: RepeatMode.OFF
+                director.setRepeatMode(current.next())
             }
 
             NowPlayingAction.BackClicked -> emit(ChipboxEvent.NavigateBack)

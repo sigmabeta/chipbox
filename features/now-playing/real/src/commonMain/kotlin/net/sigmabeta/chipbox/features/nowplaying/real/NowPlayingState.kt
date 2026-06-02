@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.features.nowplaying.real
 
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
@@ -16,7 +17,6 @@ data class NowPlayingState(
     val track: Track? = null,
     val playback: ChipboxPlaybackState? = null,
     val session: Session? = null,
-    val repeatMode: RepeatMode = RepeatMode.OFF,
     val errors: List<NowPlayingError> = emptyList(),
 ) : FreeformState<NowPlayingModel>() {
 
@@ -39,7 +39,7 @@ data class NowPlayingState(
         cachedMs = playback?.cachedMs ?: 0L,
         canSkipForward = playback?.skipForwardAllowed == true,
         isShuffled = session?.shuffled == true,
-        repeatMode = repeatMode,
+        repeatMode = session?.repeatMode ?: RepeatMode.OFF,
         // Only a fatal ERROR carries a message; its presence drives the transport warning icon.
         errorMessage = playback
             ?.takeIf { it.state == PlayerState.ERROR }

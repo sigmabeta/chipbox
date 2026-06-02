@@ -17,6 +17,9 @@ import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.common.RepeatMode
+import net.sigmabeta.chipbox.player.common.Session
+import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
@@ -145,15 +148,34 @@ class NowPlayingViewModelTest {
     }
 
     @Test
-    fun `RepeatClicked cycles repeatMode in the OFF ALL ONE sequence`() = runTest(dispatcher) {
-        val vm = newViewModel(FakeDirector())
-        assertEquals(RepeatMode.OFF, vm.state.first().repeatMode)
+    fun `RepeatClicked asks the director to advance to the next repeat mode`() = runTest(dispatcher) {
+        // The VM reads the session's current repeatMode and asks the director to cycle it
+        // (OFF -> ALL -> ONE -> OFF). Without a session it defaults to OFF, so the first tap
+        // requests ALL.
+        val director = FakeDirector()
+        val vm = newViewModel(director)
         vm.sendAction(NowPlayingAction.RepeatClicked)
-        assertEquals(RepeatMode.ALL, vm.state.value.repeatMode)
+        assertEquals(listOf(RepeatMode.ALL), director.setRepeatModeCalls)
+    }
+
+    @Test
+    fun `RepeatClicked cycles from the session's current mode`() = runTest(dispatcher) {
+        // With ALL already live on the session, the next tap should request ONE.
+        val director = FakeDirector()
+        val vm = newViewModel(director)
+        director.emitSession(sessionWith(RepeatMode.ALL))
+        vm.state.first { it.session?.repeatMode == RepeatMode.ALL }
         vm.sendAction(NowPlayingAction.RepeatClicked)
-        assertEquals(RepeatMode.ONE, vm.state.value.repeatMode)
-        vm.sendAction(NowPlayingAction.RepeatClicked)
-        assertEquals(RepeatMode.OFF, vm.state.value.repeatMode)
+        assertEquals(listOf(RepeatMode.ONE), director.setRepeatModeCalls)
+    }
+
+    @Test
+    fun `the session's repeatMode surfaces in the rendered model`() = runTest(dispatcher) {
+        val director = FakeDirector()
+        val vm = newViewModel(director)
+        director.emitSession(sessionWith(RepeatMode.ONE))
+        val state = vm.state.first { it.session?.repeatMode == RepeatMode.ONE }
+        assertEquals(RepeatMode.ONE, state.toContent(stubStringProvider()).repeatMode)
     }
 
     // ---- navigation / placeholder actions ----
@@ -284,6 +306,12 @@ class NowPlayingViewModelTest {
         game = gameTitle?.let { Game(id = 1, title = it, photoUrl = null, artists = null, tracks = null) },
         artists = artistName?.let { listOf(Artist(id = 1, name = it, photoUrl = null, tracks = null, games = null)) },
         platform = Platform.OTHER,
+    )
+
+    private fun sessionWith(repeatMode: RepeatMode): Session = Session(
+        type = SessionType.ALL_TRACKS,
+        contentId = 0L,
+        repeatMode = repeatMode,
     )
 
     private fun playbackOf(state: PlayerState, position: Long = 0L): ChipboxPlaybackState = ChipboxPlaybackState(

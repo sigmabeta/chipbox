@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.player.common.STALL_TIMEOUT_MS
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
@@ -440,9 +441,12 @@ class RealDirector(
         directorScope.launch {
             val session = model.session ?: return@launch
             val setlist = model.setlist ?: return@launch
-            if (isLast(session, setlist)) return@launch
+            val atLast = isLast(session, setlist)
+            // Honour the same gate the UI is showing (skipForwardAllowed): at the end of the
+            // setlist there's nowhere to go unless repeat-all is on, in which case we wrap to the top.
+            if (atLast && !wrapsAtEnd(session, setlist)) return@launch
 
-            val nextPosition = (session.currentPosition ?: -1) + 1
+            val nextPosition = if (atLast) 0 else (session.currentPosition ?: -1) + 1
             hatchet.i("skipForward: advancing to position $nextPosition (state=${model.playback.state}).")
             switchToTrack(model.copy(session = session.copy(currentPosition = nextPosition)), setlist[nextPosition])
         }
@@ -507,6 +511,29 @@ class RealDirector(
         }
     }
 
+    override fun setRepeatMode(mode: RepeatMode) {
+        directorScope.launch {
+            val session = model.session ?: return@launch
+            if (session.repeatMode == mode) return@launch
+
+            // Repeat is consulted lazily on the next track change, so this neither touches the
+            // setlist nor interrupts the current track. The one immediate effect is the
+            // skip-forward gate: repeat-all makes "next" available even on the last track (it
+            // wraps), so recompute and re-publish it as part of the same commit.
+            val updated = session.copy(repeatMode = mode)
+            val setlist = model.setlist
+            val skipAllowed = setlist
+                ?.let { skipForwardAllowed(updated, it) }
+                ?: model.playback.skipForwardAllowed
+            commit(
+                model.copy(
+                    session = updated,
+                    playback = model.playback.copy(skipForwardAllowed = skipAllowed),
+                )
+            )
+        }
+    }
+
     override fun metadataState() = metadataStateMutable.asSharedFlow()
 
     override fun playbackState() = playbackStateMutable.asSharedFlow()
@@ -558,6 +585,17 @@ class RealDirector(
         val nextTrackPosition = (session.currentPosition ?: -1) + 1
         return nextTrackPosition >= setlist.size
     }
+
+    /** True when the end of the setlist loops back to the start rather than stopping — i.e.
+     *  repeat-all over a non-empty setlist. (Repeat-one restarts the current track in place and
+     *  never reaches the end, so it doesn't "wrap" in this sense.) */
+    private fun wrapsAtEnd(session: Session, setlist: List<Long>): Boolean =
+        session.repeatMode == RepeatMode.ALL && setlist.isNotEmpty()
+
+    /** Whether "skip forward" has somewhere to go: another track ahead, or a wrap to the top when
+     *  repeat-all is on. Drives both the UI's enabled state and the [skipForward] no-op guard. */
+    private fun skipForwardAllowed(session: Session, setlist: List<Long>): Boolean =
+        !isLast(session, setlist) || wrapsAtEnd(session, setlist)
 
     /** Track id the director currently considers active, from the live setlist position.
      *  Null until a session + setlist are established. */
@@ -648,7 +686,7 @@ class RealDirector(
         // A new track is loading: we now expect audio, so start guarding for a stall and reset the
         // render-progress mark this track will be measured against.
         val armed = m.copy(lastRenderProgressMs = 0L)
-        val skipForwardAllowed = !isLast(session, setlist)
+        val skipForwardAllowed = skipForwardAllowed(session, setlist)
 
         // Already mid-playback (audio flowing) or mid-buffer (starved): a track change is in
         // flight. Don't force a state — the speaker decides PLAYING vs BUFFERING by whether audio
@@ -717,11 +755,14 @@ class RealDirector(
     }
 
     /**
-     * The generator's current track ended. With a track still to come, advance the setlist position
-     * and start it (the speaker rides into the next track's buffers on its own — no forced switch).
-     * With the setlist exhausted, transition to [PlayerState.ENDING] and stop the generator while
-     * the speaker plays out what's buffered; [reduceSpeakerBuffering] completes the session once it
-     * drains.
+     * The generator's current track ended. The session's [Session.repeatMode] decides what comes
+     * next:
+     *  - [RepeatMode.ONE] re-queues the same track (position unchanged), looping it indefinitely.
+     *  - otherwise, with a track still to come, advance the setlist position and start it (the
+     *    speaker rides into the next track's buffers on its own — no forced switch).
+     *  - at the end of the setlist, [RepeatMode.ALL] wraps back to position 0; [RepeatMode.OFF]
+     *    transitions to [PlayerState.ENDING] and stops the generator while the speaker plays out
+     *    what's buffered ([reduceSpeakerBuffering] completes the session once it drains).
      */
     private fun reduceTrackChange(m: Model): Pair<Model, List<Effect>> {
         val session = m.session
@@ -734,10 +775,26 @@ class RealDirector(
             ).with(Effect.PublishError(detail, currentTrackId(m)))
         }
 
+        // Repeat-one: restart the current track in place, leaving the setlist position untouched.
+        if (session.repeatMode == RepeatMode.ONE) {
+            val trackId = currentTrackId(m)
+            if (trackId != null) {
+                hatchet.d("Track ended; repeat-one is on — restarting the current track.")
+                return m.with(Effect.StartTrack(trackId))
+            }
+            // No resolvable current track to repeat — fall through to normal advance/end handling.
+        }
+
         return if (isLast(session, setlist)) {
-            hatchet.d("Generator requested next track, but no more exist.")
-            m.copy(playback = m.playback.copy(state = PlayerState.ENDING))
-                .with(Effect.CancelWatchdog, Effect.StopGenerator)
+            if (wrapsAtEnd(session, setlist)) {
+                hatchet.d("End of setlist; repeat-all is on — wrapping back to the first track.")
+                m.copy(session = session.copy(currentPosition = 0))
+                    .with(Effect.StartTrack(setlist[0]))
+            } else {
+                hatchet.d("Generator requested next track, but no more exist.")
+                m.copy(playback = m.playback.copy(state = PlayerState.ENDING))
+                    .with(Effect.CancelWatchdog, Effect.StopGenerator)
+            }
         } else {
             val nextPosition = (session.currentPosition ?: -1) + 1
             m.copy(session = session.copy(currentPosition = nextPosition))
