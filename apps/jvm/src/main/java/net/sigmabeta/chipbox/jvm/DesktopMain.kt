@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.jvm
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -10,6 +11,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
+import java.awt.SplashScreen
 import kotlinx.coroutines.flow.MutableSharedFlow
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.jvm.di.JvmChipboxGraph
@@ -65,6 +67,10 @@ fun runDesktop(graph: JvmChipboxGraph) = application {
             }
         },
     ) {
+        // Dismiss the launcher splash (-splash:, shown since before main()) once the window's
+        // content first composes — the real UI is up. getSplashScreen() is null when no splash
+        // was launched (IDE run without the flag, headless), so this is a safe, idempotent no-op.
+        LaunchedEffect(Unit) { SplashScreen.getSplashScreen()?.close() }
         CompositionLocalProvider(
             LocalMetroViewModelFactory provides graph.metroViewModelFactory,
             LocalChipboxStringProvider provides graph.stringProvider,
