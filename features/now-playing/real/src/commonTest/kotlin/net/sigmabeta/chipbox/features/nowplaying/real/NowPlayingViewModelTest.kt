@@ -79,14 +79,38 @@ class NowPlayingViewModelTest {
 
     @Test
     fun `playback IDLE emits NavigateBack`() = runTest(dispatcher) {
-        // The screen is dead-on-arrival without a live session — director emits IDLE either at
-        // startup (no session) or on stop. Bouncing back to the previous screen avoids rendering
-        // a half-built player.
+        // The screen is dead-on-arrival without a live session — the Director seeds IDLE before
+        // anything plays (typically because Android killed the process and recreated this screen
+        // against a fresh, sessionless Director). Bounce back rather than render a blank player.
         val director = FakeDirector()
         val vm = newViewModel(director)
         val event = async(start = CoroutineStart.UNDISPATCHED) { vm.events.first() }
         director.emitPlayback(PlayerState.IDLE)
         assertTrue(event.await() is ChipboxEvent.NavigateBack)
+    }
+
+    @Test
+    fun `playback STOPPED emits NavigateBack`() = runTest(dispatcher) {
+        // STOPPED is the terminal state once playback finishes or the user stops it; the screen
+        // has nothing left to show, so it leaves the same way it does for IDLE.
+        val director = FakeDirector()
+        val vm = newViewModel(director)
+        // Drain the NavigateBack the VM fires for the FakeDirector's IDLE seed at construction.
+        assertTrue(vm.events.first() is ChipboxEvent.NavigateBack)
+        val event = async(start = CoroutineStart.UNDISPATCHED) { vm.events.first() }
+        director.emitPlayback(PlayerState.STOPPED)
+        assertTrue(event.await() is ChipboxEvent.NavigateBack)
+    }
+
+    @Test
+    fun `idle at construction still navigates back when events is collected afterward`() = runTest(dispatcher) {
+        // Regression for the cold-restart race: the FakeDirector seeds IDLE, so the VM's init
+        // collector fires NavigateBack while the VM is being constructed — before anything
+        // subscribes to events. The channel-backed events flow must buffer and deliver it rather
+        // than drop it (a replay=0 SharedFlow lost it, leaving the screen stuck on a dead player).
+        val director = FakeDirector()
+        val vm = newViewModel(director)
+        assertTrue(vm.events.first() is ChipboxEvent.NavigateBack)
     }
 
     // ---- transport actions ----
@@ -326,9 +350,14 @@ class NowPlayingViewModelTest {
     private suspend fun CoroutineScope.collectAndDispatch(
         vm: NowPlayingViewModel,
         action: NowPlayingAction,
-    ): ChipboxEvent = async(start = CoroutineStart.UNDISPATCHED) { vm.events.first() }
-        .also { vm.sendAction(action) }
-        .await()
+    ): ChipboxEvent {
+        // The VM emits a NavigateBack at construction (the FakeDirector seeds an IDLE player);
+        // drain that buffered event so we observe the one the dispatched action produces.
+        vm.events.first()
+        return async(start = CoroutineStart.UNDISPATCHED) { vm.events.first() }
+            .also { vm.sendAction(action) }
+            .await()
+    }
 
     private fun stubStringProvider() = object : StringProvider {
         override fun getString(string: SageStringId): String = string.toString()

@@ -2,15 +2,14 @@ package net.sigmabeta.chipbox.common.ui.freeform.api
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
@@ -61,17 +60,21 @@ abstract class ChipboxFreeformViewModel<S : FreeformState<Model>, Model>(
     /** Whether to render diagnostic overlays in the screen's content. Always false today. */
     val showDebug: StateFlow<Boolean> = _showDebug.asStateFlow()
 
-    private val _events = MutableSharedFlow<ChipboxEvent>(
-        replay = 0,
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST,
-    )
+    // A Channel rather than a replay=0 SharedFlow so a one-shot event emitted *before* the UI
+    // starts collecting isn't lost. Subclasses commonly emit from flow collectors launched in
+    // their `init` block — which run as the ViewModel is constructed, before
+    // [ChipboxFreeformEntry]'s `LaunchedEffect` subscribes to [events]. A SharedFlow with no
+    // replay drops those; a buffered Channel holds them until the first collector drains it.
+    // (Concretely: NowPlaying fires NavigateBack the instant it sees an IDLE/STOPPED player, e.g.
+    // when Android recreates the screen against a fresh, sessionless Director after a process
+    // kill.) Single-consumer is fine — exactly one collector forwards these to the host.
+    private val _events = Channel<ChipboxEvent>(Channel.BUFFERED)
 
     /** One-shot effects. Collected by [ChipboxFreeformEntry] and forwarded to the host. */
-    val events: SharedFlow<ChipboxEvent> = _events.asSharedFlow()
+    val events: Flow<ChipboxEvent> = _events.receiveAsFlow()
 
     protected fun emit(event: ChipboxEvent) {
-        _events.tryEmit(event)
+        _events.trySend(event)
     }
 
     protected fun updateState(updater: (S) -> S) {
