@@ -63,10 +63,13 @@ class NowPlayingViewModel @Inject constructor(
         }
         viewModelScope.launch {
             director.playbackState().collect { playback ->
-                // IDLE means no session is live — there's nothing to show here. This usually
-                // reflects the screen being (re)created out of sync with the player (e.g. an
-                // Android lifecycle race), so leave rather than render a blank player.
-                if (playback.state == PlayerState.IDLE) {
+                // No live session to show — leave the screen rather than render a dead player.
+                // IDLE is the pre-session seed the Director emits before anything plays: the
+                // common cause is Android killing the app's process and later recreating this
+                // screen against a brand-new, sessionless Director. STOPPED is the terminal state
+                // the player lands in once playback finishes or is stopped. ENDING still has audio
+                // draining, so it's deliberately excluded.
+                if (playback.state == PlayerState.IDLE || playback.state == PlayerState.STOPPED) {
                     emit(ChipboxEvent.NavigateBack)
                 }
                 updateState { it.copy(playback = playback) }
