@@ -27,6 +27,13 @@ val nativeLibsDirFile: File = layout.projectDirectory.dir("libs").asFile
 val nativeBuildDirFile: File = layout.projectDirectory.dir("native-build").asFile
 val hostShimDirFile: File = File(nativeBuildDirFile, "hostshim")
 
+// Launch splash shown by the JVM launcher (`-splash:`) before main() runs — the desktop analog
+// of Android's androidx core-splashscreen, covering the synchronous graph build (incl. the
+// runBlocking string preload) that happens before the Compose window opens. java.awt.SplashScreen
+// only accepts PNG/GIF/JPEG (not the webp window icon), so this is a separate PNG. DesktopMain
+// closes it once the Compose window's content first composes.
+val splashImageFile: File = layout.projectDirectory.dir("src/main/splash").file("splash.png").asFile
+
 // Resolve cmake — explicit `-Pchipbox.jvm.cmake=…` first, then `$PATH` (split manually to
 // avoid `providers.exec("which", …)` failing the configuration cache when which returns 1),
 // then the Android SDK's bundled copy (which any contributor targeting Android already has).
@@ -284,6 +291,8 @@ val nativeLibsTask = tasks.register("nativeLibs") {
 tasks.named<JavaExec>("run") {
     dependsOn(nativeLibsTask)
     systemProperty("java.library.path", nativeLibsDirFile.absolutePath)
+    // `-splash:` is a launcher JVM arg (not a -D property); shows the splash before main() runs.
+    jvmArgs("-splash:${splashImageFile.absolutePath}")
 }
 
 // Bundle the emulator .so/.dylib/.dll files into `lib/native/` inside the distribution so
@@ -296,6 +305,11 @@ distributions {
         contents {
             from(nativeLibsDirFile) {
                 into("lib/native")
+            }
+            // Loose file (not inside a jar) so the `-splash:$APP_HOME/lib/splash.png` launcher
+            // flag injected into the start scripts below can read it.
+            from(splashImageFile) {
+                into("lib")
             }
         }
     }
@@ -325,6 +339,23 @@ tasks.named<CreateStartScripts>("startScripts") {
             windowsScript.readText().replace(
                 "-classpath \"%CLASSPATH%\"",
                 "-D\"java.library.path=%APP_HOME%\\lib\\native\" -classpath \"%CLASSPATH%\"",
+            )
+        )
+        // Launcher splash (covers the synchronous graph build before the window opens). Anchored
+        // on the `-Djava.library.path=…` token the replaces above just inserted — NOT the original
+        // exec line, which no longer exists at this point. `$APP_HOME/lib/splash.png` is bundled by
+        // the `distributions` block; the path interpolates in the shell, same as java.library.path.
+        unixScript.writeText(
+            unixScript.readText().replace(
+                "\"-Djava.library.path=\$APP_HOME/lib/native\" \"\$@\"",
+                "\"-Djava.library.path=\$APP_HOME/lib/native\" \"-splash:\$APP_HOME/lib/splash.png\" \"\$@\"",
+            )
+        )
+        windowsScript.writeText(
+            windowsScript.readText().replace(
+                "-D\"java.library.path=%APP_HOME%\\lib\\native\" -classpath \"%CLASSPATH%\"",
+                "-splash:\"%APP_HOME%\\lib\\splash.png\" " +
+                    "-D\"java.library.path=%APP_HOME%\\lib\\native\" -classpath \"%CLASSPATH%\"",
             )
         )
     }

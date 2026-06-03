@@ -4,12 +4,24 @@
     <meta charset="UTF-8">
     <title>Chipbox</title>
     <style>
-        html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; background: #000; }
-        #splash { color: #fff; font-family: sans-serif; padding: 1em; }
+        /* Launch splash shown until the wasm/Skia bundle loads and JsMain removes #splash. Mirrors
+           Android's androidx splash: centered launcher icon on the Chipbox background. CSS makes it
+           night-aware (the desktop AWT splash can't) using the same backgroundLight/backgroundDark
+           hexes as ChipboxLight/Dark. */
+        html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; background: #FFF8F1; }
+        #splash {
+            position: fixed; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: #FFF8F1;
+        }
+        #splash img { width: 144px; height: 144px; image-rendering: pixelated; }
+        @media (prefers-color-scheme: dark) {
+            html, body, #splash { background: #16130B; }
+        }
     </style>
 </head>
 <body>
-<div id="splash">Loading Chipbox…</div>
+<div id="splash"><img src="splash.png" alt="Chipbox"></div>
 <script src="chipbox.js"></script>
 </body>
 </html>
