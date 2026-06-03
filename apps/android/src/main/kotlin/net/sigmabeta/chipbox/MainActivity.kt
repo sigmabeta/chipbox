@@ -11,6 +11,7 @@ import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -33,6 +34,9 @@ class MainActivity : ComponentActivity() {
     private val backKeyEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Must run before super.onCreate so the platform splash (Theme.Chipbox.Starting)
+        // is handed off to postSplashScreenTheme instead of leaving its window visible.
+        installSplashScreen()
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val appGraph = (application as ChipboxApplication).appGraph
