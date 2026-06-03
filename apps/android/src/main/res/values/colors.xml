@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors ChipboxLight.background so the launch splash matches the app's
+         light theme and the cold-start frame doesn't flash a mismatched color. -->
+    <color name="splash_background">#FFF8F1</color>
+</resources>

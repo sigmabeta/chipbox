@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Post-splash theme. Compose draws the entire UI, so this only governs the
+         window background behind it during the brief gap between splash dismissal
+         and the first Compose frame. Keeping windowBackground on the night-aware
+         splash color avoids the old light-theme flash. -->
+    <style name="Theme.Chipbox" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/splash_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- Launch theme applied by the manifest. installSplashScreen() in MainActivity
+         swaps it for postSplashScreenTheme once the activity is created. -->
+    <style name="Theme.Chipbox.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Chipbox</item>
+    </style>
+</resources>

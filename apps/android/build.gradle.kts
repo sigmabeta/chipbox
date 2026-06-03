@@ -146,6 +146,8 @@ dependencies {
 
     implementation(libs.sage.fake.analytics)
 
+    implementation(libs.androidx.core.splash)
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)

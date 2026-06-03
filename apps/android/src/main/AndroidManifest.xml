@@ -13,7 +13,7 @@
         android:icon="@mipmap/ic_launcher"
         android:name=".ChipboxApplication"
         android:supportsRtl="true"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/Theme.Chipbox.Starting">
 
         <activity
             android:name=".MainActivity"

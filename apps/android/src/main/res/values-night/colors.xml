@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Mirrors ChipboxDark.background for the dark variant of the launch splash. -->
+    <color name="splash_background">#16130B</color>
+</resources>
