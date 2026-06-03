@@ -7,7 +7,9 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import java.io.File
+import kotlinx.coroutines.CoroutineScope
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
+import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.speaker.real.SourceDataLineSpeaker
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
@@ -37,6 +39,13 @@ interface JvmChipboxGraph : ViewModelGraph {
     val librarySource: LocalFileContentSource
     val scanner: RealScanner
     val generator: RealGenerator
+
+    /** Playback coordinator — observed by the OS media-control bridge (see `mediasession`). */
+    val director: Director
+
+    /** App-lifetime scope (Default dispatcher, SupervisorJob) from `JvmCoroutinesModule`; the
+     *  media-control bridge collects the Director's flows on it. */
+    val appScope: CoroutineScope
 
     /** Live speaker used by the desktop UI; bound to [Speaker] below. */
     val liveSpeaker: SourceDataLineSpeaker

@@ -440,4 +440,22 @@ dependencies {
     // only, no runtime). Each screen implements `Screen`; `Navigator(MyScreen())` owns
     // the back stack.
     implementation(libs.voyager.navigator)
+
+    // OS media-control integration (net.sigmabeta.chipbox.jvm.mediasession). dbus-java speaks the
+    // session-bus MPRIS protocol the Linux desktop uses for media keys / the system media widget.
+    // Inline coordinates (not the catalog) because the version catalog lives in the `sage`
+    // submodule and this is a chipbox-only, desktop-only dependency — same pattern as the
+    // kotlinx-datetime deps in cbox/common/*. The native-unixsocket transport uses JDK 17's
+    // UnixDomainSocketAddress (no JNI). Other OSes have no backend yet, so neither artifact is
+    // touched outside Linux.
+    implementation("com.github.hypfvieh:dbus-java-core:5.0.0")
+    implementation("com.github.hypfvieh:dbus-java-transport-native-unixsocket:5.0.0")
+
+    // Unit tests for the media-session bridge (MprisState / MprisMediaControls). kotlin-test
+    // resolves to its JUnit 4 variant via the junit4 dep below; the director fake feeds the
+    // bridge's inbound transport methods. No coroutines-test needed — the pure state model and
+    // the action methods are exercised directly without a live bus.
+    testImplementation(kotlin("test"))
+    testImplementation(libs.junit4)
+    testImplementation(projects.cbox.common.player.director.fake)
 }
