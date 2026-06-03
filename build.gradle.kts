@@ -44,10 +44,10 @@ allprojects {
 //    forward-compatible bumps to the patched releases — the buildHttp redirect allow-list bypass,
 //    the dev-server cross-origin-over-HTTP bundle-load bypass, and the ws TypedArray-`reason`
 //    uninitialized-memory read.
-//
-// uuid is intentionally NOT pinned: the flagged path is uuid.v3/v5/v6 with external buffers, but
-// its only consumer here (sockjs, via webpack-dev-server) uses uuid.v4 (unaffected), and forcing
-// uuid 11+ would break sockjs's CommonJS `require('uuid')`.
+//  - uuid: the out-of-range-buffer-write fix only landed in 11.1.1 (no 8.x backport), so a major
+//    bump is the only way to clear the alert. Its sole consumer here (sockjs, via
+//    webpack-dev-server) does `require('uuid').v4()`; uuid 11 keeps a CommonJS `require` export
+//    (package.json `exports.node.require` + `main` both point at dist/cjs), so sockjs is unaffected.
 plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
     rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().apply {
         resolution("serialize-javascript", "^7.0.5")
@@ -55,6 +55,7 @@ plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
         resolution("webpack", "^5.102.0")
         resolution("webpack-dev-server", "^5.2.4")
         resolution("ws", "^8.21.0")
+        resolution("uuid", "^11.1.1")
     }
 }
 
