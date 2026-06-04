@@ -7,7 +7,7 @@ plugins {
 }
 
 kotlin {
-    androidLibrary {
+    android {
         namespace = namespaceFromPath()
     }
 
@@ -35,7 +35,7 @@ kotlin {
                 implementation(libs.androidx.compose.ui.tooling.preview)
                 // ComposeViewAdapter (the renderer Android Studio's preview panel loads) lives in
                 // ui-tooling, not ui-tooling-preview. Without it on the android classpath the
-                // preview surface throws ClassNotFoundException. KMP androidLibrary has no
+                // preview surface throws ClassNotFoundException. The KMP android target has no
                 // debug-only source set, so it rides on androidMain alongside the annotations.
                 implementation(libs.androidx.compose.ui.tooling)
                 // rememberChipboxStringProvider() loads the single multiplatform string source

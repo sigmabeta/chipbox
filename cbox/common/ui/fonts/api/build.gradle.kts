@@ -10,7 +10,7 @@ plugins {
 // SettingsAction.BrandFontSelected, ChipboxAppUiViewModel) don't drag Compose-Resources into
 // their classpath — which would pull Skiko on Kotlin/JS, breaking jsTest there.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.ui.fonts.api"
     }
 }

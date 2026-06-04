@@ -8,7 +8,7 @@ plugins {
 // takes a StringProvider so platform folder names match what the apps render. The plan/result types
 // it produces are in cbox/common/organizer/api. Usable by any app (Android / JVM / CLI), not just one.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.organizer.real"
     }
 

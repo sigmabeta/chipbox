@@ -8,7 +8,7 @@ plugins {
 // android/contentsource/file/real module + duplicated LocalFileContentSource.kt twins in
 // apps/jvm and apps/cli).
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.contentsource.file.real"
     }
 

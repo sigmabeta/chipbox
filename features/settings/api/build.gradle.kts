@@ -9,7 +9,7 @@ plugins {
 // can build the same screen from the same types the Android UI does. SettingsViewModel
 // itself stays in features/settings/real (Hilt-annotated; not yet wired on JVM).
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.features.settings.api"
     }
 

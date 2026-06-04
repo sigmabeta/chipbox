@@ -5,7 +5,7 @@ plugins {
 
 // Test stub for DebugSettingsManager — single boolean preference behind a MutableStateFlow.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.debug.fake"
     }
 

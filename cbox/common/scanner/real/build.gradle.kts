@@ -7,7 +7,7 @@ plugins {
 // `LibrarySource` interface. Both Android (SAF impl in cbox/android/contentsource/file/real)
 // and JVM (LocalFileContentSource in apps/jvm) drive this same code.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.scanner.real"
     }
 

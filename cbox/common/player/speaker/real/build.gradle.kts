@@ -7,7 +7,7 @@ plugins {
 // each platform's DI picks its own — no expect/actual needed. Replaces the pre-KMP split
 // (the android/player/speaker/real module + a loose SourceDataLineSpeaker.kt in apps/jvm).
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.player.speaker.real"
     }
 

@@ -15,7 +15,7 @@ plugins {
 // The earlier `cbox.android.ui.theme.api` dep was unused (no AppTheme/ChipboxTheme refs in
 // any source file); dropped during the KMP conversion.
 kotlin {
-    androidLibrary {
+    android {
         namespace = namespaceFromPath()
     }
 

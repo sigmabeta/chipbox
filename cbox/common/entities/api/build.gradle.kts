@@ -8,7 +8,7 @@ plugins {
 // for android, jvm AND the js() purity gate. room-compiler still reads the annotations from
 // database/real, which keeps the (jvm/android/native-only) room-runtime.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.entities.api"
     }
 

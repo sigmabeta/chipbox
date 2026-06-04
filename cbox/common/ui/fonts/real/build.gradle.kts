@@ -15,7 +15,7 @@ plugins {
 // accessors, and the [ChipboxFont.resource] / [ChipboxFont.toFontFamily] extensions. Apply
 // this module only where Compose UI is also in scope (e.g. cbox/common/ui/theme/api).
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.ui.fonts.real"
         // Same `androidResources.enable = true` + manual symlink workaround the sibling :api
         // used before the split — AGP 9 + KMP library leaves `outputDirectory` unset on

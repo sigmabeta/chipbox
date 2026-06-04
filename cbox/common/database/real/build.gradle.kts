@@ -9,7 +9,7 @@ plugins {
 // KSP runs room-compiler against each target so the Room generated code lands
 // in androidMain and jvmMain respectively.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.database.real"
     }
 

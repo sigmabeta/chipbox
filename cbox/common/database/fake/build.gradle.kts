@@ -8,7 +8,7 @@ plugins {
 // these are pure-Kotlin map-backed doubles that mimic the Flow-re-emits-on-table-change
 // contract.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.database.fake"
     }
 

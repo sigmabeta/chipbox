@@ -6,7 +6,7 @@ plugins {
 // Test stub for DebugInfoManager — a MutableStateFlow-backed double that lets tests push
 // PlaybackDebugInfo snapshots into the screen's view-model.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.debuginfo.fake"
     }
 
