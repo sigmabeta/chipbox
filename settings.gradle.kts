@@ -1,3 +1,5 @@
+import org.gradle.caching.http.HttpBuildCache
+
 val sageLocalProps = file("sage/local.properties")
 if (!sageLocalProps.exists()) {
     val rootLocalProps = file("local.properties")
@@ -38,6 +40,30 @@ develocity {
         publishing.onlyIf { isCi }
         // Tag the CI-published scans so they're filterable apart from any local `--scan` runs.
         if (isCi) tag("CI")
+    }
+}
+
+buildCache {
+    // Local cache: fast within-build / same-machine reuse, kept on.
+    local {
+        isEnabled = true
+    }
+    // Remote: the self-hosted gradle/build-cache-node behind Caddy (TLS) at sebacloud.org.
+    remote<HttpBuildCache> {
+        setUrl("https://gradle.sebacloud.org/cache/")
+
+        // Trust boundary — only CI pushes; everyone else reads anonymously. The node grants
+        // anonymous read, so local dev needs no credentials. CircleCI exports CI in the env;
+        // pushing additionally requires the write password, so a misconfigured CI can't half-push.
+        // All reads go through providers to stay configuration-cache safe.
+        val ciPassword = providers.environmentVariable("GRADLE_CACHE_PASSWORD")
+        isPush = providers.environmentVariable("CI").isPresent && ciPassword.isPresent
+        if (isPush) {
+            credentials {
+                username = providers.environmentVariable("GRADLE_CACHE_USER").orElse("ci").get()
+                password = ciPassword.get()
+            }
+        }
     }
 }
 
