@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.player.emulators
 
+import kotlin.concurrent.Volatile
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.SHORTS_PER_FRAME
 import net.sigmabeta.chipbox.player.common.millisToFrames
@@ -82,7 +83,14 @@ abstract class Emulator {
      *  track is loaded; goes negative once exhausted. */
     protected var remainingFramesTotal = Int.MAX_VALUE
 
-    private var hasLoadedTrack = false
+    /** True only between a successful [loadTrack] and the next [teardown]. Guards
+     *  [generateBuffer] from crossing into native on an unloaded/torn-down core (see there).
+     *  `@Volatile` because the emulators are process-wide singletons: a track handoff tears the
+     *  core down on one coroutine while the outgoing track's render-ahead writer may still be
+     *  calling [generateBuffer] on another. Subclasses that override [loadTrack] (e.g. the fake
+     *  synth) must set this true once their load succeeds. */
+    @Volatile
+    protected var hasLoadedTrack = false
 
     open fun isFileExtensionSupported(extension: String) = supportedFileExtensions.contains(extension)
 
@@ -105,6 +113,17 @@ abstract class Emulator {
 
         setTrackNumber(track.trackNumber)
         loadTrackInternal(track.path)
+        // The native cores clear their error on entry to a load and set it on any failure path, so
+        // a non-null error here means the load didn't take. Leave hasLoadedTrack false so
+        // generateBuffer never runs the core — some cores (e.g. GBA) crash on a generate against a
+        // half-initialised/NULL core rather than failing gracefully. The error stays readable via
+        // getLastError() for the generator's failure handling.
+        val loadError = getLastError()
+        if (loadError != null) {
+            hatchet.e("Failed to load ${track.title}: $loadError")
+            hasLoadedTrack = false
+            return
+        }
         remainingFramesTotal =
             (track.trackLengthMs + track.fadeLengthMs).toDouble()
                 .millisToFrames(getSampleRateInternal())
@@ -119,6 +138,15 @@ abstract class Emulator {
     fun generateBuffer(
         buffer: ShortArray
     ): Int {
+        if (!hasLoadedTrack) {
+            // No track is loaded: the load failed, or — because emulators are process-wide
+            // singletons — a track handoff tore the core down on another coroutine while this
+            // render-ahead writer was still running. Running the native core now dereferences
+            // freed/uninitialised state; GBA's generateBuffer faults on a NULL m_core (SIGSEGV in
+            // GBACoreRunFrame). Bail before the JNI call. Returns 0 frames (not -1) so the caller
+            // treats it as "nothing produced", not end-of-track.
+            return 0
+        }
         if (remainingFramesTotal < 0) {
             hatchet.d("Track is over.")
             trackOver = true

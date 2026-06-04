@@ -45,6 +45,7 @@ object FakeEmulator : Emulator() {
 
         this.generatedTrack = generatedTrack
         notes = ArrayDeque<Note>().apply { addAll(generatedTrack.measures.flatMap { it.notes }) }
+        hasLoadedTrack = true
     }
 
     override fun loadTrackInternal(path: String) = Unit

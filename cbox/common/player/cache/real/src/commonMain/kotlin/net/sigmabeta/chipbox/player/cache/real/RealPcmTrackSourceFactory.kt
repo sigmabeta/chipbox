@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.player.cache.real
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmCacheKey
@@ -31,6 +33,8 @@ class RealPcmTrackSourceFactory(
     private val contentSourceRegistry: ContentSourceRegistry,
     private val hatchet: Hatchet,
     cacheCapBytes: Long = PcmCacheJanitor.DEFAULT_CAP_BYTES,
+    private val emulatorDispatcher: CoroutineDispatcher =
+        net.sigmabeta.chipbox.utils.emulatorDispatcher,
 ) : PcmTrackSource.Factory {
 
     private val hasher = PcmCacheHasher(contentSourceRegistry)
@@ -63,14 +67,20 @@ class RealPcmTrackSourceFactory(
             hatchet = hatchet,
         )
 
-        val emulatorSource = EmulatorPcmSource(
-            emulator = emulator,
-            track = track,
-            stagedFile = stagedFile,
-            stagingTrackDir = stagingTrackDir,
-            fileSystem = fileSystem,
-            hatchet = hatchet,
-        )
+        // Construct on the emulator thread: the constructor calls into the native core
+        // (loadTrack), which must not run concurrently with another track's generate/teardown of
+        // the shared singleton.
+        val emulatorSource = withContext(emulatorDispatcher) {
+            EmulatorPcmSource(
+                emulator = emulator,
+                track = track,
+                stagedFile = stagedFile,
+                stagingTrackDir = stagingTrackDir,
+                fileSystem = fileSystem,
+                hatchet = hatchet,
+                emulatorDispatcher = emulatorDispatcher,
+            )
+        }
         val key = PcmCacheKey(
             sourceHash = sourceHash,
             trackNumber = track.trackNumber,

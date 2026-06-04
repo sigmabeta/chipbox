@@ -12,7 +12,12 @@ sdsf_loader_state * sdsf_state;
 
 void loadFile(const char *filename_c_str) {
     teardown();
-    
+
+    // Clear any error left by a previous (failed) load: neither this nor teardown() resets it,
+    // so a stale string would otherwise make a following good load look failed. Matches the other
+    // cores (PSF/USF/NCSF clear here, GME/2SF overwrite on outcome).
+    last_error = nullptr;
+
     xsf_version = psf_load(
             filename_c_str,
             &psf_file_system,
