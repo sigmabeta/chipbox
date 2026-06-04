@@ -6,7 +6,7 @@ plugins {
 // Test stub for ChipboxSettingsManager — every getter is a MutableStateFlow tests can drive
 // directly via the matching setX, plus a record of every write call.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.settings.fake"
     }
 

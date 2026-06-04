@@ -7,7 +7,7 @@ plugins {
 // cache sources) live in :cbox:common:player:cache:real because they're tied to
 // PcmCacheFile internals; these are the call-recording, scriptable doubles tests use.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.player.cache.fake"
     }
 

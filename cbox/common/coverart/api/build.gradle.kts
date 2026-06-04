@@ -11,7 +11,7 @@ plugins {
 kotlin {
     // js target keeps this layer honestly multiplatform: it has no jvmSharedMain, so everything here
     // is forced through commonMain (no java.* / no I/O) and the metadata compile actually verifies it.
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.coverart.api"
     }
 

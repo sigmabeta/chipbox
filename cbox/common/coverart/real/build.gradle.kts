@@ -10,7 +10,7 @@ plugins {
 // keeps the metadata compile honest about purity). The one platform-bound piece, the OkHttp-backed
 // [CoverArtHttp] impl, lives in jvmSharedMain (src/main/java), shared by the android + jvm targets.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.coverart.real"
     }
 

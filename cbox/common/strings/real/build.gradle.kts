@@ -12,7 +12,7 @@ plugins {
 }
 
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.strings.real"
     }
 

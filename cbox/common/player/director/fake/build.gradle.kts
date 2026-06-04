@@ -7,7 +7,7 @@ plugins {
 // consume the metadata / playback / session / error streams without dragging a real
 // generator+speaker+repository pipeline in.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.common.player.director.fake"
     }
 

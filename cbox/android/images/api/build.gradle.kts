@@ -14,7 +14,7 @@ plugins {
 // java.io.File-backed `FakeOtherImageFetcher` stays in `src/main/java` (which sage.kmp maps
 // to `jvmSharedMain` — works on JVM + Android, not JS).
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.images.api"
     }
 

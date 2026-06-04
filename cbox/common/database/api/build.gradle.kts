@@ -8,7 +8,7 @@ plugins {
 // jvm AND the js() purity gate, letting repository/real depend on the DAO contracts without the
 // (jvm/android/native-only) Room runtime. database/real's @Database + room-compiler reference these.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.database.api"
     }
 

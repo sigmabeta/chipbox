@@ -14,7 +14,7 @@ plugins {
 // `buildOuterSink` (Intent.ACTION_VIEW, ClipboardManager) became platform-callback parameters
 // in [ChipboxAppUi], filled in by each app entry point.
 kotlin {
-    androidLibrary {
+    android {
         namespace = namespaceFromPath()
     }
 

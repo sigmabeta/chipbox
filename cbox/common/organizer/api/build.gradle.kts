@@ -7,7 +7,7 @@ plugins {
 // bucket name, and [FolderMove] (which references okio.Path rather than java.io.File, so it stays
 // multiplatform). The planner/executor that produces and applies these is in cbox/common/organizer/real.
 kotlin {
-    androidLibrary {
+    android {
         namespace = "net.sigmabeta.chipbox.organizer.api"
     }
 
