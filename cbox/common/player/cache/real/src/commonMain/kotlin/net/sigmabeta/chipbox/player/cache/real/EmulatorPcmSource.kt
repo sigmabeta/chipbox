@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.player.cache.real
 
 import kotlin.concurrent.Volatile
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.common.EbuR128
@@ -19,6 +21,13 @@ import okio.Path
  * [net.sigmabeta.chipbox.contentsource.ContentSource.openBytes].
  *
  * On [close], the source tears down the emulator and deletes its staging directory.
+ *
+ * ### Threading
+ * Every native-emulator call this class makes ([readFrames], [close]) is confined to
+ * [emulatorDispatcher] — the single thread that the process-wide-singleton emulators must be
+ * driven from. The constructor itself calls into native ([Emulator.loadTrack]), so the factory
+ * **must construct this on [emulatorDispatcher]** too; otherwise a load could race another track's
+ * in-flight generate on the shared core.
  */
 internal class EmulatorPcmSource(
     private val emulator: Emulator,
@@ -27,13 +36,20 @@ internal class EmulatorPcmSource(
     private val stagingTrackDir: Path,
     private val fileSystem: FileSystem,
     private val hatchet: Hatchet,
+    private val emulatorDispatcher: CoroutineDispatcher,
 ) : PcmTrackSource {
 
     override val sampleRate: Int
 
     override val totalFrames: Long?
 
+    @Volatile
     private var lastError: String? = null
+
+    // Captured on the emulator thread during [readFrames] so [getDiagnostics] (called from the
+    // generator loop, a different thread) never reaches into native off-thread.
+    @Volatile
+    private var diagnostics: String? = null
 
     // Live BS.1770 measurer. Without render-ahead, the measurement tracks the playback position —
     // exposed via [loudnessLufs] / [truePeakDbtp] for the speaker's progressive normalization.
@@ -69,8 +85,14 @@ internal class EmulatorPcmSource(
     }
 
     override suspend fun readFrames(buffer: ShortArray): Int {
-        val framesGenerated = emulator.generateBuffer(buffer)
-        lastError = emulator.getLastError()
+        // Generate + read native state on the emulator thread, atomically with respect to any
+        // teardown/load of the shared singleton core (which are confined to the same thread).
+        val framesGenerated = withContext(emulatorDispatcher) {
+            val frames = emulator.generateBuffer(buffer)
+            lastError = emulator.getLastError()
+            diagnostics = emulator.getDiagnostics()
+            frames
+        }
         if (framesGenerated <= 0) return 0
         measurer.process(buffer, framesGenerated)
         measuredLufs = measurer.integratedLoudness()
@@ -88,7 +110,7 @@ internal class EmulatorPcmSource(
 
     override fun getLastError(): String? = lastError
 
-    override fun getDiagnostics(): String? = emulator.getDiagnostics()
+    override fun getDiagnostics(): String? = diagnostics
 
     override val isOver: Boolean get() = emulator.trackOver
 
@@ -96,7 +118,9 @@ internal class EmulatorPcmSource(
 
     override suspend fun close() {
         try {
-            emulator.teardown()
+            // Confined to the emulator thread so the free can't race an in-flight generate of the
+            // shared singleton core (the use-after-free that crashed the native cores on skip).
+            withContext(emulatorDispatcher) { emulator.teardown() }
         } finally {
             fileSystem.deleteRecursively(stagingTrackDir, mustExist = false)
         }

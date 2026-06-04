@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.player.cache.real
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
@@ -24,6 +26,8 @@ class UncachedPcmTrackSourceFactory(
     private val fileSystem: FileSystem,
     private val contentSourceRegistry: ContentSourceRegistry,
     private val hatchet: Hatchet,
+    private val emulatorDispatcher: CoroutineDispatcher =
+        net.sigmabeta.chipbox.utils.emulatorDispatcher,
 ) : PcmTrackSource.Factory {
 
     override suspend fun open(track: Track, bytes: ByteArray): PcmTrackSource {
@@ -47,13 +51,18 @@ class UncachedPcmTrackSourceFactory(
             hatchet = hatchet,
         )
 
-        return EmulatorPcmSource(
-            emulator = emulator,
-            track = track,
-            stagedFile = stagedFile,
-            stagingTrackDir = stagingTrackDir,
-            fileSystem = fileSystem,
-            hatchet = hatchet,
-        )
+        // Construct on the emulator thread: the constructor's loadTrack call must be serialised
+        // with all other native-core access (see EmulatorPcmSource threading note).
+        return withContext(emulatorDispatcher) {
+            EmulatorPcmSource(
+                emulator = emulator,
+                track = track,
+                stagedFile = stagedFile,
+                stagingTrackDir = stagingTrackDir,
+                fileSystem = fileSystem,
+                hatchet = hatchet,
+                emulatorDispatcher = emulatorDispatcher,
+            )
+        }
     }
 }
