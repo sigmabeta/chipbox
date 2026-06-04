@@ -135,12 +135,10 @@ workflows:
   build_analyze:
     jobs:
       - setup
-      # ktlint runs through Gradle now, so it needs the workspace setup produces
-      # (Gradle home + the sage submodule included build).
-      - kt-lint:
-          requires:
-            - setup
-      - detekt:
+      # ktlint + detekt share ONE Gradle configuration in a single job rather than paying the
+      # (dominant) configuration cost twice; -Pchipbox.skipNative keeps the emulator modules'
+      # CMake/NDK toolchain out of configuration here. Needs the workspace setup produces.
+      - static-analysis:
           requires:
             - setup
       - screenshot-test:
@@ -148,7 +146,7 @@ workflows:
             - setup
       # commonTest unit tests for the chipbox.kmp.test modules — runs the JVM
       # target of every commonTest source set (ViewModel tests, repository
-      # tests, etc.). Gates behind kt-lint so a syntax error fails fast on
+      # tests, etc.). Gates behind static-analysis so a syntax error fails fast on
       # `medium` rather than burning compile time here.
       #
       # Sibling jsTest run isn't wired into CI by choice: the matching JVM run
@@ -158,24 +156,21 @@ workflows:
       # remains available locally.
       - unit-test-jvm:
           requires:
-            - kt-lint
+            - static-analysis
             - setup
       # shared-build compiles the JVM target of every module shared between the
-      # JVM and Android apps. It runs in parallel with detekt (both gate the
-      # heavy Android jobs via android-lint below) rather than behind it — same
-      # fail-fast guarantee, one less job on the critical path. It gates behind
-      # kt-lint as a cheap fail-fast check; setup supplies the workspace.
+      # JVM and Android apps. It gates behind static-analysis as a cheap fail-fast
+      # check (ktlint + detekt) before the heavy compile; setup supplies the workspace.
       - shared-build:
           requires:
-            - kt-lint
+            - static-analysis
             - setup
-      # Heavy Android jobs start only once the shared code compiles AND detekt
-      # passes — so a `large` box is never spent on lint / APK assembly for code
-      # that already failed static analysis or the shared compile.
+      # Heavy Android jobs start only once the shared code compiles — and since
+      # shared-build itself gates on static-analysis, a `large` box is never spent on
+      # lint / APK assembly for code that failed ktlint/detekt or the shared compile.
       - android-lint:
           requires:
             - shared-build
-            - detekt
       # build-release-jvm finishes the JVM app: the shared Kotlin compiles are
       # remote-cache hits (shared-build pushed them), so it only adds the
       # host-native libs + the desktop distribution on top.
@@ -262,36 +257,25 @@ jobs:
             - .gradle/caches/modules-2
             - .gradle/wrapper
 
-  kt-lint:
+  static-analysis:
     executor: android
 
     steps:
       - attach_built_workspace
       - run:
-          name: Run Ktlint
-          # ktlint runs through Gradle now (org.jlleitschuh.gradle.ktlint). The vendored sage/
-          # submodule is a separate included build, so it stays out of the lint set.
-          # --continue so a failing module doesn't mask violations in others.
-          command: ./gradlew ktlintCheck --continue --build-cache --configuration-cache --no-daemon --max-workers=2
+          name: Run Ktlint + Detekt
+          # Both static-analysis checks in ONE Gradle invocation so the (dominant) configuration
+          # cost is paid once instead of twice. --continue so a ktlint failure doesn't mask detekt
+          # violations and vice versa. -Pchipbox.skipNative skips the emulator :native modules'
+          # CMake/NDK toolchain resolution at configuration time (~20s) — they have no Kotlin to
+          # lint, so there's nothing for this job to do in them. ktlint runs through Gradle
+          # (org.jlleitschuh.gradle.ktlint); the vendored sage/ submodule is a separate included
+          # build and stays out of the lint set.
+          command: ./gradlew ktlintCheck detekt --continue --build-cache --configuration-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
       - collect_reports
       - store_artifacts:
           path: ~/reports
-          destination: ktlint-reports
-          when: always
-
-  detekt:
-    executor: android
-
-    steps:
-      - attach_built_workspace
-      - run:
-          name: Run Detekt checks
-          # --continue so a failing module doesn't mask violations in others.
-          command: ./gradlew detekt --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - collect_reports
-      - store_artifacts:
-          path: ~/reports
-          destination: detekt-reports
+          destination: static-analysis-reports
           when: always
 
   shared-build:
