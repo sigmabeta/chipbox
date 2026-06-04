@@ -1,11 +1,10 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
     id("chipbox.kmp.test")
 }
 
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.repository.fake"
     }

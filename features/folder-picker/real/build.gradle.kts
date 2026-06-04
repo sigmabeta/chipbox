@@ -10,8 +10,6 @@ plugins {
 // FileSystem is injected via Metro; the binding for `FileSystem.SYSTEM` lives in each app's DI
 // module (AndroidAppModule, JvmModules).
 kotlin {
-    js { nodejs() }
-
     sourceSets {
         named("commonMain") {
             dependencies {

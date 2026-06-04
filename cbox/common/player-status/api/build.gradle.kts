@@ -2,6 +2,7 @@ import net.sigmabeta.sage.plugins.components.namespaceFromPath
 
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
     alias(libs.plugins.sage.compose.kmp)
     alias(libs.plugins.metro)
     id("chipbox.kmp.test")
@@ -14,8 +15,6 @@ plugins {
 // The earlier `cbox.android.ui.theme.api` dep was unused (no AppTheme/ChipboxTheme refs in
 // any source file); dropped during the KMP conversion.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = namespaceFromPath()
     }

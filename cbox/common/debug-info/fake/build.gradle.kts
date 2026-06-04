@@ -1,12 +1,11 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
 }
 
 // Test stub for DebugInfoManager — a MutableStateFlow-backed double that lets tests push
 // PlaybackDebugInfo snapshots into the screen's view-model.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.debuginfo.fake"
     }

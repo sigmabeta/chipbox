@@ -7,8 +7,6 @@ plugins {
 // now — debugInfo/player-common are KMP, %.3f became formatDecimal, and java.net.URLDecoder became
 // the urlDecodeUtf8 expect/actual (jvm URLDecoder + jsMain best-effort percent-decode).
 kotlin {
-    js { nodejs() }
-
     sourceSets {
         named("commonMain") {
             dependencies {

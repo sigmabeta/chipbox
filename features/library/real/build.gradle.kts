@@ -7,8 +7,6 @@ plugins {
 // because ChipboxListEntry is still androidMain (M9 slice 6 promotes it). Desktop gets its
 // own route in apps/jvm once a CMP-friendly list scaffold lands.
 kotlin {
-    js { nodejs() }
-
     sourceSets {
         named("commonMain") {
             dependencies {

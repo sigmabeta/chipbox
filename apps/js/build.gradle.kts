@@ -16,6 +16,11 @@ plugins {
 // because they force `jvm()` + an Android library target and `jvmSharedMain` `dependsOn` edges
 // that don't belong in a single-target executable. The Kotlin Multiplatform + Compose plugins
 // above are what sage.compose.kmp adds on top of sage.kmp anyway — minus the Android pieces.
+//
+// REQUIRES `-Pchipbox.js=true`. The shared modules this app depends on only expose a Kotlin/JS
+// variant when that property is set (see `sage.kmp.js`); the gate keeps non-web Android/JVM builds
+// from configuring Kotlin/JS at all (it's incompatible with configure-on-demand). Any apps/js or
+// apps/server bundle task must pass it.
 
 // ---------------------------------------------------------------------------------------------
 // WASM emulator builds (Emscripten). Each chiptune emulator's `cbox/native/<name>` directory

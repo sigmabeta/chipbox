@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
 }
 
 // The production Generator wiring is pure Kotlin (the real work lives in the pure-JVM
@@ -7,8 +8,6 @@ plugins {
 // caller-supplied config (the two cache dirs) — now passed as plain File params from the
 // Android Hilt module — so this is one KMP module for both variants, no platform seam.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.player.generator.real"
     }

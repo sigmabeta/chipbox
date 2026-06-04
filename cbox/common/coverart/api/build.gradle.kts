@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -10,8 +11,6 @@ plugins {
 kotlin {
     // js target keeps this layer honestly multiplatform: it has no jvmSharedMain, so everything here
     // is forced through commonMain (no java.* / no I/O) and the metadata compile actually verifies it.
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.coverart.api"
     }

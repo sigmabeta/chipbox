@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
 }
 
 // LibraryOrganizer — pure planning + on-disk execution of the $destination/$platform/$game layout.
@@ -7,8 +8,6 @@ plugins {
 // takes a StringProvider so platform folder names match what the apps render. The plan/result types
 // it produces are in cbox/common/organizer/api. Usable by any app (Android / JVM / CLI), not just one.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.organizer.real"
     }

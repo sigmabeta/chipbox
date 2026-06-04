@@ -2,6 +2,7 @@ import net.sigmabeta.sage.plugins.components.namespaceFromPath
 
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
     alias(libs.plugins.sage.compose.kmp)
     alias(libs.plugins.metro)
     id("chipbox.kmp.test")
@@ -13,8 +14,6 @@ plugins {
 // `buildOuterSink` (Intent.ACTION_VIEW, ClipboardManager) became platform-callback parameters
 // in [ChipboxAppUi], filled in by each app entry point.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = namespaceFromPath()
     }

@@ -22,6 +22,7 @@ class ChipboxFeatureApiPlugin : Plugin<Project> {
         with(target) {
             with(pluginManager) {
                 apply("sage.kmp")
+                apply("sage.kmp.js")
                 apply("org.jetbrains.kotlin.plugin.serialization")
             }
 

@@ -7,8 +7,6 @@ plugins {
 // the timestamp formatter (ErrorTimestamp): java.time on the shared JVM/Android source set, an
 // epoch-string stub on the enforcement-only JS target (which has no debug UI).
 kotlin {
-    js { nodejs() }
-
     sourceSets {
         named("commonMain") {
             dependencies {

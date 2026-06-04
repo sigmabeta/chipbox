@@ -2,14 +2,13 @@ import net.sigmabeta.sage.plugins.components.namespaceFromPath
 
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
     alias(libs.plugins.sage.compose.kmp)
 }
 
 // ChipboxListViewModel + ChipboxListEntry both live in commonMain — ChipboxListEntry is the
 // Compose scaffolding that binds a list VM to sage's GridScreen / ListScreen (also commonMain).
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = namespaceFromPath()
     }

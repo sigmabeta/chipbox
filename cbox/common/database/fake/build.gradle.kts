@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
 }
 
 // In-memory implementations of the 6 DAO interfaces from :database:api. Used by
@@ -7,8 +8,6 @@ plugins {
 // these are pure-Kotlin map-backed doubles that mimic the Flow-re-emits-on-table-change
 // contract.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.database.fake"
     }

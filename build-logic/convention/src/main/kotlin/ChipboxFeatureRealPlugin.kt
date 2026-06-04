@@ -23,6 +23,7 @@ class ChipboxFeatureRealPlugin : Plugin<Project> {
         with(target) {
             with(pluginManager) {
                 apply("sage.kmp")
+                apply("sage.kmp.js")
                 apply("sage.compose.kmp")
                 apply("dev.zacsweers.metro")
             }

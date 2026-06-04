@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
 }
 
 // The @Dao interfaces. They need only Room's annotations (room-common, which publishes a JS
@@ -7,8 +8,6 @@ plugins {
 // jvm AND the js() purity gate, letting repository/real depend on the DAO contracts without the
 // (jvm/android/native-only) Room runtime. database/real's @Database + room-compiler reference these.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.database.api"
     }

@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
     id("chipbox.kmp.test")
 }
 
@@ -8,8 +9,6 @@ plugins {
 // purity gate too. The Room runtime (database/real) only appears in DI, which extracts the DAOs
 // from ChipboxDatabase and hands them here.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.repository.real"
     }

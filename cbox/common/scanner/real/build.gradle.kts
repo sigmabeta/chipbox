@@ -1,13 +1,12 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
 }
 
 // Production scanner — pure Kotlin now that it talks to the library via the platform-neutral
 // `LibrarySource` interface. Both Android (SAF impl in cbox/android/contentsource/file/real)
 // and JVM (LocalFileContentSource in apps/jvm) drive this same code.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.scanner.real"
     }
