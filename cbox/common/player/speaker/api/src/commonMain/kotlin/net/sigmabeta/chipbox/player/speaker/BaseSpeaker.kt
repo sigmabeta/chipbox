@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.player.speaker
 
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -127,11 +128,35 @@ abstract class BaseSpeaker(
     }
 
     /**
-     * Milliseconds played within the currently-loaded track, derived from each [AudioBuffer]'s
-     * [net.sigmabeta.chipbox.player.buffer.AudioBuffer.frameIndex] and the sink's own play head.
-     * Returns 0 for sinks that don't track a play head (e.g. test/file sinks).
+     * Last play-head position sampled on the consume coroutine, in ms within the current track.
+     * Published by [refreshPositionMs] so [currentPositionMs] — which the director calls from its
+     * own coroutine — never reaches into the sink off-thread. The live read ([readSinkPositionMs])
+     * only ever runs on the consume coroutine, which also owns sink open/teardown, so it can touch
+     * the sink without synchronisation. `@Volatile` for cross-thread visibility; reset on [stop].
      */
-    override fun currentPositionMs(): Long = 0L
+    @Volatile
+    private var lastKnownPositionMs: Long = 0L
+
+    /**
+     * Milliseconds played within the currently-loaded track. Returns the position last sampled on
+     * the consume coroutine; safe to call from any thread and never touches the sink. Returns 0
+     * for sinks that don't track a play head (e.g. test/file sinks).
+     */
+    final override fun currentPositionMs(): Long = lastKnownPositionMs
+
+    /**
+     * Read the sink's live play-head position, in ms within the current track. Called ONLY on the
+     * consume coroutine (which also owns the sink's lifecycle), so subclasses may touch the sink
+     * directly without synchronisation. Default 0 for sinks with no play head (test/file sinks).
+     */
+    protected open fun readSinkPositionMs(): Long = 0L
+
+    /** Sample the live sink position on the consume coroutine and publish it for [currentPositionMs]. */
+    private fun refreshPositionMs(): Long {
+        val position = readSinkPositionMs()
+        lastKnownPositionMs = position
+        return position
+    }
 
     override fun play() {
         startPlayback()
@@ -151,6 +176,7 @@ abstract class BaseSpeaker(
         pendingTargetTrackId = null
         appliedNormalizationLufs = Double.NaN
         appliedNormalizationTruePeakDbtp = Double.NaN
+        lastKnownPositionMs = 0L
 
         teardown()
     }
@@ -259,7 +285,7 @@ abstract class BaseSpeaker(
                     emitTrackChangeIfNeeded(audioBuffer)
                 }
 
-                val playingEvent = SpeakerEvent.Playing(currentPositionMs())
+                val playingEvent = SpeakerEvent.Playing(refreshPositionMs())
                 updateDebug {
                     it.copy(lastEvent = playingEvent, positionMs = playingEvent.positionMs)
                 }
@@ -309,7 +335,7 @@ abstract class BaseSpeaker(
         bufferManager.checkForNextAudioBuffer()?.let { return it }
 
         hatchet.d("Consume: no buffer ready, emitting Buffering and awaiting.")
-        val bufferingEvent = SpeakerEvent.Buffering(currentPositionMs())
+        val bufferingEvent = SpeakerEvent.Buffering(refreshPositionMs())
         updateDebug {
             it.copy(
                 lastEvent = bufferingEvent,
