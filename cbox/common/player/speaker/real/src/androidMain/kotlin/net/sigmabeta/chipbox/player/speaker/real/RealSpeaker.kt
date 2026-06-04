@@ -4,6 +4,7 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.os.Process
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
@@ -24,6 +25,10 @@ class RealSpeaker(
         hatchet: Hatchet,
         dispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : BaseSpeaker(bufferManager, hatchet, dispatcher) {
+    // @Volatile: written on the consume coroutine (initializeAudioTrack) and on the lifecycle
+    // caller's thread (teardown, after the consume loop is cancel-joined). Keeps a stale non-null
+    // reference from being observed across that handoff.
+    @Volatile
     private var audioTrack: AudioTrack? = null
 
     private var lastLoggedTrackId: Long? = null
@@ -67,14 +72,13 @@ class RealSpeaker(
         logProblems(samplesWritten)
     }
 
-    override fun currentPositionMs(): Long {
+    override fun readSinkPositionMs(): Long {
         val track = audioTrack ?: return 0L
         val rate = track.sampleRate
         if (rate <= 0) return 0L
-        // playbackHeadPosition is a JNI call that throws IllegalStateException if the native
-        // AudioTrack pointer has been freed. The director's reducer runs on a separate
-        // coroutine from the speaker, so even after the null-check above the captured `track`
-        // can be released by a concurrent teardown() before this call lands.
+        // Called only on the consume coroutine, which also owns teardown — so the track can't be
+        // released mid-call here. The try/catch stays as belt-and-suspenders: playbackHeadPosition
+        // is a JNI call that throws IllegalStateException if the native AudioTrack was freed.
         val headFrames = try {
             track.playbackHeadPosition.toLong()
         } catch (_: IllegalStateException) {
@@ -127,9 +131,10 @@ class RealSpeaker(
     }
 
     override fun teardown() {
-        // Null the field out before releasing so concurrent readers (e.g. the director
-        // reducer calling currentPositionMs()) bail at the null-check instead of holding a
-        // reference to a track whose native pointer is about to be freed.
+        // Null the (@Volatile) field out before releasing so any later reader sees null and bails
+        // at the null-check instead of holding a reference to a track whose native pointer is
+        // about to be freed. Teardown runs after the consume loop is cancel-joined, so it can't
+        // overlap readSinkPositionMs/onAudioReceived.
         val track = audioTrack ?: return
         audioTrack = null
         referenceHeadFrames = 0L

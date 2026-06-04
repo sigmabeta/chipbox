@@ -4,6 +4,7 @@ import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
 import javax.sound.sampled.LineUnavailableException
 import javax.sound.sampled.SourceDataLine
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
@@ -22,10 +23,11 @@ import net.sigmabeta.sage.logging.Hatchet
  * buffered audio with `flush()` so post-seek frames don't sit behind a few hundred ms of
  * pre-seek output. Teardown drains, stops, and closes the line.
  *
- * `currentPositionMs` snapshots `(getMicrosecondPosition, audio.frameIndex)` on each received
+ * `readSinkPositionMs` snapshots `(getMicrosecondPosition, audio.frameIndex)` on each received
  * buffer so the running position survives seeks (the line's microsecond counter resets only on
  * `close()`, not `flush()`). When no line is open (between teardown and the first new buffer)
- * it returns 0.
+ * it returns 0. It runs only on the consume coroutine; the value the director reads is published
+ * through `BaseSpeaker.currentPositionMs`.
  *
  * Live audio on the JVM target. Heavy
  * emulator cores can emit a terminal `GeneratorEvent.Error` on a cold render-ahead cache; the
@@ -38,7 +40,13 @@ class SourceDataLineSpeaker(
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : BaseSpeaker(bufferManager, hatchet, dispatcher) {
 
+    // @Volatile: written on the consume coroutine (openLine) and on the lifecycle caller's thread
+    // (teardown, after the consume loop is cancel-joined). The visibility guard keeps a stale
+    // non-null `line` from being observed across that handoff.
+    @Volatile
     private var line: SourceDataLine? = null
+
+    @Volatile
     private var lineSampleRate: Int = 0
     private var conversionBuffer: ByteArray = ByteArray(0)
 
@@ -65,7 +73,7 @@ class SourceDataLineSpeaker(
         activeLine.write(bytes, 0, audio.data.size * BYTES_PER_SAMPLE)
     }
 
-    override fun currentPositionMs(): Long {
+    override fun readSinkPositionMs(): Long {
         val activeLine = line
         val rate = lineSampleRate
         if (activeLine == null || rate <= 0) return 0L
