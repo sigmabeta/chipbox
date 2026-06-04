@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 
 # `setup` is a real setup step — it checks out, inits the `sage` submodule,
 # fetches tags, and resolves dependencies once, then a workspace carries the
@@ -15,88 +15,153 @@ version: 2
 # Each downstream job restores its lineage and re-saves under the same key (a
 # CircleCI no-op when the upstream job already stored that revision), so the
 # expensive Kotlin compiles happen once per lineage.
-#
-# Workspace root is the home dir so both `project` and `.gradle` fit under it.
-workspace_root: &workspace_root /home/circleci
 
-attach_ws: &attach_ws
-  attach_workspace:
-    at: *workspace_root
+parameters:
+  # Workspace root is the home dir so both `project` and `.gradle` fit under it.
+  # A pipeline parameter keeps this single-sourced for the executor, the
+  # attach-workspace command, and setup's persist_to_workspace.
+  workspace_root:
+    type: string
+    default: /home/circleci
 
-# The emulator modules build native code via CMake, which needs Ninja. The
-# cimg/android image ships neither an SDK CMake nor Ninja; installing the SDK
-# CMake package bundles Ninja in its bin folder, which AGP auto-detects (no
-# PATH wrangling). Only jobs that actually build native code need this.
-install_cmake: &install_cmake
-  run:
-    name: Install SDK CMake (bundles Ninja for native builds)
-    # `yes` gets SIGPIPE (exit 141) once sdkmanager stops reading; under
-    # CircleCI's `bash -eo pipefail` that would fail the step. `yes || true`
-    # absorbs the signal so only sdkmanager's real exit status counts.
-    command: (yes || true) | sdkmanager "cmake;3.22.1"
+##################################################
 
-# The JVM target's emulator libs are host-built (host CMake's default Unix
-# Makefiles generator + gcc/g++/make/ar), NOT via the NDK. apps/jvm's build
-# script runs the CMake configure/build Exec tasks during installDist; they
-# resolve the `cmake` binary through $ANDROID_HOME (the SDK 3.22.1 that
-# install_cmake drops in — same version AGP uses), but the compile itself needs
-# a host C/C++ toolchain that the cimg/android image doesn't guarantee. Only
-# build-release-jvm builds host-native code, so only it needs this.
-install_host_toolchain: &install_host_toolchain
-  run:
-    name: Install host C/C++ toolchain (gcc/g++/make for JVM native libs)
-    command: sudo apt-get update && sudo apt-get install -y build-essential
+executors:
+  # Every job runs on the same cimg/android image and differs only in box size
+  # and heap tuning, so one parameterized executor covers them all.
+  android:
+    parameters:
+      resource_class:
+        type: enum
+        enum: ["medium", "large"]
+        default: "medium"
+      jvm_opts:
+        type: string
+        default: -Xmx3200m
+    resource_class: << parameters.resource_class >>
+    docker:
+      - image: cimg/android:2024.04.1
+    environment:
+      JVM_OPTS: << parameters.jvm_opts >>
 
-# Sweep every module's `build/reports/` (ktlint, detekt, html test reports, lint,
-# whatever lives there) into one tree keyed by module path. Runs `when: always`
-# so a failing check still ships its report. `./sage` is the vendored submodule
-# (its own included build) — its reports come from a separate build invocation,
-# don't collect them. The matched dir is `-prune`d so find doesn't descend back
-# into it; the cp -r grabs the whole tree.
-collect_reports: &collect_reports
-  run:
-    name: Collect build/reports from every module
-    when: always
-    command: |
-      mkdir -p ~/reports
-      find . -path './sage' -prune -o \
-             -path '*/build/reports' -type d -print -prune | while read d; do
-        mod=$(echo "$d" | sed 's|^\./||;s|/build/reports$||;s|/|-|g')
-        mkdir -p ~/reports/"$mod" && cp -r "$d"/. ~/reports/"$mod"/
-      done
+##################################################
 
-# Sweep every module's JUnit-format `TEST-*.xml` into one tree CircleCI can
-# parse into the Tests tab. Per-module subdir so each suite shows up
-# separately. Same `when: always` + sage-exclusion rationale as collect_reports.
-collect_test_results: &collect_test_results
-  run:
-    name: Collect JUnit XML test results from every module
-    when: always
-    command: |
-      mkdir -p ~/test-results
-      find . -path './sage' -prune -o \
-             -path '*/build/test-results/*' -name 'TEST-*.xml' -print | while read f; do
-        mod=$(echo "$f" | sed 's|^\./||;s|/build/test-results/.*$||;s|/|-|g')
-        mkdir -p ~/test-results/"$mod" && cp "$f" ~/test-results/"$mod"/
-      done
+commands:
+  # Downstream jobs attach the workspace setup produced instead of re-cloning /
+  # re-resolving. The matching persist_to_workspace lives in `setup`.
+  attach_built_workspace:
+    steps:
+      - attach_workspace:
+          at: << pipeline.parameters.workspace_root >>
 
-# Paparazzi's failure / diff images live under `build/paparazzi/`, NOT under
-# `build/reports/`, so collect_reports misses them. Each screenshot module
-# gets its own subdir in the artifact tree so a regression is one click away.
-collect_paparazzi: &collect_paparazzi
-  run:
-    name: Collect Paparazzi failure / diff images from every screenshot module
-    when: always
-    command: |
-      mkdir -p ~/paparazzi
-      find . -path './sage' -prune -o \
-             -path '*/build/paparazzi' -type d -print -prune | while read d; do
-        mod=$(echo "$d" | sed 's|^\./||;s|/build/paparazzi$||;s|/|-|g')
-        mkdir -p ~/paparazzi/"$mod" && cp -r "$d"/. ~/paparazzi/"$mod"/
-      done
+  # Restore one of the per-lineage Gradle build caches. `lineage` selects the
+  # cache (ktlint / detekt / jvm / release / test-jvm / screenshot); the
+  # fallback chain widens from this exact revision to the branch tip to any
+  # prior save so a cold revision still warms from the nearest ancestor.
+  restore_gradle_build_cache:
+    parameters:
+      lineage:
+        type: string
+    steps:
+      - restore_cache:
+          keys:
+            - build-cache-<< parameters.lineage >>-v1-{{ .Branch }}-{{ .Revision }}
+            - build-cache-<< parameters.lineage >>-v1-{{ .Branch }}-
+            - build-cache-<< parameters.lineage >>-v1-
+
+  # Save the Gradle build cache under this revision's key for the given lineage.
+  # An identical-key save from a later job in the same lineage is a CircleCI
+  # no-op, which is exactly how the two shared lineages avoid recompiling.
+  save_gradle_build_cache:
+    parameters:
+      lineage:
+        type: string
+    steps:
+      - save_cache:
+          key: build-cache-<< parameters.lineage >>-v1-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle/caches/build-cache-1
+
+  # The emulator modules build native code via CMake, which needs Ninja. The
+  # cimg/android image ships neither an SDK CMake nor Ninja; installing the SDK
+  # CMake package bundles Ninja in its bin folder, which AGP auto-detects (no
+  # PATH wrangling). Only jobs that actually build native code need this.
+  install_cmake:
+    steps:
+      - run:
+          name: Install SDK CMake (bundles Ninja for native builds)
+          # `yes` gets SIGPIPE (exit 141) once sdkmanager stops reading; under
+          # CircleCI's `bash -eo pipefail` that would fail the step. `yes || true`
+          # absorbs the signal so only sdkmanager's real exit status counts.
+          command: (yes || true) | sdkmanager "cmake;3.22.1"
+
+  # The JVM target's emulator libs are host-built (host CMake's default Unix
+  # Makefiles generator + gcc/g++/make/ar), NOT via the NDK. apps/jvm's build
+  # script runs the CMake configure/build Exec tasks during installDist; they
+  # resolve the `cmake` binary through $ANDROID_HOME (the SDK 3.22.1 that
+  # install_cmake drops in — same version AGP uses), but the compile itself needs
+  # a host C/C++ toolchain that the cimg/android image doesn't guarantee. Only
+  # build-release-jvm builds host-native code, so only it needs this.
+  install_host_toolchain:
+    steps:
+      - run:
+          name: Install host C/C++ toolchain (gcc/g++/make for JVM native libs)
+          command: sudo apt-get update && sudo apt-get install -y build-essential
+
+  # Sweep every module's `build/reports/` (ktlint, detekt, html test reports, lint,
+  # whatever lives there) into one tree keyed by module path. Runs `when: always`
+  # so a failing check still ships its report. `./sage` is the vendored submodule
+  # (its own included build) — its reports come from a separate build invocation,
+  # don't collect them. The matched dir is `-prune`d so find doesn't descend back
+  # into it; the cp -r grabs the whole tree.
+  collect_reports:
+    steps:
+      - run:
+          name: Collect build/reports from every module
+          when: always
+          command: |
+            mkdir -p ~/reports
+            find . -path './sage' -prune -o \
+                   -path '*/build/reports' -type d -print -prune | while read d; do
+              mod=$(echo "$d" | sed 's|^\./||;s|/build/reports$||;s|/|-|g')
+              mkdir -p ~/reports/"$mod" && cp -r "$d"/. ~/reports/"$mod"/
+            done
+
+  # Sweep every module's JUnit-format `TEST-*.xml` into one tree CircleCI can
+  # parse into the Tests tab. Per-module subdir so each suite shows up
+  # separately. Same `when: always` + sage-exclusion rationale as collect_reports.
+  collect_test_results:
+    steps:
+      - run:
+          name: Collect JUnit XML test results from every module
+          when: always
+          command: |
+            mkdir -p ~/test-results
+            find . -path './sage' -prune -o \
+                   -path '*/build/test-results/*' -name 'TEST-*.xml' -print | while read f; do
+              mod=$(echo "$f" | sed 's|^\./||;s|/build/test-results/.*$||;s|/|-|g')
+              mkdir -p ~/test-results/"$mod" && cp "$f" ~/test-results/"$mod"/
+            done
+
+  # Paparazzi's failure / diff images live under `build/paparazzi/`, NOT under
+  # `build/reports/`, so collect_reports misses them. Each screenshot module
+  # gets its own subdir in the artifact tree so a regression is one click away.
+  collect_paparazzi:
+    steps:
+      - run:
+          name: Collect Paparazzi failure / diff images from every screenshot module
+          when: always
+          command: |
+            mkdir -p ~/paparazzi
+            find . -path './sage' -prune -o \
+                   -path '*/build/paparazzi' -type d -print -prune | while read d; do
+              mod=$(echo "$d" | sed 's|^\./||;s|/build/paparazzi$||;s|/|-|g')
+              mkdir -p ~/paparazzi/"$mod" && cp -r "$d"/. ~/paparazzi/"$mod"/
+            done
+
+##################################################
 
 workflows:
-  version: 2
   build_analyze:
     jobs:
       - setup
@@ -155,13 +220,7 @@ workflows:
 
 jobs:
   setup:
-    resource_class: medium
-
-    docker:
-      - image: cimg/android:2024.04.1
-
-    environment:
-      JVM_OPTS: -Xmx3200m
+    executor: android
 
     steps:
       - restore_cache:
@@ -224,69 +283,47 @@ jobs:
             - ".git"
             - "sage"
       - persist_to_workspace:
-          root: *workspace_root
+          root: << pipeline.parameters.workspace_root >>
           paths:
             - project
             - .gradle/caches/modules-2
             - .gradle/wrapper
 
   kt-lint:
-    resource_class: medium
-
-    docker:
-      - image: cimg/android:2024.04.1
-
-    environment:
-      JVM_OPTS: -Xmx3200m
+    executor: android
 
     steps:
-      - *attach_ws
-      - restore_cache:
-          keys:
-            - build-cache-ktlint-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-ktlint-v1-{{ .Branch }}-
-            - build-cache-ktlint-v1-
+      - attach_built_workspace
+      - restore_gradle_build_cache:
+          lineage: ktlint
       - run:
           name: Run Ktlint
           # ktlint runs through Gradle now (org.jlleitschuh.gradle.ktlint). The vendored sage/
           # submodule is a separate included build, so it stays out of the lint set.
           # --continue so a failing module doesn't mask violations in others.
           command: ./gradlew ktlintCheck --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - save_cache:
-          key: build-cache-ktlint-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle/caches/build-cache-1
-      - *collect_reports
+      - save_gradle_build_cache:
+          lineage: ktlint
+      - collect_reports
       - store_artifacts:
           path: ~/reports
           destination: ktlint-reports
           when: always
 
   detekt:
-    resource_class: medium
-
-    docker:
-      - image: cimg/android:2024.04.1
-
-    environment:
-      JVM_OPTS: -Xmx3200m
+    executor: android
 
     steps:
-      - *attach_ws
-      - restore_cache:
-          keys:
-            - build-cache-detekt-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-detekt-v1-{{ .Branch }}-
-            - build-cache-detekt-v1-
+      - attach_built_workspace
+      - restore_gradle_build_cache:
+          lineage: detekt
       - run:
           name: Run Detekt checks
           # --continue so a failing module doesn't mask violations in others.
           command: ./gradlew detekt --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - save_cache:
-          key: build-cache-detekt-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle/caches/build-cache-1
-      - *collect_reports
+      - save_gradle_build_cache:
+          lineage: detekt
+      - collect_reports
       - store_artifacts:
           path: ~/reports
           destination: detekt-reports
@@ -295,25 +332,19 @@ jobs:
   shared-build:
     # A whole-graph Kotlin compile of every shared module — give it the headroom
     # the `large` Android jobs get rather than throttling it on `medium`.
-    resource_class: large
-
-    docker:
-      - image: cimg/android:2024.04.1
-
-    environment:
-      JVM_OPTS: -Xms2g -Xmx4g
+    executor:
+      name: android
+      resource_class: large
+      jvm_opts: -Xms2g -Xmx4g
 
     steps:
-      - *attach_ws
+      - attach_built_workspace
       # Dedicated JVM-side build-cache lineage, separate from the Android
       # `release` lineage: a KMP module's jvm-target compile and its
       # android-`release` compile are distinct tasks with distinct cache keys, so
       # they can't share one cache entry. build-release-jvm restores this key.
-      - restore_cache:
-          keys:
-            - build-cache-jvm-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-jvm-v1-{{ .Branch }}-
-            - build-cache-jvm-v1-
+      - restore_gradle_build_cache:
+          lineage: jvm
       - run:
           name: Build shared JVM/Android code
           # `:apps:jvm:classes` compiles apps/jvm plus, transitively, the JVM
@@ -325,40 +356,30 @@ jobs:
           # have no debug/release split; the Android `release` graph is compiled
           # in android-lint, which feeds build-release-apk.)
           command: ./gradlew :apps:jvm:classes --build-cache --configuration-cache --no-daemon --max-workers=4
-      - save_cache:
-          key: build-cache-jvm-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle/caches/build-cache-1
+      - save_gradle_build_cache:
+          lineage: jvm
 
   android-lint:
-    resource_class: large
-
-    docker:
-      - image: cimg/android:2024.04.1
-
-    environment:
+    executor:
+      name: android
+      resource_class: large
       # Start off with a 4GB heap size; expand up to 6GB
-      JVM_OPTS: -Xms4g -Xmx6g
+      jvm_opts: -Xms4g -Xmx6g
 
     steps:
-      - *attach_ws
+      - attach_built_workspace
       # lintRelease pulls dependency AARs, which builds the emulator native libs.
-      - *install_cmake
+      - install_cmake
       # Shared release build cache: lintRelease and assembleRelease compile the
       # same release graph. build-release-apk requires this job, so it restores
       # what we save here (its identical-key save is then a CircleCI no-op).
-      - restore_cache:
-          keys:
-            - build-cache-release-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-release-v1-{{ .Branch }}-
-            - build-cache-release-v1-
+      - restore_gradle_build_cache:
+          lineage: release
       - run:
           name: Run Android Lint checks
           command: ./gradlew :apps:android:lintRelease --build-cache --configuration-cache --no-daemon --max-workers=4
-      - save_cache:
-          key: build-cache-release-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle/caches/build-cache-1
+      - save_gradle_build_cache:
+          lineage: release
       # Existing apps/android/build/reports/ kept verbatim so its CircleCI URL
       # stays stable for anyone with a bookmark; the broader collect_reports
       # below picks up any other module that produced reports during lintRelease
@@ -367,176 +388,144 @@ jobs:
           path: apps/android/build/reports/
           destination: reports
           when: always
-      - *collect_reports
+      - collect_reports
       - store_artifacts:
           path: ~/reports
           destination: lint-reports
           when: always
 
   unit-test-jvm:
-    resource_class: large
-
-    docker:
-      - image: cimg/android:2024.04.1
-
-    environment:
-      JVM_OPTS: -Xms2g -Xmx4g
+    executor:
+      name: android
+      resource_class: large
+      jvm_opts: -Xms2g -Xmx4g
 
     steps:
-      - *attach_ws
+      - attach_built_workspace
       # Own build-cache lineage: unit-test compiles the commonTest source set
       # which shared-build's `:apps:jvm:classes` never touches. A shared key
       # would still work (different task hashes, no collisions) but separation
       # keeps the cache rotation easier to reason about.
-      - restore_cache:
-          keys:
-            - build-cache-test-jvm-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-test-jvm-v1-{{ .Branch }}-
-            - build-cache-test-jvm-v1-
+      - restore_gradle_build_cache:
+          lineage: test-jvm
       - run:
           name: Run JVM unit tests (commonTest @ jvmTest)
           command: ./gradlew jvmTest --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - save_cache:
-          key: build-cache-test-jvm-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle/caches/build-cache-1
+      - save_gradle_build_cache:
+          lineage: test-jvm
       # JUnit XMLs for the CircleCI Tests tab (pass/fail counts, suite drilldown).
-      - *collect_test_results
+      - collect_test_results
       - store_test_results:
           path: ~/test-results
           when: always
       # HTML test reports + any other build/reports/ output for download.
-      - *collect_reports
+      - collect_reports
       - store_artifacts:
           path: ~/reports
           destination: jvm-test-reports
           when: always
 
   screenshot-test:
-    resource_class: large
-
-    docker:
-      - image: cimg/android:2024.04.1
-
-    environment:
+    executor:
+      name: android
+      resource_class: large
       # Paparazzi LayoutLib rendering across the screenshot modules is
       # memory-hungry; the old -Xmx512m GC-thrashed on this `large` box.
-      JVM_OPTS: -Xms2g -Xmx4g
+      jvm_opts: -Xms2g -Xmx4g
 
     steps:
       # Golden snapshots come from the workspace (setup did the LFS pull;
       # this job has no SSH for git@github.com).
-      - *attach_ws
-      - restore_cache:
-          keys:
-            - build-cache-screenshot-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-screenshot-v1-{{ .Branch }}-
-            - build-cache-screenshot-v1-
+      - attach_built_workspace
+      - restore_gradle_build_cache:
+          lineage: screenshot
       - run:
           name: Compare screenshot tests
           command: ./gradlew verifyPaparazziDebug --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - save_cache:
-          key: build-cache-screenshot-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle/caches/build-cache-1
+      - save_gradle_build_cache:
+          lineage: screenshot
       # JUnit XML for the Tests tab (Paparazzi runs as a JUnit test under the hood).
-      - *collect_test_results
+      - collect_test_results
       - store_test_results:
           path: ~/test-results
           when: always
       # Build-reports (html test reports, lint, etc) and the paparazzi failure
       # images themselves — different roots, different collectors.
-      - *collect_reports
+      - collect_reports
       - store_artifacts:
           path: ~/reports
           destination: screenshot-reports
           when: always
-      - *collect_paparazzi
+      - collect_paparazzi
       - store_artifacts:
           path: ~/paparazzi
           destination: paparazzi-images
           when: always
 
   build-release-apk:
-    resource_class: large
-
-    docker:
-      - image: cimg/android:2024.04.1
-
-    environment:
+    executor:
+      name: android
+      resource_class: large
       # Start off with a 4GB heap size; expand up to 6GB
-      JVM_OPTS: -Xms4g -Xmx6g
+      jvm_opts: -Xms4g -Xmx6g
 
     steps:
-      - *attach_ws
+      - attach_built_workspace
       # assembleRelease builds the emulator modules' native code via CMake.
-      - *install_cmake
+      - install_cmake
       # Shared with android-lint (runs first): restores its compiled release
       # graph so assembleRelease is largely cache hits.
-      - restore_cache:
-          keys:
-            - build-cache-release-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-release-v1-{{ .Branch }}-
-            - build-cache-release-v1-
+      - restore_gradle_build_cache:
+          lineage: release
       # Release signing reads CHIPBOX_KEY_ALIAS / CHIPBOX_KEYSTORE_PASSWORD /
       # CHIPBOX_KEY_PASSWORD from CircleCI project env vars (chipbox.jks is
       # committed at the repo root). Without them the APK is debug-signed.
       - run:
           name: Build Release
           command: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --configuration-cache --no-daemon --max-workers=4
-      - save_cache:
-          key: build-cache-release-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle/caches/build-cache-1
+      - save_gradle_build_cache:
+          lineage: release
       - store_artifacts:
           path: apps/android/build/outputs/apk/release
           destination: outputs
           when: always
       # Report sweep so any module-level build-time report from the release
       # graph (e.g. resource shrinker, R8 mapping reports) is downloadable.
-      - *collect_reports
+      - collect_reports
       - store_artifacts:
           path: ~/reports
           destination: release-apk-reports
           when: always
 
   build-release-jvm:
-    resource_class: large
-
-    docker:
-      - image: cimg/android:2024.04.1
-
-    environment:
-      JVM_OPTS: -Xms2g -Xmx4g
+    executor:
+      name: android
+      resource_class: large
+      jvm_opts: -Xms2g -Xmx4g
 
     steps:
-      - *attach_ws
+      - attach_built_workspace
       # installDist host-builds the 7 emulator native libs (host CMake + gcc/g++)
       # and bundles them into the distribution. cmake comes from the SDK package;
       # the host C/C++ toolchain from apt.
-      - *install_cmake
-      - *install_host_toolchain
+      - install_cmake
+      - install_host_toolchain
       # Same JVM build-cache lineage shared-build populated: every Kotlin compile
       # is a cache hit, so this job's real work is just the native build + the
       # distribution layout. The identical-key save below is a CircleCI no-op when
       # shared-build already stored this revision.
-      - restore_cache:
-          keys:
-            - build-cache-jvm-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-jvm-v1-{{ .Branch }}-
-            - build-cache-jvm-v1-
+      - restore_gradle_build_cache:
+          lineage: jvm
       - run:
           name: Build Release (JVM desktop app)
           command: ./gradlew :apps:jvm:installDist --build-cache --configuration-cache --no-daemon --max-workers=4
-      - save_cache:
-          key: build-cache-jvm-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle/caches/build-cache-1
+      - save_gradle_build_cache:
+          lineage: jvm
       - store_artifacts:
           path: apps/jvm/build/install
           destination: jvm-dist
           when: always
-      - *collect_reports
+      - collect_reports
       - store_artifacts:
           path: ~/reports
           destination: release-jvm-reports
