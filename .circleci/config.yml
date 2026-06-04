@@ -7,14 +7,12 @@ version: 2.1
 # re-cloning / re-resolving. They compile only what they need; native code is
 # built only in the jobs that actually require it.
 #
-# Compiled output is carried forward via two independent Gradle build-cache
-# lineages, because a KMP module's jvm-target compile and its android-`release`
-# compile are different tasks (different cache keys) and cannot share an entry:
-#   * build-cache-jvm-v1     : shared-build -> build-release-jvm
-#   * build-cache-release-v1 : android-lint -> build-release-apk
-# Each downstream job restores its lineage and re-saves under the same key (a
-# CircleCI no-op when the upstream job already stored that revision), so the
-# expensive Kotlin compiles happen once per lineage.
+# Compiled task outputs are shared via the self-hosted remote Gradle build cache
+# (gradle.sebacloud.org, configured in settings.gradle.kts): every job pulls
+# matching entries and CI pushes new ones, so the expensive Kotlin compiles
+# happen once and are reused across jobs, branches, and developer machines.
+# CircleCI's own caches now cover only what the build cache doesn't: the source
+# checkout (.git + sage) and resolved dependency downloads (modules-2).
 
 parameters:
   # Workspace root is the home dir so both `project` and `.gradle` fit under it.
@@ -53,34 +51,6 @@ commands:
     steps:
       - attach_workspace:
           at: << pipeline.parameters.workspace_root >>
-
-  # Restore one of the per-lineage Gradle build caches. `lineage` selects the
-  # cache (ktlint / detekt / jvm / release / test-jvm / screenshot); the
-  # fallback chain widens from this exact revision to the branch tip to any
-  # prior save so a cold revision still warms from the nearest ancestor.
-  restore_gradle_build_cache:
-    parameters:
-      lineage:
-        type: string
-    steps:
-      - restore_cache:
-          keys:
-            - build-cache-<< parameters.lineage >>-v1-{{ .Branch }}-{{ .Revision }}
-            - build-cache-<< parameters.lineage >>-v1-{{ .Branch }}-
-            - build-cache-<< parameters.lineage >>-v1-
-
-  # Save the Gradle build cache under this revision's key for the given lineage.
-  # An identical-key save from a later job in the same lineage is a CircleCI
-  # no-op, which is exactly how the two shared lineages avoid recompiling.
-  save_gradle_build_cache:
-    parameters:
-      lineage:
-        type: string
-    steps:
-      - save_cache:
-          key: build-cache-<< parameters.lineage >>-v1-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle/caches/build-cache-1
 
   # The emulator modules build native code via CMake, which needs Ninja. The
   # cimg/android image ships neither an SDK CMake nor Ninja; installing the SDK
@@ -206,9 +176,9 @@ workflows:
           requires:
             - shared-build
             - detekt
-      # build-release-jvm finishes the JVM app: it restores shared-build's JVM
-      # build cache (compilation = cache hits) and only adds the host-native libs
-      # + the desktop distribution on top.
+      # build-release-jvm finishes the JVM app: the shared Kotlin compiles are
+      # remote-cache hits (shared-build pushed them), so it only adds the
+      # host-native libs + the desktop distribution on top.
       - build-release-jvm:
           requires:
             - shared-build
@@ -265,9 +235,8 @@ jobs:
           name: Resolve Android app dependencies
           # Dependency resolution only — no compilation, so no native build.
           # Populates ~/.gradle so downstream jobs resolve offline.
-          # `--no-build-cache`: org.gradle.caching=true would otherwise pack+store the
-          # convention-plugin compiles into build-cache-1, but setup never saves/persists
-          # that dir, so the store is discarded at job end — skip the wasted packing.
+          # `--no-build-cache`: this step does no cacheable compile work worth pushing to
+          # the remote cache, so skip the cache machinery entirely.
           command: ./gradlew :apps:android:dependencies --configuration releaseRuntimeClasspath --no-configuration-cache --no-build-cache --no-daemon --max-workers=2
       - run:
           name: Resolve JVM app dependencies
@@ -298,16 +267,12 @@ jobs:
 
     steps:
       - attach_built_workspace
-      - restore_gradle_build_cache:
-          lineage: ktlint
       - run:
           name: Run Ktlint
           # ktlint runs through Gradle now (org.jlleitschuh.gradle.ktlint). The vendored sage/
           # submodule is a separate included build, so it stays out of the lint set.
           # --continue so a failing module doesn't mask violations in others.
           command: ./gradlew ktlintCheck --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - save_gradle_build_cache:
-          lineage: ktlint
       - collect_reports
       - store_artifacts:
           path: ~/reports
@@ -319,14 +284,10 @@ jobs:
 
     steps:
       - attach_built_workspace
-      - restore_gradle_build_cache:
-          lineage: detekt
       - run:
           name: Run Detekt checks
           # --continue so a failing module doesn't mask violations in others.
           command: ./gradlew detekt --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - save_gradle_build_cache:
-          lineage: detekt
       - collect_reports
       - store_artifacts:
           path: ~/reports
@@ -343,12 +304,6 @@ jobs:
 
     steps:
       - attach_built_workspace
-      # Dedicated JVM-side build-cache lineage, separate from the Android
-      # `release` lineage: a KMP module's jvm-target compile and its
-      # android-`release` compile are distinct tasks with distinct cache keys, so
-      # they can't share one cache entry. build-release-jvm restores this key.
-      - restore_gradle_build_cache:
-          lineage: jvm
       - run:
           name: Build shared JVM/Android code
           # `:apps:jvm:classes` compiles apps/jvm plus, transitively, the JVM
@@ -358,10 +313,9 @@ jobs:
           # the distribution are only wired into run/installDist/dist*, so neither
           # is triggered here — build-release-jvm adds those. (Pure-JVM modules
           # have no debug/release split; the Android `release` graph is compiled
-          # in android-lint, which feeds build-release-apk.)
+          # in android-lint, which feeds build-release-apk.) Outputs are pushed to
+          # the remote build cache, so build-release-jvm hits them.
           command: ./gradlew :apps:jvm:classes --build-cache --configuration-cache --no-daemon --max-workers=4
-      - save_gradle_build_cache:
-          lineage: jvm
 
   android-lint:
     executor:
@@ -374,16 +328,11 @@ jobs:
       - attach_built_workspace
       # lintRelease pulls dependency AARs, which builds the emulator native libs.
       - install_cmake
-      # Shared release build cache: lintRelease and assembleRelease compile the
-      # same release graph. build-release-apk requires this job, so it restores
-      # what we save here (its identical-key save is then a CircleCI no-op).
-      - restore_gradle_build_cache:
-          lineage: release
       - run:
           name: Run Android Lint checks
+          # lintRelease and assembleRelease compile the same release graph; the
+          # compiles land in the remote build cache here, so build-release-apk hits them.
           command: ./gradlew :apps:android:lintRelease --build-cache --configuration-cache --no-daemon --max-workers=4
-      - save_gradle_build_cache:
-          lineage: release
       # Existing apps/android/build/reports/ kept verbatim so its CircleCI URL
       # stays stable for anyone with a bookmark; the broader collect_reports
       # below picks up any other module that produced reports during lintRelease
@@ -406,17 +355,9 @@ jobs:
 
     steps:
       - attach_built_workspace
-      # Own build-cache lineage: unit-test compiles the commonTest source set
-      # which shared-build's `:apps:jvm:classes` never touches. A shared key
-      # would still work (different task hashes, no collisions) but separation
-      # keeps the cache rotation easier to reason about.
-      - restore_gradle_build_cache:
-          lineage: test-jvm
       - run:
           name: Run JVM unit tests (commonTest @ jvmTest)
           command: ./gradlew jvmTest --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - save_gradle_build_cache:
-          lineage: test-jvm
       # JUnit XMLs for the CircleCI Tests tab (pass/fail counts, suite drilldown).
       - collect_test_results
       - store_test_results:
@@ -441,13 +382,9 @@ jobs:
       # Golden snapshots come from the workspace (setup did the LFS pull;
       # this job has no SSH for git@github.com).
       - attach_built_workspace
-      - restore_gradle_build_cache:
-          lineage: screenshot
       - run:
           name: Compare screenshot tests
           command: ./gradlew verifyPaparazziDebug --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - save_gradle_build_cache:
-          lineage: screenshot
       # JUnit XML for the Tests tab (Paparazzi runs as a JUnit test under the hood).
       - collect_test_results
       - store_test_results:
@@ -477,18 +414,14 @@ jobs:
       - attach_built_workspace
       # assembleRelease builds the emulator modules' native code via CMake.
       - install_cmake
-      # Shared with android-lint (runs first): restores its compiled release
-      # graph so assembleRelease is largely cache hits.
-      - restore_gradle_build_cache:
-          lineage: release
       # Release signing reads CHIPBOX_KEY_ALIAS / CHIPBOX_KEYSTORE_PASSWORD /
       # CHIPBOX_KEY_PASSWORD from CircleCI project env vars (chipbox.jks is
       # committed at the repo root). Without them the APK is debug-signed.
       - run:
           name: Build Release
+          # The release-graph compiles are remote-cache hits from android-lint; this job
+          # adds the assemble-only work (dexing, resource/APK packaging, native build).
           command: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --configuration-cache --no-daemon --max-workers=4
-      - save_gradle_build_cache:
-          lineage: release
       - store_artifacts:
           path: apps/android/build/outputs/apk/release
           destination: outputs
@@ -514,17 +447,11 @@ jobs:
       # the host C/C++ toolchain from apt.
       - install_cmake
       - install_host_toolchain
-      # Same JVM build-cache lineage shared-build populated: every Kotlin compile
-      # is a cache hit, so this job's real work is just the native build + the
-      # distribution layout. The identical-key save below is a CircleCI no-op when
-      # shared-build already stored this revision.
-      - restore_gradle_build_cache:
-          lineage: jvm
       - run:
           name: Build Release (JVM desktop app)
+          # Every Kotlin compile is a remote-cache hit (shared-build pushed them),
+          # so this job's real work is just the host native build + the distribution.
           command: ./gradlew :apps:jvm:installDist --build-cache --configuration-cache --no-daemon --max-workers=4
-      - save_gradle_build_cache:
-          lineage: jvm
       - store_artifacts:
           path: apps/jvm/build/install
           destination: jvm-dist
