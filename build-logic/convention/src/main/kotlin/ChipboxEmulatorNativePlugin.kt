@@ -23,6 +23,16 @@ class ChipboxEmulatorNativePlugin : Plugin<Project> {
 
             extensions.configure<LibraryExtension> {
                 this.namespace = namespace
+                defaultConfig {
+                    ndk {
+                        // 64-bit ABIs only. Google Play has required a 64-bit build since
+                        // Aug 2019 and 32-bit-only devices are effectively gone, so dropping
+                        // armeabi-v7a + x86 halves emulator native build time and APK size.
+                        // AGP intersects this set with the CMake build, so the 32-bit slices
+                        // are never compiled. Re-add an ABI here if one is ever needed again.
+                        abiFilters += setOf("arm64-v8a", "x86_64")
+                    }
+                }
                 externalNativeBuild {
                     cmake {
                         path = rootProject.file("cbox/native/$emulatorDirName/CMakeLists.txt")
