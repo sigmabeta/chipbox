@@ -18,6 +18,29 @@ pluginManagement {
     }
 }
 
+plugins {
+    // Develocity Build Scans. The `sage` submodule pins its own (3.17.3) for standalone
+    // builds, but in this composite build the root build owns the scan and sage's plugin
+    // defers to it — so this must stay on the latest Gradle-9-compatible line, not match sage.
+    id("com.gradle.develocity") version "4.4.2"
+}
+
+develocity {
+    buildScan {
+        // Free public Build Scan service (scans.gradle.com) — accept its terms non-interactively.
+        termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
+        termsOfUseAgree = "yes"
+
+        // Auto-publish on CI only — CircleCI (and most CI) export CI in the environment.
+        // Locally nothing is uploaded unless you pass `--scan`, which overrides this predicate
+        // and always publishes. Reading via providers keeps it configuration-cache safe.
+        val isCi = providers.environmentVariable("CI").isPresent
+        publishing.onlyIf { isCi }
+        // Tag the CI-published scans so they're filterable apart from any local `--scan` runs.
+        if (isCi) tag("CI")
+    }
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
