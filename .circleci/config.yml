@@ -265,13 +265,17 @@ jobs:
           name: Resolve Android app dependencies
           # Dependency resolution only — no compilation, so no native build.
           # Populates ~/.gradle so downstream jobs resolve offline.
-          command: ./gradlew :apps:android:dependencies --configuration releaseRuntimeClasspath --no-configuration-cache --no-daemon --max-workers=2
+          # `--no-build-cache`: org.gradle.caching=true would otherwise pack+store the
+          # convention-plugin compiles into build-cache-1, but setup never saves/persists
+          # that dir, so the store is discarded at job end — skip the wasted packing.
+          command: ./gradlew :apps:android:dependencies --configuration releaseRuntimeClasspath --no-configuration-cache --no-build-cache --no-daemon --max-workers=2
       - run:
           name: Resolve JVM app dependencies
           # The JVM/desktop deps aren't in the Android release classpath, so warm
           # them here too — otherwise shared-build AND build-release-jvm each
           # re-download them (different boxes, neither persists modules-2).
-          command: ./gradlew :apps:jvm:dependencies --configuration runtimeClasspath --no-configuration-cache --no-daemon --max-workers=2
+          # `--no-build-cache` for the same reason as the Android step above.
+          command: ./gradlew :apps:jvm:dependencies --configuration runtimeClasspath --no-configuration-cache --no-build-cache --no-daemon --max-workers=2
       - save_cache:
           key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum "apps/android/build.gradle.kts" }}-{{ checksum "apps/jvm/build.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}
           paths:
