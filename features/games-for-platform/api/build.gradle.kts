@@ -3,8 +3,6 @@ plugins {
 }
 
 kotlin {
-    js { nodejs() }
-
     sourceSets {
         named("commonMain") {
             dependencies {

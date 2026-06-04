@@ -2,6 +2,7 @@ import org.jetbrains.compose.resources.ResourcesExtension
 
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
     alias(libs.plugins.sage.compose.kmp)
     // JetBrains Compose Gradle plugin — needed for the `Res.font.*` codegen over the .otf
     // files under `src/commonMain/composeResources/font/`. Sibling :api is now pure Kotlin
@@ -14,8 +15,6 @@ plugins {
 // accessors, and the [ChipboxFont.resource] / [ChipboxFont.toFontFamily] extensions. Apply
 // this module only where Compose UI is also in scope (e.g. cbox/common/ui/theme/api).
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.ui.fonts.real"
         // Same `androidResources.enable = true` + manual symlink workaround the sibling :api

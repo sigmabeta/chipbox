@@ -1,13 +1,12 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
     // Models cross the HTTP boundary between apps/server and apps/js (RemoteRepository).
     // kotlinx.serialization gives us @Serializable for every wire type without DTO duplication.
     alias(libs.plugins.kotlin.serialization)
 }
 
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.models.api"
     }

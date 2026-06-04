@@ -10,8 +10,6 @@ plugins {
 // replaces the old Swing JFileChooser), and an enforcement-only jsMain stub that just forwards
 // events.
 kotlin {
-    js { nodejs() }
-
     sourceSets {
         named("commonMain") {
             dependencies {

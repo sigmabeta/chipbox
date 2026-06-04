@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
 }
 
 // Pure-Kotlin metadata module for [ChipboxFont] — the enum carries name / description / URL only,
@@ -9,8 +10,6 @@ plugins {
 // SettingsAction.BrandFontSelected, ChipboxAppUiViewModel) don't drag Compose-Resources into
 // their classpath — which would pull Skiko on Kotlin/JS, breaking jsTest there.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.ui.fonts.api"
     }

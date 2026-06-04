@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
     // sage.di's plugin uses `add("implementation", ...)` which is android/jvm-only — it errors
     // out on a KMP module that has no top-level `implementation` configuration. The metro
     // compiler plugin + the sage-common-di dep are added explicitly to commonMain below.
@@ -13,8 +14,6 @@ plugins {
 // java.io.File-backed `FakeOtherImageFetcher` stays in `src/main/java` (which sage.kmp maps
 // to `jvmSharedMain` — works on JVM + Android, not JS).
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.images.api"
     }

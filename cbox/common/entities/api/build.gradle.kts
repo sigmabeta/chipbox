@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
 }
 
 // Room entities — annotations only (@Entity/@PrimaryKey/@ColumnInfo/@Index). Those live in
@@ -7,8 +8,6 @@ plugins {
 // for android, jvm AND the js() purity gate. room-compiler still reads the annotations from
 // database/real, which keeps the (jvm/android/native-only) room-runtime.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.entities.api"
     }

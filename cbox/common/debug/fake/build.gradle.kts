@@ -1,11 +1,10 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
 }
 
 // Test stub for DebugSettingsManager — single boolean preference behind a MutableStateFlow.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.debug.fake"
     }

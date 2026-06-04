@@ -1,12 +1,11 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
 }
 
 // Test stub for ChipboxSettingsManager — every getter is a MutableStateFlow tests can drive
 // directly via the matching setX, plus a record of every write call.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.settings.fake"
     }

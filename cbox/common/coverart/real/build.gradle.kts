@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -9,8 +10,6 @@ plugins {
 // keeps the metadata compile honest about purity). The one platform-bound piece, the OkHttp-backed
 // [CoverArtHttp] impl, lives in jvmSharedMain (src/main/java), shared by the android + jvm targets.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.coverart.real"
     }

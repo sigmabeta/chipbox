@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.sage.kmp)
+    alias(libs.plugins.sage.kmp.js)
     alias(libs.plugins.sage.compose.kmp)
 }
 
@@ -12,8 +13,6 @@ plugins {
 // `:ui:fonts:real` (not `:api`) because `AppTheme()` calls `ChipboxFont.toFontFamily()` — the
 // Compose binding extension lives there. The `:api` enum alone wouldn't be enough.
 kotlin {
-    js { nodejs() }
-
     androidLibrary {
         namespace = "net.sigmabeta.chipbox.common.ui.theme.api"
     }

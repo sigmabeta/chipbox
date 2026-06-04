@@ -7,8 +7,6 @@ plugins {
 // `actual` lives in src/main/java (= jvmSharedMain, shared by the Android + JVM leaf targets) and
 // the enforcement-only JS target (no debug UI) gets a deterministic stub in jsMain.
 kotlin {
-    js { nodejs() }
-
     sourceSets {
         named("commonMain") {
             dependencies {

@@ -9,8 +9,6 @@ plugins {
 // serves both the Android and JVM leaf targets — there's no platform-specific UI here (unlike the
 // folder picker), so no per-platform split is needed.
 kotlin {
-    js { nodejs() }
-
     sourceSets {
         named("commonMain") {
             dependencies {
