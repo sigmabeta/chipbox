@@ -368,7 +368,7 @@ class RealScanner(
             // Reader (or m3u overlay) couldn't determine a length — fall back to a sensible
             // default so the track is still seekable and the now-playing UI can render a
             // progress bar. Accept any non-positive value to absorb reader bugs that emit 0.
-            if (gamed.length <= 0L) {
+            val lengthed = if (gamed.length <= 0L) {
                 // No real length means no real fade window either, so also give the track the
                 // default fade-out — otherwise it ends abruptly at DEFAULT_LENGTH_MS. Keep any
                 // fade the reader/m3u already supplied.
@@ -378,6 +378,15 @@ class RealScanner(
                 )
             } else {
                 gamed
+            }
+            // A zero fade usually means the length came from a floor(seconds) tag, which clips up
+            // to a second of real audio off the end. Pad by two seconds to cover that; trailing-
+            // silence trimming reclaims any padding that runs past the actual end, so it's inaudible
+            // when the track really had stopped.
+            if (lengthed.fadeLengthMs == 0L) {
+                lengthed.copy(length = lengthed.length + ZERO_FADE_PADDING_MS)
+            } else {
+                lengthed
             }
         }
 
@@ -527,6 +536,7 @@ class RealScanner(
         private const val TAG_UNKNOWN = "Unknown"
         private const val MAX_LIB_DEPTH = 8
         private const val DEFAULT_LENGTH_MS = 2L * 60 * 1000 + 30 * 1000
+        private const val ZERO_FADE_PADDING_MS = 2L * 1000
 
         // Bounds for [scanParallelism]; see the comment there. MAX is the traced ceiling (going
         // past it oversubscribes the SAF provider); MIN keeps low-core devices usefully concurrent
