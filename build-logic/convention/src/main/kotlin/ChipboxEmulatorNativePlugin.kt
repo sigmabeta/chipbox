@@ -28,14 +28,20 @@ class ChipboxEmulatorNativePlugin : Plugin<Project> {
             val emulatorDirName = projectDir.parentFile.name
             val derivedNamespace = namespaceFromPath()
 
+            val skipNative = providers.gradleProperty("chipbox.skipNative").isPresent
+
             extensions.configure<LibraryExtension> {
                 namespace = derivedNamespace
-                // AGP still strips/packages the jniLibs with the NDK's tools, so pin the version.
-                ndkVersion = NativeEmulators.NDK_VERSION
+                // Pin ndkVersion ONLY when we actually emit jniLibs (AGP strips them with the NDK's
+                // tools). Setting it unconditionally makes AGP resolve — and on CI install — the NDK
+                // even for skip-native jobs (lint, static-analysis) that build nothing native.
+                if (!skipNative) {
+                    ndkVersion = NativeEmulators.NDK_VERSION
+                }
             }
 
-            // The skip gate still applies — lint/static-analysis pass -Pchipbox.skipNative.
-            if (providers.gradleProperty("chipbox.skipNative").isPresent) return@with
+            // lint / static-analysis pass -Pchipbox.skipNative — nothing native to build here.
+            if (skipNative) return@with
 
             // Use the SDK's CMake (the version AGP used; install_cmake provides it on CI) — it
             // bundles a matching Ninja next to it. A PATH cmake like /usr/bin/cmake on CI has no
