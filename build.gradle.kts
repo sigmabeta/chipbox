@@ -7,12 +7,6 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.ktlint) apply false
-    // Kover — JVM/Android unit-test coverage. Applied here (no `apply false`) so the root
-    // project is the merging module for the aggregate report; each subproject also applies
-    // Kover via the subprojects block below. Run aggregate report with:
-    //   ./gradlew koverHtmlReport
-    // Report lands at build/reports/kover/html/index.html.
-    alias(libs.plugins.kover)
 }
 
 // Use the system Node + Yarn (chipbox dev box has Node 22 and yarn 1.x installed) rather than
@@ -67,7 +61,6 @@ plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
 val ktlintToolVersion = libs.versions.ktlintTool.get()
 subprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
-    apply(plugin = "org.jetbrains.kotlinx.kover")
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
         version.set(ktlintToolVersion)
     }
@@ -91,12 +84,3 @@ subprojects {
     }
 }
 
-// Aggregate coverage report: depend on every subproject's `kover` configuration so that
-// `./gradlew koverHtmlReport` at the root produces a single merged report across all
-// modules. Safe to iterate `subprojects` here because the `subprojects { apply(plugin =
-// "...kover") }` above runs synchronously during root configuration — by the time this
-// `dependencies` block evaluates, every subproject has the `kover` configuration
-// registered.
-dependencies {
-    subprojects.forEach { kover(project(it.path)) }
-}
