@@ -1,6 +1,6 @@
 plugins {
-    id("chipbox.feature.real")
-    id("chipbox.kmp.test")
+    alias(chipbox.plugins.feature.real)
+    alias(chipbox.plugins.kmp.test)
 }
 
 // RescanStatusState / the route `expect` are commonMain (pure renderer + entry point). The

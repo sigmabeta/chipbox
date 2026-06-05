@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.sage.jvm)
     // Host emulator native build (shared cacheable CMake task; provides `chipboxHostNativeLibs`).
-    id("chipbox.native.host")
+    alias(chipbox.plugins.native.host)
     alias(libs.plugins.metro)
     // Compose Multiplatform desktop. Two plugins are needed: the Kotlin Compose compiler
     // (shared with the Android UI) handles @Composable codegen, and the JetBrains Compose

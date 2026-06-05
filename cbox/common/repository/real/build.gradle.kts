@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.sage.kmp)
     alias(libs.plugins.sage.kmp.js)
-    id("chipbox.kmp.test")
+    alias(chipbox.plugins.kmp.test)
 }
 
 // DatabaseRepository is pure Kotlin — it now takes the @Dao interfaces (database/api, which is

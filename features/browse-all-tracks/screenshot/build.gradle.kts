@@ -1,5 +1,5 @@
 plugins {
-    id("chipbox.screenshot")
+    alias(chipbox.plugins.screenshot)
 }
 
 dependencies {

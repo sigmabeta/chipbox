@@ -77,6 +77,11 @@ dependencyResolutionManagement {
         create("libs") {
             from(files("$settingsDir/sage/gradle/libs.versions.toml"))
         }
+        // Chipbox's own convention plugins live in a chipbox-owned catalog (not sage's), applied
+        // as `alias(chipbox.plugins.<name>)`.
+        create("chipbox") {
+            from(files("$settingsDir/gradle/chipbox.versions.toml"))
+        }
     }
 }
 

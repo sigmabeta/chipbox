@@ -1,5 +1,5 @@
 plugins {
-    id("chipbox.feature.real")
+    alias(chipbox.plugins.feature.real)
 }
 
 // The menu + mode ViewModels and their states are commonMain (pure UI-model assembly). The only
