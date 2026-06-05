@@ -55,6 +55,10 @@ gradlePlugin {
             id = "chipbox.emulator.native"
             implementationClass = "ChipboxEmulatorNativePlugin"
         }
+        register("chipboxNativeHost") {
+            id = "chipbox.native.host"
+            implementationClass = "ChipboxNativeHostPlugin"
+        }
         register("chipboxScreenshot") {
             id = "chipbox.screenshot"
             implementationClass = "ChipboxScreenshotPlugin"
