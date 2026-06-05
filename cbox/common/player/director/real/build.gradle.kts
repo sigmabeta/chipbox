@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.sage.kmp)
     alias(libs.plugins.sage.kmp.js)
-    id("chipbox.kmp.test")
+    alias(chipbox.plugins.kmp.test)
 }
 
 kotlin {

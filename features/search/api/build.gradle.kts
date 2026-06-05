@@ -1,3 +1,3 @@
 plugins {
-    id("chipbox.feature.api")
+    alias(chipbox.plugins.feature.api)
 }

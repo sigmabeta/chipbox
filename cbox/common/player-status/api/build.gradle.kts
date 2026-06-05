@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.sage.kmp.js)
     alias(libs.plugins.sage.compose.kmp)
     alias(libs.plugins.metro)
-    id("chipbox.kmp.test")
+    alias(chipbox.plugins.kmp.test)
 }
 
 // Sage.kmp so PlayerStatus + PlayerStatusViewModel are reachable from the shared

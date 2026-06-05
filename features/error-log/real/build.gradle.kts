@@ -1,6 +1,6 @@
 plugins {
-    id("chipbox.feature.real")
-    id("chipbox.kmp.test")
+    alias(chipbox.plugins.feature.real)
+    alias(chipbox.plugins.kmp.test)
 }
 
 // ViewModel/State + the ErrorLogRoute composable are all commonMain. The only platform split is

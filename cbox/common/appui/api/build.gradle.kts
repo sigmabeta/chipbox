@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.sage.kmp.js)
     alias(libs.plugins.sage.compose.kmp)
     alias(libs.plugins.metro)
-    id("chipbox.kmp.test")
+    alias(chipbox.plugins.kmp.test)
 }
 
 // Promoted from sage.android → sage.kmp so the same `ChipboxAppUi()` composable drives the

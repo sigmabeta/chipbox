@@ -1,6 +1,6 @@
 plugins {
-    id("chipbox.feature.real")
-    id("chipbox.kmp.test")
+    alias(chipbox.plugins.feature.real)
+    alias(chipbox.plugins.kmp.test)
 }
 
 // SettingsViewModel is commonMain now (its deps are all KMP); the build-date java.time formatting

@@ -1,6 +1,6 @@
 plugins {
-    id("chipbox.feature.real")
-    id("chipbox.kmp.test")
+    alias(chipbox.plugins.feature.real)
+    alias(chipbox.plugins.kmp.test)
 }
 
 // LibraryViewModel + state/action are pure-Kotlin commonMain; LibraryRoute is androidMain

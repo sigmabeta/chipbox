@@ -1,3 +1,3 @@
 plugins {
-    id("chipbox.emulator.native")
+    alias(chipbox.plugins.emulator.native)
 }

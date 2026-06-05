@@ -1,0 +1,11 @@
+# Chipbox convention plugins (chipbox build-logic). Registered as the `chipbox` version catalog in
+# settings.gradle.kts, so modules apply them via `alias(chipbox.plugins.<name>)`. Versionless —
+# the plugins come from the included build, not a published artifact.
+[plugins]
+feature-api = { id = "chipbox.feature.api" }
+feature-real = { id = "chipbox.feature.real" }
+emulator-real = { id = "chipbox.emulator.real" }
+emulator-native = { id = "chipbox.emulator.native" }
+native-host = { id = "chipbox.native.host" }
+screenshot = { id = "chipbox.screenshot" }
+kmp-test = { id = "chipbox.kmp.test" }
