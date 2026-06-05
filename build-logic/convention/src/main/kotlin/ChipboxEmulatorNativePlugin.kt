@@ -37,10 +37,14 @@ class ChipboxEmulatorNativePlugin : Plugin<Project> {
             // The skip gate still applies — lint/static-analysis pass -Pchipbox.skipNative.
             if (providers.gradleProperty("chipbox.skipNative").isPresent) return@with
 
-            val cmake = resolveCmake()
+            // Use the SDK's CMake (the version AGP used; install_cmake provides it on CI) — it
+            // bundles a matching Ninja next to it. A PATH cmake like /usr/bin/cmake on CI has no
+            // sibling ninja, so the `-G Ninja` configure below would fail.
+            val sdk = androidSdkDir()
+            val cmake = File(sdk, "cmake/${NativeEmulators.CMAKE_VERSION}/bin/cmake")
             val ninja = File(cmake.parentFile, "ninja")
             val toolchain = File(
-                androidSdkDir(),
+                sdk,
                 "ndk/${NativeEmulators.NDK_VERSION}/build/cmake/android.toolchain.cmake",
             )
             val nativeRoot = rootProject.layout.projectDirectory.dir("cbox/native")
