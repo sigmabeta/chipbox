@@ -65,6 +65,18 @@ commands:
           # absorbs the signal so only sdkmanager's real exit status counts.
           command: (yes || true) | sdkmanager "cmake;3.22.1"
 
+  # The emulator :native modules build their .so's with our own buildEmulatorNativeLib task
+  # (CMake + the NDK toolchain), NOT AGP's externalNativeBuild. AGP only auto-installs the NDK
+  # when *its own* native tasks need it — which we no longer have — so setting ndkVersion alone
+  # doesn't download it. Install it explicitly here so the toolchain file exists before any
+  # native task runs (otherwise: "Could not find toolchain file"). Only build-release-apk builds
+  # the Android .so's, so only it needs this. Version pinned to NativeEmulators.NDK_VERSION.
+  install_ndk:
+    steps:
+      - run:
+          name: Install NDK (toolchain for the Android emulator native libs)
+          command: (yes || true) | sdkmanager "ndk;29.0.14206865"
+
   # The JVM target's emulator libs are host-built (host CMake's default Unix
   # Makefiles generator + gcc/g++/make/ar), NOT via the NDK. apps/jvm's build
   # script runs the CMake configure/build Exec tasks during installDist; they
@@ -431,8 +443,10 @@ jobs:
           package: cmake
       - restore_sdk_package:
           package: ndk
-      # assembleRelease builds the emulator modules' native code via CMake.
+      # assembleRelease builds the emulator modules' native code via CMake + the NDK toolchain.
+      # On a cache hit these are no-ops (the packages are already on disk); otherwise they download.
       - install_cmake
+      - install_ndk
       # Release signing reads CHIPBOX_KEY_ALIAS / CHIPBOX_KEYSTORE_PASSWORD /
       # CHIPBOX_KEY_PASSWORD from CircleCI project env vars (chipbox.jks is
       # committed at the repo root). Without them the APK is debug-signed.
