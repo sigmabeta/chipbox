@@ -144,8 +144,6 @@ dependencies {
     implementation(libs.sage.common.ui.listScreens)
     implementation(libs.sage.android.ui.themes)
 
-    implementation(libs.sage.fake.analytics)
-
     implementation(libs.androidx.core.splash)
 
     implementation(platform(libs.androidx.compose.bom))
