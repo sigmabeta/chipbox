@@ -25,9 +25,12 @@ kotlin {
                 implementation(projects.cbox.common.ui.components.api)
                 implementation(projects.cbox.common.models.api)
                 implementation(projects.cbox.common.player.director.api)
+                implementation(projects.cbox.common.appcomm.api)
 
+                implementation(libs.sage.common.appcomm)
                 implementation(libs.sage.common.di)
                 implementation(libs.sage.common.images)
+                implementation(libs.sage.common.logging)
 
                 implementation(libs.metrox.viewmodel)
                 implementation(libs.metrox.viewmodel.compose)

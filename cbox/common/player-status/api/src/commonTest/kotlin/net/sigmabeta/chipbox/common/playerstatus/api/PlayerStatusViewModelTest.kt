@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.PlayerState
+import net.sigmabeta.sage.logging.BluntHatchet
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -23,7 +24,7 @@ import kotlin.test.assertTrue
 
 /**
  * Tests for the small `combine(metadataState, playbackState) → PlayerStatusState` reducer in
- * [PlayerStatusViewModel] plus the `onPlayPauseClicked` dispatch.
+ * [PlayerStatusViewModel] plus the `sendAction` dispatch.
  *
  * Rig: `Dispatchers.setMain(UnconfinedTestDispatcher())` so `viewModelScope` (and the `stateIn`
  * it backs) runs on a deterministic test dispatcher. Unconfined makes every emission propagate
@@ -48,7 +49,7 @@ class PlayerStatusViewModelTest {
     @Test
     fun `initial state is Empty until any metadata arrives`() = runTest {
         val director = FakeDirector()
-        val viewModel = PlayerStatusViewModel(director)
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
         // FakeDirector seeds metadata=null + IDLE playback; the reducer maps null track → Empty.
         assertEquals(PlayerStatusState.Empty, viewModel.state.first())
     }
@@ -56,7 +57,7 @@ class PlayerStatusViewModelTest {
     @Test
     fun `metadata plus PLAYING state produces a visible row with title and isPlaying true`() = runTest {
         val director = FakeDirector()
-        val viewModel = PlayerStatusViewModel(director)
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
 
         director.emitMetadata(trackOf("Schala"))
         director.emitPlayback(PlayerState.PLAYING)
@@ -74,7 +75,7 @@ class PlayerStatusViewModelTest {
         // Documented in the reducer: BUFFERING counts as "playing" for the play/pause toggle but
         // also as buffering for the spinner. Both true together.
         val director = FakeDirector()
-        val viewModel = PlayerStatusViewModel(director)
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
 
         director.emitMetadata(trackOf("Schala"))
         director.emitPlayback(PlayerState.BUFFERING)
@@ -88,7 +89,7 @@ class PlayerStatusViewModelTest {
     @Test
     fun `ERROR state surfaces isError and clears the play affordance`() = runTest {
         val director = FakeDirector()
-        val viewModel = PlayerStatusViewModel(director)
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
 
         director.emitMetadata(trackOf("Schala"))
         director.emitPlayback(PlayerState.ERROR)
@@ -104,7 +105,7 @@ class PlayerStatusViewModelTest {
         // player is dormant. Without this the bar would animate in only to read "Unknown" + a
         // stale title on cold start.
         val director = FakeDirector()
-        val viewModel = PlayerStatusViewModel(director)
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
 
         director.emitMetadata(trackOf("Schala"))
         director.emitPlayback(PlayerState.IDLE)
@@ -119,7 +120,7 @@ class PlayerStatusViewModelTest {
         // The reducer renders `artists?.joinToString(", ")` — verify the separator is the one
         // the row's caption renders, since the now-playing UI hangs the second artist off this.
         val director = FakeDirector()
-        val viewModel = PlayerStatusViewModel(director)
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
 
         director.emitMetadata(trackOf("Theme", artistNames = listOf("Composer A", "Composer B")))
         director.emitPlayback(PlayerState.PLAYING)
@@ -133,7 +134,7 @@ class PlayerStatusViewModelTest {
         // The Track model's artists field is nullable — orEmpty() means a missing list collapses
         // to "" rather than "null" or crashing the joinToString.
         val director = FakeDirector()
-        val viewModel = PlayerStatusViewModel(director)
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
 
         director.emitMetadata(trackOf("Theme", artistNames = null))
         director.emitPlayback(PlayerState.PLAYING)
@@ -143,33 +144,50 @@ class PlayerStatusViewModelTest {
     }
 
     @Test
-    fun `onPlayPauseClicked while playing dispatches pause`() = runTest {
+    fun `PlayPauseClicked action while playing dispatches pause`() = runTest {
         val director = FakeDirector()
-        val viewModel = PlayerStatusViewModel(director)
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
 
         director.emitMetadata(trackOf("Schala"))
         director.emitPlayback(PlayerState.PLAYING)
         // Let the state catch up to PLAYING before the click.
         viewModel.state.first { it.isPlaying }
 
-        viewModel.onPlayPauseClicked()
+        viewModel.sendAction(PlayerStatusAction.PlayPauseClicked)
 
         assertEquals(1, director.pauseCalls)
         assertEquals(0, director.playCalls)
     }
 
     @Test
-    fun `onPlayPauseClicked while paused dispatches play`() = runTest {
+    fun `PlayPauseClicked action while paused dispatches play`() = runTest {
         val director = FakeDirector()
-        val viewModel = PlayerStatusViewModel(director)
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
 
         director.emitMetadata(trackOf("Schala"))
         director.emitPlayback(PlayerState.PAUSED)
         viewModel.state.first { !it.isPlaying && it.visible }
 
-        viewModel.onPlayPauseClicked()
+        viewModel.sendAction(PlayerStatusAction.PlayPauseClicked)
 
         assertEquals(1, director.playCalls)
+        assertEquals(0, director.pauseCalls)
+    }
+
+    @Test
+    fun `CardClicked action toggles no playback but is accepted`() = runTest {
+        // Navigation is the host's job; the VM only logs the action. Verify it doesn't touch
+        // the director (no play/pause leaking out of a card tap).
+        val director = FakeDirector()
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
+
+        director.emitMetadata(trackOf("Schala"))
+        director.emitPlayback(PlayerState.PLAYING)
+        viewModel.state.first { it.isPlaying }
+
+        viewModel.sendAction(PlayerStatusAction.CardClicked)
+
+        assertEquals(0, director.playCalls)
         assertEquals(0, director.pauseCalls)
     }
 
@@ -177,7 +195,7 @@ class PlayerStatusViewModelTest {
     fun `metadata becoming null collapses back to Empty`() = runTest {
         // Session teardown emits a null metadata — the row should hide.
         val director = FakeDirector()
-        val viewModel = PlayerStatusViewModel(director)
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
 
         director.emitMetadata(trackOf("Schala"))
         director.emitPlayback(PlayerState.PLAYING)
