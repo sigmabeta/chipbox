@@ -14,6 +14,7 @@
 #   scripts/verify.sh                 # run everything
 #   scripts/verify.sh static-analysis unit-test   # run only the named task(s)
 #   scripts/verify.sh --skip-apps     # everything except the heavy app builds (debug APK + desktop dist)
+#   scripts/verify.sh --rerun         # force every task to re-run (Gradle --rerun-tasks; ignores cache/up-to-date)
 #   scripts/verify.sh --list          # list task names
 #   VERIFY_OUT=/tmp/v scripts/verify.sh           # override the output folder
 #
@@ -48,15 +49,21 @@ APP_BUILD_TASKS="release-jvm apk"
 # ---- arg parsing -----------------------------------------------------------
 filter=()
 skip_apps=0
+rerun=0
 for arg in "$@"; do
   case "$arg" in
-    -h|--help) sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"; exit 0 ;;
     --list) printf '%s\n' "${ALL_TASKS[@]%%|*}"; exit 0 ;;
     --skip-apps) skip_apps=1 ;;
+    --rerun|--rerun-tasks) rerun=1 ;;
     -*) echo "unknown option: $arg" >&2; exit 2 ;;
     *) filter+=("$arg") ;;
   esac
 done
+
+# --rerun forces every task to re-execute via Gradle's --rerun-tasks (ignores up-to-date AND
+# build-cache hits), so the run reflects a from-scratch build rather than cached/incremental results.
+[ "$rerun" = 1 ] && GRADLE_FLAGS+=(--rerun-tasks)
 
 selected=()
 for entry in "${ALL_TASKS[@]}"; do
