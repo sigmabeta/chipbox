@@ -10,6 +10,8 @@ import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
 import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
+import net.sigmabeta.sage.analytics.Analytics
+import net.sigmabeta.sage.analytics.NoopAnalytics
 import net.sigmabeta.sage.android.logging.AndroidHatchet
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
@@ -30,6 +32,12 @@ object AndroidAppModule {
     @Provides
     @SingleIn(AppScope::class)
     fun provideHatchet(): Hatchet = AndroidHatchet()
+
+    // Chipbox's Android build ships no real analytics backend — bind the no-op impl (now in
+    // common:analytics). This replaces the former :fake:analytics module's contributed binding.
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideAnalytics(hatchet: Hatchet): Analytics = NoopAnalytics(hatchet)
 
     @Provides
     @SingleIn(AppScope::class)
