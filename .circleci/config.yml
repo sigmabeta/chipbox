@@ -78,6 +78,33 @@ commands:
           name: Install host C/C++ toolchain (gcc/g++/make for JVM native libs)
           command: sudo apt-get update && sudo apt-get install -y build-essential
 
+  # CMake and the NDK are large SDK packages the release jobs re-provision every run (install_cmake
+  # downloads CMake; AGP auto-installs the NDK from `ndkVersion`). The native *build* is cacheable
+  # now, but the *tools* aren't — so cache the SDK package dirs across runs. The key is the checksum
+  # of NativeEmulators.kt (where the CMake/NDK versions live), so a version bump auto-busts it and no
+  # fallback key can restore a stale version. On a hit, "installing" becomes a fast restore instead
+  # of a download (the NDK is ~1 GB). `package` is the SDK dir name: "cmake" or "ndk".
+  #
+  # NOTE: assumes CircleCI expands $ANDROID_HOME in cache paths. If a first CI run shows the cache
+  # not populating, replace it with the literal SDK path (echo $ANDROID_HOME on the box).
+  restore_sdk_package:
+    parameters:
+      package:
+        type: string
+    steps:
+      - restore_cache:
+          keys:
+            - sdk-<< parameters.package >>-v1-{{ checksum "build-logic/convention/src/main/kotlin/NativeEmulators.kt" }}
+  save_sdk_package:
+    parameters:
+      package:
+        type: string
+    steps:
+      - save_cache:
+          key: sdk-<< parameters.package >>-v1-{{ checksum "build-logic/convention/src/main/kotlin/NativeEmulators.kt" }}
+          paths:
+            - $ANDROID_HOME/<< parameters.package >>
+
   # Sweep every module's `build/reports/` (ktlint, detekt, html test reports, lint,
   # whatever lives there) into one tree keyed by module path. Runs `when: always`
   # so a failing check still ships its report. `./sage` is the vendored submodule
@@ -398,6 +425,12 @@ jobs:
 
     steps:
       - attach_built_workspace
+      # Restore the SDK CMake + NDK before provisioning them, so install_cmake and AGP's NDK
+      # auto-install become fast cache restores instead of downloads (the NDK is ~1 GB).
+      - restore_sdk_package:
+          package: cmake
+      - restore_sdk_package:
+          package: ndk
       # assembleRelease builds the emulator modules' native code via CMake.
       - install_cmake
       # Release signing reads CHIPBOX_KEY_ALIAS / CHIPBOX_KEYSTORE_PASSWORD /
@@ -408,6 +441,11 @@ jobs:
           # The release-graph compiles are remote-cache hits from android-lint; this job
           # adds the assemble-only work (dexing, resource/APK packaging, native build).
           command: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --configuration-cache --no-daemon --max-workers=4
+      # Repopulate the tool caches — AGP installed the NDK during the build above.
+      - save_sdk_package:
+          package: cmake
+      - save_sdk_package:
+          package: ndk
       - store_artifacts:
           path: apps/android/build/outputs/apk/release
           destination: outputs
@@ -430,7 +468,10 @@ jobs:
       - attach_built_workspace
       # installDist host-builds the 7 emulator native libs (host CMake + gcc/g++)
       # and bundles them into the distribution. cmake comes from the SDK package;
-      # the host C/C++ toolchain from apt.
+      # the host C/C++ toolchain from apt. No NDK here — the host build targets the
+      # build machine, not Android.
+      - restore_sdk_package:
+          package: cmake
       - install_cmake
       - install_host_toolchain
       - run:
@@ -438,6 +479,8 @@ jobs:
           # Every Kotlin compile is a remote-cache hit (shared-build pushed them),
           # so this job's real work is just the host native build + the distribution.
           command: ./gradlew :apps:jvm:installDist --build-cache --configuration-cache --no-daemon --max-workers=4
+      - save_sdk_package:
+          package: cmake
       - store_artifacts:
           path: apps/jvm/build/install
           destination: jvm-dist
