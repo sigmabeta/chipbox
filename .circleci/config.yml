@@ -310,13 +310,15 @@ jobs:
 
     steps:
       - attach_built_workspace
-      # lintRelease pulls dependency AARs, which builds the emulator native libs.
-      - install_cmake
       - run:
           name: Run Android Lint checks
-          # lintRelease and assembleRelease compile the same release graph; the
-          # compiles land in the remote build cache here, so build-release-apk hits them.
-          command: ./gradlew :apps:android:lintRelease --build-cache --configuration-cache --no-daemon --max-workers=4
+          # lintRelease and assembleRelease compile the same release graph; those Kotlin compiles
+          # land in the remote build cache here, so build-release-apk hits them. -Pchipbox.skipNative
+          # skips the emulator CMake/NDK build: AGP's externalNativeBuild tasks aren't cacheable and
+          # lint analyzes code (not the .so libs), so building native here is pure duplicated cost —
+          # build-release-apk is the one job that actually needs the native libs. (No CMake install
+          # needed as a result.)
+          command: ./gradlew :apps:android:lintRelease --build-cache --configuration-cache --no-daemon --max-workers=4 -Pchipbox.skipNative
       # Existing apps/android/build/reports/ kept verbatim so its CircleCI URL
       # stays stable for anyone with a bookmark; the broader collect_reports
       # below picks up any other module that produced reports during lintRelease
