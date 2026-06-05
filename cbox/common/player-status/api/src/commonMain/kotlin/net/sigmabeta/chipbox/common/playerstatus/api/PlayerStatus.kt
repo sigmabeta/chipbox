@@ -110,8 +110,14 @@ fun PlayerStatus(
         ) {
             PlayerStatusCard(
                 state = state,
-                onPlayPauseClicked = viewModel::onPlayPauseClicked,
-                onClick = onClick,
+                onPlayPauseClicked = {
+                    viewModel.sendAction(PlayerStatusAction.PlayPauseClicked)
+                },
+                onClick = {
+                    // Log the intent through the VM, then let the host navigate.
+                    viewModel.sendAction(PlayerStatusAction.CardClicked)
+                    onClick()
+                },
             )
         }
     }
