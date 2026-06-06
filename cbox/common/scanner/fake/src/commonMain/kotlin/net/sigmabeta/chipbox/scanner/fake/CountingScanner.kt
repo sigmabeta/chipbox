@@ -21,7 +21,7 @@ import net.sigmabeta.chipbox.scanner.state.ScannerState
  * react to scan progress (e.g. SettingsViewModel's rescanStatus, RescanStatusViewModel).
  */
 class CountingScanner(
-    dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    dispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) : Scanner(dispatcher = dispatcher) {
 
     var startCount: Int = 0
