@@ -13,10 +13,11 @@ application {
 // CLI's scan path touches — every chiptune format is parsed by pure-Kotlin readers — so the CLI
 // needs exactly libvgmstream.so on java.library.path. Rather than duplicate apps/jvm's host-CMake
 // machinery (cmake/JDK probing, hostshim, per-emulator tasks), reuse the .so that module already
-// builds: depend on its `nativeEmulatorVgmstream` task and point java.library.path at its output
-// dir. (vgmstream needs no android/log hostshim, so that single task is self-sufficient here.)
-val jvmNativeLibsDir = project(":apps:jvm").layout.projectDirectory.dir("libs").asFile
-val buildVgmstreamLib = ":apps:jvm:nativeEmulatorVgmstream"
+// builds: depend on its single-emulator `buildHostNativeVgmstream` task (from the shared
+// chipbox.native.host plugin) and point java.library.path at that task's output dir.
+val jvmNativeLibsDir = project(":apps:jvm").layout.buildDirectory
+    .dir("jvm-native/out/vgmstream/host").get().asFile
+val buildVgmstreamLib = ":apps:jvm:buildHostNativeVgmstream"
 
 // Mordant's interactive folder picker enters raw terminal mode, which needs a real TTY on stdin.
 // `gradlew run` forks a JVM whose stdin is detached by default; wiring System.in through lets the
