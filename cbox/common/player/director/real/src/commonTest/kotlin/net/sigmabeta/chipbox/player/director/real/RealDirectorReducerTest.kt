@@ -156,6 +156,38 @@ class RealDirectorReducerTest {
     }
 
     @Test
+    fun `the first buffer of a restored session lands PAUSED without starting the speaker`() = runTest {
+        // Restore loads the track but resumes paused: the first Emitting while BUFFERING with a
+        // pending offset must NOT issue SpeakerPlay (that would start audio) — it lands PAUSED and
+        // keeps pendingResumeMs for the first play() to seek to.
+        val director = newDirector(tracks = 1)
+        val model = bufferingModel(setlist = listOf(1L), position = 0, pendingResumeMs = 30_000L)
+
+        val (next, effects) = director.reduce(model, GeneratorEvent.Emitting(producedMs = 100L, trackId = 1L))
+
+        assertEquals(PlayerState.PAUSED, next.playback.state)
+        assertEquals(30_000L, next.pendingResumeMs, "offset kept for the first play() to seek to")
+        assertEquals(listOf(RealDirector.Effect.CancelWatchdog), effects, "speaker must not start")
+        director.release()
+    }
+
+    @Test
+    fun `the first buffer of a normal session kicks the speaker`() = runTest {
+        // The non-restore counterpart: no pending offset, so the first buffer while BUFFERING starts
+        // the speaker as usual.
+        val director = newDirector(tracks = 1)
+        val model = bufferingModel(setlist = listOf(1L), position = 0, pendingResumeMs = null)
+
+        val (_, effects) = director.reduce(model, GeneratorEvent.Emitting(producedMs = 100L, trackId = 1L))
+
+        assertEquals(
+            listOf(RealDirector.Effect.SpeakerPlay, RealDirector.Effect.ArmWatchdog),
+            effects,
+        )
+        director.release()
+    }
+
+    @Test
     fun `Rendering re-arms the watchdog only when the watermark advances`() = runTest {
         val director = newDirector(tracks = 1)
         val model = playingModel(setlist = listOf(1L), position = 0).copy(lastRenderProgressMs = 1_000L)
@@ -205,6 +237,30 @@ class RealDirectorReducerTest {
         setlist = setlist,
         consecutiveFailures = 0,
         lastRenderProgressMs = 0L,
+    )
+
+    private fun bufferingModel(
+        setlist: List<Long>,
+        position: Int,
+        pendingResumeMs: Long?,
+    ): RealDirector.Model = RealDirector.Model(
+        playback = ChipboxPlaybackState(
+            state = PlayerState.BUFFERING,
+            position = 0L,
+            generatorProducedMs = 0L,
+            playbackSpeed = 1.0f,
+            skipForwardAllowed = false,
+        ),
+        session = Session(
+            type = SessionType.SETLIST,
+            contentId = 0L,
+            explicitSetlist = setlist,
+            currentPosition = position,
+        ),
+        setlist = setlist,
+        consecutiveFailures = 0,
+        lastRenderProgressMs = 0L,
+        pendingResumeMs = pendingResumeMs,
     )
 
     private fun trackOf(id: Long): Track = Track(

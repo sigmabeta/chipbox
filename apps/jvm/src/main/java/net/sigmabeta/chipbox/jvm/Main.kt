@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.jvm
 
 import dev.zacsweers.metro.createGraphFactory
 import java.io.File
+import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.jvm.di.JvmChipboxGraph
 import net.sigmabeta.chipbox.jvm.mediasession.createDesktopMediaControls
 import net.sigmabeta.chipbox.utils.appDataDir
@@ -16,7 +17,22 @@ private const val LIBRARY_DB_NAME = "library.sqlite"
 fun main() {
     val graph = buildGraph()
     installMediaControls(graph)
+    installSessionPersistence(graph)
     runDesktop(graph)
+}
+
+/**
+ * Desktop equivalent of the Android playback service's restore/observe/teardown wiring: bring the
+ * last session back (loaded but paused) on launch, keep the saved snapshot in step with playback,
+ * and write a final snapshot on JVM exit so "closed while playing" still resumes next time. The
+ * shutdown hook writes synchronously through [net.sigmabeta.chipbox.jvm.JvmStorage] (a window-close
+ * runs `exitApplication`, ending the JVM rather than returning to `main`).
+ */
+private fun installSessionPersistence(graph: JvmChipboxGraph) {
+    val persister = graph.playbackSessionPersister
+    persister.observe()
+    graph.appScope.launch { persister.restore() }
+    Runtime.getRuntime().addShutdownHook(Thread(persister::snapshotNow))
 }
 
 /**

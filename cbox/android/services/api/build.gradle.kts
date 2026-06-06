@@ -15,5 +15,6 @@ dependencies {
     implementation(projects.cbox.android.artworkprovider.api)
     implementation(projects.cbox.common.player.common.api)
     implementation(projects.cbox.common.player.director.api)
+    implementation(projects.cbox.common.player.persistence.api)
     implementation(projects.cbox.common.repository.api)
 }

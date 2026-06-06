@@ -136,6 +136,9 @@ dependencies {
     // for the Metro graph; without :di the binding isn't on the classpath and feature VMs
     // that take a Director fail to resolve.
     implementation(projects.cbox.common.player.director.di)
+    // PlaybackSessionModule binds the session store + persister (save/restore last session) into
+    // the graph; Main.kt restores on launch and snapshots on shutdown. Storage is JvmStorage.
+    implementation(projects.cbox.common.player.persistence.di)
     // SourceDataLineSpeaker (the JVM/desktop Speaker) now lives in the shared player:speaker:real
     // module's jvmMain alongside the Android AudioTrack impl in androidMain.
     implementation(projects.cbox.common.player.speaker.real)

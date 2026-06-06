@@ -89,6 +89,7 @@ open class FakeDirector : Director {
     val setShuffledCalls: MutableList<Boolean> = mutableListOf()
     val setRepeatModeCalls: MutableList<RepeatMode> = mutableListOf()
     val duckCalls: MutableList<Unit> = mutableListOf()
+    val restoreCalls: MutableList<Pair<Session, Long>> = mutableListOf()
 
     override fun metadataState(): SharedFlow<Track?> = metadataSink.asSharedFlow()
     override fun playbackState(): SharedFlow<ChipboxPlaybackState> = playbackSink.asSharedFlow()
@@ -97,6 +98,9 @@ open class FakeDirector : Director {
 
     override fun start(session: Session) = Unit
     override fun start(setlist: List<Long>, startingPosition: Int, sourceName: String?, shuffled: Boolean) = Unit
+    override fun restore(session: Session, positionMs: Long) {
+        restoreCalls += session to positionMs
+    }
 
     // Director overrides above stay non-final on the bookkeeping methods that some tests want to
     // record (e.g. SearchVM's setlist path); the rest stay as no-ops/counters.

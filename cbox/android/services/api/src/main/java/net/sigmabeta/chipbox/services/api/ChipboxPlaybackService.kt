@@ -9,7 +9,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.sage.logging.Hatchet
 
 class ChipboxPlaybackService : MediaLibraryService() {
@@ -19,6 +21,7 @@ class ChipboxPlaybackService : MediaLibraryService() {
     private lateinit var libraryBrowser: LibraryBrowser
     private lateinit var director: Director
     private lateinit var hatchet: Hatchet
+    private lateinit var sessionPersister: PlaybackSessionPersister
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -36,6 +39,7 @@ class ChipboxPlaybackService : MediaLibraryService() {
         libraryBrowser = graph.libraryBrowser()
         director = graph.director()
         hatchet = graph.hatchet()
+        sessionPersister = graph.playbackSessionPersister()
 
         hatchet.i("Starting service...")
 
@@ -48,11 +52,19 @@ class ChipboxPlaybackService : MediaLibraryService() {
         val receiver = BecomingNoisyReceiver { player.pauseFromBecomingNoisy() }
         registerReceiver(receiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
         noisyReceiver = receiver
+
+        // Bring back the last session (loaded but paused) and keep the saved snapshot in step
+        // with playback for the rest of the service's life.
+        sessionPersister.observe()
+        serviceScope.launch { sessionPersister.restore() }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session
 
     override fun onTaskRemoved(rootIntent: Intent?) {
+        // App swiped away — the realistic "closed while still playing". Capture the position now
+        // (a pause may never have happened) so the next launch resumes where we left off.
+        sessionPersister.snapshotNow()
         val player = directorPlayer
         if (player == null || !player.playWhenReady) {
             stopSelf()
@@ -61,6 +73,7 @@ class ChipboxPlaybackService : MediaLibraryService() {
 
     override fun onDestroy() {
         hatchet.i("Destroying service...")
+        sessionPersister.snapshotNow()
         noisyReceiver?.let {
             try {
                 unregisterReceiver(it)

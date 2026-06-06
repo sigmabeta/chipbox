@@ -41,6 +41,16 @@ interface Director {
         shuffled: Boolean = false,
     )
 
+    /**
+     * Restore a previously-saved [session] without auto-playing: resolves the setlist, loads the
+     * track the session points at, and lands in [PlayerState.PAUSED] showing [positionMs] — the
+     * speaker never starts, so launch is silent. The saved offset is applied as a seek the first
+     * time the user hits [play], so resume picks up exactly where it left off. Used on app
+     * launch to bring the last session back. No-op if the session resolves to an empty setlist or
+     * no startable track.
+     */
+    fun restore(session: Session, positionMs: Long)
+
     /** Resume the current session if paused, or (re)attach the speaker to the buffer stream. */
     fun play()
 

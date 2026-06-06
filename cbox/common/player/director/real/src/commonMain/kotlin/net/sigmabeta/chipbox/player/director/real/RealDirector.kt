@@ -96,6 +96,12 @@ class RealDirector(
         /** Highest render watermark (ms) seen for the current track, so a render that's still
          *  advancing (healthy uncached seek) can be told apart from a wedged one. */
         val lastRenderProgressMs: Long,
+        /** Set by [restore]: a saved offset (ms) to resume a restored-but-paused session at.
+         *  While non-null the session is "loaded, paused, waiting for the user to press play" —
+         *  the first buffer lands in PAUSED instead of PLAYING, the paused position display shows
+         *  this value, and the first [play] seeks here before starting the speaker. Cleared the
+         *  moment the restore is consumed (play) or invalidated (new session / track jump / seek). */
+        val pendingResumeMs: Long? = null,
     )
 
     private var model = Model(
@@ -228,7 +234,10 @@ class RealDirector(
      *  played audio) and re-emit the playback (and, when it changed, the session). */
     private fun commit(next: Model) {
         val sessionChanged = model.session != next.session
-        val stampedPlayback = next.playback.copy(position = speaker.currentPositionMs())
+        // While a restore is pending the speaker hasn't played a frame (position 0), so anchor the
+        // paused progress bar to the saved offset until the first play() seeks there for real.
+        val position = next.pendingResumeMs ?: speaker.currentPositionMs()
+        val stampedPlayback = next.playback.copy(position = position)
         model = next.copy(playback = stampedPlayback)
         directorScope.launch { playbackStateMutable.emit(stampedPlayback) }
         if (sessionChanged) {
@@ -269,7 +278,15 @@ class RealDirector(
             val setlistForSession = getSetlistForSession(session)
                 .let { if (session.shuffled) it.shuffled() else it }
 
-            commit(model.copy(session = session, setlist = setlistForSession, consecutiveFailures = 0))
+            commit(
+                model.copy(
+                    session = session,
+                    setlist = setlistForSession,
+                    consecutiveFailures = 0,
+                    // A fresh user-initiated session supersedes any pending restore.
+                    pendingResumeMs = null,
+                ),
+            )
 
             val firstTrackId = when {
                 session.startingTrackId != null -> session.startingTrackId
@@ -306,6 +323,48 @@ class RealDirector(
         }
     }
 
+    override fun restore(session: Session, positionMs: Long) {
+        directorScope.launch {
+            val setlistForSession = getSetlistForSession(session)
+                .let { if (session.shuffled) it.shuffled() else it }
+
+            if (setlistForSession.isEmpty()) {
+                hatchet.w("restore: session resolved to an empty setlist; nothing to restore.")
+                return@launch
+            }
+
+            // Mirror start()'s starting-track resolution, but record the saved offset so the first
+            // buffer lands paused (see reduceGeneratorEmitting) and the first play() seeks here.
+            commit(
+                model.copy(
+                    session = session,
+                    setlist = setlistForSession,
+                    consecutiveFailures = 0,
+                    pendingResumeMs = positionMs.coerceAtLeast(0L),
+                ),
+            )
+
+            val firstTrackId = when {
+                session.startingTrackId != null -> session.startingTrackId
+                session.currentPosition != null -> setlistForSession.getOrNull(session.currentPosition!!)
+                session.startingPosition != null -> setlistForSession.getOrNull(session.startingPosition!!)
+                session.type == SessionType.SINGLE_TRACK -> session.contentId
+                else -> null
+            }
+
+            if (firstTrackId == null) {
+                hatchet.w("restore: could not resolve a track to restore; ignoring.")
+                commit(model.copy(session = null, setlist = null, pendingResumeMs = null))
+                return@launch
+            }
+
+            val startingPosition = setlistForSession.indexOfFirst { it == firstTrackId }
+                .takeIf { it >= 0 } ?: 0
+            commit(model.copy(session = session.copy(currentPosition = startingPosition)))
+            generator.startTrack(firstTrackId)
+        }
+    }
+
     private fun PlayerState.hasActiveAudio(): Boolean = when (this) {
         PlayerState.PLAYING, PlayerState.BUFFERING, PlayerState.PAUSED, PlayerState.ENDING -> true
         PlayerState.IDLE, PlayerState.STOPPED, PlayerState.ERROR -> false
@@ -339,11 +398,29 @@ class RealDirector(
         directorScope.launch {
             when (model.playback.state) {
                 PlayerState.PAUSED -> {
-                    speaker.play()
-                    commit(model.copy(playback = model.playback.copy(state = PlayerState.PLAYING)))
-                    generator.play()
-                    // Audio should resume flowing, so guard for a stall again until it does.
-                    armStallWatchdog()
+                    val resumeMs = model.pendingResumeMs
+                    if (resumeMs != null) {
+                        // First play of a restored session: jump to the saved offset before any
+                        // audio is heard. generator.seek repositions the source; speaker.seek
+                        // drains the buffer the generator pre-filled at position 0 and starts the
+                        // consume loop — resume and seek in one step. Clearing pendingResumeMs
+                        // makes every later pause/resume behave normally.
+                        commit(
+                            model.copy(
+                                pendingResumeMs = null,
+                                playback = model.playback.copy(state = PlayerState.PLAYING),
+                            ),
+                        )
+                        generator.seek(resumeMs)
+                        speaker.seek()
+                        armStallWatchdog()
+                    } else {
+                        speaker.play()
+                        commit(model.copy(playback = model.playback.copy(state = PlayerState.PLAYING)))
+                        generator.play()
+                        // Audio should resume flowing, so guard for a stall again until it does.
+                        armStallWatchdog()
+                    }
                 }
 
                 // A finished setlist ends in STOPPED with the generator loop and speaker sink both
@@ -432,6 +509,8 @@ class RealDirector(
 
     override fun seek(positionMs: Long) {
         directorScope.launch {
+            // An explicit seek supersedes a pending restore offset (the user chose a new spot).
+            if (model.pendingResumeMs != null) commit(model.copy(pendingResumeMs = null))
             generator.seek(positionMs)
             speaker.seek()
         }
@@ -461,6 +540,7 @@ class RealDirector(
 
             if (withinTrackPosition > SKIP_BACK_THRESHOLD_MS || setlistPosition <= 0) {
                 // Restart of the current track — no track change, so a plain in-track seek.
+                if (model.pendingResumeMs != null) commit(model.copy(pendingResumeMs = null))
                 generator.seek(0L)
                 speaker.seek()
                 return@launch
@@ -482,7 +562,9 @@ class RealDirector(
     private suspend fun switchToTrack(advanced: Model, trackId: Long) {
         cancelStallWatchdog()
         generator.stop()
-        commit(advanced)
+        // Jumping to a different track invalidates any pending restore offset (it was for the
+        // track we're leaving), so the next play() resumes the new track from the top.
+        commit(advanced.copy(pendingResumeMs = null))
         generator.startTrack(trackId)
         speaker.switchTo(trackId)
     }
@@ -735,6 +817,23 @@ class RealDirector(
         val currentTrackId = currentTrackId(m)
         if (currentTrackId != null && event.trackId != currentTrackId) {
             return m.with()
+        }
+
+        // A restored session reaches its first buffer "loaded but paused": land in PAUSED without
+        // starting the speaker, so launch stays silent. pendingResumeMs is intentionally kept — the
+        // first play() consumes it as a seek to the saved offset. Only this first buffer matters;
+        // once PAUSED, later Emittings fall through to the normal watermark update below (their
+        // ArmWatchdog no-ops while paused).
+        if (m.playback.state == PlayerState.BUFFERING && m.pendingResumeMs != null) {
+            return m.copy(
+                consecutiveFailures = 0,
+                lastRenderProgressMs = maxOf(m.lastRenderProgressMs, event.cachedMs),
+                playback = m.playback.copy(
+                    state = PlayerState.PAUSED,
+                    generatorProducedMs = event.producedMs,
+                    cachedMs = event.cachedMs,
+                ),
+            ).with(Effect.CancelWatchdog)
         }
 
         // The current track is producing audio — the failure streak is broken and the stall guard

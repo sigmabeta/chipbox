@@ -43,4 +43,5 @@ class ChipboxApplication :
     override fun libraryBrowser() = appGraph.libraryBrowser
     override fun director() = appGraph.director
     override fun hatchet() = appGraph.hatchet
+    override fun playbackSessionPersister() = appGraph.playbackSessionPersister
 }
