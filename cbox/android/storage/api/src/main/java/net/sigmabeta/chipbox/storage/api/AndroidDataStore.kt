@@ -29,7 +29,11 @@ class ChipboxDataStore(
 
     override fun savedStringFlow(key: String): Flow<String?> = dataStore
         .data
-        .map { it[stringPreferencesKey(key)] }
+        .map {
+            val savedString = it[stringPreferencesKey(key)]
+            hatchet.v("Loading from storage: $key -> $savedString")
+            savedString
+        }
 
     override fun saveInt(key: String, value: Int) {
         coroutineScope.launch(dispatchers.disk) {
@@ -41,5 +45,9 @@ class ChipboxDataStore(
 
     override fun savedIntFlow(key: String): Flow<Int?> = dataStore
         .data
-        .map { it[intPreferencesKey(key)] }
+        .map {
+            val savedInt = it[intPreferencesKey(key)]
+            hatchet.v("Loading from storage: $key -> $savedInt")
+            savedInt
+        }
 }
