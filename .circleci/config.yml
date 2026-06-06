@@ -97,8 +97,12 @@ commands:
   # fallback key can restore a stale version. On a hit, "installing" becomes a fast restore instead
   # of a download (the NDK is ~1 GB). `package` is the SDK dir name: "cmake" or "ndk".
   #
-  # NOTE: assumes CircleCI expands $ANDROID_HOME in cache paths. If a first CI run shows the cache
-  # not populating, replace it with the literal SDK path (echo $ANDROID_HOME on the box).
+  # NOTE: CircleCI does NOT expand environment variables in cache `paths`. A `$ANDROID_HOME/cmake`
+  # entry resolved to the literal `/home/circleci/project/$ANDROID_HOME/cmake`, found nothing, and
+  # archived an empty 16-byte cache — so installs silently re-downloaded every run. The SDK lives at
+  # /home/circleci/android-sdk (a real image-level ENV on cimg/android), so the path is hardcoded.
+  # Key bumped to `-v2-` because the broken `-v1-` empty archives are immutable under their key and
+  # would otherwise never be replaced (a restore would hit the empty cache and the save would no-op).
   restore_sdk_package:
     parameters:
       package:
@@ -106,16 +110,16 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - sdk-<< parameters.package >>-v1-{{ checksum "build-logic/convention/src/main/kotlin/NativeEmulators.kt" }}
+            - sdk-<< parameters.package >>-v2-{{ checksum "build-logic/convention/src/main/kotlin/NativeEmulators.kt" }}
   save_sdk_package:
     parameters:
       package:
         type: string
     steps:
       - save_cache:
-          key: sdk-<< parameters.package >>-v1-{{ checksum "build-logic/convention/src/main/kotlin/NativeEmulators.kt" }}
+          key: sdk-<< parameters.package >>-v2-{{ checksum "build-logic/convention/src/main/kotlin/NativeEmulators.kt" }}
           paths:
-            - $ANDROID_HOME/<< parameters.package >>
+            - /home/circleci/android-sdk/<< parameters.package >>
 
   # Gradle's configuration cache lives in the project-local `.gradle/configuration-cache`
   # (one entry per distinct task-graph request). CI containers are throwaway, so without
