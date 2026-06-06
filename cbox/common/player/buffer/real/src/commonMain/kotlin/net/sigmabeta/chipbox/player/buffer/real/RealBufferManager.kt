@@ -127,6 +127,24 @@ class RealBufferManager(
         )
     }
 
+    override suspend fun reset() {
+        // Drop the pool and forget the rate so the next setSampleRate rebuilds a full empty pool
+        // unconditionally. Closing the old channels wakes any consumer parked in receive() (none at
+        // the cold-start call site) with ClosedReceiveChannelException; with pool now null there's
+        // nothing for it to half-read. See the doc on ProducerBufferManager.reset for why a
+        // surviving-process pool goes stale.
+        val old = pool
+        pool = null
+        old?.empty?.close()
+        old?.full?.close()
+        currentSampleRate = null
+        capacity.store(0)
+        emptyCount.store(0)
+        fullCount.store(0)
+        publishDebug()
+        hatchet.d("reset(): pool discarded; next setSampleRate rebuilds.")
+    }
+
     override suspend fun sendAudioBuffer(audioBuffer: AudioBuffer) {
         pool?.full?.send(audioBuffer)
         fullCount.fetchAndAdd(1)

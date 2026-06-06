@@ -126,7 +126,16 @@ abstract class BaseGenerator(
     override fun play() {
         if (ongoingGenerationJob == null) {
             updateDebug { it.copy(looping = true) }
+            // A fresh loop with no source loaded is a cold start (app launch / after stop), NOT a
+            // resume-after-pause — pause() cancels the loop but keeps currentSource, and a resume
+            // re-enters here with it still set. The buffer manager is a process singleton, so after
+            // the app is killed while the process survives its pool can be left drained at the same
+            // rate; setSampleRate would then no-op and getNextEmptyBuffer would block forever. Reset
+            // it on a cold start so the upcoming loadNextTrack rebuilds a full pool. (Track changes
+            // keep the loop running, so they never reach this branch and never reset mid-playback.)
+            val coldStart = currentSource == null
             ongoingGenerationJob = generatorScope.launch {
+                if (coldStart) bufferManager.reset()
                 loop()
             }
         } else {
