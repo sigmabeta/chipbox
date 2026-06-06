@@ -51,6 +51,16 @@ class RealPlaybackSessionPersister(
     @Volatile
     private var latest: Snapshotable? = null
 
+    /** Set by [snapshotNow] (the teardown net). Tearing the service down releases the player, which
+     *  emits [PlayerState.STOPPED]; the observer would read that as an explicit stop and `clear()`
+     *  the snapshot [snapshotNow] just wrote — losing the session we meant to resume. While this is
+     *  true the observer treats a STOPPED as a teardown artifact and does NOT clear. It resets when
+     *  genuine playback resumes (a PLAYING tick) or on the next [restore], so a real user-stop or a
+     *  setlist playing to its end still clears as before. `@Volatile`: written from the teardown
+     *  thread, read by the collector. */
+    @Volatile
+    private var tearingDown = false
+
     /** Stop observing and cancel the scope. Unused in production (the singleton lives for the
      *  process); here so tests can tear the collector down. */
     fun release() {
@@ -58,6 +68,9 @@ class RealPlaybackSessionPersister(
     }
 
     override suspend fun restore() {
+        // A fresh restore means we're live again — any teardown suppression from a previous service
+        // lifetime (the persister is a process singleton) no longer applies.
+        tearingDown = false
         val snapshot = runCatching { store.load() }
             .onFailure { hatchet.w("Failed to load saved session: $it") }
             .getOrNull()
@@ -85,8 +98,14 @@ class RealPlaybackSessionPersister(
             ) { session, playback, track -> Snapshotable(session, playback.state, playback.position, track) }
                 .collect { current ->
                     latest = current
+                    // Genuine playback resumed — cancel any teardown suppression so a later stop
+                    // clears normally (e.g. a backgrounded session that plays its setlist to the end).
+                    if (current.state == PlayerState.PLAYING) tearingDown = false
                     when {
-                        current.state == PlayerState.STOPPED -> store.clear()
+                        // Don't clear on a STOPPED that's just the player being released during
+                        // teardown — that would wipe the snapshot snapshotNow() wrote. A real
+                        // stop arrives with tearingDown == false (reset on the preceding PLAYING).
+                        current.state == PlayerState.STOPPED -> if (!tearingDown) store.clear()
 
                         previousState == PlayerState.PLAYING && current.state == PlayerState.PAUSED ->
                             current.session?.let {
@@ -102,6 +121,9 @@ class RealPlaybackSessionPersister(
         val current = latest ?: return
         val session = current.session ?: return
         if (current.state == PlayerState.STOPPED || current.state == PlayerState.IDLE) return
+        // Mark teardown BEFORE the save so the STOPPED the collector sees when the player is
+        // released next can't race ahead and clear what we're about to write.
+        tearingDown = true
         store.save(snapshotOf(session, current.track, current.positionMs))
     }
 
