@@ -313,19 +313,18 @@ jobs:
             - jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum "apps/android/build.gradle.kts" }}-{{ checksum "apps/jvm/build.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}
             - jars-v1-
       - run:
-          name: Resolve Android app dependencies
-          # Dependency resolution only — no compilation, so no native build.
-          # Populates ~/.gradle so downstream jobs resolve offline.
-          # `--no-build-cache`: this step does no cacheable compile work worth pushing to
-          # the remote cache, so skip the cache machinery entirely.
-          command: ./gradlew :apps:android:dependencies --configuration releaseRuntimeClasspath --no-configuration-cache --no-build-cache --no-daemon --max-workers=2
-      - run:
-          name: Resolve JVM app dependencies
-          # The JVM/desktop deps aren't in the Android release classpath, so warm
-          # them here too — otherwise shared-build AND build-release-jvm each
-          # re-download them (different boxes, neither persists modules-2).
-          # `--no-build-cache` for the same reason as the Android step above.
-          command: ./gradlew :apps:jvm:dependencies --configuration runtimeClasspath --no-configuration-cache --no-build-cache --no-daemon --max-workers=2
+          name: Resolve app dependencies (Android + JVM)
+          # Dependency resolution only — no compilation, so no native build. One Gradle invocation
+          # warms BOTH apps' classpaths into ~/.gradle so downstream jobs resolve offline, paying the
+          # (dominant) build configuration once instead of twice. The JVM/desktop deps aren't in the
+          # Android release classpath (Compose Desktop + Skia, Voyager, sqlite-bundled, metrox), so both
+          # must be resolved here — otherwise shared-build AND build-release-jvm each re-download the
+          # JVM-only delta (different boxes, neither persists modules-2). The two `:apps:*:dependencies`
+          # report tasks can't share one invocation (each needs a different `--configuration`), so each
+          # app instead registers a `resolveCiDependencies` task that resolves its own dependency graph;
+          # the unqualified task name runs both in this single invocation. `--no-build-cache`: no
+          # cacheable compile work here worth pushing to the remote cache, so skip the cache machinery.
+          command: ./gradlew resolveCiDependencies --no-configuration-cache --no-build-cache --no-daemon --max-workers=2
       - save_cache:
           key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum "apps/android/build.gradle.kts" }}-{{ checksum "apps/jvm/build.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}
           paths:

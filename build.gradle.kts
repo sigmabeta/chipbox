@@ -84,3 +84,32 @@ subprojects {
     }
 }
 
+// One-shot dependency warm-up for CI's `setup` job. `resolveCiDependencies` resolves an app's
+// runtime-classpath dependency GRAPH, downloading the component metadata + POMs into the Gradle
+// module cache — exactly what the old `:apps:*:dependencies` report task did. It deliberately
+// resolves `resolutionResult` (the graph) rather than `incoming.files` (the artifacts): forcing
+// artifact selection on the Android release classpath fails with variant ambiguity, because
+// picking the concrete jar/aar for each component is AGP-internal work the report task never did.
+//
+// The task is registered in each app project rather than the root because a configuration must be
+// resolved by its OWNING project — resolving `:apps:android:releaseRuntimeClasspath` from a root
+// task fails Gradle's "resolution without an exclusive lock" check. Both apps register the same
+// task name, so a single unqualified `./gradlew resolveCiDependencies` runs both in ONE invocation
+// — paying the dominant build-configuration cost once instead of the twice the two separate
+// `:apps:*:dependencies` runs cost (they couldn't share an invocation: the `dependencies` report
+// task takes a single `--configuration` and the two apps need different ones). The JVM/desktop deps
+// aren't in the Android release classpath (Compose Desktop + Skia, Voyager, sqlite-bundled, metrox),
+// so both classpaths must be warmed here.
+mapOf(
+    ":apps:android" to "releaseRuntimeClasspath",
+    ":apps:jvm" to "runtimeClasspath",
+).forEach { (path, configuration) ->
+    project(path).tasks.register("resolveCiDependencies") {
+        description = "Resolves this app's dependency graph to warm the Gradle module cache (CI warm-up)."
+        group = "ci"
+        doLast {
+            this.project.configurations.getByName(configuration).incoming.resolutionResult.root
+        }
+    }
+}
+
