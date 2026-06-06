@@ -11,7 +11,7 @@ import java.util.Properties
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * JVM analog of Android's `ChipboxDataStore` — a file-backed [Storage]. Per-key
+ * JVM analog of Android's `AndroidDataStore` — a file-backed [Storage]. Per-key
  * [MutableStateFlow]s give the UI the same reactive reads the Android DataStore does; a
  * `java.util.Properties` file under the work dir makes those values survive process death.
  *
