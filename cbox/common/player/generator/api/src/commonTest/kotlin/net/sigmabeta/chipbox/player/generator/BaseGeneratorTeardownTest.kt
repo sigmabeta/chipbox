@@ -68,6 +68,28 @@ class BaseGeneratorTeardownTest {
         generator.release()
     }
 
+    @Test
+    fun `a cold start resets the buffer pool before producing`() = runTest {
+        // The buffer manager is a process singleton; a relaunch that finds the process still alive
+        // can inherit a drained pool at the same rate, which setSampleRate would no-op on. A fresh
+        // produce loop (no source loaded) must reset it so the pool is rebuilt full.
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val bufferManager = RecordingBufferManager()
+        val generator = TestGenerator(
+            repository = FakeRepository(mapOf(TRACK_ID to trackOf(TRACK_ID))),
+            contentSourceRegistry = ContentSourceRegistry(setOf(EmptyContentSource())),
+            bufferManager = bufferManager,
+            pcmSourceFactory = RecordingFactory(RecordingSource()),
+            dispatcher = dispatcher,
+        )
+
+        generator.startTrack(TRACK_ID)
+        advanceUntilIdle()
+
+        assertEquals(1, bufferManager.resetCount, "a fresh produce loop must rebuild the (possibly stale) pool")
+        generator.release()
+    }
+
     /** Minimal concrete [BaseGenerator] that returns a caller-supplied [PcmTrackSource.Factory]. */
     private class TestGenerator(
         repository: Repository,
@@ -117,6 +139,20 @@ class BaseGeneratorTeardownTest {
         override suspend fun setSampleRate(sampleRate: Int) = Unit
         override suspend fun getNextEmptyBuffer(): ShortArray = ShortArray(BUFFER_SHORTS)
         override suspend fun sendAudioBuffer(audioBuffer: AudioBuffer) = Unit
+        override suspend fun reset() = Unit
+    }
+
+    /** Counts [reset] calls so the cold-start test can assert the pool was rebuilt. */
+    private class RecordingBufferManager : ProducerBufferManager {
+        var resetCount = 0
+            private set
+
+        override suspend fun setSampleRate(sampleRate: Int) = Unit
+        override suspend fun getNextEmptyBuffer(): ShortArray = ShortArray(BUFFER_SHORTS)
+        override suspend fun sendAudioBuffer(audioBuffer: AudioBuffer) = Unit
+        override suspend fun reset() {
+            resetCount++
+        }
     }
 
     private companion object {
