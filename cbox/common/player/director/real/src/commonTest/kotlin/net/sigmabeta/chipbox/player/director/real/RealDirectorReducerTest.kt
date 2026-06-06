@@ -188,6 +188,43 @@ class RealDirectorReducerTest {
     }
 
     @Test
+    fun `loading a restored session lands PAUSED and does not arm the stall watchdog`() = runTest {
+        // A restore loads toward paused — no audio should flow until the user hits play — so the
+        // Loading reduce must land PAUSED and must NOT arm the watchdog. Arming it let the watchdog
+        // "recover" a deliberately-silent restore by skipping to (and starting) the next track.
+        val director = newDirector(tracks = 1)
+        val model = stoppedModel(setlist = listOf(1L), position = 0, pendingResumeMs = 22_988L)
+
+        val (next, effects) = director.reduce(model, GeneratorEvent.Loading(1L))
+
+        assertEquals(PlayerState.PAUSED, next.playback.state)
+        assertEquals(22_988L, next.pendingResumeMs, "offset kept for the first play() to seek to")
+        assertEquals(
+            listOf(RealDirector.Effect.EmitMetadata(trackOf(1L))),
+            effects,
+            "metadata only — the watchdog must stay off for a paused restore",
+        )
+        director.release()
+    }
+
+    @Test
+    fun `loading a fresh session lands BUFFERING and arms the watchdog`() = runTest {
+        // The non-restore counterpart: no pending offset, so a cold load shows BUFFERING and arms
+        // the stall guard while it waits for the first buffer.
+        val director = newDirector(tracks = 1)
+        val model = stoppedModel(setlist = listOf(1L), position = 0, pendingResumeMs = null)
+
+        val (next, effects) = director.reduce(model, GeneratorEvent.Loading(1L))
+
+        assertEquals(PlayerState.BUFFERING, next.playback.state)
+        assertEquals(
+            listOf(RealDirector.Effect.ArmWatchdog, RealDirector.Effect.EmitMetadata(trackOf(1L))),
+            effects,
+        )
+        director.release()
+    }
+
+    @Test
     fun `Rendering re-arms the watchdog only when the watermark advances`() = runTest {
         val director = newDirector(tracks = 1)
         val model = playingModel(setlist = listOf(1L), position = 0).copy(lastRenderProgressMs = 1_000L)
@@ -246,6 +283,30 @@ class RealDirectorReducerTest {
     ): RealDirector.Model = RealDirector.Model(
         playback = ChipboxPlaybackState(
             state = PlayerState.BUFFERING,
+            position = 0L,
+            generatorProducedMs = 0L,
+            playbackSpeed = 1.0f,
+            skipForwardAllowed = false,
+        ),
+        session = Session(
+            type = SessionType.SETLIST,
+            contentId = 0L,
+            explicitSetlist = setlist,
+            currentPosition = position,
+        ),
+        setlist = setlist,
+        consecutiveFailures = 0,
+        lastRenderProgressMs = 0L,
+        pendingResumeMs = pendingResumeMs,
+    )
+
+    private fun stoppedModel(
+        setlist: List<Long>,
+        position: Int,
+        pendingResumeMs: Long?,
+    ): RealDirector.Model = RealDirector.Model(
+        playback = ChipboxPlaybackState(
+            state = PlayerState.STOPPED,
             position = 0L,
             generatorProducedMs = 0L,
             playbackSpeed = 1.0f,
