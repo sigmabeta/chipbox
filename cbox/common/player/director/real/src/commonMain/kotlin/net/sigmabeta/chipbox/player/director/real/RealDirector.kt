@@ -789,9 +789,32 @@ class RealDirector(
             ).with(Effect.ArmWatchdog)
         }
 
-        // Nothing playing yet (cold start / resumed from a stopped-ish state): show the spinner
-        // with this track's metadata and wait for the first buffer.
+        // Nothing playing yet (cold start / resumed from a stopped-ish state): show this track's
+        // metadata and wait for the first buffer.
         val newTrack = getTrack(event.trackId) ?: return metadataLoadError(m, event.trackId)
+
+        // A restored session loads straight to PAUSED and must NOT arm the stall watchdog: no audio
+        // is meant to flow until the user hits play, so the silence here is expected, not a fault.
+        // Arming it let the watchdog "recover" a deliberately-paused restore by skipping to — and
+        // starting — the next track. The generator keeps producing in the background to pre-fill the
+        // resume buffer; the first play() consumes pendingResumeMs as a seek. Landing PAUSED here
+        // (rather than waiting for the first Emitting) also means the restore doesn't depend on the
+        // generator producing a buffer, which it can't when a surviving-process buffer pool is stale.
+        if (m.pendingResumeMs != null) {
+            hatchet.i(
+                "handleGeneratorLoading(track=${event.trackId}): " +
+                    "${m.playback.state} -> PAUSED (restored session, awaiting play)."
+            )
+            return armed.copy(
+                playback = m.playback.copy(
+                    state = PlayerState.PAUSED,
+                    generatorProducedMs = 0L,
+                    cachedMs = 0L,
+                    skipForwardAllowed = skipForwardAllowed,
+                ),
+            ).with(Effect.EmitMetadata(newTrack))
+        }
+
         hatchet.i(
             "handleGeneratorLoading(track=${event.trackId}): " +
                 "${m.playback.state} -> BUFFERING (metadata emitted)."
@@ -819,7 +842,8 @@ class RealDirector(
             return m.with()
         }
 
-        // A restored session reaches its first buffer "loaded but paused": land in PAUSED without
+        // Fallback for a restore that's somehow still BUFFERING when its first buffer arrives
+        // (reduceGeneratorLoading now lands a restore in PAUSED up front). Land in PAUSED without
         // starting the speaker, so launch stays silent. pendingResumeMs is intentionally kept — the
         // first play() consumes it as a seek to the saved offset. Only this first buffer matters;
         // once PAUSED, later Emittings fall through to the normal watermark update below (their
