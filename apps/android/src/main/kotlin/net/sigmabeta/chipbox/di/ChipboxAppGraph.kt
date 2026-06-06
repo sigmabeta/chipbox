@@ -8,6 +8,7 @@ import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.services.api.LibraryBrowser
 import net.sigmabeta.sage.appinfo.AppInfo
@@ -35,6 +36,7 @@ interface ChipboxAppGraph : ViewModelGraph {
     // (post-M6, no more @Inject lateinit).
     val libraryBrowser: LibraryBrowser
     val director: Director
+    val playbackSessionPersister: PlaybackSessionPersister
 
     // ArtworkProvider dependencies — pulled lazily in `ArtworkProvider.openFile()` since
     // ContentProvider construction is process-init and can't synchronously resolve

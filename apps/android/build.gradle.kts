@@ -111,6 +111,7 @@ dependencies {
     implementation(projects.cbox.android.contentsource.file.di)
     implementation(projects.cbox.common.player.buffer.di)
     implementation(projects.cbox.common.player.director.di)
+    implementation(projects.cbox.common.player.persistence.di)
     implementation(projects.cbox.android.player.emulators.di)
     implementation(projects.cbox.common.player.emulators.di)
     implementation(projects.cbox.android.player.generator.di)

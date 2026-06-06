@@ -566,6 +566,100 @@ class RealDirectorTest {
         director.release()
     }
 
+    // ---- restore (resume the last session on launch) ----
+
+    @Test
+    fun `restore loads the saved track and lands paused at the saved position`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+
+        director.restore(
+            Session(
+                type = SessionType.SETLIST,
+                contentId = 0L,
+                explicitSetlist = listOf(1L, 2L, 3L),
+                startingTrackId = 2L,
+            ),
+            positionMs = 30_000L,
+        )
+        gen.emit(GeneratorEvent.Loading(2L)) // cold -> BUFFERING
+        gen.emit(GeneratorEvent.Emitting(producedMs = 100L, trackId = 2L)) // first buffer ready
+
+        val state = director.playbackState().first { it.state == PlayerState.PAUSED }
+        assertEquals(PlayerState.PAUSED, state.state, "restore resumes paused, not playing")
+        assertEquals(30_000L, state.position, "paused UI anchored at the saved offset")
+        assertEquals(listOf(2L), gen.startTrackCalls, "the saved track is the one loaded")
+        assertEquals(0, speaker.playCalls, "the speaker never starts on restore")
+        val track = director.metadataState().first { it?.id == 2L }
+        assertEquals("Track Two", track?.title)
+        director.release()
+    }
+
+    @Test
+    fun `the first play after a restore seeks to the saved offset and resumes`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+        director.restore(
+            Session(
+                type = SessionType.SETLIST,
+                contentId = 0L,
+                explicitSetlist = listOf(1L, 2L, 3L),
+                startingTrackId = 2L,
+            ),
+            positionMs = 30_000L,
+        )
+        gen.emit(GeneratorEvent.Loading(2L))
+        gen.emit(GeneratorEvent.Emitting(producedMs = 100L, trackId = 2L))
+        director.playbackState().first { it.state == PlayerState.PAUSED }
+
+        director.play()
+
+        assertEquals(listOf(30_000L), gen.seekCalls, "play() seeks to the saved offset before any audio")
+        assertEquals(1, speaker.seekCalls, "speaker drains the pre-seek buffer and starts the consume loop")
+        val state = director.playbackState().first { it.state == PlayerState.PLAYING }
+        assertEquals(PlayerState.PLAYING, state.state)
+        director.release()
+    }
+
+    @Test
+    fun `a normal pause-resume after a restore does not seek again`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1))
+        director.restore(
+            Session(
+                type = SessionType.SETLIST,
+                contentId = 0L,
+                explicitSetlist = listOf(1L),
+                startingTrackId = 1L,
+            ),
+            positionMs = 10_000L,
+        )
+        gen.emit(GeneratorEvent.Loading(1L))
+        gen.emit(GeneratorEvent.Emitting(producedMs = 50L, trackId = 1L))
+        director.playbackState().first { it.state == PlayerState.PAUSED }
+        director.play() // consumes the restore seek
+        director.playbackState().first { it.state == PlayerState.PLAYING }
+        speaker.emit(SpeakerEvent.Playing(12_000L))
+
+        director.pause()
+        director.playbackState().first { it.state == PlayerState.PAUSED }
+        director.play()
+
+        assertEquals(listOf(10_000L), gen.seekCalls, "only the restore seek fires; a normal resume does not seek")
+        assertTrue(speaker.playCalls >= 1, "a normal resume restarts the speaker via play(), not seek")
+        director.release()
+    }
+
+    @Test
+    fun `restore with an empty setlist is a no-op`() = runTest {
+        val (director, gen, _, _) = newDirector(emptyList())
+
+        director.restore(
+            Session(type = SessionType.SETLIST, contentId = 0L, explicitSetlist = emptyList(), startingTrackId = 1L),
+            positionMs = 5_000L,
+        )
+
+        assertTrue(gen.startTrackCalls.isEmpty(), "nothing to restore -> no track started")
+        director.release()
+    }
+
     // ---- transport ----
 
     @Test

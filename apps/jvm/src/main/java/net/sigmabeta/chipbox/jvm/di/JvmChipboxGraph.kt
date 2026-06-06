@@ -10,6 +10,7 @@ import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.chipbox.player.speaker.real.SourceDataLineSpeaker
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
@@ -42,6 +43,9 @@ interface JvmChipboxGraph : ViewModelGraph {
 
     /** Playback coordinator — observed by the OS media-control bridge (see `mediasession`). */
     val director: Director
+
+    /** Saves the last session and restores it on the next launch (see `Main.kt`). */
+    val playbackSessionPersister: PlaybackSessionPersister
 
     /** App-lifetime scope (Default dispatcher, SupervisorJob) from `JvmCoroutinesModule`; the
      *  media-control bridge collects the Director's flows on it. */

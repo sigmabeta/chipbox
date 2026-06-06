@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.services.api
 
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.sage.logging.Hatchet
 
 /**
@@ -17,4 +18,5 @@ interface ChipboxServiceGraph {
     fun libraryBrowser(): LibraryBrowser
     fun director(): Director
     fun hatchet(): Hatchet
+    fun playbackSessionPersister(): PlaybackSessionPersister
 }
