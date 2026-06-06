@@ -13,7 +13,7 @@ import net.sigmabeta.sage.coroutines.SageDispatchers
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.storage.common.Storage
 
-class ChipboxDataStore(
+class AndroidDataStore(
     private val dataStore: DataStore<Preferences>,
     private val coroutineScope: CoroutineScope,
     private val dispatchers: SageDispatchers,
