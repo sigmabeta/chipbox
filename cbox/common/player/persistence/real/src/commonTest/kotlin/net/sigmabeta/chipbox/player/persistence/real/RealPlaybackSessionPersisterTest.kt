@@ -109,6 +109,47 @@ class RealPlaybackSessionPersisterTest {
     }
 
     @Test
+    fun `a STOPPED caused by teardown after snapshotNow does not clear the snapshot`() = runTest {
+        val director = FakeDirector()
+        val store = FakePlaybackSessionStore()
+        val persister = newPersister(director, store)
+        persister.observe()
+        director.emitSession(Session(type = SessionType.GAME, contentId = 3L))
+        director.emitMetadata(trackOf(9L))
+        director.emitPlayback(playback(PlayerState.PLAYING, positionMs = 12_000L))
+
+        // Teardown net fires (onTaskRemoved/onDestroy), then releasing the player drives STOPPED.
+        persister.snapshotNow()
+        director.emitPlayback(playback(PlayerState.STOPPED, positionMs = 0L))
+
+        assertEquals(0, store.clearCalls, "teardown STOPPED must not wipe what snapshotNow saved")
+        assertEquals(3L, store.stored?.contentId)
+        assertEquals(12_000L, store.stored?.positionMs)
+        persister.release()
+    }
+
+    @Test
+    fun `playback resuming after a teardown snapshot re-arms the STOPPED clear`() = runTest {
+        val director = FakeDirector()
+        val store = FakePlaybackSessionStore()
+        val persister = newPersister(director, store)
+        persister.observe()
+        director.emitSession(Session(type = SessionType.GAME, contentId = 3L))
+        director.emitMetadata(trackOf(9L))
+        director.emitPlayback(playback(PlayerState.PLAYING, positionMs = 12_000L))
+        persister.snapshotNow()
+
+        // Backgrounded-but-still-playing session keeps going and plays its setlist to the end:
+        // the PLAYING tick clears the teardown guard, so the terminal STOPPED clears as normal.
+        director.emitPlayback(playback(PlayerState.PLAYING, positionMs = 30_000L))
+        director.emitPlayback(playback(PlayerState.STOPPED, positionMs = 0L))
+
+        assertTrue(store.clearCalls >= 1, "a genuine stop after resumed playback still clears")
+        assertNull(store.stored)
+        persister.release()
+    }
+
+    @Test
     fun `snapshotNow writes the latest position even without a pause`() = runTest {
         val director = FakeDirector()
         val store = FakePlaybackSessionStore()
