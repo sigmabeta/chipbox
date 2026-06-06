@@ -70,5 +70,8 @@ targets too.
   (overwrites) them (git-LFS). Use verify unless intentionally re-recording.
 - Don't boot an AVD to verify — stop after build + lint and hand device testing
   to the user. Don't `git commit`/`push` unless explicitly asked.
+- Always run `scripts/verify.sh` (the full CI-mirroring suite — lint, unit tests,
+  Paparazzi, shared build, android-lint, jvm dist, debug APK) before any `git
+  push`, and only push if it reports `OVERALL: PASS`.
 - A/B-testing a native emulator change (USF/PSF/SSF/…): `apps/abrender` renders a
   corpus to WAV + RMS metrics and diffs two runs. See `apps/abrender/README.md`.
