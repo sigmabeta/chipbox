@@ -89,11 +89,19 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 rootProject.name = "Chipbox"
 
+// apps/js (and the Kotlin/JS variants its shared deps expose via sage.kmp.js) is gated behind
+// -Pchipbox.js so ordinary Android/JVM builds and IDE syncs never configure Kotlin/JS. Include it
+// only when the flag is set — an unconditional include made a no-flag sync fail to resolve its
+// JS-only project deps (e.g. :cbox:common:appui:api exposes no JS variant without the flag).
+// apps:server's web-bundle wiring is gated to match (see apps/server/build.gradle.kts).
+if (providers.gradleProperty("chipbox.js").orNull.toBoolean()) {
+    include(":apps:js")
+}
+
 include(
     // SAGE-aware modules
     ":apps:android",
     ":apps:jvm",
-    ":apps:js",
     ":apps:cli",
     ":apps:abrender",
     ":apps:server",
