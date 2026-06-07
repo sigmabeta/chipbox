@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.di
 
+import android.content.Context
 import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
@@ -8,6 +9,8 @@ import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibrarySource
+import net.sigmabeta.chipbox.crash.CrashReporter
+import net.sigmabeta.chipbox.crash.real.RealCrashReporter
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
 import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
 import net.sigmabeta.sage.analytics.Analytics
@@ -47,6 +50,20 @@ object AndroidAppModule {
         versionCode = BuildConfig.VERSION_CODE,
         buildTimeMs = BuildConfig.BUILD_TIME_MS,
         buildBranch = BuildConfig.BUILD_BRANCH,
+    )
+
+    // Crash reports go under the app's private files dir (survives backgrounding, wiped on
+    // uninstall/clear-data). Installed from ChipboxApplication.onCreate().
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideCrashReporter(
+        context: Context,
+        appInfo: AppInfo,
+        hatchet: Hatchet,
+    ): CrashReporter = RealCrashReporter(
+        crashDir = context.filesDir.resolve("crashes"),
+        appInfo = appInfo,
+        hatchet = hatchet,
     )
 
     // SettingsViewModel's LibrarySource param resolves to the SAF-backed Android impl on this

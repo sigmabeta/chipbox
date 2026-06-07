@@ -7,6 +7,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
+import net.sigmabeta.chipbox.crash.CrashReporter
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.chipbox.repository.Repository
@@ -31,6 +32,9 @@ interface ChipboxAppGraph : ViewModelGraph {
     val appInfo: AppInfo
     val hatchet: Hatchet
     val stringProvider: StringProvider
+
+    // Pulled in ChipboxApplication.onCreate() to install the uncaught-exception handler.
+    val crashReporter: CrashReporter
 
     // ChipboxPlaybackService dependencies — pulled in `ChipboxPlaybackService.onCreate()`
     // (post-M6, no more @Inject lateinit).

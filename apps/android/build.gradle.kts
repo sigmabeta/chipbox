@@ -103,6 +103,7 @@ kotlin {
 
 dependencies {
     implementation(projects.cbox.common.appui.api)
+    implementation(projects.cbox.common.crash.real)
     implementation(projects.cbox.common.strings.real)
     implementation(projects.cbox.android.artworkprovider.api)
     implementation(projects.cbox.common.database.real)

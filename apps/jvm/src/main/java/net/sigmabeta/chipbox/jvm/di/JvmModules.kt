@@ -15,6 +15,8 @@ import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
+import net.sigmabeta.chipbox.crash.CrashReporter
+import net.sigmabeta.chipbox.crash.real.RealCrashReporter
 import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
@@ -264,6 +266,23 @@ object JvmSpeakerModule {
 object JvmStorageModule {
     @Provides @SingleIn(AppScope::class)
     fun provideStorage(@Named("workDir") workDir: File): Storage = JvmStorage(File(workDir, "settings.properties"))
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object JvmCrashModule {
+    // Crash reports go under the same per-OS app-data dir as the DB and settings (see Main.kt's
+    // workDir). Installed from main() after the graph is built.
+    @Provides @SingleIn(AppScope::class)
+    fun provideCrashReporter(
+        @Named("workDir") workDir: File,
+        appInfo: AppInfo,
+        hatchet: Hatchet,
+    ): CrashReporter = RealCrashReporter(
+        crashDir = File(workDir, "crashes"),
+        appInfo = appInfo,
+        hatchet = hatchet,
+    )
 }
 
 @BindingContainer

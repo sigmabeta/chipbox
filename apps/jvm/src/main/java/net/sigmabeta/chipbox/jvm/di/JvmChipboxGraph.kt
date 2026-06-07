@@ -9,6 +9,7 @@ import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
+import net.sigmabeta.chipbox.crash.CrashReporter
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.chipbox.player.speaker.real.SourceDataLineSpeaker
@@ -37,6 +38,9 @@ interface JvmChipboxGraph : ViewModelGraph {
     val hatchet: Hatchet
     val stringProvider: StringProvider
     val repository: Repository
+
+    /** Installs the uncaught-exception handler that serializes fatal crashes (see `Main.kt`). */
+    val crashReporter: CrashReporter
     val librarySource: LocalFileContentSource
     val scanner: RealScanner
     val generator: RealGenerator

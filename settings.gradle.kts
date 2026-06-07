@@ -182,6 +182,8 @@ include(
     ":cbox:common:player:director:di",
     ":cbox:common:player:director:fake",
     ":cbox:common:player:director:real",
+    ":cbox:common:crash:api",
+    ":cbox:common:crash:real",
     ":cbox:common:player:emulators:api",
     ":cbox:common:player:emulators:di",
     ":cbox:common:player:emulators:fake",
