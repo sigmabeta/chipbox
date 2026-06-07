@@ -99,6 +99,7 @@ tasks.named<CreateStartScripts>("startScripts") {
 }
 
 dependencies {
+    implementation(projects.cbox.common.crash.real)
     implementation(projects.cbox.common.player.generator.real)
     implementation(projects.cbox.common.player.emulators.gba.real)
     implementation(projects.cbox.common.player.emulators.gme.real)

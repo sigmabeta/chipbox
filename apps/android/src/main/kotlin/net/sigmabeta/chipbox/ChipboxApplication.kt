@@ -18,6 +18,11 @@ class ChipboxApplication :
         // (Was a compile-time `BuildConfig.DEBUG` const-fold pre-M9 — AGP 9's KMP Android
         // Library DSL doesn't expose buildConfig generation, so it's a runtime toggle now.)
         isPerfMeasurementEnabled = BuildConfig.DEBUG
+
+        // Install the fatal-exception handler as early as possible so a crash during startup is
+        // still serialized. Touching appGraph here forces the lazy graph to build now, which is
+        // fine — onCreate runs once and the graph is reused by every later Activity/Service.
+        appGraph.crashReporter.install()
     }
 
     /**

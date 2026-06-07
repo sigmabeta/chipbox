@@ -16,6 +16,7 @@ private const val LIBRARY_DB_NAME = "library.sqlite"
  */
 fun main() {
     val graph = buildGraph()
+    graph.crashReporter.install()
     installMediaControls(graph)
     installSessionPersistence(graph)
     runDesktop(graph)
