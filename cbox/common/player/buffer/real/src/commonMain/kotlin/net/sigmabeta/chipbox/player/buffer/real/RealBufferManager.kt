@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.player.buffer.real
 
-import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.channels.Channel
@@ -9,6 +8,8 @@ import kotlinx.coroutines.channels.ClosedSendChannelException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.BufferDebugInfo
 import net.sigmabeta.chipbox.player.buffer.BufferDebugSource
@@ -46,10 +47,16 @@ class RealBufferManager(
      *  (old-full, new-empty) pair — the race that let [drain] pour old-rate buffers into a fresh
      *  full pool and leak live-pool arrays to GC during a seek that coincided with a rate change.
      *
-     *  @Volatile so a consumer that wakes from a ClosedReceiveChannelException after the swap sees
-     *  the post-swap pool when it retries. */
-    @Volatile
-    private var pool: Pool? = null
+     *  A [MutableStateFlow] rather than a plain @Volatile var: besides giving a consumer that wakes
+     *  from a ClosedReceiveChannelException after the swap a coherent view of the post-swap pool, it
+     *  lets [waitForNextAudioBuffer] *suspend* on a null pool until [setSampleRate] rebuilds one,
+     *  instead of throwing. That's the cold-start-in-a-surviving-process race: a speaker consume
+     *  loop left parked in receive() wakes when [reset] closes the old channels, and must wait for
+     *  the generator's imminent [setSampleRate] rather than crash on the transiently-null pool. */
+    private val poolState = MutableStateFlow<Pool?>(null)
+
+    private val pool: Pool?
+        get() = poolState.value
 
     private class Pool(
         val empty: Channel<ShortArray>,
@@ -106,8 +113,9 @@ class RealBufferManager(
 
         val old = pool
 
-        // Publish both channels in one write so no reader can catch a mismatched pair.
-        pool = Pool(empty = arrays, full = buffers)
+        // Publish both channels in one write so no reader can catch a mismatched pair. This also
+        // wakes any consumer suspended in waitForNextAudioBuffer awaiting a non-null pool.
+        poolState.value = Pool(empty = arrays, full = buffers)
 
         // Close the old channels AFTER publishing the new ones — closing wakes any
         // consumer suspended in receive() with ClosedReceiveChannelException, and the
@@ -129,12 +137,14 @@ class RealBufferManager(
 
     override suspend fun reset() {
         // Drop the pool and forget the rate so the next setSampleRate rebuilds a full empty pool
-        // unconditionally. Closing the old channels wakes any consumer parked in receive() (none at
-        // the cold-start call site) with ClosedReceiveChannelException; with pool now null there's
-        // nothing for it to half-read. See the doc on ProducerBufferManager.reset for why a
-        // surviving-process pool goes stale.
+        // unconditionally. Closing the old channels wakes any consumer parked in receive() with
+        // ClosedReceiveChannelException; with pool now null it has nothing to half-read, so it
+        // re-suspends in waitForNextAudioBuffer until the generator's imminent setSampleRate
+        // publishes a fresh pool. (A surviving-process cold start CAN leave the speaker loop parked
+        // here — that's the case the null-tolerant await guards against.) See the doc on
+        // ProducerBufferManager.reset for why a surviving-process pool goes stale.
         val old = pool
-        pool = null
+        poolState.value = null
         old?.empty?.close()
         old?.full?.close()
         currentSampleRate = null
@@ -160,14 +170,19 @@ class RealBufferManager(
 
     override suspend fun waitForNextAudioBuffer(): AudioBuffer {
         while (true) {
-            val channel = pool?.full ?: throw IllegalStateException("Set up buffers first!")
+            // A null pool is transient, not an error: reset() nulls it on a cold start and the
+            // generator rebuilds it via setSampleRate moments later. Suspend until a non-null pool
+            // is published rather than throwing — a surviving-process consume loop parked here must
+            // ride out that gap, not crash with "Set up buffers first!".
+            val channel = (pool ?: poolState.filterNotNull().first()).full
             try {
                 val buffer = channel.receive()
                 fullCount.fetchAndAdd(-1)
                 publishDebug()
                 return buffer
             } catch (_: ClosedReceiveChannelException) {
-                // Channels were swapped for a sample rate change; loop to pick up the new one.
+                // Channels were swapped for a sample rate change (or closed by reset); loop to pick
+                // up the new pool, awaiting one if reset hasn't been followed by setSampleRate yet.
                 hatchet.w("waitForNextAudioBuffer: old fullBuffers closed; retrying on new channel.")
             }
         }
