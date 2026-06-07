@@ -53,6 +53,8 @@ import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.playbackstatus.real.PlaybackStatusRoute
 import net.sigmabeta.chipbox.features.errorlog.ErrorLog
 import net.sigmabeta.chipbox.features.errorlog.real.ErrorLogRoute
+import net.sigmabeta.chipbox.features.crashlog.CrashLog
+import net.sigmabeta.chipbox.features.crashlog.real.CrashLogRoute
 import net.sigmabeta.chipbox.features.search.Search
 import net.sigmabeta.chipbox.features.search.real.SearchRoute
 import net.sigmabeta.chipbox.features.settings.Settings
@@ -84,6 +86,7 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     RescanStatus -> RescanStatusScreen
     PlaybackStatus -> PlaybackStatusScreen
     ErrorLog -> ErrorLogScreen
+    CrashLog -> CrashLogScreen
     ComponentLibrary -> ComponentLibraryMenuScreen
     is ComponentLibraryMode -> ComponentLibraryModeScreen(destination.mode)
     NowPlaying -> NowPlayingScreen
@@ -367,6 +370,17 @@ private object PlaybackStatusScreen : Screen {
 private object ErrorLogScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         ErrorLogRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+/**
+ * Debug-only crash log, reached from the Settings debug section (gated behind `shouldShowDebug`).
+ * Surfaces the fatal-exception reports RealCrashReporter persisted to disk; the route is only
+ * reachable when the gated Settings row emits `NavigateTo(CrashLog)`.
+ */
+private object CrashLogScreen : Screen {
+    @Composable override fun Content() = ScreenScaffold {
+        CrashLogRoute(onEvent = LocalChipboxEventSink.current)
     }
 }
 

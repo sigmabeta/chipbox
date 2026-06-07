@@ -19,5 +19,6 @@ sealed class SettingsAction : ChipboxAction() {
     data object BuildDateClicked : SettingsAction()
     data object PlaybackStatusClicked : SettingsAction()
     data object ErrorLogClicked : SettingsAction()
+    data object CrashLogClicked : SettingsAction()
     data object ComponentLibraryClicked : SettingsAction()
 }

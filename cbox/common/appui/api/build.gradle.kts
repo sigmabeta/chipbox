@@ -62,6 +62,8 @@ kotlin {
                 api(projects.features.playbackStatus.real)
                 // Debug-only error log reached from that same Settings debug section.
                 api(projects.features.errorLog.real)
+                // Debug-only crash log (persisted fatal exceptions), same Settings debug section.
+                api(projects.features.crashLog.real)
                 // Debug-only component gallery, reached from the same Settings debug section.
                 api(projects.features.componentLibrary.real)
                 api(projects.features.search.real)

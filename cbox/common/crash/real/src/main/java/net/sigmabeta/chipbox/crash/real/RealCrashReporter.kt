@@ -64,7 +64,7 @@ class RealCrashReporter(
         )
 
         crashDir.mkdirs()
-        val target = File(crashDir, "crash-${report.timestampMs}.json")
+        val target = File(crashDir, CrashReportFiles.fileName(report.timestampMs))
         val tmp = File(crashDir, "${target.name}.tmp")
         tmp.writeText(json.encodeToString(CrashReport.serializer(), report))
         moveIntoPlace(tmp, target)
@@ -88,10 +88,10 @@ class RealCrashReporter(
 
     /** Keep only the most recent [MAX_REPORTS] crash files so the directory can't grow unbounded. */
     private fun pruneOldReports() {
-        val reports = crashDir.listFiles { file -> file.isFile && file.name.matches(REPORT_NAME) }
-            ?.sortedByDescending { it.name }
-            ?: return
-        reports.drop(MAX_REPORTS).forEach { it.delete() }
+        CrashReportFiles.reportsIn(crashDir)
+            .sortedByDescending { it.name }
+            .drop(MAX_REPORTS)
+            .forEach { it.delete() }
     }
 
     private fun toRecentError(error: HatchetError) = CrashReport.RecentError(
@@ -103,6 +103,5 @@ class RealCrashReporter(
 
     private companion object {
         const val MAX_REPORTS = 20
-        val REPORT_NAME = Regex("""crash-\d+\.json""")
     }
 }

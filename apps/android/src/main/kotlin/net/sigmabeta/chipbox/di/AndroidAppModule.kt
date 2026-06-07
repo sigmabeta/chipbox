@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.di
 import android.content.Context
 import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
+import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.runBlocking
@@ -10,8 +11,11 @@ import net.sigmabeta.chipbox.BuildConfig
 import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.crash.CrashReporter
+import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.crash.real.RealCrashReporter
+import net.sigmabeta.chipbox.crash.real.RealCrashReportStore
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
+import java.io.File
 import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
 import net.sigmabeta.sage.analytics.Analytics
 import net.sigmabeta.sage.analytics.NoopAnalytics
@@ -53,18 +57,31 @@ object AndroidAppModule {
     )
 
     // Crash reports go under the app's private files dir (survives backgrounding, wiped on
-    // uninstall/clear-data). Installed from ChipboxApplication.onCreate().
+    // uninstall/clear-data). Shared by the writer (CrashReporter) and the reader (CrashReportStore).
+    @Provides
+    @SingleIn(AppScope::class)
+    @Named("crashDir")
+    fun provideCrashDir(context: Context): File = context.filesDir.resolve("crashes")
+
+    // Installed from ChipboxApplication.onCreate().
     @Provides
     @SingleIn(AppScope::class)
     fun provideCrashReporter(
-        context: Context,
+        @Named("crashDir") crashDir: File,
         appInfo: AppInfo,
         hatchet: Hatchet,
     ): CrashReporter = RealCrashReporter(
-        crashDir = context.filesDir.resolve("crashes"),
+        crashDir = crashDir,
         appInfo = appInfo,
         hatchet = hatchet,
     )
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideCrashReportStore(
+        @Named("crashDir") crashDir: File,
+        hatchet: Hatchet,
+    ): CrashReportStore = RealCrashReportStore(crashDir = crashDir, hatchet = hatchet)
 
     // SettingsViewModel's LibrarySource param resolves to the SAF-backed Android impl on this
     // target. (The interface lives in cbox/common/contentsource/api; AndroidFileContentSource

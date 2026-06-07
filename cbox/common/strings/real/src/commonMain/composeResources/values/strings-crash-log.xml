@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="crash_log_screen_title">Crash log</string>
+    <string name="crash_log_empty">No crashes recorded.</string>
+</resources>
