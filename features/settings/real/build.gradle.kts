@@ -28,6 +28,8 @@ kotlin {
                 implementation(projects.features.playbackStatus.api)
                 // ErrorLog route key for SettingsAction.ErrorLogClicked -> NavigateTo.
                 implementation(projects.features.errorLog.api)
+                // CrashLog route key for SettingsAction.CrashLogClicked -> NavigateTo.
+                implementation(projects.features.crashLog.api)
                 // ComponentLibrary route key for SettingsAction.ComponentLibraryClicked -> NavigateTo.
                 implementation(projects.features.componentLibrary.api)
                 // ManageLibrary route key for SettingsAction.ManageLibraryClicked -> NavigateTo.

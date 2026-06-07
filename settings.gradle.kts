@@ -257,6 +257,8 @@ include(
     ":features:playback-status:real",
     ":features:error-log:api",
     ":features:error-log:real",
+    ":features:crash-log:api",
+    ":features:crash-log:real",
     ":features:component-library:api",
     ":features:component-library:real",
     ":features:search:api",

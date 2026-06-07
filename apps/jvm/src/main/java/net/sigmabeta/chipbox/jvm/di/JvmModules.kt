@@ -16,7 +16,9 @@ import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.crash.CrashReporter
+import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.crash.real.RealCrashReporter
+import net.sigmabeta.chipbox.crash.real.RealCrashReportStore
 import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
@@ -272,17 +274,27 @@ object JvmStorageModule {
 @ContributesTo(AppScope::class)
 object JvmCrashModule {
     // Crash reports go under the same per-OS app-data dir as the DB and settings (see Main.kt's
-    // workDir). Installed from main() after the graph is built.
+    // workDir). Shared by the writer (CrashReporter) and the reader (CrashReportStore).
+    @Provides @SingleIn(AppScope::class) @Named("crashDir")
+    fun provideCrashDir(@Named("workDir") workDir: File): File = File(workDir, "crashes")
+
+    // Installed from main() after the graph is built.
     @Provides @SingleIn(AppScope::class)
     fun provideCrashReporter(
-        @Named("workDir") workDir: File,
+        @Named("crashDir") crashDir: File,
         appInfo: AppInfo,
         hatchet: Hatchet,
     ): CrashReporter = RealCrashReporter(
-        crashDir = File(workDir, "crashes"),
+        crashDir = crashDir,
         appInfo = appInfo,
         hatchet = hatchet,
     )
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideCrashReportStore(
+        @Named("crashDir") crashDir: File,
+        hatchet: Hatchet,
+    ): CrashReportStore = RealCrashReportStore(crashDir = crashDir, hatchet = hatchet)
 }
 
 @BindingContainer

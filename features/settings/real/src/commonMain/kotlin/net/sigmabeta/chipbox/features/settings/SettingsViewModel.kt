@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibrary
+import net.sigmabeta.chipbox.features.crashlog.CrashLog
 import net.sigmabeta.chipbox.features.errorlog.ErrorLog
 import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
@@ -123,6 +124,8 @@ class SettingsViewModel @Inject constructor(
             SettingsAction.PlaybackStatusClicked -> emit(ChipboxEvent.NavigateTo(PlaybackStatus))
 
             SettingsAction.ErrorLogClicked -> emit(ChipboxEvent.NavigateTo(ErrorLog))
+
+            SettingsAction.CrashLogClicked -> emit(ChipboxEvent.NavigateTo(CrashLog))
 
             SettingsAction.ComponentLibraryClicked -> emit(ChipboxEvent.NavigateTo(ComponentLibrary))
 
