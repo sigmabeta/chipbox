@@ -18,7 +18,7 @@ cbox/
 features/    user-facing screens, all KMP (api/real/screenshot)
 build-logic/ chipbox-specific convention plugins (id "chipbox.*")
 sage/        vendored SAGE submodule: convention plugins + version catalog + libs
-scripts/     helpers, incl. kmpify.py (batch module → KMP rewrite)
+scripts/     helpers (verify.sh CI suite, loc_report.py)
 ```
 
 ## Module suffix convention
@@ -166,8 +166,7 @@ with a digit); `settings.gradle.kts` remaps `projectDir`.
 1. Create dirs; put pure code in `src/commonMain/kotlin/`, `java.*` code in
    `src/main/java/`.
 2. Write `build.gradle.kts` with the right `chipbox.*` / `sage.*` plugin and the
-   `androidLibrary { namespace }` block (or run `scripts/kmpify.py <dir>` to
-   convert an existing module).
+   `androidLibrary { namespace }` block.
 3. Register the project path(s) in `settings.gradle.kts`.
 4. Wire it into consumers (`apps/android`, `apps/jvm`, other modules) via
    `implementation(projects.…)` typesafe accessors.
