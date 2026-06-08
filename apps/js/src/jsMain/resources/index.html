@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Chipbox</title>
+    <!-- The web target is always a debug build (AppInfo.isDebug == true, WebModules.kt), so the
+         favicon + launch splash use the purple-recolored debug art — the same treatment the desktop
+         splash/icon and the in-app palette swap get on the same flag. Static HTML can't read the
+         runtime flag (JsMain sets the "Chipbox Debug" document title once wasm loads); the original
+         yellow `splash.png` stays as the release asset, like desktop's `splash.png`. -->
+    <link rel="icon" type="image/png" href="favicon.png">
     <style>
         /* Launch splash shown until the wasm/Skia bundle loads and JsMain removes #splash. Mirrors
            Android's androidx splash: centered launcher icon on the Chipbox background. CSS makes it
@@ -21,7 +27,7 @@
     </style>
 </head>
 <body>
-<div id="splash"><img src="splash.png" alt="Chipbox"></div>
+<div id="splash"><img src="splash_debug.png" alt="Chipbox"></div>
 <script src="chipbox.js"></script>
 </body>
 </html>

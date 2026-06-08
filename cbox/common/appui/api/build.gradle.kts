@@ -41,6 +41,9 @@ kotlin {
                 // ChipboxSettingsManager + ThemeMode — read by ChipboxAppUiViewModel to pick
                 // the light/dark color scheme passed into ChipboxTheme.
                 implementation(projects.cbox.common.settings.api)
+                // AppInfo.isDebug — read by ChipboxAppUiViewModel so debug builds swap the
+                // primary/secondary palette (ChipboxTheme.swapPrimaryAndSecondary).
+                implementation(libs.sage.common.appinfo)
                 // Needed for `GamesForPlatformDeepScreen(val platform: Platform)` — the typed
                 // Voyager Screen that carries the route arg now that AndroidX nav's typesafe
                 // routing is gone.

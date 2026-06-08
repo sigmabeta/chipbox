@@ -21,7 +21,12 @@ application {
 // Host emulator native libs are built by the chipbox.native.host plugin (the shared cacheable
 // build in build-logic) into build/jvm-native/libs/ via the `chipboxHostNativeLibs` aggregate
 // task. run / installDist / the start scripts wire to that directory + task below.
-val splashImageFile: File = layout.projectDirectory.dir("src/main/splash").file("splash.png").asFile
+// Desktop is always a debug build today (AppInfo.isDebug == true, JvmModules.kt), so use the
+// purple-recolored splash — the same treatment DesktopMain applies to the window icon
+// (ic_launcher_debug.webp). The original yellow `splash.png` is kept as the release asset; if a
+// release desktop ever ships, gate this on the same flag. `-splash:` is a launcher arg shown
+// before main() runs, so it can't read the runtime flag the way the window icon does.
+val splashImageFile: File = layout.projectDirectory.dir("src/main/splash").file("splash_debug.png").asFile
 val nativeLibsDirFile: File = layout.buildDirectory.dir("jvm-native/libs").get().asFile
 val nativeLibsTask = tasks.named("chipboxHostNativeLibs")
 
@@ -44,9 +49,11 @@ distributions {
                 into("lib/native")
             }
             // Loose file (not inside a jar) so the `-splash:$APP_HOME/lib/splash.png` launcher
-            // flag injected into the start scripts below can read it.
+            // flag injected into the start scripts below can read it. Renamed to the stable
+            // `splash.png` the scripts expect (the source is the recolored `splash_debug.png`).
             from(splashImageFile) {
                 into("lib")
+                rename { "splash.png" }
             }
         }
     }

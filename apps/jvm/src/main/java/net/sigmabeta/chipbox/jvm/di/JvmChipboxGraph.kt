@@ -18,6 +18,7 @@ import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.real.RealScanner
+import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
@@ -38,6 +39,9 @@ interface JvmChipboxGraph : ViewModelGraph {
     val hatchet: Hatchet
     val stringProvider: StringProvider
     val repository: Repository
+
+    /** Build metadata; `isDebug` drives the debug window title/icon in `DesktopMain.kt`. */
+    val appInfo: AppInfo
 
     /** Installs the uncaught-exception handler that serializes fatal crashes (see `Main.kt`). */
     val crashReporter: CrashReporter

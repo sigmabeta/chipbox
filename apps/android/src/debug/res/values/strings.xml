@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug-variant overlay: overrides app_name so the debug install is labelled "Chipbox Debug"
+     in the launcher / recents, distinguishing it from a release build installed alongside it. -->
+<resources>
+    <string name="app_name">Chipbox Debug</string>
+</resources>

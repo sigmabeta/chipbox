@@ -19,6 +19,11 @@ import androidx.compose.ui.text.font.FontFamily
  * default) follows the OS via [isSystemInDarkTheme]. The Settings "Theme" picker drives this
  * through `ChipboxAppUi`.
  *
+ * [swapPrimaryAndSecondary] exchanges the primary and secondary color roles (see
+ * [withPrimarySecondarySwapped]). `ChipboxAppUi` sets it to `AppInfo.isDebug` so debug builds —
+ * Android debug, and the always-debug desktop/web targets — are instantly distinguishable from a
+ * release build at a glance.
+ *
  * Inlines the (Android-only) `SageMaterial` helper's body — `isSystemInDarkTheme()` itself is
  * multiplatform (it lives in `androidx.compose.foundation`), so once SageMaterial's scheme pick
  * is replicated here, no Android-only theme dep is needed on the JVM side.
@@ -30,10 +35,12 @@ fun ChipboxTheme(
     plain: FontFamily = FontFamily.Default,
     scale: Float = 1.0f,
     darkTheme: Boolean? = null,
+    swapPrimaryAndSecondary: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val isDark = darkTheme ?: isSystemInDarkTheme()
-    val colors = if (isDark) ChipboxDark else ChipboxLight
+    val baseColors = if (isDark) ChipboxDark else ChipboxLight
+    val colors = if (swapPrimaryAndSecondary) baseColors.withPrimarySecondarySwapped() else baseColors
     // Recolors the state-layer overlay the default ripple paints on focus/hover/press for every
     // clickable. Change this color to restyle the focus state app-wide.
     val rippleConfiguration = RippleConfiguration(color = colors.primary)

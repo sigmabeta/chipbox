@@ -68,6 +68,8 @@ fun ChipboxAppUi(
             ThemeMode.DARK -> true
             ThemeMode.SYSTEM -> null
         },
+        // Debug builds swap primary/secondary so they're unmistakable next to a release build.
+        swapPrimaryAndSecondary = appUiViewModel.isDebugBuild,
     ) {
         val titleBarController = remember { TitleBarController() }
         val chromeController = remember { ChromeController() }

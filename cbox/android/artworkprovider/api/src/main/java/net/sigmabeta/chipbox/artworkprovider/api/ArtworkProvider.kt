@@ -20,15 +20,22 @@ import java.io.FileNotFoundException
 
 class ArtworkProvider : ContentProvider() {
 
-    private val matcher = UriMatcher(UriMatcher.NO_MATCH).apply {
-        addURI(ArtworkUris.AUTHORITY, "${ArtworkUris.SEGMENT_GAME}/#", MATCH_GAME)
-        addURI(ArtworkUris.AUTHORITY, "${ArtworkUris.SEGMENT_ARTIST}/#", MATCH_ARTIST)
-    }
+    // Read ArtworkUris.authority lazily (in onCreate, not as a field initializer) so it reflects
+    // the applicationId-derived value set in ChipboxApplication.attachBaseContext — for a `.debug`
+    // build that's net.sigmabeta.chipbox.debug.artworkprovider.api, matching the ${applicationId}
+    // authority the manifest registers this provider under.
+    private lateinit var matcher: UriMatcher
 
     @Volatile
     private var graph: ArtworkProviderGraph? = null
 
-    override fun onCreate(): Boolean = true
+    override fun onCreate(): Boolean {
+        matcher = UriMatcher(UriMatcher.NO_MATCH).apply {
+            addURI(ArtworkUris.authority, "${ArtworkUris.SEGMENT_GAME}/#", MATCH_GAME)
+            addURI(ArtworkUris.authority, "${ArtworkUris.SEGMENT_ARTIST}/#", MATCH_ARTIST)
+        }
+        return true
+    }
 
     override fun getType(uri: Uri): String? = when (matcher.match(uri)) {
         MATCH_GAME, MATCH_ARTIST -> "image/*"

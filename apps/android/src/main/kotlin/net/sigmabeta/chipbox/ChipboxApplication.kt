@@ -1,8 +1,10 @@
 package net.sigmabeta.chipbox
 
 import android.app.Application
+import android.content.Context
 import dev.zacsweers.metro.createGraphFactory
 import net.sigmabeta.chipbox.artworkprovider.api.ArtworkProviderGraph
+import net.sigmabeta.chipbox.artworkprovider.api.ArtworkUris
 import net.sigmabeta.chipbox.di.ChipboxAppGraph
 import net.sigmabeta.chipbox.services.api.ChipboxServiceGraph
 import net.sigmabeta.sage.ui.perf.isPerfMeasurementEnabled
@@ -11,6 +13,15 @@ class ChipboxApplication :
     Application(),
     ArtworkProviderGraph,
     ChipboxServiceGraph {
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base)
+        // Point the artwork ContentProvider at this build's applicationId-derived authority (for a
+        // `.debug` build, net.sigmabeta.chipbox.debug.artworkprovider.api). Must happen here: content
+        // providers are installed after attachBaseContext but before onCreate, and ArtworkProvider
+        // reads this in its own onCreate. packageName is the suffixed applicationId at this point.
+        ArtworkUris.authority = "$packageName.${ArtworkUris.AUTHORITY_SUFFIX}"
+    }
+
     override fun onCreate() {
         super.onCreate()
         // Release builds skip the measureTime { content() } wrapping in sage common/ui/perf-compose

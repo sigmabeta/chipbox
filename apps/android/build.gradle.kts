@@ -64,6 +64,12 @@ android {
     buildTypes {
         getByName("debug") {
             isMinifyEnabled = false
+            // Debug installs as a separate app (net.sigmabeta.chipbox.debug) so it can sit
+            // alongside a release build. The artwork ContentProvider's authority is derived from
+            // the applicationId at runtime (ArtworkUris, set in ChipboxApplication.attachBaseContext)
+            // and declared with ${applicationId} in the manifest, so the two installs don't collide
+            // on a duplicate provider authority.
+            applicationIdSuffix = ".debug"
         }
         getByName("release") {
             isMinifyEnabled = false
