@@ -39,6 +39,10 @@ class DirectorPlayer(
     private var requestedPlayWhenReady: Boolean = false
     private var shuffled: Boolean = false
 
+    /** Whether we currently hold OS audio focus. Drives request-once / abandon-once in
+     *  [syncAudioFocus]; toggled there and on the focus-change callbacks below. */
+    private var hasAudioFocus: Boolean = false
+
     init {
         director.metadataState()
             .onEach { track ->
@@ -60,6 +64,14 @@ class DirectorPlayer(
                     PlayerState.IDLE,
                     PlayerState.ERROR -> false
                 }
+                // Drive audio focus off the observed playback state, not just the media3 command
+                // handlers. Every in-app play goes straight to Director.play()/start()
+                // (PlayerStatusViewModel, NowPlayingViewModel, the detail screens) and never reaches
+                // handleSetPlayWhenReady, so requesting focus only there meant UI-initiated playback
+                // never acquired focus: it didn't pause other apps, and — holding no focus — never
+                // heard AUDIOFOCUS_LOSS to pause for them. Observing state covers the UI and the
+                // transport paths with a single rule.
+                syncAudioFocus(state.state)
                 invalidateState()
             }
             .launchIn(scope)
@@ -144,13 +156,10 @@ class DirectorPlayer(
 
     override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
         requestedPlayWhenReady = playWhenReady
+        // Focus is acquired by the playbackState observer once Director reaches an active state —
+        // see syncAudioFocus — so both this transport path and the in-app UI path get it.
         if (playWhenReady) {
-            if (audioFocusHelper.requestFocus()) {
-                director.play()
-            } else {
-                hatchet.e("Audio focus denied.")
-                requestedPlayWhenReady = false
-            }
+            director.play()
         } else {
             director.pause()
         }
@@ -167,13 +176,19 @@ class DirectorPlayer(
     override fun handleStop(): ListenableFuture<*> {
         requestedPlayWhenReady = false
         director.stop()
+        // The STOPPED state would also release focus via the observer, but abandon here too so
+        // it's gone synchronously with the stop command.
         audioFocusHelper.abandonFocus()
+        hasAudioFocus = false
         return Futures.immediateVoidFuture()
     }
 
     override fun handleRelease(): ListenableFuture<*> {
         director.stop()
+        // Release explicitly: cancelling the scope below stops the observer, so it can't react to
+        // the resulting STOPPED state.
         audioFocusHelper.abandonFocus()
+        hasAudioFocus = false
         scope.cancel()
         return Futures.immediateVoidFuture()
     }
@@ -214,10 +229,10 @@ class DirectorPlayer(
             hatchet.e("Failed to parse media id ${target.mediaId}: $t")
             return Futures.immediateVoidFuture()
         }
-        if (audioFocusHelper.requestFocus()) {
-            requestedPlayWhenReady = true
-            director.play()
-        }
+        // Focus is acquired by the playbackState observer once Director starts playing (see
+        // syncAudioFocus).
+        requestedPlayWhenReady = true
+        director.play()
         return Futures.immediateVoidFuture()
     }
 
@@ -227,8 +242,45 @@ class DirectorPlayer(
         }
     }
 
+    /**
+     * Acquire focus while audio is (about to be) flowing, release it once playback is fully
+     * stopped, and HOLD it across a pause. Holding through PAUSED is what lets a transient focus
+     * loss (onFocusLossTransient -> Director.pauseTemporarily) be undone by the matching
+     * onFocusGain: abandoning on every pause would tear down the request, and we'd never be told
+     * focus returned.
+     */
+    private fun syncAudioFocus(state: PlayerState) {
+        when (state) {
+            PlayerState.PLAYING,
+            PlayerState.BUFFERING,
+            PlayerState.ENDING -> if (!hasAudioFocus) {
+                if (audioFocusHelper.requestFocus()) {
+                    hasAudioFocus = true
+                } else {
+                    // Something else owns exclusive focus (a call, etc.) — don't play over it.
+                    hatchet.w("Audio focus denied; pausing.")
+                    director.pause()
+                }
+            }
+
+            // Keep focus across a pause so a transient-loss resume can regain it.
+            PlayerState.PAUSED -> Unit
+
+            PlayerState.STOPPED,
+            PlayerState.IDLE,
+            PlayerState.ERROR -> if (hasAudioFocus) {
+                audioFocusHelper.abandonFocus()
+                hasAudioFocus = false
+            }
+        }
+    }
+
     override fun onFocusLoss() {
+        // Permanent loss: the OS gave focus to another app. Pause, then drop the request so the
+        // next play re-acquires it (a permanent loss sends no onFocusGain).
         director.pause()
+        audioFocusHelper.abandonFocus()
+        hasAudioFocus = false
     }
 
     override fun onFocusLossTransient() {
