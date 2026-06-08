@@ -21,6 +21,7 @@ import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
+import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 
@@ -28,8 +29,16 @@ import net.sigmabeta.sage.logging.Hatchet
 @ViewModelKey
 class ChipboxAppUiViewModel @Inject constructor(
     settingsManager: ChipboxSettingsManager,
+    appInfo: AppInfo,
     private val hatchet: Hatchet,
 ) : ViewModel() {
+    /**
+     * Whether this is a debug build. Drives `ChipboxTheme`'s primary/secondary swap so debug
+     * builds (Android debug + the always-debug desktop/web targets) are visually distinct from
+     * release. Constant for the process, so a plain val rather than a flow.
+     */
+    val isDebugBuild: Boolean = appInfo.isDebug
+
     /** The user's persisted theme choice; drives `ChipboxTheme`'s light/dark scheme. */
     val themeMode: StateFlow<ThemeMode> = settingsManager.getThemeMode()
         .stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.DEFAULT)

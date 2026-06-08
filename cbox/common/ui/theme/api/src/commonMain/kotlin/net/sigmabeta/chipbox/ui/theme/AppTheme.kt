@@ -11,7 +11,8 @@ import net.sigmabeta.chipbox.ui.theme.api.tokens.ChipboxFontDefaults
  * multiplatform `ChipboxFont.toFontFamily()` (loading each Compose Multiplatform font resource).
  * Multiplatform — used by both the shared `ChipboxAppUi` (Android + desktop) and Compose
  * previews. [darkTheme] is `null` to follow the system setting, or `true`/`false` to force a
- * scheme.
+ * scheme. [swapPrimaryAndSecondary] exchanges the primary/secondary roles to mark debug builds —
+ * see [ChipboxTheme].
  */
 @Composable
 fun AppTheme(
@@ -19,6 +20,7 @@ fun AppTheme(
     plain: ChipboxFont = ChipboxFontDefaults.Plain,
     fontScale: Float = 1.0f,
     darkTheme: Boolean? = null,
+    swapPrimaryAndSecondary: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     ChipboxTheme(
@@ -26,6 +28,7 @@ fun AppTheme(
         plain = plain.toFontFamily(),
         scale = fontScale,
         darkTheme = darkTheme,
+        swapPrimaryAndSecondary = swapPrimaryAndSecondary,
         content = content,
     )
 }

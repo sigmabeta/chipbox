@@ -2,6 +2,7 @@
 
 package net.sigmabeta.chipbox.ui.theme.api
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
@@ -296,4 +297,24 @@ val ChipboxDark = darkColorScheme(
     surfaceContainer = surfaceContainerDark,
     surfaceContainerHigh = surfaceContainerHighDark,
     surfaceContainerHighest = surfaceContainerHighestDark,
+)
+
+/**
+ * A copy of this scheme with the primary and secondary color *roles* exchanged — primary ↔
+ * secondary along with their on-colors and containers, so foreground text stays legible on the
+ * swapped tones rather than just recoloring the base hue. Used to make debug builds instantly
+ * recognisable (the brand yellow primary becomes the purple secondary and vice versa); see
+ * [ChipboxTheme]'s `swapPrimaryAndSecondary`. `copy` reads every argument from the original
+ * scheme, so the swap can't alias itself.
+ */
+fun ColorScheme.withPrimarySecondarySwapped(): ColorScheme = copy(
+    primary = secondary,
+    onPrimary = onSecondary,
+    primaryContainer = secondaryContainer,
+    onPrimaryContainer = onSecondaryContainer,
+    inversePrimary = secondary,
+    secondary = primary,
+    onSecondary = onPrimary,
+    secondaryContainer = primaryContainer,
+    onSecondaryContainer = onPrimaryContainer,
 )

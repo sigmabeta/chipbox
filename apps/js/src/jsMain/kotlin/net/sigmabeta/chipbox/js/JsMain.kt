@@ -97,6 +97,12 @@ fun main() {
             stringProvider = stringProvider,
         )
 
+        // The web target is always a debug build; mark the browser tab title to match the
+        // primary/secondary palette swap ChipboxAppUi applies on the same AppInfo.isDebug flag.
+        if (graph.appInfo.isDebug) {
+            document.title = "Chipbox Debug"
+        }
+
         // Hook the browser's media-session API into the player so OS-level transport (media keys,
         // lock-screen controls, Bluetooth headset buttons) drives the same Director.
         WebMediaSession(graph.director, apiBaseUrl).install(graph.appScope)

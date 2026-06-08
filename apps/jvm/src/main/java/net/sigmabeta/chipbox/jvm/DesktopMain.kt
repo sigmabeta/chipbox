@@ -44,10 +44,14 @@ fun runDesktop(graph: JvmChipboxGraph) = application {
     // backKeyEvents) and routes each signal to its back handler.
     val backKeyEvents = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
     val heldBackKeys = remember { mutableSetOf<Key>() }
+    // The desktop target is always a debug build (AppInfo.isDebug == true), but read it through the
+    // graph rather than hardcoding so the title/icon track AppInfo if a release desktop ever ships —
+    // matching the primary/secondary palette swap ChipboxAppUi applies on the same flag.
+    val isDebug = graph.appInfo.isDebug
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Chipbox",
-        icon = painterResource("ic_launcher.webp"),
+        title = if (isDebug) "Chipbox Debug" else "Chipbox",
+        icon = painterResource(if (isDebug) "ic_launcher_debug.webp" else "ic_launcher.webp"),
         onKeyEvent = { event ->
             val isBackKey = event.key == Key.Escape || event.key == Key.Backspace
             when {

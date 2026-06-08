@@ -6,6 +6,7 @@ import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import kotlinx.coroutines.CoroutineScope
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
@@ -28,6 +29,9 @@ import net.sigmabeta.sage.ui.StringProvider
 interface WebChipboxGraph : ViewModelGraph {
     val hatchet: Hatchet
     val stringProvider: StringProvider
+
+    /** Build metadata; `isDebug` sets the browser document title in `JsMain`. */
+    val appInfo: AppInfo
 
     // Exposed so `JsMain` can wire the browser-only `WebMediaSession` to the player without
     // creating a parallel composition root. The app-scope CoroutineScope is the same one
