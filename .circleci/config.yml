@@ -524,8 +524,9 @@ jobs:
           # adds the assemble-only work (dexing, resource/APK packaging, native build).
           command: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --configuration-cache --no-daemon --max-workers=4
       # Rename the APK to chipbox-<versionName>.apk so the published artifact carries the
-      # git-tag-derived version (apps/android/build.gradle.kts appVersioning {}). Reads the version
-      # from AGP's output-metadata.json, so the version is single-sourced from the built APK.
+      # git-tag-derived version (apps/android/build.gradle.kts appVersioning {}). Reads the name from
+      # the version_name.txt the plugin generates during assembleRelease — see the script for why
+      # that, not output-metadata.json, is the source of truth.
       - run:
           name: Name release APK by version
           command: ./scripts/rename-release-apk.sh
