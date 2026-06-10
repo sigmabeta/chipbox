@@ -233,6 +233,16 @@ appVersioning {
     }
 }
 
+// GenerateAppVersionInfo is a @CacheableTask whose fingerprint is .git/refs + .git/HEAD. On CircleCI
+// tags are stored packed (.git/packed-refs), so .git/refs/tags is empty and the tags never enter the
+// task's cache key — combined with our shared remote build cache, a stale/empty result (the plugin's
+// "No git tags found" fallback → versionName "") gets served, or the up-to-date check skips the task.
+// The version must reflect live git on every build, so opt this task out of state tracking entirely:
+// it always re-runs against the real repo and its output is never cached. (Locally it's cheap.)
+tasks.matching { it.name.startsWith("generateAppVersionInfo") }.configureEach {
+    doNotTrackState("Derives versionCode/Name from live git tags; must re-read git on every build.")
+}
+
 object Versions {
     // Per-tier capacities. Each component must stay below its MAX_* or verifyRequirements fails the
     // build loudly — that's the guard that keeps the place-value packing below non-overlapping.
