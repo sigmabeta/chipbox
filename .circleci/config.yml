@@ -130,33 +130,38 @@ commands:
   #    The GRADLE_ENCRYPTION_KEY project env var (a stable base64 AES key, read from the environment)
   #    makes the same key decrypt entries everywhere. (Set in CircleCI project settings, not here.)
   #
-  # 2. STABLE BUILD-LOGIC CLASSPATH. The config-cache *fingerprint* references Gradle's generated
-  #    build-logic classpath — type-safe project/dependency accessors, compiled kotlin-dsl scripts,
-  #    the generated gradle-api jar, and the artifact-transform outputs (ABI snapshots) under
-  #    transforms/. A fresh container regenerates these, so the restored entry invalidates ("file
-  #    '.../dependencies-accessors|transforms/...' has changed"). We cache that classpath ONCE
-  #    (restore_buildlogic_classpath / save_buildlogic_classpath) keyed on what actually determines it
-  #    — the version catalogs, settings, and Gradle version — so every job and every pipeline with the
-  #    same key restores byte-identical copies. `setup` produces this set during dependency
-  #    resolution/configuration (no task execution => only the config-relevant transforms, not the big
-  #    compilation ones like layoutlib) and saves it; downstream jobs restore it before configuring.
+  # 2. STABLE BUILD-LOGIC CLASSPATH (PARTIAL). The config-cache *fingerprint* references Gradle's
+  #    generated build-logic classpath, which a fresh container regenerates, so the restored entry
+  #    invalidates ("file '.../dependencies-accessors|transforms/...' has changed"). We cache the SAFE
+  #    parts of it ONCE (restore/save_buildlogic_classpath) keyed on what determines it — the version
+  #    catalogs, settings, and Gradle version — so every job/pipeline with the same key restores
+  #    byte-identical copies: the type-safe project/dependency accessors, compiled kotlin-dsl/groovy-dsl
+  #    scripts, and the generated gradle-api jar. `setup` produces these during dependency resolution.
+  #
+  #    NOT cached: the artifact-transform outputs (transforms/, jars-9/). The Android-configuring jobs'
+  #    fingerprint references those, but they're content-addressed, Gradle-managed caches — restoring a
+  #    foreign/partial copy corrupts transform resolution and BREAKS the build (a ClasspathEntrySnapshot
+  #    transform failed: "no implementation for KotlinToolchains"). The Android SDK's volatile
+  #    build-tools/.installer/.installData is also a fingerprint input. So reuse is PARTIAL: JVM-only
+  #    jobs (unit-test, shared-build) reuse the config cache; the Android-configuring jobs still
+  #    recompute their task graph. Encryption (1) + this classpath cache make that partial reuse work
+  #    and keep the build green; fully covering the Android jobs would mean safely caching transforms
+  #    and stabilizing the SDK metadata, which isn't worth the fragility today.
   restore_buildlogic_classpath:
     steps:
       - restore_cache:
           keys:
-            - blcp-v1-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
-            - blcp-v1-
+            - blcp-v2-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
+            - blcp-v2-
   save_buildlogic_classpath:
     steps:
       - save_cache:
-          key: blcp-v1-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
+          key: blcp-v2-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
           paths:
             - /home/circleci/.gradle/caches/9.5.0/dependencies-accessors
             - /home/circleci/.gradle/caches/9.5.0/kotlin-dsl
             - /home/circleci/.gradle/caches/9.5.0/generated-gradle-jars
             - /home/circleci/.gradle/caches/9.5.0/groovy-dsl
-            - /home/circleci/.gradle/caches/9.5.0/transforms
-            - /home/circleci/.gradle/caches/jars-9
 
   # Per-job config-cache entry (each job requests a different task graph => a different entry), with a
   # branch/revision fallback chain: exact {{ .Revision }} hits on a rerun; {{ .Branch }}- restores the
@@ -170,9 +175,9 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - cconfig-<< parameters.job >>-v5-{{ .Branch }}-{{ .Revision }}
-            - cconfig-<< parameters.job >>-v5-{{ .Branch }}-
-            - cconfig-<< parameters.job >>-v5-
+            - cconfig-<< parameters.job >>-v6-{{ .Branch }}-{{ .Revision }}
+            - cconfig-<< parameters.job >>-v6-{{ .Branch }}-
+            - cconfig-<< parameters.job >>-v6-
   save_config_cache:
     parameters:
       job:
@@ -185,7 +190,7 @@ commands:
           # skips configuration entirely. The `{{ .Revision }}` key is immutable, so a rerun
           # after a successful save is a no-op.
           when: always
-          key: cconfig-<< parameters.job >>-v5-{{ .Branch }}-{{ .Revision }}
+          key: cconfig-<< parameters.job >>-v6-{{ .Branch }}-{{ .Revision }}
           paths:
             - .gradle/configuration-cache
 
