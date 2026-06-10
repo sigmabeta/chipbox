@@ -18,7 +18,8 @@ object NativeEmulators {
     const val COMMON_SUBDIR = "native-common"
 
     const val NDK_VERSION = "29.0.14206865"
-    const val CMAKE_VERSION = "3.22.1"
+    // No pinned CMake version: the native builds use the highest CMake under $SDK/cmake (see
+    // resolveSdkCmake / resolveCmake). The .so is determined by NDK_VERSION + explicit flags.
     const val ANDROID_PLATFORM = "android-26"
 }
 
@@ -35,21 +36,38 @@ fun Project.androidSdkDir(): File {
 }
 
 /**
- * Resolve a CMake binary, mirroring apps/jvm's logic: `-Pchipbox.cmake` override → `$PATH` →
- * highest version under `$SDK/cmake` (the copy any Android contributor already has) → bare `cmake`.
+ * Highest CMake version directory under `$SDK/cmake` with an executable `bin/cmake`, or null. Names
+ * sort lexicographically, which is correct for the SDK's `3.22.1` / `4.1.x` scheme.
+ */
+private fun Project.highestSdkCmakeDir(): File? =
+    File(androidSdkDir(), "cmake").listFiles()
+        ?.filter { it.isDirectory && File(it, "bin/cmake").canExecute() }
+        ?.maxByOrNull { it.name }
+
+/**
+ * CMake for the Android `:native` builds: they configure with `-G Ninja`, so they need the SDK's
+ * CMake (it ships a sibling `ninja`; a bare `$PATH` cmake wouldn't). Uses the highest version under
+ * `$SDK/cmake` — cmake 4.1.x in recent cimg/android images, or whatever a contributor has locally.
+ * No version pin: the `.so` is determined by the NDK toolchain + the explicit configure flags, not
+ * the CMake version. (cmake 4 needs the source's cmake_minimum_required floor to be >= 3.5.)
+ */
+fun Project.resolveSdkCmake(): File =
+    highestSdkCmakeDir()?.let { File(it, "bin/cmake") }
+        ?: error("No CMake under ${androidSdkDir()}/cmake — install one: `sdkmanager 'cmake;<ver>'`.")
+
+/**
+ * CMake for the apps/jvm host build: `-Pchipbox.cmake` override → highest SDK CMake → `$PATH` →
+ * bare `cmake`. Prefers the SDK copy so CI deterministically uses the image's CMake.
  */
 fun Project.resolveCmake(): File {
     (findProperty("chipbox.cmake") as? String)?.takeIf { it.isNotBlank() }?.let { return File(it) }
+    highestSdkCmakeDir()?.let { return File(it, "bin/cmake") }
     System.getenv("PATH").orEmpty()
         .splitToSequence(File.pathSeparatorChar)
         .filter { it.isNotEmpty() }
         .map { File(it, "cmake") }
         .firstOrNull { it.canExecute() }
         ?.let { return it }
-    File(androidSdkDir(), "cmake").listFiles()
-        ?.filter { it.isDirectory }
-        ?.sortedByDescending { it.name }
-        ?.forEach { dir -> File(dir, "bin/cmake").takeIf { it.canExecute() }?.let { return it } }
     return File("cmake")
 }
 
