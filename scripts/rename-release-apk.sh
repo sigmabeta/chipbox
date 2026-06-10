@@ -23,7 +23,15 @@ VERSION_NAME="$(cat "$VERSION_FILE")"
 OUTPUT_FILE=$(jq -r '.elements[0].outputFile' "$META")
 
 if [ -z "$VERSION_NAME" ]; then
-  echo "Empty version name in $VERSION_FILE" >&2
+  # app-versioning wrote an empty name, i.e. it found no git tag. Dump tag visibility so the CI log
+  # explains why (packed vs loose refs, tags missing from the workspace, shallow clone, etc.).
+  {
+    echo "Empty version name in $VERSION_FILE — app-versioning found no git tag."
+    echo "  git tag count: $(git tag --list 2>&1 | wc -l)"
+    echo "  git describe : $(git describe --tags 2>&1 || true)"
+    echo "  loose refs/tags: $(ls .git/refs/tags 2>&1 | tr '\n' ' ')"
+    echo "  packed tags    : $(grep 'refs/tags' .git/packed-refs 2>/dev/null | wc -l) entries"
+  } >&2
   exit 1
 fi
 
