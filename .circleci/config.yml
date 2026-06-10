@@ -121,20 +121,42 @@ commands:
           paths:
             - /home/circleci/android-sdk/<< parameters.package >>
 
-  # NOTE: Gradle's configuration cache is intentionally DISABLED on CI (every Gradle command below
-  # passes `--no-configuration-cache`, overriding `org.gradle.configuration-cache=true` in
-  # gradle.properties, which stays on for local dev, where it reuses fine on a warm machine).
-  # Measured behaviour: the entry reuses *within* one container but never *across* CI's ephemeral
-  # containers — every job recomputes the task graph ("no cached configuration is available"), even
-  # job-1550-style exact-key restores of a same-commit rerun. That's a *key* miss, not a fingerprint
-  # invalidation, so some component of the configuration-cache key differs per container. We did NOT
-  # pin down which: the leading suspect (an unstable build-script classpath from build-logic
-  # recompiling) was tested and DISPROVEN — the generated gradle-api jar + its ABI snapshots are
-  # byte-identical across containers, and build-logic's Kotlin compile is deterministic. So caching
-  # `.gradle/configuration-cache` was pure transfer overhead for zero hits; the
-  # restore_config_cache/save_config_cache commands were removed. Disabled on ROI grounds (it'd save
-  # only ~tens of seconds of configuration per job). The one known way to actually reuse it here is a
-  # persistent (self-hosted) runner that keeps the same machine warm.
+  # Gradle's configuration cache lets every downstream job skip the ~2-3 min task-graph
+  # configuration (156 modules) when nothing it depends on changed. It is ENCRYPTED with a key
+  # Gradle otherwise generates randomly per Gradle User Home (caches/<gv>/cc-keystore); CI never
+  # shares that keystore across containers, so an entry written by one job is undecryptable in
+  # another ("no cached configuration is available"). The fix is the GRADLE_ENCRYPTION_KEY project
+  # env var (a stable base64 AES key) — Gradle reads it from the environment, so the same key
+  # decrypts entries in every container and the cache actually reuses across jobs. Persist it per
+  # `job` (each requests a different task graph => a different entry) with a branch/revision fallback
+  # chain: the exact {{ .Revision }} key hits on a rerun; the {{ .Branch }}- fallback restores the
+  # previous commit's entry, which Gradle reuses as long as no configuration input changed. `setup`
+  # is excluded on purpose — it resolves deps with `--no-configuration-cache` and writes no entry.
+  restore_config_cache:
+    parameters:
+      job:
+        type: string
+    steps:
+      - restore_cache:
+          keys:
+            - cconfig-<< parameters.job >>-v3-{{ .Branch }}-{{ .Revision }}
+            - cconfig-<< parameters.job >>-v3-{{ .Branch }}-
+            - cconfig-<< parameters.job >>-v3-
+  save_config_cache:
+    parameters:
+      job:
+        type: string
+    steps:
+      - save_cache:
+          # `when: always` so a job that fails in task *execution* still saves the entry that
+          # *configuration* already produced (Gradle writes the config-cache entry once
+          # configuration succeeds, before any task runs) — a retry of the same commit then
+          # skips configuration entirely. The `{{ .Revision }}` key is immutable, so a rerun
+          # after a successful save is a no-op.
+          when: always
+          key: cconfig-<< parameters.job >>-v3-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - .gradle/configuration-cache
 
   # Sweep every module's `build/reports/` (ktlint, detekt, html test reports, lint,
   # whatever lives there) into one tree keyed by module path. Runs `when: always`
@@ -325,6 +347,8 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_config_cache:
+          job: static-analysis
       - run:
           name: Run Ktlint + Detekt
           # Both static-analysis checks in ONE Gradle invocation so the (dominant) configuration
@@ -334,7 +358,9 @@ jobs:
           # lint, so there's nothing for this job to do in them. ktlint runs through Gradle
           # (org.jlleitschuh.gradle.ktlint); the vendored sage/ submodule is a separate included
           # build and stays out of the lint set.
-          command: ./gradlew ktlintCheck detekt --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
+          command: ./gradlew ktlintCheck detekt --continue --build-cache --configuration-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
+      - save_config_cache:
+          job: static-analysis
       - collect_reports
       - store_artifacts:
           path: ~/reports
@@ -351,6 +377,8 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_config_cache:
+          job: shared-build
       - run:
           name: Build shared JVM/Android code
           # `:apps:jvm:classes` compiles apps/jvm plus, transitively, the JVM
@@ -362,7 +390,9 @@ jobs:
           # have no debug/release split; the Android `release` graph is compiled
           # in android-lint, which feeds build-release-apk.) Outputs are pushed to
           # the remote build cache, so build-release-jvm hits them.
-          command: ./gradlew :apps:jvm:classes --build-cache --no-configuration-cache --no-daemon --max-workers=4
+          command: ./gradlew :apps:jvm:classes --build-cache --configuration-cache --no-daemon --max-workers=4
+      - save_config_cache:
+          job: shared-build
 
   android-lint:
     executor:
@@ -373,6 +403,8 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_config_cache:
+          job: android-lint
       - run:
           name: Run Android Lint checks
           # lintRelease and assembleRelease compile the same release graph; those Kotlin compiles
@@ -381,7 +413,9 @@ jobs:
           # lint analyzes code (not the .so libs), so building native here is pure duplicated cost —
           # build-release-apk is the one job that actually needs the native libs. (No CMake install
           # needed as a result.)
-          command: ./gradlew :apps:android:lintRelease --build-cache --no-configuration-cache --no-daemon --max-workers=4 -Pchipbox.skipNative
+          command: ./gradlew :apps:android:lintRelease --build-cache --configuration-cache --no-daemon --max-workers=4 -Pchipbox.skipNative
+      - save_config_cache:
+          job: android-lint
       # Existing apps/android/build/reports/ kept verbatim so its CircleCI URL
       # stays stable for anyone with a bookmark; the broader collect_reports
       # below picks up any other module that produced reports during lintRelease
@@ -404,9 +438,13 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_config_cache:
+          job: unit-test
       - run:
           name: Run JVM unit tests (commonTest @ jvmTest)
-          command: ./gradlew jvmTest --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2
+          command: ./gradlew jvmTest --continue --build-cache --configuration-cache --no-daemon --max-workers=2
+      - save_config_cache:
+          job: unit-test
       # JUnit XMLs for the CircleCI Tests tab (pass/fail counts, suite drilldown).
       - collect_test_results
       - store_test_results:
@@ -431,9 +469,13 @@ jobs:
       # Golden snapshots come from the workspace (setup did the LFS pull;
       # this job has no SSH for git@github.com).
       - attach_built_workspace
+      - restore_config_cache:
+          job: screenshot
       - run:
           name: Compare screenshot tests
-          command: ./gradlew verifyPaparazziDebug --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2
+          command: ./gradlew verifyPaparazziDebug --continue --build-cache --configuration-cache --no-daemon --max-workers=2
+      - save_config_cache:
+          job: screenshot
       # JUnit XML for the Tests tab (Paparazzi runs as a JUnit test under the hood).
       - collect_test_results
       - store_test_results:
@@ -461,6 +503,8 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_config_cache:
+          job: release-apk
       # Restore the SDK CMake + NDK before provisioning them, so install_cmake and AGP's NDK
       # auto-install become fast cache restores instead of downloads (the NDK is ~1 GB).
       - restore_sdk_package:
@@ -478,7 +522,9 @@ jobs:
           name: Build Release
           # The release-graph compiles are remote-cache hits from android-lint; this job
           # adds the assemble-only work (dexing, resource/APK packaging, native build).
-          command: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --no-configuration-cache --no-daemon --max-workers=4
+          command: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --configuration-cache --no-daemon --max-workers=4
+      - save_config_cache:
+          job: release-apk
       # Rename the APK to chipbox-<versionName>.apk so the published artifact carries the
       # git-tag-derived version (apps/android/build.gradle.kts appVersioning {}). Reads the name from
       # the version_name.txt the plugin generates during assembleRelease — see the script for why
@@ -511,6 +557,8 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_config_cache:
+          job: release-jvm
       # installDist host-builds the 7 emulator native libs (host CMake + gcc/g++)
       # and bundles them into the distribution. cmake comes from the SDK package;
       # the host C/C++ toolchain from apt. No NDK here — the host build targets the
@@ -523,7 +571,9 @@ jobs:
           name: Build Release (JVM desktop app)
           # Every Kotlin compile is a remote-cache hit (shared-build pushed them),
           # so this job's real work is just the host native build + the distribution.
-          command: ./gradlew :apps:jvm:installDist --build-cache --no-configuration-cache --no-daemon --max-workers=4
+          command: ./gradlew :apps:jvm:installDist --build-cache --configuration-cache --no-daemon --max-workers=4
+      - save_config_cache:
+          job: release-jvm
       - save_sdk_package:
           package: cmake
       - store_artifacts:
