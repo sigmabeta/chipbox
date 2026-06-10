@@ -300,6 +300,19 @@ jobs:
           # the unqualified task name runs both in this single invocation. `--no-build-cache`: no
           # cacheable compile work here worth pushing to the remote cache, so skip the cache machinery.
           command: ./gradlew resolveCiDependencies --no-configuration-cache --no-build-cache --no-daemon --max-workers=2
+      # TEMP probe (remove after): is the generated gradle-api jar — and its ABI snapshot, which
+      # destabilizes :build-logic:convention:compileKotlin's build-cache key and thus config-cache
+      # reuse — byte-identical across CI containers? Hash it here and in static-analysis (a different
+      # container, same pipeline) and compare. Same hash => reproducible (fix = cache availability);
+      # different => non-reproducible (fix = cache the ~32 MB of snapshots). Read-only.
+      - run:
+          name: TEMP probe gradle-api jar + ABI snapshot hash
+          command: |
+            set +e
+            echo "job=$CIRCLE_JOB workflow_job=$CIRCLE_WORKFLOW_JOB_ID"
+            echo "gradle-api.jar  : $(sha256sum /home/circleci/.gradle/caches/9.5.0/generated-gradle-jars/gradle-api-9.5.0.jar 2>/dev/null | cut -c1-16)"
+            echo "gradle-api ABI snapshot(s):"
+            find /home/circleci/.gradle/caches/9.5.0/transforms -name 'gradle-api-*-snapshot.bin' -exec sha256sum {} \; 2>/dev/null | cut -c1-16 | sort -u | sed 's/^/  /'
       - save_cache:
           key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum "apps/android/build.gradle.kts" }}-{{ checksum "apps/jvm/build.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}
           paths:
@@ -332,6 +345,16 @@ jobs:
           # (org.jlleitschuh.gradle.ktlint); the vendored sage/ submodule is a separate included
           # build and stays out of the lint set.
           command: ./gradlew ktlintCheck detekt --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
+      # TEMP probe (remove after): second container's gradle-api jar + ABI snapshot hash, to compare
+      # against setup's — see the matching note in the setup job.
+      - run:
+          name: TEMP probe gradle-api jar + ABI snapshot hash
+          command: |
+            set +e
+            echo "job=$CIRCLE_JOB workflow_job=$CIRCLE_WORKFLOW_JOB_ID"
+            echo "gradle-api.jar  : $(sha256sum /home/circleci/.gradle/caches/9.5.0/generated-gradle-jars/gradle-api-9.5.0.jar 2>/dev/null | cut -c1-16)"
+            echo "gradle-api ABI snapshot(s):"
+            find /home/circleci/.gradle/caches/9.5.0/transforms -name 'gradle-api-*-snapshot.bin' -exec sha256sum {} \; 2>/dev/null | cut -c1-16 | sort -u | sed 's/^/  /'
       - collect_reports
       - store_artifacts:
           path: ~/reports
