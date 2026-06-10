@@ -122,16 +122,47 @@ commands:
             - /home/circleci/android-sdk/<< parameters.package >>
 
   # Gradle's configuration cache lets every downstream job skip the ~2-3 min task-graph
-  # configuration (156 modules) when nothing it depends on changed. It is ENCRYPTED with a key
-  # Gradle otherwise generates randomly per Gradle User Home (caches/<gv>/cc-keystore); CI never
-  # shares that keystore across containers, so an entry written by one job is undecryptable in
-  # another ("no cached configuration is available"). The fix is the GRADLE_ENCRYPTION_KEY project
-  # env var (a stable base64 AES key) — Gradle reads it from the environment, so the same key
-  # decrypts entries in every container and the cache actually reuses across jobs. Persist it per
-  # `job` (each requests a different task graph => a different entry) with a branch/revision fallback
-  # chain: the exact {{ .Revision }} key hits on a rerun; the {{ .Branch }}- fallback restores the
-  # previous commit's entry, which Gradle reuses as long as no configuration input changed. `setup`
-  # is excluded on purpose — it resolves deps with `--no-configuration-cache` and writes no entry.
+  # configuration (156 modules). Two things are needed to reuse it across CI's ephemeral containers:
+  #
+  # 1. ENCRYPTION KEY. The config cache is encrypted with a key Gradle otherwise generates randomly
+  #    per Gradle User Home (caches/<gv>/cc-keystore), which CI never shares across containers — so an
+  #    entry written by one job is undecryptable in another ("no cached configuration is available").
+  #    The GRADLE_ENCRYPTION_KEY project env var (a stable base64 AES key, read from the environment)
+  #    makes the same key decrypt entries everywhere. (Set in CircleCI project settings, not here.)
+  #
+  # 2. STABLE BUILD-LOGIC CLASSPATH. The config-cache *fingerprint* references Gradle's generated
+  #    build-logic classpath — type-safe project/dependency accessors, compiled kotlin-dsl scripts,
+  #    the generated gradle-api jar, and the artifact-transform outputs (ABI snapshots) under
+  #    transforms/. A fresh container regenerates these, so the restored entry invalidates ("file
+  #    '.../dependencies-accessors|transforms/...' has changed"). We cache that classpath ONCE
+  #    (restore_buildlogic_classpath / save_buildlogic_classpath) keyed on what actually determines it
+  #    — the version catalogs, settings, and Gradle version — so every job and every pipeline with the
+  #    same key restores byte-identical copies. `setup` produces this set during dependency
+  #    resolution/configuration (no task execution => only the config-relevant transforms, not the big
+  #    compilation ones like layoutlib) and saves it; downstream jobs restore it before configuring.
+  restore_buildlogic_classpath:
+    steps:
+      - restore_cache:
+          keys:
+            - blcp-v1-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
+            - blcp-v1-
+  save_buildlogic_classpath:
+    steps:
+      - save_cache:
+          key: blcp-v1-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
+          paths:
+            - /home/circleci/.gradle/caches/9.5.0/dependencies-accessors
+            - /home/circleci/.gradle/caches/9.5.0/kotlin-dsl
+            - /home/circleci/.gradle/caches/9.5.0/generated-gradle-jars
+            - /home/circleci/.gradle/caches/9.5.0/groovy-dsl
+            - /home/circleci/.gradle/caches/9.5.0/transforms
+            - /home/circleci/.gradle/caches/jars-9
+
+  # Per-job config-cache entry (each job requests a different task graph => a different entry), with a
+  # branch/revision fallback chain: exact {{ .Revision }} hits on a rerun; {{ .Branch }}- restores the
+  # previous commit's entry, reused as long as no configuration input changed. Just the entry now —
+  # the classpath it's fingerprinted against is restored separately (above). `setup` is excluded on
+  # purpose: it resolves deps with `--no-configuration-cache` and writes no entry.
   restore_config_cache:
     parameters:
       job:
@@ -139,9 +170,9 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - cconfig-<< parameters.job >>-v4-{{ .Branch }}-{{ .Revision }}
-            - cconfig-<< parameters.job >>-v4-{{ .Branch }}-
-            - cconfig-<< parameters.job >>-v4-
+            - cconfig-<< parameters.job >>-v5-{{ .Branch }}-{{ .Revision }}
+            - cconfig-<< parameters.job >>-v5-{{ .Branch }}-
+            - cconfig-<< parameters.job >>-v5-
   save_config_cache:
     parameters:
       job:
@@ -154,19 +185,9 @@ commands:
           # skips configuration entirely. The `{{ .Revision }}` key is immutable, so a rerun
           # after a successful save is a no-op.
           when: always
-          key: cconfig-<< parameters.job >>-v4-{{ .Branch }}-{{ .Revision }}
+          key: cconfig-<< parameters.job >>-v5-{{ .Branch }}-{{ .Revision }}
           paths:
             - .gradle/configuration-cache
-            # Gradle-generated build-logic classpath the config-cache fingerprint references (type-safe
-            # project/dependency accessors, compiled kotlin-dsl, generated gradle-api jars). Each fresh
-            # container regenerates these, so without bundling them the restored entry invalidates with
-            # "file '.../dependencies-accessors/...' has changed". Bundled here (NOT build-logic's build/
-            # outputs — restoring those fought Gradle's up-to-date check) so a restore brings back the
-            # exact copies the entry was fingerprinted against. CircleCI doesn't expand env vars in
-            # paths, so the Gradle User Home is hardcoded.
-            - /home/circleci/.gradle/caches/9.5.0/dependencies-accessors
-            - /home/circleci/.gradle/caches/9.5.0/kotlin-dsl
-            - /home/circleci/.gradle/caches/9.5.0/generated-gradle-jars
 
   # Sweep every module's `build/reports/` (ktlint, detekt, html test reports, lint,
   # whatever lives there) into one tree keyed by module path. Runs `when: always`
@@ -335,6 +356,7 @@ jobs:
           # the unqualified task name runs both in this single invocation. `--no-build-cache`: no
           # cacheable compile work here worth pushing to the remote cache, so skip the cache machinery.
           command: ./gradlew resolveCiDependencies --no-configuration-cache --no-build-cache --no-daemon --max-workers=2
+      - save_buildlogic_classpath
       - save_cache:
           key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum "apps/android/build.gradle.kts" }}-{{ checksum "apps/jvm/build.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}
           paths:
@@ -357,6 +379,7 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_buildlogic_classpath
       - restore_config_cache:
           job: static-analysis
       - run:
@@ -387,6 +410,7 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_buildlogic_classpath
       - restore_config_cache:
           job: shared-build
       - run:
@@ -413,6 +437,7 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_buildlogic_classpath
       - restore_config_cache:
           job: android-lint
       - run:
@@ -448,6 +473,7 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_buildlogic_classpath
       - restore_config_cache:
           job: unit-test
       - run:
@@ -479,6 +505,7 @@ jobs:
       # Golden snapshots come from the workspace (setup did the LFS pull;
       # this job has no SSH for git@github.com).
       - attach_built_workspace
+      - restore_buildlogic_classpath
       - restore_config_cache:
           job: screenshot
       - run:
@@ -513,6 +540,7 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_buildlogic_classpath
       - restore_config_cache:
           job: release-apk
       # Restore the SDK CMake + NDK before provisioning them, so install_cmake and AGP's NDK
@@ -567,6 +595,7 @@ jobs:
 
     steps:
       - attach_built_workspace
+      - restore_buildlogic_classpath
       - restore_config_cache:
           job: release-jvm
       # installDist host-builds the 7 emulator native libs (host CMake + gcc/g++)
