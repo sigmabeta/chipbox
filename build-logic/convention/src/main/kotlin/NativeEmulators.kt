@@ -53,7 +53,11 @@ private fun Project.highestSdkCmakeDir(): File? =
  */
 fun Project.resolveSdkCmake(): File =
     highestSdkCmakeDir()?.let { File(it, "bin/cmake") }
-        ?: error("No CMake under ${androidSdkDir()}/cmake — install one: `sdkmanager 'cmake;<ver>'`.")
+        // No SDK CMake installed. This runs at *configuration* time in every job that configures the
+        // native modules — including base-image CI jobs (no SDK cmake) that never *execute* the native
+        // task. So don't fail here: return a placeholder. The task only runs where an SDK cmake exists
+        // (the `-ndk` image's 4.1.x on CI, a contributor's local install), where the branch above hits.
+        ?: File(androidSdkDir(), "cmake/none/bin/cmake")
 
 /**
  * CMake for the apps/jvm host build: `-Pchipbox.cmake` override → highest SDK CMake → `$PATH` →
