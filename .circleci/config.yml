@@ -72,78 +72,15 @@ commands:
           name: Install host C/C++ toolchain (gcc/g++/make for JVM native libs)
           command: sudo apt-get update && sudo apt-get install -y build-essential
 
-  # Gradle's configuration cache lets every downstream job skip the ~2-3 min task-graph
-  # configuration (156 modules). Two things are needed to reuse it across CI's ephemeral containers:
-  #
-  # 1. ENCRYPTION KEY. The config cache is encrypted with a key Gradle otherwise generates randomly
-  #    per Gradle User Home (caches/<gv>/cc-keystore), which CI never shares across containers — so an
-  #    entry written by one job is undecryptable in another ("no cached configuration is available").
-  #    The GRADLE_ENCRYPTION_KEY project env var (a stable base64 AES key, read from the environment)
-  #    makes the same key decrypt entries everywhere. (Set in CircleCI project settings, not here.)
-  #
-  # 2. STABLE BUILD-LOGIC CLASSPATH (PARTIAL). The config-cache *fingerprint* references Gradle's
-  #    generated build-logic classpath, which a fresh container regenerates, so the restored entry
-  #    invalidates ("file '.../dependencies-accessors|transforms/...' has changed"). We cache the SAFE
-  #    parts of it ONCE (restore/save_buildlogic_classpath) keyed on what determines it — the version
-  #    catalogs, settings, and Gradle version — so every job/pipeline with the same key restores
-  #    byte-identical copies: the type-safe project/dependency accessors, compiled kotlin-dsl/groovy-dsl
-  #    scripts, and the generated gradle-api jar. `setup` produces these during dependency resolution.
-  #
-  #    NOT cached: the artifact-transform outputs (transforms/, jars-9/). The Android-configuring jobs'
-  #    fingerprint references those, but they're content-addressed, Gradle-managed caches — restoring a
-  #    foreign/partial copy corrupts transform resolution and BREAKS the build (a ClasspathEntrySnapshot
-  #    transform failed: "no implementation for KotlinToolchains"). The Android SDK's volatile
-  #    build-tools/.installer/.installData is also a fingerprint input. So reuse is PARTIAL: JVM-only
-  #    jobs (unit-test, shared-build) reuse the config cache; the Android-configuring jobs still
-  #    recompute their task graph. Encryption (1) + this classpath cache make that partial reuse work
-  #    and keep the build green; fully covering the Android jobs would mean safely caching transforms
-  #    and stabilizing the SDK metadata, which isn't worth the fragility today.
-  restore_buildlogic_classpath:
-    steps:
-      - restore_cache:
-          keys:
-            - blcp-v3-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
-            - blcp-v3-
-  save_buildlogic_classpath:
-    steps:
-      - save_cache:
-          key: blcp-v3-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
-          paths:
-            - /home/circleci/.gradle/caches/9.5.0/dependencies-accessors
-            - /home/circleci/.gradle/caches/9.5.0/kotlin-dsl
-            - /home/circleci/.gradle/caches/9.5.0/generated-gradle-jars
-            - /home/circleci/.gradle/caches/9.5.0/groovy-dsl
-
-  # Per-job config-cache entry (each job requests a different task graph => a different entry), with a
-  # branch/revision fallback chain: exact {{ .Revision }} hits on a rerun; {{ .Branch }}- restores the
-  # previous commit's entry, reused as long as no configuration input changed. Just the entry now —
-  # the classpath it's fingerprinted against is restored separately (above). `setup` is excluded on
-  # purpose: it resolves deps with `--no-configuration-cache` and writes no entry.
-  restore_config_cache:
-    parameters:
-      job:
-        type: string
-    steps:
-      - restore_cache:
-          keys:
-            - cconfig-<< parameters.job >>-v7-{{ .Branch }}-{{ .Revision }}
-            - cconfig-<< parameters.job >>-v7-{{ .Branch }}-
-            - cconfig-<< parameters.job >>-v7-
-  save_config_cache:
-    parameters:
-      job:
-        type: string
-    steps:
-      - save_cache:
-          # `when: always` so a job that fails in task *execution* still saves the entry that
-          # *configuration* already produced (Gradle writes the config-cache entry once
-          # configuration succeeds, before any task runs) — a retry of the same commit then
-          # skips configuration entirely. The `{{ .Revision }}` key is immutable, so a rerun
-          # after a successful save is a no-op.
-          when: always
-          key: cconfig-<< parameters.job >>-v7-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - .gradle/configuration-cache
+  # NOTE: Gradle's configuration cache is DISABLED on CI — every Gradle command below passes
+  # `--no-configuration-cache`, overriding `org.gradle.configuration-cache=true` in gradle.properties
+  # (kept on for local dev, where it reuses fine on a warm machine). We proved it never reuses across
+  # CI's ephemeral containers: every job's config-cache fingerprint references an artifact-transform
+  # output under caches/<gv>/transforms (the build-script classpath ABI snapshot), which isn't
+  # reproduced identically per container; caching transforms to stabilize it corrupts Gradle's
+  # transform resolution and BREAKS the build. So config-cache caching was pure transfer overhead for
+  # zero hits and was removed (encryption key, per-job entry, and build-logic classpath caches all).
+  # The only way to actually reuse it here is a persistent (self-hosted) runner that stays warm.
 
   # Sweep every module's `build/reports/` (ktlint, detekt, html test reports, lint,
   # whatever lives there) into one tree keyed by module path. Runs `when: always`
@@ -312,7 +249,6 @@ jobs:
           # the unqualified task name runs both in this single invocation. `--no-build-cache`: no
           # cacheable compile work here worth pushing to the remote cache, so skip the cache machinery.
           command: ./gradlew resolveCiDependencies --no-configuration-cache --no-build-cache --no-daemon --max-workers=2
-      - save_buildlogic_classpath
       - save_cache:
           key: jars-v1-{{ checksum "build.gradle.kts" }}-{{ checksum "apps/android/build.gradle.kts" }}-{{ checksum "apps/jvm/build.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}
           paths:
@@ -335,9 +271,6 @@ jobs:
 
     steps:
       - attach_built_workspace
-      - restore_buildlogic_classpath
-      - restore_config_cache:
-          job: static-analysis
       - run:
           name: Run Ktlint + Detekt
           # Both static-analysis checks in ONE Gradle invocation so the (dominant) configuration
@@ -347,9 +280,7 @@ jobs:
           # lint, so there's nothing for this job to do in them. ktlint runs through Gradle
           # (org.jlleitschuh.gradle.ktlint); the vendored sage/ submodule is a separate included
           # build and stays out of the lint set.
-          command: ./gradlew ktlintCheck detekt --continue --build-cache --configuration-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
-      - save_config_cache:
-          job: static-analysis
+          command: ./gradlew ktlintCheck detekt --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
       - collect_reports
       - store_artifacts:
           path: ~/reports
@@ -366,9 +297,6 @@ jobs:
 
     steps:
       - attach_built_workspace
-      - restore_buildlogic_classpath
-      - restore_config_cache:
-          job: shared-build
       - run:
           name: Build shared JVM/Android code
           # `:apps:jvm:classes` compiles apps/jvm plus, transitively, the JVM
@@ -380,9 +308,7 @@ jobs:
           # have no debug/release split; the Android `release` graph is compiled
           # in android-lint, which feeds build-release-apk.) Outputs are pushed to
           # the remote build cache, so build-release-jvm hits them.
-          command: ./gradlew :apps:jvm:classes --build-cache --configuration-cache --no-daemon --max-workers=4
-      - save_config_cache:
-          job: shared-build
+          command: ./gradlew :apps:jvm:classes --build-cache --no-configuration-cache --no-daemon --max-workers=4
 
   android-lint:
     executor:
@@ -393,9 +319,6 @@ jobs:
 
     steps:
       - attach_built_workspace
-      - restore_buildlogic_classpath
-      - restore_config_cache:
-          job: android-lint
       - run:
           name: Run Android Lint checks
           # lintRelease and assembleRelease compile the same release graph; those Kotlin compiles
@@ -404,9 +327,7 @@ jobs:
           # lint analyzes code (not the .so libs), so building native here is pure duplicated cost —
           # build-release-apk is the one job that actually needs the native libs. (No CMake install
           # needed as a result.)
-          command: ./gradlew :apps:android:lintRelease --build-cache --configuration-cache --no-daemon --max-workers=4 -Pchipbox.skipNative
-      - save_config_cache:
-          job: android-lint
+          command: ./gradlew :apps:android:lintRelease --build-cache --no-configuration-cache --no-daemon --max-workers=4 -Pchipbox.skipNative
       # Existing apps/android/build/reports/ kept verbatim so its CircleCI URL
       # stays stable for anyone with a bookmark; the broader collect_reports
       # below picks up any other module that produced reports during lintRelease
@@ -429,14 +350,9 @@ jobs:
 
     steps:
       - attach_built_workspace
-      - restore_buildlogic_classpath
-      - restore_config_cache:
-          job: unit-test
       - run:
           name: Run JVM unit tests (commonTest @ jvmTest)
-          command: ./gradlew jvmTest --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - save_config_cache:
-          job: unit-test
+          command: ./gradlew jvmTest --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2
       # JUnit XMLs for the CircleCI Tests tab (pass/fail counts, suite drilldown).
       - collect_test_results
       - store_test_results:
@@ -461,14 +377,9 @@ jobs:
       # Golden snapshots come from the workspace (setup did the LFS pull;
       # this job has no SSH for git@github.com).
       - attach_built_workspace
-      - restore_buildlogic_classpath
-      - restore_config_cache:
-          job: screenshot
       - run:
           name: Compare screenshot tests
-          command: ./gradlew verifyPaparazziDebug --continue --build-cache --configuration-cache --no-daemon --max-workers=2
-      - save_config_cache:
-          job: screenshot
+          command: ./gradlew verifyPaparazziDebug --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2
       # JUnit XML for the Tests tab (Paparazzi runs as a JUnit test under the hood).
       - collect_test_results
       - store_test_results:
@@ -499,9 +410,6 @@ jobs:
 
     steps:
       - attach_built_workspace
-      - restore_buildlogic_classpath
-      - restore_config_cache:
-          job: release-apk
       # assembleRelease builds the emulator modules' native code via CMake + the NDK toolchain — both
       # ship in the `-ndk` image (CMake 4.1.x, NDK 29.0.14206865), so nothing to install/cache here.
       # Release signing reads CHIPBOX_KEY_ALIAS / CHIPBOX_KEYSTORE_PASSWORD /
@@ -511,9 +419,7 @@ jobs:
           name: Build Release
           # The release-graph compiles are remote-cache hits from android-lint; this job
           # adds the assemble-only work (dexing, resource/APK packaging, native build).
-          command: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --configuration-cache --no-daemon --max-workers=4
-      - save_config_cache:
-          job: release-apk
+          command: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --no-configuration-cache --no-daemon --max-workers=4
       # Rename the APK to chipbox-<versionName>.apk so the published artifact carries the
       # git-tag-derived version (apps/android/build.gradle.kts appVersioning {}). Reads the name from
       # the version_name.txt the plugin generates during assembleRelease — see the script for why
@@ -541,9 +447,6 @@ jobs:
 
     steps:
       - attach_built_workspace
-      - restore_buildlogic_classpath
-      - restore_config_cache:
-          job: release-jvm
       # installDist host-builds the 7 emulator native libs (host CMake + gcc/g++) and bundles them
       # into the distribution. CMake ships in the image; the host C/C++ toolchain comes from apt. No
       # NDK here — the host build targets the build machine, not Android.
@@ -552,9 +455,7 @@ jobs:
           name: Build Release (JVM desktop app)
           # Every Kotlin compile is a remote-cache hit (shared-build pushed them),
           # so this job's real work is just the host native build + the distribution.
-          command: ./gradlew :apps:jvm:installDist --build-cache --configuration-cache --no-daemon --max-workers=4
-      - save_config_cache:
-          job: release-jvm
+          command: ./gradlew :apps:jvm:installDist --build-cache --no-configuration-cache --no-daemon --max-workers=4
       - store_artifacts:
           path: apps/jvm/build/install
           destination: jvm-dist
