@@ -305,6 +305,25 @@ jobs:
           # origin AND be an ancestor of the built branch, or describe finds nothing and the version
           # name comes out empty (see scripts/rename-release-apk.sh, which logs tag state on failure).
           command: git fetch --prune --prune-tags && git fetch --tags -f
+      # TEMP diagnostic (remove after): the Gradle configuration cache never reuses in CI — every
+      # downstream job recomputes the task graph ("no cached configuration is available"), even on an
+      # exact-key restore of a same-commit rerun. Locally it reuses fine. This isolates the cause:
+      # run the SAME config-cache build 3x back-to-back IN ONE CONTAINER. If runs 2/3 reuse, the
+      # problem is purely the cross-container restore; if they MISS even back-to-back, the cache key
+      # is unstable per-invocation (a timestamp/random/per-run value in the key). Also dumps the
+      # candidate key-dirs and key-relevant env so we can see what moved.
+      - run:
+          name: TEMP diagnose configuration cache (within-container reuse)
+          command: |
+            set +e
+            for i in 1 2 3; do
+              echo "=== run $i ==="
+              ./gradlew help --configuration-cache --no-daemon 2>&1 \
+                | grep -iE 'Reusing configuration cache|no cached configuration|cannot be reused because' | head -2
+              echo "  candidate dirs: $(ls -1 .gradle/configuration-cache/ 2>/dev/null | grep -vE 'gc.properties|\.lock' | wc -l)"
+            done
+            echo "=== key-relevant env ==="
+            env | grep -iE '^(CI=|CIRCLE_|JAVA_HOME|GRADLE_USER_HOME|JVM_OPTS|ANDROID_)' | sort
       - run:
           name: Fetch Paparazzi golden snapshots (Git LFS)
           # Done here because `setup` has SSH configured by `checkout`;
