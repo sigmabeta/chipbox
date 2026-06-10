@@ -299,17 +299,44 @@ jobs:
       - run:
           name: Get full history + all Git tags
           # app-versioning derives the release version via `git describe --tags`, which needs the
-          # tagged commits to be REACHABLE from HEAD — not just the tag refs to exist. CircleCI's
-          # checkout is shallow, so the tag refs are present but their commits are outside the
-          # truncated history → `git describe` fails ("No tags can describe <sha>") → empty version
-          # name → build-release-apk's rename step fails. Unshallow to pull full history (the `||`
-          # fallback covers an already-complete clone, where --unshallow errors), then fetch tags.
-          # setup persists .git to the workspace, so build-release-apk inherits the full history.
+          # tagged commits to be REACHABLE from HEAD — not just the tag refs to exist. Ensure both:
+          # --unshallow pulls full history if the checkout was shallow (the `||` fallback covers an
+          # already-complete clone, where --unshallow errors), and --force refreshes tag refs to
+          # match origin (a restored cached .git can hold stale tag SHAs). setup persists .git to the
+          # workspace, so build-release-apk inherits whatever state this leaves.
           command: |
             git fetch --unshallow --tags --force 2>/dev/null || git fetch --tags --force
             git fetch --prune --prune-tags
             test -f .git/shallow && echo "WARNING: still shallow" || echo "history complete"
             echo "describe: $(git describe --tags 2>&1)"
+      - run:
+          name: Diagnose git topology (why does describe fail?)
+          # build-release-apk's version comes from `git describe --tags`, which fails in CI even
+          # though the repo isn't shallow. Dump the full picture so the cause is visible without
+          # guessing: HEAD, the fetch refspec (single-branch clones don't fetch tag history), each
+          # local tag's SHA + whether that commit is present and an ancestor of HEAD, the describe
+          # output, and what origin actually advertises. Read-only; `set +e` so it never fails setup.
+          command: |
+            set +e
+            echo "== HEAD / branch =="
+            git rev-parse HEAD; git rev-parse --abbrev-ref HEAD
+            echo "shallow=$(test -f .git/shallow && echo yes || echo no)  depth=$(git rev-list --count HEAD)"
+            echo "== fetch refspec =="
+            git config --get-all remote.origin.fetch
+            echo "== local tags: name  sha  commit-present  ancestor-of-HEAD =="
+            for t in $(git tag -l); do
+              sha=$(git rev-list -n1 "$t" 2>/dev/null)
+              obj=$(git cat-file -e "${sha}^{commit}" 2>/dev/null && echo present || echo MISSING)
+              anc=$(git merge-base --is-ancestor "$t" HEAD 2>/dev/null && echo ancestor || echo NOT-ancestor)
+              printf "  %-14s %s  %s  %s\n" "$t" "${sha:0:12}" "$obj" "$anc"
+            done
+            echo "== describe =="
+            echo "  --tags:          $(git describe --tags 2>&1)"
+            echo "  --tags --always: $(git describe --tags --always 2>&1)"
+            echo "== origin tags (ls-remote) =="
+            git ls-remote --tags origin | head -20
+            echo "== recent history =="
+            git log --oneline -8
       - run:
           name: Fetch Paparazzi golden snapshots (Git LFS)
           # Done here because `setup` has SSH configured by `checkout`;
