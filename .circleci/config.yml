@@ -123,15 +123,18 @@ commands:
 
   # NOTE: Gradle's configuration cache is intentionally DISABLED on CI (every Gradle command below
   # passes `--no-configuration-cache`, overriding `org.gradle.configuration-cache=true` in
-  # gradle.properties, which stays on for local dev where it works). We measured that it never
-  # reuses across CI's ephemeral containers: it's keyed on the build-script classpath, and
-  # `:build-logic:convention:compileKotlin` recompiles in every fresh container (its build-cache key
-  # fingerprints the ABI snapshot of the generated gradle-api jar, which isn't reproduced/cached
-  # identically per container). So a restored entry's key never matches — "no cached configuration is
-  # available", 0 reuse across runs. Caching/restoring `.gradle/configuration-cache` (and the
-  # build-script classpath that would stabilize it) was pure transfer overhead for zero hits, so the
-  # restore_config_cache/save_config_cache commands were removed. The only way to actually reuse it
-  # here is a persistent (self-hosted) runner that keeps the same machine warm.
+  # gradle.properties, which stays on for local dev, where it reuses fine on a warm machine).
+  # Measured behaviour: the entry reuses *within* one container but never *across* CI's ephemeral
+  # containers — every job recomputes the task graph ("no cached configuration is available"), even
+  # job-1550-style exact-key restores of a same-commit rerun. That's a *key* miss, not a fingerprint
+  # invalidation, so some component of the configuration-cache key differs per container. We did NOT
+  # pin down which: the leading suspect (an unstable build-script classpath from build-logic
+  # recompiling) was tested and DISPROVEN — the generated gradle-api jar + its ABI snapshots are
+  # byte-identical across containers, and build-logic's Kotlin compile is deterministic. So caching
+  # `.gradle/configuration-cache` was pure transfer overhead for zero hits; the
+  # restore_config_cache/save_config_cache commands were removed. Disabled on ROI grounds (it'd save
+  # only ~tens of seconds of configuration per job). The one known way to actually reuse it here is a
+  # persistent (self-hosted) runner that keeps the same machine warm.
 
   # Sweep every module's `build/reports/` (ktlint, detekt, html test reports, lint,
   # whatever lives there) into one tree keyed by module path. Runs `when: always`
