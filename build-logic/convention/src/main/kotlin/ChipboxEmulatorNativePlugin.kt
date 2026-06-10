@@ -43,11 +43,11 @@ class ChipboxEmulatorNativePlugin : Plugin<Project> {
             // lint / static-analysis pass -Pchipbox.skipNative — nothing native to build here.
             if (skipNative) return@with
 
-            // Use the SDK's CMake (the version AGP used; install_cmake provides it on CI) — it
-            // bundles a matching Ninja next to it. A PATH cmake like /usr/bin/cmake on CI has no
-            // sibling ninja, so the `-G Ninja` configure below would fail.
+            // Use the highest SDK CMake (the cimg/android image ships one; locally it's whatever the
+            // contributor installed) — it bundles a matching Ninja next to it. A PATH cmake like
+            // /usr/bin/cmake has no sibling ninja, so the `-G Ninja` configure below would fail.
             val sdk = androidSdkDir()
-            val cmake = File(sdk, "cmake/${NativeEmulators.CMAKE_VERSION}/bin/cmake")
+            val cmake = resolveSdkCmake()
             val ninja = File(cmake.parentFile, "ninja")
             val toolchain = File(
                 sdk,
@@ -67,7 +67,7 @@ class ChipboxEmulatorNativePlugin : Plugin<Project> {
 
                 // Relocatable identity (the cache key) — no absolute paths here.
                 cacheKey.put("toolchain", "ndk-${NativeEmulators.NDK_VERSION}")
-                cacheKey.put("cmake", NativeEmulators.CMAKE_VERSION)
+                cacheKey.put("cmake", cmake.parentFile.parentFile.name)
                 cacheKey.put("platform", NativeEmulators.ANDROID_PLATFORM)
                 cacheKey.put("buildType", BUILD_TYPE)
                 cacheKey.put("abis", ABIS.joinToString(","))
