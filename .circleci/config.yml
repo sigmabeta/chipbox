@@ -297,8 +297,19 @@ jobs:
             git submodule foreach --recursive 'git fetch origin' || true
             git submodule update --init --recursive
       - run:
-          name: Get all Git tags
-          command: git fetch --prune --prune-tags && git fetch --tags -f
+          name: Get full history + all Git tags
+          # app-versioning derives the release version via `git describe --tags`, which needs the
+          # tagged commits to be REACHABLE from HEAD — not just the tag refs to exist. CircleCI's
+          # checkout is shallow, so the tag refs are present but their commits are outside the
+          # truncated history → `git describe` fails ("No tags can describe <sha>") → empty version
+          # name → build-release-apk's rename step fails. Unshallow to pull full history (the `||`
+          # fallback covers an already-complete clone, where --unshallow errors), then fetch tags.
+          # setup persists .git to the workspace, so build-release-apk inherits the full history.
+          command: |
+            git fetch --unshallow --tags --force 2>/dev/null || git fetch --tags --force
+            git fetch --prune --prune-tags
+            test -f .git/shallow && echo "WARNING: still shallow" || echo "history complete"
+            echo "describe: $(git describe --tags 2>&1)"
       - run:
           name: Fetch Paparazzi golden snapshots (Git LFS)
           # Done here because `setup` has SSH configured by `checkout`;
