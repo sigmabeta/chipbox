@@ -138,6 +138,14 @@ commands:
   # fingerprint and re-configures from scratch, so a stale restore is never wrong, only
   # occasionally wasted. `setup` is excluded on purpose — it resolves dependencies with
   # `--no-configuration-cache`, so it never writes an entry.
+  # The configuration cache alone isn't enough to reuse across CI containers: a restored entry is
+  # keyed/fingerprinted against the build-script CLASSPATH — the convention-plugin (`build-logic`)
+  # outputs plus Gradle's generated build-logic artifacts (kotlin-dsl scripts, type-safe project &
+  # dependency accessors, generated-gradle-jars). Each fresh container regenerates those, so the
+  # restored entry never matches → "no cached configuration is available" (a key miss, not a
+  # fingerprint miss). Fix per https://www.jasonpearson.dev/gradle-config-cache-reuse-on-ci/: bundle
+  # that classpath INTO the same cache as the config-cache entry, so a restore always brings back the
+  # exact classpath the entry was built against. Key bumped to -v2- because -v1- entries lack it.
   restore_config_cache:
     parameters:
       job:
@@ -145,9 +153,9 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - cconfig-<< parameters.job >>-v1-{{ .Branch }}-{{ .Revision }}
-            - cconfig-<< parameters.job >>-v1-{{ .Branch }}-
-            - cconfig-<< parameters.job >>-v1-
+            - cconfig-<< parameters.job >>-v2-{{ .Branch }}-{{ .Revision }}
+            - cconfig-<< parameters.job >>-v2-{{ .Branch }}-
+            - cconfig-<< parameters.job >>-v2-
   save_config_cache:
     parameters:
       job:
@@ -158,11 +166,20 @@ commands:
           # *configuration* already produced (Gradle writes the config-cache entry once
           # configuration succeeds, before any task runs) — a retry of the same commit then
           # skips configuration entirely. The `{{ .Revision }}` key is immutable, so a rerun
-          # after a successful save is a no-op.
+          # after a successful save is a no-op. CircleCI does NOT expand env vars in cache paths,
+          # so the Gradle User Home dirs are hardcoded (/home/circleci/.gradle, an image-level ENV).
           when: always
-          key: cconfig-<< parameters.job >>-v1-{{ .Branch }}-{{ .Revision }}
+          key: cconfig-<< parameters.job >>-v2-{{ .Branch }}-{{ .Revision }}
           paths:
             - .gradle/configuration-cache
+            # Convention-plugin outputs (the included-build plugin classpath).
+            - build-logic/convention/build
+            - sage/sage-build-logic/convention/build
+            # Gradle-generated build-logic classpath: compiled DSL scripts, project/dependency
+            # accessors, and the generated Gradle API jars.
+            - /home/circleci/.gradle/caches/9.5.0/kotlin-dsl
+            - /home/circleci/.gradle/caches/9.5.0/dependencies-accessors
+            - /home/circleci/.gradle/caches/9.5.0/generated-gradle-jars
 
   # Sweep every module's `build/reports/` (ktlint, detekt, html test reports, lint,
   # whatever lives there) into one tree keyed by module path. Runs `when: always`
