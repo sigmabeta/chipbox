@@ -38,7 +38,7 @@ executors:
         default: -Xmx3200m
     resource_class: << parameters.resource_class >>
     docker:
-      - image: cimg/android:2024.04.1
+      - image: cimg/android:2026.03.1
     environment:
       JVM_OPTS: << parameters.jvm_opts >>
 
@@ -151,12 +151,12 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - blcp-v2-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
-            - blcp-v2-
+            - blcp-v3-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
+            - blcp-v3-
   save_buildlogic_classpath:
     steps:
       - save_cache:
-          key: blcp-v2-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
+          key: blcp-v3-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}-{{ checksum "settings.gradle.kts" }}-{{ checksum "sage/gradle/libs.versions.toml" }}-{{ checksum "gradle/chipbox.versions.toml" }}
           paths:
             - /home/circleci/.gradle/caches/9.5.0/dependencies-accessors
             - /home/circleci/.gradle/caches/9.5.0/kotlin-dsl
@@ -175,9 +175,9 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - cconfig-<< parameters.job >>-v6-{{ .Branch }}-{{ .Revision }}
-            - cconfig-<< parameters.job >>-v6-{{ .Branch }}-
-            - cconfig-<< parameters.job >>-v6-
+            - cconfig-<< parameters.job >>-v7-{{ .Branch }}-{{ .Revision }}
+            - cconfig-<< parameters.job >>-v7-{{ .Branch }}-
+            - cconfig-<< parameters.job >>-v7-
   save_config_cache:
     parameters:
       job:
@@ -190,7 +190,7 @@ commands:
           # skips configuration entirely. The `{{ .Revision }}` key is immutable, so a rerun
           # after a successful save is a no-op.
           when: always
-          key: cconfig-<< parameters.job >>-v6-{{ .Branch }}-{{ .Revision }}
+          key: cconfig-<< parameters.job >>-v7-{{ .Branch }}-{{ .Revision }}
           paths:
             - .gradle/configuration-cache
 
