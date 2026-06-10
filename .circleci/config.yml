@@ -25,8 +25,9 @@ parameters:
 ##################################################
 
 executors:
-  # Every job runs on the same cimg/android image and differs only in box size
-  # and heap tuning, so one parameterized executor covers them all.
+  # Every job runs on a cimg/android image and differs only in box size, heap tuning, and image
+  # variant, so one parameterized executor covers them all. The default (plain) image is used
+  # everywhere except build-release-apk, which overrides to the `-ndk` variant (NDK pre-installed).
   android:
     parameters:
       resource_class:
@@ -36,9 +37,12 @@ executors:
       jvm_opts:
         type: string
         default: -Xmx3200m
+      image:
+        type: string
+        default: cimg/android:2026.03.1
     resource_class: << parameters.resource_class >>
     docker:
-      - image: cimg/android:2026.03.1
+      - image: << parameters.image >>
     environment:
       JVM_OPTS: << parameters.jvm_opts >>
 
@@ -65,17 +69,9 @@ commands:
           # absorbs the signal so only sdkmanager's real exit status counts.
           command: (yes || true) | sdkmanager "cmake;3.22.1"
 
-  # The emulator :native modules build their .so's with our own buildEmulatorNativeLib task
-  # (CMake + the NDK toolchain), NOT AGP's externalNativeBuild. AGP only auto-installs the NDK
-  # when *its own* native tasks need it — which we no longer have — so setting ndkVersion alone
-  # doesn't download it. Install it explicitly here so the toolchain file exists before any
-  # native task runs (otherwise: "Could not find toolchain file"). Only build-release-apk builds
-  # the Android .so's, so only it needs this. Version pinned to NativeEmulators.NDK_VERSION.
-  install_ndk:
-    steps:
-      - run:
-          name: Install NDK (toolchain for the Android emulator native libs)
-          command: (yes || true) | sdkmanager "ndk;29.0.14206865"
+  # (NDK install removed: build-release-apk now runs on the cimg/android `-ndk` image, which
+  # pre-installs NDK 29.0.14206865 == NativeEmulators.NDK_VERSION. Keep that pin and the image's
+  # NDK_STABLE_VERSION in lockstep on future image bumps, or restore an explicit install step.)
 
   # The JVM target's emulator libs are host-built (host CMake's default Unix
   # Makefiles generator + gcc/g++/make/ar), NOT via the NDK. apps/jvm's build
@@ -542,22 +538,22 @@ jobs:
       resource_class: large
       # Start off with a 4GB heap size; expand up to 6GB
       jvm_opts: -Xms4g -Xmx6g
+      # The `-ndk` variant pre-installs NDK 29.0.14206865 (== NativeEmulators.NDK_VERSION), so this
+      # job — the only one that builds the Android .so's — skips installing/caching the ~1 GB NDK.
+      image: cimg/android:2026.03.1-ndk
 
     steps:
       - attach_built_workspace
       - restore_buildlogic_classpath
       - restore_config_cache:
           job: release-apk
-      # Restore the SDK CMake + NDK before provisioning them, so install_cmake and AGP's NDK
-      # auto-install become fast cache restores instead of downloads (the NDK is ~1 GB).
+      # CMake (which bundles Ninja) isn't in the image; restore it before provisioning so install_cmake
+      # is a fast cache restore instead of a download. The NDK is already in the `-ndk` image.
       - restore_sdk_package:
           package: cmake
-      - restore_sdk_package:
-          package: ndk
-      # assembleRelease builds the emulator modules' native code via CMake + the NDK toolchain.
-      # On a cache hit these are no-ops (the packages are already on disk); otherwise they download.
+      # assembleRelease builds the emulator modules' native code via CMake + the NDK toolchain. CMake
+      # installs here (no-op on a cache hit); the NDK ships in the image.
       - install_cmake
-      - install_ndk
       # Release signing reads CHIPBOX_KEY_ALIAS / CHIPBOX_KEYSTORE_PASSWORD /
       # CHIPBOX_KEY_PASSWORD from CircleCI project env vars (chipbox.jks is
       # committed at the repo root). Without them the APK is debug-signed.
@@ -575,11 +571,9 @@ jobs:
       - run:
           name: Name release APK by version
           command: ./scripts/rename-release-apk.sh
-      # Repopulate the tool caches — AGP installed the NDK during the build above.
+      # Repopulate the CMake cache (the NDK ships in the `-ndk` image, so it isn't cached here).
       - save_sdk_package:
           package: cmake
-      - save_sdk_package:
-          package: ndk
       - store_artifacts:
           path: apps/android/build/outputs/apk/release
           destination: outputs
