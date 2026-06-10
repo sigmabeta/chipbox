@@ -139,9 +139,9 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - cconfig-<< parameters.job >>-v3-{{ .Branch }}-{{ .Revision }}
-            - cconfig-<< parameters.job >>-v3-{{ .Branch }}-
-            - cconfig-<< parameters.job >>-v3-
+            - cconfig-<< parameters.job >>-v4-{{ .Branch }}-{{ .Revision }}
+            - cconfig-<< parameters.job >>-v4-{{ .Branch }}-
+            - cconfig-<< parameters.job >>-v4-
   save_config_cache:
     parameters:
       job:
@@ -154,9 +154,19 @@ commands:
           # skips configuration entirely. The `{{ .Revision }}` key is immutable, so a rerun
           # after a successful save is a no-op.
           when: always
-          key: cconfig-<< parameters.job >>-v3-{{ .Branch }}-{{ .Revision }}
+          key: cconfig-<< parameters.job >>-v4-{{ .Branch }}-{{ .Revision }}
           paths:
             - .gradle/configuration-cache
+            # Gradle-generated build-logic classpath the config-cache fingerprint references (type-safe
+            # project/dependency accessors, compiled kotlin-dsl, generated gradle-api jars). Each fresh
+            # container regenerates these, so without bundling them the restored entry invalidates with
+            # "file '.../dependencies-accessors/...' has changed". Bundled here (NOT build-logic's build/
+            # outputs — restoring those fought Gradle's up-to-date check) so a restore brings back the
+            # exact copies the entry was fingerprinted against. CircleCI doesn't expand env vars in
+            # paths, so the Gradle User Home is hardcoded.
+            - /home/circleci/.gradle/caches/9.5.0/dependencies-accessors
+            - /home/circleci/.gradle/caches/9.5.0/kotlin-dsl
+            - /home/circleci/.gradle/caches/9.5.0/generated-gradle-jars
 
   # Sweep every module's `build/reports/` (ktlint, detekt, html test reports, lint,
   # whatever lives there) into one tree keyed by module path. Runs `when: always`
