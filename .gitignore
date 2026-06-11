@@ -62,6 +62,10 @@ apps/jvm/Chipbox Output Files/
 .chipbox-cli/
 # A/B render harness: per-run WAV + metrics output (default --out dir, created wherever it's run)
 ab-runs/
+# A/B render harness: runs pulled off a device by apps/abrender-core/run-on-device.sh (default --out)
+ab-runs-device/
+# A/B render harness: device-vs-host comparison runs from apps/abrender-core/ab-compare.sh (default --out)
+ab-compare/
 *.so
 # Stray top-level yarn.lock (only locks `yarn` itself) that a bare `yarn` run in the repo root
 # leaves behind. It shadows kotlin-js-store/yarn.lock and breaks Dependabot's JS evaluation.

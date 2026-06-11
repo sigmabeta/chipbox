@@ -104,6 +104,7 @@ include(
     ":apps:jvm",
     ":apps:cli",
     ":apps:abrender",
+    ":apps:abrender-core",
     ":apps:server",
     ":benchmark",
 
