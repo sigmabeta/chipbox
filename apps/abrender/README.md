@@ -39,9 +39,9 @@ No device, emulator, or audio hardware is required; rendering is offline and det
 4. diff baseline vs candidate
 ```
 
-The `:apps:abrender:run` task depends on `:apps:jvm:nativeLibs`, and the native build is
-input-tracked (`cbox/native/<emu>/` → `apps/jvm/libs/lib<emu>.so`). So after you edit a native
-source, the next render **rebuilds the changed lib automatically**. To be certain, rebuild
+The `:apps:abrender:run` task depends on `:apps:jvm:chipboxHostNativeLibs`, and the native build is
+input-tracked (`cbox/native/<emu>/` → `apps/jvm/build/jvm-native/libs/lib<emu>.so`). So after you edit
+a native source, the next render **rebuilds the changed lib automatically**. To be certain, rebuild
 explicitly and check the `.so` timestamp before the candidate pass (step 4 below).
 
 ---
@@ -50,15 +50,15 @@ explicitly and check the `.so` timestamp before the candidate pass (step 4 below
 
 ```sh
 # (0) From the repo root. Build the current native libs.
-./gradlew :apps:jvm:nativeLibs
+./gradlew :apps:jvm:chipboxHostNativeLibs
 
 # (1) BASELINE: one track per game, 30s each, USF only.
 ./gradlew :apps:abrender:run --args="render --dir /path/to/usf-corpus --label baseline --ext usf,miniusf"
 
 # (2) Apply the native change, e.g. edit files under cbox/native/usf/, then REBUILD + verify:
-ls -l --time-style=+%T apps/jvm/libs/libusf.so      # note the time
-./gradlew :apps:jvm:nativeEmulatorUsf               # rebuilds just libusf.so
-ls -l --time-style=+%T apps/jvm/libs/libusf.so      # time MUST have advanced
+ls -l --time-style=+%T apps/jvm/build/jvm-native/libs/libusf.so   # note the time
+./gradlew :apps:jvm:chipboxHostNativeLibs                         # rebuilds only the changed lib + stages it
+ls -l --time-style=+%T apps/jvm/build/jvm-native/libs/libusf.so   # time MUST have advanced
 
 # (3) CANDIDATE: identical render args, new label.
 ./gradlew :apps:abrender:run --args="render --dir /path/to/usf-corpus --label candidate --ext usf,miniusf"
@@ -67,19 +67,23 @@ ls -l --time-style=+%T apps/jvm/libs/libusf.so      # time MUST have advanced
 ./gradlew :apps:abrender:run --args="diff --a baseline --b candidate"
 ```
 
-Per-emulator rebuild tasks (or `nativeLibs` for all):
+The rebuild command is always `./gradlew :apps:jvm:chipboxHostNativeLibs` — it rebuilds only the
+emulator whose source changed (each per-emulator build is input-tracked) and stages every `.so` into
+`apps/jvm/build/jvm-native/libs/`. To force a single emulator's build, run its
+`:apps:jvm:buildHostNative<Backend>` task (e.g. `buildHostNativeUsf`), then `chipboxHostNativeLibs` to
+stage it. Which lib maps to which `--ext`:
 
-| backend / `--ext` | rebuild task | lib |
-|---|---|---|
-| USF (`usf`, `miniusf`) | `nativeEmulatorUsf` | `libusf.so` |
-| PSF family (`psf`, `minipsf`, `psf2`, …) | `nativeEmulatorSlopsf` | `libslopsf.so` |
-| SSF/DSF (`ssf`, `dsf`) | `nativeEmulatorSsf` | `libssf.so` |
-| GME (`spc`, `nsf`, `nsfe`, `gbs`) | `nativeEmulatorGme` | `libgme.so` |
-| VGM (`vgm`, `vgz`) | `nativeEmulatorVgm` | `libvgm.so` |
-| 2SF (`twosf`, `mini2sf`) | `nativeEmulatorTwosf` | `libtwosf.so` |
-| NCSF (`ncsf`, `minincsf`) | `nativeEmulatorNcsf` | `libncsf.so` |
-| GBA (`gsf`, `minigsf`) | `nativeEmulatorGba` | `libgba.so` |
-| vgmstream (many) | `nativeEmulatorVgmstream` | `libvgmstream.so` |
+| backend / `--ext` | lib |
+|---|---|
+| USF (`usf`, `miniusf`) | `libusf.so` |
+| PSF family (`psf`, `minipsf`, `psf2`, …) | `libslopsf.so` |
+| SSF/DSF (`ssf`, `dsf`) | `libssf.so` |
+| GME (`spc`, `nsf`, `nsfe`, `gbs`) | `libgme.so` |
+| VGM (`vgm`, `vgz`) | `libvgm.so` |
+| 2SF (`twosf`, `mini2sf`) | `libtwosf.so` |
+| NCSF (`ncsf`, `minincsf`) | `libncsf.so` |
+| GBA (`gsf`, `minigsf`) | `libgba.so` |
+| vgmstream (many) | `libvgmstream.so` |
 
 ---
 
@@ -230,7 +234,7 @@ against a host run with no special handling.
 
 ```sh
 # (1) Render an x86_64 baseline on the host, as usual.
-./gradlew :apps:jvm:nativeLibs
+./gradlew :apps:jvm:chipboxHostNativeLibs
 ./gradlew :apps:abrender:run --args="render --dir /path/to/usf-corpus --label x86 --ext usf,miniusf"
 
 # (2) Render the SAME corpus on a connected device (builds+installs the test APK, pushes the corpus,
