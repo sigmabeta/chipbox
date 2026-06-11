@@ -32,8 +32,10 @@ class UncachedPcmTrackSourceFactory(
 
     override suspend fun open(track: Track, bytes: ByteArray): PcmTrackSource {
         val ext = track.extension
-        val emulator = emulators.firstOrNull { it.isFileExtensionSupported(ext) }
-            ?: throw IllegalArgumentException("No emulator found for extension '$ext'.")
+        // RSN archives are unpacked to an SPC during staging, so they play through the SPC emulator.
+        val emuExt = playbackExtension(ext)
+        val emulator = emulators.firstOrNull { it.isFileExtensionSupported(emuExt) }
+            ?: throw IllegalArgumentException("No emulator found for extension '$emuExt'.")
 
         // JS emulators fetch + instantiate their WASM module here on first use; deferring lets
         // the page load skip ~4 MB of upfront WASM transfer. No-op on JVM/Android (the
@@ -56,7 +58,7 @@ class UncachedPcmTrackSourceFactory(
         return withContext(emulatorDispatcher) {
             EmulatorPcmSource(
                 emulator = emulator,
-                track = track,
+                track = track.asStagedPlaybackTrack(),
                 stagedFile = stagedFile,
                 stagingTrackDir = stagingTrackDir,
                 fileSystem = fileSystem,

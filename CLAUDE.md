@@ -6,9 +6,9 @@ load-bearing fact below stops being true.
 
 ## What Chipbox is
 
-A chiptune jukebox: it plays raw sound-chip program/data dumps (SPC, NSF, VGM,
-PSF, USF, SSF, 2SF, NCSF, GSF, plus vgmstream formats) by emulating the original
-hardware in real time. Kotlin Multiplatform, Compose Multiplatform UI, targeting
+A chiptune jukebox: it plays raw sound-chip program/data dumps (SPC, RSN, NSF,
+VGM, PSF, USF, SSF, 2SF, NCSF, GSF, plus vgmstream formats) by emulating the
+original hardware in real time. Kotlin Multiplatform, Compose Multiplatform UI, targeting
 Android (minSdk 26 / targetSdk 36) and desktop JVM, with `js`/`cli`/`server`
 targets too.
 

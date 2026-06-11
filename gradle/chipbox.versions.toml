@@ -9,3 +9,12 @@ emulator-native = { id = "chipbox.emulator.native" }
 native-host = { id = "chipbox.native.host" }
 screenshot = { id = "chipbox.screenshot" }
 kmp-test = { id = "chipbox.kmp.test" }
+
+# Published artifacts not carried by the sage submodule's `libs` catalog. Pure-JVM only — junrar
+# decodes RAR 4.x archives (RSN sound-chip sets are solid RAR archives of SPC files); it has no
+# Kotlin/Native or JS port, so it's wired into `jvmSharedMain` behind an expect/actual unrar().
+[versions]
+junrar = "7.5.5"
+
+[libraries]
+junrar = { module = "com.github.junrar:junrar", version.ref = "junrar" }
