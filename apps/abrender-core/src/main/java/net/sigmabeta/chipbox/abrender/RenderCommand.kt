@@ -37,7 +37,7 @@ private fun shortHash(key: String): String {
  * (`<out>/<label>/`) as a WAV plus a row in `metrics.tsv`. Designed to run unattended over 400+
  * games: every track is rendered in isolation and a per-track failure is recorded, never fatal.
  */
-fun runRender(args: Args) {
+fun runRender(args: Args): RenderSummary {
     val runDir = File(args.outDir, args.label).apply { mkdirs() }
     val wavDir = File(runDir, "wav").apply { mkdirs() }
     val metricsFile = File(runDir, "metrics.tsv")
@@ -62,7 +62,7 @@ fun runRender(args: Args) {
             "No matching tracks under ${args.corpusDir} " +
                 "(ext=${args.extensions ?: "any supported"}, game~=${args.gameFilter ?: "any"}).",
         )
-        return
+        return RenderSummary(rendered = 0, skipped = 0, failed = 0)
     }
 
     val baseDone = if (args.overwrite) emptyMap() else readMetrics(metricsFile)
@@ -85,6 +85,7 @@ fun runRender(args: Args) {
     inflight.delete() // clean finish leaves no marker
     sink.close()
     println("Done. rendered=${tally.rendered} skipped=${tally.skipped} failed=${tally.failed} → $metricsFile")
+    return RenderSummary(rendered = tally.rendered, skipped = tally.skipped, failed = tally.failed)
 }
 
 private class Tally(var rendered: Int = 0, var skipped: Int = 0, var failed: Int = 0)

@@ -11,10 +11,10 @@ application {
 // The A/B render harness drives EVERY native emulator directly (USF, PSF, SSF, GME, ...), so unlike
 // the CLI — which only needs libvgmstream.so for scan-time subsong probing — it needs the whole set
 // of `.so` files on java.library.path. Rather than duplicate apps/jvm's host-CMake machinery, reuse
-// the libs that module already builds: depend on its aggregate `nativeLibs` task and point
-// java.library.path at its output dir.
-val jvmNativeLibsDir = project(":apps:jvm").layout.projectDirectory.dir("libs").asFile
-val buildAllNativeLibs = ":apps:jvm:nativeLibs"
+// the libs that module already builds: depend on its aggregate `chipboxHostNativeLibs` task and
+// point java.library.path at its output dir (build/jvm-native/libs).
+val jvmNativeLibsDir = project(":apps:jvm").layout.buildDirectory.dir("jvm-native/libs").get().asFile
+val buildAllNativeLibs = ":apps:jvm:chipboxHostNativeLibs"
 
 tasks.named<JavaExec>("run") {
     standardInput = System.`in`
@@ -74,20 +74,10 @@ configurations.runtimeClasspath {
 }
 
 dependencies {
-    // Emulator base type + every backend's JVM JNI wrapper (object XxxEmulator → System.loadLibrary).
-    // The harness walks a corpus directory and drives these directly — no database, scanner, or
-    // repository, so none of those modules are pulled in.
-    implementation(projects.cbox.common.player.emulators.api)
-    implementation(projects.cbox.common.player.emulators.gba.real)
-    implementation(projects.cbox.common.player.emulators.gme.real)
-    implementation(projects.cbox.common.player.emulators.ncsf.real)
-    implementation(projects.cbox.common.player.emulators.psf.real)
-    implementation(projects.cbox.common.player.emulators.ssf.real)
-    implementation(projects.cbox.common.player.emulators.twosf.real)
-    implementation(projects.cbox.common.player.emulators.usf.real)
-    implementation(projects.cbox.common.player.emulators.vgm.real)
-    implementation(projects.cbox.common.player.emulators.vgmstream.real)
-
-    // EbuR128 (BS.1770 loudness) + SHORTS_PER_FRAME, reused for the optional loudness metric.
-    implementation(projects.cbox.common.player.common.api)
+    // Render loop, metrics, WAV writer, and corpus walker — plus, transitively, every emulator JNI
+    // wrapper (object XxxEmulator → System.loadLibrary) and EbuR128. This module keeps only the CLI
+    // shell (Main, DiffCommand); the engine it drives lives in :apps:abrender-core so the same code
+    // also renders on-device. The JVM variant of the core pulls the JVM JNI wrappers; the .so files
+    // come from :apps:jvm's host build via java.library.path (configured above).
+    implementation(projects.apps.abrenderCore)
 }

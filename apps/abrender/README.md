@@ -217,3 +217,32 @@ PCM (the bit-identity check), `error` is empty on success.
   `--dir`, and `--ext` identical between the two passes.
 - **Game grouping.** "One per game" means one file per leaf folder. If your corpus is flat (one file
   per game directly under `--dir`), use `--every-song`.
+
+---
+
+## 10. Running on a real device (arm64)
+
+Everything above renders on the **host JVM**, which only ever exercises the **x86_64** emulator cores.
+To catch bugs specific to **arm64**, the same render engine runs on a connected Android device via an
+instrumented test in `:apps:abrender-core` (the shared engine module this CLI is built on). It writes
+the **identical** output layout (`<label>/metrics.tsv` + `wav/`), so `diff` compares an on-device run
+against a host run with no special handling.
+
+```sh
+# (1) Render an x86_64 baseline on the host, as usual.
+./gradlew :apps:jvm:nativeLibs
+./gradlew :apps:abrender:run --args="render --dir /path/to/usf-corpus --label x86 --ext usf,miniusf"
+
+# (2) Render the SAME corpus on a connected device (builds+installs the test APK, pushes the corpus,
+#     renders on arm64, pulls the run to ./ab-runs-device/arm64).
+apps/abrender-core/run-on-device.sh --dir /path/to/usf-corpus --label arm64 --ext usf,miniusf
+
+# (3) Diff arm64 (device) vs x86 (host): same emulator source, different ISA — anything but IDENTICAL
+#     is an architecture-specific divergence worth investigating.
+./gradlew :apps:abrender:run --args="diff --a x86 --b ./ab-runs-device/arm64"
+```
+
+`run-on-device.sh --help` lists every flag; they mirror `render`'s. This is **cross-ISA** A/B (one
+emulator build, two architectures), the complement to §2's two-pass **before/after** A/B on one
+architecture. The device APK bundles all nine arm64 `.so` cores, so no app install or library setup is
+needed beyond the script. See `apps/abrender-core/README.md` for how the on-device harness is wired.
