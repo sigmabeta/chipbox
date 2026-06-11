@@ -2,6 +2,9 @@ package net.sigmabeta.chipbox.player.cache.real
 
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.utils.RSN_EXTENSION
+import net.sigmabeta.chipbox.utils.RSN_MEMBER_EXTENSION
+import net.sigmabeta.chipbox.utils.rsnSpcMembers
 import net.sigmabeta.sage.logging.Hatchet
 import okio.FileSystem
 import okio.Path
@@ -30,6 +33,25 @@ internal suspend fun stageTrack(
     }
     fileSystem.deleteRecursively(stagingTrackDir, mustExist = false)
     fileSystem.createDirectories(stagingTrackDir)
+
+    // RSN archives carry no playable bytes of their own — unpack the SPC member at this track's
+    // subsong index and stage it as a plain `.spc` so the SPC emulator can load it directly. The
+    // member order matches the scanner's RsnReader, so the index lines up with the scanned track.
+    if (ext == RSN_EXTENSION) {
+        val members = rsnSpcMembers(mainBytes)
+            ?: error("Could not unpack RSN '${track.path}' for track ${track.id}.")
+        val member = members.getOrNull(track.trackNumber)
+            ?: error(
+                "RSN '${track.path}' has no SPC at index ${track.trackNumber} " +
+                    "(${members.size} member(s)) for track ${track.id}."
+            )
+        val mainFile = stagingTrackDir / "main.$RSN_MEMBER_EXTENSION"
+        fileSystem.write(mainFile) { write(member.bytes) }
+        hatchet.v(
+            "Staged RSN member '${member.name}' (${member.bytes.size} bytes) for track ${track.id}."
+        )
+        return mainFile
+    }
 
     val mainFile = stagingTrackDir / "main.$ext"
     fileSystem.write(mainFile) { write(mainBytes) }

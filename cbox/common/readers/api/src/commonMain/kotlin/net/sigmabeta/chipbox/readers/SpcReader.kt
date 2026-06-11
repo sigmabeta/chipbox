@@ -6,6 +6,28 @@ import net.sigmabeta.sage.logging.Hatchet
 
 class SpcReader(private val hatchet: Hatchet) : Reader() {
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
+        val tags = readTags(bytes, identifier) ?: return null
+        return listOf(
+            RawTrack(
+                identifier,
+                "",
+                tags.songTitle,
+                tags.artistName,
+                tags.gameTitle,
+                tags.trackLengthMs,
+                0,
+                tags.fadeLengthMs,
+                platform = Platform.SNES,
+            )
+        )
+    }
+
+    /**
+     * Parse an SPC file's ID666 / xid6 metadata, or null when [bytes] aren't a valid SPC or carry
+     * no metadata. Shared with [RsnReader], which calls this once per SPC member of an RSN archive.
+     * Never throws — a malformed body (e.g. a truncated member) is reported as null.
+     */
+    internal fun readTags(bytes: ByteArray, identifier: String): SpcTags? {
         try {
             val fileAsByteBuffer = bytesAsReader(bytes)
             val formatHeader = fileAsByteBuffer.nextBytesAsString(HEADER_MAGIC_SIZE)
@@ -19,28 +41,19 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
                 return null
             }
 
-            val spcMainTag = readMainTag(fileAsByteBuffer)
-            if (spcMainTag == null) {
-                return null
-            }
+            val spcMainTag = readMainTag(fileAsByteBuffer) ?: return null
 
             // xid6 holds the un-truncated game/song/artist names; the 32-byte ID666 fields
             // chop anything longer (e.g. "Teenage Mutant Ninja Turtles: To" → full name lives
             // in xid6 only). Prefer xid6 values when present.
             val extendedTag = readExtendedTag(bytes)
 
-            return listOf(
-                RawTrack(
-                    identifier,
-                    "",
-                    extendedTag?.songTitle ?: spcMainTag.songTitle,
-                    extendedTag?.artistName ?: spcMainTag.artistName,
-                    extendedTag?.gameTitle ?: spcMainTag.gameTitle,
-                    spcMainTag.trackLengthMs,
-                    0,
-                    spcMainTag.fadeLengthMs.coerceAtLeast(0L),
-                    platform = Platform.SNES,
-                )
+            return SpcTags(
+                songTitle = extendedTag?.songTitle ?: spcMainTag.songTitle,
+                gameTitle = extendedTag?.gameTitle ?: spcMainTag.gameTitle,
+                artistName = extendedTag?.artistName ?: spcMainTag.artistName,
+                trackLengthMs = spcMainTag.trackLengthMs,
+                fadeLengthMs = spcMainTag.fadeLengthMs.coerceAtLeast(0L),
             )
         } catch (iae: IllegalArgumentException) {
             hatchet.w("SPC parse failed: illegal argument — ${iae.message}")
@@ -193,6 +206,15 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
         private const val XID6_ID_ARTIST = 0x03
     }
 }
+
+/** Resolved SPC metadata, with xid6 values already preferred over the truncated ID666 fields. */
+data class SpcTags(
+    val songTitle: String,
+    val gameTitle: String,
+    val artistName: String,
+    val trackLengthMs: Long,
+    val fadeLengthMs: Long,
+)
 
 data class SpcMainTag(
     val songTitle: String,
