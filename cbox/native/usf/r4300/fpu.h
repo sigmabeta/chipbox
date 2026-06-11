@@ -69,6 +69,26 @@ M64P_FPU_INLINE void set_rounding(usf_state_t * state)
   }
 }
 
+/* N64 FPU convert-to-integer (CVT/TRUNC/ROUND/CEIL/FLOOR.W/.L). These were implemented
+ * with a bare C cast, whose result for NaN/Inf/out-of-range inputs is architecture-
+ * dependent: x86 SSE (cvttss2si) yields the "integer indefinite" INT_MIN/INT64_MIN, while
+ * arm64 yields 0 for NaN and saturates to INT_MAX on positive overflow. The USF rips were
+ * all validated against x86, so games that hit an invalid conversion (e.g. Yoshi's Story's
+ * audio driver) decoded to silence on arm64. Do the out-of-range handling explicitly so
+ * every architecture reproduces the x86 "integer indefinite" reference. */
+static inline int cvt_to_w(double x)
+{
+    if (x >= 2147483648.0 || x < -2147483648.0 || x != x)
+        return -2147483647 - 1; /* INT_MIN, x86 integer-indefinite */
+    return (int) x;
+}
+static inline long long cvt_to_l(double x)
+{
+    if (x >= 9223372036854775808.0 || x < -9223372036854775808.0 || x != x)
+        return -9223372036854775807LL - 1; /* INT64_MIN */
+    return (long long) x;
+}
+
 M64P_FPU_INLINE void cvt_s_w(usf_state_t * state, int *source,float *dest)
 {
   set_rounding(state);
@@ -102,68 +122,68 @@ M64P_FPU_INLINE void cvt_s_d(usf_state_t * state, double *source,float *dest)
 
 M64P_FPU_INLINE void round_l_s(float *source,long long *dest)
 {
-  *dest = (long long) roundf(*source);
+  *dest = cvt_to_l(roundf(*source));
 }
 M64P_FPU_INLINE void round_w_s(float *source,int *dest)
 {
-  *dest = (int) roundf(*source);
+  *dest = cvt_to_w(roundf(*source));
 }
 M64P_FPU_INLINE void trunc_l_s(float *source,long long *dest)
 {
-  *dest = (long long) truncf(*source);
+  *dest = cvt_to_l(truncf(*source));
 }
 M64P_FPU_INLINE void trunc_w_s(float *source,int *dest)
 {
-  *dest = (int) truncf(*source);
+  *dest = cvt_to_w(truncf(*source));
 }
 M64P_FPU_INLINE void ceil_l_s(float *source,long long *dest)
 {
-  *dest = (long long) ceilf(*source);
+  *dest = cvt_to_l(ceilf(*source));
 }
 M64P_FPU_INLINE void ceil_w_s(float *source,int *dest)
 {
-  *dest = (int) ceilf(*source);
+  *dest = cvt_to_w(ceilf(*source));
 }
 M64P_FPU_INLINE void floor_l_s(float *source,long long *dest)
 {
-  *dest = (long long) floorf(*source);
+  *dest = cvt_to_l(floorf(*source));
 }
 M64P_FPU_INLINE void floor_w_s(float *source,int *dest)
 {
-  *dest = (int) floorf(*source);
+  *dest = cvt_to_w(floorf(*source));
 }
 
 M64P_FPU_INLINE void round_l_d(double *source,long long *dest)
 {
-  *dest = (long long) round(*source);
+  *dest = cvt_to_l(round(*source));
 }
 M64P_FPU_INLINE void round_w_d(double *source,int *dest)
 {
-  *dest = (int) round(*source);
+  *dest = cvt_to_w(round(*source));
 }
 M64P_FPU_INLINE void trunc_l_d(double *source,long long *dest)
 {
-  *dest = (long long) trunc(*source);
+  *dest = cvt_to_l(trunc(*source));
 }
 M64P_FPU_INLINE void trunc_w_d(double *source,int *dest)
 {
-  *dest = (int) trunc(*source);
+  *dest = cvt_to_w(trunc(*source));
 }
 M64P_FPU_INLINE void ceil_l_d(double *source,long long *dest)
 {
-  *dest = (long long) ceil(*source);
+  *dest = cvt_to_l(ceil(*source));
 }
 M64P_FPU_INLINE void ceil_w_d(double *source,int *dest)
 {
-  *dest = (int) ceil(*source);
+  *dest = cvt_to_w(ceil(*source));
 }
 M64P_FPU_INLINE void floor_l_d(double *source,long long *dest)
 {
-  *dest = (long long) floor(*source);
+  *dest = cvt_to_l(floor(*source));
 }
 M64P_FPU_INLINE void floor_w_d(double *source,int *dest)
 {
-  *dest = (int) floor(*source);
+  *dest = cvt_to_w(floor(*source));
 }
 
 M64P_FPU_INLINE void cvt_w_s(usf_state_t * state, float *source,int *dest)
