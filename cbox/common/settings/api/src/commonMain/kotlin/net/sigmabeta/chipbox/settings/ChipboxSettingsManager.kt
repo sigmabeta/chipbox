@@ -11,4 +11,7 @@ interface ChipboxSettingsManager {
 
     fun getThemeMode(): Flow<ThemeMode>
     fun setThemeMode(mode: ThemeMode)
+
+    fun getResamplerMode(): Flow<ResamplerMode>
+    fun setResamplerMode(mode: ResamplerMode)
 }

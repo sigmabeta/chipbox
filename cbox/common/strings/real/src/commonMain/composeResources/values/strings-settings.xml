@@ -12,6 +12,12 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_system">Match system</string>
 
+    <string name="settings_section_audio">Audio</string>
+    <string name="settings_label_resampler">Resampler</string>
+    <string name="settings_resampler_os">System (OS)</string>
+    <string name="settings_resampler_linear">Linear</string>
+    <string name="settings_resampler_cubic">Cubic</string>
+
     <string name="settings_label_brand_font">Brand font</string>
     <string name="settings_label_plain_font">Plain font</string>
 

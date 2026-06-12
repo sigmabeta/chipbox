@@ -69,6 +69,11 @@ class SettingsViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            settingsManager.getResamplerMode().collect { mode ->
+                updateState { it.copy(resamplerMode = mode) }
+            }
+        }
+        viewModelScope.launch {
             debugSettingsManager.getShouldShowDebug().collect { value ->
                 updateState { it.copy(shouldShowDebug = value) }
             }
@@ -96,6 +101,8 @@ class SettingsViewModel @Inject constructor(
     override fun handleAction(action: SageAction) {
         when (action) {
             is SettingsAction.ThemeModeSelected -> settingsManager.setThemeMode(action.mode)
+
+            is SettingsAction.ResamplerModeSelected -> settingsManager.setResamplerMode(action.mode)
 
             is SettingsAction.BrandFontSelected -> settingsManager.setBrandFont(action.font.name)
 
