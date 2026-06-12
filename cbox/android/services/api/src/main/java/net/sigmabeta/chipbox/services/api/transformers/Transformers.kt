@@ -7,9 +7,11 @@ import androidx.media3.session.MediaConstants
 import net.sigmabeta.chipbox.artworkprovider.api.ArtworkUris
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.services.api.LibraryBrowser.Companion.ID_ARTISTS
 import net.sigmabeta.chipbox.services.api.LibraryBrowser.Companion.ID_GAMES
+import net.sigmabeta.chipbox.services.api.LibraryBrowser.Companion.ID_PLATFORMS
 
 internal fun Game.toMediaItem(): MediaItem {
     val metadata = MediaMetadata.Builder()
@@ -39,6 +41,23 @@ internal fun Artist.toMediaItem(): MediaItem {
 
     return MediaItem.Builder()
         .setMediaId(ID_ARTISTS + id)
+        .setMediaMetadata(metadata)
+        .build()
+}
+
+internal fun Platform.toMediaItem(title: String): MediaItem {
+    // A platform folder drills into its games — the same browsable game items as the Games
+    // branch, so it reuses ID_GAMES for those children and wants their GRID display style.
+    val metadata = MediaMetadata.Builder()
+        .setTitle(title)
+        .setIsBrowsable(true)
+        .setIsPlayable(false)
+        .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+        .setExtras(contentStyleExtras(browsableChildren = GRID))
+        .build()
+
+    return MediaItem.Builder()
+        .setMediaId(ID_PLATFORMS + name)
         .setMediaMetadata(metadata)
         .build()
 }

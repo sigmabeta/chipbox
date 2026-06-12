@@ -17,4 +17,5 @@ dependencies {
     implementation(projects.cbox.common.player.director.api)
     implementation(projects.cbox.common.player.persistence.api)
     implementation(projects.cbox.common.repository.api)
+    implementation(projects.cbox.common.strings.api)
 }
