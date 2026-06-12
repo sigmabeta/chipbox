@@ -4,9 +4,11 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.os.Process
+import java.util.concurrent.Executors
 import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExecutorCoroutineDispatcher
+import kotlinx.coroutines.asCoroutineDispatcher
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.speaker.BaseSpeaker
@@ -17,13 +19,19 @@ import net.sigmabeta.sage.logging.Hatchet
  *
  * The track is lazily (re)created whenever an incoming buffer's sample rate differs from the
  * current track's — emulators within a setlist may use different rates, so the speaker can't
- * commit to a single configuration up front. The consume coroutine is also bumped to
- * [Process.THREAD_PRIORITY_URGENT_AUDIO] when (re)initializing to avoid underruns under load.
+ * commit to a single configuration up front.
+ *
+ * The consume loop runs on a single dedicated thread ([newSinkDispatcher]) held at
+ * [Process.THREAD_PRIORITY_URGENT_AUDIO], not on `Dispatchers.Default`. A pooled-dispatcher
+ * coroutine resumes on an arbitrary worker after each suspension point (an event emit, a buffer
+ * await), so an `AudioTrack.write()` — and any thread-priority bump meant to protect it — would
+ * otherwise land on a different thread each time. Pinning the loop guarantees every write runs on
+ * the urgent-priority audio thread and serializes sink access without extra synchronisation.
  */
 class RealSpeaker(
         bufferManager: ConsumerBufferManager,
         hatchet: Hatchet,
-        dispatcher: CoroutineDispatcher = Dispatchers.Default
+        private val dispatcher: CoroutineDispatcher = newSinkDispatcher(),
 ) : BaseSpeaker(bufferManager, hatchet, dispatcher) {
     // @Volatile: written on the consume coroutine (initializeAudioTrack) and on the lifecycle
     // caller's thread (teardown, after the consume loop is cancel-joined). Keeps a stale non-null
@@ -93,7 +101,6 @@ class RealSpeaker(
         sampleRate: Int,
     ): AudioTrack {
         teardown()
-        Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
 
         val bufferSizeBytes = AudioTrack.getMinBufferSize(
                 sampleRate,
@@ -146,6 +153,14 @@ class RealSpeaker(
         track.release()
     }
 
+    override fun release() {
+        super.release()
+        // Shut down the dedicated audio thread we created in the default constructor. A
+        // caller-supplied dispatcher (e.g. a test's) isn't ours to close, so only an
+        // ExecutorCoroutineDispatcher — what newSinkDispatcher() returns — is closed.
+        (dispatcher as? ExecutorCoroutineDispatcher)?.close()
+    }
+
     override fun flushSink() {
         val track = audioTrack ?: return
         hatchet.d("flushSink: audioTrack.pause()")
@@ -173,5 +188,21 @@ class RealSpeaker(
 
     private companion object {
         const val MILLIS_PER_SECOND = 1_000L
+
+        private const val AUDIO_THREAD_NAME = "ChipboxAudioSink"
+
+        /**
+         * One dedicated daemon thread for the consume loop, pinned at
+         * [Process.THREAD_PRIORITY_URGENT_AUDIO] from creation so every `AudioTrack.write()` runs at
+         * audio priority (see the class doc). The priority is set inside the thread factory so a
+         * replacement thread — if the worker ever dies — is pinned too; [release] shuts it down.
+         */
+        private fun newSinkDispatcher(): ExecutorCoroutineDispatcher =
+            Executors.newSingleThreadExecutor { runnable ->
+                Thread({
+                    Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO)
+                    runnable.run()
+                }, AUDIO_THREAD_NAME).apply { isDaemon = true }
+            }.asCoroutineDispatcher()
     }
 }
