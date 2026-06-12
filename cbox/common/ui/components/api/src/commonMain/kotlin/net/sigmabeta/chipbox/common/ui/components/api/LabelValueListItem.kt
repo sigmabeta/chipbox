@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -35,6 +37,13 @@ fun LabelValueListItem(
     padding: PaddingValues,
 ) {
     val value = model.value
+    // AnimatedVisibility keeps composing its content through the exit transition, so when [value]
+    // flips to null on a track change the `value != null` block below still runs for a frame. Hold
+    // the last non-null value and render it during that exit, instead of `value!!` (which NPE'd).
+    val lastValue = remember { mutableStateOf(value) }
+    if (value != null) {
+        lastValue.value = value
+    }
     val action = model.clickAction
     val onClickLabel = if (action !is SageAction.Noop) {
         ChipboxStringId.ACCY_OCL_VALUE.text()
@@ -67,7 +76,7 @@ fun LabelValueListItem(
             AnimatedVisibility(
                 visible = value != null
             ) {
-                TextValue(value = value!!, active = model.active)
+                lastValue.value?.let { TextValue(value = it, active = model.active) }
             }
         },
         onClick = { actionSink.sendAction(model.clickAction) },
