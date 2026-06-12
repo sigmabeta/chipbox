@@ -12,6 +12,7 @@ kotlin {
         named("commonMain") {
             dependencies {
                 api(projects.cbox.common.player.common.api)
+                api(projects.cbox.common.player.resampler.api)
                 api(projects.cbox.common.player.buffer.api)
                 api(libs.kotlinx.coroutines.core)
                 api(libs.sage.common.logging)

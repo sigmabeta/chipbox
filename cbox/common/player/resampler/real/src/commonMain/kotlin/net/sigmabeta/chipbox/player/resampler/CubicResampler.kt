@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.player.common
+package net.sigmabeta.chipbox.player.resampler
 
 /**
  * 4-point Catmull-Rom cubic [Resampler]. A small quality step up from [LinearResampler] — it fits a
@@ -8,7 +8,7 @@ package net.sigmabeta.chipbox.player.common
  * Reads `sm1 = sample(i - 1)`, `s0 = sample(i)`, `s1 = sample(i + 1)`, `s2 = sample(i + 2)` and
  * evaluates the Catmull-Rom basis at [frac].
  */
-class CubicResampler(inputRate: Int, outputRate: Int) : StreamingResampler(inputRate, outputRate, taps = 4, leftTaps = 1) {
+class CubicResampler : StreamingResampler(taps = 4, leftTaps = 1) {
 
     override fun kernel(input: ShortArray, i: Int, frac: Double, channel: Int): Double {
         val sm1 = sample(input, i - 1, channel)

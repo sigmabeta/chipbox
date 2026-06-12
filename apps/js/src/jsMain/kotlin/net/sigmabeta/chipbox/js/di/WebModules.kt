@@ -8,6 +8,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.js.Js
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,12 +44,16 @@ import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.real.RealDirector
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.generator.Generator
+import net.sigmabeta.chipbox.player.resampler.CubicResampler
+import net.sigmabeta.chipbox.player.resampler.LinearResampler
+import net.sigmabeta.chipbox.player.resampler.Resampler
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
 import net.sigmabeta.chipbox.js.storage.LocalStorageStorage
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
+import net.sigmabeta.chipbox.settings.ResamplerMode
 import net.sigmabeta.chipbox.settings.real.RealChipboxSettingsManager
 import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.appinfo.AppInfo
@@ -228,8 +233,27 @@ object WebSpeakerModule {
     fun provideWebAudioSpeaker(
         bufferManager: ConsumerBufferManager,
         hatchet: Hatchet,
-        settingsManager: ChipboxSettingsManager,
-    ): WebAudioSpeaker = WebAudioSpeaker(bufferManager, hatchet, settingsManager.getResamplerMode())
+        resamplers: Map<ResamplerMode, Resampler>,
+    ): WebAudioSpeaker = WebAudioSpeaker(bufferManager, hatchet, resamplerFor(resamplers))
+
+    /**
+     * The single-technique resampler the worklet should use, resolved once from the saved setting
+     * (read synchronously from localStorage — no live switching). A worklet stream must always reach
+     * the context rate, so OS maps to the linear kernel rather than bypassing.
+     */
+    private fun resamplerFor(resamplers: Map<ResamplerMode, Resampler>): Resampler? {
+        val saved = window.localStorage.getItem(RealChipboxSettingsManager.KEY_RESAMPLER_MODE)
+        val mode = ResamplerMode.fromStorageValue(saved)
+        return resamplers[if (mode == ResamplerMode.CUBIC) ResamplerMode.CUBIC else ResamplerMode.LINEAR]
+    }
+
+    // The `:cbox:common:player:resampler:di` module is JVM-only (sage.jvm), so re-declare the
+    // single-technique resampler map here for JS — same pattern as WebDirectorModule.
+    @Provides @SingleIn(AppScope::class)
+    fun provideResamplers(): Map<ResamplerMode, Resampler> = mapOf(
+        ResamplerMode.LINEAR to LinearResampler(),
+        ResamplerMode.CUBIC to CubicResampler(),
+    )
 
     @Provides @SingleIn(AppScope::class)
     fun provideSpeaker(impl: WebAudioSpeaker): Speaker = impl

@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.player.common
+package net.sigmabeta.chipbox.player.resampler
 
 import kotlin.math.PI
 import kotlin.math.abs
@@ -6,13 +6,11 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ResamplerTest {
 
-    private fun impls(inRate: Int, outRate: Int): List<Resampler> =
-        listOf(LinearResampler(inRate, outRate), CubicResampler(inRate, outRate))
+    private fun impls(): List<Resampler> = listOf(LinearResampler(), CubicResampler())
 
     /** Interleaved-stereo sine, identical on both channels. */
     private fun sine(frames: Int, freqHz: Double, rate: Int, amp: Int = 10_000): ShortArray {
@@ -25,9 +23,9 @@ class ResamplerTest {
         return out
     }
 
-    private fun runWhole(r: Resampler, input: ShortArray, inFrames: Int): ShortArray {
-        val out = ShortArray(r.maxOutputFrames(inFrames) * 2)
-        val n = r.process(input, inFrames, out)
+    private fun runWhole(r: Resampler, input: ShortArray, inFrames: Int, inRate: Int, outRate: Int): ShortArray {
+        val out = ShortArray(r.maxOutputFrames(inFrames, inRate, outRate) * 2)
+        val n = r.process(input, inFrames, inRate, outRate, out)
         return out.copyOf(n * 2)
     }
 
@@ -39,10 +37,10 @@ class ResamplerTest {
         val inFrames = 4096
         val buffers = 50
         for ((inRate, outRate) in listOf(32006 to 48000, 48000 to 32006, 44100 to 48000)) {
-            for (r in impls(inRate, outRate)) {
-                val out = ShortArray(r.maxOutputFrames(inFrames) * 2)
+            for (r in impls()) {
+                val out = ShortArray(r.maxOutputFrames(inFrames, inRate, outRate) * 2)
                 var total = 0L
-                repeat(buffers) { total += r.process(sine(inFrames, 440.0, inRate), inFrames, out) }
+                repeat(buffers) { total += r.process(sine(inFrames, 440.0, inRate), inFrames, inRate, outRate, out) }
                 val ideal = (inFrames.toLong() * buffers) * outRate.toDouble() / inRate
                 assertTrue(
                     abs(total - ideal) <= 8.0,
@@ -55,10 +53,10 @@ class ResamplerTest {
     @Test
     fun `process never exceeds maxOutputFrames`() {
         for (inFrames in listOf(1, 64, 2048, 4096)) {
-            for (r in impls(32006, 48000)) {
-                val cap = r.maxOutputFrames(inFrames)
+            for (r in impls()) {
+                val cap = r.maxOutputFrames(inFrames, 32006, 48000)
                 val out = ShortArray(cap * 2)
-                val n = r.process(sine(inFrames, 300.0, 32006), inFrames, out)
+                val n = r.process(sine(inFrames, 300.0, 32006), inFrames, 32006, 48000, out)
                 assertTrue(n <= cap, "${r::class.simpleName} produced $n > cap $cap for $inFrames")
             }
         }
@@ -70,14 +68,14 @@ class ResamplerTest {
         // guard against a click at every buffer boundary.
         val inFrames = 2000
         val input = sine(inFrames, 660.0, 32006)
-        for (r in impls(32006, 48000)) {
-            val whole = runWhole(r, input, inFrames)
+        for (r in impls()) {
+            val whole = runWhole(r, input, inFrames, 32006, 48000)
 
-            val split = impls(32006, 48000).first { it::class == r::class }
+            val split = impls().first { it::class == r::class }
             val firstHalf = input.copyOfRange(0, 1000 * 2)
             val secondHalf = input.copyOfRange(1000 * 2, inFrames * 2)
-            val a = runWhole(split, firstHalf, 1000)
-            val b = runWhole(split, secondHalf, 1000)
+            val a = runWhole(split, firstHalf, 1000, 32006, 48000)
+            val b = runWhole(split, secondHalf, 1000, 32006, 48000)
             val joined = a + b
 
             assertEquals(whole.size, joined.size, "${r::class.simpleName}: split changed frame count")
@@ -89,8 +87,8 @@ class ResamplerTest {
     fun `steady-state DC is preserved`() {
         val inFrames = 1000
         val dc = ShortArray(inFrames * 2) { 8000 }
-        for (r in impls(32000, 48000)) {
-            val out = runWhole(r, dc, inFrames)
+        for (r in impls()) {
+            val out = runWhole(r, dc, inFrames, 32000, 48000)
             val frames = out.size / 2
             // Skip the kernel's startup priming (zero history); check well into steady state.
             for (f in (frames * 3 / 4) until frames) {
@@ -104,20 +102,28 @@ class ResamplerTest {
     fun `reset restores a fresh-instance result`() {
         val inFrames = 512
         val input = sine(inFrames, 1000.0, 44100)
-        for (r in impls(44100, 48000)) {
-            val fresh = runWhole(impls(44100, 48000).first { it::class == r::class }, input, inFrames)
-            runWhole(r, sine(inFrames, 1234.0, 44100), inFrames) // dirty its state
+        for (r in impls()) {
+            val fresh = runWhole(impls().first { it::class == r::class }, input, inFrames, 44100, 48000)
+            runWhole(r, sine(inFrames, 1234.0, 44100), inFrames, 44100, 48000) // dirty its state
             r.reset()
-            val afterReset = runWhole(r, input, inFrames)
+            val afterReset = runWhole(r, input, inFrames, 44100, 48000)
             assertTrue(fresh.contentEquals(afterReset), "${r::class.simpleName}: reset did not clear state")
         }
     }
 
     @Test
-    fun `factory bypasses equal rates and builds the configured kernel`() {
-        assertFalse(DefaultResamplerFactory(ResamplerQuality.CUBIC).needed(48000, 48000))
-        assertTrue(DefaultResamplerFactory(ResamplerQuality.CUBIC).needed(32006, 48000))
-        assertTrue(DefaultResamplerFactory(ResamplerQuality.LINEAR).create(32006, 48000) is LinearResampler)
-        assertTrue(DefaultResamplerFactory(ResamplerQuality.CUBIC).create(32006, 48000) is CubicResampler)
+    fun `a rate change between calls resets carried state`() {
+        // Feeding a buffer at a new rate must be bit-identical to a fresh instance at that rate —
+        // the resampler drops phase + history on the change rather than interpolating across it.
+        val inFrames = 800
+        for (r in impls()) {
+            runWhole(r, sine(inFrames, 500.0, 32006), inFrames, 32006, 48000) // run at one rate
+            val afterChange = runWhole(r, sine(inFrames, 500.0, 44100), inFrames, 44100, 48000)
+            val fresh = runWhole(impls().first { it::class == r::class }, sine(inFrames, 500.0, 44100), inFrames, 44100, 48000)
+            assertTrue(
+                fresh.contentEquals(afterChange),
+                "${r::class.simpleName}: rate change did not reset carried state",
+            )
+        }
     }
 }

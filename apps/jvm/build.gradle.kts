@@ -151,6 +151,8 @@ dependencies {
     // module's jvmMain alongside the Android AudioTrack impl in androidMain.
     implementation(projects.cbox.common.player.speaker.real)
     implementation(projects.cbox.common.player.speaker.api)
+    implementation(projects.cbox.common.player.resampler.di)
+    implementation(projects.cbox.common.player.resampler.api)
     implementation(projects.cbox.common.player.buffer.real)
     implementation(projects.cbox.common.player.common.api)
     implementation(projects.cbox.common.repository.api)

@@ -175,6 +175,8 @@ kotlin {
                 implementation(projects.cbox.common.player.cache.api)
                 implementation(projects.cbox.common.player.cache.real)
                 implementation(projects.cbox.common.player.common.api)
+                implementation(projects.cbox.common.player.resampler.api)
+                implementation(projects.cbox.common.player.resampler.real)
                 implementation(projects.cbox.common.settings.api)
                 implementation(projects.cbox.common.settings.real)
                 implementation(projects.cbox.common.crash.api)
