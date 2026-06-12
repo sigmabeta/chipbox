@@ -33,8 +33,18 @@ class ComponentLibraryModeViewModel(
         }
     }
 
-    // Every sample row uses SageAction.Noop — nothing to handle.
-    override fun handleAction(action: SageAction) = Unit
+    // Sample rows use SageAction.Noop; the one interactive control is the dropdown, which toggles
+    // its expansion the same way real screens do (at most one open at a time).
+    override fun handleAction(action: SageAction) {
+        when (action) {
+            is ComponentLibraryAction.DropdownExpandClicked -> updateState {
+                val next = if (it.expandedDropdownId == action.settingId) null else action.settingId
+                it.copy(expandedDropdownId = next)
+            }
+
+            else -> Unit
+        }
+    }
 
     @AssistedFactory
     @ManualViewModelAssistedFactoryKey(Factory::class)

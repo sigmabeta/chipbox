@@ -73,12 +73,12 @@ private fun DarkExpanded() {
 @Suppress("MagicNumber")
 @Composable
 private fun Sample(expanded: Boolean) {
-    LabelDropdownListItem(
-        model = DropdownSettingListModel(
+    ExpandingDropdownListItem(
+        model = DropdownSettingListModel.ofLabels(
             settingId = "",
             name = "Who the bus is",
             selectedPosition = 3,
-            settingsLabels = listOf(
+            labels = listOf(
                 "Noah",
                 "Lanz",
                 "Taion",
@@ -86,9 +86,9 @@ private fun Sample(expanded: Boolean) {
                 "Mio",
                 "Sena",
             ).toImmutableList(),
+            expanded = expanded,
         ),
         actionSink = PreviewActionSink(),
-        defaultExpansion = expanded,
         modifier = Modifier,
         padding = PaddingValues(horizontal = 8.dp)
     )

@@ -185,15 +185,14 @@ private fun Showcase() {
                 padding = padding,
             )
 
-            LabelDropdownListItem(
-                model = DropdownSettingListModel(
+            ExpandingDropdownListItem(
+                model = DropdownSettingListModel.ofLabels(
                     settingId = "",
                     name = "Who the bus is",
                     selectedPosition = 3,
-                    settingsLabels = listOf("Noah", "Lanz", "Taion", "Eunie", "Mio", "Sena").toImmutableList(),
+                    labels = listOf("Noah", "Lanz", "Taion", "Eunie", "Mio", "Sena").toImmutableList(),
                 ),
                 actionSink = sink,
-                defaultExpansion = false,
                 modifier = Modifier,
                 padding = padding,
             )

@@ -15,8 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.toImmutableList
+import net.sigmabeta.chipbox.common.ui.components.api.ExpandingDropdownListItem
 import net.sigmabeta.chipbox.common.ui.components.api.LabelCheckboxItem
-import net.sigmabeta.chipbox.common.ui.components.api.LabelDropdownListItem
 import net.sigmabeta.chipbox.common.ui.components.api.LabelNoThingyItem
 import net.sigmabeta.chipbox.common.ui.components.api.LabelRatingListItem
 import net.sigmabeta.chipbox.common.ui.components.api.LabelValueListItem
@@ -109,12 +109,12 @@ private fun Sample() {
             padding = padding,
         )
 
-        LabelDropdownListItem(
-            model = DropdownSettingListModel(
+        ExpandingDropdownListItem(
+            model = DropdownSettingListModel.ofLabels(
                 settingId = "",
                 name = "Who the bus is",
                 selectedPosition = 3,
-                settingsLabels = listOf(
+                labels = listOf(
                     "Noah",
                     "Lanz",
                     "Taion",
@@ -124,7 +124,6 @@ private fun Sample() {
                 ).toImmutableList(),
             ),
             actionSink = PreviewActionSink(),
-            defaultExpansion = false,
             modifier = Modifier,
             padding = padding,
         )

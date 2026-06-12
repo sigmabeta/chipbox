@@ -5,4 +5,5 @@ import net.sigmabeta.chipbox.features.componentlibrary.LibraryMode
 
 internal sealed class ComponentLibraryAction : ChipboxAction() {
     data class OpenMode(val mode: LibraryMode) : ComponentLibraryAction()
+    data class DropdownExpandClicked(val settingId: String) : ComponentLibraryAction()
 }

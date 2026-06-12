@@ -6,6 +6,7 @@ import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
 
 sealed class SettingsAction : ChipboxAction() {
+    data class DropdownExpandClicked(val settingId: String) : SettingsAction()
     data class ThemeModeSelected(val mode: ThemeMode) : SettingsAction()
     data class ResamplerModeSelected(val mode: ResamplerMode) : SettingsAction()
     data class BrandFontSelected(val font: ChipboxFont) : SettingsAction()

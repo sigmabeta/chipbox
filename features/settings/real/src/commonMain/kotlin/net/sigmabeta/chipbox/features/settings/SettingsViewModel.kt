@@ -100,13 +100,32 @@ class SettingsViewModel @Inject constructor(
 
     override fun handleAction(action: SageAction) {
         when (action) {
-            is SettingsAction.ThemeModeSelected -> settingsManager.setThemeMode(action.mode)
+            is SettingsAction.DropdownExpandClicked -> updateState {
+                // At most one dropdown open at a time: re-tapping the open one closes it; tapping
+                // any other replaces it as the single expanded dropdown.
+                val next = if (it.expandedDropdownId == action.settingId) null else action.settingId
+                it.copy(expandedDropdownId = next)
+            }
 
-            is SettingsAction.ResamplerModeSelected -> settingsManager.setResamplerMode(action.mode)
+            is SettingsAction.ThemeModeSelected -> {
+                settingsManager.setThemeMode(action.mode)
+                collapseDropdowns()
+            }
 
-            is SettingsAction.BrandFontSelected -> settingsManager.setBrandFont(action.font.name)
+            is SettingsAction.ResamplerModeSelected -> {
+                settingsManager.setResamplerMode(action.mode)
+                collapseDropdowns()
+            }
 
-            is SettingsAction.PlainFontSelected -> settingsManager.setPlainFont(action.font.name)
+            is SettingsAction.BrandFontSelected -> {
+                settingsManager.setBrandFont(action.font.name)
+                collapseDropdowns()
+            }
+
+            is SettingsAction.PlainFontSelected -> {
+                settingsManager.setPlainFont(action.font.name)
+                collapseDropdowns()
+            }
 
             SettingsAction.AddFolderClicked -> emit(ChipboxEvent.PickFolder)
 
@@ -139,6 +158,10 @@ class SettingsViewModel @Inject constructor(
             else -> Unit
         }
     }
+
+    // Picking an option closes the dropdown it came from; selection lives across the four
+    // *Selected actions, so collapse in one place.
+    private fun collapseDropdowns() = updateState { it.copy(expandedDropdownId = null) }
 
     private fun onFolderPicked(uri: String) {
         librarySource.addLibraryLocation(uri)
