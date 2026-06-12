@@ -226,7 +226,8 @@ object WebSpeakerModule {
     fun provideWebAudioSpeaker(
         bufferManager: ConsumerBufferManager,
         hatchet: Hatchet,
-    ): WebAudioSpeaker = WebAudioSpeaker(bufferManager, hatchet)
+        settingsManager: ChipboxSettingsManager,
+    ): WebAudioSpeaker = WebAudioSpeaker(bufferManager, hatchet, settingsManager.getResamplerMode())
 
     @Provides @SingleIn(AppScope::class)
     fun provideSpeaker(impl: WebAudioSpeaker): Speaker = impl
