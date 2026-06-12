@@ -19,9 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +56,8 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
+import net.sigmabeta.sage.ui.Icon as SageIcon
+import net.sigmabeta.sage.ui.vector
 import net.sigmabeta.chipbox.common.playerstatus.api.PLAYER_STATUS_ANIM_DURATION_MS
 import net.sigmabeta.chipbox.common.playerstatus.api.PlayerStatus
 import net.sigmabeta.chipbox.common.playerstatus.api.PlayerStatusReservedHeight
@@ -343,14 +342,14 @@ private fun TopAppBarNavIcon(shouldShowBack: Boolean, onMenu: () -> Unit) {
             onClick = { appActionSink.sendAction(SageAction.AppBack) },
         ) {
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                imageVector = SageIcon.Back.vector(),
                 contentDescription = null,
             )
         }
     } else {
         IconButton(onClick = onMenu) {
             Icon(
-                imageVector = Icons.Filled.Menu,
+                imageVector = SageIcon.Menu.vector(),
                 contentDescription = null,
             )
         }

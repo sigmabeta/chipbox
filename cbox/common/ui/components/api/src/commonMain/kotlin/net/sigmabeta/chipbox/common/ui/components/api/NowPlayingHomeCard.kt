@@ -20,10 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon as SageIcon
+import net.sigmabeta.sage.ui.vector
 
 private val CARD_HEIGHT = 200.dp
 private val CARD_SHAPE_RADIUS = 16.dp
@@ -294,9 +291,9 @@ private fun CardForeground(
             } else {
                 Icon(
                     imageVector = when {
-                        model.isError -> Icons.Filled.Warning
-                        model.isPlaying -> Icons.Filled.Pause
-                        else -> Icons.Filled.PlayArrow
+                        model.isError -> SageIcon.Warning.vector()
+                        model.isPlaying -> SageIcon.Pause.vector()
+                        else -> SageIcon.Play.vector()
                     },
                     contentDescription = null,
                     tint = if (model.isError) MaterialTheme.colorScheme.error else foregroundColor,
