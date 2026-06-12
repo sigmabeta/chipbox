@@ -177,6 +177,7 @@ kotlin {
                 implementation(projects.cbox.common.player.common.api)
                 implementation(projects.cbox.common.settings.api)
                 implementation(projects.cbox.common.settings.real)
+                implementation(projects.cbox.common.crash.api)
                 implementation(projects.cbox.common.debug.api)
                 implementation(projects.cbox.common.debug.real)
                 // sage's `Storage` interface — `LocalStorageStorage` implements it for the
