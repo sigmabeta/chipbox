@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
+import net.sigmabeta.chipbox.settings.ResamplerMode
 import net.sigmabeta.chipbox.settings.ThemeMode
 
 /**
@@ -19,20 +20,29 @@ class FakeChipboxSettingsManager(
     initialThemeMode: ThemeMode = ThemeMode.DEFAULT,
     initialBrandFont: String? = null,
     initialPlainFont: String? = null,
+    initialResamplerMode: ResamplerMode = ResamplerMode.DEFAULT,
 ) : ChipboxSettingsManager {
 
     private val themeMode = MutableStateFlow(initialThemeMode)
     private val brandFont = MutableStateFlow(initialBrandFont)
     private val plainFont = MutableStateFlow(initialPlainFont)
+    private val resamplerMode = MutableStateFlow(initialResamplerMode)
 
     val setBrandFontCalls: MutableList<String> = mutableListOf()
     val setPlainFontCalls: MutableList<String> = mutableListOf()
     val setThemeModeCalls: MutableList<ThemeMode> = mutableListOf()
+    val setResamplerModeCalls: MutableList<ResamplerMode> = mutableListOf()
 
     override fun getThemeMode(): Flow<ThemeMode> = themeMode.asStateFlow()
     override fun setThemeMode(mode: ThemeMode) {
         setThemeModeCalls += mode
         themeMode.value = mode
+    }
+
+    override fun getResamplerMode(): Flow<ResamplerMode> = resamplerMode.asStateFlow()
+    override fun setResamplerMode(mode: ResamplerMode) {
+        setResamplerModeCalls += mode
+        resamplerMode.value = mode
     }
 
     override fun getBrandFont(): Flow<String?> = brandFont.asStateFlow()

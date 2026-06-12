@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.player.speaker.di
 
 import android.content.Context
+import android.media.AudioManager
 import android.os.Environment
 import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
@@ -12,6 +13,7 @@ import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
 import net.sigmabeta.chipbox.player.speaker.real.RealSpeaker
 import net.sigmabeta.chipbox.player.speaker.text.TextSpeaker
+import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import okio.FileSystem
@@ -41,9 +43,28 @@ object SpeakerModule {
     @Provides
     @SingleIn(AppScope::class)
     fun provideRealSpeaker(
+        context: Context,
         bufferManager: ConsumerBufferManager,
         hatchet: Hatchet,
-    ): RealSpeaker = RealSpeaker(bufferManager, hatchet)
+        settingsManager: ChipboxSettingsManager,
+    ): RealSpeaker {
+        // The device's preferred output rate: for the in-app resampler modes we open AudioTrack here
+        // so the framework mixer never has to resample a non-standard emulator rate (the cause of the
+        // odd-rate underruns). The chosen mode (incl. OS passthrough) comes from settings.
+        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val outputRate = audioManager.getProperty(AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE)
+            ?.toIntOrNull()
+            ?: DEFAULT_OUTPUT_SAMPLE_RATE
+        return RealSpeaker(
+            bufferManager,
+            hatchet,
+            settingsManager.getResamplerMode(),
+            outputRate,
+        )
+    }
+
+    /** Fallback when the platform doesn't report a preferred rate; 48 kHz is the modern default. */
+    private const val DEFAULT_OUTPUT_SAMPLE_RATE = 48_000
 
     @Provides
     @SingleIn(AppScope::class)

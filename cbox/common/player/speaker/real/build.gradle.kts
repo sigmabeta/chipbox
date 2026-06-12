@@ -16,6 +16,7 @@ kotlin {
             dependencies {
                 api(projects.cbox.common.player.speaker.api)
                 api(projects.cbox.common.player.buffer.api)
+                implementation(projects.cbox.common.settings.api)
                 implementation(libs.kotlinx.coroutines.core)
                 implementation(libs.sage.common.logging)
             }

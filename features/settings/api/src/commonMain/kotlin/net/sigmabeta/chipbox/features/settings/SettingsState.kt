@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.features.settings
 
 import kotlinx.collections.immutable.toImmutableList
+import net.sigmabeta.chipbox.settings.ResamplerMode
 import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
@@ -30,6 +31,7 @@ data class SettingsState(
     val debugClickCount: Int = 0,
     val shouldShowDebug: Boolean? = null,
     val hasLibraryFolders: Boolean = false,
+    val resamplerMode: ResamplerMode = ResamplerMode.DEFAULT,
 ) : ListState() {
     override fun title(stringProvider: StringProvider) = TitleBarModel(
         title = stringProvider.getString(ChipboxStringId.SETTINGS_SCREEN_TITLE),
@@ -37,9 +39,33 @@ data class SettingsState(
     )
 
     override fun toListItems(stringProvider: StringProvider): List<ListModel> = appearanceSection(stringProvider) +
+            audioSection(stringProvider) +
             librarySection(stringProvider) +
             aboutSection(stringProvider) +
             debugSection(stringProvider)
+
+    private fun audioSection(stringProvider: StringProvider): List<ListModel> = listOf(
+        sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_AUDIO),
+        resamplerDropdown(stringProvider),
+    )
+
+    // OS / Linear / Cubic. Option order mirrors `ResamplerMode.entries`, so the picked index maps
+    // straight back to a `ResamplerMode`. Routed through the action sink and persisted by the VM.
+    private fun resamplerDropdown(stringProvider: StringProvider): ListModel = DropdownSettingListModel(
+        settingId = ChipboxStringId.SETTINGS_LABEL_RESAMPLER.name,
+        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_RESAMPLER),
+        selectedPosition = resamplerMode.ordinal,
+        settingsLabels = ResamplerMode.entries
+            .map { stringProvider.getString(it.labelId()) }
+            .toImmutableList(),
+        onNewOptionSelected = { index -> SettingsAction.ResamplerModeSelected(ResamplerMode.entries[index]) },
+    )
+
+    private fun ResamplerMode.labelId(): ChipboxStringId = when (this) {
+        ResamplerMode.OS -> ChipboxStringId.SETTINGS_RESAMPLER_OS
+        ResamplerMode.LINEAR -> ChipboxStringId.SETTINGS_RESAMPLER_LINEAR
+        ResamplerMode.CUBIC -> ChipboxStringId.SETTINGS_RESAMPLER_CUBIC
+    }
 
     private fun appearanceSection(stringProvider: StringProvider): List<ListModel> = listOf(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_APPEARANCE),
