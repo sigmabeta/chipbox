@@ -16,6 +16,8 @@ import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
+import net.sigmabeta.chipbox.crash.CrashReport
+import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
 import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
@@ -292,6 +294,14 @@ object WebSettingsModule {
     @Provides @SingleIn(AppScope::class)
     fun provideDebugSettingsManager(storage: Storage): DebugSettingsManager =
         RealDebugSettingsManager(storage)
+
+    // The real store reads crash files off disk (jvmShared, no JS variant). The browser has no such
+    // sink, so the crash-log screen sees an always-empty store rather than dragging in file I/O.
+    @Provides @SingleIn(AppScope::class)
+    fun provideCrashReportStore(): CrashReportStore = object : CrashReportStore {
+        override fun list(): List<CrashReport> = emptyList()
+        override fun clear() = Unit
+    }
 }
 
 @BindingContainer
