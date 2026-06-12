@@ -39,6 +39,7 @@ data class PlaybackStatusState(
         addAll(generatorSection(stringProvider))
         addAll(speakerSection(stringProvider))
         addAll(volumeSection(stringProvider))
+        addAll(resamplerSection(stringProvider))
         addAll(bufferSection(stringProvider))
     }
 
@@ -267,6 +268,33 @@ data class PlaybackStatusState(
                 stringProvider,
                 ChipboxStringId.PLAYBACK_STATUS_LABEL_VOL_NORMALIZATION,
                 modification(VolumeProcessor.KEY_NORMALIZATION)
+            ),
+        )
+    }
+
+    private fun resamplerSection(stringProvider: StringProvider): List<ListModel> {
+        val resampler = debug?.speaker?.resampler
+        return listOf(
+            section(stringProvider, ChipboxStringId.PLAYBACK_STATUS_SECTION_RESAMPLER),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_RES_MODE,
+                resampler?.mode
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_RES_ACTIVE,
+                resampler?.active?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_RES_INPUT_RATE,
+                resampler?.inputRateHz?.toString()
+            ),
+            row(
+                stringProvider,
+                ChipboxStringId.PLAYBACK_STATUS_LABEL_RES_OUTPUT_RATE,
+                resampler?.outputRateHz?.toString()
             ),
         )
     }

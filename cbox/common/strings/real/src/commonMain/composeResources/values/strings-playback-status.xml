@@ -62,5 +62,11 @@
     <string name="playback_status_label_buf_empty_avail">Empty arrays available</string>
     <string name="playback_status_label_buf_drain_count">Drain count</string>
 
+    <string name="playback_status_section_resampler">Resampler</string>
+    <string name="playback_status_label_res_mode">Mode</string>
+    <string name="playback_status_label_res_active">Active (in-app)</string>
+    <string name="playback_status_label_res_input_rate">Input rate (Hz)</string>
+    <string name="playback_status_label_res_output_rate">Output rate (Hz)</string>
+
     <string name="playback_status_cta_copy_debug_info">Copy debug info</string>
 </resources>

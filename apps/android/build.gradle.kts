@@ -128,6 +128,7 @@ dependencies {
     implementation(projects.cbox.common.player.emulators.di)
     implementation(projects.cbox.android.player.generator.di)
     implementation(projects.cbox.android.player.speaker.di)
+    implementation(projects.cbox.common.player.resampler.di)
     implementation(projects.cbox.android.repository.di)
     implementation(projects.cbox.common.repository.di)
     implementation(projects.cbox.android.scanner.di)

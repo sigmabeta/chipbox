@@ -9,19 +9,15 @@ import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
-import net.sigmabeta.chipbox.player.common.DefaultResamplerFactory
-import net.sigmabeta.chipbox.player.common.Resampler
-import net.sigmabeta.chipbox.player.common.ResamplerQuality
+import net.sigmabeta.chipbox.player.resampler.Resampler
+import net.sigmabeta.chipbox.player.resampler.ResamplerDebugInfo
 import net.sigmabeta.chipbox.player.speaker.BaseSpeaker
-import net.sigmabeta.chipbox.settings.ResamplerMode
 import net.sigmabeta.sage.logging.Hatchet
 import org.khronos.webgl.Float32Array
 import org.w3c.dom.MessagePort
@@ -29,13 +25,14 @@ import org.w3c.dom.MessageEvent
 
 /**
  * [BaseSpeaker] backed by Web Audio. Resamples each [AudioBuffer]'s S16 PCM to the AudioContext's
- * rate with the shared multiplatform [Resampler] (per the user's [ResamplerMode]), converts to
- * Float32, and posts it to `chipbox-audio-worklet.js` — now a plain FIFO that plays frames at the
- * context rate. AudioContext is created lazily on first audio — browsers require a user gesture.
+ * rate with the injected single-technique [resampler], converts to Float32, and posts it to
+ * `chipbox-audio-worklet.js` — now a plain FIFO that plays frames at the context rate. AudioContext
+ * is created lazily on first audio — browsers require a user gesture.
  *
- * [ResamplerMode.OS] has no separate browser resampler for a worklet stream, so on web it maps to
- * the linear kernel (matching the worklet's previous built-in resampling); LINEAR/CUBIC select the
- * matching kernel. When the source rate already equals the context rate the resampler is bypassed.
+ * The [resampler] is resolved from the user's saved setting when the graph builds this (changing it
+ * takes effect on the next launch — no live switching). A worklet stream must always reach the
+ * context rate, so OS mode maps to the linear kernel in DI rather than bypassing; only a source rate
+ * already equal to the context rate skips resampling.
  *
  * The worklet posts `{type: "consumed", frames}` back after each FIFO head shift (in output frames);
  * [awaitSinkCapacity] uses those to throttle the consume loop to actual playback rate, so
@@ -44,7 +41,7 @@ import org.w3c.dom.MessageEvent
 class WebAudioSpeaker(
     bufferManager: ConsumerBufferManager,
     hatchet: Hatchet,
-    resamplerModes: Flow<ResamplerMode>,
+    private val resampler: Resampler?,
 ) : BaseSpeaker(bufferManager, hatchet, Dispatchers.Default) {
 
     private val initScope = CoroutineScope(Dispatchers.Default)
@@ -52,12 +49,9 @@ class WebAudioSpeaker(
     private var workletNode: AudioWorkletNode? = null
     private var workletPort: MessagePort? = null
 
-    // Latest selected mode (off the settings flow) and the mode the current resampler was built for;
-    // JS is single-threaded so a plain var is safe. A change rebuilds the resampler on the next buffer.
-    private var requestedMode: ResamplerMode = ResamplerMode.DEFAULT
-    private var activeMode: ResamplerMode? = null
+    // Native rate of the audio currently flowing; a change is a discontinuity that resets the
+    // resampler. JS is single-threaded so a plain var is safe.
     private var currentInputRate: Int = 0
-    private var resampler: Resampler? = null
     private var resampleBuffer: ShortArray = ShortArray(0)
 
     // Set once on the first post-flush buffer (and again whenever the trackId in the buffer
@@ -80,10 +74,6 @@ class WebAudioSpeaker(
 
     private var initStarted = false
 
-    init {
-        initScope.launch { resamplerModes.collect { requestedMode = it } }
-    }
-
     override fun onAudioReceived(audio: AudioBuffer) {
         ensureAudioInitialized()
         val port = workletPort ?: return
@@ -99,11 +89,19 @@ class WebAudioSpeaker(
         }
         referenceTrackId = audio.trackId
 
-        val mode = requestedMode
-        if (audio.sampleRate != currentInputRate || mode != activeMode) {
+        if (audio.sampleRate != currentInputRate) {
             currentInputRate = audio.sampleRate
-            activeMode = mode
-            resampler = buildResampler(mode, audio.sampleRate, outputRate)
+            // A new input rate is a discontinuity; the resampler also self-resets, but clear it
+            // here so the first buffer at the new rate never carries phase from the previous one.
+            resampler?.reset()
+            updateResamplerDebug(
+                ResamplerDebugInfo(
+                    mode = resampler?.let { it::class.simpleName } ?: "OS",
+                    active = isResampling(outputRate),
+                    inputRateHz = audio.sampleRate,
+                    outputRateHz = outputRate,
+                )
+            )
         }
 
         // Produce interleaved S16 at the context rate (resampled, or the input as-is when bypassed),
@@ -111,14 +109,14 @@ class WebAudioSpeaker(
         val converter = resampler
         val outputData: ShortArray
         val outputFrames: Int
-        if (converter == null) {
+        if (converter == null || !isResampling(outputRate)) {
             outputData = audio.data
             outputFrames = audio.data.size / SHORTS_PER_FRAME
         } else {
             val inputFrames = audio.data.size / SHORTS_PER_FRAME
-            val neededShorts = converter.maxOutputFrames(inputFrames) * SHORTS_PER_FRAME
+            val neededShorts = converter.maxOutputFrames(inputFrames, currentInputRate, outputRate) * SHORTS_PER_FRAME
             if (resampleBuffer.size < neededShorts) resampleBuffer = ShortArray(neededShorts)
-            outputFrames = converter.process(audio.data, inputFrames, resampleBuffer)
+            outputFrames = converter.process(audio.data, inputFrames, currentInputRate, outputRate, resampleBuffer)
             outputData = resampleBuffer
         }
 
@@ -134,16 +132,9 @@ class WebAudioSpeaker(
         postedOutputFrames += outputFrames.toLong()
     }
 
-    /** The resampler for [mode], or null to bypass when the rates already match. OS has no separate
-     *  browser resampler for a worklet stream, so it uses the linear kernel here. */
-    private fun buildResampler(mode: ResamplerMode, inputRate: Int, outputRate: Int): Resampler? {
-        val quality = when (mode) {
-            ResamplerMode.OS, ResamplerMode.LINEAR -> ResamplerQuality.LINEAR
-            ResamplerMode.CUBIC -> ResamplerQuality.CUBIC
-        }
-        val factory = DefaultResamplerFactory(quality)
-        return if (factory.needed(inputRate, outputRate)) factory.create(inputRate, outputRate) else null
-    }
+    /** True when the injected kernel actually converts — a kernel is set and the source rate differs
+     *  from the context [outputRate]. */
+    private fun isResampling(outputRate: Int): Boolean = resampler != null && currentInputRate != outputRate
 
     override suspend fun awaitSinkCapacity() {
         // Hold the consume loop until the worklet has caught up — keeps the next iteration's
@@ -183,9 +174,9 @@ class WebAudioSpeaker(
         needsReferenceUpdate = true
         postedOutputFrames = 0L
         consumedOutputFrames.value = 0L
+        // Reset the rate gate so the next play re-resets the (injected, fixed) resampler.
         currentInputRate = 0
-        activeMode = null
-        resampler = null
+        updateResamplerDebug(null)
         // AudioContext stays alive — closing it would re-trigger the user-gesture gate, so the
         // next track wouldn't play without another click.
     }

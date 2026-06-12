@@ -7,33 +7,26 @@ import android.os.Process
 import java.util.concurrent.Executors
 import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
 import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
-import net.sigmabeta.chipbox.player.common.DefaultResamplerFactory
-import net.sigmabeta.chipbox.player.common.Resampler
-import net.sigmabeta.chipbox.player.common.ResamplerQuality
+import net.sigmabeta.chipbox.player.resampler.Resampler
+import net.sigmabeta.chipbox.player.resampler.ResamplerDebugInfo
 import net.sigmabeta.chipbox.player.speaker.BaseSpeaker
-import net.sigmabeta.chipbox.settings.ResamplerMode
 import net.sigmabeta.sage.logging.Hatchet
 
 /**
  * Production [Speaker] that writes PCM to an Android [AudioTrack].
  *
- * Sample-rate handling follows the user's [ResamplerMode] ([resamplerModes]). For LINEAR/CUBIC the
- * AudioTrack is opened at the device's output rate ([outputSampleRateHz]) and each buffer is
- * resampled to it in-app — handing the platform mixer a non-standard rate (e.g. an N64 rip's 32006
- * Hz) makes it take an arbitrary-ratio resampler path that underruns a minimal buffer, so resampling
- * ourselves keeps AudioFlinger on a clean, standard rate. For [ResamplerMode.OS] the track is opened
- * at the native rate and the OS mixer resamples (the pre-resampler behaviour). The track + resampler
- * are rebuilt when the input rate or the selected mode changes.
+ * Sample-rate handling is fixed for the speaker's lifetime by the injected [resampler], resolved
+ * from the user's saved resampler setting when the graph builds it (changing the setting takes
+ * effect on the next launch — there is no live switching). A non-null [resampler] means in-app
+ * resampling: the AudioTrack is opened at the device's output rate ([outputSampleRateHz]) and each
+ * buffer is converted to it, so handing the platform mixer a non-standard rate (e.g. an N64 rip's
+ * 32006 Hz) never makes it take the arbitrary-ratio path that underruns a minimal buffer. A null
+ * [resampler] is OS mode: the track is opened at the native rate and AudioFlinger resamples. The
+ * track is rebuilt when the input rate changes.
  *
  * The consume loop runs on a single dedicated thread ([newSinkDispatcher]) held at
  * [Process.THREAD_PRIORITY_URGENT_AUDIO], not on `Dispatchers.Default`. A pooled-dispatcher
@@ -45,7 +38,7 @@ import net.sigmabeta.sage.logging.Hatchet
 class RealSpeaker(
         bufferManager: ConsumerBufferManager,
         hatchet: Hatchet,
-        resamplerModes: Flow<ResamplerMode>,
+        private val resampler: Resampler?,
         private val outputSampleRateHz: Int,
         private val dispatcher: CoroutineDispatcher = newSinkDispatcher(),
 ) : BaseSpeaker(bufferManager, hatchet, dispatcher) {
@@ -55,24 +48,12 @@ class RealSpeaker(
     @Volatile
     private var audioTrack: AudioTrack? = null
 
-    // Latest selected mode (updated off the settings flow on configScope); read on the consume
-    // thread. @Volatile for that cross-thread handoff. Defaults until the flow's first emission.
-    @Volatile
-    private var requestedMode: ResamplerMode = ResamplerMode.DEFAULT
-
-    // The mode the current AudioTrack + resampler were built for; a change forces a rebuild.
-    private var activeMode: ResamplerMode? = null
-
-    // Collects the resampler-mode setting so a change applies on the next buffer.
-    private val configScope = CoroutineScope(Dispatchers.Default)
-
     // Native rate of the audio currently flowing (the cache/emulator rate), distinct from the
-    // AudioTrack's output rate. Drives when to rebuild the track + resampler.
+    // AudioTrack's output rate. Drives when to rebuild the track.
     private var currentInputRate: Int = 0
 
-    // Converts currentInputRate -> the track's output rate; null when bypassed (OS mode, or the
-    // rates already match).
-    private var resampler: Resampler? = null
+    // The AudioTrack's open rate: the device rate when resampling, the native rate in OS mode.
+    private var currentOutputRate: Int = 0
 
     // Scratch for resampled output, grown on demand and reused across buffers.
     private var resampleBuffer: ShortArray = ShortArray(0)
@@ -87,27 +68,30 @@ class RealSpeaker(
     private var referenceHeadFrames: Long = 0L
     private var referenceTrackFrame: Long = 0L
 
-    init {
-        configScope.launch {
-            resamplerModes.collect { requestedMode = it }
-        }
-    }
-
     override fun onAudioReceived(audio: AudioBuffer) {
-        // Rebuild when the input rate changes, the mode changed, or the track was torn down (null).
-        // The track runs at the mode's output rate, so we can't key off audioTrack.sampleRate here.
-        val mode = requestedMode
-        if (audioTrack == null || audio.sampleRate != currentInputRate || mode != activeMode) {
+        // Rebuild when the input rate changes or the track was torn down (null). The resampler is
+        // fixed for the speaker's life, so the track's open rate only depends on the input rate.
+        if (audioTrack == null || audio.sampleRate != currentInputRate) {
             currentInputRate = audio.sampleRate
-            activeMode = mode
-            // OS mode keeps the native rate and lets AudioFlinger resample; otherwise open at the
-            // device rate and resample in-app to it.
-            val outputRate = if (mode == ResamplerMode.OS) audio.sampleRate else outputSampleRateHz
+            // OS mode (null resampler) keeps the native rate and lets AudioFlinger resample;
+            // otherwise open at the device rate and resample in-app to it.
+            val outputRate = if (resampler == null) audio.sampleRate else outputSampleRateHz
+            currentOutputRate = outputRate
             audioTrack = initializeAudioTrack(outputRate)
-            resampler = buildResampler(mode, audio.sampleRate, outputRate)
+            // A new input rate is a discontinuity; the resampler also self-resets, but clear it here
+            // so the first post-rebuild buffer never carries phase from the previous rate.
+            resampler?.reset()
             hatchet.i(
                 "Audiotrack setup complete: input ${audio.sampleRate} Hz -> output $outputRate Hz " +
-                    "(mode=$mode, resampling=${resampler != null})."
+                    "(resampling=${isResampling()})."
+            )
+            updateResamplerDebug(
+                ResamplerDebugInfo(
+                    mode = resampler?.let { it::class.simpleName } ?: "OS",
+                    active = isResampling(),
+                    inputRateHz = audio.sampleRate,
+                    outputRateHz = outputRate,
+                )
             )
             audioTrack!!.play()
         }
@@ -127,29 +111,23 @@ class RealSpeaker(
         logProblems(writeToTrack(audio))
     }
 
-    /** Write [audio] to the track, resampling to the output rate first when [resampler] is set.
+    /** True when an in-app resampler is engaged — a kernel is set and the rates actually differ. */
+    private fun isResampling(): Boolean = resampler != null && currentInputRate != currentOutputRate
+
+    /** Write [audio] to the track, resampling to the output rate first when [isResampling].
      *  Returns AudioTrack.write's result (sample count or an error code). */
     private fun writeToTrack(audio: AudioBuffer): Int {
         val track = audioTrack!!
         val converter = resampler
-            ?: return track.write(audio.data, 0, audio.data.size) // already at the device rate
+        if (converter == null || !isResampling()) {
+            return track.write(audio.data, 0, audio.data.size) // already at the device rate
+        }
 
         val inputFrames = audio.data.size / SHORTS_PER_FRAME
-        val neededShorts = converter.maxOutputFrames(inputFrames) * SHORTS_PER_FRAME
+        val neededShorts = converter.maxOutputFrames(inputFrames, currentInputRate, currentOutputRate) * SHORTS_PER_FRAME
         if (resampleBuffer.size < neededShorts) resampleBuffer = ShortArray(neededShorts)
-        val outputFrames = converter.process(audio.data, inputFrames, resampleBuffer)
+        val outputFrames = converter.process(audio.data, inputFrames, currentInputRate, currentOutputRate, resampleBuffer)
         return track.write(resampleBuffer, 0, outputFrames * SHORTS_PER_FRAME)
-    }
-
-    /** The resampler for [mode], or null to bypass (OS mode, or the rates already match). */
-    private fun buildResampler(mode: ResamplerMode, inputRate: Int, outputRate: Int): Resampler? {
-        val quality = when (mode) {
-            ResamplerMode.OS -> return null
-            ResamplerMode.LINEAR -> ResamplerQuality.LINEAR
-            ResamplerMode.CUBIC -> ResamplerQuality.CUBIC
-        }
-        val factory = DefaultResamplerFactory(quality)
-        return if (factory.needed(inputRate, outputRate)) factory.create(inputRate, outputRate) else null
     }
 
     override fun readSinkPositionMs(): Long {
@@ -228,11 +206,11 @@ class RealSpeaker(
         track.pause()
         track.flush()
         track.release()
+        updateResamplerDebug(null)
     }
 
     override fun release() {
         super.release()
-        configScope.cancel()
         // Shut down the dedicated audio thread we created in the default constructor. A
         // caller-supplied dispatcher (e.g. a test's) isn't ours to close, so only an
         // ExecutorCoroutineDispatcher — what newSinkDispatcher() returns — is closed.

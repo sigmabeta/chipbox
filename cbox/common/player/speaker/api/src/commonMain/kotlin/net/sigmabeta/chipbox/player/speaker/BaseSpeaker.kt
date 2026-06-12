@@ -20,6 +20,7 @@ import kotlinx.coroutines.yield
 import net.sigmabeta.chipbox.player.buffer.AudioBuffer
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.common.VolumeProcessor
+import net.sigmabeta.chipbox.player.resampler.ResamplerDebugInfo
 import net.sigmabeta.chipbox.player.common.framesToMillis
 import net.sigmabeta.sage.logging.Hatchet
 
@@ -125,6 +126,16 @@ abstract class BaseSpeaker(
 
     private fun updateDebug(block: (SpeakerDebugInfo) -> SpeakerDebugInfo) {
         debugInfoMutable.value = block(debugInfoMutable.value)
+    }
+
+    /**
+     * Publish the platform sink's in-app resampler state for the debug PlaybackStatus screen.
+     * The resampler lives in the platform subclass (Android `AudioTrack`, web `AudioWorklet`), so
+     * those sinks call this when they (re)build it on a rate/mode change and pass null on teardown.
+     * Sinks that never resample leave it untouched (it stays null).
+     */
+    protected fun updateResamplerDebug(info: ResamplerDebugInfo?) {
+        updateDebug { it.copy(resampler = info) }
     }
 
     /**

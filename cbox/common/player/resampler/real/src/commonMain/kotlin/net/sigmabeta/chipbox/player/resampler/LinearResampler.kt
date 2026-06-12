@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.player.common
+package net.sigmabeta.chipbox.player.resampler
 
 /**
  * 2-point linear-interpolation [Resampler]. Cheapest kernel; the web audio worklet has used it for
@@ -7,7 +7,7 @@ package net.sigmabeta.chipbox.player.common
  *
  * Reads `s0 = sample(i)`, `s1 = sample(i + 1)`; output = `s0 + (s1 - s0) * frac`.
  */
-class LinearResampler(inputRate: Int, outputRate: Int) : StreamingResampler(inputRate, outputRate, taps = 2, leftTaps = 0) {
+class LinearResampler : StreamingResampler(taps = 2, leftTaps = 0) {
 
     override fun kernel(input: ShortArray, i: Int, frac: Double, channel: Int): Double {
         val s0 = sample(input, i, channel)

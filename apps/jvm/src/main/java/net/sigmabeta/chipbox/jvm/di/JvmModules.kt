@@ -8,9 +8,12 @@ import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import java.io.File
+import javax.sound.sampled.AudioSystem
+import javax.sound.sampled.DataLine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
@@ -25,6 +28,7 @@ import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
 import net.sigmabeta.chipbox.jvm.JvmStorage
 import net.sigmabeta.chipbox.jvm.logging.JvmHatchet
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
+import net.sigmabeta.chipbox.player.resampler.Resampler
 import net.sigmabeta.chipbox.player.speaker.real.SourceDataLineSpeaker
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
 import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
@@ -51,6 +55,7 @@ import net.sigmabeta.chipbox.repository.database.DatabaseRepository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
+import net.sigmabeta.chipbox.settings.ResamplerMode
 import net.sigmabeta.chipbox.settings.real.RealChipboxSettingsManager
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
@@ -260,7 +265,63 @@ object JvmSpeakerModule {
     fun provideLiveSpeaker(
         hatchet: Hatchet,
         bufferManager: ConsumerBufferManager,
-    ): SourceDataLineSpeaker = SourceDataLineSpeaker(bufferManager, hatchet)
+        settingsManager: ChipboxSettingsManager,
+        resamplers: Map<ResamplerMode, Resampler>,
+    ): SourceDataLineSpeaker = SourceDataLineSpeaker(
+        bufferManager,
+        hatchet,
+        resamplerFor(settingsManager, resamplers),
+        deviceOutputSampleRate(hatchet),
+    )
+
+    /**
+     * The single-technique resampler the speaker should use, resolved once from the saved setting:
+     * OS mode → null (the line opens at the native rate and the OS mixer resamples), otherwise the
+     * kernel for the mode. A one-time blocking read — no live switching, so a setting change applies
+     * on the next launch.
+     */
+    private fun resamplerFor(
+        settingsManager: ChipboxSettingsManager,
+        resamplers: Map<ResamplerMode, Resampler>,
+    ): Resampler? {
+        val mode = runBlocking { settingsManager.getResamplerMode().first() }
+        return if (mode == ResamplerMode.OS) null else resamplers[mode]
+    }
+
+    /**
+     * The audio device's output rate for the in-app resampler modes (LINEAR/CUBIC), the desktop
+     * analogue of Android's `AudioManager.PROPERTY_OUTPUT_SAMPLE_RATE`: resampling to it keeps the
+     * line on the device's own rate so the OS mixer never takes its arbitrary-ratio path.
+     *
+     * We ask `javax.sound` what the default mixer's output line supports. Many backends advertise
+     * `NOT_SPECIFIED` ("any rate") rather than a concrete device rate — when that's all we get, we
+     * fall back to a ubiquitous 48 kHz. OS mode ignores this and opens at the native rate.
+     */
+    private fun deviceOutputSampleRate(hatchet: Hatchet): Int {
+        val advertised = runCatching {
+            AudioSystem.getMixer(null).sourceLineInfo
+                .filterIsInstance<DataLine.Info>()
+                .flatMap { it.formats.toList() }
+                .map { it.sampleRate }
+                .filter { it > 0f } // drop AudioSystem.NOT_SPECIFIED (-1f)
+                .map { it.toInt() }
+                .toSortedSet()
+        }.getOrElse {
+            hatchet.w("Couldn't query device sample rates (${it.message}); using default.")
+            sortedSetOf()
+        }
+
+        val chosen = when {
+            advertised.isEmpty() -> DEFAULT_OUTPUT_SAMPLE_RATE
+            DEFAULT_OUTPUT_SAMPLE_RATE in advertised -> DEFAULT_OUTPUT_SAMPLE_RATE
+            else -> advertised.last() // highest concrete rate the device offers
+        }
+        hatchet.i("Desktop output rate: $chosen Hz (device advertised: ${advertised.toList()}).")
+        return chosen
+    }
+
+    /** Fallback / preferred line rate when the backend reports no concrete device rate. */
+    private const val DEFAULT_OUTPUT_SAMPLE_RATE = 48_000
 }
 
 @BindingContainer
