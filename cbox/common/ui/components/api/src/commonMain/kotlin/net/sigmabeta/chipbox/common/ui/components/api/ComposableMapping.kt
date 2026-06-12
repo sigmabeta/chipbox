@@ -59,7 +59,7 @@ fun ListModel.Content(
 
             is CtaListModel -> ActionItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
-            is DropdownSettingListModel -> LabelDropdownListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
+            is DropdownSettingListModel -> ExpandingDropdownListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is EmptyStateListModel -> EmptyListIndicator(model = this, modifier = mod)
 
