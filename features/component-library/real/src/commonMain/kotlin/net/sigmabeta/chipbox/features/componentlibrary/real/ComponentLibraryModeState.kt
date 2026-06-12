@@ -46,6 +46,8 @@ import net.sigmabeta.sage.ui.StringProvider
 data class ComponentLibraryModeState(
     val mode: LibraryMode? = null,
     val content: SampleContent? = null,
+    // settingId of the single currently-expanded dropdown, or null if collapsed.
+    val expandedDropdownId: String? = null,
 ) : ListState() {
 
     override val columnType: ColumnType = when (mode) {
@@ -127,11 +129,13 @@ data class ComponentLibraryModeState(
         )
         add(LabelRatingStarListModel(label = content.title(8), value = STAR_RATING, clickAction = SageAction.Noop, dataId = id(12)))
         add(
-            DropdownSettingListModel(
-                settingId = "cl-dropdown",
+            DropdownSettingListModel.ofLabels(
+                settingId = DROPDOWN_SETTING_ID,
                 name = content.title(9),
                 selectedPosition = 0,
-                settingsLabels = content.names.take(DROPDOWN_OPTION_COUNT).toImmutableList(),
+                labels = content.titles.take(DROPDOWN_OPTION_COUNT).toImmutableList(),
+                expanded = expandedDropdownId == DROPDOWN_SETTING_ID,
+                onExpandClicked = ComponentLibraryAction.DropdownExpandClicked(DROPDOWN_SETTING_ID),
             )
         )
         add(CtaListModel(icon = Icon.Search, name = content.title(10), clickAction = SageAction.Noop, dataId = id(13)))
@@ -260,7 +264,8 @@ data class ComponentLibraryModeState(
         const val SCROLLER_CELL_COUNT = 8
         const val SUBSECTION_CELL_COUNT = 4
         const val COLUMN_WIDE_COUNT = 4
-        const val DROPDOWN_OPTION_COUNT = 3
+        const val DROPDOWN_OPTION_COUNT = 6
+        const val DROPDOWN_SETTING_ID = "cl-dropdown"
         const val STAR_RATING = 3
         const val ID_BASE = 1_000_000L
         const val WIDE_ID_BASE = 100

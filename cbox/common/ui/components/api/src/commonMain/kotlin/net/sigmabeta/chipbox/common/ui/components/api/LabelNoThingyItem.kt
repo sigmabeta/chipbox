@@ -1,8 +1,13 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import net.sigmabeta.chipbox.common.ui.components.api.subs.LabeledThingy
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.text
@@ -23,6 +28,20 @@ fun LabelNoThingyItem(
     } else {
         null
     }
+
+    val labelColor by animateColorAsState(
+        targetValue = if (model.active) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onBackground
+        },
+        label = "LabelNoThingyItem.labelColor",
+    )
+    val fontWeightValue by animateIntAsState(
+        targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
+        label = "LabelNoThingyItem.fontWeight",
+    )
+
     LabeledThingy(
         label = model.name,
         thingy = {},
@@ -30,5 +49,7 @@ fun LabelNoThingyItem(
         onClickLabel = onClickLabel,
         modifier = modifier,
         padding = padding,
+        labelColor = labelColor,
+        labelFontWeight = FontWeight(fontWeightValue),
     )
 }

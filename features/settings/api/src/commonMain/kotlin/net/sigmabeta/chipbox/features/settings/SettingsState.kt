@@ -32,6 +32,8 @@ data class SettingsState(
     val shouldShowDebug: Boolean? = null,
     val hasLibraryFolders: Boolean = false,
     val resamplerMode: ResamplerMode = ResamplerMode.DEFAULT,
+    // settingId of the single currently-expanded dropdown, or null if all are collapsed.
+    val expandedDropdownId: String? = null,
 ) : ListState() {
     override fun title(stringProvider: StringProvider) = TitleBarModel(
         title = stringProvider.getString(ChipboxStringId.SETTINGS_SCREEN_TITLE),
@@ -51,15 +53,20 @@ data class SettingsState(
 
     // OS / Linear / Cubic. Option order mirrors `ResamplerMode.entries`, so the picked index maps
     // straight back to a `ResamplerMode`. Routed through the action sink and persisted by the VM.
-    private fun resamplerDropdown(stringProvider: StringProvider): ListModel = DropdownSettingListModel(
-        settingId = ChipboxStringId.SETTINGS_LABEL_RESAMPLER.name,
-        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_RESAMPLER),
-        selectedPosition = resamplerMode.ordinal,
-        settingsLabels = ResamplerMode.entries
-            .map { stringProvider.getString(it.labelId()) }
-            .toImmutableList(),
-        onNewOptionSelected = { index -> SettingsAction.ResamplerModeSelected(ResamplerMode.entries[index]) },
-    )
+    private fun resamplerDropdown(stringProvider: StringProvider): ListModel {
+        val settingId = ChipboxStringId.SETTINGS_LABEL_RESAMPLER.name
+        return DropdownSettingListModel.ofLabels(
+            settingId = settingId,
+            name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_RESAMPLER),
+            selectedPosition = resamplerMode.ordinal,
+            labels = ResamplerMode.entries
+                .map { stringProvider.getString(it.labelId()) }
+                .toImmutableList(),
+            expanded = expandedDropdownId == settingId,
+            onExpandClicked = SettingsAction.DropdownExpandClicked(settingId),
+            onNewOptionSelected = { index -> SettingsAction.ResamplerModeSelected(ResamplerMode.entries[index]) },
+        )
+    }
 
     private fun ResamplerMode.labelId(): ChipboxStringId = when (this) {
         ResamplerMode.OS -> ChipboxStringId.SETTINGS_RESAMPLER_OS
@@ -143,15 +150,20 @@ data class SettingsState(
     // Light / Dark / Match system. Option order mirrors `ThemeMode.entries`, so the picked
     // index maps straight back to a `ThemeMode`. The selection is routed through the action
     // sink (unlike the font dropdowns) and persisted by SettingsViewModel.
-    private fun themeDropdown(stringProvider: StringProvider): ListModel = DropdownSettingListModel(
-        settingId = ChipboxStringId.SETTINGS_LABEL_THEME.name,
-        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_THEME),
-        selectedPosition = themeMode.ordinal,
-        settingsLabels = ThemeMode.entries
-            .map { stringProvider.getString(it.labelId()) }
-            .toImmutableList(),
-        onNewOptionSelected = { index -> SettingsAction.ThemeModeSelected(ThemeMode.entries[index]) },
-    )
+    private fun themeDropdown(stringProvider: StringProvider): ListModel {
+        val settingId = ChipboxStringId.SETTINGS_LABEL_THEME.name
+        return DropdownSettingListModel.ofLabels(
+            settingId = settingId,
+            name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_THEME),
+            selectedPosition = themeMode.ordinal,
+            labels = ThemeMode.entries
+                .map { stringProvider.getString(it.labelId()) }
+                .toImmutableList(),
+            expanded = expandedDropdownId == settingId,
+            onExpandClicked = SettingsAction.DropdownExpandClicked(settingId),
+            onNewOptionSelected = { index -> SettingsAction.ThemeModeSelected(ThemeMode.entries[index]) },
+        )
+    }
 
     private fun ThemeMode.labelId(): ChipboxStringId = when (this) {
         ThemeMode.LIGHT -> ChipboxStringId.SETTINGS_THEME_LIGHT
@@ -169,13 +181,26 @@ data class SettingsState(
         defaultFont: ChipboxFont,
         onSelected: (ChipboxFont) -> SettingsAction,
     ): ListModel {
+        val settingId = labelId.name
         val fonts = ChipboxFont.entries
         val selectedFont = ChipboxFont.fromStorageValue(selectedFontName, defaultFont)
+        val selectedPosition = fonts.indexOf(selectedFont)
+        // Fonts carry a description, so each option is a captioned row rather than a bare label.
         return DropdownSettingListModel(
-            settingId = labelId.name,
+            settingId = settingId,
             name = stringProvider.getString(labelId),
-            selectedPosition = fonts.indexOf(selectedFont),
-            settingsLabels = fonts.map { it.fontName }.toImmutableList(),
+            selectedPosition = selectedPosition,
+            options = fonts.mapIndexed { index, font ->
+                font.fontName to NameCaptionListModel(
+                    dataId = index.toLong(),
+                    name = font.fontName,
+                    caption = font.description,
+                    clickAction = onSelected(font),
+                    active = index == selectedPosition,
+                )
+            }.toImmutableList(),
+            expanded = expandedDropdownId == settingId,
+            onExpandClicked = SettingsAction.DropdownExpandClicked(settingId),
             onNewOptionSelected = { index -> onSelected(fonts[index]) },
         )
     }
