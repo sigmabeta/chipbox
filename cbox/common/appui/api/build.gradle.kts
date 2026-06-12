@@ -84,7 +84,7 @@ kotlin {
                 // `@ContributesIntoMap(AppScope::class)`.
                 implementation(libs.sage.common.di)
                 implementation(libs.sage.common.ui.listScreens)
-                implementation(libs.jetbrains.compose.material.icons.extended)
+                implementation(libs.sage.common.ui.iconsReal)
                 implementation(libs.jetbrains.compose.material3.adaptive.navigation.suite)
 
                 // Voyager — single Compose Multiplatform nav stack shared with apps/jvm.

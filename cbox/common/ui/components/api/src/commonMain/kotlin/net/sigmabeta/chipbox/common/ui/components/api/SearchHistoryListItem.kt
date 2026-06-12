@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +21,8 @@ import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
 import net.sigmabeta.chipbox.common.ui.components.api.utils.outerFocusPadding
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.SearchHistoryListModel
+import net.sigmabeta.sage.ui.Icon as SageIcon
+import net.sigmabeta.sage.ui.vector
 
 @Composable
 fun SearchHistoryListItem(
@@ -57,7 +57,7 @@ fun SearchHistoryListItem(
             onClick = { actionSink.sendAction(model.removeAction) }
         ) {
             Icon(
-                imageVector = Icons.Default.Clear,
+                imageVector = SageIcon.Clear.vector(),
                 tint = contentColor,
                 contentDescription = null,
             )

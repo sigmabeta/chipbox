@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.toImmutableList
 import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
 import net.sigmabeta.sage.appcomm.ActionSink
+import net.sigmabeta.sage.ui.Icon as SageIcon
+import net.sigmabeta.sage.ui.vector
 
 private val ErrorSectionTopPadding = 16.dp
 private val ErrorSectionMaxHeight = 320.dp
@@ -105,7 +105,7 @@ private fun ErrorRow(
             onClick = { actionSink.sendAction(NowPlayingAction.DismissErrorClicked(error.id)) },
         ) {
             Icon(
-                imageVector = Icons.Default.Clear,
+                imageVector = SageIcon.Clear.vector(),
                 tint = MaterialTheme.colorScheme.onErrorContainer,
                 contentDescription = null,
             )

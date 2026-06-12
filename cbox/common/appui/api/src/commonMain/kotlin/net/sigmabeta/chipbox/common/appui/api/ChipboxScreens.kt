@@ -1,9 +1,5 @@
 package net.sigmabeta.chipbox.common.appui.api
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -61,6 +57,8 @@ import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.chipbox.features.settings.SettingsRoute
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.sage.appcomm.SageAction
+import net.sigmabeta.sage.ui.Icon as SageIcon
+import net.sigmabeta.sage.ui.vector
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.text
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
@@ -137,7 +135,7 @@ internal object HomeTab : Tab {
         @Composable get() = TabOptions(
             index = HOME_TAB_INDEX,
             title = ChipboxStringId.APPUI_TAB_HOME.text(),
-            icon = rememberTabIcon(Icons.Filled.Home),
+            icon = rememberTabIcon(SageIcon.Home.vector()),
         )
 
     @Composable
@@ -154,7 +152,7 @@ internal object LibraryTab : Tab {
         @Composable get() = TabOptions(
             index = LIBRARY_TAB_INDEX,
             title = ChipboxStringId.APPUI_TAB_LIBRARY.text(),
-            icon = rememberTabIcon(Icons.Filled.LibraryMusic),
+            icon = rememberTabIcon(SageIcon.Library.vector()),
         )
 
     @Composable
@@ -171,7 +169,7 @@ internal object SearchTab : Tab {
         @Composable get() = TabOptions(
             index = SEARCH_TAB_INDEX,
             title = ChipboxStringId.APPUI_TAB_SEARCH.text(),
-            icon = rememberTabIcon(Icons.Filled.Search),
+            icon = rememberTabIcon(SageIcon.Search.vector()),
         )
 
     @Composable

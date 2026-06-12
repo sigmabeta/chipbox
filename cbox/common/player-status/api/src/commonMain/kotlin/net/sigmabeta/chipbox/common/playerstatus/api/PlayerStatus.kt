@@ -22,10 +22,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.sage.ui.Icon as SageIcon
+import net.sigmabeta.sage.ui.vector
 
 private val COMPACT_WIDTH_BREAKPOINT = 480.dp
 private val HORIZONTAL_MARGIN = 8.dp
@@ -230,9 +227,9 @@ private fun PlayerStatusCard(
                     } else {
                         Icon(
                             imageVector = when {
-                                state.isError -> Icons.Filled.Warning
-                                state.isPlaying -> Icons.Filled.Pause
-                                else -> Icons.Filled.PlayArrow
+                                state.isError -> SageIcon.Warning.vector()
+                                state.isPlaying -> SageIcon.Pause.vector()
+                                else -> SageIcon.Play.vector()
                             },
                             contentDescription = null,
                             tint = if (state.isError) {

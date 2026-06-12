@@ -34,7 +34,7 @@ kotlin {
 
                 implementation(libs.metrox.viewmodel)
                 implementation(libs.metrox.viewmodel.compose)
-                implementation(libs.jetbrains.compose.material.icons.extended)
+                implementation(libs.sage.common.ui.iconsReal)
             }
         }
 

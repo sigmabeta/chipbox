@@ -18,16 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material.icons.filled.RepeatOne
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -107,7 +97,7 @@ private fun ColumnScope.TopBar(model: NowPlayingModel, actionSink: ActionSink) {
             onClick = { actionSink.sendAction(NowPlayingAction.BackClicked) },
         ) {
             Icon(
-                imageVector = Icons.Filled.KeyboardArrowDown,
+                imageVector = Icon.Caret.vector(),
                 contentDescription = null,
             )
         }
@@ -143,7 +133,7 @@ private fun ColumnScope.TopBar(model: NowPlayingModel, actionSink: ActionSink) {
             onClick = { actionSink.sendAction(NowPlayingAction.PlayerSettingsClicked) },
         ) {
             Icon(
-                imageVector = Icons.Filled.MoreVert,
+                imageVector = Icon.Overflow.vector(),
                 contentDescription = null,
             )
         }
@@ -316,7 +306,7 @@ private fun ColumnScope.TransportRow(
             modifier = Modifier.size(TransportToggleSize),
         ) {
             Icon(
-                imageVector = Icons.Filled.Shuffle,
+                imageVector = Icon.Shuffle.vector(),
                 contentDescription = null,
                 tint = if (model.isShuffled) accentTint else mutedTint,
                 modifier = Modifier
@@ -332,7 +322,7 @@ private fun ColumnScope.TransportRow(
             modifier = Modifier.size(TransportSkipSize),
         ) {
             Icon(
-                imageVector = Icons.Filled.SkipPrevious,
+                imageVector = Icon.SkipPrevious.vector(),
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
@@ -362,8 +352,8 @@ private fun ColumnScope.TransportRow(
                     Icon(
                         imageVector = when {
                             isError -> Icon.Warning.vector()
-                            model.isPlaying -> Icons.Filled.Pause
-                            else -> Icons.Filled.PlayArrow
+                            model.isPlaying -> Icon.Pause.vector()
+                            else -> Icon.Play.vector()
                         },
                         contentDescription = null,
                         tint = if (isError) MaterialTheme.colorScheme.error else accentTint,
@@ -383,7 +373,7 @@ private fun ColumnScope.TransportRow(
             modifier = Modifier.size(TransportSkipSize),
         ) {
             Icon(
-                imageVector = Icons.Filled.SkipNext,
+                imageVector = Icon.SkipNext.vector(),
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
@@ -399,9 +389,9 @@ private fun ColumnScope.TransportRow(
         ) {
             Icon(
                 imageVector = if (model.repeatMode == RepeatMode.ONE) {
-                    Icons.Filled.RepeatOne
+                    Icon.RepeatOne.vector()
                 } else {
-                    Icons.Filled.Repeat
+                    Icon.Repeat.vector()
                 },
                 contentDescription = null,
                 tint = if (model.repeatMode == RepeatMode.OFF) mutedTint else accentTint,

@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -24,6 +22,8 @@ import net.sigmabeta.chipbox.common.ui.components.api.previews.NotifConstants
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.NotifListModel
+import net.sigmabeta.sage.ui.Icon as SageIcon
+import net.sigmabeta.sage.ui.vector
 
 @Composable
 @Suppress("LongMethod")
@@ -76,7 +76,7 @@ fun NotifListItem(
                         .width(48.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Clear,
+                        imageVector = SageIcon.Clear.vector(),
                         tint = contentColor,
                         contentDescription = null,
                     )
