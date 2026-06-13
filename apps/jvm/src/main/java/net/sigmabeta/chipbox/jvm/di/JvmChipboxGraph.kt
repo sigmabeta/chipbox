@@ -21,6 +21,7 @@ import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
+import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.ui.StringProvider
 
 /**
@@ -39,6 +40,9 @@ interface JvmChipboxGraph : ViewModelGraph {
     val hatchet: Hatchet
     val stringProvider: StringProvider
     val repository: Repository
+
+    /** File-backed key-value store; persists the desktop window size across launches (see `DesktopMain.kt`). */
+    val storage: Storage
 
     /** Build metadata; `isDebug` drives the debug window title/icon in `DesktopMain.kt`. */
     val appInfo: AppInfo
