@@ -1,26 +1,40 @@
 package net.sigmabeta.chipbox.jvm
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
+import androidx.compose.ui.window.rememberWindowState
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 import java.awt.SplashScreen
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.jvm.di.JvmChipboxGraph
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
+import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.ui.perf.LocalLogger
 import java.awt.Desktop
 import java.awt.Toolkit
 import java.awt.datatransfer.StringSelection
 import java.net.URI
+import kotlin.math.roundToInt
 
 /**
  * Compose Multiplatform entry point for the JVM/desktop target. Calls the same
@@ -48,8 +62,11 @@ fun runDesktop(graph: JvmChipboxGraph) = application {
     // graph rather than hardcoding so the title/icon track AppInfo if a release desktop ever ships —
     // matching the primary/secondary palette swap ChipboxAppUi applies on the same flag.
     val isDebug = graph.appInfo.isDebug
+    val windowState = rememberPersistedWindowState(graph.storage)
+
     Window(
         onCloseRequest = ::exitApplication,
+        state = windowState,
         title = if (isDebug) "Chipbox Debug" else "Chipbox",
         icon = painterResource(if (isDebug) "ic_launcher_debug.webp" else "ic_launcher.webp"),
         onKeyEvent = { event ->
@@ -88,6 +105,49 @@ fun runDesktop(graph: JvmChipboxGraph) = application {
         }
     }
 }
+
+/**
+ * A [WindowState] seeded with the size the window had when last closed (Compose defaults on first
+ * launch) and kept persisted across launches via [Storage]. The stored flows are seeded
+ * synchronously at construction, so the startup read returns at once; saves are debounced so a
+ * single resize drag isn't a write storm.
+ */
+@OptIn(FlowPreview::class)
+@Composable
+private fun rememberPersistedWindowState(storage: Storage): WindowState {
+    val windowState = rememberWindowState(
+        size = remember {
+            val width = runBlocking { storage.savedIntFlow(KEY_WINDOW_WIDTH).first() }
+            val height = runBlocking { storage.savedIntFlow(KEY_WINDOW_HEIGHT).first() }
+            if (width != null && height != null) {
+                DpSize(width.dp, height.dp)
+            } else {
+                DpSize(DEFAULT_WINDOW_WIDTH.dp, DEFAULT_WINDOW_HEIGHT.dp)
+            }
+        },
+    )
+
+    LaunchedEffect(windowState, storage) {
+        snapshotFlow { windowState.size }
+            .filter { it.isSpecified }
+            .debounce(WINDOW_SIZE_PERSIST_DEBOUNCE_MS)
+            .collect { size ->
+                storage.saveInt(KEY_WINDOW_WIDTH, size.width.value.roundToInt())
+                storage.saveInt(KEY_WINDOW_HEIGHT, size.height.value.roundToInt())
+            }
+    }
+
+    return windowState
+}
+
+private const val KEY_WINDOW_WIDTH = "window.width"
+private const val KEY_WINDOW_HEIGHT = "window.height"
+
+// Compose's own default window size — used on first launch, before anything is stored.
+private const val DEFAULT_WINDOW_WIDTH = 800
+private const val DEFAULT_WINDOW_HEIGHT = 600
+
+private const val WINDOW_SIZE_PERSIST_DEBOUNCE_MS = 500L
 
 private fun openUrlIfSupported(url: String) {
     if (!Desktop.isDesktopSupported()) return
