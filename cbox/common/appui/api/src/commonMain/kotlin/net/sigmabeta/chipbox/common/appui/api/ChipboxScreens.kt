@@ -210,6 +210,7 @@ private fun TabNavigatorContent(root: Screen) {
     ) { navigator ->
         val outerSink = LocalChipboxEventSink.current
         val activeTabNavigator = LocalActiveTabNavigator.current
+        val navigationObserver = LocalNavigationObserver.current
 
         // Expose this tab's Navigator to the chrome ([ChipboxTabsScreen]) so the shell's
         // back handler ([LocalAppActionSink]) can pop the deep stack from outside the tab's
@@ -226,10 +227,13 @@ private fun TabNavigatorContent(root: Screen) {
 
         // Explicit `Unit` return — `navigator.pop()` returns Boolean (true if popped) and
         // `navigator.push()` returns Unit, which Kotlin would otherwise infer as `Any`.
-        val sink: (ChipboxEvent) -> Unit = remember(navigator, outerSink, appActionSink) {
+        val sink: (ChipboxEvent) -> Unit = remember(navigator, outerSink, appActionSink, navigationObserver) {
             { event ->
                 when (event) {
-                    is ChipboxEvent.NavigateTo -> navigator.push(screenFor(event.destination))
+                    is ChipboxEvent.NavigateTo -> {
+                        navigationObserver?.invoke(event.destination)
+                        navigator.push(screenFor(event.destination))
+                    }
 
                     // VM-driven back: pop the deep stack if we can; otherwise escalate to
                     // the shell back handler so we share its logic with system back / the

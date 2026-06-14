@@ -15,3 +15,11 @@ import kotlinx.coroutines.flow.Flow
  * session-restore opening one at launch. `null` (the default) means no such stream is wired.
  */
 internal val LocalActiveTabDestinations = staticCompositionLocalOf<Flow<Any>?> { null }
+
+/**
+ * Invoked with each route-key destination as the shell navigates to it (the active tab's deep
+ * pushes — feature `NavigateTo` and the [LocalActiveTabDestinations] seam). Provided by
+ * [ChipboxAppUi] from its `onNavigate` parameter; a UI test records these to assert that an
+ * interaction triggered the expected navigation. `null` (the default) means nobody's observing.
+ */
+internal val LocalNavigationObserver = staticCompositionLocalOf<((Any) -> Unit)?> { null }
