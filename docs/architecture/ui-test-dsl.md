@@ -234,10 +234,19 @@ graph compiles + packages for on-device). The actual device run is
 `./gradlew :cbox:common:uitest:connectedAndroidDeviceTest` with a device/emulator attached (not run
 here — no device).
 
+Generic rails moved into sage. **DONE.** `SageComposeUiTestModulePlugin` (id `sage.compose.uitest`,
+in `sage-build-logic/convention`) now owns the cross-app wiring: it applies the Compose compiler +
+JetBrains Compose plugins, declares the on-device `withDeviceTest` component, wires `src/uiTest/kotlin`
+into both `jvmTest` and `androidDeviceTest`, and carries the compose-test + instrumentation deps
+(`compose.uiTest`/`compose.material3`/`compose.desktop.currentOs` via `ComposePlugin.Dependencies`,
+plus `ui-test-manifest`/`test.runner`/`test.ext.junit`). It reads compose deps from the Compose
+Gradle plugin, so the catalog gained `compose-multiplatform-gradlePlugin`
+(`org.jetbrains.compose:compose-gradle-plugin`) on the build-logic runtime classpath. The chipbox
+`:cbox:common:uitest` build now just `alias(libs.plugins.sage.compose.uitest)` + the app-specific
+`harnessDependencies` (the DI graph's feature modules + fakes — `TestAppGraph`/`ChipboxUiTest` stay
+chipbox-specific). Verified: `jvmTest` green, `assembleAndroidDeviceTest` builds, through the plugin.
+
 Remaining (lower priority):
-- Move the generic rails into sage (a `sage.compose.uitest` convention plugin wrapping the compose
-  plugins + `withDeviceTest` + the test-dep pattern) — the cross-app intent. The harness itself
-  (`TestAppGraph`/`ChipboxUiTest`) is chipbox-specific and stays here.
 - Optional: add the item `dataId` to the semantics seam for disambiguating same-name rows.
 
 Original Phase 1 plan: cross-platform `TestAppGraph`
