@@ -11,8 +11,12 @@ import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
+import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
@@ -76,6 +80,20 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     }
 
     /**
+     * The first game in the pre-populated library (sorted by title, so it's stable for a given
+     * seed). Lets a test drive a real screen without seeding its own fixture.
+     */
+    fun firstGame(): Game = runBlocking {
+        withTimeout(LOAD_TIMEOUT_MS) {
+            val data = graph.memoryRepository
+                .getAllGames(withTracks = false, withArtists = false)
+                .first { it is Data.Succeeded }
+            @Suppress("UNCHECKED_CAST")
+            (data as Data.Succeeded<List<Game>>).data.first()
+        }
+    }
+
+    /**
      * Add a game to the library and return its id. Convenience over the populated default — use it
      * when a test needs a screen with known content to assert on.
      */
@@ -120,5 +138,9 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     /** Assert a node displaying exactly [text] is shown (e.g. a list row's name). */
     fun assertDisplayed(text: String) {
         compose.onNodeWithText(text).assertIsDisplayed()
+    }
+
+    private companion object {
+        const val LOAD_TIMEOUT_MS = 10_000L
     }
 }

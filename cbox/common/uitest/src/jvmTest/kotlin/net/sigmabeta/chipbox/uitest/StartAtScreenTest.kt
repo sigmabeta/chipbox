@@ -4,15 +4,16 @@ import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import kotlin.test.Test
 
 /**
- * The first script written purely against the DSL: start at a screen, assert its title.
+ * The first script written purely against the DSL: pick a game from the pre-populated
+ * (deterministic) library, start at its screen, and assert its title.
  */
 class StartAtScreenTest {
     @Test
     fun startingAtAGameShowsItsTitle() = runChipboxUiTest {
-        val gameId = seedGame("Metal Slug")
+        val game = firstGame()
 
-        startAtScreen(GameDetail(gameId))
+        startAtScreen(GameDetail(game.id))
 
-        assertTitle("Metal Slug")
+        assertTitle(game.title)
     }
 }
