@@ -1,6 +1,11 @@
 package net.sigmabeta.chipbox.features.settings
 
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import net.sigmabeta.chipbox.debug.GeneratorSource
+import net.sigmabeta.chipbox.debug.RepositorySource
+import net.sigmabeta.chipbox.debug.SpeakerSource
 import net.sigmabeta.chipbox.settings.ResamplerMode
 import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
@@ -32,6 +37,9 @@ data class SettingsState(
     val shouldShowDebug: Boolean? = null,
     val hasLibraryFolders: Boolean = false,
     val resamplerMode: ResamplerMode = ResamplerMode.DEFAULT,
+    val repositorySource: RepositorySource = RepositorySource.DEFAULT,
+    val generatorSource: GeneratorSource = GeneratorSource.DEFAULT,
+    val speakerSource: SpeakerSource = SpeakerSource.DEFAULT,
     // settingId of the single currently-expanded dropdown, or null if all are collapsed.
     val expandedDropdownId: String? = null,
 ) : ListState() {
@@ -135,6 +143,9 @@ data class SettingsState(
         if (shouldShowDebug != true) return emptyList()
         return listOf(
             sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_DEBUG),
+            repositorySourceDropdown(),
+            generatorSourceDropdown(),
+            speakerSourceDropdown(),
             playbackStatusRow(stringProvider),
             errorLogRow(stringProvider),
             crashLogRow(stringProvider),
@@ -143,6 +154,50 @@ data class SettingsState(
             versionCodeRow(stringProvider),
         )
     }
+
+    // The debug source switches (repository / generator / speaker). Debug-only, so labels are
+    // literal (no localized strings). Option order mirrors each enum's `entries`, so the picked
+    // index maps straight back. Each switch is applied on the next app launch (read once at DI
+    // graph build), not live.
+    private fun repositorySourceDropdown(): ListModel = debugDropdown(
+        settingId = "debug.repository_source",
+        name = "Repository (applied on next launch)",
+        selectedPosition = repositorySource.ordinal,
+        labels = persistentListOf("Real", "Memory", "Random"),
+        onSelected = { SettingsAction.RepositorySourceSelected(RepositorySource.entries[it]) },
+    )
+
+    private fun generatorSourceDropdown(): ListModel = debugDropdown(
+        settingId = "debug.generator_source",
+        name = "Generator (applied on next launch)",
+        selectedPosition = generatorSource.ordinal,
+        labels = persistentListOf("Real", "Fake"),
+        onSelected = { SettingsAction.GeneratorSourceSelected(GeneratorSource.entries[it]) },
+    )
+
+    private fun speakerSourceDropdown(): ListModel = debugDropdown(
+        settingId = "debug.speaker_source",
+        name = "Speaker (applied on next launch)",
+        selectedPosition = speakerSource.ordinal,
+        labels = persistentListOf("Real", "File", "Text"),
+        onSelected = { SettingsAction.SpeakerSourceSelected(SpeakerSource.entries[it]) },
+    )
+
+    private fun debugDropdown(
+        settingId: String,
+        name: String,
+        selectedPosition: Int,
+        labels: ImmutableList<String>,
+        onSelected: (Int) -> SettingsAction,
+    ): ListModel = DropdownSettingListModel.ofLabels(
+        settingId = settingId,
+        name = name,
+        selectedPosition = selectedPosition,
+        labels = labels,
+        expanded = expandedDropdownId == settingId,
+        onExpandClicked = SettingsAction.DropdownExpandClicked(settingId),
+        onNewOptionSelected = onSelected,
+    )
 
     private fun sectionHeader(stringProvider: StringProvider, id: ChipboxStringId) =
         SectionHeaderListModel(title = stringProvider.getString(id))

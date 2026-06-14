@@ -79,6 +79,21 @@ class SettingsViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            debugSettingsManager.getRepositorySource().collect { source ->
+                updateState { it.copy(repositorySource = source) }
+            }
+        }
+        viewModelScope.launch {
+            debugSettingsManager.getGeneratorSource().collect { source ->
+                updateState { it.copy(generatorSource = source) }
+            }
+        }
+        viewModelScope.launch {
+            debugSettingsManager.getSpeakerSource().collect { source ->
+                updateState { it.copy(speakerSource = source) }
+            }
+        }
+        viewModelScope.launch {
             librarySource.locations.collect { locations ->
                 updateState { it.copy(hasLibraryFolders = locations.isNotEmpty()) }
             }
@@ -114,6 +129,21 @@ class SettingsViewModel @Inject constructor(
 
             is SettingsAction.ResamplerModeSelected -> {
                 settingsManager.setResamplerMode(action.mode)
+                collapseDropdowns()
+            }
+
+            is SettingsAction.RepositorySourceSelected -> {
+                debugSettingsManager.setRepositorySource(action.source)
+                collapseDropdowns()
+            }
+
+            is SettingsAction.GeneratorSourceSelected -> {
+                debugSettingsManager.setGeneratorSource(action.source)
+                collapseDropdowns()
+            }
+
+            is SettingsAction.SpeakerSourceSelected -> {
+                debugSettingsManager.setSpeakerSource(action.source)
                 collapseDropdowns()
             }
 

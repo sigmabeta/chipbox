@@ -13,9 +13,7 @@ import net.sigmabeta.chipbox.crash.CrashReporter
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.chipbox.player.speaker.real.SourceDataLineSpeaker
-import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
-import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.sage.appinfo.AppInfo
@@ -63,15 +61,11 @@ interface JvmChipboxGraph : ViewModelGraph {
      *  media-control bridge collects the Director's flows on it. */
     val appScope: CoroutineScope
 
-    /** Live speaker used by the desktop UI; bound to [Speaker] below. */
+    /** Live speaker used by the desktop UI. */
     val liveSpeaker: SourceDataLineSpeaker
 
-    @Binds
-    val RealGenerator.generatorBinding: Generator
-
-    /** Director receives this binding via `DirectorModule.provideDirector(speaker = …)`. */
-    @Binds
-    val SourceDataLineSpeaker.speakerBinding: Speaker
+    // Generator and Speaker are bound in JvmGeneratorModule / JvmSpeakerModule, where the impl is
+    // selected from the debug "generator source" / "speaker source" settings at graph build.
 
     @DependencyGraph.Factory
     fun interface Factory {

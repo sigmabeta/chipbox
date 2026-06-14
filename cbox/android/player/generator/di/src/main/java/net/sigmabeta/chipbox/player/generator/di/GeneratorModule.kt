@@ -6,7 +6,11 @@ import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import java.io.File
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
+import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.debug.GeneratorSource
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.emulators.EmulatorProvider
 import net.sigmabeta.chipbox.player.generator.Generator
@@ -50,10 +54,16 @@ object GeneratorModule {
         hatchet: Hatchet,
     ): SynthGenerator = SynthGenerator(repository, contentSourceRegistry, bufferManager, hatchet)
 
+    // Pick the Generator impl from the debug "generator source" setting, read once at graph build
+    // (app launch); the switch takes effect on the next launch. FAKE = the in-process synth.
     @Provides
     @SingleIn(AppScope::class)
     fun provideGenerator(
         synthGenerator: SynthGenerator,
-        realGenerator: RealGenerator
-    ): Generator = realGenerator
+        realGenerator: RealGenerator,
+        debugSettingsManager: DebugSettingsManager,
+    ): Generator = when (runBlocking { debugSettingsManager.getGeneratorSource().first() }) {
+        GeneratorSource.REAL -> realGenerator
+        GeneratorSource.FAKE -> synthGenerator
+    }
 }

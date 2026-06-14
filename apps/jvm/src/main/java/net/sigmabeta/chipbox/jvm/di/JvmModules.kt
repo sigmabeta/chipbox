@@ -24,12 +24,17 @@ import net.sigmabeta.chipbox.crash.real.RealCrashReporter
 import net.sigmabeta.chipbox.crash.real.RealCrashReportStore
 import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.debug.GeneratorSource
+import net.sigmabeta.chipbox.debug.SpeakerSource
 import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
 import net.sigmabeta.chipbox.jvm.JvmStorage
 import net.sigmabeta.chipbox.jvm.logging.JvmHatchet
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.player.resampler.Resampler
+import net.sigmabeta.chipbox.player.speaker.Speaker
+import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
 import net.sigmabeta.chipbox.player.speaker.real.SourceDataLineSpeaker
+import net.sigmabeta.chipbox.player.speaker.text.TextSpeaker
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
 import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
 import net.sigmabeta.chipbox.player.buffer.BufferDebugSource
@@ -48,10 +53,15 @@ import net.sigmabeta.chipbox.player.emulators.twosf.TwosfEmulator
 import net.sigmabeta.chipbox.player.emulators.usf.UsfEmulator
 import net.sigmabeta.chipbox.player.emulators.vgm.VgmEmulator
 import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamEmulator
+import net.sigmabeta.chipbox.player.generator.Generator
+import net.sigmabeta.chipbox.player.generator.fake.SynthGenerator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.readers.Readers
+import net.sigmabeta.chipbox.debug.RepositorySource
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.database.DatabaseRepository
+import net.sigmabeta.chipbox.repository.memory.MemoryRepository
+import net.sigmabeta.chipbox.repository.memory.RandomMemoryRepository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
@@ -125,8 +135,19 @@ object JvmRepositoryModule {
             hatchet,
         )
 
+    // Pick the Repository impl from the debug "repository source" setting, read once at graph build
+    // (app launch). The switch takes effect on the next launch — no runtime swapping needed.
     @Provides @SingleIn(AppScope::class)
-    fun provideRepository(impl: DatabaseRepository): Repository = impl
+    fun provideRepository(
+        databaseRepository: DatabaseRepository,
+        memoryRepository: MemoryRepository,
+        randomMemoryRepository: RandomMemoryRepository,
+        debugSettingsManager: DebugSettingsManager,
+    ): Repository = when (runBlocking { debugSettingsManager.getRepositorySource().first() }) {
+        RepositorySource.REAL -> databaseRepository
+        RepositorySource.MEMORY -> memoryRepository
+        RepositorySource.RANDOM -> randomMemoryRepository
+    }
 }
 
 @BindingContainer
@@ -251,6 +272,26 @@ object JvmGeneratorModule {
         FileSystem.SYSTEM,
         hatchet,
     )
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideSynthGenerator(
+        repository: Repository,
+        contentSources: ContentSourceRegistry,
+        bufferManager: ProducerBufferManager,
+        hatchet: Hatchet,
+    ): SynthGenerator = SynthGenerator(repository, contentSources, bufferManager, hatchet)
+
+    // Pick the Generator impl from the debug "generator source" setting, read once at graph build
+    // (app launch); the switch takes effect on the next launch. FAKE = the in-process synth.
+    @Provides @SingleIn(AppScope::class)
+    fun provideGenerator(
+        realGenerator: RealGenerator,
+        synthGenerator: SynthGenerator,
+        debugSettingsManager: DebugSettingsManager,
+    ): Generator = when (runBlocking { debugSettingsManager.getGeneratorSource().first() }) {
+        GeneratorSource.REAL -> realGenerator
+        GeneratorSource.FAKE -> synthGenerator
+    }
 }
 
 @BindingContainer
@@ -273,6 +314,39 @@ object JvmSpeakerModule {
         resamplerFor(settingsManager, resamplers),
         deviceOutputSampleRate(hatchet),
     )
+
+    // Debug speaker sources: FILE writes WAV under the work dir; TEXT logs each buffer.
+    @Provides @SingleIn(AppScope::class)
+    fun provideFileSpeaker(
+        @Named("workDir") workDir: File,
+        hatchet: Hatchet,
+        bufferManager: ConsumerBufferManager,
+    ): FileSpeaker = FileSpeaker(
+        File(workDir, "speaker-output").absolutePath.toPath(),
+        FileSystem.SYSTEM,
+        hatchet,
+        bufferManager,
+    )
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideTextSpeaker(
+        hatchet: Hatchet,
+        bufferManager: ConsumerBufferManager,
+    ): TextSpeaker = TextSpeaker(hatchet, bufferManager)
+
+    // Pick the Speaker impl from the debug "speaker source" setting, read once at graph build
+    // (app launch); the switch takes effect on the next launch.
+    @Provides @SingleIn(AppScope::class)
+    fun provideSpeaker(
+        liveSpeaker: SourceDataLineSpeaker,
+        fileSpeaker: FileSpeaker,
+        textSpeaker: TextSpeaker,
+        debugSettingsManager: DebugSettingsManager,
+    ): Speaker = when (runBlocking { debugSettingsManager.getSpeakerSource().first() }) {
+        SpeakerSource.REAL -> liveSpeaker
+        SpeakerSource.FILE -> fileSpeaker
+        SpeakerSource.TEXT -> textSpeaker
+    }
 
     /**
      * The single-technique resampler the speaker should use, resolved once from the saved setting:
