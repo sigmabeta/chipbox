@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.memory.MemoryRepository
+import net.sigmabeta.chipbox.repository.memory.RandomMemoryRepository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
@@ -47,9 +48,12 @@ import okio.fakefilesystem.FakeFileSystem
 interface TestAppGraph : ViewModelGraph {
     val memoryRepository: MemoryRepository
 
+    // Default to a deterministic, pre-populated library so hosted tabs/lists have content out of
+    // the box (seed 1234 → same 10 games / 50 tracks / 5 artists every run). Tests can still
+    // `upsertGame(...)` extra fixtures on top via the `memoryRepository` accessor.
     @Provides
     @SingleIn(AppScope::class)
-    fun provideMemoryRepository(): MemoryRepository = MemoryRepository()
+    fun provideMemoryRepository(): MemoryRepository = RandomMemoryRepository()
 
     @Provides
     @SingleIn(AppScope::class)
