@@ -48,6 +48,10 @@ import okio.fakefilesystem.FakeFileSystem
 interface TestAppGraph : ViewModelGraph {
     val memoryRepository: MemoryRepository
 
+    /** The bound [Director] as a [FakeDirector], so the harness can assert on its recorded
+     *  [requests][FakeDirector.requests]. */
+    val fakeDirector: FakeDirector
+
     // Default to a deterministic, pre-populated library so hosted tabs/lists have content out of
     // the box (seed 1234 → same 10 games / 50 tracks / 5 artists every run). Tests can still
     // `upsertGame(...)` extra fixtures on top via the `memoryRepository` accessor.
@@ -61,7 +65,11 @@ interface TestAppGraph : ViewModelGraph {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideDirector(): Director = FakeDirector()
+    fun provideFakeDirector(): FakeDirector = FakeDirector()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideDirector(fakeDirector: FakeDirector): Director = fakeDirector
 
     @Provides
     @SingleIn(AppScope::class)

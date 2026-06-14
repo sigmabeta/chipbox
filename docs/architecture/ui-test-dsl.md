@@ -212,12 +212,22 @@ Verbs implemented and tested on JVM:
 `StartAtScreenTest` (startAtScreen + assertTitle off the random library) and `ClickItemTest`
 (clickWideItem → assertNavigationEvent + assertTitle) read like the target examples.
 
+Phase 4 — `assertDirectorReceived` (DONE, JVM, 2026-06-14). The deferred Director work landed in
+two parts: (1) a separate refactor reified the `Director` control surface as a `SessionRequest`
+sealed interface **in production** (`Director.request(SessionRequest)`), so the open "test-only vs
+production decorator" question is moot — `FakeDirector` records `requests: List<SessionRequest>`;
+(2) `TestAppGraph` exposes its `FakeDirector`, and `ChipboxUiTest` gains
+`assertDirectorReceived(request)` (by value, e.g. `SessionRequest.Play`) and a reified
+`assertDirectorReceived<SessionRequest.Start>()` (by type, for requests carrying a `Session`).
+`DirectorRequestTest` clicks a song from the populated library (no seeding; type-agnostic `click`)
+and asserts the Director received a `Start`. Also added: `seedGame(artists = …)` (multi-artist),
+`firstGame()` now loads tracks (via per-id `getGame`, dodging `getAllGames`' load-once flag).
+
 Step 5 (next):
-- Reify `DirectorCommand` + a recording Director for `assertDirectorReceived` (the deferred
-  Phase 4 work) — needed for the song-click → playback example.
 - Generalise the harness from `jvmTest` into the shared `uiTest` dir (per-target graph builder) so
-  the same scripts run on-device.
-- Consider adding the item `dataId` to the semantics seam for disambiguating same-name rows.
+  the same scripts run on-device — the main remaining effort (Metro graph in the instrumented tree).
+- Move the generic rails into sage (convention plugin + harness primitives) — the cross-app intent.
+- Optional: add the item `dataId` to the semantics seam for disambiguating same-name rows.
 
 Original Phase 1 plan: cross-platform `TestAppGraph`
 (`@DependencyGraph(AppScope::class)`) aggregating the *common* `@ContributesTo(AppScope)`
@@ -239,11 +249,10 @@ harness recorder. Implement `assertNavigationEvent(route)` as a typed match on
 `ChipboxEvent.NavigateTo(destination)`. The real Voyager push corroborates; the effects
 flow is the precise, race-free assertion point.
 
-**Phase 4 — Director (deferred).** Introduce a reified `DirectorCommand` sealed type +
-a recording `Director` decorator bound in `TestAppGraph` (overriding `RealDirector`).
-Implement `assertDirectorReceived(DirectorCommand.Play)`. Open question: reify commands
-test-only or also land a thin command-emitting decorator in production. One-binding swap
-thanks to the full-shell graph.
+**Phase 4 — Director. DONE** (see the Phase 1 "Phase 4 — `assertDirectorReceived`" note above).
+Resolved better than planned: the control surface was reified as `SessionRequest` in production, so
+no test-only `DirectorCommand` or decorator was needed — `FakeDirector.requests` is the recording,
+and `assertDirectorReceived` reads it.
 
 **Phase 5 — Rollout.** Per-feature example tests, ergonomic helpers, docs, CI.
 
