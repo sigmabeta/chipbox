@@ -223,10 +223,21 @@ production decorator" question is moot — `FakeDirector` records `requests: Lis
 and asserts the Director received a `Start`. Also added: `seedGame(artists = …)` (multi-artist),
 `firstGame()` now loads tracks (via per-id `getGame`, dodging `getAllGames`' load-once flag).
 
-Step 5 (next):
-- Generalise the harness from `jvmTest` into the shared `uiTest` dir (per-target graph builder) so
-  the same scripts run on-device — the main remaining effort (Metro graph in the instrumented tree).
-- Move the generic rails into sage (convention plugin + harness primitives) — the cross-app intent.
+Step 5 — on-device lift (DONE, 2026-06-14). The harness + all scripts moved from `src/jvmTest`
+into the shared `src/uiTest/kotlin` dir, so the *same* files compile into both the `jvmTest`
+(unit-test tree) and `androidDeviceTest` (instrumented tree) source sets. The ~25 harness deps are
+shared via a `harnessDependencies` lambda applied to both trees (they can't `dependsOn` across
+trees). No per-target graph builder was needed — the Metro `TestAppGraph` compiles for the Android
+target unchanged (all binding deps are KMP/android-compatible). Verified: `jvmTest` runs all 10
+scripts green; `assembleAndroidDeviceTest` builds `uitest-androidTest.apk` (the whole harness +
+graph compiles + packages for on-device). The actual device run is
+`./gradlew :cbox:common:uitest:connectedAndroidDeviceTest` with a device/emulator attached (not run
+here — no device).
+
+Remaining (lower priority):
+- Move the generic rails into sage (a `sage.compose.uitest` convention plugin wrapping the compose
+  plugins + `withDeviceTest` + the test-dep pattern) — the cross-app intent. The harness itself
+  (`TestAppGraph`/`ChipboxUiTest`) is chipbox-specific and stays here.
 - Optional: add the item `dataId` to the semantics seam for disambiguating same-name rows.
 
 Original Phase 1 plan: cross-platform `TestAppGraph`
