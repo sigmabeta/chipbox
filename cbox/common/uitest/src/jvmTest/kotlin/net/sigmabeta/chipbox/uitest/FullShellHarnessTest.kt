@@ -11,7 +11,7 @@ import kotlin.test.Test
 class FullShellHarnessTest {
     @Test
     fun startingAtSeededGameShowsTitleAndContent() = runChipboxUiTest {
-        val gameId = seedGame(title = "Metal Slug", tracks = listOf("Stage 1"), artist = "JIM")
+        val gameId = seedGame(title = "Metal Slug", tracks = listOf("Stage 1"), artists = listOf("JIM"))
 
         startAtScreen(GameDetail(gameId))
 

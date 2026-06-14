@@ -20,6 +20,7 @@ import kotlinx.coroutines.withTimeout
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
@@ -28,6 +29,7 @@ import net.sigmabeta.chipbox.uitest.harness.StubHatchet
 import net.sigmabeta.chipbox.uitest.harness.StubStringProvider
 import net.sigmabeta.chipbox.uitest.harness.createTestAppGraph
 import net.sigmabeta.sage.ui.perf.LocalLogger
+import kotlin.reflect.KClass
 
 /**
  * Entry point for the Chipbox UI test DSL. Hosts the real `ChipboxAppUi` shell over the fake
@@ -91,11 +93,20 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
      */
     fun firstGame(): Game = runBlocking {
         withTimeout(LOAD_TIMEOUT_MS) {
-            val data = graph.memoryRepository
-                .getAllGames(withTracks = false, withArtists = false)
+            // The id from the list, then the full game (with tracks/artists) by id. getAllGames has
+            // a load-once flag that the shell may already have tripped without tracks, so the
+            // per-id getGame (a fresh cold flow) is what reliably carries the tracks.
+            val list = graph.memoryRepository.getAllGames(withTracks = false, withArtists = false)
                 .first { it is Data.Succeeded }
+
             @Suppress("UNCHECKED_CAST")
-            (data as Data.Succeeded<List<Game>>).data.first()
+            val id = (list as Data.Succeeded<List<Game>>).data.first().id
+
+            val game = graph.memoryRepository.getGame(id, withTracks = true, withArtists = true)
+                .first { it is Data.Succeeded }
+
+            @Suppress("UNCHECKED_CAST")
+            (game as Data.Succeeded<Game?>).data!!
         }
     }
 
@@ -117,7 +128,7 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     fun seedGame(
         title: String,
         tracks: List<String> = listOf("Track 1"),
-        artist: String = "Composer",
+        artists: List<String> = listOf("Composer"),
     ): Long = runBlocking {
         graph.memoryRepository.upsertGame(
             RawGame(
@@ -130,7 +141,10 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
                         path = "/$title/$index",
                         source = "",
                         title = trackTitle,
-                        artist = artist,
+                        // Cycle artists across tracks — a game with >1 distinct artist renders its
+                        // songs as NameCaptionValue rows (artist in the caption) instead of plain
+                        // label/value rows.
+                        artist = artists[index % artists.size],
                         game = title,
                         length = 120_000L,
                         trackNumber = index + 1,
@@ -163,6 +177,16 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         compose.waitForIdle()
     }
 
+    /**
+     * Click the (single) node displaying [text], regardless of item type — for when the row kind
+     * doesn't matter (e.g. a song row that's a label/value or name/caption/value depending on the
+     * game's artist count). Prefer the typed `click*Item` verbs when the type is meaningful.
+     */
+    fun click(text: String) {
+        compose.onNodeWithText(text).performClick()
+        compose.waitForIdle()
+    }
+
     /** Assert the current screen's title (rendered in the chrome's top bar) is [text]. */
     fun assertTitle(text: String) {
         compose.onNodeWithText(text).assertIsDisplayed()
@@ -181,6 +205,31 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         compose.waitForIdle()
         check(destination in navigations) {
             "Expected a navigation to $destination, but saw: $navigations"
+        }
+    }
+
+    /**
+     * Assert the [Director] received [request] (by value) — e.g.
+     * `assertDirectorReceived(SessionRequest.Play)`. For requests carrying a value you don't want
+     * to spell out (a `Start` with a whole `Session`), use the type-only overload below.
+     */
+    fun assertDirectorReceived(request: SessionRequest) {
+        compose.waitForIdle()
+        check(request in graph.fakeDirector.requests) {
+            "Expected the director to receive $request, but saw: ${graph.fakeDirector.requests}"
+        }
+    }
+
+    /** Assert the [Director] received any request of type [T] — e.g.
+     *  `assertDirectorReceived<SessionRequest.Start>()` for "playback started". */
+    inline fun <reified T : SessionRequest> assertDirectorReceived() =
+        assertDirectorReceivedOfType(T::class)
+
+    fun assertDirectorReceivedOfType(type: KClass<out SessionRequest>) {
+        compose.waitForIdle()
+        val received = graph.fakeDirector.requests
+        check(received.any { type.isInstance(it) }) {
+            "Expected the director to receive a ${type.simpleName} request, but saw: $received"
         }
     }
 
