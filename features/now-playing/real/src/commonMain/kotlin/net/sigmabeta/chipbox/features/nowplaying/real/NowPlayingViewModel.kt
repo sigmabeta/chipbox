@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.common.ui.freeform.api.ChipboxFreeformViewModel
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope
@@ -86,17 +87,17 @@ class NowPlayingViewModel @Inject constructor(
         when (action) {
             NowPlayingAction.PlayPauseClicked -> togglePlayPause()
 
-            NowPlayingAction.SkipForwardClicked -> director.skipForward()
+            NowPlayingAction.SkipForwardClicked -> director.request(SessionRequest.SkipForward)
 
-            NowPlayingAction.SkipBackClicked -> director.skipBack()
+            NowPlayingAction.SkipBackClicked -> director.request(SessionRequest.SkipBack)
 
             NowPlayingAction.ShuffleClicked -> {
-                director.setShuffled(state.value.session?.shuffled != true)
+                director.request(SessionRequest.SetShuffled(state.value.session?.shuffled != true))
             }
 
             NowPlayingAction.RepeatClicked -> {
                 val current = state.value.session?.repeatMode ?: RepeatMode.OFF
-                director.setRepeatMode(current.next())
+                director.request(SessionRequest.SetRepeatMode(current.next()))
             }
 
             NowPlayingAction.BackClicked -> emit(ChipboxEvent.NavigateBack)
@@ -106,7 +107,7 @@ class NowPlayingViewModel @Inject constructor(
                 ChipboxEvent.ShowSnackbar("Player settings coming soon.")
             )
 
-            is NowPlayingAction.SeekRequested -> director.seek(action.positionMs)
+            is NowPlayingAction.SeekRequested -> director.request(SessionRequest.Seek(action.positionMs))
 
             is NowPlayingAction.DismissErrorClicked -> dismissError(action.id)
         }
@@ -143,7 +144,7 @@ class NowPlayingViewModel @Inject constructor(
 
     private fun togglePlayPause() {
         val playerState = state.value.playback?.state ?: PlayerState.IDLE
-        if (playerState.isPlaying()) director.pause() else director.play()
+        if (playerState.isPlaying()) director.request(SessionRequest.Pause) else director.request(SessionRequest.Play)
     }
 
     private fun PlayerState.isPlaying(): Boolean = when (this) {

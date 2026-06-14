@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.sage.logging.Hatchet
 import org.freedesktop.dbus.DBusPath
 import org.freedesktop.dbus.connections.impl.DBusConnection
@@ -97,26 +98,27 @@ class MprisMediaControls(
 
     // --- Inbound: bus methods -> Director ------------------------------------------------------
 
-    override fun Play() = director.play()
+    override fun Play() = director.request(SessionRequest.Play)
 
-    override fun Pause() = director.pause()
+    override fun Pause() = director.request(SessionRequest.Pause)
 
-    override fun Stop() = director.stop()
+    override fun Stop() = director.request(SessionRequest.Stop)
 
-    override fun Next() = director.skipForward()
+    override fun Next() = director.request(SessionRequest.SkipForward)
 
-    override fun Previous() = director.skipBack()
+    override fun Previous() = director.request(SessionRequest.SkipBack)
 
     override fun PlayPause() {
-        if (state.playbackStatus == STATUS_PLAYING) director.pause() else director.play()
+        val request = if (state.playbackStatus == STATUS_PLAYING) SessionRequest.Pause else SessionRequest.Play
+        director.request(request)
     }
 
     override fun Seek(offsetUs: Long) {
-        director.seek(((state.positionUs + offsetUs).coerceAtLeast(0L)) / MICROS_PER_MILLI)
+        director.request(SessionRequest.Seek(((state.positionUs + offsetUs).coerceAtLeast(0L)) / MICROS_PER_MILLI))
     }
 
     override fun SetPosition(trackId: DBusPath, positionUs: Long) {
-        director.seek(positionUs.coerceAtLeast(0L) / MICROS_PER_MILLI)
+        director.request(SessionRequest.Seek(positionUs.coerceAtLeast(0L) / MICROS_PER_MILLI))
     }
 
     override fun OpenUri(uri: String) = Unit
@@ -136,13 +138,13 @@ class MprisMediaControls(
 
     override fun <A> Set(interfaceName: String, propertyName: String, value: A) {
         when (propertyName) {
-            "LoopStatus" -> director.setRepeatMode(loopStatusToRepeatMode(value as String))
+            "LoopStatus" -> director.request(SessionRequest.SetRepeatMode(loopStatusToRepeatMode(value as String)))
 
-            "Shuffle" -> director.setShuffled(value as Boolean)
+            "Shuffle" -> director.request(SessionRequest.SetShuffled(value as Boolean))
 
             "Volume" -> {
                 val scale = value as Double
-                director.setVolume(scale)
+                director.request(SessionRequest.SetVolume(scale))
                 signal(PLAYER_IFACE, state.applyVolume(scale))
             }
 

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerState
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope
@@ -70,9 +71,9 @@ class PlayerStatusViewModel @Inject constructor(
 
     private fun togglePlayPause() {
         if (state.value.isPlaying) {
-            director.pause()
+            director.request(SessionRequest.Pause)
         } else {
-            director.play()
+            director.request(SessionRequest.Play)
         }
     }
 

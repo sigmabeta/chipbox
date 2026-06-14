@@ -11,6 +11,7 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
@@ -62,14 +63,13 @@ class BrowseAllTracksViewModel @Inject constructor(
     }
 
     private fun startSession(startingPosition: Int, shuffled: Boolean = false) {
-        director.start(
-            Session(
-                type = SessionType.ALL_TRACKS,
-                contentId = 0L,
-                startingPosition = startingPosition,
-                shuffled = shuffled,
-            )
+        val session = Session(
+            type = SessionType.ALL_TRACKS,
+            contentId = 0L,
+            startingPosition = startingPosition,
+            shuffled = shuffled,
         )
+        director.request(SessionRequest.Start(session))
     }
 
     private companion object {

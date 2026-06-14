@@ -21,6 +21,7 @@ import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerState
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.sage.appcomm.LCE
@@ -99,8 +100,8 @@ class HomeViewModel @Inject constructor(
         // in PlayerStatusViewModel (PLAYING/BUFFERING/ENDING → pause, otherwise → play).
         val state = director.playbackState().firstOrNull()?.state ?: return@launch
         when (state) {
-            PlayerState.PLAYING, PlayerState.BUFFERING, PlayerState.ENDING -> director.pause()
-            PlayerState.PAUSED, PlayerState.IDLE, PlayerState.STOPPED, PlayerState.ERROR -> director.play()
+            PlayerState.PLAYING, PlayerState.BUFFERING, PlayerState.ENDING -> director.request(SessionRequest.Pause)
+            PlayerState.PAUSED, PlayerState.IDLE, PlayerState.STOPPED, PlayerState.ERROR -> director.request(SessionRequest.Play)
         }
     }
 
@@ -110,7 +111,7 @@ class HomeViewModel @Inject constructor(
     // multi-MB transfer over HTTP against the server-backed JS target.
     private fun playRandomSong() = viewModelScope.launch {
         val pick = repository.getRandomTrack() ?: return@launch
-        director.start(Session(type = SessionType.SINGLE_TRACK, contentId = pick.id))
+        director.request(SessionRequest.Start(Session(type = SessionType.SINGLE_TRACK, contentId = pick.id)))
     }
 
     private fun navigateToRandomGame() = viewModelScope.launch {

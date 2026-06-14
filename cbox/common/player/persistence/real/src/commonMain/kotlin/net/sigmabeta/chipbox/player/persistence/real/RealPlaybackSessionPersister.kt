@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerState
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionStore
 import net.sigmabeta.sage.logging.Hatchet
@@ -78,7 +79,7 @@ class RealPlaybackSessionPersister(
 
         try {
             hatchet.i("Restoring saved session (track=${snapshot.currentTrackId}, pos=${snapshot.positionMs}ms).")
-            director.restore(snapshot.toSession(), snapshot.positionMs)
+            director.request(SessionRequest.Restore(snapshot.toSession(), snapshot.positionMs))
         } catch (t: Throwable) {
             hatchet.w("Failed to restore saved session, clearing it: $t")
             store.clear()

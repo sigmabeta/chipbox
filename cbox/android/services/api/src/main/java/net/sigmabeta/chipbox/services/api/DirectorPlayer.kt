@@ -21,6 +21,7 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerState
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.services.api.transformers.toMediaMetadata
 import net.sigmabeta.sage.logging.Hatchet
 
@@ -159,9 +160,9 @@ class DirectorPlayer(
         // Focus is acquired by the playbackState observer once Director reaches an active state —
         // see syncAudioFocus — so both this transport path and the in-app UI path get it.
         if (playWhenReady) {
-            director.play()
+            director.request(SessionRequest.Play)
         } else {
-            director.pause()
+            director.request(SessionRequest.Pause)
         }
         return Futures.immediateVoidFuture()
     }
@@ -169,13 +170,13 @@ class DirectorPlayer(
     override fun handlePrepare(): ListenableFuture<*> = Futures.immediateVoidFuture()
 
     override fun handleSetShuffleModeEnabled(shuffleModeEnabled: Boolean): ListenableFuture<*> {
-        director.setShuffled(shuffleModeEnabled)
+        director.request(SessionRequest.SetShuffled(shuffleModeEnabled))
         return Futures.immediateVoidFuture()
     }
 
     override fun handleStop(): ListenableFuture<*> {
         requestedPlayWhenReady = false
-        director.stop()
+        director.request(SessionRequest.Stop)
         // The STOPPED state would also release focus via the observer, but abandon here too so
         // it's gone synchronously with the stop command.
         audioFocusHelper.abandonFocus()
@@ -184,7 +185,7 @@ class DirectorPlayer(
     }
 
     override fun handleRelease(): ListenableFuture<*> {
-        director.stop()
+        director.request(SessionRequest.Stop)
         // Release explicitly: cancelling the scope below stops the observer, so it can't react to
         // the resulting STOPPED state.
         audioFocusHelper.abandonFocus()
@@ -200,17 +201,17 @@ class DirectorPlayer(
     ): ListenableFuture<*> {
         when (seekCommand) {
             Player.COMMAND_SEEK_TO_NEXT,
-            Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> director.skipForward()
+            Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM -> director.request(SessionRequest.SkipForward)
 
             Player.COMMAND_SEEK_TO_PREVIOUS,
-            Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> director.skipBack()
+            Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM -> director.request(SessionRequest.SkipBack)
 
             else -> {
                 // Update synchronously so the next getState() reflects the seek target. Without
                 // this, media3 records the pre-seek position with a fresh timestamp and extrapolates
                 // forward from it, making the notification clock drift until Director's flow catches up.
                 playbackState = playbackState.copy(position = positionMs)
-                director.seek(positionMs)
+                director.request(SessionRequest.Seek(positionMs))
             }
         }
         return Futures.immediateVoidFuture()
@@ -232,13 +233,13 @@ class DirectorPlayer(
         // Focus is acquired by the playbackState observer once Director starts playing (see
         // syncAudioFocus).
         requestedPlayWhenReady = true
-        director.play()
+        director.request(SessionRequest.Play)
         return Futures.immediateVoidFuture()
     }
 
     fun pauseFromBecomingNoisy() {
         if (requestedPlayWhenReady) {
-            director.pause()
+            director.request(SessionRequest.Pause)
         }
     }
 
@@ -259,7 +260,7 @@ class DirectorPlayer(
                 } else {
                     // Something else owns exclusive focus (a call, etc.) — don't play over it.
                     hatchet.w("Audio focus denied; pausing.")
-                    director.pause()
+                    director.request(SessionRequest.Pause)
                 }
             }
 
@@ -278,21 +279,21 @@ class DirectorPlayer(
     override fun onFocusLoss() {
         // Permanent loss: the OS gave focus to another app. Pause, then drop the request so the
         // next play re-acquires it (a permanent loss sends no onFocusGain).
-        director.pause()
+        director.request(SessionRequest.Pause)
         audioFocusHelper.abandonFocus()
         hasAudioFocus = false
     }
 
     override fun onFocusLossTransient() {
-        director.pauseTemporarily()
+        director.request(SessionRequest.PauseTemporarily)
     }
 
     override fun onFocusLossTransientCanDuck() {
-        director.duck()
+        director.request(SessionRequest.Duck)
     }
 
     override fun onFocusGain() {
-        director.resumeFocus()
+        director.request(SessionRequest.ResumeFocus)
     }
 
     private fun PlayerState.toMedia3PlaybackState(): Int = when (this) {

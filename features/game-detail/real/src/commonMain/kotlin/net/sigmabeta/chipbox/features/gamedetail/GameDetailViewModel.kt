@@ -13,6 +13,7 @@ import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
@@ -64,14 +65,13 @@ class GameDetailViewModel(
     }
 
     private fun startSession(startingPosition: Int, shuffled: Boolean = false) {
-        director.start(
-            Session(
-                type = SessionType.GAME,
-                contentId = gameId,
-                startingPosition = startingPosition,
-                shuffled = shuffled,
-            )
+        val session = Session(
+            type = SessionType.GAME,
+            contentId = gameId,
+            startingPosition = startingPosition,
+            shuffled = shuffled,
         )
+        director.request(SessionRequest.Start(session))
     }
 
     private fun onGameData(data: Data<net.sigmabeta.chipbox.models.Game?>) {

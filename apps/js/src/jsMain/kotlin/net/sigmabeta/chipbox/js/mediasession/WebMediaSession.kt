@@ -11,6 +11,7 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerState
+import net.sigmabeta.chipbox.player.director.SessionRequest
 
 /**
  * Bridges the chipbox [Director] to the browser's `navigator.mediaSession` API so OS-level
@@ -49,25 +50,25 @@ class WebMediaSession(
         // Action handlers — fire-and-forget; the director is responsible for ignoring no-op
         // requests (e.g. play() while already playing). null clears a handler, which removes
         // its affordance from the OS surface entirely.
-        session.setActionHandler("play") { director.play() }
-        session.setActionHandler("pause") { director.pause() }
-        session.setActionHandler("stop") { director.stop() }
-        session.setActionHandler("nexttrack") { director.skipForward() }
-        session.setActionHandler("previoustrack") { director.skipBack() }
+        session.setActionHandler("play") { director.request(SessionRequest.Play) }
+        session.setActionHandler("pause") { director.request(SessionRequest.Pause) }
+        session.setActionHandler("stop") { director.request(SessionRequest.Stop) }
+        session.setActionHandler("nexttrack") { director.request(SessionRequest.SkipForward) }
+        session.setActionHandler("previoustrack") { director.request(SessionRequest.SkipBack) }
         session.setActionHandler("seekto") { details ->
             val seconds = details?.seekTime
-            if (seconds != null) director.seek((seconds * MILLIS_PER_SECOND).toLong())
+            if (seconds != null) director.request(SessionRequest.Seek((seconds * MILLIS_PER_SECOND).toLong()))
         }
         // `seekbackward` / `seekforward` (the +/- N seconds buttons) — bracket the requested
         // offset around the current position. Browser passes `details.seekOffset` in seconds,
         // defaulting to ~10s when absent.
         session.setActionHandler("seekbackward") { details ->
             val offsetSec = details?.seekOffset ?: DEFAULT_SEEK_STEP_SECONDS
-            director.seek((currentPositionMs() - (offsetSec * MILLIS_PER_SECOND).toLong()).coerceAtLeast(0L))
+            director.request(SessionRequest.Seek((currentPositionMs() - (offsetSec * MILLIS_PER_SECOND).toLong()).coerceAtLeast(0L)))
         }
         session.setActionHandler("seekforward") { details ->
             val offsetSec = details?.seekOffset ?: DEFAULT_SEEK_STEP_SECONDS
-            director.seek(currentPositionMs() + (offsetSec * MILLIS_PER_SECOND).toLong())
+            director.request(SessionRequest.Seek(currentPositionMs() + (offsetSec * MILLIS_PER_SECOND).toLong()))
         }
 
         // Independent subscriptions. metadataState wakes the metadata update only on track id
