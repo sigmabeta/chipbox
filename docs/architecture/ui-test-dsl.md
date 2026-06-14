@@ -191,11 +191,33 @@ future deep-link / session-restore could reuse it. The apps pass nothing → no 
 `FullShellHarnessTest` now emits `GameDetail(id)` into that flow and asserts both the top-bar title
 ("Metal Slug") and the content ("JIM"/"Stage 1").
 
-Step 4 (next) — the DSL surface. Build `startAtScreen(route)` / `assertTitle(text)` /
-`assertNavigationEvent(route)` / `clickWideItem(...)` / `clickNameCaptionValueItem(...)` as a
-`ChipboxUiTest` receiver scope over this harness; add the `ListModel.Content()` semantics seam for
-the typed selectors (decided); then generalise the harness from `jvmTest` into the shared `uiTest`
-dir so it runs on-device too.
+Step 4 (DONE, JVM, 2026-06-14) — the DSL surface. `runChipboxUiTest { }` exposes a
+`ChipboxUiTest` receiver scope over the harness, hosting the real shell over a `TestAppGraph`
+that defaults to a populated `RandomMemoryRepository` (so screens have content out of the box).
+Verbs implemented and tested on JVM:
+
+- `startAtScreen(route)` — opens a route inside the active tab via the `activeTabDestinations`
+  seam (so the chrome is present).
+- `assertTitle(text)` — the chrome's top-bar title.
+- `clickWideItem(name)` / `clickNameCaptionValueItem(name)` — select by item type + name. Backed
+  by the **semantics seam**: `ListModel.Content()` tags each item with its model `simpleName`
+  (`Modifier.testTag`, riding on the row's clickable modifier so it merges with the text). Pixel-
+  inert; Paparazzi confirms.
+- `assertNavigationEvent(route)` — backed by a second seam, `ChipboxAppUi(onNavigate)` /
+  `LocalNavigationObserver`, invoked on each active-tab deep push (in-tab `NavigateTo` doesn't go
+  through the app VM's effects). Route keys are data classes, so it matches on value.
+- helpers: `firstGame()` / `artistId(name)` (read the populated library), `seedGame(...)` (add a
+  known fixture), `assertDisplayed(text)`.
+
+`StartAtScreenTest` (startAtScreen + assertTitle off the random library) and `ClickItemTest`
+(clickWideItem → assertNavigationEvent + assertTitle) read like the target examples.
+
+Step 5 (next):
+- Reify `DirectorCommand` + a recording Director for `assertDirectorReceived` (the deferred
+  Phase 4 work) — needed for the song-click → playback example.
+- Generalise the harness from `jvmTest` into the shared `uiTest` dir (per-target graph builder) so
+  the same scripts run on-device.
+- Consider adding the item `dataId` to the semantics seam for disambiguating same-name rows.
 
 Original Phase 1 plan: cross-platform `TestAppGraph`
 (`@DependencyGraph(AppScope::class)`) aggregating the *common* `@ContributesTo(AppScope)`
