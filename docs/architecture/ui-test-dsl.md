@@ -1,6 +1,7 @@
 # UI Test Scripting DSL — design & roadmap
 
-Status: **in progress** (Phase 0 landed on JVM). This is a living plan; update it as phases land.
+Status: **in progress** (Phase 0 landed: JVM host runs, Android device-test builds). This is a
+living plan; update it as phases land.
 
 ## Where this lives: sage, not chipbox
 
@@ -108,11 +109,12 @@ New test-support module `:cbox:common:uitest` (in `commonMain`, consumed by feat
 
 ## Phases
 
-**Phase 0 — Foundation (prove the rails). — DONE on JVM (2026-06-14).**
-Stood up `:cbox:common:uitest` applying `sage.kmp` + the catalog-sourced
+**Phase 0 — Foundation (prove the rails). — DONE (2026-06-14): JVM host runs, Android
+device-test builds.** Stood up `:cbox:common:uitest` applying `sage.kmp` + the catalog-sourced
 `compose.compiler` / `compose.multiplatform` plugins (the latter is what exposes the
 `compose.uiTest` and `compose.desktop.currentOs` accessors), plus `chipbox.kmp.test`. A
-trivial "host a `Text`, assert displayed" `runComposeUiTest` test.
+trivial "host a `Text`, assert displayed" `runComposeUiTest` test, in a shared `uiTest` source
+set that runs on both the JVM host and a real Android device.
 
 Findings:
 
@@ -120,25 +122,40 @@ Findings:
   tree from this toolchain. The core rail is real. Build-script note: `compose.uiTest`
   requires `@file:OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)`; the test
   body requires `@OptIn(ExperimentalTestApi::class)`.
-- **Android host: blocked on Robolectric.** The same body throws `NullPointerException` at
-  `setContent` on the `testAndroidHostTest` target — that target has no Android framework
-  (Looper/Context). Robolectric supplies it, but Robolectric needs a `@RunWith` runner
-  annotation, **which cannot live in `commonMain`/`commonTest`** where the shared DSL tests
-  must go. No Robolectric is in either catalog today; AGP is 9.2.1 (KMP android-library +
-  `withHostTest`). The smoke test is therefore scoped to `jvmTest` so the repo stays green.
+- **Android: on-device (instrumented), NOT host.** The same body NPEs at `setContent` on the
+  `androidHostTest` target — that target has no Android framework (Looper/Context). Rather than
+  fake one with Robolectric (which needs a `@RunWith` runner annotation that **can't live in
+  `commonMain`/`commonTest`**), the Android half runs on a real device/emulator, where
+  `runComposeUiTest` has a true framework. Enabled with `withDeviceTest { instrumentationRunner
+  = "androidx.test.runner.AndroidJUnitRunner" }` in the module's `android { }` block (AGP 9.2.1
+  KMP android-library). The device-test APK assembles (`uitest-androidTest.apk`); the on-device
+  run is `./gradlew :cbox:common:uitest:connectedAndroidDeviceTest` with a device attached.
 - **Not yet exercised** (deferred until the harness composes real screens): the test main
   dispatcher, and whether `composeResources` strings load under `runComposeUiTest` (the
   Paparazzi classpath-reader override may recur).
 
-**OPEN DECISION — Android-host execution strategy.** Two viable stances:
-  1. *JVM desktop as the canonical CI rail* (+ optional on-device instrumented tests for
-     Android-specific behavior). Common UI tests run on JVM (and later js); Android parity is
-     by construction (same Compose runtime). Zero Robolectric. Simplest; matches how most CMP
-     projects operate.
-  2. *Invest in Robolectric for true Android-host execution.* Requires a Robolectric catalog
-     entry, an android-test-only runner entry point (the `@RunWith` can't be common), AGP
-     host-test resource config, and likely `@GraphicsMode(NATIVE)`. Heavier, bleeding-edge on
-     AGP 9 KMP, but lets the *same* suite assert on the Android target on a host machine.
+### Source-set topology (decided)
+
+One spec, two targets — JVM desktop host + Android device. The KMP gotcha: `jvmTest` is in the
+**unit-test tree** and `androidDeviceTest` is in the **instrumented-test tree**, and a source set
+may not `dependsOn` sets from two different trees (Gradle errors: *"Invalid Source Set Dependency
+Across Trees"*). So the bridge is NOT `dependsOn` — instead:
+
+- The shared specs live in a plain directory `src/uiTest/kotlin` (not a Kotlin source set).
+- Both leaf source sets pull it in directly: `jvmTest { kotlin.srcDir("src/uiTest/kotlin") }` and
+  `androidDeviceTest { kotlin.srcDir("src/uiTest/kotlin") }`. Same physical files, two independent
+  compilations, one per tree. The specs use only multiplatform APIs (`compose.uiTest`,
+  `compose.material3`, `kotlin.test`) available to both.
+- The dir is kept **off `androidHostTest`** on purpose (no Android framework there → NPE).
+- Deps per tree: `jvmTest` inherits `compose.uiTest`/`compose.material3`/`kotlin.test` from
+  `commonTest` (unit-test tree) and adds `compose.desktop.currentOs`. `androidDeviceTest`
+  inherits nothing from `commonTest`, so it re-declares those three plus the device-only deps:
+  `ui-test-manifest` (empty host Activity), `androidx.test:runner` (AndroidJUnitRunner),
+  `androidx.test.ext:junit`.
+
+CI: `jvmTest` is the fast host rail (runs everywhere, no device); `connectedAndroidDeviceTest`
+is the Android rail (needs a device/emulator). When the generic rails move into sage, this
+topology + the `withDeviceTest` wiring belong in the `sage.compose.uitest` convention plugin.
 
 **Phase 1 — Test graph + shell harness.** Cross-platform `TestAppGraph`
 (`@DependencyGraph(AppScope::class)`) aggregating the *common* `@ContributesTo(AppScope)`
