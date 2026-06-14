@@ -27,7 +27,7 @@ import net.sigmabeta.chipbox.repository.memory.models.MemoryGame
 import net.sigmabeta.chipbox.repository.memory.models.MemoryTrack
 import net.sigmabeta.chipbox.utils.ioDispatcher
 
-class MemoryRepository(
+open class MemoryRepository(
     dispatcher: CoroutineDispatcher = ioDispatcher
 ) : Repository {
     private val repositoryScope = CoroutineScope(dispatcher)
@@ -274,6 +274,24 @@ class MemoryRepository(
     override suspend fun pruneGames(keptFolderKeys: Set<String>): List<String> = emptyList()
 
     override suspend fun upsertGame(rawGame: RawGame): GameWriteOutcome {
+        val outcome = addGame(rawGame)
+
+        // notify anyone interested that we've added a game
+        repositoryScope.launch {
+            val data = Data.Succeeded(getLatestAllGames(true, true))
+            gamesLoadEvents.emit(data)
+        }
+        return outcome
+    }
+
+    /**
+     * Synchronous core of [upsertGame]: convert + link + store the game in the in-memory maps,
+     * without the load-event emit. `protected` so [RandomMemoryRepository] can seed a library from
+     * its constructor, where a `suspend` call isn't possible and `runBlocking` isn't available in
+     * commonMain. The lazy loaders ([getAllGames] etc.) read the maps on first subscribe, so the
+     * seeded data still surfaces without the emit.
+     */
+    protected fun addGame(rawGame: RawGame): GameWriteOutcome {
         // Get and convert tracks
         val tracks = rawGame.tracks
             .map { it.toMemoryTrack() }
@@ -313,11 +331,6 @@ class MemoryRepository(
         gamesById[game.id] = game
         gamesByTitle[game.title] = game
 
-        // notify anyone interested that we've added a game
-        repositoryScope.launch {
-            val data = Data.Succeeded(getLatestAllGames(true, true))
-            gamesLoadEvents.emit(data)
-        }
         return GameWriteOutcome(game.id, GameWriteResult.ADDED)
     }
 
