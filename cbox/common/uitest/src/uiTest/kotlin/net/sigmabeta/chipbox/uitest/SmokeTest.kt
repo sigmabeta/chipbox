@@ -12,11 +12,11 @@ import kotlin.test.Test
  * engine — actually hosts a composable and queries the semantics tree on this project's
  * toolchain. Green here means the rails the full UI test DSL stands on are real.
  *
- * Lives in `jvmTest`, not `commonTest`: the same `runComposeUiTest` body NPEs on the Android
- * host target, which needs an Android framework (Robolectric) the JVM target supplies natively.
- * Robolectric in turn needs a `@RunWith` runner annotation, which can't live in
- * `commonMain`/`commonTest`. So JVM desktop is the canonical rail for now; the Android-host
- * execution strategy is an open decision recorded in docs/architecture/ui-test-dsl.md.
+ * Lives in the shared `uiTest` source set (NOT `commonTest`), so the one spec runs on two
+ * targets: the JVM desktop host (`:jvmTest`) and a real Android device (`:androidDeviceTest`,
+ * on-device/instrumented). It is kept off `androidHostTest` on purpose — that target has no
+ * Android framework, so `runComposeUiTest` NPEs there; the Android half of the suite runs
+ * on-device instead. See docs/architecture/ui-test-dsl.md.
  */
 @OptIn(ExperimentalTestApi::class)
 class SmokeTest {
