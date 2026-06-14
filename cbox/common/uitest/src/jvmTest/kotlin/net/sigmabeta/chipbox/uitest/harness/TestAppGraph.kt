@@ -5,13 +5,28 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.createGraphFactory
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
+import net.sigmabeta.chipbox.contentsource.LibrarySource
+import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
+import net.sigmabeta.chipbox.crash.CrashReport
+import net.sigmabeta.chipbox.crash.CrashReportStore
+import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.debug.fake.FakeDebugSettingsManager
+import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
+import net.sigmabeta.chipbox.debuginfo.fake.FakeDebugInfoManager
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.memory.MemoryRepository
+import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.chipbox.scanner.fake.CountingScanner
+import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
+import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
+import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
+import okio.FileSystem
+import okio.fakefilesystem.FakeFileSystem
 
 /**
  * Cross-platform Metro test graph for the UI harness. Provides the leaf bindings a real screen's
@@ -51,6 +66,47 @@ interface TestAppGraph : ViewModelGraph {
     @Provides
     @SingleIn(AppScope::class)
     fun provideHatchet(): Hatchet = StubHatchet
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSettingsManager(): ChipboxSettingsManager = FakeChipboxSettingsManager()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideAppInfo(): AppInfo = AppInfo(
+        isDebug = true,
+        versionName = "uitest",
+        versionCode = 1,
+        buildTimeMs = null,
+        buildBranch = "uitest",
+    )
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideLibrarySource(): LibrarySource = FakeLibrarySource()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideScanner(): Scanner = CountingScanner()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideDebugSettingsManager(): DebugSettingsManager = FakeDebugSettingsManager()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideDebugInfoManager(): DebugInfoManager = FakeDebugInfoManager()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideCrashReportStore(): CrashReportStore = object : CrashReportStore {
+        override fun list(): List<CrashReport> = emptyList()
+        override fun clear() = Unit
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideFileSystem(): FileSystem = FakeFileSystem()
 
     @DependencyGraph.Factory
     fun interface Factory {
