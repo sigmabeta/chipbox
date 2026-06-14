@@ -150,6 +150,7 @@ include(
     ":cbox:common:ui:components:api",
     ":cbox:common:ui:list:api",
     ":cbox:common:ui:freeform:api",
+    ":cbox:common:uitest",
     ":cbox:android:ui:previews",
     ":cbox:android:ui:theme:api",
 
