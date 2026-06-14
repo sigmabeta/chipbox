@@ -157,7 +157,28 @@ CI: `jvmTest` is the fast host rail (runs everywhere, no device); `connectedAndr
 is the Android rail (needs a device/emulator). When the generic rails move into sage, this
 topology + the `withDeviceTest` wiring belong in the `sage.compose.uitest` convention plugin.
 
-**Phase 1 — Test graph + shell harness.** Cross-platform `TestAppGraph`
+**Phase 1 — Test graph + shell harness. — IN PROGRESS.**
+
+Step 1 (DONE, JVM, 2026-06-14): the hard machinery proven on a single real screen.
+`TestAppGraph` (a `@DependencyGraph(AppScope::class)` extending `ViewModelGraph`, with
+`TestMetroViewModelFactory`) compiles and instantiates *in the test source set* — confirming
+Metro processes test compilations. It binds fakes (`MemoryRepository` exposed for seeding,
+`FakeDirector`, stub `StringProvider`/`Hatchet`). `GameDetailHarnessTest` seeds a game via
+`upsertGame`, hosts the real `GameDetailRoute` in `runComposeUiTest` (providing
+`LocalMetroViewModelFactory`, a plain `LocalViewModelStoreOwner` — the app gets one from the
+Compose Window/Voyager, absent here — plus `LocalTitleBarController`/`LocalChipboxStringProvider`/
+`LocalLogger`), and asserts the seeded "Metal Slug"/"Stage 1" surface. The real
+`GameDetailViewModel` (assisted) resolves through the ViewModel factory. Lives in `jvmTest` for
+now.
+
+Step 2 (next): wrap the full `ChipboxAppUi` tabs shell + Voyager, implement `startAtScreen(route)`
+(fire `ChipboxEvent.NavigateTo` into the app VM → real `navigator.push(screenFor(route))`) and
+`assertTitle` against the real `TitleBarController`. Open question surfaced in step 1: the full
+shell forces the graph to satisfy *every* feature VM's deps — likely cheaper to reuse the real
+per-platform app graph (`JvmChipboxGraph`/`ChipboxAppGraph`) than to hand-roll N fakes. Then
+generalise the harness from `jvmTest` into the shared `uiTest` dir for on-device too.
+
+Original Phase 1 plan: cross-platform `TestAppGraph`
 (`@DependencyGraph(AppScope::class)`) aggregating the *common* `@ContributesTo(AppScope)`
 binding containers, so `MemoryRepository` is the bound `Repository` and `RealDirector`
 the `Director`. Host real `ChipboxAppUi` with `LocalMetroViewModelFactory` from it.

@@ -9,6 +9,10 @@ plugins {
     // convention plugin in sage-build-logic (this is intended to be a sage-wide capability).
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
+    // Metro compiler plugin — lets the test source sets declare a @DependencyGraph (the
+    // TestAppGraph that hosts real screens over fake bindings). AppScope + the metrox ViewModel
+    // multibindings come from the deps below, not the sage.di mixin (which targets non-KMP bases).
+    alias(libs.plugins.metro)
     alias(chipbox.plugins.kmp.test)
 }
 
@@ -50,6 +54,28 @@ kotlin {
             dependencies {
                 // Per-OS Skia native — the desktop backend `runComposeUiTest` renders onto.
                 implementation(compose.desktop.currentOs)
+
+                // --- Phase 1 harness (jvmTest-only for now; generalised to androidDeviceTest +
+                // the shared uiTest dir once the single-screen path is green). Hosts the real
+                // GameDetailRoute over a fake Metro graph + seeded MemoryRepository. ---
+                implementation(projects.features.gameDetail.real)
+                implementation(projects.features.gameDetail.api)
+                implementation(projects.cbox.common.repository.api)
+                implementation(projects.cbox.common.repository.fake)
+                implementation(projects.cbox.common.player.director.api)
+                implementation(projects.cbox.common.player.director.fake)
+                implementation(projects.cbox.common.models.api)
+                implementation(projects.cbox.common.ui.list.api)
+                implementation(projects.cbox.common.ui.chrome.api)
+                implementation(projects.cbox.common.ui.theme.api)
+                implementation(projects.cbox.common.appcomm.api)
+                implementation(projects.cbox.common.strings.api)
+                implementation(libs.sage.common.di)
+                implementation(libs.sage.common.logging)
+                implementation(libs.sage.common.ui.strings)
+                implementation(libs.sage.common.ui.perfCompose)
+                implementation(libs.metrox.viewmodel)
+                implementation(libs.metrox.viewmodel.compose)
             }
         }
 
