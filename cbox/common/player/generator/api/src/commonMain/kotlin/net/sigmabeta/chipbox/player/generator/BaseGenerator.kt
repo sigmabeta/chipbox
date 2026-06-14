@@ -360,10 +360,16 @@ abstract class BaseGenerator(
         }
 
         val newTrack = repository.getTrack(trackId) ?: return "Failed to load track."
-        val source = contentSourceRegistry.get(newTrack.source)
-            ?: return "No content source registered for '${newTrack.source}'."
-        val bytes = source.openBytes(newTrack.path)
-            ?: return "Failed to read bytes for ${newTrack.title}."
+        // Factories that synthesize audio from the track alone (the dev synth) don't need the
+        // file bytes — skip the content-source lookup so they work for tracks with no backing file.
+        val bytes = if (pcmSourceFactory.requiresContent) {
+            val source = contentSourceRegistry.get(newTrack.source)
+                ?: return "No content source registered for '${newTrack.source}'."
+            source.openBytes(newTrack.path)
+                ?: return "Failed to read bytes for ${newTrack.title}."
+        } else {
+            ByteArray(0)
+        }
 
         currentTrack = newTrack
         audibleStarted = false

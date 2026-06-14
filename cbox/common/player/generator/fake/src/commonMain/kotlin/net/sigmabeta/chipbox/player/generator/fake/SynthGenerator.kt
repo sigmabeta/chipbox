@@ -37,6 +37,9 @@ class SynthGenerator(
 }
 
 private class SynthPcmTrackSourceFactory(private val hatchet: Hatchet) : PcmTrackSource.Factory {
+    // The synth generates from the track alone — no real file to fetch.
+    override val requiresContent: Boolean = false
+
     override suspend fun open(track: Track, bytes: ByteArray): PcmTrackSource {
         FakeEmulator.hatchet = hatchet
         FakeEmulator.loadTrack(track)

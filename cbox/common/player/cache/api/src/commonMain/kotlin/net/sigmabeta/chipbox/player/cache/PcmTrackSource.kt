@@ -106,6 +106,14 @@ interface PcmTrackSource {
      * [CachingPcmSource]-style writer-plus-reader pair.
      */
     interface Factory {
+        /**
+         * Whether the generator must fetch the track's file bytes (via its content source) before
+         * calling [open]. Sources that synthesize audio from the track alone (e.g. the dev synth)
+         * set this false, so playback works for tracks with no real backing file — [open] then
+         * receives an empty array.
+         */
+        val requiresContent: Boolean get() = true
+
         suspend fun open(track: Track, bytes: ByteArray): PcmTrackSource
     }
 }
