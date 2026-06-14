@@ -144,6 +144,19 @@ internal object ChipboxTabsScreen : Screen {
             }
         }
 
+        // Programmatic navigation into the active tab (UI tests / future deep-links) — push each
+        // requested destination onto the active tab's Navigator, the same place an in-tab
+        // `NavigateTo` lands, so the pushed screen renders with this scaffold's chrome around it.
+        // See [LocalActiveTabDestinations].
+        val activeTabDestinations = LocalActiveTabDestinations.current
+        if (activeTabDestinations != null) {
+            LaunchedEffect(activeTabDestinations, activeTabNavigator) {
+                activeTabDestinations.collect { destination ->
+                    activeTabNavigator.navigator?.push(screenFor(destination))
+                }
+            }
+        }
+
         val titleBar = LocalTitleBarController.current.state
         val chrome = LocalChromeController.current.state
 

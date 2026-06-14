@@ -5,15 +5,13 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.runBlocking
-import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
-import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUiViewModel
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
@@ -25,24 +23,17 @@ import net.sigmabeta.sage.ui.perf.LocalLogger
 import kotlin.test.Test
 
 /**
- * Phase 1, step 2: host the *full* `ChipboxAppUi` tabs shell over the fake [TestAppGraph] and
- * navigate to a real screen — fire `ChipboxEvent.NavigateTo` into the shell's own
- * `ChipboxAppUiViewModel`, whose effect collector runs the real `navigator.push(screenFor(..))`.
- * The seeded `GameDetail` then renders with its real content ("JIM", "Stage 1").
- *
- * The shell resolves its app VM from the [LocalViewModelStoreOwner] provided here, so the test
- * pulls that same instance back out of the store (via [ViewModelProvider]) to drive navigation —
- * the seam a future `startAtScreen` / `assertNavigationEvent` taps.
- *
- * NOTE: the app VM routes `NavigateTo` to the *outer* Navigator, which unmounts the tabs scaffold
- * (and its TopAppBar) — so the title bar isn't present here. A faithful `assertTitle` needs the
- * screen pushed onto the *active tab's* navigator (where the chrome lives); that in-tab navigation
- * seam is step 3. See docs/architecture/ui-test-dsl.md.
+ * Phase 1, step 3: host the *full* `ChipboxAppUi` tabs shell over the fake [TestAppGraph] and open
+ * a real screen *inside the active tab* via the `activeTabDestinations` seam — the same place an
+ * in-tab `NavigateTo` lands — so the screen renders with the tabs chrome (TopAppBar) around it.
+ * Both the seeded title ("Metal Slug", in the top bar) and the screen content ("JIM"/"Stage 1")
+ * are then present. This is the navigation path the `startAtScreen` DSL verb will build on. See
+ * docs/architecture/ui-test-dsl.md.
  */
 @OptIn(ExperimentalTestApi::class)
 class FullShellHarnessTest {
     @Test
-    fun navigatingToSeededGameRendersItsContent() = runComposeUiTest {
+    fun startingAtSeededGameShowsTitleAndContent() = runComposeUiTest {
         val graph = createTestAppGraph()
         val gameId = runBlocking {
             graph.memoryRepository.upsertGame(
@@ -67,9 +58,12 @@ class FullShellHarnessTest {
             ).gameId
         }
 
+        // metroViewModel<>() needs a ViewModelStoreOwner; the app gets it from the Compose Window /
+        // Voyager per-screen store — neither exists here, so supply a plain one.
         val storeOwner = object : ViewModelStoreOwner {
             override val viewModelStore: ViewModelStore = ViewModelStore()
         }
+        val destinations = MutableSharedFlow<Any>(extraBufferCapacity = 1)
 
         setContent {
             CompositionLocalProvider(
@@ -78,20 +72,21 @@ class FullShellHarnessTest {
                 LocalChipboxStringProvider provides StubStringProvider,
                 LocalLogger provides StubHatchet,
             ) {
-                ChipboxAppUi(onOpenUrl = {}, onCopyToClipboard = { _, _ -> })
+                ChipboxAppUi(
+                    onOpenUrl = {},
+                    onCopyToClipboard = { _, _ -> },
+                    activeTabDestinations = destinations,
+                )
             }
         }
         waitForIdle()
 
-        // The shell resolved its ChipboxAppUiViewModel into `storeOwner`; pull the same instance
-        // back out and fire a navigation — its effect collector does the real Voyager push.
-        val appViewModel = ViewModelProvider.create(storeOwner, graph.metroViewModelFactory)[
-            ChipboxAppUiViewModel::class,
-        ]
-        appViewModel.handleEvent(ChipboxEvent.NavigateTo(GameDetail(gameId)))
+        // Open GameDetail inside the active tab — the seam pushes it onto that tab's Navigator.
+        destinations.tryEmit(GameDetail(gameId))
         waitForIdle()
 
-        // The real GameDetail screen rendered over the test graph: its artist + track are present.
+        // Title (top bar, from the tabs chrome) + screen content both render.
+        onNodeWithText("Metal Slug").assertIsDisplayed()
         onNodeWithText("JIM").assertIsDisplayed()
         onNodeWithText("Stage 1").assertIsDisplayed()
     }

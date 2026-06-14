@@ -181,14 +181,21 @@ Test` hosts the shell, pulls the shell's own `ChipboxAppUiViewModel` back out of
 `ChipboxEvent.NavigateTo(GameDetail(id))`, and the real Voyager push renders the seeded screen
 ("JIM"/"Stage 1").
 
-Step 3 (next) — in-tab navigation for `assertTitle`. Finding from step 2: the `TopAppBar` is
-composed *only* in `ChipboxTabsScreen`; firing `NavigateTo` on the app VM routes to the **outer**
-Navigator, which unmounts the tabs scaffold — so the screen renders but its title bar doesn't
-exist. Faithful `startAtScreen`/`assertTitle` must push onto the **active tab's** Navigator (held
-in `ActiveTabNavigator`, currently `internal` to appui.api). Options: expose a small public
-navigation seam in appui.api (also useful to the app), or drive navigation through the real tab
-sink. Then build the `startAtScreen`/`assertTitle`/`assertNavigationEvent`/`click*` DSL verbs on
-top, and generalise the harness from `jvmTest` into the shared `uiTest` dir for on-device.
+Step 3 (DONE, JVM, 2026-06-14) — in-tab navigation seam, so `assertTitle` works. The `TopAppBar`
+is composed *only* in `ChipboxTabsScreen`, and the app VM routes `NavigateTo` to the **outer**
+Navigator (which unmounts the tabs scaffold), so a screen pushed that way has no title bar. Added a
+small public seam to `appui.api`: `ChipboxAppUi(activeTabDestinations: Flow<Any>? = null)` —
+route-key destinations pushed onto the **active tab's** Navigator (via `screenFor`), the same place
+an in-tab `NavigateTo` lands, so the screen renders with chrome. (This is test-support first; a
+future deep-link / session-restore could reuse it. The apps pass nothing → no behaviour change.)
+`FullShellHarnessTest` now emits `GameDetail(id)` into that flow and asserts both the top-bar title
+("Metal Slug") and the content ("JIM"/"Stage 1").
+
+Step 4 (next) — the DSL surface. Build `startAtScreen(route)` / `assertTitle(text)` /
+`assertNavigationEvent(route)` / `clickWideItem(...)` / `clickNameCaptionValueItem(...)` as a
+`ChipboxUiTest` receiver scope over this harness; add the `ListModel.Content()` semantics seam for
+the typed selectors (decided); then generalise the harness from `jvmTest` into the shared `uiTest`
+dir so it runs on-device too.
 
 Original Phase 1 plan: cross-platform `TestAppGraph`
 (`@DependencyGraph(AppScope::class)`) aggregating the *common* `@ContributesTo(AppScope)`
