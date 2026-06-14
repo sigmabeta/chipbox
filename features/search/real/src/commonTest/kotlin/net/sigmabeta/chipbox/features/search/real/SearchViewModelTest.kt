@@ -23,6 +23,7 @@ import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
@@ -369,19 +370,13 @@ class SearchViewModelTest {
             override fun getSearchHistory() = flow
         }
 
-    /** [FakeDirector] but with a [start(setlist, ...)] overload that records its arguments so the
-     *  song-results path can be asserted. */
+    /** [FakeDirector] but exposing the recorded [SessionRequest.StartSetlist] requests as
+     *  [StartCall]s so the song-results path can be asserted. */
     private class RecordingDirector : FakeDirector() {
         data class StartCall(val setlist: List<Long>, val startingPosition: Int, val sourceName: String?)
-        val startCalls = mutableListOf<StartCall>()
-        override fun start(
-            setlist: List<Long>,
-            startingPosition: Int,
-            sourceName: String?,
-            shuffled: Boolean,
-        ) {
-            startCalls += StartCall(setlist, startingPosition, sourceName)
-        }
+        val startCalls: List<StartCall>
+            get() = requests.filterIsInstance<SessionRequest.StartSetlist>()
+                .map { StartCall(it.setlist, it.startingPosition, it.sourceName) }
     }
 
     private suspend fun CoroutineScope.collectAndDispatch(

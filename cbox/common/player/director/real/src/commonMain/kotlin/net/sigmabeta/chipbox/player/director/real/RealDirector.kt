@@ -27,6 +27,7 @@ import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.GeneratorEvent
 import net.sigmabeta.chipbox.player.speaker.Speaker
@@ -261,7 +262,27 @@ class RealDirector(
         }
     }
 
-    override fun start(session: Session) {
+    override fun request(request: SessionRequest) {
+        when (request) {
+            is SessionRequest.Start -> start(request.session)
+            is SessionRequest.StartSetlist -> with(request) { start(setlist, startingPosition, sourceName, shuffled) }
+            is SessionRequest.Restore -> restore(request.session, request.positionMs)
+            SessionRequest.Play -> play()
+            SessionRequest.Pause -> pause()
+            SessionRequest.Stop -> stop()
+            is SessionRequest.Seek -> seek(request.positionMs)
+            SessionRequest.SkipForward -> skipForward()
+            SessionRequest.SkipBack -> skipBack()
+            is SessionRequest.SetShuffled -> setShuffled(request.shuffled)
+            is SessionRequest.SetRepeatMode -> setRepeatMode(request.mode)
+            SessionRequest.PauseTemporarily -> pauseTemporarily()
+            SessionRequest.Duck -> duck()
+            SessionRequest.ResumeFocus -> resumeFocus()
+            is SessionRequest.SetVolume -> setVolume(request.scale)
+        }
+    }
+
+    private fun start(session: Session) {
         directorScope.launch {
             // A fresh session must take over cleanly rather than queue behind whatever the
             // generator is currently doing. If we only queued the new track, a generator stuck
@@ -323,7 +344,7 @@ class RealDirector(
         }
     }
 
-    override fun restore(session: Session, positionMs: Long) {
+    private fun restore(session: Session, positionMs: Long) {
         directorScope.launch {
             val setlistForSession = getSetlistForSession(session)
                 .let { if (session.shuffled) it.shuffled() else it }
@@ -376,7 +397,7 @@ class RealDirector(
     private fun PlayerState.expectsAudioFlow(): Boolean =
         this == PlayerState.PLAYING || this == PlayerState.BUFFERING
 
-    override fun start(
+    private fun start(
         setlist: List<Long>,
         startingPosition: Int,
         sourceName: String?,
@@ -394,7 +415,7 @@ class RealDirector(
         )
     }
 
-    override fun play() {
+    private fun play() {
         directorScope.launch {
             when (model.playback.state) {
                 PlayerState.PAUSED -> {
@@ -485,7 +506,7 @@ class RealDirector(
         stallWatchdogJob = null
     }
 
-    override fun pause() {
+    private fun pause() {
         directorScope.launch {
             // Paused audio is meant to be silent — don't let that read as a stall. (The generator
             // keeps running until its buffers back up, so it isn't stopped here.)
@@ -498,7 +519,7 @@ class RealDirector(
         }
     }
 
-    override fun stop() {
+    private fun stop() {
         directorScope.launch {
             cancelStallWatchdog()
             speaker.stop()
@@ -507,7 +528,7 @@ class RealDirector(
         }
     }
 
-    override fun seek(positionMs: Long) {
+    private fun seek(positionMs: Long) {
         directorScope.launch {
             // An explicit seek supersedes a pending restore offset (the user chose a new spot).
             if (model.pendingResumeMs != null) commit(model.copy(pendingResumeMs = null))
@@ -516,7 +537,7 @@ class RealDirector(
         }
     }
 
-    override fun skipForward() {
+    private fun skipForward() {
         directorScope.launch {
             val session = model.session ?: return@launch
             val setlist = model.setlist ?: return@launch
@@ -531,7 +552,7 @@ class RealDirector(
         }
     }
 
-    override fun skipBack() {
+    private fun skipBack() {
         directorScope.launch {
             val session = model.session ?: return@launch
             val setlist = model.setlist ?: return@launch
@@ -569,7 +590,7 @@ class RealDirector(
         speaker.switchTo(trackId)
     }
 
-    override fun setShuffled(shuffled: Boolean) {
+    private fun setShuffled(shuffled: Boolean) {
         directorScope.launch {
             val session = model.session ?: return@launch
             if (session.shuffled == shuffled) return@launch
@@ -593,7 +614,7 @@ class RealDirector(
         }
     }
 
-    override fun setRepeatMode(mode: RepeatMode) {
+    private fun setRepeatMode(mode: RepeatMode) {
         directorScope.launch {
             val session = model.session ?: return@launch
             if (session.repeatMode == mode) return@launch
@@ -624,7 +645,7 @@ class RealDirector(
 
     override fun errorEvents() = errorEventsMutable.asSharedFlow()
 
-    override fun pauseTemporarily() {
+    private fun pauseTemporarily() {
         directorScope.launch {
             // A transient audio-focus loss stops the consume loop just like a real pause, so
             // reflect it as PAUSED (the UI was previously left showing PLAYING with no audio).
@@ -639,11 +660,11 @@ class RealDirector(
      * 🦆 Drop the speaker's output to 50% but keep playing — the OS only asked us to get out
      * of the way of a transient sound, not to stop.
      */
-    override fun duck() {
+    private fun duck() {
         speaker.setDucked(true)
     }
 
-    override fun resumeFocus() {
+    private fun resumeFocus() {
         directorScope.launch {
             // Undo a duck() (no-op if we weren't ducked) and restart the consume loop if a
             // pauseTemporarily() had stopped it (no-op if it's already running).
@@ -659,7 +680,7 @@ class RealDirector(
         }
     }
 
-    override fun setVolume(scale: Double) {
+    private fun setVolume(scale: Double) {
         speaker.setVolume(scale)
     }
 

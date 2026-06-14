@@ -11,6 +11,7 @@ import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
+import net.sigmabeta.chipbox.player.director.SessionRequest
 
 /**
  * Test-only [Director] stub. Subscribers of [metadataState] / [playbackState] / [sessionState] /
@@ -79,61 +80,31 @@ open class FakeDirector : Director {
         ),
     )
 
-    var playCalls: Int = 0
-    var pauseCalls: Int = 0
-    var stopCalls: Int = 0
-    var skipForwardCalls: Int = 0
-    var skipBackCalls: Int = 0
-    val seekCalls: MutableList<Long> = mutableListOf()
-    val setVolumeCalls: MutableList<Double> = mutableListOf()
-    val setShuffledCalls: MutableList<Boolean> = mutableListOf()
-    val setRepeatModeCalls: MutableList<RepeatMode> = mutableListOf()
-    val duckCalls: MutableList<Unit> = mutableListOf()
-    val restoreCalls: MutableList<Pair<Session, Long>> = mutableListOf()
+    /** Every [SessionRequest] submitted, in order — the recording assertions inspect. */
+    val requests: MutableList<SessionRequest> = mutableListOf()
 
     override fun metadataState(): SharedFlow<Track?> = metadataSink.asSharedFlow()
     override fun playbackState(): SharedFlow<ChipboxPlaybackState> = playbackSink.asSharedFlow()
     override fun sessionState(): SharedFlow<Session?> = sessionSink.asSharedFlow()
     override fun errorEvents(): SharedFlow<PlayerErrorEvent> = errorSink.asSharedFlow()
 
-    override fun start(session: Session) = Unit
-    override fun start(setlist: List<Long>, startingPosition: Int, sourceName: String?, shuffled: Boolean) = Unit
-    override fun restore(session: Session, positionMs: Long) {
-        restoreCalls += session to positionMs
+    override fun request(request: SessionRequest) {
+        requests += request
     }
 
-    // Director overrides above stay non-final on the bookkeeping methods that some tests want to
-    // record (e.g. SearchVM's setlist path); the rest stay as no-ops/counters.
-    override fun play() {
-        playCalls++
-    }
-    override fun pause() {
-        pauseCalls++
-    }
-    override fun stop() {
-        stopCalls++
-    }
-    override fun seek(positionMs: Long) {
-        seekCalls += positionMs
-    }
-    override fun skipForward() {
-        skipForwardCalls++
-    }
-    override fun skipBack() {
-        skipBackCalls++
-    }
-    override fun setShuffled(shuffled: Boolean) {
-        setShuffledCalls += shuffled
-    }
-    override fun setRepeatMode(mode: RepeatMode) {
-        setRepeatModeCalls += mode
-    }
-    override fun pauseTemporarily() = Unit
-    override fun duck() {
-        duckCalls += Unit
-    }
-    override fun resumeFocus() = Unit
-    override fun setVolume(scale: Double) {
-        setVolumeCalls += scale
-    }
+    // Convenience views over [requests] for assertions — the same shape the per-method counters
+    // had before the Director interface was reified onto SessionRequest.
+    val playCalls: Int get() = requests.count { it is SessionRequest.Play }
+    val pauseCalls: Int get() = requests.count { it is SessionRequest.Pause }
+    val stopCalls: Int get() = requests.count { it is SessionRequest.Stop }
+    val skipForwardCalls: Int get() = requests.count { it is SessionRequest.SkipForward }
+    val skipBackCalls: Int get() = requests.count { it is SessionRequest.SkipBack }
+    val seekCalls: List<Long> get() = requests.filterIsInstance<SessionRequest.Seek>().map { it.positionMs }
+    val setVolumeCalls: List<Double> get() = requests.filterIsInstance<SessionRequest.SetVolume>().map { it.scale }
+    val setShuffledCalls: List<Boolean> get() = requests.filterIsInstance<SessionRequest.SetShuffled>().map { it.shuffled }
+    val setRepeatModeCalls: List<RepeatMode>
+        get() = requests.filterIsInstance<SessionRequest.SetRepeatMode>().map { it.mode }
+    val duckCalls: List<Unit> get() = requests.filter { it is SessionRequest.Duck }.map { }
+    val restoreCalls: List<Pair<Session, Long>>
+        get() = requests.filterIsInstance<SessionRequest.Restore>().map { it.session to it.positionMs }
 }

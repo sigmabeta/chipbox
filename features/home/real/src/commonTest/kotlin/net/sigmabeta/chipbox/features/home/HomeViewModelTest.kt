@@ -28,6 +28,7 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.PlayerState
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
@@ -172,10 +173,8 @@ class HomeViewModelTest {
     // ---- helpers ----
 
     private class RecordingDirector : FakeDirector() {
-        val startSessionCalls = mutableListOf<Session>()
-        override fun start(session: Session) {
-            startSessionCalls += session
-        }
+        val startSessionCalls: List<Session>
+            get() = requests.filterIsInstance<SessionRequest.Start>().map { it.session }
     }
 
     private fun newVm(

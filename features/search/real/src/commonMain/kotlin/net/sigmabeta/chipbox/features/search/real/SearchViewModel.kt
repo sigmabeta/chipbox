@@ -23,6 +23,7 @@ import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
@@ -94,10 +95,12 @@ class SearchViewModel @Inject constructor(
                     .orEmpty()
                 val startingPosition = setlist.indexOf(action.trackId)
                 if (startingPosition >= 0) {
-                    director.start(
-                        setlist = setlist,
-                        startingPosition = startingPosition,
-                        sourceName = state.value.submittedQuery,
+                    director.request(
+                        SessionRequest.StartSetlist(
+                            setlist = setlist,
+                            startingPosition = startingPosition,
+                            sourceName = state.value.submittedQuery,
+                        ),
                     )
                 }
             }
