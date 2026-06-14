@@ -13,4 +13,6 @@ dependencies {
     api(projects.cbox.common.player.speaker.api)
     implementation(projects.cbox.common.settings.api)
     implementation(projects.cbox.common.player.resampler.api)
+    // The debug "speaker source" setting that selects Real / File / Text.
+    implementation(projects.cbox.common.debug.api)
 }

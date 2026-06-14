@@ -108,6 +108,8 @@ tasks.named<CreateStartScripts>("startScripts") {
 dependencies {
     implementation(projects.cbox.common.crash.real)
     implementation(projects.cbox.common.player.generator.real)
+    // SynthGenerator (the "fake" generator) selected by the debug generator-source setting.
+    implementation(projects.cbox.common.player.generator.fake)
     implementation(projects.cbox.common.player.emulators.gba.real)
     implementation(projects.cbox.common.player.emulators.gme.real)
     implementation(projects.cbox.common.player.emulators.ncsf.real)
@@ -151,6 +153,8 @@ dependencies {
     // module's jvmMain alongside the Android AudioTrack impl in androidMain.
     implementation(projects.cbox.common.player.speaker.real)
     implementation(projects.cbox.common.player.speaker.api)
+    // FileSpeaker / TextSpeaker selected by the debug speaker-source setting.
+    implementation(projects.cbox.common.player.speaker.fake)
     implementation(projects.cbox.common.player.resampler.di)
     implementation(projects.cbox.common.player.resampler.api)
     implementation(projects.cbox.common.player.buffer.real)
@@ -169,6 +173,9 @@ dependencies {
     // Room KMP database used as the JVM target's real library. `sqlite-bundled` is the
     // cross-platform Room driver Android doesn't need.
     implementation(projects.cbox.common.repository.real)
+    // Provides the Memory + Random repository bindings (RepositoryModule), selected by the debug
+    // "repository source" setting in JvmRepositoryModule. api-exposes repository.fake's types too.
+    implementation(projects.cbox.common.repository.di)
     implementation(projects.cbox.common.database.real)
     implementation(libs.sqlite.bundled)
 

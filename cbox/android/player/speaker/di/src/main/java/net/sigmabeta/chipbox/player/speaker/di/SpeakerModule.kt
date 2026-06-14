@@ -10,6 +10,8 @@ import dev.zacsweers.metro.SingleIn
 import java.io.File
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.debug.SpeakerSource
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.player.speaker.file.FileSpeaker
@@ -80,11 +82,18 @@ object SpeakerModule {
     /** Fallback when the platform doesn't report a preferred rate; 48 kHz is the modern default. */
     private const val DEFAULT_OUTPUT_SAMPLE_RATE = 48_000
 
+    // Pick the Speaker impl from the debug "speaker source" setting, read once at graph build
+    // (app launch); the switch takes effect on the next launch.
     @Provides
     @SingleIn(AppScope::class)
     fun provideSpeaker(
         fileSpeaker: FileSpeaker,
         realSpeaker: RealSpeaker,
-        textSpeaker: TextSpeaker
-    ): Speaker = realSpeaker
+        textSpeaker: TextSpeaker,
+        debugSettingsManager: DebugSettingsManager,
+    ): Speaker = when (runBlocking { debugSettingsManager.getSpeakerSource().first() }) {
+        SpeakerSource.REAL -> realSpeaker
+        SpeakerSource.FILE -> fileSpeaker
+        SpeakerSource.TEXT -> textSpeaker
+    }
 }
