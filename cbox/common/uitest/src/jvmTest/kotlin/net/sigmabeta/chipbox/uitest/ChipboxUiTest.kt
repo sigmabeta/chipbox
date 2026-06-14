@@ -4,7 +4,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -127,6 +130,22 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     /** Navigate to [destination] (a feature route key) inside the active tab, where the chrome is. */
     fun startAtScreen(destination: Any) {
         destinations.tryEmit(destination)
+        compose.waitForIdle()
+    }
+
+    /** Click the [WideItem][net.sigmabeta.sage.components.WideItemListModel] row named [name]. */
+    fun clickWideItem(name: String) = clickItem("WideItemListModel", name)
+
+    /**
+     * Click the [NameCaptionValueItem][net.sigmabeta.sage.components.NameCaptionValueListModel] row
+     * named [name].
+     */
+    fun clickNameCaptionValueItem(name: String) = clickItem("NameCaptionValueListModel", name)
+
+    // Select by item type (the model's testTag, set in ListModel.Content) AND displayed name, so
+    // the typed verbs target the right kind of row even when two item types show the same text.
+    private fun clickItem(typeTag: String, name: String) {
+        compose.onNode(hasTestTag(typeTag) and hasText(name)).performClick()
         compose.waitForIdle()
     }
 

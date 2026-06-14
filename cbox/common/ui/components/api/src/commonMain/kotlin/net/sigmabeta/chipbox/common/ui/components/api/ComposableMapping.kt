@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import net.sigmabeta.sage.ui.perf.DURATION_THRESHOLD_ERROR_COMPONENT_DEVICE
 import net.sigmabeta.sage.ui.perf.DURATION_THRESHOLD_WARNING_COMPONENT_DEVICE
 import net.sigmabeta.sage.ui.perf.WithMeasurementComponent
@@ -47,6 +48,12 @@ fun ListModel.Content(
     mod: Modifier,
     pad: PaddingValues,
 ) {
+    // Tag every rendered item with its model type so UI tests can select a specific kind of row
+    // (e.g. a WideItem vs a NameCaptionValueItem) by `hasTestTag(type) and hasText(name)`. The tag
+    // rides on `mod` — the same modifier each item applies to its clickable root — so it merges
+    // with the row's text into one selectable node. Inert in production (semantics only).
+    @Suppress("NAME_SHADOWING")
+    val mod = mod.testTag(this::class.simpleName ?: "Unknown")
     WithMeasurementComponent(
         this::class.simpleName ?: "Unknown",
         DURATION_THRESHOLD_WARNING_COMPONENT_DEVICE,
