@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -57,28 +58,10 @@ open class MemoryRepository(
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
 
-    // TODO this is a garbage idea. will result in screens loading the wrong data. oh well lol
-    private val singleArtistLoadEvents = MutableSharedFlow<Data<Artist>>(
-        replay = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-
-    private val singleGameLoadEvents = MutableSharedFlow<Data<Game>>(
-        replay = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-
-    private val singleTrackLoadEvents = MutableSharedFlow<Data<Track>>(
-        replay = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-
     // TODO Garbage idea. Wrong data will load on second instance of a screen
     private var artistsLoaded = false
     private var gamesLoaded = false
     private var tracksLoaded = false
-    private var singleGameLoaded = false
-    private var singleArtistLoaded = false
 
     override fun getAllArtists(
         withTracks: Boolean,
@@ -174,54 +157,27 @@ open class MemoryRepository(
         TODO("Not yet implemented")
     }
 
+    // A fresh cold flow per call, looking up the requested id each time — so navigating to a second
+    // game/artist loads THAT one, not a cached first result. (The previous shared-flow-with-a-
+    // load-once-flag approach replayed the first id's data for every later screen.)
     override fun getGame(
         id: Long,
         withTracks: Boolean,
         withArtists: Boolean
-    ): Flow<Data<Game?>> {
-        if (!singleGameLoaded) {
-            singleGameLoaded = true
-            repositoryScope.launch {
-                singleGameLoadEvents.emit(Data.Loading)
-
-                val game = gamesById[id]
-                    ?.toGame(withTracks, withArtists)
-
-                val data = if (game != null) {
-                    Data.Succeeded(game)
-                } else {
-                    Data.Empty
-                }
-
-                singleGameLoadEvents.emit(data)
-            }
-        }
-        return singleGameLoadEvents.asSharedFlow()
+    ): Flow<Data<Game?>> = flow {
+        emit(Data.Loading)
+        val game = gamesById[id]?.toGame(withTracks, withArtists)
+        emit(if (game != null) Data.Succeeded(game) else Data.Empty)
     }
 
     override fun getArtist(
         id: Long,
         withTracks: Boolean,
         withGames: Boolean
-    ): Flow<Data<Artist?>> {
-        if (!singleArtistLoaded) {
-            singleArtistLoaded = true
-            repositoryScope.launch {
-                singleArtistLoadEvents.emit(Data.Loading)
-
-                val artist = artistsById[id]
-                    ?.toArtist(withGames, withTracks)
-
-                val data = if (artist != null) {
-                    Data.Succeeded(artist)
-                } else {
-                    Data.Empty
-                }
-
-                singleArtistLoadEvents.emit(data)
-            }
-        }
-        return singleArtistLoadEvents.asSharedFlow()
+    ): Flow<Data<Artist?>> = flow {
+        emit(Data.Loading)
+        val artist = artistsById[id]?.toArtist(withGames, withTracks)
+        emit(if (artist != null) Data.Succeeded(artist) else Data.Empty)
     }
 
     override suspend fun getTrack(

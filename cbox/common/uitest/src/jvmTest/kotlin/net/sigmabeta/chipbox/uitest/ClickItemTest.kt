@@ -12,13 +12,17 @@ import kotlin.test.Test
 class ClickItemTest {
     @Test
     fun clickingAnArtistNavigatesToArtistDetail() = runChipboxUiTest {
-        val gameId = seedGame(title = "Metal Slug", tracks = listOf("Stage 1"), artist = "JIM")
-        val jimId = artistId("JIM")
+        val gameId = 11L
+        val gameName = "Silent Saga"
+        val artistId = 9L
+        val artistName = "Jake Shimomura"
+
         startAtScreen(GameDetail(gameId))
 
-        clickWideItem("JIM")
+        assertTitle(gameName)
+        clickWideItem(artistName)
 
-        assertNavigationEvent(ArtistDetail(jimId))
-        assertTitle("JIM")
+        assertNavigationEvent(ArtistDetail(artistId))
+        assertTitle(artistName)
     }
 }
