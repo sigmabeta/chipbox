@@ -56,14 +56,29 @@ kotlin {
                 implementation(compose.desktop.currentOs)
 
                 // --- Phase 1 harness (jvmTest-only for now; generalised to androidDeviceTest +
-                // the shared uiTest dir once the single-screen path is green). Hosts the real
-                // GameDetailRoute over a fake Metro graph + seeded MemoryRepository. ---
+                // the shared uiTest dir once green). Hosts the real ChipboxAppUi shell over a fake
+                // Metro graph + seeded MemoryRepository. appui.api api-exposes every feature `:real`
+                // VM, so the graph must satisfy all their deps — fakes added below. ---
+                implementation(projects.cbox.common.appui.api)
                 implementation(projects.features.gameDetail.real)
                 implementation(projects.features.gameDetail.api)
                 implementation(projects.cbox.common.repository.api)
                 implementation(projects.cbox.common.repository.fake)
                 implementation(projects.cbox.common.player.director.api)
                 implementation(projects.cbox.common.player.director.fake)
+                implementation(projects.cbox.common.settings.api)
+                implementation(projects.cbox.common.settings.fake)
+                // Remaining leaf bindings every feature VM transitively needs (Metro listed them).
+                implementation(projects.cbox.common.contentsource.api)
+                implementation(projects.cbox.common.contentsource.fake)
+                implementation(projects.cbox.common.scanner.api)
+                implementation(projects.cbox.common.scanner.fake)
+                implementation(projects.cbox.common.debug.api)
+                implementation(projects.cbox.common.debug.fake)
+                implementation(projects.cbox.common.debugInfo.api)
+                implementation(projects.cbox.common.debugInfo.fake)
+                implementation(projects.cbox.common.crash.api)
+                implementation(libs.okio.fakefilesystem)
                 implementation(projects.cbox.common.models.api)
                 implementation(projects.cbox.common.ui.list.api)
                 implementation(projects.cbox.common.ui.chrome.api)
@@ -72,6 +87,7 @@ kotlin {
                 implementation(projects.cbox.common.strings.api)
                 implementation(libs.sage.common.di)
                 implementation(libs.sage.common.logging)
+                implementation(libs.sage.common.appinfo)
                 implementation(libs.sage.common.ui.strings)
                 implementation(libs.sage.common.ui.perfCompose)
                 implementation(libs.metrox.viewmodel)

@@ -171,12 +171,24 @@ Compose Window/Voyager, absent here — plus `LocalTitleBarController`/`LocalChi
 `GameDetailViewModel` (assisted) resolves through the ViewModel factory. Lives in `jvmTest` for
 now.
 
-Step 2 (next): wrap the full `ChipboxAppUi` tabs shell + Voyager, implement `startAtScreen(route)`
-(fire `ChipboxEvent.NavigateTo` into the app VM → real `navigator.push(screenFor(route))`) and
-`assertTitle` against the real `TitleBarController`. Open question surfaced in step 1: the full
-shell forces the graph to satisfy *every* feature VM's deps — likely cheaper to reuse the real
-per-platform app graph (`JvmChipboxGraph`/`ChipboxAppGraph`) than to hand-roll N fakes. Then
-generalise the harness from `jvmTest` into the shared `uiTest` dir for on-device too.
+Step 2 (DONE, JVM, 2026-06-14): the full `ChipboxAppUi` tabs shell hosts over `TestAppGraph`.
+The "every feature VM's deps" worry turned out small — beyond the obvious leaves, Metro listed
+exactly six more (`LibrarySource`, `CrashReportStore`, `DebugSettingsManager`, `DebugInfoManager`,
+`Scanner`, `okio.FileSystem`), all covered by existing fakes / a 2-line stub. So the hand-rolled
+`TestAppGraph` stays viable — no need to reuse the real per-platform app graph. `FullShellHarness-
+Test` hosts the shell, pulls the shell's own `ChipboxAppUiViewModel` back out of the provided
+`LocalViewModelStoreOwner` (same instance, via `ViewModelProvider.create(owner, factory)`), fires
+`ChipboxEvent.NavigateTo(GameDetail(id))`, and the real Voyager push renders the seeded screen
+("JIM"/"Stage 1").
+
+Step 3 (next) — in-tab navigation for `assertTitle`. Finding from step 2: the `TopAppBar` is
+composed *only* in `ChipboxTabsScreen`; firing `NavigateTo` on the app VM routes to the **outer**
+Navigator, which unmounts the tabs scaffold — so the screen renders but its title bar doesn't
+exist. Faithful `startAtScreen`/`assertTitle` must push onto the **active tab's** Navigator (held
+in `ActiveTabNavigator`, currently `internal` to appui.api). Options: expose a small public
+navigation seam in appui.api (also useful to the app), or drive navigation through the real tab
+sink. Then build the `startAtScreen`/`assertTitle`/`assertNavigationEvent`/`click*` DSL verbs on
+top, and generalise the harness from `jvmTest` into the shared `uiTest` dir for on-device.
 
 Original Phase 1 plan: cross-platform `TestAppGraph`
 (`@DependencyGraph(AppScope::class)`) aggregating the *common* `@ContributesTo(AppScope)`
