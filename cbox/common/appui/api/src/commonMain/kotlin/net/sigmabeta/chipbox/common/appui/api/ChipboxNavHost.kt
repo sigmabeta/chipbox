@@ -149,9 +149,11 @@ internal object ChipboxTabsScreen : Screen {
         // `NavigateTo` lands, so the pushed screen renders with this scaffold's chrome around it.
         // See [LocalActiveTabDestinations].
         val activeTabDestinations = LocalActiveTabDestinations.current
+        val navigationObserver = LocalNavigationObserver.current
         if (activeTabDestinations != null) {
-            LaunchedEffect(activeTabDestinations, activeTabNavigator) {
+            LaunchedEffect(activeTabDestinations, activeTabNavigator, navigationObserver) {
                 activeTabDestinations.collect { destination ->
+                    navigationObserver?.invoke(destination)
                     activeTabNavigator.navigator?.push(screenFor(destination))
                 }
             }

@@ -57,6 +57,10 @@ fun ChipboxAppUi(
     // Routed in [ChipboxTabsScreen]; see [LocalActiveTabDestinations]. Null for hosts that don't
     // wire programmatic navigation (the apps today).
     activeTabDestinations: Flow<Any>? = null,
+    // Observer called with each destination the shell navigates to (active-tab deep pushes). Lets a
+    // UI test assert that an interaction triggered the expected navigation. See
+    // [LocalNavigationObserver]. Null for hosts that aren't observing (the apps today).
+    onNavigate: ((Any) -> Unit)? = null,
 ) {
     // Materialized before the theme so its persisted theme choice picks the color scheme — and
     // so Metro multibinding misses surface at launch rather than at the first screen entry.
@@ -87,6 +91,7 @@ fun ChipboxAppUi(
             LocalAppSnackbarHostState provides snackbarHostState,
             LocalPlatformBackKeys provides backKeyEvents,
             LocalActiveTabDestinations provides activeTabDestinations,
+            LocalNavigationObserver provides onNavigate,
             // Expose the singleton VM so the shell (which lives inside Voyager and resolves
             // its own ViewModelStoreOwner) can reach the same instance rather than getting
             // a fresh one from `metroViewModel<…>()`.

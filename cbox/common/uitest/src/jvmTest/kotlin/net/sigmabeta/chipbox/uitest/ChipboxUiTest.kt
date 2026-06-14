@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
+import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
@@ -57,6 +58,7 @@ fun runChipboxUiTest(block: ChipboxUiTest.() -> Unit) = runComposeUiTest {
 class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     private val graph = createTestAppGraph()
     private val destinations = MutableSharedFlow<Any>(extraBufferCapacity = 1)
+    private val navigations = mutableListOf<Any>()
 
     /** Host the real shell once, on the Home tab, over the test graph. */
     internal fun launchShell() {
@@ -76,6 +78,7 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
                     onOpenUrl = {},
                     onCopyToClipboard = { _, _ -> },
                     activeTabDestinations = destinations,
+                    onNavigate = { navigations += it },
                 )
             }
         }
@@ -93,6 +96,17 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
                 .first { it is Data.Succeeded }
             @Suppress("UNCHECKED_CAST")
             (data as Data.Succeeded<List<Game>>).data.first()
+        }
+    }
+
+    /** The id of the artist named [name] in the library (e.g. to assert a navigation target). */
+    fun artistId(name: String): Long = runBlocking {
+        withTimeout(LOAD_TIMEOUT_MS) {
+            val data = graph.memoryRepository
+                .getAllArtists(withTracks = false, withGames = false)
+                .first { it is Data.Succeeded }
+            @Suppress("UNCHECKED_CAST")
+            (data as Data.Succeeded<List<Artist>>).data.first { it.name == name }.id
         }
     }
 
@@ -157,6 +171,17 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     /** Assert a node displaying exactly [text] is shown (e.g. a list row's name). */
     fun assertDisplayed(text: String) {
         compose.onNodeWithText(text).assertIsDisplayed()
+    }
+
+    /**
+     * Assert the shell navigated to [destination] (a typed route key) at some point. Route keys are
+     * data classes, so this matches on value — e.g. `assertNavigationEvent(ArtistDetail(3023))`.
+     */
+    fun assertNavigationEvent(destination: Any) {
+        compose.waitForIdle()
+        check(destination in navigations) {
+            "Expected a navigation to $destination, but saw: $navigations"
+        }
     }
 
     private companion object {
