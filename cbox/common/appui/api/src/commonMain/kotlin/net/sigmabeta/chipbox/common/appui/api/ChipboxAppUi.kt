@@ -52,6 +52,11 @@ fun ChipboxAppUi(
     // handler in [ChipboxTabsScreen] so they fire whenever the window is focused — see
     // [LocalPlatformBackKeys]. Defaults to null for hosts (and previews) that don't wire keys.
     backKeyEvents: Flow<Unit>? = null,
+    // Route-key destinations to open inside the active tab (where the chrome lives), driven from
+    // outside a screen's composition — a UI test starting at a deep screen, or a future deep-link.
+    // Routed in [ChipboxTabsScreen]; see [LocalActiveTabDestinations]. Null for hosts that don't
+    // wire programmatic navigation (the apps today).
+    activeTabDestinations: Flow<Any>? = null,
 ) {
     // Materialized before the theme so its persisted theme choice picks the color scheme — and
     // so Metro multibinding misses surface at launch rather than at the first screen entry.
@@ -81,6 +86,7 @@ fun ChipboxAppUi(
             LocalChromeController provides chromeController,
             LocalAppSnackbarHostState provides snackbarHostState,
             LocalPlatformBackKeys provides backKeyEvents,
+            LocalActiveTabDestinations provides activeTabDestinations,
             // Expose the singleton VM so the shell (which lives inside Voyager and resolves
             // its own ViewModelStoreOwner) can reach the same instance rather than getting
             // a fresh one from `metroViewModel<…>()`.
