@@ -350,9 +350,16 @@ jobs:
 
     steps:
       - attach_built_workspace
+      # The :cbox:common:uitest desktop tests drive the real Compose UI via runComposeUiTest, whose
+      # resource-environment lookup reads the screen DPI through AWT (Toolkit.getScreenResolution) —
+      # that throws HeadlessException on this headless box. Give the test JVM a virtual display
+      # (xvfb-run below). Not in the base image, so install it here.
       - run:
-          name: Run JVM unit tests (commonTest @ jvmTest)
-          command: ./gradlew jvmTest --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2
+          name: Install Xvfb (virtual display for the desktop Compose UI tests)
+          command: sudo apt-get update && sudo apt-get install -y xvfb
+      - run:
+          name: Run JVM unit tests (commonTest @ jvmTest, + uitest under a virtual display)
+          command: xvfb-run -a ./gradlew jvmTest --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2
       # JUnit XMLs for the CircleCI Tests tab (pass/fail counts, suite drilldown).
       - collect_test_results
       - store_test_results:
