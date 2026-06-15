@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.debug.ImageLoaderSource
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
@@ -29,6 +31,7 @@ import net.sigmabeta.sage.logging.Hatchet
 @ViewModelKey
 class ChipboxAppUiViewModel @Inject constructor(
     settingsManager: ChipboxSettingsManager,
+    debugSettingsManager: DebugSettingsManager,
     appInfo: AppInfo,
     private val hatchet: Hatchet,
 ) : ViewModel() {
@@ -51,6 +54,16 @@ class ChipboxAppUiViewModel @Inject constructor(
     val plainFont: StateFlow<ChipboxFont> = settingsManager.getPlainFont()
         .map { ChipboxFont.fromStorageValue(it, ChipboxFont.DEFAULT_PLAIN) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ChipboxFont.DEFAULT_PLAIN)
+
+    /**
+     * Whether the UI should render generated gradient art instead of fetching real cover art —
+     * driven by the debug "image loader" setting (FAKE). Unlike the audio/data source switches (DI
+     * singletons read once at launch), this is a Compose-level toggle, so it applies live. Provided
+     * as [net.sigmabeta.chipbox.common.ui.components.api.subs.LocalForceFakeImages] by the shell.
+     */
+    val forceFakeImages: StateFlow<Boolean> = debugSettingsManager.getImageLoaderSource()
+        .map { it == ImageLoaderSource.FAKE }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     private val _currentRoute = MutableStateFlow<String?>(null)
 

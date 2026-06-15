@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.GeneratorSource
+import net.sigmabeta.chipbox.debug.ImageLoaderSource
 import net.sigmabeta.chipbox.debug.RepositorySource
 import net.sigmabeta.chipbox.debug.SpeakerSource
 
@@ -17,17 +18,20 @@ class FakeDebugSettingsManager(
     initialRepositorySource: RepositorySource = RepositorySource.DEFAULT,
     initialGeneratorSource: GeneratorSource = GeneratorSource.DEFAULT,
     initialSpeakerSource: SpeakerSource = SpeakerSource.DEFAULT,
+    initialImageLoaderSource: ImageLoaderSource = ImageLoaderSource.DEFAULT,
 ) : DebugSettingsManager {
 
     private val sink = MutableStateFlow(initialShouldShowDebug)
     private val repositorySource = MutableStateFlow(initialRepositorySource)
     private val generatorSource = MutableStateFlow(initialGeneratorSource)
     private val speakerSource = MutableStateFlow(initialSpeakerSource)
+    private val imageLoaderSource = MutableStateFlow(initialImageLoaderSource)
 
     val setShouldShowDebugCalls: MutableList<Boolean> = mutableListOf()
     val setRepositorySourceCalls: MutableList<RepositorySource> = mutableListOf()
     val setGeneratorSourceCalls: MutableList<GeneratorSource> = mutableListOf()
     val setSpeakerSourceCalls: MutableList<SpeakerSource> = mutableListOf()
+    val setImageLoaderSourceCalls: MutableList<ImageLoaderSource> = mutableListOf()
 
     override fun getShouldShowDebug(): Flow<Boolean> = sink.asStateFlow()
     override fun setShouldShowDebug(value: Boolean) {
@@ -51,5 +55,11 @@ class FakeDebugSettingsManager(
     override fun setSpeakerSource(source: SpeakerSource) {
         setSpeakerSourceCalls += source
         speakerSource.value = source
+    }
+
+    override fun getImageLoaderSource(): Flow<ImageLoaderSource> = imageLoaderSource.asStateFlow()
+    override fun setImageLoaderSource(source: ImageLoaderSource) {
+        setImageLoaderSourceCalls += source
+        imageLoaderSource.value = source
     }
 }

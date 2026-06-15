@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.GeneratorSource
+import net.sigmabeta.chipbox.debug.ImageLoaderSource
 import net.sigmabeta.chipbox.debug.RepositorySource
 import net.sigmabeta.chipbox.debug.SpeakerSource
 import net.sigmabeta.sage.storage.common.Storage
@@ -36,10 +37,18 @@ class RealDebugSettingsManager(private val storage: Storage) : DebugSettingsMana
     override fun setSpeakerSource(source: SpeakerSource) =
         storage.saveString(KEY_SPEAKER_SOURCE, source.name)
 
+    override fun getImageLoaderSource(): Flow<ImageLoaderSource> = storage
+        .savedStringFlow(KEY_IMAGE_LOADER_SOURCE)
+        .map { ImageLoaderSource.fromStorageValue(it) }
+
+    override fun setImageLoaderSource(source: ImageLoaderSource) =
+        storage.saveString(KEY_IMAGE_LOADER_SOURCE, source.name)
+
     companion object {
         const val KEY_DEBUG_ENABLED = "setting.debug.enabled"
         const val KEY_REPOSITORY_SOURCE = "setting.debug.repository_source"
         const val KEY_GENERATOR_SOURCE = "setting.debug.generator_source"
         const val KEY_SPEAKER_SOURCE = "setting.debug.speaker_source"
+        const val KEY_IMAGE_LOADER_SOURCE = "setting.debug.image_loader_source"
     }
 }

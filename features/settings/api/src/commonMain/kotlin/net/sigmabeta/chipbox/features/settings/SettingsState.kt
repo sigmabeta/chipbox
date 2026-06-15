@@ -4,6 +4,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import net.sigmabeta.chipbox.debug.GeneratorSource
+import net.sigmabeta.chipbox.debug.ImageLoaderSource
 import net.sigmabeta.chipbox.debug.RepositorySource
 import net.sigmabeta.chipbox.debug.SpeakerSource
 import net.sigmabeta.chipbox.settings.ResamplerMode
@@ -40,6 +41,7 @@ data class SettingsState(
     val repositorySource: RepositorySource = RepositorySource.DEFAULT,
     val generatorSource: GeneratorSource = GeneratorSource.DEFAULT,
     val speakerSource: SpeakerSource = SpeakerSource.DEFAULT,
+    val imageLoaderSource: ImageLoaderSource = ImageLoaderSource.DEFAULT,
     // settingId of the single currently-expanded dropdown, or null if all are collapsed.
     val expandedDropdownId: String? = null,
 ) : ListState() {
@@ -146,6 +148,7 @@ data class SettingsState(
             repositorySourceDropdown(),
             generatorSourceDropdown(),
             speakerSourceDropdown(),
+            imageLoaderSourceDropdown(),
             playbackStatusRow(stringProvider),
             errorLogRow(stringProvider),
             crashLogRow(stringProvider),
@@ -181,6 +184,16 @@ data class SettingsState(
         selectedPosition = speakerSource.ordinal,
         labels = persistentListOf("Real", "File", "Text"),
         onSelected = { SettingsAction.SpeakerSourceSelected(SpeakerSource.entries[it]) },
+    )
+
+    // Unlike the source switches above, the image loader is a Compose-level toggle, so it applies
+    // immediately (no "next launch").
+    private fun imageLoaderSourceDropdown(): ListModel = debugDropdown(
+        settingId = "debug.image_loader_source",
+        name = "Image loader",
+        selectedPosition = imageLoaderSource.ordinal,
+        labels = persistentListOf("Real", "Fake"),
+        onSelected = { SettingsAction.ImageLoaderSourceSelected(ImageLoaderSource.entries[it]) },
     )
 
     private fun debugDropdown(

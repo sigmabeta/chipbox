@@ -41,6 +41,9 @@ kotlin {
                 // ChipboxSettingsManager + ThemeMode — read by ChipboxAppUiViewModel to pick
                 // the light/dark color scheme passed into ChipboxTheme.
                 implementation(projects.cbox.common.settings.api)
+                // DebugSettingsManager + ImageLoaderSource — read by ChipboxAppUiViewModel to drive
+                // LocalForceFakeImages (the debug "image loader = fake" switch).
+                implementation(projects.cbox.common.debug.api)
                 // AppInfo.isDebug — read by ChipboxAppUiViewModel so debug builds swap the
                 // primary/secondary palette (ChipboxTheme.swapPrimaryAndSecondary).
                 implementation(libs.sage.common.appinfo)
@@ -103,6 +106,7 @@ kotlin {
         named("commonTest") {
             dependencies {
                 implementation(projects.cbox.common.settings.fake)
+                implementation(projects.cbox.common.debug.fake)
             }
         }
     }

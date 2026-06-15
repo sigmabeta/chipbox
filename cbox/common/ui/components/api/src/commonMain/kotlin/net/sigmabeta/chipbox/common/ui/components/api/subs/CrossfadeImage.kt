@@ -53,9 +53,10 @@ fun CrossfadeImage(
     imagePlaceholder: Icon,
     contentDescription: String?,
     modifier: Modifier,
-    // In a preview / Paparazzi render (LocalInspectionMode = true) Coil can't fetch, so render a
-    // deterministic generated gradient via FakeImage instead of the loading/error placeholder.
-    forceGenBitmap: Boolean = LocalInspectionMode.current,
+    // In a preview / Paparazzi render (LocalInspectionMode = true), or when the debug "image loader"
+    // setting selects FAKE ([LocalForceFakeImages]; default on in UI tests), Coil can't / shouldn't
+    // fetch — render a deterministic generated gradient via FakeImage instead.
+    forceGenBitmap: Boolean = LocalInspectionMode.current || LocalForceFakeImages.current,
     simulateError: Boolean = false,
     onImageLoadedChange: ((Boolean) -> Unit)? = null,
     // Hero / showcase surfaces (HeroImage) want the source-resolution bitmap so the upscale
