@@ -22,3 +22,11 @@ internal fun platformArtifactDir(): File? {
     val context = InstrumentationRegistry.getInstrumentation().targetContext
     return context.getExternalFilesDir(null)?.let { File(it, "uitest-failures") }
 }
+
+/**
+ * Read a test-run config value by [key]. On-device the build routes the `-P` flag in as an
+ * instrumentation runner argument (a separate process from the host, so host system properties don't
+ * reach it); fall back to a system property for completeness. The desktop twin reads system properties.
+ */
+internal fun platformTestArgument(key: String): String? =
+    InstrumentationRegistry.getArguments().getString(key) ?: System.getProperty(key)

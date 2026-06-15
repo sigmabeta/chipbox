@@ -104,6 +104,14 @@ The same specs run on two targets:
 ./gradlew :cbox:common:uitest:connectedAndroidDeviceTest   # on a connected device/emulator
 ```
 
+To **watch** a run on a device, add `-Pchipbox.uitest.actionDelayMs=<ms>` — it inserts a real pause
+before each click and before the test ends, so you can see each action's effect (omit or `0` for no
+delay):
+
+```sh
+./gradlew :cbox:common:uitest:connectedAndroidDeviceTest -Pchipbox.uitest.actionDelayMs=1500
+```
+
 When a spec fails, the harness dumps a **screenshot** and a **semantics-tree
 dump** of the live scene (named `<TestClass>.<method>.png` /
 `<TestClass>.<method>-semantics.txt`) before rethrowing:

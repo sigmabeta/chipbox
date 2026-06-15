@@ -27,10 +27,13 @@ import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.chipbox.uitest.harness.StubStringProvider
 import net.sigmabeta.chipbox.uitest.harness.createTestAppGraph
+import net.sigmabeta.chipbox.uitest.harness.platformTestArgument
 import net.sigmabeta.chipbox.uitest.harness.writeFailureArtifacts
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.perf.LocalLogger
 import kotlin.reflect.KClass
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Entry point for the Chipbox UI test DSL. Hosts the real `ChipboxAppUi` shell over the fake
@@ -51,6 +54,10 @@ import kotlin.reflect.KClass
  *
  * On any failure inside [block], the harness dumps a screenshot + semantics tree of the live scene
  * (paths logged) before rethrowing — see [writeFailureArtifacts].
+ *
+ * Pass `-Pchipbox.uitest.actionDelayMs=1500` to insert a real 1.5s pause before each click verb and
+ * before the test ends, so the actions are observable on-device (`connectedAndroidDeviceTest`).
+ * Omitted or zero → no delay.
  */
 @OptIn(ExperimentalTestApi::class)
 @Suppress("TooGenericExceptionCaught") // any failure (AssertionError included) should dump artifacts
@@ -59,6 +66,7 @@ fun runChipboxUiTest(block: ChipboxUiTest.() -> Unit) = runComposeUiTest {
     test.launchShell()
     try {
         test.block()
+        test.pauseForObservation() // let the final action's effect linger before the scene tears down
     } catch (failure: Throwable) {
         writeFailureArtifacts(failure, test.hatchet)
         throw failure
@@ -73,6 +81,19 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
 
     /** The harness logger (also the one screens log through), reused to announce failure artifacts. */
     internal val hatchet: Hatchet get() = graph.hatchet
+
+    // Real wall-clock pause applied before each click verb and before the container ends, so the
+    // effect of each action is observable when watching a device run. Zero (the default) is a no-op;
+    // set via -Pchipbox.uitest.actionDelayMs (routed in as a system property on jvmTest and an
+    // instrumentation arg on androidDeviceTest).
+    private val actionDelay: Duration =
+        (platformTestArgument(ACTION_DELAY_KEY)?.toLongOrNull() ?: 0L).coerceAtLeast(0L).milliseconds
+
+    /** Block for [actionDelay] (no-op when unset/zero). The device UI thread keeps rendering during
+     *  the sleep, so the previous action's settled result stays on screen to be observed. */
+    internal fun pauseForObservation() {
+        if (actionDelay > Duration.ZERO) Thread.sleep(actionDelay.inWholeMilliseconds)
+    }
 
     /** Host the real shell once, on the Home tab, over the test graph. */
     internal fun launchShell() {
@@ -185,6 +206,7 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     // Select by item type (the model's testTag, set in ListModel.Content) AND displayed name, so
     // the typed verbs target the right kind of row even when two item types show the same text.
     private fun clickItem(typeTag: String, name: String) {
+        pauseForObservation()
         compose.onNode(hasTestTag(typeTag) and hasText(name)).performClick()
         compose.waitForIdle()
     }
@@ -195,6 +217,7 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
      * game's artist count). Prefer the typed `click*Item` verbs when the type is meaningful.
      */
     fun click(text: String) {
+        pauseForObservation()
         compose.onNodeWithText(text).performClick()
         compose.waitForIdle()
     }
@@ -247,5 +270,8 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
 
     private companion object {
         const val LOAD_TIMEOUT_MS = 10_000L
+
+        /** Gradle `-P` flag, system property, and instrumentation-arg key for the observe delay (ms). */
+        const val ACTION_DELAY_KEY = "chipbox.uitest.actionDelayMs"
     }
 }
