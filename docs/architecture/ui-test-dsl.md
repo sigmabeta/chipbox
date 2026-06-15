@@ -277,6 +277,16 @@ never sees host system properties) via `compilations.withType(KotlinMultiplatfor
 seam (`PlatformSeam.kt`) that resolves the artifact dir. Verified +3.0s for two pauses on both desktop
 and device.
 
+Real strings + section-header assertions. **DONE.** The harness now binds the real
+composeResources-backed `ChipboxStringProvider` (preloaded via `runBlocking { loadChipboxStrings() }`
+in `TestAppGraph`, exactly like the production apps — the preload happens outside composition, so
+`runComposeUiTest` never resolves a composeResource mid-render, which is what the old empty-string stub
+existed to avoid). Screens now render real text, so `assertSectionHeader(text)` can check the detail
+screens' headers (GameDetail → "Songs"/"Artists"; ArtistDetail → "Songs"/"Games"). The verb scrolls the
+**innermost** vertical scroller (the detail screen nests a content scroller inside an outer page
+scroller) and matches the tagged `SectionHeaderListModel` row by a *descendant* carrying the text
+(`SectionHeader` sets `heading()` but doesn't merge its title `Text` up). Verified on desktop + device.
+
 Remaining (lower priority):
 - Optional: add the item `dataId` to the semantics seam for disambiguating same-name rows.
 - **Semantic-snapshot verification (followup).** A `assertMatchesSnapshot(name)` verb that dumps the

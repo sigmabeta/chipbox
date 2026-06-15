@@ -19,7 +19,6 @@ import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.chipbox.ui.theme.api.ChipboxTheme
-import net.sigmabeta.chipbox.uitest.harness.StubStringProvider
 import net.sigmabeta.chipbox.uitest.harness.createTestAppGraph
 import net.sigmabeta.sage.ui.perf.LocalLogger
 import kotlin.test.Test
@@ -74,7 +73,7 @@ class GameDetailHarnessTest {
                     LocalMetroViewModelFactory provides graph.metroViewModelFactory,
                     LocalViewModelStoreOwner provides storeOwner,
                     LocalTitleBarController provides titleBarController,
-                    LocalChipboxStringProvider provides StubStringProvider,
+                    LocalChipboxStringProvider provides graph.stringProvider,
                     LocalLogger provides graph.hatchet,
                 ) {
                     Column {
