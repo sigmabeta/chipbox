@@ -10,16 +10,15 @@ class BrowseByGameTest {
     fun listsGames() = runChipboxUiTest {
         startAtScreen(BrowseByGame)
 
-        assertGridImageItemDisplayed(firstGame().title)
+        assertGridImageItemDisplayed("Iron Quest")
     }
 
     @Test
     fun tappingGameOpensDetail() = runChipboxUiTest {
-        val game = firstGame()
-
         startAtScreen(BrowseByGame)
-        click(game.title)
 
-        assertNavigationEvent(GameDetail(game.id))
+        click("Iron Quest")
+
+        assertNavigationEvent(GameDetail(gameId("Iron Quest")))
     }
 }

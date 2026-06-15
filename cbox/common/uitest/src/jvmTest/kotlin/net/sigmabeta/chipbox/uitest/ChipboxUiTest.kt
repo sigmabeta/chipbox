@@ -10,8 +10,11 @@ import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onChildren
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onParent
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
@@ -125,29 +128,6 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         compose.waitForIdle()
     }
 
-    /**
-     * The first game in the pre-populated library (sorted by title, so it's stable for a given
-     * seed). Lets a test drive a real screen without seeding its own fixture.
-     */
-    fun firstGame(): Game = runBlocking {
-        withTimeout(LOAD_TIMEOUT_MS) {
-            // The id from the list, then the full game (with tracks/artists) by id. getAllGames has
-            // a load-once flag that the shell may already have tripped without tracks, so the
-            // per-id getGame (a fresh cold flow) is what reliably carries the tracks.
-            val list = graph.memoryRepository.getAllGames(withTracks = false, withArtists = false)
-                .first { it is Data.Succeeded }
-
-            @Suppress("UNCHECKED_CAST")
-            val id = (list as Data.Succeeded<List<Game>>).data.first().id
-
-            val game = graph.memoryRepository.getGame(id, withTracks = true, withArtists = true)
-                .first { it is Data.Succeeded }
-
-            @Suppress("UNCHECKED_CAST")
-            (game as Data.Succeeded<Game?>).data!!
-        }
-    }
-
     /** The id of the artist named [name] in the library (e.g. to assert a navigation target). */
     fun artistId(name: String): Long = runBlocking {
         withTimeout(LOAD_TIMEOUT_MS) {
@@ -236,6 +216,25 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     fun click(text: String) {
         pauseForObservation()
         compose.onNodeWithText(text).performClick()
+        compose.waitForIdle()
+    }
+
+    /**
+     * Home-specific: click the *first* card in the horizontal scroller of the Home section titled
+     * [sectionName] (e.g. `clickFirstCardInHomeSection("Games of the day")`). Home lays each section
+     * out as a `SectionHeaderListModel` row followed by a `HorizontalScrollerListModel` sibling whose
+     * children are the cards; the first card is always at the scroller's start, so it's reliably
+     * on-screen regardless of viewport width or the section's (date-shuffled) order — unlike clicking
+     * a card by name, which can be scrolled off a narrow device's viewport.
+     */
+    fun clickFirstCardInHomeSection(sectionName: String) {
+        pauseForObservation()
+        val header = hasTestTag("SectionHeaderListModel") and hasAnyDescendant(hasText(sectionName))
+        val rows = compose.onNode(header).onParent().onChildren()
+        val headerIndex = rows.fetchSemanticsNodes().indexOfFirst { header.matches(it) }
+        check(headerIndex >= 0) { "No Home section header found for '$sectionName'" }
+        // The scroller is the header's next sibling; its first child is the first card.
+        rows[headerIndex + 1].onChildren().onFirst().performClick()
         compose.waitForIdle()
     }
 
