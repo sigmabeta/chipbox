@@ -134,13 +134,27 @@ class MemoryRepositoryTest {
     }
 
     @Test
-    fun `search methods return Empty for every query in the in-memory fake`() = runTest {
-        // Documented behaviour — searchGames/Songs/Artists all hand back Data.Empty since the
-        // fake isn't a real search backend. Keep tests from drifting into "search should work".
+    fun `search matches games songs and artists by substring, Empty otherwise`() = runTest {
+        // The fake searches its in-memory maps with a case-insensitive substring match on
+        // title/name; a query with no match comes back as Data.Empty.
         val repo = MemoryRepository(UnconfinedTestDispatcher(testScheduler))
-        assertEquals(Data.Empty, repo.searchGames("anything").first())
-        assertEquals(Data.Empty, repo.searchSongs("anything").first())
-        assertEquals(Data.Empty, repo.searchArtists("anything").first())
+        repo.upsertGame(rawGame("Chrono Trigger", listOf(rawTrack("Schala", artist = "Yasunori Mitsuda"))))
+
+        val games = repo.searchGames("chrono").first { it !is Data.Loading }
+        assertTrue(games is Data.Succeeded, "expected Succeeded, got $games")
+        assertEquals("Chrono Trigger", games.data.single().title)
+
+        val songs = repo.searchSongs("schal").first { it !is Data.Loading }
+        assertTrue(songs is Data.Succeeded, "expected Succeeded, got $songs")
+        assertEquals("Schala", songs.data.single().title)
+
+        val artists = repo.searchArtists("mitsuda").first { it !is Data.Loading }
+        assertTrue(artists is Data.Succeeded, "expected Succeeded, got $artists")
+        assertEquals("Yasunori Mitsuda", artists.data.single().name)
+
+        assertEquals(Data.Empty, repo.searchGames("nope").first { it !is Data.Loading })
+        assertEquals(Data.Empty, repo.searchSongs("nope").first { it !is Data.Loading })
+        assertEquals(Data.Empty, repo.searchArtists("nope").first { it !is Data.Loading })
     }
 
     @Test
