@@ -79,3 +79,6 @@ apps/jvm/core.*
 
 # Claude Code local state
 .claude/
+
+# Local-only helper scripts (e.g. nas-tng CI-runner payloads) — not part of the repo
+scripts/local/
