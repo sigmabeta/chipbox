@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.models.Artist
@@ -145,16 +144,30 @@ open class MemoryRepository(
         platform: Platform,
         withGame: Boolean,
         withArtists: Boolean
-    ): List<Track> {
-        TODO("Not yet implemented")
+    ): List<Track> = tracksByTitle
+        .values
+        .filter { it.toTrack().platform == platform }
+        .sortedBy { it.title }
+        .map { it.toTrack(withGame, withArtists) }
+
+    override fun getGamesForPlatform(platform: Platform): Flow<Data<List<Game>>> = flow {
+        emit(Data.Loading)
+        val games = gamesByTitle
+            .values
+            .filter { game -> game.tracks.any { it.toTrack().platform == platform } }
+            .sortedBy { it.title }
+            .map { it.toGame() }
+        emit(if (games.isNotEmpty()) Data.Succeeded(games) else Data.Empty)
     }
 
-    override fun getGamesForPlatform(platform: Platform): Flow<Data<List<Game>>> {
-        TODO("Not yet implemented")
-    }
-
-    override fun getAvailablePlatforms(): Flow<Data<List<Platform>>> {
-        TODO("Not yet implemented")
+    override fun getAvailablePlatforms(): Flow<Data<List<Platform>>> = flow {
+        emit(Data.Loading)
+        val platforms = tracksById
+            .values
+            .map { it.toTrack().platform }
+            .distinct()
+            .sortedBy { it.ordinal }
+        emit(if (platforms.isNotEmpty()) Data.Succeeded(platforms) else Data.Empty)
     }
 
     // A fresh cold flow per call, looking up the requested id each time — so navigating to a second
@@ -199,11 +212,35 @@ open class MemoryRepository(
         resetData()
     }
 
-    override fun searchGames(query: String): Flow<Data<List<Game>>> = flowOf(Data.Empty)
+    override fun searchGames(query: String): Flow<Data<List<Game>>> = flow {
+        emit(Data.Loading)
+        val matches = gamesByTitle
+            .values
+            .filter { it.title.contains(query, ignoreCase = true) }
+            .sortedBy { it.title }
+            .map { it.toGame() }
+        emit(if (matches.isNotEmpty()) Data.Succeeded(matches) else Data.Empty)
+    }
 
-    override fun searchSongs(query: String): Flow<Data<List<Track>>> = flowOf(Data.Empty)
+    override fun searchSongs(query: String): Flow<Data<List<Track>>> = flow {
+        emit(Data.Loading)
+        val matches = tracksByTitle
+            .values
+            .filter { it.title.contains(query, ignoreCase = true) }
+            .sortedBy { it.title }
+            .map { it.toTrack(withGame = true, withArtists = true) }
+        emit(if (matches.isNotEmpty()) Data.Succeeded(matches) else Data.Empty)
+    }
 
-    override fun searchArtists(query: String): Flow<Data<List<Artist>>> = flowOf(Data.Empty)
+    override fun searchArtists(query: String): Flow<Data<List<Artist>>> = flow {
+        emit(Data.Loading)
+        val matches = artistsByName
+            .values
+            .filter { it.name.contains(query, ignoreCase = true) }
+            .sortedBy { it.name.lowercase() }
+            .map { it.toArtist() }
+        emit(if (matches.isNotEmpty()) Data.Succeeded(matches) else Data.Empty)
+    }
 
     private val searchHistory = MutableStateFlow<List<SearchHistory>>(emptyList())
     private var searchHistoryIdCounter = 0L

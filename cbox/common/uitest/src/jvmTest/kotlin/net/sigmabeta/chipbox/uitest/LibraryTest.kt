@@ -3,14 +3,11 @@ package net.sigmabeta.chipbox.uitest
 import net.sigmabeta.chipbox.features.browsealltracks.BrowseAllTracks
 import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtist
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
+import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatform
 import net.sigmabeta.chipbox.features.library.Library
 import kotlin.test.Test
 
-/**
- * Library is a static menu of "browse by …" rows; each navigates to the matching browse screen.
- * (Browse by Platform is omitted — its screen depends on repository platform queries that are still
- * `TODO` in the in-memory fake, so navigating there would crash on render.)
- */
+/** Library is a static menu of "browse by …" rows; each navigates to the matching browse screen. */
 class LibraryTest {
     @Test
     fun showsBrowseMenu() = runChipboxUiTest {
@@ -18,6 +15,7 @@ class LibraryTest {
 
         assertDisplayed("Browse by Game")
         assertDisplayed("Browse by Artist")
+        assertDisplayed("Browse by Platform")
         assertDisplayed("Browse All Tracks")
     }
 
@@ -37,6 +35,15 @@ class LibraryTest {
         click("Browse by Artist")
 
         assertNavigationEvent(BrowseByArtist)
+    }
+
+    @Test
+    fun browseByPlatformRowNavigates() = runChipboxUiTest {
+        startAtScreen(Library)
+
+        click("Browse by Platform")
+
+        assertNavigationEvent(BrowseByPlatform)
     }
 
     @Test
