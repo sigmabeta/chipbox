@@ -9,7 +9,10 @@ import java.io.File
  * `build/uitest-failures`) or `<java.io.tmpdir>/chipbox-uitest`.
  *
  * Lives in `src/jvmTestPlatform` (added only to `jvmTest`, NOT mirrored to `androidDeviceTest`), so
- * each compilation sees exactly one `platformArtifactDir` — this one on desktop, the Android one
- * on-device.
+ * each compilation sees exactly one of these — this one on desktop, the Android one on-device.
  */
 internal fun platformArtifactDir(): File? = null
+
+/** Desktop twin of the Android [platformTestArgument]: the `jvmTest` task passes the `-P` flag in as
+ *  a system property. */
+internal fun platformTestArgument(key: String): String? = System.getProperty(key)

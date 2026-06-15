@@ -266,6 +266,17 @@ falling back to the app's external files dir if AGP doesn't supply it. So both r
 `build/` — CI-collectable. This is failure-only and never *compares*, so it has no determinism/cross-platform
 tax. The tree-printer here is the same machinery the snapshot followup below would reuse.
 
+Observe delay. **DONE.** `-Pchipbox.uitest.actionDelayMs=<ms>` inserts a real wall-clock pause before
+each click verb (`clickWideItem`/`clickNameCaptionValueItem`/`click`) and once before the container
+ends, so a device run can be watched action-by-action (the device UI thread keeps rendering during the
+`Thread.sleep`, so the previous action's settled result stays on screen). Zero/unset → no-op. The one
+flag reaches both targets: the build sets it as a system property on `jvmTest` and as an
+instrumentation runner argument on `androidDeviceTest` (the device test is a separate process that
+never sees host system properties) via `compilations.withType(KotlinMultiplatformAndroidDeviceTestCompilation)`
+— `withDeviceTest` can't be called twice. The harness reads it through the same `platformTestArgument`
+seam (`PlatformSeam.kt`) that resolves the artifact dir. Verified +3.0s for two pauses on both desktop
+and device.
+
 Remaining (lower priority):
 - Optional: add the item `dataId` to the semantics seam for disambiguating same-name rows.
 - **Semantic-snapshot verification (followup).** A `assertMatchesSnapshot(name)` verb that dumps the

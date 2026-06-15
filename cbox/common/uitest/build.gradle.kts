@@ -1,3 +1,4 @@
+import com.android.build.api.dsl.KotlinMultiplatformAndroidDeviceTestCompilation
 import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.plugin.KotlinDependencyHandler
 
@@ -56,9 +57,24 @@ val harnessDependencies: KotlinDependencyHandler.() -> Unit = {
     implementation(libs.metrox.viewmodel.compose)
 }
 
+// Optional observe-delay: `-Pchipbox.uitest.actionDelayMs=1500` inserts a real pause before each
+// click verb and before each test ends, to watch the actions on a device. Routed to both targets
+// below: a system property on the desktop JVM, an instrumentation arg on-device (the device test runs
+// in its own process and never sees host system properties). Omitted/blank → no delay.
+val actionDelayKey = "chipbox.uitest.actionDelayMs"
+val actionDelayMs = (project.findProperty(actionDelayKey) as String?)?.takeIf { it.isNotBlank() }
+
 kotlin {
     android {
         namespace = "net.sigmabeta.chipbox.uitest"
+
+        if (actionDelayMs != null) {
+            // Can't call withDeviceTest twice (the sage plugin already created the compilation), so
+            // reach the existing one to add the instrumentation argument.
+            compilations.withType(KotlinMultiplatformAndroidDeviceTestCompilation::class.java) {
+                instrumentationRunnerArguments[actionDelayKey] = actionDelayMs
+            }
+        }
     }
 
     sourceSets {
@@ -83,4 +99,5 @@ tasks.named<Test>("jvmTest") {
         "chipbox.uitest.artifactDir",
         layout.buildDirectory.dir("uitest-failures").get().asFile.absolutePath,
     )
+    if (actionDelayMs != null) systemProperty(actionDelayKey, actionDelayMs)
 }
