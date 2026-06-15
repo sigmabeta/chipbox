@@ -5,6 +5,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.createGraphFactory
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
+import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
 import net.sigmabeta.chipbox.crash.CrashReport
@@ -22,6 +23,8 @@ import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
+import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
+import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.BasicHatchet
@@ -38,7 +41,9 @@ import okio.fakefilesystem.FakeFileSystem
  *  - [Repository] → a seedable in-memory [MemoryRepository] (exposed as [memoryRepository] so the
  *    harness can `upsertGame(...)` before navigating).
  *  - [Director] → [FakeDirector] (records calls; real playback isn't needed to render/assert).
- *  - [StringProvider] → an inert stub; [Hatchet] → a real [BasicHatchet] (prints to stdout).
+ *  - [StringProvider] → the real composeResources-backed [ChipboxStringProvider] (preloaded via
+ *    [loadChipboxStrings], so screens render actual text and tests can assert on it); [Hatchet] → a
+ *    real [BasicHatchet] (prints to stdout).
  *
  * Extends [ViewModelGraph] for the `metroViewModelFactory` accessor, and aggregates every
  * `@ContributesIntoMap` ViewModel + [TestMetroViewModelFactory] on the test classpath via
@@ -56,6 +61,10 @@ interface TestAppGraph : ViewModelGraph {
     /** The shared logger — screens log through it, and the harness reuses it to announce where it
      *  wrote failure artifacts. A real [BasicHatchet] (prints to stdout), not a no-op stub. */
     val hatchet: Hatchet
+
+    /** The real string provider, exposed so the shell can supply it as `LocalChipboxStringProvider`
+     *  (the same instance the screens' ViewModels resolve through DI). */
+    val stringProvider: StringProvider
 
     // Default to a deterministic, pre-populated library so hosted tabs/lists have content out of
     // the box (seed 1234 → same 10 games / 50 tracks / 5 artists every run). Tests can still
@@ -76,9 +85,12 @@ interface TestAppGraph : ViewModelGraph {
     @SingleIn(AppScope::class)
     fun provideDirector(fakeDirector: FakeDirector): Director = fakeDirector
 
+    // Preload all strings once (suspend → runBlocking), exactly like the production apps. The lookup
+    // is then synchronous and happens outside composition, so runComposeUiTest never has to resolve a
+    // composeResource mid-render (which the old empty-string stub existed to avoid).
     @Provides
     @SingleIn(AppScope::class)
-    fun provideStringProvider(): StringProvider = StubStringProvider
+    fun provideStringProvider(): StringProvider = runBlocking { ChipboxStringProvider(loadChipboxStrings()) }
 
     @Provides
     @SingleIn(AppScope::class)

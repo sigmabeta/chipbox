@@ -48,6 +48,10 @@ val harnessDependencies: KotlinDependencyHandler.() -> Unit = {
     implementation(projects.cbox.common.ui.theme.api)
     implementation(projects.cbox.common.appcomm.api)
     implementation(projects.cbox.common.strings.api)
+    // Real string provider (composeResources-backed) so screens render actual text — section headers
+    // ("Songs"/"Artists"/"Games") are asserted on. Preloaded via loadChipboxStrings(), so no
+    // in-composition resource reads (the reason the old stub existed).
+    implementation(projects.cbox.common.strings.real)
     implementation(libs.sage.common.di)
     implementation(libs.sage.common.logging)
     implementation(libs.sage.common.appinfo)

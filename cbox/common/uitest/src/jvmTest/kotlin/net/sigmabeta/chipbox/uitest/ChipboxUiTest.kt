@@ -1,13 +1,18 @@
 package net.sigmabeta.chipbox.uitest
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -25,7 +30,6 @@ import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
-import net.sigmabeta.chipbox.uitest.harness.StubStringProvider
 import net.sigmabeta.chipbox.uitest.harness.createTestAppGraph
 import net.sigmabeta.chipbox.uitest.harness.platformTestArgument
 import net.sigmabeta.chipbox.uitest.harness.writeFailureArtifacts
@@ -106,7 +110,7 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
             CompositionLocalProvider(
                 LocalMetroViewModelFactory provides graph.metroViewModelFactory,
                 LocalViewModelStoreOwner provides storeOwner,
-                LocalChipboxStringProvider provides StubStringProvider,
+                LocalChipboxStringProvider provides graph.stringProvider,
                 LocalLogger provides graph.hatchet,
             ) {
                 ChipboxAppUi(
@@ -230,6 +234,26 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     /** Assert a node displaying exactly [text] is shown (e.g. a list row's name). */
     fun assertDisplayed(text: String) {
         compose.onNodeWithText(text).assertIsDisplayed()
+    }
+
+    /**
+     * Assert the screen shows a section header (a `SectionHeaderListModel` row) reading [text] — e.g.
+     * `assertSectionHeader("Songs")` on a detail screen. Detail content is a lazy list, so the header
+     * may be below the fold and not yet composed; scroll the innermost vertical scroller to it first
+     * (the detail screen nests a content scroller inside an outer page scroller — target the inner
+     * one). Tolerates the header already being on screen / the content not scrolling.
+     *
+     * The header's title `Text` sits on a child node (`SectionHeader` doesn't merge its descendants),
+     * so match the tagged row by a descendant carrying [text] rather than text on the row itself.
+     */
+    fun assertSectionHeader(text: String) {
+        val header = hasTestTag("SectionHeaderListModel") and hasAnyDescendant(hasText(text))
+        runCatching {
+            compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))
+                .onLast()
+                .performScrollToNode(header)
+        }
+        compose.onNode(header).assertIsDisplayed()
     }
 
     /**
