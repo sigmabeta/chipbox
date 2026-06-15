@@ -75,3 +75,18 @@ targets too.
   push`, and only push if it reports `OVERALL: PASS`.
 - A/B-testing a native emulator change (USF/PSF/SSF/…): `apps/abrender` renders a
   corpus to WAV + RMS metrics and diffs two runs. See `apps/abrender/README.md`.
+
+## UI tests
+
+Cross-platform UI tests live in `:cbox:common:uitest` and drive the real Compose
+UI over fakes. **Two rules for agents:**
+
+- ✅ You **may add** new UI tests for new features/screens.
+- ⛔ You **must not modify** an existing UI test — assertions, data, name, or
+  structure — and never to make a failing one pass. The tests are the **source of
+  truth**, owned by humans: if your change breaks one, **stop and report it**, don't
+  edit it. Only a human changes a test (and may direct you to).
+
+How to write one, the DSL verbs, and platform gotchas:
+`docs/architecture/ui-tests-for-agents.md`. Design/internals:
+`docs/architecture/ui-test-dsl.md`.
