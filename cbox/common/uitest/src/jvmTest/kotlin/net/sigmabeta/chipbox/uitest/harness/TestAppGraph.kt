@@ -24,6 +24,7 @@ import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
+import net.sigmabeta.sage.logging.BasicHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 import okio.FileSystem
@@ -37,7 +38,7 @@ import okio.fakefilesystem.FakeFileSystem
  *  - [Repository] → a seedable in-memory [MemoryRepository] (exposed as [memoryRepository] so the
  *    harness can `upsertGame(...)` before navigating).
  *  - [Director] → [FakeDirector] (records calls; real playback isn't needed to render/assert).
- *  - [StringProvider] / [Hatchet] → inert stubs.
+ *  - [StringProvider] → an inert stub; [Hatchet] → a real [BasicHatchet] (prints to stdout).
  *
  * Extends [ViewModelGraph] for the `metroViewModelFactory` accessor, and aggregates every
  * `@ContributesIntoMap` ViewModel + [TestMetroViewModelFactory] on the test classpath via
@@ -51,6 +52,10 @@ interface TestAppGraph : ViewModelGraph {
     /** The bound [Director] as a [FakeDirector], so the harness can assert on its recorded
      *  [requests][FakeDirector.requests]. */
     val fakeDirector: FakeDirector
+
+    /** The shared logger — screens log through it, and the harness reuses it to announce where it
+     *  wrote failure artifacts. A real [BasicHatchet] (prints to stdout), not a no-op stub. */
+    val hatchet: Hatchet
 
     // Default to a deterministic, pre-populated library so hosted tabs/lists have content out of
     // the box (seed 1234 → same 10 games / 50 tracks / 5 artists every run). Tests can still
@@ -77,7 +82,7 @@ interface TestAppGraph : ViewModelGraph {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideHatchet(): Hatchet = StubHatchet
+    fun provideHatchet(): Hatchet = BasicHatchet()
 
     @Provides
     @SingleIn(AppScope::class)
