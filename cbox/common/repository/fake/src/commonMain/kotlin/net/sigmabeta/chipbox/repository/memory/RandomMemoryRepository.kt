@@ -104,7 +104,10 @@ private fun generateLibrary(seed: Int, games: Int, tracks: Int, artists: Int): L
         }
         RawGame(
             title = gameTitle,
-            photoUrl = null,
+            // A non-null synthetic cover URL (distinct per game → distinct generated gradient) so the
+            // fake image loader actually renders cover art instead of the null-source placeholder.
+            // (Artists get the same treatment in MemoryRepository.getOrAddArtistByName.)
+            photoUrl = "random://game/$gameIndex",
             folderKey = "random/$gameIndex",
             folderSignature = seed.toString(),
             tracks = rawTracks,
