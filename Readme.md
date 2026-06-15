@@ -80,6 +80,41 @@ Release builds are signed with `chipbox.jks` when the `CHIPBOX_KEY_ALIAS`,
 `CHIPBOX_KEYSTORE_PASSWORD`, and `CHIPBOX_KEY_PASSWORD` environment variables are
 present (set in CircleCI); local builds fall back to debug signing.
 
+## Testing
+
+Beyond unit tests and Paparazzi screenshots, Chipbox has a **cross-platform UI
+test framework** (`:cbox:common:uitest`). A test scripts the real Compose UI —
+the actual `ChipboxAppUi` shell, real ViewModels, real navigation — over fake
+data via a small DSL:
+
+```kotlin
+runChipboxUiTest {
+    startAtScreen(GameDetail(firstGame().id))
+    assertTitle("Metal Slug")
+    clickWideItem(name = "JIM")
+    assertNavigationEvent(ArtistDetail(3023))
+    assertDirectorReceived(SessionRequest.Play)
+}
+```
+
+The same specs run on two targets:
+
+```sh
+./gradlew :cbox:common:uitest:jvmTest                  # desktop JVM (headless, fast)
+./gradlew :cbox:common:uitest:connectedAndroidDeviceTest   # on a connected device/emulator
+```
+
+When a spec fails, the harness dumps a **screenshot** and a **semantics-tree
+dump** of the live scene (named `<TestClass>.<method>.png` /
+`<TestClass>.<method>-semantics.txt`) before rethrowing:
+
+- **desktop** — `cbox/common/uitest/build/uitest-failures/`
+- **on-device** — pulled back to
+  `cbox/common/uitest/build/outputs/connected_android_test_additional_output/androidDeviceTest/connected/<device>/`
+
+See `docs/architecture/ui-test-dsl.md` for the design (verbs, the Metro test
+graph, and the source-set topology).
+
 ## Tooling
 
 - **Gradle** with the Kotlin DSL, configuration cache, and version catalogs

@@ -141,11 +141,14 @@ One spec, two targets — JVM desktop host + Android device. The KMP gotcha: `jv
 may not `dependsOn` sets from two different trees (Gradle errors: *"Invalid Source Set Dependency
 Across Trees"*). So the bridge is NOT `dependsOn` — instead:
 
-- The shared specs live in a plain directory `src/uiTest/kotlin` (not a Kotlin source set).
-- Both leaf source sets pull it in directly: `jvmTest { kotlin.srcDir("src/uiTest/kotlin") }` and
-  `androidDeviceTest { kotlin.srcDir("src/uiTest/kotlin") }`. Same physical files, two independent
-  compilations, one per tree. The specs use only multiplatform APIs (`compose.uiTest`,
-  `compose.material3`, `kotlin.test`) available to both.
+- The shared specs live in the JVM unit-test tree's **canonical** `src/jvmTest/kotlin`. This is the
+  source set's own default dir, so Android Studio reliably marks it a test source root (run gutters,
+  debug) — a neutral dir owned by *neither* source set (e.g. `src/uiTest`) is dropped on the import
+  conflict and the tests vanish from the IDE.
+- The Android instrumented tree **mirrors** them: `androidDeviceTest { kotlin.srcDir("src/jvmTest/kotlin") }`.
+  Same physical files, two independent compilations, one per tree. The specs use only multiplatform
+  APIs (`compose.uiTest`, `compose.material3`, `kotlin.test`) available to both. (Caveat: a desktop-only
+  test added to `src/jvmTest` would also compile on-device — keep this source set cross-target.)
 - The dir is kept **off `androidHostTest`** on purpose (no Android framework there → NPE).
 - Deps per tree: `jvmTest` inherits `compose.uiTest`/`compose.material3`/`kotlin.test` from
   `commonTest` (unit-test tree) and adds `compose.desktop.currentOs`. `androidDeviceTest`
@@ -223,9 +226,9 @@ production decorator" question is moot — `FakeDirector` records `requests: Lis
 and asserts the Director received a `Start`. Also added: `seedGame(artists = …)` (multi-artist),
 `firstGame()` now loads tracks (via per-id `getGame`, dodging `getAllGames`' load-once flag).
 
-Step 5 — on-device lift (DONE, 2026-06-14). The harness + all scripts moved from `src/jvmTest`
-into the shared `src/uiTest/kotlin` dir, so the *same* files compile into both the `jvmTest`
-(unit-test tree) and `androidDeviceTest` (instrumented tree) source sets. The ~25 harness deps are
+Step 5 — on-device lift (DONE, 2026-06-14). The harness + all scripts stay in the canonical
+`src/jvmTest/kotlin`, and `androidDeviceTest` mirrors them via `srcDir`, so the *same* files compile
+into both the `jvmTest` (unit-test tree) and `androidDeviceTest` (instrumented tree) source sets. The ~25 harness deps are
 shared via a `harnessDependencies` lambda applied to both trees (they can't `dependsOn` across
 trees). No per-target graph builder was needed — the Metro `TestAppGraph` compiles for the Android
 target unchanged (all binding deps are KMP/android-compatible). Verified: `jvmTest` runs all 10
@@ -236,8 +239,8 @@ here — no device).
 
 Generic rails moved into sage. **DONE.** `SageComposeUiTestModulePlugin` (id `sage.compose.uitest`,
 in `sage-build-logic/convention`) now owns the cross-app wiring: it applies the Compose compiler +
-JetBrains Compose plugins, declares the on-device `withDeviceTest` component, wires `src/uiTest/kotlin`
-into both `jvmTest` and `androidDeviceTest`, and carries the compose-test + instrumentation deps
+JetBrains Compose plugins, declares the on-device `withDeviceTest` component, mirrors the canonical `src/jvmTest/kotlin`
+specs onto `androidDeviceTest` via `srcDir`, and carries the compose-test + instrumentation deps
 (`compose.uiTest`/`compose.material3`/`compose.desktop.currentOs` via `ComposePlugin.Dependencies`,
 plus `ui-test-manifest`/`test.runner`/`test.ext.junit`). It reads compose deps from the Compose
 Gradle plugin, so the catalog gained `compose-multiplatform-gradlePlugin`
@@ -246,8 +249,37 @@ Gradle plugin, so the catalog gained `compose-multiplatform-gradlePlugin`
 `harnessDependencies` (the DI graph's feature modules + fakes — `TestAppGraph`/`ChipboxUiTest` stay
 chipbox-specific). Verified: `jvmTest` green, `assembleAndroidDeviceTest` builds, through the plugin.
 
+On-failure diagnostics. **DONE.** `runChipboxUiTest` wraps the spec body in a try/catch that, on any
+failure (AssertionError included), dumps two artifacts from the live scene before rethrowing
+(`harness/FailureArtifacts.kt`): a **semantics-tree dump** (`onRoot().printToString()` — the most
+useful, since the usual failure is "a matcher found nothing") and a **PNG screenshot** of the root.
+Both are best-effort (wrapped so a capture problem can't mask the real failure) and logged through the
+graph's real `BasicHatchet` (replaced the no-op `StubHatchet`). The PNG encoder is pure
+`java.util.zip` over `ImageBitmap.toPixelMap()` — no `toAwtImage`/`asAndroidBitmap` — so the *same*
+code runs on desktop (`jvmTest`) and on-device (`androidDeviceTest`). The artifact location is the one
+place that *is* per-target (a small `platformArtifactDir()` seam — desktop impl in `src/jvmTestPlatform`,
+device impl in `src/androidDeviceTest`, encoding stays shared): desktop writes to the module's
+`build/uitest-failures` (the `jvmTest` task sets `chipbox.uitest.artifactDir` there); on-device it writes
+to AGP's `additionalTestOutputDir`, which `connectedAndroidDeviceTest` pulls back to the host's
+`build/outputs/connected_android_test_additional_output/.../<device>/` (verified on a connected device),
+falling back to the app's external files dir if AGP doesn't supply it. So both rails leave artifacts under
+`build/` — CI-collectable. This is failure-only and never *compares*, so it has no determinism/cross-platform
+tax. The tree-printer here is the same machinery the snapshot followup below would reuse.
+
 Remaining (lower priority):
 - Optional: add the item `dataId` to the semantics seam for disambiguating same-name rows.
+- **Semantic-snapshot verification (followup).** A `assertMatchesSnapshot(name)` verb that dumps the
+  current **semantics tree** (node text/role/structure, canonicalized to a string) and diffs it
+  against a stored golden — record/compare like Paparazzi, but over the semantics tree, not pixels.
+  Rationale: it regression-guards the *interactive, mid-flow* states the harness uniquely reaches
+  (post-click, post-nav, post-Director-request) that Paparazzi structurally can't (it renders static
+  composables in isolation — no DI graph, nav, or interaction). Preferred over `captureToImage()`
+  pixel goldens here because a semantics dump is **deterministic and cross-platform-stable** (byte-
+  identical on `jvmTest` desktop Skia and `androidDeviceTest`), whereas pixels diverge by renderer/
+  host fonts/AA and would need per-platform golden sets. Keep Paparazzi for pixel fidelity of a
+  single screen; use semantic snapshots for flow/state regressions. Needs: a canonical tree printer,
+  a record/verify mode (env flag, goldens in-repo), and animation/clock pinning (the seeded
+  `RandomMemoryRepository` already covers data determinism).
 
 Original Phase 1 plan: cross-platform `TestAppGraph`
 (`@DependencyGraph(AppScope::class)`) aggregating the *common* `@ContributesTo(AppScope)`

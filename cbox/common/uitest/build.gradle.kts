@@ -1,11 +1,12 @@
+import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.plugin.KotlinDependencyHandler
 
 plugins {
     alias(libs.plugins.sage.kmp)
     // The generic UI-test rails — Compose compiler + JetBrains Compose plugin, the on-device
-    // (`withDeviceTest`) Android half, the shared `src/uiTest` srcDir on both test trees, and the
-    // compose-test + instrumentation deps — live in this sage convention plugin (a sage-wide
-    // capability, not chipbox-specific). The app-specific harness deps stay below.
+    // (`withDeviceTest`) Android half, the canonical `src/jvmTest` specs mirrored onto
+    // androidDeviceTest, and the compose-test + instrumentation deps — live in this sage convention
+    // plugin (a sage-wide capability, not chipbox-specific). The app-specific harness deps stay below.
     alias(libs.plugins.sage.compose.uitest)
     // Metro compiler plugin — lets the test source sets declare a @DependencyGraph (the
     // TestAppGraph that hosts real screens over fake bindings). AppScope + the metrox ViewModel
@@ -14,7 +15,7 @@ plugins {
     alias(chipbox.plugins.kmp.test)
 }
 
-// The harness's app-specific dependencies. The shared specs in src/uiTest compile into BOTH the
+// The harness's app-specific dependencies. The shared specs in src/jvmTest compile into BOTH the
 // jvmTest (unit-test tree) and androidDeviceTest (instrumented tree) source sets, and those trees
 // share no dependsOn (KMP forbids it across trees), so each must carry the same classpath. Applied
 // to both below. appui.api api-exposes every feature `:real` VM, so the Metro graph must satisfy all
@@ -62,6 +63,9 @@ kotlin {
 
     sourceSets {
         named("jvmTest") {
+            // Desktop-only platform seam (the JVM `platformArtifactDir`). NOT mirrored to
+            // androidDeviceTest — the device gets its own impl from src/androidDeviceTest.
+            kotlin.srcDir("src/jvmTestPlatform/kotlin")
             dependencies { harnessDependencies() }
         }
 
@@ -69,4 +73,14 @@ kotlin {
             dependencies { harnessDependencies() }
         }
     }
+}
+
+// On a failed desktop spec, the harness dumps a screenshot + semantics tree (see FailureArtifacts.kt).
+// Point them at the module's build dir so they're a discoverable, CI-collectable artifact rather than
+// scattered in the machine's tmp. The on-device run has no build dir, so it keeps the tmpdir fallback.
+tasks.named<Test>("jvmTest") {
+    systemProperty(
+        "chipbox.uitest.artifactDir",
+        layout.buildDirectory.dir("uitest-failures").get().asFile.absolutePath,
+    )
 }

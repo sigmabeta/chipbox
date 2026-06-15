@@ -25,9 +25,10 @@ import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
-import net.sigmabeta.chipbox.uitest.harness.StubHatchet
 import net.sigmabeta.chipbox.uitest.harness.StubStringProvider
 import net.sigmabeta.chipbox.uitest.harness.createTestAppGraph
+import net.sigmabeta.chipbox.uitest.harness.writeFailureArtifacts
+import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.perf.LocalLogger
 import kotlin.reflect.KClass
 
@@ -44,15 +45,23 @@ import kotlin.reflect.KClass
  * }
  * ```
  *
- * jvmTest-only for now; it'll move into the shared `uiTest` dir (with a per-target graph builder)
- * once the verb set settles, so the same scripts run on-device too. See
+ * The specs live in `src/jvmTest` (so Android Studio shows + runs them) and are mirrored onto
+ * `androidDeviceTest`, so the same scripts run on the desktop JVM and on-device. See
  * docs/architecture/ui-test-dsl.md.
+ *
+ * On any failure inside [block], the harness dumps a screenshot + semantics tree of the live scene
+ * (paths logged) before rethrowing — see [writeFailureArtifacts].
  */
 @OptIn(ExperimentalTestApi::class)
+@Suppress("TooGenericExceptionCaught") // any failure (AssertionError included) should dump artifacts
 fun runChipboxUiTest(block: ChipboxUiTest.() -> Unit) = runComposeUiTest {
-    ChipboxUiTest(this).apply {
-        launchShell()
-        block()
+    val test = ChipboxUiTest(this)
+    test.launchShell()
+    try {
+        test.block()
+    } catch (failure: Throwable) {
+        writeFailureArtifacts(failure, test.hatchet)
+        throw failure
     }
 }
 
@@ -61,6 +70,9 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     private val graph = createTestAppGraph()
     private val destinations = MutableSharedFlow<Any>(extraBufferCapacity = 1)
     private val navigations = mutableListOf<Any>()
+
+    /** The harness logger (also the one screens log through), reused to announce failure artifacts. */
+    internal val hatchet: Hatchet get() = graph.hatchet
 
     /** Host the real shell once, on the Home tab, over the test graph. */
     internal fun launchShell() {
@@ -74,7 +86,7 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
                 LocalMetroViewModelFactory provides graph.metroViewModelFactory,
                 LocalViewModelStoreOwner provides storeOwner,
                 LocalChipboxStringProvider provides StubStringProvider,
-                LocalLogger provides StubHatchet,
+                LocalLogger provides graph.hatchet,
             ) {
                 ChipboxAppUi(
                     onOpenUrl = {},
