@@ -12,7 +12,7 @@ import kotlin.test.Test
 class SectionHeaderTest {
     @Test
     fun gameDetailShowsSongAndArtistHeaders() = runChipboxUiTest {
-        startAtScreen(GameDetail(firstGame().id))
+        startAtScreen(GameDetail(gameId("Iron Quest")))
 
         assertSectionHeader("Songs")
         assertSectionHeader("Artists")

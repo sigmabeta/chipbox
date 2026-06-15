@@ -16,7 +16,7 @@ class GamesForPlatformTest {
         startAtScreen(GamesForPlatform(Platform.OTHER))
 
         assertCtaDisplayed("Play All")
-        assertGridImageItemDisplayed(firstGame().title)
+        assertGridImageItemDisplayed("Iron Quest")
     }
 
     @Test
@@ -39,11 +39,10 @@ class GamesForPlatformTest {
 
     @Test
     fun tappingGameOpensDetail() = runChipboxUiTest {
-        val game = firstGame()
-
         startAtScreen(GamesForPlatform(Platform.OTHER))
-        click(game.title)
 
-        assertNavigationEvent(GameDetail(game.id))
+        click("Iron Quest")
+
+        assertNavigationEvent(GameDetail(gameId("Iron Quest")))
     }
 }

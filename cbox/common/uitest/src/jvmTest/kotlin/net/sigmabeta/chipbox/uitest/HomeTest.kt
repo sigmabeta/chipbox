@@ -21,12 +21,13 @@ class HomeTest {
 
     @Test
     fun tappingGameOpensDetail() = runChipboxUiTest {
-        val game = firstGame()
-
         startAtScreen(Home)
-        click(game.title)
 
-        assertNavigationEvent(GameDetail(game.id))
+        // The "games of the day" carousel is date-shuffled, so click whichever card is first (always
+        // on-screen) and assert it opens *a* game detail.
+        clickFirstCardInHomeSection("Games of the day")
+
+        assertNavigationEventOfType<GameDetail>()
     }
 
     @Test

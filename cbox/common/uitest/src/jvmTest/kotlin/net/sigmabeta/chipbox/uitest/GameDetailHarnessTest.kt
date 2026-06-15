@@ -34,15 +34,15 @@ import kotlin.test.Test
 @OptIn(ExperimentalTestApi::class)
 class GameDetailHarnessTest {
     @Test
-    fun firstLibraryGameRendersTitleAndContent() = runComposeUiTest {
+    fun libraryGameRendersTitleAndContent() = runComposeUiTest {
         val graph = createTestAppGraph()
 
-        // The first game in the deterministic library (seed 1234) — "Iron Quest".
+        // "Iron Quest" — a known game in the deterministic library (seed 1234).
         val gameId = runBlocking {
             val games = graph.memoryRepository.getAllGames(withTracks = false, withArtists = false)
                 .first { it is Data.Succeeded }
             @Suppress("UNCHECKED_CAST")
-            (games as Data.Succeeded<List<Game>>).data.first().id
+            (games as Data.Succeeded<List<Game>>).data.first { it.title == "Iron Quest" }.id
         }
 
         // metroViewModel<>() needs a ViewModelStoreOwner; the app gets it from the Compose Window /
