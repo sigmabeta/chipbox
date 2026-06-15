@@ -7,12 +7,14 @@ import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -226,6 +228,20 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         compose.waitForIdle()
     }
 
+    /**
+     * Type [query] into the screen's text field (e.g. the Search field) and let the query settle.
+     * Targets the single editable node (`hasSetTextAction`), then advances the test clock past the
+     * search debounce (`waitForIdle` alone wouldn't — a scheduled debounce delay reads as "idle") so
+     * results are loaded before the next assertion.
+     */
+    fun typeSearch(query: String) {
+        compose.onNode(hasSetTextAction()).performTextInput(query)
+        // The query debounce runs on the VM's coroutine scope (real time here, not the compose frame
+        // clock), so let real time pass, then render the results.
+        Thread.sleep(SEARCH_DEBOUNCE_WAIT_MS)
+        compose.waitForIdle()
+    }
+
     /** Assert the current screen's title (rendered in the chrome's top bar) is [text]. */
     fun assertTitle(text: String) {
         compose.onNodeWithText(text).assertIsDisplayed()
@@ -267,6 +283,17 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         }
     }
 
+    /** Assert the shell navigated to a route of type [T], when the exact args aren't predictable —
+     *  e.g. `assertNavigationEventOfType<GameDetail>()` for a "random game" jump. */
+    inline fun <reified T : Any> assertNavigationEventOfType() = assertNavigationEventOfType(T::class)
+
+    fun assertNavigationEventOfType(type: KClass<*>) {
+        compose.waitForIdle()
+        check(navigations.any { type.isInstance(it) }) {
+            "Expected a navigation to a ${type.simpleName}, but saw: $navigations"
+        }
+    }
+
     /**
      * Assert the [Director] received [request] (by value) — e.g.
      * `assertDirectorReceived(SessionRequest.Play)`. For requests carrying a value you don't want
@@ -297,5 +324,8 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
 
         /** Gradle `-P` flag, system property, and instrumentation-arg key for the observe delay (ms). */
         const val ACTION_DELAY_KEY = "chipbox.uitest.actionDelayMs"
+
+        /** Comfortably past the Search VM's 300ms query debounce. */
+        const val SEARCH_DEBOUNCE_WAIT_MS = 500L
     }
 }
