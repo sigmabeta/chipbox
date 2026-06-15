@@ -11,13 +11,11 @@ import kotlin.test.Test
 class SecondScreenDataTest {
     @Test
     fun navigatingToASecondGameLoadsItsOwnData() = runChipboxUiTest {
-        val first = seedGame("Mega Dungeon")
-        val second = seedGame("Silent Saga")
-
-        startAtScreen(GameDetail(first))
+        // Two distinct games from the pre-populated library (seed 1234).
+        startAtScreen(GameDetail(gameId("Mega Dungeon")))
         assertTitle("Mega Dungeon")
 
-        startAtScreen(GameDetail(second))
+        startAtScreen(GameDetail(gameId("Silent Saga")))
         assertTitle("Silent Saga")
     }
 }

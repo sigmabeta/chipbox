@@ -9,6 +9,6 @@ class CrashLogTest {
     fun showsEmptyState() = runChipboxUiTest {
         startAtScreen(CrashLog)
 
-        assertDisplayed("No crashes recorded.")
+        assertEmptyStateDisplayed("No crashes recorded.")
     }
 }

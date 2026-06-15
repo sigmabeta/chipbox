@@ -14,7 +14,7 @@ class BrowseByPlatformTest {
     fun listsPlatforms() = runChipboxUiTest {
         startAtScreen(BrowseByPlatform)
 
-        assertDisplayed("Other")
+        assertIconNameItemDisplayed("Other")
     }
 
     @Test

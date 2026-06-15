@@ -15,8 +15,8 @@ class GamesForPlatformTest {
     fun showsCtasAndGames() = runChipboxUiTest {
         startAtScreen(GamesForPlatform(Platform.OTHER))
 
-        assertDisplayed("Play All")
-        assertDisplayed(firstGame().title)
+        assertCtaDisplayed("Play All")
+        assertGridImageItemDisplayed(firstGame().title)
     }
 
     @Test

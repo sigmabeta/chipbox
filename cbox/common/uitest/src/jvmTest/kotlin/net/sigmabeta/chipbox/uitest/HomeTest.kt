@@ -16,7 +16,7 @@ class HomeTest {
         startAtScreen(Home)
 
         assertSectionHeader("Games of the day")
-        assertDisplayed("Random Song")
+        assertGridImageItemDisplayed("Random Song")
     }
 
     @Test
