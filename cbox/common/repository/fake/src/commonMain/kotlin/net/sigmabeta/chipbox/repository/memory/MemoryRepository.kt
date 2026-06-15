@@ -399,10 +399,13 @@ open class MemoryRepository(
             return artist
         }
 
+        val id = getNextPrimaryKey()
         artist = MemoryArtist(
-            getNextPrimaryKey(),
+            id,
             name,
-            null,
+            // Synthetic, non-null photo so the fake image loader renders generated art for artists
+            // too (real artist photos are planned; the fake provides them now).
+            "memory://artist/$id",
             mutableListOf(),
             mutableListOf()
         )
