@@ -13,10 +13,10 @@ class LibraryTest {
     fun showsBrowseMenu() = runChipboxUiTest {
         startAtScreen(Library)
 
-        assertDisplayed("Browse by Game")
-        assertDisplayed("Browse by Artist")
-        assertDisplayed("Browse by Platform")
-        assertDisplayed("Browse All Tracks")
+        assertIconNameItemDisplayed("Browse by Game")
+        assertIconNameItemDisplayed("Browse by Artist")
+        assertIconNameItemDisplayed("Browse by Platform")
+        assertIconNameItemDisplayed("Browse All Tracks")
     }
 
     @Test

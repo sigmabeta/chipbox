@@ -10,7 +10,7 @@ class BrowseByArtistTest {
     fun listsArtists() = runChipboxUiTest {
         startAtScreen(BrowseByArtist)
 
-        assertDisplayed("Jake Shimomura")
+        assertGridImageItemDisplayed("Jake Shimomura")
     }
 
     @Test

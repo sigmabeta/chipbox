@@ -18,7 +18,7 @@ class SettingsTest {
         startAtScreen(Settings)
 
         assertSectionHeader("Appearance")
-        assertDisplayed("Rescan library")
+        assertNameCaptionItemDisplayed("Rescan library")
     }
 
     @Test
@@ -27,6 +27,6 @@ class SettingsTest {
 
         click("Theme")
 
-        assertDisplayed("Light")
+        assertSingleTextItemDisplayed("Light")
     }
 }

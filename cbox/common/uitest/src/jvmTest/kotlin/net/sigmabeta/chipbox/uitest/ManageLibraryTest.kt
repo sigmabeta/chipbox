@@ -13,7 +13,7 @@ class ManageLibraryTest {
     fun showsEmptyStateAndAddCta() = runChipboxUiTest {
         startAtScreen(ManageLibrary)
 
-        assertDisplayed("No folders in your library. Add one to get started.")
-        assertDisplayed("Add folder to library")
+        assertEmptyStateDisplayed("No folders in your library. Add one to get started.")
+        assertCtaDisplayed("Add folder to library")
     }
 }

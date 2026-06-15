@@ -48,9 +48,8 @@ import kotlin.time.Duration.Companion.milliseconds
  *
  * ```
  * runChipboxUiTest {
- *     val gameId = seedGame("Metal Slug")
- *     startAtScreen(GameDetail(gameId))
- *     assertTitle("Metal Slug")
+ *     startAtScreen(GameDetail(gameId("Iron Quest")))
+ *     assertTitle("Iron Quest")
  * }
  * ```
  *
@@ -160,6 +159,18 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         }
     }
 
+    /** The id of the game titled [title] in the pre-populated library — to drive to a specific known
+     *  game without seeding one. */
+    fun gameId(title: String): Long = runBlocking {
+        withTimeout(LOAD_TIMEOUT_MS) {
+            val data = graph.memoryRepository
+                .getAllGames(withTracks = false, withArtists = false)
+                .first { it is Data.Succeeded }
+            @Suppress("UNCHECKED_CAST")
+            (data as Data.Succeeded<List<Game>>).data.first { it.title == title }.id
+        }
+    }
+
     /**
      * Add a game to the library and return its id. Convenience over the populated default — use it
      * when a test needs a screen with known content to assert on.
@@ -247,7 +258,11 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         compose.onNodeWithText(text).assertIsDisplayed()
     }
 
-    /** Assert a node displaying exactly [text] is shown (e.g. a list row's name). */
+    /**
+     * Assert *some* node displaying [text] is shown, regardless of what kind. Prefer the typed
+     * `assert*Displayed` verbs below — they pin the list-model type, so they don't collide with the
+     * same text appearing in a different kind of row (e.g. an artist name that's also a song caption).
+     */
     fun assertDisplayed(text: String) {
         compose.onNodeWithText(text).assertIsDisplayed()
     }
@@ -270,6 +285,50 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
                 .performScrollToNode(header)
         }
         compose.onNode(header).assertIsDisplayed()
+    }
+
+    /** Assert a [WideItemListModel][net.sigmabeta.sage.components.WideItemListModel] row named [name]
+     *  is displayed (e.g. an artist row on a detail screen). */
+    fun assertWideItemDisplayed(name: String) = assertItemDisplayed("WideItemListModel", name)
+
+    /** Assert a grid cover ([GridImageListModel]) titled [name] is displayed (a game/artist cover, or
+     *  a Home "RNG" card). */
+    fun assertGridImageItemDisplayed(name: String) = assertItemDisplayed("GridImageListModel", name)
+
+    /** Assert an icon + label row ([IconNameListModel]) named [name] is displayed (e.g. a Library or
+     *  Browse-by-Platform menu row). */
+    fun assertIconNameItemDisplayed(name: String) = assertItemDisplayed("IconNameListModel", name)
+
+    /** Assert a call-to-action button row ([CtaListModel]) reading [name] is displayed (e.g.
+     *  "Shuffle all tracks", "Play All"). */
+    fun assertCtaDisplayed(name: String) = assertItemDisplayed("CtaListModel", name)
+
+    /** Assert an empty-state row ([EmptyStateListModel]) reading [text] is displayed (e.g.
+     *  "No crashes recorded."). */
+    fun assertEmptyStateDisplayed(text: String) = assertItemDisplayed("EmptyStateListModel", text)
+
+    /** Assert a single-text row ([SingleTextListModel]) reading [text] is displayed (e.g. an expanded
+     *  dropdown option like "Light"). */
+    fun assertSingleTextItemDisplayed(text: String) = assertItemDisplayed("SingleTextListModel", text)
+
+    /** Assert a name + caption row ([NameCaptionListModel]) is displayed — by [name], and [caption]
+     *  when given (e.g. a Settings library row, or a Search song result). */
+    fun assertNameCaptionItemDisplayed(name: String, caption: String? = null) =
+        assertItemDisplayed("NameCaptionListModel", *listOfNotNull(name, caption).toTypedArray())
+
+    /** Assert a name + caption + value row ([NameCaptionValueListModel]) is displayed — by [name], and
+     *  [caption] when given (e.g. a track row: name = title, caption = artist, value = duration). */
+    fun assertNameCaptionValueItemDisplayed(name: String, caption: String? = null) =
+        assertItemDisplayed("NameCaptionValueListModel", *listOfNotNull(name, caption).toTypedArray())
+
+    // Assert a list row of model type [typeTag] carrying every one of [texts] is displayed. Each text
+    // may sit on the tagged row itself (most models merge it) or on a descendant (some don't), so
+    // match either. Scoping by the model tag is what makes these more precise than `assertDisplayed`.
+    private fun assertItemDisplayed(typeTag: String, vararg texts: String) {
+        val matcher = texts.fold(hasTestTag(typeTag)) { acc, text ->
+            acc and (hasText(text) or hasAnyDescendant(hasText(text)))
+        }
+        compose.onNode(matcher).assertIsDisplayed()
     }
 
     /**

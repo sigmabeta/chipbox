@@ -13,7 +13,7 @@ class BrowseAllTracksTest {
     fun showsShuffleCtaAndTracks() = runChipboxUiTest {
         startAtScreen(BrowseAllTracks)
 
-        assertDisplayed("Shuffle all tracks")
+        assertCtaDisplayed("Shuffle all tracks")
     }
 
     @Test

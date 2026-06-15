@@ -11,9 +11,9 @@ class ComponentLibraryTest {
     fun showsModeMenu() = runChipboxUiTest {
         startAtScreen(ComponentLibrary)
 
-        assertDisplayed("List")
-        assertDisplayed("Grid")
-        assertDisplayed("Columns")
+        assertIconNameItemDisplayed("List")
+        assertIconNameItemDisplayed("Grid")
+        assertIconNameItemDisplayed("Columns")
     }
 
     @Test

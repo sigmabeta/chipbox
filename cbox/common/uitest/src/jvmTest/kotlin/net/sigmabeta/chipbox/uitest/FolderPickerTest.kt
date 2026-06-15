@@ -16,7 +16,7 @@ class FolderPickerTest {
     fun showsPickerControls() = runChipboxUiTest {
         startAtScreen(FolderPicker)
 
-        assertDisplayed("Add this folder")
-        assertDisplayed("Cancel and exit")
+        assertCtaDisplayed("Add this folder")
+        assertCtaDisplayed("Cancel and exit")
     }
 }

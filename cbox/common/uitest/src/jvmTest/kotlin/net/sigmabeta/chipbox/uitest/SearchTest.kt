@@ -15,7 +15,7 @@ class SearchTest {
     fun showsEmptyPrompt() = runChipboxUiTest {
         startAtScreen(Search)
 
-        assertDisplayed("Search your library")
+        assertEmptyStateDisplayed("Search your library")
     }
 
     @Test
@@ -25,7 +25,7 @@ class SearchTest {
         typeSearch("mega")
 
         assertSectionHeader("Games")
-        assertDisplayed("Mega Dungeon")
+        assertGridImageItemDisplayed("Mega Dungeon")
     }
 
     @Test
@@ -35,7 +35,7 @@ class SearchTest {
         typeSearch("zzzznope")
 
         // The composeResources string keeps the XML `\"` escapes literally (backslashes around it).
-        assertDisplayed("No results for \\\"zzzznope\\\"")
+        assertEmptyStateDisplayed("No results for \\\"zzzznope\\\"")
     }
 
     @Test

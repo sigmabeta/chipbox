@@ -10,7 +10,7 @@ class BrowseByGameTest {
     fun listsGames() = runChipboxUiTest {
         startAtScreen(BrowseByGame)
 
-        assertDisplayed(firstGame().title)
+        assertGridImageItemDisplayed(firstGame().title)
     }
 
     @Test

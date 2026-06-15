@@ -9,6 +9,6 @@ class RescanStatusTest {
     fun showsIdleState() = runChipboxUiTest {
         startAtScreen(RescanStatus)
 
-        assertDisplayed("No scan in progress.")
+        assertEmptyStateDisplayed("No scan in progress.")
     }
 }
