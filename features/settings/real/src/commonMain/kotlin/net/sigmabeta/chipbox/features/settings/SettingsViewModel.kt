@@ -94,6 +94,11 @@ class SettingsViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            debugSettingsManager.getImageLoaderSource().collect { source ->
+                updateState { it.copy(imageLoaderSource = source) }
+            }
+        }
+        viewModelScope.launch {
             librarySource.locations.collect { locations ->
                 updateState { it.copy(hasLibraryFolders = locations.isNotEmpty()) }
             }
@@ -144,6 +149,11 @@ class SettingsViewModel @Inject constructor(
 
             is SettingsAction.SpeakerSourceSelected -> {
                 debugSettingsManager.setSpeakerSource(action.source)
+                collapseDropdowns()
+            }
+
+            is SettingsAction.ImageLoaderSourceSelected -> {
+                debugSettingsManager.setImageLoaderSource(action.source)
                 collapseDropdowns()
             }
 

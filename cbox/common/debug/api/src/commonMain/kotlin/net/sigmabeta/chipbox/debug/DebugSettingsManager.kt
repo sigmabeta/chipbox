@@ -14,4 +14,7 @@ interface DebugSettingsManager {
 
     fun getSpeakerSource(): Flow<SpeakerSource>
     fun setSpeakerSource(source: SpeakerSource)
+
+    fun getImageLoaderSource(): Flow<ImageLoaderSource>
+    fun setImageLoaderSource(source: ImageLoaderSource)
 }

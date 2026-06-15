@@ -19,6 +19,7 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
 import net.sigmabeta.chipbox.common.ui.chrome.api.TitleBarController
+import net.sigmabeta.chipbox.common.ui.components.api.subs.LocalForceFakeImages
 import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.ui.theme.api.AppTheme
 
@@ -68,6 +69,7 @@ fun ChipboxAppUi(
     val themeMode by appUiViewModel.themeMode.collectAsState()
     val brand by appUiViewModel.brandFont.collectAsState()
     val plain by appUiViewModel.plainFont.collectAsState()
+    val forceFakeImages by appUiViewModel.forceFakeImages.collectAsState()
 
     AppTheme(
         brand = brand,
@@ -92,6 +94,8 @@ fun ChipboxAppUi(
             LocalPlatformBackKeys provides backKeyEvents,
             LocalActiveTabDestinations provides activeTabDestinations,
             LocalNavigationObserver provides onNavigate,
+            // Debug "image loader = FAKE" → render generated gradient art instead of fetching.
+            LocalForceFakeImages provides forceFakeImages,
             // Expose the singleton VM so the shell (which lives inside Voyager and resolves
             // its own ViewModelStoreOwner) can reach the same instance rather than getting
             // a fresh one from `metroViewModel<…>()`.

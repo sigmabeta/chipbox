@@ -11,6 +11,7 @@ import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
 import net.sigmabeta.chipbox.crash.CrashReport
 import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.debug.ImageLoaderSource
 import net.sigmabeta.chipbox.debug.fake.FakeDebugSettingsManager
 import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
 import net.sigmabeta.chipbox.debuginfo.fake.FakeDebugInfoManager
@@ -118,9 +119,12 @@ interface TestAppGraph : ViewModelGraph {
     @SingleIn(AppScope::class)
     fun provideScanner(): Scanner = CountingScanner()
 
+    // Tests default to the fake image loader, so screens render deterministic generated gradients
+    // instead of fetching cover art through Coil. The shell reads this and provides LocalForceFakeImages.
     @Provides
     @SingleIn(AppScope::class)
-    fun provideDebugSettingsManager(): DebugSettingsManager = FakeDebugSettingsManager()
+    fun provideDebugSettingsManager(): DebugSettingsManager =
+        FakeDebugSettingsManager(initialImageLoaderSource = ImageLoaderSource.FAKE)
 
     @Provides
     @SingleIn(AppScope::class)
