@@ -2,6 +2,8 @@ package net.sigmabeta.chipbox.features.nowplaying.preview
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import net.sigmabeta.chipbox.features.nowplaying.real.ContextMenuMode
+import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingArtist
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingContent
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingError
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingModel
@@ -70,6 +72,66 @@ internal fun NowPlayingError(
     )
 }
 
+/** Context menu — LINKS: jump-off rows for the playing track's game and (single) artist. */
+@DevicePreviews
+@Composable
+internal fun NowPlayingLinks(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    NowPlayingScreenshot(
+        darkTheme,
+        syntheticWidthClass,
+        sampleModel(
+            isPlaying = true,
+            contextMenuMode = ContextMenuMode.LINKS,
+            artists = listOf(NowPlayingArtist(id = 0L, name = "Takashi Tateishi")),
+        ),
+    )
+}
+
+/** Context menu — ARTISTS: one row per artist for a multi-artist track. */
+@DevicePreviews
+@Composable
+internal fun NowPlayingArtists(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    NowPlayingScreenshot(
+        darkTheme,
+        syntheticWidthClass,
+        sampleModel(
+            isPlaying = true,
+            contextMenuMode = ContextMenuMode.ARTISTS,
+            artists = listOf(
+                NowPlayingArtist(id = 0L, name = "Takashi Tateishi"),
+                NowPlayingArtist(id = 1L, name = "Manami Matsumae"),
+            ),
+        ),
+    )
+}
+
+/** Context menu — CONTROLS: the repeat & shuffle state rows. */
+@DevicePreviews
+@Composable
+internal fun NowPlayingControls(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    NowPlayingScreenshot(
+        darkTheme,
+        syntheticWidthClass,
+        sampleModel(
+            isPlaying = true,
+            contextMenuMode = ContextMenuMode.CONTROLS,
+            repeatMode = RepeatMode.ONE,
+            isShuffled = true,
+            repeatStatusLabel = "Repeating one track",
+            shuffleStatusLabel = "Shuffling tracks",
+        ),
+    )
+}
+
 @Composable
 private fun NowPlayingScreenshot(
     darkTheme: Boolean,
@@ -90,12 +152,18 @@ private fun sampleModel(
     isBuffering: Boolean = false,
     errorMessage: String? = null,
     errors: List<NowPlayingError> = emptyList(),
+    contextMenuMode: ContextMenuMode = ContextMenuMode.NONE,
+    artists: List<NowPlayingArtist> = emptyList(),
+    repeatMode: RepeatMode = RepeatMode.OFF,
+    isShuffled: Boolean = false,
+    repeatStatusLabel: String = "",
+    shuffleStatusLabel: String = "",
 ): NowPlayingModel = NowPlayingModel(
     artwork = SourceInfo(info = "preview://mega-man-2"),
     sessionTypeLabel = "Playing from game",
     sessionSourceName = "Mega Man 2",
     title = "Dr. Wily Stage 1",
-    artistsCaption = "Takashi Tateishi",
+    artistsCaption = artists.joinToString(", ") { it.name }.ifEmpty { "Takashi Tateishi" },
     gameTitle = "Mega Man 2",
     isPlaying = isPlaying,
     isBuffering = isBuffering,
@@ -104,10 +172,15 @@ private fun sampleModel(
     // Render-ahead has cached most of the track — the secondary fill runs ahead of the playhead.
     cachedMs = 120_000L,
     canSkipForward = true,
-    isShuffled = false,
-    repeatMode = RepeatMode.OFF,
+    isShuffled = isShuffled,
+    repeatMode = repeatMode,
     errorMessage = errorMessage,
     errors = errors,
+    contextMenuMode = contextMenuMode,
+    gameId = 1L,
+    artists = artists,
+    repeatStatusLabel = repeatStatusLabel,
+    shuffleStatusLabel = shuffleStatusLabel,
 )
 
 private const val SAMPLE_ERROR = "Couldn't load track"

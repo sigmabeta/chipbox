@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
 import dev.zacsweers.metrox.viewmodel.metroViewModel
@@ -20,6 +21,7 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
 import net.sigmabeta.chipbox.common.ui.chrome.api.TitleBarController
 import net.sigmabeta.chipbox.common.ui.components.api.subs.LocalForceFakeImages
+import net.sigmabeta.chipbox.common.ui.list.api.LocalScreenLifecycleOwner
 import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.ui.theme.api.AppTheme
 
@@ -94,6 +96,10 @@ fun ChipboxAppUi(
             LocalPlatformBackKeys provides backKeyEvents,
             LocalActiveTabDestinations provides activeTabDestinations,
             LocalNavigationObserver provides onNavigate,
+            // The owner the screen entries observe for foreground/background. Sourced from the
+            // platform LocalLifecycleOwner (the Activity / desktop Window provides it) so the
+            // centralized ScreenLifecycleEffect has a real lifecycle to follow.
+            LocalScreenLifecycleOwner provides LocalLifecycleOwner.current,
             // Debug "image loader = FAKE" → render generated gradient art instead of fetching.
             LocalForceFakeImages provides forceFakeImages,
             // Expose the singleton VM so the shell (which lives inside Voyager and resolves

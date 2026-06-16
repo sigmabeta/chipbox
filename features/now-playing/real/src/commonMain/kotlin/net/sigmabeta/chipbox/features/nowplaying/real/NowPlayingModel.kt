@@ -29,6 +29,19 @@ data class NowPlayingModel(
     val isShuffled: Boolean,
     val repeatMode: RepeatMode,
     /**
+     * Which context menu (if any) replaces the [TrackInfo][NowPlayingContent] block. [ContextMenuMode.NONE]
+     * shows the plain track info; the other modes render the in-screen menu of clickable rows.
+     */
+    val contextMenuMode: ContextMenuMode = ContextMenuMode.NONE,
+    /** The playing track's game id, used by the LINKS game row to navigate to game detail. */
+    val gameId: Long = 0L,
+    /** The playing track's artists (id + name), backing the LINKS artist row and the ARTISTS list. */
+    val artists: List<NowPlayingArtist> = emptyList(),
+    /** Human-readable repeat state for the CONTROLS row, e.g. "Repeating one track". */
+    val repeatStatusLabel: String = "",
+    /** Human-readable shuffle state for the CONTROLS row, e.g. "Playing in order". */
+    val shuffleStatusLabel: String = "",
+    /**
      * Non-null only for a fatal playback error ([PlayerState.ERROR]). When set, the transport
      * play/pause button switches to a warning icon; the error detail itself is surfaced in the
      * [errors] log shown below the artwork.
@@ -69,4 +82,20 @@ data class NowPlayingModel(
 data class NowPlayingError(
     val id: Long,
     val message: String,
+)
+
+/**
+ * The in-screen "ContextMenu" that replaces the track-info block when active.
+ *
+ * - [NONE]: no menu — the plain track-info text is shown.
+ * - [LINKS]: jump-off links for the current track — its game and artist(s).
+ * - [ARTISTS]: one row per artist, shown when a multi-artist track's artist link is tapped.
+ * - [CONTROLS]: current repeat & shuffle state as human-readable rows that toggle on tap.
+ */
+enum class ContextMenuMode { NONE, LINKS, ARTISTS, CONTROLS }
+
+/** A single artist entry backing the LINKS artist row and the ARTISTS list rows. */
+data class NowPlayingArtist(
+    val id: Long,
+    val name: String,
 )

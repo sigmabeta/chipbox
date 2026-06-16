@@ -18,6 +18,7 @@ data class NowPlayingState(
     val playback: ChipboxPlaybackState? = null,
     val session: Session? = null,
     val errors: List<NowPlayingError> = emptyList(),
+    val contextMenuMode: ContextMenuMode = ContextMenuMode.NONE,
 ) : FreeformState<NowPlayingModel>() {
 
     override fun title(stringProvider: StringProvider) = TitleBarModel(
@@ -40,6 +41,11 @@ data class NowPlayingState(
         canSkipForward = playback?.skipForwardAllowed == true,
         isShuffled = session?.shuffled == true,
         repeatMode = session?.repeatMode ?: RepeatMode.OFF,
+        contextMenuMode = contextMenuMode,
+        gameId = track?.gameId ?: 0L,
+        artists = track?.artists?.map { NowPlayingArtist(id = it.id, name = it.name) }.orEmpty(),
+        repeatStatusLabel = stringProvider.getString(repeatStatusStringId()),
+        shuffleStatusLabel = stringProvider.getString(shuffleStatusStringId()),
         // Only a fatal ERROR carries a message; its presence drives the transport warning icon.
         errorMessage = playback
             ?.takeIf { it.state == PlayerState.ERROR }
@@ -147,6 +153,21 @@ data class NowPlayingState(
             SessionType.SINGLE_TRACK -> ""
         }
     }
+
+    /** Maps the current repeat mode to its human-readable CONTROLS-row label. */
+    private fun repeatStatusStringId(): ChipboxStringId = when (session?.repeatMode ?: RepeatMode.OFF) {
+        RepeatMode.OFF -> ChipboxStringId.NOW_PLAYING_CONTROLS_REPEAT_OFF
+        RepeatMode.ALL -> ChipboxStringId.NOW_PLAYING_CONTROLS_REPEAT_ALL
+        RepeatMode.ONE -> ChipboxStringId.NOW_PLAYING_CONTROLS_REPEAT_ONE
+    }
+
+    /** Maps the current shuffle state to its human-readable CONTROLS-row label. */
+    private fun shuffleStatusStringId(): ChipboxStringId =
+        if (session?.shuffled == true) {
+            ChipboxStringId.NOW_PLAYING_CONTROLS_SHUFFLE_ON
+        } else {
+            ChipboxStringId.NOW_PLAYING_CONTROLS_SHUFFLE_OFF
+        }
 
     override fun errorContent(error: Throwable): NowPlayingModel = NowPlayingModel.Empty
 

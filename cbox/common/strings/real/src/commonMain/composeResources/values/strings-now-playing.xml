@@ -15,4 +15,11 @@
     <string name="now_playing_session_type_setlist_playing">Playing search results for</string>
     <string name="now_playing_session_type_setlist_shuffling">Shuffling search results for</string>
     <string name="now_playing_session_type_single_track_playing">Playing a random song</string>
+
+    <string name="now_playing_controls_repeat_off">Playing sequentially</string>
+    <string name="now_playing_controls_repeat_all">Repeating all tracks</string>
+    <string name="now_playing_controls_repeat_one">Repeating one track</string>
+    <string name="now_playing_controls_shuffle_off">Playing in order</string>
+    <string name="now_playing_controls_shuffle_on">Shuffling tracks</string>
+    <string name="now_playing_setlist_coming_soon">Setlists coming soon.</string>
 </resources>

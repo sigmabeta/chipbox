@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
+import net.sigmabeta.chipbox.common.ui.list.api.ScreenLifecycleEffect
 import net.sigmabeta.sage.appcomm.ActionSink
 
 @Composable
@@ -19,6 +20,8 @@ fun <Model> ChipboxFreeformEntry(
     LaunchedEffect(viewModel) {
         viewModel.events.collect(onEvent)
     }
+
+    ScreenLifecycleEffect(viewModel)
 
     val state by viewModel.uiStateActual.collectAsState()
     val showDebug by viewModel.showDebug.collectAsState()

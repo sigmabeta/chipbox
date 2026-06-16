@@ -28,6 +28,8 @@ fun ChipboxListEntry(
         viewModel.events.collect(onEvent)
     }
 
+    ScreenLifecycleEffect(viewModel)
+
     val state by viewModel.uiStateActual.collectAsState()
     val showDebug by viewModel.showDebug.collectAsState()
 

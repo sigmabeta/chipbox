@@ -1,10 +1,14 @@
 package net.sigmabeta.chipbox.features.nowplaying.real
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -16,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,9 +40,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.IconNameListItem
 import net.sigmabeta.chipbox.common.ui.components.api.previews.CoverArtConstants
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.chipbox.player.common.RepeatMode
@@ -51,6 +58,32 @@ private val ArtworkCornerRadius = 16.dp
 private val TransportPlayPauseSize = 80.dp
 private val TransportSkipSize = 64.dp
 private val TransportToggleSize = 48.dp
+
+/**
+ * Test tags for the track-info block, the two text-less transport buttons, and the context-menu
+ * rows, so UI tests can target them via the semantics click action — which (unlike an injected
+ * gesture) isn't defeated by the bottom mini-player overlapping a control, and (unlike matching by
+ * text) doesn't collide with the same track title/artist the mini-player shows. Kept in sync with
+ * the literals in `NowPlayingTest`.
+ */
+const val NOW_PLAYING_TRACK_INFO_TAG = "NowPlayingTrackInfo"
+const val NOW_PLAYING_MENU_BUTTON_TAG = "NowPlayingMenuButton"
+const val NOW_PLAYING_SETLIST_BUTTON_TAG = "NowPlayingSetlistButton"
+const val NOW_PLAYING_CTX_BACK_TAG = "NowPlayingCtxBack"
+const val NOW_PLAYING_CTX_GAME_TAG = "NowPlayingCtxGame"
+const val NOW_PLAYING_CTX_ARTISTS_TAG = "NowPlayingCtxArtists"
+const val NOW_PLAYING_CTX_REPEAT_TAG = "NowPlayingCtxRepeat"
+const val NOW_PLAYING_CTX_SHUFFLE_TAG = "NowPlayingCtxShuffle"
+
+/** Test tag for the per-artist row in the ARTISTS context menu, keyed by artist id. */
+fun nowPlayingCtxArtistTag(artistId: Long) = "NowPlayingCtxArtist:$artistId"
+
+private val TrackInfoCornerRadius = 8.dp
+private val ContextMenuCornerRadius = 16.dp
+private val ContextMenuSidePadding = 64.dp
+private val ContextMenuMinWidth = 200.dp
+private val ContextMenuMaxWidth = 600.dp
+private val ContextMenuRowPadding = PaddingValues(horizontal = 8.dp)
 
 @Composable
 fun NowPlayingContent(
@@ -75,7 +108,30 @@ fun NowPlayingContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TrackInfo(model)
+        Crossfade(
+            targetState = model.contextMenuMode,
+            label = "NowPlayingInfo",
+            // Animate the height change between the (shorter) track info and the (taller) menu, the
+            // same way the error log does — the weight(1f) artwork above reflows to match, so the
+            // cover art resizes smoothly instead of jumping.
+            modifier = Modifier
+                .animateContentSize()
+                .fillMaxWidth(),
+        ) { mode ->
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center,
+            ) {
+                // `mode` is the crossfading layer's own target, not necessarily model.contextMenuMode,
+                // so render off it and pass it down — the outgoing layer keeps showing its old state
+                // while it fades.
+                if (mode == ContextMenuMode.NONE) {
+                    TrackInfo(model, actionSink)
+                } else {
+                    ContextMenu(model, mode, actionSink)
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -170,42 +226,154 @@ private fun ColumnScope.Artwork(model: NowPlayingModel) {
 }
 
 @Composable
-private fun ColumnScope.TrackInfo(model: NowPlayingModel) {
-    Text(
-        text = model.title,
-        style = MaterialTheme.typography.headlineSmall,
-        color = MaterialTheme.colorScheme.onSurface,
-        textAlign = TextAlign.Center,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.fillMaxWidth(),
+private fun TrackInfo(model: NowPlayingModel, actionSink: ActionSink) {
+    // The whole block is one tap target: tapping it opens the LINKS context menu.
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(TrackInfoCornerRadius))
+            .testTag(NOW_PLAYING_TRACK_INFO_TAG)
+            .clickable { actionSink.sendAction(NowPlayingAction.TrackInfoClicked) },
+    ) {
+        Text(
+            text = model.title,
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        if (model.artistsCaption.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = model.artistsCaption,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        if (model.gameTitle.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = model.gameTitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+/**
+ * The in-screen "ContextMenu" that replaces [TrackInfo] while a [ContextMenuMode] other than NONE
+ * is active. A surface-tinted, rounded card of clickable rows: a back row (the track name) that
+ * returns to NONE, followed by mode-specific rows (game/artist links, an artist picker, or the
+ * repeat/shuffle controls). Every row dispatches an action; the VM owns the resulting state and the
+ * auto-dismiss timer.
+ */
+@Composable
+private fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSink: ActionSink) {
+    Column(
+        modifier = Modifier
+            .padding(horizontal = ContextMenuSidePadding)
+            .widthIn(min = ContextMenuMinWidth, max = ContextMenuMaxWidth)
+            .clip(RoundedCornerShape(ContextMenuCornerRadius))
+            .background(MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        ContextMenuRow(
+            name = model.title,
+            icon = Icon.Back,
+            clickAction = NowPlayingAction.ContextMenuBackClicked,
+            actionSink = actionSink,
+            tag = NOW_PLAYING_CTX_BACK_TAG,
+        )
+
+        when (mode) {
+            ContextMenuMode.LINKS -> {
+                if (model.gameTitle.isNotEmpty()) {
+                    ContextMenuRow(
+                        name = model.gameTitle,
+                        icon = Icon.Album,
+                        clickAction = NowPlayingAction.ContextMenuGameClicked,
+                        actionSink = actionSink,
+                        tag = NOW_PLAYING_CTX_GAME_TAG,
+                    )
+                }
+                if (model.artists.isNotEmpty()) {
+                    ContextMenuRow(
+                        name = model.artistsCaption,
+                        icon = Icon.Person,
+                        clickAction = NowPlayingAction.ContextMenuArtistsClicked,
+                        actionSink = actionSink,
+                        tag = NOW_PLAYING_CTX_ARTISTS_TAG,
+                    )
+                }
+            }
+
+            ContextMenuMode.ARTISTS -> {
+                model.artists.forEach { artist ->
+                    ContextMenuRow(
+                        name = artist.name,
+                        icon = Icon.Person,
+                        clickAction = NowPlayingAction.ContextMenuArtistClicked(artist.id),
+                        actionSink = actionSink,
+                        tag = nowPlayingCtxArtistTag(artist.id),
+                    )
+                }
+            }
+
+            ContextMenuMode.CONTROLS -> {
+                ContextMenuRow(
+                    name = model.repeatStatusLabel,
+                    icon = if (model.repeatMode == RepeatMode.ONE) Icon.RepeatOne else Icon.Repeat,
+                    clickAction = NowPlayingAction.RepeatClicked,
+                    actionSink = actionSink,
+                    tag = NOW_PLAYING_CTX_REPEAT_TAG,
+                    active = model.repeatMode != RepeatMode.OFF,
+                )
+                ContextMenuRow(
+                    name = model.shuffleStatusLabel,
+                    icon = Icon.Shuffle,
+                    clickAction = NowPlayingAction.ShuffleClicked,
+                    actionSink = actionSink,
+                    tag = NOW_PLAYING_CTX_SHUFFLE_TAG,
+                    active = model.isShuffled,
+                )
+            }
+
+            ContextMenuMode.NONE -> Unit
+        }
+    }
+}
+
+@Composable
+private fun ContextMenuRow(
+    name: String,
+    icon: Icon,
+    clickAction: NowPlayingAction,
+    actionSink: ActionSink,
+    tag: String,
+    active: Boolean = false,
+) {
+    IconNameListItem(
+        name = name,
+        icon = icon,
+        clickAction = clickAction,
+        active = active,
+        actionSink = actionSink,
+        modifier = Modifier.testTag(tag),
+        padding = ContextMenuRowPadding,
     )
-
-    if (model.artistsCaption.isNotEmpty()) {
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = model.artistsCaption,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-
-    if (model.gameTitle.isNotEmpty()) {
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = model.gameTitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
 }
 
 @Composable
@@ -301,14 +469,18 @@ private fun ColumnScope.TransportRow(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Where the shuffle toggle used to live: a placeholder for the future Setlist feature.
+        // Shuffle itself now lives in the CONTROLS context menu.
         IconButton(
-            onClick = { actionSink.sendAction(NowPlayingAction.ShuffleClicked) },
-            modifier = Modifier.size(TransportToggleSize),
+            onClick = { actionSink.sendAction(NowPlayingAction.SetlistClicked) },
+            modifier = Modifier
+                .size(TransportToggleSize)
+                .testTag(NOW_PLAYING_SETLIST_BUTTON_TAG),
         ) {
             Icon(
-                imageVector = Icon.Shuffle.vector(),
+                imageVector = Icon.QueueMusic.vector(),
                 contentDescription = null,
-                tint = if (model.isShuffled) accentTint else mutedTint,
+                tint = mutedTint,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(8.dp),
@@ -383,18 +555,18 @@ private fun ColumnScope.TransportRow(
 
         Spacer(modifier = Modifier.size(8.dp))
 
+        // Where the repeat toggle used to live: opens the CONTROLS context menu (which now hosts
+        // both the repeat and shuffle toggles).
         IconButton(
-            onClick = { actionSink.sendAction(NowPlayingAction.RepeatClicked) },
-            modifier = Modifier.size(TransportToggleSize),
+            onClick = { actionSink.sendAction(NowPlayingAction.MenuClicked) },
+            modifier = Modifier
+                .size(TransportToggleSize)
+                .testTag(NOW_PLAYING_MENU_BUTTON_TAG),
         ) {
             Icon(
-                imageVector = if (model.repeatMode == RepeatMode.ONE) {
-                    Icon.RepeatOne.vector()
-                } else {
-                    Icon.Repeat.vector()
-                },
+                imageVector = Icon.Overflow.vector(),
                 contentDescription = null,
-                tint = if (model.repeatMode == RepeatMode.OFF) mutedTint else accentTint,
+                tint = mutedTint,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(8.dp),
