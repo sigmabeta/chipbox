@@ -234,14 +234,17 @@ class FakeDatabase(private val random: Random = Random(0)) {
             artistsForTrackSync(trackId)
         override suspend fun getArtistsForTrackSync(trackId: Long): List<ArtistEntity> =
             artistsForTrackSync(trackId)
+
+        // Mirror getTracksForArtistSync's SQL order: A–Z by game title, then track number.
         override suspend fun getTracksForArtistSync(artistId: Long): List<TrackEntity> = trackArtistJoins
             .filter { it.artistId == artistId }
             .mapNotNull { tracks[it.trackId] }
+            .sortedWith(compareBy({ games[it.gameId]?.title?.lowercase() }, { it.trackNumber }))
         override fun getTracksForArtist(artistId: Long): Flow<List<TrackEntity>> = observe {
             trackArtistJoins
                 .filter { it.artistId == artistId }
                 .mapNotNull { tracks[it.trackId] }
-                .sortedBy { it.title.lowercase() }
+                .sortedWith(compareBy({ games[it.gameId]?.title?.lowercase() }, { it.trackNumber }))
         }
         override suspend fun nukeTable() {
             trackArtistJoins.clear()

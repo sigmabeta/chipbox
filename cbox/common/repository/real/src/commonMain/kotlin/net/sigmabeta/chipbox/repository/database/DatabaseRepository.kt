@@ -108,7 +108,6 @@ class DatabaseRepository(
     ): List<Track> = trackArtistDao
         .getTracksForArtistSync(id)
         .suspendMap { entity -> entity.toTrack(withGame, withArtists) }
-        .sortedBy { it.game?.title }
 
     override suspend fun getTracksForPlatform(
         platform: Platform,
@@ -336,6 +335,7 @@ class DatabaseRepository(
         decodeChainFiles(chainFiles),
         extension,
         Platform.valueOf(platform),
+        gameId = gameId,
     )
 
     /**

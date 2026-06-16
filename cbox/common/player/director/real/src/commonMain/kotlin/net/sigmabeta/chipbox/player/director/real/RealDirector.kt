@@ -725,6 +725,8 @@ class RealDirector(
         .getTracksForGame(gameId)
         .map { it.id }
 
+    // Order (A–Z by game title) is owned by the DAO query, so it matches the artist-detail screen
+    // without hydrating each track's Game here — we only need the ids.
     private suspend fun getTrackListForArtist(artistId: Long) = repository
         .getTracksForArtist(artistId)
         .map { it.id }

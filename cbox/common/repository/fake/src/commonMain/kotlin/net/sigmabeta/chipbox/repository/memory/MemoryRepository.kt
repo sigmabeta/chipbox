@@ -364,6 +364,7 @@ open class MemoryRepository(
         if (withGame) game?.toGame() else null,
         if (withArtists) artists.map { it.toArtist() } else null,
         platform = Platform.OTHER,
+        gameId = game?.id ?: 0L,
     )
 
     private fun MemoryGame.toGame(withTracks: Boolean = false, withArtists: Boolean = false): Game = Game(
