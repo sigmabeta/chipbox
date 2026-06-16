@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.uitest
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
@@ -17,10 +18,15 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onParent
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.runComposeUiTest
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -30,6 +36,9 @@ import kotlinx.coroutines.withTimeout
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.common.Session
+import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
@@ -110,10 +119,19 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         val storeOwner = object : ViewModelStoreOwner {
             override val viewModelStore: ViewModelStore = ViewModelStore()
         }
+        // Real windows (Android Activity / desktop Window) provide a LocalLifecycleOwner; the bare
+        // runComposeUiTest scene doesn't, and the shell's entries run a LifecycleResumeEffect — so
+        // supply a resumed owner here. createUnsafe bypasses the registry's main-thread check.
+        val lifecycleOwner = object : LifecycleOwner {
+            override val lifecycle: Lifecycle = LifecycleRegistry.createUnsafe(this).apply {
+                currentState = Lifecycle.State.RESUMED
+            }
+        }
         compose.setContent {
             CompositionLocalProvider(
                 LocalMetroViewModelFactory provides graph.metroViewModelFactory,
                 LocalViewModelStoreOwner provides storeOwner,
+                LocalLifecycleOwner provides lifecycleOwner,
                 LocalChipboxStringProvider provides graph.stringProvider,
                 LocalLogger provides graph.hatchet,
             ) {
@@ -189,6 +207,55 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     fun startAtScreen(destination: Any) {
         destinations.tryEmit(destination)
         compose.waitForIdle()
+    }
+
+    /**
+     * Seed the fake director into a known playing state — [session], its current [track], and a
+     * non-idle [playbackState] — the baseline any screen that renders live playback (Now Playing,
+     * the mini-player) reads from. Pair with [startAtScreen] to open such a screen; without a live
+     * session the Now Playing screen bounces straight back to the previous one.
+     */
+    fun startFromSession(
+        session: Session,
+        track: Track,
+        playbackState: PlayerState = PlayerState.PLAYING,
+    ) {
+        runBlocking {
+            graph.fakeDirector.emitPlayback(playbackState)
+            graph.fakeDirector.emitMetadata(track)
+            graph.fakeDirector.emitSession(session)
+        }
+    }
+
+    /**
+     * Click the node tagged [tag]. Invokes the node's semantics `OnClick` action rather than
+     * injecting a gesture, so it isn't blocked when the bottom mini-player overlaps the control (the
+     * mini-player is hidden in production but the bare test scene can't honour that request). Uses
+     * the unmerged tree, where tagged list-rows surface as their own nodes.
+     */
+    fun clickTag(tag: String) {
+        pauseForObservation()
+        compose.onNode(hasTestTag(tag)).performSemanticsAction(SemanticsActions.OnClick)
+        // Unlike an injected gesture, performSemanticsAction doesn't pump frames, so advance the
+        // clock to let the resulting state change settle through the VM and any crossfade animation
+        // before the next step (well under the context menu's 5s auto-dismiss).
+        compose.mainClock.advanceTimeBy(CLICK_SETTLE_MS)
+        compose.waitForIdle()
+    }
+
+    /**
+     * Assert a node displaying [text] exists in the unmerged tree — for content inside merged
+     * list-rows (e.g. the Now Playing context-menu labels) that the default merged finders don't
+     * surface as their own node.
+     */
+    fun assertTextInRow(text: String) {
+        compose.onNode(hasText(text), useUnmergedTree = true).assertExists()
+    }
+
+    /** Assert no node displaying [text] exists in the unmerged tree — e.g. the context menu
+     *  collapsed back to track info. */
+    fun assertTextNotInRow(text: String) {
+        compose.onNode(hasText(text), useUnmergedTree = true).assertDoesNotExist()
     }
 
     /** Click the [WideItem][net.sigmabeta.sage.components.WideItemListModel] row named [name]. */
@@ -385,5 +452,9 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
 
         /** Comfortably past the Search VM's 300ms query debounce. */
         const val SEARCH_DEBOUNCE_WAIT_MS = 500L
+
+        /** Frames to settle a [clickTag] semantics action (state hop + crossfade); under the Now
+         *  Playing context menu's 5s auto-dismiss so the menu stays open for the next step. */
+        const val CLICK_SETTLE_MS = 2_000L
     }
 }

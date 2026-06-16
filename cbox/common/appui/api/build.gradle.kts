@@ -32,6 +32,9 @@ kotlin {
                 implementation(projects.cbox.common.ui.chrome.api)
                 implementation(projects.cbox.common.ui.components.api)
                 implementation(projects.cbox.common.ui.list.api)
+                // Reads the platform LocalLifecycleOwner to feed LocalScreenLifecycleOwner (the
+                // owner the screen entries observe for foreground/background).
+                implementation(libs.androidx.lifecycle.runtimeCompose)
                 implementation(projects.cbox.common.appcomm.api)
                 implementation(projects.cbox.common.strings.api)
                 // Shared `ChipboxTheme()` — multiplatform. The Android-side `AppTheme()`

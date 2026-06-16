@@ -59,6 +59,9 @@ val harnessDependencies: KotlinDependencyHandler.() -> Unit = {
     implementation(libs.sage.common.ui.perfCompose)
     implementation(libs.metrox.viewmodel)
     implementation(libs.metrox.viewmodel.compose)
+    // The shell's entries drive a LifecycleResumeEffect; real windows provide a LocalLifecycleOwner
+    // but the bare runComposeUiTest scene doesn't, so the harness provides a resumed one itself.
+    implementation(libs.androidx.lifecycle.runtimeCompose)
 }
 
 // Optional observe-delay: `-Pchipbox.uitest.actionDelayMs=1500` inserts a real pause before each

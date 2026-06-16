@@ -9,6 +9,10 @@ kotlin {
             dependencies {
                 api(projects.features.nowPlaying.api)
 
+                // Route keys for the LINKS/ARTISTS context-menu navigation targets.
+                implementation(projects.features.gameDetail.api)
+                implementation(projects.features.artistDetail.api)
+
                 implementation(projects.cbox.common.ui.freeform.api)
                 implementation(projects.cbox.common.ui.components.api)
                 implementation(projects.cbox.common.appcomm.api)

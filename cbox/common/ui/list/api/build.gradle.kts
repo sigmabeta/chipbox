@@ -22,6 +22,8 @@ kotlin {
                 api(libs.sage.common.ui.components)
                 api(libs.sage.common.logging)
                 api(libs.androidx.lifecycle.viewmodel)
+                // ScreenLifecycleEffect centralizes the lifecycle → active-VM Resume/Pause dispatch.
+                implementation(libs.androidx.lifecycle.runtimeCompose)
                 api(projects.cbox.common.appcomm.api)
                 api(projects.cbox.common.ui.vm.api)
 

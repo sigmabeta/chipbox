@@ -52,6 +52,30 @@ class NowPlayingScreenshots(
         }
     }
 
+    @Test
+    fun nowPlayingLinks() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            NowPlayingLinks(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
+    @Test
+    fun nowPlayingArtists() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            NowPlayingArtists(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
+    @Test
+    fun nowPlayingControls() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            NowPlayingControls(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = SUFFIX_TESTNAME)
