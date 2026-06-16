@@ -1,7 +1,10 @@
 package net.sigmabeta.chipbox.features.nowplaying.real
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -78,11 +81,14 @@ const val NOW_PLAYING_CTX_SHUFFLE_TAG = "NowPlayingCtxShuffle"
 /** Test tag for the per-artist row in the ARTISTS context menu, keyed by artist id. */
 fun nowPlayingCtxArtistTag(artistId: Long) = "NowPlayingCtxArtist:$artistId"
 
-private val TrackInfoCornerRadius = 8.dp
-private val ContextMenuCornerRadius = 16.dp
-private val ContextMenuSidePadding = 64.dp
+// TrackInfo and the ContextMenu share one container (rounded shape + the animated background), but
+// keep their own width bounds: TrackInfo wraps its content down to a 256dp floor (no cap); the menu
+// keeps its 200..600dp range.
+private val TrackInfoMinWidth = 256.dp
 private val ContextMenuMinWidth = 200.dp
 private val ContextMenuMaxWidth = 600.dp
+private val InfoContainerCornerRadius = 16.dp
+private val TrackInfoInteriorPadding = 8.dp
 private val ContextMenuRowPadding = PaddingValues(horizontal = 8.dp)
 
 @Composable
@@ -106,32 +112,11 @@ fun NowPlayingContent(
 
         ErrorSection(errors = model.errors, actionSink = actionSink)
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // Half the former 16dp gap above the info block now lives inside TrackInfo's tap target
+        // (TrackInfoInteriorPadding); the other half stays here as the exterior gap.
+        Spacer(modifier = Modifier.height(8.dp))
 
-        Crossfade(
-            targetState = model.contextMenuMode,
-            label = "NowPlayingInfo",
-            // Animate the height change between the (shorter) track info and the (taller) menu, the
-            // same way the error log does — the weight(1f) artwork above reflows to match, so the
-            // cover art resizes smoothly instead of jumping.
-            modifier = Modifier
-                .animateContentSize()
-                .fillMaxWidth(),
-        ) { mode ->
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center,
-            ) {
-                // `mode` is the crossfading layer's own target, not necessarily model.contextMenuMode,
-                // so render off it and pass it down — the outgoing layer keeps showing its old state
-                // while it fades.
-                if (mode == ContextMenuMode.NONE) {
-                    TrackInfo(model, actionSink)
-                } else {
-                    ContextMenu(model, mode, actionSink)
-                }
-            }
-        }
+        InfoContainer(model = model, actionSink = actionSink)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -225,16 +210,58 @@ private fun ColumnScope.Artwork(model: NowPlayingModel) {
     }
 }
 
+/**
+ * The container shared by [TrackInfo] and the [ContextMenu]: it wraps whichever is showing (between
+ * [InfoContainerMinWidth] and [InfoContainerMaxWidth]) and its background animates from transparent
+ * (plain track info) to `surfaceContainer` (any open menu). `animateContentSize` morphs the size as
+ * the content swaps, so the `weight(1f)` artwork above reflows smoothly instead of jumping.
+ */
+@Composable
+private fun InfoContainer(model: NowPlayingModel, actionSink: ActionSink) {
+    val backgroundColor by animateColorAsState(
+        targetValue = if (model.contextMenuMode == ContextMenuMode.NONE) {
+            Color.Transparent
+        } else {
+            MaterialTheme.colorScheme.surfaceContainer
+        },
+        label = "NowPlayingInfoBackground",
+    )
+
+    // AnimatedContent (not Crossfade) so the content stays centered while the container resizes
+    // between the track info and the larger menu: Crossfade's box pins its layers to the top-left,
+    // which left the returning TrackInfo stranded in the corner until the resize finished. The
+    // built-in SizeTransform animates the size, so the weight(1f) artwork above still reflows.
+    AnimatedContent(
+        targetState = model.contextMenuMode,
+        label = "NowPlayingInfo",
+        contentAlignment = Alignment.Center,
+        transitionSpec = { fadeIn() togetherWith fadeOut() },
+        modifier = Modifier
+            .clip(RoundedCornerShape(InfoContainerCornerRadius))
+            .background(backgroundColor),
+    ) { mode ->
+        // `mode` is the animating layer's own target, not necessarily model.contextMenuMode, so
+        // render off it — the outgoing layer keeps showing its old state while it fades.
+        if (mode == ContextMenuMode.NONE) {
+            TrackInfo(model, actionSink)
+        } else {
+            ContextMenu(model, mode, actionSink)
+        }
+    }
+}
+
 @Composable
 private fun TrackInfo(model: NowPlayingModel, actionSink: ActionSink) {
-    // The whole block is one tap target: tapping it opens the LINKS context menu.
+    // The whole block — interior padding included — is one tap target that opens the LINKS menu.
+    // Wraps its content (down to TrackInfoMinWidth) rather than filling; the shared container's
+    // AnimatedContent keeps it centered while the container resizes.
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(TrackInfoCornerRadius))
+            .widthIn(min = TrackInfoMinWidth)
             .testTag(NOW_PLAYING_TRACK_INFO_TAG)
-            .clickable { actionSink.sendAction(NowPlayingAction.TrackInfoClicked) },
+            .clickable { actionSink.sendAction(NowPlayingAction.TrackInfoClicked) }
+            .padding(TrackInfoInteriorPadding),
     ) {
         Text(
             text = model.title,
@@ -243,7 +270,6 @@ private fun TrackInfo(model: NowPlayingModel, actionSink: ActionSink) {
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth(),
         )
 
         if (model.artistsCaption.isNotEmpty()) {
@@ -255,7 +281,6 @@ private fun TrackInfo(model: NowPlayingModel, actionSink: ActionSink) {
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth(),
             )
         }
 
@@ -268,7 +293,6 @@ private fun TrackInfo(model: NowPlayingModel, actionSink: ActionSink) {
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -283,12 +307,10 @@ private fun TrackInfo(model: NowPlayingModel, actionSink: ActionSink) {
  */
 @Composable
 private fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSink: ActionSink) {
+    // Keeps its own 200..600dp width; the rounded surfaceContainer background lives on the shared
+    // container now.
     Column(
-        modifier = Modifier
-            .padding(horizontal = ContextMenuSidePadding)
-            .widthIn(min = ContextMenuMinWidth, max = ContextMenuMaxWidth)
-            .clip(RoundedCornerShape(ContextMenuCornerRadius))
-            .background(MaterialTheme.colorScheme.surfaceContainer),
+        modifier = Modifier.widthIn(min = ContextMenuMinWidth, max = ContextMenuMaxWidth),
     ) {
         ContextMenuRow(
             name = model.title,
