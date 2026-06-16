@@ -16,6 +16,12 @@ data class Track(
     val chainFiles: List<ChainFile> = emptyList(),
     val extension: String = "",
     val platform: Platform,
+    // The owning game's id, always known (a track is never gameless — `track.game_id` is a non-null
+    // FK). Unlike [game], it needs no hydration, so callers can group/identify a track's game
+    // without paying for a `withGame` join. Defaults from [game] for convenience constructions;
+    // the repository converters set it explicitly so it's correct even when [game] is not hydrated.
+    // `0` means "unset" (no real game row has id 0).
+    val gameId: Long = game?.id ?: 0L,
 )
 
 /**
