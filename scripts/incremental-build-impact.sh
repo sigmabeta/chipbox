@@ -25,6 +25,7 @@
 #   --filter <regex>       Only probe modules whose path matches this egrep regex.
 #   --limit <N>            Probe at most N modules (after filtering).
 #   --out <file>           CSV output path.                (default: build/incremental-build-impact.csv)
+#   --churn-days <N>       Window for the git-churn column.            (default: 90)
 #   --list                 Print the module universe for the app and exit (no builds).
 #   -h | --help            Show this help.
 #
@@ -51,18 +52,22 @@ TASK=""
 FILTER=""
 LIMIT=0
 OUT="build/incremental-build-impact.csv"
+CHURN_DAYS=90
 LIST_ONLY=0
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --app)    APP="$2"; shift 2 ;;
-        --task)   TASK="$2"; shift 2 ;;
-        --filter) FILTER="$2"; shift 2 ;;
-        --limit)  LIMIT="$2"; shift 2 ;;
-        --out)    OUT="$2"; shift 2 ;;
-        --list)   LIST_ONLY=1; shift ;;
+        --app)        APP="$2"; shift 2 ;;
+        --task)       TASK="$2"; shift 2 ;;
+        --filter)     FILTER="$2"; shift 2 ;;
+        --limit)      LIMIT="$2"; shift 2 ;;
+        --out)        OUT="$2"; shift 2 ;;
+        --churn-days) CHURN_DAYS="$2"; shift 2 ;;
+        --list)       LIST_ONLY=1; shift ;;
         -h|--help)
-            sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+            # Print the leading comment block (after the shebang), stopping at the first
+            # non-comment line — robust to the header growing or shrinking.
+            awk 'NR==1{next} /^#/{sub(/^# ?/,""); print; next} {exit}' "$0"; exit 0 ;;
         *) echo "error: unknown option '$1' (try --help)" >&2; exit 1 ;;
     esac
 done
@@ -87,10 +92,13 @@ GRADLE_FLAGS=(--console=plain --no-build-cache)
 
 # --- helpers ---------------------------------------------------------------------------
 
-# Count executed compile tasks in a captured build log.
+# Summarise executed work in a captured build log.
 #   A "> Task :path:name" line with no trailing UP-TO-DATE/FROM-CACHE/NO-SOURCE/SKIPPED
-#   ran for real. We count those whose task name (segment after the last ':') begins with
-#   "compile". Prints "<compileExecuted> <totalExecuted>".
+#   ran for real. Of those, we care about compile tasks (name begins with "compile").
+#   A single module can emit several compile tasks (e.g. Android emits both
+#   compileKotlinJvm and compileAndroidMain), so the *module* count is the app-agnostic
+#   blast-radius metric and the *task* count is kept for context.
+#   Prints "<distinctModules> <compileTasks> <totalTasks>".
 count_executed() {
     local log="$1"
     awk '
@@ -102,10 +110,24 @@ count_executed() {
             total++
             path = $3                        # :a:b:c:taskName
             n = split(path, seg, ":")
-            if (seg[n] ~ /^compile/) compiles++
+            if (seg[n] ~ /^compile/) {
+                compiles++
+                modpath = path               # strip the trailing :taskName -> module path
+                sub(/:[^:]+$/, "", modpath)
+                mods[modpath] = 1
+            }
         }
-        END { printf "%d %d", compiles+0, total+0 }
+        END { nm = 0; for (m in mods) nm++; printf "%d %d %d", nm, compiles+0, total+0 }
     ' "$log"
+}
+
+# Commits touching a module directory within the churn window. Run from inside the dir so
+# git resolves the right repo automatically — important because sage/* are a submodule and
+# their history lives in the submodule, not the parent repo. Prints an integer.
+module_churn() {
+    local dir="$1"
+    [[ -d "$dir" ]] || { echo 0; return; }
+    git -C "$dir" log --oneline --since="${CHURN_DAYS} days ago" -- . 2>/dev/null | wc -l | tr -d ' '
 }
 
 # Run the build task, streaming a one-line spinner-free heartbeat, capturing full log.
@@ -236,13 +258,19 @@ echo "   warm build: ${RUN_SECS}s"
 # is per-build noise (non-cacheable / always-stale tasks) and is reported for context.
 echo ">> Baseline (no-op) build to measure steady-state noise ..."
 run_build "$LOGDIR/baseline.log"
-read -r BASE_COMPILES BASE_TOTAL <<<"$(count_executed "$LOGDIR/baseline.log")"
-echo "   baseline noise: ${BASE_COMPILES} compile task(s), ${BASE_TOTAL} task(s) total, ${RUN_SECS}s"
-[[ "$BASE_COMPILES" -gt 0 ]] && \
-    echo "   note: nonzero baseline — per-module 'net' column subtracts this."
+read -r BASE_MODULES BASE_COMPILES BASE_TOTAL <<<"$(count_executed "$LOGDIR/baseline.log")"
+BASE_SECS="$RUN_SECS"     # fixed per-build overhead (config + up-to-date checks); subtracted from probe times
+echo "   baseline noise: ${BASE_MODULES} module(s), ${BASE_COMPILES} compile task(s), ${BASE_SECS}s overhead"
+[[ "$BASE_MODULES" -gt 0 ]] && \
+    echo "   note: nonzero baseline — per-module 'net' columns subtract this."
 
 # --- CSV header ------------------------------------------------------------------------
-echo "module,status,compile_tasks,net_compile_tasks,total_tasks,build_seconds,probed_file" >"$OUT"
+# recompiled_modules : distinct modules whose compile task ran (app-agnostic blast radius)
+# net_*              : with the baseline-noise floor subtracted
+# net_build_seconds  : build_seconds - baseline overhead = real incremental compile time
+# churn_commits      : commits touching the module dir in the churn window
+# pain               : net_recompiled_modules * churn_commits  (expected recompile cost)
+echo "module,status,recompiled_modules,net_recompiled_modules,compile_tasks,build_seconds,net_build_seconds,churn_commits,pain,probed_file" >"$OUT"
 
 # --- walk modules ----------------------------------------------------------------------
 declare -a RESULT_LINES=()
@@ -251,10 +279,11 @@ for module in "${MODULES[@]}"; do
     i=$((i + 1))
     dir="$(module_dir "$module")"
     src="$(pick_source_file "$dir")"
+    churn="$(module_churn "$dir")"
 
     if [[ -z "$src" ]]; then
         printf '[%d/%d] %-55s SKIP (no source)\n' "$i" "${#MODULES[@]}" "$module"
-        echo "$module,skipped,,,,,(no probe-able source)" >>"$OUT"
+        echo "$module,skipped,,,,,,${churn},,(no probe-able source)" >>"$OUT"
         continue
     fi
 
@@ -273,7 +302,7 @@ for module in "${MODULES[@]}"; do
 
     # Incremental build triggered by that one change.
     run_build "$LOGDIR/probe_${i}.log"
-    read -r COMPILES TOTAL <<<"$(count_executed "$LOGDIR/probe_${i}.log")"
+    read -r MODULES_HIT COMPILES TOTAL <<<"$(count_executed "$LOGDIR/probe_${i}.log")"
     secs="$RUN_SECS"
 
     # Restore the source.
@@ -281,17 +310,22 @@ for module in "${MODULES[@]}"; do
 
     if [[ "$RUN_RC" -ne 0 ]]; then
         printf '        -> BUILD FAILED (see %s)\n' "$LOGDIR/probe_${i}.log"
-        echo "$module,build_failed,,,,${secs},${src}" >>"$OUT"
+        echo "$module,build_failed,,,,${secs},,${churn},,${src}" >>"$OUT"
         # Re-warm so the next module starts from steady state.
         run_build "$LOGDIR/rewarm_${i}.log"
         continue
     fi
 
-    net=$((COMPILES - BASE_COMPILES))
-    [[ "$net" -lt 0 ]] && net=0
-    printf '        -> %d compile task(s) (net %d), %d total, %ds\n' "$COMPILES" "$net" "$TOTAL" "$secs"
-    echo "$module,ok,${COMPILES},${net},${TOTAL},${secs},${src}" >>"$OUT"
-    RESULT_LINES+=("$(printf '%d\t%d\t%d\t%s' "$net" "$COMPILES" "$secs" "$module")")
+    # Axis 1: fan-out — distinct downstream modules recompiled (net of baseline noise).
+    net_mods=$((MODULES_HIT - BASE_MODULES)); [[ "$net_mods" -lt 0 ]] && net_mods=0
+    # Axis 2: self-cost — real compile time, with the fixed per-build overhead removed.
+    net_secs=$((secs - BASE_SECS)); [[ "$net_secs" -lt 0 ]] && net_secs=0
+    # Expected pain = how much recompiles × how often this module actually changes.
+    pain=$((net_mods * churn))
+    printf '        -> %d module(s) recompiled (net %d), %d compile task(s), %ds (net %ds), churn %d, pain %d\n' \
+        "$MODULES_HIT" "$net_mods" "$COMPILES" "$secs" "$net_secs" "$churn" "$pain"
+    echo "$module,ok,${MODULES_HIT},${net_mods},${COMPILES},${secs},${net_secs},${churn},${pain},${src}" >>"$OUT"
+    RESULT_LINES+=("$(printf '%d\t%d\t%d\t%d\t%d\t%s' "$net_mods" "$COMPILES" "$net_secs" "$churn" "$pain" "$module")")
 
     # Return to steady state: reverting the file makes this module stale again, so build
     # once more so the next module's measurement isn't polluted by this revert.
@@ -303,15 +337,19 @@ trap - INT TERM
 # --- summary ---------------------------------------------------------------------------
 echo
 echo "==================== blast-radius summary (app $APP) ===================="
-echo "Baseline noise: ${BASE_COMPILES} compile task(s) per no-op build (subtracted as 'net')."
+echo "Baseline: ${BASE_MODULES} module(s) / ${BASE_SECS}s overhead per no-op build (subtracted as 'net')."
+echo "Columns: MODS=downstream modules recompiled (fan-out)  TASKS=raw compile tasks"
+echo "         NET-S=compile seconds minus overhead (self-cost)  CHURN=commits in ${CHURN_DAYS}d"
+echo "         PAIN=MODS*CHURN (expected recompile cost).  Sorted by PAIN, then fan-out."
 echo
 if [[ "${#RESULT_LINES[@]}" -eq 0 ]]; then
     echo "(no modules were successfully probed)"
 else
-    printf '%6s  %6s  %5s  %s\n' "NET" "RAW" "SECS" "MODULE"
+    # RESULT_LINES fields: net_mods \t tasks \t net_secs \t churn \t pain \t module
+    printf '%6s  %6s  %6s  %6s  %6s  %s\n' "PAIN" "MODS" "TASKS" "NET-S" "CHURN" "MODULE"
     printf '%s\n' "${RESULT_LINES[@]}" \
-        | sort -t$'\t' -k1,1nr -k2,2nr \
-        | awk -F'\t' '{ printf "%6d  %6d  %5d  %s\n", $1, $2, $3, $4 }'
+        | sort -t$'\t' -k5,5nr -k1,1nr \
+        | awk -F'\t' '{ printf "%6d  %6d  %6d  %6d  %6d  %s\n", $5, $1, $2, $3, $4, $6 }'
 fi
 echo
 echo "Full CSV: $OUT"
