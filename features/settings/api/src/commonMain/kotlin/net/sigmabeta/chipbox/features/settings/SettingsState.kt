@@ -32,6 +32,7 @@ data class SettingsState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val rescanStatus: LCE<Unit> = LCE.Uninitialized,
     val clearLibraryStatus: LCE<Unit> = LCE.Uninitialized,
+    val clearPlaybackHistoryStatus: LCE<Unit> = LCE.Uninitialized,
     val appInfo: AppInfo? = null,
     val formattedBuildDate: String? = null,
     val debugClickCount: Int = 0,
@@ -119,6 +120,7 @@ data class SettingsState(
         rescanRow(stringProvider),
         rescanStatusRowOrNull(stringProvider),
         clearLibraryRow(stringProvider),
+        clearPlaybackHistoryRow(stringProvider),
     )
 
     // Only present while a scan is running (rescanStatus is Loading) — taps open the live scan
@@ -315,6 +317,22 @@ data class SettingsState(
             clickAction = SettingsAction.ClearLibraryClicked,
         )
     }
+
+    private fun clearPlaybackHistoryRow(stringProvider: StringProvider): ListModel =
+        when (clearPlaybackHistoryStatus) {
+            is LCE.Loading -> LoadingItemListModel(
+                loadingType = LoadingType.TEXT_CAPTION,
+                loadOperationName = clearPlaybackHistoryStatus.operationName,
+                loadPositionOffset = 0,
+            )
+
+            else -> NameCaptionListModel(
+                dataId = ChipboxStringId.SETTINGS_LABEL_CLEAR_HISTORY.hashCode().toLong(),
+                name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_CLEAR_HISTORY),
+                caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_CLEAR_HISTORY),
+                clickAction = SettingsAction.ClearPlaybackHistoryClicked,
+            )
+        }
 
     private fun appVersionRow(stringProvider: StringProvider) = LabelValueListModel(
         label = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_APP_VERSION),

@@ -26,6 +26,7 @@ sealed class SettingsAction : ChipboxAction() {
     data object RescanLibraryClicked : SettingsAction()
     data object RescanStatusClicked : SettingsAction()
     data object ClearLibraryClicked : SettingsAction()
+    data object ClearPlaybackHistoryClicked : SettingsAction()
     data object LicensesClicked : SettingsAction()
     data object GithubClicked : SettingsAction()
     data object BuildDateClicked : SettingsAction()

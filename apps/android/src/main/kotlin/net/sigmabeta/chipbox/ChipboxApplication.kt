@@ -60,4 +60,5 @@ class ChipboxApplication :
     override fun director() = appGraph.director
     override fun hatchet() = appGraph.hatchet
     override fun playbackSessionPersister() = appGraph.playbackSessionPersister
+    override fun playbackHistoryRecorder() = appGraph.playbackHistoryRecorder
 }

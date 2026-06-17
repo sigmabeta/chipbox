@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.debug.fake.FakeDebugSettingsManager
 import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
+import net.sigmabeta.chipbox.history.fake.FakePlaybackHistoryRepository
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
@@ -317,6 +318,7 @@ class SettingsViewModelTest {
         settings: FakeChipboxSettingsManager = FakeChipboxSettingsManager(),
         debug: FakeDebugSettingsManager = FakeDebugSettingsManager(),
         repository: Repository = FakeRepository(emptyMap()),
+        playbackHistoryRepository: FakePlaybackHistoryRepository = FakePlaybackHistoryRepository(),
         scanner: CountingScanner = CountingScanner(),
         librarySource: FakeLibrarySource = FakeLibrarySource(),
         appInfo: AppInfo = appInfoOf(),
@@ -324,6 +326,7 @@ class SettingsViewModelTest {
         settingsManager = settings,
         debugSettingsManager = debug,
         repository = repository,
+        playbackHistoryRepository = playbackHistoryRepository,
         scanner = scanner,
         librarySource = librarySource,
         appInfo = appInfo,

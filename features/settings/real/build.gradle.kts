@@ -22,6 +22,7 @@ kotlin {
                 implementation(projects.cbox.common.settings.api)
                 implementation(projects.cbox.common.debug.api)
                 implementation(projects.cbox.common.repository.api)
+                implementation(projects.cbox.common.history.api)
                 implementation(projects.cbox.common.scanner.api)
                 implementation(projects.cbox.common.contentsource.api)
                 // PlaybackStatus route key for SettingsAction.PlaybackStatusClicked -> NavigateTo.
@@ -60,6 +61,7 @@ kotlin {
                 implementation(projects.cbox.common.settings.fake)
                 implementation(projects.cbox.common.debug.fake)
                 implementation(projects.cbox.common.repository.fake)
+                implementation(projects.cbox.common.history.fake)
                 implementation(projects.cbox.common.scanner.fake)
                 implementation(projects.cbox.common.contentsource.fake)
             }

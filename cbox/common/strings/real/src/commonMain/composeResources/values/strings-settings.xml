@@ -29,6 +29,8 @@
     <string name="settings_caption_rescan_library">Look for new tracks in your configured folders.</string>
     <string name="settings_label_clear_library">Clear library data</string>
     <string name="settings_caption_clear_library">Removes all imported games, artists, and tracks. Does not delete files.</string>
+    <string name="settings_label_clear_history">Clear playback history</string>
+    <string name="settings_caption_clear_history">Removes all recorded plays and play counts. Does not affect your library.</string>
 
     <string name="settings_label_app_version">App version</string>
     <string name="settings_label_build_date">Build date</string>

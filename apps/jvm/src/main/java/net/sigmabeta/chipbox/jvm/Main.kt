@@ -19,6 +19,7 @@ fun main() {
     graph.crashReporter.install()
     installMediaControls(graph)
     installSessionPersistence(graph)
+    graph.playbackHistoryRecorder.observe()
     runDesktop(graph)
 }
 
