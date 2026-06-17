@@ -15,6 +15,7 @@ kotlin {
                 implementation(projects.cbox.common.strings.api)
                 implementation(projects.cbox.common.repository.api)
                 implementation(projects.cbox.common.models.api)
+                implementation(projects.cbox.common.scanner.api)
                 implementation(projects.cbox.common.player.common.api)
                 implementation(projects.cbox.common.player.director.api)
 
