@@ -179,6 +179,11 @@ dependencies {
     implementation(projects.cbox.common.database.real)
     implementation(libs.sqlite.bundled)
 
+    // Playback history: JvmHistoryModule provides the HistoryDatabase; the shared history/di module
+    // provides the repository + recorder consumed by JvmChipboxGraph / Main.kt.
+    implementation(projects.cbox.common.history.real)
+    implementation(projects.cbox.common.history.di)
+
     // Shared scanner — uses the new LibrarySource interface; LocalFileContentSource
     // is the JVM impl, the Android twin is AndroidFileContentSource (SAF).
     implementation(projects.cbox.common.scanner.real)

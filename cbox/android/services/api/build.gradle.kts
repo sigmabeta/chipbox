@@ -13,6 +13,7 @@ dependencies {
     api(libs.androidx.media3.session)
 
     implementation(projects.cbox.android.artworkprovider.api)
+    implementation(projects.cbox.common.history.api)
     implementation(projects.cbox.common.player.common.api)
     implementation(projects.cbox.common.player.director.api)
     implementation(projects.cbox.common.player.persistence.api)

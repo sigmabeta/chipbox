@@ -23,6 +23,7 @@ import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.crash.real.RealCrashReporter
 import net.sigmabeta.chipbox.crash.real.RealCrashReportStore
 import net.sigmabeta.chipbox.database.ChipboxDatabase
+import net.sigmabeta.chipbox.history.HistoryDatabase
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.GeneratorSource
 import net.sigmabeta.chipbox.debug.SpeakerSource
@@ -116,6 +117,20 @@ object JvmDatabaseModule {
         .setQueryCoroutineContext(Dispatchers.IO)
         // The library is a derived cache; on a schema bump just rebuild it on the next scan rather
         // than ship migrations. Matches the Android builder.
+        .fallbackToDestructiveMigration(dropAllTables = true)
+        .build()
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object JvmHistoryModule {
+    // Separate file from the library DB so playback history survives library rebuilds. The repo +
+    // recorder that consume this are provided by the shared cbox/common/history/di module.
+    @Provides @SingleIn(AppScope::class)
+    fun provideHistoryDatabase(@Named("dbPath") path: String): HistoryDatabase = Room
+        .databaseBuilder<HistoryDatabase>(name = "$path.history")
+        .setDriver(BundledSQLiteDriver())
+        .setQueryCoroutineContext(Dispatchers.IO)
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 }

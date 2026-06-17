@@ -10,6 +10,7 @@ import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.crash.CrashReporter
+import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.chipbox.player.speaker.real.SourceDataLineSpeaker
@@ -56,6 +57,9 @@ interface JvmChipboxGraph : ViewModelGraph {
 
     /** Saves the last session and restores it on the next launch (see `Main.kt`). */
     val playbackSessionPersister: PlaybackSessionPersister
+
+    /** Records plays to the history database; observed for the process's life (see `Main.kt`). */
+    val playbackHistoryRecorder: PlaybackHistoryRecorder
 
     /** App-lifetime scope (Default dispatcher, SupervisorJob) from `JvmCoroutinesModule`; the
      *  media-control bridge collects the Director's flows on it. */

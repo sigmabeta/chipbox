@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.sage.logging.Hatchet
@@ -22,6 +23,7 @@ class ChipboxPlaybackService : MediaLibraryService() {
     private lateinit var director: Director
     private lateinit var hatchet: Hatchet
     private lateinit var sessionPersister: PlaybackSessionPersister
+    private lateinit var historyRecorder: PlaybackHistoryRecorder
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -40,6 +42,7 @@ class ChipboxPlaybackService : MediaLibraryService() {
         director = graph.director()
         hatchet = graph.hatchet()
         sessionPersister = graph.playbackSessionPersister()
+        historyRecorder = graph.playbackHistoryRecorder()
 
         hatchet.i("Starting service...")
 
@@ -57,6 +60,9 @@ class ChipboxPlaybackService : MediaLibraryService() {
         // with playback for the rest of the service's life.
         sessionPersister.observe()
         serviceScope.launch { sessionPersister.restore() }
+
+        // Record plays to the history database for the rest of the service's life.
+        historyRecorder.observe()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = session

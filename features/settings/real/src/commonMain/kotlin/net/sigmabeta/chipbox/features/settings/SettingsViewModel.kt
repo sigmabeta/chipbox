@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.features.errorlog.ErrorLog
 import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
+import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
@@ -35,6 +36,7 @@ class SettingsViewModel @Inject constructor(
     private val settingsManager: ChipboxSettingsManager,
     private val debugSettingsManager: DebugSettingsManager,
     private val repository: Repository,
+    private val playbackHistoryRepository: PlaybackHistoryRepository,
     private val scanner: Scanner,
     private val librarySource: LibrarySource,
     private val appInfo: AppInfo,
@@ -187,6 +189,8 @@ class SettingsViewModel @Inject constructor(
 
             SettingsAction.ClearLibraryClicked -> onClearLibraryClicked()
 
+            SettingsAction.ClearPlaybackHistoryClicked -> onClearPlaybackHistoryClicked()
+
             SettingsAction.LicensesClicked -> emit(
                 ChipboxEvent.ShowSnackbar("Licenses screen coming soon.")
             )
@@ -239,6 +243,22 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
+    private fun onClearPlaybackHistoryClicked() {
+        updateState { it.copy(clearPlaybackHistoryStatus = LCE.Loading(LOAD_OP_CLEAR_HISTORY)) }
+        viewModelScope.launch {
+            try {
+                playbackHistoryRepository.clearHistory()
+                updateState { it.copy(clearPlaybackHistoryStatus = LCE.Content(Unit)) }
+                emit(ChipboxEvent.ShowSnackbar("Playback history cleared."))
+            } catch (ex: Throwable) {
+                hatchet.e("Clear playback history failed: ${ex.message}")
+                updateState { it.copy(clearPlaybackHistoryStatus = LCE.Error(LOAD_OP_CLEAR_HISTORY, ex)) }
+                emit(ChipboxEvent.ShowSnackbar("Failed to clear playback history."))
+            }
+        }
+    }
+
     private fun onBuildDateClicked() {
         val current = state.value
         val next = current.debugClickCount + 1
@@ -257,6 +277,7 @@ class SettingsViewModel @Inject constructor(
     private companion object {
         private const val LOAD_OP_RESCAN = "settings.rescan"
         private const val LOAD_OP_CLEAR = "settings.clear_library"
+        private const val LOAD_OP_CLEAR_HISTORY = "settings.clear_history"
         private const val DEBUG_TAP_THRESHOLD = 5
         private const val GITHUB_URL = "https://github.com/sigmabeta/chipbox"
     }
