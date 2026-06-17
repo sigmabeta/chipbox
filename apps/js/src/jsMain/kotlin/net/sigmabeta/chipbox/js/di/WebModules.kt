@@ -269,8 +269,9 @@ object WebDirectorModule {
         generator: Generator,
         speaker: Speaker,
         repository: Repository,
+        settingsManager: ChipboxSettingsManager,
         hatchet: Hatchet,
-    ): Director = RealDirector(generator, speaker, repository, hatchet)
+    ): Director = RealDirector(generator, speaker, repository, settingsManager, hatchet)
 }
 
 @BindingContainer

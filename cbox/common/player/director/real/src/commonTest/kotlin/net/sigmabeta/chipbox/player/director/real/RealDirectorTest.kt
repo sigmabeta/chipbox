@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.player.generator.fake.FakeGenerator
 import net.sigmabeta.chipbox.player.speaker.fake.FakeSpeaker
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
+import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
 import net.sigmabeta.chipbox.player.generator.GeneratorEvent
 import net.sigmabeta.chipbox.player.speaker.SpeakerEvent
 import net.sigmabeta.sage.logging.BluntHatchet
@@ -827,6 +828,7 @@ class RealDirectorTest {
             generator = gen,
             speaker = speaker,
             repository = repo,
+            settingsManager = FakeChipboxSettingsManager(),
             hatchet = BluntHatchet(),
             dispatcher = UnconfinedTestDispatcher(testScheduler),
         )

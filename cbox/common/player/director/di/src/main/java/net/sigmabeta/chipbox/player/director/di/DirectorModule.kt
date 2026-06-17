@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.player.director.real.RealDirector
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 
@@ -21,6 +22,7 @@ object DirectorModule {
         generator: Generator,
         speaker: Speaker,
         repository: Repository,
+        settingsManager: ChipboxSettingsManager,
         hatchet: Hatchet,
-    ): Director = RealDirector(generator, speaker, repository, hatchet)
+    ): Director = RealDirector(generator, speaker, repository, settingsManager, hatchet)
 }

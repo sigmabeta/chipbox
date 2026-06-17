@@ -38,6 +38,7 @@ data class SettingsState(
     val shouldShowDebug: Boolean? = null,
     val hasLibraryFolders: Boolean = false,
     val resamplerMode: ResamplerMode = ResamplerMode.DEFAULT,
+    val shuffleSkipsShortTracks: Boolean = true,
     val repositorySource: RepositorySource = RepositorySource.DEFAULT,
     val generatorSource: GeneratorSource = GeneratorSource.DEFAULT,
     val speakerSource: SpeakerSource = SpeakerSource.DEFAULT,
@@ -59,6 +60,17 @@ data class SettingsState(
     private fun audioSection(stringProvider: StringProvider): List<ListModel> = listOf(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_AUDIO),
         resamplerDropdown(stringProvider),
+        shuffleSkipShortRow(stringProvider),
+    )
+
+    // Captioned toggle row: NameCaptionListModel renders `active` as bold/primary, so the enabled
+    // state reads as "on" without a dedicated switch widget. Tapping flips the persisted flag.
+    private fun shuffleSkipShortRow(stringProvider: StringProvider): ListModel = NameCaptionListModel(
+        dataId = ChipboxStringId.SETTINGS_LABEL_SHUFFLE_SKIP_SHORT.hashCode().toLong(),
+        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_SHUFFLE_SKIP_SHORT),
+        caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_SHUFFLE_SKIP_SHORT),
+        clickAction = SettingsAction.ShuffleSkipsShortTracksToggled,
+        active = shuffleSkipsShortTracks,
     )
 
     // OS / Linear / Cubic. Option order mirrors `ResamplerMode.entries`, so the picked index maps

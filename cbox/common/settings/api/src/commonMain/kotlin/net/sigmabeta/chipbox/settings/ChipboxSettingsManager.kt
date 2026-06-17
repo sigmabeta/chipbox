@@ -14,4 +14,7 @@ interface ChipboxSettingsManager {
 
     fun getResamplerMode(): Flow<ResamplerMode>
     fun setResamplerMode(mode: ResamplerMode)
+
+    fun getShuffleSkipsShortTracks(): Flow<Boolean>
+    fun setShuffleSkipsShortTracks(value: Boolean)
 }
