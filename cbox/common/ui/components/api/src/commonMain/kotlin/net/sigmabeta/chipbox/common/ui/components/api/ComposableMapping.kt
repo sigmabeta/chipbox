@@ -26,6 +26,7 @@ import net.sigmabeta.sage.components.LabelValueListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.LoadingItemListModel
 import net.sigmabeta.sage.components.LoadingType
+import net.sigmabeta.sage.components.NameCaptionCheckboxListModel
 import net.sigmabeta.sage.components.NameCaptionListModel
 import net.sigmabeta.sage.components.NameCaptionValueListModel
 import net.sigmabeta.sage.components.NotifListModel
@@ -89,6 +90,8 @@ fun ListModel.Content(
             is LabelValueListModel -> LabelValueListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is NameCaptionListModel -> NameCaptionListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
+
+            is NameCaptionCheckboxListModel -> NameCaptionCheckboxListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is NameCaptionValueListModel -> NameCaptionValueListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
