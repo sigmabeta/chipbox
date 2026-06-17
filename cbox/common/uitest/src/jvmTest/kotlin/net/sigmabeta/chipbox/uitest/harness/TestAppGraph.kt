@@ -15,6 +15,8 @@ import net.sigmabeta.chipbox.debug.ImageLoaderSource
 import net.sigmabeta.chipbox.debug.fake.FakeDebugSettingsManager
 import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
 import net.sigmabeta.chipbox.debuginfo.fake.FakeDebugInfoManager
+import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
+import net.sigmabeta.chipbox.history.fake.FakePlaybackHistoryRepository
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.Repository
@@ -77,6 +79,10 @@ interface TestAppGraph : ViewModelGraph {
     @Provides
     @SingleIn(AppScope::class)
     fun provideRepository(memoryRepository: MemoryRepository): Repository = memoryRepository
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun providePlaybackHistoryRepository(): PlaybackHistoryRepository = FakePlaybackHistoryRepository()
 
     @Provides
     @SingleIn(AppScope::class)
