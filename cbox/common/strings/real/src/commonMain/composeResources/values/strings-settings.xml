@@ -17,6 +17,8 @@
     <string name="settings_resampler_os">System (OS)</string>
     <string name="settings_resampler_linear">Linear</string>
     <string name="settings_resampler_cubic">Cubic</string>
+    <string name="settings_label_shuffle_skip_short">Shuffle skips jingles/SFX</string>
+    <string name="settings_caption_shuffle_skip_short">Reduces jumpscares when shuffling.</string>
 
     <string name="settings_label_brand_font">Brand font</string>
     <string name="settings_label_plain_font">Plain font</string>

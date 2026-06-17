@@ -21,17 +21,20 @@ class FakeChipboxSettingsManager(
     initialBrandFont: String? = null,
     initialPlainFont: String? = null,
     initialResamplerMode: ResamplerMode = ResamplerMode.DEFAULT,
+    initialShuffleSkipsShortTracks: Boolean = true,
 ) : ChipboxSettingsManager {
 
     private val themeMode = MutableStateFlow(initialThemeMode)
     private val brandFont = MutableStateFlow(initialBrandFont)
     private val plainFont = MutableStateFlow(initialPlainFont)
     private val resamplerMode = MutableStateFlow(initialResamplerMode)
+    private val shuffleSkipsShortTracks = MutableStateFlow(initialShuffleSkipsShortTracks)
 
     val setBrandFontCalls: MutableList<String> = mutableListOf()
     val setPlainFontCalls: MutableList<String> = mutableListOf()
     val setThemeModeCalls: MutableList<ThemeMode> = mutableListOf()
     val setResamplerModeCalls: MutableList<ResamplerMode> = mutableListOf()
+    val setShuffleSkipsShortTracksCalls: MutableList<Boolean> = mutableListOf()
 
     override fun getThemeMode(): Flow<ThemeMode> = themeMode.asStateFlow()
     override fun setThemeMode(mode: ThemeMode) {
@@ -55,5 +58,11 @@ class FakeChipboxSettingsManager(
     override fun setPlainFont(fontName: String) {
         setPlainFontCalls += fontName
         plainFont.value = fontName
+    }
+
+    override fun getShuffleSkipsShortTracks(): Flow<Boolean> = shuffleSkipsShortTracks.asStateFlow()
+    override fun setShuffleSkipsShortTracks(value: Boolean) {
+        setShuffleSkipsShortTracksCalls += value
+        shuffleSkipsShortTracks.value = value
     }
 }

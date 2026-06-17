@@ -74,6 +74,11 @@ class SettingsViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            settingsManager.getShuffleSkipsShortTracks().collect { value ->
+                updateState { it.copy(shuffleSkipsShortTracks = value) }
+            }
+        }
+        viewModelScope.launch {
             debugSettingsManager.getShouldShowDebug().collect { value ->
                 updateState { it.copy(shouldShowDebug = value) }
             }
@@ -136,6 +141,9 @@ class SettingsViewModel @Inject constructor(
                 settingsManager.setResamplerMode(action.mode)
                 collapseDropdowns()
             }
+
+            SettingsAction.ShuffleSkipsShortTracksToggled ->
+                settingsManager.setShuffleSkipsShortTracks(!state.value.shuffleSkipsShortTracks)
 
             is SettingsAction.RepositorySourceSelected -> {
                 debugSettingsManager.setRepositorySource(action.source)

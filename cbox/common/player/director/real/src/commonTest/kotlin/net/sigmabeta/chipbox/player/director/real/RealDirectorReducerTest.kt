@@ -15,6 +15,7 @@ import net.sigmabeta.chipbox.player.generator.GeneratorEvent
 import net.sigmabeta.chipbox.player.generator.fake.FakeGenerator
 import net.sigmabeta.chipbox.player.speaker.fake.FakeSpeaker
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
+import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
 import net.sigmabeta.sage.logging.BluntHatchet
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -247,6 +248,7 @@ class RealDirectorReducerTest {
             generator = FakeGenerator(),
             speaker = FakeSpeaker(),
             repository = FakeRepository(all.associateBy { it.id }),
+            settingsManager = FakeChipboxSettingsManager(),
             hatchet = BluntHatchet(),
             dispatcher = UnconfinedTestDispatcher(testScheduler),
         )

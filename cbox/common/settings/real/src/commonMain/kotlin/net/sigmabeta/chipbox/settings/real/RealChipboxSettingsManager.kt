@@ -26,10 +26,20 @@ class RealChipboxSettingsManager(private val storage: Storage) : ChipboxSettings
 
     override fun setResamplerMode(mode: ResamplerMode) = storage.saveString(KEY_RESAMPLER_MODE, mode.name)
 
+    // Defaults to on (no stored value → true): most listeners would rather not get ambushed by a
+    // 2-second jingle mid-shuffle, so we opt them in until they say otherwise.
+    override fun getShuffleSkipsShortTracks(): Flow<Boolean> = storage
+        .savedStringFlow(KEY_SHUFFLE_SKIP_SHORT)
+        .map { it?.toBooleanStrictOrNull() ?: true }
+
+    override fun setShuffleSkipsShortTracks(value: Boolean) =
+        storage.saveString(KEY_SHUFFLE_SKIP_SHORT, value.toString())
+
     companion object {
         const val KEY_BRAND_FONT = "setting.font.brand"
         const val KEY_PLAIN_FONT = "setting.font.plain"
         const val KEY_THEME_MODE = "setting.theme.mode"
         const val KEY_RESAMPLER_MODE = "setting.audio.resampler"
+        const val KEY_SHUFFLE_SKIP_SHORT = "setting.shuffle.skip_short_tracks"
     }
 }

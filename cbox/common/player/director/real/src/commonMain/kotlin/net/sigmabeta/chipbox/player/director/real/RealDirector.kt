@@ -34,9 +34,14 @@ import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.player.speaker.SpeakerEvent
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.sage.logging.Hatchet
 
 private const val SKIP_BACK_THRESHOLD_MS = 3_000L
+
+/** When "shuffle skips jingles/SFX" is on, shuffled setlists drop tracks shorter than this so
+ *  short stings don't ambush the listener mid-shuffle. */
+private const val MIN_SHUFFLE_TRACK_MS = 10_000L
 
 /** Consecutive generator errors (with no successful audio in between) before the director
  *  gives up and stops the session instead of skipping to yet another track. */
@@ -76,6 +81,7 @@ class RealDirector(
     private val generator: Generator,
     private val speaker: Speaker,
     private val repository: Repository,
+    private val settingsManager: ChipboxSettingsManager,
     private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1)
 ) : Director {
@@ -707,40 +713,53 @@ class RealDirector(
         return m.setlist?.getOrNull(position)
     }
 
-    private suspend fun getSetlistForSession(session: Session) = when (session.type) {
-        SessionType.GAME -> getTrackListForGame(session.contentId)
-        SessionType.ARTIST -> getTrackListForArtist(session.contentId)
-        SessionType.PLAYLIST -> getTrackListForPlaylist(session.contentId)
-        SessionType.ALL_TRACKS -> getTrackListForAllTracks()
-        SessionType.PLATFORM -> getTrackListForPlatform(session.contentId)
-        SessionType.SETLIST -> session.explicitSetlist.orEmpty()
-        SessionType.SINGLE_TRACK -> listOf(session.contentId)
+    private suspend fun getSetlistForSession(session: Session): List<Long> {
+        // Only filter when the user is actually shuffling and has opted in. Non-shuffled playback
+        // (and explicit/single-track setlists, which we have no lengths for here) is untouched.
+        val skipShort = session.shuffled && settingsManager.getShuffleSkipsShortTracks().first()
+        return when (session.type) {
+            SessionType.GAME -> getTrackListForGame(session.contentId, skipShort)
+            SessionType.ARTIST -> getTrackListForArtist(session.contentId, skipShort)
+            SessionType.PLAYLIST -> getTrackListForPlaylist(session.contentId)
+            SessionType.ALL_TRACKS -> getTrackListForAllTracks(skipShort)
+            SessionType.PLATFORM -> getTrackListForPlatform(session.contentId, skipShort)
+            SessionType.SETLIST -> session.explicitSetlist.orEmpty()
+            SessionType.SINGLE_TRACK -> listOf(session.contentId)
+        }
     }
 
-    private suspend fun getTrackListForPlatform(contentId: Long) = repository
-        .getTracksForPlatform(Platform.entries[contentId.toInt()])
-        .map { it.id }
+    // Drops sub-[MIN_SHUFFLE_TRACK_MS] tracks when [skipShort], but never to nothing: a library (or
+    // game) made entirely of short stings would otherwise yield an empty setlist and stall playback,
+    // so we fall back to the unfiltered list in that case.
+    private fun List<Track>.toSetlistIds(skipShort: Boolean): List<Long> {
+        val kept = if (skipShort) filter { it.trackLengthMs >= MIN_SHUFFLE_TRACK_MS } else this
+        return kept.ifEmpty { this }.map { it.id }
+    }
 
-    private suspend fun getTrackListForGame(gameId: Long) = repository
+    private suspend fun getTrackListForPlatform(contentId: Long, skipShort: Boolean) = repository
+        .getTracksForPlatform(Platform.entries[contentId.toInt()])
+        .toSetlistIds(skipShort)
+
+    private suspend fun getTrackListForGame(gameId: Long, skipShort: Boolean) = repository
         .getTracksForGame(gameId)
-        .map { it.id }
+        .toSetlistIds(skipShort)
 
     // Order (A–Z by game title) is owned by the DAO query, so it matches the artist-detail screen
     // without hydrating each track's Game here — we only need the ids.
-    private suspend fun getTrackListForArtist(artistId: Long) = repository
+    private suspend fun getTrackListForArtist(artistId: Long, skipShort: Boolean) = repository
         .getTracksForArtist(artistId)
-        .map { it.id }
+        .toSetlistIds(skipShort)
 
     private fun getTrackListForPlaylist(playlistId: Long): List<Long> {
         TODO("Not yet implemented")
     }
 
-    private suspend fun getTrackListForAllTracks(): List<Long> = repository
+    private suspend fun getTrackListForAllTracks(skipShort: Boolean): List<Long> = repository
         .getAllTracks(withGame = false, withArtists = false)
         .filter { it is Data.Succeeded }
         .map { (it as Data.Succeeded).data }
         .first()
-        .map { it.id }
+        .toSetlistIds(skipShort)
 
     // ---- generator-event reducers ----
 

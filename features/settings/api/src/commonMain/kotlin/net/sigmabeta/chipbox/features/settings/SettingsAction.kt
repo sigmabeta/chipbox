@@ -13,6 +13,7 @@ sealed class SettingsAction : ChipboxAction() {
     data class DropdownExpandClicked(val settingId: String) : SettingsAction()
     data class ThemeModeSelected(val mode: ThemeMode) : SettingsAction()
     data class ResamplerModeSelected(val mode: ResamplerMode) : SettingsAction()
+    data object ShuffleSkipsShortTracksToggled : SettingsAction()
     data class RepositorySourceSelected(val source: RepositorySource) : SettingsAction()
     data class GeneratorSourceSelected(val source: GeneratorSource) : SettingsAction()
     data class SpeakerSourceSelected(val source: SpeakerSource) : SettingsAction()
