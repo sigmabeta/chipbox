@@ -267,7 +267,15 @@ jobs:
             - .gradle/wrapper
 
   static-analysis:
-    executor: android
+    # Detekt runs with type resolution, so this job compiles (and KSP-processes,
+    # e.g. Room in :cbox:common:history:real) the modules it lints. On the default
+    # `medium` box (4 GB) that compile + daemon/metaspace/KSP overhead under
+    # -Xmx3200m got OOM-killed — "daemon disappeared unexpectedly". Give it the
+    # same headroom as the other compile-heavy jobs (shared-build, unit-test-jvm).
+    executor:
+      name: android
+      resource_class: large
+      jvm_opts: -Xms2g -Xmx4g
 
     steps:
       - attach_built_workspace
