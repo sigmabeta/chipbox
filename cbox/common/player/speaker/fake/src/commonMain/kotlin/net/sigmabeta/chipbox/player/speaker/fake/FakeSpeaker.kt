@@ -38,6 +38,8 @@ class FakeSpeaker : Speaker {
     var releaseCalls: Int = 0
     val setDuckedCalls = mutableListOf<Boolean>()
     val setVolumeCalls = mutableListOf<Double>()
+    val setNormalizationEnabledCalls = mutableListOf<Boolean>()
+    val setFadeInEnabledCalls = mutableListOf<Boolean>()
 
     /** Push [event] into the events flow that the Director subscribes to in its `init`. */
     suspend fun emit(event: SpeakerEvent) = eventSink.emit(event)
@@ -68,6 +70,12 @@ class FakeSpeaker : Speaker {
     }
     override fun setVolume(scale: Double) {
         setVolumeCalls += scale
+    }
+    override fun setNormalizationEnabled(enabled: Boolean) {
+        setNormalizationEnabledCalls += enabled
+    }
+    override fun setFadeInEnabled(enabled: Boolean) {
+        setFadeInEnabledCalls += enabled
     }
     override fun setVolumeModification(key: String, scale: Double) = Unit
     override fun clearVolumeModification(key: String) = Unit

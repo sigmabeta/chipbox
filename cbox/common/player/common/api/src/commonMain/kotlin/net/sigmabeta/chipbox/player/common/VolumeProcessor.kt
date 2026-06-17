@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.player.common
 
 import net.sigmabeta.sage.logging.Hatchet
+import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.math.abs
@@ -69,12 +70,67 @@ class VolumeProcessor(private val hatchet: Hatchet) {
     private var actualGain: Double = STARTING_GAIN
 
     /**
-     * Snap the smoothed gain back to unity. The speaker calls this when a new track begins so
-     * the new track's gain (normalization, plus any active duck/master) ramps in cleanly from
-     * STARTING_GAIN rather than continuing from the previous track's ramp state.
+     * When false, [setNormalization] is a no-op and any active normalization gain is cleared, so
+     * tracks play at their raw measured loudness. When true (default), normalization is applied.
+     * Driven live by the director from the user setting. Read on the speaker coroutine but written
+     * from the director coroutine, hence [Volatile].
+     */
+    @Volatile
+    private var normalizationEnabled: Boolean = true
+
+    /**
+     * When false, [resetGain] snaps straight to unity so a new track starts at full volume with no
+     * fade-in ramp; when true (default), it starts from [STARTING_GAIN] and ramps up. Driven live
+     * by the director from the user setting. [Volatile] for the same cross-coroutine reason as
+     * [normalizationEnabled].
+     */
+    @Volatile
+    private var fadeInEnabled: Boolean = true
+
+    /**
+     * The last (LUFS, dBTP) the speaker reported via [setNormalization], retained so re-enabling
+     * normalization mid-track can re-derive the *current* track's gain immediately instead of
+     * waiting for the next track. Written on the speaker coroutine, read on the director coroutine
+     * (from [setNormalizationEnabled]), so it's held behind an atomic for a consistent pair.
+     * Starts as (NaN, NaN) — the "nothing measured yet" sentinel, which [normalizationGain] maps to
+     * unity.
+     */
+    private val lastNormalizationInput = AtomicReference(NormalizationInput(Double.NaN, Double.NaN))
+
+    /**
+     * Snap the smoothed gain back to its track-start value. The speaker calls this when a new track
+     * begins so the new track's gain (normalization, plus any active duck/master) ramps in cleanly
+     * rather than continuing from the previous track's ramp state. With the fade-in disabled this
+     * starts at unity (no ramp); otherwise it starts at [STARTING_GAIN] and ramps up.
      */
     fun resetGain() {
-        actualGain = STARTING_GAIN
+        actualGain = if (fadeInEnabled) STARTING_GAIN else 1.0
+    }
+
+    /**
+     * Enable or disable loudness normalization. Both directions take effect on the current track:
+     * disabling clears the normalization gain and the smoothed gain ramps back toward the raw level;
+     * enabling re-derives the gain from the last measured loudness ([lastNormalizationInput]) and
+     * ramps into it. With no measurement yet (e.g. before the first buffer) the derived gain is
+     * unity, so enabling is a no-op until loudness arrives. Independent of the fade, ducking, and
+     * master volume.
+     */
+    fun setNormalizationEnabled(enabled: Boolean) {
+        normalizationEnabled = enabled
+        if (enabled) {
+            val input = lastNormalizationInput.load()
+            setModification(KEY_NORMALIZATION, normalizationGain(input.loudnessLufs, input.truePeakDbtp))
+        } else {
+            clearModification(KEY_NORMALIZATION)
+        }
+    }
+
+    /**
+     * Enable or disable the start-of-track fade-in — the [STARTING_GAIN]→unity ramp [resetGain]
+     * arms. Takes effect at the next track start.
+     */
+    fun setFadeInEnabled(enabled: Boolean) {
+        fadeInEnabled = enabled
     }
 
     /**
@@ -152,6 +208,10 @@ class VolumeProcessor(private val hatchet: Hatchet) {
      * stable.
      */
     fun setNormalization(loudnessLufs: Double, truePeakDbtp: Double) {
+        // Remember the measurement even while disabled, so a later enable can re-derive this track's
+        // gain without waiting for the next track to report loudness again.
+        lastNormalizationInput.store(NormalizationInput(loudnessLufs, truePeakDbtp))
+        if (!normalizationEnabled) return
         setModification(KEY_NORMALIZATION, normalizationGain(loudnessLufs, truePeakDbtp))
     }
 
@@ -235,8 +295,12 @@ class VolumeProcessor(private val hatchet: Hatchet) {
             .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt())
             .toShort()
 
+    /** Immutable (LUFS, dBTP) pair, stored atomically so the speaker-thread writer and
+     *  director-thread reader always see a consistent measurement. */
+    private data class NormalizationInput(val loudnessLufs: Double, val truePeakDbtp: Double)
+
     companion object {
-        // TODO We should expose an option in the settings menu so users can choose fade-from-zero
+        /** Track-start gain the fade-in ramps up from (when enabled via [setFadeInEnabled]). */
         const val STARTING_GAIN = 0.5
 
         /** Registry key for OS-driven transient ducking. */

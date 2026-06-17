@@ -41,6 +41,8 @@ data class SettingsState(
     val hasLibraryFolders: Boolean = false,
     val resamplerMode: ResamplerMode = ResamplerMode.DEFAULT,
     val shuffleSkipsShortTracks: Boolean = true,
+    val normalizeVolume: Boolean = true,
+    val muffleGlitchesOnStart: Boolean = true,
     val repositorySource: RepositorySource = RepositorySource.DEFAULT,
     val generatorSource: GeneratorSource = GeneratorSource.DEFAULT,
     val speakerSource: SpeakerSource = SpeakerSource.DEFAULT,
@@ -62,6 +64,8 @@ data class SettingsState(
     private fun audioSection(stringProvider: StringProvider): List<ListModel> = listOf(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_AUDIO),
         resamplerDropdown(stringProvider),
+        normalizeVolumeRow(stringProvider),
+        muffleGlitchesRow(stringProvider),
         shuffleSkipShortRow(stringProvider),
     )
 
@@ -73,6 +77,22 @@ data class SettingsState(
         caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_SHUFFLE_SKIP_SHORT),
         checked = shuffleSkipsShortTracks,
         clickAction = SettingsAction.ShuffleSkipsShortTracksToggled,
+    )
+
+    private fun normalizeVolumeRow(stringProvider: StringProvider): ListModel = NameCaptionCheckboxListModel(
+        settingId = ChipboxStringId.SETTINGS_LABEL_NORMALIZE_VOLUME.name,
+        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_NORMALIZE_VOLUME),
+        caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_NORMALIZE_VOLUME),
+        checked = normalizeVolume,
+        clickAction = SettingsAction.NormalizeVolumeToggled,
+    )
+
+    private fun muffleGlitchesRow(stringProvider: StringProvider): ListModel = NameCaptionCheckboxListModel(
+        settingId = ChipboxStringId.SETTINGS_LABEL_MUFFLE_GLITCHES.name,
+        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_MUFFLE_GLITCHES),
+        caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_MUFFLE_GLITCHES),
+        checked = muffleGlitchesOnStart,
+        clickAction = SettingsAction.MuffleGlitchesToggled,
     )
 
     // OS / Linear / Cubic. Option order mirrors `ResamplerMode.entries`, so the picked index maps

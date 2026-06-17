@@ -17,4 +17,10 @@ interface ChipboxSettingsManager {
 
     fun getShuffleSkipsShortTracks(): Flow<Boolean>
     fun setShuffleSkipsShortTracks(value: Boolean)
+
+    fun getVolumeNormalizationEnabled(): Flow<Boolean>
+    fun setVolumeNormalizationEnabled(value: Boolean)
+
+    fun getFadeInEnabled(): Flow<Boolean>
+    fun setFadeInEnabled(value: Boolean)
 }
