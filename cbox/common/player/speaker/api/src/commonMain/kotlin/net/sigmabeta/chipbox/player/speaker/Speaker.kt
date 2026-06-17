@@ -61,6 +61,14 @@ interface Speaker {
      *  `1.5` boosts it by 50%. Independent of the fade-out and of ducking. */
     fun setVolume(scale: Double)
 
+    /** Enable or disable loudness normalization. When disabled, tracks play at their raw measured
+     *  loudness; when enabled, quiet tracks are raised and loud ones lowered toward a target. */
+    fun setNormalizationEnabled(enabled: Boolean)
+
+    /** Enable or disable the short fade-in at the start of each track (muffles loud glitchy noises
+     *  some emulators emit on the first frames). When disabled, tracks start at full volume. */
+    fun setFadeInEnabled(enabled: Boolean)
+
     /** Register an arbitrary, independently-keyed volume modification. */
     fun setVolumeModification(key: String, scale: Double)
 

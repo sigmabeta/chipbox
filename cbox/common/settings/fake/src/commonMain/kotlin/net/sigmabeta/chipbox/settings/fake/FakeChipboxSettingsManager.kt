@@ -22,6 +22,8 @@ class FakeChipboxSettingsManager(
     initialPlainFont: String? = null,
     initialResamplerMode: ResamplerMode = ResamplerMode.DEFAULT,
     initialShuffleSkipsShortTracks: Boolean = true,
+    initialVolumeNormalizationEnabled: Boolean = true,
+    initialFadeInEnabled: Boolean = true,
 ) : ChipboxSettingsManager {
 
     private val themeMode = MutableStateFlow(initialThemeMode)
@@ -29,12 +31,16 @@ class FakeChipboxSettingsManager(
     private val plainFont = MutableStateFlow(initialPlainFont)
     private val resamplerMode = MutableStateFlow(initialResamplerMode)
     private val shuffleSkipsShortTracks = MutableStateFlow(initialShuffleSkipsShortTracks)
+    private val volumeNormalizationEnabled = MutableStateFlow(initialVolumeNormalizationEnabled)
+    private val fadeInEnabled = MutableStateFlow(initialFadeInEnabled)
 
     val setBrandFontCalls: MutableList<String> = mutableListOf()
     val setPlainFontCalls: MutableList<String> = mutableListOf()
     val setThemeModeCalls: MutableList<ThemeMode> = mutableListOf()
     val setResamplerModeCalls: MutableList<ResamplerMode> = mutableListOf()
     val setShuffleSkipsShortTracksCalls: MutableList<Boolean> = mutableListOf()
+    val setVolumeNormalizationEnabledCalls: MutableList<Boolean> = mutableListOf()
+    val setFadeInEnabledCalls: MutableList<Boolean> = mutableListOf()
 
     override fun getThemeMode(): Flow<ThemeMode> = themeMode.asStateFlow()
     override fun setThemeMode(mode: ThemeMode) {
@@ -64,5 +70,17 @@ class FakeChipboxSettingsManager(
     override fun setShuffleSkipsShortTracks(value: Boolean) {
         setShuffleSkipsShortTracksCalls += value
         shuffleSkipsShortTracks.value = value
+    }
+
+    override fun getVolumeNormalizationEnabled(): Flow<Boolean> = volumeNormalizationEnabled.asStateFlow()
+    override fun setVolumeNormalizationEnabled(value: Boolean) {
+        setVolumeNormalizationEnabledCalls += value
+        volumeNormalizationEnabled.value = value
+    }
+
+    override fun getFadeInEnabled(): Flow<Boolean> = fadeInEnabled.asStateFlow()
+    override fun setFadeInEnabled(value: Boolean) {
+        setFadeInEnabledCalls += value
+        fadeInEnabled.value = value
     }
 }

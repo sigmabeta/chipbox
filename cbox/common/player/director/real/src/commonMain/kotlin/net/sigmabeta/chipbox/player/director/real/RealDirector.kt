@@ -188,6 +188,17 @@ class RealDirector(
                 speaker.events().distinctUntilChanged().map { Input.Spk(it) },
             ).collect(::process)
         }
+
+        // Bridge the two audio toggles from settings to the speaker's VolumeProcessor. The director
+        // is the natural place for this: it already holds both the speaker and the settings manager,
+        // so neither has to depend on the other. Each collector emits the persisted value on
+        // subscription, configuring the speaker before playback starts, then on every change.
+        directorScope.launch {
+            settingsManager.getVolumeNormalizationEnabled().collect(speaker::setNormalizationEnabled)
+        }
+        directorScope.launch {
+            settingsManager.getFadeInEnabled().collect(speaker::setFadeInEnabled)
+        }
     }
 
     private suspend fun process(input: Input) {

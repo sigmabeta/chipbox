@@ -35,11 +35,31 @@ class RealChipboxSettingsManager(private val storage: Storage) : ChipboxSettings
     override fun setShuffleSkipsShortTracks(value: Boolean) =
         storage.saveString(KEY_SHUFFLE_SKIP_SHORT, value.toString())
 
+    // Defaults to on (no stored value → true): loudness normalization is the expected default so
+    // tracks don't lurch in volume across a varied library.
+    override fun getVolumeNormalizationEnabled(): Flow<Boolean> = storage
+        .savedStringFlow(KEY_VOLUME_NORMALIZATION)
+        .map { it?.toBooleanStrictOrNull() ?: true }
+
+    override fun setVolumeNormalizationEnabled(value: Boolean) =
+        storage.saveString(KEY_VOLUME_NORMALIZATION, value.toString())
+
+    // Defaults to on (no stored value → true): the short fade-in muffles the loud glitchy noises
+    // some emulators emit on a track's first frames, so it's on unless the user opts out.
+    override fun getFadeInEnabled(): Flow<Boolean> = storage
+        .savedStringFlow(KEY_FADE_IN)
+        .map { it?.toBooleanStrictOrNull() ?: true }
+
+    override fun setFadeInEnabled(value: Boolean) =
+        storage.saveString(KEY_FADE_IN, value.toString())
+
     companion object {
         const val KEY_BRAND_FONT = "setting.font.brand"
         const val KEY_PLAIN_FONT = "setting.font.plain"
         const val KEY_THEME_MODE = "setting.theme.mode"
         const val KEY_RESAMPLER_MODE = "setting.audio.resampler"
         const val KEY_SHUFFLE_SKIP_SHORT = "setting.shuffle.skip_short_tracks"
+        const val KEY_VOLUME_NORMALIZATION = "setting.audio.volume_normalization"
+        const val KEY_FADE_IN = "setting.audio.fade_in"
     }
 }

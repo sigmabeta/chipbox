@@ -14,6 +14,8 @@ sealed class SettingsAction : ChipboxAction() {
     data class ThemeModeSelected(val mode: ThemeMode) : SettingsAction()
     data class ResamplerModeSelected(val mode: ResamplerMode) : SettingsAction()
     data object ShuffleSkipsShortTracksToggled : SettingsAction()
+    data object NormalizeVolumeToggled : SettingsAction()
+    data object MuffleGlitchesToggled : SettingsAction()
     data class RepositorySourceSelected(val source: RepositorySource) : SettingsAction()
     data class GeneratorSourceSelected(val source: GeneratorSource) : SettingsAction()
     data class SpeakerSourceSelected(val source: SpeakerSource) : SettingsAction()

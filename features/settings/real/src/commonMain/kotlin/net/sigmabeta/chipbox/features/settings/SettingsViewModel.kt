@@ -81,6 +81,16 @@ class SettingsViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            settingsManager.getVolumeNormalizationEnabled().collect { value ->
+                updateState { it.copy(normalizeVolume = value) }
+            }
+        }
+        viewModelScope.launch {
+            settingsManager.getFadeInEnabled().collect { value ->
+                updateState { it.copy(muffleGlitchesOnStart = value) }
+            }
+        }
+        viewModelScope.launch {
             debugSettingsManager.getShouldShowDebug().collect { value ->
                 updateState { it.copy(shouldShowDebug = value) }
             }
@@ -146,6 +156,12 @@ class SettingsViewModel @Inject constructor(
 
             SettingsAction.ShuffleSkipsShortTracksToggled ->
                 settingsManager.setShuffleSkipsShortTracks(!state.value.shuffleSkipsShortTracks)
+
+            SettingsAction.NormalizeVolumeToggled ->
+                settingsManager.setVolumeNormalizationEnabled(!state.value.normalizeVolume)
+
+            SettingsAction.MuffleGlitchesToggled ->
+                settingsManager.setFadeInEnabled(!state.value.muffleGlitchesOnStart)
 
             is SettingsAction.RepositorySourceSelected -> {
                 debugSettingsManager.setRepositorySource(action.source)

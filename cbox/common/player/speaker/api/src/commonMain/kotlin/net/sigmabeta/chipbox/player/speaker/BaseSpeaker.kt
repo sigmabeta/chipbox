@@ -73,6 +73,14 @@ abstract class BaseSpeaker(
      *  Independent of the fade-out and of ducking. */
     override fun setVolume(scale: Double) = volumeProcessor.setMasterVolume(scale)
 
+    /** Enable/disable loudness normalization for subsequently-applied buffers. */
+    override fun setNormalizationEnabled(enabled: Boolean) =
+        volumeProcessor.setNormalizationEnabled(enabled)
+
+    /** Enable/disable the start-of-track fade-in. Takes effect at the next track start. */
+    override fun setFadeInEnabled(enabled: Boolean) =
+        volumeProcessor.setFadeInEnabled(enabled)
+
     /** Register an arbitrary, independently-keyed volume modification. No UI yet — API only. */
     override fun setVolumeModification(key: String, scale: Double) =
         volumeProcessor.setModification(key, scale)
