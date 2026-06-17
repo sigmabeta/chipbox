@@ -2,7 +2,9 @@ package net.sigmabeta.chipbox.history.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.entities.SongPlayCountEntity
+import net.sigmabeta.chipbox.history.PlayCount
 
 @Dao
 interface SongPlayCountDao {
@@ -16,6 +18,13 @@ interface SongPlayCountDao {
 
     @Query("SELECT * FROM song_play_count WHERE trackId = :trackId")
     suspend fun getCountSync(trackId: Long): SongPlayCountEntity?
+
+    // Most-played songs, highest count first. playCount > 1 keeps one-off plays out of "most played".
+    @Query(
+        "SELECT trackId AS id, playCount, lastPlayedMs FROM song_play_count " +
+            "WHERE playCount > 1 ORDER BY playCount DESC, lastPlayedMs DESC LIMIT :limit",
+    )
+    fun getMostPlayed(limit: Int): Flow<List<PlayCount>>
 
     @Query("DELETE FROM song_play_count")
     suspend fun nukeTable()

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,20 +56,8 @@ fun GridImage(
     )
     val fontWeight = FontWeight(fontWeightValue)
 
-    ElevatedRoundRect(
-        modifier = modifier
-            .padding(paddingValues = padding)
-            .defaultMinSize(minWidth = SquareConstants.MIN_WIDTH)
-            .aspectRatio(model.aspectRatio)
-            // Cache the cell's rasterized contents into an offscreen Skia / GPU layer so scroll
-            // translates the layer instead of re-rasterizing the image + scrim + text on every
-            // frame. The cell's content only redraws when state inside it changes (model.active
-            // flip, image load completion); during scroll the contents are static and the
-            // layer is just translated — cheap on every backend. Big win on Skiko (web + JVM),
-            // standard pattern on Android.
-            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-            .clickable { actionSink.sendAction(model.clickAction) }
-    ) {
+    // The cell's visuals, shared by both the plain and width-capped layouts below.
+    val cell: @Composable () -> Unit = {
         Box {
             CrossfadeImage(
                 sourceInfo = sourceInfo,
@@ -91,6 +80,38 @@ fun GridImage(
                     .padding(NameInnerPadding)
                     .padding(top = NameExtraTopPadding), // For extra scrim
             )
+        }
+    }
+
+    val cellModifier = Modifier
+        .defaultMinSize(minWidth = SquareConstants.MIN_WIDTH)
+        .aspectRatio(model.aspectRatio)
+        // Cache the cell's rasterized contents into an offscreen Skia / GPU layer so scroll
+        // translates the layer instead of re-rasterizing the image + scrim + text on every
+        // frame. The cell's content only redraws when state inside it changes (model.active
+        // flip, image load completion); during scroll the contents are static and the
+        // layer is just translated — cheap on every backend. Big win on Skiko (web + JVM),
+        // standard pattern on Android.
+        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        .clickable { actionSink.sendAction(model.clickAction) }
+
+    val maxWidthDp = model.maxWidthDp
+    if (maxWidthDp != null) {
+        // Cap the cell's width and center it in the available space, so a single full-width item
+        // (e.g. the "game of the day" hero) doesn't stretch across the whole screen.
+        Box(
+            modifier = modifier
+                .padding(paddingValues = padding)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center,
+        ) {
+            ElevatedRoundRect(modifier = Modifier.widthIn(max = maxWidthDp.dp).then(cellModifier)) {
+                cell()
+            }
+        }
+    } else {
+        ElevatedRoundRect(modifier = modifier.padding(paddingValues = padding).then(cellModifier)) {
+            cell()
         }
     }
 }

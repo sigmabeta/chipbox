@@ -76,6 +76,25 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `ArtistClicked emits NavigateTo ArtistDetail`() = runTest {
+        val vm = newVm()
+        val event = collectAndDispatch(vm, HomeAction.ArtistClicked(id = 7L))
+        assertTrue(event is ChipboxEvent.NavigateTo)
+        assertEquals(ArtistDetail(7L), event.destination)
+    }
+
+    @Test
+    fun `SongClicked starts a SINGLE_TRACK session for that track`() = runTest {
+        val director = RecordingDirector()
+        val vm = newVm(director = director)
+        vm.sendAction(HomeAction.SongClicked(id = 99L))
+        assertEquals(1, director.startSessionCalls.size)
+        val session = director.startSessionCalls.single()
+        assertEquals(SessionType.SINGLE_TRACK, session.type)
+        assertEquals(99L, session.contentId)
+    }
+
+    @Test
     fun `RandomGameClicked picks one of the loaded games and navigates`() = runTest {
         val games = listOf(gameOf(7L), gameOf(8L))
         val vm = newVm(repository = repoWithRandomGames(games))

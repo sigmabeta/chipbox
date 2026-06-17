@@ -94,6 +94,7 @@ class RealPlaybackHistoryRecorder(
                         record(track)
                         recorded = true
                     }
+
                     // Track ended in place (last track of a setlist drains to STOPPED/ENDING) and it
                     // actually played through — record regardless of length.
                     (slice.state == PlayerState.ENDING || slice.state == PlayerState.STOPPED) &&
