@@ -19,6 +19,7 @@ import net.sigmabeta.sage.components.LabelValueListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.LoadingItemListModel
 import net.sigmabeta.sage.components.LoadingType
+import net.sigmabeta.sage.components.NameCaptionCheckboxListModel
 import net.sigmabeta.sage.components.NameCaptionListModel
 import net.sigmabeta.sage.components.SectionHeaderListModel
 import net.sigmabeta.sage.components.SingleTextListModel
@@ -64,14 +65,14 @@ data class SettingsState(
         shuffleSkipShortRow(stringProvider),
     )
 
-    // Captioned toggle row: NameCaptionListModel renders `active` as bold/primary, so the enabled
-    // state reads as "on" without a dedicated switch widget. Tapping flips the persisted flag.
-    private fun shuffleSkipShortRow(stringProvider: StringProvider): ListModel = NameCaptionListModel(
-        dataId = ChipboxStringId.SETTINGS_LABEL_SHUFFLE_SKIP_SHORT.hashCode().toLong(),
+    // Captioned checkbox row: the caption explains what the toggle does, the checkbox shows its
+    // on/off state. Tapping anywhere on the row flips the persisted flag.
+    private fun shuffleSkipShortRow(stringProvider: StringProvider): ListModel = NameCaptionCheckboxListModel(
+        settingId = ChipboxStringId.SETTINGS_LABEL_SHUFFLE_SKIP_SHORT.name,
         name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_SHUFFLE_SKIP_SHORT),
         caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_SHUFFLE_SKIP_SHORT),
+        checked = shuffleSkipsShortTracks,
         clickAction = SettingsAction.ShuffleSkipsShortTracksToggled,
-        active = shuffleSkipsShortTracks,
     )
 
     // OS / Linear / Cubic. Option order mirrors `ResamplerMode.entries`, so the picked index maps
