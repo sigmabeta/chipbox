@@ -10,7 +10,9 @@ import net.sigmabeta.chipbox.features.home.HomeAction
 import net.sigmabeta.chipbox.features.home.HomeSectionState
 import net.sigmabeta.chipbox.features.home.HomeState
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
+import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.ui.previews.DevicePreviews
 import net.sigmabeta.chipbox.ui.previews.ListScreenPreview
 import net.sigmabeta.chipbox.ui.previews.fake.FakeModelGenerator
@@ -23,10 +25,21 @@ import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.list.WidthClass
 import net.sigmabeta.sage.ui.Icon
 
-private const val RANDOM_GAMES_ID = "random_games"
-private const val RANDOM_GAMES_PRIORITY = 100
+private const val GAME_OF_THE_DAY_ID = "game_of_the_day"
+private const val GAME_OF_THE_DAY_PRIORITY = 100
 private const val GAME_COVER_ASPECT_RATIO = 0.75f
+private const val GAME_OF_THE_DAY_MAX_WIDTH_DP = 400f
 private const val GAME_ID_OFFSET = 3_000_000_000L
+private const val RECENTLY_PLAYED_ID = "recently_played_games"
+private const val RECENTLY_PLAYED_PRIORITY = 200
+private const val RECENTLY_PLAYED_GAME_OFFSET = 4_000_000_000L
+private const val MOST_PLAYED_SONGS_ID = "most_played_songs"
+private const val MOST_PLAYED_SONGS_PRIORITY = 300
+private const val SONG_ID_OFFSET = 5_000_000_000L
+private const val MOST_PLAYED_ARTISTS_ID = "most_played_artists"
+private const val MOST_PLAYED_ARTISTS_PRIORITY = 500
+private const val ARTIST_ID_OFFSET = 7_000_000_000L
+private const val PREVIEW_SCROLLER_COUNT = 6
 private const val RNG_ID = "rng_take_the_wheel"
 private const val RNG_PRIORITY = 1000
 private const val RNG_SONG_DATA_ID = -1001L
@@ -65,7 +78,10 @@ internal fun HomeLoading(
 }
 
 private fun homeState(): HomeState {
-    val games = FakeModelGenerator().randomGames()
+    val generator = FakeModelGenerator()
+    val games = generator.randomGames()
+    val artists = generator.randomArtists()
+    val tracks = generator.randomTracks(artists, games)
     return HomeState(
         sections = persistentListOf(
             // showHeader = false mirrors NowPlayingHomeModule's override — the card carries
@@ -77,12 +93,68 @@ private fun homeState(): HomeState {
                 nowPlayingItem(games.first()),
                 showHeader = false
             ),
-            section(RANDOM_GAMES_ID, RANDOM_GAMES_PRIORITY, "Games of the day", gameCards(games)),
+            section(
+                GAME_OF_THE_DAY_ID,
+                GAME_OF_THE_DAY_PRIORITY,
+                "Game of the day",
+                persistentListOf(
+                    gameCard(
+                        games.first().id + GAME_ID_OFFSET,
+                        games.first(),
+                        maxWidthDp = GAME_OF_THE_DAY_MAX_WIDTH_DP,
+                    ),
+                ),
+            ),
+            section(
+                RECENTLY_PLAYED_ID,
+                RECENTLY_PLAYED_PRIORITY,
+                "Recently played",
+                gameScrollerCards(games, RECENTLY_PLAYED_GAME_OFFSET),
+            ),
+            section(MOST_PLAYED_SONGS_ID, MOST_PLAYED_SONGS_PRIORITY, "Most played songs", songCards(tracks)),
+            section(MOST_PLAYED_ARTISTS_ID, MOST_PLAYED_ARTISTS_PRIORITY, "Most played artists", artistCards(artists)),
             section(SOLO_ID, SOLO_PRIORITY, "Featured", soloItem(games.first())),
             section(RNG_ID, RNG_PRIORITY, "RNG Take the Wheel", rngCards()),
         ),
     )
 }
+
+// A horizontal scroller of game-cover tiles — what the recently-played-games / most-played-games
+// modules render.
+private fun gameScrollerCards(games: List<Game>, offset: Long): ImmutableList<ListModel> = games
+    .take(PREVIEW_SCROLLER_COUNT)
+    .map { game -> gameCard(game.id + offset, game) }
+    .toImmutableList()
+
+// Song cells reuse the game-cover tile (game art + the song's title) — what the most-played-songs
+// module renders.
+private fun songCards(tracks: List<Track>): ImmutableList<ListModel> = tracks
+    .take(PREVIEW_SCROLLER_COUNT)
+    .map { track ->
+        GridImageListModel(
+            dataId = track.id + SONG_ID_OFFSET,
+            name = track.title,
+            sourceInfo = track.game?.photoUrl,
+            imagePlaceholder = Icon.MusicNote,
+            clickAction = HomeAction.SongClicked(track.id),
+            aspectRatio = GAME_COVER_ASPECT_RATIO,
+        )
+    }
+    .toImmutableList()
+
+// Artist cells are square (the default 1f aspect).
+private fun artistCards(artists: List<Artist>): ImmutableList<ListModel> = artists
+    .take(PREVIEW_SCROLLER_COUNT)
+    .map { artist ->
+        GridImageListModel(
+            dataId = artist.id + ARTIST_ID_OFFSET,
+            name = artist.name,
+            sourceInfo = artist.photoUrl,
+            imagePlaceholder = Icon.Person,
+            clickAction = HomeAction.ArtistClicked(artist.id),
+        )
+    }
+    .toImmutableList()
 
 private fun nowPlayingItem(game: Game): ImmutableList<ListModel> = persistentListOf(
     NowPlayingHomeCardListModel(
@@ -103,8 +175,8 @@ private fun nowPlayingItem(game: Game): ImmutableList<ListModel> = persistentLis
 private fun homeLoadingState(): HomeState = HomeState(
     sections = persistentListOf(
         HomeSectionState(
-            id = RANDOM_GAMES_ID,
-            priority = RANDOM_GAMES_PRIORITY,
+            id = GAME_OF_THE_DAY_ID,
+            priority = GAME_OF_THE_DAY_PRIORITY,
             lce = LCE.Loading(FakeModelGenerator().loadingName()),
         ),
     ),
@@ -123,21 +195,18 @@ private fun section(
     showHeader = showHeader,
 )
 
-private fun gameCards(games: List<Game>): ImmutableList<ListModel> = games.map { game ->
-    gameCard(game.id + GAME_ID_OFFSET, game)
-}.toImmutableList()
-
 private fun soloItem(game: Game): ImmutableList<ListModel> = persistentListOf(
     gameCard(SOLO_DATA_ID, game),
 )
 
-private fun gameCard(dataId: Long, game: Game) = GridImageListModel(
+private fun gameCard(dataId: Long, game: Game, maxWidthDp: Float? = null) = GridImageListModel(
     dataId = dataId,
     name = game.title,
     sourceInfo = game.photoUrl,
     imagePlaceholder = Icon.Album,
     clickAction = HomeAction.GameClicked(game.id),
     aspectRatio = GAME_COVER_ASPECT_RATIO,
+    maxWidthDp = maxWidthDp,
 )
 
 private fun rngCards(): ImmutableList<ListModel> = persistentListOf(

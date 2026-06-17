@@ -71,6 +71,10 @@ class HomeViewModel @Inject constructor(
         when (action) {
             is HomeAction.GameClicked -> emit(NavigateTo(GameDetail(action.id)))
 
+            is HomeAction.ArtistClicked -> emit(NavigateTo(ArtistDetail(action.id)))
+
+            is HomeAction.SongClicked -> playSong(action.id)
+
             HomeAction.RandomSongClicked -> playRandomSong()
 
             HomeAction.RandomGameClicked -> navigateToRandomGame()
@@ -111,7 +115,11 @@ class HomeViewModel @Inject constructor(
     // multi-MB transfer over HTTP against the server-backed JS target.
     private fun playRandomSong() = viewModelScope.launch {
         val pick = repository.getRandomTrack() ?: return@launch
-        director.request(SessionRequest.Start(Session(type = SessionType.SINGLE_TRACK, contentId = pick.id)))
+        playSong(pick.id)
+    }
+
+    private fun playSong(trackId: Long) {
+        director.request(SessionRequest.Start(Session(type = SessionType.SINGLE_TRACK, contentId = trackId)))
     }
 
     private fun navigateToRandomGame() = viewModelScope.launch {

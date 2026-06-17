@@ -2,8 +2,11 @@ package net.sigmabeta.chipbox.history.real
 
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.entities.SongPlayEntity
+import net.sigmabeta.chipbox.history.PlayCount
 import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
+import net.sigmabeta.chipbox.history.RecentPlay
 import net.sigmabeta.chipbox.history.dao.ArtistPlayCountDao
 import net.sigmabeta.chipbox.history.dao.GamePlayCountDao
 import net.sigmabeta.chipbox.history.dao.SongPlayCountDao
@@ -43,6 +46,14 @@ class RealPlaybackHistoryRepository(
 
         hatchet.d("Recorded play: track=${track.id} game=${track.gameId} artists=${track.artists?.size ?: 0}")
     }
+
+    override fun recentlyPlayed(limit: Int): Flow<List<RecentPlay>> = songPlayDao.getRecentDistinct(limit)
+
+    override fun mostPlayedSongs(limit: Int): Flow<List<PlayCount>> = songPlayCountDao.getMostPlayed(limit)
+
+    override fun mostPlayedGames(limit: Int): Flow<List<PlayCount>> = gamePlayCountDao.getMostPlayed(limit)
+
+    override fun mostPlayedArtists(limit: Int): Flow<List<PlayCount>> = artistPlayCountDao.getMostPlayed(limit)
 
     override suspend fun clearHistory() {
         songPlayDao.nukeTable()

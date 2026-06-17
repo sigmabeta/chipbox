@@ -2,7 +2,9 @@ package net.sigmabeta.chipbox.history.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 import net.sigmabeta.chipbox.entities.GamePlayCountEntity
+import net.sigmabeta.chipbox.history.PlayCount
 
 @Dao
 interface GamePlayCountDao {
@@ -14,6 +16,12 @@ interface GamePlayCountDao {
 
     @Query("SELECT * FROM game_play_count WHERE gameId = :gameId")
     suspend fun getCountSync(gameId: Long): GamePlayCountEntity?
+
+    @Query(
+        "SELECT gameId AS id, playCount, lastPlayedMs FROM game_play_count " +
+            "WHERE playCount > 1 ORDER BY playCount DESC, lastPlayedMs DESC LIMIT :limit",
+    )
+    fun getMostPlayed(limit: Int): Flow<List<PlayCount>>
 
     @Query("DELETE FROM game_play_count")
     suspend fun nukeTable()

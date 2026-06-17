@@ -17,7 +17,8 @@ kotlin {
                 api(libs.room.common)
                 api(projects.cbox.common.entities.api)
                 api(projects.cbox.common.models.api)
-                implementation(libs.kotlinx.coroutines.core)
+                // Flow appears in the DAO + repository public API, so expose it transitively.
+                api(libs.kotlinx.coroutines.core)
             }
         }
     }
