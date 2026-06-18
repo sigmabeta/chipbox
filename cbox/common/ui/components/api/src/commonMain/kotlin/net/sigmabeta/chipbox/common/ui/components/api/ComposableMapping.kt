@@ -119,6 +119,11 @@ fun ListModel.Content(
 
             is WideItemListModel -> WideItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
+            // A DraggableListModel is meant for the reorderable path (ChipboxReorderableEntry wraps
+            // it in a DraggableListItem). If one reaches a normal list, render its inner content
+            // without a handle rather than falling through to the blank Spacer below.
+            is DraggableListModel -> content.Content(sink, debug, mod, pad)
+
             is LoadingItemListModel -> {
                 when (loadingType) {
                     LoadingType.PAGE,
