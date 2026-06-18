@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.features.nowplaying.real
 
 import net.sigmabeta.chipbox.player.common.RepeatMode
+import net.sigmabeta.sage.components.NameCaptionValueListModel
 import net.sigmabeta.sage.images.SourceInfo
 
 data class NowPlayingModel(
@@ -33,6 +34,18 @@ data class NowPlayingModel(
      * shows the plain track info; the other modes render the in-screen menu of clickable rows.
      */
     val contextMenuMode: ContextMenuMode = ContextMenuMode.NONE,
+    /**
+     * When true, the reorderable [setlist] replaces the whole [InfoContainer][NowPlayingContent]
+     * block (a peer swap, like the menu swaps TrackInfo↔ContextMenu *within* it). Mutually
+     * exclusive with an open [contextMenuMode].
+     */
+    val setlistVisible: Boolean = false,
+    /**
+     * The current playback setlist as reorderable rows (in queue order), shown when
+     * [setlistVisible]. Each row's `dataId` is the track id and `active` marks the playing track;
+     * the row click jumps playback, the handle reorders.
+     */
+    val setlist: List<NameCaptionValueListModel> = emptyList(),
     /** The playing track's game id, used by the LINKS game row to navigate to game detail. */
     val gameId: Long = 0L,
     /** The playing track's artists (id + name), backing the LINKS artist row and the ARTISTS list. */

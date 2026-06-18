@@ -12,13 +12,14 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
+import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.SessionRequest
+import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.common.ui.freeform.api.ChipboxFreeformViewModel
-import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
@@ -44,7 +45,8 @@ private fun String.ellipsize(): String =
 @ViewModelKey
 class NowPlayingViewModel @Inject constructor(
     private val director: Director,
-    private val stringProvider: StringProvider,
+    private val repository: Repository,
+    stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxFreeformViewModel<NowPlayingState, NowPlayingModel>(
     NowPlayingState(),
@@ -63,6 +65,14 @@ class NowPlayingViewModel @Inject constructor(
      * when the menu closes or the screen leaves the foreground.
      */
     private var contextMenuTimerJob: Job? = null
+
+    /** Resolved track metadata keyed by id; the queue re-emits on reorder but membership doesn't
+     *  change, so a drag never refetches. */
+    private val trackCache = mutableMapOf<Long, Track>()
+
+    /** Latest queue order (ids) — maps a tapped track id to the position [SessionRequest.PlayPosition]
+     *  expects, robust to any row that failed to resolve. */
+    private var setlistIds: List<Long> = emptyList()
 
     init {
         viewModelScope.launch {
@@ -92,6 +102,15 @@ class NowPlayingViewModel @Inject constructor(
         viewModelScope.launch {
             director.sessionState().collect { session ->
                 updateState { it.copy(session = session) }
+            }
+        }
+        viewModelScope.launch {
+            director.setlistState().collect { ids ->
+                setlistIds = ids
+                val resolved = ids.mapNotNull { id ->
+                    trackCache[id] ?: repository.getTrack(id, withGame = true)?.also { trackCache[id] = it }
+                }
+                updateState { it.copy(setlistTracks = resolved) }
             }
         }
     }
@@ -131,10 +150,17 @@ class NowPlayingViewModel @Inject constructor(
 
             NowPlayingAction.MenuClicked -> showContextMenu(ContextMenuMode.CONTROLS)
 
-            NowPlayingAction.SetlistClicked -> emit(
-                // Placeholder until the Setlist management feature exists.
-                ChipboxEvent.ShowSnackbar(stringProvider.getString(ChipboxStringId.NOW_PLAYING_SETLIST_COMING_SOON))
-            )
+            // Toggle the reorderable setlist in/out of the InfoContainer slot.
+            NowPlayingAction.SetlistClicked -> toggleSetlist()
+
+            is NowPlayingAction.SetlistTrackClicked -> {
+                val position = setlistIds.indexOf(action.trackId)
+                if (position >= 0) director.request(SessionRequest.PlayPosition(position))
+            }
+
+            // Drop from the inline reorderable list; the director owns the canonical order.
+            is SageAction.Reorder ->
+                director.request(SessionRequest.Reorder(action.fromIndex, action.toIndex))
 
             NowPlayingAction.ContextMenuBackClicked -> closeContextMenu()
 
@@ -173,10 +199,18 @@ class NowPlayingViewModel @Inject constructor(
         }
     }
 
-    /** Switch the context menu to [mode] and (re)start the inactivity auto-dismiss window. */
+    /** Switch the context menu to [mode] and (re)start the inactivity auto-dismiss window. Closes
+     *  the setlist, which shares the InfoContainer slot. */
     private fun showContextMenu(mode: ContextMenuMode) {
-        updateState { it.copy(contextMenuMode = mode) }
+        updateState { it.copy(contextMenuMode = mode, setlistVisible = false) }
         bumpContextMenuTimer()
+    }
+
+    /** Toggle the reorderable setlist in place of the whole InfoContainer. No auto-dismiss —
+     *  reordering takes time — and any open context menu is closed (they share the slot). */
+    private fun toggleSetlist() {
+        contextMenuTimerJob?.cancel()
+        updateState { it.copy(setlistVisible = !it.setlistVisible, contextMenuMode = ContextMenuMode.NONE) }
     }
 
     /** Close the context menu (back to track info) and stop the pending auto-dismiss. */

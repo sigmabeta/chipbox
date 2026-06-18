@@ -8,6 +8,7 @@ import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.sage.components.NameCaptionValueListModel
 import net.sigmabeta.sage.components.TitleBarModel
 import net.sigmabeta.sage.freeform.FreeformState
 import net.sigmabeta.sage.images.SourceInfo
@@ -19,6 +20,10 @@ data class NowPlayingState(
     val session: Session? = null,
     val errors: List<NowPlayingError> = emptyList(),
     val contextMenuMode: ContextMenuMode = ContextMenuMode.NONE,
+    /** When true, the reorderable setlist replaces the InfoContainer block. */
+    val setlistVisible: Boolean = false,
+    /** The current playback setlist resolved to track metadata, in queue order. */
+    val setlistTracks: List<Track> = emptyList(),
 ) : FreeformState<NowPlayingModel>() {
 
     override fun title(stringProvider: StringProvider) = TitleBarModel(
@@ -42,6 +47,8 @@ data class NowPlayingState(
         isShuffled = session?.shuffled == true,
         repeatMode = session?.repeatMode ?: RepeatMode.OFF,
         contextMenuMode = contextMenuMode,
+        setlistVisible = setlistVisible,
+        setlist = setlistRows(),
         gameId = track?.gameId ?: 0L,
         artists = track?.artists?.map { NowPlayingArtist(id = it.id, name = it.name) }.orEmpty(),
         repeatStatusLabel = stringProvider.getString(repeatStatusStringId()),
@@ -52,6 +59,30 @@ data class NowPlayingState(
             ?.errorMessage,
         errors = errors,
     )
+
+    /**
+     * The setlist queue as reorderable rows. The active row is the currently-playing track. Built
+     * as plain [NameCaptionValueListModel]s so the inline reorderable list can render them with
+     * [net.sigmabeta.chipbox.common.ui.components.api.NameCaptionValueListItem] — the same row the
+     * standalone setlist screen uses.
+     */
+    private fun setlistRows(): List<NameCaptionValueListModel> = setlistTracks.map { track ->
+        NameCaptionValueListModel(
+            dataId = track.id,
+            name = track.title,
+            caption = track.game?.title.orEmpty(),
+            value = formatTrackLength(track.trackLengthMs),
+            clickAction = NowPlayingAction.SetlistTrackClicked(track.id),
+            active = track.id == this.track?.id,
+        )
+    }
+
+    private fun formatTrackLength(millis: Long): String {
+        val totalSeconds = millis / MS_PER_SECOND
+        val minutes = totalSeconds / SECONDS_PER_MINUTE
+        val seconds = totalSeconds % SECONDS_PER_MINUTE
+        return "$minutes:${seconds.toString().padStart(2, '0')}"
+    }
 
     /**
      * First line of the now-playing header — describes the *kind* of session, e.g.
@@ -181,5 +212,10 @@ data class NowPlayingState(
         PlayerState.ERROR,
         PlayerState.IDLE,
         PlayerState.STOPPED -> false
+    }
+
+    private companion object {
+        const val MS_PER_SECOND = 1_000L
+        const val SECONDS_PER_MINUTE = 60L
     }
 }

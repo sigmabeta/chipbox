@@ -24,8 +24,11 @@ sealed class NowPlayingAction : ChipboxAction() {
     /** Transport "menu" button (where repeat used to live) — opens the CONTROLS context menu. */
     data object MenuClicked : NowPlayingAction()
 
-    /** Transport "setlist" button (where shuffle used to live) — placeholder until Setlists ship. */
+    /** Transport "setlist" button — toggles the inline SETLIST mode (the reorderable queue). */
     data object SetlistClicked : NowPlayingAction()
+
+    /** A row in the inline setlist was tapped — jump playback to that track. */
+    data class SetlistTrackClicked(val trackId: Long) : NowPlayingAction()
 
     /** The context menu's back row — return to the NONE state (track info). */
     data object ContextMenuBackClicked : NowPlayingAction()
