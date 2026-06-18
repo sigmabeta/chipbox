@@ -96,7 +96,10 @@ class RealPlaybackSessionPersister(
                 director.sessionState(),
                 director.playbackState(),
                 director.metadataState(),
-            ) { session, playback, track -> Snapshotable(session, playback.state, playback.position, track) }
+                director.setlistState(),
+            ) { session, playback, track, setlist ->
+                Snapshotable(session, playback.state, playback.position, track, setlist)
+            }
                 .collect { current ->
                     latest = current
                     // Genuine playback resumed — cancel any teardown suppression so a later stop
@@ -110,7 +113,7 @@ class RealPlaybackSessionPersister(
 
                         previousState == PlayerState.PLAYING && current.state == PlayerState.PAUSED ->
                             current.session?.let {
-                                store.save(snapshotOf(it, current.track, current.positionMs))
+                                store.save(snapshotOf(it, current.track, current.positionMs, current.setlist))
                             }
                     }
                     previousState = current.state
@@ -125,14 +128,15 @@ class RealPlaybackSessionPersister(
         // Mark teardown BEFORE the save so the STOPPED the collector sees when the player is
         // released next can't race ahead and clear what we're about to write.
         tearingDown = true
-        store.save(snapshotOf(session, current.track, current.positionMs))
+        store.save(snapshotOf(session, current.track, current.positionMs, current.setlist))
     }
 
-    /** The slice of the three observed streams a snapshot is built from, combined into one value. */
+    /** The slice of the observed streams a snapshot is built from, combined into one value. */
     private data class Snapshotable(
         val session: Session?,
         val state: PlayerState,
         val positionMs: Long,
         val track: Track?,
+        val setlist: List<Long>,
     )
 }

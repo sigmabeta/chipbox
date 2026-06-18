@@ -80,6 +80,25 @@ class RealPlaybackSessionPersisterTest {
     }
 
     @Test
+    fun `the saved snapshot captures the live setlist order and modified flag`() = runTest {
+        val director = FakeDirector()
+        val store = FakePlaybackSessionStore()
+        val persister = newPersister(director, store)
+        persister.observe()
+
+        director.emitSession(Session(type = SessionType.GAME, contentId = 3L, modified = true))
+        director.emitMetadata(trackOf(2L))
+        director.emitSetlist(listOf(3L, 1L, 2L))
+        director.emitPlayback(playback(PlayerState.PLAYING, positionMs = 4_000L))
+        director.emitPlayback(playback(PlayerState.PAUSED, positionMs = 8_000L))
+
+        val saved = store.saveCalls.single()
+        assertEquals(listOf(3L, 1L, 2L), saved.resolvedSetlist, "the live play order is persisted verbatim")
+        assertTrue(saved.modified, "the user-edited flag is persisted")
+        persister.release()
+    }
+
+    @Test
     fun `entering PAUSED from BUFFERING does not save (a restore must not clobber its own snapshot)`() = runTest {
         val director = FakeDirector()
         val store = FakePlaybackSessionStore()

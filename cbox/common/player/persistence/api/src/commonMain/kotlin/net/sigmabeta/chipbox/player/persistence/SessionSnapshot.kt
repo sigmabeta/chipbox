@@ -18,6 +18,12 @@ import net.sigmabeta.chipbox.player.common.SessionType
  * locates in whatever order it resolves.
  *
  * @property positionMs Playback offset within [currentTrackId] to seek to on resume.
+ * @property resolvedSetlist The exact play order (track ids) at save time, captured from the
+ *           director's live setlist. When present the director replays it verbatim on restore
+ *           instead of re-resolving from [contentId] — so a shuffled or user-edited order resumes
+ *           faithfully. Null in legacy snapshots, which fall back to re-resolution.
+ * @property modified Whether the user had reordered/removed tracks in this session (mirrors
+ *           `Session.modified`); drives the "(Modified)" label after a resume.
  */
 @Serializable
 data class SessionSnapshot(
@@ -29,4 +35,6 @@ data class SessionSnapshot(
     val shuffled: Boolean = false,
     val repeatMode: RepeatMode = RepeatMode.OFF,
     val positionMs: Long = 0L,
+    val resolvedSetlist: List<Long>? = null,
+    val modified: Boolean = false,
 )

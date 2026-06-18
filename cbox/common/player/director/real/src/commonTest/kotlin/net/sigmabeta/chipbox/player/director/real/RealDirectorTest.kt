@@ -582,6 +582,7 @@ class RealDirectorTest {
         assertEquals(1, director.sessionState().first()?.currentPosition, "playing track 1 followed to index 1")
         assertEquals(listOf(1L), gen.startTrackCalls, "an order-only change starts no new track")
         assertTrue(speaker.switchToCalls.isEmpty(), "reorder doesn't touch the speaker")
+        assertTrue(director.sessionState().first()?.modified == true, "editing marks the session modified")
         director.release()
     }
 
@@ -659,6 +660,7 @@ class RealDirectorTest {
         assertEquals(0, director.sessionState().first()?.currentPosition, "playing track 2 re-indexed to 0")
         assertEquals(listOf(2L), gen.startTrackCalls, "removing a track starts nothing new")
         assertTrue(speaker.switchToCalls.isEmpty(), "no speaker switch on remove")
+        assertTrue(director.sessionState().first()?.modified == true, "removing marks the session modified")
         director.release()
     }
 
@@ -699,6 +701,30 @@ class RealDirectorTest {
     }
 
     // ---- restore (resume the last session on launch) ----
+
+    @Test
+    fun `restore replays the saved setlist order verbatim instead of re-resolving`() = runTest {
+        val (director, gen, _, _) = newDirector(listOf(track1, track2, track3))
+
+        // A GAME session whose saved order differs from the repository's natural order. Restore
+        // must replay the saved order literally — re-resolving from contentId would both reorder it
+        // and hit FakeRepository's unimplemented getTracksForGame.
+        director.request(
+            SessionRequest.Restore(
+                Session(
+                    type = SessionType.GAME,
+                    contentId = 99L,
+                    explicitSetlist = listOf(3L, 1L, 2L),
+                    startingTrackId = 3L,
+                ),
+                positionMs = 0L,
+            ),
+        )
+
+        assertEquals(listOf(3L, 1L, 2L), director.setlistState().first(), "saved order replayed verbatim")
+        assertEquals(listOf(3L), gen.startTrackCalls, "starts at the saved track")
+        director.release()
+    }
 
     @Test
     fun `restore loads the saved track and lands paused at the saved position`() = runTest {

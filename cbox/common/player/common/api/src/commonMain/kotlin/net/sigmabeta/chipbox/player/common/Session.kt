@@ -31,6 +31,9 @@ import kotlin.random.Random
  * @property repeatMode What the director does when the current track ends — play through and
  *           stop ([RepeatMode.OFF]), wrap back to the first track ([RepeatMode.ALL]), or restart
  *           the current track ([RepeatMode.ONE]). Consulted on generator-driven auto-advance.
+ * @property modified True once the user has manually reordered or removed tracks in this session's
+ *           setlist, so the live order no longer matches what [type]/[contentId] would resolve.
+ *           Surfaced in the UI (a "(Modified)" label) and persisted with the session.
  * @property id Random session identifier; lets observers tell two unrelated sessions apart.
  */
 data class Session(
@@ -43,5 +46,6 @@ data class Session(
     val currentPosition: Int? = null,
     val shuffled: Boolean = false,
     val repeatMode: RepeatMode = RepeatMode.OFF,
+    val modified: Boolean = false,
     val id: Long = Random.nextLong()
 )

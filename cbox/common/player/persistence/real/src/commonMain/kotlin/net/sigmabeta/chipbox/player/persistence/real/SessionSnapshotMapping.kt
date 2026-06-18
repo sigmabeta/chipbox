@@ -12,15 +12,22 @@ import net.sigmabeta.chipbox.player.persistence.SessionSnapshot
 internal fun SessionSnapshot.toSession(): Session = Session(
     type = type,
     contentId = contentId,
-    explicitSetlist = explicitSetlist,
+    // The saved play order (when present) is carried as the explicit setlist; the director replays
+    // it literally on restore. Falls back to the legacy explicitSetlist for old snapshots.
+    explicitSetlist = resolvedSetlist ?: explicitSetlist,
     sourceName = sourceName,
     startingTrackId = currentTrackId,
     shuffled = shuffled,
     repeatMode = repeatMode,
+    modified = modified,
 )
 
-/** Capture the current session + active track + position as a persistable [SessionSnapshot]. */
-internal fun snapshotOf(session: Session, track: Track?, positionMs: Long): SessionSnapshot =
+/**
+ * Capture the current session + active track + position + live play order as a persistable
+ * [SessionSnapshot]. [setlist] is the director's resolved order at save time; an empty list is
+ * stored as null (nothing to replay).
+ */
+internal fun snapshotOf(session: Session, track: Track?, positionMs: Long, setlist: List<Long>): SessionSnapshot =
     SessionSnapshot(
         type = session.type,
         contentId = session.contentId,
@@ -30,4 +37,6 @@ internal fun snapshotOf(session: Session, track: Track?, positionMs: Long): Sess
         shuffled = session.shuffled,
         repeatMode = session.repeatMode,
         positionMs = positionMs,
+        resolvedSetlist = setlist.takeIf { it.isNotEmpty() },
+        modified = session.modified,
     )
