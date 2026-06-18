@@ -58,6 +58,21 @@ sealed interface SessionRequest {
     /** "Back" semantics: seek to 0 if past a small threshold, else the previous track. */
     data object SkipBack : SessionRequest
 
+    /**
+     * Jump playback to the track at [position] in the current setlist. Switches the generator and
+     * speaker over to that track like a skip. No-op when there's no session, [position] is out of
+     * range, or it's already the active position.
+     */
+    data class PlayPosition(val position: Int) : SessionRequest
+
+    /**
+     * Move the track at [fromIndex] to [toIndex] within the current setlist, mutating the live
+     * in-memory order for the session (not persisted to the library). The currently-playing track
+     * keeps playing — its position is re-indexed so it stays active wherever it lands. No-op when
+     * there's no session or either index is out of range.
+     */
+    data class Reorder(val fromIndex: Int, val toIndex: Int) : SessionRequest
+
     /** Toggle shuffle on the current session, re-resolving the setlist around the active track. */
     data class SetShuffled(val shuffled: Boolean) : SessionRequest
 

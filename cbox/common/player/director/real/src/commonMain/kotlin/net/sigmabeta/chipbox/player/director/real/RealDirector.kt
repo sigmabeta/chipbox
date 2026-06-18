@@ -156,6 +156,9 @@ class RealDirector(
     // replay = 1 so a debug screen opened mid-playback receives the active session immediately.
     private val sessionStateMutable = MutableSharedFlow<Session?>(replay = 1)
 
+    // replay = 1 so the setlist screen opened mid-playback receives the current queue immediately.
+    private val setlistStateMutable = MutableSharedFlow<List<Long>>(replay = 1)
+
     // No replay: the error log is for errors that happen while a screen is watching, not a
     // backlog replayed to late subscribers. DROP_OLDEST keeps a burst of rapid failures flowing.
     private val errorEventsMutable = MutableSharedFlow<PlayerErrorEvent>(
@@ -179,6 +182,7 @@ class RealDirector(
         metadataStateMutable.tryEmit(null)
         playbackStateMutable.tryEmit(model.playback)
         sessionStateMutable.tryEmit(null)
+        setlistStateMutable.tryEmit(emptyList())
 
         // One consumer for both event sources (plus the watchdog's internal events), so events are
         // processed strictly one at a time and never interleave on the model.
@@ -252,6 +256,7 @@ class RealDirector(
      *  played audio) and re-emit the playback (and, when it changed, the session). */
     private fun commit(next: Model) {
         val sessionChanged = model.session != next.session
+        val setlistChanged = model.setlist != next.setlist
         // While a restore is pending the speaker hasn't played a frame (position 0), so anchor the
         // paused progress bar to the saved offset until the first play() seeks there for real.
         val position = next.pendingResumeMs ?: speaker.currentPositionMs()
@@ -260,6 +265,9 @@ class RealDirector(
         directorScope.launch { playbackStateMutable.emit(stampedPlayback) }
         if (sessionChanged) {
             directorScope.launch { sessionStateMutable.emit(next.session) }
+        }
+        if (setlistChanged) {
+            directorScope.launch { setlistStateMutable.emit(next.setlist ?: emptyList()) }
         }
     }
 
@@ -290,6 +298,8 @@ class RealDirector(
             is SessionRequest.Seek -> seek(request.positionMs)
             SessionRequest.SkipForward -> skipForward()
             SessionRequest.SkipBack -> skipBack()
+            is SessionRequest.PlayPosition -> playPosition(request.position)
+            is SessionRequest.Reorder -> reorder(request.fromIndex, request.toIndex)
             is SessionRequest.SetShuffled -> setShuffled(request.shuffled)
             is SessionRequest.SetRepeatMode -> setRepeatMode(request.mode)
             SessionRequest.PauseTemporarily -> pauseTemporarily()
@@ -607,6 +617,44 @@ class RealDirector(
         speaker.switchTo(trackId)
     }
 
+    private fun playPosition(position: Int) {
+        directorScope.launch {
+            val session = model.session ?: return@launch
+            val setlist = model.setlist ?: return@launch
+            if (position !in setlist.indices) return@launch
+            // Tapping the already-playing track is a no-op rather than a disruptive restart.
+            if (position == session.currentPosition) return@launch
+            hatchet.i("playPosition: jumping to position $position (state=${model.playback.state}).")
+            switchToTrack(model.copy(session = session.copy(currentPosition = position)), setlist[position])
+        }
+    }
+
+    private fun reorder(fromIndex: Int, toIndex: Int) {
+        directorScope.launch {
+            val session = model.session ?: return@launch
+            val setlist = model.setlist ?: return@launch
+            if (fromIndex !in setlist.indices || toIndex !in setlist.indices) return@launch
+            if (fromIndex == toIndex) return@launch
+
+            // Remember which track is playing so we can keep it active wherever it lands.
+            val playingTrackId = session.currentPosition?.let(setlist::getOrNull)
+
+            // Same move semantics as ReorderableScreen's local mirror: remove then insert at target.
+            val newSetlist = setlist.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+            val newPosition = playingTrackId
+                ?.let { id -> newSetlist.indexOf(id).takeIf { it >= 0 } }
+                ?: session.currentPosition
+
+            // Order-only change: the playing track is untouched, so no generator/speaker switch.
+            commit(
+                model.copy(
+                    setlist = newSetlist,
+                    session = session.copy(currentPosition = newPosition),
+                )
+            )
+        }
+    }
+
     private fun setShuffled(shuffled: Boolean) {
         directorScope.launch {
             val session = model.session ?: return@launch
@@ -659,6 +707,8 @@ class RealDirector(
     override fun playbackState() = playbackStateMutable.asSharedFlow()
 
     override fun sessionState() = sessionStateMutable.asSharedFlow()
+
+    override fun setlistState() = setlistStateMutable.asSharedFlow()
 
     override fun errorEvents() = errorEventsMutable.asSharedFlow()
 

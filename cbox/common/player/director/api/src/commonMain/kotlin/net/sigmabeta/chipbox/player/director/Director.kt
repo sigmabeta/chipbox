@@ -43,6 +43,15 @@ interface Director {
     fun sessionState(): SharedFlow<Session?>
 
     /**
+     * Hot stream of the current setlist as ordered track ids — the live play queue the director
+     * resolved for the session, whatever the [net.sigmabeta.chipbox.player.common.SessionType].
+     * Emits an empty list before any session and on teardown, and re-emits whenever the order
+     * changes (shuffle, reorder). The setlist-management UI observes this and resolves the ids to
+     * [Track] metadata itself.
+     */
+    fun setlistState(): SharedFlow<List<Long>>
+
+    /**
      * Hot stream of playback errors — both recoverable (the failed track was skipped and
      * playback continued) and fatal (the session stopped). One [PlayerErrorEvent] is emitted per
      * occurrence with no replay, so observers see only errors that happen while subscribed; each

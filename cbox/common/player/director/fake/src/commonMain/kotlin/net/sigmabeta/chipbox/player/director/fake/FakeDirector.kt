@@ -40,6 +40,11 @@ open class FakeDirector : Director {
         extraBufferCapacity = 0,
         onBufferOverflow = BufferOverflow.SUSPEND,
     )
+    private val setlistSink = MutableSharedFlow<List<Long>>(
+        replay = 1,
+        extraBufferCapacity = 0,
+        onBufferOverflow = BufferOverflow.SUSPEND,
+    )
     private val errorSink = MutableSharedFlow<PlayerErrorEvent>(
         replay = 0,
         extraBufferCapacity = 8,
@@ -61,11 +66,13 @@ open class FakeDirector : Director {
             )
         )
         sessionSink.tryEmit(null)
+        setlistSink.tryEmit(emptyList())
     }
 
     suspend fun emitMetadata(track: Track?) = metadataSink.emit(track)
     suspend fun emitPlayback(state: ChipboxPlaybackState) = playbackSink.emit(state)
     suspend fun emitSession(session: Session?) = sessionSink.emit(session)
+    suspend fun emitSetlist(setlist: List<Long>) = setlistSink.emit(setlist)
     suspend fun emitErrorSink(event: PlayerErrorEvent) = errorSink.emit(event)
 
     /** Convenience: emit a playback state with only [state] varied; other fields default. */
@@ -86,6 +93,7 @@ open class FakeDirector : Director {
     override fun metadataState(): SharedFlow<Track?> = metadataSink.asSharedFlow()
     override fun playbackState(): SharedFlow<ChipboxPlaybackState> = playbackSink.asSharedFlow()
     override fun sessionState(): SharedFlow<Session?> = sessionSink.asSharedFlow()
+    override fun setlistState(): SharedFlow<List<Long>> = setlistSink.asSharedFlow()
     override fun errorEvents(): SharedFlow<PlayerErrorEvent> = errorSink.asSharedFlow()
 
     override fun request(request: SessionRequest) {
@@ -99,6 +107,9 @@ open class FakeDirector : Director {
     val stopCalls: Int get() = requests.count { it is SessionRequest.Stop }
     val skipForwardCalls: Int get() = requests.count { it is SessionRequest.SkipForward }
     val skipBackCalls: Int get() = requests.count { it is SessionRequest.SkipBack }
+    val playPositionCalls: List<Int> get() = requests.filterIsInstance<SessionRequest.PlayPosition>().map { it.position }
+    val reorderCalls: List<Pair<Int, Int>>
+        get() = requests.filterIsInstance<SessionRequest.Reorder>().map { it.fromIndex to it.toIndex }
     val seekCalls: List<Long> get() = requests.filterIsInstance<SessionRequest.Seek>().map { it.positionMs }
     val setVolumeCalls: List<Double> get() = requests.filterIsInstance<SessionRequest.SetVolume>().map { it.scale }
     val setShuffledCalls: List<Boolean> get() = requests.filterIsInstance<SessionRequest.SetShuffled>().map { it.shuffled }

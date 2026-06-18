@@ -568,6 +568,83 @@ class RealDirectorTest {
         director.release()
     }
 
+    // ---- reorder / jump-to-position ----
+
+    @Test
+    fun `reorder moves a track and keeps the playing track active at its new index`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 0)))
+
+        // Move track 3 (index 2) to the front; track 1 is playing at index 0.
+        director.request(SessionRequest.Reorder(fromIndex = 2, toIndex = 0))
+
+        assertEquals(listOf(3L, 1L, 2L), director.setlistState().first(), "setlist reflects the new order")
+        assertEquals(1, director.sessionState().first()?.currentPosition, "playing track 1 followed to index 1")
+        assertEquals(listOf(1L), gen.startTrackCalls, "an order-only change starts no new track")
+        assertTrue(speaker.switchToCalls.isEmpty(), "reorder doesn't touch the speaker")
+        director.release()
+    }
+
+    @Test
+    fun `reorder moving the playing track itself follows it to the new index`() = runTest {
+        val (director, _, _, _) = newDirector(listOf(track1, track2, track3))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 0)))
+
+        director.request(SessionRequest.Reorder(fromIndex = 0, toIndex = 2))
+
+        assertEquals(listOf(2L, 3L, 1L), director.setlistState().first())
+        assertEquals(2, director.sessionState().first()?.currentPosition, "the moved playing track stays active")
+        director.release()
+    }
+
+    @Test
+    fun `reorder with an out-of-range index leaves the setlist unchanged`() = runTest {
+        val (director, _, _, _) = newDirector(listOf(track1, track2))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 2L), startingPosition = 0)))
+
+        director.request(SessionRequest.Reorder(fromIndex = 0, toIndex = 5))
+
+        assertEquals(listOf(1L, 2L), director.setlistState().first(), "no move on an out-of-range index")
+        director.release()
+    }
+
+    @Test
+    fun `playPosition jumps to the requested track and switches the speaker over`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 0)))
+
+        director.request(SessionRequest.PlayPosition(2))
+
+        assertEquals(listOf(1L, 3L), gen.startTrackCalls, "the target track is started")
+        assertEquals(listOf(3L), speaker.switchToCalls, "speaker cuts over to the target")
+        assertEquals(2, director.sessionState().first()?.currentPosition)
+        director.release()
+    }
+
+    @Test
+    fun `playPosition to the already-playing position is a no-op`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 1)))
+
+        director.request(SessionRequest.PlayPosition(1))
+
+        assertEquals(listOf(2L), gen.startTrackCalls, "no extra startTrack for the current position")
+        assertTrue(speaker.switchToCalls.isEmpty(), "no speaker switch when already there")
+        director.release()
+    }
+
+    @Test
+    fun `playPosition out of range is a no-op`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 2L), startingPosition = 0)))
+
+        director.request(SessionRequest.PlayPosition(9))
+
+        assertEquals(listOf(1L), gen.startTrackCalls, "out-of-range jump starts nothing new")
+        assertTrue(speaker.switchToCalls.isEmpty())
+        director.release()
+    }
+
     // ---- restore (resume the last session on launch) ----
 
     @Test
