@@ -40,6 +40,7 @@ kotlin {
         named("commonTest") {
             dependencies {
                 implementation(projects.cbox.common.player.director.fake)
+                implementation(projects.cbox.common.repository.fake)
             }
         }
     }

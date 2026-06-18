@@ -24,6 +24,7 @@ import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
+import net.sigmabeta.chipbox.repository.fake.FakeRepository
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
@@ -306,6 +307,7 @@ class NowPlayingViewModelTest {
 
     private fun newViewModel(director: FakeDirector) = NowPlayingViewModel(
         director = director,
+        repository = FakeRepository(emptyMap()),
         stringProvider = stubStringProvider(),
         hatchet = BluntHatchet(),
     )
