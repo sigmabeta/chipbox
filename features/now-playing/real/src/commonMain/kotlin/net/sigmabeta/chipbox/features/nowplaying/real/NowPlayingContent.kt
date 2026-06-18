@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -72,6 +73,10 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 
 private val ScreenPadding = 24.dp
 private val ArtworkCornerRadius = 16.dp
+
+// At/under this width the middle swaps between track info and the setlist; above it there's room
+// to show both side by side.
+private val WideLayoutBreakpoint = 780.dp
 private val TransportPlayPauseSize = 80.dp
 private val TransportSkipSize = 64.dp
 private val TransportToggleSize = 48.dp
@@ -105,63 +110,124 @@ private val InfoContainerCornerRadius = 16.dp
 private val TrackInfoInteriorPadding = 8.dp
 private val ContextMenuRowPadding = PaddingValues(horizontal = 8.dp)
 
+// Under this height there's no room for the tall cover-art + text layout, so the track info
+// collapses to the compact home-card-style MiniNowPlayingTrackInfo.
+private val CompactHeightBreakpoint = 500.dp
+private const val MiniCardScrimAlpha = 0.45f
+
 @Composable
 fun NowPlayingContent(
     model: NowPlayingModel,
     actionSink: ActionSink,
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.systemBars)
-            .padding(ScreenPadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        TopBar(model, actionSink)
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // Above the breakpoint there's room to show the track info and the setlist together.
+        val wide = maxWidth > WideLayoutBreakpoint
+        // Under the height breakpoint the track info collapses to the compact mini card.
+        val compact = maxHeight < CompactHeightBreakpoint
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // EXPERIMENT: the setlist button takes over the whole flexible middle — artwork, error log
-        // and InfoContainer — replacing it with the reorderable queue. The header and the transport
-        // controls below stay put, so it reads as "now playing ↔ manage the queue".
-        AnimatedContent(
-            targetState = model.setlistVisible,
-            label = "NowPlayingMiddle",
-            contentAlignment = Alignment.Center,
-            transitionSpec = { fadeIn() togetherWith fadeOut() },
+        Column(
             modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-        ) { showingSetlist ->
-            if (showingSetlist) {
-                NowPlayingSetlist(model, actionSink)
-            } else {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxSize(),
-                ) {
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.systemBars)
+                .padding(ScreenPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            TopBar(model, actionSink)
 
-                    Artwork(model)
+            Spacer(modifier = Modifier.height(16.dp))
 
-                    ErrorSection(errors = model.errors, actionSink = actionSink)
-
-                    // Half the former 16dp gap above the info block now lives inside TrackInfo's tap
-                    // target (TrackInfoInteriorPadding); the other half stays here as exterior gap.
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    InfoContainer(model, actionSink)
+            // Crossfade the whole middle when crossing the breakpoint so the layout doesn't snap.
+            AnimatedContent(
+                targetState = wide,
+                label = "NowPlayingLayout",
+                contentAlignment = Alignment.Center,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            ) { isWide ->
+                if (isWide) {
+                    // Two panels: the info panel on the left, the setlist always on the right.
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        InfoPanel(model, actionSink, compact, modifier = Modifier.weight(1f).fillMaxHeight())
+                        NowPlayingSetlist(model, actionSink, modifier = Modifier.weight(1f).fillMaxHeight())
+                    }
+                } else {
+                    // One panel: the setlist button swaps the info panel out for the setlist; the
+                    // header and transport controls stay put.
+                    AnimatedContent(
+                        targetState = model.setlistVisible,
+                        label = "NowPlayingMiddle",
+                        contentAlignment = Alignment.Center,
+                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        modifier = Modifier.fillMaxSize(),
+                    ) { showingSetlist ->
+                        if (showingSetlist) {
+                            NowPlayingSetlist(model, actionSink, Modifier.fillMaxSize())
+                        } else {
+                            InfoPanel(model, actionSink, compact, Modifier.fillMaxSize())
+                        }
+                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            ProgressSection(model = model, actionSink = actionSink)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            TransportRow(model = model, actionSink = actionSink)
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(16.dp))
+/**
+ * The primary panel's info mode: the full [NowPlayingInfo], or the compact [MiniNowPlayingInfo]
+ * when the screen is too short for the tall cover-art layout.
+ */
+@Composable
+private fun InfoPanel(model: NowPlayingModel, actionSink: ActionSink, compact: Boolean, modifier: Modifier) {
+    // Crossfade between the full and compact info layouts when the height crosses the breakpoint.
+    AnimatedContent(
+        targetState = compact,
+        label = "NowPlayingInfoPanel",
+        contentAlignment = Alignment.Center,
+        transitionSpec = { fadeIn() togetherWith fadeOut() },
+        modifier = modifier,
+    ) { isCompact ->
+        if (isCompact) {
+            // The mini card sits centered in the panel region.
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                MiniNowPlayingInfo(model, actionSink)
+            }
+        } else {
+            NowPlayingInfo(model, actionSink, Modifier.fillMaxSize())
+        }
+    }
+}
 
-        ProgressSection(model = model, actionSink = actionSink)
+/** The "now playing" panel: cover art, the error log, and the track-info / context-menu block. */
+@Composable
+private fun NowPlayingInfo(model: NowPlayingModel, actionSink: ActionSink, modifier: Modifier) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier,
+    ) {
+        Artwork(model)
 
-        Spacer(modifier = Modifier.height(16.dp))
+        ErrorSection(errors = model.errors, actionSink = actionSink)
 
-        TransportRow(model = model, actionSink = actionSink)
+        // Half the former 16dp gap above the info block lives inside TrackInfo's tap target
+        // (TrackInfoInteriorPadding); the other half is this exterior gap.
+        Spacer(modifier = Modifier.height(8.dp))
+
+        InfoContainer(model, actionSink)
     }
 }
 
@@ -299,7 +365,7 @@ private fun InfoContainer(model: NowPlayingModel, actionSink: ActionSink) {
  * composable both can call. On drop it emits [SageAction.Reorder]; the VM owns the canonical order.
  */
 @Composable
-private fun NowPlayingSetlist(model: NowPlayingModel, actionSink: ActionSink) {
+private fun NowPlayingSetlist(model: NowPlayingModel, actionSink: ActionSink, modifier: Modifier = Modifier) {
     // Local mirror mutated live during a drag; rebuilt whenever the VM re-emits the queue order
     // (data-class row equality means routine playback ticks don't churn it). Mirrors ReorderableScreen.
     val items = remember(model.setlist) { model.setlist.toMutableStateList() }
@@ -313,10 +379,8 @@ private fun NowPlayingSetlist(model: NowPlayingModel, actionSink: ActionSink) {
     LazyColumn(
         state = listState,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
-        modifier = Modifier
-            .fillMaxHeight()
+        modifier = modifier
             .widthIn(min = ContextMenuMinWidth, max = ContextMenuMaxWidth)
-            .fillMaxWidth()
             .clip(RoundedCornerShape(InfoContainerCornerRadius))
             .background(MaterialTheme.colorScheme.surfaceContainer),
     ) {
@@ -464,6 +528,73 @@ private fun TrackInfo(model: NowPlayingModel, actionSink: ActionSink) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+        }
+    }
+}
+
+/**
+ * Compact info panel shown in place of [NowPlayingInfo] on short screens, mirroring the Home
+ * now-playing card ([net.sigmabeta.chipbox.common.ui.components.api.NowPlayingHomeCard]) — layered
+ * artwork → scrim → title/artist text — but without the transport controls. Tapping it opens the
+ * LINKS menu, like [TrackInfo], and it carries the same test tag. The fixed-height card is centered
+ * in the panel region.
+ */
+@Composable
+private fun MiniNowPlayingInfo(model: NowPlayingModel, actionSink: ActionSink) {
+    var imageLoaded by remember(model.artwork.info) { mutableStateOf(false) }
+    val foregroundColor by animateColorAsState(
+        targetValue = if (imageLoaded) Color.White else MaterialTheme.colorScheme.onSurface,
+        label = "MiniNowPlayingInfo.foreground",
+    )
+
+    Surface(
+        shape = RoundedCornerShape(InfoContainerCornerRadius),
+        tonalElevation = 3.dp,
+        shadowElevation = 8.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(NOW_PLAYING_TRACK_INFO_TAG)
+            .clickable { actionSink.sendAction(NowPlayingAction.TrackInfoClicked) },
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            CrossfadeImage(
+                sourceInfo = model.artwork,
+                imagePlaceholder = Icon.MusicNote,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                onImageLoadedChange = { imageLoaded = it },
+            )
+            // Scrim only once a real image is behind the text, for legibility.
+            if (imageLoaded) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = MiniCardScrimAlpha)),
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            ) {
+                Text(
+                    text = model.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = foregroundColor,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (model.artistsCaption.isNotEmpty()) {
+                    Text(
+                        text = model.artistsCaption,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = foregroundColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }
