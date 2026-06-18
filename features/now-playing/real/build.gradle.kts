@@ -20,8 +20,14 @@ kotlin {
                 implementation(projects.cbox.common.models.api)
                 implementation(projects.cbox.common.player.common.api)
                 implementation(projects.cbox.common.player.director.api)
+                // EXPERIMENT: inline setlist mode resolves queue ids to Track metadata.
+                implementation(projects.cbox.common.repository.api)
 
                 implementation(libs.sage.common.appcomm)
+                // EXPERIMENT: drag-to-reorder for the inline setlist (same lib sage's
+                // ReorderableScreen uses). Productionizing would extract a shared reorderable
+                // column rather than spread this dependency.
+                implementation(libs.reorderable)
                 implementation(libs.sage.common.freeform)
                 implementation(libs.sage.common.images)
                 implementation(libs.sage.common.ui.components)
