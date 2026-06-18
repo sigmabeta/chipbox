@@ -73,6 +73,13 @@ sealed interface SessionRequest {
      */
     data class Reorder(val fromIndex: Int, val toIndex: Int) : SessionRequest
 
+    /**
+     * Remove the track at [index] from the current setlist. The currently-playing track keeps
+     * playing — its position is re-indexed. No-op when there's no session, [index] is out of range,
+     * or [index] is the playing position (the active track isn't removable; callers gate this).
+     */
+    data class RemoveTrack(val index: Int) : SessionRequest
+
     /** Toggle shuffle on the current session, re-resolving the setlist around the active track. */
     data class SetShuffled(val shuffled: Boolean) : SessionRequest
 

@@ -36,7 +36,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +64,7 @@ import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
+import net.sigmabeta.sage.components.NameCaptionValueListModel
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.vector
 import sh.calvin.reorderable.ReorderableItem
@@ -336,16 +340,83 @@ private fun NowPlayingSetlist(model: NowPlayingModel, actionSink: ActionSink) {
                     },
                 )
 
-                DraggableListItem(dragHandle = dragHandle, modifier = Modifier) {
-                    NameCaptionValueListItem(
-                        model = row,
-                        actionSink = actionSink,
-                        modifier = Modifier,
-                        padding = ContextMenuRowPadding,
+                if (row.active) {
+                    // The playing track can be reordered but not removed.
+                    SetlistRow(row, dragHandle, actionSink, opaque = false)
+                } else {
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { value ->
+                            val removed = value == SwipeToDismissBoxValue.EndToStart
+                            if (removed) {
+                                actionSink.sendAction(NowPlayingAction.SetlistTrackRemoved(row.dataId))
+                            }
+                            removed
+                        },
                     )
+                    // True only while the row is actually being swiped left. Drives both the remove
+                    // indicator behind the row and the row's own opaque background that masks it.
+                    val swiping = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        enableDismissFromStartToEnd = false,
+                        enableDismissFromEndToStart = true,
+                        backgroundContent = {
+                            if (swiping) SwipeRemoveBackground()
+                        },
+                    ) {
+                        SetlistRow(row, dragHandle, actionSink, opaque = swiping)
+                    }
                 }
             }
         }
+    }
+}
+
+/**
+ * A single setlist row: the track info plus the reorder handle ([dragHandle]). When [opaque] is
+ * set it paints a [surfaceContainer][androidx.compose.material3.ColorScheme.surfaceContainer]
+ * background — used during a swipe so the remove reveal shows only in the gap the sliding row opens,
+ * not bleeding through the row. At rest the row is transparent (the list card shows through).
+ */
+@Composable
+private fun SetlistRow(
+    row: NameCaptionValueListModel,
+    dragHandle: Modifier,
+    actionSink: ActionSink,
+    opaque: Boolean,
+) {
+    DraggableListItem(
+        dragHandle = dragHandle,
+        modifier = if (opaque) {
+            Modifier.background(MaterialTheme.colorScheme.surfaceContainer)
+        } else {
+            Modifier
+        },
+    ) {
+        NameCaptionValueListItem(
+            model = row,
+            actionSink = actionSink,
+            modifier = Modifier,
+            padding = ContextMenuRowPadding,
+        )
+    }
+}
+
+/** The reveal behind a setlist row being swiped away: an error-tinted panel with a remove icon. */
+@Composable
+private fun SwipeRemoveBackground() {
+    Box(
+        contentAlignment = Alignment.CenterEnd,
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(horizontal = 24.dp),
+    ) {
+        Icon(
+            imageVector = Icon.Clear.vector(),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onErrorContainer,
+        )
     }
 }
 
