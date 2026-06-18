@@ -10,4 +10,6 @@ dependencies {
     // `implementation`, so neither is transitive).
     implementation(libs.sage.common.images)
     implementation(projects.cbox.common.player.common.api)
+    // The setlist panel's rows are sage NameCaptionValueListModels, built inline for the preview.
+    implementation(libs.sage.common.ui.components)
 }

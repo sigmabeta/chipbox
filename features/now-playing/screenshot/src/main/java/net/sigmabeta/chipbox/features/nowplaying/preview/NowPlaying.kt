@@ -12,6 +12,8 @@ import net.sigmabeta.chipbox.ui.previews.DevicePreviews
 import net.sigmabeta.chipbox.ui.previews.ScreenPreview
 import net.sigmabeta.chipbox.ui.previews.previewWidthClass
 import net.sigmabeta.sage.appcomm.ActionSink
+import net.sigmabeta.sage.appcomm.SageAction
+import net.sigmabeta.sage.components.NameCaptionValueListModel
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.list.WidthClass
 
@@ -181,6 +183,27 @@ private fun sampleModel(
     artists = artists,
     repeatStatusLabel = repeatStatusLabel,
     shuffleStatusLabel = shuffleStatusLabel,
+    setlist = sampleSetlist(),
 )
+
+/** A handful of queue rows so the side-by-side setlist panel (wide layouts) renders with content;
+ *  the playing track ("Dr. Wily Stage 1") is the active row. */
+private fun sampleSetlist(): List<NameCaptionValueListModel> = listOf(
+    "Title" to "1:04",
+    "Dr. Wily Stage 1" to "2:34",
+    "Dr. Wily Stage 2" to "2:08",
+    "Air Man Stage" to "1:52",
+    "Crash Man Stage" to "1:47",
+    "Boss Battle" to "0:41",
+).mapIndexed { index, (name, length) ->
+    NameCaptionValueListModel(
+        dataId = index.toLong(),
+        name = name,
+        caption = "Mega Man 2",
+        value = length,
+        clickAction = SageAction.Noop,
+        active = name == "Dr. Wily Stage 1",
+    )
+}
 
 private const val SAMPLE_ERROR = "Couldn't load track"
