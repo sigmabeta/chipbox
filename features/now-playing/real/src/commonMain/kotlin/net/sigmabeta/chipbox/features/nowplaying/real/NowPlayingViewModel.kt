@@ -158,6 +158,14 @@ class NowPlayingViewModel @Inject constructor(
                 if (position >= 0) director.request(SessionRequest.PlayPosition(position))
             }
 
+            is NowPlayingAction.SetlistTrackRemoved -> {
+                val position = setlistIds.indexOf(action.trackId)
+                // The active track isn't removable (the UI hides the affordance); guard anyway.
+                if (position >= 0 && action.trackId != state.value.track?.id) {
+                    director.request(SessionRequest.RemoveTrack(position))
+                }
+            }
+
             // Drop from the inline reorderable list; the director owns the canonical order.
             is SageAction.Reorder ->
                 director.request(SessionRequest.Reorder(action.fromIndex, action.toIndex))

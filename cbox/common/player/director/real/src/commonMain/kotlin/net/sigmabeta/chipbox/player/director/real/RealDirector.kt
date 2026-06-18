@@ -300,6 +300,7 @@ class RealDirector(
             SessionRequest.SkipBack -> skipBack()
             is SessionRequest.PlayPosition -> playPosition(request.position)
             is SessionRequest.Reorder -> reorder(request.fromIndex, request.toIndex)
+            is SessionRequest.RemoveTrack -> removeTrack(request.index)
             is SessionRequest.SetShuffled -> setShuffled(request.shuffled)
             is SessionRequest.SetRepeatMode -> setRepeatMode(request.mode)
             SessionRequest.PauseTemporarily -> pauseTemporarily()
@@ -650,6 +651,39 @@ class RealDirector(
                 model.copy(
                     setlist = newSetlist,
                     session = session.copy(currentPosition = newPosition),
+                )
+            )
+        }
+    }
+
+    private fun removeTrack(index: Int) {
+        directorScope.launch {
+            val session = model.session ?: return@launch
+            val setlist = model.setlist ?: return@launch
+            if (index !in setlist.indices) return@launch
+            // The playing track isn't removable (the UI hides the affordance); guard defensively so
+            // a stale request can't tear the active track out from under playback.
+            if (index == session.currentPosition) return@launch
+
+            // Keep the playing track active by locating it again after the removal.
+            val playingTrackId = session.currentPosition?.let(setlist::getOrNull)
+            val newSetlist = setlist.toMutableList().apply { removeAt(index) }
+            val updatedSession = session.copy(
+                currentPosition = playingTrackId
+                    ?.let { id -> newSetlist.indexOf(id).takeIf { it >= 0 } }
+                    ?: session.currentPosition,
+            )
+
+            // Removing the track after the current one can make the current one the last, so the
+            // "next" affordance must be recomputed (mirrors setRepeatMode).
+            val skipAllowed = skipForwardAllowed(updatedSession, newSetlist)
+
+            // The playing track is untouched, so no generator/speaker switch.
+            commit(
+                model.copy(
+                    setlist = newSetlist,
+                    session = updatedSession,
+                    playback = model.playback.copy(skipForwardAllowed = skipAllowed),
                 )
             )
         }

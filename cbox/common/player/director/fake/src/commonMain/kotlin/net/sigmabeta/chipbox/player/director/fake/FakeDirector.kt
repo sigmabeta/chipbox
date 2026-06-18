@@ -110,6 +110,7 @@ open class FakeDirector : Director {
     val playPositionCalls: List<Int> get() = requests.filterIsInstance<SessionRequest.PlayPosition>().map { it.position }
     val reorderCalls: List<Pair<Int, Int>>
         get() = requests.filterIsInstance<SessionRequest.Reorder>().map { it.fromIndex to it.toIndex }
+    val removeTrackCalls: List<Int> get() = requests.filterIsInstance<SessionRequest.RemoveTrack>().map { it.index }
     val seekCalls: List<Long> get() = requests.filterIsInstance<SessionRequest.Seek>().map { it.positionMs }
     val setVolumeCalls: List<Double> get() = requests.filterIsInstance<SessionRequest.SetVolume>().map { it.scale }
     val setShuffledCalls: List<Boolean> get() = requests.filterIsInstance<SessionRequest.SetShuffled>().map { it.shuffled }

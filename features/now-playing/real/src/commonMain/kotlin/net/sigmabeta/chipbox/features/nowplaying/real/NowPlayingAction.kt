@@ -30,6 +30,9 @@ sealed class NowPlayingAction : ChipboxAction() {
     /** A row in the inline setlist was tapped — jump playback to that track. */
     data class SetlistTrackClicked(val trackId: Long) : NowPlayingAction()
 
+    /** A setlist row was swiped away — remove that track from the queue. */
+    data class SetlistTrackRemoved(val trackId: Long) : NowPlayingAction()
+
     /** The context menu's back row — return to the NONE state (track info). */
     data object ContextMenuBackClicked : NowPlayingAction()
 

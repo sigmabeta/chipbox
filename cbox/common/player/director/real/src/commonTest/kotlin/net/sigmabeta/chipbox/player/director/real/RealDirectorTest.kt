@@ -645,6 +645,59 @@ class RealDirectorTest {
         director.release()
     }
 
+    // ---- remove from setlist ----
+
+    @Test
+    fun `removeTrack drops a non-playing track and keeps the playing track active`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 1)))
+
+        // Remove track 1 (index 0), which sits before the playing track (track 2 at index 1).
+        director.request(SessionRequest.RemoveTrack(0))
+
+        assertEquals(listOf(2L, 3L), director.setlistState().first(), "the track is gone")
+        assertEquals(0, director.sessionState().first()?.currentPosition, "playing track 2 re-indexed to 0")
+        assertEquals(listOf(2L), gen.startTrackCalls, "removing a track starts nothing new")
+        assertTrue(speaker.switchToCalls.isEmpty(), "no speaker switch on remove")
+        director.release()
+    }
+
+    @Test
+    fun `removeTrack at the playing position is a no-op`() = runTest {
+        val (director, _, _, _) = newDirector(listOf(track1, track2, track3))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 1)))
+
+        director.request(SessionRequest.RemoveTrack(1)) // index 1 == currentPosition
+
+        assertEquals(listOf(1L, 2L, 3L), director.setlistState().first(), "the active track isn't removable")
+        assertEquals(1, director.sessionState().first()?.currentPosition)
+        director.release()
+    }
+
+    @Test
+    fun `removeTrack out of range is a no-op`() = runTest {
+        val (director, _, _, _) = newDirector(listOf(track1, track2))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 2L), startingPosition = 0)))
+
+        director.request(SessionRequest.RemoveTrack(9))
+
+        assertEquals(listOf(1L, 2L), director.setlistState().first())
+        director.release()
+    }
+
+    @Test
+    fun `removeTrack of the last following track disables skip-forward`() = runTest {
+        val (director, _, _, _) = newDirector(listOf(track1, track2))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 2L), startingPosition = 0)))
+
+        // Remove track 2 (the only track after the playing one) — the current track becomes last.
+        director.request(SessionRequest.RemoveTrack(1))
+
+        assertEquals(listOf(1L), director.setlistState().first())
+        assertTrue(!director.playbackState().first().skipForwardAllowed, "no track ahead -> skip-forward off")
+        director.release()
+    }
+
     // ---- restore (resume the last session on launch) ----
 
     @Test
