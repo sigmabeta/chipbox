@@ -113,7 +113,7 @@ private val ContextMenuRowPadding = PaddingValues(horizontal = 8.dp)
 // Under this height there's no room for the tall cover-art + text layout, so the track info
 // collapses to the compact home-card-style MiniNowPlayingTrackInfo.
 private val CompactHeightBreakpoint = 500.dp
-private const val MiniCardScrimAlpha = 0.45f
+private const val MINI_CARD_SCRIM_ALPHA = 0.45f
 
 @Composable
 fun NowPlayingContent(
@@ -569,7 +569,7 @@ private fun MiniNowPlayingInfo(model: NowPlayingModel, actionSink: ActionSink) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = MiniCardScrimAlpha)),
+                        .background(Color.Black.copy(alpha = MINI_CARD_SCRIM_ALPHA)),
                 )
             }
             Column(
