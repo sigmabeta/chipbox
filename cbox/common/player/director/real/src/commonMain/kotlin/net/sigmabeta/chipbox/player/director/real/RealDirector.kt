@@ -374,8 +374,12 @@ class RealDirector(
 
     private fun restore(session: Session, positionMs: Long) {
         directorScope.launch {
-            val setlistForSession = getSetlistForSession(session)
-                .let { if (session.shuffled) it.shuffled() else it }
+            // A restored session carries its exact saved order in explicitSetlist (the persister
+            // captured the live setlist). Replay it literally — no re-resolve, no re-shuffle — so
+            // resume is faithful (incl. shuffled and user-modified setlists). Only a session with
+            // no saved order (legacy snapshot / game/artist) falls back to resolving from contentId.
+            val setlistForSession = session.explicitSetlist?.takeIf { it.isNotEmpty() }
+                ?: getSetlistForSession(session).let { if (session.shuffled) it.shuffled() else it }
 
             if (setlistForSession.isEmpty()) {
                 hatchet.w("restore: session resolved to an empty setlist; nothing to restore.")
@@ -650,7 +654,7 @@ class RealDirector(
             commit(
                 model.copy(
                     setlist = newSetlist,
-                    session = session.copy(currentPosition = newPosition),
+                    session = session.copy(currentPosition = newPosition, modified = true),
                 )
             )
         }
@@ -672,6 +676,7 @@ class RealDirector(
                 currentPosition = playingTrackId
                     ?.let { id -> newSetlist.indexOf(id).takeIf { it >= 0 } }
                     ?: session.currentPosition,
+                modified = true,
             )
 
             // Removing the track after the current one can make the current one the last, so the

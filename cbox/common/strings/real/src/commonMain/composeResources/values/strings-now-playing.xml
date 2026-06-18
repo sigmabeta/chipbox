@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="now_playing_screen_title">Now playing</string>
+    <string name="now_playing_label_modified_prefix">(Modified)</string>
 
     <string name="now_playing_session_type_game_playing">Playing from game</string>
     <string name="now_playing_session_type_game_shuffling">Shuffling from game</string>

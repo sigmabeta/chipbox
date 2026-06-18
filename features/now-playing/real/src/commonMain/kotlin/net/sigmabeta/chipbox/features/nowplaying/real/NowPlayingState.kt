@@ -93,7 +93,7 @@ data class NowPlayingState(
     private fun sessionTypeLabel(stringProvider: StringProvider): String {
         val session = session ?: return ""
         val shuffled = session.shuffled
-        return stringProvider.getString(
+        val base = stringProvider.getString(
             when (session.type) {
                 SessionType.GAME ->
                     if (shuffled) {
@@ -142,6 +142,12 @@ data class NowPlayingState(
                     ChipboxStringId.NOW_PLAYING_SESSION_TYPE_SINGLE_TRACK_PLAYING
             }
         )
+        // A user-edited setlist (reorder/remove) gets a "(Modified)" prefix on the type label.
+        return if (session.modified) {
+            "${stringProvider.getString(ChipboxStringId.NOW_PLAYING_LABEL_MODIFIED_PREFIX)} $base"
+        } else {
+            base
+        }
     }
 
     /**
