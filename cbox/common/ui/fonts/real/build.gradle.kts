@@ -41,3 +41,22 @@ compose.resources {
     generateResClass = ResourcesExtension.ResourceClassGeneration.Always
     packageOfResClass = "net.sigmabeta.chipbox.common.ui.fonts.real.generated.resources"
 }
+
+// Paparazzi composeResources export — see the matching block in cbox/common/strings/real. CMP 1.11
+// packages androidMain composeResources as assets only, off the JVM unit-test classpath, which breaks
+// resource loading under Paparazzi; expose them as a classpath-shaped jar the screenshot modules add
+// to their test classpath (here it carries the `Res.font.*` .otf files).
+val composeResourcesElements: Configuration by configurations.creating {
+    isCanBeResolved = false
+    isCanBeConsumed = true
+}
+val composeResourcesElementsJar = tasks.register<Jar>("composeResourcesElementsJar") {
+    archiveClassifier.set("compose-resources")
+    dependsOn("prepareComposeResourcesTaskForCommonMain")
+    from(layout.buildDirectory.dir("generated/compose/resourceGenerator/preparedResources/commonMain/composeResources")) {
+        into("composeResources/net.sigmabeta.chipbox.common.ui.fonts.real.generated.resources")
+    }
+}
+artifacts {
+    add(composeResourcesElements.name, composeResourcesElementsJar)
+}

@@ -32,3 +32,24 @@ compose.resources {
     generateResClass = ResourcesExtension.ResourceClassGeneration.Always
     packageOfResClass = "net.sigmabeta.chipbox.common.strings.real.generated.resources"
 }
+
+// Paparazzi composeResources export. CMP 1.11 packages androidMain composeResources as Android assets
+// only — off the JVM unit-test classpath — which breaks the ClasspathResourceReader in
+// ChipboxPreviewStrings under Paparazzi (strings fall back to their resource keys). Expose the
+// prepared composeResources as a classpath-shaped jar (`composeResources/<packageOfResClass>/...`)
+// that the :features:*:screenshot modules add to their test classpath (see ChipboxScreenshotPlugin).
+val composeResourcesElements: Configuration by configurations.creating {
+    isCanBeResolved = false
+    isCanBeConsumed = true
+}
+val composeResourcesElementsJar = tasks.register<Jar>("composeResourcesElementsJar") {
+    archiveClassifier.set("compose-resources")
+    // Same-module ordering: this task produces preparedResources/commonMain, read below.
+    dependsOn("prepareComposeResourcesTaskForCommonMain")
+    from(layout.buildDirectory.dir("generated/compose/resourceGenerator/preparedResources/commonMain/composeResources")) {
+        into("composeResources/net.sigmabeta.chipbox.common.strings.real.generated.resources")
+    }
+}
+artifacts {
+    add(composeResourcesElements.name, composeResourcesElementsJar)
+}
