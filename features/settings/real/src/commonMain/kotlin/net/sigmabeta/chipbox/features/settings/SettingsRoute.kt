@@ -6,16 +6,15 @@ import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 
 /**
  * `expect`/`actual` split because the folder picker for `ChipboxEvent.PickFolder` is
- * fundamentally platform-specific:
+ * platform-specific:
  *
- *  - Android (`androidMain`) uses SAF via
- *    `rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree)`.
- *  - JVM/desktop (`jvmMain`) uses `javax.swing.JFileChooser` in DIRECTORIES_ONLY mode,
- *    deferred via `SwingUtilities.invokeLater` to keep AWT's nested EDT pump out of the
- *    currently-dispatched coroutine continuation.
+ *  - Android (`androidMain`) and JVM/desktop (`jvmMain`) both push the in-app
+ *    `:features:folder-picker` screen. The Android actual first gates it behind All Files Access
+ *    (`MANAGE_EXTERNAL_STORAGE`), since the picker browses and the scanner reads raw paths.
+ *  - The jsMain stub forwards events unchanged.
  *
- * Both actuals route every other `ChipboxEvent` to the host's outer sink unchanged, and
- * intercept `PickFolder` locally so the shared chrome doesn't need a per-platform launcher
+ * Each actual routes every other `ChipboxEvent` to the host's outer sink unchanged, and
+ * intercepts `PickFolder` locally so the shared chrome doesn't need a per-platform launcher
  * callback in its sink signature.
  */
 @Composable

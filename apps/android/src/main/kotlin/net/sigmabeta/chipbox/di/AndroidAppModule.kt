@@ -8,8 +8,8 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.BuildConfig
-import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
 import net.sigmabeta.chipbox.contentsource.LibrarySource
+import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.crash.CrashReporter
 import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.crash.real.RealCrashReporter
@@ -83,12 +83,12 @@ object AndroidAppModule {
         hatchet: Hatchet,
     ): CrashReportStore = RealCrashReportStore(crashDir = crashDir, hatchet = hatchet)
 
-    // SettingsViewModel's LibrarySource param resolves to the SAF-backed Android impl on this
-    // target. (The interface lives in cbox/common/contentsource/api; AndroidFileContentSource
-    // is bound as a ContentSource elsewhere — this binding adds the LibrarySource face.)
+    // Both Android and JVM now resolve LibrarySource to the raw-path LocalFileContentSource (the
+    // interface lives in cbox/common/contentsource/api; the impl is bound as a ContentSource in
+    // AndroidFileContentSourceModule — this binding adds the LibrarySource face).
     @Provides
     @SingleIn(AppScope::class)
-    fun provideLibrarySource(impl: AndroidFileContentSource): LibrarySource = impl
+    fun provideLibrarySource(impl: LocalFileContentSource): LibrarySource = impl
 
     // FolderPicker's OkioFolderLister @Inject ctor takes a FileSystem; pin it to the live
     // platform filesystem. Other call sites that need a FileSystem (PCM cache, FileSpeaker,

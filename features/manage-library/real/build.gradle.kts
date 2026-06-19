@@ -26,7 +26,9 @@ kotlin {
         }
         named("androidMain") {
             dependencies {
-                implementation(libs.androidx.activity.compose)
+                // FolderPicker route key — Android now pushes the in-app picker (raw-path + All
+                // Files Access) instead of launching SAF OpenDocumentTree.
+                implementation(projects.features.folderPicker.api)
             }
         }
         named("jvmMain") {
