@@ -2,6 +2,9 @@
 <resources>
     <string name="folder_picker_title">Pick a folder</string>
     <string name="folder_picker_cta_add">Add this folder</string>
+    <string name="folder_picker_cta_up">Go up a folder</string>
+    <string name="folder_picker_cta_show_hidden">Show hidden files</string>
+    <string name="folder_picker_cta_hide_hidden">Hide hidden files</string>
     <string name="folder_picker_cta_cancel">Cancel and exit</string>
     <string name="folder_picker_value_empty">Empty</string>
     <string name="folder_picker_value_folders">%d folders</string>

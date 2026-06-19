@@ -79,6 +79,80 @@ class FolderPickerViewModelTest {
     }
 
     @Test
+    fun `NavigateUpClicked descends into the listing's parentPath`() = runTest {
+        val lister = FakeFolderLister(
+            mapOf(
+                "/root/Music" to FolderListing(
+                    folders = listOf(FolderPickerEntry("PSF", "/root/Music/PSF", 0, 0)),
+                    fileCount = 2,
+                    parentPath = "/root",
+                ),
+                "/root" to FolderListing(
+                    folders = listOf(FolderPickerEntry("Music", "/root/Music", 1, 2)),
+                    fileCount = 0,
+                    parentPath = "/",
+                ),
+            ),
+        )
+        val vm = newViewModel(defaultPath = "/root/Music", lister = lister)
+        vm.state.first { it.currentPath == "/root/Music" }
+
+        vm.sendAction(FolderPickerAction.NavigateUpClicked)
+        val state = vm.state.first { it.currentPath == "/root" }
+        assertEquals(listOf(FolderPickerEntry("Music", "/root/Music", 1, 2)), state.entries)
+        assertEquals("/", state.parentPath)
+    }
+
+    @Test
+    fun `NavigateUpClicked at a root with a null parent stays put`() = runTest {
+        val lister = FakeFolderLister(
+            mapOf("/" to FolderListing(emptyList(), 0, parentPath = null)),
+        )
+        val vm = newViewModel(defaultPath = "/", lister = lister)
+        vm.state.first { it.currentPath == "/" }
+
+        vm.sendAction(FolderPickerAction.NavigateUpClicked)
+        val state = vm.state.first()
+        assertEquals("/", state.currentPath, "There's nowhere to ascend to from a root")
+        assertEquals(null, state.parentPath)
+    }
+
+    @Test
+    fun `ToggleHiddenClicked re-lists the current path with dotfiles and flips showHidden`() = runTest {
+        val lister = FakeFolderLister(
+            listings = mapOf(
+                "/root" to FolderListing(
+                    folders = listOf(FolderPickerEntry("Music", "/root/Music", 0, 0)),
+                    fileCount = 1,
+                ),
+            ),
+            hiddenListings = mapOf(
+                "/root" to FolderListing(
+                    folders = listOf(
+                        FolderPickerEntry(".config", "/root/.config", 0, 0),
+                        FolderPickerEntry("Music", "/root/Music", 0, 0),
+                    ),
+                    fileCount = 3,
+                ),
+            ),
+        )
+        val vm = newViewModel(defaultPath = "/root", lister = lister)
+        val visible = vm.state.first { it.currentPath == "/root" }
+        assertEquals(false, visible.showHidden)
+        assertEquals(listOf("Music"), visible.entries.map { it.name })
+
+        vm.sendAction(FolderPickerAction.ToggleHiddenClicked)
+        val shown = vm.state.first { it.showHidden }
+        assertEquals(listOf(".config", "Music"), shown.entries.map { it.name })
+        assertEquals(3, shown.fileCount)
+
+        // Toggling again hides the dotfiles once more.
+        vm.sendAction(FolderPickerAction.ToggleHiddenClicked)
+        val hiddenAgain = vm.state.first { !it.showHidden }
+        assertEquals(listOf("Music"), hiddenAgain.entries.map { it.name })
+    }
+
+    @Test
     fun `AddThisFolderClicked adds currentPath to LibrarySource, starts a scan, and navigates to RescanStatus`() = runTest {
         val source = FakeLibrarySource()
         val scanner = CountingScanner(dispatcher)
@@ -142,8 +216,11 @@ class FolderPickerViewModelTest {
 
     private class FakeFolderLister(
         private val listings: Map<String, FolderListing>,
+        private val hiddenListings: Map<String, FolderListing> = emptyMap(),
     ) : FolderLister {
-        override fun list(path: String): FolderListing =
-            listings[path] ?: FolderListing(emptyList(), 0)
+        override fun list(path: String, showHidden: Boolean): FolderListing {
+            val source = if (showHidden) hiddenListings else listings
+            return source[path] ?: listings[path] ?: FolderListing(emptyList(), 0)
+        }
     }
 }
