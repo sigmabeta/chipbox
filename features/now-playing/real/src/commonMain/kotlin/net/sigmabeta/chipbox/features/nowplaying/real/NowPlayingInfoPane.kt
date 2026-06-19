@@ -120,7 +120,7 @@ private fun InfoContainer(model: NowPlayingModel, actionSink: ActionSink) {
         contentAlignment = Alignment.Center,
         transitionSpec = { fadeIn() togetherWith fadeOut() },
         modifier = Modifier
-            .clip(RoundedCornerShape(InfoContainerCornerRadius))
+            .clip(RoundedCornerShape(NowPlayingPanelCornerRadius))
             .background(backgroundColor),
     ) { mode ->
         // `mode` is the animating layer's own target, not necessarily model.contextMenuMode, so
@@ -184,8 +184,8 @@ private fun TrackInfo(model: NowPlayingModel, actionSink: ActionSink) {
 /**
  * The standalone compact now-playing card shown in place of [NowPlayingInfo] on short screens —
  * layered artwork → scrim → title/artist text — but without the transport controls. Tapping it
- * opens the LINKS menu, like [TrackInfo], and it carries the same test tag. The fixed-height card is
- * centered in the panel region.
+ * opens the LINKS menu, like [TrackInfo], and it carries the same test tag. The card fills the
+ * panel region it's given.
  */
 @Composable
 internal fun MiniNowPlayingInfo(model: NowPlayingModel, actionSink: ActionSink) {
@@ -196,7 +196,7 @@ internal fun MiniNowPlayingInfo(model: NowPlayingModel, actionSink: ActionSink) 
     )
 
     Surface(
-        shape = RoundedCornerShape(InfoContainerCornerRadius),
+        shape = RoundedCornerShape(NowPlayingPanelCornerRadius),
         tonalElevation = 3.dp,
         shadowElevation = 8.dp,
         modifier = Modifier

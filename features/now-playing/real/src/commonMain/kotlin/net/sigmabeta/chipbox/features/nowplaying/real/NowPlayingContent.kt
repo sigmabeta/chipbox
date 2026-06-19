@@ -31,7 +31,7 @@ private val ScreenPadding = 24.dp
 private val WideLayoutBreakpoint = 780.dp
 
 // Under this height there's no room for the tall cover-art + text layout, so the track info
-// collapses to the compact home-card-style MiniNowPlayingTrackInfo.
+// collapses to the compact MiniNowPlayingInfo card.
 private val CompactHeightBreakpoint = 500.dp
 
 @Composable
