@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.features.nowplaying.real
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +37,17 @@ private val WideLayoutBreakpoint = 780.dp
 // collapses to the compact MiniNowPlayingInfo card.
 private val CompactHeightBreakpoint = 500.dp
 
+// Shared-element keys so a pane that exists in two layout states (e.g. the setlist as the lone
+// narrow panel and as the wide right panel) animates its bounds between them instead of
+// fade-out/in — it slides/resizes across.
+private const val INFO_PANE_KEY = "now-playing-info-pane"
+private const val SETLIST_PANE_KEY = "now-playing-setlist-pane"
+
+/** Which pane(s) fill the flexible middle. The single [AnimatedContent] over this drives the
+ *  shared-element transitions between layouts. */
+private enum class MiddleLayout { WIDE, NARROW_INFO, NARROW_SETLIST }
+
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun NowPlayingContent(
     model: NowPlayingModel,
@@ -41,10 +55,19 @@ fun NowPlayingContent(
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        // Above the breakpoint there's room to show the track info and the setlist together.
+        // Above the width breakpoint there's room for both panes; under the height breakpoint the
+        // info pane collapses to the compact mini card.
         val wide = maxWidth > WideLayoutBreakpoint
-        // Under the height breakpoint the track info collapses to the compact mini card.
         val compact = maxHeight < CompactHeightBreakpoint
+        val layout = when {
+            wide -> MiddleLayout.WIDE
+            model.setlistVisible -> MiddleLayout.NARROW_SETLIST
+            else -> MiddleLayout.NARROW_INFO
+        }
+
+        // Hoisted above the AnimatedContent so the setlist keeps its scroll position as it moves
+        // between the lone narrow panel and the wide right panel.
+        val setlistListState = rememberLazyListState()
 
         Column(
             modifier = Modifier
@@ -57,40 +80,63 @@ fun NowPlayingContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Crossfade the whole middle when crossing the breakpoint so the layout doesn't snap.
-            AnimatedContent(
-                targetState = wide,
-                label = "NowPlayingLayout",
-                contentAlignment = Alignment.Center,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
+            // One AnimatedContent over the whole layout state lets shared elements tween a pane's
+            // bounds between layouts: panes present in both states slide/resize across; a pane that
+            // appears only in the target (e.g. the info pane when widening from the setlist) fades in.
+            SharedTransitionLayout(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
-            ) { isWide ->
-                if (isWide) {
-                    // Two panels: the info panel on the left, the setlist always on the right.
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
-                        InfoPanel(model, actionSink, compact, modifier = Modifier.weight(1f).fillMaxHeight())
-                        NowPlayingSetlist(model, actionSink, modifier = Modifier.weight(1f).fillMaxHeight())
-                    }
-                } else {
-                    // One panel: the setlist button swaps the info panel out for the setlist; the
-                    // header and transport controls stay put.
-                    AnimatedContent(
-                        targetState = model.setlistVisible,
-                        label = "NowPlayingMiddle",
-                        contentAlignment = Alignment.Center,
-                        transitionSpec = { fadeIn() togetherWith fadeOut() },
-                        modifier = Modifier.fillMaxSize(),
-                    ) { showingSetlist ->
-                        if (showingSetlist) {
-                            NowPlayingSetlist(model, actionSink, Modifier.fillMaxSize())
-                        } else {
-                            InfoPanel(model, actionSink, compact, Modifier.fillMaxSize())
+            ) {
+                AnimatedContent(
+                    targetState = layout,
+                    label = "NowPlayingLayout",
+                    contentAlignment = Alignment.Center,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    modifier = Modifier.fillMaxSize(),
+                ) { state ->
+                    when (state) {
+                        MiddleLayout.WIDE -> Row(
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            InfoPanel(
+                                model = model,
+                                actionSink = actionSink,
+                                compact = compact,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .sharedElement(rememberSharedContentState(INFO_PANE_KEY), this@AnimatedContent),
+                            )
+                            NowPlayingSetlist(
+                                model = model,
+                                actionSink = actionSink,
+                                listState = setlistListState,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .sharedElement(rememberSharedContentState(SETLIST_PANE_KEY), this@AnimatedContent),
+                            )
                         }
+
+                        MiddleLayout.NARROW_SETLIST -> NowPlayingSetlist(
+                            model = model,
+                            actionSink = actionSink,
+                            listState = setlistListState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .sharedElement(rememberSharedContentState(SETLIST_PANE_KEY), this@AnimatedContent),
+                        )
+
+                        MiddleLayout.NARROW_INFO -> InfoPanel(
+                            model = model,
+                            actionSink = actionSink,
+                            compact = compact,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .sharedElement(rememberSharedContentState(INFO_PANE_KEY), this@AnimatedContent),
+                        )
                     }
                 }
             }
