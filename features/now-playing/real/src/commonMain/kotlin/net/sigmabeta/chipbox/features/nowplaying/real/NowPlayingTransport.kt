@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -29,9 +30,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon
@@ -172,7 +175,6 @@ private fun CacheFillIndicator(cacheFraction: Float) {
     }
 }
 
-@Suppress("LongMethod")
 @Composable
 internal fun ColumnScope.TransportRow(
     model: NowPlayingModel,
@@ -190,36 +192,23 @@ internal fun ColumnScope.TransportRow(
     ) {
         // Where the shuffle toggle used to live: a placeholder for the future Setlist feature.
         // Shuffle itself now lives in the CONTROLS context menu.
-        IconButton(
-            onClick = { actionSink.sendAction(NowPlayingAction.SetlistClicked) },
-            modifier = Modifier
-                .size(TransportToggleSize)
-                .testTag(NOW_PLAYING_SETLIST_BUTTON_TAG),
-        ) {
-            Icon(
-                imageVector = Icon.QueueMusic.vector(),
-                contentDescription = null,
-                tint = mutedTint,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(8.dp),
-            )
-        }
+        TransportIconButton(
+            icon = Icon.QueueMusic,
+            action = NowPlayingAction.SetlistClicked,
+            actionSink = actionSink,
+            size = TransportToggleSize,
+            tint = mutedTint,
+            modifier = Modifier.testTag(NOW_PLAYING_SETLIST_BUTTON_TAG),
+        )
 
         Spacer(modifier = Modifier.size(8.dp))
 
-        IconButton(
-            onClick = { actionSink.sendAction(NowPlayingAction.SkipBackClicked) },
-            modifier = Modifier.size(TransportSkipSize),
-        ) {
-            Icon(
-                imageVector = Icon.SkipPrevious.vector(),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(8.dp),
-            )
-        }
+        TransportIconButton(
+            icon = Icon.SkipPrevious,
+            action = NowPlayingAction.SkipBackClicked,
+            actionSink = actionSink,
+            size = TransportSkipSize,
+        )
 
         Spacer(modifier = Modifier.size(16.dp))
 
@@ -258,39 +247,53 @@ internal fun ColumnScope.TransportRow(
 
         Spacer(modifier = Modifier.size(16.dp))
 
-        IconButton(
-            onClick = { actionSink.sendAction(NowPlayingAction.SkipForwardClicked) },
+        TransportIconButton(
+            icon = Icon.SkipNext,
+            action = NowPlayingAction.SkipForwardClicked,
+            actionSink = actionSink,
+            size = TransportSkipSize,
             enabled = model.canSkipForward,
-            modifier = Modifier.size(TransportSkipSize),
-        ) {
-            Icon(
-                imageVector = Icon.SkipNext.vector(),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(8.dp),
-            )
-        }
+        )
 
         Spacer(modifier = Modifier.size(8.dp))
 
         // Where the repeat toggle used to live: opens the CONTROLS context menu (which now hosts
         // both the repeat and shuffle toggles).
-        IconButton(
-            onClick = { actionSink.sendAction(NowPlayingAction.MenuClicked) },
+        TransportIconButton(
+            icon = Icon.Overflow,
+            action = NowPlayingAction.MenuClicked,
+            actionSink = actionSink,
+            size = TransportToggleSize,
+            tint = mutedTint,
+            modifier = Modifier.testTag(NOW_PLAYING_MENU_BUTTON_TAG),
+        )
+    }
+}
+
+/** A text-less transport button: a sized [IconButton] whose [icon] dispatches [action] on tap. */
+@Composable
+private fun TransportIconButton(
+    icon: Icon,
+    action: NowPlayingAction,
+    actionSink: ActionSink,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    tint: Color = LocalContentColor.current,
+) {
+    IconButton(
+        onClick = { actionSink.sendAction(action) },
+        enabled = enabled,
+        modifier = modifier.size(size),
+    ) {
+        Icon(
+            imageVector = icon.vector(),
+            contentDescription = null,
+            tint = tint,
             modifier = Modifier
-                .size(TransportToggleSize)
-                .testTag(NOW_PLAYING_MENU_BUTTON_TAG),
-        ) {
-            Icon(
-                imageVector = Icon.Overflow.vector(),
-                contentDescription = null,
-                tint = mutedTint,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(8.dp),
-            )
-        }
+                .fillMaxSize()
+                .padding(8.dp),
+        )
     }
 }
 

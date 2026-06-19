@@ -22,7 +22,7 @@ internal fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSi
     // Keeps its own 200..600dp width; the rounded surfaceContainer background lives on the shared
     // container now.
     Column(
-        modifier = Modifier.widthIn(min = ContextMenuMinWidth, max = ContextMenuMaxWidth),
+        modifier = Modifier.widthIn(min = NowPlayingPanelMinWidth, max = NowPlayingPanelMaxWidth),
     ) {
         ContextMenuRow(
             name = model.title,
@@ -106,6 +106,6 @@ private fun ContextMenuRow(
         active = active,
         actionSink = actionSink,
         modifier = Modifier.testTag(tag),
-        padding = ContextMenuRowPadding,
+        padding = NowPlayingRowPadding,
     )
 }

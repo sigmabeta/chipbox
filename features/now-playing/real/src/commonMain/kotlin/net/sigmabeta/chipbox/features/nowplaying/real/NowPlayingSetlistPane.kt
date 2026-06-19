@@ -64,8 +64,8 @@ internal fun NowPlayingSetlist(model: NowPlayingModel, actionSink: ActionSink, m
         state = listState,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
         modifier = modifier
-            .widthIn(min = ContextMenuMinWidth, max = ContextMenuMaxWidth)
-            .clip(RoundedCornerShape(InfoContainerCornerRadius))
+            .widthIn(min = NowPlayingPanelMinWidth, max = NowPlayingPanelMaxWidth)
+            .clip(RoundedCornerShape(NowPlayingPanelCornerRadius))
             .background(MaterialTheme.colorScheme.surfaceContainer),
     ) {
         itemsIndexed(items, key = { _, row -> row.dataId }) { index, row ->
@@ -145,7 +145,7 @@ private fun SetlistRow(
             model = row,
             actionSink = actionSink,
             modifier = Modifier,
-            padding = ContextMenuRowPadding,
+            padding = NowPlayingRowPadding,
         )
     }
 }

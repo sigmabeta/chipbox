@@ -3,13 +3,13 @@ package net.sigmabeta.chipbox.features.nowplaying.real
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.dp
 
-// TrackInfo and the ContextMenu share one container (rounded shape + the animated background), but
-// keep their own width bounds: TrackInfo wraps its content down to a 256dp floor (no cap); the menu
-// keeps its 200..600dp range.
-internal val ContextMenuMinWidth = 200.dp
-internal val ContextMenuMaxWidth = 600.dp
-internal val InfoContainerCornerRadius = 16.dp
-internal val ContextMenuRowPadding = PaddingValues(horizontal = 8.dp)
+// Shared shape/width/padding for the now-playing panels (the info container, the context menu, and
+// the setlist) so the rounded card and the 200..600dp width bounds stay consistent across them.
+// (TrackInfo opts out of the width bounds — it wraps its content down to a 256dp floor, no cap.)
+internal val NowPlayingPanelMinWidth = 200.dp
+internal val NowPlayingPanelMaxWidth = 600.dp
+internal val NowPlayingPanelCornerRadius = 16.dp
+internal val NowPlayingRowPadding = PaddingValues(horizontal = 8.dp)
 
 /**
  * Test tags for the track-info block, the two text-less transport buttons, and the context-menu
