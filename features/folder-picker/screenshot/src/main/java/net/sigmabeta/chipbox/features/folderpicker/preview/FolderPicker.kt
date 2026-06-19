@@ -44,4 +44,6 @@ private fun populatedState() = FolderPickerState(
         FolderPickerEntry("empty-folder", "/home/sigma/Music/empty", childFolderCount = 0, childFileCount = 0),
     ),
     fileCount = 5,
+    // Non-null parent so the golden exercises the "Go up a folder" CTA alongside the hidden-files toggle.
+    parentPath = "/home/sigma",
 )
