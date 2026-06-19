@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -49,12 +50,17 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
  * composable both can call. On drop it emits [SageAction.Reorder]; the VM owns the canonical order.
  */
 @Composable
-internal fun NowPlayingSetlist(model: NowPlayingModel, actionSink: ActionSink, modifier: Modifier = Modifier) {
+internal fun NowPlayingSetlist(
+    model: NowPlayingModel,
+    actionSink: ActionSink,
+    listState: LazyListState = rememberLazyListState(),
+    modifier: Modifier = Modifier,
+) {
     // Local mirror mutated live during a drag; rebuilt whenever the VM re-emits the queue order
     // (data-class row equality means routine playback ticks don't churn it). Mirrors ReorderableScreen.
     val items = remember(model.setlist) { model.setlist.toMutableStateList() }
     var dragStart by remember { mutableStateOf<Pair<Long, Int>?>(null) }
-    val listState = rememberLazyListState()
+    // listState is hoisted by the caller so scroll position survives the pane moving between layouts.
     val reorderState = rememberReorderableLazyListState(listState) { from, to ->
         items.add(to.index, items.removeAt(from.index))
     }
