@@ -194,7 +194,10 @@ private fun RealImage(
     var measuredSize by remember(sourceInfo.info) { mutableStateOf(IntSize.Zero) }
     var lastBucket by remember(sourceInfo.info) { mutableStateOf<GridImageSize?>(null) }
     LaunchedEffect(measuredSize, loadOriginalSize) {
-        if (loadOriginalSize || measuredSize == IntSize.Zero) return@LaunchedEffect
+        // A cell measured 0 in either axis (a collapsed layout region — e.g. a tiny desktop window
+        // or a squeezed landscape pane) has nothing to bucket, and Coil's Size(w, h) rejects a
+        // non-positive pixel dimension ("px must be > 0"). Skip until both axes are positive.
+        if (loadOriginalSize || measuredSize.width <= 0 || measuredSize.height <= 0) return@LaunchedEffect
         val newBucket = bucketFor(CoilSize(measuredSize.width, measuredSize.height)) ?: return@LaunchedEffect
         val previousBucket = lastBucket
         lastBucket = newBucket
