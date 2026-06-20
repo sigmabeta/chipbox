@@ -183,6 +183,7 @@ private fun sampleModel(
     artists = artists,
     repeatStatusLabel = repeatStatusLabel,
     shuffleStatusLabel = shuffleStatusLabel,
+    favoriteLabel = "Add to Favorites",
     setlist = sampleSetlist(),
 )
 

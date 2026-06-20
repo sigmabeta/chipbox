@@ -1,0 +1,24 @@
+plugins {
+    alias(chipbox.plugins.feature.real)
+    alias(chipbox.plugins.kmp.test)
+}
+
+kotlin {
+    sourceSets {
+        named("commonMain") {
+            dependencies {
+                api(projects.features.favorites.api)
+
+                implementation(projects.cbox.common.ui.list.api)
+                implementation(projects.cbox.common.appcomm.api)
+                implementation(projects.cbox.common.strings.api)
+                implementation(projects.cbox.common.models.api)
+                implementation(projects.cbox.common.player.common.api)
+                implementation(projects.cbox.common.player.director.api)
+
+                implementation(projects.features.gameDetail.api)
+                implementation(projects.features.artistDetail.api)
+            }
+        }
+    }
+}

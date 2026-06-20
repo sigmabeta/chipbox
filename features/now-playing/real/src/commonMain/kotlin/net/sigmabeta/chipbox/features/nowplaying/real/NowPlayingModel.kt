@@ -56,6 +56,8 @@ data class NowPlayingModel(
     val repeatStatusLabel: String = "",
     /** Human-readable shuffle state for the CONTROLS row, e.g. "Playing in order". */
     val shuffleStatusLabel: String = "",
+    /** Label for the CONTROLS "add to favorites" row, e.g. "Add to Favorites". */
+    val favoriteLabel: String = "",
     /**
      * Non-null only for a fatal playback error ([PlayerState.ERROR]). When set, the transport
      * play/pause button switches to a warning icon; the error detail itself is surfaced in the

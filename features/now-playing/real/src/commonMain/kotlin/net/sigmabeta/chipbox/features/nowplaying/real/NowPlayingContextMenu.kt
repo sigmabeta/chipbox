@@ -43,15 +43,6 @@ internal fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSi
                         tag = NOW_PLAYING_CTX_GAME_TAG,
                     )
                 }
-                if (model.platformLabel.isNotEmpty()) {
-                    ContextMenuRow(
-                        name = model.platformLabel,
-                        icon = Icon.Chip,
-                        clickAction = NowPlayingAction.ContextMenuPlatformClicked,
-                        actionSink = actionSink,
-                        tag = NOW_PLAYING_CTX_PLATFORM_TAG,
-                    )
-                }
                 if (model.artists.isNotEmpty()) {
                     ContextMenuRow(
                         name = model.artistsCaption,
@@ -59,6 +50,15 @@ internal fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSi
                         clickAction = NowPlayingAction.ContextMenuArtistsClicked,
                         actionSink = actionSink,
                         tag = NOW_PLAYING_CTX_ARTISTS_TAG,
+                    )
+                }
+                if (model.platformLabel.isNotEmpty()) {
+                    ContextMenuRow(
+                        name = model.platformLabel,
+                        icon = Icon.Chip,
+                        clickAction = NowPlayingAction.ContextMenuPlatformClicked,
+                        actionSink = actionSink,
+                        tag = NOW_PLAYING_CTX_PLATFORM_TAG,
                     )
                 }
             }
@@ -91,6 +91,13 @@ internal fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSi
                     actionSink = actionSink,
                     tag = NOW_PLAYING_CTX_SHUFFLE_TAG,
                     active = model.isShuffled,
+                )
+                ContextMenuRow(
+                    name = model.favoriteLabel,
+                    icon = Icon.FavoriteEmpty,
+                    clickAction = NowPlayingAction.AddToFavoritesClicked,
+                    actionSink = actionSink,
+                    tag = NOW_PLAYING_CTX_FAVORITES_TAG,
                 )
             }
 

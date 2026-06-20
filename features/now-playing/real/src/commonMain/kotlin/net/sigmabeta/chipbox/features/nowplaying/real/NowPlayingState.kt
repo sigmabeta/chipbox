@@ -54,6 +54,7 @@ data class NowPlayingState(
         artists = track?.artists?.map { NowPlayingArtist(id = it.id, name = it.name) }.orEmpty(),
         repeatStatusLabel = stringProvider.getString(repeatStatusStringId()),
         shuffleStatusLabel = stringProvider.getString(shuffleStatusStringId()),
+        favoriteLabel = stringProvider.getString(ChipboxStringId.NOW_PLAYING_CTX_ADD_TO_FAVORITES),
         // Only a fatal ERROR carries a message; its presence drives the transport warning icon.
         errorMessage = playback
             ?.takeIf { it.state == PlayerState.ERROR }
@@ -141,6 +142,13 @@ data class NowPlayingState(
                 // A one-off random pick — no shuffle distinction (the setlist has one entry).
                 SessionType.SINGLE_TRACK ->
                     ChipboxStringId.NOW_PLAYING_SESSION_TYPE_SINGLE_TRACK_PLAYING
+
+                SessionType.FAVORITES ->
+                    if (shuffled) {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_FAVORITES_SHUFFLING
+                    } else {
+                        ChipboxStringId.NOW_PLAYING_SESSION_TYPE_FAVORITES_PLAYING
+                    }
             }
         )
         // A user-edited setlist (reorder/remove) gets a "(Modified)" prefix on the type label.
@@ -189,6 +197,9 @@ data class NowPlayingState(
 
             // No backing source — just one track, label-only header.
             SessionType.SINGLE_TRACK -> ""
+
+            // The whole favorites collection — the type label already says it, no source name.
+            SessionType.FAVORITES -> ""
         }
     }
 

@@ -17,6 +17,8 @@ package net.sigmabeta.chipbox.player.common
  * - `SINGLE_TRACK` — plays exactly one track. `contentId` is the track id; the resolved
  *   setlist has a single entry, so the director's "advance" logic ends the session after
  *   that track finishes. Used by the Home screen's "Random song" shortcut.
+ * - `FAVORITES` — every track the user has favorited; `contentId` is unused (callers may
+ *   pass `0`). The favorites data source is wired into the director in a later step.
  */
 enum class SessionType {
     GAME,
@@ -26,4 +28,5 @@ enum class SessionType {
     PLATFORM,
     SETLIST,
     SINGLE_TRACK,
+    FAVORITES,
 }

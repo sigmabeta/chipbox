@@ -7,4 +7,5 @@ sealed class GameDetailAction : ChipboxAction() {
     data class ArtistClicked(val id: Long) : GameDetailAction()
     data object PlayAllClicked : GameDetailAction()
     data object ShuffleAllClicked : GameDetailAction()
+    data object AddToFavoritesClicked : GameDetailAction()
 }
