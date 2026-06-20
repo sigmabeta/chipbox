@@ -50,6 +50,7 @@ data class NowPlayingState(
         setlistVisible = setlistVisible,
         setlist = setlistRows(),
         gameId = track?.gameId ?: 0L,
+        platformLabel = track?.platform?.let { stringProvider.getString(it.stringId) }.orEmpty(),
         artists = track?.artists?.map { NowPlayingArtist(id = it.id, name = it.name) }.orEmpty(),
         repeatStatusLabel = stringProvider.getString(repeatStatusStringId()),
         shuffleStatusLabel = stringProvider.getString(shuffleStatusStringId()),

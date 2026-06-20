@@ -48,6 +48,8 @@ data class NowPlayingModel(
     val setlist: List<NameCaptionValueListModel> = emptyList(),
     /** The playing track's game id, used by the LINKS game row to navigate to game detail. */
     val gameId: Long = 0L,
+    /** Human-readable platform name for the LINKS platform row, e.g. "SNES". Empty when unknown. */
+    val platformLabel: String = "",
     /** The playing track's artists (id + name), backing the LINKS artist row and the ARTISTS list. */
     val artists: List<NowPlayingArtist> = emptyList(),
     /** Human-readable repeat state for the CONTROLS row, e.g. "Repeating one track". */

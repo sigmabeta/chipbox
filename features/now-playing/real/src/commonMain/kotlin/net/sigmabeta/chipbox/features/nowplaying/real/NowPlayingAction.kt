@@ -39,6 +39,9 @@ sealed class NowPlayingAction : ChipboxAction() {
     /** LINKS game row — navigate to the playing track's game detail screen. */
     data object ContextMenuGameClicked : NowPlayingAction()
 
+    /** LINKS platform row — navigate to the games-for-platform screen for the track's platform. */
+    data object ContextMenuPlatformClicked : NowPlayingAction()
+
     /**
      * LINKS artist row — navigate to artist detail when the track has a single artist, or expand
      * into the ARTISTS state to pick one when it has several. The VM decides which.

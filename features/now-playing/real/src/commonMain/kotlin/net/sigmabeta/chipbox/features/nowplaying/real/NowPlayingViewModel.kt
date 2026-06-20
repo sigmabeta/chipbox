@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
+import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatform
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.player.director.Director
@@ -176,6 +177,12 @@ class NowPlayingViewModel @Inject constructor(
                 val gameId = state.value.track?.gameId
                 closeContextMenu()
                 if (gameId != null) emit(ChipboxEvent.NavigateTo(GameDetail(gameId)))
+            }
+
+            NowPlayingAction.ContextMenuPlatformClicked -> {
+                val platform = state.value.track?.platform
+                closeContextMenu()
+                if (platform != null) emit(ChipboxEvent.NavigateTo(GamesForPlatform(platform)))
             }
 
             NowPlayingAction.ContextMenuArtistsClicked -> {

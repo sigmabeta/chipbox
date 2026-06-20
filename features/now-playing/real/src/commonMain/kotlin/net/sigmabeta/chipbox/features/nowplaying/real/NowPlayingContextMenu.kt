@@ -43,6 +43,15 @@ internal fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSi
                         tag = NOW_PLAYING_CTX_GAME_TAG,
                     )
                 }
+                if (model.platformLabel.isNotEmpty()) {
+                    ContextMenuRow(
+                        name = model.platformLabel,
+                        icon = Icon.Chip,
+                        clickAction = NowPlayingAction.ContextMenuPlatformClicked,
+                        actionSink = actionSink,
+                        tag = NOW_PLAYING_CTX_PLATFORM_TAG,
+                    )
+                }
                 if (model.artists.isNotEmpty()) {
                     ContextMenuRow(
                         name = model.artistsCaption,
