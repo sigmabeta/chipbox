@@ -11,6 +11,7 @@ kotlin {
 
                 // Route keys for the LINKS/ARTISTS context-menu navigation targets.
                 implementation(projects.features.gameDetail.api)
+                implementation(projects.features.gamesForPlatform.api)
                 implementation(projects.features.artistDetail.api)
 
                 implementation(projects.cbox.common.ui.freeform.api)
