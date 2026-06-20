@@ -24,6 +24,8 @@ import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGameRoute
 import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatform
 import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatformRoute
+import net.sigmabeta.chipbox.features.favorites.Favorites
+import net.sigmabeta.chipbox.features.favorites.FavoritesRoute
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibrary
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibraryMode
 import net.sigmabeta.chipbox.features.componentlibrary.LibraryMode
@@ -92,6 +94,7 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     BrowseByPlatform -> BrowseByPlatformScreen
     BrowseAllTracks -> BrowseAllTracksScreen
     BrowseByArtist -> BrowseByArtistScreen
+    Favorites -> FavoritesScreen
     is GameDetail -> GameDetailDeepScreen(destination.id)
     is ArtistDetail -> ArtistDetailDeepScreen(destination.id)
     is GamesForPlatform -> GamesForPlatformDeepScreen(destination.platform)
@@ -453,6 +456,12 @@ private object BrowseAllTracksScreen : Screen {
 private object BrowseByArtistScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         BrowseByArtistRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+private object FavoritesScreen : Screen {
+    @Composable override fun Content() = ScreenScaffold {
+        FavoritesRoute(onEvent = LocalChipboxEventSink.current)
     }
 }
 

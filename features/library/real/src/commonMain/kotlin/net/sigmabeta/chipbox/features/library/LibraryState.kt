@@ -20,6 +20,12 @@ data object LibraryState : ListState() {
     override fun toListItems(stringProvider: StringProvider): List<ListModel> = listOf(
         menuItem(
             stringProvider,
+            ChipboxStringId.LIBRARY_FAVORITES,
+            Icon.FavoriteFilled,
+            LibraryAction.FavoritesClicked,
+        ),
+        menuItem(
+            stringProvider,
             ChipboxStringId.LIBRARY_BROWSE_BY_GAME,
             Icon.Album,
             LibraryAction.BrowseByGameClicked,

@@ -90,6 +90,11 @@ data class GameDetailState(
                     name = stringProvider.getString(ChipboxStringId.GAME_DETAIL_CTA_SHUFFLE_ALL),
                     clickAction = GameDetailAction.ShuffleAllClicked,
                 ),
+                CtaListModel(
+                    icon = Icon.FavoriteEmpty,
+                    name = stringProvider.getString(ChipboxStringId.GAME_DETAIL_CTA_ADD_TO_FAVORITES),
+                    clickAction = GameDetailAction.AddToFavoritesClicked,
+                ),
             )
         }
 

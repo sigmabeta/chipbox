@@ -136,6 +136,13 @@ class NowPlayingViewModel @Inject constructor(
                 bumpContextMenuTimer()
             }
 
+            // Placeholder until the favorites data source is wired up (UI-only step); tapping
+            // counts as an interaction, so keep the menu open by bumping the timer.
+            NowPlayingAction.AddToFavoritesClicked -> {
+                emit(ChipboxEvent.ShowSnackbar("Favorites coming soon."))
+                bumpContextMenuTimer()
+            }
+
             NowPlayingAction.BackClicked -> emit(ChipboxEvent.NavigateBack)
 
             NowPlayingAction.PlayerSettingsClicked -> emit(

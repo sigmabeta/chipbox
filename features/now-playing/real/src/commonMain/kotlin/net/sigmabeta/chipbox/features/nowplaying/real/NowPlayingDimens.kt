@@ -27,6 +27,7 @@ const val NOW_PLAYING_CTX_PLATFORM_TAG = "NowPlayingCtxPlatform"
 const val NOW_PLAYING_CTX_ARTISTS_TAG = "NowPlayingCtxArtists"
 const val NOW_PLAYING_CTX_REPEAT_TAG = "NowPlayingCtxRepeat"
 const val NOW_PLAYING_CTX_SHUFFLE_TAG = "NowPlayingCtxShuffle"
+const val NOW_PLAYING_CTX_FAVORITES_TAG = "NowPlayingCtxFavorites"
 
 /** Test tag for the per-artist row in the ARTISTS context menu, keyed by artist id. */
 fun nowPlayingCtxArtistTag(artistId: Long) = "NowPlayingCtxArtist:$artistId"

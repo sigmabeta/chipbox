@@ -9,6 +9,7 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
+import net.sigmabeta.chipbox.appcomm.ChipboxEvent.ShowSnackbar
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
@@ -60,6 +61,7 @@ class GameDetailViewModel(
             GameDetailAction.ShuffleAllClicked -> startSession(startingPosition = 0, shuffled = true)
             is GameDetailAction.TrackClicked -> startSession(startingPosition = action.position)
             is GameDetailAction.ArtistClicked -> emit(NavigateTo(ArtistDetail(action.id)))
+            GameDetailAction.AddToFavoritesClicked -> emit(ShowSnackbar("Favorites coming soon."))
             else -> Unit
         }
     }

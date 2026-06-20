@@ -89,6 +89,11 @@ data class ArtistDetailState(
                     name = stringProvider.getString(ChipboxStringId.ARTIST_DETAIL_CTA_SHUFFLE_ALL),
                     clickAction = ArtistDetailAction.ShuffleAllClicked,
                 ),
+                CtaListModel(
+                    icon = Icon.FavoriteEmpty,
+                    name = stringProvider.getString(ChipboxStringId.ARTIST_DETAIL_CTA_ADD_TO_FAVORITES),
+                    clickAction = ArtistDetailAction.AddToFavoritesClicked,
+                ),
             )
         }
 

@@ -13,6 +13,9 @@ sealed class NowPlayingAction : ChipboxAction() {
     /** Cycle the repeat mode. Now fired only from the CONTROLS context menu row. */
     data object RepeatClicked : NowPlayingAction()
 
+    /** CONTROLS menu row — add the current track to the user's favorites. */
+    data object AddToFavoritesClicked : NowPlayingAction()
+
     data object BackClicked : NowPlayingAction()
     data object PlayerSettingsClicked : NowPlayingAction()
     data class SeekRequested(val positionMs: Long) : NowPlayingAction()

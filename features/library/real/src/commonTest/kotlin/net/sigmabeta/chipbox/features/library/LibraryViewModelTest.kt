@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.features.browsealltracks.BrowseAllTracks
 import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtist
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
 import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatform
+import net.sigmabeta.chipbox.features.favorites.Favorites
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.ui.SageStringId
@@ -24,7 +25,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /**
- * [LibraryViewModel] is a pure-navigation ViewModel: each of the 4 menu actions emits the
+ * [LibraryViewModel] is a pure-navigation ViewModel: each of the 5 menu actions emits the
  * matching [NavigateTo] event. Locks that mapping in.
  *
  * Events are emitted on a `MutableSharedFlow(replay = 0, extraBufferCapacity = 1,
@@ -44,6 +45,13 @@ class LibraryViewModelTest {
     @AfterTest
     fun tearDown() {
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `FavoritesClicked emits NavigateTo Favorites`() = runTest {
+        val vm = LibraryViewModel(stubStringProvider(), BluntHatchet())
+        val event = collectAndDispatch(vm, LibraryAction.FavoritesClicked)
+        assertEquals(NavigateTo(Favorites), event)
     }
 
     @Test
@@ -75,12 +83,12 @@ class LibraryViewModelTest {
     }
 
     @Test
-    fun `the initial uiStateActual carries the 4 menu items in declared order`() = runTest {
+    fun `the initial uiStateActual carries the 5 menu items in declared order`() = runTest {
         // stateIn(Eagerly) on viewModelScope produces a populated uiStateActual immediately.
         // Asserts the row order/title isn't accidentally reshuffled by a future state tweak.
         val vm = LibraryViewModel(stubStringProvider(), BluntHatchet())
         val rendered = vm.uiStateActual.first()
-        assertEquals(4, rendered.listItems.size, "menu should expose 4 rows")
+        assertEquals(5, rendered.listItems.size, "menu should expose 5 rows")
     }
 
     // ---- helpers ----
