@@ -15,6 +15,8 @@ import net.sigmabeta.chipbox.debug.ImageLoaderSource
 import net.sigmabeta.chipbox.debug.fake.FakeDebugSettingsManager
 import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
 import net.sigmabeta.chipbox.debuginfo.fake.FakeDebugInfoManager
+import net.sigmabeta.chipbox.favorites.FavoritesRepository
+import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
 import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
 import net.sigmabeta.chipbox.history.fake.FakePlaybackHistoryRepository
 import net.sigmabeta.chipbox.player.director.Director
@@ -61,6 +63,10 @@ interface TestAppGraph : ViewModelGraph {
      *  [requests][FakeDirector.requests]. */
     val fakeDirector: FakeDirector
 
+    /** The bound [FavoritesRepository] as a [FakeFavoritesRepository], so the harness can seed
+     *  favorites before navigating to a screen that reads them. */
+    val fakeFavoritesRepository: FakeFavoritesRepository
+
     /** The shared logger — screens log through it, and the harness reuses it to announce where it
      *  wrote failure artifacts. A real [BasicHatchet] (prints to stdout), not a no-op stub. */
     val hatchet: Hatchet
@@ -83,6 +89,14 @@ interface TestAppGraph : ViewModelGraph {
     @Provides
     @SingleIn(AppScope::class)
     fun providePlaybackHistoryRepository(): PlaybackHistoryRepository = FakePlaybackHistoryRepository()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideFakeFavoritesRepository(): FakeFavoritesRepository = FakeFavoritesRepository()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideFavoritesRepository(fake: FakeFavoritesRepository): FavoritesRepository = fake
 
     @Provides
     @SingleIn(AppScope::class)

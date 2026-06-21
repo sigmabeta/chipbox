@@ -19,6 +19,7 @@ import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
@@ -175,6 +176,7 @@ class GameDetailViewModelTest {
         gameId = gameId,
         repository = repository,
         director = director,
+        favorites = FakeFavoritesRepository(),
         stringProvider = stubStringProvider(),
         hatchet = BluntHatchet(),
     )

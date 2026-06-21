@@ -6,10 +6,14 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.binding
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatform
@@ -42,11 +46,13 @@ private const val ERROR_AFFIX_MAX_LENGTH = 10
 private fun String.ellipsize(): String =
     if (length > ERROR_AFFIX_MAX_LENGTH) take(ERROR_AFFIX_MAX_LENGTH) + "…" else this
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @ViewModelKey
 class NowPlayingViewModel @Inject constructor(
     private val director: Director,
     private val repository: Repository,
+    private val favorites: FavoritesRepository,
     stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxFreeformViewModel<NowPlayingState, NowPlayingModel>(
@@ -106,6 +112,13 @@ class NowPlayingViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            director.metadataState().flatMapLatest { track ->
+                if (track == null) flowOf(false) else favorites.isTrackFavorite(track.id)
+            }.collect { favorite ->
+                updateState { it.copy(trackFavorite = favorite) }
+            }
+        }
+        viewModelScope.launch {
             director.setlistState().collect { ids ->
                 setlistIds = ids
                 val resolved = ids.mapNotNull { id ->
@@ -136,10 +149,9 @@ class NowPlayingViewModel @Inject constructor(
                 bumpContextMenuTimer()
             }
 
-            // Placeholder until the favorites data source is wired up (UI-only step); tapping
-            // counts as an interaction, so keep the menu open by bumping the timer.
+            // Toggling counts as an interaction, so keep the menu open by bumping the timer.
             NowPlayingAction.AddToFavoritesClicked -> {
-                emit(ChipboxEvent.ShowSnackbar("Favorites coming soon."))
+                toggleTrackFavorite()
                 bumpContextMenuTimer()
             }
 
@@ -277,6 +289,12 @@ class NowPlayingViewModel @Inject constructor(
 
     private fun dismissError(id: Long) {
         updateState { state -> state.copy(errors = state.errors.filterNot { it.id == id }) }
+    }
+
+    private fun toggleTrackFavorite() {
+        val trackId = state.value.track?.id ?: return
+        val makeFavorite = !state.value.trackFavorite
+        viewModelScope.launch { favorites.setTrackFavorite(trackId, makeFavorite) }
     }
 
     private fun togglePlayPause() {

@@ -94,10 +94,11 @@ internal fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSi
                 )
                 ContextMenuRow(
                     name = model.favoriteLabel,
-                    icon = Icon.FavoriteEmpty,
+                    icon = if (model.isTrackFavorite) Icon.FavoriteFilled else Icon.FavoriteEmpty,
                     clickAction = NowPlayingAction.AddToFavoritesClicked,
                     actionSink = actionSink,
                     tag = NOW_PLAYING_CTX_FAVORITES_TAG,
+                    active = model.isTrackFavorite,
                 )
             }
 

@@ -9,7 +9,7 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
-import net.sigmabeta.chipbox.appcomm.ChipboxEvent.ShowSnackbar
+import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
@@ -29,6 +29,7 @@ class ArtistDetailViewModel(
     @Assisted private val artistId: Long,
     private val repository: Repository,
     private val director: Director,
+    private val favorites: FavoritesRepository,
     stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<ArtistDetailState>(
@@ -49,6 +50,12 @@ class ArtistDetailViewModel(
                 updateState { it.copy(playingTrackId = track?.id) }
             }
         }
+
+        viewModelScope.launch {
+            favorites.isArtistFavorite(artistId).collect { favorite ->
+                updateState { it.copy(isFavorite = favorite) }
+            }
+        }
     }
 
     override fun handleAction(action: SageAction) {
@@ -57,8 +64,14 @@ class ArtistDetailViewModel(
             ArtistDetailAction.ShuffleAllClicked -> startSession(startingPosition = 0, shuffled = true)
             is ArtistDetailAction.TrackClicked -> startSession(startingPosition = action.position)
             is ArtistDetailAction.GameClicked -> emit(NavigateTo(GameDetail(action.id)))
-            ArtistDetailAction.AddToFavoritesClicked -> emit(ShowSnackbar("Favorites coming soon."))
+            ArtistDetailAction.AddToFavoritesClicked -> toggleFavorite()
             else -> Unit
+        }
+    }
+
+    private fun toggleFavorite() {
+        viewModelScope.launch {
+            favorites.setArtistFavorite(artistId, !state.value.isFavorite)
         }
     }
 

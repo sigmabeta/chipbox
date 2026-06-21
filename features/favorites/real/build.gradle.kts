@@ -13,6 +13,8 @@ kotlin {
                 implementation(projects.cbox.common.appcomm.api)
                 implementation(projects.cbox.common.strings.api)
                 implementation(projects.cbox.common.models.api)
+                implementation(projects.cbox.common.repository.api)
+                implementation(projects.cbox.common.favorites.api)
                 implementation(projects.cbox.common.player.common.api)
                 implementation(projects.cbox.common.player.director.api)
 

@@ -169,6 +169,26 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         }
     }
 
+    /** The id of the track titled [title] in the pre-populated library (e.g. to favorite it). */
+    fun trackId(title: String): Long = runBlocking {
+        withTimeout(LOAD_TIMEOUT_MS) {
+            val data = graph.memoryRepository
+                .getAllTracks(withGame = false, withArtists = false)
+                .first { it is Data.Succeeded }
+            @Suppress("UNCHECKED_CAST")
+            (data as Data.Succeeded<List<Track>>).data.first { it.title == title }.id
+        }
+    }
+
+    /** Mark the library track with [id] as a favorite, before opening a screen that reads favorites. */
+    fun favoriteTrack(id: Long) = runBlocking { graph.fakeFavoritesRepository.setTrackFavorite(id, true) }
+
+    /** Mark the library game with [id] as a favorite. */
+    fun favoriteGame(id: Long) = runBlocking { graph.fakeFavoritesRepository.setGameFavorite(id, true) }
+
+    /** Mark the library artist with [id] as a favorite. */
+    fun favoriteArtist(id: Long) = runBlocking { graph.fakeFavoritesRepository.setArtistFavorite(id, true) }
+
     /**
      * Add a game to the library and return its id. Convenience over the populated default — use it
      * when a test needs a screen with known content to assert on.

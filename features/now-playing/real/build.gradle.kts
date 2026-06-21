@@ -23,6 +23,7 @@ kotlin {
                 implementation(projects.cbox.common.player.director.api)
                 // EXPERIMENT: inline setlist mode resolves queue ids to Track metadata.
                 implementation(projects.cbox.common.repository.api)
+                implementation(projects.cbox.common.favorites.api)
 
                 implementation(libs.sage.common.appcomm)
                 // EXPERIMENT: drag-to-reorder for the inline setlist (same lib sage's
@@ -42,6 +43,7 @@ kotlin {
             dependencies {
                 implementation(projects.cbox.common.player.director.fake)
                 implementation(projects.cbox.common.repository.fake)
+                implementation(projects.cbox.common.favorites.fake)
             }
         }
     }

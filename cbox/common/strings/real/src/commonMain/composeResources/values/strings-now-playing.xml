@@ -25,5 +25,6 @@
     <string name="now_playing_controls_shuffle_off">Playing in order</string>
     <string name="now_playing_controls_shuffle_on">Shuffling tracks</string>
     <string name="now_playing_ctx_add_to_favorites">Add to Favorites</string>
+    <string name="now_playing_ctx_remove_from_favorites">Remove from Favorites</string>
     <string name="now_playing_setlist_coming_soon">Setlists coming soon.</string>
 </resources>
