@@ -58,7 +58,7 @@ data class PlaylistDetailState(
         if (playlist is LCE.Content) {
             listOf(
                 CtaListModel(
-                    icon = Icon.Description,
+                    icon = Icon.Edit,
                     name = stringProvider.getString(ChipboxStringId.PLAYLIST_DETAIL_CTA_EDIT),
                     clickAction = PlaylistDetailAction.EditClicked,
                 ),
@@ -71,17 +71,17 @@ data class PlaylistDetailState(
     // reducer relies on that count to map reorder indices to track positions).
     private fun editHeader(stringProvider: StringProvider): List<ListModel> = listOf(
         CtaListModel(
-            icon = Icon.Visibility,
+            icon = Icon.Save,
             name = stringProvider.getString(ChipboxStringId.PLAYLIST_DETAIL_CTA_DONE),
             clickAction = PlaylistDetailAction.DoneClicked,
         ),
         CtaListModel(
-            icon = Icon.Description,
+            icon = Icon.Edit,
             name = stringProvider.getString(ChipboxStringId.PLAYLIST_DETAIL_CTA_RENAME),
             clickAction = PlaylistDetailAction.RenameClicked,
         ),
         CtaListModel(
-            icon = Icon.CrossOut,
+            icon = Icon.Delete,
             name = stringProvider.getString(ChipboxStringId.PLAYLIST_DETAIL_CTA_DELETE),
             clickAction = PlaylistDetailAction.DeleteClicked,
         ),
