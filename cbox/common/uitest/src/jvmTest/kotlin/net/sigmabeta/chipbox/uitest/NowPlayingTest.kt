@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.uitest
 
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
-import net.sigmabeta.chipbox.features.favorites.Favorites
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.models.Artist
@@ -13,6 +12,7 @@ import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.SessionRequest
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 /**
  * The Now Playing screen's in-screen "ContextMenu" that replaces the track-info block. Tapping the
@@ -109,14 +109,15 @@ class NowPlayingTest {
     }
 
     @Test
-    fun favoritesButtonOpensFavorites() = runChipboxUiTest {
-        startNowPlaying(track = singleArtistTrack(), session = allTracksSession())
+    fun favoritesButtonTogglesCurrentTrackFavorite() = runChipboxUiTest {
+        val track = singleArtistTrack()
+        startNowPlaying(track = track, session = allTracksSession())
 
         // In the wide two-panel layout (what the desktop harness renders) the transport's leftmost
-        // button is the Favorites jump-off, replacing the now-redundant setlist toggle.
+        // button duplicates the CONTROLS favorite toggle, so tapping it favorites the current track.
         clickTag(FAVORITES_BUTTON_TAG)
 
-        assertNavigationEvent(Favorites)
+        assertTrue(isTrackFavorited(track.id))
     }
 
     // ---- fixtures ----

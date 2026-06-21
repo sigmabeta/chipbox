@@ -30,12 +30,6 @@ sealed class NowPlayingAction : ChipboxAction() {
     /** Transport "setlist" button — toggles the inline SETLIST mode (the reorderable queue). */
     data object SetlistClicked : NowPlayingAction()
 
-    /**
-     * Transport "favorites" button — shown in place of [SetlistClicked] in the wide two-panel
-     * layout (where the setlist is already pinned as a panel). Opens the Favorites screen.
-     */
-    data object FavoritesClicked : NowPlayingAction()
-
     /** A row in the inline setlist was tapped — jump playback to that track. */
     data class SetlistTrackClicked(val trackId: Long) : NowPlayingAction()
 

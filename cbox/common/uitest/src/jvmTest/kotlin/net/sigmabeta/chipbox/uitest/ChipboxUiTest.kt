@@ -189,6 +189,9 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     /** Mark the library artist with [id] as a favorite. */
     fun favoriteArtist(id: Long) = runBlocking { graph.fakeFavoritesRepository.setArtistFavorite(id, true) }
 
+    /** Whether the track with [id] is currently favorited — to assert a toggle took effect. */
+    fun isTrackFavorited(id: Long): Boolean = runBlocking { graph.fakeFavoritesRepository.isTrackFavorite(id).first() }
+
     /**
      * Add a game to the library and return its id. Convenience over the populated default — use it
      * when a test needs a screen with known content to assert on.
