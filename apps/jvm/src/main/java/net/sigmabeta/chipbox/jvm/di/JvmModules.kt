@@ -25,6 +25,7 @@ import net.sigmabeta.chipbox.crash.real.RealCrashReportStore
 import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.history.HistoryDatabase
 import net.sigmabeta.chipbox.favorites.FavoritesDatabase
+import net.sigmabeta.chipbox.playlists.PlaylistsDatabase
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.GeneratorSource
 import net.sigmabeta.chipbox.debug.SpeakerSource
@@ -144,6 +145,20 @@ object JvmFavoritesModule {
     @Provides @SingleIn(AppScope::class)
     fun provideFavoritesDatabase(@Named("dbPath") path: String): FavoritesDatabase = Room
         .databaseBuilder<FavoritesDatabase>(name = "$path.favorites")
+        .setDriver(BundledSQLiteDriver())
+        .setQueryCoroutineContext(Dispatchers.IO)
+        .fallbackToDestructiveMigration(dropAllTables = true)
+        .build()
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object JvmPlaylistsModule {
+    // Separate file from the library DB so playlists survive library rebuilds. The repository that
+    // consumes this is provided by the shared cbox/common/playlists/di module.
+    @Provides @SingleIn(AppScope::class)
+    fun providePlaylistsDatabase(@Named("dbPath") path: String): PlaylistsDatabase = Room
+        .databaseBuilder<PlaylistsDatabase>(name = "$path.playlists")
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
         .fallbackToDestructiveMigration(dropAllTables = true)

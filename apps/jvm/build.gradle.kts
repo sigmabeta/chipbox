@@ -189,6 +189,11 @@ dependencies {
     implementation(projects.cbox.common.favorites.real)
     implementation(projects.cbox.common.favorites.di)
 
+    // Playlists: JvmPlaylistsModule provides the PlaylistsDatabase; the shared playlists/di module
+    // provides the repository consumed by the playlists feature VMs.
+    implementation(projects.cbox.common.playlists.real)
+    implementation(projects.cbox.common.playlists.di)
+
     // Shared scanner — uses the new LibrarySource interface; LocalFileContentSource
     // is the JVM impl, the Android twin is AndroidFileContentSource (SAF).
     implementation(projects.cbox.common.scanner.real)
