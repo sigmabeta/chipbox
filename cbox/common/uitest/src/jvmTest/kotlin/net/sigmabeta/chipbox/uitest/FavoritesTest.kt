@@ -20,7 +20,9 @@ class FavoritesTest {
         startAtScreen(Favorites)
 
         assertTitle("Favorites")
-        assertEmptyStateDisplayed("Add a game, song, or artist to your favorites to find them here quickly.")
+        val emptyText = "Add a game, song, or artist to your favorites to find them here quickly."
+        waitForContent(emptyText)
+        assertEmptyStateDisplayed(emptyText)
     }
 
     @Test
@@ -28,6 +30,7 @@ class FavoritesTest {
         favoriteTrack(trackId("Castle 36"))
         startAtScreen(Favorites)
 
+        waitForContent("Castle 36")
         assertSectionHeader("Songs")
         assertNameCaptionValueItemDisplayed("Castle 36")
     }
@@ -37,6 +40,7 @@ class FavoritesTest {
         favoriteTrack(trackId("Castle 36"))
         startAtScreen(Favorites)
 
+        waitForContent("Castle 36")
         clickNameCaptionValueItem("Castle 36")
 
         assertDirectorReceived<SessionRequest.Start>()
@@ -48,6 +52,7 @@ class FavoritesTest {
         favoriteGame(id)
         startAtScreen(Favorites)
 
+        waitForContent("Iron Quest")
         assertSectionHeader("Games")
         assertWideItemDisplayed("Iron Quest")
         clickWideItem("Iron Quest")
@@ -61,6 +66,7 @@ class FavoritesTest {
         favoriteArtist(id)
         startAtScreen(Favorites)
 
+        waitForContent("Jake Shimomura")
         assertSectionHeader("Artists")
         assertWideItemDisplayed("Jake Shimomura")
         clickWideItem("Jake Shimomura")
