@@ -12,15 +12,19 @@ import net.sigmabeta.chipbox.contentsource.LibrarySource
 import java.io.File
 
 /**
- * JVM [LibrarySource]: identifies files by absolute filesystem path. This mirrors the desktop
- * app's twin in apps/jvm (the shared `RealScanner` drives either); it lives here too because both
- * are application modules and the walker is small. The Android counterpart wraps SAF.
+ * Raw `java.io.File` [LibrarySource]: identifies files and library roots by absolute filesystem
+ * path. Lives in jvmSharedMain (`src/main/java`) so both the JVM/desktop app and the Android app use
+ * it — Android dropped SAF/`DocumentsContract` in favour of `MANAGE_EXTERNAL_STORAGE` + raw paths,
+ * so the two targets now share one walker (the shared `RealScanner` drives either).
+ *
+ * Library locations are persisted as newline-separated absolute paths in [locationsFile] (there's
+ * no SAF persisted-permission store to lean on); each platform's DI picks the file location
+ * (`workDir` on the JVM, `context.filesDir` on Android).
  */
 internal const val SOURCE_ID = "file"
 
 class LocalFileContentSource(
-    // Newline-separated absolute paths of the user's library locations, persisted across runs (the
-    // JVM has no SAF permission store like Android's, so we keep our own small file).
+    // Newline-separated absolute paths of the user's library locations, persisted across runs.
     private val locationsFile: File,
 ) : LibrarySource {
     override val sourceId: String = SOURCE_ID

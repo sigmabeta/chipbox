@@ -1,6 +1,6 @@
 package net.sigmabeta.chipbox.artworkprovider.api
 
-import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
+import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.repository.Repository
 
 /**
@@ -16,5 +16,5 @@ import net.sigmabeta.chipbox.repository.Repository
  */
 interface ArtworkProviderGraph {
     fun repository(): Repository
-    fun fileContentSource(): AndroidFileContentSource
+    fun fileContentSource(): LocalFileContentSource
 }

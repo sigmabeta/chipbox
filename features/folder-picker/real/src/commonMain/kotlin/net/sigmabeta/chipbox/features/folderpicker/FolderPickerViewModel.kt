@@ -46,6 +46,17 @@ class FolderPickerViewModel(
 
             FolderPickerAction.CancelClicked -> emit(ChipboxEvent.NavigateBack)
 
+            FolderPickerAction.NavigateUpClicked -> viewModelScope.launch {
+                // No-op at a filesystem root, where the lister reports a null parent.
+                state.value.parentPath?.let { descendInto(it) }
+            }
+
+            FolderPickerAction.ToggleHiddenClicked -> viewModelScope.launch {
+                // Flip the dotfile filter and re-list the current directory in place.
+                val path = state.value.currentPath ?: return@launch
+                descendInto(path, showHidden = !state.value.showHidden)
+            }
+
             is FolderPickerAction.FolderClicked -> viewModelScope.launch {
                 descendInto(action.path)
             }
@@ -63,13 +74,17 @@ class FolderPickerViewModel(
         emit(ChipboxEvent.NavigateTo(RescanStatus))
     }
 
-    private fun descendInto(path: String) {
-        val listing = folderLister.list(path)
+    // [showHidden] carries forward from the current state by default so descending into a folder
+    // keeps the user's dotfile preference; the toggle handler passes the flipped value explicitly.
+    private fun descendInto(path: String, showHidden: Boolean = state.value.showHidden) {
+        val listing = folderLister.list(path, showHidden)
         updateState {
             it.copy(
                 currentPath = path,
                 entries = listing.folders,
                 fileCount = listing.fileCount,
+                parentPath = listing.parentPath,
+                showHidden = showHidden,
             )
         }
     }
