@@ -21,6 +21,7 @@ internal val NowPlayingRowPadding = PaddingValues(horizontal = 8.dp)
 const val NOW_PLAYING_TRACK_INFO_TAG = "NowPlayingTrackInfo"
 const val NOW_PLAYING_MENU_BUTTON_TAG = "NowPlayingMenuButton"
 const val NOW_PLAYING_SETLIST_BUTTON_TAG = "NowPlayingSetlistButton"
+const val NOW_PLAYING_FAVORITES_BUTTON_TAG = "NowPlayingFavoritesButton"
 const val NOW_PLAYING_CTX_BACK_TAG = "NowPlayingCtxBack"
 const val NOW_PLAYING_CTX_GAME_TAG = "NowPlayingCtxGame"
 const val NOW_PLAYING_CTX_PLATFORM_TAG = "NowPlayingCtxPlatform"

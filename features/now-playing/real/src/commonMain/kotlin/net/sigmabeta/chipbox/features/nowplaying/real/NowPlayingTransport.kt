@@ -179,6 +179,7 @@ private fun CacheFillIndicator(cacheFraction: Float) {
 internal fun ColumnScope.TransportRow(
     model: NowPlayingModel,
     actionSink: ActionSink,
+    setlistPinned: Boolean = false,
 ) {
     val accentTint = MaterialTheme.colorScheme.primary
     val mutedTint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -190,16 +191,28 @@ internal fun ColumnScope.TransportRow(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Where the shuffle toggle used to live: a placeholder for the future Setlist feature.
-        // Shuffle itself now lives in the CONTROLS context menu.
-        TransportIconButton(
-            icon = Icon.QueueMusic,
-            action = NowPlayingAction.SetlistClicked,
-            actionSink = actionSink,
-            size = TransportToggleSize,
-            tint = mutedTint,
-            modifier = Modifier.testTag(NOW_PLAYING_SETLIST_BUTTON_TAG),
-        )
+        // The leftmost transport slot toggles the inline setlist — except in the wide layout, where
+        // the setlist is already pinned as its own panel, so the toggle would be redundant. There we
+        // show a Favorites jump-off instead.
+        if (setlistPinned) {
+            TransportIconButton(
+                icon = Icon.FavoriteFilled,
+                action = NowPlayingAction.FavoritesClicked,
+                actionSink = actionSink,
+                size = TransportToggleSize,
+                tint = mutedTint,
+                modifier = Modifier.testTag(NOW_PLAYING_FAVORITES_BUTTON_TAG),
+            )
+        } else {
+            TransportIconButton(
+                icon = Icon.QueueMusic,
+                action = NowPlayingAction.SetlistClicked,
+                actionSink = actionSink,
+                size = TransportToggleSize,
+                tint = mutedTint,
+                modifier = Modifier.testTag(NOW_PLAYING_SETLIST_BUTTON_TAG),
+            )
+        }
 
         Spacer(modifier = Modifier.size(8.dp))
 

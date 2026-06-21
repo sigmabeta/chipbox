@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.uitest
 
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
+import net.sigmabeta.chipbox.features.favorites.Favorites
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.models.Artist
@@ -16,7 +17,9 @@ import kotlin.test.Test
 /**
  * The Now Playing screen's in-screen "ContextMenu" that replaces the track-info block. Tapping the
  * track info opens LINKS (game + artist jump-offs); the menu button opens CONTROLS (repeat/shuffle
- * rows that toggle on tap); the back row returns to NONE; the setlist button is a placeholder.
+ * rows that toggle on tap); the back row returns to NONE. The desktop harness renders the wide
+ * two-panel layout (the setlist is pinned as a panel), so the transport's leftmost slot is the
+ * Favorites jump-off rather than the setlist toggle.
  *
  * Every test seeds a live session via [startNowPlaying] first — the screen bounces straight back
  * when the player is idle — then drives the real menu over the [net.sigmabeta.chipbox.player.director.fake.FakeDirector].
@@ -106,14 +109,14 @@ class NowPlayingTest {
     }
 
     @Test
-    fun setlistButtonDoesNotOpenControls() = runChipboxUiTest {
+    fun favoritesButtonOpensFavorites() = runChipboxUiTest {
         startNowPlaying(track = singleArtistTrack(), session = allTracksSession())
 
-        clickTag(SETLIST_BUTTON_TAG)
+        // In the wide two-panel layout (what the desktop harness renders) the transport's leftmost
+        // button is the Favorites jump-off, replacing the now-redundant setlist toggle.
+        clickTag(FAVORITES_BUTTON_TAG)
 
-        // Placeholder for the future Setlist feature: it shows a snackbar (auto-dismissed under the
-        // test clock, so not asserted here) and must not behave like the adjacent menu button.
-        assertTextNotInRow(SHUFFLE_OFF_LABEL)
+        assertNavigationEvent(Favorites)
     }
 
     // ---- fixtures ----
@@ -178,7 +181,7 @@ class NowPlayingTest {
         // Kept in sync with the NOW_PLAYING_*_TAG constants in NowPlayingContent.kt.
         const val TRACK_INFO_TAG = "NowPlayingTrackInfo"
         const val MENU_BUTTON_TAG = "NowPlayingMenuButton"
-        const val SETLIST_BUTTON_TAG = "NowPlayingSetlistButton"
+        const val FAVORITES_BUTTON_TAG = "NowPlayingFavoritesButton"
         const val CTX_BACK_TAG = "NowPlayingCtxBack"
         const val CTX_GAME_TAG = "NowPlayingCtxGame"
         const val CTX_ARTISTS_TAG = "NowPlayingCtxArtists"
