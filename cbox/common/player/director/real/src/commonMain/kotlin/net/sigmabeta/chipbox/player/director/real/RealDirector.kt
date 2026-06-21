@@ -825,7 +825,7 @@ class RealDirector(
             SessionType.PLATFORM -> getTrackListForPlatform(session.contentId, skipShort)
             SessionType.SETLIST -> session.explicitSetlist.orEmpty()
             SessionType.SINGLE_TRACK -> listOf(session.contentId)
-            SessionType.FAVORITES -> emptyList() // Not wired to the repository yet (UI-only step).
+            SessionType.FAVORITES -> session.explicitSetlist.orEmpty() // Resolved by the Favorites screen.
         }
     }
 

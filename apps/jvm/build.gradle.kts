@@ -184,6 +184,11 @@ dependencies {
     implementation(projects.cbox.common.history.real)
     implementation(projects.cbox.common.history.di)
 
+    // Favorites: JvmFavoritesModule provides the FavoritesDatabase; the shared favorites/di module
+    // provides the repository consumed by the feature VMs and the director's favorites session.
+    implementation(projects.cbox.common.favorites.real)
+    implementation(projects.cbox.common.favorites.di)
+
     // Shared scanner — uses the new LibrarySource interface; LocalFileContentSource
     // is the JVM impl, the Android twin is AndroidFileContentSource (SAF).
     implementation(projects.cbox.common.scanner.real)

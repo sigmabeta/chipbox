@@ -121,6 +121,8 @@ dependencies {
     implementation(projects.cbox.android.database.di)
     implementation(projects.cbox.common.history.di)
     implementation(projects.cbox.android.history.di)
+    implementation(projects.cbox.common.favorites.di)
+    implementation(projects.cbox.android.favorites.di)
     implementation(projects.cbox.android.services.api)
     implementation(projects.cbox.android.contentsource.file.di)
     implementation(projects.cbox.common.player.buffer.di)

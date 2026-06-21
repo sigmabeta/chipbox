@@ -24,6 +24,8 @@ data class NowPlayingState(
     val setlistVisible: Boolean = false,
     /** The current playback setlist resolved to track metadata, in queue order. */
     val setlistTracks: List<Track> = emptyList(),
+    /** Whether the currently-playing track is one of the user's favorites. */
+    val trackFavorite: Boolean = false,
 ) : FreeformState<NowPlayingModel>() {
 
     override fun title(stringProvider: StringProvider) = TitleBarModel(
@@ -54,7 +56,14 @@ data class NowPlayingState(
         artists = track?.artists?.map { NowPlayingArtist(id = it.id, name = it.name) }.orEmpty(),
         repeatStatusLabel = stringProvider.getString(repeatStatusStringId()),
         shuffleStatusLabel = stringProvider.getString(shuffleStatusStringId()),
-        favoriteLabel = stringProvider.getString(ChipboxStringId.NOW_PLAYING_CTX_ADD_TO_FAVORITES),
+        isTrackFavorite = trackFavorite,
+        favoriteLabel = stringProvider.getString(
+            if (trackFavorite) {
+                ChipboxStringId.NOW_PLAYING_CTX_REMOVE_FROM_FAVORITES
+            } else {
+                ChipboxStringId.NOW_PLAYING_CTX_ADD_TO_FAVORITES
+            },
+        ),
         // Only a fatal ERROR carries a message; its presence drives the transport warning icon.
         errorMessage = playback
             ?.takeIf { it.state == PlayerState.ERROR }
