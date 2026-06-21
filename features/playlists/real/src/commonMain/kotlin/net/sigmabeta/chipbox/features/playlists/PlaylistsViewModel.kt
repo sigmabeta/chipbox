@@ -7,6 +7,7 @@ import dev.zacsweers.metro.AssistedInject
 import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateBack
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
@@ -65,15 +66,24 @@ class PlaylistsViewModel(
 
     private fun createPlaylist() {
         // Create an empty playlist (seeding the picker's pending tracks, if any), then open its detail.
-        // (Edit mode / inline naming arrives in a later slice; for now it starts with a default name.)
         viewModelScope.launch {
-            val name = stringProvider.getString(ChipboxStringId.PLAYLISTS_DEFAULT_NAME)
-            val id = playlists.createPlaylist(name)
+            val base = stringProvider.getString(ChipboxStringId.PLAYLISTS_DEFAULT_NAME)
+            val existingNames = playlists.playlists().first().mapTo(mutableSetOf()) { it.name }
+            val id = playlists.createPlaylist(uniqueDefaultName(base, existingNames))
             if (pendingTrackIds.isNotEmpty()) {
                 playlists.addTracks(id, pendingTrackIds)
             }
             emit(NavigateTo(PlaylistDetail(id)))
         }
+    }
+
+    // Playlist names must be unique, so a fresh playlist appends the lowest free integer to the
+    // default base when it (or a numbered sibling) is already taken: "New Playlist", "New Playlist 2"…
+    private fun uniqueDefaultName(base: String, existingNames: Set<String>): String {
+        if (base !in existingNames) return base
+        var suffix = 2
+        while ("$base $suffix" in existingNames) suffix++
+        return "$base $suffix"
     }
 
     @AssistedFactory
