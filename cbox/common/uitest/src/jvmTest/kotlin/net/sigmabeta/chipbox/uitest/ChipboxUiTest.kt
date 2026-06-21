@@ -233,6 +233,18 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     }
 
     /**
+     * Wait (up to [LOAD_TIMEOUT_MS]) for a node displaying [text] to compose — for content that
+     * loads asynchronously after [startAtScreen]. The fake library emits its `Loading → Succeeded`
+     * off the compose clock, so `waitForIdle` alone can return before the rows arrive; poll until
+     * they do, then assert.
+     */
+    fun waitForContent(text: String) {
+        compose.waitUntil(timeoutMillis = LOAD_TIMEOUT_MS) {
+            compose.onAllNodes(hasText(text), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
+        }
+    }
+
+    /**
      * Seed the fake director into a known playing state — [session], its current [track], and a
      * non-idle [playbackState] — the baseline any screen that renders live playback (Now Playing,
      * the mini-player) reads from. Pair with [startAtScreen] to open such a screen; without a live
