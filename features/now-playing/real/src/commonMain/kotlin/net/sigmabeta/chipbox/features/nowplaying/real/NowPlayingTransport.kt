@@ -193,11 +193,11 @@ internal fun ColumnScope.TransportRow(
     ) {
         // The leftmost transport slot toggles the inline setlist — except in the wide layout, where
         // the setlist is already pinned as its own panel, so the toggle would be redundant. There we
-        // show a Favorites jump-off instead.
+        // surface the current track's favorite toggle instead (a duplicate of the CONTROLS row).
         if (setlistPinned) {
             TransportIconButton(
-                icon = Icon.FavoriteFilled,
-                action = NowPlayingAction.FavoritesClicked,
+                icon = if (model.isTrackFavorite) Icon.FavoriteFilled else Icon.FavoriteEmpty,
+                action = NowPlayingAction.AddToFavoritesClicked,
                 actionSink = actionSink,
                 size = TransportToggleSize,
                 tint = mutedTint,

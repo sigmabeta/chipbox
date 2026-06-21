@@ -15,7 +15,6 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
-import net.sigmabeta.chipbox.features.favorites.Favorites
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatform
 import net.sigmabeta.chipbox.models.Track
@@ -173,9 +172,6 @@ class NowPlayingViewModel @Inject constructor(
 
             // Toggle the reorderable setlist in/out of the InfoContainer slot.
             NowPlayingAction.SetlistClicked -> toggleSetlist()
-
-            // Wide-layout transport button (replaces the redundant setlist toggle) — jump to Favorites.
-            NowPlayingAction.FavoritesClicked -> emit(ChipboxEvent.NavigateTo(Favorites))
 
             is NowPlayingAction.SetlistTrackClicked -> {
                 val position = setlistIds.indexOf(action.trackId)
