@@ -74,6 +74,19 @@ class PlaylistsViewModelTest {
     }
 
     @Test
+    fun `New Playlist appends an integer when the default name is taken`() = runTest {
+        val repo = FakePlaylistsRepository()
+        // The stub StringProvider returns the id's name, so the default base is "PLAYLISTS_DEFAULT_NAME".
+        repo.seed("PLAYLISTS_DEFAULT_NAME")
+        val vm = browseVm(repo)
+
+        collectAndDispatch(vm, PlaylistsAction.NewPlaylistClicked)
+
+        val names = repo.playlists().first().map { it.name }
+        assertTrue(names.contains("PLAYLISTS_DEFAULT_NAME 2"), "expected a numbered default name, got $names")
+    }
+
+    @Test
     fun `picker mode - PlaylistClicked adds the pending tracks and pops back`() = runTest {
         val repo = FakePlaylistsRepository()
         val target = repo.seed("Existing", emptyList())
