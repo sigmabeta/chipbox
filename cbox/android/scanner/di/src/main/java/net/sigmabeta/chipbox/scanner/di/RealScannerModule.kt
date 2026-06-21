@@ -4,7 +4,7 @@ import dev.zacsweers.metro.BindingContainer
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
-import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
+import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Repository
@@ -23,7 +23,7 @@ object RealScannerModule {
     @SingleIn(AppScope::class)
     fun provideRealScanner(
         repository: Repository,
-        contentSource: AndroidFileContentSource,
+        contentSource: LocalFileContentSource,
         readers: Readers,
         hatchet: Hatchet,
     ): Scanner = RealScanner(repository, contentSource, readers, VgmstreamProbe, hatchet)

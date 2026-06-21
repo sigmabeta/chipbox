@@ -10,7 +10,7 @@ import android.os.ParcelFileDescriptor
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
+import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.repository.Data
@@ -111,7 +111,7 @@ class ArtworkProvider : ContentProvider() {
     @Suppress("TooGenericExceptionCaught")
     private fun ensureCached(
         ctx: Context,
-        source: AndroidFileContentSource,
+        source: LocalFileContentSource,
         kind: String,
         id: Long,
         photoUrl: String,
@@ -126,11 +126,9 @@ class ArtworkProvider : ContentProvider() {
 
         val tmp = File.createTempFile("art_", ".tmp", cacheDir)
         try {
-            val stream = runBlocking { source.openInputStream(Uri.parse(photoUrl)) }
+            val bytes = runBlocking { source.openBytes(photoUrl) }
                 ?: throw FileNotFoundException("Cannot open source: $photoUrl")
-            stream.use { input ->
-                tmp.outputStream().use { output -> input.copyTo(output) }
-            }
+            tmp.outputStream().use { output -> output.write(bytes) }
             if (!tmp.renameTo(cacheFile)) {
                 tmp.copyTo(cacheFile, overwrite = true)
                 tmp.delete()

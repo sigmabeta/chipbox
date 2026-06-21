@@ -58,6 +58,37 @@ class OkioFolderListerTest {
     }
 
     @Test
+    fun `showHidden surfaces dotfiles in rows, the file count, and the per-row child counts`() {
+        val fs = FakeFileSystem()
+        fs.createDirectories("/root/.config".toPath())
+        fs.createDirectories("/root/Music".toPath())
+        fs.write("/root/.DS_Store".toPath()) { writeUtf8("x") }
+        fs.write("/root/visible.txt".toPath()) { writeUtf8("y") }
+        fs.createDirectories("/root/Music/.cache".toPath())
+        fs.createDirectories("/root/Music/PSF".toPath())
+        fs.write("/root/Music/.hidden".toPath()) { writeUtf8("h") }
+        fs.write("/root/Music/cover.png".toPath()) { writeUtf8("c") }
+
+        val listing = OkioFolderLister(fs).list("/root", showHidden = true)
+
+        assertEquals(listOf(".config", "Music"), listing.folders.map { it.name })
+        assertEquals(2, listing.fileCount, "Hidden .DS_Store is counted when showHidden is on")
+
+        val music = listing.folders.single { it.name == "Music" }
+        assertEquals(2, music.childFolderCount, "Hidden .cache is counted when showHidden is on")
+        assertEquals(2, music.childFileCount, "Hidden .hidden is counted when showHidden is on")
+    }
+
+    @Test
+    fun `parentPath is the directory one level up, and null at the filesystem root`() {
+        val fs = FakeFileSystem()
+        fs.createDirectories("/root/Music".toPath())
+
+        assertEquals("/root", OkioFolderLister(fs).list("/root/Music").parentPath)
+        assertEquals(null, OkioFolderLister(fs).list("/").parentPath, "A root has nowhere to ascend to")
+    }
+
+    @Test
     fun `an unreadable or non-existent path collapses to an empty listing`() {
         // FakeFileSystem throws on list() against a non-existent path — the production
         // lister catches that and returns an empty listing instead of crashing the screen.
