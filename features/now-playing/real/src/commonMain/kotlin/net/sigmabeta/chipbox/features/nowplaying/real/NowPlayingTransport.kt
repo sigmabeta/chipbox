@@ -200,7 +200,9 @@ internal fun ColumnScope.TransportRow(
                 action = NowPlayingAction.AddToFavoritesClicked,
                 actionSink = actionSink,
                 size = TransportToggleSize,
-                tint = mutedTint,
+                // Accent the button while the track is favorited, muted otherwise — same on/off
+                // colouring the CONTROLS rows use for their active state.
+                tint = if (model.isTrackFavorite) accentTint else mutedTint,
                 modifier = Modifier.testTag(NOW_PLAYING_FAVORITES_BUTTON_TAG),
             )
         } else {
