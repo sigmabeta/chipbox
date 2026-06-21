@@ -102,6 +102,11 @@ data class GameDetailState(
                     ),
                     clickAction = GameDetailAction.AddToFavoritesClicked,
                 ),
+                CtaListModel(
+                    icon = Icon.QueueMusic,
+                    name = stringProvider.getString(ChipboxStringId.GAME_DETAIL_CTA_ADD_TO_PLAYLIST),
+                    clickAction = GameDetailAction.AddToPlaylistClicked,
+                ),
             )
         }
 

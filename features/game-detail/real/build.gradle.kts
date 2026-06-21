@@ -19,6 +19,7 @@ kotlin {
                 implementation(projects.cbox.common.player.director.api)
 
                 implementation(projects.features.artistDetail.api)
+                implementation(projects.features.playlists.api)
             }
         }
 

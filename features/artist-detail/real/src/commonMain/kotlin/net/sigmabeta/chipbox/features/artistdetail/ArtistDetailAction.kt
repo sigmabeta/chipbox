@@ -8,4 +8,5 @@ sealed class ArtistDetailAction : ChipboxAction() {
     data object PlayAllClicked : ArtistDetailAction()
     data object ShuffleAllClicked : ArtistDetailAction()
     data object AddToFavoritesClicked : ArtistDetailAction()
+    data object AddToPlaylistClicked : ArtistDetailAction()
 }

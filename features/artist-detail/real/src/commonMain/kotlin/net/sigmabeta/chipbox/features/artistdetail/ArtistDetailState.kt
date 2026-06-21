@@ -101,6 +101,11 @@ data class ArtistDetailState(
                     ),
                     clickAction = ArtistDetailAction.AddToFavoritesClicked,
                 ),
+                CtaListModel(
+                    icon = Icon.QueueMusic,
+                    name = stringProvider.getString(ChipboxStringId.ARTIST_DETAIL_CTA_ADD_TO_PLAYLIST),
+                    clickAction = ArtistDetailAction.AddToPlaylistClicked,
+                ),
             )
         }
 

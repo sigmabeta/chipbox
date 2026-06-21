@@ -8,4 +8,5 @@ sealed class GameDetailAction : ChipboxAction() {
     data object PlayAllClicked : GameDetailAction()
     data object ShuffleAllClicked : GameDetailAction()
     data object AddToFavoritesClicked : GameDetailAction()
+    data object AddToPlaylistClicked : GameDetailAction()
 }

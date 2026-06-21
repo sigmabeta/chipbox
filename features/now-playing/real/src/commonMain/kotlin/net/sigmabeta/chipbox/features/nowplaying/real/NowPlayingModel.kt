@@ -60,6 +60,15 @@ data class NowPlayingModel(
     val favoriteLabel: String = "",
     /** Whether the playing track is favorited, driving the CONTROLS row's filled/empty heart. */
     val isTrackFavorite: Boolean = false,
+    /** Label for the CONTROLS "add the current track to a playlist" row. */
+    val addToPlaylistLabel: String = "",
+    /** Label for the setlist pane's "add the whole setlist to a playlist" row. */
+    val setlistAddToPlaylistLabel: String = "",
+    /**
+     * Whether the setlist pane shows its "Add to Playlist" row: true only when the setlist has tracks
+     * and isn't the whole library (the All Tracks session has no meaningful finite list to capture).
+     */
+    val canAddSetlistToPlaylist: Boolean = false,
     /**
      * Non-null only for a fatal playback error ([PlayerState.ERROR]). When set, the transport
      * play/pause button switches to a warning icon; the error detail itself is surfaced in the

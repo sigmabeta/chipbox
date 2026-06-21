@@ -210,6 +210,10 @@ private fun sampleModel(
     shuffleStatusLabel = shuffleStatusLabel,
     isTrackFavorite = isTrackFavorite,
     favoriteLabel = if (isTrackFavorite) "Remove from Favorites" else "Add to Favorites",
+    addToPlaylistLabel = "Add to Playlist",
+    setlistAddToPlaylistLabel = "Add to Playlist",
+    // The sample session is "from game" (a finite list), so the setlist panel offers its CTA.
+    canAddSetlistToPlaylist = true,
     setlist = sampleSetlist(),
 )
 

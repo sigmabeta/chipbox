@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatform
+import net.sigmabeta.chipbox.features.playlists.Playlists
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.player.director.Director
@@ -154,6 +155,17 @@ class NowPlayingViewModel @Inject constructor(
                 toggleTrackFavorite()
                 bumpContextMenuTimer()
             }
+
+            // Close the menu and hand the playing track to the playlist picker.
+            NowPlayingAction.AddToPlaylistClicked -> {
+                val trackId = state.value.track?.id
+                closeContextMenu()
+                if (trackId != null) emit(ChipboxEvent.NavigateTo(Playlists(listOf(trackId))))
+            }
+
+            // Hand the whole current setlist (queue order) to the playlist picker.
+            NowPlayingAction.AddSetlistToPlaylistClicked ->
+                if (setlistIds.isNotEmpty()) emit(ChipboxEvent.NavigateTo(Playlists(setlistIds)))
 
             NowPlayingAction.BackClicked -> emit(ChipboxEvent.NavigateBack)
 
