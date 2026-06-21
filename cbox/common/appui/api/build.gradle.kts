@@ -82,6 +82,8 @@ kotlin {
                 api(projects.features.browseByGame.real)
                 api(projects.features.browseByPlatform.real)
                 api(projects.features.favorites.real)
+                api(projects.features.playlists.real)
+                api(projects.features.playlistDetail.real)
                 api(projects.features.gamesForPlatform.real)
                 api(projects.features.gameDetail.real)
                 api(projects.features.artistDetail.real)

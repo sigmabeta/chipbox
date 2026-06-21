@@ -26,6 +26,12 @@ data object LibraryState : ListState() {
         ),
         menuItem(
             stringProvider,
+            ChipboxStringId.LIBRARY_PLAYLISTS,
+            Icon.QueueMusic,
+            LibraryAction.PlaylistsClicked,
+        ),
+        menuItem(
+            stringProvider,
             ChipboxStringId.LIBRARY_BROWSE_BY_GAME,
             Icon.Album,
             LibraryAction.BrowseByGameClicked,

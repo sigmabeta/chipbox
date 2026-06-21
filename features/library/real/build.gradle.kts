@@ -17,6 +17,7 @@ kotlin {
                 implementation(projects.cbox.common.strings.api)
 
                 implementation(projects.features.favorites.api)
+                implementation(projects.features.playlists.api)
                 implementation(projects.features.browseAllTracks.api)
                 implementation(projects.features.browseByArtist.api)
                 implementation(projects.features.browseByGame.api)

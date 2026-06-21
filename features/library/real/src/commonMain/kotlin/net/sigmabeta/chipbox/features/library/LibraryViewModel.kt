@@ -11,6 +11,7 @@ import net.sigmabeta.chipbox.features.browsebyartist.BrowseByArtist
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
 import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatform
 import net.sigmabeta.chipbox.features.favorites.Favorites
+import net.sigmabeta.chipbox.features.playlists.Playlists
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope
@@ -27,6 +28,7 @@ class LibraryViewModel @Inject constructor(
     override fun handleAction(action: SageAction) {
         when (action) {
             LibraryAction.FavoritesClicked -> emit(NavigateTo(Favorites))
+            LibraryAction.PlaylistsClicked -> emit(NavigateTo(Playlists()))
             LibraryAction.BrowseByGameClicked -> emit(NavigateTo(BrowseByGame))
             LibraryAction.BrowseByPlatformClicked -> emit(NavigateTo(BrowseByPlatform))
             LibraryAction.BrowseByArtistClicked -> emit(NavigateTo(BrowseByArtist))

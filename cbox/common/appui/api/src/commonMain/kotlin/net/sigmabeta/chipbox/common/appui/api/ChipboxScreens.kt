@@ -26,6 +26,10 @@ import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatform
 import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatformRoute
 import net.sigmabeta.chipbox.features.favorites.Favorites
 import net.sigmabeta.chipbox.features.favorites.FavoritesRoute
+import net.sigmabeta.chipbox.features.playlists.Playlists
+import net.sigmabeta.chipbox.features.playlists.PlaylistsRoute
+import net.sigmabeta.chipbox.features.playlistdetail.PlaylistDetail
+import net.sigmabeta.chipbox.features.playlistdetail.PlaylistDetailRoute
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibrary
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibraryMode
 import net.sigmabeta.chipbox.features.componentlibrary.LibraryMode
@@ -95,6 +99,8 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     BrowseAllTracks -> BrowseAllTracksScreen
     BrowseByArtist -> BrowseByArtistScreen
     Favorites -> FavoritesScreen
+    is Playlists -> PlaylistsDeepScreen(destination.pendingTrackIds)
+    is PlaylistDetail -> PlaylistDetailDeepScreen(destination.id)
     is GameDetail -> GameDetailDeepScreen(destination.id)
     is ArtistDetail -> ArtistDetailDeepScreen(destination.id)
     is GamesForPlatform -> GamesForPlatformDeepScreen(destination.platform)
@@ -462,6 +468,24 @@ private object BrowseByArtistScreen : Screen {
 private object FavoritesScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         FavoritesRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+// Browse mode and each picker invocation get distinct keys (so they don't share a ViewModelStore +
+// its baked-in @Assisted pendingTrackIds) — see the GameDetailDeepScreen note.
+private data class PlaylistsDeepScreen(val pendingTrackIds: List<Long>) : Screen {
+    override val key: ScreenKey = "Playlists:${pendingTrackIds.hashCode()}"
+
+    @Composable override fun Content() = ScreenScaffold {
+        PlaylistsRoute(pendingTrackIds = pendingTrackIds, onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+private data class PlaylistDetailDeepScreen(val playlistId: Long) : Screen {
+    override val key: ScreenKey = "PlaylistDetail:$playlistId"
+
+    @Composable override fun Content() = ScreenScaffold {
+        PlaylistDetailRoute(playlistId = playlistId, onEvent = LocalChipboxEventSink.current)
     }
 }
 

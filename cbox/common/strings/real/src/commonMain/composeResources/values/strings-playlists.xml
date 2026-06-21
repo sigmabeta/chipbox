@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_playlists">Playlists</string>
+
+    <string name="playlists_title">Playlists</string>
+    <string name="playlists_add_title">Add to Playlist</string>
+    <string name="playlists_empty">You haven't created any playlists yet. Tap New Playlist to start one.</string>
+    <string name="playlists_cta_new">New Playlist</string>
+    <string name="playlists_default_name">New Playlist</string>
+    <string name="playlists_track_count">%d songs</string>
+    <string name="playlists_track_count_one">1 song</string>
+
+    <string name="playlist_detail_empty">Find a song, game, or artist, and click "Add to Playlist" to get started.</string>
+    <string name="playlist_detail_not_found">Playlist not found.</string>
+    <string name="playlist_detail_cta_edit">Edit playlist</string>
+    <string name="playlist_detail_cta_done">Done</string>
+    <string name="playlist_detail_cta_rename">Rename playlist</string>
+    <string name="playlist_detail_cta_delete">Delete playlist</string>
+    <string name="playlist_detail_rename_coming_soon">Rename coming soon.</string>
+    <string name="playlist_detail_deleted">Playlist deleted.</string>
+</resources>
