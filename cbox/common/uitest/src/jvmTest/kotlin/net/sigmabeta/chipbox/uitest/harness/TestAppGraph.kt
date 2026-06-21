@@ -19,6 +19,8 @@ import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
 import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
 import net.sigmabeta.chipbox.history.fake.FakePlaybackHistoryRepository
+import net.sigmabeta.chipbox.playlists.PlaylistsRepository
+import net.sigmabeta.chipbox.playlists.fake.FakePlaylistsRepository
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.Repository
@@ -67,6 +69,10 @@ interface TestAppGraph : ViewModelGraph {
      *  favorites before navigating to a screen that reads them. */
     val fakeFavoritesRepository: FakeFavoritesRepository
 
+    /** The bound [PlaylistsRepository] as a [FakePlaylistsRepository], so the harness can seed
+     *  playlists before navigating to a screen that reads them. */
+    val fakePlaylistsRepository: FakePlaylistsRepository
+
     /** The shared logger — screens log through it, and the harness reuses it to announce where it
      *  wrote failure artifacts. A real [BasicHatchet] (prints to stdout), not a no-op stub. */
     val hatchet: Hatchet
@@ -97,6 +103,14 @@ interface TestAppGraph : ViewModelGraph {
     @Provides
     @SingleIn(AppScope::class)
     fun provideFavoritesRepository(fake: FakeFavoritesRepository): FavoritesRepository = fake
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideFakePlaylistsRepository(): FakePlaylistsRepository = FakePlaylistsRepository()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun providePlaylistsRepository(fake: FakePlaylistsRepository): PlaylistsRepository = fake
 
     @Provides
     @SingleIn(AppScope::class)

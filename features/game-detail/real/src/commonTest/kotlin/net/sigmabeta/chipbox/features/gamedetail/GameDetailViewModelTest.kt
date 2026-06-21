@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
+import net.sigmabeta.chipbox.features.playlists.Playlists
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
@@ -164,6 +165,19 @@ class GameDetailViewModelTest {
     fun `TrackClicked routes to the start session path without throwing`() = runTest {
         val vm = newViewModel(gameId = 1L)
         vm.sendAction(GameDetailAction.TrackClicked(position = 2))
+    }
+
+    @Test
+    fun `AddToPlaylistClicked opens the playlist picker with this game's track ids`() = runTest {
+        val game = gameOf(1L, "Chrono Trigger", tracks = listOf(trackOf(10, "A"), trackOf(11, "B")))
+        val source = sharedFlowOf<Data<Game?>>().also { it.tryEmit(Data.Succeeded(game)) }
+        val vm = newViewModel(gameId = 1L, repository = repoWithGame(source))
+        vm.state.first { it.tracks is LCE.Content }
+
+        val event = collectAndDispatch(vm, GameDetailAction.AddToPlaylistClicked)
+
+        assertTrue(event is ChipboxEvent.NavigateTo)
+        assertEquals(Playlists(listOf(10L, 11L)), event.destination)
     }
 
     // ---- helpers ----

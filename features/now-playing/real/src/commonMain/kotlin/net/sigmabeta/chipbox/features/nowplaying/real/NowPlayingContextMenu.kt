@@ -100,6 +100,13 @@ internal fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSi
                     tag = NOW_PLAYING_CTX_FAVORITES_TAG,
                     active = model.isTrackFavorite,
                 )
+                ContextMenuRow(
+                    name = model.addToPlaylistLabel,
+                    icon = Icon.QueueMusic,
+                    clickAction = NowPlayingAction.AddToPlaylistClicked,
+                    actionSink = actionSink,
+                    tag = NOW_PLAYING_CTX_ADD_PLAYLIST_TAG,
+                )
             }
 
             ContextMenuMode.NONE -> Unit

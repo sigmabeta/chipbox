@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.features.playlists.Playlists
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
@@ -211,6 +212,32 @@ class NowPlayingViewModelTest {
         val vm = newViewModel(FakeDirector())
         val event = collectAndDispatch(vm, NowPlayingAction.BackClicked)
         assertTrue(event is ChipboxEvent.NavigateBack)
+    }
+
+    @Test
+    fun `AddToPlaylistClicked opens the playlist picker with the current track id`() = runTest(dispatcher) {
+        val director = FakeDirector()
+        val vm = newViewModel(director)
+        director.emitMetadata(trackOf(5L, "Aria"))
+        vm.state.first { it.track?.id == 5L }
+
+        val event = collectAndDispatch(vm, NowPlayingAction.AddToPlaylistClicked)
+
+        assertTrue(event is ChipboxEvent.NavigateTo)
+        assertEquals(Playlists(listOf(5L)), event.destination)
+    }
+
+    @Test
+    fun `AddSetlistToPlaylistClicked opens the picker with the whole setlist`() = runTest(dispatcher) {
+        val director = FakeDirector()
+        val vm = newViewModel(director)
+        // The VM records the raw setlist ids as they arrive; hydration to tracks isn't needed here.
+        director.emitSetlist(listOf(3L, 1L, 2L))
+
+        val event = collectAndDispatch(vm, NowPlayingAction.AddSetlistToPlaylistClicked)
+
+        assertTrue(event is ChipboxEvent.NavigateTo)
+        assertEquals(Playlists(listOf(3L, 1L, 2L)), event.destination)
     }
 
     @Test

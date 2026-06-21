@@ -16,6 +16,7 @@
     <string name="game_detail_cta_shuffle_all">Shuffle All</string>
     <string name="game_detail_cta_add_to_favorites">Add to Favorites</string>
     <string name="game_detail_cta_remove_from_favorites">Remove from Favorites</string>
+    <string name="game_detail_cta_add_to_playlist">Add to Playlist</string>
     <string name="game_detail_empty">Game not found.</string>
 
     <string name="artist_detail_section_songs">Songs</string>
@@ -24,6 +25,7 @@
     <string name="artist_detail_cta_shuffle_all">Shuffle All</string>
     <string name="artist_detail_cta_add_to_favorites">Add to Favorites</string>
     <string name="artist_detail_cta_remove_from_favorites">Remove from Favorites</string>
+    <string name="artist_detail_cta_add_to_playlist">Add to Playlist</string>
     <string name="artist_detail_empty">Artist not found.</string>
 
     <string name="games_for_platform_title">%s Games</string>

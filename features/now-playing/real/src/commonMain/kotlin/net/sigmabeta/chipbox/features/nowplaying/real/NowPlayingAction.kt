@@ -16,6 +16,12 @@ sealed class NowPlayingAction : ChipboxAction() {
     /** CONTROLS menu row — add the current track to the user's favorites. */
     data object AddToFavoritesClicked : NowPlayingAction()
 
+    /** CONTROLS menu row — add the current track to a playlist (opens the playlist picker). */
+    data object AddToPlaylistClicked : NowPlayingAction()
+
+    /** Setlist pane row — add every track in the current setlist to a playlist. */
+    data object AddSetlistToPlaylistClicked : NowPlayingAction()
+
     data object BackClicked : NowPlayingAction()
     data object PlayerSettingsClicked : NowPlayingAction()
     data class SeekRequested(val positionMs: Long) : NowPlayingAction()

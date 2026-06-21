@@ -33,6 +33,8 @@ val harnessDependencies: KotlinDependencyHandler.() -> Unit = {
     implementation(projects.cbox.common.history.fake)
     implementation(projects.cbox.common.favorites.api)
     implementation(projects.cbox.common.favorites.fake)
+    implementation(projects.cbox.common.playlists.api)
+    implementation(projects.cbox.common.playlists.fake)
     implementation(projects.cbox.common.player.director.api)
     implementation(projects.cbox.common.player.director.fake)
     implementation(projects.cbox.common.settings.api)

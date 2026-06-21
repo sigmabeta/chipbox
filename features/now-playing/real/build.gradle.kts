@@ -13,6 +13,7 @@ kotlin {
                 implementation(projects.features.gameDetail.api)
                 implementation(projects.features.gamesForPlatform.api)
                 implementation(projects.features.artistDetail.api)
+                implementation(projects.features.playlists.api)
 
                 implementation(projects.cbox.common.ui.freeform.api)
                 implementation(projects.cbox.common.ui.components.api)

@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
+import net.sigmabeta.chipbox.features.playlists.Playlists
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
@@ -69,8 +70,16 @@ class GameDetailViewModel(
             is GameDetailAction.TrackClicked -> startSession(startingPosition = action.position)
             is GameDetailAction.ArtistClicked -> emit(NavigateTo(ArtistDetail(action.id)))
             GameDetailAction.AddToFavoritesClicked -> toggleFavorite()
+            GameDetailAction.AddToPlaylistClicked -> addToPlaylist()
             else -> Unit
         }
+    }
+
+    private fun addToPlaylist() {
+        // Hand the playlist picker every track on this screen; no-op until the tracks have loaded.
+        val trackIds = (state.value.tracks as? LCE.Content)?.data?.map { it.id }
+        if (trackIds.isNullOrEmpty()) return
+        emit(NavigateTo(Playlists(trackIds)))
     }
 
     private fun toggleFavorite() {

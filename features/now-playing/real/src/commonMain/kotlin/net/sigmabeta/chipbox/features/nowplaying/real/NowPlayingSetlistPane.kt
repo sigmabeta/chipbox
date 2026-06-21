@@ -27,8 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.DraggableListItem
+import net.sigmabeta.chipbox.common.ui.components.api.IconNameListItem
 import net.sigmabeta.chipbox.common.ui.components.api.NameCaptionValueListItem
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
@@ -74,6 +76,21 @@ internal fun NowPlayingSetlist(
             .clip(RoundedCornerShape(NowPlayingPanelCornerRadius))
             .background(MaterialTheme.colorScheme.surfaceContainer),
     ) {
+        // A non-reorderable header row to capture the whole setlist into a playlist. Hidden for the
+        // All Tracks session (and an empty queue) — see [NowPlayingModel.canAddSetlistToPlaylist].
+        if (model.canAddSetlistToPlaylist) {
+            item(key = "setlist-add-to-playlist") {
+                IconNameListItem(
+                    name = model.setlistAddToPlaylistLabel,
+                    icon = Icon.QueueMusic,
+                    clickAction = NowPlayingAction.AddSetlistToPlaylistClicked,
+                    active = false,
+                    actionSink = actionSink,
+                    modifier = Modifier.testTag(NOW_PLAYING_SETLIST_ADD_PLAYLIST_TAG),
+                    padding = NowPlayingRowPadding,
+                )
+            }
+        }
         itemsIndexed(items, key = { _, row -> row.dataId }) { index, row ->
             ReorderableItem(reorderState, key = row.dataId) { _ ->
                 val dragHandle = Modifier.draggableHandle(

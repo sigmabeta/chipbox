@@ -64,6 +64,11 @@ data class NowPlayingState(
                 ChipboxStringId.NOW_PLAYING_CTX_ADD_TO_FAVORITES
             },
         ),
+        addToPlaylistLabel = stringProvider.getString(ChipboxStringId.NOW_PLAYING_CTX_ADD_TO_PLAYLIST),
+        setlistAddToPlaylistLabel = stringProvider.getString(ChipboxStringId.NOW_PLAYING_SETLIST_ADD_TO_PLAYLIST),
+        // Offer "add setlist to playlist" for any finite session — but not All Tracks (the whole
+        // library isn't a meaningful list to capture) and not an empty queue.
+        canAddSetlistToPlaylist = session?.type != SessionType.ALL_TRACKS && setlistTracks.isNotEmpty(),
         // Only a fatal ERROR carries a message; its presence drives the transport warning icon.
         errorMessage = playback
             ?.takeIf { it.state == PlayerState.ERROR }
