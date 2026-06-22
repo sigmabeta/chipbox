@@ -22,6 +22,11 @@ interface PlaylistTrackDao {
     @Query("SELECT COALESCE(MAX(position), -1) FROM playlist_track WHERE playlistId = :playlistId")
     suspend fun maxPosition(playlistId: Long): Int
 
+    // Remove one membership; leaves the other rows (and their positions) untouched, so the trackIds
+    // Flow emits the remaining list once — no clear-then-reinsert that would flash an empty list.
+    @Query("DELETE FROM playlist_track WHERE playlistId = :playlistId AND trackId = :trackId")
+    suspend fun remove(playlistId: Long, trackId: Long)
+
     @Query("DELETE FROM playlist_track WHERE playlistId = :playlistId")
     suspend fun clear(playlistId: Long)
 
