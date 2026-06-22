@@ -3,8 +3,11 @@ package net.sigmabeta.chipbox.features.settings
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import net.sigmabeta.chipbox.debug.FavoritesSource
 import net.sigmabeta.chipbox.debug.GeneratorSource
+import net.sigmabeta.chipbox.debug.HistorySource
 import net.sigmabeta.chipbox.debug.ImageLoaderSource
+import net.sigmabeta.chipbox.debug.PlaylistsSource
 import net.sigmabeta.chipbox.debug.RepositorySource
 import net.sigmabeta.chipbox.debug.SpeakerSource
 import net.sigmabeta.chipbox.settings.ResamplerMode
@@ -47,6 +50,9 @@ data class SettingsState(
     val generatorSource: GeneratorSource = GeneratorSource.DEFAULT,
     val speakerSource: SpeakerSource = SpeakerSource.DEFAULT,
     val imageLoaderSource: ImageLoaderSource = ImageLoaderSource.DEFAULT,
+    val favoritesSource: FavoritesSource = FavoritesSource.DEFAULT,
+    val historySource: HistorySource = HistorySource.DEFAULT,
+    val playlistsSource: PlaylistsSource = PlaylistsSource.DEFAULT,
     // settingId of the single currently-expanded dropdown, or null if all are collapsed.
     val expandedDropdownId: String? = null,
 ) : ListState() {
@@ -183,6 +189,9 @@ data class SettingsState(
             repositorySourceDropdown(),
             generatorSourceDropdown(),
             speakerSourceDropdown(),
+            favoritesSourceDropdown(),
+            historySourceDropdown(),
+            playlistsSourceDropdown(),
             imageLoaderSourceDropdown(),
             playbackStatusRow(stringProvider),
             errorLogRow(stringProvider),
@@ -219,6 +228,30 @@ data class SettingsState(
         selectedPosition = speakerSource.ordinal,
         labels = persistentListOf("Real", "File", "Text"),
         onSelected = { SettingsAction.SpeakerSourceSelected(SpeakerSource.entries[it]) },
+    )
+
+    private fun favoritesSourceDropdown(): ListModel = debugDropdown(
+        settingId = "debug.favorites_source",
+        name = "Favorites (applied on next launch)",
+        selectedPosition = favoritesSource.ordinal,
+        labels = persistentListOf("Real", "Fake"),
+        onSelected = { SettingsAction.FavoritesSourceSelected(FavoritesSource.entries[it]) },
+    )
+
+    private fun historySourceDropdown(): ListModel = debugDropdown(
+        settingId = "debug.history_source",
+        name = "History (applied on next launch)",
+        selectedPosition = historySource.ordinal,
+        labels = persistentListOf("Real", "Fake"),
+        onSelected = { SettingsAction.HistorySourceSelected(HistorySource.entries[it]) },
+    )
+
+    private fun playlistsSourceDropdown(): ListModel = debugDropdown(
+        settingId = "debug.playlists_source",
+        name = "Playlists (applied on next launch)",
+        selectedPosition = playlistsSource.ordinal,
+        labels = persistentListOf("Real", "Fake"),
+        onSelected = { SettingsAction.PlaylistsSourceSelected(PlaylistsSource.entries[it]) },
     )
 
     // Unlike the source switches above, the image loader is a Compose-level toggle, so it applies

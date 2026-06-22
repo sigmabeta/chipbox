@@ -3,8 +3,11 @@ package net.sigmabeta.chipbox.debug.real
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.debug.FavoritesSource
 import net.sigmabeta.chipbox.debug.GeneratorSource
+import net.sigmabeta.chipbox.debug.HistorySource
 import net.sigmabeta.chipbox.debug.ImageLoaderSource
+import net.sigmabeta.chipbox.debug.PlaylistsSource
 import net.sigmabeta.chipbox.debug.RepositorySource
 import net.sigmabeta.chipbox.debug.SpeakerSource
 import net.sigmabeta.sage.storage.common.Storage
@@ -44,11 +47,35 @@ class RealDebugSettingsManager(private val storage: Storage) : DebugSettingsMana
     override fun setImageLoaderSource(source: ImageLoaderSource) =
         storage.saveString(KEY_IMAGE_LOADER_SOURCE, source.name)
 
+    override fun getFavoritesSource(): Flow<FavoritesSource> = storage
+        .savedStringFlow(KEY_FAVORITES_SOURCE)
+        .map { FavoritesSource.fromStorageValue(it) }
+
+    override fun setFavoritesSource(source: FavoritesSource) =
+        storage.saveString(KEY_FAVORITES_SOURCE, source.name)
+
+    override fun getHistorySource(): Flow<HistorySource> = storage
+        .savedStringFlow(KEY_HISTORY_SOURCE)
+        .map { HistorySource.fromStorageValue(it) }
+
+    override fun setHistorySource(source: HistorySource) =
+        storage.saveString(KEY_HISTORY_SOURCE, source.name)
+
+    override fun getPlaylistsSource(): Flow<PlaylistsSource> = storage
+        .savedStringFlow(KEY_PLAYLISTS_SOURCE)
+        .map { PlaylistsSource.fromStorageValue(it) }
+
+    override fun setPlaylistsSource(source: PlaylistsSource) =
+        storage.saveString(KEY_PLAYLISTS_SOURCE, source.name)
+
     companion object {
         const val KEY_DEBUG_ENABLED = "setting.debug.enabled"
         const val KEY_REPOSITORY_SOURCE = "setting.debug.repository_source"
         const val KEY_GENERATOR_SOURCE = "setting.debug.generator_source"
         const val KEY_SPEAKER_SOURCE = "setting.debug.speaker_source"
         const val KEY_IMAGE_LOADER_SOURCE = "setting.debug.image_loader_source"
+        const val KEY_FAVORITES_SOURCE = "setting.debug.favorites_source"
+        const val KEY_HISTORY_SOURCE = "setting.debug.history_source"
+        const val KEY_PLAYLISTS_SOURCE = "setting.debug.playlists_source"
     }
 }
