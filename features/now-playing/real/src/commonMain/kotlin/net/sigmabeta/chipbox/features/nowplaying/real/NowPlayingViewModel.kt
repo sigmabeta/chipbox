@@ -18,8 +18,11 @@ import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatform
 import net.sigmabeta.chipbox.features.playlists.Playlists
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.RepeatMode
+import net.sigmabeta.chipbox.player.common.SessionType
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
@@ -54,7 +57,7 @@ class NowPlayingViewModel @Inject constructor(
     private val director: Director,
     private val repository: Repository,
     private val favorites: FavoritesRepository,
-    stringProvider: StringProvider,
+    private val stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxFreeformViewModel<NowPlayingState, NowPlayingModel>(
     NowPlayingState(),
@@ -163,9 +166,12 @@ class NowPlayingViewModel @Inject constructor(
                 if (trackId != null) emit(ChipboxEvent.NavigateTo(Playlists(listOf(trackId))))
             }
 
-            // Hand the whole current setlist (queue order) to the playlist picker.
+            // Hand the whole current setlist (queue order) to the playlist picker, suggesting a name
+            // derived from what's playing (e.g. "From game …", "Search results for …").
             NowPlayingAction.AddSetlistToPlaylistClicked ->
-                if (setlistIds.isNotEmpty()) emit(ChipboxEvent.NavigateTo(Playlists(setlistIds)))
+                if (setlistIds.isNotEmpty()) {
+                    emit(ChipboxEvent.NavigateTo(Playlists(setlistIds, suggestedSetlistName())))
+                }
 
             NowPlayingAction.BackClicked -> emit(ChipboxEvent.NavigateBack)
 
@@ -307,6 +313,46 @@ class NowPlayingViewModel @Inject constructor(
         val trackId = state.value.track?.id ?: return
         val makeFavorite = !state.value.trackFavorite
         viewModelScope.launch { favorites.setTrackFavorite(trackId, makeFavorite) }
+    }
+
+    /**
+     * A suggested New-Playlist name for the current setlist, by session type — the source's name
+     * ("From game …"/"From artist …"/"From platform …"), the search query ("Search results for …",
+     * or "Shuffled …" when shuffling), or "From favorites". Null when there's no meaningful source
+     * (playlist/single-track/all-tracks), so the picker falls back to the generic default.
+     */
+    private fun suggestedSetlistName(): String? {
+        val session = state.value.session ?: return null
+        val track = state.value.track
+        return when (session.type) {
+            SessionType.GAME ->
+                track?.game?.title?.let { stringProvider.getStringOneArg(ChipboxStringId.PLAYLISTS_NAME_FROM_GAME, it) }
+
+            SessionType.ARTIST -> {
+                val artists = track?.artists.orEmpty()
+                val name = artists.firstOrNull { it.id == session.contentId }?.name ?: artists.firstOrNull()?.name
+                name?.let { stringProvider.getStringOneArg(ChipboxStringId.PLAYLISTS_NAME_FROM_ARTIST, it) }
+            }
+
+            SessionType.PLATFORM ->
+                Platform.entries.getOrNull(session.contentId.toInt())
+                    ?.let { stringProvider.getString(it.stringId) }
+                    ?.let { stringProvider.getStringOneArg(ChipboxStringId.PLAYLISTS_NAME_FROM_PLATFORM, it) }
+
+            SessionType.SETLIST ->
+                session.sourceName?.let { query ->
+                    val nameId = if (session.shuffled) {
+                        ChipboxStringId.PLAYLISTS_NAME_SEARCH_SHUFFLED
+                    } else {
+                        ChipboxStringId.PLAYLISTS_NAME_SEARCH
+                    }
+                    stringProvider.getStringOneArg(nameId, query)
+                }
+
+            SessionType.FAVORITES -> stringProvider.getString(ChipboxStringId.PLAYLISTS_NAME_FROM_FAVORITES)
+
+            SessionType.PLAYLIST, SessionType.SINGLE_TRACK, SessionType.ALL_TRACKS -> null
+        }
     }
 
     private fun togglePlayPause() {

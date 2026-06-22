@@ -21,11 +21,13 @@ import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 
-// `pendingTrackIds` is the only route arg, taken as `@Assisted` and passed by the pushed Screen.
-// Empty = normal browse list; non-empty = "Add to Playlist" picker mode.
+// Route args, taken as `@Assisted` and passed by the pushed Screen: [pendingTrackIds] empty = normal
+// browse list, non-empty = "Add to Playlist" picker mode; [suggestedName] seeds a created playlist's
+// name (null in browse mode).
 @AssistedInject
 class PlaylistsViewModel(
     @Assisted private val pendingTrackIds: List<Long>,
+    @Assisted private val suggestedName: String?,
     private val playlists: PlaylistsRepository,
     private val stringProvider: StringProvider,
     hatchet: Hatchet,
@@ -66,8 +68,10 @@ class PlaylistsViewModel(
 
     private fun createPlaylist() {
         // Create an empty playlist (seeding the picker's pending tracks, if any), then open its detail.
+        // Use the caller's suggested name (e.g. "From game …") when present, else the generic default.
         viewModelScope.launch {
-            val base = stringProvider.getString(ChipboxStringId.PLAYLISTS_DEFAULT_NAME)
+            val base = suggestedName?.takeIf { it.isNotBlank() }
+                ?: stringProvider.getString(ChipboxStringId.PLAYLISTS_DEFAULT_NAME)
             val existingNames = playlists.playlists().first().mapTo(mutableSetOf()) { it.name }
             val id = playlists.createPlaylist(uniqueDefaultName(base, existingNames))
             if (pendingTrackIds.isNotEmpty()) {
@@ -78,7 +82,7 @@ class PlaylistsViewModel(
     }
 
     // Playlist names must be unique, so a fresh playlist appends the lowest free integer to the
-    // default base when it (or a numbered sibling) is already taken: "New Playlist", "New Playlist 2"…
+    // base when it (or a numbered sibling) is already taken: "New Playlist", "New Playlist 2"…
     private fun uniqueDefaultName(base: String, existingNames: Set<String>): String {
         if (base !in existingNames) return base
         var suffix = 2
@@ -90,6 +94,9 @@ class PlaylistsViewModel(
     @ManualViewModelAssistedFactoryKey(Factory::class)
     @ContributesIntoMap(AppScope::class)
     fun interface Factory : ManualViewModelAssistedFactory {
-        fun create(@Assisted pendingTrackIds: List<Long>): PlaylistsViewModel
+        fun create(
+            @Assisted pendingTrackIds: List<Long>,
+            @Assisted suggestedName: String?,
+        ): PlaylistsViewModel
     }
 }

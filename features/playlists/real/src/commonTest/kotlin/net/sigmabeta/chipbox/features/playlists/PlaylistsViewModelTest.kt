@@ -117,13 +117,26 @@ class PlaylistsViewModelTest {
         assertTrue(vm.state.value.isPicker)
     }
 
+    @Test
+    fun `New Playlist uses the suggested name when one is supplied`() = runTest {
+        val repo = FakePlaylistsRepository()
+        val vm = pickerVm(repo, pendingTrackIds = listOf(1L), suggestedName = "From game Chrono Trigger")
+
+        collectAndDispatch(vm, PlaylistsAction.NewPlaylistClicked)
+
+        assertEquals(listOf("From game Chrono Trigger"), repo.playlists().first().map { it.name })
+    }
+
     // ---- helpers ----
 
     private fun browseVm(repo: FakePlaylistsRepository) =
-        PlaylistsViewModel(emptyList(), repo, stubStringProvider(), BluntHatchet())
+        PlaylistsViewModel(emptyList(), null, repo, stubStringProvider(), BluntHatchet())
 
-    private fun pickerVm(repo: FakePlaylistsRepository, pendingTrackIds: List<Long>) =
-        PlaylistsViewModel(pendingTrackIds, repo, stubStringProvider(), BluntHatchet())
+    private fun pickerVm(
+        repo: FakePlaylistsRepository,
+        pendingTrackIds: List<Long>,
+        suggestedName: String? = null,
+    ) = PlaylistsViewModel(pendingTrackIds, suggestedName, repo, stubStringProvider(), BluntHatchet())
 
     private suspend fun CoroutineScope.collectAndDispatch(
         vm: PlaylistsViewModel,

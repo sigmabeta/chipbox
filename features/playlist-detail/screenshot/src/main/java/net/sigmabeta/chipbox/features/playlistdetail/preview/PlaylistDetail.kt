@@ -55,6 +55,32 @@ internal fun PlaylistDetailEditing(
 
 @DevicePreviews
 @Composable
+internal fun PlaylistDetailRenaming(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    ListScreenPreview(
+        screenState = playlistDetailState().copy(isEditing = true, isRenaming = true),
+        syntheticWidthClass = syntheticWidthClass,
+        darkTheme = darkTheme,
+    )
+}
+
+@DevicePreviews
+@Composable
+internal fun PlaylistDetailConfirmingDelete(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    ListScreenPreview(
+        screenState = playlistDetailState().copy(isEditing = true, isConfirmingDelete = true),
+        syntheticWidthClass = syntheticWidthClass,
+        darkTheme = darkTheme,
+    )
+}
+
+@DevicePreviews
+@Composable
 internal fun PlaylistDetailNotFound(
     darkTheme: Boolean = isSystemInDarkTheme(),
     syntheticWidthClass: WidthClass = previewWidthClass(),

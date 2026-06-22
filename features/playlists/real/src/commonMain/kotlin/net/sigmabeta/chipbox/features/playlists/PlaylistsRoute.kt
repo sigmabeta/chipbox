@@ -9,11 +9,12 @@ import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListEntry
 @Composable
 fun PlaylistsRoute(
     pendingTrackIds: List<Long>,
+    suggestedName: String?,
     onEvent: (ChipboxEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel = assistedMetroViewModel<PlaylistsViewModel, PlaylistsViewModel.Factory> {
-        create(pendingTrackIds)
+        create(pendingTrackIds, suggestedName)
     }
     ChipboxListEntry(viewModel, onEvent, modifier)
 }

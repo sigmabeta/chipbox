@@ -7,6 +7,12 @@
     <string name="playlists_empty">You haven't created any playlists yet. Tap New Playlist to start one.</string>
     <string name="playlists_cta_new">New Playlist</string>
     <string name="playlists_default_name">New Playlist</string>
+    <string name="playlists_name_from_game">From game %s</string>
+    <string name="playlists_name_from_artist">From artist %s</string>
+    <string name="playlists_name_from_platform">From platform %s</string>
+    <string name="playlists_name_from_favorites">From favorites</string>
+    <string name="playlists_name_search">Search results for %s</string>
+    <string name="playlists_name_search_shuffled">Shuffled search results for %s</string>
     <string name="playlists_track_count">%d songs</string>
     <string name="playlists_track_count_one">1 song</string>
 
@@ -16,6 +22,12 @@
     <string name="playlist_detail_cta_done">Done</string>
     <string name="playlist_detail_cta_rename">Rename playlist</string>
     <string name="playlist_detail_cta_delete">Delete playlist</string>
-    <string name="playlist_detail_rename_coming_soon">Rename coming soon.</string>
+    <string name="playlist_detail_delete_header">Delete playlist?</string>
+    <string name="playlist_detail_delete_body">This can't be undone.</string>
+    <string name="playlist_detail_delete_confirm">Delete</string>
+    <string name="playlist_detail_delete_cancel">Cancel</string>
+    <string name="playlist_detail_rename_hint">Name this playlist…</string>
+    <string name="playlist_detail_rename_submit">Rename</string>
+    <string name="playlist_detail_rename_cancel">Cancel</string>
     <string name="playlist_detail_deleted">Playlist deleted.</string>
 </resources>

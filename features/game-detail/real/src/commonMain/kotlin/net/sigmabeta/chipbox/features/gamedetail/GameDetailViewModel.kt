@@ -18,6 +18,7 @@ import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
@@ -35,7 +36,7 @@ class GameDetailViewModel(
     private val repository: Repository,
     private val director: Director,
     private val favorites: FavoritesRepository,
-    stringProvider: StringProvider,
+    private val stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<GameDetailState>(
     GameDetailState(),
@@ -79,7 +80,12 @@ class GameDetailViewModel(
         // Hand the playlist picker every track on this screen; no-op until the tracks have loaded.
         val trackIds = (state.value.tracks as? LCE.Content)?.data?.map { it.id }
         if (trackIds.isNullOrEmpty()) return
-        emit(NavigateTo(Playlists(trackIds)))
+        // Suggest a name for a new playlist made from this game, e.g. "From game Street Fighter II".
+        val title = (state.value.game as? LCE.Content)?.data?.title
+        val suggestedName = title?.let {
+            stringProvider.getStringOneArg(ChipboxStringId.PLAYLISTS_NAME_FROM_GAME, it)
+        }
+        emit(NavigateTo(Playlists(trackIds, suggestedName)))
     }
 
     private fun toggleFavorite() {

@@ -153,7 +153,8 @@ class ArtistDetailViewModelTest {
         val event = collectAndDispatch(vm, ArtistDetailAction.AddToPlaylistClicked)
 
         assertTrue(event is ChipboxEvent.NavigateTo)
-        assertEquals(Playlists(listOf(20L, 21L)), event.destination)
+        // The stub StringProvider returns the id's name for the suggested-name lookup.
+        assertEquals(Playlists(listOf(20L, 21L), "PLAYLISTS_NAME_FROM_ARTIST"), event.destination)
     }
 
     // ---- helpers ----

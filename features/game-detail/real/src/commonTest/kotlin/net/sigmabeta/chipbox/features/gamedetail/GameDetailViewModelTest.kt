@@ -177,7 +177,8 @@ class GameDetailViewModelTest {
         val event = collectAndDispatch(vm, GameDetailAction.AddToPlaylistClicked)
 
         assertTrue(event is ChipboxEvent.NavigateTo)
-        assertEquals(Playlists(listOf(10L, 11L)), event.destination)
+        // The stub StringProvider returns the id's name for the suggested-name lookup.
+        assertEquals(Playlists(listOf(10L, 11L), "PLAYLISTS_NAME_FROM_GAME"), event.destination)
     }
 
     // ---- helpers ----
