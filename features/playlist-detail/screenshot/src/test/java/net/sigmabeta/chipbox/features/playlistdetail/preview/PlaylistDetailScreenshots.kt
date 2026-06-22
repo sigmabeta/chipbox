@@ -45,6 +45,22 @@ class PlaylistDetailScreenshots(
     }
 
     @Test
+    fun playlistDetailScreenRenaming() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            PlaylistDetailRenaming(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
+    @Test
+    fun playlistDetailScreenConfirmingDelete() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            PlaylistDetailConfirmingDelete(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
+    @Test
     fun playlistDetailScreenNotFound() {
         paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
         paparazzi.snapshot {

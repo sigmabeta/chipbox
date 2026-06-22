@@ -99,7 +99,7 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     BrowseAllTracks -> BrowseAllTracksScreen
     BrowseByArtist -> BrowseByArtistScreen
     Favorites -> FavoritesScreen
-    is Playlists -> PlaylistsDeepScreen(destination.pendingTrackIds)
+    is Playlists -> PlaylistsDeepScreen(destination.pendingTrackIds, destination.suggestedName)
     is PlaylistDetail -> PlaylistDetailDeepScreen(destination.id)
     is GameDetail -> GameDetailDeepScreen(destination.id)
     is ArtistDetail -> ArtistDetailDeepScreen(destination.id)
@@ -473,11 +473,18 @@ private object FavoritesScreen : Screen {
 
 // Browse mode and each picker invocation get distinct keys (so they don't share a ViewModelStore +
 // its baked-in @Assisted pendingTrackIds) — see the GameDetailDeepScreen note.
-private data class PlaylistsDeepScreen(val pendingTrackIds: List<Long>) : Screen {
-    override val key: ScreenKey = "Playlists:${pendingTrackIds.hashCode()}"
+private data class PlaylistsDeepScreen(
+    val pendingTrackIds: List<Long>,
+    val suggestedName: String?,
+) : Screen {
+    override val key: ScreenKey = "Playlists:${pendingTrackIds.hashCode()}:${suggestedName.hashCode()}"
 
     @Composable override fun Content() = ScreenScaffold {
-        PlaylistsRoute(pendingTrackIds = pendingTrackIds, onEvent = LocalChipboxEventSink.current)
+        PlaylistsRoute(
+            pendingTrackIds = pendingTrackIds,
+            suggestedName = suggestedName,
+            onEvent = LocalChipboxEventSink.current,
+        )
     }
 }
 

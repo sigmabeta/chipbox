@@ -10,6 +10,7 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
+import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.playlists.PlaylistsRepository
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
@@ -34,6 +35,10 @@ class PlaylistDetailViewModel(
     hatchet,
 ) {
 
+    /** Resolved track metadata keyed by id; an edit re-emits the membership but never refetches a
+     *  track already shown. Declared before [init] so the hydration collector can use it. */
+    private val trackCache = mutableMapOf<Long, Track>()
+
     init {
         // A null playlist means it was deleted (or never existed) — surface the not-found state.
         viewModelScope.launch {
@@ -49,10 +54,18 @@ class PlaylistDetailViewModel(
         }
 
         // Hydrate the membership ids into full tracks via the library repository, preserving order.
+        // Hydrated tracks are cached by id, so an edit (remove/reorder) re-emits the id list but only
+        // newly-added ids hit the repository — the rest resolve from cache. Loading is shown only on
+        // the first hydration; later edits swap in place with no loading flash.
         viewModelScope.launch {
             playlists.trackIds(playlistId).collect { ids ->
-                updateState { it.copy(tracks = LCE.Loading(LOAD_OP)) }
-                val tracks = ids.mapNotNull { repository.getTrack(it, withGame = true, withArtists = true) }
+                if (state.value.tracks !is LCE.Content) {
+                    updateState { it.copy(tracks = LCE.Loading(LOAD_OP)) }
+                }
+                val tracks = ids.mapNotNull { id ->
+                    trackCache[id] ?: repository.getTrack(id, withGame = true, withArtists = true)
+                        ?.also { trackCache[id] = it }
+                }
                 updateState { it.copy(tracks = LCE.Content(tracks)) }
             }
         }
@@ -62,19 +75,40 @@ class PlaylistDetailViewModel(
         when (action) {
             PlaylistDetailAction.EditClicked -> updateState { it.copy(isEditing = true) }
 
-            PlaylistDetailAction.DoneClicked -> updateState { it.copy(isEditing = false) }
+            // Leaving edit mode also closes any in-progress rename / delete prompt.
+            PlaylistDetailAction.DoneClicked ->
+                updateState { it.copy(isEditing = false, isRenaming = false, isConfirmingDelete = false) }
 
+            // Open the inline rename field (swaps in for the Rename CTA); closes the delete prompt.
             PlaylistDetailAction.RenameClicked ->
-                emit(ChipboxEvent.ShowSnackbar(stringProvider.getString(ChipboxStringId.PLAYLIST_DETAIL_RENAME_COMING_SOON)))
+                updateState { it.copy(isRenaming = true, isConfirmingDelete = false) }
 
-            PlaylistDetailAction.DeleteClicked -> deletePlaylist()
+            // Open the inline delete confirmation (swaps in for the Delete CTA); closes the rename field.
+            PlaylistDetailAction.DeleteClicked ->
+                updateState { it.copy(isConfirmingDelete = true, isRenaming = false) }
 
             is PlaylistDetailAction.TrackRemoved -> removeTrack(action.trackId)
 
             is SageAction.Reorder -> reorderTracks(action.fromIndex, action.toIndex)
 
+            // The inline rename field confirmed: persist the new name and close it. (The action's
+            // id is the rename row's sentinel; the playlist to rename is this screen's playlistId.)
+            is SageAction.EditTextSubmitted -> renamePlaylist(action.text)
+
+            is SageAction.EditTextCancelled -> updateState { it.copy(isRenaming = false) }
+
+            // The inline delete confirmation confirmed / cancelled.
+            is SageAction.ConfirmationConfirmed -> deletePlaylist()
+
+            is SageAction.ConfirmationCancelled -> updateState { it.copy(isConfirmingDelete = false) }
+
             else -> Unit
         }
+    }
+
+    private fun renamePlaylist(name: String) {
+        updateState { it.copy(isRenaming = false) }
+        viewModelScope.launch { playlists.renamePlaylist(playlistId, name) }
     }
 
     private fun deletePlaylist() {
@@ -86,8 +120,7 @@ class PlaylistDetailViewModel(
     }
 
     private fun removeTrack(trackId: Long) {
-        val current = currentTrackIds() ?: return
-        viewModelScope.launch { playlists.setTrackOrder(playlistId, current.filterNot { it == trackId }) }
+        viewModelScope.launch { playlists.removeTrack(playlistId, trackId) }
     }
 
     /**
