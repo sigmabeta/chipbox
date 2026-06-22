@@ -67,7 +67,6 @@ class PlaylistsViewModel(
     }
 
     private fun createPlaylist() {
-        // Create an empty playlist (seeding the picker's pending tracks, if any), then open its detail.
         // Use the caller's suggested name (e.g. "From game …") when present, else the generic default.
         viewModelScope.launch {
             val base = suggestedName?.takeIf { it.isNotBlank() }
@@ -75,9 +74,13 @@ class PlaylistsViewModel(
             val existingNames = playlists.playlists().first().mapTo(mutableSetOf()) { it.name }
             val id = playlists.createPlaylist(uniqueDefaultName(base, existingNames))
             if (pendingTrackIds.isNotEmpty()) {
+                // Picker (bulk add): drop the tracks in and back out, like adding to an existing playlist.
                 playlists.addTracks(id, pendingTrackIds)
+                emit(NavigateBack)
+            } else {
+                // Browse: open the new (empty) playlist so the user can name/fill it.
+                emit(NavigateTo(PlaylistDetail(id)))
             }
-            emit(NavigateTo(PlaylistDetail(id)))
         }
     }
 
