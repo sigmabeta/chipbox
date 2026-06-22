@@ -116,6 +116,21 @@ class SettingsViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            debugSettingsManager.getFavoritesSource().collect { source ->
+                updateState { it.copy(favoritesSource = source) }
+            }
+        }
+        viewModelScope.launch {
+            debugSettingsManager.getHistorySource().collect { source ->
+                updateState { it.copy(historySource = source) }
+            }
+        }
+        viewModelScope.launch {
+            debugSettingsManager.getPlaylistsSource().collect { source ->
+                updateState { it.copy(playlistsSource = source) }
+            }
+        }
+        viewModelScope.launch {
             librarySource.locations.collect { locations ->
                 updateState { it.copy(hasLibraryFolders = locations.isNotEmpty()) }
             }
@@ -180,6 +195,21 @@ class SettingsViewModel @Inject constructor(
 
             is SettingsAction.ImageLoaderSourceSelected -> {
                 debugSettingsManager.setImageLoaderSource(action.source)
+                collapseDropdowns()
+            }
+
+            is SettingsAction.FavoritesSourceSelected -> {
+                debugSettingsManager.setFavoritesSource(action.source)
+                collapseDropdowns()
+            }
+
+            is SettingsAction.HistorySourceSelected -> {
+                debugSettingsManager.setHistorySource(action.source)
+                collapseDropdowns()
+            }
+
+            is SettingsAction.PlaylistsSourceSelected -> {
+                debugSettingsManager.setPlaylistsSource(action.source)
                 collapseDropdowns()
             }
 

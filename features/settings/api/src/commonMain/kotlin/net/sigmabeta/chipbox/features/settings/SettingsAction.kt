@@ -1,8 +1,11 @@
 package net.sigmabeta.chipbox.features.settings
 
 import net.sigmabeta.chipbox.appcomm.ChipboxAction
+import net.sigmabeta.chipbox.debug.FavoritesSource
 import net.sigmabeta.chipbox.debug.GeneratorSource
+import net.sigmabeta.chipbox.debug.HistorySource
 import net.sigmabeta.chipbox.debug.ImageLoaderSource
+import net.sigmabeta.chipbox.debug.PlaylistsSource
 import net.sigmabeta.chipbox.debug.RepositorySource
 import net.sigmabeta.chipbox.debug.SpeakerSource
 import net.sigmabeta.chipbox.settings.ResamplerMode
@@ -20,6 +23,9 @@ sealed class SettingsAction : ChipboxAction() {
     data class GeneratorSourceSelected(val source: GeneratorSource) : SettingsAction()
     data class SpeakerSourceSelected(val source: SpeakerSource) : SettingsAction()
     data class ImageLoaderSourceSelected(val source: ImageLoaderSource) : SettingsAction()
+    data class FavoritesSourceSelected(val source: FavoritesSource) : SettingsAction()
+    data class HistorySourceSelected(val source: HistorySource) : SettingsAction()
+    data class PlaylistsSourceSelected(val source: PlaylistsSource) : SettingsAction()
     data class BrandFontSelected(val font: ChipboxFont) : SettingsAction()
     data class PlainFontSelected(val font: ChipboxFont) : SettingsAction()
     data object AddFolderClicked : SettingsAction()
