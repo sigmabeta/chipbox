@@ -1,6 +1,6 @@
-# CLAUDE.md — Chipbox orientation
+# AGENTS.md — Chipbox orientation
 
-Orientation for Claude Code. Keep this file lean; deep dives live in
+Orientation for coding agents. Keep this file lean; deep dives live in
 `docs/architecture/` and are loaded on demand. Update this file when a
 load-bearing fact below stops being true.
 
@@ -68,6 +68,9 @@ targets too.
 - Run **ktlint and detekt together**; both gate commit/push.
 - `verifyPaparazziDebug` *checks* goldens; `testDebugUnitTest` *records*
   (overwrites) them (git-LFS). Use verify unless intentionally re-recording.
+- When running Paparazzi, use the script in `scripts/`
+  (`scripts/paparazzi-diff.sh`) rather than invoking the Gradle tasks directly,
+  and report the results back.
 - Don't boot an AVD to verify — stop after build + lint and hand device testing
   to the user. Don't `git commit`/`push` unless explicitly asked.
 - Always run `scripts/verify.sh` (the full CI-mirroring suite — lint, unit tests,
