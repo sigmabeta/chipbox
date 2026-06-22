@@ -109,6 +109,11 @@ class DatabaseRepository(
         { list -> list.suspendMap { it.toTrack(withGame, withArtists) } }
     )
 
+    override fun getTracksByIds(ids: List<Long>, withGame: Boolean, withArtists: Boolean) = setupFlow(
+        { trackDao.getTracksByIds(ids) },
+        { list -> list.suspendMap { it.toTrack(withGame, withArtists) } }
+    )
+
     override suspend fun getTracksForGame(
         id: Long,
         withGame: Boolean,

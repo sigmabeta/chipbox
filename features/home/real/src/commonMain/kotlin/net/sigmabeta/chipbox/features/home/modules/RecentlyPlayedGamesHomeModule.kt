@@ -4,8 +4,11 @@ import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import net.sigmabeta.chipbox.features.home.HomeAction
 import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
@@ -40,25 +43,30 @@ class RecentlyPlayedGamesHomeModule @Inject constructor(
     override val id = ID
     override val priority = PRIORITY
 
-    override fun state(): Flow<LCE<HomeModuleSection>> = combine(
-        historyRepository.recentlyPlayed(QUERY_LIMIT),
-        repository.getAllTracks(withGame = true),
-    ) { recents, tracksData ->
-        when (tracksData) {
-            // Only show a skeleton while the library loads if there's history to resolve; with no
-            // plays the row stays hidden instead of flashing a loading scroller.
-            Data.Loading -> if (recents.isEmpty()) LCE.Uninitialized else LCE.Loading(LOAD_OP)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun state(): Flow<LCE<HomeModuleSection>> =
+        historyRepository.recentlyPlayed(QUERY_LIMIT).flatMapLatest { recents ->
+            // With no plays the row stays hidden instead of flashing a loading scroller.
+            if (recents.isEmpty()) {
+                flowOf<LCE<HomeModuleSection>>(LCE.Uninitialized)
+            } else {
+                // Resolve only the recently-played track ids rather than the whole library.
+                repository.getTracksByIds(recents.map { it.trackId }, withGame = true).map { tracksData ->
+                    when (tracksData) {
+                        Data.Loading -> LCE.Loading(LOAD_OP)
 
-            Data.Empty -> LCE.Uninitialized
+                        Data.Empty -> LCE.Uninitialized
 
-            is Data.Failed -> LCE.Error(LOAD_OP, IllegalStateException(tracksData.message))
+                        is Data.Failed -> LCE.Error(LOAD_OP, IllegalStateException(tracksData.message))
 
-            is Data.Succeeded -> {
-                val trackById = tracksData.data.associateBy { it.id }
-                sectionOrHidden(recentGames(recents, trackById), hasRecentPlay(recents))
+                        is Data.Succeeded -> {
+                            val trackById = tracksData.data.associateBy { it.id }
+                            sectionOrHidden(recentGames(recents, trackById), hasRecentPlay(recents))
+                        }
+                    }
+                }
             }
         }
-    }
 
     // Collapse the recent track plays to their distinct games, preserving newest-first order (the
     // first time a game appears wins, since `recents` is already newest-first). Capped at MAX_ITEMS.
