@@ -158,6 +158,10 @@ class FakeDatabase(private val random: Random = Random(0)) {
             tracks.values.map { it.platform }.distinct()
         }
         override fun getTrack(trackId: Long): Flow<TrackEntity> = observe { tracks.getValue(trackId) }
+        override fun getTracksByIds(ids: List<Long>): Flow<List<TrackEntity>> = observe {
+            val idSet = ids.toSet()
+            tracks.values.filter { it.id in idSet }
+        }
         override suspend fun getTrackSync(trackId: Long): TrackEntity? = tracks[trackId]
         override suspend fun getRandom(): TrackEntity? = tracks.values.randomOrNull(random)
         override fun searchTracksByTitle(title: String): Flow<List<TrackEntity>> = observe {

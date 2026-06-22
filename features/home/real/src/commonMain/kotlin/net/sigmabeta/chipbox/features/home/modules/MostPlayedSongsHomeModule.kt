@@ -2,8 +2,11 @@ package net.sigmabeta.chipbox.features.home.modules
 
 import dev.zacsweers.metro.Inject
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import net.sigmabeta.chipbox.features.home.HomeAction
 import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
@@ -31,24 +34,30 @@ class MostPlayedSongsHomeModule @Inject constructor(
     override val id = ID
     override val priority = PRIORITY
 
-    override fun state(): Flow<LCE<HomeModuleSection>> = combine(
-        historyRepository.mostPlayedSongs(QUERY_LIMIT),
-        repository.getAllTracks(withGame = true),
-    ) { counts, tracksData ->
-        when (tracksData) {
-            Data.Loading -> if (counts.isEmpty()) LCE.Uninitialized else LCE.Loading(LOAD_OP)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun state(): Flow<LCE<HomeModuleSection>> =
+        historyRepository.mostPlayedSongs(QUERY_LIMIT).flatMapLatest { counts ->
+            if (counts.isEmpty()) {
+                flowOf<LCE<HomeModuleSection>>(LCE.Uninitialized)
+            } else {
+                // Resolve only the most-played track ids (for title + game art) rather than
+                // hydrating the entire library to look a handful of them up.
+                repository.getTracksByIds(counts.map { it.id }, withGame = true).map { tracksData ->
+                    when (tracksData) {
+                        Data.Loading -> LCE.Loading(LOAD_OP)
 
-            Data.Empty -> LCE.Uninitialized
+                        Data.Empty -> LCE.Uninitialized
 
-            is Data.Failed -> LCE.Error(LOAD_OP, IllegalStateException(tracksData.message))
+                        is Data.Failed -> LCE.Error(LOAD_OP, IllegalStateException(tracksData.message))
 
-            is Data.Succeeded -> {
-                val byId = tracksData.data.associateBy { it.id }
-                val tracks = counts.mapNotNull { byId[it.id] }
-                sectionOrHidden(tracks)
+                        is Data.Succeeded -> {
+                            val byId = tracksData.data.associateBy { it.id }
+                            sectionOrHidden(counts.mapNotNull { byId[it.id] })
+                        }
+                    }
+                }
             }
         }
-    }
 
     private fun sectionOrHidden(tracks: List<Track>): LCE<HomeModuleSection> {
         if (tracks.size < MIN_ITEMS) return LCE.Uninitialized
