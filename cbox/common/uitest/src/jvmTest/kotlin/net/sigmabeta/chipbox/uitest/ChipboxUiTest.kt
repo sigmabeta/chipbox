@@ -180,6 +180,21 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         }
     }
 
+    /**
+     * A snapshot of the library's tracks — exactly what the screens see (the fake repository latches
+     * its track list on first read, so tracks `seedGame`'d after the shell launches won't appear here;
+     * pick from these existing tracks to seed a playlist/favorites with real, renderable content).
+     */
+    fun libraryTracks(): List<Track> = runBlocking {
+        withTimeout(LOAD_TIMEOUT_MS) {
+            val data = graph.memoryRepository
+                .getAllTracks(withGame = true, withArtists = false)
+                .first { it is Data.Succeeded }
+            @Suppress("UNCHECKED_CAST")
+            (data as Data.Succeeded<List<Track>>).data
+        }
+    }
+
     /** Mark the library track with [id] as a favorite, before opening a screen that reads favorites. */
     fun favoriteTrack(id: Long) = runBlocking { graph.fakeFavoritesRepository.setTrackFavorite(id, true) }
 
@@ -191,6 +206,37 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
 
     /** Whether the track with [id] is currently favorited — to assert a toggle took effect. */
     fun isTrackFavorited(id: Long): Boolean = runBlocking { graph.fakeFavoritesRepository.isTrackFavorite(id).first() }
+
+    /** Seed a playlist named [name] holding [trackIds] (in order) and return its id — for opening a
+     *  playlist screen, or driving the "Add to Playlist" picker to a known target. */
+    fun seedPlaylist(name: String, trackIds: List<Long> = emptyList()): Long =
+        graph.fakePlaylistsRepository.seed(name, trackIds)
+
+    /** The id of the seeded playlist named [name] — e.g. to assert a navigation to its detail. */
+    fun playlistId(name: String): Long = runBlocking {
+        graph.fakePlaylistsRepository.playlists().first().first { it.name == name }.id
+    }
+
+    /** The ordered track ids stored in the playlist with [id] — to assert an add/remove/reorder. */
+    fun playlistTrackIds(id: Long): List<Long> = runBlocking { graph.fakePlaylistsRepository.trackIds(id).first() }
+
+    /** The names of every playlist currently stored — to assert a creation took effect. */
+    fun playlistNames(): List<String> = runBlocking {
+        graph.fakePlaylistsRepository.playlists().first().map { it.name }
+    }
+
+    /** Poll (pumping the clock) until the playlist with [id] holds exactly [count] tracks. A VM that
+     *  adds/removes tracks does so in a coroutine, so the repo settles a beat after the click does. */
+    fun waitForPlaylistTrackCount(id: Long, count: Int) {
+        compose.waitUntil(timeoutMillis = LOAD_TIMEOUT_MS) { playlistTrackIds(id).size == count }
+    }
+
+    /** Poll until a playlist named [name] exists, then return its id — for a creation that lands in a
+     *  VM coroutine after a "New Playlist" click. */
+    fun waitForPlaylistNamed(name: String): Long {
+        compose.waitUntil(timeoutMillis = LOAD_TIMEOUT_MS) { name in playlistNames() }
+        return playlistId(name)
+    }
 
     /**
      * Add a game to the library and return its id. Convenience over the populated default — use it
@@ -311,6 +357,17 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     }
 
     /**
+     * Click the [IconNameCaptionItem][net.sigmabeta.sage.components.IconNameCaptionListModel] row
+     * named [name] (e.g. a playlist row on the Playlists screen).
+     */
+    fun clickIconNameCaptionItem(name: String) = clickItem("IconNameCaptionListModel", name)
+
+    /** Click the [Cta][net.sigmabeta.sage.components.CtaListModel] row reading [name] (e.g.
+     *  "New Playlist", "Play All") — scoped to the CTA type so it can't collide with a same-named
+     *  row (e.g. a playlist literally named "New Playlist"). */
+    fun clickCta(name: String) = clickItem("CtaListModel", name)
+
+    /**
      * Click the (single) node displaying [text], regardless of item type — for when the row kind
      * doesn't matter (e.g. a song row that's a label/value or name/caption/value depending on the
      * game's artist count). Prefer the typed `click*Item` verbs when the type is meaningful.
@@ -422,6 +479,11 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     fun assertNameCaptionValueItemDisplayed(name: String, caption: String? = null) =
         assertItemDisplayed("NameCaptionValueListModel", *listOfNotNull(name, caption).toTypedArray())
 
+    /** Assert an icon + name + caption row ([IconNameCaptionListModel]) is displayed — by [name], and
+     *  [caption] when given (e.g. a playlist row: name = playlist name, caption = song count). */
+    fun assertIconNameCaptionItemDisplayed(name: String, caption: String? = null) =
+        assertItemDisplayed("IconNameCaptionListModel", *listOfNotNull(name, caption).toTypedArray())
+
     // Assert a list row of model type [typeTag] carrying every one of [texts] is displayed. Each text
     // may sit on the tagged row itself (most models merge it) or on a descendant (some don't), so
     // match either. Scoping by the model tag is what makes these more precise than `assertDisplayed`.
@@ -454,6 +516,17 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         }
     }
 
+    /** Snapshot of the route keys the shell has navigated to (for [lastNavigationOfType]). */
+    fun recordedNavigations(): List<Any> {
+        compose.waitForIdle()
+        return navigations.toList()
+    }
+
+    /** The most recent navigation of route type [T], or null — for asserting a route's *payload* when
+     *  the args aren't predictable (e.g. the `Playlists` picker's pendingTrackIds / suggestedName). */
+    inline fun <reified T : Any> lastNavigationOfType(): T? =
+        recordedNavigations().filterIsInstance<T>().lastOrNull()
+
     /**
      * Assert the [Director] received [request] (by value) — e.g.
      * `assertDirectorReceived(SessionRequest.Play)`. For requests carrying a value you don't want
@@ -476,6 +549,19 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         val received = graph.fakeDirector.requests
         check(received.any { type.isInstance(it) }) {
             "Expected the director to receive a ${type.simpleName} request, but saw: $received"
+        }
+    }
+
+    /**
+     * Assert the [Director] was asked to start a [Session] satisfying [predicate] — for pinning *which*
+     * session a control kicked off (its [type][Session.type], shuffle flag, starting position) when the
+     * full `Session` value is impractical to spell out. [description] is shown if no match is found.
+     */
+    fun assertStartedSession(description: String = "a matching session", predicate: (Session) -> Boolean) {
+        compose.waitForIdle()
+        val started = graph.fakeDirector.requests.filterIsInstance<SessionRequest.Start>().map { it.session }
+        check(started.any(predicate)) {
+            "Expected the director to start $description, but saw started sessions: $started"
         }
     }
 
