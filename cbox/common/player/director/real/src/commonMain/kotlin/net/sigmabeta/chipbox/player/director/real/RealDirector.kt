@@ -33,6 +33,8 @@ import net.sigmabeta.chipbox.player.generator.GeneratorEvent
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.player.speaker.SpeakerEvent
 import net.sigmabeta.chipbox.repository.Data
+import net.sigmabeta.chipbox.favorites.FavoritesRepository
+import net.sigmabeta.chipbox.playlists.PlaylistsRepository
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.sage.logging.Hatchet
@@ -81,6 +83,8 @@ class RealDirector(
     private val generator: Generator,
     private val speaker: Speaker,
     private val repository: Repository,
+    private val playlistsRepository: PlaylistsRepository,
+    private val favoritesRepository: FavoritesRepository,
     private val settingsManager: ChipboxSettingsManager,
     private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1)
@@ -825,7 +829,7 @@ class RealDirector(
             SessionType.PLATFORM -> getTrackListForPlatform(session.contentId, skipShort)
             SessionType.SETLIST -> session.explicitSetlist.orEmpty()
             SessionType.SINGLE_TRACK -> listOf(session.contentId)
-            SessionType.FAVORITES -> session.explicitSetlist.orEmpty() // Resolved by the Favorites screen.
+            SessionType.FAVORITES -> getTrackListForFavorites()
         }
     }
 
@@ -851,9 +855,15 @@ class RealDirector(
         .getTracksForArtist(artistId)
         .toSetlistIds(skipShort)
 
-    private fun getTrackListForPlaylist(playlistId: Long): List<Long> {
-        TODO("Not yet implemented")
-    }
+    // A playlist is a stable, id-backed ordered list, resolved straight from the playlists store —
+    // played as the user curated it (no shuffle-skip-short filtering, which would need track lengths).
+    private suspend fun getTrackListForPlaylist(playlistId: Long): List<Long> =
+        playlistsRepository.trackIds(playlistId).first()
+
+    // Favorites resolve straight from the favorites store, newest-first — the same order (and the same
+    // id stream) the Favorites screen renders, so a tapped row's position lines up with what plays.
+    private suspend fun getTrackListForFavorites(): List<Long> =
+        favoritesRepository.favoriteTrackIds().first()
 
     private suspend fun getTrackListForAllTracks(skipShort: Boolean): List<Long> = repository
         .getAllTracks(withGame = false, withArtists = false)

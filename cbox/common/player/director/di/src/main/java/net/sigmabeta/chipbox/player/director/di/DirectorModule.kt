@@ -8,6 +8,8 @@ import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.real.RealDirector
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.speaker.Speaker
+import net.sigmabeta.chipbox.favorites.FavoritesRepository
+import net.sigmabeta.chipbox.playlists.PlaylistsRepository
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.sage.di.AppScope
@@ -22,7 +24,17 @@ object DirectorModule {
         generator: Generator,
         speaker: Speaker,
         repository: Repository,
+        playlistsRepository: PlaylistsRepository,
+        favoritesRepository: FavoritesRepository,
         settingsManager: ChipboxSettingsManager,
         hatchet: Hatchet,
-    ): Director = RealDirector(generator, speaker, repository, settingsManager, hatchet)
+    ): Director = RealDirector(
+        generator,
+        speaker,
+        repository,
+        playlistsRepository,
+        favoritesRepository,
+        settingsManager,
+        hatchet,
+    )
 }

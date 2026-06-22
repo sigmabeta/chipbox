@@ -11,6 +11,10 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.common.Session
+import net.sigmabeta.chipbox.player.common.SessionType
+import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.playlists.PlaylistsRepository
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
@@ -27,6 +31,7 @@ class PlaylistDetailViewModel(
     @Assisted private val playlistId: Long,
     private val repository: Repository,
     private val playlists: PlaylistsRepository,
+    private val director: Director,
     private val stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<PlaylistDetailState>(
@@ -69,10 +74,23 @@ class PlaylistDetailViewModel(
                 updateState { it.copy(tracks = LCE.Content(tracks)) }
             }
         }
+
+        // Highlight the row that's currently playing.
+        viewModelScope.launch {
+            director.metadataState().collect { track ->
+                updateState { it.copy(playingTrackId = track?.id) }
+            }
+        }
     }
 
     override fun handleAction(action: SageAction) {
         when (action) {
+            PlaylistDetailAction.PlayAllClicked -> startSession(startingPosition = 0)
+
+            PlaylistDetailAction.ShuffleClicked -> startSession(startingPosition = 0, shuffled = true)
+
+            is PlaylistDetailAction.TrackClicked -> startSession(startingPosition = action.position)
+
             PlaylistDetailAction.EditClicked -> updateState { it.copy(isEditing = true) }
 
             // Leaving edit mode also closes any in-progress rename / delete prompt.
@@ -104,6 +122,23 @@ class PlaylistDetailViewModel(
 
             else -> Unit
         }
+    }
+
+    // A PLAYLIST session is resolved by the Director from the playlist id (contentId), like GAME; the
+    // playlist name rides along as sourceName for the now-playing header. No tracks → nothing to play.
+    private fun startSession(startingPosition: Int, shuffled: Boolean = false) {
+        if ((state.value.tracks as? LCE.Content)?.data.isNullOrEmpty()) return
+        director.request(
+            SessionRequest.Start(
+                Session(
+                    type = SessionType.PLAYLIST,
+                    contentId = playlistId,
+                    sourceName = (state.value.playlist as? LCE.Content)?.data?.name,
+                    startingPosition = startingPosition,
+                    shuffled = shuffled,
+                ),
+            ),
+        )
     }
 
     private fun renamePlaylist(name: String) {

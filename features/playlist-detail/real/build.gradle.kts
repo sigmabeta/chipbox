@@ -16,6 +16,8 @@ kotlin {
                 implementation(projects.cbox.common.models.api)
                 implementation(projects.cbox.common.repository.api)
                 implementation(projects.cbox.common.playlists.api)
+                implementation(projects.cbox.common.player.common.api)
+                implementation(projects.cbox.common.player.director.api)
             }
         }
 
@@ -23,6 +25,7 @@ kotlin {
             dependencies {
                 implementation(projects.cbox.common.repository.fake)
                 implementation(projects.cbox.common.playlists.fake)
+                implementation(projects.cbox.common.player.director.fake)
             }
         }
     }

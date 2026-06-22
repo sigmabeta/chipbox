@@ -3,6 +3,15 @@ package net.sigmabeta.chipbox.features.playlistdetail
 import net.sigmabeta.chipbox.appcomm.ChipboxAction
 
 sealed class PlaylistDetailAction : ChipboxAction() {
+    /** Play the whole playlist from the top. */
+    data object PlayAllClicked : PlaylistDetailAction()
+
+    /** Shuffle-play the whole playlist. */
+    data object ShuffleClicked : PlaylistDetailAction()
+
+    /** Play the playlist starting from the tapped track (view mode). */
+    data class TrackClicked(val position: Int) : PlaylistDetailAction()
+
     /** Enter edit mode (drag-reorder + remove + manage). */
     data object EditClicked : PlaylistDetailAction()
 

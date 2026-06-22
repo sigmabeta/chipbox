@@ -18,6 +18,8 @@
 
     <string name="playlist_detail_empty">Find a song, game, or artist, and click "Add to Playlist" to get started.</string>
     <string name="playlist_detail_not_found">Playlist not found.</string>
+    <string name="playlist_detail_cta_play_all">Play All</string>
+    <string name="playlist_detail_cta_shuffle">Shuffle</string>
     <string name="playlist_detail_cta_edit">Edit playlist</string>
     <string name="playlist_detail_cta_done">Done</string>
     <string name="playlist_detail_cta_rename">Rename playlist</string>

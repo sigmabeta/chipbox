@@ -105,15 +105,13 @@ class FavoritesViewModel @Inject constructor(
     }
 
     private fun startSession(startingPosition: Int, shuffled: Boolean = false) {
-        // Hand the director the exact track list the screen is showing as the session's explicit
-        // setlist, so [startingPosition] lines up with the tapped row and the director needs no
-        // dependency on the favorites store. No favorites loaded yet → nothing to start.
-        val trackIds = (state.value.tracks as? LCE.Content)?.data?.map { it.id }
-        if (trackIds.isNullOrEmpty()) return
+        // The director resolves a FAVORITES session straight from the favorites store, in the same
+        // newest-first order this screen renders, so [startingPosition] lines up with the tapped row.
+        // No favorites loaded yet → nothing to start.
+        if ((state.value.tracks as? LCE.Content)?.data.isNullOrEmpty()) return
         val session = Session(
             type = SessionType.FAVORITES,
             contentId = 0L,
-            explicitSetlist = trackIds,
             startingPosition = startingPosition,
             shuffled = shuffled,
         )
