@@ -98,12 +98,15 @@ kotlin {
 
                 // Voyager — single Compose Multiplatform nav stack shared with apps/jvm.
                 // Replaces androidx.navigation:navigation-compose (the AndroidX CMP fork
-                // publishes JVM stubs only). Three artifacts: navigator (per-stack push/pop),
+                // publishes JVM stubs only). Four artifacts: navigator (per-stack push/pop),
                 // tab-navigator (per-tab back stacks for Home/Library/Search —
-                // saveState + restoreState equivalent), transitions (SlideTransition).
+                // saveState + restoreState equivalent), transitions (SlideTransition),
+                // screenmodel (a back-stack-scoped holder used on JVM/JS to keep each Screen's
+                // ViewModelStore alive across navigation — see PerScreenViewModelStore.jvm.kt).
                 implementation(libs.voyager.navigator)
                 implementation(libs.voyager.tab.navigator)
                 implementation(libs.voyager.transitions)
+                implementation(libs.voyager.screenmodel)
                 implementation(libs.metrox.viewmodel)
                 implementation(libs.metrox.viewmodel.compose)
             }
