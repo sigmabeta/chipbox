@@ -39,6 +39,8 @@ data class PlaylistDetailState(
     // While confirming a delete, the "Delete playlist" CTA is replaced in place by an inline
     // confirmation row. Still one header row, so the reorder index mapping is unaffected.
     val isConfirmingDelete: Boolean = false,
+    // The currently-playing track id (from the Director), to highlight that row in view mode.
+    val playingTrackId: Long? = null,
 ) : ListState() {
     override val columnType: ColumnType = ColumnType.One
 
@@ -60,19 +62,36 @@ data class PlaylistDetailState(
         else -> viewHeader(stringProvider) + tracksSection(stringProvider, editing = false)
     }
 
-    // View mode: a single "Edit playlist" CTA, shown once the playlist itself has loaded.
-    private fun viewHeader(stringProvider: StringProvider): List<ListModel> =
-        if (playlist is LCE.Content) {
-            listOf(
+    // View mode: Play All / Shuffle (once there are tracks) + an "Edit playlist" CTA (once loaded).
+    private fun viewHeader(stringProvider: StringProvider): List<ListModel> {
+        if (playlist !is LCE.Content) return emptyList()
+        val hasTracks = (tracks as? LCE.Content)?.data?.isNotEmpty() == true
+        return buildList {
+            if (hasTracks) {
+                add(
+                    CtaListModel(
+                        icon = Icon.Play,
+                        name = stringProvider.getString(ChipboxStringId.PLAYLIST_DETAIL_CTA_PLAY_ALL),
+                        clickAction = PlaylistDetailAction.PlayAllClicked,
+                    ),
+                )
+                add(
+                    CtaListModel(
+                        icon = Icon.Shuffle,
+                        name = stringProvider.getString(ChipboxStringId.PLAYLIST_DETAIL_CTA_SHUFFLE),
+                        clickAction = PlaylistDetailAction.ShuffleClicked,
+                    ),
+                )
+            }
+            add(
                 CtaListModel(
                     icon = Icon.Edit,
                     name = stringProvider.getString(ChipboxStringId.PLAYLIST_DETAIL_CTA_EDIT),
                     clickAction = PlaylistDetailAction.EditClicked,
                 ),
             )
-        } else {
-            emptyList()
         }
+    }
 
     // Edit mode: Done / (Rename CTA or inline rename field) / Delete. MUST be exactly
     // [PLAYLIST_EDIT_HEADER_ROWS] rows (the reducer relies on that count to map reorder indices to
@@ -149,17 +168,18 @@ data class PlaylistDetailState(
             } else if (editing) {
                 data.map(::editTrackRow)
             } else {
-                data.map(::viewTrackRow)
+                data.mapIndexed(::viewTrackRow)
             }
         }
 
-    // Playback from a playlist is out of scope for now, so view-mode rows don't act on tap (Noop).
-    private fun viewTrackRow(track: Track): ListModel = NameCaptionValueListModel(
+    // View mode: tapping a row plays the playlist from that position; the playing row is highlighted.
+    private fun viewTrackRow(position: Int, track: Track): ListModel = NameCaptionValueListModel(
         dataId = track.id,
         name = track.title,
         caption = track.game?.title.orEmpty(),
         value = formatTrackLength(track.trackLengthMs),
-        clickAction = SageAction.Noop,
+        clickAction = PlaylistDetailAction.TrackClicked(position),
+        active = track.id == playingTrackId,
     )
 
     // Edit-mode row: wrapped in [DraggableListModel] for the reorder handle, with a dismissAction so

@@ -16,6 +16,8 @@ import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.player.generator.fake.FakeGenerator
 import net.sigmabeta.chipbox.player.speaker.fake.FakeSpeaker
+import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
+import net.sigmabeta.chipbox.playlists.fake.FakePlaylistsRepository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
 import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
 import net.sigmabeta.chipbox.player.generator.GeneratorEvent
@@ -984,6 +986,8 @@ class RealDirectorTest {
             generator = gen,
             speaker = speaker,
             repository = repo,
+            playlistsRepository = FakePlaylistsRepository(),
+            favoritesRepository = FakeFavoritesRepository(),
             settingsManager = FakeChipboxSettingsManager(),
             hatchet = BluntHatchet(),
             dispatcher = UnconfinedTestDispatcher(testScheduler),

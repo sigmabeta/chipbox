@@ -168,6 +168,12 @@ kotlin {
                 implementation(projects.cbox.common.player.director.api)
                 implementation(projects.cbox.common.player.director.fake)
                 implementation(projects.cbox.common.player.director.real)
+                // Web has no Room-backed playlists/favorites stores; the empty fakes satisfy the
+                // Director's repository deps (PLAYLIST/FAVORITES sessions resolve to nothing on web).
+                implementation(projects.cbox.common.playlists.api)
+                implementation(projects.cbox.common.playlists.fake)
+                implementation(projects.cbox.common.favorites.api)
+                implementation(projects.cbox.common.favorites.fake)
                 implementation(projects.cbox.common.player.emulators.api)
                 implementation(projects.cbox.common.player.buffer.api)
                 implementation(projects.cbox.common.player.buffer.real)

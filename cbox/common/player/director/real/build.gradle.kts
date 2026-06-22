@@ -18,6 +18,8 @@ kotlin {
                 implementation(projects.cbox.common.player.generator.api)
                 implementation(projects.cbox.common.player.speaker.api)
                 implementation(projects.cbox.common.repository.api)
+                implementation(projects.cbox.common.playlists.api)
+                implementation(projects.cbox.common.favorites.api)
                 implementation(projects.cbox.common.settings.api)
                 api(libs.kotlinx.coroutines.core)
                 implementation(libs.sage.common.logging)
@@ -29,6 +31,8 @@ kotlin {
                 implementation(projects.cbox.common.player.generator.fake)
                 implementation(projects.cbox.common.player.speaker.fake)
                 implementation(projects.cbox.common.repository.fake)
+                implementation(projects.cbox.common.playlists.fake)
+                implementation(projects.cbox.common.favorites.fake)
                 implementation(projects.cbox.common.settings.fake)
             }
         }

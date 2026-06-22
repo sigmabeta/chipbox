@@ -42,6 +42,10 @@ import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.real.RealDirector
+import net.sigmabeta.chipbox.favorites.FavoritesRepository
+import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
+import net.sigmabeta.chipbox.playlists.PlaylistsRepository
+import net.sigmabeta.chipbox.playlists.fake.FakePlaylistsRepository
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.resampler.CubicResampler
@@ -269,9 +273,28 @@ object WebDirectorModule {
         generator: Generator,
         speaker: Speaker,
         repository: Repository,
+        playlistsRepository: PlaylistsRepository,
+        favoritesRepository: FavoritesRepository,
         settingsManager: ChipboxSettingsManager,
         hatchet: Hatchet,
-    ): Director = RealDirector(generator, speaker, repository, settingsManager, hatchet)
+    ): Director = RealDirector(
+        generator,
+        speaker,
+        repository,
+        playlistsRepository,
+        favoritesRepository,
+        settingsManager,
+        hatchet,
+    )
+
+    // Web doesn't ship the Room-backed playlists/favorites stores; the Director only needs *some*
+    // repository of each to construct. Empty fakes mean PLAYLIST/FAVORITES sessions resolve to
+    // nothing (web has no playlists/favorites UI), without breaking the rest of playback.
+    @Provides @SingleIn(AppScope::class)
+    fun providePlaylistsRepository(): PlaylistsRepository = FakePlaylistsRepository()
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideFavoritesRepository(): FavoritesRepository = FakeFavoritesRepository()
 }
 
 @BindingContainer

@@ -10,6 +10,9 @@ import kotlinx.coroutines.test.setMain
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Playlist
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.player.common.SessionType
+import net.sigmabeta.chipbox.player.director.SessionRequest
+import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.playlists.fake.FakePlaylistsRepository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
 import net.sigmabeta.sage.appcomm.LCE
@@ -46,7 +49,7 @@ class PlaylistDetailViewModelTest {
                 2L to trackOf(2L, "Second"),
             ),
         )
-        val vm = PlaylistDetailViewModel(id, repository, playlists, stubStringProvider(), BluntHatchet())
+        val vm = PlaylistDetailViewModel(id, repository, playlists, FakeDirector(), stubStringProvider(), BluntHatchet())
 
         val state = vm.state.first { (it.tracks as? LCE.Content)?.data?.isNotEmpty() == true }
         // Order follows the playlist's positions (2 then 1), not the id order.
@@ -60,12 +63,47 @@ class PlaylistDetailViewModelTest {
             playlistId = 99L,
             repository = FakeRepository(emptyMap()),
             playlists = FakePlaylistsRepository(),
+            director = FakeDirector(),
             stringProvider = stubStringProvider(),
             hatchet = BluntHatchet(),
         )
 
         val state = vm.state.first { it.notFound }
         assertTrue(state.notFound)
+    }
+
+    @Test
+    fun `PlayAllClicked starts a PLAYLIST session from the top`() = runTest {
+        val (vm, _, id, director) = seededVm(listOf(1L, 2L, 3L))
+        vm.state.first { (it.tracks as? LCE.Content)?.data?.size == 3 }
+
+        vm.sendAction(PlaylistDetailAction.PlayAllClicked)
+
+        val start = director.requests.filterIsInstance<SessionRequest.Start>().single()
+        assertEquals(SessionType.PLAYLIST, start.session.type)
+        assertEquals(id, start.session.contentId)
+        assertEquals(0, start.session.startingPosition)
+        assertFalse(start.session.shuffled)
+    }
+
+    @Test
+    fun `ShuffleClicked starts a shuffled PLAYLIST session`() = runTest {
+        val (vm, _, _, director) = seededVm(listOf(1L, 2L))
+        vm.state.first { (it.tracks as? LCE.Content)?.data?.size == 2 }
+
+        vm.sendAction(PlaylistDetailAction.ShuffleClicked)
+
+        assertTrue(director.requests.filterIsInstance<SessionRequest.Start>().single().session.shuffled)
+    }
+
+    @Test
+    fun `TrackClicked starts the playlist from that position`() = runTest {
+        val (vm, _, _, director) = seededVm(listOf(1L, 2L, 3L))
+        vm.state.first { (it.tracks as? LCE.Content)?.data?.size == 3 }
+
+        vm.sendAction(PlaylistDetailAction.TrackClicked(position = 2))
+
+        assertEquals(2, director.requests.filterIsInstance<SessionRequest.Start>().single().session.startingPosition)
     }
 
     @Test
@@ -190,14 +228,16 @@ class PlaylistDetailViewModelTest {
         val vm: PlaylistDetailViewModel,
         val playlists: FakePlaylistsRepository,
         val id: Long,
+        val director: FakeDirector,
     )
 
     private fun seededVm(trackIds: List<Long>): Seeded {
         val playlists = FakePlaylistsRepository()
         val id = playlists.seed("Mix", trackIds)
         val repository = FakeRepository(trackIds.associateWith { trackOf(it, "Track $it") })
-        val vm = PlaylistDetailViewModel(id, repository, playlists, stubStringProvider(), BluntHatchet())
-        return Seeded(vm, playlists, id)
+        val director = FakeDirector()
+        val vm = PlaylistDetailViewModel(id, repository, playlists, director, stubStringProvider(), BluntHatchet())
+        return Seeded(vm, playlists, id, director)
     }
 
     private fun vmWithTracks(trackIds: List<Long>): PlaylistDetailViewModel = seededVm(trackIds).vm

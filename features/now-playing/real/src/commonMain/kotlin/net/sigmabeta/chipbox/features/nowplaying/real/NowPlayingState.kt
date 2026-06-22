@@ -194,8 +194,9 @@ data class NowPlayingState(
                     ?: ""
             }
 
-            // Playlists aren't wired up yet — no source name to surface.
-            SessionType.PLAYLIST -> ""
+            // The playlist's name, supplied as the session's source name (the type label says "from
+            // playlist", this fills in which one).
+            SessionType.PLAYLIST -> session.sourceName.orEmpty()
 
             SessionType.ALL_TRACKS -> ""
 
