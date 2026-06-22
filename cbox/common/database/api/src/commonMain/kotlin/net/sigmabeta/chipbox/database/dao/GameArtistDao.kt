@@ -17,6 +17,30 @@ interface GameArtistDao {
     @Query("DELETE FROM game_artist_join WHERE gameId = :gameId")
     suspend fun deleteForGame(gameId: Long)
 
+    // Artist ids for a game (by name) and game ids for an artist (by title), in display order.
+    // Hydration resolves each id through the artist-by-id / game-by-id caches, so a shared
+    // artist or game is read from storage once and reused. Each joins the target table only to
+    // order the ids.
+    @Query(
+        """
+            SELECT game_artist_join.artistId FROM game_artist_join
+            INNER JOIN artist ON artist.id=game_artist_join.artistId
+            WHERE game_artist_join.gameId=:gameId
+            ORDER BY artist.name COLLATE NOCASE
+            """
+    )
+    suspend fun getArtistIdsForGame(gameId: Long): List<Long>
+
+    @Query(
+        """
+            SELECT game_artist_join.gameId FROM game_artist_join
+            INNER JOIN game ON game.id=game_artist_join.gameId
+            WHERE game_artist_join.artistId=:artistId
+            ORDER BY game.title COLLATE NOCASE
+            """
+    )
+    suspend fun getGameIdsForArtist(artistId: Long): List<Long>
+
     @Query(
         """ 
             SELECT * FROM artist INNER JOIN game_artist_join 
