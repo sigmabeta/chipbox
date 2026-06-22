@@ -99,16 +99,16 @@ class PlaylistsViewModelTest {
     }
 
     @Test
-    fun `picker mode - NewPlaylistClicked creates a playlist seeded with the pending tracks`() = runTest {
+    fun `picker mode - NewPlaylistClicked creates a playlist with the tracks and backs out`() = runTest {
         val repo = FakePlaylistsRepository()
         val vm = pickerVm(repo, pendingTrackIds = listOf(10L, 11L))
 
         val event = collectAndDispatch(vm, PlaylistsAction.NewPlaylistClicked)
 
-        assertTrue(event is ChipboxEvent.NavigateTo)
-        val destination = event.destination
-        assertTrue(destination is PlaylistDetail)
-        assertEquals(listOf(10L, 11L), repo.trackIds(destination.id).first())
+        // Like adding to an existing playlist: pop back rather than open the new one.
+        assertTrue(event is ChipboxEvent.NavigateBack)
+        val created = repo.playlists().first().single()
+        assertEquals(listOf(10L, 11L), repo.trackIds(created.id).first())
     }
 
     @Test
