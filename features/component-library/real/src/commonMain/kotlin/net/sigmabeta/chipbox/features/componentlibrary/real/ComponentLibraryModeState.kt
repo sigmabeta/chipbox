@@ -5,8 +5,10 @@ import net.sigmabeta.chipbox.features.componentlibrary.LibraryMode
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.CheckableListModel
+import net.sigmabeta.sage.components.ConfirmationListModel
 import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.components.DropdownSettingListModel
+import net.sigmabeta.sage.components.EditTextListModel
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.components.HeroImageListModel
@@ -139,6 +141,8 @@ data class ComponentLibraryModeState(
             )
         )
         add(CtaListModel(icon = Icon.Search, name = content.title(10), clickAction = SageAction.Noop, dataId = id(13)))
+        add(EditTextListModel(id = id(14), header = content.title(11), hint = content.title(12), allowEmpty = false))
+        add(ConfirmationListModel(id = id(15), header = content.title(0), bodyText = content.caption(0), confirmLabel = content.title(1)))
 
         add(SectionHeaderListModel("WideItem / Notif"))
         add(

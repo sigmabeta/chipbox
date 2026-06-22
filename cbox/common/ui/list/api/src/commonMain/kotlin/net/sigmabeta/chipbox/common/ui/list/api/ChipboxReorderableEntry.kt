@@ -11,6 +11,7 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
 import net.sigmabeta.chipbox.common.ui.components.api.Content
 import net.sigmabeta.chipbox.common.ui.components.api.DraggableListItem
 import net.sigmabeta.chipbox.common.ui.components.api.DraggableListModel
+import net.sigmabeta.chipbox.common.ui.components.api.SwipeToRemoveBox
 import net.sigmabeta.sage.ui.list.ReorderableScreen
 
 /**
@@ -51,10 +52,19 @@ fun ChipboxReorderableEntry(
         modifier = modifier,
         itemContent = { model, sink, debug, _, dragHandle, mod, pad ->
             when (model) {
-                is DraggableListModel ->
-                    DraggableListItem(dragHandle = dragHandle, modifier = mod) {
-                        model.content.Content(sink, debug, Modifier, pad)
+                is DraggableListModel -> {
+                    val row = @Composable {
+                        DraggableListItem(dragHandle = dragHandle, modifier = mod) {
+                            model.content.Content(sink, debug, Modifier, pad)
+                        }
                     }
+                    val dismissAction = model.dismissAction
+                    if (dismissAction != null) {
+                        SwipeToRemoveBox(onRemove = { sink.sendAction(dismissAction) }) { row() }
+                    } else {
+                        row()
+                    }
+                }
 
                 else -> model.Content(sink, debug, mod, pad)
             }
