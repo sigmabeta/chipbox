@@ -61,6 +61,13 @@ class FakePlaylistsRepository : PlaylistsRepository {
             }
         }
 
+    override suspend fun removeTrack(playlistId: Long, trackId: Long) =
+        entries.update { list ->
+            list.map { entry ->
+                if (entry.id == playlistId) entry.copy(trackIds = entry.trackIds.filterNot { it == trackId }) else entry
+            }
+        }
+
     override suspend fun setTrackOrder(playlistId: Long, orderedTrackIds: List<Long>) =
         entries.update { list ->
             list.map { if (it.id == playlistId) it.copy(trackIds = orderedTrackIds) else it }

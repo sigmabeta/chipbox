@@ -34,7 +34,10 @@ interface PlaylistsRepository {
     /** Append [trackIds] to the end of the playlist, skipping any already present. */
     suspend fun addTracks(playlistId: Long, trackIds: List<Long>)
 
-    /** Replace the playlist's membership with exactly [orderedTrackIds], in that order (reorder + remove). */
+    /** Remove a single track, leaving the rest in place — emits the remaining list in one update. */
+    suspend fun removeTrack(playlistId: Long, trackId: Long)
+
+    /** Replace the playlist's membership with exactly [orderedTrackIds], in that order (reorder). */
     suspend fun setTrackOrder(playlistId: Long, orderedTrackIds: List<Long>)
 
     /** Wipe every playlist. */

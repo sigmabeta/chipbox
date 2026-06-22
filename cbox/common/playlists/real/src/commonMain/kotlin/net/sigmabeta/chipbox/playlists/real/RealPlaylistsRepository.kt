@@ -63,10 +63,17 @@ class RealPlaylistsRepository(
         hatchet.d("Added ${trackIds.size} track(s) to playlist $playlistId")
     }
 
+    override suspend fun removeTrack(playlistId: Long, trackId: Long) {
+        // Single-row delete, not a clear+reinsert — the trackIds Flow emits the remaining list once
+        // (a clear+reinsert flashes an empty list, which makes the swiped row cascade-remove the rest).
+        playlistTrackDao.remove(playlistId, trackId)
+        hatchet.d("Removed track $trackId from playlist $playlistId")
+    }
+
     override suspend fun setTrackOrder(playlistId: Long, orderedTrackIds: List<Long>) {
-        // Rewrite the whole membership: clear, then reinsert at contiguous positions. Covers both
-        // reordering and removal. Sequential writes (no explicit transaction) match the rest of the
-        // codebase — Room serializes writes, and the trackIds Flow re-emits only once both complete.
+        // Rewrite the whole membership: clear, then reinsert at contiguous positions — for reordering.
+        // Sequential writes (no explicit transaction) match the rest of the codebase; Room serializes
+        // writes, and the trackIds Flow re-emits once both complete.
         playlistTrackDao.clear(playlistId)
         playlistTrackDao.insertAll(
             orderedTrackIds.mapIndexed { index, trackId ->
