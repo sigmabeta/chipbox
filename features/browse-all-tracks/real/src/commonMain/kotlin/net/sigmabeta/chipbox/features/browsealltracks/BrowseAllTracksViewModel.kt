@@ -59,13 +59,18 @@ class BrowseAllTracksViewModel @Inject constructor(
     override fun handleAction(action: SageAction) {
         when (action) {
             is BrowseAllTracksAction.TrackClicked -> startSession(startingPosition = action.position)
+
             BrowseAllTracksAction.ShuffleAllClicked -> startSession(startingPosition = 0, shuffled = true)
+
             SageAction.LoadMoreRequested -> loadNextPage()
+
             SageAction.LoadPreviousRequested -> loadPreviousPage()
+
             // Entry-at-offset seam: open the window around a target page. No route sends this yet;
             // it's the hook for a future "resume where I left off" / jump-to entry, and the tests
             // use it to exercise prepend.
             is SageAction.InitWithPageNumber -> loadInitial((action.pageNumber * pageSize).toInt())
+
             else -> Unit
         }
     }
@@ -129,13 +134,16 @@ class BrowseAllTracksViewModel @Inject constructor(
             loadingMore = false,
             hasMoreAfter = data.data.size >= pageSize,
         )
+
         Data.Empty -> state.copy(
             tracks = LCE.Content(emptyList()),
             loadingPrevious = false,
             loadingMore = false,
             hasMoreAfter = false,
         )
+
         is Data.Failed -> state.copy(tracks = LCE.Error(LOAD_OP, IllegalStateException(data.message)))
+
         Data.Loading -> state
     }
 
@@ -148,9 +156,12 @@ class BrowseAllTracksViewModel @Inject constructor(
                 hasMoreAfter = data.data.size >= pageSize,
             )
         }
+
         Data.Empty -> state.copy(loadingMore = false, hasMoreAfter = false)
+
         // Keep what's already shown; just drop the footer spinner.
         is Data.Failed -> state.copy(loadingMore = false)
+
         Data.Loading -> state
     }
 
@@ -164,8 +175,11 @@ class BrowseAllTracksViewModel @Inject constructor(
                 hasMoreBefore = newStart > 0,
             )
         }
+
         Data.Empty -> state.copy(loadingPrevious = false, hasMoreBefore = false)
+
         is Data.Failed -> state.copy(loadingPrevious = false)
+
         Data.Loading -> state
     }
 
