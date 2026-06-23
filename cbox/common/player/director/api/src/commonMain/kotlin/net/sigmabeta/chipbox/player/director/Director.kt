@@ -43,13 +43,16 @@ interface Director {
     fun sessionState(): SharedFlow<Session?>
 
     /**
-     * Hot stream of the current setlist as ordered track ids — the live play queue the director
-     * resolved for the session, whatever the [net.sigmabeta.chipbox.player.common.SessionType].
-     * Emits an empty list before any session and on teardown, and re-emits whenever the order
-     * changes (shuffle, reorder). The setlist-management UI observes this and resolves the ids to
-     * [Track] metadata itself.
+     * Hot stream of the current setlist as ordered [SetlistEntry] slots — the live play queue the
+     * director resolved for the session, whatever the
+     * [net.sigmabeta.chipbox.player.common.SessionType]. Each entry carries a stable per-slot
+     * [SetlistEntry.slotId] (so duplicate track ids stay distinguishable) and an
+     * [SetlistEntry.active] flag for the playing slot. Emits an empty list before any session and on
+     * teardown, and re-emits whenever the order, membership, or active slot changes (shuffle,
+     * reorder, removal, track advance). The setlist-management UI observes this and resolves each
+     * [SetlistEntry.trackId] to [Track] metadata itself.
      */
-    fun setlistState(): SharedFlow<List<Long>>
+    fun setlistState(): SharedFlow<List<SetlistEntry>>
 
     /**
      * Hot stream of playback errors — both recoverable (the failed track was skipped and

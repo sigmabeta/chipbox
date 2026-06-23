@@ -42,8 +42,9 @@ data class NowPlayingModel(
     val setlistVisible: Boolean = false,
     /**
      * The current playback setlist as reorderable rows (in queue order), shown when
-     * [setlistVisible]. Each row's `dataId` is the track id and `active` marks the playing track;
-     * the row click jumps playback, the handle reorders.
+     * [setlistVisible]. Each row's `dataId` is its stable queue slot id (not the track id, so a
+     * duplicated track stays distinct) and `active` marks the playing slot; the row click jumps
+     * playback, the handle reorders.
      */
     val setlist: List<NameCaptionValueListModel> = emptyList(),
     /** The playing track's game id, used by the LINKS game row to navigate to game detail. */

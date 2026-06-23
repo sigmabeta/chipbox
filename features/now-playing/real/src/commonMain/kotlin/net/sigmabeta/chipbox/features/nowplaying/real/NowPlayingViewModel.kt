@@ -27,6 +27,7 @@ import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.SessionRequest
+import net.sigmabeta.chipbox.player.director.SetlistEntry
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.common.ui.freeform.api.ChipboxFreeformViewModel
 import net.sigmabeta.sage.appcomm.SageAction
@@ -81,9 +82,10 @@ class NowPlayingViewModel @Inject constructor(
      *  change, so a drag never refetches. */
     private val trackCache = mutableMapOf<Long, Track>()
 
-    /** Latest queue order (ids) — maps a tapped track id to the position [SessionRequest.PlayPosition]
-     *  expects, robust to any row that failed to resolve. */
-    private var setlistIds: List<Long> = emptyList()
+    /** Latest queue, as the director's slot entries — resolves a tapped/removed slot id to the
+     *  position [SessionRequest.PlayPosition] / [SessionRequest.RemoveTrack] expect, and is robust
+     *  to any row that failed to resolve (it mirrors the full queue, not just the displayed rows). */
+    private var setlistEntries: List<SetlistEntry> = emptyList()
 
     init {
         viewModelScope.launch {
@@ -123,12 +125,14 @@ class NowPlayingViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            director.setlistState().collect { ids ->
-                setlistIds = ids
-                val resolved = ids.mapNotNull { id ->
-                    trackCache[id] ?: repository.getTrack(id, withGame = true)?.also { trackCache[id] = it }
+            director.setlistState().collect { entries ->
+                setlistEntries = entries
+                val resolved = entries.mapNotNull { entry ->
+                    val track = trackCache[entry.trackId]
+                        ?: repository.getTrack(entry.trackId, withGame = true)?.also { trackCache[entry.trackId] = it }
+                    track?.let { SetlistRowData(slotId = entry.slotId, active = entry.active, track = it) }
                 }
-                updateState { it.copy(setlistTracks = resolved) }
+                updateState { it.copy(setlistSlots = resolved) }
             }
         }
     }
@@ -169,8 +173,9 @@ class NowPlayingViewModel @Inject constructor(
             // Hand the whole current setlist (queue order) to the playlist picker, suggesting a name
             // derived from what's playing (e.g. "From game …", "Search results for …").
             NowPlayingAction.AddSetlistToPlaylistClicked ->
-                if (setlistIds.isNotEmpty()) {
-                    emit(ChipboxEvent.NavigateTo(Playlists(setlistIds, suggestedSetlistName())))
+                if (setlistEntries.isNotEmpty()) {
+                    val trackIds = setlistEntries.map { it.trackId }
+                    emit(ChipboxEvent.NavigateTo(Playlists(trackIds, suggestedSetlistName())))
                 }
 
             NowPlayingAction.BackClicked -> emit(ChipboxEvent.NavigateBack)
@@ -192,14 +197,14 @@ class NowPlayingViewModel @Inject constructor(
             NowPlayingAction.SetlistClicked -> toggleSetlist()
 
             is NowPlayingAction.SetlistTrackClicked -> {
-                val position = setlistIds.indexOf(action.trackId)
+                val position = setlistEntries.indexOfFirst { it.slotId == action.slotId }
                 if (position >= 0) director.request(SessionRequest.PlayPosition(position))
             }
 
             is NowPlayingAction.SetlistTrackRemoved -> {
-                val position = setlistIds.indexOf(action.trackId)
-                // The active track isn't removable (the UI hides the affordance); guard anyway.
-                if (position >= 0 && action.trackId != state.value.track?.id) {
+                val position = setlistEntries.indexOfFirst { it.slotId == action.slotId }
+                // The active slot isn't removable (the UI hides the affordance); guard anyway.
+                if (position >= 0 && !setlistEntries[position].active) {
                     director.request(SessionRequest.RemoveTrack(position))
                 }
             }
