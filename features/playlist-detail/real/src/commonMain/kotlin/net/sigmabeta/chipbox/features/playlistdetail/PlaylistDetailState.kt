@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.features.playlistdetail
 
+import net.sigmabeta.chipbox.common.ui.components.api.DismissibleListModel
 import net.sigmabeta.chipbox.common.ui.components.api.DraggableListModel
 import net.sigmabeta.chipbox.models.Playlist
 import net.sigmabeta.chipbox.models.Track
@@ -182,15 +183,18 @@ data class PlaylistDetailState(
         active = track.id == playingTrackId,
     )
 
-    // Edit-mode row: wrapped in [DraggableListModel] for the reorder handle, with a dismissAction so
-    // a right-to-left swipe removes the track. Same content as the view row (no leading icon, no tap).
-    private fun editTrackRow(track: Track): ListModel = DraggableListModel(
-        content = NameCaptionValueListModel(
-            dataId = track.id,
-            name = track.title,
-            caption = track.game?.title.orEmpty(),
-            value = formatTrackLength(track.trackLengthMs),
-            clickAction = SageAction.Noop,
+    // Edit-mode row: a [DraggableListModel] (reorder handle) nested in a [DismissibleListModel]
+    // (right-to-left swipe removes the track) — swipe outermost, handle within. Same content as the
+    // view row (no leading icon, no tap).
+    private fun editTrackRow(track: Track): ListModel = DismissibleListModel(
+        content = DraggableListModel(
+            content = NameCaptionValueListModel(
+                dataId = track.id,
+                name = track.title,
+                caption = track.game?.title.orEmpty(),
+                value = formatTrackLength(track.trackLengthMs),
+                clickAction = SageAction.Noop,
+            ),
         ),
         dismissAction = PlaylistDetailAction.TrackRemoved(track.id),
     )

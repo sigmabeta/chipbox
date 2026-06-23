@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
-import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.ListModel
 
 /**
@@ -11,9 +10,8 @@ import net.sigmabeta.sage.components.ListModel
  * domain model — so the same content model can be dragged on one screen and static on another, and
  * even models owned by `sage` can be made draggable from here without modifying them.
  *
- * When [dismissAction] is non-null the row is also swipe-to-remove: a right-to-left swipe dispatches
- * [dismissAction] (rendered via [SwipeToRemoveBox]). Drag (vertical, via the handle) and swipe
- * (horizontal) coexist.
+ * Swipe-to-remove is a separate, composable concern: wrap this in a [DismissibleListModel] (swipe
+ * outermost, drag handle within) for a row that both drags and dismisses.
  *
  * [dataId] and [columns] delegate to [content] so the reducer's re-emitted order and the screen's
  * live drag mirror agree on identity. [layoutId] *composes* the draggable concept with the
@@ -22,7 +20,6 @@ import net.sigmabeta.sage.components.ListModel
  */
 data class DraggableListModel(
     val content: ListModel,
-    val dismissAction: SageAction? = null,
 ) : ListModel() {
     override val dataId get() = content.dataId
     override val columns get() = content.columns
