@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,14 +61,14 @@ fun NameCaptionListItem(
                 .fillMaxWidth()
                 .wrapContentHeight()
         ) {
-            Text(
+            CrossfadeText(
                 text = model.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = textColor,
                 fontWeight = fontWeight,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
+                textModifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(top = 24.dp)
             )
@@ -78,13 +77,13 @@ fun NameCaptionListItem(
                 modifier = Modifier.height(4.dp)
             )
 
-            Text(
+            CrossfadeText(
                 text = model.caption,
                 style = MaterialTheme.typography.bodySmall,
                 color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
+                textModifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(bottom = 12.dp)
             )

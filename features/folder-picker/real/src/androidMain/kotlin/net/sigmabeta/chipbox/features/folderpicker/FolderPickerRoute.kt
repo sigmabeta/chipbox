@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListEntry
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.text
@@ -104,19 +104,19 @@ private fun StoragePermissionPrompt(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
+        CrossfadeText(
             text = ChipboxStringId.FOLDER_PICKER_PERMISSION_TITLE.text(),
             style = MaterialTheme.typography.headlineSmall,
             textAlign = TextAlign.Center,
         )
-        Text(
+        CrossfadeText(
             text = ChipboxStringId.FOLDER_PICKER_PERMISSION_RATIONALE.text(),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 12.dp, bottom = 24.dp),
+            textModifier = Modifier.padding(top = 12.dp, bottom = 24.dp),
         )
         Button(onClick = onGrantClicked) {
-            Text(text = ChipboxStringId.FOLDER_PICKER_PERMISSION_CTA.text())
+            CrossfadeText(text = ChipboxStringId.FOLDER_PICKER_PERMISSION_CTA.text())
         }
     }
 }

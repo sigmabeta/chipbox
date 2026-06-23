@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +34,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
 import net.sigmabeta.chipbox.common.ui.components.api.previews.CoverArtConstants
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.sage.appcomm.ActionSink
@@ -146,36 +146,39 @@ private fun TrackInfo(model: NowPlayingModel, actionSink: ActionSink) {
             .clickable { actionSink.sendAction(NowPlayingAction.TrackInfoClicked) }
             .padding(TrackInfoInteriorPadding),
     ) {
-        Text(
+        CrossfadeText(
             text = model.title,
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            contentAlignment = Alignment.Center,
         )
 
         if (model.artistsCaption.isNotEmpty()) {
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
+            CrossfadeText(
                 text = model.artistsCaption,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                contentAlignment = Alignment.Center,
             )
         }
 
         if (model.gameTitle.isNotEmpty()) {
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
+            CrossfadeText(
                 text = model.gameTitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                contentAlignment = Alignment.Center,
             )
         }
     }
@@ -226,7 +229,7 @@ internal fun MiniNowPlayingInfo(model: NowPlayingModel, actionSink: ActionSink) 
                     .fillMaxWidth()
                     .padding(16.dp),
             ) {
-                Text(
+                CrossfadeText(
                     text = model.title,
                     style = MaterialTheme.typography.titleMedium,
                     color = foregroundColor,
@@ -234,7 +237,7 @@ internal fun MiniNowPlayingInfo(model: NowPlayingModel, actionSink: ActionSink) 
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (model.artistsCaption.isNotEmpty()) {
-                    Text(
+                    CrossfadeText(
                         text = model.artistsCaption,
                         style = MaterialTheme.typography.bodyMedium,
                         color = foregroundColor,
