@@ -14,6 +14,15 @@ import net.sigmabeta.sage.freeform.FreeformState
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.StringProvider
 
+/** A resolved setlist slot: the director's stable [slotId] and [active] flag paired with the
+ *  hydrated [track]. The slot id — not the track id — is the row's identity, so a duplicated track
+ *  yields two distinct rows. */
+data class SetlistRowData(
+    val slotId: Long,
+    val active: Boolean,
+    val track: Track,
+)
+
 data class NowPlayingState(
     val track: Track? = null,
     val playback: ChipboxPlaybackState? = null,
@@ -22,8 +31,9 @@ data class NowPlayingState(
     val contextMenuMode: ContextMenuMode = ContextMenuMode.NONE,
     /** When true, the reorderable setlist replaces the InfoContainer block. */
     val setlistVisible: Boolean = false,
-    /** The current playback setlist resolved to track metadata, in queue order. */
-    val setlistTracks: List<Track> = emptyList(),
+    /** The current playback setlist resolved to track metadata, in queue order, each tagged with
+     *  its stable slot id and active flag. */
+    val setlistSlots: List<SetlistRowData> = emptyList(),
     /** Whether the currently-playing track is one of the user's favorites. */
     val trackFavorite: Boolean = false,
 ) : FreeformState<NowPlayingModel>() {
@@ -68,7 +78,7 @@ data class NowPlayingState(
         setlistAddToPlaylistLabel = stringProvider.getString(ChipboxStringId.NOW_PLAYING_SETLIST_ADD_TO_PLAYLIST),
         // Offer "add setlist to playlist" for any finite session — but not All Tracks (the whole
         // library isn't a meaningful list to capture) and not an empty queue.
-        canAddSetlistToPlaylist = session?.type != SessionType.ALL_TRACKS && setlistTracks.isNotEmpty(),
+        canAddSetlistToPlaylist = session?.type != SessionType.ALL_TRACKS && setlistSlots.isNotEmpty(),
         // Only a fatal ERROR carries a message; its presence drives the transport warning icon.
         errorMessage = playback
             ?.takeIf { it.state == PlayerState.ERROR }
@@ -82,14 +92,16 @@ data class NowPlayingState(
      * [net.sigmabeta.chipbox.common.ui.components.api.NameCaptionValueListItem] — the same row the
      * standalone setlist screen uses.
      */
-    private fun setlistRows(): List<NameCaptionValueListModel> = setlistTracks.map { track ->
+    private fun setlistRows(): List<NameCaptionValueListModel> = setlistSlots.map { slot ->
+        val track = slot.track
         NameCaptionValueListModel(
-            dataId = track.id,
+            dataId = slot.slotId,
             name = track.title,
             caption = track.game?.title.orEmpty(),
             value = formatTrackLength(track.trackLengthMs),
-            clickAction = NowPlayingAction.SetlistTrackClicked(track.id),
-            active = track.id == this.track?.id,
+            clickAction = NowPlayingAction.SetlistTrackClicked(slot.slotId),
+            // The director marks the playing slot — authoritative even when a track id repeats.
+            active = slot.active,
         )
     }
 

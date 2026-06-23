@@ -36,11 +36,12 @@ sealed class NowPlayingAction : ChipboxAction() {
     /** Transport "setlist" button — toggles the inline SETLIST mode (the reorderable queue). */
     data object SetlistClicked : NowPlayingAction()
 
-    /** A row in the inline setlist was tapped — jump playback to that track. */
-    data class SetlistTrackClicked(val trackId: Long) : NowPlayingAction()
+    /** A row in the inline setlist was tapped — jump playback to that queue slot. Carries the
+     *  slot id (not a track id) so a duplicated track resolves to the exact slot tapped. */
+    data class SetlistTrackClicked(val slotId: Long) : NowPlayingAction()
 
-    /** A setlist row was swiped away — remove that track from the queue. */
-    data class SetlistTrackRemoved(val trackId: Long) : NowPlayingAction()
+    /** A setlist row was swiped away — remove that queue slot. Carries the slot id, not a track id. */
+    data class SetlistTrackRemoved(val slotId: Long) : NowPlayingAction()
 
     /** The context menu's back row — return to the NONE state (track info). */
     data object ContextMenuBackClicked : NowPlayingAction()
