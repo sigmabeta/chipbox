@@ -14,6 +14,17 @@ plugins {
 kotlin {
     android {
         namespace = "net.sigmabeta.chipbox.common.strings.real"
+
+        // AGP 9's `com.android.kotlin.multiplatform.library` ships with Android resource/asset
+        // processing OFF by default. While off, AGP never calls
+        // `variant.sources.assets.addGeneratedSourceDirectory(...)`, so the Compose Resources
+        // plugin's `copyAndroidMainComposeResourcesToAndroidAssets` task is registered but its
+        // `outputDirectory` is never configured and it stays out of the `assemble` graph — the
+        // generated `*.cvr` value resources never reach the AAR/APK assets and the app crashes at
+        // runtime with MissingResourceException (JetBrains CMP-9547). Enable assets so they ship.
+        androidResources {
+            enable = true
+        }
     }
 
     sourceSets {

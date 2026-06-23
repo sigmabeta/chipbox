@@ -28,11 +28,14 @@ import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.SessionRequest
+import net.sigmabeta.chipbox.player.director.SetlistEntry
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.GeneratorEvent
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.player.speaker.SpeakerEvent
 import net.sigmabeta.chipbox.repository.Data
+import net.sigmabeta.chipbox.favorites.FavoritesRepository
+import net.sigmabeta.chipbox.playlists.PlaylistsRepository
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.sage.logging.Hatchet
@@ -67,8 +70,9 @@ private const val MILLIS_PER_SECOND = 1_000L
  * update the model and call the generator/speaker directly, since they're driven by the UI rather
  * than the event stream.
  *
- * Setlist resolution is driven by [Session.type]: `GAME`, `ARTIST`, and `ALL_TRACKS` sessions pull
- * tracks for the given scope from the repository; `PLAYLIST` is not yet implemented.
+ * Setlist resolution is driven by [Session.type]: each scope (`GAME`, `ARTIST`, `PLATFORM`,
+ * `ALL_TRACKS`, `FAVORITES`, `PLAYLIST`) pulls its track ids from the matching repository;
+ * `SETLIST` replays an explicit list and `SINGLE_TRACK` plays its one `contentId`.
  *
  * ### Threading
  * The default [dispatcher] is single-threaded ([CoroutineDispatcher.limitedParallelism]`(1)` over
@@ -81,6 +85,8 @@ class RealDirector(
     private val generator: Generator,
     private val speaker: Speaker,
     private val repository: Repository,
+    private val playlistsRepository: PlaylistsRepository,
+    private val favoritesRepository: FavoritesRepository,
     private val settingsManager: ChipboxSettingsManager,
     private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.Default.limitedParallelism(1)
@@ -98,6 +104,15 @@ class RealDirector(
         val playback: ChipboxPlaybackState,
         val session: Session?,
         val setlist: List<Long>?,
+        /** Per-slot identities, parallel to [setlist] (same size/order). Minted when a setlist is
+         *  built and carried through reorder/removal so a slot keeps its identity independent of its
+         *  position — the only way to tell duplicate track ids apart. Null exactly when [setlist] is. */
+        val setlistSlotIds: List<Long>? = null,
+        /** Slot id of the track the *speaker* is currently playing — the audible position, which
+         *  trails [Session.currentPosition] (the generator/producer cursor that renders ahead). Set
+         *  when playback is directed at a track (start/skip), advanced on the speaker's track-change.
+         *  Drives the UI's "now playing" highlight so it matches what you hear, not what's buffering. */
+        val audibleSlotId: Long? = null,
         /** Generator errors since the last successful audio emission; drives the give-up cutoff. */
         val consecutiveFailures: Int,
         /** Highest render watermark (ms) seen for the current track, so a render that's still
@@ -147,6 +162,41 @@ class RealDirector(
      *  while audio is meant to be flowing. Null while disarmed (paused, stopped, ending, idle). */
     private var stallWatchdogJob: Job? = null
 
+    // Monotonic source of [Model.setlistSlotIds] values. Only ever incremented, so a slot id is
+    // unique for the director's lifetime and never reused — duplicate track ids get distinct slots.
+    private var nextSlotId = 0L
+
+    private fun mintSlotIds(count: Int): List<Long> = List(count) { nextSlotId++ }
+
+    // Zips the parallel setlist/slot-id lists into the public [SetlistEntry] view, marking the
+    // audible slot active. Empty whenever there is no live setlist.
+    private fun Model.setlistEntries(): List<SetlistEntry> {
+        val ids = setlist ?: return emptyList()
+        val slots = setlistSlotIds ?: return emptyList()
+        return ids.mapIndexed { index, trackId ->
+            SetlistEntry(
+                slotId = slots[index],
+                trackId = trackId,
+                active = slots[index] == audibleSlotId,
+            )
+        }
+    }
+
+    // The audible slot after the speaker crosses into [reportedTrackId]. If the slot we already
+    // consider audible plays that track (e.g. start/skip just set it, and the speaker is confirming),
+    // keep it; otherwise advance to the next slot in play order whose track matches — searching
+    // forward with wrap so repeat-all wraps (and duplicate track ids) resolve to the right copy.
+    private fun Model.nextAudibleSlot(reportedTrackId: Long): Long? {
+        val ids = setlist ?: return audibleSlotId
+        val slots = setlistSlotIds ?: return audibleSlotId
+        val currentIndex = audibleSlotId?.let { slots.indexOf(it) } ?: -1
+        if (currentIndex >= 0 && ids[currentIndex] == reportedTrackId) return audibleSlotId
+        val nextIndex = (1..ids.size)
+            .map { (currentIndex + it).mod(ids.size) }
+            .firstOrNull { ids[it] == reportedTrackId }
+        return nextIndex?.let { slots[it] } ?: audibleSlotId
+    }
+
     // replay = 1 so late subscribers (e.g. a screen opened mid-playback) immediately
     // receive the current track / state instead of waiting for the next change.
     private val metadataStateMutable = MutableSharedFlow<Track?>(replay = 1)
@@ -157,7 +207,7 @@ class RealDirector(
     private val sessionStateMutable = MutableSharedFlow<Session?>(replay = 1)
 
     // replay = 1 so the setlist screen opened mid-playback receives the current queue immediately.
-    private val setlistStateMutable = MutableSharedFlow<List<Long>>(replay = 1)
+    private val setlistStateMutable = MutableSharedFlow<List<SetlistEntry>>(replay = 1)
 
     // No replay: the error log is for errors that happen while a screen is watching, not a
     // backlog replayed to late subscribers. DROP_OLDEST keeps a burst of rapid failures flowing.
@@ -256,7 +306,12 @@ class RealDirector(
      *  played audio) and re-emit the playback (and, when it changed, the session). */
     private fun commit(next: Model) {
         val sessionChanged = model.session != next.session
-        val setlistChanged = model.setlist != next.setlist
+        // Re-publish the setlist when its order/membership changes OR when the audible slot moves,
+        // since `active` (the audible slot) is part of the published view. Compare the cheap raw
+        // inputs (often the same instance) rather than rebuilding entries on every commit.
+        val setlistChanged = model.setlist != next.setlist ||
+            model.setlistSlotIds != next.setlistSlotIds ||
+            model.audibleSlotId != next.audibleSlotId
         // While a restore is pending the speaker hasn't played a frame (position 0), so anchor the
         // paused progress bar to the saved offset until the first play() seeks there for real.
         val position = next.pendingResumeMs ?: speaker.currentPositionMs()
@@ -267,7 +322,8 @@ class RealDirector(
             directorScope.launch { sessionStateMutable.emit(next.session) }
         }
         if (setlistChanged) {
-            directorScope.launch { setlistStateMutable.emit(next.setlist ?: emptyList()) }
+            val entries = next.setlistEntries()
+            directorScope.launch { setlistStateMutable.emit(entries) }
         }
     }
 
@@ -331,6 +387,9 @@ class RealDirector(
                 model.copy(
                     session = session,
                     setlist = setlistForSession,
+                    setlistSlotIds = mintSlotIds(setlistForSession.size),
+                    // Cleared here, set to the starting slot once it's resolved below.
+                    audibleSlotId = null,
                     consecutiveFailures = 0,
                     // A fresh user-initiated session supersedes any pending restore.
                     pendingResumeMs = null,
@@ -359,7 +418,13 @@ class RealDirector(
                 val startingPosition = session.startingPosition
                     ?: setlistForSession.indexOfFirst { it == firstTrackId }
 
-                commit(model.copy(session = session.copy(currentPosition = startingPosition)))
+                commit(
+                    model.copy(
+                        session = session.copy(currentPosition = startingPosition),
+                        // The directed track is also the first audible slot.
+                        audibleSlotId = model.setlistSlotIds?.getOrNull(startingPosition),
+                    ),
+                )
                 generator.startTrack(firstTrackId)
                 if (wasActive) {
                     // Cut the speaker over to the new track, discarding any audio still queued from
@@ -392,6 +457,8 @@ class RealDirector(
                 model.copy(
                     session = session,
                     setlist = setlistForSession,
+                    setlistSlotIds = mintSlotIds(setlistForSession.size),
+                    audibleSlotId = null,
                     consecutiveFailures = 0,
                     pendingResumeMs = positionMs.coerceAtLeast(0L),
                 ),
@@ -407,13 +474,26 @@ class RealDirector(
 
             if (firstTrackId == null) {
                 hatchet.w("restore: could not resolve a track to restore; ignoring.")
-                commit(model.copy(session = null, setlist = null, pendingResumeMs = null))
+                commit(
+                    model.copy(
+                        session = null,
+                        setlist = null,
+                        setlistSlotIds = null,
+                        audibleSlotId = null,
+                        pendingResumeMs = null,
+                    ),
+                )
                 return@launch
             }
 
             val startingPosition = setlistForSession.indexOfFirst { it == firstTrackId }
                 .takeIf { it >= 0 } ?: 0
-            commit(model.copy(session = session.copy(currentPosition = startingPosition)))
+            commit(
+                model.copy(
+                    session = session.copy(currentPosition = startingPosition),
+                    audibleSlotId = model.setlistSlotIds?.getOrNull(startingPosition),
+                ),
+            )
             generator.startTrack(firstTrackId)
         }
     }
@@ -615,9 +695,12 @@ class RealDirector(
     private suspend fun switchToTrack(advanced: Model, trackId: Long) {
         cancelStallWatchdog()
         generator.stop()
+        // A user jump cuts the speaker straight over, so the audible slot moves with it immediately
+        // (no waiting on a speaker track-change). [advanced] already holds the jumped-to position.
+        val audibleSlot = advanced.session?.currentPosition?.let { advanced.setlistSlotIds?.getOrNull(it) }
         // Jumping to a different track invalidates any pending restore offset (it was for the
         // track we're leaving), so the next play() resumes the new track from the top.
-        commit(advanced.copy(pendingResumeMs = null))
+        commit(advanced.copy(pendingResumeMs = null, audibleSlotId = audibleSlot))
         generator.startTrack(trackId)
         speaker.switchTo(trackId)
     }
@@ -638,22 +721,27 @@ class RealDirector(
         directorScope.launch {
             val session = model.session ?: return@launch
             val setlist = model.setlist ?: return@launch
+            val slotIds = model.setlistSlotIds ?: return@launch
             if (fromIndex !in setlist.indices || toIndex !in setlist.indices) return@launch
             if (fromIndex == toIndex) return@launch
 
-            // Remember which track is playing so we can keep it active wherever it lands.
-            val playingTrackId = session.currentPosition?.let(setlist::getOrNull)
+            // Remember the playing *slot* (not its track id — duplicates would be ambiguous) so we
+            // can keep it active wherever it lands.
+            val playingSlotId = session.currentPosition?.let(slotIds::getOrNull)
 
             // Same move semantics as ReorderableScreen's local mirror: remove then insert at target.
+            // The slot ids move in lockstep so each slot keeps its identity across the reorder.
             val newSetlist = setlist.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
-            val newPosition = playingTrackId
-                ?.let { id -> newSetlist.indexOf(id).takeIf { it >= 0 } }
+            val newSlotIds = slotIds.toMutableList().apply { add(toIndex, removeAt(fromIndex)) }
+            val newPosition = playingSlotId
+                ?.let { id -> newSlotIds.indexOf(id).takeIf { it >= 0 } }
                 ?: session.currentPosition
 
             // Order-only change: the playing track is untouched, so no generator/speaker switch.
             commit(
                 model.copy(
                     setlist = newSetlist,
+                    setlistSlotIds = newSlotIds,
                     session = session.copy(currentPosition = newPosition, modified = true),
                 )
             )
@@ -664,17 +752,19 @@ class RealDirector(
         directorScope.launch {
             val session = model.session ?: return@launch
             val setlist = model.setlist ?: return@launch
+            val slotIds = model.setlistSlotIds ?: return@launch
             if (index !in setlist.indices) return@launch
             // The playing track isn't removable (the UI hides the affordance); guard defensively so
             // a stale request can't tear the active track out from under playback.
             if (index == session.currentPosition) return@launch
 
-            // Keep the playing track active by locating it again after the removal.
-            val playingTrackId = session.currentPosition?.let(setlist::getOrNull)
+            // Keep the playing slot active by locating it again (by slot id) after the removal.
+            val playingSlotId = session.currentPosition?.let(slotIds::getOrNull)
             val newSetlist = setlist.toMutableList().apply { removeAt(index) }
+            val newSlotIds = slotIds.toMutableList().apply { removeAt(index) }
             val updatedSession = session.copy(
-                currentPosition = playingTrackId
-                    ?.let { id -> newSetlist.indexOf(id).takeIf { it >= 0 } }
+                currentPosition = playingSlotId
+                    ?.let { id -> newSlotIds.indexOf(id).takeIf { it >= 0 } }
                     ?: session.currentPosition,
                 modified = true,
             )
@@ -687,6 +777,7 @@ class RealDirector(
             commit(
                 model.copy(
                     setlist = newSetlist,
+                    setlistSlotIds = newSlotIds,
                     session = updatedSession,
                     playback = model.playback.copy(skipForwardAllowed = skipAllowed),
                 )
@@ -709,9 +800,14 @@ class RealDirector(
                 ?.let { id -> newSetlist.indexOf(id).takeIf { it >= 0 } }
                 ?: 0
 
+            // Shuffle re-resolves the whole queue, so these are genuinely new slots. Audio isn't
+            // interrupted, so re-anchor the audible slot onto the still-playing track's new slot.
+            val newSlotIds = mintSlotIds(newSetlist.size)
             commit(
                 model.copy(
                     setlist = newSetlist,
+                    setlistSlotIds = newSlotIds,
+                    audibleSlotId = newSlotIds.getOrNull(newPosition),
                     session = session.copy(shuffled = shuffled, currentPosition = newPosition),
                 )
             )
@@ -825,6 +921,7 @@ class RealDirector(
             SessionType.PLATFORM -> getTrackListForPlatform(session.contentId, skipShort)
             SessionType.SETLIST -> session.explicitSetlist.orEmpty()
             SessionType.SINGLE_TRACK -> listOf(session.contentId)
+            SessionType.FAVORITES -> getTrackListForFavorites()
         }
     }
 
@@ -850,9 +947,15 @@ class RealDirector(
         .getTracksForArtist(artistId)
         .toSetlistIds(skipShort)
 
-    private fun getTrackListForPlaylist(playlistId: Long): List<Long> {
-        TODO("Not yet implemented")
-    }
+    // A playlist is a stable, id-backed ordered list, resolved straight from the playlists store —
+    // played as the user curated it (no shuffle-skip-short filtering, which would need track lengths).
+    private suspend fun getTrackListForPlaylist(playlistId: Long): List<Long> =
+        playlistsRepository.trackIds(playlistId).first()
+
+    // Favorites resolve straight from the favorites store, newest-first — the same order (and the same
+    // id stream) the Favorites screen renders, so a tapped row's position lines up with what plays.
+    private suspend fun getTrackListForFavorites(): List<Long> =
+        favoritesRepository.favoriteTrackIds().first()
 
     private suspend fun getTrackListForAllTracks(skipShort: Boolean): List<Long> = repository
         .getAllTracks(withGame = false, withArtists = false)
@@ -1183,9 +1286,11 @@ class RealDirector(
     private suspend fun reduceSpeakerTrackChange(m: Model, newTrackId: Long): Pair<Model, List<Effect>> {
         val newTrack = getTrack(newTrackId) ?: return metadataLoadError(m, newTrackId)
         hatchet.i("updatePlayerMetadata(track=$newTrackId, ${newTrack.title}): emitting metadata.")
-        // State follows the speaker's Playing/Buffering flow, not metadata: a TrackChange is
+        // The speaker crossing into a track is the audible-position signal: advance the audible slot
+        // (which drives the setlist's "now playing" highlight) to match what's actually audible now.
+        // State itself follows the speaker's Playing/Buffering flow, not metadata: a TrackChange is
         // always immediately followed by a Playing event that flips BUFFERING -> PLAYING.
-        return m.with(Effect.EmitMetadata(newTrack))
+        return m.copy(audibleSlotId = m.nextAudibleSlot(newTrackId)).with(Effect.EmitMetadata(newTrack))
     }
 
     private fun reduceSpeakerError(m: Model, event: SpeakerEvent.Error): Pair<Model, List<Effect>> {

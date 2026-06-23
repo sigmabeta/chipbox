@@ -8,5 +8,7 @@ dependencies {
 
     implementation(projects.cbox.common.player.generator.api)
     implementation(projects.cbox.common.player.speaker.api)
+    implementation(projects.cbox.common.playlists.api)
+    implementation(projects.cbox.common.favorites.api)
     implementation(projects.cbox.common.settings.api)
 }

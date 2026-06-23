@@ -27,6 +27,7 @@ data class ArtistDetailState(
     val tracks: LCE<List<Track>> = LCE.Uninitialized,
     val games: LCE<List<Game>> = LCE.Uninitialized,
     val playingTrackId: Long? = null,
+    val isFavorite: Boolean = false,
     val notFound: Boolean = false,
 ) : ListState() {
     override val columnType: ColumnType = ColumnType.Staggered(STAGGERED_WIDTH_DP, false)
@@ -88,6 +89,22 @@ data class ArtistDetailState(
                     icon = Icon.Shuffle,
                     name = stringProvider.getString(ChipboxStringId.ARTIST_DETAIL_CTA_SHUFFLE_ALL),
                     clickAction = ArtistDetailAction.ShuffleAllClicked,
+                ),
+                CtaListModel(
+                    icon = if (isFavorite) Icon.FavoriteFilled else Icon.FavoriteEmpty,
+                    name = stringProvider.getString(
+                        if (isFavorite) {
+                            ChipboxStringId.ARTIST_DETAIL_CTA_REMOVE_FROM_FAVORITES
+                        } else {
+                            ChipboxStringId.ARTIST_DETAIL_CTA_ADD_TO_FAVORITES
+                        },
+                    ),
+                    clickAction = ArtistDetailAction.AddToFavoritesClicked,
+                ),
+                CtaListModel(
+                    icon = Icon.QueueMusic,
+                    name = stringProvider.getString(ChipboxStringId.ARTIST_DETAIL_CTA_ADD_TO_PLAYLIST),
+                    clickAction = ArtistDetailAction.AddToPlaylistClicked,
                 ),
             )
         }

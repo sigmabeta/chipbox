@@ -17,6 +17,19 @@ interface TrackArtistDao {
     @Query("DELETE FROM track_artist_join WHERE trackId IN (:trackIds)")
     suspend fun deleteForTracks(trackIds: List<Long>)
 
+    // Artist ids for a track, in display order (by name). Hydration resolves each id through the
+    // artist-by-id cache, so a track's artist rows aren't re-marshalled per track the way the
+    // full-row join below does. Joins artist only to order by name.
+    @Query(
+        """
+            SELECT track_artist_join.artistId FROM track_artist_join
+            INNER JOIN artist ON artist.id=track_artist_join.artistId
+            WHERE track_artist_join.trackId=:trackId
+            ORDER BY artist.name COLLATE NOCASE
+            """
+    )
+    suspend fun getArtistIdsForTrack(trackId: Long): List<Long>
+
     @Query(
         """
             SELECT * FROM artist INNER JOIN track_artist_join

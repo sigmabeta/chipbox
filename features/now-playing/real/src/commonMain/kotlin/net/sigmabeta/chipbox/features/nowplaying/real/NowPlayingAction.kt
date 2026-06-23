@@ -13,6 +13,15 @@ sealed class NowPlayingAction : ChipboxAction() {
     /** Cycle the repeat mode. Now fired only from the CONTROLS context menu row. */
     data object RepeatClicked : NowPlayingAction()
 
+    /** CONTROLS menu row — add the current track to the user's favorites. */
+    data object AddToFavoritesClicked : NowPlayingAction()
+
+    /** CONTROLS menu row — add the current track to a playlist (opens the playlist picker). */
+    data object AddToPlaylistClicked : NowPlayingAction()
+
+    /** Setlist pane row — add every track in the current setlist to a playlist. */
+    data object AddSetlistToPlaylistClicked : NowPlayingAction()
+
     data object BackClicked : NowPlayingAction()
     data object PlayerSettingsClicked : NowPlayingAction()
     data class SeekRequested(val positionMs: Long) : NowPlayingAction()
@@ -27,17 +36,21 @@ sealed class NowPlayingAction : ChipboxAction() {
     /** Transport "setlist" button — toggles the inline SETLIST mode (the reorderable queue). */
     data object SetlistClicked : NowPlayingAction()
 
-    /** A row in the inline setlist was tapped — jump playback to that track. */
-    data class SetlistTrackClicked(val trackId: Long) : NowPlayingAction()
+    /** A row in the inline setlist was tapped — jump playback to that queue slot. Carries the
+     *  slot id (not a track id) so a duplicated track resolves to the exact slot tapped. */
+    data class SetlistTrackClicked(val slotId: Long) : NowPlayingAction()
 
-    /** A setlist row was swiped away — remove that track from the queue. */
-    data class SetlistTrackRemoved(val trackId: Long) : NowPlayingAction()
+    /** A setlist row was swiped away — remove that queue slot. Carries the slot id, not a track id. */
+    data class SetlistTrackRemoved(val slotId: Long) : NowPlayingAction()
 
     /** The context menu's back row — return to the NONE state (track info). */
     data object ContextMenuBackClicked : NowPlayingAction()
 
     /** LINKS game row — navigate to the playing track's game detail screen. */
     data object ContextMenuGameClicked : NowPlayingAction()
+
+    /** LINKS platform row — navigate to the games-for-platform screen for the track's platform. */
+    data object ContextMenuPlatformClicked : NowPlayingAction()
 
     /**
      * LINKS artist row — navigate to artist detail when the track has a single artist, or expand

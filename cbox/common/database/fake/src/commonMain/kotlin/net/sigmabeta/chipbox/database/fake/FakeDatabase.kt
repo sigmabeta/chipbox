@@ -63,6 +63,7 @@ class FakeDatabase(private val random: Random = Random(0)) {
         override fun getArtist(artistId: Long): Flow<ArtistEntity?> = observe { artists[artistId] }
         override suspend fun getArtistByNameSync(name: String): ArtistEntity? =
             artists.values.firstOrNull { it.name == name }
+        override suspend fun getArtistByIdSync(artistId: Long): ArtistEntity = artists.getValue(artistId)
         override suspend fun getRandom(): ArtistEntity? = artists.values.randomOrNull(random)
         override fun getAll(): Flow<List<ArtistEntity>> = observe {
             artists.values.sortedBy { it.name.lowercase() }
@@ -157,6 +158,10 @@ class FakeDatabase(private val random: Random = Random(0)) {
             tracks.values.map { it.platform }.distinct()
         }
         override fun getTrack(trackId: Long): Flow<TrackEntity> = observe { tracks.getValue(trackId) }
+        override fun getTracksByIds(ids: List<Long>): Flow<List<TrackEntity>> = observe {
+            val idSet = ids.toSet()
+            tracks.values.filter { it.id in idSet }
+        }
         override suspend fun getTrackSync(trackId: Long): TrackEntity? = tracks[trackId]
         override suspend fun getRandom(): TrackEntity? = tracks.values.randomOrNull(random)
         override fun searchTracksByTitle(title: String): Flow<List<TrackEntity>> = observe {
@@ -194,6 +199,13 @@ class FakeDatabase(private val random: Random = Random(0)) {
             gameArtistJoins.removeAll { it.gameId == gameId }
             bump()
         }
+        override suspend fun getArtistIdsForGame(gameId: Long): List<Long> =
+            artistsForGameSync(gameId).map { it.id }
+        override suspend fun getGameIdsForArtist(artistId: Long): List<Long> = gameArtistJoins
+            .filter { it.artistId == artistId }
+            .mapNotNull { games[it.gameId] }
+            .sortedBy { it.title.lowercase() }
+            .map { it.id }
         override fun getArtistsForGame(gameId: Long): Flow<List<ArtistEntity>> = observe {
             artistsForGameSync(gameId)
         }
@@ -230,6 +242,8 @@ class FakeDatabase(private val random: Random = Random(0)) {
             trackArtistJoins.removeAll { it.trackId in idSet }
             bump()
         }
+        override suspend fun getArtistIdsForTrack(trackId: Long): List<Long> =
+            artistsForTrackSync(trackId).map { it.id }
         override suspend fun getArtistsForTrack(trackId: Long): List<ArtistEntity> =
             artistsForTrackSync(trackId)
         override suspend fun getArtistsForTrackSync(trackId: Long): List<ArtistEntity> =

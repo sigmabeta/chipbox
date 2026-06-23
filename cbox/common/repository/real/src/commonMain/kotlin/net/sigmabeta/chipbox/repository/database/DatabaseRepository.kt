@@ -59,8 +59,24 @@ class DatabaseRepository(
     private val trackArtistDao: TrackArtistDao,
     private val searchHistoryDao: SearchHistoryDao,
     private val hatchet: Hatchet,
-    private val dispatcher: CoroutineDispatcher = ioDispatcher
+    private val dispatcher: CoroutineDispatcher = ioDispatcher,
+    gameCacheSize: Int = DEFAULT_GAME_CACHE_SIZE,
+    artistCacheSize: Int = DEFAULT_ARTIST_CACHE_SIZE,
+    trackListCacheSize: Int = DEFAULT_TRACK_LIST_CACHE_SIZE,
 ) : Repository {
+
+    // Hydration fans out one DAO roundtrip per row. The leaf entities — artists and games — are
+    // cached by their OWN id, not by the parent's, because the reuse is at the entity level: one
+    // artist appears across many tracks/games, one game across an artist's many games. The artist
+    // resolvers fetch only the relevant artist ids (cheap join) and resolve each through
+    // [artistByIdCache], so a shared artist is read once and reused for the rest of the screen;
+    // games-for-artist does the same through [gameByIdCache]. Track lists stay keyed by parent id
+    // (tracks aren't shared enough to dedup) — those caches pay off mainly on revisit. Every
+    // mutation calls invalidateCaches() to stay coherent with Room's Flow re-emissions.
+    private val gameByIdCache = LruCache<Long, Game>(gameCacheSize, "gameById", hatchet)
+    private val artistByIdCache = LruCache<Long, Artist>(artistCacheSize, "artistById", hatchet)
+    private val tracksForGameCache = LruCache<Long, List<Track>>(trackListCacheSize, "tracksForGame", hatchet)
+    private val tracksForArtistCache = LruCache<Long, List<Track>>(trackListCacheSize, "tracksForArtist", hatchet)
 
     // upsertGame runs on the scanner's IO coroutine and its DAO calls suspend (Room KMP makes them
     // suspend off-Android), so begin/end can resume on different threads — trace with `traceAsync`,
@@ -90,6 +106,11 @@ class DatabaseRepository(
 
     override fun getAllTracks(withGame: Boolean, withArtists: Boolean) = setupFlow(
         { trackDao.getAll() },
+        { list -> list.suspendMap { it.toTrack(withGame, withArtists) } }
+    )
+
+    override fun getTracksByIds(ids: List<Long>, withGame: Boolean, withArtists: Boolean) = setupFlow(
+        { trackDao.getTracksByIds(ids) },
         { list -> list.suspendMap { it.toTrack(withGame, withArtists) } }
     )
 
@@ -193,6 +214,7 @@ class DatabaseRepository(
         }
         val idByTrackKey = rawGame.tracks.zip(trackIds).associate { (track, id) -> track.trackKey() to id }
         linkArtists(gameId, rawGame, idByTrackKey, artistsByName)
+        invalidateCaches()
         return gameId
     }
 
@@ -255,6 +277,7 @@ class DatabaseRepository(
             removedIds.isNotEmpty() ||
             toUpdate.isNotEmpty() ||
             toInsert.isNotEmpty()
+        invalidateCaches()
         return if (changed) GameWriteResult.UPDATED else GameWriteResult.UNCHANGED
     }
 
@@ -294,6 +317,7 @@ class DatabaseRepository(
             traceAsync(TRACE_PRUNE_GAMES, nextCookie()) { gameDao.deleteByIds(removable.map { it.id }) }
         }
         traceAsync(TRACE_PRUNE_ARTISTS, nextCookie()) { artistDao.deleteOrphans() }
+        invalidateCaches()
         return removable.map { it.title }
     }
 
@@ -304,7 +328,7 @@ class DatabaseRepository(
         id,
         name,
         photoUrl,
-        if (withTracks) getTracksForArtist(id, withGame = true) else null,
+        if (withTracks) cachedTracksForArtist(id) else null,
         if (withGames) getGamesForArtist(id) else null
     )
 
@@ -384,25 +408,38 @@ class DatabaseRepository(
         platform.name,
     )
 
-    private suspend fun getGameById(id: Long): Game = gameDao
-        .getGameSync(id)
-        .toGame()
+    private suspend fun getGameById(id: Long): Game = gameByIdCache.getOrLoad(id) {
+        gameDao.getGameSync(id).toGame()
+    }
 
+    private suspend fun getArtistById(id: Long): Artist = artistByIdCache.getOrLoad(id) {
+        artistDao.getArtistByIdSync(id).toArtist()
+    }
+
+    // Each of these reads only the relevant ids from the join, then resolves them through the
+    // by-id caches — so a shared artist/game is fetched from storage once per cache lifetime.
     private suspend fun getGamesForArtist(id: Long): List<Game> = gameArtistDao
-        .getGamesForArtistSync(id)
-        .suspendMap { it.toGame() }
+        .getGameIdsForArtist(id)
+        .suspendMap { getGameById(it) }
 
     private suspend fun getArtistsForTrack(id: Long): List<Artist> = trackArtistDao
-        .getArtistsForTrackSync(id)
-        .suspendMap { it.toArtist() }
+        .getArtistIdsForTrack(id)
+        .suspendMap { getArtistById(it) }
 
     private suspend fun getArtistsForGame(id: Long): List<Artist> = gameArtistDao
-        .getArtistsForGameSync(id)
-        .suspendMap { it.toArtist() }
+        .getArtistIdsForGame(id)
+        .suspendMap { getArtistById(it) }
 
-    private suspend fun getTracksForGame(id: Long): List<Track> = trackDao
-        .getTracksForGameSync(id)
-        .suspendMap { it.toTrack(withArtists = true) }
+    private suspend fun getTracksForGame(id: Long): List<Track> = tracksForGameCache.getOrLoad(id) {
+        trackDao.getTracksForGameSync(id).suspendMap { it.toTrack(withArtists = true) }
+    }
+
+    // The artist screen hydrates an artist's tracks with their game (withGame = true). This leaf
+    // path has a fixed shape, so it's cached; the public getTracksForArtist overload keeps hitting
+    // the DAO because its withGame/withArtists flags vary per caller.
+    private suspend fun cachedTracksForArtist(id: Long): List<Track> = tracksForArtistCache.getOrLoad(id) {
+        trackArtistDao.getTracksForArtistSync(id).suspendMap { it.toTrack(withGame = true) }
+    }
 
     override suspend fun clearLibrary() = withContext(dispatcher) {
         artistDao.nukeTable()
@@ -410,6 +447,17 @@ class DatabaseRepository(
         trackDao.nukeTable()
         gameArtistDao.nukeTable()
         trackArtistDao.nukeTable()
+        invalidateCaches()
+    }
+
+    // Clear every hydration cache after a mutation. Scans are batch writes while reads are
+    // interactive, so the thrash is negligible; a subsequent Room-Flow re-emit repopulates from
+    // fresh rows.
+    private suspend fun invalidateCaches() {
+        gameByIdCache.clear()
+        artistByIdCache.clear()
+        tracksForGameCache.clear()
+        tracksForArtistCache.clear()
     }
 
     override fun searchGames(query: String) = setupFlow(
@@ -486,6 +534,14 @@ class DatabaseRepository(
     companion object {
         const val ERR_UNKNOWN = "Unknown Error"
         val DELIMITERS_ARTISTS = Regex(", &|,| or | and |&")
+
+        // LRU capacities. gameById / artistById are keyed by the entity's own id and are the hot
+        // caches (one entry reused across every row that references it), so they hold a full
+        // working set of distinct entities. The track-list caches are parent-keyed and bounded by
+        // entry count.
+        private const val DEFAULT_GAME_CACHE_SIZE = 128
+        private const val DEFAULT_ARTIST_CACHE_SIZE = 128
+        private const val DEFAULT_TRACK_LIST_CACHE_SIZE = 128
 
         // Perfetto trace labels for the scan-time insert path. All `traceAsync` because the DAO
         // calls suspend; the per-track spans (resolve/insert/link) fire once per track, so a slow

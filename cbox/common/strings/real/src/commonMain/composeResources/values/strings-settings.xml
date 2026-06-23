@@ -53,5 +53,5 @@
     <string name="settings_caption_crash_log">Fatal exceptions from past sessions (debug only).</string>
 
     <string name="settings_label_component_library">Component library</string>
-    <string name="settings_caption_component_library">Browse the app\'s UI components (debug only).</string>
+    <string name="settings_caption_component_library">Browse the app's UI components (debug only).</string>
 </resources>

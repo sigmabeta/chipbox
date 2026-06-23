@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -104,14 +103,14 @@ fun IconNameCaptionListItem(
                 .fillMaxWidth()
                 .wrapContentHeight()
         ) {
-            Text(
+            CrossfadeText(
                 text = name,
                 style = MaterialTheme.typography.titleMedium,
                 color = textColor,
                 fontWeight = fontWeight,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
+                textModifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(top = 24.dp)
             )
@@ -120,13 +119,13 @@ fun IconNameCaptionListItem(
                 modifier = Modifier.height(4.dp)
             )
 
-            Text(
+            CrossfadeText(
                 text = caption,
                 style = MaterialTheme.typography.bodySmall,
                 color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
+                textModifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(bottom = 12.dp)
             )

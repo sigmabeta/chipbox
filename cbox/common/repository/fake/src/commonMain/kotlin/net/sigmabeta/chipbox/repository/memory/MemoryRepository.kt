@@ -132,6 +132,16 @@ open class MemoryRepository(
         return tracksLoadEvents.asSharedFlow()
     }
 
+    override fun getTracksByIds(
+        ids: List<Long>,
+        withGame: Boolean,
+        withArtists: Boolean
+    ): Flow<Data<List<Track>>> = flow {
+        emit(Data.Loading)
+        val tracks = ids.mapNotNull { tracksById[it]?.toTrack(withGame, withArtists) }
+        emit(if (tracks.isNotEmpty()) Data.Succeeded(tracks) else Data.Empty)
+    }
+
     override suspend fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> {
         TODO("Not yet implemented")
     }

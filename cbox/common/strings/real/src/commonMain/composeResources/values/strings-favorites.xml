@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_favorites">Favorites</string>
+    <string name="library_favorites_empty">Add a game, song, or artist to your favorites to find them here quickly.</string>
+
+    <string name="favorites_section_tracks">Songs</string>
+    <string name="favorites_section_games">Games</string>
+    <string name="favorites_section_artists">Artists</string>
+</resources>

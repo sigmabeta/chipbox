@@ -17,4 +17,13 @@ interface DebugSettingsManager {
 
     fun getImageLoaderSource(): Flow<ImageLoaderSource>
     fun setImageLoaderSource(source: ImageLoaderSource)
+
+    fun getFavoritesSource(): Flow<FavoritesSource>
+    fun setFavoritesSource(source: FavoritesSource)
+
+    fun getHistorySource(): Flow<HistorySource>
+    fun setHistorySource(source: HistorySource)
+
+    fun getPlaylistsSource(): Flow<PlaylistsSource>
+    fun setPlaylistsSource(source: PlaylistsSource)
 }

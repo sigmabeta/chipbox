@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_label_rescan_status">Scan in progress</string>
-    <string name="settings_caption_rescan_status">View the current scan\'s progress.</string>
+    <string name="settings_caption_rescan_status">View the current scan's progress.</string>
 
     <string name="rescan_status_title">Rescan Status</string>
     <string name="rescan_status_section_progress">Progress</string>

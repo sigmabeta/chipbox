@@ -6,18 +6,28 @@ import dev.zacsweers.metro.ContributesIntoMap
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.binding
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
+import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatform
+import net.sigmabeta.chipbox.features.playlists.Playlists
+import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.common.RepeatMode
+import net.sigmabeta.chipbox.player.common.SessionType
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.SessionRequest
+import net.sigmabeta.chipbox.player.director.SetlistEntry
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.common.ui.freeform.api.ChipboxFreeformViewModel
 import net.sigmabeta.sage.appcomm.SageAction
@@ -41,12 +51,14 @@ private const val ERROR_AFFIX_MAX_LENGTH = 10
 private fun String.ellipsize(): String =
     if (length > ERROR_AFFIX_MAX_LENGTH) take(ERROR_AFFIX_MAX_LENGTH) + "…" else this
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @ViewModelKey
 class NowPlayingViewModel @Inject constructor(
     private val director: Director,
     private val repository: Repository,
-    stringProvider: StringProvider,
+    private val favorites: FavoritesRepository,
+    private val stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxFreeformViewModel<NowPlayingState, NowPlayingModel>(
     NowPlayingState(),
@@ -70,9 +82,10 @@ class NowPlayingViewModel @Inject constructor(
      *  change, so a drag never refetches. */
     private val trackCache = mutableMapOf<Long, Track>()
 
-    /** Latest queue order (ids) — maps a tapped track id to the position [SessionRequest.PlayPosition]
-     *  expects, robust to any row that failed to resolve. */
-    private var setlistIds: List<Long> = emptyList()
+    /** Latest queue, as the director's slot entries — resolves a tapped/removed slot id to the
+     *  position [SessionRequest.PlayPosition] / [SessionRequest.RemoveTrack] expect, and is robust
+     *  to any row that failed to resolve (it mirrors the full queue, not just the displayed rows). */
+    private var setlistEntries: List<SetlistEntry> = emptyList()
 
     init {
         viewModelScope.launch {
@@ -105,12 +118,21 @@ class NowPlayingViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
-            director.setlistState().collect { ids ->
-                setlistIds = ids
-                val resolved = ids.mapNotNull { id ->
-                    trackCache[id] ?: repository.getTrack(id, withGame = true)?.also { trackCache[id] = it }
+            director.metadataState().flatMapLatest { track ->
+                if (track == null) flowOf(false) else favorites.isTrackFavorite(track.id)
+            }.collect { favorite ->
+                updateState { it.copy(trackFavorite = favorite) }
+            }
+        }
+        viewModelScope.launch {
+            director.setlistState().collect { entries ->
+                setlistEntries = entries
+                val resolved = entries.mapNotNull { entry ->
+                    val track = trackCache[entry.trackId]
+                        ?: repository.getTrack(entry.trackId, withGame = true)?.also { trackCache[entry.trackId] = it }
+                    track?.let { SetlistRowData(slotId = entry.slotId, active = entry.active, track = it) }
                 }
-                updateState { it.copy(setlistTracks = resolved) }
+                updateState { it.copy(setlistSlots = resolved) }
             }
         }
     }
@@ -135,6 +157,27 @@ class NowPlayingViewModel @Inject constructor(
                 bumpContextMenuTimer()
             }
 
+            // Toggling counts as an interaction, so keep the menu open by bumping the timer.
+            NowPlayingAction.AddToFavoritesClicked -> {
+                toggleTrackFavorite()
+                bumpContextMenuTimer()
+            }
+
+            // Close the menu and hand the playing track to the playlist picker.
+            NowPlayingAction.AddToPlaylistClicked -> {
+                val trackId = state.value.track?.id
+                closeContextMenu()
+                if (trackId != null) emit(ChipboxEvent.NavigateTo(Playlists(listOf(trackId))))
+            }
+
+            // Hand the whole current setlist (queue order) to the playlist picker, suggesting a name
+            // derived from what's playing (e.g. "From game …", "Search results for …").
+            NowPlayingAction.AddSetlistToPlaylistClicked ->
+                if (setlistEntries.isNotEmpty()) {
+                    val trackIds = setlistEntries.map { it.trackId }
+                    emit(ChipboxEvent.NavigateTo(Playlists(trackIds, suggestedSetlistName())))
+                }
+
             NowPlayingAction.BackClicked -> emit(ChipboxEvent.NavigateBack)
 
             NowPlayingAction.PlayerSettingsClicked -> emit(
@@ -154,14 +197,14 @@ class NowPlayingViewModel @Inject constructor(
             NowPlayingAction.SetlistClicked -> toggleSetlist()
 
             is NowPlayingAction.SetlistTrackClicked -> {
-                val position = setlistIds.indexOf(action.trackId)
+                val position = setlistEntries.indexOfFirst { it.slotId == action.slotId }
                 if (position >= 0) director.request(SessionRequest.PlayPosition(position))
             }
 
             is NowPlayingAction.SetlistTrackRemoved -> {
-                val position = setlistIds.indexOf(action.trackId)
-                // The active track isn't removable (the UI hides the affordance); guard anyway.
-                if (position >= 0 && action.trackId != state.value.track?.id) {
+                val position = setlistEntries.indexOfFirst { it.slotId == action.slotId }
+                // The active slot isn't removable (the UI hides the affordance); guard anyway.
+                if (position >= 0 && !setlistEntries[position].active) {
                     director.request(SessionRequest.RemoveTrack(position))
                 }
             }
@@ -176,6 +219,12 @@ class NowPlayingViewModel @Inject constructor(
                 val gameId = state.value.track?.gameId
                 closeContextMenu()
                 if (gameId != null) emit(ChipboxEvent.NavigateTo(GameDetail(gameId)))
+            }
+
+            NowPlayingAction.ContextMenuPlatformClicked -> {
+                val platform = state.value.track?.platform
+                closeContextMenu()
+                if (platform != null) emit(ChipboxEvent.NavigateTo(GamesForPlatform(platform)))
             }
 
             NowPlayingAction.ContextMenuArtistsClicked -> {
@@ -263,6 +312,52 @@ class NowPlayingViewModel @Inject constructor(
 
     private fun dismissError(id: Long) {
         updateState { state -> state.copy(errors = state.errors.filterNot { it.id == id }) }
+    }
+
+    private fun toggleTrackFavorite() {
+        val trackId = state.value.track?.id ?: return
+        val makeFavorite = !state.value.trackFavorite
+        viewModelScope.launch { favorites.setTrackFavorite(trackId, makeFavorite) }
+    }
+
+    /**
+     * A suggested New-Playlist name for the current setlist, by session type — the source's name
+     * ("From game …"/"From artist …"/"From platform …"), the search query ("Search results for …",
+     * or "Shuffled …" when shuffling), or "From favorites". Null when there's no meaningful source
+     * (playlist/single-track/all-tracks), so the picker falls back to the generic default.
+     */
+    private fun suggestedSetlistName(): String? {
+        val session = state.value.session ?: return null
+        val track = state.value.track
+        return when (session.type) {
+            SessionType.GAME ->
+                track?.game?.title?.let { stringProvider.getStringOneArg(ChipboxStringId.PLAYLISTS_NAME_FROM_GAME, it) }
+
+            SessionType.ARTIST -> {
+                val artists = track?.artists.orEmpty()
+                val name = artists.firstOrNull { it.id == session.contentId }?.name ?: artists.firstOrNull()?.name
+                name?.let { stringProvider.getStringOneArg(ChipboxStringId.PLAYLISTS_NAME_FROM_ARTIST, it) }
+            }
+
+            SessionType.PLATFORM ->
+                Platform.entries.getOrNull(session.contentId.toInt())
+                    ?.let { stringProvider.getString(it.stringId) }
+                    ?.let { stringProvider.getStringOneArg(ChipboxStringId.PLAYLISTS_NAME_FROM_PLATFORM, it) }
+
+            SessionType.SETLIST ->
+                session.sourceName?.let { query ->
+                    val nameId = if (session.shuffled) {
+                        ChipboxStringId.PLAYLISTS_NAME_SEARCH_SHUFFLED
+                    } else {
+                        ChipboxStringId.PLAYLISTS_NAME_SEARCH
+                    }
+                    stringProvider.getStringOneArg(nameId, query)
+                }
+
+            SessionType.FAVORITES -> stringProvider.getString(ChipboxStringId.PLAYLISTS_NAME_FROM_FAVORITES)
+
+            SessionType.PLAYLIST, SessionType.SINGLE_TRACK, SessionType.ALL_TRACKS -> null
+        }
     }
 
     private fun togglePlayPause() {

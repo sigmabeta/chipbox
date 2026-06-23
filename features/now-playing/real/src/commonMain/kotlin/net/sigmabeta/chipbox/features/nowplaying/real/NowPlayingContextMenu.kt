@@ -52,6 +52,15 @@ internal fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSi
                         tag = NOW_PLAYING_CTX_ARTISTS_TAG,
                     )
                 }
+                if (model.platformLabel.isNotEmpty()) {
+                    ContextMenuRow(
+                        name = model.platformLabel,
+                        icon = Icon.Chip,
+                        clickAction = NowPlayingAction.ContextMenuPlatformClicked,
+                        actionSink = actionSink,
+                        tag = NOW_PLAYING_CTX_PLATFORM_TAG,
+                    )
+                }
             }
 
             ContextMenuMode.ARTISTS -> {
@@ -82,6 +91,21 @@ internal fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSi
                     actionSink = actionSink,
                     tag = NOW_PLAYING_CTX_SHUFFLE_TAG,
                     active = model.isShuffled,
+                )
+                ContextMenuRow(
+                    name = model.favoriteLabel,
+                    icon = if (model.isTrackFavorite) Icon.FavoriteFilled else Icon.FavoriteEmpty,
+                    clickAction = NowPlayingAction.AddToFavoritesClicked,
+                    actionSink = actionSink,
+                    tag = NOW_PLAYING_CTX_FAVORITES_TAG,
+                    active = model.isTrackFavorite,
+                )
+                ContextMenuRow(
+                    name = model.addToPlaylistLabel,
+                    icon = Icon.QueueMusic,
+                    clickAction = NowPlayingAction.AddToPlaylistClicked,
+                    actionSink = actionSink,
+                    tag = NOW_PLAYING_CTX_ADD_PLAYLIST_TAG,
                 )
             }
 

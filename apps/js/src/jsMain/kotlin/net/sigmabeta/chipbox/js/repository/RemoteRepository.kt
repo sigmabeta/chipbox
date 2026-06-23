@@ -70,6 +70,17 @@ class RemoteRepository(
             }.body()
         }
 
+    // No server-side id filter yet, so fetch and filter client-side. Non-regressive: the callers
+    // that now use this previously fetched the full track list here anyway.
+    override fun getTracksByIds(ids: List<Long>, withGame: Boolean, withArtists: Boolean): Flow<Data<List<Track>>> =
+        listFlow {
+            val idSet = ids.toSet()
+            client.get("$baseUrl/api/tracks") {
+                parameter("withGame", withGame)
+                parameter("withArtists", withArtists)
+            }.body<List<Track>>().filter { it.id in idSet }
+        }
+
     override suspend fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> =
         client.get("$baseUrl/api/games/$id/tracks") {
             parameter("withGame", withGame)

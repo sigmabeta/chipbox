@@ -98,7 +98,9 @@ class RealPlaybackSessionPersister(
                 director.metadataState(),
                 director.setlistState(),
             ) { session, playback, track, setlist ->
-                Snapshotable(session, playback.state, playback.position, track, setlist)
+                // Persistence only needs the track-id order; slot ids are in-memory identity that's
+                // re-minted on restore, so flatten the entries to their track ids here.
+                Snapshotable(session, playback.state, playback.position, track, setlist.map { it.trackId })
             }
                 .collect { current ->
                     latest = current

@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.vector
@@ -66,24 +67,24 @@ internal fun ColumnScope.TopBar(model: NowPlayingModel, actionSink: ActionSink) 
             modifier = Modifier.weight(1.0f)
         ) {
             if (model.sessionTypeLabel.isNotEmpty()) {
-                Text(
+                CrossfadeText(
                     text = model.sessionTypeLabel,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth(),
+                    textModifier = Modifier.fillMaxWidth(),
                 )
                 if (model.sessionSourceName.isNotEmpty()) {
-                    Text(
+                    CrossfadeText(
                         text = model.sessionSourceName,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth(),
+                        textModifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
@@ -179,6 +180,7 @@ private fun CacheFillIndicator(cacheFraction: Float) {
 internal fun ColumnScope.TransportRow(
     model: NowPlayingModel,
     actionSink: ActionSink,
+    setlistPinned: Boolean = false,
 ) {
     val accentTint = MaterialTheme.colorScheme.primary
     val mutedTint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -190,16 +192,30 @@ internal fun ColumnScope.TransportRow(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Where the shuffle toggle used to live: a placeholder for the future Setlist feature.
-        // Shuffle itself now lives in the CONTROLS context menu.
-        TransportIconButton(
-            icon = Icon.QueueMusic,
-            action = NowPlayingAction.SetlistClicked,
-            actionSink = actionSink,
-            size = TransportToggleSize,
-            tint = mutedTint,
-            modifier = Modifier.testTag(NOW_PLAYING_SETLIST_BUTTON_TAG),
-        )
+        // The leftmost transport slot toggles the inline setlist — except in the wide layout, where
+        // the setlist is already pinned as its own panel, so the toggle would be redundant. There we
+        // surface the current track's favorite toggle instead (a duplicate of the CONTROLS row).
+        if (setlistPinned) {
+            TransportIconButton(
+                icon = if (model.isTrackFavorite) Icon.FavoriteFilled else Icon.FavoriteEmpty,
+                action = NowPlayingAction.AddToFavoritesClicked,
+                actionSink = actionSink,
+                size = TransportToggleSize,
+                // Accent the button while the track is favorited, muted otherwise — same on/off
+                // colouring the CONTROLS rows use for their active state.
+                tint = if (model.isTrackFavorite) accentTint else mutedTint,
+                modifier = Modifier.testTag(NOW_PLAYING_FAVORITES_BUTTON_TAG),
+            )
+        } else {
+            TransportIconButton(
+                icon = Icon.QueueMusic,
+                action = NowPlayingAction.SetlistClicked,
+                actionSink = actionSink,
+                size = TransportToggleSize,
+                tint = mutedTint,
+                modifier = Modifier.testTag(NOW_PLAYING_SETLIST_BUTTON_TAG),
+            )
+        }
 
         Spacer(modifier = Modifier.size(8.dp))
 

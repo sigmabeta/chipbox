@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.SessionRequest
+import net.sigmabeta.chipbox.player.director.SetlistEntry
 
 /**
  * Test-only [Director] stub. Subscribers of [metadataState] / [playbackState] / [sessionState] /
@@ -40,7 +41,7 @@ open class FakeDirector : Director {
         extraBufferCapacity = 0,
         onBufferOverflow = BufferOverflow.SUSPEND,
     )
-    private val setlistSink = MutableSharedFlow<List<Long>>(
+    private val setlistSink = MutableSharedFlow<List<SetlistEntry>>(
         replay = 1,
         extraBufferCapacity = 0,
         onBufferOverflow = BufferOverflow.SUSPEND,
@@ -72,7 +73,15 @@ open class FakeDirector : Director {
     suspend fun emitMetadata(track: Track?) = metadataSink.emit(track)
     suspend fun emitPlayback(state: ChipboxPlaybackState) = playbackSink.emit(state)
     suspend fun emitSession(session: Session?) = sessionSink.emit(session)
-    suspend fun emitSetlist(setlist: List<Long>) = setlistSink.emit(setlist)
+
+    /** Emit a setlist from bare track ids, minting index-based slot ids. [activeIndex] marks the
+     *  playing slot (none by default). */
+    suspend fun emitSetlist(setlist: List<Long>, activeIndex: Int? = null) = setlistSink.emit(
+        setlist.mapIndexed { index, trackId ->
+            SetlistEntry(slotId = index.toLong(), trackId = trackId, active = index == activeIndex)
+        },
+    )
+
     suspend fun emitErrorSink(event: PlayerErrorEvent) = errorSink.emit(event)
 
     /** Convenience: emit a playback state with only [state] varied; other fields default. */
@@ -93,7 +102,7 @@ open class FakeDirector : Director {
     override fun metadataState(): SharedFlow<Track?> = metadataSink.asSharedFlow()
     override fun playbackState(): SharedFlow<ChipboxPlaybackState> = playbackSink.asSharedFlow()
     override fun sessionState(): SharedFlow<Session?> = sessionSink.asSharedFlow()
-    override fun setlistState(): SharedFlow<List<Long>> = setlistSink.asSharedFlow()
+    override fun setlistState(): SharedFlow<List<SetlistEntry>> = setlistSink.asSharedFlow()
     override fun errorEvents(): SharedFlow<PlayerErrorEvent> = errorSink.asSharedFlow()
 
     override fun request(request: SessionRequest) {

@@ -15,10 +15,12 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
+import net.sigmabeta.chipbox.features.playlists.Playlists
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
@@ -141,6 +143,20 @@ class ArtistDetailViewModelTest {
         vm.sendAction(ArtistDetailAction.TrackClicked(position = 1))
     }
 
+    @Test
+    fun `AddToPlaylistClicked opens the playlist picker with this artist's track ids`() = runTest {
+        val artist = artistOf(1L, "Mitsuda", tracks = listOf(trackOf(20, "A"), trackOf(21, "B")))
+        val source = sharedFlowOf<Data<Artist?>>().also { it.tryEmit(Data.Succeeded(artist)) }
+        val vm = newViewModel(artistId = 1L, repository = repoWithArtist(source))
+        vm.state.first { it.tracks is LCE.Content }
+
+        val event = collectAndDispatch(vm, ArtistDetailAction.AddToPlaylistClicked)
+
+        assertTrue(event is ChipboxEvent.NavigateTo)
+        // The stub StringProvider returns the id's name for the suggested-name lookup.
+        assertEquals(Playlists(listOf(20L, 21L), "PLAYLISTS_NAME_FROM_ARTIST"), event.destination)
+    }
+
     // ---- helpers ----
 
     private fun newViewModel(
@@ -151,6 +167,7 @@ class ArtistDetailViewModelTest {
         artistId = artistId,
         repository = repository,
         director = director,
+        favorites = FakeFavoritesRepository(),
         stringProvider = stubStringProvider(),
         hatchet = BluntHatchet(),
     )

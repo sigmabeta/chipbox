@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,27 +74,27 @@ fun NameCaptionValueListItem(
                 .weight(1f)
                 .wrapContentHeight(),
         ) {
-            Text(
+            CrossfadeText(
                 text = model.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = primaryColor,
                 fontWeight = fontWeight,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
+                textModifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(top = 24.dp),
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Text(
+            CrossfadeText(
                 text = model.caption,
                 style = MaterialTheme.typography.bodySmall,
                 color = primaryColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
+                textModifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(bottom = 12.dp),
             )
@@ -103,7 +102,7 @@ fun NameCaptionValueListItem(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        Text(
+        CrossfadeText(
             text = model.value,
             textAlign = TextAlign.End,
             style = MaterialTheme.typography.labelLarge,
@@ -111,7 +110,7 @@ fun NameCaptionValueListItem(
             fontWeight = fontWeight,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.wrapContentWidth(),
+            textModifier = Modifier.wrapContentWidth(),
         )
     }
 }

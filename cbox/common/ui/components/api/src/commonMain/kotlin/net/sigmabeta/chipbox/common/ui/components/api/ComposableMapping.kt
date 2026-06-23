@@ -11,8 +11,10 @@ import net.sigmabeta.sage.ui.perf.WithMeasurementComponent
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.CheckableListModel
 import net.sigmabeta.sage.components.CollapsibleDetailsListModel
+import net.sigmabeta.sage.components.ConfirmationListModel
 import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.components.DropdownSettingListModel
+import net.sigmabeta.sage.components.EditTextListModel
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.ErrorStateListModel
 import net.sigmabeta.sage.components.HeroImageListModel
@@ -65,9 +67,13 @@ fun ListModel.Content(
 
             is CollapsibleDetailsListModel -> CollapsibleDetailsListItem(model = this, modifier = mod, padding = pad)
 
+            is ConfirmationListModel -> ConfirmationListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
+
             is CtaListModel -> ActionItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is DropdownSettingListModel -> ExpandingDropdownListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
+
+            is EditTextListModel -> EditTextListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is EmptyStateListModel -> EmptyListIndicator(model = this, modifier = mod)
 
@@ -123,6 +129,11 @@ fun ListModel.Content(
             // it in a DraggableListItem). If one reaches a normal list, render its inner content
             // without a handle rather than falling through to the blank Spacer below.
             is DraggableListModel -> content.Content(sink, debug, mod, pad)
+
+            // Swipe-to-remove works in any list path: wrap the inner content in SwipeToRemoveBox.
+            is DismissibleListModel -> SwipeToRemoveBox(onRemove = { sink.sendAction(dismissAction) }) {
+                content.Content(sink, debug, mod, pad)
+            }
 
             is LoadingItemListModel -> {
                 when (loadingType) {

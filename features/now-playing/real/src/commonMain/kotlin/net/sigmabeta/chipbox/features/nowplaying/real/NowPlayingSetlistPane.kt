@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.features.nowplaying.real
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.DragInteraction
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +19,7 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,8 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
+import kotlinx.coroutines.flow.collect
 import net.sigmabeta.chipbox.common.ui.components.api.DraggableListItem
+import net.sigmabeta.chipbox.common.ui.components.api.IconNameListItem
 import net.sigmabeta.chipbox.common.ui.components.api.NameCaptionValueListItem
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
@@ -37,6 +45,14 @@ import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.vector
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+
+// Don't yank the viewport to the playing track if the user touched the list this recently; assume
+// they're browsing the queue and leave them where they are.
+private val USER_SCROLL_GRACE = 5.seconds
+
+// Rows of lead-in to keep above the playing track, so it lands as the 3rd visible row rather than
+// pinned to the very top (clamped near the start of the list, where there's no room above).
+private const val PLAYING_ROW_LEAD_IN = 2
 
 /**
  * EXPERIMENT: the current play queue rendered in place of the whole [InfoContainer] — the setlist
@@ -66,6 +82,46 @@ internal fun NowPlayingSetlist(
     }
     val haptic = LocalHapticFeedback.current
 
+    // Wall-time of the user's most recent touch on the list. Updated from the list's own interaction
+    // stream (drags/presses) so programmatic auto-scrolls below never count as "the user scrolled".
+    var lastUserScroll by remember { mutableStateOf<TimeSource.Monotonic.ValueTimeMark?>(null) }
+    LaunchedEffect(listState) {
+        listState.interactionSource.interactions.collect { interaction ->
+            when (interaction) {
+                is DragInteraction.Start, is DragInteraction.Stop, is DragInteraction.Cancel,
+                is PressInteraction.Press, is PressInteraction.Release, is PressInteraction.Cancel ->
+                    lastUserScroll = TimeSource.Monotonic.markNow()
+            }
+        }
+    }
+
+    // Whenever the playing track changes, scroll it to the 3rd visible row. Keyed on the active
+    // row's slot id so reorders (which move it but don't change which slot plays) don't scroll.
+    val activeSlotId = model.setlist.firstOrNull { it.active }?.dataId
+    LaunchedEffect(activeSlotId) {
+        if (activeSlotId == null) return@LaunchedEffect
+
+        // Defer to a user who's actively browsing the queue.
+        val mark = lastUserScroll
+        if (mark != null && mark.elapsedNow() < USER_SCROLL_GRACE) return@LaunchedEffect
+
+        val activeIndex = items.indexOfFirst { it.active }
+        if (activeIndex < 0) return@LaunchedEffect
+        // The optional add-to-playlist header is item 0 when present, shifting every row down one.
+        val targetIndex = activeIndex + if (model.canAddSetlistToPlaylist) 1 else 0
+        // Scroll the row two slots below the top so the playing track reads as the 3rd visible row.
+        val desiredTop = (targetIndex - PLAYING_ROW_LEAD_IN).coerceAtLeast(0)
+
+        // Already parked there → nothing to do.
+        if (listState.firstVisibleItemIndex == desiredTop && listState.firstVisibleItemScrollOffset == 0) {
+            return@LaunchedEffect
+        }
+
+        // Snap rather than animate: an animated scroll fights the reorderable list's own scroll
+        // handling and produces a one-off settle-bounce of the whole list.
+        listState.scrollToItem(desiredTop)
+    }
+
     LazyColumn(
         state = listState,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
@@ -74,7 +130,26 @@ internal fun NowPlayingSetlist(
             .clip(RoundedCornerShape(NowPlayingPanelCornerRadius))
             .background(MaterialTheme.colorScheme.surfaceContainer),
     ) {
-        itemsIndexed(items, key = { _, row -> row.dataId }) { index, row ->
+        // A non-reorderable header row to capture the whole setlist into a playlist. Hidden for the
+        // All Tracks session (and an empty queue) — see [NowPlayingModel.canAddSetlistToPlaylist].
+        if (model.canAddSetlistToPlaylist) {
+            item(key = "setlist-add-to-playlist", contentType = "setlist-add-to-playlist") {
+                IconNameListItem(
+                    name = model.setlistAddToPlaylistLabel,
+                    icon = Icon.QueueMusic,
+                    clickAction = NowPlayingAction.AddSetlistToPlaylistClicked,
+                    active = false,
+                    actionSink = actionSink,
+                    modifier = Modifier.testTag(NOW_PLAYING_SETLIST_ADD_PLAYLIST_TAG),
+                    padding = NowPlayingRowPadding,
+                )
+            }
+        }
+        itemsIndexed(
+            items,
+            key = { _, row -> row.dataId },
+            contentType = { _, row -> row.layoutId() },
+        ) { index, row ->
             ReorderableItem(reorderState, key = row.dataId) { _ ->
                 val dragHandle = Modifier.draggableHandle(
                     onDragStarted = {

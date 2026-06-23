@@ -21,11 +21,16 @@ internal val NowPlayingRowPadding = PaddingValues(horizontal = 8.dp)
 const val NOW_PLAYING_TRACK_INFO_TAG = "NowPlayingTrackInfo"
 const val NOW_PLAYING_MENU_BUTTON_TAG = "NowPlayingMenuButton"
 const val NOW_PLAYING_SETLIST_BUTTON_TAG = "NowPlayingSetlistButton"
+const val NOW_PLAYING_FAVORITES_BUTTON_TAG = "NowPlayingFavoritesButton"
 const val NOW_PLAYING_CTX_BACK_TAG = "NowPlayingCtxBack"
 const val NOW_PLAYING_CTX_GAME_TAG = "NowPlayingCtxGame"
+const val NOW_PLAYING_CTX_PLATFORM_TAG = "NowPlayingCtxPlatform"
 const val NOW_PLAYING_CTX_ARTISTS_TAG = "NowPlayingCtxArtists"
 const val NOW_PLAYING_CTX_REPEAT_TAG = "NowPlayingCtxRepeat"
 const val NOW_PLAYING_CTX_SHUFFLE_TAG = "NowPlayingCtxShuffle"
+const val NOW_PLAYING_CTX_FAVORITES_TAG = "NowPlayingCtxFavorites"
+const val NOW_PLAYING_CTX_ADD_PLAYLIST_TAG = "NowPlayingCtxAddPlaylist"
+const val NOW_PLAYING_SETLIST_ADD_PLAYLIST_TAG = "NowPlayingSetlistAddPlaylist"
 
 /** Test tag for the per-artist row in the ARTISTS context menu, keyed by artist id. */
 fun nowPlayingCtxArtistTag(artistId: Long) = "NowPlayingCtxArtist:$artistId"

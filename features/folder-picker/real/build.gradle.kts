@@ -29,6 +29,15 @@ kotlin {
             }
         }
 
+        named("androidMain") {
+            dependencies {
+                // The Android Route gates the picker behind All Files Access / READ_EXTERNAL_STORAGE
+                // and launches the grant flow via rememberLauncherForActivityResult.
+                implementation(libs.androidx.activity.compose)
+                implementation(projects.cbox.common.ui.components.api)
+            }
+        }
+
         named("commonTest") {
             dependencies {
                 implementation(projects.cbox.common.contentsource.fake)

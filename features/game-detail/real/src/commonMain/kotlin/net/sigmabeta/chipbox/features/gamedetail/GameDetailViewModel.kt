@@ -9,13 +9,16 @@ import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactory
 import dev.zacsweers.metrox.viewmodel.ManualViewModelAssistedFactoryKey
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
+import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
+import net.sigmabeta.chipbox.features.playlists.Playlists
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
@@ -32,7 +35,8 @@ class GameDetailViewModel(
     @Assisted private val gameId: Long,
     private val repository: Repository,
     private val director: Director,
-    stringProvider: StringProvider,
+    private val favorites: FavoritesRepository,
+    private val stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<GameDetailState>(
     GameDetailState(),
@@ -52,6 +56,12 @@ class GameDetailViewModel(
                 updateState { it.copy(playingTrackId = track?.id) }
             }
         }
+
+        viewModelScope.launch {
+            favorites.isGameFavorite(gameId).collect { favorite ->
+                updateState { it.copy(isFavorite = favorite) }
+            }
+        }
     }
 
     override fun handleAction(action: SageAction) {
@@ -60,7 +70,27 @@ class GameDetailViewModel(
             GameDetailAction.ShuffleAllClicked -> startSession(startingPosition = 0, shuffled = true)
             is GameDetailAction.TrackClicked -> startSession(startingPosition = action.position)
             is GameDetailAction.ArtistClicked -> emit(NavigateTo(ArtistDetail(action.id)))
+            GameDetailAction.AddToFavoritesClicked -> toggleFavorite()
+            GameDetailAction.AddToPlaylistClicked -> addToPlaylist()
             else -> Unit
+        }
+    }
+
+    private fun addToPlaylist() {
+        // Hand the playlist picker every track on this screen; no-op until the tracks have loaded.
+        val trackIds = (state.value.tracks as? LCE.Content)?.data?.map { it.id }
+        if (trackIds.isNullOrEmpty()) return
+        // Suggest a name for a new playlist made from this game, e.g. "From game Street Fighter II".
+        val title = (state.value.game as? LCE.Content)?.data?.title
+        val suggestedName = title?.let {
+            stringProvider.getStringOneArg(ChipboxStringId.PLAYLISTS_NAME_FROM_GAME, it)
+        }
+        emit(NavigateTo(Playlists(trackIds, suggestedName)))
+    }
+
+    private fun toggleFavorite() {
+        viewModelScope.launch {
+            favorites.setGameFavorite(gameId, !state.value.isFavorite)
         }
     }
 
