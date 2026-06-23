@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.vector
@@ -66,24 +67,24 @@ internal fun ColumnScope.TopBar(model: NowPlayingModel, actionSink: ActionSink) 
             modifier = Modifier.weight(1.0f)
         ) {
             if (model.sessionTypeLabel.isNotEmpty()) {
-                Text(
+                CrossfadeText(
                     text = model.sessionTypeLabel,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth(),
+                    textModifier = Modifier.fillMaxWidth(),
                 )
                 if (model.sessionSourceName.isNotEmpty()) {
-                    Text(
+                    CrossfadeText(
                         text = model.sessionSourceName,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth(),
+                        textModifier = Modifier.fillMaxWidth(),
                     )
                 }
             }

@@ -26,7 +26,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
@@ -387,7 +386,7 @@ private fun navItems(
             // `Tab.options` is `@Composable get` — read it inside the composable closures
             // (icon/label), not in the outer non-composable lambda body.
             icon = { Icon(painter = tab.options.icon!!, contentDescription = null) },
-            label = { Text(tab.options.title) },
+            label = { CrossfadeText(tab.options.title) },
         )
     }
 }
