@@ -12,6 +12,11 @@ interface TrackDao {
     @Query("SELECT * FROM track ORDER BY title")
     fun getAll(): Flow<List<TrackEntity>>
 
+    // Paged variant of [getAll]. SQLite treats a negative LIMIT as "no limit", so passing -1 yields
+    // every row from [offset] onward — letting the repository express "skip N, take the rest".
+    @Query("SELECT * FROM track ORDER BY title LIMIT :limit OFFSET :offset")
+    fun getAllPaged(limit: Int, offset: Int): Flow<List<TrackEntity>>
+
     @Query("SELECT * FROM track WHERE game_id = :gameId")
     fun getTracksForGame(gameId: Long): Flow<List<TrackEntity>>
 

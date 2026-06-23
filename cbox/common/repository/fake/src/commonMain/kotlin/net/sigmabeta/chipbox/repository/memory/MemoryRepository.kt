@@ -108,8 +108,24 @@ open class MemoryRepository(
 
     override fun getAllTracks(
         withGame: Boolean,
-        withArtists: Boolean
+        withArtists: Boolean,
+        limit: Int?,
+        offset: Int
     ): Flow<Data<List<Track>>> {
+        // A paged request gets a fresh one-shot flow so distinct pages don't clobber each other
+        // through the shared, lazily-cached unpaged flow below.
+        if (limit != null || offset != 0) {
+            return flow {
+                emit(Data.Loading)
+                val page = tracksByTitle
+                    .values
+                    .sortedBy { it.title }
+                    .drop(offset)
+                    .let { if (limit != null) it.take(limit) else it }
+                    .map { it.toTrack(withGame, withArtists) }
+                emit(if (page.isNotEmpty()) Data.Succeeded(page) else Data.Empty)
+            }
+        }
         if (!tracksLoaded) {
             tracksLoaded = true
             repositoryScope.launch {

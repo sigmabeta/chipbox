@@ -6,19 +6,29 @@ import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.ListModel
+import net.sigmabeta.sage.components.LoadingItemListModel
 import net.sigmabeta.sage.components.LoadingType
 import net.sigmabeta.sage.components.NameCaptionValueListModel
 import net.sigmabeta.sage.components.TitleBarModel
 import net.sigmabeta.sage.list.ColumnType
 import net.sigmabeta.sage.list.ListState
+import net.sigmabeta.sage.list.PaginationType
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.StringProvider
 
 data class BrowseAllTracksState(
     val tracks: LCE<List<Track>> = LCE.Uninitialized,
     val playingTrackId: Long? = null,
+    // Paging window: [windowStart, windowStart + tracks.size) within the title-ordered catalog.
+    val windowStart: Int = 0,
+    val hasMoreBefore: Boolean = false,
+    val hasMoreAfter: Boolean = true,
+    val loadingPrevious: Boolean = false,
+    val loadingMore: Boolean = false,
 ) : ListState() {
     override val columnType: ColumnType = ColumnType.One
+
+    override val paginationType: PaginationType = PaginationType.Standard()
 
     override fun title(stringProvider: StringProvider) = TitleBarModel(
         title = stringProvider.getString(ChipboxStringId.LIBRARY_BROWSE_ALL_TRACKS),
@@ -35,11 +45,28 @@ data class BrowseAllTracksState(
             is LCE.Error -> false
         }
         val cta = if (showCta) listOf(shuffleAllCta(stringProvider)) else emptyList()
-        return cta + tracks.withStandardErrorAndLoading(
+        val content = tracks.withStandardErrorAndLoading(
             loadingType = LoadingType.TEXT_CAPTION,
             loadingItemCount = LOADING_COUNT,
             loadingWithHeader = false,
         ) { content(data, stringProvider) }
+        // Inline header/footer spinners shown while paging a non-empty window further up or down.
+        return cta +
+            pageLoader(loadingPrevious, LOAD_PREVIOUS_OP) +
+            content +
+            pageLoader(loadingMore, LOAD_MORE_OP)
+    }
+
+    private fun pageLoader(show: Boolean, operationName: String): List<ListModel> {
+        if (!show) return emptyList()
+        val type = paginationType as? PaginationType.Paginating ?: return emptyList()
+        return listOf(
+            LoadingItemListModel(
+                loadingType = type.loadingType,
+                loadOperationName = operationName,
+                loadPositionOffset = 0,
+            )
+        )
     }
 
     private fun shuffleAllCta(stringProvider: StringProvider) = CtaListModel(
@@ -64,7 +91,9 @@ data class BrowseAllTracksState(
             name = track.title,
             caption = track.game?.title.orEmpty(),
             value = formatTrackLength(track.trackLengthMs),
-            clickAction = BrowseAllTracksAction.TrackClicked(index),
+            // Absolute position in the title-ordered catalog (window may start past 0), so playback
+        // starts on the right track regardless of how far the window has been paged.
+        clickAction = BrowseAllTracksAction.TrackClicked(windowStart + index),
             active = track.id == playingTrackId,
         )
 
@@ -77,6 +106,9 @@ data class BrowseAllTracksState(
 
     private companion object {
         const val LOADING_COUNT = 12
+
+        const val LOAD_PREVIOUS_OP = "browse_all_tracks.load_previous"
+        const val LOAD_MORE_OP = "browse_all_tracks.load_more"
 
         const val MILLIS_PER_SECOND = 1_000L
         const val SECONDS_PER_MINUTE = 60L

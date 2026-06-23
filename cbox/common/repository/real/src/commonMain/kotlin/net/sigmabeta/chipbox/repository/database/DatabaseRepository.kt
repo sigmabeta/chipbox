@@ -104,8 +104,19 @@ class DatabaseRepository(
         { list -> list.suspendMap { it.toGame(withTracks, withArtists) } }
     )
 
-    override fun getAllTracks(withGame: Boolean, withArtists: Boolean) = setupFlow(
-        { trackDao.getAll() },
+    override fun getAllTracks(
+        withGame: Boolean,
+        withArtists: Boolean,
+        limit: Int?,
+        offset: Int
+    ) = setupFlow(
+        {
+            if (limit == null && offset == 0) {
+                trackDao.getAll()
+            } else {
+                trackDao.getAllPaged(limit ?: -1, offset)
+            }
+        },
         { list -> list.suspendMap { it.toTrack(withGame, withArtists) } }
     )
 
