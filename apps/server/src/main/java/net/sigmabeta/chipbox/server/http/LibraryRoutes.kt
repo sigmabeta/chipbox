@@ -108,7 +108,13 @@ private fun Route.trackRoutes(repository: Repository) {
         get {
             val withGame = call.boolParam("withGame")
             val withArtists = call.boolParam("withArtists")
-            call.respond(repository.getAllTracks(withGame, withArtists).firstSettled().map { it.withPublicUrls() })
+            val limit = call.intParam("limit")
+            val offset = call.intParam("offset") ?: 0
+            call.respond(
+                repository.getAllTracks(withGame, withArtists, limit, offset)
+                    .firstSettled()
+                    .map { it.withPublicUrls() }
+            )
         }
         get("/{id}") {
             val id = call.longPathParam("id") ?: return@get call.notFound()
@@ -179,6 +185,9 @@ private fun io.ktor.server.application.ApplicationCall.longPathParam(name: Strin
 
 private fun io.ktor.server.application.ApplicationCall.queryParam(name: String): String? =
     request.queryParameters[name]?.takeIf { it.isNotBlank() }
+
+private fun io.ktor.server.application.ApplicationCall.intParam(name: String): Int? =
+    request.queryParameters[name]?.toIntOrNull()
 
 private fun io.ktor.server.application.ApplicationCall.platformPathParam(): Platform? =
     parameters["platform"]?.let { name -> runCatching { Platform.valueOf(name) }.getOrNull() }

@@ -19,9 +19,20 @@ interface Repository {
         withArtists: Boolean = false
     ): Flow<Data<List<Game>>>
 
+    /**
+     * Every track in the library, ordered by title.
+     *
+     * Pass [limit] to load only a page of the catalog and [offset] to skip that many rows from the
+     * start — the groundwork for paginated/lazy loading on large libraries. The defaults
+     * ([limit] = null, [offset] = 0) load the whole catalog in one emission, matching the original
+     * behaviour, so existing callers are unaffected. A null [limit] means "no upper bound"; [offset]
+     * still applies when [limit] is null.
+     */
     fun getAllTracks(
         withGame: Boolean = false,
-        withArtists: Boolean = false
+        withArtists: Boolean = false,
+        limit: Int? = null,
+        offset: Int = 0
     ): Flow<Data<List<Track>>>
 
     // Resolve a known set of tracks by id. Use this instead of filtering [getAllTracks] when a
