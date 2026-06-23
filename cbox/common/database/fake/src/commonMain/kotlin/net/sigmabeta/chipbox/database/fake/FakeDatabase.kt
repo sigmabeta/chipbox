@@ -147,6 +147,12 @@ class FakeDatabase(private val random: Random = Random(0)) {
         override fun getAll(): Flow<List<TrackEntity>> = observe {
             tracks.values.sortedBy { it.title }
         }
+        override fun getAllPaged(limit: Int, offset: Int): Flow<List<TrackEntity>> = observe {
+            // Mirror SQLite: ORDER BY title, skip [offset], then take [limit] — a negative limit
+            // means "no limit" (every row from [offset] onward).
+            val fromOffset = tracks.values.sortedBy { it.title }.drop(offset)
+            if (limit < 0) fromOffset else fromOffset.take(limit)
+        }
         override fun getTracksForGame(gameId: Long): Flow<List<TrackEntity>> = observe {
             tracks.values.filter { it.gameId == gameId }
         }
