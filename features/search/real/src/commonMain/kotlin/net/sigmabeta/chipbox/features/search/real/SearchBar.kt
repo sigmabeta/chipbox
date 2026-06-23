@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -26,6 +25,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.strings.api.text
+import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
 import net.sigmabeta.chipbox.common.ui.components.api.subs.MenuActionIcon
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon
@@ -96,12 +96,12 @@ fun SearchBar(
                 )
 
                 this@Row.AnimatedVisibility(visible = textEmpty) {
-                    Text(
+                    CrossfadeText(
                         text = ChipboxStringId.SEARCH_HINT.text(),
                         style = MaterialTheme.typography.titleMedium.copy(
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         ),
-                        modifier = Modifier
+                        textModifier = Modifier
                             .alpha(HINT_ALPHA)
                             .fillMaxWidth(),
                     )

@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.toImmutableList
+import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
 import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon as SageIcon
@@ -91,7 +91,7 @@ private fun ErrorRow(
             .background(MaterialTheme.colorScheme.errorContainer)
             .padding(start = ErrorRowTextStartPadding),
     ) {
-        Text(
+        CrossfadeText(
             text = error.message,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onErrorContainer,

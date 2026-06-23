@@ -134,6 +134,30 @@ internal fun NowPlayingControls(
     )
 }
 
+/**
+ * Context menu — CONTROLS with the current track favorited: the favorite row shows its filled,
+ * accented "Remove from Favorites" state, and (in the wide layout) the transport favorites button
+ * picks up the same accent tint.
+ */
+@DevicePreviews
+@Composable
+internal fun NowPlayingControlsFavorited(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    NowPlayingScreenshot(
+        darkTheme,
+        syntheticWidthClass,
+        sampleModel(
+            isPlaying = true,
+            contextMenuMode = ContextMenuMode.CONTROLS,
+            repeatStatusLabel = "Playing sequentially",
+            shuffleStatusLabel = "Playing in order",
+            isTrackFavorite = true,
+        ),
+    )
+}
+
 @Composable
 private fun NowPlayingScreenshot(
     darkTheme: Boolean,
@@ -160,6 +184,7 @@ private fun sampleModel(
     isShuffled: Boolean = false,
     repeatStatusLabel: String = "",
     shuffleStatusLabel: String = "",
+    isTrackFavorite: Boolean = false,
 ): NowPlayingModel = NowPlayingModel(
     artwork = SourceInfo(info = "preview://mega-man-2"),
     sessionTypeLabel = "Playing from game",
@@ -183,6 +208,12 @@ private fun sampleModel(
     artists = artists,
     repeatStatusLabel = repeatStatusLabel,
     shuffleStatusLabel = shuffleStatusLabel,
+    isTrackFavorite = isTrackFavorite,
+    favoriteLabel = if (isTrackFavorite) "Remove from Favorites" else "Add to Favorites",
+    addToPlaylistLabel = "Add to Playlist",
+    setlistAddToPlaylistLabel = "Add to Playlist",
+    // The sample session is "from game" (a finite list), so the setlist panel offers its CTA.
+    canAddSetlistToPlaylist = true,
     setlist = sampleSetlist(),
 )
 

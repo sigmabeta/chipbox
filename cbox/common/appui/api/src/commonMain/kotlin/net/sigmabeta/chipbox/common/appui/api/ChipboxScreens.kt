@@ -24,6 +24,12 @@ import net.sigmabeta.chipbox.features.browsebygame.BrowseByGame
 import net.sigmabeta.chipbox.features.browsebygame.BrowseByGameRoute
 import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatform
 import net.sigmabeta.chipbox.features.browsebyplatform.BrowseByPlatformRoute
+import net.sigmabeta.chipbox.features.favorites.Favorites
+import net.sigmabeta.chipbox.features.favorites.FavoritesRoute
+import net.sigmabeta.chipbox.features.playlists.Playlists
+import net.sigmabeta.chipbox.features.playlists.PlaylistsRoute
+import net.sigmabeta.chipbox.features.playlistdetail.PlaylistDetail
+import net.sigmabeta.chipbox.features.playlistdetail.PlaylistDetailRoute
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibrary
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibraryMode
 import net.sigmabeta.chipbox.features.componentlibrary.LibraryMode
@@ -92,6 +98,9 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     BrowseByPlatform -> BrowseByPlatformScreen
     BrowseAllTracks -> BrowseAllTracksScreen
     BrowseByArtist -> BrowseByArtistScreen
+    Favorites -> FavoritesScreen
+    is Playlists -> PlaylistsDeepScreen(destination.pendingTrackIds, destination.suggestedName)
+    is PlaylistDetail -> PlaylistDetailDeepScreen(destination.id)
     is GameDetail -> GameDetailDeepScreen(destination.id)
     is ArtistDetail -> ArtistDetailDeepScreen(destination.id)
     is GamesForPlatform -> GamesForPlatformDeepScreen(destination.platform)
@@ -105,15 +114,18 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
  * navigation + config change — same invariant the AndroidX `chipboxComposable` wrapper kept).
  */
 @Composable
-private fun ScreenScaffold(content: @Composable () -> Unit) {
+private fun Screen.ScreenScaffold(content: @Composable () -> Unit) {
     val controller = LocalChromeController.current
     LaunchedEffect(Unit) { controller.set(ScreenChrome.Default) }
-    // [WithPerScreenViewModelStore] gives each Screen its own ViewModelStore on JVM (where
+    // [WithPerScreenViewModelStore] gives each Screen its own ViewModelStore on JVM/JS (where
     // Voyager doesn't); androidMain is a passthrough since Voyager already does it via
     // AndroidScreenLifecycleOwner. Without this, all screens in the JVM Navigator share the
     // Window's ViewModelStore and `metroViewModel<VM>()` returns the same cached instance —
     // pushing GamesForPlatform(DREAMCAST) then GamesForPlatform(GENESIS) reuses Dreamcast.
-    WithPerScreenViewModelStore {
+    // Passing `this` (the Screen) lets the JVM/JS actual scope the store to the screen's
+    // back-stack lifetime, so state survives navigating away and back (e.g. Home's modules,
+    // Search's query) instead of being torn down the moment the screen stops being on top.
+    WithPerScreenViewModelStore(this) {
         content()
     }
 }
@@ -453,6 +465,37 @@ private object BrowseAllTracksScreen : Screen {
 private object BrowseByArtistScreen : Screen {
     @Composable override fun Content() = ScreenScaffold {
         BrowseByArtistRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+private object FavoritesScreen : Screen {
+    @Composable override fun Content() = ScreenScaffold {
+        FavoritesRoute(onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+// Browse mode and each picker invocation get distinct keys (so they don't share a ViewModelStore +
+// its baked-in @Assisted pendingTrackIds) — see the GameDetailDeepScreen note.
+private data class PlaylistsDeepScreen(
+    val pendingTrackIds: List<Long>,
+    val suggestedName: String?,
+) : Screen {
+    override val key: ScreenKey = "Playlists:${pendingTrackIds.hashCode()}:${suggestedName.hashCode()}"
+
+    @Composable override fun Content() = ScreenScaffold {
+        PlaylistsRoute(
+            pendingTrackIds = pendingTrackIds,
+            suggestedName = suggestedName,
+            onEvent = LocalChipboxEventSink.current,
+        )
+    }
+}
+
+private data class PlaylistDetailDeepScreen(val playlistId: Long) : Screen {
+    override val key: ScreenKey = "PlaylistDetail:$playlistId"
+
+    @Composable override fun Content() = ScreenScaffold {
+        PlaylistDetailRoute(playlistId = playlistId, onEvent = LocalChipboxEventSink.current)
     }
 }
 

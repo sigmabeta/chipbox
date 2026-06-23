@@ -16,6 +16,12 @@ interface ArtistDao {
     @Query("SELECT * FROM artist WHERE name = :name")
     suspend fun getArtistByNameSync(name: String): ArtistEntity?
 
+    // Single-row by-id lookup behind the artist-by-id read cache: hydration resolves each artist
+    // id (from the join queries below) through this, so a shared artist is read from storage once
+    // and reused across every track/game that references it.
+    @Query("SELECT * FROM artist WHERE id = :artistId")
+    suspend fun getArtistByIdSync(artistId: Long): ArtistEntity
+
     @Query("SELECT * FROM artist ORDER BY name COLLATE NOCASE")
     fun getAll(): Flow<List<ArtistEntity>>
 

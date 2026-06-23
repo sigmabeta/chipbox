@@ -147,7 +147,9 @@ fun NowPlayingContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            TransportRow(model = model, actionSink = actionSink)
+            // In the wide layout the setlist is pinned as its own panel, so the transport's setlist
+            // toggle is redundant — swap it for a jump to Favorites.
+            TransportRow(model = model, actionSink = actionSink, setlistPinned = wide)
         }
     }
 }

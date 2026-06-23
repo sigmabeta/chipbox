@@ -6,7 +6,7 @@ import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
-import net.sigmabeta.chipbox.contentsource.AndroidFileContentSource
+import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.crash.CrashReporter
 import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
 import net.sigmabeta.chipbox.player.director.Director
@@ -48,7 +48,7 @@ interface ChipboxAppGraph : ViewModelGraph {
     // ContentProvider construction is process-init and can't synchronously resolve
     // an AppScope graph that's lazy-built.
     val repository: Repository
-    val fileContentSource: AndroidFileContentSource
+    val fileContentSource: LocalFileContentSource
 
     // Bind Context from Application: contributed modules that take a Context (resources,
     // analytics, datastore) get the Application Context routed through this @Provides.

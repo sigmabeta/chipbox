@@ -11,6 +11,10 @@ dependencies {
     api(projects.cbox.common.history.api)
     api(projects.cbox.common.history.real)
 
+    // The debug switch picks Real vs Fake at graph build.
+    implementation(projects.cbox.common.history.fake)
+    implementation(projects.cbox.common.debug.api)
     implementation(projects.cbox.common.player.director.api)
+    implementation(libs.kotlinx.coroutines.core)
     implementation(libs.sage.common.logging)
 }

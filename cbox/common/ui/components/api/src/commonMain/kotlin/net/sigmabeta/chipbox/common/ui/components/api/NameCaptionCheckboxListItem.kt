@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,26 +63,26 @@ fun NameCaptionCheckboxListItem(
         Column(
             modifier = Modifier.weight(1.0f)
         ) {
-            Text(
+            CrossfadeText(
                 text = model.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
+                textModifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(top = 24.dp)
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Text(
+            CrossfadeText(
                 text = model.caption,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
+                textModifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(bottom = 12.dp)
             )

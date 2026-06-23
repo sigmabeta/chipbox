@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -135,12 +134,12 @@ private fun EmptyListIndicator(
             }
         }
 
-        Text(
+        CrossfadeText(
             text = explanation,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyLarge,
             color = color,
-            modifier = Modifier
+            textModifier = Modifier
                 .padding(horizontal = 32.dp)
                 .padding(bottom = 16.dp)
                 .widthIn(min = 200.dp, max = 400.dp)
@@ -171,12 +170,12 @@ private fun DebugText(debugText: String, color: Color) {
     val style = remember(baseStyle) {
         baseStyle.copy(fontSize = 10.sp, fontFamily = FontFamily.Monospace)
     }
-    Text(
+    CrossfadeText(
         text = debugText,
         textAlign = TextAlign.Center,
         style = style,
         color = color,
-        modifier = Modifier
+        textModifier = Modifier
             .padding(horizontal = 32.dp)
             .padding(bottom = 8.dp)
             .widthIn(min = 200.dp, max = 400.dp)
@@ -190,12 +189,12 @@ private fun DebugTextSmall(debugText: String, color: Color) {
     val style = remember(baseStyle) {
         baseStyle.copy(fontSize = 6.sp, fontFamily = FontFamily.Monospace)
     }
-    Text(
+    CrossfadeText(
         text = debugText,
         textAlign = TextAlign.Center,
         style = style,
         color = color,
-        modifier = Modifier
+        textModifier = Modifier
             .padding(horizontal = 32.dp)
             .padding(bottom = 16.dp)
             .widthIn(min = 200.dp, max = 400.dp)

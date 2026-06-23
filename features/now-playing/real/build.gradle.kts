@@ -11,7 +11,9 @@ kotlin {
 
                 // Route keys for the LINKS/ARTISTS context-menu navigation targets.
                 implementation(projects.features.gameDetail.api)
+                implementation(projects.features.gamesForPlatform.api)
                 implementation(projects.features.artistDetail.api)
+                implementation(projects.features.playlists.api)
 
                 implementation(projects.cbox.common.ui.freeform.api)
                 implementation(projects.cbox.common.ui.components.api)
@@ -22,6 +24,7 @@ kotlin {
                 implementation(projects.cbox.common.player.director.api)
                 // EXPERIMENT: inline setlist mode resolves queue ids to Track metadata.
                 implementation(projects.cbox.common.repository.api)
+                implementation(projects.cbox.common.favorites.api)
 
                 implementation(libs.sage.common.appcomm)
                 // EXPERIMENT: drag-to-reorder for the inline setlist (same lib sage's
@@ -41,6 +44,7 @@ kotlin {
             dependencies {
                 implementation(projects.cbox.common.player.director.fake)
                 implementation(projects.cbox.common.repository.fake)
+                implementation(projects.cbox.common.favorites.fake)
             }
         }
     }

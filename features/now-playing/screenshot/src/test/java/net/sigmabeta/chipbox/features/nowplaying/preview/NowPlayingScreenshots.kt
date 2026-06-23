@@ -76,6 +76,14 @@ class NowPlayingScreenshots(
         }
     }
 
+    @Test
+    fun nowPlayingControlsFavorited() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            NowPlayingControlsFavorited(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = SUFFIX_TESTNAME)

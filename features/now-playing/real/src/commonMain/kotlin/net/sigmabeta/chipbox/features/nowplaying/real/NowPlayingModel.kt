@@ -42,18 +42,34 @@ data class NowPlayingModel(
     val setlistVisible: Boolean = false,
     /**
      * The current playback setlist as reorderable rows (in queue order), shown when
-     * [setlistVisible]. Each row's `dataId` is the track id and `active` marks the playing track;
-     * the row click jumps playback, the handle reorders.
+     * [setlistVisible]. Each row's `dataId` is its stable queue slot id (not the track id, so a
+     * duplicated track stays distinct) and `active` marks the playing slot; the row click jumps
+     * playback, the handle reorders.
      */
     val setlist: List<NameCaptionValueListModel> = emptyList(),
     /** The playing track's game id, used by the LINKS game row to navigate to game detail. */
     val gameId: Long = 0L,
+    /** Human-readable platform name for the LINKS platform row, e.g. "SNES". Empty when unknown. */
+    val platformLabel: String = "",
     /** The playing track's artists (id + name), backing the LINKS artist row and the ARTISTS list. */
     val artists: List<NowPlayingArtist> = emptyList(),
     /** Human-readable repeat state for the CONTROLS row, e.g. "Repeating one track". */
     val repeatStatusLabel: String = "",
     /** Human-readable shuffle state for the CONTROLS row, e.g. "Playing in order". */
     val shuffleStatusLabel: String = "",
+    /** Label for the CONTROLS favorite row — "Add to Favorites" or "Remove from Favorites". */
+    val favoriteLabel: String = "",
+    /** Whether the playing track is favorited, driving the CONTROLS row's filled/empty heart. */
+    val isTrackFavorite: Boolean = false,
+    /** Label for the CONTROLS "add the current track to a playlist" row. */
+    val addToPlaylistLabel: String = "",
+    /** Label for the setlist pane's "add the whole setlist to a playlist" row. */
+    val setlistAddToPlaylistLabel: String = "",
+    /**
+     * Whether the setlist pane shows its "Add to Playlist" row: true only when the setlist has tracks
+     * and isn't the whole library (the All Tracks session has no meaningful finite list to capture).
+     */
+    val canAddSetlistToPlaylist: Boolean = false,
     /**
      * Non-null only for a fatal playback error ([PlayerState.ERROR]). When set, the transport
      * play/pause button switches to a warning icon; the error detail itself is surfaced in the

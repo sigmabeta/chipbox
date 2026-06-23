@@ -17,10 +17,12 @@ plugins {
 kotlin {
     android {
         namespace = "net.sigmabeta.chipbox.common.ui.fonts.real"
-        // Same `androidResources.enable = true` + manual symlink workaround the sibling :api
-        // used before the split — AGP 9 + KMP library leaves `outputDirectory` unset on
-        // `copyAndroidMainComposeResourcesToAndroidAssets`, so we route .otf files into the
-        // APK's `assets/composeResources/<pkg>/font/` by hand via the androidMain symlink.
+        // AGP 9's `com.android.kotlin.multiplatform.library` ships with Android resource/asset
+        // processing OFF by default; while off, AGP never wires `outputDirectory` on
+        // `copyAndroidMainComposeResourcesToAndroidAssets`, so the `Res.font.*` .otf files never
+        // reach the APK's `assets/composeResources/<pkg>/font/` and the app crashes at runtime
+        // with MissingResourceException (JetBrains CMP-9547). Enabling assets is sufficient on its
+        // own to package them — same as cbox/common/strings/real does for its value resources.
         androidResources {
             enable = true
         }

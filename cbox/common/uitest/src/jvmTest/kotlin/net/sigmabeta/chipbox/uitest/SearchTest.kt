@@ -34,8 +34,7 @@ class SearchTest {
 
         typeSearch("zzzznope")
 
-        // The composeResources string keeps the XML `\"` escapes literally (backslashes around it).
-        assertEmptyStateDisplayed("No results for \\\"zzzznope\\\"")
+        assertEmptyStateDisplayed("No results for \"zzzznope\"")
     }
 
     @Test

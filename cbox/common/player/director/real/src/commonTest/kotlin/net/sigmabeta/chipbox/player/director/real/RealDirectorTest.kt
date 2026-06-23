@@ -16,6 +16,8 @@ import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.player.generator.fake.FakeGenerator
 import net.sigmabeta.chipbox.player.speaker.fake.FakeSpeaker
+import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
+import net.sigmabeta.chipbox.playlists.fake.FakePlaylistsRepository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
 import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
 import net.sigmabeta.chipbox.player.generator.GeneratorEvent
@@ -180,6 +182,40 @@ class RealDirectorTest {
 
         assertEquals(listOf(1L, 2L), gen.startTrackCalls, "natural end should queue the next id")
         assertTrue(speaker.switchToCalls.isEmpty(), "auto-advance must not force a speaker switch")
+        director.release()
+    }
+
+    @Test
+    fun `setlist active follows the audible track, not the generator's lookahead`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1, track2, track3))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 2L, 3L), startingPosition = 0)))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+
+        // Track 1 is audible, so it's the highlighted slot.
+        assertEquals(
+            listOf(true, false, false),
+            director.setlistState().first().map { it.active },
+            "track 1 is audible and highlighted",
+        )
+
+        // The generator finishes rendering track 1 and races ahead to produce track 2: the producer
+        // cursor advances, but no audio for track 2 has played yet.
+        gen.emit(GeneratorEvent.TrackChange)
+        assertEquals(1, director.sessionState().first()?.currentPosition, "producer cursor moved ahead")
+        assertEquals(
+            listOf(true, false, false),
+            director.setlistState().first().map { it.active },
+            "highlight stays on the audible track 1 while the generator renders ahead",
+        )
+
+        // The speaker now actually crosses into track 2 — the highlight follows what you hear.
+        speaker.emit(SpeakerEvent.TrackChange(trackId = 2L))
+        assertEquals(
+            listOf(false, true, false),
+            director.setlistState().first().map { it.active },
+            "once track 2 is audible, the highlight moves to it",
+        )
         director.release()
     }
 
@@ -578,7 +614,7 @@ class RealDirectorTest {
         // Move track 3 (index 2) to the front; track 1 is playing at index 0.
         director.request(SessionRequest.Reorder(fromIndex = 2, toIndex = 0))
 
-        assertEquals(listOf(3L, 1L, 2L), director.setlistState().first(), "setlist reflects the new order")
+        assertEquals(listOf(3L, 1L, 2L), director.setlistState().first().map { it.trackId }, "setlist reflects the new order")
         assertEquals(1, director.sessionState().first()?.currentPosition, "playing track 1 followed to index 1")
         assertEquals(listOf(1L), gen.startTrackCalls, "an order-only change starts no new track")
         assertTrue(speaker.switchToCalls.isEmpty(), "reorder doesn't touch the speaker")
@@ -593,8 +629,32 @@ class RealDirectorTest {
 
         director.request(SessionRequest.Reorder(fromIndex = 0, toIndex = 2))
 
-        assertEquals(listOf(2L, 3L, 1L), director.setlistState().first())
+        assertEquals(listOf(2L, 3L, 1L), director.setlistState().first().map { it.trackId })
         assertEquals(2, director.sessionState().first()?.currentPosition, "the moved playing track stays active")
+        director.release()
+    }
+
+    @Test
+    fun `reorder tracks the playing slot by id when the same track id appears twice`() = runTest {
+        val (director, _, _, _) = newDirector(listOf(track1, track2))
+        // Track 1 appears twice; the SECOND copy (index 1) is the one playing. A track-id lookup
+        // would mistake it for the first copy — slot ids keep them distinct.
+        director.request(SessionRequest.Start(setlistSession(listOf(1L, 1L, 2L), startingPosition = 1)))
+
+        val before = director.setlistState().first()
+        assertEquals(3, before.map { it.slotId }.toSet().size, "duplicate track ids still get unique slots")
+        assertEquals(listOf(false, true, false), before.map { it.active }, "only the 2nd copy is active")
+        val playingSlotId = before[1].slotId
+
+        // Move track 2 (index 2) to the front; the playing slot (2nd copy of track 1) must follow.
+        director.request(SessionRequest.Reorder(fromIndex = 2, toIndex = 0))
+
+        val after = director.setlistState().first()
+        assertEquals(listOf(2L, 1L, 1L), after.map { it.trackId })
+        // The playing slot followed to index 2 — NOT the other copy of track 1 now at index 1.
+        assertEquals(2, director.sessionState().first()?.currentPosition, "playing slot followed by id")
+        assertEquals(playingSlotId, after[2].slotId, "the playing slot kept its identity")
+        assertEquals(listOf(false, false, true), after.map { it.active }, "only the playing slot is active")
         director.release()
     }
 
@@ -605,7 +665,7 @@ class RealDirectorTest {
 
         director.request(SessionRequest.Reorder(fromIndex = 0, toIndex = 5))
 
-        assertEquals(listOf(1L, 2L), director.setlistState().first(), "no move on an out-of-range index")
+        assertEquals(listOf(1L, 2L), director.setlistState().first().map { it.trackId }, "no move on an out-of-range index")
         director.release()
     }
 
@@ -656,7 +716,7 @@ class RealDirectorTest {
         // Remove track 1 (index 0), which sits before the playing track (track 2 at index 1).
         director.request(SessionRequest.RemoveTrack(0))
 
-        assertEquals(listOf(2L, 3L), director.setlistState().first(), "the track is gone")
+        assertEquals(listOf(2L, 3L), director.setlistState().first().map { it.trackId }, "the track is gone")
         assertEquals(0, director.sessionState().first()?.currentPosition, "playing track 2 re-indexed to 0")
         assertEquals(listOf(2L), gen.startTrackCalls, "removing a track starts nothing new")
         assertTrue(speaker.switchToCalls.isEmpty(), "no speaker switch on remove")
@@ -671,7 +731,7 @@ class RealDirectorTest {
 
         director.request(SessionRequest.RemoveTrack(1)) // index 1 == currentPosition
 
-        assertEquals(listOf(1L, 2L, 3L), director.setlistState().first(), "the active track isn't removable")
+        assertEquals(listOf(1L, 2L, 3L), director.setlistState().first().map { it.trackId }, "the active track isn't removable")
         assertEquals(1, director.sessionState().first()?.currentPosition)
         director.release()
     }
@@ -683,7 +743,7 @@ class RealDirectorTest {
 
         director.request(SessionRequest.RemoveTrack(9))
 
-        assertEquals(listOf(1L, 2L), director.setlistState().first())
+        assertEquals(listOf(1L, 2L), director.setlistState().first().map { it.trackId })
         director.release()
     }
 
@@ -695,7 +755,7 @@ class RealDirectorTest {
         // Remove track 2 (the only track after the playing one) — the current track becomes last.
         director.request(SessionRequest.RemoveTrack(1))
 
-        assertEquals(listOf(1L), director.setlistState().first())
+        assertEquals(listOf(1L), director.setlistState().first().map { it.trackId })
         assertTrue(!director.playbackState().first().skipForwardAllowed, "no track ahead -> skip-forward off")
         director.release()
     }
@@ -721,7 +781,7 @@ class RealDirectorTest {
             ),
         )
 
-        assertEquals(listOf(3L, 1L, 2L), director.setlistState().first(), "saved order replayed verbatim")
+        assertEquals(listOf(3L, 1L, 2L), director.setlistState().first().map { it.trackId }, "saved order replayed verbatim")
         assertEquals(listOf(3L), gen.startTrackCalls, "starts at the saved track")
         director.release()
     }
@@ -984,6 +1044,8 @@ class RealDirectorTest {
             generator = gen,
             speaker = speaker,
             repository = repo,
+            playlistsRepository = FakePlaylistsRepository(),
+            favoritesRepository = FakeFavoritesRepository(),
             settingsManager = FakeChipboxSettingsManager(),
             hatchet = BluntHatchet(),
             dispatcher = UnconfinedTestDispatcher(testScheduler),

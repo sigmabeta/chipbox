@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.features.playlists.Playlists
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
@@ -23,6 +24,7 @@ import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.PlayerErrorEvent
 import net.sigmabeta.chipbox.player.director.PlayerState
+import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
 import net.sigmabeta.sage.logging.BluntHatchet
@@ -213,6 +215,32 @@ class NowPlayingViewModelTest {
     }
 
     @Test
+    fun `AddToPlaylistClicked opens the playlist picker with the current track id`() = runTest(dispatcher) {
+        val director = FakeDirector()
+        val vm = newViewModel(director)
+        director.emitMetadata(trackOf(5L, "Aria"))
+        vm.state.first { it.track?.id == 5L }
+
+        val event = collectAndDispatch(vm, NowPlayingAction.AddToPlaylistClicked)
+
+        assertTrue(event is ChipboxEvent.NavigateTo)
+        assertEquals(Playlists(listOf(5L)), event.destination)
+    }
+
+    @Test
+    fun `AddSetlistToPlaylistClicked opens the picker with the whole setlist`() = runTest(dispatcher) {
+        val director = FakeDirector()
+        val vm = newViewModel(director)
+        // The VM records the raw setlist ids as they arrive; hydration to tracks isn't needed here.
+        director.emitSetlist(listOf(3L, 1L, 2L))
+
+        val event = collectAndDispatch(vm, NowPlayingAction.AddSetlistToPlaylistClicked)
+
+        assertTrue(event is ChipboxEvent.NavigateTo)
+        assertEquals(Playlists(listOf(3L, 1L, 2L)), event.destination)
+    }
+
+    @Test
     fun `PlayerSettingsClicked surfaces the coming-soon snackbar`() = runTest(dispatcher) {
         // Placeholder until the player settings screen lands. Guarding the literal so the test
         // fails loud when the route is wired and the author updates the assertion.
@@ -308,6 +336,7 @@ class NowPlayingViewModelTest {
     private fun newViewModel(director: FakeDirector) = NowPlayingViewModel(
         director = director,
         repository = FakeRepository(emptyMap()),
+        favorites = FakeFavoritesRepository(),
         stringProvider = stubStringProvider(),
         hatchet = BluntHatchet(),
     )

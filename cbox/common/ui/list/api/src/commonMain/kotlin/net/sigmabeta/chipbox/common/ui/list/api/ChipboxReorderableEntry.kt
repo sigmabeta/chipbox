@@ -9,8 +9,10 @@ import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
 import net.sigmabeta.chipbox.common.ui.components.api.Content
+import net.sigmabeta.chipbox.common.ui.components.api.DismissibleListModel
 import net.sigmabeta.chipbox.common.ui.components.api.DraggableListItem
 import net.sigmabeta.chipbox.common.ui.components.api.DraggableListModel
+import net.sigmabeta.chipbox.common.ui.components.api.SwipeToRemoveBox
 import net.sigmabeta.sage.ui.list.ReorderableScreen
 
 /**
@@ -50,13 +52,24 @@ fun ChipboxReorderableEntry(
         sideMargin = SIDE_MARGIN_DEFAULT,
         modifier = modifier,
         itemContent = { model, sink, debug, _, dragHandle, mod, pad ->
-            when (model) {
-                is DraggableListModel ->
-                    DraggableListItem(dragHandle = dragHandle, modifier = mod) {
-                        model.content.Content(sink, debug, Modifier, pad)
+            // Peel the wrappers outside-in: SwipeToRemoveBox (from DismissibleListModel) wraps the
+            // drag handle (from DraggableListModel), which wraps the real row — mirroring how the
+            // two wrappers nest. Either wrapper is optional; an unwrapped row renders plainly.
+            val dismissible = model as? DismissibleListModel
+            val inner = dismissible?.content ?: model
+            val row = @Composable {
+                when (inner) {
+                    is DraggableListModel -> DraggableListItem(dragHandle = dragHandle, modifier = mod) {
+                        inner.content.Content(sink, debug, Modifier, pad)
                     }
 
-                else -> model.Content(sink, debug, mod, pad)
+                    else -> inner.Content(sink, debug, mod, pad)
+                }
+            }
+            if (dismissible != null) {
+                SwipeToRemoveBox(onRemove = { sink.sendAction(dismissible.dismissAction) }) { row() }
+            } else {
+                row()
             }
         },
     )

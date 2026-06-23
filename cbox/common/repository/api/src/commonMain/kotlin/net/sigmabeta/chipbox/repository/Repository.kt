@@ -24,6 +24,15 @@ interface Repository {
         withArtists: Boolean = false
     ): Flow<Data<List<Track>>>
 
+    // Resolve a known set of tracks by id. Use this instead of filtering [getAllTracks] when a
+    // caller already has the ids (e.g. play-history surfaces): it hydrates only the requested rows
+    // rather than the whole library. Order is unspecified — re-sort by the id list if needed.
+    fun getTracksByIds(
+        ids: List<Long>,
+        withGame: Boolean = false,
+        withArtists: Boolean = false
+    ): Flow<Data<List<Track>>>
+
     suspend fun getTracksForGame(
         id: Long,
         withGame: Boolean = false,

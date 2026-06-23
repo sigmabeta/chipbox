@@ -4,8 +4,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
+import net.sigmabeta.chipbox.debug.FavoritesSource
 import net.sigmabeta.chipbox.debug.GeneratorSource
+import net.sigmabeta.chipbox.debug.HistorySource
 import net.sigmabeta.chipbox.debug.ImageLoaderSource
+import net.sigmabeta.chipbox.debug.PlaylistsSource
 import net.sigmabeta.chipbox.debug.RepositorySource
 import net.sigmabeta.chipbox.debug.SpeakerSource
 
@@ -19,6 +22,9 @@ class FakeDebugSettingsManager(
     initialGeneratorSource: GeneratorSource = GeneratorSource.DEFAULT,
     initialSpeakerSource: SpeakerSource = SpeakerSource.DEFAULT,
     initialImageLoaderSource: ImageLoaderSource = ImageLoaderSource.DEFAULT,
+    initialFavoritesSource: FavoritesSource = FavoritesSource.DEFAULT,
+    initialHistorySource: HistorySource = HistorySource.DEFAULT,
+    initialPlaylistsSource: PlaylistsSource = PlaylistsSource.DEFAULT,
 ) : DebugSettingsManager {
 
     private val sink = MutableStateFlow(initialShouldShowDebug)
@@ -26,12 +32,18 @@ class FakeDebugSettingsManager(
     private val generatorSource = MutableStateFlow(initialGeneratorSource)
     private val speakerSource = MutableStateFlow(initialSpeakerSource)
     private val imageLoaderSource = MutableStateFlow(initialImageLoaderSource)
+    private val favoritesSource = MutableStateFlow(initialFavoritesSource)
+    private val historySource = MutableStateFlow(initialHistorySource)
+    private val playlistsSource = MutableStateFlow(initialPlaylistsSource)
 
     val setShouldShowDebugCalls: MutableList<Boolean> = mutableListOf()
     val setRepositorySourceCalls: MutableList<RepositorySource> = mutableListOf()
     val setGeneratorSourceCalls: MutableList<GeneratorSource> = mutableListOf()
     val setSpeakerSourceCalls: MutableList<SpeakerSource> = mutableListOf()
     val setImageLoaderSourceCalls: MutableList<ImageLoaderSource> = mutableListOf()
+    val setFavoritesSourceCalls: MutableList<FavoritesSource> = mutableListOf()
+    val setHistorySourceCalls: MutableList<HistorySource> = mutableListOf()
+    val setPlaylistsSourceCalls: MutableList<PlaylistsSource> = mutableListOf()
 
     override fun getShouldShowDebug(): Flow<Boolean> = sink.asStateFlow()
     override fun setShouldShowDebug(value: Boolean) {
@@ -61,5 +73,23 @@ class FakeDebugSettingsManager(
     override fun setImageLoaderSource(source: ImageLoaderSource) {
         setImageLoaderSourceCalls += source
         imageLoaderSource.value = source
+    }
+
+    override fun getFavoritesSource(): Flow<FavoritesSource> = favoritesSource.asStateFlow()
+    override fun setFavoritesSource(source: FavoritesSource) {
+        setFavoritesSourceCalls += source
+        favoritesSource.value = source
+    }
+
+    override fun getHistorySource(): Flow<HistorySource> = historySource.asStateFlow()
+    override fun setHistorySource(source: HistorySource) {
+        setHistorySourceCalls += source
+        historySource.value = source
+    }
+
+    override fun getPlaylistsSource(): Flow<PlaylistsSource> = playlistsSource.asStateFlow()
+    override fun setPlaylistsSource(source: PlaylistsSource) {
+        setPlaylistsSourceCalls += source
+        playlistsSource.value = source
     }
 }

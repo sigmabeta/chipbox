@@ -13,17 +13,20 @@ kotlin {
                 implementation(projects.cbox.common.appcomm.api)
                 implementation(projects.cbox.common.strings.api)
                 implementation(projects.cbox.common.repository.api)
+                implementation(projects.cbox.common.favorites.api)
                 implementation(projects.cbox.common.models.api)
                 implementation(projects.cbox.common.player.common.api)
                 implementation(projects.cbox.common.player.director.api)
 
                 implementation(projects.features.gameDetail.api)
+                implementation(projects.features.playlists.api)
             }
         }
 
         named("commonTest") {
             dependencies {
                 implementation(projects.cbox.common.repository.fake)
+                implementation(projects.cbox.common.favorites.fake)
                 implementation(projects.cbox.common.player.director.fake)
             }
         }
