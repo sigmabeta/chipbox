@@ -130,6 +130,11 @@ fun ListModel.Content(
             // without a handle rather than falling through to the blank Spacer below.
             is DraggableListModel -> content.Content(sink, debug, mod, pad)
 
+            // Swipe-to-remove works in any list path: wrap the inner content in SwipeToRemoveBox.
+            is DismissibleListModel -> SwipeToRemoveBox(onRemove = { sink.sendAction(dismissAction) }) {
+                content.Content(sink, debug, mod, pad)
+            }
+
             is LoadingItemListModel -> {
                 when (loadingType) {
                     LoadingType.PAGE,
