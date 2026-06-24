@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * commonTest companion to the JVM-side `NcsfReaderTest`/`PsfReaderTest`: same coverage shape, but
@@ -109,15 +110,38 @@ class PsfReaderTest {
     }
 
     @Test
-    fun `missing tag section returns null`() {
-        // File has the header but no "[TAG]" marker — there's nothing to extract.
-        val bytes = ByteArray(16)
+    fun `untagged file parses to empty metadata instead of failing`() {
+        // The [TAG] block is optional: many sequentially-ripped .psf files and most .psflib files
+        // carry none. A header-only PSF is still a valid, playable track, so it must parse (with
+        // empty tags) rather than be rejected — otherwise the scanner drops it. Regression test for
+        // ~half a PS1 rip set failing to scan.
+        val bytes = headerOnlyPsf(platformCode = 0x01)
+
+        val info = reader.readTagInfo(bytes)
+
+        assertNotNull(info)
+        assertEquals(Platform.PSX, info.platform)
+        assertTrue(info.tags.isEmpty())
+        assertTrue(info.libReferences.isEmpty())
+    }
+
+    @Test
+    fun `untagged file still yields a playable track`() {
+        val tracks = reader.readTracksFromFile(headerOnlyPsf(platformCode = 0x01), "/music/BGM00_0000.psf")
+
+        assertNotNull(tracks)
+        assertEquals(1, tracks.size)
+        assertEquals(Platform.PSX, tracks.first().platform)
+    }
+
+    private fun headerOnlyPsf(platformCode: Int): ByteArray {
+        val bytes = ByteArray(16) // signature + 3 size fields, no body and no [TAG] section
         "PSF".encodeToByteArray().copyInto(bytes, 0)
-        bytes[3] = 0x01
+        bytes[3] = platformCode.toByte()
         writeIntLe(bytes, 4, 0)
         writeIntLe(bytes, 8, 0)
         writeIntLe(bytes, 12, 0)
-        assertNull(reader.readTagInfo(bytes))
+        return bytes
     }
 
     @Test
