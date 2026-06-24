@@ -55,23 +55,19 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
                 return null
             }
 
-            if (tagsAreaSize <= 0) {
-                hatchet.w(
-                    "PSF parse failed: no tag section " +
-                        "(file=${bytes.size}b, reserved=${reservedAreaSize}b, program=${programAreaSize}b)."
-                )
-                return null
-            }
-
-            fileAsByteBuffer.position(tagSectionStart)
-
-            if (!isPsfTagValid(fileAsByteBuffer)) {
-                hatchet.w("PSF parse failed: missing '[TAG]' marker at offset $tagSectionStart.")
-                return null
-            }
-
+            // The [TAG] block is optional. A structurally valid PSF can carry no tags at all —
+            // common for sequentially-ripped .psf and most .psflib files — and is still a playable
+            // track. Parse tags only when the section is present; otherwise return empty metadata and
+            // let the scanner fall back to the filename instead of rejecting the file.
             val tagMap = HashMap<String, String>()
-            readAllTags(tagsAreaSize, fileAsByteBuffer, tagMap)
+            if (tagsAreaSize > 0) {
+                fileAsByteBuffer.position(tagSectionStart)
+                if (isPsfTagValid(fileAsByteBuffer)) {
+                    readAllTags(tagsAreaSize, fileAsByteBuffer, tagMap)
+                } else {
+                    hatchet.d("PSF: no '[TAG]' marker at offset $tagSectionStart — treating as untagged.")
+                }
+            }
 
             val libRefs = tagMap.keys
                 .filter { key ->
