@@ -451,7 +451,11 @@ class RealScanner(
                     sub.lengthMs,
                     sub.subsong,
                     0L,
-                ).copy(source = librarySource.sourceId, extension = ext)
+                ).copy(
+                    source = librarySource.sourceId,
+                    extension = ext,
+                    platform = platformForVgmstreamExtension(ext),
+                )
             }
         }
     }
