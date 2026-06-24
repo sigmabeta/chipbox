@@ -99,12 +99,12 @@ internal fun String.toLengthMillis(): Long {
         else -> return 0L
     }
 
-    val minutesInt = minutesText.toInt()
-    val secondsInt = try {
-        secondsText.toInt() + (minutesInt * SECONDS_PER_MINUTE)
-    } catch (ex: NumberFormatException) {
-        ((secondsText.toFloatOrNull() ?: 0.0f) + (minutesInt * SECONDS_PER_MINUTE)).toInt()
-    }
+    // Parse both components leniently: a blank or non-numeric minutes/seconds field — e.g. a
+    // malformed ":30", "1:", or "" tag value — contributes 0 rather than throwing. A bad length/fade
+    // tag must never abort the scan (and via PSF _lib chain-tag merging, one bad .psflib would
+    // otherwise take down every .minipsf that includes it).
+    val minutesInt = minutesText.toIntOrNull() ?: 0
+    val secondsInt = (secondsText.toFloatOrNull() ?: 0.0f).toInt() + (minutesInt * SECONDS_PER_MINUTE)
 
     return secondsInt * MILLIS_PER_SECOND
 }
