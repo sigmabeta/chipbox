@@ -60,6 +60,16 @@ class ReaderUtilsTest {
     }
 
     @Test
+    fun `toLengthMillis tolerates blank or non-numeric minutes without throwing`() {
+        // Regression: a leading-colon or garbage minutes field (":30", "x:30") used to throw an
+        // uncaught NumberFormatException and fail the whole file's scan. The minutes part now
+        // contributes 0 instead.
+        assertEquals(30_000L, ":30".toLengthMillis())
+        assertEquals(30_000L, "x:30".toLengthMillis())
+        assertEquals(0L, ":".toLengthMillis())
+    }
+
+    @Test
     fun `toLengthMillis returns zero for more than three colon-separated parts`() {
         // Unrecognized layout → 0; documented `else -> return 0L` branch.
         assertEquals(0L, "1:2:3:4".toLengthMillis())
