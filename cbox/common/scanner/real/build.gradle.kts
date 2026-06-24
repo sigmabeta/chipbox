@@ -28,5 +28,11 @@ kotlin {
                 implementation(libs.sage.common.logging)
             }
         }
+
+        named("commonTest") {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }
