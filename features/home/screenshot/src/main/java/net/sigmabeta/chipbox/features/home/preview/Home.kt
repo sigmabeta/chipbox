@@ -77,6 +77,32 @@ internal fun HomeLoading(
     )
 }
 
+@DevicePreviews
+@Composable
+internal fun HomeEmptyNoFolders(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    ListScreenPreview(
+        screenState = HomeState(libraryFolderCount = 0, hasTracks = false),
+        syntheticWidthClass = syntheticWidthClass,
+        darkTheme = darkTheme,
+    )
+}
+
+@DevicePreviews
+@Composable
+internal fun HomeEmptyFoldersPresent(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    ListScreenPreview(
+        screenState = HomeState(libraryFolderCount = 1, hasTracks = false),
+        syntheticWidthClass = syntheticWidthClass,
+        darkTheme = darkTheme,
+    )
+}
+
 private fun homeState(): HomeState {
     val generator = FakeModelGenerator()
     val games = generator.randomGames()

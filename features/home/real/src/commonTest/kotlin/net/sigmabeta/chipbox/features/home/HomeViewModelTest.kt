@@ -16,11 +16,16 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.contentsource.LibraryLocationInfo
+import net.sigmabeta.chipbox.contentsource.LibrarySource
+import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
+import net.sigmabeta.chipbox.features.folderpicker.FolderPicker
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
+import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
@@ -33,7 +38,13 @@ import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
+import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.chipbox.scanner.fake.CountingScanner
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
+import net.sigmabeta.sage.components.CtaListModel
+import net.sigmabeta.sage.components.EmptyStateListModel
+import net.sigmabeta.sage.components.SectionListModel
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
@@ -189,6 +200,65 @@ class HomeViewModelTest {
         assertEquals(0, director.startSessionCalls.size)
     }
 
+    @Test
+    fun `AddFolderClicked emits NavigateTo FolderPicker`() = runTest {
+        val vm = newVm()
+        val event = collectAndDispatch(vm, HomeAction.AddFolderClicked)
+        assertTrue(event is ChipboxEvent.NavigateTo)
+        assertEquals(FolderPicker, event.destination)
+    }
+
+    @Test
+    fun `RescanLibraryClicked starts a scan and navigates to RescanStatus`() = runTest {
+        val scanner = CountingScanner()
+        val vm = newVm(scanner = scanner)
+        val event = collectAndDispatch(vm, HomeAction.RescanLibraryClicked)
+        assertEquals(1, scanner.startCount)
+        assertTrue(event is ChipboxEvent.NavigateTo)
+        assertEquals(RescanStatus, event.destination)
+    }
+
+    @Test
+    fun `empty home with no folders shows the add-your-first-folder state plus an add CTA`() = runTest {
+        val vm = newVm(librarySource = FakeLibrarySource(initial = emptyList()))
+        val state = vm.state.first { it.hasTracks == false }
+        val container = state.toListItems(stubStringProvider()).filterIsInstance<SectionListModel>().single()
+        assertEquals(EMPTY_STATE_MAX_WIDTH_DP_EXPECTED, container.maxContentWidthDp)
+        val emptyState = container.sectionItems.filterIsInstance<EmptyStateListModel>().single()
+        assertEquals(ChipboxStringId.HOME_EMPTY_NO_FOLDERS.toString(), emptyState.explanation)
+        val ctaActions = container.sectionItems.filterIsInstance<CtaListModel>().map { it.clickAction }
+        assertEquals(listOf(HomeAction.AddFolderClicked), ctaActions)
+    }
+
+    @Test
+    fun `empty home with folders shows the folders-are-empty state plus rescan then add CTAs`() = runTest {
+        val source = FakeLibrarySource(initial = listOf(LibraryLocationInfo("/music", "Music")))
+        val vm = newVm(librarySource = source)
+        val state = vm.state.first { it.hasTracks == false && it.libraryFolderCount == 1 }
+        val container = state.toListItems(stubStringProvider()).filterIsInstance<SectionListModel>().single()
+        val emptyState = container.sectionItems.filterIsInstance<EmptyStateListModel>().single()
+        assertEquals(ChipboxStringId.HOME_EMPTY_FOLDERS_EMPTY.toString(), emptyState.explanation)
+        val ctaActions = container.sectionItems.filterIsInstance<CtaListModel>().map { it.clickAction }
+        assertEquals(listOf(HomeAction.RescanLibraryClicked, HomeAction.AddFolderClicked), ctaActions)
+    }
+
+    @Test
+    fun `no empty state once the library has tracks`() = runTest {
+        val vm = newVm(repository = repoWithTracks(flowOf(Data.Succeeded(listOf(trackOf(1L))))))
+        val state = vm.state.first { it.hasTracks == true }
+        assertTrue(state.toListItems(stubStringProvider()).none { it is SectionListModel })
+    }
+
+    @Test
+    fun `empty state shows on an empty library even when a module has content`() = runTest {
+        val section = HomeModuleSection("Top", persistentListOf())
+        val modules = setOf(FakeHomeModule("a", priority = 0, flow = flowOf(LCE.Content(section))))
+        // Default repository reports no tracks, so the empty state wins over the module's content.
+        val vm = newVm(modules = modules)
+        val state = vm.state.first { it.hasTracks == false }
+        assertTrue(state.toListItems(stubStringProvider()).any { it is SectionListModel })
+    }
+
     // ---- helpers ----
 
     private class RecordingDirector : FakeDirector() {
@@ -200,10 +270,14 @@ class HomeViewModelTest {
         modules: Set<HomeModule> = emptySet(),
         repository: Repository = repoWithEverythingEmpty(),
         director: FakeDirector = FakeDirector(),
+        librarySource: LibrarySource = FakeLibrarySource(),
+        scanner: Scanner = CountingScanner(),
     ) = HomeViewModel(
         modules = modules,
         repository = repository,
         director = director,
+        librarySource = librarySource,
+        scanner = scanner,
         stringProvider = stubStringProvider(),
         hatchet = BluntHatchet(),
     )
@@ -287,4 +361,9 @@ class HomeViewModelTest {
         extraBufferCapacity = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST,
     )
+
+    private companion object {
+        // Mirror of HomeState's private EMPTY_STATE_MAX_WIDTH_DP.
+        const val EMPTY_STATE_MAX_WIDTH_DP_EXPECTED = 512
+    }
 }
