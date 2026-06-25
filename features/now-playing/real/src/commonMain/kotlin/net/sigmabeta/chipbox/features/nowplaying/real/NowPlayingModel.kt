@@ -62,6 +62,11 @@ data class NowPlayingModel(
     val dumper: String = "",
     val dumpDate: String = "",
     val comment: String = "",
+    /**
+     * The single metadata tag shown in the [ContextMenuMode.TAG] view — the one the user tapped in
+     * the LINKS menu because it was too long to read inline. Null in every other mode.
+     */
+    val selectedTag: NowPlayingTag? = null,
     /** Human-readable repeat state for the CONTROLS row, e.g. "Repeating one track". */
     val repeatStatusLabel: String = "",
     /** Human-readable shuffle state for the CONTROLS row, e.g. "Playing in order". */
@@ -129,11 +134,21 @@ data class NowPlayingError(
  * - [LINKS]: jump-off links for the current track — its game and artist(s).
  * - [ARTISTS]: one row per artist, shown when a multi-artist track's artist link is tapped.
  * - [CONTROLS]: current repeat & shuffle state as human-readable rows that toggle on tap.
+ * - [TAG]: the full text of one metadata tag, shown when its LINKS row was too long to read inline.
  */
-enum class ContextMenuMode { NONE, LINKS, ARTISTS, CONTROLS }
+enum class ContextMenuMode { NONE, LINKS, ARTISTS, CONTROLS, TAG }
 
 /** A single artist entry backing the LINKS artist row and the ARTISTS list rows. */
 data class NowPlayingArtist(
     val id: Long,
     val name: String,
+)
+
+/** Which extended-metadata tag a LINKS row (and the [ContextMenuMode.TAG] view) represents. */
+enum class NowPlayingTagKind { JAPANESE_TITLE, JAPANESE_ARTIST, DUMPER, DUMP_DATE, COMMENT }
+
+/** A resolved metadata tag: its [kind] (drives the icon) and its full text [value]. */
+data class NowPlayingTag(
+    val kind: NowPlayingTagKind,
+    val value: String,
 )

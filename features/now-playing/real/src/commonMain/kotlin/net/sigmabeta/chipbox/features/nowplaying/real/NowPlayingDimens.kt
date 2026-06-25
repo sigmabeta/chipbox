@@ -39,5 +39,8 @@ const val NOW_PLAYING_CTX_DUMPER_TAG = "NowPlayingCtxDumper"
 const val NOW_PLAYING_CTX_DUMP_DATE_TAG = "NowPlayingCtxDumpDate"
 const val NOW_PLAYING_CTX_COMMENT_TAG = "NowPlayingCtxComment"
 
+/** The TAG view's scrollable body — the full text of one expanded metadata tag. */
+const val NOW_PLAYING_CTX_TAG_TAG = "NowPlayingCtxTag"
+
 /** Test tag for the per-artist row in the ARTISTS context menu, keyed by artist id. */
 fun nowPlayingCtxArtistTag(artistId: Long) = "NowPlayingCtxArtist:$artistId"
