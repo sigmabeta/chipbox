@@ -144,7 +144,7 @@ data class SettingsState(
     private fun librarySection(stringProvider: StringProvider): List<ListModel> = listOfNotNull(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_LIBRARY),
         libraryFolderRow(stringProvider),
-        rescanRow(stringProvider),
+        rescanRowOrNull(stringProvider),
         rescanStatusRowOrNull(stringProvider),
         clearLibraryRow(stringProvider),
         clearPlaybackHistoryRow(stringProvider),
@@ -347,14 +347,18 @@ data class SettingsState(
         clickAction = SettingsAction.AddFolderClicked,
     )
 
-    // No inline loading state: tapping this starts a scan and opens the Rescan Status screen, which
-    // is where progress is shown now.
-    private fun rescanRow(stringProvider: StringProvider): ListModel = NameCaptionListModel(
-        dataId = ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY.hashCode().toLong(),
-        name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY),
-        caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_RESCAN_LIBRARY),
-        clickAction = SettingsAction.RescanLibraryClicked,
-    )
+    // Tapping this starts a scan and opens the Rescan Status screen, which is where progress is
+    // shown. Hidden while a scan is already running (rescanStatus is Loading) — the
+    // rescanStatusRowOrNull entry takes its place — so there's no way to kick off a second scan.
+    private fun rescanRowOrNull(stringProvider: StringProvider): ListModel? {
+        if (rescanStatus is LCE.Loading) return null
+        return NameCaptionListModel(
+            dataId = ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY.hashCode().toLong(),
+            name = stringProvider.getString(ChipboxStringId.SETTINGS_LABEL_RESCAN_LIBRARY),
+            caption = stringProvider.getString(ChipboxStringId.SETTINGS_CAPTION_RESCAN_LIBRARY),
+            clickAction = SettingsAction.RescanLibraryClicked,
+        )
+    }
 
     private fun clearLibraryRow(stringProvider: StringProvider): ListModel = when (clearLibraryStatus) {
         is LCE.Loading -> LoadingItemListModel(
