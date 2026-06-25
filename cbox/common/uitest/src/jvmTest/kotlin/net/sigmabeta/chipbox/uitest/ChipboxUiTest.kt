@@ -43,6 +43,8 @@ import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
+import net.sigmabeta.chipbox.scanner.state.ScannerEvent
+import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.chipbox.uitest.harness.createTestAppGraph
 import net.sigmabeta.chipbox.uitest.harness.platformTestArgument
@@ -305,6 +307,43 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
             graph.fakeDirector.emitPlayback(playbackState)
             graph.fakeDirector.emitMetadata(track)
             graph.fakeDirector.emitSession(session)
+        }
+    }
+
+    /** Drive the fake scanner into the "scanning" state — the scan-status Home card reacts to it. */
+    fun beginScan() = runBlocking { graph.countingScanner.pushState(ScannerState.Scanning()) }
+
+    /** Emit a per-file scan heartbeat — surfaces as the card's "currently reading" line. */
+    fun scanReadingFile(name: String) =
+        runBlocking { graph.countingScanner.pushEvent(ScannerEvent.FileScanned(name)) }
+
+    /** Emit a "game added" scan change — surfaces as a row in the card's change list. */
+    fun scanFoundGame(title: String, trackCount: Int, gameId: Long) =
+        runBlocking { graph.countingScanner.pushEvent(ScannerEvent.GameFoundEvent(gameId, title, trackCount, null)) }
+
+    /** Drive the scanner to a successful completion with the given totals. */
+    fun completeScan(games: Int, tracks: Int) =
+        runBlocking { graph.countingScanner.pushState(ScannerState.Complete(0, games, tracks, 0)) }
+
+    /** Drive the scanner to a failure at [path]. */
+    fun failScan(path: String) = runBlocking { graph.countingScanner.pushState(ScannerState.Failed(path)) }
+
+    /**
+     * Scroll the Home list so the scan-status card is on screen. The card is prepended at the top of
+     * an already-laid-out Home list, so the lazy grid anchors it just above the fold; bring it into
+     * view before asserting it's displayed or tapping it. Call only when the card is present.
+     */
+    fun revealScanCard() {
+        compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))
+            .onFirst()
+            .performScrollToNode(hasTestTag("ScanStatusCardListModel"))
+        compose.waitForIdle()
+    }
+
+    /** Poll (pumping the clock) until no node displays [text] — e.g. after dismissing a card. */
+    fun waitForContentGone(text: String) {
+        compose.waitUntil(timeoutMillis = LOAD_TIMEOUT_MS) {
+            compose.onAllNodes(hasText(text), useUnmergedTree = true).fetchSemanticsNodes().isEmpty()
         }
     }
 

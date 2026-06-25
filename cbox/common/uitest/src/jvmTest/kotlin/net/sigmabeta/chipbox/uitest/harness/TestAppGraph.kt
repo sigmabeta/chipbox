@@ -5,6 +5,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.createGraphFactory
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
@@ -64,6 +65,10 @@ interface TestAppGraph : ViewModelGraph {
     /** The bound [Director] as a [FakeDirector], so the harness can assert on its recorded
      *  [requests][FakeDirector.requests]. */
     val fakeDirector: FakeDirector
+
+    /** The bound [Scanner] as a [CountingScanner], so the harness can drive scan state/events that
+     *  the scan-status Home card reacts to. */
+    val countingScanner: CountingScanner
 
     /** The bound [FavoritesRepository] as a [FakeFavoritesRepository], so the harness can seed
      *  favorites before navigating to a screen that reads them. */
@@ -149,9 +154,16 @@ interface TestAppGraph : ViewModelGraph {
     @SingleIn(AppScope::class)
     fun provideLibrarySource(): LibrarySource = FakeLibrarySource()
 
+    // Unconfined rather than the default Dispatchers.Main: the UI harness never calls
+    // Dispatchers.setMain, so a Main-confined scanner scope would throw the moment clearScan()
+    // (tap-to-dismiss) launches on it.
     @Provides
     @SingleIn(AppScope::class)
-    fun provideScanner(): Scanner = CountingScanner()
+    fun provideCountingScanner(): CountingScanner = CountingScanner(Dispatchers.Unconfined)
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideScanner(scanner: CountingScanner): Scanner = scanner
 
     // Tests default to the fake image loader, so screens render deterministic generated gradients
     // instead of fetching cover art through Coil. The shell reads this and provides LocalForceFakeImages.
