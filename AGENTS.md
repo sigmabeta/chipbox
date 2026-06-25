@@ -25,6 +25,17 @@ targets too.
 - `docs/architecture/sage-integration.md` — what the `sage/` submodule provides
   and the chipbox↔sage type/DI/build boundary.
 
+## Per-module READMEs
+
+Every Gradle module — chipbox **and** the `sage/` submodule — has a `README.md`
+at its root: what it contains, why you'd depend on it, and how to use its
+code/resources (per-file for small modules, grouped by role for large ones).
+**Before working in a module, read its README first**, then skim the READMEs of
+the modules it depends on — it's the fastest orientation to a module's public
+surface and its api/real/di/fake siblings. Keep a module's README in sync when
+you change its public API, dependencies, or role — same rule as this file: update
+it when a load-bearing fact stops being true.
+
 ## Load-bearing facts (verified 2026-05-31)
 
 - **DI is Metro** (`dev.zacsweers.metro`), not Hilt. Hilt + KSP were removed

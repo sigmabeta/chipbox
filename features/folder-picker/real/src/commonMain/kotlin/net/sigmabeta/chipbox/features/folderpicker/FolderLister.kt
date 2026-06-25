@@ -3,7 +3,7 @@ package net.sigmabeta.chipbox.features.folderpicker
 /**
  * Reads the immediate contents of [path] and projects them into [FolderPickerEntry] rows plus
  * the aggregate file count. Abstracted so the view model stays testable without touching disk.
- * Production binding (`JvmFolderLister`) lives in jvmSharedMain and uses `java.io.File`.
+ * Production binding ([OkioFolderLister]) lives in commonMain and uses okio's `FileSystem`.
  *
  * [showHidden] controls whether dotfile entries (and dotfile grand-children in the per-row counts)
  * are included; it defaults to false so the picker hides them unless the user toggles them on.
