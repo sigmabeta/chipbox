@@ -46,14 +46,40 @@ class RescanStatusViewModel @Inject constructor(
     private val pending = mutableListOf<ScanEventItem>()
     private var nextEventId = 0L
 
+    // The file currently being read, surfaced live under Progress. Driven only by the high-frequency
+    // FileScanned heartbeat — never by the game-change events — and kept separate from the batched
+    // [rendered]/[pending] Changes list so it can refresh on the faster tick.
+    private var currentFile: String? = null
+
+    // Snapshot of [rendered] reused between flushes so the fast tick republishes the SAME list
+    // instance — equal-state suppression stays O(1) and only the changing latestEvent recomposes.
+    private var eventsSnapshot: List<ScanEventItem> = emptyList()
+
     init {
         viewModelScope.launch {
             scanner.state().collect { state -> absorb(state) }
         }
         viewModelScope.launch {
-            scanner.scanEvents().collect { event -> event.toItemOrNull()?.let(pending::add) }
+            scanner.scanEvents().collect { event ->
+                when (event) {
+                    // High-frequency heartbeat: drives the live Progress row only, never the
+                    // Changes list.
+                    is ScannerEvent.FileScanned -> currentFile = event.name
+
+                    else -> event.toItemOrNull()?.let(pending::add)
+                }
+            }
         }
-        // Perf mitigation: batch event/progress changes into at most one state emission per second
+        // The Progress per-file marquee refreshes on a fast tick for live feedback — capped so it
+        // updates no more often than once per LATEST_EVENT_INTERVAL_MS. Cheap: it republishes the
+        // same events-list instance, so only the marquee row recomposes.
+        viewModelScope.launch {
+            while (isActive) {
+                delay(LATEST_EVENT_INTERVAL_MS)
+                publish()
+            }
+        }
+        // Perf mitigation: batch the full Changes list into at most one state emission per second
         // instead of recomposing on every scanner callback (a large library fires thousands).
         viewModelScope.launch {
             while (isActive) {
@@ -66,6 +92,9 @@ class RescanStatusViewModel @Inject constructor(
     private fun absorb(state: ScannerState) {
         when (state) {
             is ScannerState.Scanning -> {
+                // Entering Scanning from any settled phase means a fresh run — drop the previous
+                // run's trailing file so Progress doesn't show a stale name before the first read.
+                if (phase != ScanPhase.SCANNING) currentFile = null
                 phase = ScanPhase.SCANNING
                 timeInSeconds = state.timeInSeconds
                 gamesFound = state.gamesFound
@@ -92,14 +121,21 @@ class RescanStatusViewModel @Inject constructor(
         }
     }
 
-    // Drains pending events (in arrival order) into the rendered list and republishes state — the
-    // State reverses for display so newest shows on top. Building an equal RescanStatusState is a
-    // no-op for the StateFlow, so quiet ticks don't recompose.
+    // Drains pending events (in arrival order) into the rendered list, refreshes the reused
+    // snapshot, and republishes. The State reverses [events] for display so newest shows on top.
     private fun flush() {
         if (pending.isNotEmpty()) {
             rendered.addAll(pending)
             pending.clear()
+            eventsSnapshot = rendered.toList()
         }
+        publish()
+    }
+
+    // Rebuilds and republishes the rendered state from the buffered fields. Building an equal
+    // RescanStatusState is a no-op for the StateFlow, so quiet ticks don't recompose; reusing
+    // [eventsSnapshot] keeps that equality check O(1) on the fast tick.
+    private fun publish() {
         updateState {
             RescanStatusState(
                 phase = phase,
@@ -108,7 +144,8 @@ class RescanStatusViewModel @Inject constructor(
                 tracksFound = tracksFound,
                 tracksFailed = tracksFailed,
                 failedPath = failedPath,
-                events = rendered.toList(),
+                currentFile = currentFile,
+                events = eventsSnapshot,
             )
         }
     }
@@ -123,7 +160,8 @@ class RescanStatusViewModel @Inject constructor(
         is ScannerEvent.GameRemoved ->
             ScanEventItem(nextEventId++, name, ScanEventKind.REMOVED, 0, gameId = null, imageUrl = null)
 
-        ScannerEvent.Unknown -> null
+        // Not a meaningful change — handled separately as the live Progress heartbeat.
+        is ScannerEvent.FileScanned, ScannerEvent.Unknown -> null
     }
 
     override fun handleAction(action: SageAction) {
@@ -135,5 +173,6 @@ class RescanStatusViewModel @Inject constructor(
 
     private companion object {
         private const val BATCH_INTERVAL_MS = 1000L
+        private const val LATEST_EVENT_INTERVAL_MS = 500L
     }
 }
