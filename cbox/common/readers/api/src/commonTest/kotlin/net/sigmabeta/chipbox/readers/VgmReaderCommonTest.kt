@@ -132,6 +132,42 @@ class VgmReaderCommonTest {
     }
 
     @Test
+    fun `GD3 Japanese fields that merely duplicate the English value are dropped`() {
+        val tracks = reader.readTracksFromFile(
+            vgmWithGd3(
+                title = "Stage 1",
+                game = "Cool Game",
+                system = "Sega Mega Drive",
+                author = "Yuzo Koshiro",
+                titleJp = "Stage 1", // identical to the English title
+                gameJp = "Cool Game",
+                authorJp = "Yuzo Koshiro",
+            ),
+            "dup.vgm",
+        )
+        assertNotNull(tracks)
+        assertNull(tracks[0].titleJp)
+        assertNull(tracks[0].artistJp)
+        assertNull(tracks[0].gameTitleJp)
+    }
+
+    @Test
+    fun `a GD3 Japanese value that differs from the English one is kept`() {
+        val tracks = reader.readTracksFromFile(
+            vgmWithGd3(
+                title = "Stage 1",
+                game = "Cool Game",
+                system = "Sega Mega Drive",
+                author = "Yuzo Koshiro",
+                titleJp = "ステージ1",
+            ),
+            "keep.vgm",
+        )
+        assertNotNull(tracks)
+        assertEquals("ステージ1", tracks[0].titleJp)
+    }
+
+    @Test
     fun `GD3 with only English fields leaves the optional metadata null`() {
         val tracks = reader.readTracksFromFile(
             vgmWithGd3(title = "Stage 1", game = "Cool Game", system = "Sega Mega Drive", author = "Yuzo Koshiro"),

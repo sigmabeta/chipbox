@@ -82,6 +82,25 @@ class SpcReaderTest {
     }
 
     @Test
+    fun `ID666 text fields decode as Latin-1, not UTF-8`() {
+        val bytes = spcFile(
+            songTitle = "x",
+            gameTitle = "x",
+            artistName = "x",
+            lengthSeconds = "1",
+            fadeMillis = "0",
+        )
+        // Place a lone 0xED byte (Latin-1 'í') at the start of the 16-byte dumper field. As UTF-8
+        // it's an invalid lead byte and would decode to the replacement char; as Latin-1 it's 'í'.
+        bytes[110] = 0xED.toByte()
+
+        val tracks = reader.readTracksFromFile(bytes, "latin1.spc")
+
+        assertNotNull(tracks)
+        assertEquals("í", tracks[0].dumper)
+    }
+
+    @Test
     fun `rejects a file with the wrong header magic`() {
         // Has SPC-shaped header layout but the magic string is wrong.
         val bytes = ByteArray(0x10_200)

@@ -37,23 +37,30 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
                 null
             }
 
+            // GD3 rips routinely fill the Japanese slot with a copy of the English string; drop a
+            // Japanese value that merely duplicates its English counterpart so it isn't surfaced as
+            // a redundant "Japanese title/artist" later.
+            val titleEn = tag?.title
+            val artistEn = tag?.artist
+            val gameEn = tag?.game
+
             return listOf(
                 RawTrack(
                     path = identifier,
                     source = "",
-                    title = tag?.title.orUnknown(),
-                    artist = tag?.artist.orUnknown(),
-                    game = tag?.game.orUnknown(),
+                    title = titleEn.orUnknown(),
+                    artist = artistEn.orUnknown(),
+                    game = gameEn.orUnknown(),
                     length = lengthMs,
                     trackNumber = 0,
                     fadeLengthMs = fadeMs,
                     platform = platformForSystem(tag?.system),
                     comment = tag?.notes,
                     dumper = tag?.vgmBy,
-                    titleJp = tag?.titleJp,
-                    artistJp = tag?.artistJp,
+                    titleJp = tag?.titleJp?.takeUnless { it == titleEn },
+                    artistJp = tag?.artistJp?.takeUnless { it == artistEn },
                     releaseDate = tag?.releaseDate,
-                    gameTitleJp = tag?.gameJp,
+                    gameTitleJp = tag?.gameJp?.takeUnless { it == gameEn },
                 )
             )
         } catch (iae: IllegalArgumentException) {
