@@ -66,6 +66,11 @@ class FakeModelGenerator(private val seed: Long = DEFAULT_SEED) {
             photoUrl = "preview://game/cover",
             artists = artists,
             tracks = tracks,
+            // Descriptive metadata so the Game Detail "Details" section renders in previews/goldens.
+            copyright = "© 1995 Konami",
+            releaseDate = "1995",
+            genre = "Action RPG",
+            titleJp = "幻想水滸伝",
         )
     }
 

@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.testTag
 import net.sigmabeta.chipbox.common.ui.components.api.IconNameListItem
 import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.sage.appcomm.ActionSink
+import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.ui.Icon
 
 /**
@@ -61,6 +62,13 @@ internal fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSi
                         tag = NOW_PLAYING_CTX_PLATFORM_TAG,
                     )
                 }
+                // Read-only descriptive metadata from the track's file tags. These don't navigate
+                // (SageAction.Noop); they're shown here because LINKS is the track's "about" surface.
+                MetadataRow(model.japaneseTitle, Icon.MusicNote, NOW_PLAYING_CTX_JP_TITLE_TAG, actionSink)
+                MetadataRow(model.japaneseArtist, Icon.Person, NOW_PLAYING_CTX_JP_ARTIST_TAG, actionSink)
+                MetadataRow(model.dumper, Icon.Edit, NOW_PLAYING_CTX_DUMPER_TAG, actionSink)
+                MetadataRow(model.dumpDate, Icon.Calendar, NOW_PLAYING_CTX_DUMP_DATE_TAG, actionSink)
+                MetadataRow(model.comment, Icon.Description, NOW_PLAYING_CTX_COMMENT_TAG, actionSink)
             }
 
             ContextMenuMode.ARTISTS -> {
@@ -112,6 +120,24 @@ internal fun ContextMenu(model: NowPlayingModel, mode: ContextMenuMode, actionSi
             ContextMenuMode.NONE -> Unit
         }
     }
+}
+
+/**
+ * A read-only LINKS row for an optional file-tag metadata value. Renders nothing when [value] is
+ * blank, so a track missing the field contributes no row. Tapping does nothing ([SageAction.Noop]).
+ */
+@Composable
+private fun MetadataRow(value: String, icon: Icon, tag: String, actionSink: ActionSink) {
+    if (value.isEmpty()) return
+    IconNameListItem(
+        name = value,
+        icon = icon,
+        clickAction = SageAction.Noop,
+        active = false,
+        actionSink = actionSink,
+        modifier = Modifier.testTag(tag),
+        padding = NowPlayingRowPadding,
+    )
 }
 
 @Composable

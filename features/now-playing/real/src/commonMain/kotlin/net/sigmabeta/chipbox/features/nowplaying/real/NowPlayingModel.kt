@@ -53,6 +53,15 @@ data class NowPlayingModel(
     val platformLabel: String = "",
     /** The playing track's artists (id + name), backing the LINKS artist row and the ARTISTS list. */
     val artists: List<NowPlayingArtist> = emptyList(),
+    /**
+     * Optional descriptive metadata read from the track's file tags, surfaced as read-only rows in
+     * the LINKS menu. Each is empty when the file carried none, so its row is omitted.
+     */
+    val japaneseTitle: String = "",
+    val japaneseArtist: String = "",
+    val dumper: String = "",
+    val dumpDate: String = "",
+    val comment: String = "",
     /** Human-readable repeat state for the CONTROLS row, e.g. "Repeating one track". */
     val repeatStatusLabel: String = "",
     /** Human-readable shuffle state for the CONTROLS row, e.g. "Playing in order". */

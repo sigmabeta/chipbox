@@ -6,6 +6,7 @@ import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
+import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.HeroImageListModel
@@ -49,8 +50,49 @@ data class GameDetailState(
         listOf(
             heroSection(),
             ctaSection(stringProvider),
+            infoSection(stringProvider),
             artistSection(stringProvider),
             songSection(stringProvider),
+        )
+    }
+
+    // A read-only "Details" section of the game's descriptive metadata (release date, genre,
+    // copyright, Japanese title) modelled as label/value rows — the same tag-style key→value
+    // presentation the rest of the library uses. Each field is optional, so only the present ones
+    // render; when the game carries none, the whole section (header included) disappears.
+    private fun infoSection(stringProvider: StringProvider) = game.sectionWithStandardErrorAndLoading(
+            sectionName = SECTION_NAME_DETAILS,
+            loadingItemCount = 0,
+            loadingWithHeader = false,
+        ) {
+            val rows = listOfNotNull(
+                infoRow(INFO_INDEX_RELEASE_DATE, ChipboxStringId.GAME_DETAIL_INFO_RELEASE_DATE, data.releaseDate, stringProvider),
+                infoRow(INFO_INDEX_GENRE, ChipboxStringId.GAME_DETAIL_INFO_GENRE, data.genre, stringProvider),
+                infoRow(INFO_INDEX_COPYRIGHT, ChipboxStringId.GAME_DETAIL_INFO_COPYRIGHT, data.copyright, stringProvider),
+                infoRow(INFO_INDEX_JAPANESE_TITLE, ChipboxStringId.GAME_DETAIL_INFO_JAPANESE_TITLE, data.titleJp, stringProvider),
+            )
+            if (rows.isEmpty()) {
+                emptyList()
+            } else {
+                listOf(
+                    SectionHeaderListModel(
+                        stringProvider.getString(ChipboxStringId.GAME_DETAIL_SECTION_DETAILS),
+                    ),
+                ) + rows
+            }
+        }
+
+    private fun infoRow(
+        index: Long,
+        labelId: ChipboxStringId,
+        value: String?,
+        stringProvider: StringProvider,
+    ): LabelValueListModel? = value?.takeIf { it.isNotBlank() }?.let {
+        LabelValueListModel(
+            dataId = ID_PREFIX_DETAILS + index,
+            label = stringProvider.getString(labelId),
+            value = it,
+            clickAction = SageAction.Noop,
         )
     }
 
@@ -197,8 +239,15 @@ data class GameDetailState(
     companion object {
         private const val SECTION_NAME_HERO = "section.hero"
         private const val SECTION_NAME_CTA = "section.cta"
+        private const val SECTION_NAME_DETAILS = "section.details"
         private const val SECTION_NAME_SONGS = "section.songs"
         private const val SECTION_NAME_ARTISTS = "section.artists"
+
+        // Stable per-field offsets for the Details rows' dataIds.
+        private const val INFO_INDEX_RELEASE_DATE = 0L
+        private const val INFO_INDEX_GENRE = 1L
+        private const val INFO_INDEX_COPYRIGHT = 2L
+        private const val INFO_INDEX_JAPANESE_TITLE = 3L
 
         private const val STAGGERED_WIDTH_DP = 320
         private const val SONGS_LOADING_COUNT = 8
@@ -209,5 +258,6 @@ data class GameDetailState(
         private const val ID_PREFIX_SONGS = 1_000_000L
         private const val ID_PREFIX_ARTISTS = 1_000_000_000L
         private const val ID_PREFIX_SCROLLER = 1_000_000_000_000L
+        private const val ID_PREFIX_DETAILS = 2_000_000_000_000L
     }
 }
