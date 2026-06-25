@@ -13,6 +13,7 @@ data class M3uEntry(
     val game: String?, // non-null only in GBS-style compound tags
     val lengthMs: Long,
     val fadeLengthMs: Long,
+    val copyright: String? = null, // non-null only in Zophar "Title - Artist - Game - Copyright" tags
 )
 
 class M3uReader(private val hatchet: Hatchet) {
@@ -46,12 +47,14 @@ private fun String.toM3uEntry(): M3uEntry? {
     val title: String
     val artist: String?
     val game: String?
+    var copyright: String? = null
     if (metaParts.size >= COMPOUND_TAG_MIN_PARTS && metaParts.last().looksLikeCopyright()) {
         // Zophar GBS/NSF compound: "Title - Artist - Game - Copyright". Anchor from the right
         // so titles containing " - " (e.g. "Stage 3 - Float Islands") survive intact.
         title = metaParts.dropLast(COMPOUND_TAG_TRAILING_PARTS).joinToString(" - ").orUnknown()
         artist = metaParts[metaParts.size - COMPOUND_TAG_ARTIST_FROM_END].orUnknown()
         game = metaParts[metaParts.size - COMPOUND_TAG_GAME_FROM_END].orUnknown()
+        copyright = metaParts.last().trim().ifEmpty { null }
     } else if (metaParts.size == SIMPLE_TAG_PARTS) {
         title = metaParts[0].orUnknown()
         artist = metaParts[1].orUnknown()
@@ -65,7 +68,7 @@ private fun String.toM3uEntry(): M3uEntry? {
     val lengthMs = tags.getOrNull(TAG_INDEX_LENGTH)?.toLengthMillis() ?: LENGTH_UNKNOWN_MS
     val fadeLengthMs = (tags.getOrNull(TAG_INDEX_FADE)?.toLengthMillis() ?: 0L).coerceAtLeast(0L)
 
-    return M3uEntry(filename, trackNumber, title, artist, game, lengthMs, fadeLengthMs)
+    return M3uEntry(filename, trackNumber, title, artist, game, lengthMs, fadeLengthMs, copyright)
 }
 
 /** Splits on commas not preceded by a backslash, then strips escape characters. */

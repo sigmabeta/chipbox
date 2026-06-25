@@ -458,6 +458,52 @@ class DatabaseRepositoryTest {
         assertEquals(chain, decoded.chainFiles)
     }
 
+    @Test
+    fun `descriptive game and track metadata round-trips through upsert and read-back`() = runTest {
+        // The new optional metadata (game-level copyright/release/genre/jp-title; track-level
+        // comment/dumper/dump-date/jp-title/jp-artist) must survive RawGame/RawTrack -> entity ->
+        // domain model. Pin the whole pipeline so a future converter edit can't silently drop it.
+        val (repo, db) = newRepo()
+        repo.upsertGame(
+            rawGame(
+                "Game",
+                "/library/x",
+                copyright = "1995 Squaresoft",
+                releaseDate = "1995",
+                genre = "RPG",
+                titleJp = "ゲーム",
+                tracks = listOf(
+                    rawTrack(
+                        "Schala",
+                        comment = "ripped from cart",
+                        dumper = "Datschge",
+                        dumpDate = "08/15/2001",
+                        titleJp = "シャラ",
+                        artistJp = "光田康典",
+                    ),
+                ),
+            ),
+        )
+
+        val gameId = db.games.values.single().id
+        val game = repo.getGame(gameId, withTracks = true).first { it !is Data.Loading }
+        assertTrue(game is Data.Succeeded)
+        val hydrated = game.data
+        assertNotNull(hydrated)
+        assertEquals("1995 Squaresoft", hydrated.copyright)
+        assertEquals("1995", hydrated.releaseDate)
+        assertEquals("RPG", hydrated.genre)
+        assertEquals("ゲーム", hydrated.titleJp)
+
+        val track = repo.getTrack(db.tracks.values.single().id)
+        assertNotNull(track)
+        assertEquals("ripped from cart", track.comment)
+        assertEquals("Datschge", track.dumper)
+        assertEquals("08/15/2001", track.dumpDate)
+        assertEquals("シャラ", track.titleJp)
+        assertEquals("光田康典", track.artistJp)
+    }
+
     // ---- random picks ----
 
     @Test
@@ -538,12 +584,20 @@ class DatabaseRepositoryTest {
         signature: String = "sig-${title.hashCode()}",
         tracks: List<RawTrack> = emptyList(),
         photoUrl: String? = null,
+        copyright: String? = null,
+        releaseDate: String? = null,
+        genre: String? = null,
+        titleJp: String? = null,
     ): RawGame = RawGame(
         title = title,
         photoUrl = photoUrl,
         folderKey = folderKey,
         folderSignature = signature,
         tracks = tracks,
+        copyright = copyright,
+        releaseDate = releaseDate,
+        genre = genre,
+        titleJp = titleJp,
     )
 
     private fun rawTrack(
@@ -554,6 +608,11 @@ class DatabaseRepositoryTest {
         length: Long = 60_000L,
         platform: Platform = Platform.OTHER,
         chainFiles: List<ChainFile> = emptyList(),
+        comment: String? = null,
+        dumper: String? = null,
+        dumpDate: String? = null,
+        titleJp: String? = null,
+        artistJp: String? = null,
     ): RawTrack = RawTrack(
         path = path,
         source = "test",
@@ -566,5 +625,10 @@ class DatabaseRepositoryTest {
         chainFiles = chainFiles,
         extension = "psf",
         platform = platform,
+        comment = comment,
+        dumper = dumper,
+        dumpDate = dumpDate,
+        titleJp = titleJp,
+        artistJp = artistJp,
     )
 }

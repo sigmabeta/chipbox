@@ -227,6 +227,10 @@ class DatabaseRepository(
                     photoUrl = rawGame.photoUrl,
                     folderKey = rawGame.folderKey,
                     folderSignature = rawGame.folderSignature,
+                    copyright = rawGame.copyright,
+                    releaseDate = rawGame.releaseDate,
+                    genre = rawGame.genre,
+                    titleJp = rawGame.titleJp,
                 )
             )
         }
@@ -247,12 +251,21 @@ class DatabaseRepository(
         val gameId = existing.id
         // We only reach the update path because the folder's signature changed, so refresh the row
         // (title/photo may have changed) and store the new signature for next time.
-        val metadataChanged = existing.title != rawGame.title || existing.photoUrl != rawGame.photoUrl
+        val metadataChanged = existing.title != rawGame.title ||
+            existing.photoUrl != rawGame.photoUrl ||
+            existing.copyright != rawGame.copyright ||
+            existing.releaseDate != rawGame.releaseDate ||
+            existing.genre != rawGame.genre ||
+            existing.titleJp != rawGame.titleJp
         gameDao.update(
             existing.copy(
                 title = rawGame.title,
                 photoUrl = rawGame.photoUrl,
                 folderSignature = rawGame.folderSignature,
+                copyright = rawGame.copyright,
+                releaseDate = rawGame.releaseDate,
+                genre = rawGame.genre,
+                titleJp = rawGame.titleJp,
             )
         )
 
@@ -365,7 +378,11 @@ class DatabaseRepository(
         title,
         photoUrl,
         if (withArtists) getArtistsForGame(id) else null,
-        if (withTracks) getTracksForGame(id) else null
+        if (withTracks) getTracksForGame(id) else null,
+        copyright,
+        releaseDate,
+        genre,
+        titleJp,
     )
 
     private suspend fun TrackEntity.toTrack(
@@ -385,6 +402,11 @@ class DatabaseRepository(
         extension,
         Platform.valueOf(platform),
         gameId = gameId,
+        comment = comment,
+        dumper = dumper,
+        dumpDate = dumpDate,
+        titleJp = titleJp,
+        artistJp = artistJp,
     )
 
     /**
@@ -431,6 +453,11 @@ class DatabaseRepository(
         encodeChainFiles(chainFiles),
         extension,
         platform.name,
+        comment,
+        dumper,
+        dumpDate,
+        titleJp,
+        artistJp,
     )
 
     private suspend fun getGameById(id: Long): Game = gameByIdCache.getOrLoad(id) {

@@ -105,6 +105,47 @@ class VgmReaderCommonTest {
         assertEquals(Platform.GENESIS, tracks[0].platform)
     }
 
+    @Test
+    fun `GD3 Japanese names, release date, creator and notes surface on the RawTrack`() {
+        val tracks = reader.readTracksFromFile(
+            vgmWithGd3(
+                title = "Stage 1",
+                game = "Cool Game",
+                system = "Sega Mega Drive",
+                author = "Yuzo Koshiro",
+                titleJp = "ステージ1",
+                gameJp = "クールゲーム",
+                authorJp = "古代祐三",
+                date = "1991",
+                converter = "BlastEm",
+                notes = "ripped from ROM",
+            ),
+            "jp.vgm",
+        )
+        assertNotNull(tracks)
+        assertEquals("ステージ1", tracks[0].titleJp)
+        assertEquals("クールゲーム", tracks[0].gameTitleJp)
+        assertEquals("古代祐三", tracks[0].artistJp)
+        assertEquals("1991", tracks[0].releaseDate)
+        assertEquals("BlastEm", tracks[0].dumper)
+        assertEquals("ripped from ROM", tracks[0].comment)
+    }
+
+    @Test
+    fun `GD3 with only English fields leaves the optional metadata null`() {
+        val tracks = reader.readTracksFromFile(
+            vgmWithGd3(title = "Stage 1", game = "Cool Game", system = "Sega Mega Drive", author = "Yuzo Koshiro"),
+            "en.vgm",
+        )
+        assertNotNull(tracks)
+        assertNull(tracks[0].titleJp)
+        assertNull(tracks[0].gameTitleJp)
+        assertNull(tracks[0].artistJp)
+        assertNull(tracks[0].releaseDate)
+        assertNull(tracks[0].dumper)
+        assertNull(tracks[0].comment)
+    }
+
     /**
      * Minimal VGM: 0x40-byte header with the magic and the two sample-count fields at their
      * documented offsets. GD3 offset stays 0 (= no tag block), so the reader skips GD3 parsing.
@@ -126,20 +167,31 @@ class VgmReaderCommonTest {
      * (title-en, title-jp, game-en, game-jp, system-en, system-jp, author-en, author-jp,
      * date, converter, notes). Only the four English entries the reader picks up are non-empty.
      */
-    private fun vgmWithGd3(title: String, game: String, system: String, author: String): ByteArray {
-        val empty = "".encodeUtf16Le() + byteArrayOf(0, 0)
+    private fun vgmWithGd3(
+        title: String,
+        game: String,
+        system: String,
+        author: String,
+        titleJp: String = "",
+        gameJp: String = "",
+        authorJp: String = "",
+        date: String = "",
+        converter: String = "",
+        notes: String = "",
+    ): ByteArray {
+        fun str(value: String) = value.encodeUtf16Le() + byteArrayOf(0, 0)
         val payload = cat(
-            title.encodeUtf16Le() + byteArrayOf(0, 0),
-            empty, // title-jp
-            game.encodeUtf16Le() + byteArrayOf(0, 0),
-            empty, // game-jp
-            system.encodeUtf16Le() + byteArrayOf(0, 0),
-            empty, // system-jp
-            author.encodeUtf16Le() + byteArrayOf(0, 0),
-            empty, // author-jp
-            empty, // date
-            empty, // converter
-            empty, // notes
+            str(title),
+            str(titleJp),
+            str(game),
+            str(gameJp),
+            str(system),
+            str(""), // system-jp
+            str(author),
+            str(authorJp),
+            str(date),
+            str(converter),
+            str(notes),
         )
         val header = ByteArray(0x40)
         "Vgm ".encodeToByteArray().copyInto(header, 0)

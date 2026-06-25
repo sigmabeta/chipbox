@@ -87,6 +87,20 @@ class M3uReaderTest {
     }
 
     @Test
+    fun `Zophar compound tag captures the copyright field`() {
+        // Pure-ASCII copyright (anchored by the year) so the Latin-1 tag decode round-trips it
+        // verbatim — a '©' glyph would mojibake to "Â©" through convert().
+        val entry = parse("game.nsf::NSF,1,Theme - Composer - Game Name - (C) 1992 HAL,2:30").single()
+        assertEquals("(C) 1992 HAL", entry.copyright)
+    }
+
+    @Test
+    fun `simple and plain tags leave copyright null`() {
+        assertNull(parse("game.nsf::NSF,1,My Title - My Artist - My Game,2:00").single().copyright)
+        assertNull(parse("game.nsf::NSF,1,Just A Title,2:00").single().copyright)
+    }
+
+    @Test
     fun `compound parse anchors from the right so titles can contain dash separators`() {
         // "Stage 3 - Float Islands" survives because the parser anchors on the trailing copyright
         // field and works backwards — splitting from the left would have eaten "Float Islands"

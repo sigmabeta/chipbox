@@ -42,6 +42,9 @@ class RsnReader(
                 trackNumber = index,
                 fadeLengthMs = tags?.fadeLengthMs ?: 0L,
                 platform = Platform.SNES,
+                comment = tags?.comment,
+                dumper = tags?.dumper,
+                dumpDate = tags?.dumpDate,
             )
         }
     }

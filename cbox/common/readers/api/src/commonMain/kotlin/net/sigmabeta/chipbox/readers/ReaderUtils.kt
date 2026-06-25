@@ -72,6 +72,18 @@ fun String?.orUnknown(): String {
     return this
 }
 
+/**
+ * Normalize an optional metadata string: trim it, then collapse "absent" representations — null, an
+ * empty string, or the PSF "<?>" placeholder — to null. Unlike [orUnknown] (for required fields that
+ * must always render *something*), optional tags stay null when missing so the UI can omit them.
+ */
+internal fun String?.orNullIfBlank(): String? {
+    val trimmed = this?.trim()
+    if (trimmed.isNullOrEmpty()) return null
+    if (trimmed == TAG_PSF_PLACEHOLDER) return null
+    return trimmed
+}
+
 internal fun bytesAsReader(bytes: ByteArray): ByteReader = ByteReader.wrap(bytes)
 
 internal fun String.toLengthMillis(): Long {

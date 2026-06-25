@@ -109,6 +109,40 @@ class NsfeReaderTest {
     }
 
     @Test
+    fun `auth chunk copyright and ripper surface on every track`() {
+        // 'auth' is game, artist, copyright, ripper. The last two are optional descriptive metadata
+        // (copyright is release-level; ripper maps to the track's dumper).
+        val nsfe = nsfeFile(
+            chunks = listOf(
+                infoChunk(trackCount = 1),
+                chunk("tlbl", "One".encodeToByteArray()),
+                chunk("auth", nullSep("Game", "Artist", "(C)1990 Capcom", "Mr. Ripper")),
+                chunk("NEND", ByteArray(0)),
+            ),
+        )
+        val tracks = reader.readTracksFromFile(nsfe, "auth.nsfe")
+        assertNotNull(tracks)
+        assertEquals("(C)1990 Capcom", tracks[0].copyright)
+        assertEquals("Mr. Ripper", tracks[0].dumper)
+    }
+
+    @Test
+    fun `auth chunk without copyright or ripper leaves them null`() {
+        val nsfe = nsfeFile(
+            chunks = listOf(
+                infoChunk(trackCount = 1),
+                chunk("tlbl", "One".encodeToByteArray()),
+                chunk("auth", nullSep("Game", "Artist")),
+                chunk("NEND", ByteArray(0)),
+            ),
+        )
+        val tracks = reader.readTracksFromFile(nsfe, "noauth.nsfe")
+        assertNotNull(tracks)
+        assertNull(tracks[0].copyright)
+        assertNull(tracks[0].dumper)
+    }
+
+    @Test
     fun `rejects a file with the wrong magic`() {
         assertNull(reader.readTracksFromFile("NOPE".encodeToByteArray() + ByteArray(64), "x.nsfe"))
     }

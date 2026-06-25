@@ -49,6 +49,39 @@ class SpcReaderTest {
     }
 
     @Test
+    fun `surfaces dumper, comment and dump date from the ID666 tag`() {
+        val tracks = reader.readTracksFromFile(
+            spcFile(
+                songTitle = "x",
+                gameTitle = "x",
+                artistName = "x",
+                lengthSeconds = "1",
+                fadeMillis = "0",
+                dumper = "Datschge",
+                comments = "Ripped from cart",
+                dumpDate = "08/15/2001",
+            ),
+            "meta.spc",
+        )
+        assertNotNull(tracks)
+        assertEquals("Datschge", tracks[0].dumper)
+        assertEquals("Ripped from cart", tracks[0].comment)
+        assertEquals("08/15/2001", tracks[0].dumpDate)
+    }
+
+    @Test
+    fun `absent optional ID666 fields come back null`() {
+        val tracks = reader.readTracksFromFile(
+            spcFile(songTitle = "x", gameTitle = "x", artistName = "x", lengthSeconds = "1", fadeMillis = "0"),
+            "bare.spc",
+        )
+        assertNotNull(tracks)
+        assertNull(tracks[0].dumper)
+        assertNull(tracks[0].comment)
+        assertNull(tracks[0].dumpDate)
+    }
+
+    @Test
     fun `rejects a file with the wrong header magic`() {
         // Has SPC-shaped header layout but the magic string is wrong.
         val bytes = ByteArray(0x10_200)
@@ -105,6 +138,9 @@ class SpcReaderTest {
         artistName: String,
         lengthSeconds: String,
         fadeMillis: String,
+        dumper: String = "",
+        comments: String = "",
+        dumpDate: String = "",
         xid6: ByteArray = ByteArray(0),
     ): ByteArray {
         val xid6Offset = 0x10_200
@@ -123,9 +159,9 @@ class SpcReaderTest {
         // Sequential fixed-width tag fields.
         writeFixedAscii(bytes, 46, songTitle, 32)
         writeFixedAscii(bytes, 78, gameTitle, 32)
-        writeFixedAscii(bytes, 110, "", 16) // dumper name
-        writeFixedAscii(bytes, 126, "", 32) // comments
-        writeFixedAscii(bytes, 158, "", 11) // dump date
+        writeFixedAscii(bytes, 110, dumper, 16) // dumper name
+        writeFixedAscii(bytes, 126, comments, 32) // comments
+        writeFixedAscii(bytes, 158, dumpDate, 11) // dump date
         writeFixedAscii(bytes, 169, lengthSeconds, 3)
         writeFixedAscii(bytes, 172, fadeMillis, 5)
         writeFixedAscii(bytes, 177, artistName, 32)
