@@ -120,6 +120,33 @@ class NowPlayingTest {
         assertTrue(isTrackFavorited(track.id))
     }
 
+    @Test
+    fun linksLongMetadataTagOpensTheTagDetailView() = runChipboxUiTest {
+        // A comment too long to read on the single ellipsized LINKS row is tappable; tapping it
+        // drills into the TAG view, which shows the full text (and the LINKS rows are gone).
+        val longComment = "Arranged by Yuzo Koshiro and reconstructed from the original sound driver."
+        startNowPlaying(track = tagTrack(comment = longComment), session = allTracksSession())
+
+        clickTag(TRACK_INFO_TAG) // open LINKS
+        assertTextInRow(GAME_TITLE) // the LINKS game row is up
+        clickTag(CTX_COMMENT_TAG) // the long comment is expandable
+
+        assertTextInRow(longComment) // TAG view shows the full comment
+        assertTextNotInRow(GAME_TITLE) // the LINKS rows are gone — we're in TAG
+    }
+
+    @Test
+    fun linksShortMetadataTagIsInertAndStaysInLinks() = runChipboxUiTest {
+        // A short dumper fits the inline row, so its tap does nothing — the LINKS menu stays put
+        // rather than opening an empty TAG view.
+        startNowPlaying(track = tagTrack(dumper = "Datschge"), session = allTracksSession())
+
+        clickTag(TRACK_INFO_TAG) // open LINKS
+        clickTag(CTX_DUMPER_TAG) // short → inert
+
+        assertTextInRow(GAME_TITLE) // still in LINKS (its game row is present)
+    }
+
     // ---- fixtures ----
 
     // Seed a live session via the generic harness verb, then open Now Playing on top of it.
@@ -149,6 +176,27 @@ class NowPlayingTest {
             artists = artists,
             platform = Platform.OTHER,
             gameId = ironQuestId,
+        )
+    }
+
+    // A now-playing track carrying extended file-tag metadata, for the TAG-view tests. Points at the
+    // same real library ids as [ironQuestTrack] so the LINKS rows render.
+    private fun ChipboxUiTest.tagTrack(comment: String = "", dumper: String = ""): Track {
+        val ironQuestId = gameId(GAME_TITLE)
+        return Track(
+            id = 1L,
+            path = "/iron-quest/$TRACK_TITLE",
+            source = "test",
+            title = TRACK_TITLE,
+            trackLengthMs = 154_000L,
+            trackNumber = 1,
+            fadeLengthMs = 0L,
+            game = Game(id = ironQuestId, title = GAME_TITLE, photoUrl = null, artists = null, tracks = null),
+            artists = listOf(artistOf(ARTIST_JAKE)),
+            platform = Platform.OTHER,
+            gameId = ironQuestId,
+            comment = comment.ifEmpty { null },
+            dumper = dumper.ifEmpty { null },
         )
     }
 
@@ -188,5 +236,7 @@ class NowPlayingTest {
         const val CTX_ARTISTS_TAG = "NowPlayingCtxArtists"
         const val CTX_REPEAT_TAG = "NowPlayingCtxRepeat"
         const val CTX_SHUFFLE_TAG = "NowPlayingCtxShuffle"
+        const val CTX_COMMENT_TAG = "NowPlayingCtxComment"
+        const val CTX_DUMPER_TAG = "NowPlayingCtxDumper"
     }
 }

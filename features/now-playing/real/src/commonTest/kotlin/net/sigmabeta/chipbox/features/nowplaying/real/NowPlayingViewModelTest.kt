@@ -34,6 +34,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -250,6 +251,47 @@ class NowPlayingViewModelTest {
         assertEquals("Player settings coming soon.", event.message)
     }
 
+    // ---- metadata tag context menu ----
+
+    @Test
+    fun `ContextMenuTagClicked opens the TAG view resolving that kind's value`() = runTest(dispatcher) {
+        val director = FakeDirector()
+        val vm = newViewModel(director)
+        director.emitMetadata(trackOf(1L, "Aria", comment = "a ripper's note about this track"))
+        vm.state.first { it.track?.id == 1L }
+
+        vm.sendAction(NowPlayingAction.ContextMenuTagClicked(NowPlayingTagKind.COMMENT))
+
+        val state = vm.state.first { it.contextMenuMode == ContextMenuMode.TAG }
+        assertEquals(NowPlayingTagKind.COMMENT, state.selectedTagKind)
+        val tag = state.toContent(stubStringProvider()).selectedTag
+        assertEquals(NowPlayingTagKind.COMMENT, tag?.kind)
+        assertEquals("a ripper's note about this track", tag?.value)
+    }
+
+    @Test
+    fun `ContextMenuBackClicked from the TAG view returns to track info and clears the selection`() = runTest(dispatcher) {
+        val director = FakeDirector()
+        val vm = newViewModel(director)
+        director.emitMetadata(trackOf(1L, "Aria", comment = "x"))
+        vm.state.first { it.track?.id == 1L }
+        vm.sendAction(NowPlayingAction.ContextMenuTagClicked(NowPlayingTagKind.COMMENT))
+        vm.state.first { it.contextMenuMode == ContextMenuMode.TAG }
+
+        vm.sendAction(NowPlayingAction.ContextMenuBackClicked)
+
+        val state = vm.state.first { it.contextMenuMode == ContextMenuMode.NONE }
+        assertNull(state.selectedTagKind)
+    }
+
+    @Test
+    fun `isExpandableTag flags only multi-line or over-20-char values`() {
+        assertFalse(isExpandableTag("Datschge"))
+        assertFalse(isExpandableTag("a".repeat(20)), "20 chars still fits the inline row")
+        assertTrue(isExpandableTag("a".repeat(21)))
+        assertTrue(isExpandableTag("line one\nline two"))
+    }
+
     // ---- error log ----
 
     @Test
@@ -350,6 +392,7 @@ class NowPlayingViewModelTest {
         title: String,
         gameTitle: String? = null,
         artistName: String? = null,
+        comment: String? = null,
     ): Track = Track(
         id = id,
         path = "/library/$title.psf",
@@ -361,6 +404,7 @@ class NowPlayingViewModelTest {
         game = gameTitle?.let { Game(id = 1, title = it, photoUrl = null, artists = null, tracks = null) },
         artists = artistName?.let { listOf(Artist(id = 1, name = it, photoUrl = null, tracks = null, games = null)) },
         platform = Platform.OTHER,
+        comment = comment,
     )
 
     private fun sessionWith(repeatMode: RepeatMode): Session = Session(

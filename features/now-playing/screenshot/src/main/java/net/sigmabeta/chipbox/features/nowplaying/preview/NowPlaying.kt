@@ -7,6 +7,8 @@ import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingArtist
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingContent
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingError
 import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingModel
+import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingTag
+import net.sigmabeta.chipbox.features.nowplaying.real.NowPlayingTagKind
 import net.sigmabeta.chipbox.player.common.RepeatMode
 import net.sigmabeta.chipbox.ui.previews.DevicePreviews
 import net.sigmabeta.chipbox.ui.previews.ScreenPreview
@@ -93,6 +95,29 @@ internal fun NowPlayingLinks(
             dumper = "Datschge",
             dumpDate = "2001-08-15",
             comment = "Ripped from the original cartridge",
+        ),
+    )
+}
+
+/** Context menu — TAG: the full text of one long metadata tag, scrollable within 400dp. */
+@DevicePreviews
+@Composable
+internal fun NowPlayingTagDetail(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    NowPlayingScreenshot(
+        darkTheme,
+        syntheticWidthClass,
+        sampleModel(
+            isPlaying = true,
+            contextMenuMode = ContextMenuMode.TAG,
+            selectedTag = NowPlayingTag(
+                kind = NowPlayingTagKind.COMMENT,
+                value = "Arranged by Yuzo Koshiro.\n\nThis track is based on an unused prototype " +
+                    "cue and was reconstructed from the original Z80 driver. The looping section " +
+                    "differs slightly from the retail build — the intro fanfare is four bars longer.",
+            ),
         ),
     )
 }
@@ -195,6 +220,7 @@ private fun sampleModel(
     dumper: String = "",
     dumpDate: String = "",
     comment: String = "",
+    selectedTag: NowPlayingTag? = null,
 ): NowPlayingModel = NowPlayingModel(
     artwork = SourceInfo(info = "preview://mega-man-2"),
     sessionTypeLabel = "Playing from game",
@@ -221,6 +247,7 @@ private fun sampleModel(
     dumper = dumper,
     dumpDate = dumpDate,
     comment = comment,
+    selectedTag = selectedTag,
     repeatStatusLabel = repeatStatusLabel,
     shuffleStatusLabel = shuffleStatusLabel,
     isTrackFavorite = isTrackFavorite,

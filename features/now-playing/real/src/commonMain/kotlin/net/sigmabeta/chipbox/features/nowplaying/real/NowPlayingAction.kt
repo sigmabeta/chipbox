@@ -60,4 +60,10 @@ sealed class NowPlayingAction : ChipboxAction() {
 
     /** ARTISTS row — navigate to the detail screen for one specific artist. */
     data class ContextMenuArtistClicked(val artistId: Long) : NowPlayingAction()
+
+    /**
+     * LINKS metadata row whose text was too long to read inline — open the TAG view showing that
+     * tag's full value. Only dispatched by rows the UI deems expandable; short rows are inert.
+     */
+    data class ContextMenuTagClicked(val kind: NowPlayingTagKind) : NowPlayingAction()
 }

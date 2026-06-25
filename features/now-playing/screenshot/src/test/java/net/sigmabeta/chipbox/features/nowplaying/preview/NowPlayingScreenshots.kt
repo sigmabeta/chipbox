@@ -61,6 +61,14 @@ class NowPlayingScreenshots(
     }
 
     @Test
+    fun nowPlayingTagDetail() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            NowPlayingTagDetail(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
+    @Test
     fun nowPlayingArtists() {
         paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
         paparazzi.snapshot {

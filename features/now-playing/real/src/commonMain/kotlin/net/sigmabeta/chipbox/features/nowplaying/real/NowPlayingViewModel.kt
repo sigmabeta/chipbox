@@ -247,6 +247,8 @@ class NowPlayingViewModel @Inject constructor(
                 emit(ChipboxEvent.NavigateTo(ArtistDetail(action.artistId)))
             }
 
+            is NowPlayingAction.ContextMenuTagClicked -> showTag(action.kind)
+
             // Lifecycle, delivered from the Route. Foregrounding restarts the auto-dismiss window so
             // a menu left open across a background→foreground gets a fresh 5s; backgrounding cancels
             // the pending dismiss so it doesn't fire while the user can't see the screen.
@@ -259,8 +261,18 @@ class NowPlayingViewModel @Inject constructor(
     /** Switch the context menu to [mode] and (re)start the inactivity auto-dismiss window. Closes
      *  the setlist, which shares the InfoContainer slot. */
     private fun showContextMenu(mode: ContextMenuMode) {
-        updateState { it.copy(contextMenuMode = mode, setlistVisible = false) }
+        updateState { it.copy(contextMenuMode = mode, selectedTagKind = null, setlistVisible = false) }
         bumpContextMenuTimer()
+    }
+
+    /** Drill into the full text of one metadata [kind] (the TAG view). Unlike the other menus this
+     *  is a reading surface — cancel the auto-dismiss so a long tag isn't yanked away mid-read; the
+     *  back row returns to track info. */
+    private fun showTag(kind: NowPlayingTagKind) {
+        contextMenuTimerJob?.cancel()
+        updateState {
+            it.copy(contextMenuMode = ContextMenuMode.TAG, selectedTagKind = kind, setlistVisible = false)
+        }
     }
 
     /** Toggle the reorderable setlist in place of the whole InfoContainer. No auto-dismiss —
@@ -273,7 +285,7 @@ class NowPlayingViewModel @Inject constructor(
     /** Close the context menu (back to track info) and stop the pending auto-dismiss. */
     private fun closeContextMenu() {
         contextMenuTimerJob?.cancel()
-        updateState { it.copy(contextMenuMode = ContextMenuMode.NONE) }
+        updateState { it.copy(contextMenuMode = ContextMenuMode.NONE, selectedTagKind = null) }
     }
 
     /** Restart the inactivity window so the menu auto-returns to NONE after [CONTEXT_MENU_TIMEOUT_MS]. */

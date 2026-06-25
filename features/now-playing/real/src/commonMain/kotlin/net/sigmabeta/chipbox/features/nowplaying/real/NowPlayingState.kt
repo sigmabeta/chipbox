@@ -29,6 +29,8 @@ data class NowPlayingState(
     val session: Session? = null,
     val errors: List<NowPlayingError> = emptyList(),
     val contextMenuMode: ContextMenuMode = ContextMenuMode.NONE,
+    /** Which metadata tag the [ContextMenuMode.TAG] view is showing; null outside that mode. */
+    val selectedTagKind: NowPlayingTagKind? = null,
     /** When true, the reorderable setlist replaces the InfoContainer block. */
     val setlistVisible: Boolean = false,
     /** The current playback setlist resolved to track metadata, in queue order, each tagged with
@@ -69,6 +71,9 @@ data class NowPlayingState(
         dumper = track?.dumper.orEmpty(),
         dumpDate = track?.dumpDate.orEmpty(),
         comment = track?.comment.orEmpty(),
+        selectedTag = selectedTagKind?.let { kind ->
+            tagValue(kind).takeIf { it.isNotEmpty() }?.let { NowPlayingTag(kind, it) }
+        },
         repeatStatusLabel = stringProvider.getString(repeatStatusStringId()),
         shuffleStatusLabel = stringProvider.getString(shuffleStatusStringId()),
         isTrackFavorite = trackFavorite,
@@ -109,6 +114,15 @@ data class NowPlayingState(
             active = slot.active,
         )
     }
+
+    /** The current track's value for a given metadata [kind] (empty when the track lacks it). */
+    private fun tagValue(kind: NowPlayingTagKind): String = when (kind) {
+        NowPlayingTagKind.JAPANESE_TITLE -> track?.titleJp
+        NowPlayingTagKind.JAPANESE_ARTIST -> track?.artistJp
+        NowPlayingTagKind.DUMPER -> track?.dumper
+        NowPlayingTagKind.DUMP_DATE -> track?.dumpDate
+        NowPlayingTagKind.COMMENT -> track?.comment
+    }.orEmpty()
 
     private fun formatTrackLength(millis: Long): String {
         val totalSeconds = millis / MS_PER_SECOND
