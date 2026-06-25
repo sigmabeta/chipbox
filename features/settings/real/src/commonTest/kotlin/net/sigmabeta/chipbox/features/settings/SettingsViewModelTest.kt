@@ -26,6 +26,7 @@ import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
 import net.sigmabeta.sage.appcomm.LCE
+import net.sigmabeta.sage.components.NameCaptionListModel
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.ui.SageStringId
@@ -233,6 +234,26 @@ class SettingsViewModelTest {
         val event = collectAndDispatch(vm, SettingsAction.RescanStatusClicked)
         assertTrue(event is ChipboxEvent.NavigateTo)
         assertEquals(RescanStatus, event.destination)
+    }
+
+    @Test
+    fun `rescan CTA is shown when idle and the in-progress row is not`() {
+        val actions = SettingsState(rescanStatus = LCE.Uninitialized)
+            .toListItems(stubStringProvider())
+            .filterIsInstance<NameCaptionListModel>()
+            .map { it.clickAction }
+        assertTrue(SettingsAction.RescanLibraryClicked in actions)
+        assertFalse(SettingsAction.RescanStatusClicked in actions)
+    }
+
+    @Test
+    fun `rescan CTA is hidden while a scan is running, replaced by the in-progress row`() {
+        val actions = SettingsState(rescanStatus = LCE.Loading("settings.rescan"))
+            .toListItems(stubStringProvider())
+            .filterIsInstance<NameCaptionListModel>()
+            .map { it.clickAction }
+        assertFalse(SettingsAction.RescanLibraryClicked in actions)
+        assertTrue(SettingsAction.RescanStatusClicked in actions)
     }
 
     @Test
