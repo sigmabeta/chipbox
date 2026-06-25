@@ -120,6 +120,9 @@ class HomeViewModel @Inject constructor(
                 emit(NavigateTo(RescanStatus))
             }
 
+            // Drop the scanner back to idle so the ScanStatusModule's section hides itself.
+            HomeAction.ScanStatusDismissed -> scanner.clearScan()
+
             HomeAction.NowPlayingCardClicked -> emit(NavigateTo(NowPlaying))
 
             HomeAction.NowPlayingPlayPauseClicked -> togglePlayPause()

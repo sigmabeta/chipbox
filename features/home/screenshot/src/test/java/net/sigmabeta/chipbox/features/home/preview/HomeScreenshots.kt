@@ -52,6 +52,30 @@ class HomeScreenshots(
         }
     }
 
+    @Test
+    fun homeScreenScanStatusScanning() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            HomeScanStatusScanning(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
+    @Test
+    fun homeScreenScanStatusComplete() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            HomeScanStatusComplete(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
+    @Test
+    fun homeScreenScanStatusFailed() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            HomeScanStatusFailed(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = SUFFIX_TESTNAME)

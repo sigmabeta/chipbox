@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.features.home.modules.MostPlayedSongsHomeModule
 import net.sigmabeta.chipbox.features.home.modules.NowPlayingHomeModule
 import net.sigmabeta.chipbox.features.home.modules.RecentlyPlayedGamesHomeModule
 import net.sigmabeta.chipbox.features.home.modules.RngTakeTheWheelHomeModule
+import net.sigmabeta.chipbox.features.home.modules.ScanStatusHomeModule
 import net.sigmabeta.sage.di.AppScope
 
 @ContributesTo(AppScope::class)
@@ -47,4 +48,8 @@ interface HomeModuleBindings {
     @Binds
     @IntoSet
     fun bindRngTakeTheWheelModule(impl: RngTakeTheWheelHomeModule): HomeModule
+
+    @Binds
+    @IntoSet
+    fun bindScanStatusModule(impl: ScanStatusHomeModule): HomeModule
 }
