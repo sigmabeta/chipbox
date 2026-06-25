@@ -20,6 +20,9 @@ import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.sage.components.ImageNameCaptionListModel
+import net.sigmabeta.sage.components.LabelValueListModel
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
@@ -189,6 +192,72 @@ class RescanStatusViewModelTest {
         val ids = vm.state.first { it.events.size == 2 }.events.map { it.id }
         assertEquals(2, ids.distinct().size, "Each scan event gets its own row id")
         assertTrue(ids[1] > ids[0], "Ids are monotonic in flush order")
+    }
+
+    @Test
+    fun `current file surfaces on the fast tick, before the full Changes list is flushed`() =
+        rescanTest { vm, scanner ->
+            scanner.pushState(ScannerState.Scanning(timeInSeconds = 1))
+            scanner.pushEvent(ScannerEvent.FileScanned(name = "chrono.spc"))
+
+            val state = vm.state.first { it.currentFile != null }
+            assertEquals("chrono.spc", state.currentFile)
+            assertTrue(state.events.isEmpty(), "FileScanned never enters the Changes list")
+        }
+
+    @Test
+    fun `current file tracks the most recent FileScanned heartbeat`() = rescanTest { vm, scanner ->
+        scanner.pushState(ScannerState.Scanning(timeInSeconds = 1))
+        scanner.pushEvent(ScannerEvent.FileScanned(name = "a.nsf"))
+        assertEquals("a.nsf", vm.state.first { it.currentFile != null }.currentFile)
+
+        scanner.pushEvent(ScannerEvent.FileScanned(name = "b.nsf"))
+        assertEquals("b.nsf", vm.state.first { it.currentFile == "b.nsf" }.currentFile)
+    }
+
+    @Test
+    fun `FileScanned drives the current file but never the Changes list`() = rescanTest { vm, scanner ->
+        scanner.pushState(ScannerState.Scanning(timeInSeconds = 1))
+        scanner.pushEvent(ScannerEvent.FileScanned(name = "x.vgm"))
+        scanner.pushEvent(ScannerEvent.GameFoundEvent(id = 1L, name = "Real Game", trackCount = 3, imageUrl = null))
+        advanceTimeBy(BATCH_FLUSH_MS)
+
+        val state = vm.state.first { it.events.isNotEmpty() }
+        // The game change is the only Changes entry; the scanned file is not in the list.
+        assertEquals(listOf("Real Game"), state.events.map { it.gameName })
+        assertEquals("x.vgm", state.currentFile)
+    }
+
+    @Test
+    fun `starting a new scan run clears the previous run's current file`() = rescanTest { vm, scanner ->
+        scanner.pushState(ScannerState.Scanning(timeInSeconds = 1))
+        scanner.pushEvent(ScannerEvent.FileScanned(name = "a.spc"))
+        advanceTimeBy(BATCH_FLUSH_MS)
+        assertEquals("a.spc", vm.state.value.currentFile)
+
+        scanner.pushState(ScannerState.Complete(timeInSeconds = 5, gamesFound = 1, tracksFound = 1, tracksFailed = 0))
+        advanceTimeBy(BATCH_FLUSH_MS)
+        // A fresh Scanning state (after the previous run settled) drops the stale file name.
+        scanner.pushState(ScannerState.Scanning(timeInSeconds = 0))
+        assertNull(vm.state.first { it.currentFile == null }.currentFile)
+    }
+
+    @Test
+    fun `current file renders as a Scanning row inside the Progress section`() {
+        val state = RescanStatusState(phase = ScanPhase.SCANNING, currentFile = "chrono.spc")
+        // The only image rows would be Changes entries; there are none, and the file shows as a
+        // plain label/value row instead.
+        val items = state.toListItems(stubStringProvider())
+        assertTrue(items.none { it is ImageNameCaptionListModel })
+        val scanningRow = items.filterIsInstance<LabelValueListModel>()
+            .single { it.value == "chrono.spc" }
+        assertEquals(ChipboxStringId.RESCAN_STATUS_LABEL_SCANNING.toString(), scanningRow.label)
+    }
+
+    @Test
+    fun `current file is hidden once scanning completes`() {
+        val state = RescanStatusState(phase = ScanPhase.COMPLETE, currentFile = "stale.spc")
+        assertTrue(state.toListItems(stubStringProvider()).none { it is LabelValueListModel && it.value == "stale.spc" })
     }
 
     @Test

@@ -199,6 +199,10 @@ class RealScanner(
         val tagInfoCache = HashMap<String, PsfTagInfo?>()
 
         for (file in files) {
+            // Per-file progress heartbeat for the Rescan Status UI. Fires far more often than the
+            // game-level change events, so the screen shows motion even when no game changes.
+            emitEvent(ScannerEvent.FileScanned(file.name))
+
             val ext = file.extension
             if (ext.isEmpty()) continue
 

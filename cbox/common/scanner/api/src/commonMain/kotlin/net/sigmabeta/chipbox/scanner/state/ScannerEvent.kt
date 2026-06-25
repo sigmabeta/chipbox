@@ -3,6 +3,13 @@ package net.sigmabeta.chipbox.scanner.state
 sealed class ScannerEvent {
     object Unknown : ScannerEvent()
 
+    /** A single file is being read right now. A pure progress heartbeat — it fires far more often
+     *  than the Game* change events (once per file) so the UI can show live motion, and is never
+     *  added to the "Changes" list. [name] is the file's display name. */
+    class FileScanned(
+        val name: String
+    ) : ScannerEvent()
+
     /** A new game was added to the library this scan. [id] is its repository id; [imageUrl] is its
      *  cover-art source, or null when the game has no artwork. */
     class GameFoundEvent(

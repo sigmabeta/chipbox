@@ -39,6 +39,11 @@ data class RescanStatusState(
     val tracksFound: Int = 0,
     val tracksFailed: Int = 0,
     val failedPath: String? = null,
+    // The file the scanner is reading right now, surfaced under Progress as a live heartbeat so the
+    // screen shows motion between (rare) meaningful changes. Updated on a much faster cadence than
+    // [events] — which stays batched for perf — and is never mixed into that Changes list. Null
+    // when no file is currently being read.
+    val currentFile: String? = null,
     val events: List<ScanEventItem> = emptyList(),
 ) : ListState() {
     override val columnType: ColumnType = ColumnType.One
@@ -68,6 +73,15 @@ data class RescanStatusState(
             labelValue(stringProvider, ChipboxStringId.RESCAN_STATUS_LABEL_TRACKS, tracksFound),
             labelValue(stringProvider, ChipboxStringId.RESCAN_STATUS_LABEL_FAILED, tracksFailed),
         )
+        // Live per-file heartbeat: only meaningful mid-scan, and shown as a plain label/value row
+        // (it's a filename, not a game) so it can never be confused with a Changes entry.
+        if (phase == ScanPhase.SCANNING && currentFile != null) {
+            rows += LabelValueListModel(
+                label = stringProvider.getString(ChipboxStringId.RESCAN_STATUS_LABEL_SCANNING),
+                value = currentFile,
+                clickAction = SageAction.Noop,
+            )
+        }
         if (phase == ScanPhase.FAILED && failedPath != null) {
             rows += LabelValueListModel(
                 label = stringProvider.getString(ChipboxStringId.RESCAN_STATUS_LABEL_FAILED_PATH),
@@ -83,22 +97,24 @@ data class RescanStatusState(
         return buildList {
             add(SectionHeaderListModel(stringProvider.getString(ChipboxStringId.RESCAN_STATUS_SECTION_EVENTS)))
             // [events] is chronological; reverse so the most recent change shows at the top.
-            events.asReversed().forEach { event ->
-                val verb = stringProvider.getString(event.kind.labelId())
-                add(
-                    ImageNameCaptionListModel(
-                        dataId = event.id,
-                        name = event.gameName,
-                        caption = if (event.kind == ScanEventKind.REMOVED) verb else "$verb · ${event.trackCount} tracks",
-                        sourceInfo = SourceInfo(info = event.imageUrl),
-                        imagePlaceholder = Icon.Album,
-                        // Added/updated games open their detail screen; a removed game is gone, so no tap.
-                        clickAction = event.gameId?.let { RescanStatusAction.GameClicked(it) } ?: SageAction.Noop,
-                    ),
-                )
-            }
+            events.asReversed().forEach { event -> add(eventRow(stringProvider, event)) }
         }
     }
+
+    private fun eventRow(stringProvider: StringProvider, event: ScanEventItem) =
+        ImageNameCaptionListModel(
+            dataId = event.id,
+            name = event.gameName,
+            caption = if (event.kind == ScanEventKind.REMOVED) {
+                stringProvider.getString(event.kind.labelId())
+            } else {
+                "${stringProvider.getString(event.kind.labelId())} · ${event.trackCount} tracks"
+            },
+            sourceInfo = SourceInfo(info = event.imageUrl),
+            imagePlaceholder = Icon.Album,
+            // Added/updated games open their detail screen; a removed game is gone, so no tap.
+            clickAction = event.gameId?.let { RescanStatusAction.GameClicked(it) } ?: SageAction.Noop,
+        )
 
     private fun labelValue(stringProvider: StringProvider, labelId: ChipboxStringId, value: Int) =
         LabelValueListModel(
