@@ -337,7 +337,6 @@ data class SettingsState(
             }.toImmutableList(),
             expanded = expandedDropdownId == settingId,
             onExpandClicked = SettingsAction.DropdownExpandClicked(settingId),
-            onNewOptionSelected = { index -> onSelected(fonts[index]) },
         )
     }
 
