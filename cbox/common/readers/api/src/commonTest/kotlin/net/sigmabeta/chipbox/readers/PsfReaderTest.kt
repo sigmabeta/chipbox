@@ -194,6 +194,19 @@ class PsfReaderTest {
         assertNull(track.comment)
     }
 
+    @Test
+    fun `buildRawTrack treats a literal Unknown optional tag as absent`() {
+        // Some rips write the placeholder word literally (e.g. a USF `comment=Unknown`); it carries
+        // no information, so the optional field comes back null rather than the word "Unknown".
+        val track = reader.buildRawTrack(
+            tags = mapOf("title" to "x", "comment" to "Unknown", "copyright" to "Unknown"),
+            identifier = "t.psf",
+            platform = Platform.PSX,
+        )
+        assertNull(track.comment)
+        assertNull(track.copyright)
+    }
+
     /**
      * Builds a minimal, valid PSF container: "PSF" + platform byte, empty reserved/program areas
      * (so the tag section is at offset 16), then "[TAG]" + [tagText]. Mirrors what a real .psf /

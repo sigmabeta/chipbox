@@ -1,11 +1,23 @@
 package net.sigmabeta.chipbox.readers
 
+import net.sigmabeta.chipbox.utils.convert
+
 internal fun ByteReader.nextFourBytesAsInt() = readIntLe()
 
 internal fun ByteReader.nextBytes(numberOfBytes: Int): ByteArray? = readBytes(numberOfBytes)
 
 internal fun ByteReader.nextBytesAsString(numberOfBytes: Int) = nextBytes(numberOfBytes)
     ?.decodeToString()
+    ?.substringBefore(0.toChar())
+    ?.trim()
+
+/**
+ * Read [numberOfBytes] and decode them as Latin-1 (ISO-8859-1, one byte → one code point) rather
+ * than UTF-8. Used for fixed-width text fields whose bytes are Latin-1 by convention — notably SPC
+ * ID666 tags, where a UTF-8 decode turns an accented byte (e.g. 0xED 'í') into a replacement char.
+ */
+internal fun ByteReader.nextBytesAsLatin1String(numberOfBytes: Int) = nextBytes(numberOfBytes)
+    ?.convert()
     ?.substringBefore(0.toChar())
     ?.trim()
 
@@ -81,6 +93,9 @@ internal fun String?.orNullIfBlank(): String? {
     val trimmed = this?.trim()
     if (trimmed.isNullOrEmpty()) return null
     if (trimmed == TAG_PSF_PLACEHOLDER) return null
+    // A tag whose literal value is the "Unknown" placeholder (e.g. a PSF `comment=Unknown`) carries
+    // no real information, so treat it as absent rather than surfacing the placeholder word.
+    if (trimmed == TAG_UNKNOWN) return null
     return trimmed
 }
 

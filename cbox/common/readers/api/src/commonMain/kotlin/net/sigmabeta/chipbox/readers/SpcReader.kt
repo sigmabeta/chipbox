@@ -81,17 +81,18 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
             return null
         }
 
-        // These must all happen in order.
+        // These must all happen in order. ID666 text fields are Latin-1 by convention, so decode
+        // them as such — a UTF-8 decode mangles accented names (e.g. "Agustín" → "Agust�n").
         val minorVersion = fileAsByteBuffer.nextBytesAsInt(1)
         val spcRegistersIgnored = fileAsByteBuffer.nextBytes(LENGTH_SPC_REGISTERS)
-        val songTitle = fileAsByteBuffer.nextBytesAsString(LENGTH_TAG_STANDARD)
-        val gameTitle = fileAsByteBuffer.nextBytesAsString(LENGTH_TAG_STANDARD)
-        val dumperName = fileAsByteBuffer.nextBytesAsString(LENGTH_TAG_DUMPER_NAME)
-        val comments = fileAsByteBuffer.nextBytesAsString(LENGTH_TAG_STANDARD)
-        val dumpDate = fileAsByteBuffer.nextBytesAsString(LENGTH_TAG_DUMP_DATE)
+        val songTitle = fileAsByteBuffer.nextBytesAsLatin1String(LENGTH_TAG_STANDARD)
+        val gameTitle = fileAsByteBuffer.nextBytesAsLatin1String(LENGTH_TAG_STANDARD)
+        val dumperName = fileAsByteBuffer.nextBytesAsLatin1String(LENGTH_TAG_DUMPER_NAME)
+        val comments = fileAsByteBuffer.nextBytesAsLatin1String(LENGTH_TAG_STANDARD)
+        val dumpDate = fileAsByteBuffer.nextBytesAsLatin1String(LENGTH_TAG_DUMP_DATE)
         val lengthSecondsString = fileAsByteBuffer.nextBytesAsString(LENGTH_TAG_TRACK_LENGTH)
         val fadeLengthMillisString = fileAsByteBuffer.nextBytesAsString(LENGTH_TAG_FADE_LENGTH)
-        val artistName = fileAsByteBuffer.nextBytesAsString(LENGTH_TAG_STANDARD)
+        val artistName = fileAsByteBuffer.nextBytesAsLatin1String(LENGTH_TAG_STANDARD)
 
         if (SHOULD_LOG_EXTRA_INFO) {
             hatchet.i("SPC Minor Ver: $minorVersion")
