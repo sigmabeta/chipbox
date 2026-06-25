@@ -3,9 +3,8 @@ plugins {
     alias(chipbox.plugins.kmp.test)
 }
 
-// LibraryViewModel + state/action are pure-Kotlin commonMain; LibraryRoute is androidMain
-// because ChipboxListEntry is still androidMain (M9 slice 6 promotes it). Desktop gets its
-// own route in apps/jvm once a CMP-friendly list scaffold lands.
+// LibraryViewModel, its state/action, and LibraryRoute are all pure-Kotlin commonMain — the
+// screen is fully multiplatform now that ChipboxListEntry lives in commonMain.
 kotlin {
     sourceSets {
         named("commonMain") {
