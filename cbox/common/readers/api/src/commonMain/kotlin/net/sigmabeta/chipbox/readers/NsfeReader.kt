@@ -21,9 +21,12 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
             }
 
             val chunks = readNsfeChunks(fileAsByteBuffer)
+            // 'auth' chunk is null-separated: game, artist, copyright, ripper.
             val gameMetadata = chunks.parseChunkAsStrings(CHUNK_AUTH)
-            val gameTitle = gameMetadata?.getOrNull(0).orUnknown()
-            val gameArtist = gameMetadata?.getOrNull(1).orUnknown()
+            val gameTitle = gameMetadata?.getOrNull(AUTH_INDEX_GAME).orUnknown()
+            val gameArtist = gameMetadata?.getOrNull(AUTH_INDEX_ARTIST).orUnknown()
+            val copyright = gameMetadata?.getOrNull(AUTH_INDEX_COPYRIGHT).orNullFromTag()
+            val ripper = gameMetadata?.getOrNull(AUTH_INDEX_RIPPER).orNullFromTag()
 
             val trackNameList = chunks.parseChunkAsStrings(CHUNK_TLBL).orEmpty()
             val artistList = chunks.parseChunkAsStrings(CHUNK_TAUT)
@@ -56,6 +59,8 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
                         index,
                         fadeMs.coerceAtLeast(0L),
                         platform = Platform.NES,
+                        dumper = ripper,
+                        copyright = copyright,
                     )
                 )
             }
@@ -137,12 +142,22 @@ class NsfeReader(private val hatchet: Hatchet) : Reader() {
         return NsfeChunk(name, length, content)
     }
 
+    // parseChunkAsStrings already collapses blank fields to TAG_UNKNOWN; for optional metadata
+    // (copyright/ripper) we want null instead so the UI can omit the field entirely.
+    private fun String?.orNullFromTag(): String? = this?.takeUnless { it == TAG_UNKNOWN }.orNullIfBlank()
+
     private fun isNsfeFile(header: String) = header.contentEquals(HEADER_MAGIC)
 
     companion object {
         private const val HEADER_MAGIC = "NSFE"
         private const val HEADER_MAGIC_SIZE = 4
         private const val CHUNK_NAME_SIZE = 4
+
+        // 'auth' chunk field order.
+        private const val AUTH_INDEX_GAME = 0
+        private const val AUTH_INDEX_ARTIST = 1
+        private const val AUTH_INDEX_COPYRIGHT = 2
+        private const val AUTH_INDEX_RIPPER = 3
 
         // Byte offset of the track-count field within the NSFE 'INFO' chunk.
         private const val INFO_OFFSET_TRACK_COUNT = 0x08

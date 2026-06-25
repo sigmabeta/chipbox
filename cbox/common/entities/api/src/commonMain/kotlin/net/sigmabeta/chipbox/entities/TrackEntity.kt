@@ -37,5 +37,11 @@ data class TrackEntity(
     val extension: String = "",
     // Stored as Platform.name; the model enum lives in a module this one doesn't depend on.
     val platform: String = "OTHER",
+    // Optional descriptive metadata, null when the source file carried none.
+    val comment: String? = null,
+    val dumper: String? = null,
+    @ColumnInfo(name = "dump_date") val dumpDate: String? = null,
+    @ColumnInfo(name = "title_jp") val titleJp: String? = null,
+    @ColumnInfo(name = "artist_jp") val artistJp: String? = null,
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
 )

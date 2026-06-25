@@ -325,6 +325,7 @@ class RealScanner(
                     game = entry.game ?: siblings[index].game,
                     length = if (entry.lengthMs != LENGTH_UNKNOWN_MS) entry.lengthMs else siblings[index].length,
                     fadeLengthMs = entry.fadeLengthMs,
+                    copyright = entry.copyright ?: siblings[index].copyright,
                 )
             }
         }
@@ -391,9 +392,26 @@ class RealScanner(
         }
 
         val gameName = checked.first().game
+
+        // Release-level metadata is read per-track by the format readers; collapse it to one value
+        // per folder by taking the first track that carried each field.
+        fun firstMeta(selector: (RawTrack) -> String?): String? =
+            checked.firstNotNullOfOrNull { selector(it)?.takeIf { value -> value.isNotBlank() } }
         hatchet.i("Adding game \"$gameName\" with ${checked.size} track(s).")
         val outcome = traceAsync(TRACE_UPSERT_GAME, nextCookie()) {
-            repository.upsertGame(RawGame(gameName, imagePath, folderKey, signature, checked))
+            repository.upsertGame(
+                RawGame(
+                    gameName,
+                    imagePath,
+                    folderKey,
+                    signature,
+                    checked,
+                    copyright = firstMeta { it.copyright },
+                    releaseDate = firstMeta { it.releaseDate },
+                    genre = firstMeta { it.genre },
+                    titleJp = firstMeta { it.gameTitleJp },
+                )
+            )
         }
         when (outcome.result) {
             GameWriteResult.ADDED ->

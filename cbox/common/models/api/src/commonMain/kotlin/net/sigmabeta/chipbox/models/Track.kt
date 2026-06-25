@@ -22,6 +22,12 @@ data class Track(
     // the repository converters set it explicitly so it's correct even when [game] is not hydrated.
     // `0` means "unset" (no real game row has id 0).
     val gameId: Long = game?.id ?: 0L,
+    // Optional descriptive metadata pulled from the file's tags, null when it carried none.
+    val comment: String? = null,
+    val dumper: String? = null,
+    val dumpDate: String? = null,
+    val titleJp: String? = null,
+    val artistJp: String? = null,
 )
 
 /**

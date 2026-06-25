@@ -24,6 +24,7 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
             val numberOfTracks = getNumberOfTracks(bytes)
             val gameTitle = getGameTitle(bytes)
             val gameArtist = getGameArtist(bytes)
+            val copyright = getCopyright(bytes)
 
             val tracks = mutableListOf<RawTrack>()
 
@@ -39,6 +40,7 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
                         index,
                         FADE_LENGTH_MS,
                         platform = Platform.GAMEBOY,
+                        copyright = copyright,
                     )
                 )
             }
@@ -72,6 +74,16 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
             TAG_UNKNOWN
         }
 
+    private fun getCopyright(fileAsBytes: ByteArray): String? = try {
+            fileAsBytes
+                .decodeToString(OFFSET_COPYRIGHT, OFFSET_COPYRIGHT_END, true)
+                .substringBefore(0.toChar())
+                .orNullIfBlank()
+        } catch (ex: Exception) {
+            hatchet.w("GBS: unable to read copyright — ${ex.message}")
+            null
+        }
+
     private fun isGbsFile(header: String) = header.startsWith(HEADER_MAGIC)
 
     companion object {
@@ -83,6 +95,9 @@ class GbsReader(private val hatchet: Hatchet) : Reader() {
         private const val OFFSET_TITLE = 0x10
         private const val OFFSET_AUTHOR = 0x30
         private const val OFFSET_COPYRIGHT = 0x50
+
+        // Copyright is a 32-byte field; the code/data section starts at 0x70.
+        private const val OFFSET_COPYRIGHT_END = 0x70
 
         private const val BYTE_MASK = 0xFF
     }

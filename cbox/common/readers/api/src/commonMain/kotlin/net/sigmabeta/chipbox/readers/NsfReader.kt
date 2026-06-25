@@ -25,6 +25,7 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
             val numberOfTracks = getNumberOfTracks(bytes)
             val gameTitle = getGameTitle(bytes)
             val gameArtist = getGameArtist(bytes)
+            val copyright = getCopyright(bytes)
 
             val tracks = mutableListOf<RawTrack>()
 
@@ -40,6 +41,7 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
                         index,
                         FADE_LENGTH_MS,
                         platform = Platform.NES,
+                        copyright = copyright,
                     )
                 )
             }
@@ -72,6 +74,16 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
             TAG_UNKNOWN
         }
 
+    private fun getCopyright(fileAsBytes: ByteArray): String? = try {
+            fileAsBytes
+                .decodeToString(OFFSET_COPYRIGHT, OFFSET_COPYRIGHT_END, true)
+                .substringBefore(0.toChar())
+                .orNullIfBlank()
+        } catch (ex: Exception) {
+            hatchet.w("NSF: unable to read copyright — ${ex.message}")
+            null
+        }
+
     private fun isNsfFile(header: String) = header.contentEquals(HEADER_MAGIC)
 
     companion object {
@@ -83,6 +95,9 @@ class NsfReader(private val hatchet: Hatchet) : Reader() {
         private const val OFFSET_GAME_TITLE = 0x0E
         private const val OFFSET_GAME_ARTIST = 0x2E
         private const val OFFSET_COPYRIGHT = 0x4E
+
+        // Copyright is a 32-byte field; the program data starts at 0x6E.
+        private const val OFFSET_COPYRIGHT_END = 0x6E
 
         private const val BYTE_MASK = 0xFF
     }

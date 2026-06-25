@@ -48,6 +48,12 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
                     trackNumber = 0,
                     fadeLengthMs = fadeMs,
                     platform = platformForSystem(tag?.system),
+                    comment = tag?.notes,
+                    dumper = tag?.vgmBy,
+                    titleJp = tag?.titleJp,
+                    artistJp = tag?.artistJp,
+                    releaseDate = tag?.releaseDate,
+                    gameTitleJp = tag?.gameJp,
                 )
             )
         } catch (iae: IllegalArgumentException) {
@@ -98,11 +104,18 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
             hatchet.w("VGM: GD3 truncated; ${strings.size}/$GD3_STRING_COUNT strings.")
         }
 
+        fun at(index: Int) = strings.getOrNull(index)?.takeIf { it.isNotEmpty() }
         return Gd3Tag(
-            title = strings.getOrNull(GD3_IDX_TITLE_EN)?.takeIf { it.isNotEmpty() },
-            game = strings.getOrNull(GD3_IDX_GAME_EN)?.takeIf { it.isNotEmpty() },
-            artist = strings.getOrNull(GD3_IDX_AUTHOR_EN)?.takeIf { it.isNotEmpty() },
-            system = strings.getOrNull(GD3_IDX_SYSTEM_EN)?.takeIf { it.isNotEmpty() },
+            title = at(GD3_IDX_TITLE_EN),
+            game = at(GD3_IDX_GAME_EN),
+            artist = at(GD3_IDX_AUTHOR_EN),
+            system = at(GD3_IDX_SYSTEM_EN),
+            titleJp = at(GD3_IDX_TITLE_JP),
+            gameJp = at(GD3_IDX_GAME_JP),
+            artistJp = at(GD3_IDX_AUTHOR_JP),
+            releaseDate = at(GD3_IDX_RELEASE_DATE),
+            vgmBy = at(GD3_IDX_VGM_BY),
+            notes = at(GD3_IDX_NOTES),
         )
     }
 
@@ -188,9 +201,15 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
         private const val GD3_HEADER_SIZE = 12
         private const val GD3_STRING_COUNT = 11
         private const val GD3_IDX_TITLE_EN = 0
+        private const val GD3_IDX_TITLE_JP = 1
         private const val GD3_IDX_GAME_EN = 2
+        private const val GD3_IDX_GAME_JP = 3
         private const val GD3_IDX_SYSTEM_EN = 4
         private const val GD3_IDX_AUTHOR_EN = 6
+        private const val GD3_IDX_AUTHOR_JP = 7
+        private const val GD3_IDX_RELEASE_DATE = 8
+        private const val GD3_IDX_VGM_BY = 9
+        private const val GD3_IDX_NOTES = 10
 
         private const val SAMPLE_RATE_HZ = 44_100L
         private const val MILLIS_PER_SECOND = 1000L
@@ -205,4 +224,10 @@ private data class Gd3Tag(
     val game: String?,
     val artist: String?,
     val system: String?,
+    val titleJp: String? = null,
+    val gameJp: String? = null,
+    val artistJp: String? = null,
+    val releaseDate: String? = null,
+    val vgmBy: String? = null,
+    val notes: String? = null,
 )

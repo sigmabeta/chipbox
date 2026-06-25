@@ -18,6 +18,9 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
                 0,
                 tags.fadeLengthMs,
                 platform = Platform.SNES,
+                comment = tags.comment,
+                dumper = tags.dumper,
+                dumpDate = tags.dumpDate,
             )
         )
     }
@@ -54,6 +57,9 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
                 artistName = extendedTag?.artistName ?: spcMainTag.artistName,
                 trackLengthMs = spcMainTag.trackLengthMs,
                 fadeLengthMs = spcMainTag.fadeLengthMs.coerceAtLeast(0L),
+                comment = spcMainTag.comment,
+                dumper = spcMainTag.dumper,
+                dumpDate = spcMainTag.dumpDate,
             )
         } catch (iae: IllegalArgumentException) {
             hatchet.w("SPC parse failed: illegal argument — ${iae.message}")
@@ -91,8 +97,8 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
             hatchet.i("SPC Minor Ver: $minorVersion")
             hatchet.i("SPC Registers: $spcRegistersIgnored")
             hatchet.i("Dumper: $dumperName")
-            hatchet.i("Dump Date: $comments")
-            hatchet.i("Comments: $dumpDate")
+            hatchet.i("Dump Date: $dumpDate")
+            hatchet.i("Comments: $comments")
         }
 
         // SPC lengths are stored as string-encoded numbers?!?!? Apparently this is supposed to not
@@ -106,7 +112,10 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
             gameTitle.orUnknown(),
             lengthMs,
             fadeLengthMs,
-            artistName.orUnknown()
+            artistName.orUnknown(),
+            comment = comments.orNullIfBlank(),
+            dumper = dumperName.orNullIfBlank(),
+            dumpDate = dumpDate.orNullIfBlank(),
         )
     }
 
@@ -214,6 +223,9 @@ data class SpcTags(
     val artistName: String,
     val trackLengthMs: Long,
     val fadeLengthMs: Long,
+    val comment: String? = null,
+    val dumper: String? = null,
+    val dumpDate: String? = null,
 )
 
 data class SpcMainTag(
@@ -221,7 +233,10 @@ data class SpcMainTag(
     val gameTitle: String,
     val trackLengthMs: Long,
     val fadeLengthMs: Long,
-    val artistName: String
+    val artistName: String,
+    val comment: String? = null,
+    val dumper: String? = null,
+    val dumpDate: String? = null,
 )
 
 data class SpcExtendedTag(

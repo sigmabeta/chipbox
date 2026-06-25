@@ -18,5 +18,10 @@ data class GameEntity(
     // Hash of the source folder's files (path + size + last-modified). The scanner compares this
     // against a freshly computed hash on rescan to skip re-reading folders that haven't changed.
     @ColumnInfo(name = "folder_signature") val folderSignature: String,
+    // Optional release-level descriptive metadata, null when no scanned track carried it.
+    val copyright: String? = null,
+    @ColumnInfo(name = "release_date") val releaseDate: String? = null,
+    val genre: String? = null,
+    @ColumnInfo(name = "title_jp") val titleJp: String? = null,
     @PrimaryKey(autoGenerate = true) val id: Long = 0
 )

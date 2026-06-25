@@ -104,6 +104,10 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
         -1,
         tags[PSF_TAG_KEY_FADE]?.toLengthMillis() ?: 0L,
         platform = platform,
+        comment = tags[PSF_TAG_KEY_COMMENT].orNullIfBlank(),
+        copyright = tags[PSF_TAG_KEY_COPYRIGHT].orNullIfBlank(),
+        releaseDate = tags[PSF_TAG_KEY_YEAR].orNullIfBlank(),
+        genre = tags[PSF_TAG_KEY_GENRE].orNullIfBlank(),
     )
 
     private fun libKeyToIndex(key: String): Int = key.removePrefix("_lib").toIntOrNull() ?: 1
@@ -193,6 +197,10 @@ class PsfReader(private val hatchet: Hatchet) : Reader() {
         private const val PSF_TAG_KEY_LENGTH = "length"
         private const val PSF_TAG_KEY_FADE = "fade"
         private const val PSF_TAG_KEY_LIB = "_lib"
+        private const val PSF_TAG_KEY_COMMENT = "comment"
+        private const val PSF_TAG_KEY_COPYRIGHT = "copyright"
+        private const val PSF_TAG_KEY_YEAR = "year"
+        private const val PSF_TAG_KEY_GENRE = "genre"
         private const val PSF_TAG_HEADER = "[TAG]"
         private const val PSF_UTF8_FLAG = "utf8=1"
     }

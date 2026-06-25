@@ -10,5 +10,11 @@ data class RawGame(
     // Hash of the folder's files (path + size + last-modified) at scan time; persisted so the next
     // scan can skip this folder if it recomputes to the same value.
     val folderSignature: String,
-    val tracks: List<RawTrack>
+    val tracks: List<RawTrack>,
+    // Release-level descriptive metadata aggregated from the folder's tracks (first non-blank value);
+    // null when no track carried it.
+    val copyright: String? = null,
+    val releaseDate: String? = null,
+    val genre: String? = null,
+    val titleJp: String? = null,
 )

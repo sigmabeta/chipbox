@@ -166,6 +166,34 @@ class PsfReaderTest {
         assertEquals(Platform.PSX, track.platform)
     }
 
+    @Test
+    fun `buildRawTrack maps the optional descriptive PSF tags`() {
+        val track = reader.buildRawTrack(
+            tags = mapOf(
+                "title" to "x",
+                "copyright" to "1999 Squaresoft",
+                "year" to "1999",
+                "genre" to "RPG",
+                "comment" to "ripped by foo",
+            ),
+            identifier = "track.psf",
+            platform = Platform.PSX,
+        )
+        assertEquals("1999 Squaresoft", track.copyright)
+        assertEquals("1999", track.releaseDate)
+        assertEquals("RPG", track.genre)
+        assertEquals("ripped by foo", track.comment)
+    }
+
+    @Test
+    fun `buildRawTrack leaves missing optional tags null`() {
+        val track = reader.buildRawTrack(tags = mapOf("title" to "x"), identifier = "t.psf", platform = Platform.PSX)
+        assertNull(track.copyright)
+        assertNull(track.releaseDate)
+        assertNull(track.genre)
+        assertNull(track.comment)
+    }
+
     /**
      * Builds a minimal, valid PSF container: "PSF" + platform byte, empty reserved/program areas
      * (so the tag section is at offset 16), then "[TAG]" + [tagText]. Mirrors what a real .psf /
