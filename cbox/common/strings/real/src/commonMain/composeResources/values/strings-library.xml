@@ -12,6 +12,11 @@
 
     <string name="game_detail_section_songs">Songs</string>
     <string name="game_detail_section_artists">Artists</string>
+    <string name="game_detail_section_details">Details</string>
+    <string name="game_detail_info_release_date">Release Date</string>
+    <string name="game_detail_info_genre">Genre</string>
+    <string name="game_detail_info_copyright">Copyright</string>
+    <string name="game_detail_info_japanese_title">Japanese Title</string>
     <string name="game_detail_cta_play_all">Play All</string>
     <string name="game_detail_cta_shuffle_all">Shuffle All</string>
     <string name="game_detail_cta_add_to_favorites">Add to Favorites</string>

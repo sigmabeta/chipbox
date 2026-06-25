@@ -32,5 +32,12 @@ const val NOW_PLAYING_CTX_FAVORITES_TAG = "NowPlayingCtxFavorites"
 const val NOW_PLAYING_CTX_ADD_PLAYLIST_TAG = "NowPlayingCtxAddPlaylist"
 const val NOW_PLAYING_SETLIST_ADD_PLAYLIST_TAG = "NowPlayingSetlistAddPlaylist"
 
+// Read-only file-tag metadata rows in the LINKS context menu.
+const val NOW_PLAYING_CTX_JP_TITLE_TAG = "NowPlayingCtxJpTitle"
+const val NOW_PLAYING_CTX_JP_ARTIST_TAG = "NowPlayingCtxJpArtist"
+const val NOW_PLAYING_CTX_DUMPER_TAG = "NowPlayingCtxDumper"
+const val NOW_PLAYING_CTX_DUMP_DATE_TAG = "NowPlayingCtxDumpDate"
+const val NOW_PLAYING_CTX_COMMENT_TAG = "NowPlayingCtxComment"
+
 /** Test tag for the per-artist row in the ARTISTS context menu, keyed by artist id. */
 fun nowPlayingCtxArtistTag(artistId: Long) = "NowPlayingCtxArtist:$artistId"
