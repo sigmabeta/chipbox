@@ -174,6 +174,12 @@ kotlin {
                 implementation(projects.cbox.common.playlists.fake)
                 implementation(projects.cbox.common.favorites.api)
                 implementation(projects.cbox.common.favorites.fake)
+                // Playback history is stored browser-locally: LocalStoragePlaybackHistoryRepository
+                // persists the play log in window.localStorage, fed by the shared (Room-free)
+                // RealPlaybackHistoryRecorder from history.real. The Home recently-/most-played
+                // cards read straight off that log.
+                implementation(projects.cbox.common.history.api)
+                implementation(projects.cbox.common.history.real)
                 implementation(projects.cbox.common.player.emulators.api)
                 implementation(projects.cbox.common.player.buffer.api)
                 implementation(projects.cbox.common.player.buffer.real)

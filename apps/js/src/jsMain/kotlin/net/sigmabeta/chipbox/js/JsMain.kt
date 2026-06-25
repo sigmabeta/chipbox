@@ -117,6 +117,10 @@ fun main() {
         // lock-screen controls, Bluetooth headset buttons) drives the same Director.
         WebMediaSession(graph.director, apiBaseUrl).install(graph.appScope)
 
+        // Start recording playback history (browser-local, via localStorage) the same way apps/jvm's
+        // Main does — observe() watches the Director and logs a play once it clears the threshold.
+        graph.playbackHistoryRecorder.observe()
+
         // Back-key stream — fed by window-level Escape keypresses (Backspace is browser-back
         // navigation, leave it alone). Skip events whose target is a text input so the field
         // can still clear / lose focus naturally.

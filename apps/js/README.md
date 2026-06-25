@@ -18,6 +18,17 @@ leaf — nothing depends on it.
 - **Run/build:** `./gradlew :apps:js:jsBrowserDevelopmentRun -Pchipbox.js=true`
   (dev server), or `:apps:js:jsBrowserDistribution -Pchipbox.js=true` for the
   production bundle. `apps/server` copies the bundle into its static resources.
+  - **Add `--no-parallel --no-configuration-cache`** to any task that drives the
+    npm/webpack toolchain (`jsBrowserDistribution`, `jsBrowserDevelopmentRun`,
+    `jsTest`). Kotlin/JS's `rootPackageJson` resolves cross-project npm
+    configurations, which collides with this repo's default `org.gradle.parallel`
+    + `org.gradle.configuration-cache` (you'll otherwise see "Resolution of the
+    configuration … was attempted without an exclusive lock"). The pure-Kotlin
+    `compileKotlinJs` / `compileProductionExecutableKotlinJs` tasks are unaffected
+    and run fine under the defaults.
+  - If a build fails with "Lock file was changed", run
+    `./gradlew kotlinUpgradeYarnLock -Pchipbox.js=true --no-parallel --no-configuration-cache`
+    and commit the refreshed `kotlin-js-store/yarn.lock`.
 - **WASM emulators:** each `cbox/native/<name>` dir has a CMakeLists with an
   `EMSCRIPTEN` branch; per-emulator `build<Name>Wasm` tasks (needing `$EMSDK` or
   `-Pchipbox.js.emsdk=...`) emit a `.js` loader + `.wasm` blob, and `copyEmulatorWasm`
