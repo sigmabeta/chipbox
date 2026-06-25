@@ -36,6 +36,22 @@ class HomeScreenshots(
         }
     }
 
+    @Test
+    fun homeScreenEmptyNoFolders() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            HomeEmptyNoFolders(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
+    @Test
+    fun homeScreenEmptyFoldersPresent() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            HomeEmptyFoldersPresent(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = SUFFIX_TESTNAME)

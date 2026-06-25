@@ -9,6 +9,8 @@ sealed class HomeAction : ChipboxAction() {
     data object RandomSongClicked : HomeAction()
     data object RandomGameClicked : HomeAction()
     data object RandomArtistClicked : HomeAction()
+    data object AddFolderClicked : HomeAction()
+    data object RescanLibraryClicked : HomeAction()
     data object NowPlayingCardClicked : HomeAction()
     data object NowPlayingPlayPauseClicked : HomeAction()
     data object NowPlayingCardAppeared : HomeAction()

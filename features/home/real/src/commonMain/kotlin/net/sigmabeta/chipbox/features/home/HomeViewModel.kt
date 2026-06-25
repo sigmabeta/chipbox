@@ -13,10 +13,13 @@ import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
+import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
+import net.sigmabeta.chipbox.features.folderpicker.FolderPicker
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
+import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
@@ -24,6 +27,7 @@ import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope
@@ -36,6 +40,8 @@ class HomeViewModel @Inject constructor(
     modules: Set<HomeModule>,
     private val repository: Repository,
     private val director: Director,
+    private val librarySource: LibrarySource,
+    private val scanner: Scanner,
     stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<HomeState>(
@@ -65,6 +71,32 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
+
+        // Folder count only feeds the empty state's copy ("add your first folder" vs "your
+        // folders are empty"); the modules themselves decide whether there's content to show.
+        viewModelScope.launch {
+            librarySource.locations.collect { locations ->
+                updateState { it.copy(libraryFolderCount = locations.size) }
+            }
+        }
+
+        // Drive the first-run empty state off the library actually being empty rather than the
+        // content modules going quiet. A single-track probe keeps this cheap and reactive; it
+        // re-emits as the library fills or is cleared.
+        viewModelScope.launch {
+            repository.getAllTracks(limit = 1).collect { tracks ->
+                val hasTracks = when (tracks) {
+                    is Data.Succeeded -> true
+
+                    Data.Empty -> false
+
+                    // Leave the prior verdict in place while loading or on a transient failure, so
+                    // the empty state neither flashes on startup nor flickers on a failed refresh.
+                    Data.Loading, is Data.Failed -> return@collect
+                }
+                updateState { it.copy(hasTracks = hasTracks) }
+            }
+        }
     }
 
     override fun handleAction(action: SageAction) {
@@ -80,6 +112,13 @@ class HomeViewModel @Inject constructor(
             HomeAction.RandomGameClicked -> navigateToRandomGame()
 
             HomeAction.RandomArtistClicked -> navigateToRandomArtist()
+
+            HomeAction.AddFolderClicked -> emit(NavigateTo(FolderPicker))
+
+            HomeAction.RescanLibraryClicked -> {
+                scanner.startScan()
+                emit(NavigateTo(RescanStatus))
+            }
 
             HomeAction.NowPlayingCardClicked -> emit(NavigateTo(NowPlaying))
 

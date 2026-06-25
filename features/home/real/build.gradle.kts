@@ -17,12 +17,15 @@ kotlin {
                 implementation(projects.cbox.common.history.api)
                 implementation(projects.cbox.common.models.api)
                 implementation(projects.cbox.common.scanner.api)
+                implementation(projects.cbox.common.contentsource.api)
                 implementation(projects.cbox.common.player.common.api)
                 implementation(projects.cbox.common.player.director.api)
 
                 implementation(projects.features.artistDetail.api)
+                implementation(projects.features.folderPicker.api)
                 implementation(projects.features.gameDetail.api)
                 implementation(projects.features.nowPlaying.api)
+                implementation(projects.features.rescanStatus.api)
             }
         }
 
@@ -30,6 +33,8 @@ kotlin {
             dependencies {
                 implementation(projects.cbox.common.repository.fake)
                 implementation(projects.cbox.common.history.fake)
+                implementation(projects.cbox.common.contentsource.fake)
+                implementation(projects.cbox.common.scanner.fake)
                 implementation(projects.cbox.common.player.director.fake)
             }
         }
