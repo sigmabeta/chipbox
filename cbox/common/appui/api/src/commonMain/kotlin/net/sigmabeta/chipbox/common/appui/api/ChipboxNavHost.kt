@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.common.appui.api
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateDpAsState
@@ -8,8 +9,10 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,11 +46,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
-import cafe.adriel.voyager.navigator.tab.CurrentTab
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import kotlinx.coroutines.CoroutineScope
@@ -67,6 +70,15 @@ import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
 import net.sigmabeta.sage.ui.list.LocalListBottomInset
 
 private val NAV_RAIL_MIN_WIDTH = 480.dp
+
+// Top-level tab switches: the outgoing tab slides down and fades out while the incoming
+// tab slides in from the left (no fade). Deliberately distinct from the horizontal
+// SlideTransition used for push/pop *within* a tab's hierarchy.
+private const val TAB_SWITCH_ANIM_DURATION_MS = 210
+
+// Cap how far the outgoing tab travels downward, so on tall screens it fades out rather
+// than sliding the full height.
+private val TAB_SWITCH_MAX_SLIDE = 400.dp
 
 /**
  * Root of the outer Voyager Navigator owned by [ChipboxAppUi]. Renders the chrome
@@ -307,7 +319,7 @@ internal object ChipboxTabsScreen : Screen {
                                         .fillMaxSize()
                                         .padding(padding),
                                 ) {
-                                    CurrentTab()
+                                    AnimatedCurrentTab(tabNavigator)
                                     AnimatedVisibility(
                                         visible = chrome.showPlayerStatus,
                                         enter = slideInVertically(initialOffsetY = { it }),
@@ -337,6 +349,41 @@ internal object ChipboxTabsScreen : Screen {
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Renders the active tab's content, cross-fading between tabs on switch. Replaces Voyager's
+ * [cafe.adriel.voyager.navigator.tab.CurrentTab], which swaps tabs with no transition. We
+ * reuse Voyager's per-tab [TabNavigator.saveableState] (keyed by tab) so each tab keeps its
+ * own saved state across the animation, exactly as `CurrentTab` does. The fade-through is
+ * intentionally different from the in-hierarchy horizontal slide (see
+ * [TAB_SWITCH_ANIM_DURATION_MS]).
+ */
+@Composable
+private fun AnimatedCurrentTab(tabNavigator: TabNavigator) {
+    val maxSlidePx = with(LocalDensity.current) { TAB_SWITCH_MAX_SLIDE.roundToPx() }
+    AnimatedContent(
+        targetState = tabNavigator.current,
+        contentKey = { it.key },
+        transitionSpec = {
+            val enter = slideInHorizontally(
+                animationSpec = tween(durationMillis = TAB_SWITCH_ANIM_DURATION_MS),
+                initialOffsetX = { fullWidth -> -fullWidth },
+            )
+            val exit = slideOutVertically(
+                animationSpec = tween(durationMillis = TAB_SWITCH_ANIM_DURATION_MS),
+                targetOffsetY = { fullHeight -> minOf(fullHeight, maxSlidePx) },
+            ) + fadeOut(
+                animationSpec = tween(durationMillis = TAB_SWITCH_ANIM_DURATION_MS),
+            )
+            enter togetherWith exit
+        },
+        label = "TabSwitch",
+    ) { tab ->
+        tabNavigator.saveableState("currentTab", tab) {
+            tab.Content()
         }
     }
 }
