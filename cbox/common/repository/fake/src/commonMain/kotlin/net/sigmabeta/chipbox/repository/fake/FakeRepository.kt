@@ -40,8 +40,8 @@ class FakeRepository(private val tracksById: Map<Long, Track>) : Repository {
     override suspend fun getTracksForPlatform(platform: Platform, withGame: Boolean, withArtists: Boolean): List<Track> =
         TODO("FakeRepository.getTracksForPlatform not implemented — use a SETLIST session in tests.")
 
-    override fun getAllArtists(withTracks: Boolean, withGames: Boolean): Flow<Data<List<Artist>>> = flowOf(Data.Empty)
-    override fun getAllGames(withTracks: Boolean, withArtists: Boolean): Flow<Data<List<Game>>> = flowOf(Data.Empty)
+    override fun getAllArtists(withTracks: Boolean, withGames: Boolean, limit: Int?, offset: Int): Flow<Data<List<Artist>>> = flowOf(Data.Empty)
+    override fun getAllGames(withTracks: Boolean, withArtists: Boolean, limit: Int?, offset: Int): Flow<Data<List<Game>>> = flowOf(Data.Empty)
     override fun getAllTracks(withGame: Boolean, withArtists: Boolean, limit: Int?, offset: Int): Flow<Data<List<Track>>> = flowOf(Data.Empty)
     override fun getTracksByIds(ids: List<Long>, withGame: Boolean, withArtists: Boolean): Flow<Data<List<Track>>> =
         flowOf(ids.mapNotNull { tracksById[it] }.let { if (it.isEmpty()) Data.Empty else Data.Succeeded(it) })

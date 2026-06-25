@@ -9,14 +9,36 @@ import net.sigmabeta.chipbox.models.Track
 
 interface Repository {
     // Lists
+    /**
+     * Every artist in the library, ordered by name.
+     *
+     * Pass [limit] to load only a page of the catalog and [offset] to skip that many rows from the
+     * start — the groundwork for paginated/lazy loading on large libraries. The defaults
+     * ([limit] = null, [offset] = 0) load the whole catalog in one emission, matching the original
+     * behaviour, so existing callers are unaffected. A null [limit] means "no upper bound"; [offset]
+     * still applies when [limit] is null.
+     */
     fun getAllArtists(
         withTracks: Boolean = false,
-        withGames: Boolean = false
+        withGames: Boolean = false,
+        limit: Int? = null,
+        offset: Int = 0
     ): Flow<Data<List<Artist>>>
 
+    /**
+     * Every game in the library, ordered by title.
+     *
+     * Pass [limit] to load only a page of the catalog and [offset] to skip that many rows from the
+     * start — the groundwork for paginated/lazy loading on large libraries. The defaults
+     * ([limit] = null, [offset] = 0) load the whole catalog in one emission, matching the original
+     * behaviour, so existing callers are unaffected. A null [limit] means "no upper bound"; [offset]
+     * still applies when [limit] is null.
+     */
     fun getAllGames(
         withTracks: Boolean = false,
-        withArtists: Boolean = false
+        withArtists: Boolean = false,
+        limit: Int? = null,
+        offset: Int = 0
     ): Flow<Data<List<Game>>>
 
     /**

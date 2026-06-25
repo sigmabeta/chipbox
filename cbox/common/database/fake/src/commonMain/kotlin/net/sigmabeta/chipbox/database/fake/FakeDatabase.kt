@@ -68,6 +68,12 @@ class FakeDatabase(private val random: Random = Random(0)) {
         override fun getAll(): Flow<List<ArtistEntity>> = observe {
             artists.values.sortedBy { it.name.lowercase() }
         }
+        override fun getAllPaged(limit: Int, offset: Int): Flow<List<ArtistEntity>> = observe {
+            // Mirror SQLite: ORDER BY name, skip [offset], then take [limit] — a negative limit
+            // means "no limit" (every row from [offset] onward).
+            val fromOffset = artists.values.sortedBy { it.name.lowercase() }.drop(offset)
+            if (limit < 0) fromOffset else fromOffset.take(limit)
+        }
         override fun searchArtistsByName(name: String): Flow<List<ArtistEntity>> = observe {
             artists.values.filter { sqlLike(name, it.name) }.sortedBy { it.name.lowercase() }
         }
@@ -123,6 +129,12 @@ class FakeDatabase(private val random: Random = Random(0)) {
         override suspend fun getGameSync(gameId: Long): GameEntity = games.getValue(gameId)
         override fun getAll(): Flow<List<GameEntity>> = observe {
             games.values.sortedBy { it.title.lowercase() }
+        }
+        override fun getAllPaged(limit: Int, offset: Int): Flow<List<GameEntity>> = observe {
+            // Mirror SQLite: ORDER BY title, skip [offset], then take [limit] — a negative limit
+            // means "no limit" (every row from [offset] onward).
+            val fromOffset = games.values.sortedBy { it.title.lowercase() }.drop(offset)
+            if (limit < 0) fromOffset else fromOffset.take(limit)
         }
         override fun getGamesForPlatform(platformName: String): Flow<List<GameEntity>> = observe {
             val gameIds = tracks.values.filter { it.platform == platformName }.map { it.gameId }.toSet()

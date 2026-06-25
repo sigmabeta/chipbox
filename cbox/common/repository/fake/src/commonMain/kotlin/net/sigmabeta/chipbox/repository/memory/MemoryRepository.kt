@@ -64,8 +64,24 @@ open class MemoryRepository(
 
     override fun getAllArtists(
         withTracks: Boolean,
-        withGames: Boolean
+        withGames: Boolean,
+        limit: Int?,
+        offset: Int
     ): Flow<Data<List<Artist>>> {
+        // A paged request gets a fresh one-shot flow so distinct pages don't clobber each other
+        // through the shared, lazily-cached unpaged flow below.
+        if (limit != null || offset != 0) {
+            return flow {
+                emit(Data.Loading)
+                val page = artistsByName
+                    .values
+                    .sortedBy { it.name.lowercase() }
+                    .drop(offset)
+                    .let { if (limit != null) it.take(limit) else it }
+                    .map { it.toArtist(withGames, withTracks) }
+                emit(if (page.isNotEmpty()) Data.Succeeded(page) else Data.Empty)
+            }
+        }
         if (!artistsLoaded) {
             artistsLoaded = true
             repositoryScope.launch {
@@ -87,7 +103,26 @@ open class MemoryRepository(
         return artistsLoadEvents.asSharedFlow()
     }
 
-    override fun getAllGames(withTracks: Boolean, withArtists: Boolean): Flow<Data<List<Game>>> {
+    override fun getAllGames(
+        withTracks: Boolean,
+        withArtists: Boolean,
+        limit: Int?,
+        offset: Int
+    ): Flow<Data<List<Game>>> {
+        // A paged request gets a fresh one-shot flow so distinct pages don't clobber each other
+        // through the shared, lazily-cached unpaged flow below.
+        if (limit != null || offset != 0) {
+            return flow {
+                emit(Data.Loading)
+                val page = gamesByTitle
+                    .values
+                    .sortedBy { it.title }
+                    .drop(offset)
+                    .let { if (limit != null) it.take(limit) else it }
+                    .map { it.toGame(withTracks, withArtists) }
+                emit(if (page.isNotEmpty()) Data.Succeeded(page) else Data.Empty)
+            }
+        }
         if (!gamesLoaded) {
             gamesLoaded = true
             repositoryScope.launch {

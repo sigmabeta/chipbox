@@ -39,6 +39,11 @@ interface GameDao {
     @Query("SELECT * FROM game ORDER BY title COLLATE NOCASE")
     fun getAll(): Flow<List<GameEntity>>
 
+    // Paged variant of [getAll]. SQLite treats a negative LIMIT as "no limit", so passing -1 yields
+    // every row from [offset] onward — letting the repository express "skip N, take the rest".
+    @Query("SELECT * FROM game ORDER BY title COLLATE NOCASE LIMIT :limit OFFSET :offset")
+    fun getAllPaged(limit: Int, offset: Int): Flow<List<GameEntity>>
+
     @Query(
         "SELECT DISTINCT game.* FROM game " +
             "INNER JOIN track ON track.game_id = game.id " +
