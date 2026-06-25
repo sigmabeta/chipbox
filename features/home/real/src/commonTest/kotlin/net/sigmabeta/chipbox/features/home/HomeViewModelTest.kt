@@ -40,6 +40,7 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
+import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.CtaListModel
@@ -216,6 +217,15 @@ class HomeViewModelTest {
         assertEquals(1, scanner.startCount)
         assertTrue(event is ChipboxEvent.NavigateTo)
         assertEquals(RescanStatus, event.destination)
+    }
+
+    @Test
+    fun `ScanStatusDismissed clears the scan back to idle`() = runTest {
+        val scanner = CountingScanner()
+        scanner.pushState(ScannerState.Scanning(timeInSeconds = 1))
+        val vm = newVm(scanner = scanner)
+        vm.sendAction(HomeAction.ScanStatusDismissed)
+        assertEquals(ScannerState.Idle, scanner.state().first())
     }
 
     @Test

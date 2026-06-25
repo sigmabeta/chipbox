@@ -15,4 +15,10 @@
     <string name="home_empty_add_folder_cta">Add a library folder</string>
     <string name="home_empty_rescan_cta">Rescan library folders</string>
     <string name="home_error">Something went wrong loading your home screen.</string>
+    <string name="home_scan_title">Library Scan %1$s</string>
+    <string name="home_scan_status_scanning">Scanning</string>
+    <string name="home_scan_status_complete">Complete</string>
+    <string name="home_scan_status_failed">Failed</string>
+    <string name="home_scan_status_error">The scan failed while reading %1$s.</string>
+    <string name="home_scan_status_error_generic">The scan failed.</string>
 </resources>

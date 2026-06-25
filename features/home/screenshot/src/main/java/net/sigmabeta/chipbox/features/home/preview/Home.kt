@@ -6,6 +6,9 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import net.sigmabeta.chipbox.common.ui.components.api.NowPlayingHomeCardListModel
+import net.sigmabeta.chipbox.common.ui.components.api.ScanCardStatus
+import net.sigmabeta.chipbox.common.ui.components.api.ScanStatusCardListModel
+import net.sigmabeta.chipbox.common.ui.components.api.ScanStatusDetail
 import net.sigmabeta.chipbox.features.home.HomeAction
 import net.sigmabeta.chipbox.features.home.HomeSectionState
 import net.sigmabeta.chipbox.features.home.HomeState
@@ -20,6 +23,8 @@ import net.sigmabeta.chipbox.ui.previews.previewWidthClass
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.GridImageListModel
+import net.sigmabeta.sage.components.ImageNameCaptionListModel
+import net.sigmabeta.sage.components.LabelValueListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.list.WidthClass
@@ -102,6 +107,108 @@ internal fun HomeEmptyFoldersPresent(
         darkTheme = darkTheme,
     )
 }
+
+@DevicePreviews
+@Composable
+internal fun HomeScanStatusScanning(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    ListScreenPreview(
+        screenState = scanStatusState(ScanCardStatus.SCANNING),
+        syntheticWidthClass = syntheticWidthClass,
+        darkTheme = darkTheme,
+    )
+}
+
+@DevicePreviews
+@Composable
+internal fun HomeScanStatusComplete(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    ListScreenPreview(
+        screenState = scanStatusState(ScanCardStatus.COMPLETE),
+        syntheticWidthClass = syntheticWidthClass,
+        darkTheme = darkTheme,
+    )
+}
+
+@DevicePreviews
+@Composable
+internal fun HomeScanStatusFailed(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    ListScreenPreview(
+        screenState = scanStatusState(ScanCardStatus.FAILED),
+        syntheticWidthClass = syntheticWidthClass,
+        darkTheme = darkTheme,
+    )
+}
+
+private fun scanStatusState(status: ScanCardStatus): HomeState {
+    val detail: ScanStatusDetail = when (status) {
+        ScanCardStatus.SCANNING -> ScanStatusDetail.Rows(
+            persistentListOf(
+                scanChangeRow(1L, "Chrono Trigger", "Added · 60 tracks"),
+                scanChangeRow(2L, "Mega Man 2", "Updated · 11 tracks"),
+                scanChangeRow(3L, "Final Fantasy VI", "Added · 62 tracks"),
+                scanChangeRow(4L, "Castlevania", "Added · 18 tracks"),
+            ),
+        )
+
+        ScanCardStatus.COMPLETE -> ScanStatusDetail.Rows(
+            persistentListOf(
+                scanSummaryRow("Elapsed (seconds)", "42"),
+                scanSummaryRow("Games found", "37"),
+                scanSummaryRow("Tracks found", "1024"),
+                scanSummaryRow("Tracks failed", "3"),
+            ),
+        )
+
+        ScanCardStatus.FAILED -> ScanStatusDetail.Error(
+            "The scan failed while reading bad-folder/track.spc.",
+        )
+    }
+    val card = ScanStatusCardListModel(
+        status = status,
+        statusLabel = when (status) {
+            ScanCardStatus.SCANNING -> "Library Scan Scanning"
+            ScanCardStatus.COMPLETE -> "Library Scan Complete"
+            ScanCardStatus.FAILED -> "Library Scan Failed"
+        },
+        currentFile = "robotnik_theme.spc".takeIf { status == ScanCardStatus.SCANNING },
+        detail = detail,
+        dismissAction = HomeAction.ScanStatusDismissed.takeIf { status != ScanCardStatus.SCANNING },
+    )
+    return HomeState(
+        sections = persistentListOf(
+            HomeSectionState(
+                id = "scan_status",
+                priority = 50,
+                lce = LCE.Content(HomeModuleSection(title = "Scan", items = persistentListOf(card))),
+                showHeader = false,
+            ),
+        ),
+        hasTracks = true,
+    )
+}
+
+private fun scanChangeRow(dataId: Long, name: String, caption: String) = ImageNameCaptionListModel(
+    dataId = dataId,
+    name = name,
+    caption = caption,
+    sourceInfo = SourceInfo(info = null),
+    imagePlaceholder = Icon.Album,
+    clickAction = HomeAction.GameClicked(dataId),
+)
+
+private fun scanSummaryRow(label: String, value: String) = LabelValueListModel(
+    label = label,
+    value = value,
+    clickAction = SageAction.Noop,
+)
 
 private fun homeState(): HomeState {
     val generator = FakeModelGenerator()

@@ -105,6 +105,8 @@ fun ListModel.Content(
 
             is NowPlayingHomeCardListModel -> NowPlayingHomeCard(model = this, actionSink = sink, modifier = mod, padding = pad)
 
+            is ScanStatusCardListModel -> ScanStatusCard(model = this, actionSink = sink, modifier = mod, padding = pad)
+
             is SearchResultListModel -> ImageNameCaptionListItem(model = this, actionSink = sink, modifier = mod, padding = pad)
 
             is SectionListModel -> SectionListItem(model = this, actionSink = sink, showDebug = debug, modifier = mod, padding = pad)
