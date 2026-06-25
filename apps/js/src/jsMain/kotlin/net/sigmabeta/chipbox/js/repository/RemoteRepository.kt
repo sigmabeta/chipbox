@@ -46,19 +46,33 @@ class RemoteRepository(
 
     // ---------- lists ----------
 
-    override fun getAllArtists(withTracks: Boolean, withGames: Boolean): Flow<Data<List<Artist>>> =
+    override fun getAllArtists(
+        withTracks: Boolean,
+        withGames: Boolean,
+        limit: Int?,
+        offset: Int
+    ): Flow<Data<List<Artist>>> =
         listFlow {
             client.get("$baseUrl/api/artists") {
                 parameter("withTracks", withTracks)
                 parameter("withGames", withGames)
+                if (limit != null) parameter("limit", limit)
+                if (offset != 0) parameter("offset", offset)
             }.body()
         }
 
-    override fun getAllGames(withTracks: Boolean, withArtists: Boolean): Flow<Data<List<Game>>> =
+    override fun getAllGames(
+        withTracks: Boolean,
+        withArtists: Boolean,
+        limit: Int?,
+        offset: Int
+    ): Flow<Data<List<Game>>> =
         listFlow {
             client.get("$baseUrl/api/games") {
                 parameter("withTracks", withTracks)
                 parameter("withArtists", withArtists)
+                if (limit != null) parameter("limit", limit)
+                if (offset != 0) parameter("offset", offset)
             }.body()
         }
 

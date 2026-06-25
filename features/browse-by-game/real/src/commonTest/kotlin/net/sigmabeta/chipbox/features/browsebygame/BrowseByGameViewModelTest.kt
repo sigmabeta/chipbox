@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.features.browsebygame
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -9,6 +10,8 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -20,6 +23,7 @@ import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
 import net.sigmabeta.sage.appcomm.LCE
+import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
@@ -83,6 +87,80 @@ class BrowseByGameViewModelTest {
         assertEquals(GameDetail(7L), event.destination)
     }
 
+    @Test
+    fun `paging walks the catalog a page at a time and stops at the end`() = runTest {
+        val vm = BrowseByGameViewModel(repoOver(manyGames(250)), stubStringProvider(), BluntHatchet())
+
+        // First page loads on init.
+        assertEquals(100, vm.contentSize())
+        assertTrue(vm.state.value.hasMoreAfter)
+        assertEquals(false, vm.state.value.hasMoreBefore)
+
+        vm.sendAction(SageAction.LoadMoreRequested)
+        assertEquals(200, vm.contentSize())
+        assertTrue(vm.state.value.hasMoreAfter)
+
+        vm.sendAction(SageAction.LoadMoreRequested)
+        assertEquals(250, vm.contentSize())
+        assertEquals(false, vm.state.value.hasMoreAfter) // last page was partial
+
+        // Nothing left below -> request is a no-op.
+        vm.sendAction(SageAction.LoadMoreRequested)
+        assertEquals(250, vm.contentSize())
+    }
+
+    @Test
+    fun `load-more ignores a second request while a page is still loading`() = runTest {
+        val all = manyGames(250)
+        val gate = CompletableDeferred<Unit>()
+        var pagedFetches = 0
+        val repo = object : Repository by FakeRepository(emptyMap()) {
+            override fun getAllGames(withTracks: Boolean, withArtists: Boolean, limit: Int?, offset: Int) = flow {
+                emit(Data.Loading)
+                if (offset > 0) {
+                    pagedFetches++
+                    gate.await() // hold the in-flight page open
+                }
+                val slice = all.drop(offset).let { if (limit != null) it.take(limit) else it }
+                emit(if (slice.isEmpty()) Data.Empty else Data.Succeeded(slice))
+            }
+        }
+        val vm = BrowseByGameViewModel(repo, stubStringProvider(), BluntHatchet())
+        assertEquals(100, vm.contentSize()) // initial page (offset 0, ungated)
+
+        vm.sendAction(SageAction.LoadMoreRequested) // starts page @100, suspends on the gate
+        vm.sendAction(SageAction.LoadMoreRequested) // coalesced away by the in-flight guard
+        gate.complete(Unit)
+
+        assertEquals(200, vm.contentSize())
+        assertEquals(1, pagedFetches) // only one page was actually requested
+    }
+
+    @Test
+    fun `entering at an offset pages backwards to the start, then forward to the end`() = runTest {
+        val vm = BrowseByGameViewModel(repoOver(manyGames(250)), stubStringProvider(), BluntHatchet())
+        assertEquals(100, vm.contentSize())
+
+        // Open the window at the second page.
+        vm.sendAction(SageAction.InitWithPageNumber(id = 0L, pageNumber = 1L))
+        assertEquals(100, vm.contentSize())
+        assertEquals(100, vm.state.value.windowStart)
+        assertTrue(vm.state.value.hasMoreBefore)
+        assertEquals(101L, firstGameId(vm)) // games 101..200
+
+        // Prepend the earlier page.
+        vm.sendAction(SageAction.LoadPreviousRequested)
+        assertEquals(200, vm.contentSize())
+        assertEquals(0, vm.state.value.windowStart)
+        assertEquals(false, vm.state.value.hasMoreBefore)
+        assertEquals(1L, firstGameId(vm)) // window now starts at the top
+
+        // And still pages forward off the same window.
+        vm.sendAction(SageAction.LoadMoreRequested)
+        assertEquals(250, vm.contentSize())
+        assertEquals(false, vm.state.value.hasMoreAfter)
+    }
+
     // ---- helpers ----
 
     private fun <T> sharedFlowOf(): MutableSharedFlow<T> = MutableSharedFlow(
@@ -93,8 +171,27 @@ class BrowseByGameViewModelTest {
 
     private fun repoWithGames(flow: Flow<Data<List<Game>>>): Repository =
         object : Repository by FakeRepository(emptyMap()) {
-            override fun getAllGames(withTracks: Boolean, withArtists: Boolean) = flow
+            override fun getAllGames(withTracks: Boolean, withArtists: Boolean, limit: Int?, offset: Int) = flow
         }
+
+    // Backs the catalog with a real list and honors limit/offset, so the VM's paging window can be
+    // exercised the way the database repository would serve it.
+    private fun repoOver(all: List<Game>): Repository =
+        object : Repository by FakeRepository(emptyMap()) {
+            override fun getAllGames(withTracks: Boolean, withArtists: Boolean, limit: Int?, offset: Int): Flow<Data<List<Game>>> {
+                val slice = all.drop(offset).let { if (limit != null) it.take(limit) else it }
+                return flowOf(if (slice.isEmpty()) Data.Empty else Data.Succeeded(slice))
+            }
+        }
+
+    private fun BrowseByGameViewModel.contentSize() =
+        (state.value.games as? LCE.Content)?.data?.size ?: 0
+
+    private fun firstGameId(vm: BrowseByGameViewModel) =
+        (vm.state.value.games as LCE.Content).data.first().id
+
+    private fun manyGames(count: Int): List<Game> =
+        (1..count).map { gameOf(it.toLong(), "Game $it") }
 
     private fun gameOf(id: Long, title: String): Game =
         Game(id = id, title = title, photoUrl = null, artists = null, tracks = null)

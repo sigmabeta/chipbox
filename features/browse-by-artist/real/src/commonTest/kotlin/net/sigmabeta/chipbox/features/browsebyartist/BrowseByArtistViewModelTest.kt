@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.features.browsebyartist
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -9,6 +10,8 @@ import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -20,6 +23,7 @@ import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
 import net.sigmabeta.sage.appcomm.LCE
+import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
@@ -30,12 +34,14 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * [BrowseByArtistViewModel] subscribes to `repository.getAllArtists()` in `init` and folds each
- * Data emission into LCE on `state.artists`. The click action emits `NavigateTo(ArtistDetail)`.
+ * [BrowseByArtistViewModel] opens a paging window over `repository.getAllArtists(limit, offset)` on
+ * `init` and folds each Data emission into LCE on `state.artists`. The click action emits
+ * `NavigateTo(ArtistDetail)`.
  *
  * Tests drive the repository's flow via a [MutableSharedFlow] swapped in for `getAllArtists`
- * (via delegation through [FakeRepository]). The Dispatchers.setMain rig is the same one used
- * across the rest of the ChipboxListViewModel suites.
+ * (via delegation through [FakeRepository]), plus a list-backed `repoOver` that honors limit/offset
+ * to exercise the paging window. The Dispatchers.setMain rig is the same one used across the rest of
+ * the ChipboxListViewModel suites.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class BrowseByArtistViewModelTest {
@@ -94,6 +100,80 @@ class BrowseByArtistViewModelTest {
         assertEquals(ArtistDetail(42L), event.destination)
     }
 
+    @Test
+    fun `paging walks the catalog a page at a time and stops at the end`() = runTest {
+        val vm = BrowseByArtistViewModel(repoOver(manyArtists(250)), stubStringProvider(), BluntHatchet())
+
+        // First page loads on init.
+        assertEquals(100, vm.contentSize())
+        assertTrue(vm.state.value.hasMoreAfter)
+        assertEquals(false, vm.state.value.hasMoreBefore)
+
+        vm.sendAction(SageAction.LoadMoreRequested)
+        assertEquals(200, vm.contentSize())
+        assertTrue(vm.state.value.hasMoreAfter)
+
+        vm.sendAction(SageAction.LoadMoreRequested)
+        assertEquals(250, vm.contentSize())
+        assertEquals(false, vm.state.value.hasMoreAfter) // last page was partial
+
+        // Nothing left below -> request is a no-op.
+        vm.sendAction(SageAction.LoadMoreRequested)
+        assertEquals(250, vm.contentSize())
+    }
+
+    @Test
+    fun `load-more ignores a second request while a page is still loading`() = runTest {
+        val all = manyArtists(250)
+        val gate = CompletableDeferred<Unit>()
+        var pagedFetches = 0
+        val repo = object : Repository by FakeRepository(emptyMap()) {
+            override fun getAllArtists(withTracks: Boolean, withGames: Boolean, limit: Int?, offset: Int) = flow {
+                emit(Data.Loading)
+                if (offset > 0) {
+                    pagedFetches++
+                    gate.await() // hold the in-flight page open
+                }
+                val slice = all.drop(offset).let { if (limit != null) it.take(limit) else it }
+                emit(if (slice.isEmpty()) Data.Empty else Data.Succeeded(slice))
+            }
+        }
+        val vm = BrowseByArtistViewModel(repo, stubStringProvider(), BluntHatchet())
+        assertEquals(100, vm.contentSize()) // initial page (offset 0, ungated)
+
+        vm.sendAction(SageAction.LoadMoreRequested) // starts page @100, suspends on the gate
+        vm.sendAction(SageAction.LoadMoreRequested) // coalesced away by the in-flight guard
+        gate.complete(Unit)
+
+        assertEquals(200, vm.contentSize())
+        assertEquals(1, pagedFetches) // only one page was actually requested
+    }
+
+    @Test
+    fun `entering at an offset pages backwards to the start, then forward to the end`() = runTest {
+        val vm = BrowseByArtistViewModel(repoOver(manyArtists(250)), stubStringProvider(), BluntHatchet())
+        assertEquals(100, vm.contentSize())
+
+        // Open the window at the second page.
+        vm.sendAction(SageAction.InitWithPageNumber(id = 0L, pageNumber = 1L))
+        assertEquals(100, vm.contentSize())
+        assertEquals(100, vm.state.value.windowStart)
+        assertTrue(vm.state.value.hasMoreBefore)
+        assertEquals(101L, firstArtistId(vm)) // artists 101..200
+
+        // Prepend the earlier page.
+        vm.sendAction(SageAction.LoadPreviousRequested)
+        assertEquals(200, vm.contentSize())
+        assertEquals(0, vm.state.value.windowStart)
+        assertEquals(false, vm.state.value.hasMoreBefore)
+        assertEquals(1L, firstArtistId(vm)) // window now starts at the top
+
+        // And still pages forward off the same window.
+        vm.sendAction(SageAction.LoadMoreRequested)
+        assertEquals(250, vm.contentSize())
+        assertEquals(false, vm.state.value.hasMoreAfter)
+    }
+
     // ---- helpers ----
 
     private fun <T> sharedFlowOf(): MutableSharedFlow<T> = MutableSharedFlow(
@@ -104,8 +184,27 @@ class BrowseByArtistViewModelTest {
 
     private fun repoWithArtists(flow: Flow<Data<List<Artist>>>): Repository =
         object : Repository by FakeRepository(emptyMap()) {
-            override fun getAllArtists(withTracks: Boolean, withGames: Boolean) = flow
+            override fun getAllArtists(withTracks: Boolean, withGames: Boolean, limit: Int?, offset: Int) = flow
         }
+
+    // Backs the catalog with a real list and honors limit/offset, so the VM's paging window can be
+    // exercised the way the database repository would serve it.
+    private fun repoOver(all: List<Artist>): Repository =
+        object : Repository by FakeRepository(emptyMap()) {
+            override fun getAllArtists(withTracks: Boolean, withGames: Boolean, limit: Int?, offset: Int): Flow<Data<List<Artist>>> {
+                val slice = all.drop(offset).let { if (limit != null) it.take(limit) else it }
+                return flowOf(if (slice.isEmpty()) Data.Empty else Data.Succeeded(slice))
+            }
+        }
+
+    private fun BrowseByArtistViewModel.contentSize() =
+        (state.value.artists as? LCE.Content)?.data?.size ?: 0
+
+    private fun firstArtistId(vm: BrowseByArtistViewModel) =
+        (vm.state.value.artists as LCE.Content).data.first().id
+
+    private fun manyArtists(count: Int): List<Artist> =
+        (1..count).map { artistOf(it.toLong(), "Artist $it") }
 
     private fun artistOf(id: Long, name: String): Artist =
         Artist(id = id, name = name, photoUrl = null, tracks = null, games = null)

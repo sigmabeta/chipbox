@@ -242,12 +242,12 @@ class HomeViewModelTest {
 
     private fun repoWithGames(flow: Flow<Data<List<Game>>>): Repository =
         object : Repository by FakeRepository(emptyMap()) {
-            override fun getAllGames(withTracks: Boolean, withArtists: Boolean) = flow
+            override fun getAllGames(withTracks: Boolean, withArtists: Boolean, limit: Int?, offset: Int) = flow
         }
 
     private fun repoWithArtists(flow: Flow<Data<List<Artist>>>): Repository =
         object : Repository by FakeRepository(emptyMap()) {
-            override fun getAllArtists(withTracks: Boolean, withGames: Boolean) = flow
+            override fun getAllArtists(withTracks: Boolean, withGames: Boolean, limit: Int?, offset: Int) = flow
         }
 
     private fun repoWithTracks(flow: Flow<Data<List<Track>>>): Repository =

@@ -25,6 +25,11 @@ interface ArtistDao {
     @Query("SELECT * FROM artist ORDER BY name COLLATE NOCASE")
     fun getAll(): Flow<List<ArtistEntity>>
 
+    // Paged variant of [getAll]. SQLite treats a negative LIMIT as "no limit", so passing -1 yields
+    // every row from [offset] onward — letting the repository express "skip N, take the rest".
+    @Query("SELECT * FROM artist ORDER BY name COLLATE NOCASE LIMIT :limit OFFSET :offset")
+    fun getAllPaged(limit: Int, offset: Int): Flow<List<ArtistEntity>>
+
     @Query("SELECT * FROM artist WHERE name LIKE :name ORDER BY name COLLATE NOCASE")
     fun searchArtistsByName(name: String): Flow<List<ArtistEntity>>
 

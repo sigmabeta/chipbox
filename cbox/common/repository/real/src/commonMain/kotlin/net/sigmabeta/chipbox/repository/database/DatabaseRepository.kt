@@ -93,14 +93,28 @@ class DatabaseRepository(
 
     override fun getAllArtists(
         withTracks: Boolean,
-        withGames: Boolean
+        withGames: Boolean,
+        limit: Int?,
+        offset: Int
     ): Flow<Data<List<Artist>>> = setupFlow(
-        { artistDao.getAll() },
+        {
+            if (limit == null && offset == 0) {
+                artistDao.getAll()
+            } else {
+                artistDao.getAllPaged(limit ?: -1, offset)
+            }
+        },
         { list -> list.suspendMap { it.toArtist(withTracks, withGames) } }
     )
 
-    override fun getAllGames(withTracks: Boolean, withArtists: Boolean) = setupFlow(
-        { gameDao.getAll() },
+    override fun getAllGames(withTracks: Boolean, withArtists: Boolean, limit: Int?, offset: Int) = setupFlow(
+        {
+            if (limit == null && offset == 0) {
+                gameDao.getAll()
+            } else {
+                gameDao.getAllPaged(limit ?: -1, offset)
+            }
+        },
         { list -> list.suspendMap { it.toGame(withTracks, withArtists) } }
     )
 
