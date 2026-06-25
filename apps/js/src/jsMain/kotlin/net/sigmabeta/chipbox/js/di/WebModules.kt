@@ -44,6 +44,10 @@ import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.real.RealDirector
 import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
+import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
+import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
+import net.sigmabeta.chipbox.history.real.RealPlaybackHistoryRecorder
+import net.sigmabeta.chipbox.js.repository.LocalStoragePlaybackHistoryRepository
 import net.sigmabeta.chipbox.playlists.PlaylistsRepository
 import net.sigmabeta.chipbox.playlists.fake.FakePlaylistsRepository
 import net.sigmabeta.chipbox.player.emulators.Emulator
@@ -302,6 +306,27 @@ object WebDirectorModule {
 object WebScannerModule {
     @Provides @SingleIn(AppScope::class)
     fun provideScanner(): Scanner = CountingScanner()
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object WebHistoryModule {
+    // Browser-local playback history. The browser has no Room store and the server exposes no
+    // history endpoint, so plays are persisted in window.localStorage via
+    // [LocalStoragePlaybackHistoryRepository]. It's fed by the shared, tested
+    // [RealPlaybackHistoryRecorder] (the same recorder apps/jvm + apps/android use) — JsMain calls
+    // observe() at startup, so once a track plays past the 10s / play-to-end threshold the Home
+    // recently-/most-played cards fill and survive reloads.
+    @Provides @SingleIn(AppScope::class)
+    fun providePlaybackHistoryRepository(hatchet: Hatchet): PlaybackHistoryRepository =
+        LocalStoragePlaybackHistoryRepository(hatchet)
+
+    @Provides @SingleIn(AppScope::class)
+    fun providePlaybackHistoryRecorder(
+        director: Director,
+        repository: PlaybackHistoryRepository,
+        hatchet: Hatchet,
+    ): PlaybackHistoryRecorder = RealPlaybackHistoryRecorder(director, repository, hatchet)
 }
 
 @BindingContainer
