@@ -6,11 +6,14 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
+import net.sigmabeta.chipbox.scanner.fake.CountingScanner
+import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
@@ -48,8 +51,20 @@ class RecentlyAddedGamesHomeModuleTest {
         assertEquals(listOf(1L, 2L, 3L, 4L, 5L), lce.data.items.map { it.dataId - ID_OFFSET })
     }
 
+    @Test
+    fun `hidden while a scan is in flight`() = runTest {
+        val scanner = CountingScanner(UnconfinedTestDispatcher(testScheduler))
+        scanner.pushState(ScannerState.Scanning())
+        val module = RecentlyAddedGamesHomeModule(
+            repoWith(flowOf(Data.Succeeded(listOf(gameOf(1L))))),
+            scanner,
+            stubStringProvider(),
+        )
+        assertEquals(LCE.Uninitialized, module.state().first())
+    }
+
     private fun moduleWith(flow: Flow<Data<List<Game>>>) =
-        RecentlyAddedGamesHomeModule(repoWith(flow), stubStringProvider())
+        RecentlyAddedGamesHomeModule(repoWith(flow), CountingScanner(UnconfinedTestDispatcher()), stubStringProvider())
 
     private fun repoWith(flow: Flow<Data<List<Game>>>): Repository =
         object : Repository by FakeRepository(emptyMap()) {

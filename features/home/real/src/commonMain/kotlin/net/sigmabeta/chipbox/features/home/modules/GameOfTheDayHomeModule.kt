@@ -3,22 +3,15 @@ package net.sigmabeta.chipbox.features.home.modules
 import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 import net.sigmabeta.chipbox.features.home.HomeAction
 import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
-import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.GridImageListModel
@@ -41,25 +34,14 @@ class GameOfTheDayHomeModule @Inject constructor(
     override val priority = PRIORITY
 
     // Hold off on picking while a library scan is in flight — the game list churns as the scan
-    // discovers content, so we'd be picking from a moving, partial set. Stay in Loading until the
-    // scan settles, then surface the day's game. distinctUntilChanged on the scanning flag keeps us
-    // from re-subscribing on every Scanning progress emission; the scan-settled transition re-runs
-    // the pick (the library only changes via a scan).
-    @OptIn(ExperimentalCoroutinesApi::class)
-    override fun state(): Flow<LCE<HomeModuleSection>> = scanner.state()
-        .map { it is ScannerState.Scanning }
-        .distinctUntilChanged()
-        .flatMapLatest { isScanning ->
-            if (isScanning) {
-                flowOf(LCE.Loading(LOAD_OP))
-            } else {
-                flow {
-                    emit(LCE.Loading(LOAD_OP))
-                    emit(pickOfTheDay())
-                }.catch { emit(LCE.Error(LOAD_OP, it)) }
-            }
-        }
-        .onStart { emit(LCE.Loading(LOAD_OP)) }
+    // discovers content, so we'd be picking from a moving, partial set. The section stays hidden
+    // until the scan settles, then we surface the day's game.
+    override fun state(): Flow<LCE<HomeModuleSection>> = scanner.hideSectionWhileScanning(::content)
+
+    private fun content(): Flow<LCE<HomeModuleSection>> = flow {
+        emit(LCE.Loading(LOAD_OP))
+        emit(pickOfTheDay())
+    }.catch { emit(LCE.Error(LOAD_OP, it)) }
 
     // Pick one game deterministically for the day with a surgical count + offset fetch — no need to
     // load the whole catalog. The epoch-day seed makes the pick stable within a day and roll over
