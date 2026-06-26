@@ -66,6 +66,23 @@ interface Repository {
         withArtists: Boolean = false
     ): Flow<Data<List<Track>>>
 
+    // Resolve a known set of games by id — the games analogue of [getTracksByIds]. Use this instead
+    // of filtering [getAllGames] when a caller already has the ids (e.g. most-played surfaces): it
+    // hydrates only the requested rows rather than the whole catalog. Order is unspecified.
+    fun getGamesByIds(
+        ids: List<Long>,
+        withTracks: Boolean = false,
+        withArtists: Boolean = false
+    ): Flow<Data<List<Game>>>
+
+    // Resolve a known set of artists by id — the artists analogue of [getTracksByIds]. Use this
+    // instead of filtering [getAllArtists] when a caller already has the ids. Order is unspecified.
+    fun getArtistsByIds(
+        ids: List<Long>,
+        withTracks: Boolean = false,
+        withGames: Boolean = false
+    ): Flow<Data<List<Artist>>>
+
     suspend fun getTracksForGame(
         id: Long,
         withGame: Boolean = false,
@@ -159,6 +176,19 @@ interface Repository {
     suspend fun getRandomGame(): Game?
 
     suspend fun getRandomArtist(): Artist?
+
+    /**
+     * Total number of games in the library. Paired with [getGameAtIndex] to pick one game by a
+     * stable index without materializing the catalog — e.g. a deterministic daily pick:
+     * `getGameAtIndex(seed % getGameCount())`.
+     */
+    suspend fun getGameCount(): Int
+
+    /**
+     * The game at [index] in a stable order (by id), or null if [index] is out of range. The cheap
+     * half of the count-then-fetch pick described on [getGameCount].
+     */
+    suspend fun getGameAtIndex(index: Int): Game?
 
     suspend fun clearLibrary()
 

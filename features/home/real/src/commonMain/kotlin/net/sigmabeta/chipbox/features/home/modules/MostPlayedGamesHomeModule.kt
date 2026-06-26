@@ -2,8 +2,11 @@ package net.sigmabeta.chipbox.features.home.modules
 
 import dev.zacsweers.metro.Inject
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import net.sigmabeta.chipbox.features.home.HomeAction
 import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
@@ -31,24 +34,30 @@ class MostPlayedGamesHomeModule @Inject constructor(
     override val id = ID
     override val priority = PRIORITY
 
-    override fun state(): Flow<LCE<HomeModuleSection>> = combine(
-        historyRepository.mostPlayedGames(QUERY_LIMIT),
-        repository.getAllGames(),
-    ) { counts, gamesData ->
-        when (gamesData) {
-            Data.Loading -> if (counts.isEmpty()) LCE.Uninitialized else LCE.Loading(LOAD_OP)
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun state(): Flow<LCE<HomeModuleSection>> =
+        historyRepository.mostPlayedGames(QUERY_LIMIT).flatMapLatest { counts ->
+            if (counts.isEmpty()) {
+                flowOf<LCE<HomeModuleSection>>(LCE.Uninitialized)
+            } else {
+                // Resolve only the most-played game ids (for title + cover art) rather than
+                // hydrating the entire catalog to look a handful of them up.
+                repository.getGamesByIds(counts.map { it.id }).map { gamesData ->
+                    when (gamesData) {
+                        Data.Loading -> LCE.Loading(LOAD_OP)
 
-            Data.Empty -> LCE.Uninitialized
+                        Data.Empty -> LCE.Uninitialized
 
-            is Data.Failed -> LCE.Error(LOAD_OP, IllegalStateException(gamesData.message))
+                        is Data.Failed -> LCE.Error(LOAD_OP, IllegalStateException(gamesData.message))
 
-            is Data.Succeeded -> {
-                val byId = gamesData.data.associateBy { it.id }
-                val games = counts.mapNotNull { byId[it.id] }
-                sectionOrHidden(games)
+                        is Data.Succeeded -> {
+                            val byId = gamesData.data.associateBy { it.id }
+                            sectionOrHidden(counts.mapNotNull { byId[it.id] })
+                        }
+                    }
+                }
             }
         }
-    }
 
     private fun sectionOrHidden(games: List<Game>): LCE<HomeModuleSection> {
         if (games.size < MIN_ITEMS) return LCE.Uninitialized

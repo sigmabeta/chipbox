@@ -45,6 +45,10 @@ class FakeRepository(private val tracksById: Map<Long, Track>) : Repository {
     override fun getAllTracks(withGame: Boolean, withArtists: Boolean, limit: Int?, offset: Int): Flow<Data<List<Track>>> = flowOf(Data.Empty)
     override fun getTracksByIds(ids: List<Long>, withGame: Boolean, withArtists: Boolean): Flow<Data<List<Track>>> =
         flowOf(ids.mapNotNull { tracksById[it] }.let { if (it.isEmpty()) Data.Empty else Data.Succeeded(it) })
+    override fun getGamesByIds(ids: List<Long>, withTracks: Boolean, withArtists: Boolean): Flow<Data<List<Game>>> =
+        flowOf(Data.Empty)
+    override fun getArtistsByIds(ids: List<Long>, withTracks: Boolean, withGames: Boolean): Flow<Data<List<Artist>>> =
+        flowOf(Data.Empty)
     override fun getGamesForPlatform(platform: Platform): Flow<Data<List<Game>>> = flowOf(Data.Empty)
     override fun getRecentlyAddedGames(limit: Int, withinMs: Long): Flow<Data<List<Game>>> = flowOf(Data.Empty)
     override fun getAvailablePlatforms(): Flow<Data<List<Platform>>> = flowOf(Data.Empty)
@@ -57,6 +61,8 @@ class FakeRepository(private val tracksById: Map<Long, Track>) : Repository {
     override suspend fun clearLibrary() = Unit
     override suspend fun getRandomTrack(): Track? = tracksById.values.randomOrNull()
     override suspend fun getRandomGame(): Game? = null
+    override suspend fun getGameCount(): Int = 0
+    override suspend fun getGameAtIndex(index: Int): Game? = null
     override suspend fun getRandomArtist(): Artist? = null
     override fun searchGames(query: String): Flow<Data<List<Game>>> = flowOf(Data.Empty)
     override fun searchSongs(query: String): Flow<Data<List<Track>>> = flowOf(Data.Empty)

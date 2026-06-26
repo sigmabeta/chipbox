@@ -97,6 +97,12 @@ private fun Route.gameRoutes(repository: Repository) {
                 repository.getRecentlyAddedGames(limit, withinMs).firstSettled().map { it.withPublicUrls() }
             )
         }
+        get("/count") { call.respond(repository.getGameCount()) }
+        get("/at") {
+            val index = call.intParam("index") ?: return@get call.badRequest("`index` required")
+            val game = repository.getGameAtIndex(index) ?: return@get call.notFound()
+            call.respond(game.withPublicUrls())
+        }
         get("/{id}") {
             val id = call.longPathParam("id") ?: return@get call.notFound()
             val withTracks = call.boolParam("withTracks")
