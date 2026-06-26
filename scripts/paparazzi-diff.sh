@@ -59,6 +59,9 @@ fi
 tmp="$(mktemp -d)"
 review="build/paparazzi-review"
 trap 'rm -rf "$tmp"' EXIT
+# Start clean so stale montages from a previous run (e.g. a larger --top, or
+# screenshots that no longer diverge) can't masquerade as current results.
+rm -rf "$review"
 mkdir -p "$review"
 scores="$tmp/scores"; : > "$scores"
 

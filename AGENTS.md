@@ -73,15 +73,21 @@ it when a load-bearing fact stops being true.
 ./gradlew :apps:jvm:run --args="gui"       # desktop window
 ./gradlew ktlintCheck detekt               # lint — run BOTH at the same scope
 ./gradlew ktlintFormat                     # auto-fix
-./gradlew verifyPaparazziDebug             # check screenshots (does NOT record)
+scripts/paparazzi-diff.sh                  # check screenshots (use this, NOT the Gradle task)
 ```
 
 - Run **ktlint and detekt together**; both gate commit/push.
-- `verifyPaparazziDebug` *checks* goldens; `testDebugUnitTest` *records*
-  (overwrites) them (git-LFS). Use verify unless intentionally re-recording.
-- When running Paparazzi, use the script in `scripts/`
-  (`scripts/paparazzi-diff.sh`) rather than invoking the Gradle tasks directly,
-  and report the results back.
+- **Always verify screenshots via `scripts/paparazzi-diff.sh`**, never by invoking
+  the Gradle tasks directly: it re-renders, ranks the most-divergent snapshots,
+  writes `golden | new | diff` montages under `build/paparazzi-review/`, and
+  reverts the goldens afterward (non-destructive). After running it, **report a
+  summary back**: how many goldens diverged, the worst AE% offenders, and whether
+  the change is expected — note that `--top N` only ranks the loudest N, so cross-
+  check the full set with `git status` rather than trusting the ranked list as the
+  total.
+- Under the hood `verifyPaparazziDebug` *checks* goldens and `testDebugUnitTest`
+  *records* (overwrites) them (git-LFS) — only re-record (`--keep`, or the record
+  task) when a visual change is intentional.
 - Don't boot an AVD to verify — stop after build + lint and hand device testing
   to the user. Don't `git commit`/`push` unless explicitly asked.
 - Always run `scripts/verify.sh` (the full CI-mirroring suite — lint, unit tests,
