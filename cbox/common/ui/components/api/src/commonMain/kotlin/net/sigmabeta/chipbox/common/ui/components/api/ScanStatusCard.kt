@@ -129,12 +129,24 @@ private fun StatusColumn(
                     maxLines = STATUS_MAX_LINES,
                     overflow = TextOverflow.Ellipsis,
                 )
+                // Folder above file: the coarser "where" over the faster-moving "what".
+                val folder = model.currentFolder
+                if (folder != null) {
+                    Spacer(modifier = Modifier.height(CURRENT_FILE_GAP))
+                    Text(
+                        text = folder,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = contentColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 val file = model.currentFile
                 if (file != null) {
                     Spacer(modifier = Modifier.height(CURRENT_FILE_GAP))
                     Text(
                         text = file,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = contentColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

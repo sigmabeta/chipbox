@@ -3,6 +3,14 @@ package net.sigmabeta.chipbox.scanner.state
 sealed class ScannerEvent {
     object Unknown : ScannerEvent()
 
+    /** The scanner has started walking a folder. A pure progress heartbeat — like [FileScanned] it
+     *  is never added to the "Changes" list; it gives the UI the coarser "now in folder X" context
+     *  above the per-file motion, and fires once per folder (including unchanged ones that get
+     *  skipped). [name] is the folder's display name. */
+    class FolderScanned(
+        val name: String
+    ) : ScannerEvent()
+
     /** A single file is being read right now. A pure progress heartbeat — it fires far more often
      *  than the Game* change events (once per file) so the UI can show live motion, and is never
      *  added to the "Changes" list. [name] is the file's display name. */

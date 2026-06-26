@@ -34,6 +34,18 @@ class ScanStatusModuleTest {
     }
 
     @Test
+    fun scanningShowsCurrentFolder() = runChipboxUiTest {
+        beginScan()
+        scanReadingFolder("Sonic the Hedgehog")
+        scanReadingFile("robotnik_theme.spc")
+
+        waitForContent("Library Scan Scanning")
+        revealScanCard()
+        assertTextInRow("Sonic the Hedgehog")
+        assertTextInRow("robotnik_theme.spc")
+    }
+
+    @Test
     fun completeShowsSummary() = runChipboxUiTest {
         completeScan(games = 10, tracks = 200)
 

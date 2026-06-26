@@ -11,6 +11,7 @@
     <string name="rescan_status_label_tracks">Tracks found</string>
     <string name="rescan_status_label_failed">Tracks failed</string>
     <string name="rescan_status_label_failed_path">Failed at</string>
+    <string name="rescan_status_label_folder">Folder</string>
     <string name="rescan_status_label_scanning">Scanning</string>
     <string name="rescan_status_idle">No scan in progress.</string>
     <string name="rescan_status_event_added">Added</string>

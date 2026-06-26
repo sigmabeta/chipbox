@@ -12,7 +12,7 @@ the `:api` route key.
 
 | File | What it is |
 | --- | --- |
-| `RescanStatusState.kt` | `RescanStatusState : ListState` plus `ScanPhase`, `ScanEventKind`, and `ScanEventItem`. Renders a Progress section (elapsed/games/tracks/failed, a live per-file "Scanning…" heartbeat row, and a failed-path row) followed by a reversed Changes feed of game-change rows. |
+| `RescanStatusState.kt` | `RescanStatusState : ListState` plus `ScanPhase`, `ScanEventKind`, and `ScanEventItem`. Renders a Progress section (elapsed/games/tracks/failed, a live per-folder "Folder" row above a per-file "Scanning…" heartbeat row, and a failed-path row) followed by a reversed Changes feed of game-change rows. |
 | `RescanStatusAction.kt` | `RescanStatusAction.GameClicked(gameId)` — tapping an added/updated game row. |
 | `RescanStatusViewModel.kt` | `@ContributesIntoMap` / `@ViewModelKey` / `@Inject` ViewModel. Collects `Scanner.state()` + `Scanner.scanEvents()`, buffers them, and flushes to state on timers; handles `GameClicked` by emitting `NavigateTo(GameDetail(id))`. |
 | `RescanStatusRoute.kt` | `@Composable RescanStatusRoute(onEvent, modifier)` — resolves the VM via `metroViewModel()` and renders it through `ChipboxListEntry`. |
@@ -26,6 +26,9 @@ The screen observes the scanner directly, not a snapshot:
   mapping `ScannerState.Scanning/Complete/Failed/Idle/Unknown` onto `ScanPhase`.
 - **`Scanner.scanEvents()`** carries two distinct kinds of event, handled on
   separate cadences:
+  - `ScannerEvent.FolderScanned` is a **per-folder heartbeat**. It updates only
+    `currentFolder`, surfaced as a single live "Folder" row under Progress (the
+    coarser "where" above the per-file row), and never enters the Changes list.
   - `ScannerEvent.FileScanned` is a **high-frequency per-file heartbeat**. It
     updates only `currentFile`, surfaced as a single live "Scanning…" row under
     Progress, and republished on a fast **500 ms** tick. It never enters the

@@ -181,6 +181,7 @@ private fun scanStatusState(status: ScanCardStatus): HomeState {
             ScanCardStatus.COMPLETE -> "Library Scan Complete"
             ScanCardStatus.FAILED -> "Library Scan Failed"
         },
+        currentFolder = "Sonic the Hedgehog".takeIf { status == ScanCardStatus.SCANNING },
         currentFile = "robotnik_theme.spc".takeIf { status == ScanCardStatus.SCANNING },
         detail = detail,
         dismissAction = HomeAction.ScanStatusDismissed.takeIf { status != ScanCardStatus.SCANNING },

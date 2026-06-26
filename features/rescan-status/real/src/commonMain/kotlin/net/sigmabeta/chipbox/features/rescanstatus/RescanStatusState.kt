@@ -39,6 +39,10 @@ data class RescanStatusState(
     val tracksFound: Int = 0,
     val tracksFailed: Int = 0,
     val failedPath: String? = null,
+    // The folder the scanner is walking right now, surfaced under Progress above [currentFile] as
+    // the coarser "where" context. A live heartbeat like [currentFile] — never mixed into the
+    // Changes list. Null when no folder is currently being walked.
+    val currentFolder: String? = null,
     // The file the scanner is reading right now, surfaced under Progress as a live heartbeat so the
     // screen shows motion between (rare) meaningful changes. Updated on a much faster cadence than
     // [events] — which stays batched for perf — and is never mixed into that Changes list. Null
@@ -73,6 +77,15 @@ data class RescanStatusState(
             labelValue(stringProvider, ChipboxStringId.RESCAN_STATUS_LABEL_TRACKS, tracksFound),
             labelValue(stringProvider, ChipboxStringId.RESCAN_STATUS_LABEL_FAILED, tracksFailed),
         )
+        // Live per-folder heartbeat: the coarser "where", shown above the per-file row. Like the
+        // file row it's a plain label/value (it's a folder name, not a game) and scanning-only.
+        if (phase == ScanPhase.SCANNING && currentFolder != null) {
+            rows += LabelValueListModel(
+                label = stringProvider.getString(ChipboxStringId.RESCAN_STATUS_LABEL_FOLDER),
+                value = currentFolder,
+                clickAction = SageAction.Noop,
+            )
+        }
         // Live per-file heartbeat: only meaningful mid-scan, and shown as a plain label/value row
         // (it's a filename, not a game) so it can never be confused with a Changes entry.
         if (phase == ScanPhase.SCANNING && currentFile != null) {

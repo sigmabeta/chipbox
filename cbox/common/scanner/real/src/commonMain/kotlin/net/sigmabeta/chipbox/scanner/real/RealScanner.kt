@@ -168,6 +168,10 @@ class RealScanner(
         snapshot: Map<String, FolderSnapshot>,
         seenFolderKeys: AtomicReference<Set<String>>,
     ): Progress {
+        // Per-folder progress heartbeat for the scan-status UIs. Fires once as we begin each folder
+        // — including the unchanged ones we skip below — so the displays show the coarse "now in
+        // folder X" context above the faster per-file heartbeat. Never a "Changes" entry.
+        emitEvent(ScannerEvent.FolderScanned(folderDisplayName(folderId)))
         val sorted = group.sortedBy { it.name }
         val signature = folderSignature(sorted)
         val known = snapshot[folderId]
