@@ -16,7 +16,13 @@ import kotlinx.coroutines.flow.StateFlow
 interface LibrarySource : ContentSource {
     val locations: StateFlow<List<LibraryLocationInfo>>
 
-    fun scanFiles(): Flow<LibraryFileInfo>
+    /**
+     * Walk the configured [locations] and stream the music folders found, each as a complete
+     * [LibraryFolderInfo] (a folder and all of its direct files). Emitting a folder the moment it's
+     * fully discovered — rather than draining the whole walk first — lets the scanner read each
+     * folder while later folders are still being discovered.
+     */
+    fun scanFolders(): Flow<LibraryFolderInfo>
 
     /**
      * Persist a new library root identified by [identifier] (an absolute filesystem path).

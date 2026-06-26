@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
-import net.sigmabeta.chipbox.contentsource.LibraryFileInfo
+import net.sigmabeta.chipbox.contentsource.LibraryFolderInfo
 import net.sigmabeta.chipbox.contentsource.LibraryLocationInfo
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 
@@ -17,7 +17,7 @@ import net.sigmabeta.chipbox.contentsource.LibrarySource
  * AND record the call (via [addedLocations] / [removedLocations]) so assertions can verify the
  * view-model dispatched the right thing.
  *
- * `openBytes` returns null and `scanFiles` returns an empty flow — neither is exercised by
+ * `openBytes` returns null and `scanFolders` returns an empty flow — neither is exercised by
  * view-model tests; they're here only because [LibrarySource] inherits them from
  * `ContentSource`.
  */
@@ -37,7 +37,7 @@ class FakeLibrarySource(
     }
 
     override suspend fun openBytes(identifier: String): ByteArray? = null
-    override fun scanFiles(): Flow<LibraryFileInfo> = emptyFlow()
+    override fun scanFolders(): Flow<LibraryFolderInfo> = emptyFlow()
     override fun addLibraryLocation(identifier: String) {
         addedLocations += identifier
         _locations.update { it + LibraryLocationInfo(identifier, null) }

@@ -1,12 +1,14 @@
 package net.sigmabeta.chipbox.contentsource
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import net.sigmabeta.chipbox.contentsource.LibraryFileInfo
+import net.sigmabeta.chipbox.contentsource.LibraryFolderInfo
 import net.sigmabeta.chipbox.contentsource.LibraryLocationInfo
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import java.io.File
@@ -70,26 +72,37 @@ class LocalFileContentSource(
         }
     }
 
-    override fun scanFiles(): Flow<LibraryFileInfo> = flow {
+    override fun scanFolders(): Flow<LibraryFolderInfo> = flow {
         for (loc in _locations.value) {
-            val root = File(loc.identifier)
-            for (file in root.walkTopDown()) {
-                if (!file.isFile) continue
-                val parent = file.parentFile?.absolutePath ?: root.absolutePath
-                emit(
-                    LibraryFileInfo(
-                        identifier = file.absolutePath,
-                        parentFolderId = parent,
-                        name = file.name,
-                        extension = file.extension.lowercase(),
-                        mimeType = null,
-                        sizeBytes = file.length(),
-                        lastModifiedMs = file.lastModified(),
-                    ),
-                )
-            }
+            emitFoldersIn(File(loc.identifier))
         }
     }
+
+    // Depth-first walk that emits each directory's own files as one complete [LibraryFolderInfo] the
+    // moment that directory is enumerated, then descends into its subdirectories. Streaming whole
+    // folders (rather than draining the entire tree first) is what lets the scanner read a folder
+    // while later folders are still being discovered. A directory with no direct files emits nothing
+    // but is still descended into.
+    private suspend fun FlowCollector<LibraryFolderInfo>.emitFoldersIn(dir: File) {
+        val entries = dir.listFiles() ?: return
+        val files = entries.filter { it.isFile }.map { it.toLibraryFileInfo(dir) }
+        if (files.isNotEmpty()) {
+            emit(LibraryFolderInfo(folderId = dir.absolutePath, files = files))
+        }
+        for (entry in entries) {
+            if (entry.isDirectory) emitFoldersIn(entry)
+        }
+    }
+
+    private fun File.toLibraryFileInfo(parent: File) = LibraryFileInfo(
+        identifier = absolutePath,
+        parentFolderId = parent.absolutePath,
+        name = name,
+        extension = extension.lowercase(),
+        mimeType = null,
+        sizeBytes = length(),
+        lastModifiedMs = lastModified(),
+    )
 
     override suspend fun openBytes(identifier: String): ByteArray? {
         val file = File(identifier)
