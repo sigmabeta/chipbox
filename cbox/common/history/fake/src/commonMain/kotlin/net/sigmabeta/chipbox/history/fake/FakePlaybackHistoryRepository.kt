@@ -22,6 +22,7 @@ class FakePlaybackHistoryRepository : PlaybackHistoryRepository {
     var mostPlayedSongs: List<PlayCount> = emptyList()
     var mostPlayedGames: List<PlayCount> = emptyList()
     var mostPlayedArtists: List<PlayCount> = emptyList()
+    var playedGameIds: List<Long> = emptyList()
 
     override suspend fun recordPlay(track: Track) {
         recordedPlays += track
@@ -34,6 +35,8 @@ class FakePlaybackHistoryRepository : PlaybackHistoryRepository {
     override fun mostPlayedGames(limit: Int): Flow<List<PlayCount>> = flowOf(mostPlayedGames.take(limit))
 
     override fun mostPlayedArtists(limit: Int): Flow<List<PlayCount>> = flowOf(mostPlayedArtists.take(limit))
+
+    override fun playedGameIds(): Flow<List<Long>> = flowOf(playedGameIds)
 
     override suspend fun clearHistory() {
         clearCalls++

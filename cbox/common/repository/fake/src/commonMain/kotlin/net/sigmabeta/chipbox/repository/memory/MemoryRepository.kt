@@ -422,6 +422,17 @@ open class MemoryRepository(
         emit(if (picked.isNotEmpty()) Data.Succeeded(picked) else Data.Empty)
     }
 
+    override fun getUnplayedGames(playedGameIds: List<Long>, limit: Int): Flow<Data<List<Game>>> = flow {
+        emit(Data.Loading)
+        val excluded = playedGameIds.toHashSet()
+        val picked = gamesById.values
+            .filter { it.id !in excluded }
+            .shuffled()
+            .take(limit)
+            .map { it.toGame() }
+        emit(if (picked.isNotEmpty()) Data.Succeeded(picked) else Data.Empty)
+    }
+
     @OptIn(ExperimentalTime::class)
     private fun nowMs(): Long = Clock.System.now().toEpochMilliseconds()
 

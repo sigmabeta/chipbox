@@ -23,6 +23,11 @@ interface GamePlayCountDao {
     )
     fun getMostPlayed(limit: Int): Flow<List<PlayCount>>
 
+    // Every game with at least one play (a row exists here only after the first play increments it),
+    // for the Home "New to You" row to subtract from the library.
+    @Query("SELECT gameId FROM game_play_count")
+    fun getPlayedGameIds(): Flow<List<Long>>
+
     @Query("DELETE FROM game_play_count")
     suspend fun nukeTable()
 }

@@ -38,6 +38,7 @@ internal fun Route.libraryRoutes(repository: Repository) {
 // Fallbacks for /api/games/recently-added when the client omits the params (it normally sends both).
 private const val DEFAULT_RECENTLY_ADDED_LIMIT = 10
 private const val DEFAULT_RECENTLY_ADDED_WINDOW_MS = 7L * 24 * 60 * 60 * 1000
+private const val DEFAULT_UNPLAYED_LIMIT = 10
 
 private fun Route.randomRoutes(repository: Repository) {
     route("/random") {
@@ -109,6 +110,15 @@ private fun Route.gameRoutes(repository: Repository) {
             val withinMs = call.longParam("withinMs") ?: DEFAULT_RECENTLY_ADDED_WINDOW_MS
             call.respond(
                 repository.getRecentlyAddedGames(limit, withinMs).firstSettled().map { it.withPublicUrls() }
+            )
+        }
+        get("/unplayed") {
+            val limit = call.intParam("limit") ?: DEFAULT_UNPLAYED_LIMIT
+            // ?exclude=1,2,3 — the games the client has played (its history lives client-side). Absent
+            // / empty means nothing played yet, so every game is eligible.
+            val excluded = call.idsParam("exclude") ?: emptyList()
+            call.respond(
+                repository.getUnplayedGames(excluded, limit).firstSettled().map { it.withPublicUrls() }
             )
         }
         get("/count") { call.respond(repository.getGameCount()) }
