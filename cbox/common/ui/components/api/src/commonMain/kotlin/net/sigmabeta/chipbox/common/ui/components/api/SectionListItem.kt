@@ -29,18 +29,22 @@ fun SectionListItem(
 ) {
     val maxWidth = model.maxContentWidthDp
     if (maxWidth != null) {
-        // Cap the content to maxWidth and centre it horizontally in the full-width slot.
+        // Cap the content to maxWidth and centre it horizontally in the full-width slot. Inset the
+        // slot by the screen side margin so a backgroundContainer panel doesn't bleed to the screen
+        // edges; the inner items then sit flush to the panel (zeroed `padding`) so they keep the
+        // same on-screen position instead of being double-inset.
         Box(
             modifier = modifier
                 .fillMaxWidth()
-                .wrapContentHeight(),
+                .wrapContentHeight()
+                .padding(padding),
             contentAlignment = Alignment.TopCenter,
         ) {
             SectionContentColumn(
                 model = model,
                 actionSink = actionSink,
                 showDebug = showDebug,
-                padding = padding,
+                padding = PaddingValues(),
                 modifier = Modifier.widthIn(max = maxWidth.dp),
             )
         }
