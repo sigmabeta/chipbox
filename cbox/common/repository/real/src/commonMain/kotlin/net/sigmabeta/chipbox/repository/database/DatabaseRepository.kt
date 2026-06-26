@@ -183,6 +183,11 @@ class DatabaseRepository(
         { list -> list.suspendMap { it.toGame() } }
     )
 
+    override fun getUnplayedGames(playedGameIds: List<Long>, limit: Int) = setupFlow(
+        { gameDao.getUnplayed(playedGameIds, limit) },
+        { list -> list.suspendMap { it.toGame() } }
+    )
+
     override fun getAvailablePlatforms() = setupFlow(
         { trackDao.getDistinctPlatforms() },
         { list -> list.map { Platform.valueOf(it) } }

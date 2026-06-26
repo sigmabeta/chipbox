@@ -77,6 +77,13 @@ interface GameDao {
     @Query("SELECT * FROM game WHERE date_added >= :threshold ORDER BY RANDOM() LIMIT :limit")
     fun getRecentlyAdded(threshold: Long, limit: Int): Flow<List<GameEntity>>
 
+    // Home "New to You" row: a random sample of games the user hasn't played. Play counts live in a
+    // separate (history) database, so the caller passes the played game ids to exclude. SQLite treats
+    // `id NOT IN ()` as true for every row, so an empty :playedIds (nothing played yet) yields a
+    // random sample of the whole library — exactly what we want for a brand-new library.
+    @Query("SELECT * FROM game WHERE id NOT IN (:playedIds) ORDER BY RANDOM() LIMIT :limit")
+    fun getUnplayed(playedIds: List<Long>, limit: Int): Flow<List<GameEntity>>
+
     @Insert
     suspend fun insert(game: GameEntity): Long
 

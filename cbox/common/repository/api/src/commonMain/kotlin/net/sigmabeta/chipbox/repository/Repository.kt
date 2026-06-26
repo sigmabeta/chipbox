@@ -113,6 +113,18 @@ interface Repository {
      */
     fun getRecentlyAddedGames(limit: Int, withinMs: Long): Flow<Data<List<Game>>>
 
+    /**
+     * A surgical pick for the Home "New to You" row: a random sample of up to [limit] games whose id
+     * is NOT in [playedGameIds] (the set of games the user has played, sourced from the playback
+     * history database — the two live in separate databases, so the caller supplies the exclusion
+     * set). An empty [playedGameIds] means nothing has been played yet, so every game is eligible.
+     *
+     * Backed by a single bounded query — Home rows must render fast, so implementations MUST NOT
+     * materialize the whole catalog and filter in memory. Re-emits when the library changes. Emits
+     * [Data.Empty] when there are no unplayed games.
+     */
+    fun getUnplayedGames(playedGameIds: List<Long>, limit: Int): Flow<Data<List<Game>>>
+
     fun getAvailablePlatforms(): Flow<Data<List<Platform>>>
 
     // Individual models

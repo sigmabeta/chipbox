@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.features.home.modules.RecentlyAddedGamesHomeModule
 import net.sigmabeta.chipbox.features.home.modules.RecentlyPlayedGamesHomeModule
 import net.sigmabeta.chipbox.features.home.modules.RngTakeTheWheelHomeModule
 import net.sigmabeta.chipbox.features.home.modules.ScanStatusHomeModule
+import net.sigmabeta.chipbox.features.home.modules.UnplayedGamesHomeModule
 import net.sigmabeta.sage.di.AppScope
 
 @ContributesTo(AppScope::class)
@@ -49,6 +50,10 @@ interface HomeModuleBindings {
     @Binds
     @IntoSet
     fun bindMostPlayedArtistsModule(impl: MostPlayedArtistsHomeModule): HomeModule
+
+    @Binds
+    @IntoSet
+    fun bindUnplayedGamesModule(impl: UnplayedGamesHomeModule): HomeModule
 
     @Binds
     @IntoSet

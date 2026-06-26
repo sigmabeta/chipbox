@@ -72,6 +72,10 @@ class LocalStoragePlaybackHistoryRepository(
     override fun mostPlayedArtists(limit: Int): Flow<List<PlayCount>> =
         mostPlayed(limit) { it.artistIds }
 
+    override fun playedGameIds(): Flow<List<Long>> = plays.map { log ->
+        log.mapNotNull { it.gameId.takeIf { id -> id != 0L } }.distinct()
+    }
+
     override suspend fun clearHistory() {
         persist(emptyList())
         plays.value = emptyList()

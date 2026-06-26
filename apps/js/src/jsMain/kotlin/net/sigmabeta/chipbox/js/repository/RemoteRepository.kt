@@ -158,6 +158,15 @@ class RemoteRepository(
         }.body()
     }
 
+    // The played-game ids come from the browser's local history; the server excludes them, picks at
+    // random, and applies the LIMIT in SQL, so the "New to You" row stays surgical over HTTP.
+    override fun getUnplayedGames(playedGameIds: List<Long>, limit: Int): Flow<Data<List<Game>>> = listFlow {
+        client.get("$baseUrl/api/games/unplayed") {
+            parameter("limit", limit)
+            parameter("exclude", playedGameIds.joinToString(","))
+        }.body()
+    }
+
     // ---------- single ----------
 
     override fun getGame(id: Long, withTracks: Boolean, withArtists: Boolean): Flow<Data<Game?>> =

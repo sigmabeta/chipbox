@@ -27,6 +27,13 @@ interface PlaybackHistoryRepository {
     /** Most-played artists (playCount > 1), highest count first, capped at [limit]. */
     fun mostPlayedArtists(limit: Int): Flow<List<PlayCount>>
 
+    /**
+     * The ids of every game with at least one recorded play. Drives the Home "New to You" row, which
+     * surfaces games NOT in this set. Re-emits as plays are recorded, so a freshly-played game drops
+     * out of the unplayed set.
+     */
+    fun playedGameIds(): Flow<List<Long>>
+
     /** Wipe all playback history — every play row and every per-song/game/artist counter. */
     suspend fun clearHistory()
 }

@@ -7,6 +7,7 @@
     <string name="home_section_most_played_songs">Most played songs</string>
     <string name="home_section_most_played_games">Most played games</string>
     <string name="home_section_most_played_artists">Most played artists</string>
+    <string name="home_section_new_to_you">New to You</string>
     <string name="home_section_rng">RNG Take the Wheel</string>
     <string name="home_rng_random_song">Random Song</string>
     <string name="home_rng_random_game">Random Game</string>

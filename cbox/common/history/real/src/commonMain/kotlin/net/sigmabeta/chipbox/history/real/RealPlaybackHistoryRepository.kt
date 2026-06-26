@@ -55,6 +55,8 @@ class RealPlaybackHistoryRepository(
 
     override fun mostPlayedArtists(limit: Int): Flow<List<PlayCount>> = artistPlayCountDao.getMostPlayed(limit)
 
+    override fun playedGameIds(): Flow<List<Long>> = gamePlayCountDao.getPlayedGameIds()
+
     override suspend fun clearHistory() {
         songPlayDao.nukeTable()
         songPlayCountDao.nukeTable()
