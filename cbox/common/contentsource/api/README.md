@@ -15,8 +15,9 @@ or anywhere else.
 | File | What it is |
 | --- | --- |
 | `ContentSource.kt` | Base interface: a `sourceId` and `suspend openBytes(identifier): ByteArray?`. |
-| `LibrarySource.kt` | A `ContentSource` that also exposes a `locations` `StateFlow`, `scanFiles()` walk, and add/remove-location. |
+| `LibrarySource.kt` | A `ContentSource` that also exposes a `locations` `StateFlow`, a `scanFolders()` walk, and add/remove-location. |
 | `LibraryFileInfo.kt` | One discovered file: `identifier`, `parentFolderId` (the scanner's grouping key), name/ext/mime, size, and last-modified ms (size+mtime feed the unchanged-folder signature). |
+| `LibraryFolderInfo.kt` | One discovered folder + all its direct files. `scanFolders()` streams these so the scanner can read each folder (its complete file set) while later folders are still being discovered. |
 | `LibraryLocationInfo.kt` | One user-added location: `identifier` (same shape as a file id) + optional display name. |
 | `ContentSourceRegistry.kt` | Indexes a `Set<ContentSource>` by `sourceId`; `get(sourceId)` resolves the source that owns a track. |
 

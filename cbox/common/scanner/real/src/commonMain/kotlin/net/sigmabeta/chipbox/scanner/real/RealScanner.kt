@@ -2,10 +2,11 @@ package net.sigmabeta.chipbox.scanner.real
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import net.sigmabeta.chipbox.contentsource.LibraryFileInfo
@@ -102,11 +103,6 @@ class RealScanner(
                 locations.joinToString { it.identifier }
         )
 
-        val files = traceAsync(TRACE_SCAN_FILES, nextCookie()) {
-            librarySource.scanFiles().toList()
-        }
-        val groups = files.groupBy { it.parentFolderId }
-        hatchet.d("Found ${files.size} file(s) across ${groups.size} folder(s).")
         // Pre-scan snapshot of stored folder signatures, so a folder whose files are unchanged
         // (same paths, sizes, mtimes) is skipped without any reads or parsing.
         val snapshot = repository.folderSnapshots()
@@ -116,16 +112,24 @@ class RealScanner(
         val gamesFound = AtomicInt(0)
         val tracksFound = AtomicInt(0)
         val tracksFailed = AtomicInt(0)
-        // Folders are independent (each scanGroup has its own metadata + tag caches), and most
-        // of a scan is spent blocked on SAF binder IPC for file reads. Process several folders
-        // at once so those waits overlap and parsing spreads across cores — bounded so we don't
-        // swamp the disk dispatcher or hold too many file buffers in memory at once.
+        val foldersFound = AtomicInt(0)
+        // Folders are independent (each scanGroup has its own metadata + tag caches), and most of a
+        // scan is spent blocked on file-read IO. Discovery (the directory walk, one stat per file)
+        // runs *concurrently* with reading: as each folder is discovered it's dispatched to a reader,
+        // so the walk's latency overlaps the reads instead of gating them behind a separate up-front
+        // discovery pass. The semaphore bounds how many folders read at once — without it the walk,
+        // which is far faster than reading, would launch every folder's reader before the first
+        // finished and swamp the disk / hold too many file buffers at once.
         val semaphore = Semaphore(scanParallelism)
         val total = coroutineScope {
-            groups.map { (folderId, group) ->
-                async {
-                    semaphore.withPermit { scanFolder(folderId, group, snapshot, seenFolderKeys) }
-                        .also { progress ->
+            val readers = mutableListOf<Deferred<Progress>>()
+            traceAsync(TRACE_SCAN_FILES, nextCookie()) {
+                librarySource.scanFolders().collect { folder ->
+                    foldersFound.fetchAndAdd(1)
+                    readers += async {
+                        semaphore.withPermit {
+                            scanFolder(folder.folderId, folder.files, snapshot, seenFolderKeys)
+                        }.also { progress ->
                             emitState(
                                 ScannerState.Scanning(
                                     scanStart.elapsedNow().inWholeSeconds.toInt(),
@@ -135,9 +139,12 @@ class RealScanner(
                                 )
                             )
                         }
+                    }
                 }
-            }.awaitAll().fold(Progress.EMPTY, Progress::plus)
+            }
+            readers.awaitAll().fold(Progress.EMPTY, Progress::plus)
         }
+        hatchet.d("Scanned ${foldersFound.load()} folder(s).")
         // Reconcile deletions: drop games whose folder yielded nothing this scan (cascading
         // their tracks/joins) and any artists left without tracks. Each removed game becomes an event.
         val removed = traceAsync(TRACE_PRUNE, nextCookie()) { repository.pruneGames(seenFolderKeys.load()) }

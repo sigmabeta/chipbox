@@ -15,7 +15,7 @@ SAF, so the two targets drive the same walker (and the same shared `RealScanner`
 
 | File | What it is |
 | --- | --- |
-| `LocalFileContentSource.kt` | The `LibrarySource`. `scanFiles()` is a `walkTopDown()` flow of `LibraryFileInfo` (grouped by parent dir); `openBytes()` reads a file by path; add/remove-location validate directories and persist the list to `locationsFile`. Also `addLocation(File)`. Internal `SOURCE_ID = "file"`. |
+| `LocalFileContentSource.kt` | The `LibrarySource`. `scanFolders()` is a depth-first walk that emits each directory as a `LibraryFolderInfo` (the dir + its direct files) the moment it's enumerated, so reading overlaps discovery; `openBytes()` reads a file by path; add/remove-location validate directories and persist the list to `locationsFile`. Also `addLocation(File)`. Internal `SOURCE_ID = "file"`. |
 
 ## Why depend on this module
 
@@ -31,7 +31,7 @@ JVM, `context.filesDir` on Android). Elsewhere depend on
 val source = LocalFileContentSource(locationsFile = File(workDir, "library-locations.txt"))
 source.addLocation(File("/storage/emulated/0/Music"))
 
-source.scanFiles().collect { file -> /* feed RealScanner */ }
+source.scanFolders().collect { folder -> /* feed RealScanner — read while later folders discover */ }
 val bytes = source.openBytes("/storage/emulated/0/Music/game/track.spc")
 ```
 
