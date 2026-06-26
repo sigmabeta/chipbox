@@ -64,7 +64,14 @@ private fun Route.artistRoutes(repository: Repository) {
         get {
             val withTracks = call.boolParam("withTracks")
             val withGames = call.boolParam("withGames")
-            call.respond(repository.getAllArtists(withTracks, withGames).firstSettled().map { it.withPublicUrls() })
+            // ?ids=1,2,3 resolves just those artists server-side (most-played row); otherwise list all.
+            val ids = call.idsParam("ids")
+            val artists = if (ids != null) {
+                repository.getArtistsByIds(ids, withTracks, withGames)
+            } else {
+                repository.getAllArtists(withTracks, withGames)
+            }
+            call.respond(artists.firstSettled().map { it.withPublicUrls() })
         }
         get("/{id}") {
             val id = call.longPathParam("id") ?: return@get call.notFound()
@@ -88,7 +95,14 @@ private fun Route.gameRoutes(repository: Repository) {
         get {
             val withTracks = call.boolParam("withTracks")
             val withArtists = call.boolParam("withArtists")
-            call.respond(repository.getAllGames(withTracks, withArtists).firstSettled().map { it.withPublicUrls() })
+            // ?ids=1,2,3 resolves just those games server-side (most-played row); otherwise list all.
+            val ids = call.idsParam("ids")
+            val games = if (ids != null) {
+                repository.getGamesByIds(ids, withTracks, withArtists)
+            } else {
+                repository.getAllGames(withTracks, withArtists)
+            }
+            call.respond(games.firstSettled().map { it.withPublicUrls() })
         }
         get("/recently-added") {
             val limit = call.intParam("limit") ?: DEFAULT_RECENTLY_ADDED_LIMIT
@@ -125,13 +139,17 @@ private fun Route.trackRoutes(repository: Repository) {
         get {
             val withGame = call.boolParam("withGame")
             val withArtists = call.boolParam("withArtists")
-            val limit = call.intParam("limit")
-            val offset = call.intParam("offset") ?: 0
-            call.respond(
-                repository.getAllTracks(withGame, withArtists, limit, offset)
-                    .firstSettled()
-                    .map { it.withPublicUrls() }
-            )
+            // ?ids=1,2,3 resolves just those tracks server-side (recently/most-played rows); the
+            // limit/offset paging applies only to the list-all path.
+            val ids = call.idsParam("ids")
+            val tracks = if (ids != null) {
+                repository.getTracksByIds(ids, withGame, withArtists).firstSettled()
+            } else {
+                val limit = call.intParam("limit")
+                val offset = call.intParam("offset") ?: 0
+                repository.getAllTracks(withGame, withArtists, limit, offset).firstSettled()
+            }
+            call.respond(tracks.map { it.withPublicUrls() })
         }
         get("/{id}") {
             val id = call.longPathParam("id") ?: return@get call.notFound()
@@ -208,6 +226,14 @@ private fun io.ktor.server.application.ApplicationCall.intParam(name: String): I
 
 private fun io.ktor.server.application.ApplicationCall.longParam(name: String): Long? =
     request.queryParameters[name]?.toLongOrNull()
+
+// Parse a comma-separated id list (e.g. `?ids=1,2,3`). Null when absent or empty, so callers fall
+// back to the list-all path.
+private fun io.ktor.server.application.ApplicationCall.idsParam(name: String): List<Long>? =
+    request.queryParameters[name]
+        ?.split(',')
+        ?.mapNotNull { it.trim().toLongOrNull() }
+        ?.takeIf { it.isNotEmpty() }
 
 private fun io.ktor.server.application.ApplicationCall.platformPathParam(): Platform? =
     parameters["platform"]?.let { name -> runCatching { Platform.valueOf(name) }.getOrNull() }
