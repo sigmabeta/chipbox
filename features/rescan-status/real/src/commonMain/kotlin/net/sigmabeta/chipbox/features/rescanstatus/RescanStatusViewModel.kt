@@ -46,6 +46,11 @@ class RescanStatusViewModel @Inject constructor(
     private val pending = mutableListOf<ScanEventItem>()
     private var nextEventId = 0L
 
+    // The folder currently being walked, surfaced live under Progress above [currentFile]. Driven
+    // only by the FolderScanned heartbeat — never the game-change events — and kept out of the
+    // batched Changes list, like [currentFile].
+    private var currentFolder: String? = null
+
     // The file currently being read, surfaced live under Progress. Driven only by the high-frequency
     // FileScanned heartbeat — never by the game-change events — and kept separate from the batched
     // [rendered]/[pending] Changes list so it can refresh on the faster tick.
@@ -62,8 +67,9 @@ class RescanStatusViewModel @Inject constructor(
         viewModelScope.launch {
             scanner.scanEvents().collect { event ->
                 when (event) {
-                    // High-frequency heartbeat: drives the live Progress row only, never the
-                    // Changes list.
+                    // Heartbeats: drive the live Progress rows only, never the Changes list.
+                    is ScannerEvent.FolderScanned -> currentFolder = event.name
+
                     is ScannerEvent.FileScanned -> currentFile = event.name
 
                     else -> event.toItemOrNull()?.let(pending::add)
@@ -93,8 +99,11 @@ class RescanStatusViewModel @Inject constructor(
         when (state) {
             is ScannerState.Scanning -> {
                 // Entering Scanning from any settled phase means a fresh run — drop the previous
-                // run's trailing file so Progress doesn't show a stale name before the first read.
-                if (phase != ScanPhase.SCANNING) currentFile = null
+                // run's trailing folder/file so Progress doesn't show a stale name before the first read.
+                if (phase != ScanPhase.SCANNING) {
+                    currentFolder = null
+                    currentFile = null
+                }
                 phase = ScanPhase.SCANNING
                 timeInSeconds = state.timeInSeconds
                 gamesFound = state.gamesFound
@@ -144,6 +153,7 @@ class RescanStatusViewModel @Inject constructor(
                 tracksFound = tracksFound,
                 tracksFailed = tracksFailed,
                 failedPath = failedPath,
+                currentFolder = currentFolder,
                 currentFile = currentFile,
                 events = eventsSnapshot,
             )
@@ -160,8 +170,8 @@ class RescanStatusViewModel @Inject constructor(
         is ScannerEvent.GameRemoved ->
             ScanEventItem(nextEventId++, name, ScanEventKind.REMOVED, 0, gameId = null, imageUrl = null)
 
-        // Not a meaningful change — handled separately as the live Progress heartbeat.
-        is ScannerEvent.FileScanned, ScannerEvent.Unknown -> null
+        // Not meaningful changes — handled separately as the live Progress heartbeats.
+        is ScannerEvent.FolderScanned, is ScannerEvent.FileScanned, ScannerEvent.Unknown -> null
     }
 
     override fun handleAction(action: SageAction) {

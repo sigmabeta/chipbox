@@ -111,6 +111,33 @@ class ScanStatusHomeModuleTest {
         assertTrue(lces.lastCard().rows().filterIsInstance<ImageNameCaptionListModel>().isEmpty())
     }
 
+    @Test
+    fun `scanning surfaces the current folder above the file`() = moduleTest { scanner, lces ->
+        scanner.pushState(ScannerState.Scanning(timeInSeconds = 1))
+        scanner.pushEvent(ScannerEvent.FolderScanned(name = "Sonic the Hedgehog"))
+        scanner.pushEvent(ScannerEvent.FileScanned(name = "robotnik.spc"))
+        advanceTimeBy(SAMPLE_MS * 2)
+        runCurrent()
+
+        val card = lces.lastCard()
+        assertEquals("Sonic the Hedgehog", card.currentFolder)
+        assertEquals("robotnik.spc", card.currentFile)
+    }
+
+    @Test
+    fun `complete drops the current folder`() = moduleTest { scanner, lces ->
+        scanner.pushState(ScannerState.Scanning(timeInSeconds = 1))
+        scanner.pushEvent(ScannerEvent.FolderScanned(name = "Sonic the Hedgehog"))
+        advanceTimeBy(SAMPLE_MS * 2)
+        runCurrent()
+
+        scanner.pushState(ScannerState.Complete(timeInSeconds = 2, gamesFound = 1, tracksFound = 1, tracksFailed = 0))
+        advanceTimeBy(SAMPLE_MS * 2)
+        runCurrent()
+
+        assertNull(lces.lastCard().currentFolder, "The folder marquee is scanning-only")
+    }
+
     // ---- helpers ----
 
     private fun moduleTest(

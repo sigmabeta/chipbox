@@ -71,7 +71,8 @@ class ScanStatusHomeModule @Inject constructor(
         val card = ScanStatusCardListModel(
             status = status,
             statusLabel = statusLabel,
-            // The file marquee is only meaningful while actively scanning.
+            // The folder/file marquees are only meaningful while actively scanning.
+            currentFolder = acc.currentFolder.takeIf { status == ScanCardStatus.SCANNING },
             currentFile = acc.currentFile.takeIf { status == ScanCardStatus.SCANNING },
             detail = detail(acc, status),
             // A settled scan can be dismissed by tapping the card; an in-progress one can't.
@@ -182,6 +183,7 @@ private class Accumulator {
     var tracksFound = 0
     var tracksFailed = 0
     var failedPath: String? = null
+    var currentFolder: String? = null
     var currentFile: String? = null
     val changes = mutableListOf<Change>()
 
@@ -229,6 +231,8 @@ private class Accumulator {
 
     private fun apply(event: ScannerEvent) {
         when (event) {
+            is ScannerEvent.FolderScanned -> currentFolder = event.name
+
             is ScannerEvent.FileScanned -> currentFile = event.name
 
             is ScannerEvent.GameFoundEvent ->
@@ -245,6 +249,7 @@ private class Accumulator {
     }
 
     private fun reset() {
+        currentFolder = null
         currentFile = null
         changes.clear()
     }

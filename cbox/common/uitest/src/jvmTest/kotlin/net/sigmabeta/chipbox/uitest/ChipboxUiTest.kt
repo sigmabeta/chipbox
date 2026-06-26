@@ -313,6 +313,10 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     /** Drive the fake scanner into the "scanning" state — the scan-status Home card reacts to it. */
     fun beginScan() = runBlocking { graph.countingScanner.pushState(ScannerState.Scanning()) }
 
+    /** Emit a per-folder scan heartbeat — surfaces as the card's "current folder" line. */
+    fun scanReadingFolder(name: String) =
+        runBlocking { graph.countingScanner.pushEvent(ScannerEvent.FolderScanned(name)) }
+
     /** Emit a per-file scan heartbeat — surfaces as the card's "currently reading" line. */
     fun scanReadingFile(name: String) =
         runBlocking { graph.countingScanner.pushEvent(ScannerEvent.FileScanned(name)) }

@@ -43,6 +43,8 @@ private fun scanningState() = RescanStatusState(
     gamesFound = 3,
     tracksFound = 42,
     tracksFailed = 1,
+    currentFolder = "Mega Man 2",
+    currentFile = "02 - title.nsf",
     // Chronological (oldest first); the screen reverses for display, so Mega Man 2 shows on top.
     events = listOf(
         ScanEventItem(1L, "Final Fantasy VI", ScanEventKind.REMOVED, 0, gameId = null, imageUrl = null),

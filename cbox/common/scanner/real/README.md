@@ -14,7 +14,7 @@ interfaces, so the Android and JVM targets share this same code.
 
 | File | What it is |
 | --- | --- |
-| `RealScanner.kt` | The scanner. Groups discovered files by parent folder, skips unchanged folders via a SHA-256 folder signature, parses tracks in bounded parallel, emits live `Scanning` progress + per-file/per-game events, and prunes games whose folders vanished. |
+| `RealScanner.kt` | The scanner. Groups discovered files by parent folder, skips unchanged folders via a SHA-256 folder signature, parses tracks in bounded parallel, emits live `Scanning` progress + per-folder/per-file/per-game events, and prunes games whose folders vanished. |
 | `VgmstreamPlatform.kt` | `platformForVgmstreamExtension` — best-effort `Platform` for vgmstream-decoded files (maps unambiguous PSX extensions, else `OTHER`); metadata only. |
 | `AvailableProcessors.kt` | `expect fun availableProcessors()` sizing scan parallelism — JVM/Android read `Runtime`; the enforcement-only JS actual returns 1. |
 
