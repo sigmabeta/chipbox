@@ -10,6 +10,13 @@ import net.sigmabeta.sage.components.ListModel
  * in parallel and patches the corresponding slot in [HomeState]; modules render independently
  * as their data arrives. Bind concrete implementations into `Set<HomeModule>` via Metro
  * `@Binds @IntoSet` so adding a row is a single-file change.
+ *
+ * **Keep [state] cheap — fast loading is a hard requirement.** Home collects every module's flow
+ * on open, so a row must not pull the whole catalog and filter/shuffle in memory (e.g.
+ * `repository.getAllGames()` then `.filter`/`.shuffled`). Push the filter, limit, and any random
+ * pick down into a bounded, indexed repository query; if one doesn't exist yet, add it to
+ * `Repository` rather than post-filtering a list-everything call.
+ * `RecentlyAddedGamesHomeModule` over `Repository.getRecentlyAddedGames` is the reference example.
  */
 interface HomeModule {
     /** Stable identity used to key the section's state slot. */

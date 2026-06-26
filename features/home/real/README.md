@@ -77,6 +77,14 @@ class FavoritesHomeModule @Inject constructor(
 fun bindFavoritesModule(impl: FavoritesHomeModule): HomeModule
 ```
 
+**Keep `state()` cheap — fast loading is a hard requirement.** Home collects every
+module's flow on open, so a row must render quickly. Never load the whole catalog
+and filter/shuffle in memory (e.g. `getAllGames()` then `.filter`/`.shuffled`); push
+the filter, limit, and any random pick into a bounded, indexed repository query. If
+the surgical query you need doesn't exist, add it to `Repository` (and all its impls)
+rather than post-filtering a list-everything call — see `RecentlyAddedGamesHomeModule`
+over `Repository.getRecentlyAddedGames` for the pattern.
+
 ```kotlin
 // Rendering the screen (done by ChipboxScreens):
 @Composable
