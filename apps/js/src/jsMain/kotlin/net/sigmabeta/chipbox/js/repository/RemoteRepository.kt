@@ -91,35 +91,33 @@ class RemoteRepository(
             }.body()
         }
 
-    // No server-side id filter yet, so fetch and filter client-side. Non-regressive: the callers
-    // that now use this previously fetched the full track list here anyway.
+    // Server-side id filter (`?ids=…`) so only the requested rows come over the wire, not the
+    // whole list.
     override fun getTracksByIds(ids: List<Long>, withGame: Boolean, withArtists: Boolean): Flow<Data<List<Track>>> =
         listFlow {
-            val idSet = ids.toSet()
             client.get("$baseUrl/api/tracks") {
+                parameter("ids", ids.joinToString(","))
                 parameter("withGame", withGame)
                 parameter("withArtists", withArtists)
-            }.body<List<Track>>().filter { it.id in idSet }
+            }.body()
         }
 
-    // No server-side id filter yet, so fetch and filter client-side — same compromise as
-    // [getTracksByIds] above (the callers already fetched the full list here before).
     override fun getGamesByIds(ids: List<Long>, withTracks: Boolean, withArtists: Boolean): Flow<Data<List<Game>>> =
         listFlow {
-            val idSet = ids.toSet()
             client.get("$baseUrl/api/games") {
+                parameter("ids", ids.joinToString(","))
                 parameter("withTracks", withTracks)
                 parameter("withArtists", withArtists)
-            }.body<List<Game>>().filter { it.id in idSet }
+            }.body()
         }
 
     override fun getArtistsByIds(ids: List<Long>, withTracks: Boolean, withGames: Boolean): Flow<Data<List<Artist>>> =
         listFlow {
-            val idSet = ids.toSet()
             client.get("$baseUrl/api/artists") {
+                parameter("ids", ids.joinToString(","))
                 parameter("withTracks", withTracks)
                 parameter("withGames", withGames)
-            }.body<List<Artist>>().filter { it.id in idSet }
+            }.body()
         }
 
     override suspend fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> =
