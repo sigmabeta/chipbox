@@ -168,6 +168,11 @@ class DatabaseRepository(
         { list -> list.suspendMap { it.toGame() } }
     )
 
+    override fun getRecentlyAddedGames(limit: Int, withinMs: Long) = setupFlow(
+        { gameDao.getRecentlyAdded(currentTimeMillis() - withinMs, limit) },
+        { list -> list.suspendMap { it.toGame() } }
+    )
+
     override fun getAvailablePlatforms() = setupFlow(
         { trackDao.getDistinctPlatforms() },
         { list -> list.map { Platform.valueOf(it) } }
@@ -220,6 +225,7 @@ class DatabaseRepository(
         }
 
     private suspend fun insertNewGame(rawGame: RawGame): Long {
+        val now = currentTimeMillis()
         val gameId = traceAsync(TRACE_INSERT_GAME, nextCookie()) {
             gameDao.insert(
                 GameEntity(
@@ -231,6 +237,8 @@ class DatabaseRepository(
                     releaseDate = rawGame.releaseDate,
                     genre = rawGame.genre,
                     titleJp = rawGame.titleJp,
+                    dateAdded = now,
+                    dateLastUpdated = now,
                 )
             )
         }
@@ -239,7 +247,7 @@ class DatabaseRepository(
         // One batched insert for all the game's tracks (a single transaction / commit) instead of a
         // row-at-a-time insert; the returned ids line up with rawGame.tracks by index.
         val trackIds = traceAsync(TRACE_INSERT_TRACKS, nextCookie()) {
-            trackDao.insertAll(rawGame.tracks.map { it.toTrackEntity(gameId) })
+            trackDao.insertAll(rawGame.tracks.map { it.toTrackEntity(gameId, now) })
         }
         val idByTrackKey = rawGame.tracks.zip(trackIds).associate { (track, id) -> track.trackKey() to id }
         linkArtists(gameId, rawGame, idByTrackKey, artistsByName)
@@ -249,25 +257,14 @@ class DatabaseRepository(
 
     private suspend fun updateExistingGame(existing: GameEntity, rawGame: RawGame): GameWriteResult {
         val gameId = existing.id
-        // We only reach the update path because the folder's signature changed, so refresh the row
-        // (title/photo may have changed) and store the new signature for next time.
+        val now = currentTimeMillis()
+        // We only reach the update path because the folder's signature changed.
         val metadataChanged = existing.title != rawGame.title ||
             existing.photoUrl != rawGame.photoUrl ||
             existing.copyright != rawGame.copyright ||
             existing.releaseDate != rawGame.releaseDate ||
             existing.genre != rawGame.genre ||
             existing.titleJp != rawGame.titleJp
-        gameDao.update(
-            existing.copy(
-                title = rawGame.title,
-                photoUrl = rawGame.photoUrl,
-                folderSignature = rawGame.folderSignature,
-                copyright = rawGame.copyright,
-                releaseDate = rawGame.releaseDate,
-                genre = rawGame.genre,
-                titleJp = rawGame.titleJp,
-            )
-        )
 
         val artistsByName = resolveGameArtists(rawGame)
 
@@ -289,8 +286,14 @@ class DatabaseRepository(
             if (current == null) {
                 toInsert += raw
             } else {
-                val updated = raw.toTrackEntity(gameId).copy(id = current.id)
-                if (updated != current) toUpdate += updated
+                // Carry over the existing row's id and both timestamps so the equality check below
+                // compares content only; if the content moved, bump date_last_updated to now.
+                val candidate = raw.toTrackEntity(gameId, now).copy(
+                    id = current.id,
+                    dateAdded = current.dateAdded,
+                    dateLastUpdated = current.dateLastUpdated,
+                )
+                if (candidate != current) toUpdate += candidate.copy(dateLastUpdated = now)
                 idByTrackKey[raw.trackKey()] = current.id
             }
         }
@@ -299,7 +302,7 @@ class DatabaseRepository(
         }
         if (toInsert.isNotEmpty()) {
             val ids = traceAsync(TRACE_INSERT_TRACKS, nextCookie()) {
-                trackDao.insertAll(toInsert.map { it.toTrackEntity(gameId) })
+                trackDao.insertAll(toInsert.map { it.toTrackEntity(gameId, now) })
             }
             toInsert.forEachIndexed { index, raw -> idByTrackKey[raw.trackKey()] = ids[index] }
         }
@@ -315,6 +318,22 @@ class DatabaseRepository(
             removedIds.isNotEmpty() ||
             toUpdate.isNotEmpty() ||
             toInsert.isNotEmpty()
+
+        // Refresh the row (title/photo may have changed) and store the new signature for next time.
+        // date_added is preserved; date_last_updated only advances when something actually changed.
+        gameDao.update(
+            existing.copy(
+                title = rawGame.title,
+                photoUrl = rawGame.photoUrl,
+                folderSignature = rawGame.folderSignature,
+                copyright = rawGame.copyright,
+                releaseDate = rawGame.releaseDate,
+                genre = rawGame.genre,
+                titleJp = rawGame.titleJp,
+                dateLastUpdated = if (changed) now else existing.dateLastUpdated,
+            )
+        )
+
         invalidateCaches()
         return if (changed) GameWriteResult.UPDATED else GameWriteResult.UNCHANGED
     }
@@ -383,6 +402,7 @@ class DatabaseRepository(
         releaseDate,
         genre,
         titleJp,
+        dateAdded,
     )
 
     private suspend fun TrackEntity.toTrack(
@@ -442,7 +462,9 @@ class DatabaseRepository(
 
     private fun TrackEntity.trackKey(): Pair<String, Int> = path to trackNumber
 
-    private fun RawTrack.toTrackEntity(gameId: Long): TrackEntity = TrackEntity(
+    // [now] seeds both timestamps for a freshly built row; the update path overwrites date_added (and,
+    // when nothing changed, date_last_updated) with the existing row's values before persisting.
+    private fun RawTrack.toTrackEntity(gameId: Long, now: Long): TrackEntity = TrackEntity(
         title,
         path,
         source,
@@ -458,6 +480,8 @@ class DatabaseRepository(
         dumpDate,
         titleJp,
         artistJp,
+        dateAdded = now,
+        dateLastUpdated = now,
     )
 
     private suspend fun getGameById(id: Long): Game = gameByIdCache.getOrLoad(id) {

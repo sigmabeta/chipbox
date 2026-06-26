@@ -36,10 +36,12 @@ import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
     // v9: games gain folder_signature for skip-unchanged-folder rescans.
     // v10: tracks gain comment/dumper/dump_date/title_jp/artist_jp; games gain
     //      copyright/release_date/genre/title_jp — optional descriptive metadata from file tags.
+    // v11: tracks and games gain date_added/date_last_updated (epoch millis) recorded by the scanner;
+    //      games gain a date_added index for the "recently added" Home row's range query.
     // Upgrades are handled by fallbackToDestructiveMigration (the library is a derived cache and is
     // rebuilt on the next scan), which also clears any duplicate rows left by older insert-only
     // rescans.
-    version = 10
+    version = 11
 )
 @ConstructedBy(ChipboxDatabaseConstructor::class)
 @Suppress("TooManyFunctions")

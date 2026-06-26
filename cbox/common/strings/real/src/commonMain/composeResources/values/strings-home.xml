@@ -2,6 +2,7 @@
 <resources>
     <string name="home_section_now_playing">Now playing</string>
     <string name="home_section_game_of_the_day">Game of the day</string>
+    <string name="home_section_recently_added">Recently added</string>
     <string name="home_section_recently_played">Recently played</string>
     <string name="home_section_most_played_songs">Most played songs</string>
     <string name="home_section_most_played_games">Most played games</string>

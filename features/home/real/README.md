@@ -33,7 +33,9 @@ This is a large module; files are grouped by role.
 - **Card modules** — `modules/*HomeModule.kt`, one `HomeModule` per Home row,
   ordered by `priority`: `NowPlayingHomeModule` (0, headerless hero card),
   `ScanStatusHomeModule` (50, live scan-progress card off the `Scanner` flows),
-  `GameOfTheDayHomeModule` (100), `RecentlyPlayedGamesHomeModule` (200),
+  `GameOfTheDayHomeModule` (100), `RecentlyAddedGamesHomeModule` (150, a random
+  sample of games added in the last week via `Repository.getRecentlyAddedGames`),
+  `RecentlyPlayedGamesHomeModule` (200),
   `MostPlayedSongsHomeModule` (300), `MostPlayedGamesHomeModule`,
   `MostPlayedArtistsHomeModule` (500), and `RngTakeTheWheelHomeModule` (1000,
   the random-pick tiles).
@@ -42,6 +44,7 @@ This is a large module; files are grouped by role.
   and `@Binds @IntoSet` each concrete module into it.
 - **Tests** (`commonTest`) — `HomeViewModelTest.kt`,
   `modules/RngTakeTheWheelHomeModuleTest.kt`, `modules/ScanStatusHomeModuleTest.kt`,
+  `modules/RecentlyAddedGamesHomeModuleTest.kt`,
   driven over the repository/history/scanner/director fakes.
 
 ## Why depend on this module

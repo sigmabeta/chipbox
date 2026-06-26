@@ -86,6 +86,16 @@ interface Repository {
 
     fun getGamesForPlatform(platform: Platform): Flow<Data<List<Game>>>
 
+    /**
+     * A surgical pick for the Home "recently added" row: a random sample of up to [limit] games
+     * whose `dateAdded` falls within the last [withinMs] (relative to now), newest-window only.
+     *
+     * Backed by a single bounded, indexed query — Home rows must render fast, so implementations
+     * MUST NOT materialize the whole catalog and filter in memory. Re-emits when the library
+     * changes. Emits [Data.Empty] when nothing falls inside the window.
+     */
+    fun getRecentlyAddedGames(limit: Int, withinMs: Long): Flow<Data<List<Game>>>
+
     fun getAvailablePlatforms(): Flow<Data<List<Platform>>>
 
     // Individual models

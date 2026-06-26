@@ -43,5 +43,9 @@ data class TrackEntity(
     @ColumnInfo(name = "dump_date") val dumpDate: String? = null,
     @ColumnInfo(name = "title_jp") val titleJp: String? = null,
     @ColumnInfo(name = "artist_jp") val artistJp: String? = null,
+    // Wall-clock millis (epoch). date_added is set once when the row is first inserted and never
+    // changed; date_last_updated is bumped whenever a rescan rewrites the row's content.
+    @ColumnInfo(name = "date_added") val dateAdded: Long = 0,
+    @ColumnInfo(name = "date_last_updated") val dateLastUpdated: Long = 0,
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
 )

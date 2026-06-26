@@ -140,6 +140,10 @@ class FakeDatabase(private val random: Random = Random(0)) {
             val gameIds = tracks.values.filter { it.platform == platformName }.map { it.gameId }.toSet()
             games.values.filter { it.id in gameIds }.sortedBy { it.title.lowercase() }
         }
+        override fun getRecentlyAdded(threshold: Long, limit: Int): Flow<List<GameEntity>> = observe {
+            // Mirror SQLite: WHERE date_added >= threshold ORDER BY RANDOM() LIMIT limit.
+            games.values.filter { it.dateAdded >= threshold }.shuffled(random).take(limit)
+        }
         override fun searchGamesByTitle(title: String): Flow<List<GameEntity>> = observe {
             games.values.filter { sqlLike(title, it.title) }.sortedBy { it.title.lowercase() }
         }

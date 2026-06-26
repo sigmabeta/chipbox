@@ -35,6 +35,10 @@ internal fun Route.libraryRoutes(repository: Repository) {
     }
 }
 
+// Fallbacks for /api/games/recently-added when the client omits the params (it normally sends both).
+private const val DEFAULT_RECENTLY_ADDED_LIMIT = 10
+private const val DEFAULT_RECENTLY_ADDED_WINDOW_MS = 7L * 24 * 60 * 60 * 1000
+
 private fun Route.randomRoutes(repository: Repository) {
     route("/random") {
         get("/track") {
@@ -85,6 +89,13 @@ private fun Route.gameRoutes(repository: Repository) {
             val withTracks = call.boolParam("withTracks")
             val withArtists = call.boolParam("withArtists")
             call.respond(repository.getAllGames(withTracks, withArtists).firstSettled().map { it.withPublicUrls() })
+        }
+        get("/recently-added") {
+            val limit = call.intParam("limit") ?: DEFAULT_RECENTLY_ADDED_LIMIT
+            val withinMs = call.longParam("withinMs") ?: DEFAULT_RECENTLY_ADDED_WINDOW_MS
+            call.respond(
+                repository.getRecentlyAddedGames(limit, withinMs).firstSettled().map { it.withPublicUrls() }
+            )
         }
         get("/{id}") {
             val id = call.longPathParam("id") ?: return@get call.notFound()
@@ -188,6 +199,9 @@ private fun io.ktor.server.application.ApplicationCall.queryParam(name: String):
 
 private fun io.ktor.server.application.ApplicationCall.intParam(name: String): Int? =
     request.queryParameters[name]?.toIntOrNull()
+
+private fun io.ktor.server.application.ApplicationCall.longParam(name: String): Long? =
+    request.queryParameters[name]?.toLongOrNull()
 
 private fun io.ktor.server.application.ApplicationCall.platformPathParam(): Platform? =
     parameters["platform"]?.let { name -> runCatching { Platform.valueOf(name) }.getOrNull() }

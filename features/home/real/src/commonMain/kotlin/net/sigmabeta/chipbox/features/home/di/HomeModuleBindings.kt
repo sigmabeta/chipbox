@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.features.home.modules.MostPlayedArtistsHomeModule
 import net.sigmabeta.chipbox.features.home.modules.MostPlayedGamesHomeModule
 import net.sigmabeta.chipbox.features.home.modules.MostPlayedSongsHomeModule
 import net.sigmabeta.chipbox.features.home.modules.NowPlayingHomeModule
+import net.sigmabeta.chipbox.features.home.modules.RecentlyAddedGamesHomeModule
 import net.sigmabeta.chipbox.features.home.modules.RecentlyPlayedGamesHomeModule
 import net.sigmabeta.chipbox.features.home.modules.RngTakeTheWheelHomeModule
 import net.sigmabeta.chipbox.features.home.modules.ScanStatusHomeModule
@@ -28,6 +29,10 @@ interface HomeModuleBindings {
     @Binds
     @IntoSet
     fun bindGameOfTheDayModule(impl: GameOfTheDayHomeModule): HomeModule
+
+    @Binds
+    @IntoSet
+    fun bindRecentlyAddedGamesModule(impl: RecentlyAddedGamesHomeModule): HomeModule
 
     @Binds
     @IntoSet
