@@ -243,45 +243,6 @@ class RescanStatusViewModelTest {
     }
 
     @Test
-    fun `current folder surfaces on the fast tick and never enters the Changes list`() =
-        rescanTest { vm, scanner ->
-            scanner.pushState(ScannerState.Scanning(timeInSeconds = 1))
-            scanner.pushEvent(ScannerEvent.FolderScanned(name = "Mega Man 2"))
-
-            val state = vm.state.first { it.currentFolder != null }
-            assertEquals("Mega Man 2", state.currentFolder)
-            assertTrue(state.events.isEmpty(), "FolderScanned never enters the Changes list")
-        }
-
-    @Test
-    fun `starting a new scan run clears the previous run's current folder`() = rescanTest { vm, scanner ->
-        scanner.pushState(ScannerState.Scanning(timeInSeconds = 1))
-        scanner.pushEvent(ScannerEvent.FolderScanned(name = "Old Folder"))
-        advanceTimeBy(BATCH_FLUSH_MS)
-        assertEquals("Old Folder", vm.state.value.currentFolder)
-
-        scanner.pushState(ScannerState.Complete(timeInSeconds = 5, gamesFound = 1, tracksFound = 1, tracksFailed = 0))
-        advanceTimeBy(BATCH_FLUSH_MS)
-        scanner.pushState(ScannerState.Scanning(timeInSeconds = 0))
-        assertNull(vm.state.first { it.currentFolder == null }.currentFolder)
-    }
-
-    @Test
-    fun `current folder renders as a Folder row inside the Progress section`() {
-        val state = RescanStatusState(phase = ScanPhase.SCANNING, currentFolder = "Mega Man 2")
-        val items = state.toListItems(stubStringProvider())
-        assertTrue(items.none { it is ImageNameCaptionListModel })
-        val folderRow = items.filterIsInstance<LabelValueListModel>().single { it.value == "Mega Man 2" }
-        assertEquals(ChipboxStringId.RESCAN_STATUS_LABEL_FOLDER.toString(), folderRow.label)
-    }
-
-    @Test
-    fun `current folder is hidden once scanning completes`() {
-        val state = RescanStatusState(phase = ScanPhase.COMPLETE, currentFolder = "stale-folder")
-        assertTrue(state.toListItems(stubStringProvider()).none { it is LabelValueListModel && it.value == "stale-folder" })
-    }
-
-    @Test
     fun `current file renders as a Scanning row inside the Progress section`() {
         val state = RescanStatusState(phase = ScanPhase.SCANNING, currentFile = "chrono.spc")
         // The only image rows would be Changes entries; there are none, and the file shows as a
