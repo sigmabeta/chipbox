@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.GridImageListModel
@@ -28,14 +29,19 @@ import net.sigmabeta.sage.ui.StringProvider
 class MostPlayedArtistsHomeModule @Inject constructor(
     private val repository: Repository,
     private val historyRepository: PlaybackHistoryRepository,
+    private val scanner: Scanner,
     private val stringProvider: StringProvider,
 ) : HomeModule {
 
     override val id = ID
     override val priority = PRIORITY
 
+    // Hidden while a scan runs: the library join (getArtistsByIds) re-emits as artists hydrate, so
+    // the row would flicker mid-scan. Surface it once the scan settles.
+    override fun state(): Flow<LCE<HomeModuleSection>> = scanner.hideSectionWhileScanning(::content)
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    override fun state(): Flow<LCE<HomeModuleSection>> =
+    private fun content(): Flow<LCE<HomeModuleSection>> =
         historyRepository.mostPlayedArtists(QUERY_LIMIT).flatMapLatest { counts ->
             if (counts.isEmpty()) {
                 flowOf<LCE<HomeModuleSection>>(LCE.Uninitialized)

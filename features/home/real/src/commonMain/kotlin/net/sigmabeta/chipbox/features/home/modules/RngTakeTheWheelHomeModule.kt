@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.GridImageListModel
@@ -28,13 +29,18 @@ import net.sigmabeta.sage.ui.StringProvider
  */
 class RngTakeTheWheelHomeModule @Inject constructor(
     private val repository: Repository,
+    private val scanner: Scanner,
     private val stringProvider: StringProvider,
 ) : HomeModule {
 
     override val id = ID
     override val priority = PRIORITY
 
-    override fun state(): Flow<LCE<HomeModuleSection>> =
+    // Hidden while a scan runs: the empty→non-empty probe flips mid-scan and the random pick would
+    // draw from a partial library. Surface the cards once the scan settles.
+    override fun state(): Flow<LCE<HomeModuleSection>> = scanner.hideSectionWhileScanning(::content)
+
+    private fun content(): Flow<LCE<HomeModuleSection>> =
         repository.getAllTracks(limit = 1).map { tracks ->
             // Only Succeeded means the library has at least one song; Loading/Empty/Failed all keep
             // the row hidden rather than flashing static cards before the probe settles.

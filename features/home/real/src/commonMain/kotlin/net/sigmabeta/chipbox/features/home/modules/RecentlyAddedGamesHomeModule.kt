@@ -10,6 +10,7 @@ import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.GridImageListModel
@@ -27,13 +28,18 @@ import net.sigmabeta.sage.ui.StringProvider
  */
 class RecentlyAddedGamesHomeModule @Inject constructor(
     private val repository: Repository,
+    private val scanner: Scanner,
     private val stringProvider: StringProvider,
 ) : HomeModule {
 
     override val id = ID
     override val priority = PRIORITY
 
-    override fun state(): Flow<LCE<HomeModuleSection>> =
+    // Hidden while a scan runs: getRecentlyAddedGames re-emits on every insert, so an ungated row
+    // would fill in live as the scan discovers games. Surface it once the scan settles.
+    override fun state(): Flow<LCE<HomeModuleSection>> = scanner.hideSectionWhileScanning(::content)
+
+    private fun content(): Flow<LCE<HomeModuleSection>> =
         repository.getRecentlyAddedGames(MAX_ITEMS, WINDOW_MS).map { data ->
             when (data) {
                 Data.Loading -> LCE.Loading(LOAD_OP)
