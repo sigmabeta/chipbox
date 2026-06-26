@@ -391,6 +391,25 @@ open class MemoryRepository(
         return GameWriteOutcome(game.id, GameWriteResult.ADDED)
     }
 
+    override fun getGamesByIds(ids: List<Long>, withTracks: Boolean, withArtists: Boolean): Flow<Data<List<Game>>> =
+        flow {
+            emit(Data.Loading)
+            val games = ids.mapNotNull { gamesById[it]?.toGame(withTracks, withArtists) }
+            emit(if (games.isNotEmpty()) Data.Succeeded(games) else Data.Empty)
+        }
+
+    override fun getArtistsByIds(ids: List<Long>, withTracks: Boolean, withGames: Boolean): Flow<Data<List<Artist>>> =
+        flow {
+            emit(Data.Loading)
+            val artists = ids.mapNotNull { artistsById[it]?.toArtist(withGames = withGames, withTracks = withTracks) }
+            emit(if (artists.isNotEmpty()) Data.Succeeded(artists) else Data.Empty)
+        }
+
+    override suspend fun getGameCount(): Int = gamesById.size
+
+    override suspend fun getGameAtIndex(index: Int): Game? =
+        gamesById.values.sortedBy { it.id }.getOrNull(index)?.toGame()
+
     @OptIn(ExperimentalTime::class)
     override fun getRecentlyAddedGames(limit: Int, withinMs: Long): Flow<Data<List<Game>>> = flow {
         emit(Data.Loading)

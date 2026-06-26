@@ -36,6 +36,11 @@ interface ArtistDao {
     @Query("SELECT * FROM artist ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandom(): ArtistEntity?
 
+    // Resolve a known set of artists by id (most-played and other id-driven surfaces) without
+    // scanning the whole table.
+    @Query("SELECT * FROM artist WHERE id IN (:ids)")
+    fun getArtistsByIds(ids: List<Long>): Flow<List<ArtistEntity>>
+
     @Insert
     suspend fun insert(artist: ArtistEntity): Long
 

@@ -58,6 +58,19 @@ interface GameDao {
     @Query("SELECT * FROM game ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandom(): GameEntity?
 
+    // Resolve a known set of games by id (most-played and other id-driven surfaces) without scanning
+    // the whole table.
+    @Query("SELECT * FROM game WHERE id IN (:ids)")
+    fun getGamesByIds(ids: List<Long>): Flow<List<GameEntity>>
+
+    // Count + offset pick: a stable, surgical alternative to loading every game to choose one
+    // (e.g. the date-seeded "game of the day").
+    @Query("SELECT COUNT(*) FROM game")
+    suspend fun count(): Int
+
+    @Query("SELECT * FROM game ORDER BY id LIMIT 1 OFFSET :offset")
+    suspend fun getAtOffset(offset: Int): GameEntity?
+
     // Home "recently added" row: a random sample of games added at/after :threshold, capped by
     // :limit. The date_added index serves the range filter, so this stays surgical instead of
     // scanning the whole table. RANDOM() shuffles only the (small) in-window set.

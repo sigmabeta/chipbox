@@ -139,6 +139,16 @@ class DatabaseRepository(
         { list -> list.suspendMap { it.toTrack(withGame, withArtists) } }
     )
 
+    override fun getGamesByIds(ids: List<Long>, withTracks: Boolean, withArtists: Boolean) = setupFlow(
+        { gameDao.getGamesByIds(ids) },
+        { list -> list.suspendMap { it.toGame(withTracks, withArtists) } }
+    )
+
+    override fun getArtistsByIds(ids: List<Long>, withTracks: Boolean, withGames: Boolean) = setupFlow(
+        { artistDao.getArtistsByIds(ids) },
+        { list -> list.suspendMap { it.toArtist(withTracks, withGames) } }
+    )
+
     override suspend fun getTracksForGame(
         id: Long,
         withGame: Boolean,
@@ -210,6 +220,11 @@ class DatabaseRepository(
 
     override suspend fun getRandomGame(): Game? =
         gameDao.getRandom()?.toGame(withTracks = false, withArtists = false)
+
+    override suspend fun getGameCount(): Int = gameDao.count()
+
+    override suspend fun getGameAtIndex(index: Int): Game? =
+        gameDao.getAtOffset(index)?.toGame(withTracks = false, withArtists = false)
 
     override suspend fun getRandomArtist(): Artist? =
         artistDao.getRandom()?.toArtist(withTracks = false, withGames = false)

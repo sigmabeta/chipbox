@@ -102,6 +102,26 @@ class RemoteRepository(
             }.body<List<Track>>().filter { it.id in idSet }
         }
 
+    // No server-side id filter yet, so fetch and filter client-side — same compromise as
+    // [getTracksByIds] above (the callers already fetched the full list here before).
+    override fun getGamesByIds(ids: List<Long>, withTracks: Boolean, withArtists: Boolean): Flow<Data<List<Game>>> =
+        listFlow {
+            val idSet = ids.toSet()
+            client.get("$baseUrl/api/games") {
+                parameter("withTracks", withTracks)
+                parameter("withArtists", withArtists)
+            }.body<List<Game>>().filter { it.id in idSet }
+        }
+
+    override fun getArtistsByIds(ids: List<Long>, withTracks: Boolean, withGames: Boolean): Flow<Data<List<Artist>>> =
+        listFlow {
+            val idSet = ids.toSet()
+            client.get("$baseUrl/api/artists") {
+                parameter("withTracks", withTracks)
+                parameter("withGames", withGames)
+            }.body<List<Artist>>().filter { it.id in idSet }
+        }
+
     override suspend fun getTracksForGame(id: Long, withGame: Boolean, withArtists: Boolean): List<Track> =
         client.get("$baseUrl/api/games/$id/tracks") {
             parameter("withGame", withGame)
@@ -181,6 +201,14 @@ class RemoteRepository(
 
     override suspend fun getRandomArtist(): Artist? =
         client.get("$baseUrl/api/random/artist").bodyOrNull()
+
+    // Server-side count + offset pick — keeps the date-seeded "game of the day" off the
+    // fetch-everything path even over HTTP.
+    override suspend fun getGameCount(): Int =
+        client.get("$baseUrl/api/games/count").body()
+
+    override suspend fun getGameAtIndex(index: Int): Game? =
+        client.get("$baseUrl/api/games/at") { parameter("index", index) }.bodyOrNull()
 
     // ---------- search ----------
 

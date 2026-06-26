@@ -65,6 +65,9 @@ class FakeDatabase(private val random: Random = Random(0)) {
             artists.values.firstOrNull { it.name == name }
         override suspend fun getArtistByIdSync(artistId: Long): ArtistEntity = artists.getValue(artistId)
         override suspend fun getRandom(): ArtistEntity? = artists.values.randomOrNull(random)
+        override fun getArtistsByIds(ids: List<Long>): Flow<List<ArtistEntity>> = observe {
+            ids.mapNotNull { artists[it] }
+        }
         override fun getAll(): Flow<List<ArtistEntity>> = observe {
             artists.values.sortedBy { it.name.lowercase() }
         }
@@ -101,6 +104,12 @@ class FakeDatabase(private val random: Random = Random(0)) {
         override suspend fun getByFolderKeySync(folderKey: String): GameEntity? =
             games.values.firstOrNull { it.folderKey == folderKey }
         override suspend fun getRandom(): GameEntity? = games.values.randomOrNull(random)
+        override fun getGamesByIds(ids: List<Long>): Flow<List<GameEntity>> = observe {
+            ids.mapNotNull { games[it] }
+        }
+        override suspend fun count(): Int = games.size
+        override suspend fun getAtOffset(offset: Int): GameEntity? =
+            games.values.sortedBy { it.id }.getOrNull(offset)
         override suspend fun getAllSync(): List<GameEntity> = games.values.toList()
         override suspend fun getSignatureRows(): List<GameSignatureRow> = games.values.map { g ->
             GameSignatureRow(
