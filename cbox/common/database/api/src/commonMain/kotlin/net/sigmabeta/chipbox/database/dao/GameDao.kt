@@ -58,6 +58,12 @@ interface GameDao {
     @Query("SELECT * FROM game ORDER BY RANDOM() LIMIT 1")
     suspend fun getRandom(): GameEntity?
 
+    // Home "recently added" row: a random sample of games added at/after :threshold, capped by
+    // :limit. The date_added index serves the range filter, so this stays surgical instead of
+    // scanning the whole table. RANDOM() shuffles only the (small) in-window set.
+    @Query("SELECT * FROM game WHERE date_added >= :threshold ORDER BY RANDOM() LIMIT :limit")
+    fun getRecentlyAdded(threshold: Long, limit: Int): Flow<List<GameEntity>>
+
     @Insert
     suspend fun insert(game: GameEntity): Long
 

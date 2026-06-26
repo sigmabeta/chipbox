@@ -14,4 +14,6 @@ data class Game(
     val releaseDate: String? = null,
     val genre: String? = null,
     val titleJp: String? = null,
+    // Epoch millis the game first entered the library (0 if unknown). Drives the "Recently added" row.
+    val dateAdded: Long = 0,
 )

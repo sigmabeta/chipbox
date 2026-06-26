@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
@@ -365,7 +367,8 @@ open class MemoryRepository(
             rawGame.title,
             rawGame.photoUrl,
             artists,
-            tracks
+            tracks,
+            dateAdded = nowMs(),
         )
 
         // link each track to this game and add them to repository
@@ -387,6 +390,21 @@ open class MemoryRepository(
 
         return GameWriteOutcome(game.id, GameWriteResult.ADDED)
     }
+
+    @OptIn(ExperimentalTime::class)
+    override fun getRecentlyAddedGames(limit: Int, withinMs: Long): Flow<Data<List<Game>>> = flow {
+        emit(Data.Loading)
+        val threshold = nowMs() - withinMs
+        val picked = gamesById.values
+            .filter { it.dateAdded >= threshold }
+            .shuffled()
+            .take(limit)
+            .map { it.toGame() }
+        emit(if (picked.isNotEmpty()) Data.Succeeded(picked) else Data.Empty)
+    }
+
+    @OptIn(ExperimentalTime::class)
+    private fun nowMs(): Long = Clock.System.now().toEpochMilliseconds()
 
     private fun getLatestAllGames(withTracks: Boolean = false, withArtists: Boolean = false) = gamesByTitle
             .values
@@ -433,7 +451,8 @@ open class MemoryRepository(
             title,
             photoUrl,
             if (withArtists) artists.map { it.toArtist() } else null,
-            if (withTracks) tracks.map { it.toTrack(withArtists = withArtists) } else null
+            if (withTracks) tracks.map { it.toTrack(withArtists = withArtists) } else null,
+            dateAdded = dateAdded,
         )
 
     private fun MemoryArtist.toArtist(

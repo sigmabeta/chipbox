@@ -131,6 +131,15 @@ class RemoteRepository(
         client.get("$baseUrl/api/platforms").body()
     }
 
+    // Surgical server-side query — the window filter, random pick, and LIMIT all run in SQL, so the
+    // Home row never pulls the full catalog over HTTP.
+    override fun getRecentlyAddedGames(limit: Int, withinMs: Long): Flow<Data<List<Game>>> = listFlow {
+        client.get("$baseUrl/api/games/recently-added") {
+            parameter("limit", limit)
+            parameter("withinMs", withinMs)
+        }.body()
+    }
+
     // ---------- single ----------
 
     override fun getGame(id: Long, withTracks: Boolean, withArtists: Boolean): Flow<Data<Game?>> =

@@ -35,6 +35,9 @@ private const val GAME_OF_THE_DAY_PRIORITY = 100
 private const val GAME_COVER_ASPECT_RATIO = 0.75f
 private const val GAME_OF_THE_DAY_MAX_WIDTH_DP = 400f
 private const val GAME_ID_OFFSET = 3_000_000_000L
+private const val RECENTLY_ADDED_ID = "recently_added_games"
+private const val RECENTLY_ADDED_PRIORITY = 150
+private const val RECENTLY_ADDED_GAME_OFFSET = 8_000_000_000L
 private const val RECENTLY_PLAYED_ID = "recently_played_games"
 private const val RECENTLY_PLAYED_PRIORITY = 200
 private const val RECENTLY_PLAYED_GAME_OFFSET = 4_000_000_000L
@@ -237,6 +240,12 @@ private fun homeState(): HomeState {
                         maxWidthDp = GAME_OF_THE_DAY_MAX_WIDTH_DP,
                     ),
                 ),
+            ),
+            section(
+                RECENTLY_ADDED_ID,
+                RECENTLY_ADDED_PRIORITY,
+                "Recently added",
+                gameScrollerCards(games, RECENTLY_ADDED_GAME_OFFSET),
             ),
             section(
                 RECENTLY_PLAYED_ID,
