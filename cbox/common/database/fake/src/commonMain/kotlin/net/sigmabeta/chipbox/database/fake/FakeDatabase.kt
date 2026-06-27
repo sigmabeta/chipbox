@@ -153,6 +153,11 @@ class FakeDatabase(private val random: Random = Random(0)) {
             // Mirror SQLite: WHERE date_added >= threshold ORDER BY RANDOM() LIMIT limit.
             games.values.filter { it.dateAdded >= threshold }.shuffled(random).take(limit)
         }
+        override fun getUnplayed(playedIds: List<Long>, limit: Int): Flow<List<GameEntity>> = observe {
+            // Mirror SQLite: WHERE id NOT IN (playedIds) ORDER BY RANDOM() LIMIT limit.
+            val excluded = playedIds.toHashSet()
+            games.values.filter { it.id !in excluded }.shuffled(random).take(limit)
+        }
         override fun searchGamesByTitle(title: String): Flow<List<GameEntity>> = observe {
             games.values.filter { sqlLike(title, it.title) }.sortedBy { it.title.lowercase() }
         }
