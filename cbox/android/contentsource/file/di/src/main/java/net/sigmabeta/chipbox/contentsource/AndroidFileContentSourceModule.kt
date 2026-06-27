@@ -8,6 +8,8 @@ import dev.zacsweers.metro.Multibinds
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import net.sigmabeta.sage.di.AppScope
+import okio.FileSystem
+import okio.Path.Companion.toOkioPath
 import java.io.File
 
 @ContributesTo(AppScope::class)
@@ -30,8 +32,8 @@ interface AndroidFileContentSourceModule {
         // filesDir (the JVM app uses its workDir).
         @Provides
         @SingleIn(AppScope::class)
-        fun provideLocalFileContentSource(context: Context): LocalFileContentSource =
-            LocalFileContentSource(File(context.filesDir, "library-locations.txt"))
+        fun provideLocalFileContentSource(context: Context, fileSystem: FileSystem): LocalFileContentSource =
+            LocalFileContentSource(fileSystem, File(context.filesDir, "library-locations.txt").toOkioPath())
 
         // ContentSourceRegistry is a plain (framework-free) type in contentsource:api; build it
         // from the multibinding Set<ContentSource> here. The JVM app wires its own equivalent in

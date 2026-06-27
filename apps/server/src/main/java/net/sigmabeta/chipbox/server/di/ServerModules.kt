@@ -29,6 +29,8 @@ import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
+import okio.FileSystem
+import okio.Path.Companion.toOkioPath
 
 /**
  * Binding containers for the headless HTTP server. Modelled on `JvmModules.kt` in `apps/jvm` —
@@ -42,8 +44,9 @@ import net.sigmabeta.sage.ui.StringProvider
  *    no user-facing About screen.
  *  - **No JvmBufferModule / JvmEmulatorsModule / JvmGeneratorModule / JvmSpeakerModule** —
  *    playback isn't a server concern.
- *  - **No JvmFileSystemModule** — the FolderPicker UI is the only consumer of FileSystem.SYSTEM
- *    on JVM today; the server doesn't render UI.
+ *  - **No JvmFileSystemModule** — that module only exists to feed the FolderPicker UI's injected
+ *    FileSystem, which the headless server doesn't render. The one server consumer
+ *    (LocalFileContentSource) pins FileSystem.SYSTEM inline instead.
  */
 
 @BindingContainer
@@ -98,7 +101,9 @@ object ServerRepositoryModule {
 object ServerContentSourceModule {
     @Provides @SingleIn(AppScope::class)
     fun provideLocalFileContentSource(@Named("workDir") workDir: File): LocalFileContentSource =
-        LocalFileContentSource(File(workDir, "library-locations.txt"))
+        // The server has no FileSystem in its graph (no FolderPicker UI), so pin FileSystem.SYSTEM
+        // inline here — same pattern as the other server call sites that pass it directly.
+        LocalFileContentSource(FileSystem.SYSTEM, File(workDir, "library-locations.txt").toOkioPath())
 
     @Provides @SingleIn(AppScope::class)
     fun provideLibrarySource(impl: LocalFileContentSource): LibrarySource = impl
