@@ -25,6 +25,7 @@ import net.sigmabeta.chipbox.server.http.ErrorResponse
 import net.sigmabeta.chipbox.server.http.fileRoutes
 import net.sigmabeta.chipbox.server.http.libraryRoutes
 import net.sigmabeta.chipbox.server.http.staticRoutes
+import okio.Path.Companion.toOkioPath
 
 /**
  * Boots the Metro graph, kicks off a background scan, and starts Ktor. The server starts serving
@@ -47,7 +48,7 @@ fun main() {
     )
     // Seed the configured library directory into the persisted locations list. Idempotent —
     // LocalFileContentSource dedups against `library-locations.txt`.
-    graph.localFileContentSource.addLocation(config.libraryDir)
+    graph.localFileContentSource.addLocation(config.libraryDir.toOkioPath())
 
     val scanning = AtomicBoolean(false)
     graph.appScope.launch {

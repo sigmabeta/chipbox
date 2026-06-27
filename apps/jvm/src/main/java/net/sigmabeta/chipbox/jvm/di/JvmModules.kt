@@ -76,6 +76,7 @@ import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.ui.StringProvider
 import okio.FileSystem
+import okio.Path.Companion.toOkioPath
 import okio.Path.Companion.toPath
 
 /**
@@ -200,8 +201,11 @@ object JvmRepositoryModule {
 object JvmContentSourceModule {
     @Provides
     @SingleIn(AppScope::class)
-    fun provideLocalFileContentSource(@Named("workDir") workDir: File): LocalFileContentSource =
-        LocalFileContentSource(File(workDir, "library-locations.txt"))
+    fun provideLocalFileContentSource(
+        @Named("workDir") workDir: File,
+        fileSystem: FileSystem,
+    ): LocalFileContentSource =
+        LocalFileContentSource(fileSystem, File(workDir, "library-locations.txt").toOkioPath())
 
     @Provides @SingleIn(AppScope::class)
     fun provideLibrarySource(impl: LocalFileContentSource): LibrarySource = impl

@@ -23,7 +23,9 @@ import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.logging.Hatchet
+import okio.FileSystem
 import okio.Path
+import okio.Path.Companion.toOkioPath
 import okio.Path.Companion.toPath
 import java.io.File
 
@@ -75,12 +77,13 @@ class ChipboxLibrary(
     // constructed and rewrites it whenever a location is added, so each run adds to the saved
     // library rather than replacing it. The scanner's prune step still drops games whose folders
     // are no longer present.
-    private val contentSource = LocalFileContentSource(File(workDir, LOCATIONS_NAME))
+    private val contentSource =
+        LocalFileContentSource(FileSystem.SYSTEM, File(workDir, LOCATIONS_NAME).toOkioPath())
 
     private val scanner = RealScanner(repository, contentSource, Readers(hatchet), VgmstreamProbe, hatchet)
 
     /** Adds [folder] to the saved library locations (persisted across runs; deduplicated). */
-    fun addLibraryFolder(folder: File) = contentSource.addLocation(folder)
+    fun addLibraryFolder(folder: File) = contentSource.addLocation(folder.toOkioPath())
 
     /** Removes the saved library location with the given absolute [path]. */
     fun removeLibraryFolder(path: String) = contentSource.removeLibraryLocation(path)

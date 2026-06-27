@@ -43,8 +43,8 @@ import kotlin.time.TimeSource
  * The production scanner — drives [readers] over every file [librarySource] exposes,
  * applies PSF `_lib` chain resolution and m3u overlays, and persists one `RawGame` per
  * source folder to [repository]. Talks to the library through the platform-neutral
- * [LibrarySource] / [LibraryFileInfo] interfaces so both the Android (SAF) and JVM
- * (`java.io.File`) targets share this same code.
+ * [LibrarySource] / [LibraryFileInfo] interfaces, so this same code drives any backing
+ * store — in production an okio-backed filesystem walker shared across every target.
  */
 @OptIn(ExperimentalAtomicApi::class)
 class RealScanner(
