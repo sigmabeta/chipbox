@@ -642,6 +642,13 @@ class RealDirector(
 
     private fun seek(positionMs: Long) {
         directorScope.launch {
+            // Seeking while paused must not resume playback. Stash the target as a pending resume
+            // offset (the same machinery a restored session uses) and anchor the paused progress bar
+            // to it via commit; no audio moves until the next play() consumes the offset as a seek.
+            if (model.playback.state == PlayerState.PAUSED) {
+                commit(model.copy(pendingResumeMs = positionMs.coerceAtLeast(0L)))
+                return@launch
+            }
             // An explicit seek supersedes a pending restore offset (the user chose a new spot).
             if (model.pendingResumeMs != null) commit(model.copy(pendingResumeMs = null))
             generator.seek(positionMs)
