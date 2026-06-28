@@ -904,6 +904,49 @@ class RealDirectorTest {
     }
 
     @Test
+    fun `seeking while playing repositions immediately and keeps playing`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L))))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+        director.playbackState().first { it.state == PlayerState.PLAYING }
+
+        director.request(SessionRequest.Seek(45_000L))
+
+        assertEquals(listOf(45_000L), gen.seekCalls, "a playing seek repositions the generator now")
+        assertEquals(1, speaker.seekCalls, "a playing seek drains and restarts the consume loop now")
+        val state = director.playbackState().first { it.state == PlayerState.PLAYING }
+        assertEquals(PlayerState.PLAYING, state.state, "a seek while playing stays playing")
+        director.release()
+    }
+
+    @Test
+    fun `seeking while paused does not resume and defers the reposition to the next play`() = runTest {
+        val (director, gen, speaker, _) = newDirector(listOf(track1))
+        director.request(SessionRequest.Start(setlistSession(listOf(1L))))
+        gen.emit(GeneratorEvent.Loading(1L))
+        speaker.emit(SpeakerEvent.Playing(0L))
+        director.request(SessionRequest.Pause)
+        director.playbackState().first { it.state == PlayerState.PAUSED }
+
+        director.request(SessionRequest.Seek(45_000L))
+
+        val paused = director.playbackState().first { it.position == 45_000L }
+        assertEquals(PlayerState.PAUSED, paused.state, "a seek while paused must stay paused")
+        assertEquals(45_000L, paused.position, "the paused progress bar moves to the seek target")
+        assertTrue(gen.seekCalls.isEmpty(), "no audio moves until play() — the generator isn't sought yet")
+        assertEquals(0, speaker.seekCalls, "the speaker consume loop isn't restarted while paused")
+
+        director.request(SessionRequest.Play)
+
+        assertEquals(listOf(45_000L), gen.seekCalls, "the deferred seek fires on the next play()")
+        assertEquals(1, speaker.seekCalls, "play() drains the stale buffer and restarts the consume loop")
+        val state = director.playbackState().first { it.state == PlayerState.PLAYING }
+        assertEquals(PlayerState.PLAYING, state.state)
+        director.release()
+    }
+
+    @Test
     fun `stop tears down both speaker and generator and flips state to STOPPED`() = runTest {
         val (director, gen, speaker, _) = newDirector(listOf(track1))
         director.request(SessionRequest.Start(setlistSession(listOf(1L))))
