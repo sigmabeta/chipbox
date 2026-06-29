@@ -17,7 +17,8 @@ Once releases are published, the APK will be attached to each GitHub release.
 
 ## Desktop
 
-A native desktop (JVM) build. Linux is supported today; macOS and Windows native
-emulator builds are in progress.
+A native desktop (JVM) build. **Linux** runs natively, and **Windows** is
+cross-compiled (all nine emulator cores, as self-contained `.dll`s). macOS isn't
+supported yet.
 
 [Build &amp; run the desktop app](build.md){ .md-button .md-button--primary }

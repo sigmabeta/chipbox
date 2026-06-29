@@ -33,7 +33,7 @@ Install a debug build to a connected device:
 
 ## Desktop (JVM)
 
-Native emulator cores are host-built via CMake (Linux-only for now):
+Native emulator cores are host-built via CMake. On Linux this runs natively:
 
 ```sh
 ./gradlew :apps:jvm:run
@@ -44,3 +44,17 @@ Package a distributable archive:
 ```sh
 ./gradlew :apps:jvm:installDist   # or distZip / distTar
 ```
+
+### Windows (cross-compiled)
+
+A Windows distribution is cross-compiled from Linux with the MinGW-w64 toolchain
+(all nine cores, as fully static `.dll`s). Install the cross toolchain
+(`mingw-w64` + a static MinGW zlib) and point at a Windows JDK for the win32 JNI
+headers:
+
+```sh
+./gradlew :apps:jvm:distZip -Pchipbox.jvm.nativeTarget=windows-x64 \
+  -Pchipbox.jvm.nativeJdk=/path/to/windows-jdk
+```
+
+macOS native builds are still pending.

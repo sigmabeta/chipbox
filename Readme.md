@@ -69,12 +69,24 @@ Install a debug build to a connected device:
 ./gradlew :apps:android:installDebug
 ```
 
-Run the desktop app (native emulator libs are host-built via CMake; Linux-only
-for now):
+Run the desktop app on the host (native emulator libs are host-built via CMake;
+runs natively on Linux):
 
 ```sh
 ./gradlew :apps:jvm:run
 ```
+
+A **Windows** distribution is cross-compiled from Linux with the MinGW-w64
+toolchain (all nine emulator cores, as fully static `.dll`s). It needs the cross
+toolchain (`mingw-w64` + a static MinGW zlib) and a Windows JDK for the win32 JNI
+headers:
+
+```sh
+./gradlew :apps:jvm:distZip -Pchipbox.jvm.nativeTarget=windows-x64 \
+  -Pchipbox.jvm.nativeJdk=/path/to/windows-jdk
+```
+
+macOS native builds are still pending.
 
 Release builds are signed with `chipbox.jks` when the `CHIPBOX_KEY_ALIAS`,
 `CHIPBOX_KEYSTORE_PASSWORD`, and `CHIPBOX_KEY_PASSWORD` environment variables are
@@ -138,7 +150,7 @@ graph, and the source-set topology).
 
 - Independent tempo & pitch playback controls (see
   `arch-docs/psf-playback-speed-pitch-design.md`)
-- Desktop builds for macOS and Windows (currently Linux-only)
+- Desktop builds for macOS (Linux runs natively; Windows is cross-compiled)
 - Bespoke UI for Android TV
 - Android Auto control support
 - Add support for more emulator cores
