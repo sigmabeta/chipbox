@@ -72,6 +72,43 @@ commands:
           name: Install host C/C++ toolchain (gcc/g++/make for JVM native libs)
           command: sudo apt-get update && sudo apt-get install -y build-essential
 
+  # Windows cross-build toolchain for the desktop app's emulator natives: the MinGW-w64 cross
+  # gcc/g++/binutils plus a *static* MinGW zlib (libz.a). We force the POSIX-threads variant via
+  # update-alternatives so std::thread / pthreads cores build, and the static zlib lets the .dll link
+  # fully static (no zlib1.dll / libgcc / libstdc++ / winpthread to ship). CMake comes from the image
+  # (same as the Linux host build). Only build-windows-jvm needs this.
+  install_mingw_toolchain:
+    steps:
+      - run:
+          name: Install MinGW-w64 cross toolchain (Windows .dll build)
+          command: |
+            sudo apt-get update
+            sudo apt-get install -y mingw-w64 libz-mingw-w64-dev
+            sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+            sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+
+  # The cross-build compiles JNI against a *Windows* JDK's headers (include/win32/jni_md.h), which the
+  # Linux JDK doesn't ship. Download a Temurin Windows JDK once (cached); only its headers are read —
+  # no Windows code runs. Exports WIN_JDK_HOME for the Gradle invocation via $BASH_ENV.
+  fetch_windows_jdk:
+    steps:
+      - restore_cache:
+          keys:
+            - win-jdk-temurin-21-v1
+      - run:
+          name: Fetch Windows JDK (win32 JNI headers)
+          command: |
+            if [ ! -d "$HOME/win-jdk" ]; then
+              mkdir -p "$HOME/win-jdk"
+              curl -fsSL -o /tmp/winjdk.zip "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk"
+              unzip -q /tmp/winjdk.zip -d "$HOME/win-jdk"
+            fi
+            echo "export WIN_JDK_HOME=\"$(find "$HOME/win-jdk" -maxdepth 1 -type d -name 'jdk-*' | head -1)\"" >> "$BASH_ENV"
+      - save_cache:
+          key: win-jdk-temurin-21-v1
+          paths:
+            - ~/win-jdk
+
   # NOTE: Gradle's configuration cache is DISABLED on CI — every Gradle command below passes
   # `--no-configuration-cache`, overriding `org.gradle.configuration-cache=true` in gradle.properties
   # (kept on for local dev, where it reuses fine on a warm machine). We proved it never reuses across
@@ -179,6 +216,11 @@ workflows:
       # remote-cache hits (shared-build pushed them), so it only adds the
       # host-native libs + the desktop distribution on top.
       - build-release-jvm:
+          requires:
+            - shared-build
+      # Windows desktop cross-build — same gating as build-release-jvm (needs the shared Kotlin
+      # compiles as remote-cache hits); only adds the MinGW native cross-build + Windows distribution.
+      - build-windows-jvm:
           requires:
             - shared-build
       - build-release-apk:
@@ -479,4 +521,36 @@ jobs:
       - store_artifacts:
           path: ~/reports
           destination: release-jvm-reports
+          when: always
+
+  # Cross-compiles the desktop app's emulator natives to Windows .dll (MinGW-w64) and packages a
+  # Windows distribution (distZip → chipbox.zip, with a chipbox.bat launcher). Same shape as
+  # build-release-jvm — shared Kotlin compiles are remote-cache hits, so the added work is the cross
+  # native build + distribution. GBA/GSF (mGBA) is excluded for Windows for now (needs vendored
+  # Windows VFS sources); the other 8 cores build. The shared jars are platform-neutral; only the
+  # bundled natives differ from the Linux dist.
+  build-windows-jvm:
+    executor:
+      name: android
+      resource_class: large
+      jvm_opts: -Xms2g -Xmx4g
+
+    steps:
+      - attach_built_workspace
+      - install_mingw_toolchain
+      - fetch_windows_jdk
+      - run:
+          name: Cross-build Windows desktop distribution (distZip)
+          command: |
+            ./gradlew :apps:jvm:distZip --build-cache --no-configuration-cache --no-daemon --max-workers=4 \
+              -Pchipbox.jvm.nativeTarget=windows-x64 \
+              -Pchipbox.jvm.nativeJdk="$WIN_JDK_HOME"
+      - store_artifacts:
+          path: apps/jvm/build/distributions
+          destination: jvm-dist-windows
+          when: always
+      - collect_reports
+      - store_artifacts:
+          path: ~/reports
+          destination: windows-jvm-reports
           when: always
