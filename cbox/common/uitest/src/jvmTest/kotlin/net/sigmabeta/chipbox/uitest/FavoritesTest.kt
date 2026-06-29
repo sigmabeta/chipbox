@@ -54,8 +54,8 @@ class FavoritesTest {
 
         waitForContent("Iron Quest")
         assertSectionHeader("Games")
-        assertWideItemDisplayed("Iron Quest")
-        clickWideItem("Iron Quest")
+        assertGridImageItemDisplayed("Iron Quest")
+        clickGridImage("Iron Quest")
 
         assertNavigationEvent(GameDetail(id))
     }
@@ -68,8 +68,8 @@ class FavoritesTest {
 
         waitForContent("Jake Shimomura")
         assertSectionHeader("Artists")
-        assertWideItemDisplayed("Jake Shimomura")
-        clickWideItem("Jake Shimomura")
+        assertGridImageItemDisplayed("Jake Shimomura")
+        clickGridImage("Jake Shimomura")
 
         assertNavigationEvent(ArtistDetail(id))
     }

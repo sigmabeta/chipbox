@@ -386,6 +386,12 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     fun clickWideItem(name: String) = clickItem("WideItemListModel", name)
 
     /**
+     * Click the grid cover ([GridImageListModel][net.sigmabeta.sage.components.GridImageListModel])
+     * titled [name] — a game/artist cover cell in a grid.
+     */
+    fun clickGridImage(name: String) = clickItem("GridImageListModel", name)
+
+    /**
      * Click the [NameCaptionValueItem][net.sigmabeta.sage.components.NameCaptionValueListModel] row
      * named [name].
      */
