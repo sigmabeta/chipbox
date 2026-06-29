@@ -78,6 +78,10 @@ class ChipboxNativeHostPlugin : Plugin<Project> {
                     nativeSources.from(nativeRoot.dir(emulator), nativeRoot.dir(NativeEmulators.COMMON_SUBDIR))
                     sourceDir.set(nativeRoot.dir(emulator))
                     cmakeExecutable.set(cmake)
+                    // Bound parallel compile jobs when asked (e.g. CI), so a cold cross-build of every
+                    // core doesn't OOM the container — unset keeps the native tool's default (`-j`).
+                    (findProperty("chipbox.native.maxParallel") as? String)?.toIntOrNull()
+                        ?.let { maxParallelJobs.set(it) }
                     // Target-scoped so a Linux build and a Windows cross-build never share a CMake
                     // cache dir (CMAKE_SYSTEM_NAME is sticky in the cache and the toolchain file is only
                     // read on a fresh configure, so a shared dir would pin the first target's platform).

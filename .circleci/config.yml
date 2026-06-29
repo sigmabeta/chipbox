@@ -540,10 +540,14 @@ jobs:
       - fetch_windows_jdk
       - run:
           name: Cross-build Windows desktop distribution (distZip)
+          # Bound the native compile parallelism: the Windows .dll's are a cold build (the Linux .so
+          # are remote-cache hits, but this target is new), and an unbounded `make -j` over all nine
+          # cores — mGBA alone is ~150 files — OOM-kills the container. -j2 keeps it within `large`.
           command: |
             ./gradlew :apps:jvm:distZip --build-cache --no-configuration-cache --no-daemon --max-workers=4 \
               -Pchipbox.jvm.nativeTarget=windows-x64 \
-              -Pchipbox.jvm.nativeJdk="$WIN_JDK_HOME"
+              -Pchipbox.jvm.nativeJdk="$WIN_JDK_HOME" \
+              -Pchipbox.native.maxParallel=2
       - store_artifacts:
           path: apps/jvm/build/distributions
           destination: jvm-dist-windows
