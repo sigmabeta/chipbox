@@ -69,7 +69,7 @@ import kotlin.time.Duration.Companion.milliseconds
  *
  * The specs live in `src/jvmTest` (so Android Studio shows + runs them) and are mirrored onto
  * `androidDeviceTest`, so the same scripts run on the desktop JVM and on-device. See
- * docs/architecture/ui-test-dsl.md.
+ * arch-docs/architecture/ui-test-dsl.md.
  *
  * On any failure inside [block], the harness dumps a screenshot + semantics tree of the live scene
  * (paths logged) before rethrowing — see [writeFailureArtifacts].

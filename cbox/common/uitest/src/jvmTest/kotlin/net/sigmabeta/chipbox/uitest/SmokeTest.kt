@@ -16,7 +16,7 @@ import kotlin.test.Test
  * targets: the JVM desktop host (`:jvmTest`) and a real Android device (`:androidDeviceTest`,
  * on-device/instrumented). It is kept off `androidHostTest` on purpose — that target has no
  * Android framework, so `runComposeUiTest` NPEs there; the Android half of the suite runs
- * on-device instead. See docs/architecture/ui-test-dsl.md.
+ * on-device instead. See arch-docs/architecture/ui-test-dsl.md.
  */
 @OptIn(ExperimentalTestApi::class)
 class SmokeTest {

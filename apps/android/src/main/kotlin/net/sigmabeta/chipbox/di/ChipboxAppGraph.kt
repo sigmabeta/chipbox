@@ -19,7 +19,7 @@ import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 
 /**
- * Application-wide Metro dependency graph (see docs/architecture/sage-integration.md). Owns every
+ * Application-wide Metro dependency graph (see arch-docs/architecture/sage-integration.md). Owns every
  * `AppScope`-scoped binding the app needs — both for `metroViewModel<T>()` resolution
  * (via the inherited [ViewModelGraph] multibindings) and for hand-rolled injection at
  * the four `Application` / `Activity` / `Service` / `ContentProvider` entry points: those

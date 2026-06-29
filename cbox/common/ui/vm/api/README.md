@@ -25,7 +25,7 @@ members of its own; it exists so the rest of the Chipbox UI can share one
 > The marker was since promoted to extend `androidx.lifecycle.ViewModel` (the
 > first Android port, `ChipboxListViewModel`, needed `viewModelScope`), and
 > ViewModel resolution in feature code is done with Metro's `metroViewModel<VM>()`
-> (see `docs/architecture/feature-screens.md`), not a provider from this module.
+> (see `arch-docs/architecture/feature-screens.md`), not a provider from this module.
 > Treat the file's source as the source of truth.
 
 ## Why depend on this module

@@ -1,0 +1,4 @@
+# Build dependencies for the MkDocs Material landing site (docs/).
+# Install locally with:  pip install -r requirements.txt
+mkdocs-material>=9.7.6
+pymdown-extensions>=11.0  # 11.0+ required for Markdown 3.10 (10.x silently breaks code fences)
