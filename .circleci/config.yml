@@ -227,6 +227,31 @@ workflows:
           requires:
             - android-lint
 
+  # Tag-triggered release. CircleCI ignores tags unless every job opts in with a tag filter (and these
+  # ignore branches so the workflow is tag-only). Build the three distributables, then publish them to
+  # a GitHub Release. Build jobs gate only on setup — the shared Kotlin compiles are remote-cache hits
+  # from the branch CI that built this commit, so there's no need to re-run lint/tests here.
+  release:
+    jobs:
+      - setup:
+          filters: &release_tags
+            tags:
+              only: /^\d+\.\d+.*/
+            branches:
+              ignore: /.*/
+      - build-release-apk:
+          requires: [setup]
+          filters: *release_tags
+      - build-release-jvm:
+          requires: [setup]
+          filters: *release_tags
+      - build-windows-jvm:
+          requires: [setup]
+          filters: *release_tags
+      - publish-release:
+          requires: [build-release-apk, build-release-jvm, build-windows-jvm]
+          filters: *release_tags
+
 ##################################################
 
 jobs:
@@ -488,6 +513,20 @@ jobs:
           path: apps/android/build/outputs/apk/release
           destination: outputs
           when: always
+      # Stage the (universal, arm64-inclusive) release APK for the publish-release job. No-op off a
+      # tag, so branch builds just persist an empty dir.
+      - run:
+          name: Stage release APK for publish (tag builds)
+          command: |
+            mkdir -p ~/rel-android
+            if [ -n "${CIRCLE_TAG:-}" ]; then
+              cp apps/android/build/outputs/apk/release/chipbox-*.apk ~/rel-android/
+              ls -la ~/rel-android
+            fi
+      - persist_to_workspace:
+          root: << pipeline.parameters.workspace_root >>
+          paths:
+            - rel-android
       # Report sweep so any module-level build-time report from the release
       # graph (e.g. resource shrinker, R8 mapping reports) is downloadable.
       - collect_reports
@@ -517,6 +556,22 @@ jobs:
           path: apps/jvm/build/install
           destination: jvm-dist
           when: always
+      # Stage the Linux distZip for publish-release (tag builds only). distZip just packages the
+      # install image installDist already produced — the native build is a cache hit. Renamed per-OS
+      # because the Linux and Windows zips share the base name `chipbox.zip`.
+      - run:
+          name: Stage Linux distribution for publish (tag builds)
+          command: |
+            mkdir -p ~/rel-linux
+            if [ -n "${CIRCLE_TAG:-}" ]; then
+              ./gradlew :apps:jvm:distZip --build-cache --no-configuration-cache --no-daemon --max-workers=4
+              cp apps/jvm/build/distributions/*.zip ~/rel-linux/chipbox-"$CIRCLE_TAG"-linux.zip
+              ls -la ~/rel-linux
+            fi
+      - persist_to_workspace:
+          root: << pipeline.parameters.workspace_root >>
+          paths:
+            - rel-linux
       - collect_reports
       - store_artifacts:
           path: ~/reports
@@ -552,8 +607,59 @@ jobs:
           path: apps/jvm/build/distributions
           destination: jvm-dist-windows
           when: always
+      # Stage the Windows distZip for publish-release (tag builds only); already built above.
+      - run:
+          name: Stage Windows distribution for publish (tag builds)
+          command: |
+            mkdir -p ~/rel-windows
+            if [ -n "${CIRCLE_TAG:-}" ]; then
+              cp apps/jvm/build/distributions/*.zip ~/rel-windows/chipbox-"$CIRCLE_TAG"-windows.zip
+              ls -la ~/rel-windows
+            fi
+      - persist_to_workspace:
+          root: << pipeline.parameters.workspace_root >>
+          paths:
+            - rel-windows
       - collect_reports
       - store_artifacts:
           path: ~/reports
           destination: windows-jvm-reports
           when: always
+
+  # Tag-only. Aggregates the artifacts the three build jobs staged into the workspace (universal APK
+  # + Linux/Windows distZips) and creates a GitHub Release for the pushed tag via the REST API (curl +
+  # jq ship in the image). Needs a GH_TOKEN project env var with Contents: write. alpha/beta/rc tags
+  # are marked as prereleases; release notes are auto-generated from commits.
+  publish-release:
+    executor:
+      name: android
+      resource_class: medium
+    steps:
+      - attach_built_workspace
+      - run:
+          name: Publish GitHub Release
+          command: |
+            set -euo pipefail
+            mkdir -p ~/release-upload
+            cp ~/rel-android/* ~/rel-linux/* ~/rel-windows/* ~/release-upload/ 2>/dev/null || true
+            echo "Assets to publish:"; ls -la ~/release-upload
+            [ -n "$(ls -A ~/release-upload)" ] || { echo "ERROR: no staged artifacts"; exit 1; }
+            PRERELEASE=false
+            case "$CIRCLE_TAG" in *alpha*|*beta*|*rc*) PRERELEASE=true ;; esac
+            resp=$(curl -sS -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/sigmabeta/chipbox/releases" \
+              -d "{\"tag_name\":\"$CIRCLE_TAG\",\"name\":\"$CIRCLE_TAG\",\"prerelease\":$PRERELEASE,\"generate_release_notes\":true}")
+            id=$(echo "$resp" | jq -r '.id // empty')
+            [ -n "$id" ] || { echo "Release creation failed:"; echo "$resp" | jq -r '.message, (.errors // [])[]?'; exit 1; }
+            echo "Created release $CIRCLE_TAG (id=$id, prerelease=$PRERELEASE)"
+            for f in ~/release-upload/*; do
+              n=$(basename "$f")
+              echo "Uploading $n ..."
+              curl -sS -X POST \
+                -H "Authorization: Bearer $GH_TOKEN" -H "Content-Type: application/octet-stream" \
+                --data-binary @"$f" \
+                "https://uploads.github.com/repos/sigmabeta/chipbox/releases/$id/assets?name=$n" \
+                | jq -r '.browser_download_url // .message'
+            done
+            echo "Published: https://github.com/sigmabeta/chipbox/releases/tag/$CIRCLE_TAG"
