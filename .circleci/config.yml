@@ -526,9 +526,8 @@ jobs:
   # Cross-compiles the desktop app's emulator natives to Windows .dll (MinGW-w64) and packages a
   # Windows distribution (distZip → chipbox.zip, with a chipbox.bat launcher). Same shape as
   # build-release-jvm — shared Kotlin compiles are remote-cache hits, so the added work is the cross
-  # native build + distribution. GBA/GSF (mGBA) is excluded for Windows for now (needs vendored
-  # Windows VFS sources); the other 8 cores build. The shared jars are platform-neutral; only the
-  # bundled natives differ from the Linux dist.
+  # native build + distribution. All 9 emulator cores build (incl. mGBA/GSF). The shared jars are
+  # platform-neutral; only the bundled natives differ from the Linux dist.
   build-windows-jvm:
     executor:
       name: android

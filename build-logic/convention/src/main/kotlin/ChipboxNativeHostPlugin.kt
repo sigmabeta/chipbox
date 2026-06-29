@@ -71,13 +71,7 @@ class ChipboxNativeHostPlugin : Plugin<Project> {
                 if (target == NativeHostTarget.WINDOWS_X64) append(" -static -static-libgcc -static-libstdc++")
             }
 
-            // gba/mGBA pulls in Windows platform sources (vfs-w32.c) absent from the POSIX-only vendored
-            // tree, so it can't cross-compile yet — drop it from the Windows target (tracked follow-up).
-            val emulators = NativeEmulators.subdirs.filterNot {
-                target == NativeHostTarget.WINDOWS_X64 && it == "gba"
-            }
-
-            val perEmulator = emulators.map { emulator ->
+            val perEmulator = NativeEmulators.subdirs.map { emulator ->
                 tasks.register<BuildEmulatorNativeLib>("buildHostNative${emulator.replaceFirstChar { it.uppercase() }}") {
                     group = "native"
                     dependsOn(shim)
