@@ -64,7 +64,8 @@ it when a load-bearing fact stops being true.
   end-state glue — `:di` wiring, `:native` (CMake) + `:screenshot` (Paparazzi)
   companions, and Android system modules (audio service, SAF/ContentProvider,
   `R.*` resources, Android Main dispatcher). Remaining KMP-adjacent work:
-  macOS/Windows desktop native builds (Linux-only today — see `Readme.md`).
+  macOS desktop native builds (Linux runs natively; Windows is cross-compiled via
+  MinGW-w64 with `-Pchipbox.jvm.nativeTarget=windows-x64` — see `Readme.md`).
 
 ## Build / verify (no device, no emulator boot)
 
