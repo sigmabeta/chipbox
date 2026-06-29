@@ -68,6 +68,10 @@ abstract class BuildEmulatorNativeLib : DefaultTask() {
                         add("-S"); add(src)
                         add("-B"); add(cxx.absolutePath)
                         add("-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=${variantOut.absolutePath}")
+                        // A Windows `.dll` is a RUNTIME artifact (only the `.dll.a` import lib is a
+                        // LIBRARY one), so the cross-build needs this set too or the `.dll` lands in the
+                        // build tree. Harmless for the Android/Linux `.so`, which are LIBRARY artifacts.
+                        add("-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=${variantOut.absolutePath}")
                         addAll(extraArgs)
                     },
                 )

@@ -23,6 +23,31 @@ object NativeEmulators {
     const val ANDROID_PLATFORM = "android-26"
 }
 
+/**
+ * Desktop-JVM host native target. `LINUX` (default) builds for the build machine — the long-standing
+ * behavior. `WINDOWS_X64` cross-compiles to Windows `.dll`s via the MinGW-w64 toolchain, selected
+ * with `-Pchipbox.jvm.nativeTarget=windows-x64`. macOS isn't wired yet.
+ */
+enum class NativeHostTarget(
+    /** The JDK `include/<subdir>/jni_md.h` (per-OS JNI machine-dependent header) for this target. */
+    val jniMdSubdir: String,
+    /** MinGW-style cross-compiler prefix (e.g. `x86_64-w64-mingw32-`), or null when native to host. */
+    val crossPrefix: String?,
+) {
+    LINUX("linux", null),
+    WINDOWS_X64("win32", "x86_64-w64-mingw32-"),
+}
+
+/** Host native target from `-Pchipbox.jvm.nativeTarget` (`host`/`linux` default, or `windows-x64`). */
+fun Project.resolveNativeHostTarget(): NativeHostTarget {
+    val raw = (findProperty("chipbox.jvm.nativeTarget") as? String)?.trim()?.lowercase()
+    return when (raw) {
+        null, "", "host", "linux" -> NativeHostTarget.LINUX
+        "windows-x64", "windows", "win", "mingw" -> NativeHostTarget.WINDOWS_X64
+        else -> error("Unknown -Pchipbox.jvm.nativeTarget='$raw'; use 'host' (default) or 'windows-x64'.")
+    }
+}
+
 /** Android SDK location: ANDROID_HOME / ANDROID_SDK_ROOT / `sdk.dir` in local.properties. */
 fun Project.androidSdkDir(): File {
     System.getenv("ANDROID_HOME")?.let { return File(it) }
@@ -75,16 +100,31 @@ fun Project.resolveCmake(): File {
     return File("cmake")
 }
 
-private fun File.hasJniHeaders(): Boolean =
-    File(this, "include/jni.h").isFile && File(this, "include/linux/jni_md.h").isFile
+private fun File.hasJniHeaders(target: NativeHostTarget): Boolean =
+    File(this, "include/jni.h").isFile && File(this, "include/${target.jniMdSubdir}/jni_md.h").isFile
 
 /**
- * Resolve a JDK that ships JNI headers (the host native build needs `include/jni.h`). Mirrors
- * apps/jvm: `-Pchipbox.jvm.nativeJdk` override → java.home / JAVA_HOME → `~/.jdks`, `/usr/lib/jvm`.
+ * Resolve a JDK that ships the JNI headers the host native build compiles against — `include/jni.h`
+ * plus the target's `include/<subdir>/jni_md.h`. `-Pchipbox.jvm.nativeJdk` override → java.home /
+ * JAVA_HOME → `~/.jdks`, `/usr/lib/jvm`. Cross targets (Windows) can't be auto-discovered — the local
+ * machine's JDKs ship the *host* `jni_md.h`, not the target's — so they require the explicit override
+ * pointing at a JDK for the target OS (only its `include/<subdir>/jni_md.h` is read; no code runs).
  */
-fun Project.resolveNativeJdk(): File {
-    (findProperty("chipbox.jvm.nativeJdk") as? String)?.takeIf { it.isNotBlank() }
-        ?.let { return File(it) }
+fun Project.resolveNativeJdk(target: NativeHostTarget = NativeHostTarget.LINUX): File {
+    (findProperty("chipbox.jvm.nativeJdk") as? String)?.takeIf { it.isNotBlank() }?.let {
+        val jdk = File(it)
+        require(jdk.hasJniHeaders(target)) {
+            "-Pchipbox.jvm.nativeJdk=$it is missing include/${target.jniMdSubdir}/jni_md.h; " +
+                "point it at a JDK for ${target.name}."
+        }
+        return jdk
+    }
+    if (target.crossPrefix != null) {
+        error(
+            "Cross-compiling to ${target.name} needs a target JDK: set -Pchipbox.jvm.nativeJdk=/path/to/jdk " +
+                "whose include/${target.jniMdSubdir}/jni_md.h exists (e.g. a Windows JDK).",
+        )
+    }
     val candidates = buildList {
         System.getProperty("java.home")?.let { add(File(it)) }
         System.getenv("JAVA_HOME")?.let { add(File(it)) }
@@ -93,6 +133,6 @@ fun Project.resolveNativeJdk(): File {
             root.listFiles()?.filter { it.isDirectory }?.sortedByDescending { it.name }?.let { addAll(it) }
         }
     }
-    return candidates.firstOrNull { it.hasJniHeaders() }
+    return candidates.firstOrNull { it.hasJniHeaders(target) }
         ?: error("No JDK with include/jni.h found; set -Pchipbox.jvm.nativeJdk=/path/to/jdk")
 }
