@@ -9,7 +9,7 @@ that wires a VM's rendered state into SAGE's `ListScreen`/`GridScreen`/
 `ReorderableScreen`. Being `:api`, it is the public contract feature `:api`/`:real`
 modules build against; there is no `:real` impl — the building blocks live here.
 
-Read `docs/architecture/feature-screens.md` for the end-to-end anatomy of a
+Read `arch-docs/architecture/feature-screens.md` for the end-to-end anatomy of a
 feature screen; this module provides the VM base and the Route's rendering half.
 
 ## Contents

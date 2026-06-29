@@ -120,7 +120,7 @@ dump** of the live scene (named `<TestClass>.<method>.png` /
 - **on-device** — pulled back to
   `cbox/common/uitest/build/outputs/connected_android_test_additional_output/androidDeviceTest/connected/<device>/`
 
-See `docs/architecture/ui-test-dsl.md` for the design (verbs, the Metro test
+See `arch-docs/architecture/ui-test-dsl.md` for the design (verbs, the Metro test
 graph, and the source-set topology).
 
 ## Tooling
@@ -137,7 +137,7 @@ graph, and the source-set topology).
 ## Roadmap
 
 - Independent tempo & pitch playback controls (see
-  `docs/psf-playback-speed-pitch-design.md`)
+  `arch-docs/psf-playback-speed-pitch-design.md`)
 - Desktop builds for macOS and Windows (currently Linux-only)
 - Bespoke UI for Android TV
 - Android Auto control support

@@ -20,7 +20,7 @@ detekt {
 // Metro's `interop.includeDagger()` keeps the compiler plugin recognising the existing
 // Dagger-shaped `@Inject` / `@Provides` / `@Module` / `@Binds` annotations on the
 // `@ContributesTo(AppScope::class)` modules across the compile classpath. The Hilt plugin
-// and KSP step are gone (Milestone 6 — see docs/architecture/sage-integration.md); the Dagger annotations
+// and KSP step are gone (Milestone 6 — see arch-docs/architecture/sage-integration.md); the Dagger annotations
 // stay because rewriting them as Metro-native (`@SingleIn(AppScope::class)`, etc.) buys
 // nothing functional and would churn 30+ module files.
 metro {

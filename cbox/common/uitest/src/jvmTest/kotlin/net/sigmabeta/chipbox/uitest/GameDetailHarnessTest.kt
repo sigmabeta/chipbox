@@ -29,7 +29,7 @@ import kotlin.test.Test
  * [GameDetailViewModel] (assisted, resolved through the ViewModelGraph factory) over the
  * pre-populated [MemoryRepository], rendered in `runComposeUiTest`, and the entity data surfaces in
  * the semantics tree. The full tabs shell + Voyager `startAtScreen`/`assertNavigationEvent` wrap is
- * the next step. See docs/architecture/ui-test-dsl.md.
+ * the next step. See arch-docs/architecture/ui-test-dsl.md.
  */
 @OptIn(ExperimentalTestApi::class)
 class GameDetailHarnessTest {

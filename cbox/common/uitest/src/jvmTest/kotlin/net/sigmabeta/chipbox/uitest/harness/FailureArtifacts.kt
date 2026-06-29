@@ -22,7 +22,7 @@ import java.util.zip.Deflater
  *  - a **PNG screenshot** of the root — "what it looked like", encoded cross-platform.
  *
  * This is failure-only and never *compares* anything, so it dodges the determinism/cross-platform
- * pixel issues that make golden-image diffing fragile here (see docs/architecture/ui-test-dsl.md).
+ * pixel issues that make golden-image diffing fragile here (see arch-docs/architecture/ui-test-dsl.md).
  *
  * Everything is best-effort and wrapped so a capture problem can never mask the real failure. Paths
  * are logged through [hatchet] (a real [net.sigmabeta.sage.logging.BasicHatchet], so they show up in

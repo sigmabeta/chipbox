@@ -18,7 +18,7 @@ import net.sigmabeta.sage.logging.Hatchet
 class ChipboxPlaybackService : MediaLibraryService() {
     // Resolved in onCreate from `application as ChipboxServiceGraph`; assigned-once so the
     // accessors read like Hilt @Inject lateinit at the use sites but reach the Metro graph
-    // instead. See docs/architecture/sage-integration.md (M6).
+    // instead. See arch-docs/architecture/sage-integration.md (M6).
     private lateinit var libraryBrowser: LibraryBrowser
     private lateinit var director: Director
     private lateinit var hatchet: Hatchet

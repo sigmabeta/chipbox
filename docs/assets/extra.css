@@ -1,0 +1,30 @@
+/* Chipbox brand accent — the app's warm gold (primaryDark #E3C46D),
+   with a darker, readable variant for the light scheme. */
+
+[data-md-color-scheme="default"] {
+  --md-accent-fg-color: #735C0C;
+  --md-typeset-a-color: #735C0C;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-accent-fg-color: #E3C46D;
+  --md-typeset-a-color: #E3C46D;
+  --md-primary-fg-color--dark: #16130B;
+}
+
+/* Make the primary button use the gold accent instead of the header color. */
+.md-button--primary {
+  background-color: var(--md-accent-fg-color);
+  border-color: var(--md-accent-fg-color);
+  color: #16130B;
+}
+.md-button--primary:hover {
+  background-color: var(--md-accent-fg-color);
+  border-color: var(--md-accent-fg-color);
+  filter: brightness(1.1);
+}
+
+/* Grid card icons in the brand gold. */
+.md-typeset .grid.cards .twemoji svg {
+  fill: var(--md-accent-fg-color);
+}

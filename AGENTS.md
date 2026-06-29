@@ -1,7 +1,7 @@
 # AGENTS.md — Chipbox orientation
 
 Orientation for coding agents. Keep this file lean; deep dives live in
-`docs/architecture/` and are loaded on demand. Update this file when a
+`arch-docs/architecture/` and are loaded on demand. Update this file when a
 load-bearing fact below stops being true.
 
 ## What Chipbox is
@@ -14,15 +14,15 @@ targets too.
 
 ## The four things I keep re-deriving (read these first)
 
-- `docs/architecture/multiplatform-structure.md` — module taxonomy, source sets
+- `arch-docs/architecture/multiplatform-structure.md` — module taxonomy, source sets
   (`commonMain` vs `jvmSharedMain`=`src/main/java`), convention plugins, how to
   add a module, native build.
-- `docs/architecture/feature-screens.md` — anatomy of a `features/*` screen
+- `arch-docs/architecture/feature-screens.md` — anatomy of a `features/*` screen
   (api/real/screenshot, `ChipboxListViewModel`, `ListState`/`ListModel`,
   Voyager route registration). Start here to build/modify a screen.
-- `docs/architecture/playback-system.md` — Director → Generator → Emulator →
+- `arch-docs/architecture/playback-system.md` — Director → Generator → Emulator →
   Cache → Buffer → Speaker pipeline and the events between them.
-- `docs/architecture/sage-integration.md` — what the `sage/` submodule provides
+- `arch-docs/architecture/sage-integration.md` — what the `sage/` submodule provides
   and the chipbox↔sage type/DI/build boundary.
 
 ## Per-module READMEs
@@ -108,5 +108,5 @@ UI over fakes. **Two rules for agents:**
   edit it. Only a human changes a test (and may direct you to).
 
 How to write one, the DSL verbs, and platform gotchas:
-`docs/architecture/ui-tests-for-agents.md`. Design/internals:
-`docs/architecture/ui-test-dsl.md`.
+`arch-docs/architecture/ui-tests-for-agents.md`. Design/internals:
+`arch-docs/architecture/ui-test-dsl.md`.
