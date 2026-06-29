@@ -69,7 +69,7 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
 import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
 import net.sigmabeta.sage.ui.list.LocalListBottomInset
 
-private val NAV_RAIL_MIN_WIDTH = 480.dp
+private val NAV_RAIL_MIN_WIDTH = 552.dp
 
 // Top-level tab switches: the outgoing tab slides down and fades out while the incoming
 // tab slides in from the left (no fade). Deliberately distinct from the horizontal
