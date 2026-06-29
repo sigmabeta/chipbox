@@ -3,6 +3,7 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.MapProperty
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
@@ -46,6 +47,12 @@ abstract class BuildEmulatorNativeLib : DefaultTask() {
     @get:Internal abstract val sourceDir: DirectoryProperty
     @get:Internal abstract val workDir: DirectoryProperty
 
+    /** Cap on parallel compile jobs for `cmake --build`. Unset → `-j` (the native tool's default; for
+     *  Make that's *unbounded*). Set it to bound memory on a cold build of many files (e.g. CI, where a
+     *  full mGBA compile under `make -j` can OOM the container). `@Internal`: speed/memory only, not the
+     *  output — must not affect the cache key. */
+    @get:Internal abstract val maxParallelJobs: Property<Int>
+
     /** `<variant>/lib*.so`. */
     @get:OutputDirectory abstract val outputDir: DirectoryProperty
 
@@ -76,7 +83,10 @@ abstract class BuildEmulatorNativeLib : DefaultTask() {
                     },
                 )
             }
-            exec.exec { commandLine(cmake, "--build", cxx.absolutePath, "-j") }
+            val parallelArg = maxParallelJobs.orNull?.let { listOf("--parallel", it.toString()) } ?: listOf("-j")
+            exec.exec {
+                commandLine(buildList { add(cmake); add("--build"); add(cxx.absolutePath); addAll(parallelArg) })
+            }
         }
     }
 }
