@@ -24,12 +24,12 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# Two jobs (GitHub's canonical Pages pattern): build uploads the site artifact exactly once; deploy
+# only publishes it. Keeping deploy separate means a transient deploy retry never re-uploads — a
+# single combined job that retried left two `github-pages` artifacts and deploy-pages refused to pick.
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -49,6 +49,13 @@ jobs:
         with:
           path: site
 
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
