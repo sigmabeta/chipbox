@@ -150,10 +150,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      # Puts sdkmanager on PATH and accepts SDK licenses (it isn't on PATH by default on ubuntu-latest).
+      - uses: android-actions/setup-android@v3
       # The Android emulator natives need the pinned NDK + an SDK CMake (NativeEmulators).
       - name: Install NDK + CMake
-        run: |
-          sdkmanager "ndk;29.0.14206865" "cmake;3.22.1"
+        run: sdkmanager "ndk;29.0.14206865" "cmake;3.22.1"
       - uses: gradle/actions/setup-gradle@v4
       - name: Assemble release (split APKs)
         run: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --no-configuration-cache --no-daemon --max-workers=4
