@@ -44,9 +44,21 @@ val hostOsResourceDir: String = when {
 // prefix. Local builds (and non-tag CI) fall back to a static placeholder.
 val jpackageVersion: String = (project.findProperty("chipbox.jvm.packageVersion") as String?) ?: "3.0.0"
 val appResourcesRoot: Provider<Directory> = layout.buildDirectory.dir("jpackage-resources")
+// Windows .msi must be packaged on windows-latest (jpackage can't cross-compile), but there's no
+// native Windows-host build of the cores. jpackage only *assembles* — it doesn't compile natives — so
+// the Windows job supplies the .dll cross-compiled on a Linux job via this property and we skip the
+// native build entirely. Unset (the default) → build the host natives normally (Linux .deb/.rpm, run).
+val prebuiltNativeDir: String? = project.findProperty("chipbox.jvm.prebuiltNativeDir") as String?
 val stageAppResources by tasks.registering(Copy::class) {
-    dependsOn(nativeLibsTask)
-    from(nativeLibsDirFile) { into(hostOsResourceDir) } // .so/.dll/.dylib → $APPDIR/resources
+    if (prebuiltNativeDir != null) {
+        from(prebuiltNativeDir) {
+            include("*.dll", "*.so", "*.dylib")
+            into(hostOsResourceDir)
+        }
+    } else {
+        dependsOn(nativeLibsTask)
+        from(nativeLibsDirFile) { into(hostOsResourceDir) } // .so/.dll/.dylib → $APPDIR/resources
+    }
     from(splashImageFile) {
         // splash → $APPDIR/resources/splash.png (for the -splash launcher arg)
         into("common")
@@ -69,9 +81,12 @@ compose.desktop {
             "-splash:\$APPDIR/resources/splash.png",
         )
         nativeDistributions {
+            // Each format only builds on its compatible OS (Compose disables the rest), so declaring
+            // all three is safe: ubuntu builds Deb/Rpm, windows-latest builds Msi.
             targetFormats(
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb,
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Rpm,
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi,
             )
             packageName = "chipbox"
             packageVersion = jpackageVersion
@@ -80,6 +95,14 @@ compose.desktop {
             // and would surface only as runtime ClassNotFound. Trim later via suggestRuntimeModules.
             includeAllModules = true
             appResourcesRootDir.set(appResourcesRoot)
+            windows {
+                // Stable UUID so future versions upgrade the install in place rather than stacking
+                // side-by-side. Start-menu shortcut + group; let the user pick the install dir.
+                upgradeUuid = "44f80530-fd71-4dd3-9d94-00c76e65a537"
+                menuGroup = "Chipbox"
+                menu = true
+                shortcut = true
+            }
         }
     }
 }
