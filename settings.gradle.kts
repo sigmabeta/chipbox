@@ -60,7 +60,10 @@ buildCache {
         isPush = providers.environmentVariable("CI").isPresent && ciPassword.isPresent
         if (isPush) {
             credentials {
-                username = providers.environmentVariable("GRADLE_CACHE_USER").orElse("ci").get()
+                // GRADLE_CACHE_USER is optional — the node's write user is "ci" (CircleCI never set
+                // the var, so it defaulted to "ci"). On Actions the env is passed through from a
+                // possibly-unset secret, so it can arrive present-but-blank; treat blank as unset.
+                username = providers.environmentVariable("GRADLE_CACHE_USER").orElse("ci").get().ifBlank { "ci" }
                 password = ciPassword.get()
             }
         }
