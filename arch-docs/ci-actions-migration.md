@@ -54,13 +54,18 @@ Inter-job files: `actions/upload-artifact` / `download-artifact` (replaces
 - `ci.yml` — push / pull_request: lint, unit-test, screenshot, shared-build,
   android-lint, desktop-linux, android-apk. **(Phase 1, done.)** Windows is not
   in `ci.yml` — it builds at release time only.
-- `release.yml` — tag `^\d+\.\d+.*`: **Phase 2b (Linux done)** builds the Linux
-  installers + APKs and publishes a GitHub Release via the built-in `GITHUB_TOKEN`.
+- `release.yml` — tag `^\d+\.\d+.*`: builds the desktop installers + APKs and
+  publishes a GitHub Release via the built-in `GITHUB_TOKEN`.
   - **Linux desktop** → `.deb` + `.rpm` (JRE bundled), via jpackage
     (`compose.desktop.application` in `apps/jvm`). Validated locally (natives
     bundled at `$APPDIR/resources`, `java.library.path` points there).
+  - **Windows desktop** → `.msi`. Two-stage: a ubuntu job MinGW-cross-compiles the
+    emulator `.dll`, then a `windows-latest` job runs jpackage over them
+    (`-Pchipbox.jvm.prebuiltNativeDir`). jpackage assembles but doesn't compile
+    native code, so no native Windows toolchain is needed. **Unvalidated** — wired
+    blind (no local Windows); the first tag is its live test.
   - **APKs** → split signed APKs (unchanged).
-  - **Windows / macOS** → not produced (see below).
+  - **macOS** → not produced (see below).
 - `pages.yml` — already exists, unchanged.
 
 > **Packaging migration (done for desktop):** `apps/jvm` moved off the Gradle
@@ -72,12 +77,20 @@ Inter-job files: `actions/upload-artifact` / `download-artifact` (replaces
 > old start-script injection. jpackage needs a full JDK — CI's Temurin 21 has it;
 > a dev JBR needs `-Pchipbox.jvm.jpackageJdk=…`.
 
-> **Windows/macOS release paused:** removing the `application` plugin deleted the
-> MinGW-cross distZip that the old Windows release leg shipped, and jpackage can't
-> cross-compile — so a Windows `.msi`/macOS `.dmg` must run on its own runner with
-> a native build that doesn't exist yet (only `LINUX`-native + `WINDOWS_X64`
-> MinGW-cross exist — `NativeEmulators.NativeHostTarget`). Until those native-host
-> paths land, **no Windows or macOS desktop artifact is released.**
+> **Windows .msi approach:** jpackage can't cross-compile, but it only *assembles*
+> — it never compiles native code. So the existing MinGW cross-compile (Linux)
+> still produces the `.dll`, and a `windows-latest` job runs jpackage over those
+> prebuilt libs (`-Pchipbox.jvm.prebuiltNativeDir` skips the native build and
+> stages them instead). No native Windows toolchain. Likely failure points to
+> check on the first run: WiX availability (jpackage `.msi` needs WiX v3 — the job
+> installs it via choco), the forward-slash `java.library.path=$APPDIR/resources`
+> resolving on Windows, and whether the `.dll` actually load (the old cross-built
+> distZip was never run on Windows either).
+
+> **macOS release still paused:** a `.dmg` needs a darwin native build that doesn't
+> exist (`NativeEmulators.NativeHostTarget` has only `LINUX` + `WINDOWS_X64`). Until
+> a macOS/`darwin` `.dylib` target lands (Phase 3), **no macOS desktop artifact is
+> released.**
 
 > **Native-host build reality (verified):** the desktop native build supports
 > only `LINUX` (native to the build machine) and `WINDOWS_X64` (MinGW-w64
@@ -131,11 +144,10 @@ signing); `GRADLE_CACHE_USER`, `GRADLE_CACHE_PASSWORD` (build-cache push).
      a real tag — see dual-release caveat.)**
    - **2b Native installers** — `apps/jvm` migrated to
      `compose.desktop.application`; jpackage bundles the JNI natives into the app
-     image. **Linux `.deb`/`.rpm` done** (validated locally; wired into
-     `release.yml`). `.msi` on `windows-latest` and `.dmg` on
-     `macos-latest` are **pending their native-host builds** (jpackage can't
-     cross-compile); the old MinGW-cross Windows distZip is gone with the
-     `application` plugin, so Windows/macOS releases are paused until then.
+     image. **Linux `.deb`/`.rpm` done** (validated locally). **Windows `.msi`
+     wired** (MinGW-cross `.dll` on ubuntu → jpackage on `windows-latest`;
+     unvalidated — needs a tag). `.dmg` on `macos-latest` is **pending the darwin
+     native build**.
 3. **macOS target** — generalize the native host build to detect macOS
    (`darwin`/`.dylib`) + clang on `macos-latest`; then the `.dmg` leg of 2b.
 4. **Cut over** — **(Done.)** Deleted `.circleci/config.yml`; broadened `ci.yml`

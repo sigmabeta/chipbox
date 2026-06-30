@@ -1,15 +1,16 @@
 name: Release
 
-# Tag-triggered release: builds the Linux desktop installers (.deb / .rpm) and the split signed APKs,
-# then publishes them all to a GitHub Release via the built-in GITHUB_TOKEN (no PAT). See
+# Tag-triggered release: builds the desktop installers (Linux .deb/.rpm + Windows .msi) and the split
+# signed APKs, then publishes them all to a GitHub Release via the built-in GITHUB_TOKEN (no PAT). See
 # arch-docs/ci-actions-migration.md.
 #
 # Desktop packaging is jpackage via compose.desktop.application (apps/jvm). The emulator natives are
-# bundled into the app image and java.library.path is pointed at them ($APPDIR/resources).
+# bundled into the app image and java.library.path is pointed at them ($APPDIR/resources). The Windows
+# .dll are cross-compiled on a Linux job (jpackage assembles but doesn't compile native code) and fed
+# to the windows-latest packaging job.
 #
-# Windows .msi and macOS .dmg are NOT produced yet: jpackage can't cross-compile, so each needs to run
-# on its own runner, and the native emulator build has no native Windows-host or macOS/darwin path yet
-# (only LINUX-native + WINDOWS_X64 MinGW-cross exist). Those are later phases — see the doc.
+# macOS .dmg is NOT produced yet: it needs a darwin native build that doesn't exist (NativeEmulators
+# has no macOS/darwin path) — a later phase. See the doc.
 #
 # This is the sole release path (CircleCI is deleted) but has NOT yet run on a real tag — the first tag
 # push is its live test. workflow_dispatch exercises the build jobs only; the publish step is gated to
@@ -62,11 +63,93 @@ jobs:
             apps/jvm/build/compose/binaries/main/deb/*.deb
             apps/jvm/build/compose/binaries/main/rpm/*.rpm
 
-  # desktop-windows / desktop-macos: DEFERRED. jpackage can't cross-compile, so a Windows .msi must run
-  # on windows-latest and a macOS .dmg on macos-latest — each needs the emulator cores built natively on
-  # that OS. The native build has no Windows-host or macOS/darwin path yet (NativeEmulators supports only
-  # LINUX-native + WINDOWS_X64 MinGW-cross), so until those land no Windows/macOS desktop artifact ships.
-  # The MinGW cross-compiled distZip the old Windows leg produced is gone with the application plugin.
+  # Windows .msi is built in two stages because jpackage can't cross-compile but doesn't compile native
+  # code either — it only assembles. So we cross-compile the emulator .dll on ubuntu (the proven MinGW
+  # path) and hand them to a windows-latest job that runs jpackage over them. No native Windows toolchain
+  # needed. (macOS .dmg is still deferred — it needs a darwin native build that doesn't exist yet.)
+  windows-natives:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # MinGW-w64 cross toolchain + static MinGW zlib so the .dll link fully static. POSIX-threads
+      # variant so std::thread / pthreads cores build.
+      - name: Install MinGW-w64 cross toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 libz-mingw-w64-dev
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+      # JNI is compiled against a *Windows* JDK's headers (include/win32/jni_md.h); only headers are read.
+      - name: Cache Windows JDK (win32 JNI headers)
+        id: winjdk
+        uses: actions/cache@v4
+        with:
+          path: ~/win-jdk
+          key: win-jdk-temurin-21-v1
+      - name: Fetch Windows JDK
+        if: steps.winjdk.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$HOME/win-jdk"
+          curl -fsSL -o /tmp/winjdk.zip "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk"
+          unzip -q /tmp/winjdk.zip -d "$HOME/win-jdk"
+      - uses: gradle/actions/setup-gradle@v4
+      # Bound native parallelism (mGBA alone is ~150 files); an unbounded make -j OOM-kills the runner.
+      - name: Cross-compile Windows emulator natives (.dll)
+        run: |
+          WIN_JDK_HOME="$(find "$HOME/win-jdk" -maxdepth 1 -type d -name 'jdk-*' | head -1)"
+          ./gradlew :apps:jvm:chipboxHostNativeLibs --build-cache --no-configuration-cache --no-daemon --max-workers=4 \
+            -Pchipbox.jvm.nativeTarget=windows-x64 \
+            -Pchipbox.jvm.nativeJdk="$WIN_JDK_HOME" \
+            -Pchipbox.native.maxParallel=2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-natives
+          path: apps/jvm/build/jvm-native/libs/*.dll
+
+  desktop-windows:
+    needs: windows-natives
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # jpackage's .msi step shells out to the WiX Toolset (v3); install it so it's on PATH. The
+      # windows-latest image's bundled WiX has historically drifted (v3 → v4, which jpackage rejects).
+      - name: Install WiX Toolset (v3, for jpackage .msi)
+        run: choco install wixtoolset --version 3.14.1 -y --no-progress
+      # Download the cross-compiled .dll into apps/jvm so a relative -P path resolves against the
+      # project dir on Windows (avoids Git-Bash vs Windows path-separator issues with an absolute path).
+      - name: Download cross-compiled natives
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-natives
+          path: apps/jvm/prebuilt-natives
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build Windows installer (.msi)
+        shell: bash
+        run: |
+          VERSION="$(printf '%s' "${{ github.ref_name }}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo '0.0.0')"
+          echo "jpackage version: $VERSION"
+          ./gradlew :apps:jvm:packageMsi \
+            -Pchipbox.jvm.packageVersion="$VERSION" \
+            -Pchipbox.jvm.prebuiltNativeDir=prebuilt-natives \
+            --build-cache --no-configuration-cache --no-daemon --max-workers=4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: apps/jvm/build/compose/binaries/main/msi/*.msi
 
   android-apk:
     runs-on: ubuntu-latest
@@ -107,7 +190,7 @@ jobs:
           path: apps/android/build/outputs/apk/release/chipbox-*.apk
 
   publish:
-    needs: [desktop-linux, android-apk]
+    needs: [desktop-linux, desktop-windows, android-apk]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') # publish only for tag pushes, not manual branch runs
     permissions:
@@ -119,7 +202,8 @@ jobs:
       - name: Collect assets
         run: |
           mkdir -p upload
-          find dist -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.apk' \) -exec cp {} upload/ \;
+          find dist -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.msi' -o -name '*.apk' \) \
+            -exec cp {} upload/ \;
           echo "Assets to publish:"; ls -la upload
           [ -n "$(ls -A upload)" ] || { echo "ERROR: no staged artifacts"; exit 1; }
       # alpha/beta/rc tags ship as prereleases; notes are auto-generated from commits.
