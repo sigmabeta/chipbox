@@ -142,9 +142,10 @@ jobs:
           name: windows-natives
           path: apps/jvm/prebuilt-natives
       - uses: gradle/actions/setup-gradle@v4
-      # nativeTarget=windows-x64 so the chipbox.native.host plugin resolves the runner's Windows JDK
-      # (win32 JNI headers) at apply time — it defaults to LINUX, which has no matching JDK here. The
-      # native build itself is skipped via prebuiltNativeDir; this only satisfies the eager plugin apply.
+      # nativeTarget=windows-x64 + nativeJdk=$JAVA_HOME so the chipbox.native.host plugin's eager apply
+      # resolves a win32-JNI-header JDK (the runner's own Windows JDK). It defaults to LINUX (no matching
+      # JDK here), and the WINDOWS_X64 path requires the explicit nativeJdk. The native build itself is
+      # skipped via prebuiltNativeDir; this only satisfies the plugin apply.
       - name: Build Windows installer (.msi)
         shell: bash
         run: |
@@ -154,6 +155,7 @@ jobs:
             -Pchipbox.jvm.packageVersion="$VERSION" \
             -Pchipbox.jvm.prebuiltNativeDir=prebuilt-natives \
             -Pchipbox.jvm.nativeTarget=windows-x64 \
+            -Pchipbox.jvm.nativeJdk="$JAVA_HOME" \
             --build-cache --no-configuration-cache --no-daemon --max-workers=4
       - uses: actions/upload-artifact@v4
         with:
