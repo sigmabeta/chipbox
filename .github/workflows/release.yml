@@ -128,10 +128,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      # jpackage's .msi step shells out to the WiX Toolset (v3); install it so it's on PATH. The
-      # windows-latest image's bundled WiX has historically drifted (v3 → v4, which jpackage rejects).
-      - name: Install WiX Toolset (v3, for jpackage .msi)
-        run: choco install wixtoolset --version 3.14.1 -y --no-progress
+      # jpackage's .msi step shells out to WiX v3. windows-latest preinstalls it (the choco
+      # `wixtoolset` package tracks v3.x), so this is a no-op safety net for future images that might
+      # drop it. No --version pin: pinning a patch older than the preinstalled one makes choco fail as
+      # a downgrade, and an unpinned install just skips when a same-or-newer version is already present.
+      - name: Ensure WiX Toolset (v3, for jpackage .msi)
+        run: choco install wixtoolset -y --no-progress
       # Download the cross-compiled .dll into apps/jvm so a relative -P path resolves against the
       # project dir on Windows (avoids Git-Bash vs Windows path-separator issues with an absolute path).
       - name: Download cross-compiled natives
