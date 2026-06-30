@@ -102,6 +102,12 @@ compose.desktop {
                 menuGroup = "Chipbox"
                 menu = true
                 shortcut = true
+                // Without an explicit icon jpackage stamps the launcher with the Compose/Kotlin
+                // default. Multi-resolution .ico generated from the app launcher icon (icons/).
+                iconFile.set(project.file("icons/chipbox.ico"))
+            }
+            linux {
+                iconFile.set(project.file("icons/chipbox.png"))
             }
         }
     }
