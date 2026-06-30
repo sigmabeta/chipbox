@@ -19,6 +19,9 @@ name: Release
 on:
   push:
     tags: ['[0-9]+.[0-9]+*'] # mirrors the old /^\d+\.\d+.*/ — e.g. 3.0.0-beta04
+    # TEMP (remove before merging to beta): exercise the build jobs — incl. the unvalidated Windows
+    # .msi — on this branch. The publish job stays gated to tag refs, so nothing is released.
+    branches: [ci-github-actions]
   workflow_dispatch:
 
 concurrency:
