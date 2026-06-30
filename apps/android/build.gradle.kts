@@ -92,9 +92,11 @@ android {
         }
         getByName("release") {
             isMinifyEnabled = false
-            // Release-signed with chipbox.jks when the CHIPBOX_* env vars are
-            // present (CI); falls back to debug signing for local builds.
-            signingConfig = if (System.getenv("CHIPBOX_KEY_ALIAS") != null) {
+            // Release-signed with chipbox.jks when the CHIPBOX_* env vars are present (CI); falls back
+            // to debug signing otherwise. isNullOrBlank (not != null) to match the signingConfig above:
+            // GitHub Actions maps an undefined secret to an empty string, and selecting the "release"
+            // config when it has no storeFile fails with "missing required property storeFile".
+            signingConfig = if (!System.getenv("CHIPBOX_KEY_ALIAS").isNullOrBlank()) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")
