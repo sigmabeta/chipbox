@@ -33,14 +33,16 @@ GRADLE_FLAGS=(--build-cache --configuration-cache --console=plain)
 # `setup`'s `:dependencies` step is dependency resolution, not verification, so it's omitted.
 # static-analysis and android-lint pass -Pchipbox.skipNative — neither needs the emulator .so libs
 # (AGP's externalNativeBuild isn't cacheable, so building native in lint is pure duplicated cost).
-# The apk/release-jvm tasks build native on purpose. All matches CI.
+# The apk/release-jvm tasks build native on purpose. release-jvm builds the desktop emulator natives
+# (chipboxHostNativeLibs); the full jpackage packaging (createDistributable / .deb / .rpm) is CI-only,
+# since jpackage needs a full JDK a dev JBR may lack. Otherwise this matches CI.
 ALL_TASKS=(
   "static-analysis|ktlintCheck detekt --continue -Pchipbox.skipNative"
   "unit-test|jvmTest --continue"
   "screenshot|verifyPaparazziDebug --continue"
   "shared-build|:apps:jvm:classes"
   "android-lint|:apps:android:lintRelease -Pchipbox.skipNative"
-  "release-jvm|:apps:jvm:installDist"
+  "release-jvm|:apps:jvm:chipboxHostNativeLibs"
   "apk|:apps:android:assembleDebug"
 )
 # Release APK can't be built locally right now (signing), so this uses assembleDebug.
@@ -132,8 +134,8 @@ fi
 if [[ "$ran" == *" apk "* ]] && [ -d apps/android/build/outputs/apk/debug ]; then
   mkdir -p "$OUT/apk"; cp -r apps/android/build/outputs/apk/debug/. "$OUT/apk/"
 fi
-if [[ "$ran" == *" release-jvm "* ]] && [ -d apps/jvm/build/install ]; then
-  mkdir -p "$OUT/jvm-dist"; cp -r apps/jvm/build/install/. "$OUT/jvm-dist/"
+if [[ "$ran" == *" release-jvm "* ]] && [ -d apps/jvm/build/jvm-native/libs ]; then
+  mkdir -p "$OUT/jvm-native"; cp -r apps/jvm/build/jvm-native/libs/. "$OUT/jvm-native/"
 fi
 
 # ---- summary ---------------------------------------------------------------
@@ -157,7 +159,7 @@ summary="$OUT/summary.txt"
   desc test-results "JUnit XML (unit tests + Paparazzi)"
   desc paparazzi    "screenshot diff/failure images (per module)"
   desc apk          "debug APK (apps/android)"
-  desc jvm-dist     "desktop distribution (apps/jvm)"
+  desc jvm-native   "desktop emulator native libs (apps/jvm)"
 } >"$summary"
 
 echo

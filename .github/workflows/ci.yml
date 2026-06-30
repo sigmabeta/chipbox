@@ -129,9 +129,11 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-      # Host emulator natives build with the image's gcc/g++/make + an SDK/PATH CMake (resolveCmake).
-      - name: Build desktop distribution (Linux)
-        run: ./gradlew :apps:jvm:installDist --build-cache --no-configuration-cache --no-daemon --max-workers=4
+      # Builds the jpackage app image (host emulator natives via the image's gcc/g++/make + jlink
+      # runtime) — the desktop packaging path after the move to compose.desktop.application. The
+      # OS-specific installers (.deb/.rpm) are release-only; this just proves the app assembles.
+      - name: Build desktop app image (Linux)
+        run: ./gradlew :apps:jvm:createDistributable --build-cache --no-configuration-cache --no-daemon --max-workers=4
 
   android-apk:
     runs-on: ubuntu-latest
