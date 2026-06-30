@@ -1,0 +1,177 @@
+name: Release
+
+# Tag-triggered release: builds the desktop distZips (Linux native + Windows via MinGW cross-compile)
+# and the split signed APKs, then publishes them all to a GitHub Release. Ports the CircleCI `release`
+# workflow to Actions (see arch-docs/ci-actions-migration.md), using the built-in GITHUB_TOKEN instead
+# of a PAT.
+#
+# This is the PARITY port (distZips + APKs), matching what CircleCI ships today. Native installers
+# (.deb/.rpm/.msi/.dmg via jpackage `nativeDistributions`) and the macOS build are a LATER phase: the
+# native host build currently supports only LINUX (native) and WINDOWS_X64 (MinGW cross) — there is no
+# native Windows-host or macOS/darwin path yet (NativeEmulators.NativeHostTarget), and `apps/jvm` has
+# no `nativeDistributions` config. Adding those is build-logic work, tracked separately.
+#
+# This is now the sole release path (CircleCI is deleted) but has NOT yet run on a real tag — the first
+# tag push is its live test. `workflow_dispatch` exercises the build jobs only; the publish step is
+# gated to tag refs, so a manual branch run won't create a Release.
+
+on:
+  push:
+    tags: ['[0-9]+.[0-9]+*'] # mirrors CircleCI's /^\d+\.\d+.*/ — e.g. 3.0.0-beta04
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false # never cancel an in-flight publish
+
+env:
+  # Remote Gradle build cache (gradle.sebacloud.org): anonymous read always; push needs CI + these.
+  GRADLE_CACHE_USER: ${{ secrets.GRADLE_CACHE_USER }}
+  GRADLE_CACHE_PASSWORD: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+
+jobs:
+  desktop-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0 # full history + tags for appVersioning's git describe
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # Host emulator natives build with the image's gcc/g++/make (resolveNativeHostTarget → LINUX).
+      - name: Install host C/C++ toolchain
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build Linux desktop distribution (distZip)
+        run: ./gradlew :apps:jvm:distZip --build-cache --no-configuration-cache --no-daemon --max-workers=4
+      # Renamed per-OS: the Linux and Windows zips share the base name chipbox.zip.
+      - name: Stage Linux zip
+        run: |
+          mkdir -p staging
+          cp apps/jvm/build/distributions/*.zip "staging/chipbox-${{ github.ref_name }}-linux.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: staging/*.zip
+
+  desktop-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # MinGW-w64 cross toolchain + static MinGW zlib so the .dll links fully static (nothing extra to
+      # ship). Force the POSIX-threads variant so std::thread / pthreads cores build.
+      - name: Install MinGW-w64 cross toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mingw-w64 libz-mingw-w64-dev
+          sudo update-alternatives --set x86_64-w64-mingw32-gcc /usr/bin/x86_64-w64-mingw32-gcc-posix
+          sudo update-alternatives --set x86_64-w64-mingw32-g++ /usr/bin/x86_64-w64-mingw32-g++-posix
+      # The cross-build compiles JNI against a *Windows* JDK's headers (include/win32/jni_md.h), which
+      # the Linux JDK doesn't ship. Only its headers are read — no Windows code runs.
+      - name: Cache Windows JDK (win32 JNI headers)
+        id: winjdk
+        uses: actions/cache@v4
+        with:
+          path: ~/win-jdk
+          key: win-jdk-temurin-21-v1
+      - name: Fetch Windows JDK
+        if: steps.winjdk.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "$HOME/win-jdk"
+          curl -fsSL -o /tmp/winjdk.zip "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jdk/hotspot/normal/eclipse?project=jdk"
+          unzip -q /tmp/winjdk.zip -d "$HOME/win-jdk"
+      - uses: gradle/actions/setup-gradle@v4
+      # Bound native compile parallelism: the Windows .dlls are a cold build (Linux .so are cache hits);
+      # an unbounded make -j over all cores (mGBA alone is ~150 files) OOM-kills the runner. -j2 fits.
+      - name: Cross-build Windows desktop distribution (distZip)
+        run: |
+          WIN_JDK_HOME="$(find "$HOME/win-jdk" -maxdepth 1 -type d -name 'jdk-*' | head -1)"
+          ./gradlew :apps:jvm:distZip --build-cache --no-configuration-cache --no-daemon --max-workers=4 \
+            -Pchipbox.jvm.nativeTarget=windows-x64 \
+            -Pchipbox.jvm.nativeJdk="$WIN_JDK_HOME" \
+            -Pchipbox.native.maxParallel=2
+      - name: Stage Windows zip
+        run: |
+          mkdir -p staging
+          cp apps/jvm/build/distributions/*.zip "staging/chipbox-${{ github.ref_name }}-windows.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: staging/*.zip
+
+  android-apk:
+    runs-on: ubuntu-latest
+    env:
+      # Release signing — without these the APK is debug-signed (apps/android/build.gradle.kts).
+      CHIPBOX_KEY_ALIAS: ${{ secrets.CHIPBOX_KEY_ALIAS }}
+      CHIPBOX_KEYSTORE_PASSWORD: ${{ secrets.CHIPBOX_KEYSTORE_PASSWORD }}
+      CHIPBOX_KEY_PASSWORD: ${{ secrets.CHIPBOX_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Cache NDK + CMake
+        id: cache-ndk
+        uses: actions/cache@v4
+        with:
+          path: |
+            /usr/local/lib/android/sdk/ndk/29.0.14206865
+            /usr/local/lib/android/sdk/cmake/3.22.1
+          key: android-ndk-29.0.14206865-cmake-3.22.1
+      - name: Install NDK + CMake
+        if: steps.cache-ndk.outputs.cache-hit != 'true'
+        run: sdkmanager "ndk;29.0.14206865" "cmake;3.22.1"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Assemble release (split APKs)
+        run: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --no-configuration-cache --no-daemon --max-workers=4
+      - name: Name APKs by version + ABI
+        run: ./scripts/rename-release-apk.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-apks
+          path: apps/android/build/outputs/apk/release/chipbox-*.apk
+
+  publish:
+    needs: [desktop-linux, desktop-windows, android-apk]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') # publish only for tag pushes, not manual branch runs
+    permissions:
+      contents: write # create the Release + upload assets via the built-in GITHUB_TOKEN
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: Collect assets
+        run: |
+          mkdir -p upload
+          find dist -type f \( -name '*.zip' -o -name '*.apk' \) -exec cp {} upload/ \;
+          echo "Assets to publish:"; ls -la upload
+          [ -n "$(ls -A upload)" ] || { echo "ERROR: no staged artifacts"; exit 1; }
+      # alpha/beta/rc tags ship as prereleases; notes are auto-generated from commits.
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PRERELEASE=""
+          case "${{ github.ref_name }}" in *alpha*|*beta*|*rc*) PRERELEASE="--prerelease" ;; esac
+          gh release create "${{ github.ref_name }}" upload/* \
+            --repo "${{ github.repository }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes $PRERELEASE
+          echo "Published: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"

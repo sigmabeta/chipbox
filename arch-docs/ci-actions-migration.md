@@ -1,6 +1,9 @@
 # CI migration: CircleCI → GitHub Actions
 
-Status: **in progress** (started on branch `ci-github-actions`).
+Status: **cut over** (branch `ci-github-actions`). CircleCI is deleted; GitHub
+Actions is the only CI — `ci.yml` (push/PR, every branch) and `release.yml` (tags).
+Remaining: native installers (Phase 2b) and the macOS target (Phase 3). The
+parity `release.yml` is authored but not yet exercised on a real tag.
 
 ## Why
 
@@ -49,10 +52,28 @@ Inter-job files: `actions/upload-artifact` / `download-artifact` (replaces
 ## Workflows
 
 - `ci.yml` — push / pull_request: lint, unit-test, screenshot, shared-build,
-  android-lint, desktop-linux, desktop-windows, android-apk.
-- `release.yml` — tag `^\d+\.\d+.*`: OS matrix (ubuntu `.deb`/`.rpm`, windows
-  `.msi`, macos `.dmg`) + distZips + split APKs → publish GitHub Release.
+  android-lint, desktop-linux, android-apk. **(Phase 1, done.)** Windows is not
+  in `ci.yml` — it builds at release time only.
+- `release.yml` — tag `^\d+\.\d+.*`: **Phase 2a (done)** ports the CircleCI
+  release as-is — Linux distZip (native host), Windows distZip (MinGW
+  cross-compile on ubuntu), split signed APKs → publish a GitHub Release via the
+  built-in `GITHUB_TOKEN`. **Phase 2b (pending)** adds native installers
+  (`.deb`/`.rpm`/`.msi`/`.dmg`) — see below; it needs build-logic that doesn't
+  exist yet.
 - `pages.yml` — already exists, unchanged.
+
+> **Native-host build reality (verified):** the desktop native build supports
+> only `LINUX` (native to the build machine) and `WINDOWS_X64` (MinGW-w64
+> cross-compile from Linux) — `NativeEmulators.NativeHostTarget`. There is **no
+> native Windows-host path and no macOS/`darwin` target**, and `apps/jvm` has no
+> `nativeDistributions` block. So "Windows: go native on `windows-latest`",
+> macOS `.dmg`, and any jpackage installer are all **blocked on new build-logic**,
+> not just new CI YAML. Phase 2a therefore keeps the proven MinGW cross-compile.
+
+> **Untested-on-tag caveat:** `release.yml` is now the sole release path (CircleCI
+> deleted), but it has not yet run on a real tag — the next version tag is its live
+> test. Its publish step is gated to tag refs, so a `workflow_dispatch` run only
+> exercises the build jobs (no Release is created).
 
 ## Native installers
 
@@ -86,10 +107,23 @@ signing); `GRADLE_CACHE_USER`, `GRADLE_CACHE_PASSWORD` (build-cache push).
 ## Phased rollout
 
 1. **Parity** — `ci.yml` runs alongside CircleCI on `ci-github-actions`; confirm
-   every check matches green. CircleCI stays.
-2. **Release** — `release.yml` (matrix installers + publish); test on a tag.
-3. **macOS target** — build-logic + `.dmg`.
-4. **Cut over** — delete `.circleci/config.yml` + CircleCI-only scripts; move secrets.
+   every check matches green. CircleCI stays. **(Done.)**
+2. **Release** — split into:
+   - **2a Parity** — `release.yml` ports the CircleCI release (distZips + split
+     APKs + publish via `GITHUB_TOKEN`). No new build-logic. **(Done; untested on
+     a real tag — see dual-release caveat.)**
+   - **2b Native installers** — add `apps/jvm` `nativeDistributions` (`.deb`/
+     `.rpm` on ubuntu, `.msi` on `windows-latest`, `.dmg` on `macos-latest`) +
+     bundle the JNI natives into the jpackage image. Needs a native Windows-host
+     build path (`.msi` can't cross-compile) and overlaps Phase 3 for macOS.
+3. **macOS target** — generalize the native host build to detect macOS
+   (`darwin`/`.dylib`) + clang on `macos-latest`; then the `.dmg` leg of 2b.
+4. **Cut over** — **(Done.)** Deleted `.circleci/config.yml`; broadened `ci.yml`
+   to every branch; migrated the `CIRCLE_BRANCH` versionCode factor to
+   `GITHUB_REF_NAME` (`apps/android/build.gradle.kts`); updated `Readme.md`,
+   `scripts/verify.sh`, `settings.gradle.kts` comments. Secrets already live as
+   GitHub Actions secrets (`CHIPBOX_*`, `GRADLE_CACHE_*`); releases use the
+   built-in `GITHUB_TOKEN` (no PAT).
 5. **(future)** iOS.
 
 ## Toolchain facts

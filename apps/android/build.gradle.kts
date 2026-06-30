@@ -227,7 +227,10 @@ appVersioning {
         // Only the mobile APK ships today; widen to a when() if another platform gets a store build.
         val platType = 1
 
-        val branch = when (System.getenv("CIRCLE_BRANCH")) {
+        // Actions sets GITHUB_REF_NAME to the branch on a branch push (e.g. "beta") and to the tag
+        // on a tag push. Tag, PR and local builds fall through to the default (7) — matching the
+        // prior CircleCI behavior, where CIRCLE_BRANCH was empty on tag builds.
+        val branch = when (System.getenv("GITHUB_REF_NAME")) {
             "release" -> 9
             "beta" -> 8
             else -> 7

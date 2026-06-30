@@ -33,7 +33,7 @@ develocity {
         termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
         termsOfUseAgree = "yes"
 
-        // Auto-publish on CI only — CircleCI (and most CI) export CI in the environment.
+        // Auto-publish on CI only — GitHub Actions (and most CI) export CI in the environment.
         // Locally nothing is uploaded unless you pass `--scan`, which overrides this predicate
         // and always publishes. Reading via providers keeps it configuration-cache safe.
         val isCi = providers.environmentVariable("CI").isPresent
@@ -53,7 +53,7 @@ buildCache {
         setUrl("https://gradle.sebacloud.org/cache/")
 
         // Trust boundary — only CI pushes; everyone else reads anonymously. The node grants
-        // anonymous read, so local dev needs no credentials. CircleCI exports CI in the env;
+        // anonymous read, so local dev needs no credentials. GitHub Actions exports CI in the env;
         // pushing additionally requires the write password, so a misconfigured CI can't half-push.
         // All reads go through providers to stay configuration-cache safe.
         val ciPassword = providers.environmentVariable("GRADLE_CACHE_PASSWORD")

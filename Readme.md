@@ -90,7 +90,7 @@ macOS native builds are still pending.
 
 Release builds are signed with `chipbox.jks` when the `CHIPBOX_KEY_ALIAS`,
 `CHIPBOX_KEYSTORE_PASSWORD`, and `CHIPBOX_KEY_PASSWORD` environment variables are
-present (set in CircleCI); local builds fall back to debug signing.
+present (set as GitHub Actions secrets); local builds fall back to debug signing.
 
 ## Testing
 
@@ -144,7 +144,8 @@ graph, and the source-set topology).
 - **Paparazzi** for screenshot tests (`./gradlew verifyPaparazziDebug`)
 - **ktlint** / **detekt** for static analysis (`./gradlew ktlintCheck detekt`;
   `./gradlew ktlintFormat` auto-fixes)
-- **CircleCI** for CI (Android and JVM build pipelines)
+- **GitHub Actions** for CI (`.github/workflows/`: `ci.yml` push/PR checks,
+  `release.yml` tag releases)
 
 ## Roadmap
 

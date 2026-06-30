@@ -1,12 +1,11 @@
 name: CI
 
-# Parity port of the CircleCI build_analyze workflow to GitHub Actions (see
-# arch-docs/ci-actions-migration.md). Runs alongside CircleCI during migration. Native Windows,
-# the installer matrix, and macOS land in release.yml / later phases.
+# Push / PR checks for every branch (the GitHub Actions replacement for the former CircleCI
+# build_analyze workflow — see arch-docs/ci-actions-migration.md). Tag releases live in release.yml;
+# native Windows installers and macOS are later phases.
 
 on:
   push:
-    branches: [beta, ci-github-actions]
   pull_request:
   workflow_dispatch:
 

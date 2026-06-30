@@ -4,7 +4,7 @@
 # task's artifacts (reports, JUnit XML, Paparazzi diffs, the APK, the desktop dist) into one
 # folder.
 #
-# Mirrors the gradle commands in .circleci/config.yml. CI splits these across parallel jobs;
+# Mirrors the gradle commands in .github/workflows/ci.yml. CI splits these across parallel jobs;
 # locally they run sequentially with --continue-style independence: a failing task does NOT stop
 # the others, so one run gives you the full picture. Differences from CI, on purpose: the Gradle
 # daemon is left on (faster local reruns; CI uses --no-daemon in throwaway containers) and
