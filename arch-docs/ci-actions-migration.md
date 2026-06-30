@@ -54,21 +54,38 @@ Inter-job files: `actions/upload-artifact` / `download-artifact` (replaces
 - `ci.yml` — push / pull_request: lint, unit-test, screenshot, shared-build,
   android-lint, desktop-linux, android-apk. **(Phase 1, done.)** Windows is not
   in `ci.yml` — it builds at release time only.
-- `release.yml` — tag `^\d+\.\d+.*`: **Phase 2a (done)** ports the CircleCI
-  release as-is — Linux distZip (native host), Windows distZip (MinGW
-  cross-compile on ubuntu), split signed APKs → publish a GitHub Release via the
-  built-in `GITHUB_TOKEN`. **Phase 2b (pending)** adds native installers
-  (`.deb`/`.rpm`/`.msi`/`.dmg`) — see below; it needs build-logic that doesn't
-  exist yet.
+- `release.yml` — tag `^\d+\.\d+.*`: **Phase 2b (Linux done)** builds the Linux
+  installers + APKs and publishes a GitHub Release via the built-in `GITHUB_TOKEN`.
+  - **Linux desktop** → `.deb` + `.rpm` (JRE bundled), via jpackage
+    (`compose.desktop.application` in `apps/jvm`). Validated locally (natives
+    bundled at `$APPDIR/resources`, `java.library.path` points there).
+  - **APKs** → split signed APKs (unchanged).
+  - **Windows / macOS** → not produced (see below).
 - `pages.yml` — already exists, unchanged.
+
+> **Packaging migration (done for desktop):** `apps/jvm` moved off the Gradle
+> `application` plugin to `compose.desktop.application` — the two can't coexist
+> (both register a `run` task). Consequences: `:apps:jvm:distZip` no longer exists
+> (replaced by the `.deb`/`.rpm` installers); `run` is now Compose's JavaExec
+> (`--args="gui"` still works); the natives + splash are bundled via
+> `appResourcesRootDir` and `java.library.path=$APPDIR/resources` instead of the
+> old start-script injection. jpackage needs a full JDK — CI's Temurin 21 has it;
+> a dev JBR needs `-Pchipbox.jvm.jpackageJdk=…`.
+
+> **Windows/macOS release paused:** removing the `application` plugin deleted the
+> MinGW-cross distZip that the old Windows release leg shipped, and jpackage can't
+> cross-compile — so a Windows `.msi`/macOS `.dmg` must run on its own runner with
+> a native build that doesn't exist yet (only `LINUX`-native + `WINDOWS_X64`
+> MinGW-cross exist — `NativeEmulators.NativeHostTarget`). Until those native-host
+> paths land, **no Windows or macOS desktop artifact is released.**
 
 > **Native-host build reality (verified):** the desktop native build supports
 > only `LINUX` (native to the build machine) and `WINDOWS_X64` (MinGW-w64
 > cross-compile from Linux) — `NativeEmulators.NativeHostTarget`. There is **no
 > native Windows-host path and no macOS/`darwin` target**, and `apps/jvm` has no
-> `nativeDistributions` block. So "Windows: go native on `windows-latest`",
-> macOS `.dmg`, and any jpackage installer are all **blocked on new build-logic**,
-> not just new CI YAML. Phase 2a therefore keeps the proven MinGW cross-compile.
+> `nativeDistributions` block (now added — Linux only). So "Windows: go native on
+> `windows-latest`" and macOS `.dmg` remain **blocked on new build-logic**, not
+> just new CI YAML.
 
 > **Untested-on-tag caveat:** `release.yml` is now the sole release path (CircleCI
 > deleted), but it has not yet run on a real tag — the next version tag is its live
@@ -112,10 +129,13 @@ signing); `GRADLE_CACHE_USER`, `GRADLE_CACHE_PASSWORD` (build-cache push).
    - **2a Parity** — `release.yml` ports the CircleCI release (distZips + split
      APKs + publish via `GITHUB_TOKEN`). No new build-logic. **(Done; untested on
      a real tag — see dual-release caveat.)**
-   - **2b Native installers** — add `apps/jvm` `nativeDistributions` (`.deb`/
-     `.rpm` on ubuntu, `.msi` on `windows-latest`, `.dmg` on `macos-latest`) +
-     bundle the JNI natives into the jpackage image. Needs a native Windows-host
-     build path (`.msi` can't cross-compile) and overlaps Phase 3 for macOS.
+   - **2b Native installers** — `apps/jvm` migrated to
+     `compose.desktop.application`; jpackage bundles the JNI natives into the app
+     image. **Linux `.deb`/`.rpm` done** (validated locally; wired into
+     `release.yml`). `.msi` on `windows-latest` and `.dmg` on
+     `macos-latest` are **pending their native-host builds** (jpackage can't
+     cross-compile); the old MinGW-cross Windows distZip is gone with the
+     `application` plugin, so Windows/macOS releases are paused until then.
 3. **macOS target** — generalize the native host build to detect macOS
    (`darwin`/`.dylib`) + clang on `macos-latest`; then the `.dmg` leg of 2b.
 4. **Cut over** — **(Done.)** Deleted `.circleci/config.yml`; broadened `ci.yml`
