@@ -57,16 +57,22 @@ internal class CachingPcmSourceTest {
     // ---- happy path ----
 
     @Test
-    fun `writer renders a short audible track to completion and seals the cache file`() = runTest {
+    fun `writer renders a short audible track to completion and promotes the cache file on close`() = runTest {
         val fake = FakePcmTrackSource(sampleRate = 1000).apply { enqueueAudible(2000) }
         var completeCalls = 0
 
         val source = newCachingSource(fake, onComplete = { completeCalls++ })
 
         assertEquals(1, completeCalls, "onWriteComplete must fire exactly once on success")
-        assertTrue(fileSystem.exists(finalPath()), ".pcm should exist after the atomic rename")
-        assertFalse(fileSystem.exists(tempPath()), ".pcm.tmp should be gone after seal")
+        // The header is sealed on completion, but the rename is DEFERRED to close(): Windows can't
+        // rename the temp file while the render-ahead read handle is open. So until close, the sealed
+        // .pcm.tmp is still the file on disk and the final .pcm does not exist yet.
+        assertTrue(fileSystem.exists(tempPath()), ".pcm.tmp should remain (sealed) until close")
+        assertFalse(fileSystem.exists(finalPath()), ".pcm should not exist until close promotes it")
+
         source.close()
+        assertTrue(fileSystem.exists(finalPath()), ".pcm should exist after close promotes the temp file")
+        assertFalse(fileSystem.exists(tempPath()), ".pcm.tmp should be gone after promotion")
     }
 
     @Test

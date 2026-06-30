@@ -115,6 +115,7 @@ internal class PcmCacheJanitorTest {
             integratedLufs = Double.NaN,
             truePeakDbtp = Double.NEGATIVE_INFINITY,
         )
+        writer.promote() // complete() seals the temp file; promote() renames it to the final .pcm
         val path = cacheDir / key.filename()
         File(path.toString()).setLastModified(mtime)
         return path

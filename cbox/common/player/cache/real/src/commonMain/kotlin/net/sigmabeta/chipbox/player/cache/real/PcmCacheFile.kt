@@ -195,9 +195,11 @@ internal object PcmCacheFile {
     )
 
     /**
-     * Append-only writer for a `.pcm.tmp` file. Tracks frames written. On [complete], rewrites
-     * the header with the final frame count and the complete flag, then atomically renames the
-     * file to its final name.
+     * Append-only writer for a `.pcm.tmp` file. Tracks frames written. [complete] rewrites the
+     * header with the final frame count and the complete flag and closes the write handle, but does
+     * NOT rename — the rename is deferred to [promote] because a render-ahead reader keeps a handle
+     * open on the temp file until playback ends, and Windows refuses to rename a file with any open
+     * handle (POSIX tolerates it).
      */
     internal class Writer(
         private val fileSystem: FileSystem,
@@ -211,6 +213,12 @@ internal object PcmCacheFile {
 
         @Volatile
         private var closed = false
+
+        @Volatile
+        private var completed = false
+
+        @Volatile
+        private var promoted = false
 
         val framesWritten: Long get() = framesWrittenInternal
 
@@ -255,7 +263,21 @@ internal object PcmCacheFile {
                 closed = true
                 handle.close()
             }
-            // Atomic rename. If the destination already exists (race), keep the older one.
+            completed = true
+        }
+
+        /**
+         * Rename the sealed temp file to its final `.pcm` name. The rename is split out of [complete]
+         * and deferred to here because the render-ahead reader ([CachingPcmSource]) keeps a handle
+         * open on the temp file until playback of this track ends, and Windows fails a rename while
+         * any handle is open. Call only once every other handle on the temp file is closed (POSIX
+         * would tolerate an earlier rename; doing it in one place keeps both platforms identical).
+         * No-op unless [complete] succeeded; idempotent.
+         */
+        fun promote() {
+            if (!completed || promoted) return
+            promoted = true
+            // If the destination already exists (a concurrent writer won), keep the older one.
             if (!fileSystem.exists(finalPath)) {
                 fileSystem.atomicMove(tempPath, finalPath)
             } else {

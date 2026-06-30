@@ -54,6 +54,7 @@ internal class PcmCacheFileTest {
         val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 42L, trackLengthMs = 1234L)
         writer.appendFrames(frames, framesToWrite = 4)
         writer.complete(trackId = 42L, trackLengthMs = 1234L, integratedLufs = -14.5, truePeakDbtp = -1.25)
+        writer.promote()
 
         val reader = assertNotNull(
             PcmCacheFile.openForRead(fileSystem, cacheDir, key),
@@ -84,6 +85,7 @@ internal class PcmCacheFileTest {
         val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 7L, trackLengthMs = 999L)
         writer.appendFrames(shortArrayOf(10, 20), framesToWrite = 1)
         writer.complete(trackId = 7L, trackLengthMs = 999L, integratedLufs = -9.0, truePeakDbtp = -2.0)
+        writer.promote()
 
         val bytes = fileSystem.read(cacheDir / key.filename()) { readByteArray() }
         assertTrue(bytes.size >= PcmCacheFormat.HEADER_SIZE_BYTES)
@@ -124,7 +126,7 @@ internal class PcmCacheFileTest {
     }
 
     @Test
-    fun `complete atomically renames temp to final`() {
+    fun `complete seals the header and promote renames temp to final`() {
         val writer = PcmCacheFile.openForWrite(fileSystem, cacheDir, key, trackId = 1L, trackLengthMs = 0L)
         assertTrue(fileSystem.exists(cacheDir / key.tempFilename()))
         writer.appendFrames(shortArrayOf(1, 2), framesToWrite = 1)
@@ -135,8 +137,14 @@ internal class PcmCacheFileTest {
             truePeakDbtp = Double.NEGATIVE_INFINITY,
         )
 
-        assertFalse(fileSystem.exists(cacheDir / key.tempFilename()), "temp file should be gone after complete")
-        assertTrue(fileSystem.exists(cacheDir / key.filename()), "final file should exist after complete")
+        // complete() seals the header but DEFERS the rename (Windows can't rename a file while a
+        // reader still holds it open), so the temp file is still the one on disk until promote().
+        assertTrue(fileSystem.exists(cacheDir / key.tempFilename()), "temp file should remain until promote")
+        assertFalse(fileSystem.exists(cacheDir / key.filename()), "final file should not exist before promote")
+
+        writer.promote()
+        assertFalse(fileSystem.exists(cacheDir / key.tempFilename()), "temp file should be gone after promote")
+        assertTrue(fileSystem.exists(cacheDir / key.filename()), "final file should exist after promote")
     }
 
     @Test
@@ -159,6 +167,7 @@ internal class PcmCacheFileTest {
             integratedLufs = Double.NaN,
             truePeakDbtp = Double.NEGATIVE_INFINITY,
         )
+        writer.promote()
 
         val mismatchedHash = key.copy(sourceHash = "0000000000000000")
         assertNull(
@@ -178,6 +187,7 @@ internal class PcmCacheFileTest {
             integratedLufs = Double.NaN,
             truePeakDbtp = Double.NEGATIVE_INFINITY,
         )
+        writer.promote()
 
         val reader = assertNotNull(PcmCacheFile.openForRead(fileSystem, cacheDir, key))
         try {
