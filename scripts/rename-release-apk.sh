@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Renames the release APK to chipbox-<versionName>.apk so the published CI artifact is identifiable
-# at a glance.
+# Renames each release APK to chipbox-<versionName>-<abi>.apk so the published CI artifacts are
+# identifiable at a glance. With ABI splits (apps/android/build.gradle.kts splits {}), assembleRelease
+# emits one APK per ABI (arm64-v8a, x86_64) plus a universal one; output-metadata.json lists them all,
+# each with its outputFile and either a UNIVERSAL type or an ABI filter value.
 #
 # The version name is read from the file the app-versioning plugin generates during
 # assembleRelease (build/outputs/app_versioning/release/version_name.txt — "<tag>.<commits>", per
-# the appVersioning {} block in apps/android/build.gradle.kts). That file, NOT the APK's
-# output-metadata.json, is the source of truth: the plugin applies the name via a versionNameOverride
-# that AGP does not write back into output-metadata.json (its versionName field stays null there).
-# The output file name itself is unaffected by the override, so it's still read from the metadata.
+# the appVersioning {} block). That file, NOT the APK's output-metadata.json, is the source of truth
+# for the version: the plugin applies the name via a versionNameOverride that AGP does not write back
+# into output-metadata.json (its versionName field stays null there). The output file names themselves
+# are unaffected by the override, so they're still read from the metadata.
 set -euo pipefail
 
 DIR="apps/android/build/outputs/apk/release"
@@ -20,7 +22,6 @@ if [ ! -f "$VERSION_FILE" ]; then
 fi
 
 VERSION_NAME="$(cat "$VERSION_FILE")"
-OUTPUT_FILE=$(jq -r '.elements[0].outputFile' "$META")
 
 if [ -z "$VERSION_NAME" ]; then
   # app-versioning wrote an empty name, i.e. it found no git tag. Dump tag visibility so the CI log
@@ -35,5 +36,12 @@ if [ -z "$VERSION_NAME" ]; then
   exit 1
 fi
 
-mv "$DIR/$OUTPUT_FILE" "$DIR/chipbox-$VERSION_NAME.apk"
-echo "Renamed $OUTPUT_FILE -> chipbox-$VERSION_NAME.apk"
+# For each output APK, derive its ABI label (the ABI filter value, or "universal" when unfiltered) and
+# rename to chipbox-<version>-<abi>.apk.
+jq -r '.elements[]
+        | [ (.filters | map(select(.filterType == "ABI") | .value)[0] // "universal"), .outputFile ]
+        | @tsv' "$META" \
+  | while IFS=$'\t' read -r ABI OUTPUT_FILE; do
+      mv "$DIR/$OUTPUT_FILE" "$DIR/chipbox-$VERSION_NAME-$ABI.apk"
+      echo "Renamed $OUTPUT_FILE -> chipbox-$VERSION_NAME-$ABI.apk"
+    done

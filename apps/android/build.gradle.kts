@@ -50,6 +50,18 @@ android {
         buildConfigField("String", "BUILD_BRANCH", "\"${gitBranch()}\"")
     }
 
+    // Per-ABI split APKs (arm64-v8a + x86_64) plus a universal one. The release publishes all three:
+    // targeted, smaller per-arch installs alongside a one-APK-fits-all. No per-ABI versionCode offset
+    // (these are direct downloads, not Play tracks where each ABI needs a distinct code).
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "x86_64")
+            isUniversalApk = true
+        }
+    }
+
     signingConfigs {
         create("release") {
             // Set these in CircleCI project settings → Environment Variables.
