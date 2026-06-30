@@ -10,17 +10,11 @@ plugins {
     // travel through the future sage.compose.kmp convention for shared UI modules.
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
-    application
-}
-
-application {
-    mainClass.set("net.sigmabeta.chipbox.jvm.MainKt")
-    applicationName = "chipbox"
 }
 
 // Host emulator native libs are built by the chipbox.native.host plugin (the shared cacheable
 // build in build-logic) into build/jvm-native/libs/ via the `chipboxHostNativeLibs` aggregate
-// task. run / installDist / the start scripts wire to that directory + task below.
+// task. The compose.desktop `run` task + the jpackage app image wire to that directory + task below.
 // Desktop is always a debug build today (AppInfo.isDebug == true, JvmModules.kt), so use the
 // purple-recolored splash — the same treatment DesktopMain applies to the window icon
 // (ic_launcher_debug.webp). The original yellow `splash.png` is kept as the release asset; if a
@@ -30,79 +24,83 @@ val splashImageFile: File = layout.projectDirectory.dir("src/main/splash").file(
 val nativeLibsDirFile: File = layout.buildDirectory.dir("jvm-native/libs").get().asFile
 val nativeLibsTask = tasks.named("chipboxHostNativeLibs")
 
-tasks.named<JavaExec>("run") {
+// --- Packaging: compose.desktop.application (jpackage) --------------------------------------------
+// Migrated off the Gradle `application` plugin (native-installers phase): that plugin and
+// compose.desktop.application both register a `run` task and can't coexist, so Compose now owns
+// packaging end to end. It provides `run` (still a JavaExec → `--args="gui"` works), a JRE-bundled
+// app image (`createDistributable`), and the native installers (`packageDeb` / `packageRpm`; Windows
+// .msi + macOS .dmg follow once their native builds exist).
+//
+// The emulator natives are staged into the per-OS appResources layout Compose expects: it flattens
+// `<root>/common` + `<root>/<os.id>` into the app's `resources` dir, which jpackage materializes at
+// `$APPDIR/resources`. java.library.path is pointed there for the packaged launcher so the emulators'
+// `System.loadLibrary("usf")` resolve without touching the (Android-shared) loader code.
+val hostOsResourceDir: String = when {
+    org.gradle.internal.os.OperatingSystem.current().isWindows -> "windows"
+    org.gradle.internal.os.OperatingSystem.current().isMacOsX -> "macos"
+    else -> "linux"
+}
+// jpackage requires a strict numeric version (X.Y.Z); CI passes the git tag sanitized to its numeric
+// prefix. Local builds (and non-tag CI) fall back to a static placeholder.
+val jpackageVersion: String = (project.findProperty("chipbox.jvm.packageVersion") as String?) ?: "3.0.0"
+val appResourcesRoot: Provider<Directory> = layout.buildDirectory.dir("jpackage-resources")
+val stageAppResources by tasks.registering(Copy::class) {
     dependsOn(nativeLibsTask)
-    systemProperty("java.library.path", nativeLibsDirFile.absolutePath)
-    // `-splash:` is a launcher JVM arg (not a -D property); shows the splash before main() runs.
-    jvmArgs("-splash:${splashImageFile.absolutePath}")
+    from(nativeLibsDirFile) { into(hostOsResourceDir) } // .so/.dll/.dylib → $APPDIR/resources
+    from(splashImageFile) {
+        // splash → $APPDIR/resources/splash.png (for the -splash launcher arg)
+        into("common")
+        rename { "splash.png" }
+    }
+    into(appResourcesRoot)
 }
 
-// Bundle the emulator .so/.dylib/.dll files into `lib/native/` inside the distribution so
-// `applicationDefaultJvmArgs`' `__APP_HOME__/lib/native` resolves at launch. `installDist`,
-// `distZip`, and `distTar` all consume this. Path-derived archive names from the SAGE
-// convention plugins (`sage.kmp` / `sage.jvm`) keep the per-module jars unique in `lib/`,
-// so the flat distribution layout works without the old `standaloneScript` workaround.
-distributions {
-    named("main") {
-        contents {
-            from(nativeLibsDirFile) {
-                into("lib/native")
-            }
-            // Loose file (not inside a jar) so the `-splash:$APP_HOME/lib/splash.png` launcher
-            // flag injected into the start scripts below can read it. Renamed to the stable
-            // `splash.png` the scripts expect (the source is the recolored `splash_debug.png`).
-            from(splashImageFile) {
-                into("lib")
-                rename { "splash.png" }
-            }
+compose.desktop {
+    application {
+        mainClass = "net.sigmabeta.chipbox.jvm.MainKt"
+        // jpackage lives in a full JDK; a dev machine's Gradle JDK may be a stripped JBR without it.
+        // Override locally with -Pchipbox.jvm.jpackageJdk=/path/to/jdk21. CI's Temurin 21 has jpackage,
+        // so it leaves this unset and Compose uses the build JDK.
+        (project.findProperty("chipbox.jvm.jpackageJdk") as String?)?.let { javaHome = it }
+        // Passed to the packaged jpackage launcher (--java-options); jpackage substitutes $APPDIR at
+        // launch. The plain `run` task below overrides these with absolute paths (no $APPDIR there).
+        jvmArgs += listOf(
+            "-Djava.library.path=\$APPDIR/resources",
+            "-splash:\$APPDIR/resources/splash.png",
+        )
+        nativeDistributions {
+            targetFormats(
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb,
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Rpm,
+            )
+            packageName = "chipbox"
+            packageVersion = jpackageVersion
+            // Bundle the full JDK runtime: the app pulls in modules (java.sql via sqlite, java.naming,
+            // java.desktop via Swing/AWT, the unix-socket transport) that module inference can miss
+            // and would surface only as runtime ClassNotFound. Trim later via suggestRuntimeModules.
+            includeAllModules = true
+            appResourcesRootDir.set(appResourcesRoot)
         }
     }
 }
-listOf("installDist", "distZip", "distTar").forEach { taskName ->
-    tasks.named(taskName) { dependsOn(nativeLibsTask) }
-}
 
-// Inject `-Djava.library.path=…/lib/native` directly into the exec line of each generated
-// start script. Routing through `applicationDefaultJvmArgs` doesn't work for native paths:
-// Gradle's unix template puts JVM args through an xargs+sed escape pipeline that turns `$`
-// into `\$`, so the shell never expands `$APP_HOME` and the JVM ends up looking for a
-// literal "APP_HOME" directory. Injecting after the exec line is the only place where the
-// shells (bash `$APP_HOME`, cmd `%APP_HOME%`) actually interpolate the install root.
-tasks.named<CreateStartScripts>("startScripts") {
-    doLast {
-        unixScript.writeText(
-            unixScript.readText().replace(
-                "exec \"\$JAVACMD\" \"\$@\"",
-                "exec \"\$JAVACMD\" \"-Djava.library.path=\$APP_HOME/lib/native\" \"\$@\"",
-            )
-        )
-        // The bat template's exec line ends in `%CMD_LINE_ARGS%` (Gradle ≤ 8.x) or `%*`
-        // (current). Match the `-classpath` segment instead — stable across both — and
-        // splice the system property in just before it.
-        windowsScript.writeText(
-            windowsScript.readText().replace(
-                "-classpath \"%CLASSPATH%\"",
-                "-D\"java.library.path=%APP_HOME%\\lib\\native\" -classpath \"%CLASSPATH%\"",
-            )
-        )
-        // Launcher splash (covers the synchronous graph build before the window opens). Anchored
-        // on the `-Djava.library.path=…` token the replaces above just inserted — NOT the original
-        // exec line, which no longer exists at this point. `$APP_HOME/lib/splash.png` is bundled by
-        // the `distributions` block; the path interpolates in the shell, same as java.library.path.
-        unixScript.writeText(
-            unixScript.readText().replace(
-                "\"-Djava.library.path=\$APP_HOME/lib/native\" \"\$@\"",
-                "\"-Djava.library.path=\$APP_HOME/lib/native\" \"-splash:\$APP_HOME/lib/splash.png\" \"\$@\"",
-            )
-        )
-        windowsScript.writeText(
-            windowsScript.readText().replace(
-                "-D\"java.library.path=%APP_HOME%\\lib\\native\" -classpath \"%CLASSPATH%\"",
-                "-splash:\"%APP_HOME%\\lib\\splash.png\" " +
-                    "-D\"java.library.path=%APP_HOME%\\lib\\native\" -classpath \"%CLASSPATH%\"",
-            )
-        )
-    }
+// Compose's prepareAppResources Sync reads appResourcesRootDir, so it must run after the staging
+// Copy; the app-image / installer tasks consume it transitively.
+tasks.matching {
+    it.name == "prepareAppResources" || it.name == "createDistributable" || it.name.startsWith("package")
+}.configureEach { dependsOn(stageAppResources) }
+
+// Compose's `run` is a JavaExec, like the old application-plugin run. Wire the in-place native dir +
+// splash with ABSOLUTE paths (the $APPDIR variants in app.jvmArgs are only valid once packaged).
+// Compose registers `run` lazily (afterEvaluate), so match it via a live configureEach rather than
+// tasks.named (which would resolve too early).
+tasks.withType<JavaExec>().matching { it.name == "run" }.configureEach {
+    dependsOn(stageAppResources)
+    val nativeDir = nativeLibsDirFile.absolutePath
+    val splashPath = splashImageFile.absolutePath
+    jvmArgs = jvmArgs.orEmpty()
+        .filterNot { "java.library.path" in it || it.startsWith("-splash:") }
+        .plus(listOf("-Djava.library.path=$nativeDir", "-splash:$splashPath"))
 }
 
 dependencies {
