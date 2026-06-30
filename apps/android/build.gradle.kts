@@ -64,12 +64,14 @@ android {
 
     signingConfigs {
         create("release") {
-            // Set these in CircleCI project settings → Environment Variables.
-            // chipbox.jks lives at the repo root and is committed to the repo.
+            // Set these as CI secrets/env vars. chipbox.jks lives at the repo root and is committed.
+            // Treat blank the same as unset: GitHub Actions maps an undefined secret to an *empty*
+            // string (not unset), so a `!= null` check would try to release-sign with blank creds and
+            // fail ("Keystore was tampered with..."); blank → debug-sign fallback, like an unset var.
             val ksAlias = System.getenv("CHIPBOX_KEY_ALIAS")
             val ksPass = System.getenv("CHIPBOX_KEYSTORE_PASSWORD")
             val keyPass = System.getenv("CHIPBOX_KEY_PASSWORD")
-            if (ksAlias != null && ksPass != null && keyPass != null) {
+            if (!ksAlias.isNullOrBlank() && !ksPass.isNullOrBlank() && !keyPass.isNullOrBlank()) {
                 storeFile = rootProject.file("chipbox.jks")
                 storePassword = ksPass
                 keyAlias = ksAlias
