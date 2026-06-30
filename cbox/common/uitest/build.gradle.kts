@@ -85,6 +85,16 @@ kotlin {
     android {
         namespace = "net.sigmabeta.chipbox.uitest"
 
+        // KMP android libraries default android-resource/asset processing to OFF (unlike plain
+        // android libraries). With it off, the device-test component has no assets source, so the
+        // Compose-resources plugin can't wire its copy task's outputDirectory (the
+        // `sources.assets?.addGeneratedSourceDirectory` no-ops) and connectedAndroidDeviceTest fails
+        // at configuration. Enabling it gives main + deviceTest an assets source so compose strings
+        // are copied into the test APK — required for the on-device half of this harness to run.
+        androidResources {
+            enable = true
+        }
+
         if (actionDelayMs != null) {
             // Can't call withDeviceTest twice (the sage plugin already created the compilation), so
             // reach the existing one to add the instrumentation argument.
