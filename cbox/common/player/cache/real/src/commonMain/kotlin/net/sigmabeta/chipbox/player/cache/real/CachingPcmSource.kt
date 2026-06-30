@@ -35,9 +35,11 @@ import okio.FileSystem
  * returns 0 without blocking and reports [awaitingRender]; the generator polls and surfaces
  * render progress so the director — not this source — decides when a wait has stalled.
  *
- * On track end, the writer flips the header to "complete" and atomically renames `.pcm.tmp`
- * to `.pcm`. The next time this track plays, [RealPcmTrackSourceFactory] finds the complete
- * file and returns a [CachedFilePcmSource] instead of going through this class.
+ * On track end, the writer flips the header to "complete" (sealing `.pcm.tmp`). The `.pcm.tmp`
+ * to `.pcm` rename is DEFERRED to [close] — Windows can't rename a file while our read handle is
+ * open, so we promote only after it's closed. The next time this track plays,
+ * [RealPcmTrackSourceFactory] finds the complete file and returns a [CachedFilePcmSource] instead
+ * of going through this class.
  */
 internal class CachingPcmSource(
     private val emulatorSource: PcmTrackSource,
@@ -271,6 +273,13 @@ internal class CachingPcmSource(
             if (!writerComplete) {
                 writer.abort()
                 runCatching { onWriteAbort() }
+            } else {
+                // The writer sealed the temp file's header on completion but deferred the
+                // `.pcm.tmp` -> `.pcm` rename to here: Windows can't rename a file while our
+                // readHandle is open, so promote only now that it's closed (just above).
+                runCatching { writer.promote() }.onFailure {
+                    hatchet.w("Cache promote failed for ${track.title}: ${it.message}")
+                }
             }
             try {
                 emulatorSource.close()
