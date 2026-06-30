@@ -1,0 +1,165 @@
+name: CI
+
+# Parity port of the CircleCI build_analyze workflow to GitHub Actions (see
+# arch-docs/ci-actions-migration.md). Runs alongside CircleCI during migration. Native Windows,
+# the installer matrix, and macOS land in release.yml / later phases.
+
+on:
+  push:
+    branches: [beta, ci-github-actions]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Remote Gradle build cache (gradle.sebacloud.org): anonymous read always; push needs CI (Actions
+  # sets it) + these. Absent (e.g. fork PRs) → read-only, build still works.
+  GRADLE_CACHE_USER: ${{ secrets.GRADLE_CACHE_USER }}
+  GRADLE_CACHE_PASSWORD: ${{ secrets.GRADLE_CACHE_PASSWORD }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: ktlint + detekt
+        run: ./gradlew ktlintCheck detekt --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lint-reports
+          path: '**/build/reports/**'
+
+  shared-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile shared JVM code
+        run: ./gradlew :apps:jvm:classes --build-cache --no-configuration-cache --no-daemon --max-workers=4
+
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      # jvmTest spins up Compose Desktop windows, so it needs an X display — same xvfb wrapper CI used.
+      - name: jvmTest (commonTest JVM target)
+        run: xvfb-run -a ./gradlew jvmTest --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results
+          path: '**/build/test-results/**/TEST-*.xml'
+
+  screenshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+          lfs: true # Paparazzi golden snapshots are the only LFS-tracked files
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify Paparazzi snapshots
+        run: ./gradlew verifyPaparazziDebug --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paparazzi-diffs
+          path: '**/build/paparazzi/**'
+
+  android-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Android lint (release)
+        run: ./gradlew :apps:android:lintRelease --build-cache --no-configuration-cache --no-daemon --max-workers=4 -Pchipbox.skipNative
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-lint-report
+          path: 'apps/android/build/reports/**'
+
+  desktop-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      # Host emulator natives build with the image's gcc/g++/make + an SDK/PATH CMake (resolveCmake).
+      - name: Build desktop distribution (Linux)
+        run: ./gradlew :apps:jvm:installDist --build-cache --no-configuration-cache --no-daemon --max-workers=4
+
+  android-apk:
+    runs-on: ubuntu-latest
+    env:
+      # Release signing — without these the APK is debug-signed (apps/android/build.gradle.kts).
+      CHIPBOX_KEY_ALIAS: ${{ secrets.CHIPBOX_KEY_ALIAS }}
+      CHIPBOX_KEYSTORE_PASSWORD: ${{ secrets.CHIPBOX_KEYSTORE_PASSWORD }}
+      CHIPBOX_KEY_PASSWORD: ${{ secrets.CHIPBOX_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0 # full history + tags for appVersioning's git describe
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # The Android emulator natives need the pinned NDK + an SDK CMake (NativeEmulators).
+      - name: Install NDK + CMake
+        run: |
+          sdkmanager "ndk;29.0.14206865" "cmake;3.22.1"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Assemble release (split APKs)
+        run: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --no-configuration-cache --no-daemon --max-workers=4
+      - name: Name APKs by version + ABI
+        run: ./scripts/rename-release-apk.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-apks
+          path: apps/android/build/outputs/apk/release/chipbox-*.apk
