@@ -43,6 +43,7 @@ import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
+import net.sigmabeta.chipbox.scanner.fake.CountingScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
@@ -146,6 +147,27 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
             }
         }
         compose.waitForIdle()
+        awaitScanStatusSubscription()
+    }
+
+    /**
+     * Block until the Home scan-status card's collectors are actually subscribed to the scanner.
+     *
+     * [HomeViewModel] launches a `module.state().collect {}` for every module at construction
+     * (the scan-status card included, even while hidden), but that `viewModelScope.launch` is
+     * dispatched and can still be pending when [launchShell]'s `waitForIdle` returns. The scanner's
+     * state/event streams are `replay = 1` / `DROP_OLDEST` and `onStart`-replay only the *last*
+     * event, so a scan event driven before the collector attaches is lost — a folder heartbeat
+     * pushed just before a file one can never be recovered. That loss is one of the two races behind
+     * the intermittent scan-status spec failures (the other — cross-flow ordering — is handled by
+     * [driveScan]). Waiting for a live subscription here closes it. Harmless for non-scan specs:
+     * Home always hosts the (hidden) card, so the subscription always materialises.
+     */
+    private fun awaitScanStatusSubscription() {
+        compose.waitUntil(timeoutMillis = LOAD_TIMEOUT_MS) {
+            graph.countingScanner.stateSubscribers.value > 0 &&
+                graph.countingScanner.eventSubscribers.value > 0
+        }
     }
 
     /** The id of the artist named [name] in the library (e.g. to assert a navigation target). */
@@ -311,26 +333,45 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
     }
 
     /** Drive the fake scanner into the "scanning" state — the scan-status Home card reacts to it. */
-    fun beginScan() = runBlocking { graph.countingScanner.pushState(ScannerState.Scanning()) }
+    fun beginScan() = driveScan { pushState(ScannerState.Scanning()) }
 
     /** Emit a per-folder scan heartbeat — surfaces as the card's "current folder" line. */
-    fun scanReadingFolder(name: String) =
-        runBlocking { graph.countingScanner.pushEvent(ScannerEvent.FolderScanned(name)) }
+    fun scanReadingFolder(name: String) = driveScan { pushEvent(ScannerEvent.FolderScanned(name)) }
 
     /** Emit a per-file scan heartbeat — surfaces as the card's "currently reading" line. */
-    fun scanReadingFile(name: String) =
-        runBlocking { graph.countingScanner.pushEvent(ScannerEvent.FileScanned(name)) }
+    fun scanReadingFile(name: String) = driveScan { pushEvent(ScannerEvent.FileScanned(name)) }
 
     /** Emit a "game added" scan change — surfaces as a row in the card's change list. */
     fun scanFoundGame(title: String, trackCount: Int, gameId: Long) =
-        runBlocking { graph.countingScanner.pushEvent(ScannerEvent.GameFoundEvent(gameId, title, trackCount, null)) }
+        driveScan { pushEvent(ScannerEvent.GameFoundEvent(gameId, title, trackCount, null)) }
 
     /** Drive the scanner to a successful completion with the given totals. */
-    fun completeScan(games: Int, tracks: Int) =
-        runBlocking { graph.countingScanner.pushState(ScannerState.Complete(0, games, tracks, 0)) }
+    fun completeScan(games: Int, tracks: Int) = driveScan { pushState(ScannerState.Complete(0, games, tracks, 0)) }
 
     /** Drive the scanner to a failure at [path]. */
-    fun failScan(path: String) = runBlocking { graph.countingScanner.pushState(ScannerState.Failed(path)) }
+    fun failScan(path: String) = driveScan { pushState(ScannerState.Failed(path)) }
+
+    /**
+     * Emit one scanner state/event, then advance virtual time so the card fully absorbs and renders
+     * it before the verb returns — making a sequence of scan verbs deterministic.
+     *
+     * Two production traits make back-to-back driving lossy, so each input must land on its own:
+     *  - The scanner's `scanEvents()` stream is `replay = 1` / `DROP_OLDEST` — it buffers only one
+     *    un-collected event. A folder heartbeat emitted just before a file one is dropped unless the
+     *    collector consumes the folder in between (even with a live subscriber).
+     *  - The card throttles its render with `sample(REFRESH_MS)`, so the visible card lags the
+     *    reduced state by up to one sample window; an assertion fired before the next tick sees stale
+     *    content. `waitForIdle` alone does not cross that window — only advancing the clock does.
+     *
+     * Advancing past [SCAN_SETTLE_MS] (> the card's REFRESH_MS) on every emission both lets the
+     * collector consume this input before the next is emitted and forces a fresh sampled render.
+     * Pairs with [awaitScanStatusSubscription], which guarantees a live collector to absorb into.
+     */
+    private fun driveScan(emit: suspend CountingScanner.() -> Unit) {
+        runBlocking { graph.countingScanner.emit() }
+        compose.mainClock.advanceTimeBy(SCAN_SETTLE_MS)
+        compose.waitForIdle()
+    }
 
     /**
      * Scroll the Home list so the scan-status card is on screen. The card is prepended at the top of
@@ -626,5 +667,10 @@ class ChipboxUiTest internal constructor(private val compose: ComposeUiTest) {
         /** Frames to settle a [clickTag] semantics action (state hop + crossfade); under the Now
          *  Playing context menu's 5s auto-dismiss so the menu stays open for the next step. */
         const val CLICK_SETTLE_MS = 2_000L
+
+        /** Virtual time to advance after each scan emission ([driveScan]); comfortably past the
+         *  scan-status card's 500ms `sample(REFRESH_MS)` window so the input is collected and a fresh
+         *  card render is sampled before the next verb or assertion. */
+        const val SCAN_SETTLE_MS = 1_000L
     }
 }

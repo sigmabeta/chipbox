@@ -19,6 +19,10 @@ import net.sigmabeta.chipbox.scanner.state.ScannerState
  * [pushState] / [pushEvent] re-expose the [Scanner]'s `protected` emit functions so tests can
  * drive `scanner.state()` / `scanner.scanEvents()` collectors directly — needed by VMs that
  * react to scan progress (e.g. SettingsViewModel's rescanStatus, RescanStatusViewModel).
+ *
+ * [stateSubscribers] / [eventSubscribers] likewise re-expose the subscriber counts, so a UI-test
+ * harness can wait until a consumer is actually collecting before driving events (the streams lose
+ * pre-subscription emissions — see [Scanner.stateSubscriptionCount]).
  */
 class CountingScanner(
     dispatcher: CoroutineDispatcher = Dispatchers.Main,
@@ -32,4 +36,7 @@ class CountingScanner(
 
     suspend fun pushState(state: ScannerState) = emitState(state)
     suspend fun pushEvent(event: ScannerEvent) = emitEvent(event)
+
+    val stateSubscribers get() = stateSubscriptionCount
+    val eventSubscribers get() = eventSubscriptionCount
 }
