@@ -1,24 +1,34 @@
 # Download
 
-!!! note "Packaged releases are on the way"
-
-    Chipbox doesn't have a tagged release yet. Until then, grab the source and
-    build it yourself — it's a one-liner per platform. See **[Build from
-    source](build.md)**.
+Current release: **[3.0.0-beta05](https://github.com/sigmabeta/chipbox/releases/tag/3.0.0-beta05)**
+(prerelease). See the changelog and every asset on the
+[releases page](https://github.com/sigmabeta/chipbox/releases).
 
 ## Android
 
-Android 8.0 (API 26) or newer.
+Android 8.0 (API 26) or newer. The universal APK runs on any device; the
+per-architecture builds are smaller.
 
-[:material-github: Releases :material-arrow-top-right:](https://github.com/sigmabeta/chipbox/releases){ .md-button .md-button--primary }
-[Build the APK yourself](build.md){ .md-button }
+[:material-android: Download APK (universal) :material-download:](https://github.com/sigmabeta/chipbox/releases/download/3.0.0-beta05/chipbox-3.0.0-beta05.0-universal.apk){ .md-button .md-button--primary }
+[Build it yourself](build.md){ .md-button }
 
-Once releases are published, the APK will be attached to each GitHub release.
+Smaller per-architecture builds:
+[arm64-v8a](https://github.com/sigmabeta/chipbox/releases/download/3.0.0-beta05/chipbox-3.0.0-beta05.0-arm64-v8a.apk)
+·
+[x86_64](https://github.com/sigmabeta/chipbox/releases/download/3.0.0-beta05/chipbox-3.0.0-beta05.0-x86_64.apk).
 
 ## Desktop
 
-A native desktop (JVM) build. **Linux** runs natively, and **Windows** is
-cross-compiled (all nine emulator cores, as self-contained `.dll`s). macOS isn't
-supported yet.
+Self-contained installers with a bundled Java runtime — nothing else to install.
+macOS isn't supported yet.
 
-[Build &amp; run the desktop app](build.md){ .md-button .md-button--primary }
+### Windows
+
+[:material-microsoft-windows: Download .msi :material-download:](https://github.com/sigmabeta/chipbox/releases/download/3.0.0-beta05/chipbox-3.0.0-beta05-x64.msi){ .md-button .md-button--primary }
+
+### Linux
+
+[:material-debian: .deb — Debian / Ubuntu :material-download:](https://github.com/sigmabeta/chipbox/releases/download/3.0.0-beta05/chipbox-3.0.0-beta05-amd64.deb){ .md-button .md-button--primary }
+[:material-redhat: .rpm — Fedora / RHEL :material-download:](https://github.com/sigmabeta/chipbox/releases/download/3.0.0-beta05/chipbox-3.0.0-beta05-x86_64.rpm){ .md-button }
+
+Prefer to build from source? See **[Build from source](build.md)**.
