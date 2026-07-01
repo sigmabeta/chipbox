@@ -226,7 +226,8 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') # publish only for tag pushes, not manual branch runs
     permissions:
-      contents: write # create the Release + upload assets via the built-in GITHUB_TOKEN
+      contents: write # create the Release + upload assets, and commit the refreshed download page
+      actions: write # dispatch pages.yml to redeploy the download page
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -250,3 +251,27 @@ jobs:
             --title "${{ github.ref_name }}" \
             --generate-notes $PRERELEASE
           echo "Published: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+      # Keep the landing site's download links in sync with this release: regenerate download.md from
+      # the just-published assets, commit it to beta, then dispatch the Pages deploy. (A GITHUB_TOKEN
+      # commit doesn't trigger the push-based Pages build — hence the explicit workflow_dispatch, which
+      # is exempt from that recursion rule.)
+      - name: Checkout beta (to update the download page)
+        uses: actions/checkout@v4
+        with:
+          ref: beta
+          path: site-src
+      - name: Refresh + deploy the download page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd site-src
+          bash scripts/gen-download-page.sh "${{ github.ref_name }}" ../upload > docs/download.md
+          if git diff --quiet -- docs/download.md; then
+            echo "Download page already current for ${{ github.ref_name }}."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -am "docs(site): point downloads at ${{ github.ref_name }}"
+            git push origin beta
+          fi
+          gh workflow run pages.yml --ref beta
