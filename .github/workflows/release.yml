@@ -55,13 +55,26 @@ jobs:
       - name: Build Linux installers (.deb / .rpm)
         run: |
           VERSION="$(printf '%s' "${{ github.ref_name }}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo '0.0.0')"
-          echo "jpackage version: $VERSION"
+          echo "jpackage app-version (embedded OS-package metadata): $VERSION"
           ./gradlew :apps:jvm:packageDeb :apps:jvm:packageRpm \
             -Pchipbox.jvm.packageVersion="$VERSION" \
             --build-cache --no-configuration-cache --no-daemon --max-workers=4
+      # jpackage names files by the numeric app-version; relabel with the full version name (the tag),
+      # e.g. chipbox-3.0.0-beta04-amd64.deb. The embedded deb/rpm Version stays the numeric $VERSION
+      # above — those fields reject a prerelease suffix, so the full name only lives in the filename.
+      - name: Label installers with the full version name
+        env:
+          VERSION_NAME: ${{ github.ref_name }}
+        run: |
+          d=apps/jvm/build/compose/binaries/main
+          mv "$d"/deb/*.deb "$d/deb/chipbox-${VERSION_NAME}-amd64.deb"
+          mv "$d"/rpm/*.rpm "$d/rpm/chipbox-${VERSION_NAME}-x86_64.rpm"
       - uses: actions/upload-artifact@v4
         with:
           name: release-linux
+          # Installers are already compressed — skip artifact re-compression (the zip wrapper is
+          # unavoidable, but there's no gain). The published Release assets are the raw files.
+          compression-level: 0
           path: |
             apps/jvm/build/compose/binaries/main/deb/*.deb
             apps/jvm/build/compose/binaries/main/rpm/*.rpm
@@ -157,9 +170,19 @@ jobs:
             -Pchipbox.jvm.nativeTarget=windows-x64 \
             -Pchipbox.jvm.nativeJdk="$JAVA_HOME" \
             --build-cache --no-configuration-cache --no-daemon --max-workers=4
+      # jpackage names the .msi by the numeric app-version; relabel with the full version name (the
+      # tag), e.g. chipbox-3.0.0-beta04-x64.msi. The embedded MSI ProductVersion stays numeric.
+      - name: Label installer with the full version name
+        shell: bash
+        env:
+          VERSION_NAME: ${{ github.ref_name }}
+        run: |
+          d=apps/jvm/build/compose/binaries/main/msi
+          mv "$d"/*.msi "$d/chipbox-${VERSION_NAME}-x64.msi"
       - uses: actions/upload-artifact@v4
         with:
           name: release-windows
+          compression-level: 0 # .msi is already compressed
           path: apps/jvm/build/compose/binaries/main/msi/*.msi
 
   android-apk:
@@ -198,6 +221,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: release-apks
+          compression-level: 0 # APKs (zip-based) are already compressed
           path: apps/android/build/outputs/apk/release/chipbox-*.apk
 
   publish:
