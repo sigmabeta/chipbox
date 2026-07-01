@@ -25,13 +25,14 @@ run by hand.
 
 ## What the pipeline does
 
-`release.yml` has five jobs:
+`release.yml` has six jobs:
 
 | Job | Runner | Produces |
 |---|---|---|
 | `desktop-linux` | ubuntu | `.deb` + `.rpm` (jpackage) |
 | `windows-natives` | ubuntu | the emulator `.dll` (MinGW cross-compile) |
 | `desktop-windows` | windows | `.msi` (jpackage over the prebuilt `.dll`) |
+| `desktop-macos` | macos | `.dmg` (native `.dylib` build + jpackage) |
 | `android-apk` | ubuntu | split signed APKs (universal + per-ABI) |
 | `publish` | ubuntu | the GitHub Release + refreshed download page |
 
@@ -73,12 +74,15 @@ The **APKs** are versioned independently by the app-versioning plugin
 
 For a tag `X` the Release carries (raw files, no zip wrapper):
 
-- `chipbox-X-amd64.deb`, `chipbox-X-x86_64.rpm`, `chipbox-X-x64.msi`
+- `chipbox-X-amd64.deb`, `chipbox-X-x86_64.rpm`, `chipbox-X-x64.msi`, `chipbox-X-arm64.dmg`
 - `chipbox-X.<commits>-universal.apk`, `-arm64-v8a.apk`, `-x86_64.apk`
 
-macOS `.dmg` is **not produced yet** — it needs a darwin native build
-(`NativeEmulators.NativeHostTarget` has only `LINUX` + `WINDOWS_X64`). When that
-lands, add a `desktop-macos` job; the download page picks up a `.dmg` automatically.
+The macOS `.dmg` is **Apple Silicon (arm64) only** — `macos-latest` is arm64, so
+Intel Macs aren't covered (a universal build via `lipo`, or an `x86_64` runner, is
+a follow-up). It ships **unsigned**: Gatekeeper warns on first launch (right-click →
+Open, or `xattr -dr com.apple.quarantine`); Developer-ID signing + notarization is a
+TODO. The download page picks up whatever assets exist, so a platform with no asset
+this release is simply omitted.
 
 The intermediate CI **artifacts** (Actions → run → Artifacts) are always zipped by
 `upload-artifact` (`compression-level: 0`, since installers are already compressed);

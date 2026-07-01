@@ -4,9 +4,9 @@ name: Release
 # signed APKs, publishes them to a GitHub Release via the built-in GITHUB_TOKEN (no PAT), and refreshes
 # the download page. Full reference: arch-docs/release-process.md.
 #
-# Desktop packaging is jpackage via compose.desktop.application (apps/jvm). The Windows .dll are
-# cross-compiled on a Linux job (jpackage assembles but doesn't compile native code) and fed to the
-# windows-latest packaging job. macOS .dmg is NOT produced yet (no darwin native build).
+# Desktop packaging is jpackage via compose.desktop.application (apps/jvm). Linux/macOS build natively
+# on their runners; the Windows .dll are cross-compiled on a Linux job (jpackage assembles but doesn't
+# compile native code) and fed to the windows-latest packaging job.
 #
 # workflow_dispatch exercises the build jobs only; the publish step is gated to tag refs, so a manual
 # run won't create a Release.
@@ -216,8 +216,48 @@ jobs:
           compression-level: 0 # APKs (zip-based) are already compressed
           path: apps/android/build/outputs/apk/release/chipbox-*.apk
 
+  # macOS .dmg. Unlike Windows, this builds natively on macos-latest: the emulator cores compile to
+  # .dylib with the runner's clang, and jpackage packages the .dmg. macos-latest is Apple Silicon, so
+  # the .dmg is arm64. Ships UNSIGNED (Gatekeeper warns; TODO: Developer-ID signing + notarization).
+  desktop-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # clang + ar ship with Xcode; CMake usually preinstalled — install defensively (no-op if present).
+      - name: Ensure CMake
+        run: brew list cmake >/dev/null 2>&1 || brew install cmake
+      - uses: gradle/actions/setup-gradle@v4
+      # resolveNativeHostTarget defaults to MACOS on this runner and the native JDK (darwin JNI headers)
+      # is the runner's own, so no -Pchipbox.jvm.nativeTarget / nativeJdk needed.
+      - name: Build macOS installer (.dmg)
+        run: |
+          VERSION="$(printf '%s' "${{ github.ref_name }}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo '0.0.0')"
+          echo "jpackage app-version: $VERSION"
+          ./gradlew :apps:jvm:packageDmg \
+            -Pchipbox.jvm.packageVersion="$VERSION" \
+            --build-cache --no-configuration-cache --no-daemon --max-workers=4
+      # jpackage names the .dmg by the numeric app-version; relabel with the full tag + arch.
+      - name: Label installer with the full version name
+        env:
+          VERSION_NAME: ${{ github.ref_name }}
+        run: |
+          d=apps/jvm/build/compose/binaries/main/dmg
+          mv "$d"/*.dmg "$d/chipbox-${VERSION_NAME}-arm64.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          compression-level: 0 # .dmg is already compressed
+          path: apps/jvm/build/compose/binaries/main/dmg/*.dmg
+
   publish:
-    needs: [desktop-linux, desktop-windows, android-apk]
+    needs: [desktop-linux, desktop-windows, desktop-macos, android-apk]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') # publish only for tag pushes, not manual branch runs
     permissions:
@@ -230,7 +270,7 @@ jobs:
       - name: Collect assets
         run: |
           mkdir -p upload
-          find dist -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.msi' -o -name '*.apk' \) \
+          find dist -type f \( -name '*.deb' -o -name '*.rpm' -o -name '*.msi' -o -name '*.dmg' -o -name '*.apk' \) \
             -exec cp {} upload/ \;
           echo "Assets to publish:"; ls -la upload
           [ -n "$(ls -A upload)" ] || { echo "ERROR: no staged artifacts"; exit 1; }

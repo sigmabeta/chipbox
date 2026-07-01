@@ -3,7 +3,8 @@
 Status: **done, merged to `beta`.** CircleCI is deleted; GitHub Actions is the
 only CI — `ci.yml` (push/PR) and `release.yml` (tags). Linux `.deb`/`.rpm` +
 Windows `.msi` + signed APKs ship; `3.0.0-beta05` was the first release cut through
-it. Remaining: the macOS `.dmg` target (Phase 3).
+it. The macOS `.dmg` target is wired (`desktop-macos`) — pending first-run
+validation; see `release-process.md`.
 
 > This doc is the **historical migration record**. For how releases work now and
 > how to cut one, see **[`release-process.md`](release-process.md)**.
@@ -90,10 +91,11 @@ Inter-job files: `actions/upload-artifact` / `download-artifact` (replaces
 > resolving on Windows, and whether the `.dll` actually load (the old cross-built
 > distZip was never run on Windows either).
 
-> **macOS release still paused:** a `.dmg` needs a darwin native build that doesn't
-> exist (`NativeEmulators.NativeHostTarget` has only `LINUX` + `WINDOWS_X64`). Until
-> a macOS/`darwin` `.dylib` target lands (Phase 3), **no macOS desktop artifact is
-> released.**
+> **macOS `.dmg` (added, pending validation):** `NativeHostTarget.MACOS` now builds
+> the cores natively to `.dylib` on `macos-latest`, and a `desktop-macos` job
+> packages the `.dmg` (arm64, unsigned). Written blind (no macOS host) — the darwin
+> clang compile of the cores and the runtime `.dylib` loading are unverified until a
+> CI run + a real install. See `release-process.md`.
 
 > **Native-host build reality (verified):** the desktop native build supports
 > only `LINUX` (native to the build machine) and `WINDOWS_X64` (MinGW-w64
