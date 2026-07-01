@@ -1,20 +1,15 @@
 name: Release
 
 # Tag-triggered release: builds the desktop installers (Linux .deb/.rpm + Windows .msi) and the split
-# signed APKs, then publishes them all to a GitHub Release via the built-in GITHUB_TOKEN (no PAT). See
-# arch-docs/ci-actions-migration.md.
+# signed APKs, publishes them to a GitHub Release via the built-in GITHUB_TOKEN (no PAT), and refreshes
+# the download page. Full reference: arch-docs/release-process.md.
 #
-# Desktop packaging is jpackage via compose.desktop.application (apps/jvm). The emulator natives are
-# bundled into the app image and java.library.path is pointed at them ($APPDIR/resources). The Windows
-# .dll are cross-compiled on a Linux job (jpackage assembles but doesn't compile native code) and fed
-# to the windows-latest packaging job.
+# Desktop packaging is jpackage via compose.desktop.application (apps/jvm). The Windows .dll are
+# cross-compiled on a Linux job (jpackage assembles but doesn't compile native code) and fed to the
+# windows-latest packaging job. macOS .dmg is NOT produced yet (no darwin native build).
 #
-# macOS .dmg is NOT produced yet: it needs a darwin native build that doesn't exist (NativeEmulators
-# has no macOS/darwin path) — a later phase. See the doc.
-#
-# This is the sole release path (CircleCI is deleted) but has NOT yet run on a real tag — the first tag
-# push is its live test. workflow_dispatch exercises the build jobs only; the publish step is gated to
-# tag refs, so a manual branch run won't create a Release.
+# workflow_dispatch exercises the build jobs only; the publish step is gated to tag refs, so a manual
+# run won't create a Release.
 
 on:
   push:

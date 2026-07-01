@@ -1,9 +1,12 @@
 # CI migration: CircleCI → GitHub Actions
 
-Status: **cut over** (branch `ci-github-actions`). CircleCI is deleted; GitHub
-Actions is the only CI — `ci.yml` (push/PR, every branch) and `release.yml` (tags).
-Remaining: native installers (Phase 2b) and the macOS target (Phase 3). The
-parity `release.yml` is authored but not yet exercised on a real tag.
+Status: **done, merged to `beta`.** CircleCI is deleted; GitHub Actions is the
+only CI — `ci.yml` (push/PR) and `release.yml` (tags). Linux `.deb`/`.rpm` +
+Windows `.msi` + signed APKs ship; `3.0.0-beta05` was the first release cut through
+it. Remaining: the macOS `.dmg` target (Phase 3).
+
+> This doc is the **historical migration record**. For how releases work now and
+> how to cut one, see **[`release-process.md`](release-process.md)**.
 
 ## Why
 

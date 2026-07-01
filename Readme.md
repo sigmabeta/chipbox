@@ -145,7 +145,8 @@ graph, and the source-set topology).
 - **ktlint** / **detekt** for static analysis (`./gradlew ktlintCheck detekt`;
   `./gradlew ktlintFormat` auto-fixes)
 - **GitHub Actions** for CI (`.github/workflows/`: `ci.yml` push/PR checks,
-  `release.yml` tag releases)
+  `release.yml` tag releases). Cutting a release: push a version tag — see
+  [`arch-docs/release-process.md`](arch-docs/release-process.md).
 
 ## Roadmap
 
