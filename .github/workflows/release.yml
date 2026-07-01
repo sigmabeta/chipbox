@@ -243,6 +243,12 @@ jobs:
           ./gradlew :apps:jvm:packageDmg \
             -Pchipbox.jvm.packageVersion="$VERSION" \
             --build-cache --no-configuration-cache --no-daemon --max-workers=4
+      # jpackage writes its real error to a log file, not stdout — surface it so a failure is diagnosable.
+      - name: Show jpackage logs on failure
+        if: failure()
+        run: |
+          find apps/jvm/build/compose/logs -name '*.txt' -print -exec cat {} \; 2>/dev/null \
+            || echo "no jpackage logs found"
       # jpackage names the .dmg by the numeric app-version; relabel with the full tag + arch.
       - name: Label installer with the full version name
         env:
