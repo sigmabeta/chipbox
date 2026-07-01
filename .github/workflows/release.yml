@@ -43,10 +43,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y build-essential fakeroot binutils rpm
       - uses: gradle/actions/setup-gradle@v4
       # jpackage demands a strict numeric version (X.Y.Z); sanitize the tag to its numeric prefix
-      # (3.0.0-beta04 → 3.0.0). Non-tag dispatch runs fall back to 0.0.0 (never published).
+      # (3.0.0-beta04 → 3.0.0). Non-tag dispatch runs fall back to 1.0.0 (never published; macOS
+      # jpackage rejects a zero major, and 1.0.0 is valid everywhere).
       - name: Build Linux installers (.deb / .rpm)
         run: |
-          VERSION="$(printf '%s' "${{ github.ref_name }}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo '0.0.0')"
+          VERSION="$(printf '%s' "${{ github.ref_name }}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo '1.0.0')"
           echo "jpackage app-version (embedded OS-package metadata): $VERSION"
           ./gradlew :apps:jvm:packageDeb :apps:jvm:packageRpm \
             -Pchipbox.jvm.packageVersion="$VERSION" \
@@ -74,7 +75,7 @@ jobs:
   # Windows .msi is built in two stages because jpackage can't cross-compile but doesn't compile native
   # code either — it only assembles. So we cross-compile the emulator .dll on ubuntu (the proven MinGW
   # path) and hand them to a windows-latest job that runs jpackage over them. No native Windows toolchain
-  # needed. (macOS .dmg is still deferred — it needs a darwin native build that doesn't exist yet.)
+  # needed. (macOS is different — it builds natively on macos-latest; see the desktop-macos job below.)
   windows-natives:
     runs-on: ubuntu-latest
     steps:
@@ -154,7 +155,7 @@ jobs:
       - name: Build Windows installer (.msi)
         shell: bash
         run: |
-          VERSION="$(printf '%s' "${{ github.ref_name }}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo '0.0.0')"
+          VERSION="$(printf '%s' "${{ github.ref_name }}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo '1.0.0')"
           echo "jpackage version: $VERSION"
           ./gradlew :apps:jvm:packageMsi \
             -Pchipbox.jvm.packageVersion="$VERSION" \
@@ -238,7 +239,7 @@ jobs:
       # is the runner's own, so no -Pchipbox.jvm.nativeTarget / nativeJdk needed.
       - name: Build macOS installer (.dmg)
         run: |
-          VERSION="$(printf '%s' "${{ github.ref_name }}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo '0.0.0')"
+          VERSION="$(printf '%s' "${{ github.ref_name }}" | grep -oE '^[0-9]+\.[0-9]+\.[0-9]+' || echo '1.0.0')"
           echo "jpackage app-version: $VERSION"
           ./gradlew :apps:jvm:packageDmg \
             -Pchipbox.jvm.packageVersion="$VERSION" \
