@@ -496,11 +496,13 @@ object JvmSettingsManagersModule {
 @BindingContainer
 @ContributesTo(AppScope::class)
 object JvmAppInfoModule {
-    // The Android target builds this from Gradle-injected BuildConfig fields; on JVM there's
-    // no BuildConfig + no signed-build context, so the values are intentionally fake (debug
-    // flag on, dev version) — good enough for the desktop bootstrap's Settings screen.
+    // The Android target builds this from Gradle-injected BuildConfig fields; on JVM there's no
+    // BuildConfig, so these are hand-set. isDebug defaults to release (false) — packaged installers
+    // get the release name/icon/colors/splash — and is flipped on only for the dev `run` task via
+    // -Dchipbox.debug=true (apps/jvm/build.gradle.kts). versionName stays a dev placeholder; it only
+    // feeds the Settings screen, not the packaged-artifact version.
     @Provides @SingleIn(AppScope::class) fun provideAppInfo(): AppInfo = AppInfo(
-        isDebug = true,
+        isDebug = System.getProperty("chipbox.debug")?.toBooleanStrictOrNull() ?: false,
         versionName = "0.1.0-jvm",
         versionCode = 1,
         buildTimeMs = System.currentTimeMillis(),

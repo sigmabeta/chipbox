@@ -15,12 +15,15 @@ plugins {
 // Host emulator native libs are built by the chipbox.native.host plugin (the shared cacheable
 // build in build-logic) into build/jvm-native/libs/ via the `chipboxHostNativeLibs` aggregate
 // task. The compose.desktop `run` task + the jpackage app image wire to that directory + task below.
-// Desktop is always a debug build today (AppInfo.isDebug == true, JvmModules.kt), so use the
-// purple-recolored splash — the same treatment DesktopMain applies to the window icon
-// (ic_launcher_debug.webp). The original yellow `splash.png` is kept as the release asset; if a
-// release desktop ever ships, gate this on the same flag. `-splash:` is a launcher arg shown
-// before main() runs, so it can't read the runtime flag the way the window icon does.
-val splashImageFile: File = layout.projectDirectory.dir("src/main/splash").file("splash_debug.png").asFile
+//
+// Debug vs release: `AppInfo.isDebug` (JvmModules.kt) reads `-Dchipbox.debug` and defaults to release
+// (false), which drives the window title ("Chipbox" vs "Chipbox Debug"), the window icon, and the
+// swapped/plain color scheme. The dev `run` task opts into debug (`-Dchipbox.debug=true`) and uses the
+// purple `splash_debug.png`; the packaged installers stay release and bundle the yellow `splash.png`.
+// (`-splash:` is a launcher arg shown before main() runs, so the splash is picked at build time, not
+// from the runtime flag.)
+val splashDebugFile: File = layout.projectDirectory.dir("src/main/splash").file("splash_debug.png").asFile
+val splashReleaseFile: File = layout.projectDirectory.dir("src/main/splash").file("splash.png").asFile
 val nativeLibsDirFile: File = layout.buildDirectory.dir("jvm-native/libs").get().asFile
 val nativeLibsTask = tasks.named("chipboxHostNativeLibs")
 
@@ -59,8 +62,9 @@ val stageAppResources by tasks.registering(Copy::class) {
         dependsOn(nativeLibsTask)
         from(nativeLibsDirFile) { into(hostOsResourceDir) } // .so/.dll/.dylib → $APPDIR/resources
     }
-    from(splashImageFile) {
-        // splash → $APPDIR/resources/splash.png (for the -splash launcher arg)
+    from(splashReleaseFile) {
+        // Release splash → $APPDIR/resources/splash.png (for the -splash launcher arg). Packaged
+        // installers are release, so they get the yellow splash; `run` uses the debug one below.
         into("common")
         rename { "splash.png" }
     }
@@ -126,10 +130,18 @@ tasks.matching {
 tasks.withType<JavaExec>().matching { it.name == "run" }.configureEach {
     dependsOn(stageAppResources)
     val nativeDir = nativeLibsDirFile.absolutePath
-    val splashPath = splashImageFile.absolutePath
+    val splashPath = splashDebugFile.absolutePath
+    // Dev runs are debug (window title/icon + swapped colors + purple splash); packaged installers
+    // stay release (isDebug defaults false in JvmModules). -Dchipbox.debug=true opts this run in.
     jvmArgs = jvmArgs.orEmpty()
-        .filterNot { "java.library.path" in it || it.startsWith("-splash:") }
-        .plus(listOf("-Djava.library.path=$nativeDir", "-splash:$splashPath"))
+        .filterNot { "java.library.path" in it || it.startsWith("-splash:") || "chipbox.debug" in it }
+        .plus(
+            listOf(
+                "-Djava.library.path=$nativeDir",
+                "-splash:$splashPath",
+                "-Dchipbox.debug=true",
+            ),
+        )
 }
 
 dependencies {
