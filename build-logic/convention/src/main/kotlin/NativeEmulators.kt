@@ -24,9 +24,10 @@ object NativeEmulators {
 }
 
 /**
- * Desktop-JVM host native target. `LINUX` (default) builds for the build machine — the long-standing
- * behavior. `WINDOWS_X64` cross-compiles to Windows `.dll`s via the MinGW-w64 toolchain, selected
- * with `-Pchipbox.jvm.nativeTarget=windows-x64`. macOS isn't wired yet.
+ * Desktop-JVM host native target. The default (`host`) detects the build machine's OS — `LINUX`
+ * (`lib<t>.so`) or `MACOS` (`lib<t>.dylib`), each built natively with the host toolchain. `WINDOWS_X64`
+ * cross-compiles Windows `<t>.dll`s via the MinGW-w64 toolchain (`-Pchipbox.jvm.nativeTarget=windows-x64`,
+ * from a Linux build machine — jpackage then packages them on windows-latest).
  */
 enum class NativeHostTarget(
     /** The JDK `include/<subdir>/jni_md.h` (per-OS JNI machine-dependent header) for this target. */
@@ -35,16 +36,32 @@ enum class NativeHostTarget(
     val crossPrefix: String?,
 ) {
     LINUX("linux", null),
+    MACOS("darwin", null),
     WINDOWS_X64("win32", "x86_64-w64-mingw32-"),
 }
 
-/** Host native target from `-Pchipbox.jvm.nativeTarget` (`host`/`linux` default, or `windows-x64`). */
+/**
+ * Host native target from `-Pchipbox.jvm.nativeTarget`. Unset/`host` detects the build OS (LINUX or
+ * MACOS — each native); `linux`/`macos` force one; `windows-x64` selects the MinGW cross-compile.
+ */
 fun Project.resolveNativeHostTarget(): NativeHostTarget {
     val raw = (findProperty("chipbox.jvm.nativeTarget") as? String)?.trim()?.lowercase()
     return when (raw) {
-        null, "", "host", "linux" -> NativeHostTarget.LINUX
+        "linux" -> NativeHostTarget.LINUX
+        "macos", "mac", "osx", "darwin" -> NativeHostTarget.MACOS
         "windows-x64", "windows", "win", "mingw" -> NativeHostTarget.WINDOWS_X64
-        else -> error("Unknown -Pchipbox.jvm.nativeTarget='$raw'; use 'host' (default) or 'windows-x64'.")
+        null, "", "host" -> {
+            val os = org.gradle.internal.os.OperatingSystem.current()
+            when {
+                os.isMacOsX -> NativeHostTarget.MACOS
+                os.isLinux -> NativeHostTarget.LINUX
+                else -> error(
+                    "No native host build for ${os.name}; cross-compile with " +
+                        "-Pchipbox.jvm.nativeTarget=windows-x64 (from Linux).",
+                )
+            }
+        }
+        else -> error("Unknown -Pchipbox.jvm.nativeTarget='$raw'; use 'host', 'linux', 'macos', or 'windows-x64'.")
     }
 }
 

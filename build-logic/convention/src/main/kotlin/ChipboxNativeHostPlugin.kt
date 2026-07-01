@@ -17,10 +17,11 @@ import javax.inject.Inject
  *  - aggregate task **`chipboxHostNativeLibs`** that produces it.
  * `apps/jvm` points its distribution / `java.library.path` wiring at those.
  *
- * Target is [NativeHostTarget]: `LINUX` (default) builds `lib<target>.so` with the host toolchain;
- * `WINDOWS_X64` (`-Pchipbox.jvm.nativeTarget=windows-x64`) cross-compiles `<target>.dll` with MinGW-w64
- * (fully static — no MinGW runtime DLLs to ship — against a Windows JDK's `win32` JNI headers). The
- * CMake/JDK resolvers and the emulator inventory are shared via [NativeEmulators].
+ * Target is [NativeHostTarget]: `LINUX`/`MACOS` (the default, by build OS) build `lib<target>.so` /
+ * `lib<target>.dylib` natively with the host toolchain; `WINDOWS_X64`
+ * (`-Pchipbox.jvm.nativeTarget=windows-x64`) cross-compiles `<target>.dll` with MinGW-w64 (fully static
+ * — no MinGW runtime DLLs to ship — against a Windows JDK's `win32` JNI headers). The CMake/JDK
+ * resolvers and the emulator inventory are shared via [NativeEmulators].
  */
 class ChipboxNativeHostPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -48,18 +49,19 @@ class ChipboxNativeHostPlugin : Plugin<Project> {
                 outputDir.set(shimDir)
                 compiler.set("${crossPrefix}gcc")
                 archiver.set("${crossPrefix}ar")
-                // -fPIC matters for the Linux .so; on a Windows DLL all code is already position-
-                // independent, so MinGW just warns — omit it there.
-                extraCompileArgs.set(if (target == NativeHostTarget.LINUX) listOf("-fPIC") else emptyList())
+                // -fPIC matters for the native .so/.dylib; on a Windows DLL all code is already
+                // position-independent, so MinGW just warns — omit it there. (`gcc`/`ar` are the
+                // clang/llvm aliases on macOS, so this shim command line is unchanged there.)
+                extraCompileArgs.set(if (target == NativeHostTarget.WINDOWS_X64) emptyList() else listOf("-fPIC"))
             }
             val shimDirFile = shimDir.get().asFile
             val cFlags = buildList {
                 add("-I$jdk/include")
                 add("-I$jdk/include/${target.jniMdSubdir}")
-                if (target == NativeHostTarget.LINUX) {
-                    // GCC/Linux: PIC for the .so, and blank out the MSVC calling-convention keywords the
-                    // Windows-derived cores reference (they don't exist on Linux). On a real Windows target
-                    // those ARE live ABI keywords and must stay intact — hence Linux-only.
+                if (target != NativeHostTarget.WINDOWS_X64) {
+                    // Native GCC/clang (Linux/macOS): PIC for the .so/.dylib, and blank out the MSVC
+                    // calling-convention keywords the Windows-derived cores reference (they don't exist
+                    // off Windows). On the real Windows target those ARE live ABI keywords — keep them.
                     add("-fPIC"); add("-D__fastcall="); add("-D__cdecl="); add("-D__stdcall=")
                 }
                 add("-I${shimDirFile.absolutePath}/include")

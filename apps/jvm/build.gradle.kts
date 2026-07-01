@@ -86,11 +86,12 @@ compose.desktop {
         )
         nativeDistributions {
             // Each format only builds on its compatible OS (Compose disables the rest), so declaring
-            // all three is safe: ubuntu builds Deb/Rpm, windows-latest builds Msi.
+            // all four is safe: ubuntu builds Deb/Rpm, windows-latest builds Msi, macos-latest Dmg.
             targetFormats(
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb,
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Rpm,
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi,
+                org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg,
             )
             packageName = "chipbox"
             packageVersion = jpackageVersion
@@ -112,6 +113,13 @@ compose.desktop {
             }
             linux {
                 iconFile.set(project.file("icons/chipbox.png"))
+            }
+            macOS {
+                // Reverse-DNS bundle identifier for the .app. The .dmg ships UNSIGNED for now
+                // (Gatekeeper will warn: right-click → Open, or `xattr -dr com.apple.quarantine`);
+                // Developer-ID signing + notarization is a TODO.
+                bundleID = "net.sigmabeta.chipbox"
+                iconFile.set(project.file("icons/chipbox.icns"))
             }
         }
     }
