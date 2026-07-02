@@ -43,6 +43,6 @@ director.request(SessionRequest.Start(session))
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (impl) / `commonTest` (tests)
 - **SAGE/module dependencies:** `:cbox:common:player:director:api` (`api`); `implementation` of `:cbox:common:player:common:api`, `:cbox:common:player:generator:api`, `:cbox:common:player:speaker:api`, `:cbox:common:repository:api`, `:cbox:common:playlists:api`, `:cbox:common:favorites:api`, `:cbox:common:settings:api`, `kotlinx.coroutines.core`, `sage.common.logging`. Test deps add the matching `:fake` modules.

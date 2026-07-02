@@ -46,6 +46,6 @@ val exporter: Speaker = FileSpeaker(
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (+ `jvmSharedTest`, tests under `src/test/java`)
 - **SAGE/module dependencies:** `:cbox:common:player:speaker:api`, `okio` (`api`); `:cbox:common:utils:api`, `sage.common.logging` (`implementation`)

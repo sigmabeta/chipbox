@@ -49,6 +49,6 @@ class MyScreenViewModel : ChipboxViewModel() {
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `androidx.lifecycle.viewmodel` (multiplatform lifecycle artifact). No SAGE or project deps (leaf).

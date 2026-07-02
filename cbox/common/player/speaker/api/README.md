@@ -57,6 +57,6 @@ class MySpeaker(/* deps */) : BaseSpeaker(/* bufferManager, hatchet */) {
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `:cbox:common:player:common:api`, `:cbox:common:player:resampler:api`, `:cbox:common:player:buffer:api`, `kotlinx.coroutines.core`, `sage.common.logging` (all `api`)

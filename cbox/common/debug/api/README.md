@@ -45,6 +45,6 @@ class DebugMenuViewModel(private val debug: DebugSettingsManager) {
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** none (leaf; `api`s `kotlinx-coroutines-core`)

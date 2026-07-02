@@ -54,6 +54,6 @@ consumer.recycleShortArray(buffer.data)      // hand the array back to the empty
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `kotlinx.coroutines.core` (`api`); none on other project modules (leaf within the pipeline)

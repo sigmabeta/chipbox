@@ -96,6 +96,6 @@ actual fun FolderPickerRoute(onEvent: (ChipboxEvent) -> Unit, modifier: Modifier
 ## Module facts
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (the `feature.real` plugin transitively applies `sage.kmp.js`)
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the `feature.real` plugin transitively applies `sage.kmp.js`)
 - **Source set:** `commonMain` (State/Action/VM/`FolderLister`/`OkioFolderLister`) + `androidMain`/`jvmMain`/`jsMain` Route actuals; tests in `commonTest`. No `jvmSharedMain` code.
 - **SAGE/module dependencies:** `:features:folder-picker:api`, `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:contentsource:api`, `:cbox:common:scanner:api`, `:features:rescan-status:api`, `okio` (commonMain); `androidx.activity.compose` + `:cbox:common:ui:components:api` (androidMain); fakes (`contentsource.fake`, `scanner.fake`, `okio.fakefilesystem`) for tests.

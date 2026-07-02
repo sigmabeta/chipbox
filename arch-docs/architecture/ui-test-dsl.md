@@ -337,5 +337,5 @@ and `assertDirectorReceived` reads it.
   override Paparazzi needed (see `paparazzi_compose_resources`).
 - **Android target** — `runComposeUiTest` on Android wants instrumentation or
   Robolectric; Phase 0 settles which.
-- **js target** — gated out of CI (`-Pchipbox.js=true`), so compile/run it explicitly
+- **js target** — gated out of CI (`-Psage.js=true`), so compile/run it explicitly
   when touching shared test code.

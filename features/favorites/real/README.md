@@ -40,6 +40,6 @@ FavoritesRoute(onEvent = LocalChipboxEventSink.current)
 ## Module facts
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (the `feature.real` plugin transitively applies `sage.kmp.js`)
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the `feature.real` plugin transitively applies `sage.kmp.js`)
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `api` → `:features:favorites:api`; `implementation` → `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:models:api`, `:cbox:common:repository:api`, `:cbox:common:favorites:api`, `:cbox:common:player:common:api`, `:cbox:common:player:director:api`, `:features:game-detail:api`, `:features:artist-detail:api`

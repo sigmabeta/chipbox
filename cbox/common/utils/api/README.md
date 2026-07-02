@@ -55,7 +55,7 @@ val dir = appDataDir(xdgName = "chipbox", nativeName = "Chipbox")
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (helpers + `expect`), `src/main/java`
   (`jvmSharedMain` actuals: dispatchers, `unrar`, `AppDataDir`), `jsMain`
   (JS actuals / stubs)

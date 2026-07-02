@@ -75,7 +75,7 @@ val source = factory.open(track, fileBytes)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` + `jsMain` + `src/main/java` (`jvmSharedMain`) — the
   `touchLastModified` set-mtime helper is an `expect` in `commonMain` with a
   `java.io.File` `actual` in `src/main/java` (covers both Android and JVM) and a

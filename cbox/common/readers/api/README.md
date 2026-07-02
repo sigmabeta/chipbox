@@ -63,7 +63,7 @@ val entries: List<M3uEntry> = readers.m3u.parse(m3uBytes)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (readers + `ByteReader`/`ReaderUtils`/`Gzip` expect);
   `src/main/java` (`jvmSharedMain`) and `src/jsMain` hold the `gunzip` actuals
 - **SAGE/module dependencies:** `api` `:cbox:common:repository:api` (the `RawTrack`

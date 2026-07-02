@@ -87,7 +87,7 @@ println(tally.snapshot())                                 // CoverArtSummary
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `kotlin.serialization`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (keeps the
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (keeps the
   metadata compile honest about commonMain purity)
 - **Source set:** `commonMain` for the logic; `src/main/java` (`jvmSharedMain`)
   for the OkHttp `CoverArtHttp` impl, shared by `androidMain` + `jvmMain`

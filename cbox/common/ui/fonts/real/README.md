@@ -39,7 +39,7 @@ val resource: FontResource = ChipboxFont.METEOR.resource
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp` + `compose.multiplatform`
   (the JetBrains Compose Gradle plugin, for `Res.font.*` codegen)
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (Kotlin + `composeResources/font/`)
 - **SAGE/module dependencies:** `:cbox:common:ui:fonts:api` (`api`),
   `libs.jetbrains.compose.resources` (`api`)

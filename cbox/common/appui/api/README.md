@@ -110,7 +110,7 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp` + `metro` +
   `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (`jsTest`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (`jsTest`
   disabled — Skiko/Node, see `build.gradle.kts`)
 - **Source set:** `commonMain` (most code) + `androidMain` / `jvmMain` / `jsMain`
   (`backMouseButton` + `WithPerScreenViewModelStore` actuals) + `commonTest`

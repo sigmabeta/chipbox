@@ -43,6 +43,6 @@ emit(NavigateTo(GameDetail(id)))
 ## Module facts
 
 - **Plugin:** `chipbox.plugins.feature.real` + `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (+ `commonTest`)
 - **SAGE/module dependencies:** `api` `:features:game-detail:api`; `implementation` `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:repository:api`, `:cbox:common:favorites:api`, `:cbox:common:models:api`, `:cbox:common:player:common:api`, `:cbox:common:player:director:api`, `:features:artist-detail:api`, `:features:playlists:api`. `commonTest`: `:cbox:common:repository:fake`, `:cbox:common:favorites:fake`, `:cbox:common:player:director:fake`.

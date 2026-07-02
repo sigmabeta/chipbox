@@ -17,7 +17,7 @@ plugins {
 // that don't belong in a single-target executable. The Kotlin Multiplatform + Compose plugins
 // above are what sage.compose.kmp adds on top of sage.kmp anyway — minus the Android pieces.
 //
-// REQUIRES `-Pchipbox.js=true`. The shared modules this app depends on only expose a Kotlin/JS
+// REQUIRES `-Psage.js=true`. The shared modules this app depends on only expose a Kotlin/JS
 // variant when that property is set (see `sage.kmp.js`); the gate keeps non-web Android/JVM builds
 // from configuring Kotlin/JS at all (it's incompatible with configure-on-demand). Any apps/js or
 // apps/server bundle task must pass it.
@@ -28,10 +28,10 @@ plugins {
 // emcmake/emmake. Output lands in `build/wasm/<name>/`; the `copyEmulatorWasm` task fans it into
 // `src/jsMain/resources/wasm/` so the webpack bundle ships them at `/wasm/<name>.wasm` runtime.
 //
-// emsdk discovery: explicit `-Pchipbox.js.emsdk=/path/to/emsdk` first, then `$EMSDK` env var.
+// emsdk discovery: explicit `-Psage.js.emsdk=/path/to/emsdk` first, then `$EMSDK` env var.
 // Tasks fail at execution (not configuration) if neither is present, so running unrelated tasks
 // (`compileKotlinJs` etc.) on a dev box without emsdk still works.
-val emsdkDir: Provider<String> = providers.gradleProperty("chipbox.js.emsdk")
+val emsdkDir: Provider<String> = providers.gradleProperty("sage.js.emsdk")
     .orElse(providers.environmentVariable("EMSDK"))
 
 val wasmResourcesDirPath: String =
@@ -64,7 +64,7 @@ val buildTaskNames = wasmEmulators.map { emu ->
 
     val configureTask = tasks.register<Exec>("configure${cap}Wasm") {
         description = "Configures the Emscripten WASM build for ${emu.displayName}. Needs " +
-            "\$EMSDK or -Pchipbox.js.emsdk."
+            "\$EMSDK or -Psage.js.emsdk."
         group = "wasm"
         inputs.file(File(srcDir, "CMakeLists.txt"))
         outputs.file(File(buildDir, "CMakeCache.txt"))
@@ -76,7 +76,7 @@ val buildTaskNames = wasmEmulators.map { emu ->
             val emsdk = capturedEmsdk.orNull
                 ?: error(
                     "Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
-                    "-Pchipbox.js.emsdk=/path/to/emsdk."
+                    "-Psage.js.emsdk=/path/to/emsdk."
                 )
             require(File(emsdk, "emsdk_env.sh").isFile) {
                 "EMSDK=$emsdk does not look like an emsdk checkout (no emsdk_env.sh)."
@@ -109,7 +109,7 @@ val buildTaskNames = wasmEmulators.map { emu ->
             val emsdk = capturedEmsdk.orNull
                 ?: error(
                     "Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
-                    "-Pchipbox.js.emsdk=/path/to/emsdk."
+                    "-Psage.js.emsdk=/path/to/emsdk."
                 )
             val envScript = File(emsdk, "emsdk_env.sh").absolutePath
             commandLine(

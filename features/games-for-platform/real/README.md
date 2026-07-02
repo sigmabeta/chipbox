@@ -39,7 +39,7 @@ emit(NavigateTo(GamesForPlatform(platform)))
 ## Module facts
 
 - **Plugin:** `chipbox.plugins.feature.real` + `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (+ `commonTest`)
 - **SAGE/module dependencies:** `api(:features:games-for-platform:api)`;
   `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`,

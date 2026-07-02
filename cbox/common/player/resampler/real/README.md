@@ -39,6 +39,6 @@ val outFrames = resampler.process(input, inFrames, 32_006, 48_000, out)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `:cbox:common:player:resampler:api` (`api`)

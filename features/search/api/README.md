@@ -33,6 +33,6 @@ emit(ChipboxEvent.NavigateTo(Search))
 ## Module facts
 
 - **Plugin:** `chipbox.feature.api`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (the `feature.api` plugin transitively applies `sage.kmp.js`).
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the `feature.api` plugin transitively applies `sage.kmp.js`).
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** none (leaf) — only `kotlinx.serialization`.

@@ -41,6 +41,6 @@ val label = "${font.fontName}: ${font.description}"
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` (no `sage.compose.kmp` — pure Kotlin)
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** none (leaf)

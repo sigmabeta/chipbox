@@ -73,6 +73,6 @@ The ViewModel is contributed to the app graph automatically via Metro
 ## Module facts
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (state, route, ViewModel) and `commonTest` (`RescanStatusViewModelTest`). The ViewModel + route live in `commonMain` because `scanner.api` is now KMP — no `jvmSharedMain` split.
 - **SAGE/module dependencies:** `:features:rescan-status:api` (api), `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:scanner:api`, `:features:game-detail:api`, `sage.common.images`; test: `:cbox:common:scanner:fake`.

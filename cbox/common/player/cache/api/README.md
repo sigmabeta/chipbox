@@ -57,6 +57,6 @@ val onDisk = key.filename()       // "<hash>-0-<rate>.pcm"
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (+ `commonTest`)
 - **SAGE/module dependencies:** `:cbox:common:models:api` (`api`), `:cbox:common:player:buffer:api` (`api`), `kotlinx.coroutines.core` (`implementation`)

@@ -44,6 +44,6 @@ val emulator = provider.emulators.firstOrNull { it.isFileExtensionSupported("spc
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (+ `commonTest`)
 - **SAGE/module dependencies:** `:cbox:common:models:api`, `:cbox:common:player:common:api`, `kotlinx-coroutines-core`, `sage.common.logging`

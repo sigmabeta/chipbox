@@ -50,6 +50,6 @@ override fun handleAction(action: SageAction) {
 ## Module facts
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (`feature.real` transitively applies `sage.kmp.js`)
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (`feature.real` transitively applies `sage.kmp.js`)
 - **Source set:** `commonMain` (state/action/VM/route all pure-Kotlin); tests in `commonTest`
 - **SAGE/module dependencies:** `:features:library:api` (api); `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`; route keys from `:features:favorites:api`, `:features:playlists:api`, `:features:browse-all-tracks:api`, `:features:browse-by-artist:api`, `:features:browse-by-game:api`, `:features:browse-by-platform:api`

@@ -43,6 +43,6 @@ Settings -> SettingsDeepScreen    // SettingsRoute(onEvent = LocalChipboxEventSi
 ## Module facts
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (VM + `expect` Route/build-date); `androidMain` / `jvmMain` / `jsMain` Route actuals; `src/main/java` (`jvmSharedMain`) + `jsMain` build-date actuals; `commonTest` for `SettingsViewModelTest`
 - **SAGE/module dependencies:** `:features:settings:api`; `:cbox:common:ui:list:api`, `:cbox:common:ui:fonts:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:settings:api`, `:cbox:common:debug:api`, `:cbox:common:repository:api`, `:cbox:common:history:api`, `:cbox:common:scanner:api`, `:cbox:common:contentsource:api`; the `:api` route keys of `:features:playback-status`, `:error-log`, `:crash-log`, `:component-library`, `:manage-library`, `:rescan-status`, and `:folder-picker` (android/jvm); `sage.common.appinfo`, `sage.common.ui.components`, `kotlinx.collections.immutable`

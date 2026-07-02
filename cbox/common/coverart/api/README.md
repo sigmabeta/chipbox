@@ -53,7 +53,7 @@ val creds: IgdbCredentials? = parseIgdbCredentials(configLines)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `kotlin.serialization`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (the JS
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the JS
   target has no `jvmSharedMain`, so it forces every file through `commonMain` and
   verifies the layer is genuinely pure)
 - **Source set:** `commonMain` (no `jvmSharedMain`)

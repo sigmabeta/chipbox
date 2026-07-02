@@ -50,6 +50,6 @@ actionSink.sendAction(SearchAction.QueryChanged(newText))
 ## Module facts
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (the `feature.real` plugin transitively applies `sage.kmp.js`).
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the `feature.real` plugin transitively applies `sage.kmp.js`).
 - **Source set:** `commonMain` (impl), `commonTest` (`SearchViewModelTest`)
 - **SAGE/module dependencies:** `api`-exposes `:features:search:api`; `implementation` of `:cbox:common:ui:list:api`, `:cbox:common:ui:components:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:repository:api`, `:cbox:common:models:api`, `:cbox:common:player:common:api`, `:cbox:common:player:director:api`, `:features:game-detail:api`, `:features:artist-detail:api`, plus SAGE `appcomm`/`images`/`ui-components`/`ui-strings` and Compose material-icons-extended. Tests use `:cbox:common:repository:fake` and `:cbox:common:player:director:fake`.

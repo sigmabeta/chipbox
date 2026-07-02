@@ -39,6 +39,6 @@ PlaylistDetailRoute(playlistId = playlistId, onEvent = LocalChipboxEventSink.cur
 ## Module facts
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (impl), `commonTest` (`PlaylistDetailViewModelTest`)
 - **SAGE/module dependencies:** `api(:features:playlist-detail:api)`; `implementation` of `:cbox:common:ui:list:api`, `:cbox:common:ui:components:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:models:api`, `:cbox:common:repository:api`, `:cbox:common:playlists:api`, `:cbox:common:player:common:api`, `:cbox:common:player:director:api`. Test: `:cbox:common:repository:fake`, `:cbox:common:playlists:fake`, `:cbox:common:player:director:fake`.

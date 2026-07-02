@@ -29,6 +29,6 @@ repo.setGameFavorite(gameId = 3, favorite = true)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `:cbox:common:favorites:api`, `kotlinx-coroutines-core`

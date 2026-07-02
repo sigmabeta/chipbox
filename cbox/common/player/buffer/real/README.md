@@ -52,6 +52,6 @@ In production this construction and the multi-interface binding happen in
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (+ `commonTest`)
 - **SAGE/module dependencies:** `:cbox:common:player:buffer:api` (`api`), `:cbox:common:player:common:api`, `sage.common.logging`

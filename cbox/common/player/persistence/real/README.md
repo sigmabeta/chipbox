@@ -33,6 +33,6 @@ val persister = RealPlaybackSessionPersister(director, store, hatchet)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `kotlin.serialization` + `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (impl) / `commonTest` (tests)
 - **SAGE/module dependencies:** `:cbox:common:player:persistence:api` (`api`); `implementation` of `:cbox:common:player:common:api`, `:cbox:common:player:director:api`, `:cbox:common:models:api`, `kotlinx.coroutines.core`, `kotlinx.serialization.json`, `sage.common.storage.common`, `sage.common.logging`. Test deps add `:persistence:fake` and `:director:fake`.
