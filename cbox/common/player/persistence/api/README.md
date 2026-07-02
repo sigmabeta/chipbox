@@ -39,6 +39,6 @@ class PlaybackService(private val persister: PlaybackSessionPersister) {
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `kotlin.serialization`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `:cbox:common:player:common:api` (`api`, re-exports `SessionType`/`RepeatMode`), `kotlinx.serialization.core` (`api`)

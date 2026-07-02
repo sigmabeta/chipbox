@@ -38,6 +38,6 @@ val placeholder: ImageBitmap = BitmapGenerator.generateBitmap(game)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `metro` (the `metro` compiler plugin and `sage.common.di` are added to `commonMain` directly because `sage.di`'s plugin is Android/JVM-only)
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (logger), `androidMain` (Bitmap/Coil), `src/main/java`/`jvmSharedMain` (`java.io.File` fetcher)
 - **SAGE/module dependencies:** `coil.kt.core`/`compose`/`okhttp`, `sage.common.di`, `sage.common.analytics`, `sage.common.logging`, `sage.common.images`

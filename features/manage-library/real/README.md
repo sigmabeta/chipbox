@@ -76,7 +76,7 @@ ChipboxListEntry(viewModel, routedOnEvent, modifier)
 ## Module facts
 
 - **Plugin:** `chipbox.plugins.feature.real` + `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (the
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the
   `feature.real` plugin transitively applies `sage.kmp.js`)
 - **Source set:** `commonMain` (state/action/VM + `expect` route) with
   `androidMain` / `jvmMain` / `jsMain` actuals for `ManageLibraryRoute`; tests in

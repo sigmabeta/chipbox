@@ -31,6 +31,6 @@ emit(NavigateTo(ArtistDetail(id = artist.id)))
 ## Module facts
 
 - **Plugin:** `chipbox.plugins.feature.api`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** none (leaf; only `kotlinx.serialization` from the plugin)

@@ -39,6 +39,6 @@ emit(ChipboxEvent.NavigateTo(Settings))
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `kotlin.serialization` (raw KMP plugins, not `feature.api` — this module declares its own dependencies and an Android namespace)
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `sage.common.appcomm`, `sage.common.list`, `sage.common.appinfo`, `sage.common.ui.components`, `sage.common.ui.strings`; `:cbox:common:appcomm:api`, `:cbox:common:settings:api`, `:cbox:common:debug:api`, `:cbox:common:strings:api`, `:cbox:common:ui:fonts:api`; `kotlinx.serialization.core`, `kotlinx.collections.immutable`

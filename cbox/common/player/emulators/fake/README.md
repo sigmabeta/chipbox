@@ -45,6 +45,6 @@ FakeEmulator.teardown()
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (+ `commonTest`)
 - **SAGE/module dependencies:** `:cbox:common:player:emulators:api` (`api`), `kotlinx-coroutines-core` (`api`), `:cbox:common:repository:api` (`implementation`)

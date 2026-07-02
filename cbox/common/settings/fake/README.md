@@ -30,6 +30,6 @@ assertEquals(listOf(ThemeMode.LIGHT), settings.setThemeModeCalls)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `:cbox:common:settings:api` (api), `kotlinx-coroutines-core` (impl)

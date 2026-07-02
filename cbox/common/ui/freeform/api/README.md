@@ -40,6 +40,6 @@ fun NowPlayingRoute(onEvent: (ChipboxEvent) -> Unit, modifier: Modifier = Modifi
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** SAGE `common.freeform`, `common.appcomm`, `common.ui.strings`, `common.ui.components` (api). Project: `:cbox:common:appcomm:api`, `:cbox:common:ui:list:api` (api — reuses `ScreenLifecycleEffect`), `:cbox:common:ui:chrome:api` (impl).

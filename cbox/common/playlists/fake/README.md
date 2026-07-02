@@ -30,6 +30,6 @@ val id = repo.seed("Road trip", trackIds = listOf(1, 2, 3))
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `:cbox:common:playlists:api`, `kotlinx-coroutines-core`

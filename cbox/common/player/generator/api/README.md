@@ -59,6 +59,6 @@ class MyGenerator(/* deps */) : BaseGenerator(/* repo, registry, buffer, hatchet
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (+ `commonTest`)
 - **SAGE/module dependencies:** `:cbox:common:player:common:api`, `:cbox:common:player:buffer:api`, `:cbox:common:player:cache:api`, `:cbox:common:repository:api`, `:cbox:common:contentsource:api`, `kotlinx.coroutines.core`, `sage.common.logging` (all `api`); `:cbox:common:utils:api` (`implementation`); `:cbox:common:repository:fake` (`commonTest`)

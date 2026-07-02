@@ -36,6 +36,6 @@ class CrashLogViewModel(private val store: CrashReportStore) {
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `kotlin.serialization`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `kotlinx-serialization-core` (api) — leaf otherwise

@@ -43,6 +43,6 @@ val source = ContentSourceRegistry(boundSources).get(track.source)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `sage.common.coroutines` (leaf otherwise — no project deps)

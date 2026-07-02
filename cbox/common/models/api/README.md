@@ -63,7 +63,7 @@ val files: List<ChainFile> = decodeChainFiles(encoded)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `kotlin.serialization`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (tests in `commonTest`)
 - **SAGE/module dependencies:** `api(projects.cbox.common.strings.api)` (for
   `Platform`'s string ids); `api(libs.kotlinx.serialization.core)`.

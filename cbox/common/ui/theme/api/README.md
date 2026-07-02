@@ -67,6 +67,6 @@ AppTheme(darkTheme = userPickedDark, swapPrimaryAndSecondary = AppInfo.isDebug) 
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (theme, colors, typography, tokens) with `androidMain` / `jvmMain` / `jsMain` `actual`s for `chipboxDefaultTextStyle()`.
 - **SAGE/module dependencies:** `:cbox:common:ui:fonts:real` (api — for `ChipboxFont` + `toFontFamily()`). No SAGE libs.

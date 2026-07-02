@@ -33,6 +33,6 @@ class FavoriteToggle(private val repo: FavoritesRepository, private val trackId:
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `room-common`, `:cbox:common:entities:api`, `:cbox:common:models:api`, `kotlinx-coroutines-core`

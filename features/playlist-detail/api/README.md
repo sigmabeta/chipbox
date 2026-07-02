@@ -32,6 +32,6 @@ onEvent(ChipboxEvent.Navigate(PlaylistDetail(id = playlist.id)))
 ## Module facts
 
 - **Plugin:** `chipbox.feature.api`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** none (leaf)

@@ -34,12 +34,12 @@ val buildVgmstreamLib = ":apps:jvm:nativeEmulatorVgmstream"
 // webpack-task dependency entirely when `bundleJs` is false — that's what keeps the default
 // `:apps:server:run` webpack-free. (An `onlyIf` on the Copy task alone wouldn't help: its
 // upstream `dependsOn` still fires before Gradle checks `onlyIf`.)
-// apps/js is gated behind -Pchipbox.js (see settings.gradle.kts); without the flag it isn't in the
+// apps/js is gated behind -Psage.js (see settings.gradle.kts); without the flag it isn't in the
 // build, so every reference to it below must be gated too — otherwise configuring apps:server (an
 // IDE sync, a plain `:apps:server:run`) fails with "Project ':apps:js' could not be found".
 // Consequence: bundling the web app — including the shippable installDist/distZip/distTar
-// artifacts — now requires -Pchipbox.js=true.
-val jsModuleAvailable = providers.gradleProperty("chipbox.js")
+// artifacts — now requires -Psage.js=true.
+val jsModuleAvailable = providers.gradleProperty("sage.js")
     .map { it.toBoolean() }.getOrElse(false)
 val bundleJsEnabled = providers.gradleProperty("chipbox.server.bundleJs")
     .map { it.toBoolean() }.getOrElse(false)
@@ -110,14 +110,14 @@ val installProdBundle = tasks.register<Copy>("installProductionJsBundle") {
         from(project(":apps:js").layout.buildDirectory.dir("dist/js/productionExecutable"))
         into(layout.buildDirectory.dir("generated/static/static"))
     } else {
-        // apps:js is gated out without -Pchipbox.js, so there's no web bundle to copy. The dist
+        // apps:js is gated out without -Psage.js, so there's no web bundle to copy. The dist
         // tasks still depend on this task (the "always bundle JS when shipping" contract), so fail
         // loudly here rather than silently shipping a server with no UI. `run` never reaches this —
         // it doesn't depend on installProductionJsBundle.
         doFirst {
             error(
                 "Cannot assemble a shippable apps:server distribution without the web bundle. " +
-                    "Re-run with -Pchipbox.js=true (apps:js is gated behind that flag).",
+                    "Re-run with -Psage.js=true (apps:js is gated behind that flag).",
             )
         }
     }

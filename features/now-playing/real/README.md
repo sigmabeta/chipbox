@@ -61,7 +61,7 @@ from the emitted `NowPlayingModel` and forwards UI `NowPlayingAction`s back to i
 ## Module facts
 
 - **Plugin:** `chipbox.plugins.feature.real` + `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (Compose UI + ViewModel); tests in `commonTest`
 - **SAGE/module dependencies:** `:features:now-playing:api` (`api`); the `:api`
   modules of `game-detail`, `games-for-platform`, `artist-detail`, `playlists`;

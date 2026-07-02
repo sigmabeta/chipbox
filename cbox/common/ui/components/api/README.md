@@ -111,7 +111,7 @@ val card = ScanStatusCardListModel(
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (composables + models), `src/main/java` (`jvmSharedMain`
   actuals), `androidMain`/`jvmMain`/`jsMain` (platform `actual`s + Android preview helpers)
 - **SAGE/module dependencies:** `libs.sage.common.ui.components` (`api`),

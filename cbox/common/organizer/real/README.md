@@ -42,7 +42,7 @@ val result = organizer.commit(moves)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `api` `:cbox:common:organizer:api`,
   `:cbox:common:models:api` (`Game`/`Track`/`Platform`); `implementation` `okio`,

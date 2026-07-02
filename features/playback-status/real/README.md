@@ -64,6 +64,6 @@ private object PlaybackStatusScreen : Screen {
 ## Module facts
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (+ `src/main/java` / `src/jsMain` `actual`s for `urlDecodeUtf8`; `commonTest` for the VM test)
 - **SAGE/module dependencies:** `api(:features:playback-status:api)`; `:cbox:common:appcomm:api`, `:cbox:common:ui:list:api`, `:cbox:common:strings:api`, `:cbox:common:models:api`, `:cbox:common:player:common:api`, `:cbox:common:debugInfo:api`, `:cbox:common:utils:api`, `sage.common.ui.components`; (test) `:cbox:common:debugInfo:fake`

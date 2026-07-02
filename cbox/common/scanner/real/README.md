@@ -42,6 +42,6 @@ scanner.startScan()   // walks librarySource, persists RawGames, emits state()/s
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (with per-target `availableProcessors` actuals in `src/main/java` and `src/jsMain`)
 - **SAGE/module dependencies:** `:cbox:common:scanner:api`, `:cbox:common:repository:api`, `:cbox:common:contentsource:api`, `:cbox:common:readers:api`, `:cbox:common:perf:api`, `:cbox:common:utils:api`, `:cbox:common:player:emulators:api`, `okio`, `sage.common.logging`

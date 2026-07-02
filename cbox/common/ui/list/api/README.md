@@ -64,6 +64,6 @@ fun LibraryRoute(onEvent: (ChipboxEvent) -> Unit, modifier: Modifier = Modifier)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** SAGE `common.list`, `common.appcomm`, `common.ui.strings`, `common.ui.components`, `common.logging`, `common.ui.listScreens` (impl); `androidx.lifecycle.viewmodel` + `runtimeCompose`. Project: `:cbox:common:appcomm:api`, `:cbox:common:ui:vm:api` (api), `:cbox:common:ui:chrome:api`, `:cbox:common:ui:components:api` (impl).

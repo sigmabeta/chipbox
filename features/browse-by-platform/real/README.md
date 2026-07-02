@@ -38,7 +38,7 @@ Tapping a platform row emits `NavigateTo(GamesForPlatform(platform))`.
 ## Module facts
 
 - **Plugin:** `chipbox.plugins.feature.real` + `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (+ `commonTest`)
 - **SAGE/module dependencies:** `api` `:features:browse-by-platform:api`;
   `implementation` `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`,

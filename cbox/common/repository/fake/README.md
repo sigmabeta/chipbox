@@ -40,7 +40,7 @@ val stub: Repository = FakeRepository(tracksById = mapOf(1L to track))
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (tests in `commonTest`)
 - **SAGE/module dependencies:** `api`s `:cbox:common:repository:api` and
   `:cbox:common:models:api`; `implementation` `:cbox:common:utils:api`

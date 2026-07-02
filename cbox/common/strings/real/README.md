@@ -63,7 +63,7 @@ fun MyScreenPreview() {
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp` + `compose.multiplatform`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (provider + XML values), `androidMain` (preview provider)
 - **SAGE/module dependencies:** `api(projects.cbox.common.strings.api)`,
   `implementation(libs.sage.common.ui.strings)`,

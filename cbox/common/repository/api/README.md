@@ -56,7 +56,7 @@ suspend fun ingest(repository: Repository, scanned: RawGame) {
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `api`s `:cbox:common:models:api` and
   `kotlinx-coroutines-core`

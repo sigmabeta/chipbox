@@ -33,7 +33,7 @@ onEvent(ChipboxEvent.NavigateTo(ManageLibrary))
 ## Module facts
 
 - **Plugin:** `chipbox.plugins.feature.api`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (the
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the
   `feature.api` plugin transitively applies `sage.kmp.js`)
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** none (leaf)

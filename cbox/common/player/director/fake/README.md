@@ -37,6 +37,6 @@ assertEquals(1, director.pauseCalls)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `:cbox:common:player:director:api`, `:cbox:common:player:common:api`, `:cbox:common:models:api` (all `api`); `kotlinx.coroutines.core` (`implementation`)

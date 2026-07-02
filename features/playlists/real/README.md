@@ -44,7 +44,7 @@ playlist and opens its `PlaylistDetail`.
 ## Module facts
 
 - **Plugin:** `chipbox.plugins.feature.real` + `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (impl), `commonTest` (`PlaylistsViewModelTest`)
 - **SAGE/module dependencies:** `:features:playlists:api` (`api`),
   `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`,

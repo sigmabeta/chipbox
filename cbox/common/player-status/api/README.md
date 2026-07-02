@@ -56,6 +56,6 @@ Scaffold { padding ->
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp` + `metro` + `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (pure Compose + `androidx.lifecycle` ViewModel; no `android.*` imports) / `commonTest`
 - **SAGE/module dependencies:** `implementation` of `:cbox:common:ui:components:api`, `:cbox:common:models:api`, `:cbox:common:player:director:api`, `:cbox:common:appcomm:api`, plus `sage.common.appcomm`, `sage.common.di`, `sage.common.images`, `sage.common.logging`, `sage.common.ui.iconsReal`, `metrox.viewmodel(.compose)`. Test deps add `:director:fake`.

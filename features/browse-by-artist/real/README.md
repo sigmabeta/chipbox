@@ -40,7 +40,7 @@ Tapping a tile emits `NavigateTo(ArtistDetail(id))`, so the host needs the
 ## Module facts
 
 - **Plugin:** `chipbox.plugins.feature.real` + `chipbox.plugins.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (+ `commonTest`)
 - **SAGE/module dependencies:** `api` → `:features:browse-by-artist:api`;
   `implementation` → `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`,

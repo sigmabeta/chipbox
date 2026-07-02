@@ -48,7 +48,7 @@ fun NowPlayingRoute(onEvent: (ChipboxEvent) -> Unit) {
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` only
 - **SAGE/module dependencies:** `sage.common.ui.components` (`TitleBarModel`),
   `:cbox:common:appcomm:api` (`ChipboxEvent`) — both exposed via `api()`.

@@ -24,7 +24,7 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   webpack-dev-server separately). Opt in with `-Pchipbox.server.bundleJs`
   (`+ -Pchipbox.server.productionBundle` for minified). The shippable
   `installDist`/`distZip`/`distTar` artifacts always bundle the production JS —
-  which requires `-Pchipbox.js=true` (apps/js is gated behind it) or they fail loudly.
+  which requires `-Psage.js=true` (apps/js is gated behind it) or they fail loudly.
 
 ## Entry point
 

@@ -40,6 +40,6 @@ ErrorLog -> ErrorLogScreen        // ErrorLogRoute(onEvent = LocalChipboxEventSi
 ## Module facts
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (VM, state, route); `src/main/java` (`jvmSharedMain`) + `jsMain` for the timestamp `actual`; `commonTest` for `ErrorLogViewModelTest`
 - **SAGE/module dependencies:** `:features:error-log:api`; `:cbox:common:appcomm:api`, `:cbox:common:ui:list:api`, `:cbox:common:strings:api`; `sage.common.ui.components`

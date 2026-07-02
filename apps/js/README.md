@@ -1,6 +1,6 @@
 # `:apps:js`
 
-> The Kotlin/JS browser app — Compose Multiplatform UI in the browser, gated behind `-Pchipbox.js`.
+> The Kotlin/JS browser app — Compose Multiplatform UI in the browser, gated behind `-Psage.js`.
 
 The browser twin of `apps/android` / `apps/jvm`: a single-target Kotlin/JS
 executable that mounts the shared `ChipboxAppUi` in a `ComposeViewport`, talks to
@@ -11,12 +11,12 @@ leaf — nothing depends on it.
 ## What this builds / how to run it
 
 - **App target:** a Kotlin/JS (IR) browser executable, webpack-bundled to
-  `chipbox.js`. **Requires `-Pchipbox.js=true`** — the shared modules only expose
+  `sage.js`. **Requires `-Psage.js=true`** — the shared modules only expose
   a Kotlin/JS variant when that flag is set (see the `sage.kmp.js` plugin), and
   the gate keeps non-web Android/JVM builds from configuring Kotlin/JS at all
   (incompatible with configure-on-demand).
-- **Run/build:** `./gradlew :apps:js:jsBrowserDevelopmentRun -Pchipbox.js=true`
-  (dev server), or `:apps:js:jsBrowserDistribution -Pchipbox.js=true` for the
+- **Run/build:** `./gradlew :apps:js:jsBrowserDevelopmentRun -Psage.js=true`
+  (dev server), or `:apps:js:jsBrowserDistribution -Psage.js=true` for the
   production bundle. `apps/server` copies the bundle into its static resources.
   - **Add `--no-parallel --no-configuration-cache`** to any task that drives the
     npm/webpack toolchain (`jsBrowserDistribution`, `jsBrowserDevelopmentRun`,
@@ -27,11 +27,11 @@ leaf — nothing depends on it.
     `compileKotlinJs` / `compileProductionExecutableKotlinJs` tasks are unaffected
     and run fine under the defaults.
   - If a build fails with "Lock file was changed", run
-    `./gradlew kotlinUpgradeYarnLock -Pchipbox.js=true --no-parallel --no-configuration-cache`
+    `./gradlew kotlinUpgradeYarnLock -Psage.js=true --no-parallel --no-configuration-cache`
     and commit the refreshed `kotlin-js-store/yarn.lock`.
 - **WASM emulators:** each `cbox/native/<name>` dir has a CMakeLists with an
   `EMSCRIPTEN` branch; per-emulator `build<Name>Wasm` tasks (needing `$EMSDK` or
-  `-Pchipbox.js.emsdk=...`) emit a `.js` loader + `.wasm` blob, and `copyEmulatorWasm`
+  `-Psage.js.emsdk=...`) emit a `.js` loader + `.wasm` blob, and `copyEmulatorWasm`
   fans them into `src/jsMain/resources/wasm/` so webpack serves them at
   `/wasm/<name>.{js,wasm}`. Emulators covered: gme, vgm, ssf, usf, psf, ncsf,
   2sf, vgmstream, gba.
@@ -68,7 +68,7 @@ arrow-key→focus handling, removes the `index.html` splash, and mounts
   `kotlin.serialization`. `sage.kmp` / `sage.compose.kmp` are deliberately **not**
   applied (they'd force a `jvm()` + Android target a single-target executable
   doesn't want).
-- **Targets:** JS (browser), only when built with `-Pchipbox.js`.
+- **Targets:** JS (browser), only when built with `-Psage.js`.
 - **Source set:** `src/jsMain/kotlin` (+ `src/jsMain/resources`).
 - **SAGE/module dependencies:** `cbox/common` `appui`, `strings`, `repository`,
   `contentsource`, the full `player` chain (director/generator/buffer/cache/

@@ -30,6 +30,6 @@ assertEquals(listOf(SpeakerSource.FILE), debug.setSpeakerSourceCalls)
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `:cbox:common:debug:api` (api), `kotlinx-coroutines-core` (impl)

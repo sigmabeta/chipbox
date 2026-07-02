@@ -97,7 +97,7 @@ fun HomeRoute(onEvent: (ChipboxEvent) -> Unit, modifier: Modifier = Modifier) {
 ## Module facts
 
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (the
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (the
   `feature.real` plugin transitively applies `sage.kmp.js`).
 - **Source set:** `commonMain` (impl) + `commonTest` (tests).
 - **SAGE/module dependencies:** `api`-exposes `:features:home:api`; implements

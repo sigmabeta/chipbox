@@ -33,6 +33,6 @@ emit(NavigateTo(Library))
 ## Module facts
 
 - **Plugin:** `chipbox.feature.api`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js` (`feature.api` transitively applies `sage.kmp.js`)
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js` (`feature.api` transitively applies `sage.kmp.js`)
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** none (leaf)

@@ -40,6 +40,6 @@ is ComponentLibraryMode -> ComponentLibraryModeScreen(destination.mode)  // Comp
 ## Module facts
 
 - **Plugin:** `chipbox.feature.real`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (ViewModels, states, routes); `src/main/java` (`jvmSharedMain`) for the `StringGenerator`-backed sample `actual`; `jsMain` for the placeholder `actual`
 - **SAGE/module dependencies:** `:features:component-library:api`; `:cbox:common:ui:list:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`; `sage.common.images`, `sage.common.ui.components`, `sage.common.ui.strings` (jvmShared), `kotlinx.collections.immutable`

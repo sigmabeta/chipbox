@@ -40,6 +40,6 @@ traceAsync("decodeTrack", cookie = trackId) { decode() }
 ## Module facts
 
 - **Plugin:** `sage.kmp` + `sage.kmp.js`
-- **Targets:** Android + JVM; JS (Node) when built with `-Pchipbox.js`
+- **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (expect) + `androidMain` / `jvmMain` / `jsMain` (actuals)
 - **SAGE/module dependencies:** `androidx.tracing.ktx` (Android-only impl) — leaf otherwise
