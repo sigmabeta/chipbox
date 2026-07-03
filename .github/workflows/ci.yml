@@ -20,7 +20,7 @@ env:
   GRADLE_CACHE_PASSWORD: ${{ secrets.GRADLE_CACHE_PASSWORD }}
 
 jobs:
-  lint:
+  static-analysis:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,10 +37,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: lint-reports
+          name: static-analysis-reports
           path: '**/build/reports/**'
 
   shared-build:
+    # Gate the heavy whole-graph compile behind ktlint + detekt: fail fast on a lint/style break
+    # before spending a compile on it (mirrors the former CircleCI shared-build ← static-analysis edge).
+    needs: static-analysis
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,6 +59,9 @@ jobs:
         run: ./gradlew :apps:jvm:classes --build-cache --no-configuration-cache --no-daemon --max-workers=4
 
   unit-test:
+    # Behind static-analysis so a syntax/style break fails fast in the cheap job rather than burning
+    # compile time here (mirrors the former CircleCI unit-test-jvm ← static-analysis edge).
+    needs: static-analysis
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -98,6 +104,10 @@ jobs:
           path: '**/build/paparazzi/**'
 
   android-lint:
+    # Starts only once the shared code compiles: lintRelease compiles the release graph, whose Kotlin
+    # compiles land in the remote build cache for android-apk to hit (mirrors CircleCI android-lint ←
+    # shared-build). shared-build itself gates on static-analysis, so this never runs on lint-failing code.
+    needs: shared-build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -118,6 +128,9 @@ jobs:
           path: 'apps/android/build/reports/**'
 
   desktop-linux:
+    # Behind shared-build so the shared Kotlin compiles are remote-cache hits here; this job then only
+    # adds the host-native libs + the desktop app image (mirrors CircleCI build-release-jvm ← shared-build).
+    needs: shared-build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -136,6 +149,10 @@ jobs:
         run: ./gradlew :apps:jvm:createDistributable --build-cache --no-configuration-cache --no-daemon --max-workers=4
 
   android-apk:
+    # Last in the chain: android-lint compiled the release graph into the remote build cache, so this
+    # job's assembleRelease hits those Kotlin compiles and only adds the assemble-only work (dexing,
+    # native build, APK packaging) — mirrors CircleCI build-release-apk ← android-lint.
+    needs: android-lint
     runs-on: ubuntu-latest
     env:
       # Release signing — without these the APK is debug-signed (apps/android/build.gradle.kts).
