@@ -48,10 +48,6 @@ import net.sigmabeta.sage.ui.Icon as SageIcon
 import net.sigmabeta.sage.ui.vector
 
 private val CARD_HEIGHT = 200.dp
-
-// Breathing room above the card so it doesn't sit flush against the top of the Home list
-// (or whatever precedes it), giving the row that follows — e.g. ScanStatus — a clean gap.
-private val CARD_TOP_PADDING = 16.dp
 private val CARD_SHAPE_RADIUS = 16.dp
 private val CARD_SHADOW_ELEVATION = 8.dp
 private val PLAY_BUTTON_SIZE = 64.dp
@@ -135,7 +131,6 @@ fun NowPlayingHomeCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(padding)
-            .padding(top = CARD_TOP_PADDING)
             .height(CARD_HEIGHT)
             .clickable { actionSink.sendAction(model.clickAction) },
     ) {

@@ -61,7 +61,8 @@ fun ScanStatusCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(padding),
+            .padding(padding)
+            .padding(top = CARD_TOP_PADDING),
         contentAlignment = Alignment.TopCenter,
     ) {
         Surface(
@@ -187,6 +188,9 @@ private fun RowScope.DetailColumn(
 }
 
 private val CARD_MAX_WIDTH = 600.dp
+
+// Breathing room above the card so it doesn't sit flush against whatever Home row precedes it.
+private val CARD_TOP_PADDING = 16.dp
 private val CARD_HEIGHT = 300.dp
 private val CARD_CORNER_RADIUS = 16.dp
 private val CARD_PADDING = 16.dp
