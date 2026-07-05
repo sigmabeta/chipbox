@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -90,8 +91,12 @@ internal fun ColumnScope.TopBar(model: NowPlayingModel, actionSink: ActionSink) 
             }
         }
 
+        // Temporarily hidden — kept in the layout (invisible, non-interactive) so it holds its
+        // slot and the title column stays centered. Restore visibility when the overflow returns.
         IconButton(
             onClick = { actionSink.sendAction(NowPlayingAction.PlayerSettingsClicked) },
+            modifier = Modifier.alpha(0f),
+            enabled = false,
         ) {
             Icon(
                 imageVector = Icon.Overflow.vector(),

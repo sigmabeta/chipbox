@@ -36,7 +36,9 @@ class PlayerStatusViewModel @Inject constructor(
         } else {
             val playerState = playback.state
             PlayerStatusState(
-                visible = playerState != PlayerState.IDLE && playerState != PlayerState.STOPPED,
+                // Gate on having metadata to show, not on playback state — a stopped/idle track
+                // still has a title/artist worth surfacing. `track != null` here, so: visible.
+                visible = true,
                 isPlaying = playerState.isPlaying(),
                 isBuffering = playerState == PlayerState.BUFFERING,
                 isError = playerState == PlayerState.ERROR,

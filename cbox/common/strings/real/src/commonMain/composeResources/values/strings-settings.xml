@@ -24,8 +24,8 @@
     <string name="settings_label_muffle_glitches">Muffle glitches on track start</string>
     <string name="settings_caption_muffle_glitches">Applies a short fade in, avoids loud glitchy noises.</string>
 
-    <string name="settings_label_brand_font">Brand font</string>
-    <string name="settings_label_plain_font">Plain font</string>
+    <string name="settings_label_brand_font">Large font</string>
+    <string name="settings_label_plain_font">Small font</string>
 
     <string name="settings_label_add_folder">Add folder to library</string>
     <string name="settings_caption_add_folder">Pick a folder containing music files. Subfolders are included.</string>
