@@ -19,8 +19,9 @@ import net.sigmabeta.sage.ui.StringProvider
 
 /**
  * Top-of-Home row that surfaces a larger version of the bottom mini-player. The module hides
- * itself (emits [LCE.Uninitialized]) whenever the director has no current track or is in a
- * stopped/idle state, so the row only takes up screen space when there's something to play.
+ * itself (emits [LCE.Uninitialized]) whenever the director has no current track — i.e. no
+ * metadata to show — so the row only takes up screen space when there's a track to surface.
+ * A stopped/idle track still has a title/artist, so playback state no longer gates the row.
  *
  * The section's `items` always has exactly one element, which means
  * [net.sigmabeta.chipbox.features.home.HomeState] renders it full-width (per the single-item
@@ -42,7 +43,7 @@ class NowPlayingHomeModule @Inject constructor(
         director.metadataState(),
         director.playbackState(),
     ) { track, playback ->
-        if (track == null || !playback.state.isLive()) {
+        if (track == null) {
             LCE.Uninitialized
         } else {
             LCE.Content(sectionFor(track, playback))
@@ -68,8 +69,6 @@ class NowPlayingHomeModule @Inject constructor(
             items = persistentListOf(card),
         )
     }
-
-    private fun PlayerState.isLive(): Boolean = this != PlayerState.IDLE && this != PlayerState.STOPPED
 
     // 0..1, with 0 for "unknown length" so the indicator sits empty rather than full or NaN.
     private fun progressFractionOf(positionMs: Long, trackLengthMs: Long): Float =

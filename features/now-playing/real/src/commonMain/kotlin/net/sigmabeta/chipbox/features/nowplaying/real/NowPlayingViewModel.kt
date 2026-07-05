@@ -90,6 +90,15 @@ class NowPlayingViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             director.metadataState().collect { track ->
+                // Gate on having metadata to show, not on playback state — a stopped/idle track
+                // still has a title/artist worth rendering. Only a null track (no metadata at all)
+                // means there's nothing to show, so leave the screen rather than render a dead
+                // player. This is the pre-session seed the Director emits before anything plays;
+                // the common cause is Android killing the app's process and later recreating this
+                // screen against a brand-new, sessionless Director.
+                if (track == null) {
+                    emit(ChipboxEvent.NavigateBack)
+                }
                 updateState { it.copy(track = track) }
             }
         }
@@ -100,15 +109,6 @@ class NowPlayingViewModel @Inject constructor(
         }
         viewModelScope.launch {
             director.playbackState().collect { playback ->
-                // No live session to show — leave the screen rather than render a dead player.
-                // IDLE is the pre-session seed the Director emits before anything plays: the
-                // common cause is Android killing the app's process and later recreating this
-                // screen against a brand-new, sessionless Director. STOPPED is the terminal state
-                // the player lands in once playback finishes or is stopped. ENDING still has audio
-                // draining, so it's deliberately excluded.
-                if (playback.state == PlayerState.IDLE || playback.state == PlayerState.STOPPED) {
-                    emit(ChipboxEvent.NavigateBack)
-                }
                 updateState { it.copy(playback = playback) }
             }
         }

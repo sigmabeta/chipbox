@@ -88,11 +88,10 @@ internal fun Track.toMediaItem(
 }
 
 internal fun Track.toMediaMetadata(): MediaMetadata {
-    // The now-playing session surfaces the game in the artist slot — chiptune "artist" is
-    // often unknown/various, whereas the game is the meaningful subtitle for a track.
+    // Artist slot carries the real artist string; the game stays in the album slot.
     val builder = MediaMetadata.Builder()
         .setTitle(title)
-        .setArtist(game?.title ?: UNKNOWN_GAME)
+        .setArtist(getArtistText())
         .setAlbumTitle(game?.title)
         .setIsBrowsable(false)
         .setIsPlayable(true)
@@ -119,8 +118,6 @@ internal fun contentStyleExtras(
 private fun Game.iconUri() = if (photoUrl != null) ArtworkUris.forGame(id) else null
 
 private fun Artist.iconUri() = if (photoUrl != null) ArtworkUris.forArtist(id) else null
-
-private const val UNKNOWN_GAME = "Unknown Game"
 
 private const val MAX_ARTISTS_TO_LIST = 3
 
