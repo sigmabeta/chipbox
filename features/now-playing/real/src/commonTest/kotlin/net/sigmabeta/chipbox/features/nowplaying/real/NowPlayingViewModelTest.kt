@@ -94,15 +94,24 @@ class NowPlayingViewModelTest {
     }
 
     @Test
-    fun `playback STOPPED emits NavigateBack`() = runTest(dispatcher) {
-        // STOPPED is the terminal state once playback finishes or the user stops it; the screen
-        // has nothing left to show, so it leaves the same way it does for IDLE.
+    fun `STOPPED with a track stays on screen while null metadata navigates back`() = runTest(dispatcher) {
+        // Navigation gates on metadata now, not playback state: a STOPPED track still has a title/
+        // artist, so the screen holds rather than bouncing the way it does for the sessionless
+        // seed. Only losing the track — null metadata — navigates back.
         val director = FakeDirector()
         val vm = newViewModel(director)
-        // Drain the NavigateBack the VM fires for the FakeDirector's IDLE seed at construction.
+        // Drain the NavigateBack the VM fires for the FakeDirector's null-metadata seed at construction.
         assertTrue(vm.events.first() is ChipboxEvent.NavigateBack)
-        val event = async(start = CoroutineStart.UNDISPATCHED) { vm.events.first() }
+
+        // A real track, then STOPPED: still on screen, no bounce.
+        director.emitMetadata(trackOf(1L, "Corridors of Time"))
         director.emitPlayback(PlayerState.STOPPED)
+        val stopped = vm.state.first { it.track?.title == "Corridors of Time" }
+        assertEquals(PlayerState.STOPPED, stopped.playback?.state)
+
+        // Losing the track (null metadata) is what navigates back now.
+        val event = async(start = CoroutineStart.UNDISPATCHED) { vm.events.first() }
+        director.emitMetadata(null)
         assertTrue(event.await() is ChipboxEvent.NavigateBack)
     }
 

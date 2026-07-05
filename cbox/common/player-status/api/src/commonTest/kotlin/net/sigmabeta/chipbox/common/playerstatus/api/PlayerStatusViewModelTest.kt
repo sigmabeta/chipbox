@@ -100,19 +100,20 @@ class PlayerStatusViewModelTest {
     }
 
     @Test
-    fun `IDLE and STOPPED both render as not visible`() = runTest {
-        // The visibility predicate explicitly excludes both: nothing for the UI to show when the
-        // player is dormant. Without this the bar would animate in only to read "Unknown" + a
-        // stale title on cold start.
+    fun `IDLE and STOPPED stay visible while a track is present`() = runTest {
+        // Visibility gates on having metadata to show, not on playback state: a stopped/idle track
+        // still has a title/artist worth surfacing, so the bar stays up. Only a null track
+        // collapses it — see `initial state is Empty until any metadata arrives`.
         val director = FakeDirector()
         val viewModel = PlayerStatusViewModel(director, BluntHatchet())
 
         director.emitMetadata(trackOf("Schala"))
+
         director.emitPlayback(PlayerState.IDLE)
-        assertFalse(viewModel.state.first { it.title == "Schala" }.visible)
+        assertTrue(viewModel.state.first { it.title == "Schala" }.visible)
 
         director.emitPlayback(PlayerState.STOPPED)
-        assertFalse(viewModel.state.first { !it.visible || it.title == "Schala" }.visible)
+        assertTrue(viewModel.state.first { it.title == "Schala" }.visible)
     }
 
     @Test
