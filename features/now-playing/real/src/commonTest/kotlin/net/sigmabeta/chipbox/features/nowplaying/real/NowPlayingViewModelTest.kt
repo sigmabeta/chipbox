@@ -82,14 +82,14 @@ class NowPlayingViewModelTest {
     }
 
     @Test
-    fun `playback IDLE emits NavigateBack`() = runTest(dispatcher) {
-        // The screen is dead-on-arrival without a live session — the Director seeds IDLE before
+    fun `null metadata emits NavigateBack`() = runTest(dispatcher) {
+        // The screen is dead-on-arrival without metadata — the Director seeds a null track before
         // anything plays (typically because Android killed the process and recreated this screen
-        // against a fresh, sessionless Director). Bounce back rather than render a blank player.
+        // against a fresh, sessionless Director). Navigation gates on metadata, not playback state,
+        // so the null seed is what bounces back rather than render a blank player.
         val director = FakeDirector()
         val vm = newViewModel(director)
         val event = async(start = CoroutineStart.UNDISPATCHED) { vm.events.first() }
-        director.emitPlayback(PlayerState.IDLE)
         assertTrue(event.await() is ChipboxEvent.NavigateBack)
     }
 
