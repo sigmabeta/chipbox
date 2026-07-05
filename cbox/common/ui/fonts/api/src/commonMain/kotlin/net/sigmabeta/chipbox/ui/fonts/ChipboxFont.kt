@@ -13,6 +13,11 @@ enum class ChipboxFont(
     val description: String,
     val url: String,
 ) {
+    REGULAR(
+        "Regular",
+        "Looks like any other regular app.",
+        "https://rsms.me/inter/"
+    ),
     PLANETARY(
         "Planetary",
         "A font only a mother or two could love.",
@@ -100,15 +105,15 @@ enum class ChipboxFont(
     ),
     DYSLEXIC(
         "OpenDyslexic",
-        "No clever quip here, just the goods.",
+        "Helps with readability.",
         "https://opendyslexic.org/",
     ),
     ;
 
     companion object {
         /** Brand/plain typefaces applied until the user picks otherwise in Settings. */
-        val DEFAULT_BRAND: ChipboxFont = DOUBLE_TOUCH
-        val DEFAULT_PLAIN: ChipboxFont = PLANETARY
+        val DEFAULT_BRAND: ChipboxFont = REGULAR
+        val DEFAULT_PLAIN: ChipboxFont = REGULAR
 
         /** Resolves a persisted [ChipboxFont.name] back to an entry, falling back to [default]. */
         fun fromStorageValue(value: String?, default: ChipboxFont): ChipboxFont =

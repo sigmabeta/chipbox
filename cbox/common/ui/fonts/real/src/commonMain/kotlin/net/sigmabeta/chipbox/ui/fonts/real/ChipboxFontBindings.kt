@@ -13,6 +13,7 @@ import net.sigmabeta.chipbox.common.ui.fonts.real.generated.resources.nds
 import net.sigmabeta.chipbox.common.ui.fonts.real.generated.resources.nes
 import net.sigmabeta.chipbox.common.ui.fonts.real.generated.resources.open_dyslexic
 import net.sigmabeta.chipbox.common.ui.fonts.real.generated.resources.ps4
+import net.sigmabeta.chipbox.common.ui.fonts.real.generated.resources.regular
 import net.sigmabeta.chipbox.common.ui.fonts.real.generated.resources.shining_force_lg
 import net.sigmabeta.chipbox.common.ui.fonts.real.generated.resources.shining_force_sm
 import net.sigmabeta.chipbox.common.ui.fonts.real.generated.resources.shinobi
@@ -34,6 +35,7 @@ import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
  */
 val ChipboxFont.resource: FontResource
     get() = when (this) {
+        ChipboxFont.REGULAR -> Res.font.regular
         ChipboxFont.PLANETARY -> Res.font.earthbound
         ChipboxFont.METEOR -> Res.font.final_fantasy_vii
         ChipboxFont.ESPERANTO -> Res.font.final_fantasy_vi
