@@ -57,4 +57,15 @@ headers:
   -Pchipbox.jvm.nativeJdk=/path/to/windows-jdk
 ```
 
-macOS native builds are still pending.
+### macOS (Apple Silicon)
+
+On a macOS host the cores build natively to `.dylib`, so `./gradlew :apps:jvm:run`
+works as on Linux. Package an installer image with jpackage:
+
+```sh
+./gradlew :apps:jvm:packageDmg
+```
+
+The `.dmg` is Apple Silicon (arm64) only and currently ships **unsigned** —
+Gatekeeper will warn on first launch (right-click → Open, or
+`xattr -dr com.apple.quarantine`). Signing and notarization are still a TODO.

@@ -19,13 +19,6 @@ device.
 
 <div class="grid cards" markdown>
 
--   :material-chip:{ .lg .middle } &nbsp; __Real-time chip emulation__
-
-    ---
-
-    GME, vgmstream, mGBA and more cores, wired in via JNI, reproduce SNES, NES,
-    Genesis, PlayStation, N64, Saturn and DS audio hardware.
-
 -   :material-cellphone-link:{ .lg .middle } &nbsp; __Android &amp; desktop__
 
     ---

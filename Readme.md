@@ -86,7 +86,10 @@ headers:
   -Pchipbox.jvm.nativeJdk=/path/to/windows-jdk
 ```
 
-macOS native builds are still pending.
+On a **macOS** host the cores build natively to `.dylib`, so `./gradlew
+:apps:jvm:run` works as on Linux, and `./gradlew :apps:jvm:packageDmg` produces a
+`.dmg`. It's Apple Silicon (arm64) only and currently ships unsigned (signing +
+notarization are a TODO).
 
 Release builds are signed with `chipbox.jks` when the `CHIPBOX_KEY_ALIAS`,
 `CHIPBOX_KEYSTORE_PASSWORD`, and `CHIPBOX_KEY_PASSWORD` environment variables are
@@ -152,7 +155,6 @@ graph, and the source-set topology).
 
 - Independent tempo & pitch playback controls (see
   `arch-docs/psf-playback-speed-pitch-design.md`)
-- Desktop builds for macOS (Linux runs natively; Windows is cross-compiled)
 - Bespoke UI for Android TV
 - Android Auto control support
 - Add support for more emulator cores
