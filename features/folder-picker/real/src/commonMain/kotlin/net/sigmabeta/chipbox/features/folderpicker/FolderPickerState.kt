@@ -71,9 +71,12 @@ data class FolderPickerState(
 
     override fun toListItems(stringProvider: StringProvider): List<ListModel> = buildList {
         if (atVolumeList) {
-            // The synthetic chooser: pick a volume to descend into, or cancel out. There's nothing
-            // to "add" (a volume root isn't a real target here) and nowhere further up.
-            add(cancelCta(stringProvider))
+            // The synthetic chooser: pick a volume to descend into. No "add" (a volume root isn't a
+            // real target here) and nowhere further up; the app-bar back arrow already handles exit,
+            // so there's no "Cancel and exit" row either. Keeping the chooser CTA-free also means it
+            // shares no LazyColumn key with the folder browser — a shared key that changed position
+            // across the chooser→folder swap would leave the newly-shown CTAs anchored above the top
+            // of the viewport (they'd only appear after a further navigation).
             volumes.forEach { add(volumeRow(it)) }
             return@buildList
         }

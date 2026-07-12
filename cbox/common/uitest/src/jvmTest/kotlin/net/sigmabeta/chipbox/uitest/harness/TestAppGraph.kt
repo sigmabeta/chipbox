@@ -39,6 +39,7 @@ import net.sigmabeta.sage.logging.BasicHatchet
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
 import okio.FileSystem
+import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
 
 /**
@@ -185,7 +186,13 @@ interface TestAppGraph : ViewModelGraph {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideFileSystem(): FileSystem = FakeFileSystem()
+    fun provideFileSystem(): FileSystem = FakeFileSystem().apply {
+        // The folder picker lands in the platform default directory (jvm: user.home). In production
+        // that directory always exists and is readable; materialize it here so the picker renders
+        // its browse controls instead of the unreadable-directory error state (which only exists for
+        // Android's traverse-only /storage chain).
+        createDirectories((System.getProperty("user.home") ?: "/").toPath())
+    }
 
     @DependencyGraph.Factory
     fun interface Factory {
