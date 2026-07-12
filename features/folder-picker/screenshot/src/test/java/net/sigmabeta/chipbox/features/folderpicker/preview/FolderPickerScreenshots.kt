@@ -36,6 +36,14 @@ class FolderPickerScreenshots(
         }
     }
 
+    @Test
+    fun folderPickerScreenUnreadable() {
+        paparazzi.unsafeUpdateConfig(deviceConfig = deviceConfig)
+        paparazzi.snapshot {
+            FolderPickerUnreadable(syntheticWidthClass = deviceConfig.toWidthClass())
+        }
+    }
+
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = SUFFIX_TESTNAME)

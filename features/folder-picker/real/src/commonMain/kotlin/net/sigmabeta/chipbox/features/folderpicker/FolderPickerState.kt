@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.features.folderpicker
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.CtaListModel
+import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.LabelValueListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.SingleTextListModel
@@ -33,6 +34,11 @@ data class FolderPickerEntry(
  * The CTAs are always pinned to the top: "Add this folder" commits the [currentPath] to the
  * library and starts a scan; "Go up a folder" ascends to [parentPath] (shown only when there is
  * one); the hidden-files toggle flips [showHidden]; "Cancel and exit" pops the screen.
+ *
+ * [readable] is false when the current directory couldn't be enumerated (permission denied) — the
+ * common case for Android's traverse-only storage parents above `/storage/emulated/0`. In that
+ * state the screen collapses to an explanatory error plus the "Go up"/"Cancel" escapes; "Add" and
+ * the hidden-files toggle are dropped since there's nothing to add or reveal.
  */
 data class FolderPickerState(
     val currentPath: String? = null,
@@ -40,6 +46,7 @@ data class FolderPickerState(
     val fileCount: Int = 0,
     val parentPath: String? = null,
     val showHidden: Boolean = false,
+    val readable: Boolean = true,
 ) : ListState() {
     override val columnType: ColumnType = ColumnType.One
 
@@ -52,6 +59,18 @@ data class FolderPickerState(
     )
 
     override fun toListItems(stringProvider: StringProvider): List<ListModel> = buildList {
+        if (!readable) {
+            // Nothing to enumerate: offer only the escapes and explain why. "Go up" is still
+            // offered when there's a parent, for the case of an isolated unreadable folder under a
+            // readable one. "Return to default folder" sits right below the error message so it
+            // reads as the obvious fix — it's the reliable escape, since ascending from here
+            // (Android's storage-root chain) just lands on more traverse-only, unreadable parents.
+            if (parentPath != null) add(upCta(stringProvider))
+            add(cancelCta(stringProvider))
+            add(unreadableError(stringProvider))
+            add(returnToDefaultCta(stringProvider))
+            return@buildList
+        }
         add(addCta(stringProvider))
         if (parentPath != null) add(upCta(stringProvider))
         add(toggleHiddenCta(stringProvider))
@@ -98,6 +117,19 @@ data class FolderPickerState(
         label = entry.name,
         value = folderValueText(stringProvider, entry.childFolderCount, entry.childFileCount),
         clickAction = FolderPickerAction.FolderClicked(entry.path),
+    )
+
+    private fun returnToDefaultCta(stringProvider: StringProvider) = CtaListModel(
+        icon = Icon.Home,
+        name = stringProvider.getString(ChipboxStringId.FOLDER_PICKER_CTA_RETURN_TO_DEFAULT),
+        clickAction = FolderPickerAction.ReturnToDefaultClicked,
+    )
+
+    private fun unreadableError(stringProvider: StringProvider) = EmptyStateListModel(
+        icon = Icon.Warning,
+        explanation = stringProvider.getString(ChipboxStringId.FOLDER_PICKER_ERROR_UNREADABLE),
+        // Not a "crossed-out empty" — it's a permission wall, so show the warning glyph plainly.
+        showCrossOut = false,
     )
 
     private fun aggregateFilesRow(stringProvider: StringProvider) = SingleTextListModel(

@@ -6,6 +6,7 @@
     <string name="folder_picker_cta_show_hidden">Show hidden files</string>
     <string name="folder_picker_cta_hide_hidden">Hide hidden files</string>
     <string name="folder_picker_cta_cancel">Cancel and exit</string>
+    <string name="folder_picker_cta_return_to_default">Return to default folder</string>
     <string name="folder_picker_permission_title">Storage access needed</string>
     <string name="folder_picker_permission_rationale">Chipbox needs access to all files so it can browse your storage and play music from any folder you choose.</string>
     <string name="folder_picker_permission_cta">Grant access</string>
@@ -13,4 +14,5 @@
     <string name="folder_picker_value_folders">%d folders</string>
     <string name="folder_picker_value_files">%d files</string>
     <string name="folder_picker_value_folders_and_files">%1$s, %2$s</string>
+    <string name="folder_picker_error_unreadable">This folder can't be opened — Android doesn't permit apps to read its contents.</string>
 </resources>

@@ -35,6 +35,24 @@ internal fun FolderPickerEmpty(
     )
 }
 
+@DevicePreviews
+@Composable
+internal fun FolderPickerUnreadable(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    ListScreenPreview(
+        // A traverse-only Android storage parent: no entries, only the escapes + the error state.
+        screenState = FolderPickerState(
+            currentPath = "/storage/emulated",
+            parentPath = "/storage",
+            readable = false,
+        ),
+        syntheticWidthClass = syntheticWidthClass,
+        darkTheme = darkTheme,
+    )
+}
+
 private fun populatedState() = FolderPickerState(
     currentPath = "/home/sigma/Music",
     entries = listOf(

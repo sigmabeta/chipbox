@@ -15,9 +15,11 @@ import okio.Path.Companion.toPath
  * child counts are a one-level peek into each subfolder so the rows can show
  * "$folderCount folders, $fileCount files". Dotfiles are filtered out unless `showHidden` is set.
  *
- * Unreadable directories (permission denied, vanished mid-listing, ...) collapse to an empty
- * listing — the picker just shows "no subfolders" rather than crashing the screen, but still
- * reports the parent path so the user can ascend back out.
+ * Unreadable directories (permission denied, vanished mid-listing, ...) collapse to a listing
+ * flagged `readable = false` — the picker surfaces an explanatory error state rather than crashing
+ * the screen, while still reporting the parent path so the user can ascend back out. This is the
+ * expected case for Android's traverse-only storage parents (`/storage/emulated`, `/storage`, `/`),
+ * which apps may cross but not enumerate even with All Files Access.
  */
 @Inject
 @ContributesBinding(AppScope::class)
@@ -27,7 +29,7 @@ class OkioFolderLister(private val fileSystem: FileSystem) : FolderLister {
         val children = try {
             fileSystem.list(root)
         } catch (_: IOException) {
-            return FolderListing(emptyList(), 0, root.parent?.toString())
+            return FolderListing(emptyList(), 0, root.parent?.toString(), readable = false)
         }
 
         val visible = children.visibleUnless(showHidden)
