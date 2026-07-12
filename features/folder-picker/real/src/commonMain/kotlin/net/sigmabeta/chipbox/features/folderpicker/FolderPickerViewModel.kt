@@ -22,21 +22,37 @@ import net.sigmabeta.sage.ui.StringProvider
 class FolderPickerViewModel(
     @Assisted private val defaultPath: String,
     private val folderLister: FolderLister,
+    storageVolumeProvider: StorageVolumeProvider,
     private val librarySource: LibrarySource,
     private val scanner: Scanner,
     stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<FolderPickerState>(
-    FolderPickerState(),
+    // Seed the volume list once — it's constant for the screen's lifetime, and copy() carries it
+    // through every subsequent state update. The provider decides per platform (Android via
+    // StorageManager, empty on desktop) so this screen stays free of platform filesystem logic.
+    FolderPickerState(volumes = storageVolumeProvider.volumes()),
     stringProvider,
     hatchet,
 ) {
+    private val volumes = state.value.volumes
+
+    // Paths that ARE a volume root, for deciding when "up" opens the volume chooser instead of the
+    // (unreadable-on-Android) filesystem parent above the root.
+    private val volumeRoots = volumes.map { it.path }.toSet()
+
     init {
-        // [defaultPath] is the per-OS landing directory passed in from the platform Route actual
-        // (~ on Unix, getExternalStorageDirectory() on Android). Listing runs on the disk
-        // dispatcher because java.io.File walks block; the launch unblocks composition.
+        // Land on the volume chooser when there's a genuine choice (more than one mounted volume),
+        // so an SD card is one tap away rather than buried behind "up". With a single volume there's
+        // nothing to choose, so drop straight into [defaultPath] — the per-OS landing directory from
+        // the platform Route actual (~ on Unix, getExternalStorageDirectory() on Android). Listing
+        // runs in the launch because java.io.File walks block; it unblocks composition.
         viewModelScope.launch {
-            descendInto(defaultPath)
+            if (volumes.size > 1) {
+                showVolumeList()
+            } else {
+                descendInto(defaultPath)
+            }
         }
     }
 
@@ -47,8 +63,14 @@ class FolderPickerViewModel(
             FolderPickerAction.CancelClicked -> emit(ChipboxEvent.NavigateBack)
 
             FolderPickerAction.NavigateUpClicked -> viewModelScope.launch {
-                // No-op at a filesystem root, where the lister reports a null parent.
-                state.value.parentPath?.let { descendInto(it) }
+                val current = state.value
+                when {
+                    // At a volume root with more than one volume, "up" is the volume chooser.
+                    current.parentIsVolumeList -> showVolumeList()
+
+                    // Otherwise ascend to the filesystem parent; no-op at a root (null parent).
+                    else -> current.parentPath?.let { descendInto(it) }
+                }
             }
 
             FolderPickerAction.ReturnToDefaultClicked -> viewModelScope.launch {
@@ -85,14 +107,36 @@ class FolderPickerViewModel(
     // keeps the user's dotfile preference; the toggle handler passes the flipped value explicitly.
     private fun descendInto(path: String, showHidden: Boolean = state.value.showHidden) {
         val listing = folderLister.list(path, showHidden)
+        val atVolumeRoot = path in volumeRoots
         updateState {
             it.copy(
                 currentPath = path,
                 entries = listing.folders,
                 fileCount = listing.fileCount,
-                parentPath = listing.parentPath,
+                // At a volume root, don't expose the filesystem parent (Android's traverse-only,
+                // unreadable /storage chain). Instead, when there's more than one volume, "up"
+                // opens the chooser; with a single volume the root is simply the top.
+                parentPath = if (atVolumeRoot) null else listing.parentPath,
+                parentIsVolumeList = atVolumeRoot && volumes.size > 1,
                 showHidden = showHidden,
                 readable = listing.readable,
+                atVolumeList = false,
+            )
+        }
+    }
+
+    // Render the synthetic volume chooser: no current directory, no filesystem parent — just the
+    // volume rows and the cancel escape.
+    private fun showVolumeList() {
+        updateState {
+            it.copy(
+                currentPath = null,
+                entries = emptyList(),
+                fileCount = 0,
+                parentPath = null,
+                parentIsVolumeList = false,
+                readable = true,
+                atVolumeList = true,
             )
         }
     }

@@ -51,6 +51,8 @@ actual fun FolderPickerRoute(
         // External storage is `/storage/emulated/0` on most devices — the same root the old SAF
         // picker landed users in by default.
         val defaultPath = remember { Environment.getExternalStorageDirectory().absolutePath }
+        // The mounted volumes (internal + SD cards) are supplied by the injected
+        // StorageVolumeProvider inside the view model, not gathered here.
         val viewModel = assistedMetroViewModel<FolderPickerViewModel, FolderPickerViewModel.Factory> {
             create(defaultPath)
         }

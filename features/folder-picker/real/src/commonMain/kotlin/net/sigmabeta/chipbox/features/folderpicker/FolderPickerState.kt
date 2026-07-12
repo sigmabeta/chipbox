@@ -39,6 +39,10 @@ data class FolderPickerEntry(
  * common case for Android's traverse-only storage parents above `/storage/emulated/0`. In that
  * state the screen collapses to an explanatory error plus the "Go up"/"Cancel" escapes; "Add" and
  * the hidden-files toggle are dropped since there's nothing to add or reveal.
+ *
+ * [atVolumeList] switches the screen to the synthetic storage-volume chooser: [volumes] rendered as
+ * rows, no current directory. [parentIsVolumeList] is set at a volume root when there's more than
+ * one volume, so "Go up a folder" opens that chooser instead of the unreadable filesystem parent.
  */
 data class FolderPickerState(
     val currentPath: String? = null,
@@ -47,18 +51,32 @@ data class FolderPickerState(
     val parentPath: String? = null,
     val showHidden: Boolean = false,
     val readable: Boolean = true,
+    val volumes: List<StorageVolumeInfo> = emptyList(),
+    val atVolumeList: Boolean = false,
+    val parentIsVolumeList: Boolean = false,
 ) : ListState() {
     override val columnType: ColumnType = ColumnType.One
 
     override fun title(stringProvider: StringProvider) = TitleBarModel(
-        // Show where the user is, not a static label. [currentPath] is null only for the first
-        // frame before the view model resolves the default directory — fall back to the label then.
-        title = currentPath?.middleEllipsize(MAX_TITLE_LENGTH)
-            ?: stringProvider.getString(ChipboxStringId.FOLDER_PICKER_TITLE),
+        // Show where the user is, not a static label. On the volume chooser there's no path, so
+        // name it "Storage"; [currentPath] is null only otherwise for the first frame before the
+        // view model resolves the default directory — fall back to the generic label then.
+        title = when {
+            atVolumeList -> stringProvider.getString(ChipboxStringId.FOLDER_PICKER_VOLUMES_TITLE)
+            currentPath != null -> currentPath.middleEllipsize(MAX_TITLE_LENGTH)
+            else -> stringProvider.getString(ChipboxStringId.FOLDER_PICKER_TITLE)
+        },
         shouldShowBack = true,
     )
 
     override fun toListItems(stringProvider: StringProvider): List<ListModel> = buildList {
+        if (atVolumeList) {
+            // The synthetic chooser: pick a volume to descend into, or cancel out. There's nothing
+            // to "add" (a volume root isn't a real target here) and nowhere further up.
+            add(cancelCta(stringProvider))
+            volumes.forEach { add(volumeRow(it)) }
+            return@buildList
+        }
         if (!readable) {
             // Nothing to enumerate: offer only the escapes and explain why. "Go up" is still
             // offered when there's a parent, for the case of an isolated unreadable folder under a
@@ -72,7 +90,7 @@ data class FolderPickerState(
             return@buildList
         }
         add(addCta(stringProvider))
-        if (parentPath != null) add(upCta(stringProvider))
+        if (parentPath != null || parentIsVolumeList) add(upCta(stringProvider))
         add(toggleHiddenCta(stringProvider))
         add(cancelCta(stringProvider))
         entries.forEach { add(folderRow(stringProvider, it)) }
@@ -117,6 +135,15 @@ data class FolderPickerState(
         label = entry.name,
         value = folderValueText(stringProvider, entry.childFolderCount, entry.childFileCount),
         clickAction = FolderPickerAction.FolderClicked(entry.path),
+    )
+
+    // A storage volume in the chooser: its human-readable label plus its root path, so the user can
+    // tell internal storage from an SD card. Tapping descends into the volume like any folder.
+    private fun volumeRow(volume: StorageVolumeInfo) = LabelValueListModel(
+        dataId = volume.path.hashCode().toLong(),
+        label = volume.label,
+        value = volume.path,
+        clickAction = FolderPickerAction.FolderClicked(volume.path),
     )
 
     private fun returnToDefaultCta(stringProvider: StringProvider) = CtaListModel(
