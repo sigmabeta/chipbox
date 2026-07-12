@@ -220,6 +220,96 @@ class FolderPickerViewModelTest {
     }
 
     @Test
+    fun `with multiple volumes the picker lands on the volume chooser, not the default path`() = runTest {
+        val volumes = listOf(
+            StorageVolumeInfo("Internal shared storage", "/storage/emulated/0"),
+            StorageVolumeInfo("SD card", "/storage/1A2B-3C4D"),
+        )
+        val lister = FakeFolderLister(
+            mapOf("/storage/emulated/0" to FolderListing(emptyList(), 0, parentPath = "/storage/emulated")),
+        )
+        val vm = newViewModel(defaultPath = "/storage/emulated/0", lister = lister, volumes = volumes)
+
+        val state = vm.state.first { it.atVolumeList }
+        assertEquals(null, state.currentPath, "It opens the chooser rather than descending into a volume")
+        assertEquals(volumes, state.volumes)
+    }
+
+    @Test
+    fun `NavigateUpClicked at a volume root with multiple volumes opens the volume chooser`() = runTest {
+        val volumes = listOf(
+            StorageVolumeInfo("Internal shared storage", "/storage/emulated/0"),
+            StorageVolumeInfo("SD card", "/storage/1A2B-3C4D"),
+        )
+        val lister = FakeFolderLister(
+            mapOf(
+                "/storage/emulated/0" to FolderListing(
+                    folders = listOf(FolderPickerEntry("Music", "/storage/emulated/0/Music", 0, 3)),
+                    fileCount = 0,
+                    parentPath = "/storage/emulated",
+                ),
+            ),
+        )
+        val vm = newViewModel(defaultPath = "/storage/emulated/0", lister = lister, volumes = volumes)
+        // Multiple volumes → lands on the chooser; descend into one to reach a volume root.
+        vm.state.first { it.atVolumeList }
+        vm.sendAction(FolderPickerAction.FolderClicked("/storage/emulated/0"))
+        val atRoot = vm.state.first { it.currentPath == "/storage/emulated/0" }
+        assertTrue(atRoot.parentIsVolumeList, "The volume root's 'up' is the chooser, not /storage/emulated")
+        assertEquals(null, atRoot.parentPath, "The unreadable filesystem parent must not be exposed")
+
+        vm.sendAction(FolderPickerAction.NavigateUpClicked)
+        val chooser = vm.state.first { it.atVolumeList && it.currentPath == null }
+        assertEquals(volumes, chooser.volumes)
+    }
+
+    @Test
+    fun `clicking a volume in the chooser descends into it`() = runTest {
+        val volumes = listOf(
+            StorageVolumeInfo("Internal shared storage", "/storage/emulated/0"),
+            StorageVolumeInfo("SD card", "/storage/1A2B-3C4D"),
+        )
+        val lister = FakeFolderLister(
+            mapOf(
+                "/storage/emulated/0" to FolderListing(emptyList(), 0, parentPath = "/storage/emulated"),
+                "/storage/1A2B-3C4D" to FolderListing(
+                    folders = listOf(FolderPickerEntry("Games", "/storage/1A2B-3C4D/Games", 0, 9)),
+                    fileCount = 0,
+                    parentPath = "/storage",
+                ),
+            ),
+        )
+        val vm = newViewModel(defaultPath = "/storage/emulated/0", lister = lister, volumes = volumes)
+        // Multiple volumes → lands on the chooser directly.
+        vm.state.first { it.atVolumeList }
+
+        vm.sendAction(FolderPickerAction.FolderClicked("/storage/1A2B-3C4D"))
+        val state = vm.state.first { it.currentPath == "/storage/1A2B-3C4D" }
+        assertEquals(false, state.atVolumeList)
+        assertEquals(listOf("Games"), state.entries.map { it.name })
+        assertTrue(state.parentIsVolumeList, "The SD card root also ascends back to the chooser")
+    }
+
+    @Test
+    fun `a lone volume root is the top — no up navigation and no chooser`() = runTest {
+        val volumes = listOf(StorageVolumeInfo("Internal shared storage", "/storage/emulated/0"))
+        val lister = FakeFolderLister(
+            mapOf(
+                "/storage/emulated/0" to FolderListing(emptyList(), 0, parentPath = "/storage/emulated"),
+            ),
+        )
+        val vm = newViewModel(defaultPath = "/storage/emulated/0", lister = lister, volumes = volumes)
+        val atRoot = vm.state.first { it.currentPath == "/storage/emulated/0" }
+        assertEquals(false, atRoot.parentIsVolumeList)
+        assertEquals(null, atRoot.parentPath, "A single volume root has nowhere to ascend to")
+
+        vm.sendAction(FolderPickerAction.NavigateUpClicked)
+        val state = vm.state.first()
+        assertEquals("/storage/emulated/0", state.currentPath, "Up is a no-op at a lone volume root")
+        assertEquals(false, state.atVolumeList)
+    }
+
+    @Test
     fun `CancelClicked emits NavigateBack and does not touch the library`() = runTest {
         val source = FakeLibrarySource()
         val vm = newViewModel(
@@ -239,9 +329,11 @@ class FolderPickerViewModelTest {
         lister: FolderLister,
         source: FakeLibrarySource = FakeLibrarySource(),
         scanner: CountingScanner = CountingScanner(dispatcher),
+        volumes: List<StorageVolumeInfo> = emptyList(),
     ) = FolderPickerViewModel(
         defaultPath = defaultPath,
         folderLister = lister,
+        storageVolumeProvider = { volumes },
         librarySource = source,
         scanner = scanner,
         stringProvider = stubStringProvider(),

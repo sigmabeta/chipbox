@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="folder_picker_title">Pick a folder</string>
+    <string name="folder_picker_volumes_title">Storage</string>
     <string name="folder_picker_cta_add">Add this folder</string>
     <string name="folder_picker_cta_up">Go up a folder</string>
-    <string name="folder_picker_cta_show_hidden">Show hidden files</string>
-    <string name="folder_picker_cta_hide_hidden">Hide hidden files</string>
+    <string name="folder_picker_cta_show_hidden">Show hidden folders</string>
+    <string name="folder_picker_cta_hide_hidden">Hide hidden folders</string>
     <string name="folder_picker_cta_cancel">Cancel and exit</string>
     <string name="folder_picker_cta_return_to_default">Return to default folder</string>
     <string name="folder_picker_permission_title">Storage access needed</string>

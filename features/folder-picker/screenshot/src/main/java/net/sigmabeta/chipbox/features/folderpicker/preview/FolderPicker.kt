@@ -4,6 +4,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import net.sigmabeta.chipbox.features.folderpicker.FolderPickerEntry
 import net.sigmabeta.chipbox.features.folderpicker.FolderPickerState
+import net.sigmabeta.chipbox.features.folderpicker.StorageVolumeInfo
 import net.sigmabeta.chipbox.ui.previews.DevicePreviews
 import net.sigmabeta.chipbox.ui.previews.ListScreenPreview
 import net.sigmabeta.chipbox.ui.previews.previewWidthClass
@@ -47,6 +48,26 @@ internal fun FolderPickerUnreadable(
             currentPath = "/storage/emulated",
             parentPath = "/storage",
             readable = false,
+        ),
+        syntheticWidthClass = syntheticWidthClass,
+        darkTheme = darkTheme,
+    )
+}
+
+@DevicePreviews
+@Composable
+internal fun FolderPickerVolumes(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    syntheticWidthClass: WidthClass = previewWidthClass(),
+) {
+    ListScreenPreview(
+        // The synthetic storage-volume chooser reached by going "up" from a volume root.
+        screenState = FolderPickerState(
+            atVolumeList = true,
+            volumes = listOf(
+                StorageVolumeInfo("Internal shared storage", "/storage/emulated/0"),
+                StorageVolumeInfo("SD card", "/storage/1A2B-3C4D"),
+            ),
         ),
         syntheticWidthClass = syntheticWidthClass,
         darkTheme = darkTheme,
