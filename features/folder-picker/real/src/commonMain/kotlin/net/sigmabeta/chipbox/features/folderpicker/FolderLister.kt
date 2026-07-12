@@ -17,9 +17,16 @@ interface FolderLister {
  * grand-children), plus the total number of files directly inside (rolled up into a single row
  * per the spec — files aren't displayed individually). [parentPath] is the directory one level up,
  * or null when [path] is a filesystem root and there's nowhere to ascend to.
+ *
+ * [readable] is false when the directory couldn't be enumerated at all (permission denied,
+ * vanished mid-listing, ...) — distinct from a genuinely empty directory, which is [readable] with
+ * no [folders]. On Android this is the common case for the traverse-only parents above
+ * `/storage/emulated/0` (`/storage/emulated`, `/storage`, `/`), which apps may cross but not list;
+ * the picker surfaces an explanatory error state rather than a silently-empty screen.
  */
 data class FolderListing(
     val folders: List<FolderPickerEntry>,
     val fileCount: Int,
     val parentPath: String? = null,
+    val readable: Boolean = true,
 )

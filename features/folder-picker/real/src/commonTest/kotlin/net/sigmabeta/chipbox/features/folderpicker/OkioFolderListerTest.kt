@@ -4,6 +4,7 @@ import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
@@ -95,5 +96,23 @@ class OkioFolderListerTest {
         val listing = OkioFolderLister(FakeFileSystem()).list("/does-not-exist")
         assertTrue(listing.folders.isEmpty())
         assertEquals(0, listing.fileCount)
+    }
+
+    @Test
+    fun `an unreadable path is flagged not readable and still reports its parent`() {
+        // The empty-listing collapse must be distinguishable from a genuinely empty directory so
+        // the picker can show its permission-error state; the parent still comes back so the user
+        // can ascend out.
+        val listing = OkioFolderLister(FakeFileSystem()).list("/storage/emulated")
+        assertFalse(listing.readable)
+        assertEquals("/storage", listing.parentPath)
+    }
+
+    @Test
+    fun `a directory that lists successfully is readable`() {
+        val fs = FakeFileSystem()
+        fs.createDirectories("/root/Music".toPath())
+
+        assertTrue(OkioFolderLister(fs).list("/root").readable)
     }
 }

@@ -171,6 +171,55 @@ class FolderPickerViewModelTest {
     }
 
     @Test
+    fun `descending into an unreadable directory lifts readable=false into state`() = runTest {
+        val lister = FakeFolderLister(
+            mapOf(
+                "/storage/emulated" to FolderListing(
+                    folders = emptyList(),
+                    fileCount = 0,
+                    parentPath = "/storage",
+                    readable = false,
+                ),
+            ),
+        )
+        val vm = newViewModel(defaultPath = "/storage/emulated", lister = lister)
+
+        val state = vm.state.first { it.currentPath == "/storage/emulated" }
+        assertEquals(false, state.readable)
+        assertEquals("/storage", state.parentPath, "The user must still be able to ascend out")
+    }
+
+    @Test
+    fun `ReturnToDefaultClicked jumps back to the default path from an unreadable directory`() = runTest {
+        val lister = FakeFolderLister(
+            mapOf(
+                "/storage/emulated/0" to FolderListing(
+                    folders = listOf(FolderPickerEntry("Music", "/storage/emulated/0/Music", 0, 3)),
+                    fileCount = 0,
+                    parentPath = "/storage/emulated",
+                ),
+                "/storage/emulated" to FolderListing(
+                    folders = emptyList(),
+                    fileCount = 0,
+                    parentPath = "/storage",
+                    readable = false,
+                ),
+            ),
+        )
+        val vm = newViewModel(defaultPath = "/storage/emulated/0", lister = lister)
+        vm.state.first { it.currentPath == "/storage/emulated/0" }
+
+        // Ascend into the unreadable parent, then use the escape CTA to return to the default.
+        vm.sendAction(FolderPickerAction.NavigateUpClicked)
+        vm.state.first { it.currentPath == "/storage/emulated" && !it.readable }
+
+        vm.sendAction(FolderPickerAction.ReturnToDefaultClicked)
+        val state = vm.state.first { it.currentPath == "/storage/emulated/0" }
+        assertTrue(state.readable)
+        assertEquals(listOf("Music"), state.entries.map { it.name })
+    }
+
+    @Test
     fun `CancelClicked emits NavigateBack and does not touch the library`() = runTest {
         val source = FakeLibrarySource()
         val vm = newViewModel(

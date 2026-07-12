@@ -51,6 +51,13 @@ class FolderPickerViewModel(
                 state.value.parentPath?.let { descendInto(it) }
             }
 
+            FolderPickerAction.ReturnToDefaultClicked -> viewModelScope.launch {
+                // Reliable escape from an unreadable directory: jump straight back to the per-OS
+                // landing folder ([defaultPath]) rather than ascending through more traverse-only
+                // parents that are themselves unreadable (Android's /storage/emulated, /storage, /).
+                descendInto(defaultPath)
+            }
+
             FolderPickerAction.ToggleHiddenClicked -> viewModelScope.launch {
                 // Flip the dotfile filter and re-list the current directory in place.
                 val path = state.value.currentPath ?: return@launch
@@ -85,6 +92,7 @@ class FolderPickerViewModel(
                 fileCount = listing.fileCount,
                 parentPath = listing.parentPath,
                 showHidden = showHidden,
+                readable = listing.readable,
             )
         }
     }
