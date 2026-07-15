@@ -166,7 +166,7 @@ private fun RealImage(
         SizeResolver { bucketRequestSize(sizeResolver.size()) }
     }
     val request = remember(context, sourceInfo.info, bucketedSizeResolver, loadOriginalSize) {
-        val builder = ImageRequest.Builder(context).data(sourceInfo.info)
+        val builder = ImageRequest.Builder(context).data(platformImageModel(sourceInfo.info))
         if (!loadOriginalSize) builder.size(bucketedSizeResolver)
         builder.build()
     }
