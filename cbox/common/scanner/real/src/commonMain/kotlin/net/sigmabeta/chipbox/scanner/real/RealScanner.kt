@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.scanner.real
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -270,7 +271,7 @@ class RealScanner(
             if (reader == null) {
                 // No dedicated chiptune reader — fall back to vgmstream for streamed-audio formats
                 // (ADX, HCA, DSP/BRSTM, STRM, ...). Checked last so the readers above win.
-                if (!vgmstreamProbe.isSupported(ext)) {
+                if (!vgmstreamSupports(ext)) {
                     hatchet.v("No reader for extension '$ext' — skipping ${file.name}.")
                     continue
                 }
@@ -455,6 +456,33 @@ class RealScanner(
             .sortedBy { it.identifier }
             .joinToString("\n") { "${it.identifier}|${it.sizeBytes}|${it.lastModifiedMs}" }
         return joined.encodeToByteArray().toByteString().sha256().hex()
+    }
+
+    // vgmstream's supported-extension probe lazily loads its native lib on first call. When that lib
+    // can't be loaded (not bundled for this platform/target, or missing from java.library.path), the
+    // failure is a LinkageError — an Error, not an Exception — so neither [readWithErrorHandling] nor
+    // the top-level scan catch stops it from tearing down the whole scan and leaving consumers hung
+    // with no terminal state. Treat any such failure as "vgmstream unavailable": skip streamed-audio
+    // formats for the rest of this scan so the chiptune formats still scan to completion. Latched to
+    // one probe + one log line rather than re-failing (and re-loading) on every unreadable file.
+    private val vgmstreamUnavailable = AtomicReference(false)
+
+    private fun vgmstreamSupports(ext: String): Boolean {
+        if (vgmstreamUnavailable.load()) return false
+        return try {
+            vgmstreamProbe.isSupported(ext)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (unavailable: Throwable) {
+            if (unavailable is VirtualMachineError) throw unavailable
+            if (vgmstreamUnavailable.compareAndSet(false, true)) {
+                hatchet.e(
+                    "vgmstream native lib unavailable (${unavailable.message}); " +
+                        "skipping streamed-audio formats for this scan.",
+                )
+            }
+            false
+        }
     }
 
     // Streamed-audio path: vgmstream decodes by filesystem path and keys on the extension, so we

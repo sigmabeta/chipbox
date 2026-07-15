@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.scanner
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -25,8 +26,16 @@ abstract class Scanner(
         scannerScope.launch {
             try {
                 scan()
-            } catch (ex: Exception) {
-                hatchet.e("Scan error. ${ex.stackTraceToString()}")
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: Throwable) {
+                // A scan must always end in a terminal state: consumers block on
+                // state().first { it is Complete || Failed }, so a failure that escapes scan()
+                // without one hangs every consumer forever. Catch Throwable (not just Exception) —
+                // an Error such as a native-lib LinkageError would otherwise slip past — and surface
+                // it as Failed so the UI/CLI unblock instead of spinning.
+                hatchet.e("Scan error. ${error.stackTraceToString()}")
+                emitState(ScannerState.Failed(error.message ?: error::class.simpleName ?: "unknown error"))
             }
         }
     }
