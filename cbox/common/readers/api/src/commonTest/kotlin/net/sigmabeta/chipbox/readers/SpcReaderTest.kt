@@ -124,6 +124,25 @@ class SpcReaderTest {
     }
 
     @Test
+    fun `accepts a header whose version digit is a NUL byte`() {
+        // Some rippers write the 33-byte magic field as "SNES-SPC700 Sound File Data v0.3\0",
+        // NUL where the final version digit belongs. Real SPC files, so the reader must accept them.
+        val bytes = spcFile(
+            songTitle = "Red Falcon's Revenge",
+            gameTitle = "Contra III",
+            artistName = "x",
+            lengthSeconds = "120",
+            fadeMillis = "5000",
+        )
+        bytes[0x20] = 0 // overwrite the '0' of "v0.30" with NUL
+
+        val tracks = reader.readTracksFromFile(bytes, "contra.spc")
+        assertNotNull(tracks)
+        assertEquals("Red Falcon's Revenge", tracks[0].title)
+        assertEquals("Contra III", tracks[0].game)
+    }
+
+    @Test
     fun `xid6 string fields override the truncated ID666 names`() {
         // ID666 caps each name at 32 bytes; xid6 carries the full string. The reader must prefer
         // the xid6 entries when present.

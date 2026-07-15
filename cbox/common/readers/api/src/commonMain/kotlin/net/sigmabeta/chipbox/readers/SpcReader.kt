@@ -120,7 +120,11 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
         )
     }
 
-    private fun isSpcFile(header: String) = header.contentEquals(HEADER_MAGIC)
+    // Match only the invariant leading text, not the full "…v0.30" version suffix. Some rippers
+    // write the 33-byte magic field with a NUL where the final version digit belongs (so the field
+    // reads "SNES-SPC700 Sound File Data v0.3\0"), and others emit different version numbers. Every
+    // such file is still a valid SPC, so — like snes_spc / game-music-emu — we key off the prefix.
+    private fun isSpcFile(header: String) = header.startsWith(HEADER_MAGIC_PREFIX)
 
     /**
      * Parse the extended ID666 (xid6) chunk that may follow the standard 0x10200-byte SPC body.
@@ -181,9 +185,12 @@ class SpcReader(private val hatchet: Hatchet) : Reader() {
     }
 
     companion object {
-        private const val HEADER_MAGIC = "SNES-SPC700 Sound File Data v0.30"
+        // The version-independent prefix shared by every SPC file; see [isSpcFile] for why we don't
+        // require the trailing " v0.30".
+        private const val HEADER_MAGIC_PREFIX = "SNES-SPC700 Sound File Data"
 
-        // 33-byte magic string (32 chars + the trailing v-version digit) is read up front.
+        // The full 33-byte magic field (prefix + " v0.30") is still consumed up front to position
+        // the reader at the ID666 header-info field, even though only the prefix is validated.
         private const val HEADER_MAGIC_SIZE = 33
 
         // 3-byte field after the magic; its last byte is 0x1A when ID666 metadata is present.
