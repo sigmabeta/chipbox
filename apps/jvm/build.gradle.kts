@@ -135,21 +135,29 @@ tasks.matching {
 // splash with ABSOLUTE paths (the $APPDIR variants in app.jvmArgs are only valid once packaged).
 // Compose registers `run` lazily (afterEvaluate), so match it via a live configureEach rather than
 // tasks.named (which would resolve too early).
+//
+// The rewrite MUST run in doFirst (execution time), not at configuration time: Compose copies
+// `application.jvmArgs` (the `-Djava.library.path=$APPDIR/resources` placeholder) onto the run task
+// AFTER this configureEach fires, so a configuration-time `jvmArgs = …` gets clobbered and the JVM
+// launches with the literal, unexpanded `$APPDIR/resources` on java.library.path — no emulator .so
+// resolves and every track fails to load. doFirst runs last, so its override wins.
 tasks.withType<JavaExec>().matching { it.name == "run" }.configureEach {
     dependsOn(stageAppResources)
     val nativeDir = nativeLibsDirFile.absolutePath
     val splashPath = splashDebugFile.absolutePath
     // Dev runs are debug (window title/icon + swapped colors + purple splash); packaged installers
     // stay release (isDebug defaults false in JvmModules). -Dchipbox.debug=true opts this run in.
-    jvmArgs = jvmArgs.orEmpty()
-        .filterNot { "java.library.path" in it || it.startsWith("-splash:") || "chipbox.debug" in it }
-        .plus(
-            listOf(
-                "-Djava.library.path=$nativeDir",
-                "-splash:$splashPath",
-                "-Dchipbox.debug=true",
-            ),
-        )
+    doFirst {
+        jvmArgs = jvmArgs.orEmpty()
+            .filterNot { "java.library.path" in it || it.startsWith("-splash:") || "chipbox.debug" in it }
+            .plus(
+                listOf(
+                    "-Djava.library.path=$nativeDir",
+                    "-splash:$splashPath",
+                    "-Dchipbox.debug=true",
+                ),
+            )
+    }
 }
 
 dependencies {
