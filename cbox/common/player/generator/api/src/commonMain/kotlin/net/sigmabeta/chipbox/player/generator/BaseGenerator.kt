@@ -327,8 +327,13 @@ abstract class BaseGenerator(
             teardownHelper()
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
-            val message = e.message ?: "Unknown error"
+        } catch (e: Throwable) {
+            // Surface *any* failure as a generator error — including Errors such as an
+            // UnsatisfiedLinkError from a missing/unresolvable emulator native lib. An
+            // Exception-only catch let those escape the loop coroutine silently, so the director
+            // never heard an error and instead timed out with a generic "no audio for 5 seconds"
+            // stall (and retried forever).
+            val message = e.message ?: e::class.simpleName ?: "Unknown error"
             val errorEvent = GeneratorEvent.Error(message)
             updateDebug { it.copy(lastEvent = errorEvent, lastError = message) }
             eventSink.emit(errorEvent)
