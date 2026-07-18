@@ -1,3 +1,9 @@
+import org.gradle.api.file.FileCollection
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.process.CommandLineArgumentProvider
+
 plugins {
     alias(libs.plugins.sage.jvm)
     alias(libs.plugins.kotlin.serialization)
@@ -19,8 +25,25 @@ application {
 // libvgmstream.so: scanner.real → VgmstreamProbe.probe → System.loadLibrary("vgmstream"). Same
 // pattern apps/cli uses (apps/cli/build.gradle.kts comments explain in detail). One native lib,
 // no per-format emulator builds — pure Kotlin readers handle everything else during a scan.
-val jvmNativeLibsDir = project(":apps:jvm").layout.projectDirectory.dir("libs").asFile
-val buildVgmstreamLib = ":apps:jvm:nativeEmulatorVgmstream"
+// Consume libvgmstream.so from apps/jvm's committed `libs/` directory via a named consumable
+// configuration rather than reading project(":apps:jvm").layout directly (forbidden under Isolated
+// Projects). These are prebuilt/committed .so files, so the configuration carries no producing task.
+val jvmNativeLibsDeps: Configuration by configurations.dependencyScope("jvmNativeLibsDeps")
+val jvmNativeLibs: Configuration by configurations.resolvable("jvmNativeLibs") {
+    extendsFrom(jvmNativeLibsDeps)
+}
+dependencies {
+    add(jvmNativeLibsDeps.name, project(path = ":apps:jvm", configuration = "prebuiltNativeLibsElements"))
+}
+// Argument provider that resolves the native-lib directory lazily at execution and emits it as
+// `-Djava.library.path`. Modelling it as a CommandLineArgumentProvider with an @InputFiles
+// FileCollection (rather than a lambda capturing a configuration-backed Provider) keeps it
+// configuration-cache safe and establishes the task dependency on the config's builtBy producer.
+class NativeLibraryPathArgument(
+    @get:InputFiles @get:PathSensitive(PathSensitivity.ABSOLUTE) val nativeDir: FileCollection,
+) : CommandLineArgumentProvider {
+    override fun asArguments() = listOf("-Djava.library.path=${nativeDir.singleFile.absolutePath}")
+}
 
 // Bundle copy is opt-in. By default `:apps:server:run` skips webpack entirely — Ktor's
 // `staticResources("/", "static")` just 404s on `/`, which is fine when you're running the
@@ -83,8 +106,7 @@ tasks.named("processResources") {
 }
 
 tasks.named<JavaExec>("run") {
-    dependsOn(buildVgmstreamLib)
-    systemProperty("java.library.path", jvmNativeLibsDir.absolutePath)
+    jvmArgumentProviders.add(NativeLibraryPathArgument(jvmNativeLibs))
 }
 
 // Bundle libvgmstream.so into `lib/native/` in the installed distribution + splice
@@ -92,7 +114,7 @@ tasks.named<JavaExec>("run") {
 distributions {
     named("main") {
         contents {
-            from(jvmNativeLibsDir) {
+            from(jvmNativeLibs) {
                 include("libvgmstream.so")
                 into("lib/native")
             }
@@ -125,7 +147,7 @@ val installProdBundle = tasks.register<Copy>("installProductionJsBundle") {
 
 listOf("installDist", "distZip", "distTar").forEach { taskName ->
     tasks.named(taskName) {
-        dependsOn(buildVgmstreamLib)
+        dependsOn(jvmNativeLibs)
         // Shippable artifacts must include the production JS bundle regardless of -P flags;
         // wiring an explicit Copy that doesn't respect `onlyIf` keeps that contract.
         dependsOn(installProdBundle)

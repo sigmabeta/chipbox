@@ -53,7 +53,10 @@ class ChipboxEmulatorNativePlugin : Plugin<Project> {
                 sdk,
                 "ndk/${NativeEmulators.NDK_VERSION}/build/cmake/android.toolchain.cmake",
             )
-            val nativeRoot = rootProject.layout.projectDirectory.dir("cbox/native")
+            // isolated.rootProject (not rootProject.layout) reads the root dir in an
+            // Isolated-Projects-safe way — a plain rootProject.layout access reaches into another
+            // project's state, which IP forbids.
+            val nativeRoot = isolated.rootProject.projectDirectory.dir("cbox/native")
 
             val buildNative = tasks.register<BuildEmulatorNativeLib>("buildEmulatorNativeLib") {
                 nativeSources.from(

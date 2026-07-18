@@ -293,3 +293,32 @@ object Versions {
         println("Version component $type: $actual")
     }
 }
+
+// One-shot dependency warm-up for CI's `setup` job (moved here from the root build for Isolated
+// Projects — a configuration must be resolved by its owning project, and the root may not reach
+// into another project's tasks). Resolves the release runtime-classpath dependency GRAPH
+// (`resolutionResult`, not `incoming.files`), downloading component metadata + POMs into the Gradle
+// module cache — what the old `:apps:android:dependencies` report did. It resolves the graph rather
+// than artifacts because forcing artifact selection on the Android release classpath fails with
+// variant ambiguity (picking the concrete jar/aar is AGP-internal work the report never did).
+// apps/jvm registers the same task name for its own classpath, so one unqualified
+// `./gradlew resolveCiDependencies` warms both apps in a single configured invocation.
+tasks.register("resolveCiDependencies") {
+    description = "Resolves this app's dependency graph to warm the Gradle module cache (CI warm-up)."
+    group = "ci"
+    doLast { logger.lifecycle("Warmed the release dependency graph into the Gradle module cache.") }
+}
+// AGP creates the variant runtime-classpath configurations late, so wire the graph as a task input
+// after evaluation. It's an input Provider so Gradle resolves it in its own (CC/Isolated-Projects
+// safe) phase — resolving a cross-project configuration inside doLast triggers task creation at
+// execution time, which the configuration cache forbids. Graph-only (not artifacts): forcing
+// artifact selection on the Android release classpath fails with variant ambiguity.
+afterEvaluate {
+    val releaseDependencyGraph =
+        configurations.named("releaseRuntimeClasspath")
+            .flatMap { it.incoming.resolutionResult.rootComponent }
+            .map { it.dependencies.size }
+    tasks.named("resolveCiDependencies") {
+        inputs.property("dependencyGraphSize", releaseDependencyGraph)
+    }
+}
