@@ -79,7 +79,9 @@ val harnessDependencies: KotlinDependencyHandler.() -> Unit = {
 // below: a system property on the desktop JVM, an instrumentation arg on-device (the device test runs
 // in its own process and never sees host system properties). Omitted/blank → no delay.
 val actionDelayKey = "chipbox.uitest.actionDelayMs"
-val actionDelayMs = (project.findProperty(actionDelayKey) as String?)?.takeIf { it.isNotBlank() }
+// providers.gradleProperty (not findProperty): reads only Gradle properties / -P, without the
+// parent-project ExtraProperties walk that findProperty does — which Isolated Projects forbids.
+val actionDelayMs = providers.gradleProperty(actionDelayKey).orNull?.takeIf { it.isNotBlank() }
 
 kotlin {
     android {

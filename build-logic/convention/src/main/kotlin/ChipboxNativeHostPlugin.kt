@@ -37,7 +37,10 @@ class ChipboxNativeHostPlugin : Plugin<Project> {
             val target = resolveNativeHostTarget()
             val cmake = resolveCmake()
             val jdk = resolveNativeJdk(target)
-            val nativeRoot = rootProject.layout.projectDirectory.dir("cbox/native")
+            // isolated.rootProject (not rootProject.layout) reads the root dir in an
+            // Isolated-Projects-safe way — a plain rootProject.layout access reaches into another
+            // project's state, which IP forbids.
+            val nativeRoot = isolated.rootProject.projectDirectory.dir("cbox/native")
             val shimDir = layout.buildDirectory.dir("jvm-native/hostshim")
             val crossPrefix = target.crossPrefix.orEmpty()
             // Cross targets need a CMake toolchain file (processed before platform/compiler detection)

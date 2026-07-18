@@ -1,3 +1,9 @@
+import org.gradle.api.file.FileCollection
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.process.CommandLineArgumentProvider
+
 plugins {
     alias(libs.plugins.sage.jvm)
     application
@@ -13,13 +19,29 @@ application {
 // of `.so` files on java.library.path. Rather than duplicate apps/jvm's host-CMake machinery, reuse
 // the libs that module already builds: depend on its aggregate `chipboxHostNativeLibs` task and
 // point java.library.path at its output dir (build/jvm-native/libs).
-val jvmNativeLibsDir = project(":apps:jvm").layout.buildDirectory.dir("jvm-native/libs").get().asFile
-val buildAllNativeLibs = ":apps:jvm:chipboxHostNativeLibs"
+// Consume every host-built emulator .so from apps/jvm via a named consumable configuration rather
+// than reading project(":apps:jvm").layout directly (forbidden under Isolated Projects). Resolving
+// this configuration yields the output directory and pulls its `builtBy` task as a dependency.
+val jvmNativeLibsDeps: Configuration by configurations.dependencyScope("jvmNativeLibsDeps")
+val jvmNativeLibs: Configuration by configurations.resolvable("jvmNativeLibs") {
+    extendsFrom(jvmNativeLibsDeps)
+}
+dependencies {
+    add(jvmNativeLibsDeps.name, project(path = ":apps:jvm", configuration = "hostNativeLibsElements"))
+}
+// Argument provider that resolves the native-lib directory lazily at execution and emits it as
+// `-Djava.library.path`. Modelling it as a CommandLineArgumentProvider with an @InputFiles
+// FileCollection (rather than a lambda capturing a configuration-backed Provider) keeps it
+// configuration-cache safe and establishes the task dependency on the config's builtBy producer.
+class NativeLibraryPathArgument(
+    @get:InputFiles @get:PathSensitive(PathSensitivity.ABSOLUTE) val nativeDir: FileCollection,
+) : CommandLineArgumentProvider {
+    override fun asArguments() = listOf("-Djava.library.path=${nativeDir.singleFile.absolutePath}")
+}
 
 tasks.named<JavaExec>("run") {
     standardInput = System.`in`
-    dependsOn(buildAllNativeLibs)
-    systemProperty("java.library.path", jvmNativeLibsDir.absolutePath)
+    jvmArgumentProviders.add(NativeLibraryPathArgument(jvmNativeLibs))
 }
 
 // Bundle every emulator .so into `lib/native/` inside the distribution and inject
@@ -28,7 +50,7 @@ tasks.named<JavaExec>("run") {
 distributions {
     named("main") {
         contents {
-            from(jvmNativeLibsDir) {
+            from(jvmNativeLibs) {
                 include("*.so")
                 into("lib/native")
             }
@@ -37,7 +59,7 @@ distributions {
 }
 listOf("installDist", "distZip", "distTar").forEach { taskName ->
     tasks.named<AbstractCopyTask>(taskName) {
-        dependsOn(buildAllNativeLibs)
+        dependsOn(jvmNativeLibs)
         duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     }
 }

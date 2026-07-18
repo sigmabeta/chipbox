@@ -27,6 +27,31 @@ val splashReleaseFile: File = layout.projectDirectory.dir("src/main/splash").fil
 val nativeLibsDirFile: File = layout.buildDirectory.dir("jvm-native/libs").get().asFile
 val nativeLibsTask = tasks.named("chipboxHostNativeLibs")
 
+// Expose the host-built native directories to the sibling JVM apps (cli/abrender/server) as
+// consumable configurations. They used to read `project(":apps:jvm").layout` directly, which
+// Isolated Projects forbids (a project accessing another project's layout). Each configuration
+// carries one directory as an outgoing artifact with `builtBy` its producing task; consumers select
+// a specific one by name via `project(path = ":apps:jvm", configuration = "<name>")`, so no
+// attribute matching is needed and the task dependency is wired through `builtBy` automatically.
+artifacts.add(configurations.consumable("hostNativeLibsElements").name, nativeLibsDirFile) {
+    builtBy(nativeLibsTask)
+}
+artifacts.add(
+    configurations.consumable("hostVgmstreamElements").name,
+    layout.buildDirectory.dir("jvm-native/out/vgmstream/host"),
+) {
+    // tasks.matching (not tasks.named) so this tolerates -Pchipbox.skipNative, under which the
+    // per-emulator host tasks aren't registered (lint/static-analysis configure this module but
+    // build nothing native). Empty under skipNative → no producer wired, which is correct there.
+    builtBy(tasks.matching { it.name == "buildHostNativeVgmstream" })
+}
+// The `libs/` directory holds committed prebuilt .so files (a source dir, not a build output), so
+// this consumable needs no `builtBy` producing task.
+artifacts.add(
+    configurations.consumable("prebuiltNativeLibsElements").name,
+    layout.projectDirectory.dir("libs"),
+)
+
 // --- Packaging: compose.desktop.application (jpackage) --------------------------------------------
 // Migrated off the Gradle `application` plugin (native-installers phase): that plugin and
 // compose.desktop.application both register a `run` task and can't coexist, so Compose now owns
@@ -45,13 +70,13 @@ val hostOsResourceDir: String = when {
 }
 // jpackage requires a strict numeric version (X.Y.Z); CI passes the git tag sanitized to its numeric
 // prefix. Local builds (and non-tag CI) fall back to a static placeholder.
-val jpackageVersion: String = (project.findProperty("chipbox.jvm.packageVersion") as String?) ?: "3.0.0"
+val jpackageVersion: String = providers.gradleProperty("chipbox.jvm.packageVersion").getOrElse("3.0.0")
 val appResourcesRoot: Provider<Directory> = layout.buildDirectory.dir("jpackage-resources")
 // Windows .msi must be packaged on windows-latest (jpackage can't cross-compile), but there's no
 // native Windows-host build of the cores. jpackage only *assembles* — it doesn't compile natives — so
 // the Windows job supplies the .dll cross-compiled on a Linux job via this property and we skip the
 // native build entirely. Unset (the default) → build the host natives normally (Linux .deb/.rpm, run).
-val prebuiltNativeDir: String? = project.findProperty("chipbox.jvm.prebuiltNativeDir") as String?
+val prebuiltNativeDir: String? = providers.gradleProperty("chipbox.jvm.prebuiltNativeDir").orNull
 val stageAppResources by tasks.registering(Copy::class) {
     if (prebuiltNativeDir != null) {
         from(prebuiltNativeDir) {
@@ -77,7 +102,7 @@ compose.desktop {
         // jpackage lives in a full JDK; a dev machine's Gradle JDK may be a stripped JBR without it.
         // Override locally with -Pchipbox.jvm.jpackageJdk=/path/to/jdk21. CI's Temurin 21 has jpackage,
         // so it leaves this unset and Compose uses the build JDK.
-        (project.findProperty("chipbox.jvm.jpackageJdk") as String?)?.let { javaHome = it }
+        providers.gradleProperty("chipbox.jvm.jpackageJdk").orNull?.let { javaHome = it }
         // Passed to the packaged jpackage launcher (--java-options); jpackage substitutes $APPDIR at
         // launch. The plain `run` task below overrides these with absolute paths (no $APPDIR there).
         jvmArgs += listOf(
@@ -316,4 +341,23 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation(libs.junit4)
     testImplementation(projects.cbox.common.player.director.fake)
+}
+
+// One-shot dependency warm-up for CI's `setup` job — sibling of apps/android's task of the same
+// name (moved here from the root build for Isolated Projects). The JVM/desktop deps (Compose
+// Desktop + Skia, Voyager, sqlite-bundled, metrox) aren't in the Android release classpath, so this
+// warms `runtimeClasspath` separately. Registering the same task name in both apps lets one
+// unqualified `./gradlew resolveCiDependencies` resolve both in a single configured invocation.
+val runtimeDependencyGraph =
+    configurations.named("runtimeClasspath")
+        .flatMap { it.incoming.resolutionResult.rootComponent }
+        .map { it.dependencies.size }
+tasks.register("resolveCiDependencies") {
+    description = "Resolves this app's dependency graph to warm the Gradle module cache (CI warm-up)."
+    group = "ci"
+    // Wire the graph as an input Provider so Gradle resolves it in its own (CC/Isolated-Projects
+    // safe) phase — resolving a cross-project configuration inside doLast triggers task creation at
+    // execution time, which the configuration cache forbids.
+    inputs.property("dependencyGraphSize", runtimeDependencyGraph)
+    doLast { logger.lifecycle("Warmed the runtime dependency graph into the Gradle module cache.") }
 }

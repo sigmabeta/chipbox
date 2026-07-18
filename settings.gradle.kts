@@ -90,6 +90,13 @@ dependencyResolutionManagement {
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
+// Apply chipbox's ktlint+detekt convention (`chipbox.lint`, in build-logic) to every module.
+// This replaces the old root `subprojects { }` block: Isolated Projects forbids a project
+// configuring its siblings, but `gradle.lifecycle.beforeProject { }` configures each project in
+// isolation and is IP-safe. A plugin applied by id here resolves against the applying project's
+// own classpath (which includes the build-logic included build), so the convention plugin's
+// ktlint/detekt types load fine — unlike a raw settings-classpath `apply`. The root project has no
+// hand-written sources to lint, so skip it (keeps its lifecycle clean and avoids a no-op ktlint).
 rootProject.name = "Chipbox"
 
 // apps/js (and the Kotlin/JS variants its shared deps expose via sage.kmp.js) is gated behind

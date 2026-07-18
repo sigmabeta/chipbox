@@ -69,7 +69,9 @@ fun Project.resolveNativeHostTarget(): NativeHostTarget {
 fun Project.androidSdkDir(): File {
     System.getenv("ANDROID_HOME")?.let { return File(it) }
     System.getenv("ANDROID_SDK_ROOT")?.let { return File(it) }
-    val local = rootProject.file("local.properties")
+    // isolated.rootProject keeps this root-relative lookup Isolated-Projects-safe (a plain
+    // rootProject.file access reaches into another project's state, which IP forbids).
+    val local = isolated.rootProject.projectDirectory.file("local.properties").asFile
     if (local.isFile) {
         val props = Properties().apply { local.inputStream().use { load(it) } }
         props.getProperty("sdk.dir")?.let { return File(it) }

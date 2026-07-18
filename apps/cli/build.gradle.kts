@@ -1,3 +1,9 @@
+import org.gradle.api.file.FileCollection
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.process.CommandLineArgumentProvider
+
 plugins {
     alias(libs.plugins.sage.jvm)
     application
@@ -15,9 +21,26 @@ application {
 // machinery (cmake/JDK probing, hostshim, per-emulator tasks), reuse the .so that module already
 // builds: depend on its single-emulator `buildHostNativeVgmstream` task (from the shared
 // chipbox.native.host plugin) and point java.library.path at that task's output dir.
-val jvmNativeLibsDir = project(":apps:jvm").layout.buildDirectory
-    .dir("jvm-native/out/vgmstream/host").get().asFile
-val buildVgmstreamLib = ":apps:jvm:buildHostNativeVgmstream"
+// Consume libvgmstream.so from apps/jvm's host build via a named consumable configuration rather
+// than reading project(":apps:jvm").layout directly (forbidden under Isolated Projects). Resolving
+// this configuration both yields the output directory and pulls its `builtBy` task as a dependency.
+val jvmVgmstreamLibDeps: Configuration by configurations.dependencyScope("jvmVgmstreamLibDeps")
+val jvmVgmstreamLib: Configuration by configurations.resolvable("jvmVgmstreamLib") {
+    extendsFrom(jvmVgmstreamLibDeps)
+}
+dependencies {
+    add(jvmVgmstreamLibDeps.name, project(path = ":apps:jvm", configuration = "hostVgmstreamElements"))
+}
+// Argument provider that resolves the native-lib directory lazily at execution and emits it as
+// `-Djava.library.path`. Modelling it as a CommandLineArgumentProvider with an @InputFiles
+// FileCollection (rather than a lambda capturing a configuration-backed Provider) keeps it
+// configuration-cache safe — a captured config Provider is a "Gradle script object reference" CC
+// can't serialize — and establishes the task dependency on the config's builtBy producer.
+class NativeLibraryPathArgument(
+    @get:InputFiles @get:PathSensitive(PathSensitivity.ABSOLUTE) val nativeDir: FileCollection,
+) : CommandLineArgumentProvider {
+    override fun asArguments() = listOf("-Djava.library.path=${nativeDir.singleFile.absolutePath}")
+}
 
 // Mordant's interactive folder picker enters raw terminal mode, which needs a real TTY on stdin.
 // `gradlew run` forks a JVM whose stdin is detached by default; wiring System.in through lets the
@@ -26,8 +49,7 @@ val buildVgmstreamLib = ":apps:jvm:buildHostNativeVgmstream"
 //   ./gradlew :apps:cli:installDist  →  apps/cli/build/install/chipbox-cli/bin/chipbox-cli
 tasks.named<JavaExec>("run") {
     standardInput = System.`in`
-    dependsOn(buildVgmstreamLib)
-    systemProperty("java.library.path", jvmNativeLibsDir.absolutePath)
+    jvmArgumentProviders.add(NativeLibraryPathArgument(jvmVgmstreamLib))
 }
 
 // Bundle libvgmstream.so into `lib/native/` inside the distribution and inject
@@ -37,7 +59,7 @@ tasks.named<JavaExec>("run") {
 distributions {
     named("main") {
         contents {
-            from(jvmNativeLibsDir) {
+            from(jvmVgmstreamLib) {
                 include("libvgmstream.so")
                 into("lib/native")
             }
@@ -46,7 +68,7 @@ distributions {
 }
 listOf("installDist", "distZip", "distTar").forEach { taskName ->
     tasks.named<AbstractCopyTask>(taskName) {
-        dependsOn(buildVgmstreamLib)
+        dependsOn(jvmVgmstreamLib)
         // Excluding the Compose UI/skiko groups (see the runtimeClasspath block above) shifts version
         // resolution so org.jetbrains.compose.runtime and androidx.compose.runtime can both land on
         // runtime-desktop at the same version — two artifacts, one jar filename. The dist Copy then

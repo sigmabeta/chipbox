@@ -6,6 +6,10 @@ plugins {
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.detekt) apply false
+    // Both linters are applied per-module by the SAGE base plugins (sage.kmp/android/jvm, via
+    // configureDetekt()/configureKtlint()); declaring them here `apply false` puts their runtime on
+    // the shared classpath so those by-id applications resolve. This replaced the old root
+    // `subprojects {}` lint block (which Isolated Projects forbids).
     alias(libs.plugins.ktlint) apply false
 }
 
@@ -15,16 +19,14 @@ plugins {
 // repos, which `RepositoriesMode.FAIL_ON_PROJECT_REPOS` in settings.gradle.kts rejects —
 // `kotlinNodeJsSetup` / `kotlinYarnSetup` fail before any jsTest can run.
 //
-// Kotlin 2.3 deprecated the old NodeJsRootExtension.download — the new API is the EnvSpec
-// types registered per-project by NodeJsPlugin / YarnPlugin (each KMP module with a js()
-// target applies them locally, so we configure on every subproject, not just root).
-allprojects {
-    plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin> {
-        the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().download.set(false)
-    }
-    plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
-        the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec>().download.set(false)
-    }
+// Kotlin 2.3 deprecated the old NodeJsRootExtension.download — the new API is the EnvSpec types
+// registered by NodeJsPlugin / YarnPlugin. Configure them on the root project only: Isolated
+// Projects forbids the old `allprojects { }` traversal, and the actual node/yarn download is driven
+// by the root `kotlin*Setup` tasks, so disabling it on the root EnvSpec is what keeps the toolchain
+// from adding the `nodejs.org` / `yarnpkg` project repos that FAIL_ON_PROJECT_REPOS rejects. The
+// whole JS toolchain is gated behind `-Psage.js`, so none of this configures in ordinary builds.
+plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin> {
+    the<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec>().download.set(false)
 }
 
 // Force-bump npm transitives the Kotlin/JS toolchain drags in that Dependabot flags. yarn won't
@@ -43,6 +45,7 @@ allprojects {
 //    webpack-dev-server) does `require('uuid').v4()`; uuid 11 keeps a CommonJS `require` export
 //    (package.json `exports.node.require` + `main` both point at dist/cjs), so sockjs is unaffected.
 plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
+    the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootEnvSpec>().download.set(false)
     rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().apply {
         resolution("serialize-javascript", "^7.0.5")
         resolution("diff", "^8.0.4")
@@ -53,63 +56,13 @@ plugins.withType<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin> {
     }
 }
 
-// ktlint via the Gradle plugin, replacing the old ktlint-check.sh / ktlint-fix.sh that
-// downloaded the ktlint binary and ran it outside Gradle. Applied to every chipbox module;
-// the vendored sage/ submodule is a separate included build and keeps its own lint config.
-// `ktlintCheck` (wired into `check`) lints, `ktlintFormat` auto-fixes. The engine is pinned to
-// the version the old script downloaded so the active ruleset doesn't change.
-val ktlintToolVersion = libs.versions.ktlintTool.get()
-subprojects {
-    apply(plugin = "org.jlleitschuh.gradle.ktlint")
-    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
-        version.set(ktlintToolVersion)
-    }
-    // KSP/Room and Compose Multiplatform register their generated sources (e.g.
-    // ChipboxDatabase_Impl.kt, the Compose `Res` accessors) into the Kotlin source sets, so
-    // ktlint-gradle would lint them. The old ktlint-check.sh excluded `**/build/**`; keep that
-    // exclusion so we only lint hand-written code.
-    tasks.withType<org.jlleitschuh.gradle.ktlint.tasks.BaseKtLintCheckTask>().configureEach {
-        exclude { it.file.path.contains("/build/") }
-    }
-    // Mirror the ktlint exclusion for detekt: Compose-resource codegen produces source files
-    // ([commonMain]Strings*.kt, Res.kt) that violate detekt's LongMethod/MaxLineLength/
-    // FunctionNaming rules. The same `it.file.path.contains("/build/")` predicate the ktlint
-    // exclusion above uses works on Detekt (SourceTask) and survives the absolute-path source
-    // entries Compose's resourceGenerator registers — `exclude("**/build/**")` only matches
-    // paths relative to the source roots and doesn't catch them.
-    plugins.withId("io.gitlab.arturbosch.detekt") {
-        tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-            exclude { it.file.path.contains("/build/") }
-        }
-    }
-}
+// ktlint + detekt are applied per-module by the SAGE base plugins (sage.kmp/android/jvm) via
+// configureDetekt()/configureKtlint(); the `apply false` declarations above just put their runtime
+// on the shared classpath. This replaced the old root `subprojects { }` lint block, which Isolated
+// Projects forbids (a project configuring its siblings). Per-module apply keeps ktlint co-resident
+// with each module's Kotlin plugin, which ktlint-gradle's KMP integration needs.
 
-// One-shot dependency warm-up for CI's `setup` job. `resolveCiDependencies` resolves an app's
-// runtime-classpath dependency GRAPH, downloading the component metadata + POMs into the Gradle
-// module cache — exactly what the old `:apps:*:dependencies` report task did. It deliberately
-// resolves `resolutionResult` (the graph) rather than `incoming.files` (the artifacts): forcing
-// artifact selection on the Android release classpath fails with variant ambiguity, because
-// picking the concrete jar/aar for each component is AGP-internal work the report task never did.
-//
-// The task is registered in each app project rather than the root because a configuration must be
-// resolved by its OWNING project — resolving `:apps:android:releaseRuntimeClasspath` from a root
-// task fails Gradle's "resolution without an exclusive lock" check. Both apps register the same
-// task name, so a single unqualified `./gradlew resolveCiDependencies` runs both in ONE invocation
-// — paying the dominant build-configuration cost once instead of the twice the two separate
-// `:apps:*:dependencies` runs cost (they couldn't share an invocation: the `dependencies` report
-// task takes a single `--configuration` and the two apps need different ones). The JVM/desktop deps
-// aren't in the Android release classpath (Compose Desktop + Skia, Voyager, sqlite-bundled, metrox),
-// so both classpaths must be warmed here.
-mapOf(
-    ":apps:android" to "releaseRuntimeClasspath",
-    ":apps:jvm" to "runtimeClasspath",
-).forEach { (path, configuration) ->
-    project(path).tasks.register("resolveCiDependencies") {
-        description = "Resolves this app's dependency graph to warm the Gradle module cache (CI warm-up)."
-        group = "ci"
-        doLast {
-            this.project.configurations.getByName(configuration).incoming.resolutionResult.root
-        }
-    }
-}
+// The `resolveCiDependencies` CI dependency-cache warm-up is registered in each app's own build
+// file (apps/android, apps/jvm) rather than here — Isolated Projects forbids the root reaching into
+// `project(":apps:*").tasks`, and a configuration must be resolved by its owning project anyway.
 
