@@ -51,7 +51,7 @@ jobs:
           echo "jpackage app-version (embedded OS-package metadata): $VERSION"
           ./gradlew :apps:jvm:packageDeb :apps:jvm:packageRpm \
             -Pchipbox.jvm.packageVersion="$VERSION" \
-            --build-cache --no-configuration-cache --no-daemon --max-workers=4
+            --build-cache --no-daemon --max-workers=4
       # jpackage names files by the numeric app-version; relabel with the full version name (the tag),
       # e.g. chipbox-3.0.0-beta04-amd64.deb. The embedded deb/rpm Version stays the numeric $VERSION
       # above — those fields reject a prerelease suffix, so the full name only lives in the filename.
@@ -113,7 +113,7 @@ jobs:
       - name: Cross-compile Windows emulator natives (.dll)
         run: |
           WIN_JDK_HOME="$(find "$HOME/win-jdk" -maxdepth 1 -type d -name 'jdk-*' | head -1)"
-          ./gradlew :apps:jvm:chipboxHostNativeLibs --build-cache --no-configuration-cache --no-daemon --max-workers=4 \
+          ./gradlew :apps:jvm:chipboxHostNativeLibs --build-cache --no-daemon --max-workers=4 \
             -Pchipbox.jvm.nativeTarget=windows-x64 \
             -Pchipbox.jvm.nativeJdk="$WIN_JDK_HOME" \
             -Pchipbox.native.maxParallel=2
@@ -162,7 +162,7 @@ jobs:
             -Pchipbox.jvm.prebuiltNativeDir=prebuilt-natives \
             -Pchipbox.jvm.nativeTarget=windows-x64 \
             -Pchipbox.jvm.nativeJdk="$JAVA_HOME" \
-            --build-cache --no-configuration-cache --no-daemon --max-workers=4
+            --build-cache --no-daemon --max-workers=4
       # jpackage names the .msi by the numeric app-version; relabel with the full version name (the
       # tag), e.g. chipbox-3.0.0-beta04-x64.msi. The embedded MSI ProductVersion stays numeric.
       - name: Label installer with the full version name
@@ -208,7 +208,7 @@ jobs:
         run: sdkmanager "ndk;29.0.14206865" "cmake;3.22.1"
       - uses: gradle/actions/setup-gradle@v4
       - name: Assemble release (split APKs)
-        run: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --no-configuration-cache --no-daemon --max-workers=4
+        run: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --no-daemon --max-workers=4
       - name: Name APKs by version + ABI
         run: ./scripts/rename-release-apk.sh
       - uses: actions/upload-artifact@v4
@@ -243,7 +243,7 @@ jobs:
           echo "jpackage app-version: $VERSION"
           ./gradlew :apps:jvm:packageDmg \
             -Pchipbox.jvm.packageVersion="$VERSION" \
-            --build-cache --no-configuration-cache --no-daemon --max-workers=4
+            --build-cache --no-daemon --max-workers=4
       # jpackage writes its real error to a log file, not stdout — surface it so a failure is diagnosable.
       - name: Show jpackage logs on failure
         if: failure()
