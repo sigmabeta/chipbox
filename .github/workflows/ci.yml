@@ -33,7 +33,7 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
       - name: ktlint + detekt
-        run: ./gradlew ktlintCheck detekt --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
+        run: ./gradlew ktlintCheck detekt --continue --build-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -56,7 +56,7 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
       - name: Compile shared JVM code
-        run: ./gradlew :apps:jvm:classes --build-cache --no-configuration-cache --no-daemon --max-workers=4
+        run: ./gradlew :apps:jvm:classes --build-cache --no-daemon --max-workers=4
 
   unit-test:
     # Behind static-analysis so a syntax/style break fails fast in the cheap job rather than burning
@@ -75,7 +75,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       # jvmTest spins up Compose Desktop windows, so it needs an X display — same xvfb wrapper CI used.
       - name: jvmTest (commonTest JVM target)
-        run: xvfb-run -a ./gradlew jvmTest --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2
+        run: xvfb-run -a ./gradlew jvmTest --continue --build-cache --no-daemon --max-workers=2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -96,7 +96,7 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
       - name: Verify Paparazzi snapshots
-        run: ./gradlew verifyPaparazziDebug --continue --build-cache --no-configuration-cache --no-daemon --max-workers=2
+        run: ./gradlew verifyPaparazziDebug --continue --build-cache --no-daemon --max-workers=2
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -120,7 +120,7 @@ jobs:
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
       - name: Android lint (release)
-        run: ./gradlew :apps:android:lintRelease --build-cache --no-configuration-cache --no-daemon --max-workers=4 -Pchipbox.skipNative
+        run: ./gradlew :apps:android:lintRelease --build-cache --no-daemon --max-workers=4 -Pchipbox.skipNative
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -146,7 +146,7 @@ jobs:
       # runtime) — the desktop packaging path after the move to compose.desktop.application. The
       # OS-specific installers (.deb/.rpm) are release-only; this just proves the app assembles.
       - name: Build desktop app image (Linux)
-        run: ./gradlew :apps:jvm:createDistributable --build-cache --no-configuration-cache --no-daemon --max-workers=4
+        run: ./gradlew :apps:jvm:createDistributable --build-cache --no-daemon --max-workers=4
 
   android-apk:
     # Last in the chain: android-lint compiled the release graph into the remote build cache, so this
@@ -186,7 +186,7 @@ jobs:
         run: sdkmanager "ndk;29.0.14206865" "cmake;3.22.1"
       - uses: gradle/actions/setup-gradle@v4
       - name: Assemble release (split APKs)
-        run: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --no-configuration-cache --no-daemon --max-workers=4
+        run: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --no-daemon --max-workers=4
       - name: Name APKs by version + ABI
         run: ./scripts/rename-release-apk.sh
       - uses: actions/upload-artifact@v4
