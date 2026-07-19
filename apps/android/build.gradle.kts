@@ -72,7 +72,9 @@ android {
             val ksPass = System.getenv("CHIPBOX_KEYSTORE_PASSWORD")
             val keyPass = System.getenv("CHIPBOX_KEY_PASSWORD")
             if (!ksAlias.isNullOrBlank() && !ksPass.isNullOrBlank() && !keyPass.isNullOrBlank()) {
-                storeFile = rootProject.file("chipbox.jks")
+                // isolated.rootProject (not rootProject.file) reads the repo-root keystore in an
+                // Isolated-Projects-safe way: a project can't reach into another project's file().
+                storeFile = isolated.rootProject.projectDirectory.file("chipbox.jks").asFile
                 storePassword = ksPass
                 keyAlias = ksAlias
                 keyPassword = keyPass

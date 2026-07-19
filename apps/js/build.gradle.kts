@@ -36,7 +36,8 @@ val emsdkDir: Provider<String> = providers.gradleProperty("sage.js.emsdk")
 
 val wasmResourcesDirPath: String =
     layout.projectDirectory.dir("src/jsMain/resources/wasm").asFile.absolutePath
-val nativeRootDir: String = rootProject.layout.projectDirectory.dir("cbox/native").asFile.absolutePath
+// isolated.rootProject (not rootProject.layout) keeps this root-relative lookup Isolated-Projects-safe.
+val nativeRootDir: String = isolated.rootProject.projectDirectory.dir("cbox/native").asFile.absolutePath
 val wasmBuildRootDir: String = layout.buildDirectory.dir("wasm").get().asFile.absolutePath
 
 // Each emulator that ships a WASM build is one line here. The CMakeLists in
