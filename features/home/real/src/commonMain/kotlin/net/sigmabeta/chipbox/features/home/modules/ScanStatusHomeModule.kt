@@ -16,6 +16,7 @@ import net.sigmabeta.chipbox.common.ui.components.api.ScanStatusDetail
 import net.sigmabeta.chipbox.features.home.HomeAction
 import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
+import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
@@ -36,12 +37,14 @@ import net.sigmabeta.sage.ui.StringProvider
  * the failure message.
  *
  * The scanner's per-file heartbeat fires far too often to render each one, so the reduced state is
- * [sample]d down to [REFRESH_MS]; the rare meaningful changes accumulate in between and are carried
- * through every emission, so none are lost.
+ * [sample]d down to [ScanRefreshInterval]; the rare meaningful changes accumulate in between and are
+ * carried through every emission, so none are lost. A refresh interval of `0` disables the throttle
+ * (the UI-test harness supplies `0`).
  */
 class ScanStatusHomeModule @Inject constructor(
     private val scanner: Scanner,
     private val stringProvider: StringProvider,
+    private val refreshInterval: ScanRefreshInterval,
 ) : HomeModule {
 
     override val id = ID
@@ -51,15 +54,21 @@ class ScanStatusHomeModule @Inject constructor(
     override val showHeader = false
 
     @OptIn(FlowPreview::class)
-    override fun state(): Flow<LCE<HomeModuleSection>> =
-        merge(
+    override fun state(): Flow<LCE<HomeModuleSection>> {
+        val reduced = merge(
             scanner.state().map<ScannerState, Input> { Input.State(it) },
             scanner.scanEvents().map<ScannerEvent, Input> { Input.Event(it) },
         )
             .scan(Accumulator()) { acc, input -> acc.reduce(input) }
-            .sample(REFRESH_MS)
+        val throttled = if (refreshInterval.millis > 0L) {
+            reduced.sample(refreshInterval.millis)
+        } else {
+            reduced
+        }
+        return throttled
             .map { render(it) }
             .distinctUntilChanged()
+    }
 
     private fun render(acc: Accumulator): LCE<HomeModuleSection> {
         val status = acc.phase.toCardStatus() ?: return LCE.Uninitialized
@@ -127,10 +136,6 @@ class ScanStatusHomeModule @Inject constructor(
         // Above Game of the Day (100) but below the Now Playing card (0): prominent while a scan
         // runs, without displacing active playback.
         const val PRIORITY = 50
-
-        // The scanner's file heartbeat fires per file (thousands a scan); throttle the card to a
-        // calm cadence so Home doesn't recompose on every read.
-        const val REFRESH_MS = 500L
     }
 }
 

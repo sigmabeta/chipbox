@@ -32,7 +32,10 @@ This is a large module; files are grouped by role.
   the `HomeModuleSection` row type (title + pre-built `ListModel`s).
 - **Card modules** — `modules/*HomeModule.kt`, one `HomeModule` per Home row,
   ordered by `priority`: `NowPlayingHomeModule` (0, headerless hero card),
-  `ScanStatusHomeModule` (50, live scan-progress card off the `Scanner` flows),
+  `ScanStatusHomeModule` (50, live scan-progress card off the `Scanner` flows,
+  throttled to the injected `module/ScanRefreshInterval` — app graphs pass the
+  production cadence, the UI-test graph passes `0` to disable the `sample` throttle
+  and keep the card in lockstep with the driven scan verbs),
   `GameOfTheDayHomeModule` (100), `RecentlyAddedGamesHomeModule` (150, a random
   sample of games added in the last week via `Repository.getRecentlyAddedGames`),
   `RecentlyPlayedGamesHomeModule` (200),

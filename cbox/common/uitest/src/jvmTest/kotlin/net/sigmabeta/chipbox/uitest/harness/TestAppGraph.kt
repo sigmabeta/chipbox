@@ -18,6 +18,7 @@ import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
 import net.sigmabeta.chipbox.debuginfo.fake.FakeDebugInfoManager
 import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
+import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
 import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
 import net.sigmabeta.chipbox.history.fake.FakePlaybackHistoryRepository
 import net.sigmabeta.chipbox.playlists.PlaylistsRepository
@@ -165,6 +166,12 @@ interface TestAppGraph : ViewModelGraph {
     @Provides
     @SingleIn(AppScope::class)
     fun provideScanner(scanner: CountingScanner): Scanner = scanner
+
+    // Disable the Home scan-status card's sampling throttle so it re-renders on every driven scan
+    // input; the `sample` timer otherwise makes the scan-status specs race the next sampled frame.
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideScanRefreshInterval(): ScanRefreshInterval = ScanRefreshInterval(0L)
 
     // Tests default to the fake image loader, so screens render deterministic generated gradients
     // instead of fetching cover art through Coil. The shell reads this and provides LocalForceFakeImages.

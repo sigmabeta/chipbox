@@ -15,6 +15,7 @@ import net.sigmabeta.chipbox.common.ui.components.api.ScanStatusCardListModel
 import net.sigmabeta.chipbox.common.ui.components.api.ScanStatusDetail
 import net.sigmabeta.chipbox.features.home.HomeAction
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
+import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
@@ -144,7 +145,7 @@ class ScanStatusHomeModuleTest {
         block: suspend TestScope.(CountingScanner, List<LCE<HomeModuleSection>>) -> Unit,
     ) = runTest(dispatcher) {
         val scanner = CountingScanner()
-        val module = ScanStatusHomeModule(scanner, stubStringProvider())
+        val module = ScanStatusHomeModule(scanner, stubStringProvider(), ScanRefreshInterval(SAMPLE_MS))
         val lces = mutableListOf<LCE<HomeModuleSection>>()
         val job: Job = launch { module.state().collect { lces.add(it) } }
         runCurrent()
@@ -172,7 +173,7 @@ class ScanStatusHomeModuleTest {
     }
 
     private companion object {
-        /** Mirrors the module's private REFRESH_MS — the sample cadence the card is throttled to. */
+        /** The sample cadence the card is throttled to in these tests. */
         const val SAMPLE_MS = 500L
     }
 }
