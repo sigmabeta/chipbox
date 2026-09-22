@@ -194,7 +194,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      # `packages` overridden: the action default ('tools platform-tools') requests the legacy
+      # `tools` package Google removed from the SDK repo, which now fails the step.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
       - name: Cache NDK + CMake
         id: cache-ndk
         uses: actions/cache@v4

@@ -169,7 +169,12 @@ jobs:
           distribution: temurin
           java-version: '21'
       # Puts sdkmanager on PATH and accepts SDK licenses (it isn't on PATH by default on ubuntu-latest).
+      # `packages` is overridden because the action's default ('tools platform-tools') requests the
+      # legacy `tools` package, which Google removed from the SDK repo — installing it now fails the
+      # step with "Failed to find package 'tools'". platform-tools alone is all we need.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
       # Cache the ~1GB NDK (+ CMake) so only the first run pays the download. Path is the stable
       # ubuntu-latest SDK location; a miss just re-installs.
       - name: Cache NDK + CMake
