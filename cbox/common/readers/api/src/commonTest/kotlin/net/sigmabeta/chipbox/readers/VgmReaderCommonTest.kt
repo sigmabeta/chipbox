@@ -31,16 +31,17 @@ class VgmReaderCommonTest {
     }
 
     @Test
-    fun `a loop adds two extra loop iterations to the length and enables fade`() {
-        // VGM "endless" tracks loop forever; the reader extends total by 2x loop so playback gets
-        // 3 iterations + fade. Pins the documented math down so a future rework doesn't change it
-        // by accident.
+    fun `a loop adds one extra loop iteration to the length and enables fade`() {
+        // VGM "endless" tracks loop forever; `total` already holds the intro + one loop, so the
+        // reader adds a single extra loop for two iterations + fade — matching vgmrips' "Total +
+        // Loop" listing. Pins the documented math down so a future rework doesn't change it by
+        // accident.
         val tracks = reader.readTracksFromFile(
             minimalVgm(totalSamples = 44_100, loopSamples = 22_050),
             "loop.vgm",
         )
         assertNotNull(tracks)
-        assertEquals(2000L, tracks[0].length)
+        assertEquals(1500L, tracks[0].length)
         assertEquals(FADE_LENGTH_MS, tracks[0].fadeLengthMs)
     }
 

@@ -187,7 +187,7 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
 
     private fun computeLengthMs(totalSamples: Long, loopSamples: Long): Long {
         if (totalSamples <= 0L) return LENGTH_UNKNOWN_MS
-        val withExtraLoops = if (loopSamples > 0L) totalSamples + 2L * loopSamples else totalSamples
+        val withExtraLoops = if (loopSamples > 0L) totalSamples + loopSamples else totalSamples
         return withExtraLoops * MILLIS_PER_SECOND / SAMPLE_RATE_HZ
     }
 
