@@ -30,15 +30,15 @@ internal class VgmReaderTest {
     }
 
     @Test
-    fun `a loop adds two extra loop iterations to the length and enables fade`() {
+    fun `a loop adds one extra loop iteration to the length and enables fade`() {
         val tracks = reader.readTracksFromFile(
             minimalVgm(totalSamples = 44_100, loopSamples = 22_050),
             "loop.vgm",
         )
 
         assertNotNull(tracks)
-        // total + 2*loop = 44_100 + 44_100 = 88_200 samples = 2000 ms.
-        assertEquals(2000L, tracks[0].length)
+        // total + loop = 44_100 + 22_050 = 66_150 samples = 1500 ms.
+        assertEquals(1500L, tracks[0].length)
         assertEquals(net.sigmabeta.chipbox.models.FADE_LENGTH_MS, tracks[0].fadeLengthMs)
     }
 
