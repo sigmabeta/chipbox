@@ -23,6 +23,7 @@ import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.crash.real.RealCrashReporter
 import net.sigmabeta.chipbox.crash.real.RealCrashReportStore
 import net.sigmabeta.chipbox.database.ChipboxDatabase
+import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
 import net.sigmabeta.chipbox.history.HistoryDatabase
 import net.sigmabeta.chipbox.favorites.FavoritesDatabase
 import net.sigmabeta.chipbox.playlists.PlaylistsDatabase
@@ -108,6 +109,14 @@ object JvmStringsModule {
     // Single multiplatform source: cbox/common/strings/real's composeResources, preloaded once.
     @Provides @SingleIn(AppScope::class)
     fun provideStringProvider(): StringProvider = runBlocking { ChipboxStringProvider(loadChipboxStrings()) }
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object JvmHomeConfigModule {
+    // Throttle the Home scan-status card to a calm cadence; the scanner heartbeats per file.
+    @Provides @SingleIn(AppScope::class)
+    fun provideScanRefreshInterval(): ScanRefreshInterval = ScanRefreshInterval(ScanRefreshInterval.PRODUCTION_MILLIS)
 }
 
 @BindingContainer

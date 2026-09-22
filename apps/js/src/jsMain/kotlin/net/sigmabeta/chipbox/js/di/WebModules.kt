@@ -23,6 +23,7 @@ import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
 import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
 import net.sigmabeta.chipbox.debuginfo.real.RealDebugInfoManager
+import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
 import net.sigmabeta.chipbox.js.contentsource.HttpContentSource
 import net.sigmabeta.chipbox.js.emulators.WasmGbaEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmGmeEmulator
@@ -102,6 +103,14 @@ object WebRepositoryModule {
 
     @Provides @SingleIn(AppScope::class)
     fun provideRepository(client: HttpClient): Repository = RemoteRepository(client)
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object WebHomeConfigModule {
+    // Throttle the Home scan-status card to a calm cadence; the scanner heartbeats per file.
+    @Provides @SingleIn(AppScope::class)
+    fun provideScanRefreshInterval(): ScanRefreshInterval = ScanRefreshInterval(ScanRefreshInterval.PRODUCTION_MILLIS)
 }
 
 @BindingContainer

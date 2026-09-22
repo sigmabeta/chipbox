@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.crash.CrashReporter
 import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.crash.real.RealCrashReporter
 import net.sigmabeta.chipbox.crash.real.RealCrashReportStore
+import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
 import java.io.File
 import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
@@ -35,6 +36,11 @@ object AndroidAppModule {
     @Provides
     @SingleIn(AppScope::class)
     fun provideStringProvider(): StringProvider = runBlocking { ChipboxStringProvider(loadChipboxStrings()) }
+
+    // Throttle the Home scan-status card to a calm cadence; the scanner heartbeats per file.
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideScanRefreshInterval(): ScanRefreshInterval = ScanRefreshInterval(ScanRefreshInterval.PRODUCTION_MILLIS)
 
     @Provides
     @SingleIn(AppScope::class)
