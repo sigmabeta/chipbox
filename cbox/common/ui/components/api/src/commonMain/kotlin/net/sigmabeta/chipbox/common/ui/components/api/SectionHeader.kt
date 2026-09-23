@@ -1,6 +1,5 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +12,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun SectionHeader(
@@ -30,17 +30,12 @@ fun SectionHeader(
 
         CrossfadeText(
             text = name,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge
+                .copy(fontSize = 26.sp),
             color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textModifier = Modifier
-                .border(
-                    width = 2.dp,
-                    color = color,
-                    shape = SectionHeaderShape
-                )
-                .padding(horizontal = 8.dp)
                 .semantics {
                     heading()
                 }
