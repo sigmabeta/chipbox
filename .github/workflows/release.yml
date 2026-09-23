@@ -135,11 +135,38 @@ jobs:
           distribution: temurin
           java-version: '21'
       # jpackage's .msi step shells out to WiX v3. windows-latest preinstalls it (the choco
-      # `wixtoolset` package tracks v3.x), so this is a no-op safety net for future images that might
-      # drop it. No --version pin: pinning a patch older than the preinstalled one makes choco fail as
-      # a downgrade, and an unpinned install just skips when a same-or-newer version is already present.
-      - name: Ensure WiX Toolset (v3, for jpackage .msi)
-        run: choco install wixtoolset -y --no-progress
+      # `wixtoolset` package tracks v3.x), so the install is a no-op safety net for future images
+      # that might drop it. No --version pin: pinning a patch older than the preinstalled one makes
+      # choco fail as a downgrade, and an unpinned install just skips when a same-or-newer version is
+      # already present.
+      #
+      # Also export WIX_PATH. Compose desktop's own WiX bootstrap (configureWix) reaches into the
+      # ROOT project's layout when WIX_PATH is unset — a hard Gradle Isolated Projects violation that
+      # fails this job (only Windows evaluates that code path, so every other release job passes).
+      # Pointing it at the installed WiX v3 bin/ (which has candle.exe/light.exe, and which Compose
+      # prepends to jpackage's PATH) makes it skip that bootstrap.
+      - name: Ensure WiX Toolset (v3) + expose WIX_PATH to Compose
+        shell: pwsh
+        run: |
+          choco install wixtoolset -y --no-progress
+          $candidates = @()
+          if ($env:WIX) {
+            $candidates += (Join-Path $env:WIX 'candle.exe')
+            $candidates += (Join-Path $env:WIX 'bin\candle.exe')
+          }
+          $candidates += "${env:ProgramFiles(x86)}\WiX Toolset v3*\bin\candle.exe"
+          $candidates += "$env:ProgramFiles\WiX Toolset v3*\bin\candle.exe"
+          $candle = $candidates |
+            ForEach-Object { Get-Item $_ -ErrorAction SilentlyContinue } |
+            Select-Object -First 1 -ExpandProperty FullName
+          if (-not $candle) {
+            $cmd = Get-Command candle.exe -ErrorAction SilentlyContinue
+            if ($cmd) { $candle = $cmd.Source }
+          }
+          if (-not $candle) { throw "WiX v3 candle.exe not found; cannot package the .msi" }
+          $wixBin = Split-Path $candle -Parent
+          "WIX_PATH=$wixBin" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "WiX bin: $wixBin"
       # Download the cross-compiled .dll into apps/jvm so a relative -P path resolves against the
       # project dir on Windows (avoids Git-Bash vs Windows path-separator issues with an absolute path).
       - name: Download cross-compiled natives
