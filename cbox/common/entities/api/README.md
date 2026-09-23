@@ -20,7 +20,9 @@ and references library rows by plain id rather than cross-database FK).
   (`game`, unique on `folder_key`, plus `folderSignature` for rescan skipping and
   optional descriptive metadata), `TrackEntity` (`track`, unique on `(path,
   trackNumber)`, `CASCADE` FK to `game`, `platform` stored as `Platform.name`,
-  `chainFiles` as an encoded string). Both `GameEntity` and `TrackEntity` carry
+  `chainFiles` as an encoded string, plus `scannerVersion`/`readerVersion` so a
+  rescan can tell whether the row was produced by the current logic). Both
+  `GameEntity` and `TrackEntity` carry
   `dateAdded`/`dateLastUpdated` (epoch millis) stamped by the scanner.
   `@PrimaryKey(autoGenerate = true)` ids.
 - **Library joins** (`joins/`) — `GameArtistJoin`, `TrackArtistJoin`: composite-PK

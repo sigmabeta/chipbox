@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.map
 import net.sigmabeta.chipbox.database.dao.ArtistDao
 import net.sigmabeta.chipbox.database.dao.GameArtistDao
 import net.sigmabeta.chipbox.database.dao.GameDao
+import net.sigmabeta.chipbox.database.dao.GameReaderVersionRow
 import net.sigmabeta.chipbox.database.dao.GameSignatureRow
 import net.sigmabeta.chipbox.database.dao.SearchHistoryDao
 import net.sigmabeta.chipbox.database.dao.TrackArtistDao
@@ -112,12 +113,29 @@ class FakeDatabase(private val random: Random = Random(0)) {
             games.values.sortedBy { it.id }.getOrNull(offset)
         override suspend fun getAllSync(): List<GameEntity> = games.values.toList()
         override suspend fun getSignatureRows(): List<GameSignatureRow> = games.values.map { g ->
+            val gameTracks = tracks.values.filter { it.gameId == g.id }
             GameSignatureRow(
                 folderKey = g.folderKey,
                 signature = g.folderSignature,
-                trackCount = tracks.values.count { it.gameId == g.id },
+                trackCount = gameTracks.size,
+                scannerVersion = gameTracks.maxOfOrNull { it.scannerVersion } ?: 0,
             )
         }
+
+        // Mirror the SQL: one row per (folder, extension) with the highest stored reader version.
+        override suspend fun getReaderVersionRows(): List<GameReaderVersionRow> =
+            games.values.flatMap { g ->
+                tracks.values
+                    .filter { it.gameId == g.id }
+                    .groupBy { it.extension }
+                    .map { (extension, extTracks) ->
+                        GameReaderVersionRow(
+                            folderKey = g.folderKey,
+                            extension = extension,
+                            readerVersion = extTracks.maxOf { it.readerVersion },
+                        )
+                    }
+            }
         override suspend fun update(game: GameEntity) {
             games[game.id] = game
             bump()

@@ -14,7 +14,8 @@ interfaces, so the Android and JVM targets share this same code.
 
 | File | What it is |
 | --- | --- |
-| `RealScanner.kt` | The scanner. Streams folders from the content source and reads them concurrently with discovery (bounded parallel), skips unchanged folders via a SHA-256 folder signature, emits live `Scanning` progress + per-folder/per-file/per-game events, and prunes games whose folders vanished. |
+| `RealScanner.kt` | The scanner. Streams folders from the content source and reads them concurrently with discovery (bounded parallel), skips unchanged folders via a SHA-256 folder signature *and* matching per-track scanner/reader versions (so a reader fix re-reads old folders), emits live `Scanning` progress + per-folder/per-file/per-game events, and prunes games whose folders vanished. |
+| `FolderVersionCheck.kt` | `FolderSnapshot.isUpToDate(...)` — the pure version gate: a folder is current only when all its tracks carry the current scanner version and the current reader version for their format. |
 | `VgmstreamPlatform.kt` | `platformForVgmstreamExtension` — best-effort `Platform` for vgmstream-decoded files (maps unambiguous PSX extensions, else `OTHER`); metadata only. |
 | `AvailableProcessors.kt` | `expect fun availableProcessors()` sizing scan parallelism — JVM/Android read `Runtime`; the enforcement-only JS actual returns 1. |
 

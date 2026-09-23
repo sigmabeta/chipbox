@@ -38,10 +38,14 @@ import net.sigmabeta.chipbox.entities.joins.TrackArtistJoin
     //      copyright/release_date/genre/title_jp — optional descriptive metadata from file tags.
     // v11: tracks and games gain date_added/date_last_updated (epoch millis) recorded by the scanner;
     //      games gain a date_added index for the "recently added" Home row's range query.
-    // Upgrades are handled by fallbackToDestructiveMigration (the library is a derived cache and is
-    // rebuilt on the next scan), which also clears any duplicate rows left by older insert-only
-    // rescans.
-    version = 11
+    // v12: tracks gain scanner_version/reader_version so a scan re-reads folders whose stored tracks
+    //      were produced by older scanner/reader logic. Migrated with MIGRATION_11_12 (existing rows
+    //      default to 0, i.e. stale) rather than a destructive rebuild, so a reader fix doesn't force
+    //      users to clear + rescan their whole library.
+    // Other upgrades are handled by fallbackToDestructiveMigration (the library is a derived cache
+    // and is rebuilt on the next scan), which also clears any duplicate rows left by older
+    // insert-only rescans.
+    version = 12
 )
 @ConstructedBy(ChipboxDatabaseConstructor::class)
 @Suppress("TooManyFunctions")

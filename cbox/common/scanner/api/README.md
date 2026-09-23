@@ -11,7 +11,7 @@ scan progress (drive a UI from it) or to subclass it; the concrete walk lives in
 
 | File | What it is |
 | --- | --- |
-| `Scanner.kt` | Abstract base. Subclasses implement `CoroutineScope.scan()`; the base provides final `startScan()` / `clearScan()` and replay-1 `state()` / `scanEvents()` flows, plus `protected` `emitState`/`emitEvent`/`isFailedAlready` for subclasses. |
+| `Scanner.kt` | Abstract base. Subclasses implement `CoroutineScope.scan()`; the base provides final `startScan()` / `clearScan()` and replay-1 `state()` / `scanEvents()` flows, plus `protected` `emitState`/`emitEvent`/`isFailedAlready` for subclasses. Exposes a `version` (bump on a logic change that alters persisted tracks; stamped onto each track so the folder-skip check re-reads stale ones). |
 | `state/ScannerState.kt` | Sealed scan lifecycle: `Unknown`, `Idle`, `Scanning` (live running totals), `Complete`, `Failed(path)`. |
 | `state/ScannerEvent.kt` | Sealed per-item events: `FolderScanned` (per-folder progress heartbeat), `FileScanned` (per-file progress heartbeat), `GameFoundEvent`, `GameUpdated`, `GameRemoved`, `Unknown`. |
 

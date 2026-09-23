@@ -7,7 +7,10 @@ it ships the actual readers that parse chiptune file headers and embedded tags.
 These run during a library scan, decoding each file's bytes into the
 `RawTrack`/`RawGame`-style metadata the scanner persists. The single
 multiplatform contract is `Reader.readTracksFromFile(bytes, identifier)`, which
-returns `List<RawTrack>?` (null on a parse miss).
+returns `List<RawTrack>?` (null on a parse miss). Each reader also exposes a
+`version` — bump it when a change alters the tracks a file yields, so the scanner
+re-reads files parsed by the old logic (`Readers.readerVersionFor(extension)`
+resolves it per format for the skip check).
 
 ## Contents
 
@@ -29,9 +32,11 @@ This module is large; files group by role:
   target). Used by `VgmReader` to inflate `.vgz`.
 - **Format readers** — `PsfReader.kt` (PSF family + `_lib` chain tags →
   `PsfTagInfo`), `NsfReader.kt`, `NsfeReader.kt` (chunked NSFe), `GbsReader.kt`,
-  `SpcReader.kt` (ID666 / xid6 → `SpcTags`), `RsnReader.kt` (unpacks the RAR
-  archive in Kotlin and delegates each member to `SpcReader`), `VgmReader.kt`
-  (VGM/VGZ with GD3 tags). Each parses headers/tags and emits `RawTrack`s.
+  `SpcReader.kt` (ID666 / xid6 → `SpcTags`),   `RsnReader.kt` (unpacks the RAR
+  archive in Kotlin and delegates each member to `SpcReader`, folding the
+  delegate's version into its own), `VgmReader.kt`
+  (VGM/VGZ with GD3 tags; `version = 2` after the loop-length fix). Each parses
+  headers/tags and emits `RawTrack`s.
 - **Playlist reader** — `M3uReader.kt`: parses `.m3u` subtune playlists into
   `List<M3uEntry>` (note: this one returns `M3uEntry`, not `RawTrack` — its
   per-track overrides are merged onto a game's tracks elsewhere).

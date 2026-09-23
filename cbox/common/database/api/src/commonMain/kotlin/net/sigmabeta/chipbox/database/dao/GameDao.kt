@@ -19,13 +19,26 @@ interface GameDao {
     @Query("SELECT * FROM game")
     suspend fun getAllSync(): List<GameEntity>
 
-    // Pre-scan snapshot: each game's folder signature + track count, for skip-unchanged decisions.
+    // Pre-scan snapshot: each game's folder signature + track count + scanner version, for
+    // skip-unchanged decisions. IFNULL keeps games with no tracks at scanner_version 0 (stale).
     @Query(
         "SELECT game.folder_key AS folderKey, game.folder_signature AS signature, " +
-            "COUNT(track.id) AS trackCount FROM game " +
+            "COUNT(track.id) AS trackCount, " +
+            "IFNULL(MAX(track.scanner_version), 0) AS scannerVersion FROM game " +
             "LEFT JOIN track ON track.game_id = game.id GROUP BY game.id"
     )
     suspend fun getSignatureRows(): List<GameSignatureRow>
+
+    // Reader versions per (folder, extension) for the skip check: a folder whose tracks were parsed
+    // by an older reader version must be re-read even when its file signature is unchanged. Grouped
+    // by extension so only folders containing a bumped format are invalidated.
+    @Query(
+        "SELECT game.folder_key AS folderKey, track.extension AS extension, " +
+            "MAX(track.reader_version) AS readerVersion FROM game " +
+            "INNER JOIN track ON track.game_id = game.id " +
+            "GROUP BY game.folder_key, track.extension"
+    )
+    suspend fun getReaderVersionRows(): List<GameReaderVersionRow>
 
     @Update
     suspend fun update(game: GameEntity)
@@ -96,4 +109,12 @@ data class GameSignatureRow(
     val folderKey: String,
     val signature: String,
     val trackCount: Int,
+    val scannerVersion: Int,
+)
+
+/** Projection for [GameDao.getReaderVersionRows] — the reader version stored for one extension. */
+data class GameReaderVersionRow(
+    val folderKey: String,
+    val extension: String,
+    val readerVersion: Int,
 )
