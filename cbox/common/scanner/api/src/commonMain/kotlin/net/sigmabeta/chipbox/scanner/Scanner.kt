@@ -20,6 +20,14 @@ abstract class Scanner(
     dispatcher: CoroutineDispatcher = ioDispatcher,
     private val hatchet: Hatchet = BluntHatchet(),
 ) {
+    /**
+     * Version of the scanner's reading/aggregation logic. Bump it whenever a change alters the
+     * tracks a scan persists (tag merging, m3u overlays, length/fade defaults, chain resolution,
+     * vgmstream fallback, …) so tracks written by an older scan are re-read. Stored on each
+     * persisted track and compared against the current code in the folder-skip check.
+     */
+    open val version: Int = INITIAL_VERSION
+
     abstract suspend fun CoroutineScope.scan()
 
     fun startScan() {
@@ -93,4 +101,8 @@ abstract class Scanner(
     }
 
     protected fun isFailedAlready() = currentState is ScannerState.Failed
+
+    companion object {
+        const val INITIAL_VERSION = 1
+    }
 }

@@ -183,7 +183,12 @@ class RealScanner(
         val sorted = group.sortedBy { it.name }
         val signature = folderSignature(sorted)
         val known = snapshot[folderId]
-        if (known != null && known.signature == signature) {
+        // Skip only when the files are unchanged *and* the stored tracks came from the current
+        // scanner/reader logic — a reader fix (e.g. VGM length) must re-read unchanged folders.
+        if (known != null &&
+            known.signature == signature &&
+            known.isUpToDate(version) { readers.readerVersionFor(it) }
+        ) {
             hatchet.d("Folder $folderId unchanged — skipping ${group.size} file(s).")
             seenFolderKeys.addKey(folderId)
             return Progress(1, known.trackCount, 0)
@@ -363,7 +368,14 @@ class RealScanner(
             }
         }
 
-        val rawTracks = tracksByFilename.values.flatten()
+        val rawTracks = tracksByFilename.values.flatten().map {
+            // Stamp the versions that produced this track so the next scan can skip the folder when
+            // both match, or re-read it when either the scanner or the format's reader has changed.
+            it.copy(
+                scannerVersion = version,
+                readerVersion = readers.readerVersionFor(it.extension),
+            )
+        }
 
         if (rawTracks.isEmpty()) {
             return if (failed > 0) Progress(0, 0, failed) else Progress.EMPTY

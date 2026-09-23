@@ -23,6 +23,7 @@ import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.crash.real.RealCrashReporter
 import net.sigmabeta.chipbox.crash.real.RealCrashReportStore
 import net.sigmabeta.chipbox.database.ChipboxDatabase
+import net.sigmabeta.chipbox.database.MIGRATION_11_12
 import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
 import net.sigmabeta.chipbox.history.HistoryDatabase
 import net.sigmabeta.chipbox.favorites.FavoritesDatabase
@@ -127,8 +128,9 @@ object JvmDatabaseModule {
         .databaseBuilder<ChipboxDatabase>(name = path)
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
-        // The library is a derived cache; on a schema bump just rebuild it on the next scan rather
-        // than ship migrations. Matches the Android builder.
+        .addMigrations(MIGRATION_11_12)
+        // The library is a derived cache; on an unhandled schema bump just rebuild it on the next
+        // scan rather than ship migrations. Versioned column changes get a real migration (above).
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 }

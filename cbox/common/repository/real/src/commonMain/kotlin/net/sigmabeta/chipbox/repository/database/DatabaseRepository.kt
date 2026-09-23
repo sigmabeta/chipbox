@@ -234,9 +234,20 @@ class DatabaseRepository(
     override suspend fun getRandomArtist(): Artist? =
         artistDao.getRandom()?.toArtist(withTracks = false, withGames = false)
 
-    override suspend fun folderSnapshots(): Map<String, FolderSnapshot> = gameDao
-        .getSignatureRows()
-        .associate { it.folderKey to FolderSnapshot(it.signature, it.trackCount) }
+    override suspend fun folderSnapshots(): Map<String, FolderSnapshot> {
+        // Reader versions are keyed by (folder, extension); fold them into a per-folder map so the
+        // scanner can invalidate just the folders containing a format whose reader was bumped.
+        val readerVersionsByFolder = gameDao.getReaderVersionRows()
+            .groupBy({ it.folderKey }, { it.extension to it.readerVersion })
+        return gameDao.getSignatureRows().associate { row ->
+            row.folderKey to FolderSnapshot(
+                signature = row.signature,
+                trackCount = row.trackCount,
+                scannerVersion = row.scannerVersion,
+                readerVersions = readerVersionsByFolder[row.folderKey].orEmpty().toMap(),
+            )
+        }
+    }
 
     override suspend fun upsertGame(rawGame: RawGame): GameWriteOutcome =
         when (val existing = gameDao.getByFolderKeySync(rawGame.folderKey)) {
@@ -500,6 +511,8 @@ class DatabaseRepository(
         dumpDate,
         titleJp,
         artistJp,
+        scannerVersion,
+        readerVersion,
         dateAdded = now,
         dateLastUpdated = now,
     )

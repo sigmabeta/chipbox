@@ -4,7 +4,20 @@ import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
 
 sealed class Reader {
+    /**
+     * Version of this reader's parsing/length logic. Bump it whenever a change alters the
+     * [RawTrack]s a given file yields (e.g. a corrected track length), so a later scan re-reads
+     * files that an older version parsed. The value is stored on each persisted track and compared
+     * against the current code in the scanner's folder-skip check — see
+     * `Reader.version` / `Readers.readerVersionFor`.
+     */
+    open val version: Int = INITIAL_VERSION
+
     abstract fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>?
+
+    companion object {
+        const val INITIAL_VERSION = 1
+    }
 }
 
 fun isPsfFamily(extension: String): Boolean = extension in PSF_FAMILY_EXTENSIONS
@@ -42,6 +55,19 @@ class Readers(hatchet: Hatchet) {
         EXT_VGM, EXT_VGZ -> vgm
 
         else -> null
+    }
+
+    /**
+     * Version of the reader that handles [extension], for the scanner's folder-skip check.
+     * Formats with no dedicated chiptune reader ([forExtension] returns null, e.g. vgmstream
+     * streamed audio) report [NO_READER_VERSION] — their output is parser-agnostic and covered by
+     * the scanner version instead.
+     */
+    fun readerVersionFor(extension: String): Int =
+        forExtension(extension)?.version ?: NO_READER_VERSION
+
+    companion object {
+        const val NO_READER_VERSION = 0
     }
 }
 

@@ -43,6 +43,13 @@ data class TrackEntity(
     @ColumnInfo(name = "dump_date") val dumpDate: String? = null,
     @ColumnInfo(name = "title_jp") val titleJp: String? = null,
     @ColumnInfo(name = "artist_jp") val artistJp: String? = null,
+    // Versions of the scanner + reader logic that produced this row, stamped by the scanner. The
+    // scanner re-reads a folder when any stored track's versions don't match the current code, even
+    // if the source files are unchanged. `defaultValue = "0"` matches the v11->v12 migration's
+    // ALTER TABLE default so Room's schema validation passes; 0 never matches current, so
+    // pre-migration rows are re-read.
+    @ColumnInfo(name = "scanner_version", defaultValue = "0") val scannerVersion: Int = 0,
+    @ColumnInfo(name = "reader_version", defaultValue = "0") val readerVersion: Int = 0,
     // Wall-clock millis (epoch). date_added is set once when the row is first inserted and never
     // changed; date_last_updated is bumped whenever a rescan rewrites the row's content.
     @ColumnInfo(name = "date_added") val dateAdded: Long = 0,

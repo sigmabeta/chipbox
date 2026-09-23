@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.database.ChipboxDatabase
+import net.sigmabeta.chipbox.database.MIGRATION_11_12
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
@@ -59,7 +60,8 @@ class ChipboxLibrary(
         .databaseBuilder<ChipboxDatabase>(name = dbFile.absolutePath)
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
-        // The library is a derived cache; on a schema bump just rebuild it on the next scan.
+        .addMigrations(MIGRATION_11_12)
+        // The library is a derived cache; unhandled schema bumps rebuild it on the next scan.
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 

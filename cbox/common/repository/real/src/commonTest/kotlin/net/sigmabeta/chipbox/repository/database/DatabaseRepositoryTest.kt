@@ -420,6 +420,31 @@ class DatabaseRepositoryTest {
     }
 
     @Test
+    fun `upsertGame persists scanner and reader versions, surfaced per extension by folderSnapshots`() = runTest {
+        // The scanner compares these against the current code to decide whether an unchanged folder
+        // still needs re-reading. Reader versions are keyed by extension so only folders containing a
+        // bumped format are invalidated.
+        val (repo, db) = newRepo()
+        repo.upsertGame(
+            rawGame(
+                "Game A",
+                "/library/a",
+                signature = "sig-A",
+                tracks = listOf(
+                    rawTrack("A1", scannerVersion = 3, readerVersion = 5),
+                    rawTrack("A2", scannerVersion = 3, readerVersion = 2, extension = "nsf"),
+                ),
+            ),
+        )
+
+        val snapshot = repo.folderSnapshots().getValue("/library/a")
+        assertEquals(3, snapshot.scannerVersion)
+        assertEquals(mapOf("psf" to 5, "nsf" to 2), snapshot.readerVersions)
+        assertEquals(3, db.tracks.values.first { it.extension == "psf" }.scannerVersion)
+        assertEquals(5, db.tracks.values.first { it.extension == "psf" }.readerVersion)
+    }
+
+    @Test
     fun `clearLibrary empties the library tables but leaves search history alone`() = runTest {
         // clearLibrary() is wired to the dedicated "Clear Library" button in
         // SettingsViewModel.onClearLibraryClicked. It nukes the 5 library tables (games,
@@ -608,11 +633,14 @@ class DatabaseRepositoryTest {
         length: Long = 60_000L,
         platform: Platform = Platform.OTHER,
         chainFiles: List<ChainFile> = emptyList(),
+        extension: String = "psf",
         comment: String? = null,
         dumper: String? = null,
         dumpDate: String? = null,
         titleJp: String? = null,
         artistJp: String? = null,
+        scannerVersion: Int = 0,
+        readerVersion: Int = 0,
     ): RawTrack = RawTrack(
         path = path,
         source = "test",
@@ -623,12 +651,14 @@ class DatabaseRepositoryTest {
         trackNumber = trackNumber,
         fadeLengthMs = 0L,
         chainFiles = chainFiles,
-        extension = "psf",
+        extension = extension,
         platform = platform,
         comment = comment,
         dumper = dumper,
         dumpDate = dumpDate,
         titleJp = titleJp,
         artistJp = artistJp,
+        scannerVersion = scannerVersion,
+        readerVersion = readerVersion,
     )
 }

@@ -19,6 +19,7 @@ object DatabaseModule {
             ChipboxDatabase::class.java,
             "chipbox-room-database"
         )
+        .addMigrations(MIGRATION_11_12)
         .fallbackToDestructiveMigration()
         .build()
 }

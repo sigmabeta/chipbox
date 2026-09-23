@@ -6,6 +6,11 @@ import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.sage.logging.Hatchet
 
 class VgmReader(private val hatchet: Hatchet) : Reader() {
+    // v2: the VGM header's total-samples already includes one loop pass, so the length now extends
+    // by a single loop instead of two (see computeLengthMs). Bumping the version re-reads VGM/VGZ
+    // files parsed by the old, ~50%-too-long logic.
+    override val version: Int = 2
+
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         try {
             val vgm = maybeDecompress(bytes, identifier) ?: return null

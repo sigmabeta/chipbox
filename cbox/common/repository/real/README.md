@@ -11,15 +11,16 @@ the `@Dao` interfaces directly (not the Room `@Database`), so it builds for the
 
 ## Contents
 
-- **Repository impl** — `DatabaseRepository.kt`: the full `Repository`
+- **Repository impl** —   `DatabaseRepository.kt`: the full `Repository`
   implementation. Reads return `Flow<Data<...>>` built by `setupFlow`
   (`Loading` → `Succeeded`/`Empty`, `Failed` on error, on `ioDispatcher`).
   Hydration (`withTracks`/`withGames`/`withArtists`) fans out per-row DAO calls
   via a `suspendMap` helper. The scan write path — `upsertGame` (insert-new vs
-  update-existing, reconciling tracks by `(path, trackNumber)` and rebuilding
-  artist links), `pruneGames`, `folderSnapshots`, `clearLibrary` — is traced
-  with `traceAsync` (from `:cbox:common:perf:api`) and serializes artist
-  get-or-create through a `Mutex`.
+  update-existing, reconciling tracks by `(path, trackNumber)`, persisting each
+  track's scanner/reader version, and rebuilding artist links), `pruneGames`,
+  `folderSnapshots` (signature + track count + per-extension reader versions),
+  `clearLibrary` — is traced with `traceAsync` (from `:cbox:common:perf:api`) and
+  serializes artist get-or-create through a `Mutex`.
 - **Cache** — `LruCache.kt`: a tiny coroutine-safe (`Mutex`) LRU keyed by entity
   id; `commonMain` has no access-order `LinkedHashMap`, so recency is maintained
   by hand. `DatabaseRepository` runs one instance per hydration resolver

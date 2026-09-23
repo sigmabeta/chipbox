@@ -14,14 +14,16 @@ the generated code lands in `androidMain` and `jvmMain` respectively.
 
 | File | What it is |
 | --- | --- |
-| `ChipboxDatabase.kt` | The `@Database` (version 11) over the six entities + two join tables, exposing all six DAOs (`artistDao()`, `gameDao()`, `trackDao()`, `gameArtistDao()`, `trackArtistDao()`, `searchHistoryDao()`). Declares the `expect object ChipboxDatabaseConstructor` that Room generates a per-target `actual` for via `@ConstructedBy`. |
+| `ChipboxDatabase.kt` | The `@Database` (version 12) over the six entities + two join tables, exposing all six DAOs (`artistDao()`, `gameDao()`, `trackDao()`, `gameArtistDao()`, `trackArtistDao()`, `searchHistoryDao()`). Declares the `expect object ChipboxDatabaseConstructor` that Room generates a per-target `actual` for via `@ConstructedBy`. |
+| `ChipboxMigrations.kt` | `MIGRATION_11_12`: adds `track.scanner_version`/`reader_version` (default 0) with `ALTER TABLE`, so tracks parsed by old scanner/reader logic are re-read on the next scan without wiping the library. Wired into all four builders (Android/JVM/server/CLI). |
 
 Schema notes from the source: v8 adds a unique `folder_key` plus unique
 constraints on tracks/artists; v9 adds `folder_signature` for
 skip-unchanged-folder rescans; v10 adds optional descriptive metadata columns;
-v11 adds `date_added`/`date_last_updated` (epoch millis) to tracks and games.
-The DB is a derived cache, so upgrades use `fallbackToDestructiveMigration`
-(rebuilt on the next scan).
+v11 adds `date_added`/`date_last_updated` (epoch millis) to tracks and games;
+v12 adds per-track `scanner_version`/`reader_version`. v12 is a real migration
+(`MIGRATION_11_12`); other schema bumps use `fallbackToDestructiveMigration`
+(the DB is a derived cache, rebuilt on the next scan).
 
 ## Why depend on this module
 

@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.database.ChipboxDatabase
+import net.sigmabeta.chipbox.database.MIGRATION_11_12
 import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Repository
@@ -72,7 +73,8 @@ object ServerDatabaseModule {
         .databaseBuilder<ChipboxDatabase>(name = path)
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.IO)
-        // Library is a derived cache; on a schema bump just rebuild it on the next scan.
+        .addMigrations(MIGRATION_11_12)
+        // Library is a derived cache; unhandled schema bumps rebuild on the next scan.
         .fallbackToDestructiveMigration(dropAllTables = true)
         .build()
 }

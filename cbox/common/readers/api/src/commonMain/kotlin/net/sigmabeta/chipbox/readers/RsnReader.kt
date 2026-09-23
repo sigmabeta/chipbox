@@ -15,6 +15,11 @@ class RsnReader(
     private val hatchet: Hatchet,
     private val spcReader: SpcReader,
 ) : Reader() {
+    // RSN members are parsed by [SpcReader], so an SpcReader version bump must invalidate
+    // RSN-parsed tracks too. Pack this reader's own version in the high 16 bits and the delegate's
+    // in the low 16 so the two components can't collide; both only ever increase.
+    override val version: Int get() = (RSN_VERSION shl 16) or spcReader.version
+
     override fun readTracksFromFile(bytes: ByteArray, identifier: String): List<RawTrack>? {
         val members = rsnSpcMembers(bytes)
         if (members == null) {
@@ -47,5 +52,9 @@ class RsnReader(
                 dumpDate = tags?.dumpDate,
             )
         }
+    }
+
+    companion object {
+        const val RSN_VERSION = 1
     }
 }
