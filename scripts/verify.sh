@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 #
 # verify.sh — run the same verification tasks CI runs, summarize pass/fail, and collate every
-# task's artifacts (reports, JUnit XML, Paparazzi diffs, the APK, the desktop dist) into one
-# folder.
+# task's artifacts (reports, JUnit XML, Paparazzi diffs, the APKs, the desktop emulator natives)
+# into one folder.
+#
+# It verifies the WORKING TREE, not the commit you're about to push: it warns (without failing) when
+# there are uncommitted/untracked changes, or when the sage submodule points at a commit no remote
+# branch contains — CI checks submodules out recursively, so that push would fail at checkout.
 #
 # Mirrors the gradle commands in .github/workflows/ci.yml. CI splits these across parallel jobs;
 # locally they run sequentially with --continue-style independence: a failing task does NOT stop
@@ -13,7 +17,7 @@
 # Usage:
 #   scripts/verify.sh                 # run everything
 #   scripts/verify.sh static-analysis unit-test   # run only the named task(s)
-#   scripts/verify.sh --skip-apps     # everything except the heavy app builds (debug APK + desktop dist)
+#   scripts/verify.sh --skip-apps     # everything except the heavy app builds (release APK + desktop natives)
 #   scripts/verify.sh --rerun         # force every task to re-run (Gradle --rerun-tasks; ignores cache/up-to-date)
 #   scripts/verify.sh --list          # list task names
 #   VERIFY_OUT=/tmp/v scripts/verify.sh           # override the output folder
@@ -33,7 +37,9 @@ GRADLE_FLAGS=(--build-cache --configuration-cache --console=plain)
 # `setup`'s `:dependencies` step is dependency resolution, not verification, so it's omitted.
 # static-analysis and android-lint pass -Pchipbox.skipNative — neither needs the emulator .so libs
 # (AGP's externalNativeBuild isn't cacheable, so building native in lint is pure duplicated cost).
-# The apk/release-jvm tasks build native on purpose. release-jvm builds the desktop emulator natives
+# The apk/release-jvm tasks build native on purpose. apk builds the RELEASE variant, as CI and
+# release.yml do, so release-only config (the appVersioning versionCode logic) is exercised; without
+# the CHIPBOX_KEY_* signing env it falls back to debug signing, so it builds on any machine. release-jvm builds the desktop emulator natives
 # (chipboxHostNativeLibs); the full jpackage packaging (createDistributable / .deb / .rpm) is CI-only,
 # since jpackage needs a full JDK a dev JBR may lack. Otherwise this matches CI.
 ALL_TASKS=(
@@ -43,9 +49,8 @@ ALL_TASKS=(
   "shared-build|:apps:jvm:classes"
   "android-lint|:apps:android:lintRelease -Pchipbox.skipNative"
   "release-jvm|:apps:jvm:chipboxHostNativeLibs"
-  "apk|:apps:android:assembleDebug"
+  "apk|:apps:android:assembleRelease"
 )
-# Release APK can't be built locally right now (signing), so this uses assembleDebug.
 APP_BUILD_TASKS="release-jvm apk"
 
 # ---- arg parsing -----------------------------------------------------------
@@ -67,6 +72,13 @@ done
 # build-cache hits), so the run reflects a from-scratch build rather than cached/incremental results.
 [ "$rerun" = 1 ] && GRADLE_FLAGS+=(--rerun-tasks)
 
+valid_names=" ${ALL_TASKS[*]%%|*} "
+for name in "${filter[@]}"; do
+  if [[ "$valid_names" != *" $name "* ]]; then
+    echo "unknown task: $name (see --list)" >&2; exit 2
+  fi
+done
+
 selected=()
 for entry in "${ALL_TASKS[@]}"; do
   name="${entry%%|*}"
@@ -80,6 +92,22 @@ if [ "${#selected[@]}" -eq 0 ]; then echo "no tasks selected" >&2; exit 2; fi
 if [ -t 1 ]; then R=$'\e[31m'; G=$'\e[32m'; B=$'\e[1m'; Z=$'\e[0m'; else R= G= B= Z=; fi
 
 # ---- run -------------------------------------------------------------------
+# OUT is wiped below, so refuse anything that would take the repo (or worse) with it.
+case "$(realpath -m "$OUT" 2>/dev/null || echo "$OUT")" in
+  / | "$ROOT" | "$HOME" | "$ROOT"/build) echo "refusing to use '$OUT' as VERIFY_OUT (it gets rm -rf'd)" >&2; exit 2 ;;
+esac
+
+# (2) The run checks the working tree; flag the ways that can diverge from what CI will see.
+warnings=()
+if [ -n "$(git status --porcelain --ignore-submodules=dirty)" ]; then
+  warnings+=("working tree has uncommitted or untracked changes — this run may not match what you push")
+fi
+sage_head=$(git -C sage rev-parse HEAD 2>/dev/null)
+if [ -n "$sage_head" ] && [ -z "$(git -C sage branch -r --contains "$sage_head" 2>/dev/null)" ]; then
+  warnings+=("sage submodule is at ${sage_head:0:8}, which no remote branch contains — push sage first or CI checkout fails")
+fi
+for w in "${warnings[@]}"; do echo "${R}warning:${Z} $w" >&2; done
+
 rm -rf "$OUT"
 mkdir -p "$LOGS"
 echo "${B}Running ${#selected[@]} verification task(s); logs -> $LOGS${Z}"
@@ -131,8 +159,8 @@ if [[ "$ran" == *" screenshot "* ]]; then
     mkdir -p "$OUT/paparazzi/$mod" && cp -r "$d"/. "$OUT/paparazzi/$mod"/
   done
 fi
-if [[ "$ran" == *" apk "* ]] && [ -d apps/android/build/outputs/apk/debug ]; then
-  mkdir -p "$OUT/apk"; cp -r apps/android/build/outputs/apk/debug/. "$OUT/apk/"
+if [[ "$ran" == *" apk "* ]] && [ -d apps/android/build/outputs/apk/release ]; then
+  mkdir -p "$OUT/apk"; cp -r apps/android/build/outputs/apk/release/. "$OUT/apk/"
 fi
 if [[ "$ran" == *" release-jvm "* ]] && [ -d apps/jvm/build/jvm-native/libs ]; then
   mkdir -p "$OUT/jvm-native"; cp -r apps/jvm/build/jvm-native/libs/. "$OUT/jvm-native/"
@@ -151,6 +179,7 @@ summary="$OUT/summary.txt"
   done
   echo
   if [ "$overall" -eq 0 ]; then echo "OVERALL: PASS"; else echo "OVERALL: FAIL"; fi
+  for w in "${warnings[@]}"; do echo "WARNING: $w"; done
   echo
   echo "Artifacts under $OUT/:"
   printf '  %-14s %s\n' "logs/" "full gradle output per task (start here for any FAIL)"
@@ -158,7 +187,7 @@ summary="$OUT/summary.txt"
   desc reports      "ktlint, detekt, android-lint, HTML test reports (per module)"
   desc test-results "JUnit XML (unit tests + Paparazzi)"
   desc paparazzi    "screenshot diff/failure images (per module)"
-  desc apk          "debug APK (apps/android)"
+  desc apk          "release APKs, debug-signed unless CHIPBOX_KEY_* is set (apps/android)"
   desc jvm-native   "desktop emulator native libs (apps/jvm)"
 } >"$summary"
 

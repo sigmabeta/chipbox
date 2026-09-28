@@ -92,8 +92,9 @@ scripts/paparazzi-diff.sh                  # check screenshots (use this, NOT th
 - Don't boot an AVD to verify — stop after build + lint and hand device testing
   to the user. Don't `git commit`/`push` unless explicitly asked.
 - Always run `scripts/verify.sh` (the full CI-mirroring suite — lint, unit tests,
-  Paparazzi, shared build, android-lint, jvm dist, debug APK) before any `git
-  push`, and only push if it reports `OVERALL: PASS`.
+  Paparazzi, shared build, android-lint, desktop natives, release APK) before any `git
+  push`, and only push if it reports `OVERALL: PASS`. Heed its `WARNING:` lines too
+  (uncommitted changes, unpushed `sage` commit) — they mean CI may not see what you tested.
 - A/B-testing a native emulator change (USF/PSF/SSF/…): `apps/abrender` renders a
   corpus to WAV + RMS metrics and diffs two runs. See `apps/abrender/README.md`.
 
