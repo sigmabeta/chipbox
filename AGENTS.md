@@ -12,6 +12,12 @@ original hardware in real time. Kotlin Multiplatform, Compose Multiplatform UI, 
 Android (minSdk 26 / targetSdk 36) and desktop JVM, with `js`/`cli`/`server`
 targets too.
 
+## Before doing any work
+
+Pull the latest `sage/` submodule first: `git -C sage pull` (or
+`git submodule update --remote sage`). Chipbox builds against sage source, so a
+stale checkout means you're working against outdated APIs and build logic.
+
 ## The four things I keep re-deriving (read these first)
 
 - `arch-docs/architecture/multiplatform-structure.md` — module taxonomy, source sets
