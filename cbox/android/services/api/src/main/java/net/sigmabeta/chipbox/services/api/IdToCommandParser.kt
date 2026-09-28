@@ -16,40 +16,31 @@ object IdToCommandParser {
         val parentId = detailSplit[1]
         val trackId = detailSplit[2]
 
-        when (type) {
-            LibraryBrowser.COMMAND_GAMES -> director.request(
-                SessionRequest.Start(
-                    Session(
-                        SessionType.GAME,
-                        parentId.toLong(),
-                        startingTrackId = trackId.toLong(),
-                    ),
-                ),
-            )
+        val sessionType = when (type) {
+            LibraryBrowser.COMMAND_GAMES -> SessionType.GAME
 
-            LibraryBrowser.COMMAND_ARTISTS -> director.request(
-                SessionRequest.Start(
-                    Session(
-                        SessionType.ARTIST,
-                        parentId.toLong(),
-                        startingTrackId = trackId.toLong(),
-                    ),
-                ),
-            )
+            LibraryBrowser.COMMAND_ARTISTS -> SessionType.ARTIST
 
-            LibraryBrowser.COMMAND_TRACKS -> director.request(
-                // contentId is unused for ALL_TRACKS (per SessionType docs); parentId here
-                // is the placeholder "top" segment.
-                SessionRequest.Start(
-                    Session(
-                        SessionType.ALL_TRACKS,
-                        contentId = 0L,
-                        startingTrackId = trackId.toLong(),
-                    ),
-                ),
-            )
+            LibraryBrowser.COMMAND_TRACKS -> SessionType.ALL_TRACKS
 
-            else -> hatchet.w("Unhandled media command type '$type' (mediaId=$mediaId); ignoring.")
+            else -> {
+                hatchet.w("Unhandled media command type '$type' (mediaId=$mediaId); ignoring.")
+                return
+            }
         }
+
+        // contentId is unused for ALL_TRACKS (per SessionType docs); parentId there is the
+        // placeholder "top" segment.
+        val contentId = if (sessionType == SessionType.ALL_TRACKS) 0L else parentId.toLong()
+
+        // A "Shuffle all" item carries ID_SHUFFLE where a track id would be: start the same
+        // setlist shuffled from its first slot, as the in-app Shuffle All CTA does.
+        val session = if (trackId == LibraryBrowser.ID_SHUFFLE) {
+            Session(sessionType, contentId, startingPosition = 0, shuffled = true)
+        } else {
+            Session(sessionType, contentId, startingTrackId = trackId.toLong())
+        }
+
+        director.request(SessionRequest.Start(session))
     }
 }

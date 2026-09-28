@@ -29,8 +29,10 @@ service + its session/browse glue", not a KMP interface.
 
 **Browse tree:**
 - `LibraryBrowser.kt` — builds the browsable media items (Games / Artists / Platforms / All
-  Tracks) from `Repository`; `@Inject`-constructed.
-- `IdToCommandParser.kt` — parses a played media ID into a `Director` `SessionRequest`.
+  Tracks) from `Repository`; `@Inject`-constructed. Each game/artist/All Tracks list leads
+  with a playable "Shuffle all" item (id ends in `ID_SHUFFLE` instead of a track id).
+- `IdToCommandParser.kt` — parses a played media ID into a `Director` `SessionRequest` (a
+  shuffle id starts the same setlist shuffled from slot 0).
 - `transformers/Transformers.kt` — `Game`/`Artist`/`Track`/`Platform` → `MediaItem`/`MediaMetadata`,
   attaching artwork URIs via `ArtworkUris` and content-style extras.
 
