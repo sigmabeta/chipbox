@@ -207,8 +207,8 @@ appVersioning {
         val rawTag = gitTag.rawTagName
         println("Generating version code. Git tag: $rawTag")
 
-        // Tags look like "2.1.1", "3.0", or "3.0-alpha01": "<numbers>[-<prerelease label>]".
-        // Parse tolerantly so a non-strict tag never crashes a release build.
+        // Tags look like "2.1.1", "3.0", "3.0-alpha01", or "3.0.0-rc1": "<numbers>[-<prerelease label>]".
+        // The numeric part parses tolerantly; the prerelease label must be alpha/beta/rc (see below).
         val (numberPart, prereleaseLabel) = rawTag.split('-', limit = 2)
             .let { it[0] to it.getOrNull(1) }
         val segments = numberPart.split('.')
@@ -216,13 +216,7 @@ appVersioning {
         val minor = segments.getOrNull(1)?.toIntOrNull() ?: 0
         val patch = segments.getOrNull(2)?.toIntOrNull() ?: 0
 
-        // A final release (no "-alphaNN" suffix) outranks every prerelease of the same x.y.z, so it
-        // takes the top prerelease slot; an "alphaNN"/"betaNN" tag uses its own number below that.
-        val prerelease = if (prereleaseLabel == null) {
-            Versions.FINAL_RELEASE_PRERELEASE
-        } else {
-            prereleaseLabel.filter(Char::isDigit).toIntOrNull() ?: 0
-        }
+        val prerelease = Versions.prereleaseSlot(prereleaseLabel)
 
         val commits = gitTag.commitsSinceLatestTag
 
@@ -284,8 +278,36 @@ object Versions {
     const val MINOR = PATCH * MAX_PATCH_VERSIONS // 10_000_000
     const val MAJOR = MINOR * MAX_MINOR_VERSIONS // 100_000_000
 
-    // The slot a final release takes in the prerelease tier — above any real "alphaNN" number.
+    // The prerelease tier is split into ascending bands so every alpha < every beta < every rc <
+    // the final release of the same x.y.z — Android refuses to install a lower versionCode over a
+    // higher one, so a later-stage tag must never rank below an earlier one. A stage's tag number
+    // is added to its band's base and must stay within the band.
+    //
+    // Beta sits at 30+ although 3.0.0-beta03..beta11 shipped at their bare numbers (3..11) under
+    // the old digits-only scheme: that only moves later betas up, never down, so it's still safe.
+    private val PRERELEASE_BANDS = listOf(
+        "alpha" to (0 until 30),
+        "beta" to (30 until 70),
+        "rc" to (70 until 99),
+    )
+
+    // The slot a final release takes in the prerelease tier — above every prerelease band.
     const val FINAL_RELEASE_PRERELEASE = MAX_PRERELEASES - 1 // 99
+
+    fun prereleaseSlot(label: String?): Int {
+        if (label == null) return FINAL_RELEASE_PRERELEASE
+
+        val stage = label.takeWhile(Char::isLetter).lowercase()
+        val number = label.drop(stage.length).toIntOrNull() ?: 0
+        val band = PRERELEASE_BANDS.firstOrNull { it.first == stage }?.second
+            ?: error("Unknown prerelease label '$label' — expected alphaNN, betaNN, or rcNN.")
+
+        val slot = band.first + number
+        require(slot in band) {
+            "Prerelease '$label' overflows the $stage band (max $stage${band.last - band.first})."
+        }
+        return slot
+    }
 
     fun verifyRequirements(type: String, actual: Int, max: Int) {
         require(actual in 0 until max) {

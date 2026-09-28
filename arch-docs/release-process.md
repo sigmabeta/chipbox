@@ -14,7 +14,8 @@ git push origin 3.0.0-beta06
 ```
 
 That's it. `.github/workflows/release.yml` fires on tags matching
-`[0-9]+.[0-9]+*` (e.g. `3.0.0`, `3.0.0-beta06`, `3.1.0-rc1`), builds every
+`[0-9]+.[0-9]+*` (e.g. `3.0.0`, `3.0.0-beta06`, `3.1.0-rc1`; the label must be
+`alphaNN`/`betaNN`/`rcNN` — see [Versioning](#versioning)), builds every
 artifact, publishes a GitHub Release, and refreshes the download page. Nothing to
 run by hand.
 
@@ -69,6 +70,24 @@ Two version strings, on purpose:
 The **APKs** are versioned independently by the app-versioning plugin
 (`scripts/rename-release-apk.sh` → `chipbox-<tag>.<commits>-<abi>.apk`, e.g.
 `chipbox-3.0.0-beta06.0-universal.apk` — the `.0` is commits-since-tag).
+
+The APK **versionCode** packs the tag into place-value tiers (`Versions` in
+`apps/android/build.gradle.kts`). The prerelease tier is banded by stage so a later
+stage always outranks an earlier one — Android refuses to install a lower
+versionCode over a higher one, so getting this wrong forces users to uninstall
+(losing favorites/playlists/history):
+
+| Tag label | Prerelease slot | Allowed tags |
+|---|---|---|
+| `alphaNN` | `NN` | `alpha00`–`alpha29` |
+| `betaNN` | `30 + NN` | `beta00`–`beta39` |
+| `rcNN` | `70 + NN` | `rc00`–`rc28` |
+| *(none — final)* | `99` | — |
+
+Any other label (or an overflowing number) **fails the release build** rather than
+producing a mis-ranked code. `3.0.0-beta03`–`beta11` shipped under an older
+digits-only scheme (slots 3–11); the bands only move later tags up, so upgrades
+from them are unaffected.
 
 ## Published assets
 
