@@ -16,6 +16,7 @@ import net.sigmabeta.chipbox.services.api.ChipboxPlaybackService.Companion.ID_RO
 import net.sigmabeta.chipbox.services.api.transformers.GRID
 import net.sigmabeta.chipbox.services.api.transformers.LIST
 import net.sigmabeta.chipbox.services.api.transformers.contentStyleExtras
+import net.sigmabeta.chipbox.services.api.transformers.shuffleAllMediaItem
 import net.sigmabeta.chipbox.services.api.transformers.toMediaItem
 import net.sigmabeta.sage.logging.Hatchet
 import net.sigmabeta.sage.ui.StringProvider
@@ -71,6 +72,8 @@ class LibraryBrowser @Inject constructor(
         return when (parts.size) {
             1 -> parts[0].toLongOrNull()?.let { fetchGame(it)?.toMediaItem() }
 
+            2 if parts[1] == ID_SHUFFLE -> shuffleAllMediaItem(mediaId.substringBeforeLast('.'))
+
             2 -> {
                 val trackId = parts[1].toLongOrNull() ?: return null
                 val track = repository.getTrack(trackId, withGame = true, withArtists = true)
@@ -86,6 +89,8 @@ class LibraryBrowser @Inject constructor(
         val parts = mediaId.removePrefix(ID_ARTISTS).split('.')
         return when (parts.size) {
             1 -> parts[0].toLongOrNull()?.let { fetchArtist(it)?.toMediaItem() }
+
+            2 if parts[1] == ID_SHUFFLE -> shuffleAllMediaItem(mediaId.substringBeforeLast('.'))
 
             2 -> {
                 val trackId = parts[1].toLongOrNull() ?: return null
@@ -106,6 +111,8 @@ class LibraryBrowser @Inject constructor(
         // IdToCommandParser doesn't need a special case.
         val parts = mediaId.removePrefix(ID_TRACKS).split('.')
         return when {
+            parts.size == 2 && parts[0] == ID_TOP && parts[1] == ID_SHUFFLE -> shuffleAllMediaItem(ID_TRACKS_TOP)
+
             parts.size == 2 && parts[0] == ID_TOP -> {
                 val trackId = parts[1].toLongOrNull() ?: return null
                 val track = repository.getTrack(trackId, withGame = true, withArtists = true)
@@ -138,8 +145,6 @@ class LibraryBrowser @Inject constructor(
         return when (val id = parentMediaId.substringAfterLast(".")) {
             ID_TOP -> getGamesMenuItems()
 
-            ID_SHUFFLE -> startGamesShuffle()
-
             else -> {
                 val gameId = id.toLongOrNull() ?: return null
                 browseToGame(parentMediaId, gameId)
@@ -150,8 +155,6 @@ class LibraryBrowser @Inject constructor(
     private suspend fun browseArtists(parentMediaId: String): List<MediaItem>? {
         return when (val id = parentMediaId.substringAfterLast(".")) {
             ID_TOP -> getArtistsMenuItems()
-
-            ID_SHUFFLE -> startArtistsShuffle()
 
             else -> {
                 val artistId = id.toLongOrNull() ?: return null
@@ -193,6 +196,7 @@ class LibraryBrowser @Inject constructor(
         .map { it.data }
         .first()!!
         .let { game -> game.tracks!!.map { it.toMediaItem(parentMediaId, game) } }
+        .withShuffleAll(parentMediaId)
 
     private suspend fun browseToArtist(parentMediaId: String, artistId: Long) = repository
         .getArtist(artistId, true)
@@ -207,14 +211,12 @@ class LibraryBrowser @Inject constructor(
             }
             track.toMediaItem(parentMediaId, subtitle = track.game?.title ?: UNKNOWN_GAME)
         }
+        .withShuffleAll(parentMediaId)
 
-    private fun startGamesShuffle(): List<MediaItem>? {
-        TODO("Not yet implemented")
-    }
-
-    private fun startArtistsShuffle(): List<MediaItem>? {
-        TODO("Not yet implemented")
-    }
+    // Mirrors the in-app "Shuffle all" CTA: a playable first row that starts a shuffled session
+    // over the same setlist. Omitted for an empty list, where there's nothing to shuffle.
+    private fun List<MediaItem>.withShuffleAll(parentMediaId: String): List<MediaItem> =
+        if (isEmpty()) this else listOf(shuffleAllMediaItem(parentMediaId)) + this
 
     private fun topLevelItemGames(): MediaItem {
         val metadata = MediaMetadata.Builder()
@@ -312,12 +314,15 @@ class LibraryBrowser @Inject constructor(
         .map { (it as Data.Succeeded).data }
         .first()
         .map { it.toMediaItem(parentId = ID_TRACKS_TOP) }
+        .withShuffleAll(ID_TRACKS_TOP)
 
     companion object {
         private const val UNKNOWN_GAME = "Unknown Game"
 
         private const val ID_TOP = "top"
-        private const val ID_SHUFFLE = "shuffle"
+
+        // Final segment of a "Shuffle all" item's id, in place of a track id.
+        const val ID_SHUFFLE = "shuffle"
 
         const val COMMAND_GAMES = "games"
         const val COMMAND_ARTISTS = "artists"
@@ -333,8 +338,5 @@ class LibraryBrowser @Inject constructor(
         const val ID_ARTISTS_TOP = ID_ARTISTS + ID_TOP
         const val ID_PLATFORMS_TOP = ID_PLATFORMS + ID_TOP
         const val ID_TRACKS_TOP = ID_TRACKS + ID_TOP
-
-        const val ID_GAMES_SHUFFLE = ID_GAMES + ID_SHUFFLE
-        const val ID_ARTISTS_SHUFFLE = ID_ARTISTS + ID_SHUFFLE
     }
 }

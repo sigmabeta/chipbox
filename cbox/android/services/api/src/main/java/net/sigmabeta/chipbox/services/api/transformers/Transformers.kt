@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.services.api.LibraryBrowser.Companion.ID_ARTISTS
 import net.sigmabeta.chipbox.services.api.LibraryBrowser.Companion.ID_GAMES
 import net.sigmabeta.chipbox.services.api.LibraryBrowser.Companion.ID_PLATFORMS
+import net.sigmabeta.chipbox.services.api.LibraryBrowser.Companion.ID_SHUFFLE
 
 internal fun Game.toMediaItem(): MediaItem {
     val metadata = MediaMetadata.Builder()
@@ -83,6 +84,22 @@ internal fun Track.toMediaItem(
 
     return MediaItem.Builder()
         .setMediaId("$parentId.$id")
+        .setMediaMetadata(metadata)
+        .build()
+}
+
+// A playable "Shuffle all" row for the track list under [parentId]; IdToCommandParser starts a
+// shuffled session over that list when it sees the trailing ID_SHUFFLE segment.
+internal fun shuffleAllMediaItem(parentId: String): MediaItem {
+    val metadata = MediaMetadata.Builder()
+        .setTitle("Shuffle all")
+        .setIsBrowsable(false)
+        .setIsPlayable(true)
+        .setMediaType(MediaMetadata.MEDIA_TYPE_PLAYLIST)
+        .build()
+
+    return MediaItem.Builder()
+        .setMediaId("$parentId.$ID_SHUFFLE")
         .setMediaMetadata(metadata)
         .build()
 }
