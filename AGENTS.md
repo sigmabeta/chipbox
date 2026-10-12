@@ -81,6 +81,7 @@ it when a load-bearing fact stops being true.
 ./gradlew ktlintCheck detekt               # lint — run BOTH at the same scope
 ./gradlew ktlintFormat                     # auto-fix
 scripts/paparazzi-diff.sh                  # check screenshots (use this, NOT the Gradle task)
+scripts/build-benchmark.sh                 # time this machine's builds (--quick / --full / --help)
 ```
 
 - Run **ktlint and detekt together**; both gate commit/push.
@@ -103,6 +104,11 @@ scripts/paparazzi-diff.sh                  # check screenshots (use this, NOT th
   (uncommitted changes, unpushed `sage` commit) — they mean CI may not see what you tested.
 - A/B-testing a native emulator change (USF/PSF/SSF/…): `apps/abrender` renders a
   corpus to WAV + RMS metrics and diffs two runs. See `apps/abrender/README.md`.
+- Benchmarking a machine's build speed (new dev box, CI runner sizing):
+  `scripts/build-benchmark.sh` times a fixed set of real builds from scratch with the
+  build cache off, prints a fingerprint of the box, and reduces it to one index. Compare
+  two machines with `--baseline <results.json>` — never quote an index without its
+  scenario set and `--repeat`. It is not part of CI; it is a measurement, not a gate.
 
 ## UI tests
 
