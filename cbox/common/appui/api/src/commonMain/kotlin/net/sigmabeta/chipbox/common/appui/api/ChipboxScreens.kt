@@ -39,6 +39,8 @@ import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.gamedetail.GameDetailRoute
 import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatform
 import net.sigmabeta.chipbox.features.gamesforplatform.GamesForPlatformRoute
+import net.sigmabeta.chipbox.features.tracksforartist.TracksForArtist
+import net.sigmabeta.chipbox.features.tracksforartist.TracksForArtistRoute
 import net.sigmabeta.chipbox.features.home.Home
 import net.sigmabeta.chipbox.features.home.HomeRoute
 import net.sigmabeta.chipbox.features.library.Library
@@ -104,6 +106,7 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
     is GameDetail -> GameDetailDeepScreen(destination.id)
     is ArtistDetail -> ArtistDetailDeepScreen(destination.id)
     is GamesForPlatform -> GamesForPlatformDeepScreen(destination.platform)
+    is TracksForArtist -> TracksForArtistDeepScreen(destination.artistId, destination.artistName)
     else -> error("No Voyager Screen registered for destination $destination")
 }
 
@@ -526,6 +529,14 @@ private data class GamesForPlatformDeepScreen(val platform: Platform) : Screen {
 
     @Composable override fun Content() = ScreenScaffold {
         GamesForPlatformRoute(platform = platform, onEvent = LocalChipboxEventSink.current)
+    }
+}
+
+private data class TracksForArtistDeepScreen(val artistId: Long, val artistName: String) : Screen {
+    override val key: ScreenKey = "TracksForArtist:$artistId"
+
+    @Composable override fun Content() = ScreenScaffold {
+        TracksForArtistRoute(artistId = artistId, artistName = artistName, onEvent = LocalChipboxEventSink.current)
     }
 }
 

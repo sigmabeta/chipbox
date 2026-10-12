@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.playlists.Playlists
+import net.sigmabeta.chipbox.features.tracksforartist.TracksForArtist
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
@@ -68,8 +69,15 @@ class ArtistDetailViewModel(
             is ArtistDetailAction.GameClicked -> emit(NavigateTo(GameDetail(action.id)))
             ArtistDetailAction.AddToFavoritesClicked -> toggleFavorite()
             ArtistDetailAction.AddToPlaylistClicked -> addToPlaylist()
+            ArtistDetailAction.ViewAllSongsClicked -> viewAllSongs()
             else -> Unit
         }
+    }
+
+    private fun viewAllSongs() {
+        // The CTA only renders once the artist is loaded, so the name is always present here.
+        val name = (state.value.artist as? LCE.Content)?.data?.name ?: return
+        emit(NavigateTo(TracksForArtist(artistId, name)))
     }
 
     private fun addToPlaylist() {

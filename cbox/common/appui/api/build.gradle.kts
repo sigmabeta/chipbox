@@ -87,6 +87,7 @@ kotlin {
                 api(projects.features.gamesForPlatform.real)
                 api(projects.features.gameDetail.real)
                 api(projects.features.artistDetail.real)
+                api(projects.features.tracksForArtist.real)
 
                 // `sage.di.android` plugin auto-included this; the sage.kmp + metro combo
                 // doesn't, so it's explicit here. Needed for `ChipboxAppUiViewModel`'s
