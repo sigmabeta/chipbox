@@ -76,6 +76,11 @@ interface GameDao {
     @Query("SELECT * FROM game WHERE id IN (:ids)")
     fun getGamesByIds(ids: List<Long>): Flow<List<GameEntity>>
 
+    // Suspend sibling of [getGamesByIds] for hydration paths that have a whole set of games to
+    // resolve in one shot — replacing a `getGameSync` round-trip per row (the artist-detail N+1).
+    @Query("SELECT * FROM game WHERE id IN (:ids)")
+    suspend fun getGamesByIdsSync(ids: List<Long>): List<GameEntity>
+
     // Count + offset pick: a stable, surgical alternative to loading every game to choose one
     // (e.g. the date-seeded "game of the day").
     @Query("SELECT COUNT(*) FROM game")
