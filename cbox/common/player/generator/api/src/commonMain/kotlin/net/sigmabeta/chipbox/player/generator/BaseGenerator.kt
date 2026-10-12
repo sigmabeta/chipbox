@@ -565,10 +565,13 @@ abstract class BaseGenerator(
      * fraction of the buffer. The pipeline plays the whole fixed-size array (no per-buffer
      * frame count travels on [net.sigmabeta.chipbox.player.buffer.AudioBuffer]), so emitting a
      * partially-filled buffer plays its untouched tail — pool zeros or a recycled buffer's
-     * stale audio — as a mid-stream gap/glitch. The first read goes through [readWaitingForRender]
-     * so render-ahead starvation is waited out; subsequent reads top the buffer up until it's
-     * whole, so every emitted buffer is one contiguous block. Cached-file sources already return
-     * full reads, so for them the first read fills the buffer and the loop is a no-op.
+     * stale audio — as a mid-stream gap/glitch. Every read goes through [readWaitingForRender]
+     * so a short mid-buffer read from a still-rendering source is waited out (emitting
+     * [GeneratorEvent.Rendering] heartbeats) rather than committed as a zero tail. Skipping the
+     * wait on the top-up reads let a fast consumer outrunning the render-ahead writer bake a
+     * silent gap into a first (cache-miss) play that a cached replay never had. Cached-file
+     * sources already return full reads, so for them the first read fills the buffer and the
+     * loop is a no-op.
      *
      * Only a genuine end-of-track (or error) ends the fill early; whatever tail is left unread
      * is zeroed so the final buffer can't replay stale samples.
@@ -578,7 +581,7 @@ abstract class BaseGenerator(
         var filledShorts = readWaitingForRender(source, buffer) * SHORTS_PER_FRAME
         while (filledShorts in 1 until capacityShorts) {
             val rest = ShortArray(capacityShorts - filledShorts)
-            val read = source.readFrames(rest).coerceAtLeast(0)
+            val read = readWaitingForRender(source, rest)
             if (read == 0) break
             rest.copyInto(buffer, filledShorts, 0, read * SHORTS_PER_FRAME)
             filledShorts += read * SHORTS_PER_FRAME
