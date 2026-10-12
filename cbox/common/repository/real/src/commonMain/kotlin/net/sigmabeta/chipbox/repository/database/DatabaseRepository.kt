@@ -423,12 +423,22 @@ class DatabaseRepository(
     private suspend fun GameEntity.toGame(
         withTracks: Boolean = false,
         withArtists: Boolean = false
+    ) = toGameModel(
+        tracks = if (withTracks) getTracksForGame(id) else null,
+        artists = if (withArtists) getArtistsForGame(id) else null,
+    )
+
+    // Model construction with pre-resolved joins, so batched callers (see [cachedTracksForArtist])
+    // can build the base model without a per-row suspend round-trip.
+    private fun GameEntity.toGameModel(
+        tracks: List<Track>? = null,
+        artists: List<Artist>? = null,
     ) = Game(
         id,
         title,
         photoUrl,
-        if (withArtists) getArtistsForGame(id) else null,
-        if (withTracks) getTracksForGame(id) else null,
+        artists,
+        tracks,
         copyright,
         releaseDate,
         genre,
@@ -439,7 +449,14 @@ class DatabaseRepository(
     private suspend fun TrackEntity.toTrack(
         withGame: Boolean = false,
         withArtists: Boolean = false
-    ) = Track(
+    ) = toTrack(
+        game = if (withGame) getGameById(gameId) else null,
+        artists = if (withArtists) getArtistsForTrack(id) else null,
+    )
+
+    // Model construction with the game/artist joins already resolved, so callers that batch their
+    // lookups (see [cachedTracksForArtist]) can avoid the per-row `getGameById` fan-out.
+    private fun TrackEntity.toTrack(game: Game?, artists: List<Artist>?) = Track(
         id,
         path,
         source,
@@ -447,8 +464,8 @@ class DatabaseRepository(
         trackLengthMs,
         trackNumber,
         fadeLengthMs,
-        if (withGame) getGameById(gameId) else null,
-        if (withArtists) getArtistsForTrack(id) else null,
+        game,
+        artists,
         decodeChainFiles(chainFiles),
         extension,
         Platform.valueOf(platform),
@@ -547,7 +564,16 @@ class DatabaseRepository(
     // path has a fixed shape, so it's cached; the public getTracksForArtist overload keeps hitting
     // the DAO because its withGame/withArtists flags vary per caller.
     private suspend fun cachedTracksForArtist(id: Long): List<Track> = tracksForArtistCache.getOrLoad(id) {
-        trackArtistDao.getTracksForArtistSync(id).suspendMap { it.toTrack(withGame = true) }
+        traceAsync(TRACE_TRACKS_FOR_ARTIST, nextCookie()) {
+            val entities = trackArtistDao.getTracksForArtistSync(id)
+            // One batched game fetch for the whole list instead of a `getGameById` round-trip per
+            // track (the artist-detail N+1). The entities already arrive in display order and
+            // resolving games from a map preserves it — do not re-sort.
+            val gamesById = gameDao
+                .getGamesByIdsSync(entities.map { it.gameId }.distinct())
+                .associate { it.id to it.toGameModel() }
+            entities.map { it.toTrack(game = gamesById[it.gameId], artists = null) }
+        }
     }
 
     override suspend fun clearLibrary() = withContext(dispatcher) {
@@ -663,6 +689,9 @@ class DatabaseRepository(
         private const val TRACE_DELETE_TRACKS = "Repository:deleteTracks"
         private const val TRACE_PRUNE_GAMES = "Repository:pruneGames"
         private const val TRACE_PRUNE_ARTISTS = "Repository:pruneArtists"
+
+        // Read-path trace: the artist-detail leaf that used to fan out one game query per track.
+        private const val TRACE_TRACKS_FOR_ARTIST = "Repository:cachedTracksForArtist"
     }
 }
 

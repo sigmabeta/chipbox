@@ -108,6 +108,8 @@ class FakeDatabase(private val random: Random = Random(0)) {
         override fun getGamesByIds(ids: List<Long>): Flow<List<GameEntity>> = observe {
             ids.mapNotNull { games[it] }
         }
+        override suspend fun getGamesByIdsSync(ids: List<Long>): List<GameEntity> =
+            ids.mapNotNull { games[it] }
         override suspend fun count(): Int = games.size
         override suspend fun getAtOffset(offset: Int): GameEntity? =
             games.values.sortedBy { it.id }.getOrNull(offset)
