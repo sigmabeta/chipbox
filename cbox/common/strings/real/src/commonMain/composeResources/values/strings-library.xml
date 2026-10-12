@@ -31,7 +31,10 @@
     <string name="artist_detail_cta_add_to_favorites">Add to Favorites</string>
     <string name="artist_detail_cta_remove_from_favorites">Remove from Favorites</string>
     <string name="artist_detail_cta_add_to_playlist">Add to Playlist</string>
+    <string name="artist_detail_cta_view_all_songs">View all %1$d songs</string>
     <string name="artist_detail_empty">Artist not found.</string>
+
+    <string name="tracks_for_artist_empty">No songs by this artist.</string>
 
     <string name="games_for_platform_title">%s Games</string>
     <string name="games_for_platform_empty">No games for this platform.</string>

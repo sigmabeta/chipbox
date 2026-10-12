@@ -115,11 +115,32 @@ data class ArtistDetailState(
             loadingItemCount = SONGS_LOADING_COUNT,
             loadingWithHeader = true,
         ) {
+            // This section renders as one non-lazy column (so it can move between grid columns as
+            // a single unit), so a prolific composer's hundreds of tracks would otherwise compose
+            // on the main thread all at once and freeze the screen for seconds. Render a bounded
+            // preview inline and hand the rest to the lazy TracksForArtist screen via a CTA.
             listOf(
                 SectionHeaderListModel(
                     stringProvider.getString(ChipboxStringId.ARTIST_DETAIL_SECTION_SONGS),
                 ),
-            ) + data.mapIndexed(::trackRow)
+            ) + data.take(SONGS_PREVIEW_COUNT).mapIndexed(::trackRow) +
+                viewAllSongsCta(stringProvider, data.size)
+        }
+
+    private fun viewAllSongsCta(stringProvider: StringProvider, totalTracks: Int): List<ListModel> =
+        if (totalTracks > SONGS_PREVIEW_COUNT) {
+            listOf(
+                CtaListModel(
+                    icon = Icon.Browse,
+                    name = stringProvider.getStringOneInt(
+                        ChipboxStringId.ARTIST_DETAIL_CTA_VIEW_ALL_SONGS,
+                        totalTracks,
+                    ),
+                    clickAction = ArtistDetailAction.ViewAllSongsClicked,
+                ),
+            )
+        } else {
+            emptyList()
         }
 
     private fun trackRow(index: Int, track: Track): ListModel = NameCaptionValueListModel(
@@ -171,6 +192,10 @@ data class ArtistDetailState(
 
         private const val STAGGERED_WIDTH_DP = 320
         private const val SONGS_LOADING_COUNT = 8
+
+        // Upper bound on the tracks rendered inline in the (non-lazy) song section. Beyond this the
+        // "view all songs" CTA takes over; see songSection().
+        private const val SONGS_PREVIEW_COUNT = 50
 
         private const val MILLIS_PER_SECOND = 1_000L
         private const val SECONDS_PER_MINUTE = 60L

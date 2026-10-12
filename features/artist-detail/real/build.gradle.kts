@@ -20,6 +20,7 @@ kotlin {
 
                 implementation(projects.features.gameDetail.api)
                 implementation(projects.features.playlists.api)
+                implementation(projects.features.tracksForArtist.api)
             }
         }
 
