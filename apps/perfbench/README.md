@@ -2,7 +2,8 @@
 
 The host-side home of the Chipbox performance harness: a JVM CLI that measures
 **how fast the emulator cores render audio** (real-time factor, RTF) over a
-corpus you supply. It is a **measurement, not a gate** — nothing in CI runs it.
+corpus you supply, and diffs two runs against each other. It is a
+**measurement, not a gate** — nothing in CI runs it.
 
 Device axes (UI scroll jank, startup) live in the Android `:benchmark` module;
 the result schema both homes share lives in [`:apps:perfbench-core`](../perfbench-core/README.md).
@@ -37,6 +38,24 @@ to** the tracks that reference them, since the native loaders resolve them as
 siblings. `build/perfbench/` is git-ignored; WAV scratch output lands in
 `build/perfbench/wav/`.
 
+### `diff --a <runA> --b <runB>`
+
+Compares the audio axis of two runs. Run A is the **baseline**, run B the
+**current** run; each argument is a `results.json` or the folder holding one.
+For every scenario measured by both runs it prints the speedup — baseline render
+time ÷ current render time, so **above 1 means B rendered the same audio
+faster** — and the **geometric mean** of those speedups.
+
+```sh
+./gradlew :apps:perfbench:run --args="diff --a build/perfbench-baseline --b build/perfbench"
+```
+
+The diff **refuses** rather than report a number when the two runs are not
+comparable: a different **fingerprint class** (host vs device), a different
+**scenario set**, or a different **corpus manifest**. The refusal names what
+differed. The same machine class is required, not the same machine, so a
+baseline captured on one host can be diffed against another host.
+
 ## Reading the result
 
 RTF = audio duration ÷ wall-clock render time, so **> 1 means faster than real
@@ -52,9 +71,10 @@ audio.vgm: <game> — <title>  RTF 98.76  (0.10s median for 10s audio)
 ```
 
 `results.json` carries the run config, the **host fingerprint** (CPU model and
-cores, OS/kernel, JVM, and the Chipbox + sage commits), the corpus reference, and
-an `audio` axis. Subsequent tickets populate the corpus manifest and add a
-`diff` subcommand with comparability guards.
+cores, OS/kernel, JVM, and the Chipbox + sage commits), the corpus reference
+with its **manifest** — the `{path, sha256, bytes}` of every track the run
+actually measured, ordered by path — and an `audio` axis. Compare two runs with
+[`diff`](#diff---a-runa---b-runb).
 
 ## Implementation note
 
