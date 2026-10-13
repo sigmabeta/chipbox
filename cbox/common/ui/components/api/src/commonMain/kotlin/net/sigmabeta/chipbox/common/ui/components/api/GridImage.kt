@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -27,11 +26,11 @@ import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.previews.SquareConstants
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.chipbox.common.ui.components.api.subs.ElevatedRoundRect
+import net.sigmabeta.chipbox.common.ui.components.api.subs.TintedText
 import net.sigmabeta.chipbox.common.ui.components.api.subs.gridCellOffscreenLayerEnabled
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.images.SourceInfo
-import androidx.compose.runtime.getValue
 
 @Composable
 fun GridImage(
@@ -42,7 +41,7 @@ fun GridImage(
 ) {
     val sourceInfo = remember(model.sourceInfo) { SourceInfo(model.sourceInfo) }
 
-    val textColor by animateColorAsState(
+    val textColor = animateColorAsState(
         targetValue = if (model.active) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -50,11 +49,8 @@ fun GridImage(
         },
         label = "GridImage.textColor",
     )
-    val fontWeightValue by animateIntAsState(
-        targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
-        label = "GridImage.fontWeight",
-    )
-    val fontWeight = FontWeight(fontWeightValue)
+    // Snapped, not animated: animating FontWeight re-measures the text every frame.
+    val fontWeight = if (model.active) FontWeight.Bold else FontWeight.Normal
 
     // The cell's visuals, shared by both the plain and width-capped layouts below.
     val cell: @Composable () -> Unit = {
@@ -66,7 +62,7 @@ fun GridImage(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            CrossfadeText(
+            TintedText(
                 text = model.name,
                 color = textColor,
                 fontWeight = fontWeight,

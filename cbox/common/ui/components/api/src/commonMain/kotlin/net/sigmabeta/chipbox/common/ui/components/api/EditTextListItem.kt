@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -81,11 +82,11 @@ fun EditTextListItem(
     ) {
         Column(modifier = Modifier.padding(padding)) {
             if (model.header.isNotBlank()) {
-                CrossfadeText(
+                Text(
                     text = model.header,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
-                    textModifier = Modifier.padding(
+                    modifier = Modifier.padding(
                         start = EDIT_TEXT_CONTENT_PADDING,
                         end = EDIT_TEXT_CONTENT_PADDING,
                         top = EDIT_TEXT_CONTENT_PADDING,
@@ -113,11 +114,11 @@ fun EditTextListItem(
                     .padding(bottom = EDIT_TEXT_CONTENT_PADDING),
             ) {
                 TextButton(onClick = { actionSink.sendAction(SageAction.EditTextCancelled(model.id)) }) {
-                    CrossfadeText(text = model.cancelLabel)
+                    Text(text = model.cancelLabel)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(onClick = ::submit, enabled = canSubmit) {
-                    CrossfadeText(text = model.submitLabel)
+                    Text(text = model.submitLabel)
                 }
             }
         }
@@ -158,12 +159,12 @@ private fun EditTextField(
         )
 
         if (value.text.isEmpty()) {
-            CrossfadeText(
+            Text(
                 text = hint,
                 style = MaterialTheme.typography.bodyLarge.copy(
                     color = MaterialTheme.colorScheme.onSurface,
                 ),
-                textModifier = Modifier.alpha(HINT_ALPHA),
+                modifier = Modifier.alpha(HINT_ALPHA),
             )
         }
     }

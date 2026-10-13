@@ -2,8 +2,6 @@ package net.sigmabeta.chipbox.common.ui.components.api.subs
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -241,35 +239,31 @@ fun RealStandardImage(
         latestCallback?.invoke(isLoaded)
     }
 
-    // Coil's engine only calls Target.onStart (which transitions us to State.Loading) when
-    // the memory cache MISSES; a hit skips the engine pipeline and goes Empty → Success
-    // directly. Track whether we ever observed a Loading state so we can pick the right
-    // crossfade behavior: a regular tween for actual fetches, and a snap for cache hits
-    // so a scroll-back into a warm cell doesn't fade the placeholder in for 300ms before
-    // showing the bitmap that was already in memory.
-    //
-    // We can't pre-check the memory cache from composition (Coil's MemoryCache.Key
-    // includes size extras, and the size isn't resolved until layout), so we infer the
-    // hit-vs-miss decision from the state trajectory instead.
+    // Coil's engine only calls Target.onStart (which transitions us to State.Loading) on a
+    // memory-cache MISS; a hit skips the engine pipeline and goes Empty -> Success directly.
+    // We can't pre-check the memory cache from composition (Coil's MemoryCache.Key includes
+    // size extras, and the size isn't resolved until layout), so we infer hit-vs-miss from the
+    // state trajectory: a Loading we've observed means a real fetch.
     var sawLoading by remember(sourceInfo.info) { mutableStateOf(false) }
     LaunchedEffect(state) {
         if (state is AsyncImagePainter.State.Loading) {
             sawLoading = true
         }
     }
-    val crossfadeSpec = if (sawLoading) tween<Float>() else snap()
 
-    if (crossfadeImagesEnabled) {
+    // Only wrap in a Crossfade once a real fetch has been seen. A memory-cache hit goes
+    // Empty -> Success without ever passing through Loading, so it renders through the direct
+    // branch below (a hard cut) and skips the Crossfade slot/layout footprint entirely — the
+    // common case while scrolling through already-seen cells. A real fetch still crossfades.
+    if (crossfadeImagesEnabled && sawLoading) {
         Crossfade(
             targetState = state,
-            animationSpec = crossfadeSpec,
             label = "Image Crossfade",
             modifier = modifier,
         ) { loadingState ->
             stateBranch(loadingState, asyncPainter, imagePlaceholder, contentDescription)
         }
     } else {
-        // JS: skip the Crossfade slot footprint, render the active state directly.
         Box(modifier = modifier) {
             stateBranch(state, asyncPainter, imagePlaceholder, contentDescription)
         }

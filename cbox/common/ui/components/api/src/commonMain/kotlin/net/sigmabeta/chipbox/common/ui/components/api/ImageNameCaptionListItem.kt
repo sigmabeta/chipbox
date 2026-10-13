@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.chipbox.common.ui.components.api.subs.ElevatedCircle
+import net.sigmabeta.chipbox.common.ui.components.api.subs.TintedText
 import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
 import net.sigmabeta.chipbox.common.ui.components.api.utils.ImageSize
 import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
@@ -33,7 +33,6 @@ import net.sigmabeta.sage.components.ImageNameCaptionListModel
 import net.sigmabeta.sage.components.SearchResultListModel
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
-import androidx.compose.runtime.getValue
 
 @Composable
 fun ImageNameCaptionListItem(
@@ -88,7 +87,7 @@ private fun ImageNameCaptionListItem(
     modifier: Modifier,
     padding: PaddingValues,
 ) {
-    val textColor by animateColorAsState(
+    val textColor = animateColorAsState(
         targetValue = if (active) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -96,11 +95,8 @@ private fun ImageNameCaptionListItem(
         },
         label = "ImageNameCaptionListItem.textColor",
     )
-    val fontWeightValue by animateIntAsState(
-        targetValue = if (active) FontWeight.Bold.weight else FontWeight.Normal.weight,
-        label = "ImageNameCaptionListItem.fontWeight",
-    )
-    val fontWeight = FontWeight(fontWeightValue)
+    // Snapped, not animated: animating FontWeight re-measures the text every frame.
+    val fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
 
     Row(
         modifier = modifier
@@ -133,14 +129,14 @@ private fun ImageNameCaptionListItem(
                 .fillMaxWidth()
                 .wrapContentHeight()
         ) {
-            CrossfadeText(
+            TintedText(
                 text = name,
                 style = MaterialTheme.typography.titleMedium,
                 color = textColor,
                 fontWeight = fontWeight,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textModifier = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp)
             )
@@ -149,13 +145,13 @@ private fun ImageNameCaptionListItem(
                 modifier = Modifier.height(4.dp)
             )
 
-            CrossfadeText(
+            TintedText(
                 text = caption,
                 style = MaterialTheme.typography.bodySmall,
                 color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textModifier = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp)
             )

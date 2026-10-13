@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,12 +22,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.subs.TintedText
 import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
 import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
 import net.sigmabeta.chipbox.common.ui.components.api.utils.outerFocusPadding
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.NameCaptionValueListModel
-import androidx.compose.runtime.getValue
 
 @Composable
 fun NameCaptionValueListItem(
@@ -37,7 +36,7 @@ fun NameCaptionValueListItem(
     modifier: Modifier,
     padding: PaddingValues,
 ) {
-    val primaryColor by animateColorAsState(
+    val primaryColor = animateColorAsState(
         targetValue = if (model.active) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -45,7 +44,7 @@ fun NameCaptionValueListItem(
         },
         label = "NameCaptionValueListItem.primaryColor",
     )
-    val valueColor by animateColorAsState(
+    val valueColor = animateColorAsState(
         targetValue = if (model.active) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -53,11 +52,8 @@ fun NameCaptionValueListItem(
         },
         label = "NameCaptionValueListItem.valueColor",
     )
-    val fontWeightValue by animateIntAsState(
-        targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
-        label = "NameCaptionValueListItem.fontWeight",
-    )
-    val fontWeight = FontWeight(fontWeightValue)
+    // Snapped, not animated: animating FontWeight re-measures the text every frame.
+    val fontWeight = if (model.active) FontWeight.Bold else FontWeight.Normal
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -74,27 +70,27 @@ fun NameCaptionValueListItem(
                 .weight(1f)
                 .wrapContentHeight(),
         ) {
-            CrossfadeText(
+            TintedText(
                 text = model.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = primaryColor,
                 fontWeight = fontWeight,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textModifier = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(top = 24.dp),
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            CrossfadeText(
+            TintedText(
                 text = model.caption,
                 style = MaterialTheme.typography.bodySmall,
                 color = primaryColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textModifier = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(bottom = 12.dp),
             )
@@ -102,7 +98,7 @@ fun NameCaptionValueListItem(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        CrossfadeText(
+        TintedText(
             text = model.value,
             textAlign = TextAlign.End,
             style = MaterialTheme.typography.labelLarge,
@@ -110,7 +106,7 @@ fun NameCaptionValueListItem(
             fontWeight = fontWeight,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            textModifier = Modifier.wrapContentWidth(),
+            modifier = Modifier.wrapContentWidth(),
         )
     }
 }

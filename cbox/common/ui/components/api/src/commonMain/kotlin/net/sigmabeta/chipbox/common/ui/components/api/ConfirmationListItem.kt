@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -46,22 +47,22 @@ fun ConfirmationListItem(
         modifier = modifier.padding(CONFIRM_LIFT_PADDING),
     ) {
         Column(modifier = Modifier.padding(padding)) {
-            CrossfadeText(
+            Text(
                 text = model.header,
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
-                textModifier = Modifier.padding(
+                modifier = Modifier.padding(
                     start = CONFIRM_CONTENT_PADDING,
                     end = CONFIRM_CONTENT_PADDING,
                     top = CONFIRM_CONTENT_PADDING,
                 ),
             )
 
-            CrossfadeText(
+            Text(
                 text = model.bodyText,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textModifier = Modifier.padding(
+                modifier = Modifier.padding(
                     start = CONFIRM_CONTENT_PADDING,
                     end = CONFIRM_CONTENT_PADDING,
                     top = 4.dp,
@@ -76,11 +77,11 @@ fun ConfirmationListItem(
                     .padding(CONFIRM_CONTENT_PADDING),
             ) {
                 TextButton(onClick = { actionSink.sendAction(SageAction.ConfirmationCancelled(model.id)) }) {
-                    CrossfadeText(text = model.cancelLabel)
+                    Text(text = model.cancelLabel)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Button(onClick = { actionSink.sendAction(SageAction.ConfirmationConfirmed(model.id)) }) {
-                    CrossfadeText(text = model.confirmLabel)
+                    Text(text = model.confirmLabel)
                 }
             }
         }

@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,7 +21,6 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
 import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
 import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
 import net.sigmabeta.chipbox.common.ui.components.api.utils.outerFocusPadding
@@ -34,7 +35,7 @@ fun LabeledThingy(
     accyStateDescription: String? = null,
     modifier: Modifier,
     padding: PaddingValues,
-    labelColor: Color? = null,
+    labelColor: State<Color>? = null,
     labelFontWeight: FontWeight? = null,
 ) {
     Row(
@@ -52,17 +53,31 @@ fun LabeledThingy(
                 accyStateDescription?.let { stateDescription = it }
             },
     ) {
-        CrossfadeText(
-            text = label,
-            style = MaterialTheme.typography.titleMedium,
-            color = labelColor ?: MaterialTheme.colorScheme.onBackground,
-            fontWeight = labelFontWeight,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .padding(vertical = 16.dp)
-                .weight(1.0f)
-        )
+        if (labelColor != null) {
+            TintedText(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                color = labelColor,
+                fontWeight = labelFontWeight,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(vertical = 16.dp)
+                    .weight(1.0f)
+            )
+        } else {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                fontWeight = labelFontWeight,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(vertical = 16.dp)
+                    .weight(1.0f)
+            )
+        }
 
         Spacer(modifier = Modifier.width(8.dp))
 
