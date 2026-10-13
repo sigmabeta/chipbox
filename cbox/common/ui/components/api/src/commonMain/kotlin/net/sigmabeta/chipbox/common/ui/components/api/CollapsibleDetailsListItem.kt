@@ -18,9 +18,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -29,8 +32,6 @@ import androidx.compose.ui.unit.dp
 import net.sigmabeta.sage.components.CollapsibleDetailsListModel
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.vector
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 
 @Composable
 fun CollapsibleDetailsListItem(
@@ -53,7 +54,7 @@ fun CollapsibleDetailsListItem(
                 .clickable { collapsed = !collapsed }
                 .padding(padding),
         ) {
-            CrossfadeText(
+            Text(
                 text = model.title,
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -124,7 +125,7 @@ private fun DetailItem(
                 .alpha(0.7f)
         )
 
-        CrossfadeText(
+        Text(
             text = detailText,
             color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.labelLarge,

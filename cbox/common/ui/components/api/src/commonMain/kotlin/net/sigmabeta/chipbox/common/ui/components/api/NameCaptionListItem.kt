@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,12 +18,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.subs.TintedText
 import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
 import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
 import net.sigmabeta.chipbox.common.ui.components.api.utils.outerFocusPadding
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.NameCaptionListModel
-import androidx.compose.runtime.getValue
 
 @Composable
 fun NameCaptionListItem(
@@ -33,7 +32,7 @@ fun NameCaptionListItem(
     modifier: Modifier,
     padding: PaddingValues,
 ) {
-    val textColor by animateColorAsState(
+    val textColor = animateColorAsState(
         targetValue = if (model.active) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -41,11 +40,8 @@ fun NameCaptionListItem(
         },
         label = "NameCaptionListItem.textColor",
     )
-    val fontWeightValue by animateIntAsState(
-        targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
-        label = "NameCaptionListItem.fontWeight",
-    )
-    val fontWeight = FontWeight(fontWeightValue)
+    // Snapped, not animated: animating FontWeight re-measures the text every frame.
+    val fontWeight = if (model.active) FontWeight.Bold else FontWeight.Normal
 
     Row(
         modifier = modifier
@@ -61,14 +57,14 @@ fun NameCaptionListItem(
                 .fillMaxWidth()
                 .wrapContentHeight()
         ) {
-            CrossfadeText(
+            TintedText(
                 text = model.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = textColor,
                 fontWeight = fontWeight,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textModifier = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(top = 24.dp)
             )
@@ -77,13 +73,13 @@ fun NameCaptionListItem(
                 modifier = Modifier.height(4.dp)
             )
 
-            CrossfadeText(
+            TintedText(
                 text = model.caption,
                 style = MaterialTheme.typography.bodySmall,
                 color = textColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textModifier = Modifier
+                modifier = Modifier
                     .fillMaxWidth()
                     .paddingFromBaseline(bottom = 12.dp)
             )

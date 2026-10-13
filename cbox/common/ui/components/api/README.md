@@ -42,10 +42,14 @@ This is a large module (~90 files). Grouped by role:
   `DismissibleListModel` / `SwipeToRemoveBox` for reorderable and swipe-to-remove paths.
 
 - **Drawing / effect sub-components (`subs/`)** — `CrossfadeImage` (the Coil-backed
-  loader with size-bucketing, crossfade, and a fake/inspection branch), `FakeImage`
-  (deterministic gradient stand-in), `ElevatedPill` / `ElevatedCircle` / `ElevatedRoundRect`,
-  `Flasher` (loading shimmer), `Rating` (heart row), `LabeledThingy` / `LoadingThingy`,
-  `MenuActionIcon`, plus the `LocalForceFakeImages` / `LocalInspectionMode` plumbing.
+  loader with size-bucketing; it crossfades real fetches only — memory-cache hits hard-cut,
+  and on JS the crossfade is skipped entirely), `TintedText` (a `Text` that paints a
+  `State<Color>` in the draw phase, so animating a cell/row's text colour never recomposes or
+  re-lays-out the text), `TintedIcon` (its icon counterpart — a leaf that reads the animated
+  tint so only the icon recomposes), `FakeImage` (deterministic gradient stand-in), `ElevatedPill` /
+  `ElevatedCircle` / `ElevatedRoundRect`, `Flasher` (loading shimmer), `Rating` (heart row),
+  `LabeledThingy` / `LoadingThingy`, `MenuActionIcon`, plus the `LocalForceFakeImages` /
+  `LocalInspectionMode` plumbing.
 
 - **Layout / measurement utils (`utils/`)** — `FocusArea.kt` (`FocusAreaShape`,
   `outer`/`innerFocusPadding` for rounded focus highlights), `ImageSize.kt`
