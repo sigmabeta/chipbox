@@ -25,9 +25,18 @@ fun runAudio(args: AudioArgs): PerfResult {
     val bank = EmulatorBank()
     val scenarios = args.only ?: AudioScenario.all
     val results = mutableListOf<AudioResult>()
+    val measuredFiles = mutableListOf<File>()
 
     for (scenario in scenarios) {
-        benchmarkScenario(bank, scenario, args, wavDir)?.let { results += it }
+        val track = representativeTrack(bank, args.corpusDir, scenario)
+        if (track == null) {
+            println("${scenario.id}: no ${scenario.extensions.joinToString("/")} tracks under ${args.corpusDir}")
+            continue
+        }
+        benchmarkScenario(bank, track, scenario, args, wavDir)?.let { result ->
+            results += result
+            measuredFiles += File(track.path)
+        }
     }
 
     val repoRoot = resolveRepoRoot()
@@ -38,7 +47,10 @@ fun runAudio(args: AudioArgs): PerfResult {
         sageCommit = sageCommit,
         config = PerfConfig(repeat = args.repeat, scenarios = scenarios.map { it.id }),
         machine = hostFingerprint(SystemHostEnvironment.detect(), chipboxCommit, sageCommit),
-        corpus = CorpusRef(root = args.corpusDir.absolutePath),
+        corpus = CorpusRef(
+            root = args.corpusDir.absolutePath,
+            manifest = corpusManifest(args.corpusDir, measuredFiles),
+        ),
         axes = mapOf(
             "audio" to AudioAxis(
                 config = AudioAxisConfig(sampleSeconds = args.sampleSeconds, repeats = args.repeat),
@@ -52,19 +64,14 @@ fun runAudio(args: AudioArgs): PerfResult {
     return result
 }
 
-/** Benchmarks one scenario, printing a one-line verdict; `null` if it can't be measured. */
+/** Benchmarks one scenario's already-selected track, printing a one-line verdict; `null` on failure. */
 private fun benchmarkScenario(
     bank: EmulatorBank,
+    track: SelectedTrack,
     scenario: AudioScenario,
     args: AudioArgs,
     wavDir: File,
 ): AudioResult? {
-    val track = representativeTrack(bank, args.corpusDir, scenario)
-    if (track == null) {
-        println("${scenario.id}: no ${scenario.extensions.joinToString("/")} tracks under ${args.corpusDir}")
-        return null
-    }
-
     val measurement = measureScenario(bank, track, scenario, args, File(wavDir, "${scenario.id}.wav"))
     return measurement?.let { audioResult(it) }?.also { result ->
         println(

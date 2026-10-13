@@ -2,7 +2,7 @@ package net.sigmabeta.chipbox.perfbench
 
 /**
  * `perfbench` — the host-side performance benchmarking CLI. One entry point, one subcommand per
- * axis; the device axes live in the Android `:benchmark` module instead. v1 ships `audio`.
+ * axis; the device axes live in the Android `:benchmark` module instead. v1 ships `audio` and `diff`.
  */
 fun main(rawArgs: Array<String>) {
     val command = rawArgs.firstOrNull()
@@ -14,6 +14,8 @@ fun main(rawArgs: Array<String>) {
 
     when (command) {
         "audio" -> runAudio(parseAudioOptions(options))
+
+        "diff" -> runDiff(parseDiffOptions(options))
 
         else -> {
             println("Unknown command: $command\n")
@@ -52,6 +54,7 @@ private fun printUsage() {
 
         Usage:
           perfbench audio --dir <corpus> [options]
+          perfbench diff --a <runA> --b <runB>
 
         audio — measure real-time factor (RTF) per emulator over a corpus. Renders each scenario's
         representative track through the raw emulator core and reports the median RTF of N timed
@@ -63,6 +66,14 @@ private fun printUsage() {
           --repeat <n>         timed repeats per scenario (median of N)   (default: $DEFAULT_REPEAT)
           --seconds <n>        audio seconds rendered per repeat          (default: $DEFAULT_SAMPLE_SECONDS)
           --out <dir>          results root; results.json is written here  (default: $DEFAULT_OUT)
+
+        diff — compare the audio axis of two runs. Run A is the baseline, run B the current run.
+        Prints the per-scenario speedup (baseline render time ÷ current render time) and its
+        geometric mean. Refuses to compare runs from a different fingerprint class, scenario set,
+        or corpus manifest rather than report a silently wrong speedup.
+
+          --a <run>            baseline results.json (or the folder holding it)   (required)
+          --b <run>            current results.json (or the folder holding it)    (required)
         """.trimIndent(),
     )
 }
