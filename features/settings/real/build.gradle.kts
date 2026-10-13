@@ -22,6 +22,9 @@ kotlin {
                 implementation(projects.cbox.common.settings.api)
                 implementation(projects.cbox.common.debug.api)
                 implementation(projects.cbox.common.repository.api)
+                // Snapshot ingest: the debug "Import library snapshot" action reads a
+                // LibrarySnapshot and upserts it via repository.importLibrarySnapshot.
+                implementation(projects.apps.perfbenchCore)
                 implementation(projects.cbox.common.history.api)
                 implementation(projects.cbox.common.scanner.api)
                 implementation(projects.cbox.common.contentsource.api)

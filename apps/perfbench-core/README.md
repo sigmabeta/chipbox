@@ -8,7 +8,9 @@ other.
 
 It is **pure contract** — no renderer, no I/O, no platform code beyond the
 optional host probe below. KMP (`androidTarget` + `jvm`) so both homes resolve a
-variant.
+variant; it also declares a `js` purity target (added under `-Psage.js`) because
+the app's Settings feature — which surfaces the snapshot-ingest capability —
+builds for JS.
 
 ## Contents
 
@@ -20,6 +22,7 @@ variant.
 | `AudioReport.kt` | pure report math: `audioResult(AudioMeasurement)` and `median` |
 | `Diff.kt` | the baseline-diff contract: `compareAudioRuns`/`DiffOutcome`, the `DiffRefusal` comparability guards, the `FingerprintClass` of a `Fingerprint`, `ScenarioSpeedup`/`DiffReport`, and `geometricMean` |
 | `LibrarySnapshot.kt` | the `snapshot` subcommand's `LibrarySnapshot` DTO — the raw scan output (`List<RawGame>`) plus scan metadata (`scanner_version`, `reader_versions`, the corpus `root`), and the pure `relativized`/`rebased` path transforms that make one snapshot portable across hosts and devices |
+| `LibraryImport.kt` | the in-app ingest side: `LibraryImportResult` and the `Repository.importLibrarySnapshot(snapshot, root)` extension that rebases a snapshot onto `root` and upsert-merges its games through the existing `upsertGame` path — idempotent, with no file-existence check |
 | `PerfbenchJson.kt` | the one JSON dialect (`class` discriminator, pretty-printed) |
 | `SystemHostEnvironment.kt` | `jvmMain` only: probes the running host for the facts a host fingerprint records (`/proc/cpuinfo`, `/etc/os-release`, `java.*`) |
 
@@ -58,6 +61,11 @@ val snapshot = librarySnapshot(
     games = rawGames,
 )
 val forDevice = snapshot.games.map { it.rebased("/sdcard/corpus") }
+
+// Ingest a snapshot into the library (rebased onto wherever the corpus lives here). Idempotent and
+// with no file-existence check; importing the same snapshot twice is safe.
+val result = repository.importLibrarySnapshot(snapshot, root = "/sdcard/corpus")
+println("${result.added} added, ${result.updated} updated, ${result.unchanged} unchanged")
 ```
 
 `libs.kotlinx.serialization.json` is an `api` dependency because the schema types
@@ -66,6 +74,7 @@ reuses `:cbox:common:repository:api`'s `@Serializable` raw scan types (`RawGame`
 `RawTrack`) as its payload, so that module is an `api` dependency too.
 
 Tested by `commonTest` (schema round-trips, fingerprint construction, report
-math, scenario ids, the diff comparability guards and geometric mean, and the
-snapshot round-trip + path transforms) and a `jvmTest` for the `/proc/cpuinfo`
-parser.
+math, scenario ids, the diff comparability guards and geometric mean, the
+snapshot round-trip + path transforms, and snapshot ingest against the in-memory
+fake database) and a `jvmTest` for the `/proc/cpuinfo` parser. The scanner →
+snapshot → import round trip itself is covered end-to-end in `apps/perfbench`.

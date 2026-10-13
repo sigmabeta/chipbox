@@ -42,4 +42,7 @@ sealed class SettingsAction : ChipboxAction() {
     data object ErrorLogClicked : SettingsAction()
     data object CrashLogClicked : SettingsAction()
     data object ComponentLibraryClicked : SettingsAction()
+
+    // Debug-only: reveals an inline path field; submitting it imports a library snapshot.
+    data object ImportSnapshotClicked : SettingsAction()
 }
