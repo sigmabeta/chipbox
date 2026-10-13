@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.perfbench
+package net.sigmabeta.chipbox.repository
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -8,11 +8,9 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import net.sigmabeta.chipbox.models.ChainFile
 import net.sigmabeta.chipbox.models.Platform
-import net.sigmabeta.chipbox.repository.RawGame
-import net.sigmabeta.chipbox.repository.RawTrack
 
 /**
- * Behaviour of the [LibrarySnapshot] contract: it round-trips through the shared JSON dialect, and
+ * Behaviour of the [LibrarySnapshot] contract: it round-trips through [LibrarySnapshotJson], and
  * the paths it stores are relative to the snapshot's corpus root so the same snapshot is valid on
  * any host or device.
  */
@@ -21,8 +19,8 @@ class LibrarySnapshotTest {
     fun `round-trips a fully populated snapshot`() {
         val snapshot = snapshot(games = listOf(rawGame()))
 
-        val json = PerfbenchJson.encodeToString(snapshot)
-        val back = PerfbenchJson.decodeFromString<LibrarySnapshot>(json)
+        val json = LibrarySnapshotJson.encodeToString(snapshot)
+        val back = LibrarySnapshotJson.decodeFromString<LibrarySnapshot>(json)
 
         assertEquals(snapshot, back)
         assertTrue(json.contains("\"scanner_version\""), "scan metadata key missing")

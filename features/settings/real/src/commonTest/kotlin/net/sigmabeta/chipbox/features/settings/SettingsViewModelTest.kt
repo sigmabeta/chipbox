@@ -25,10 +25,10 @@ import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.history.fake.FakePlaybackHistoryRepository
-import net.sigmabeta.chipbox.perfbench.LibrarySnapshot
-import net.sigmabeta.chipbox.perfbench.PerfbenchJson
 import net.sigmabeta.chipbox.repository.GameWriteOutcome
 import net.sigmabeta.chipbox.repository.GameWriteResult
+import net.sigmabeta.chipbox.repository.LibrarySnapshot
+import net.sigmabeta.chipbox.repository.LibrarySnapshotJson
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
@@ -399,7 +399,7 @@ class SettingsViewModelTest {
         )
         val repository = RecordingRepository()
         val source = BytesLibrarySource(
-            mapOf("/snapshot.json" to PerfbenchJson.encodeToString(snapshot).encodeToByteArray()),
+            mapOf("/snapshot.json" to LibrarySnapshotJson.encodeToString(snapshot).encodeToByteArray()),
         )
         val vm = newViewModel(repository = repository, librarySource = source)
 

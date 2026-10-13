@@ -12,8 +12,11 @@ import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteOutcome
 import net.sigmabeta.chipbox.repository.GameWriteResult
+import net.sigmabeta.chipbox.repository.LibrarySnapshot
+import net.sigmabeta.chipbox.repository.LibrarySnapshotJson
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.repository.librarySnapshot
 import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.BluntHatchet
@@ -56,7 +59,7 @@ fun runSnapshot(args: SnapshotArgs, prober: VgmstreamProber = VgmstreamProbe): L
         games = games,
     )
     args.outFile.parentFile?.mkdirs()
-    args.outFile.writeText(PerfbenchJson.encodeToString(snapshot))
+    args.outFile.writeText(LibrarySnapshotJson.encodeToString(snapshot))
     println(
         "Scanned ${games.size} game(s), ${games.sumOf { it.tracks.size }} track(s) — " +
             "wrote ${args.outFile.absolutePath}",

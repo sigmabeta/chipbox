@@ -21,6 +21,8 @@ impl lives in `:cbox:common:repository:real`, wired via `:cbox:common:repository
 | `RawArtist.kt` | Minimal scanner-side artist input (`name`). |
 | `FolderSnapshot.kt` | Pre-scan view of a stored game (`signature`, `trackCount`, `scannerVersion`, per-extension `readerVersions`), keyed by `folderKey`; lets the scanner skip folders whose signature is unchanged *and* whose tracks came from the current scanner/reader logic. |
 | `GameWriteResult.kt` | `GameWriteOutcome(gameId, result)` and the `GameWriteResult` enum (`ADDED`/`UPDATED`/`UNCHANGED`) returned by `upsertGame`. |
+| `LibrarySnapshot.kt` | A serialized record of scanned games/tracks (the raw `RawGame` payload + scan metadata + corpus `root`) that can seed the library without rescanning. Carries the `LibrarySnapshotJson` dialect and the pure `relativized`/`rebased` path transforms that make one snapshot portable across hosts and machines. |
+| `LibraryImport.kt` | `LibraryImportResult` and the `Repository.importLibrarySnapshot(snapshot, root)` extension: rebases the snapshot onto `root` and upsert-merges every game through `upsertGame` (idempotent, no file-existence check). |
 
 ## Why depend on this module
 
@@ -51,7 +53,16 @@ suspend fun ingest(repository: Repository, scanned: RawGame) {
         GameWriteResult.UNCHANGED -> Unit
     }
 }
+
+// Snapshot ingest: seed the library from a serialized scan without rescanning. Rebase onto the
+// importing machine's corpus root; idempotent and no file-existence check.
+val snapshot = LibrarySnapshotJson.decodeFromString<LibrarySnapshot>(File(path).readText())
+val result = repository.importLibrarySnapshot(snapshot, root = "/device/corpus")
 ```
+
+`LibrarySnapshotJson` is the snapshot's JSON dialect — `ignoreUnknownKeys` keeps
+it forward-compatible, `encodeDefaults` keeps the scan-metadata keys present even
+at their defaults.
 
 ## Module facts
 
@@ -59,5 +70,6 @@ suspend fun ingest(repository: Repository, scanned: RawGame) {
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `api`s `:cbox:common:models:api`,
-  `kotlinx-coroutines-core`, and `kotlinx-serialization-core` (generated
-  serializers for `RawGame`/`RawTrack`)
+  `kotlinx-coroutines-core`, `kotlinx-serialization-core` (generated serializers
+  for `RawGame`/`RawTrack`) and `kotlinx-serialization-json`
+  (`LibrarySnapshotJson`)
