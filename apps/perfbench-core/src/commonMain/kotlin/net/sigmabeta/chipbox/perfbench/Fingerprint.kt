@@ -62,3 +62,27 @@ fun hostFingerprint(
     chipboxCommit = chipboxCommit,
     sageCommit = sageCommit,
 )
+
+/** The raw device facts, decoupled from how they were probed so [deviceFingerprint] stays pure. */
+data class DeviceEnvironment(
+    val manufacturer: String,
+    val model: String,
+    val androidBuild: String,
+    val abi: String,
+    val thermalStatus: String,
+)
+
+/** Builds a [DeviceFingerprint] from probed facts plus the two commits resolved by the caller. */
+fun deviceFingerprint(
+    environment: DeviceEnvironment,
+    chipboxCommit: String,
+    sageCommit: String,
+): DeviceFingerprint = DeviceFingerprint(
+    manufacturer = environment.manufacturer,
+    model = environment.model,
+    androidBuild = environment.androidBuild,
+    abi = environment.abi,
+    thermalStatus = environment.thermalStatus,
+    chipboxCommit = chipboxCommit,
+    sageCommit = sageCommit,
+)

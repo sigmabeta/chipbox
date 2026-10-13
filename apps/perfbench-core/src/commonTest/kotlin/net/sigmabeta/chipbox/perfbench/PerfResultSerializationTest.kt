@@ -89,6 +89,39 @@ class PerfResultSerializationTest {
     }
 
     @Test
+    fun `round-trips a ui axis`() {
+        val result = minimalResult().copy(
+            axes = mapOf(
+                "ui" to UiAxis(
+                    config = UiAxisConfig(iterations = 5),
+                    results = listOf(
+                        UiResult(
+                            scenario = "ui.browse_by_game_scroll",
+                            frames = 240,
+                            frameP50Ms = 8.0,
+                            frameP90Ms = 12.0,
+                            frameP99Ms = 30.0,
+                            jankPercent = 4.5,
+                            traceSections = listOf(
+                                TraceSectionSum(name = "GridImage", sumMs = 120.0, count = 240),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val json = PerfbenchJson.encodeToString(result)
+        val back = PerfbenchJson.decodeFromString<PerfResult>(json)
+
+        assertEquals(result, back)
+        assertIs<UiAxis>(back.axes["ui"])
+        assertTrue(json.contains("\"frame_p50_ms\""))
+        assertTrue(json.contains("\"jank_percent\""))
+        assertTrue(json.contains("\"trace_sections\""))
+    }
+
+    @Test
     fun `round-trips a device fingerprint`() {
         val result = minimalResult().copy(
             machine = DeviceFingerprint(

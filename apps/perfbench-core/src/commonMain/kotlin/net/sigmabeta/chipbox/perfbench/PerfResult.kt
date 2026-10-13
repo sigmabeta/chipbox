@@ -86,3 +86,47 @@ data class AudioResult(
     val max: Double,
     val samples: List<Double>,
 )
+
+/** UI rendering/jank — one [UiResult] per scenario (e.g. the BrowseByGame scroll). */
+@Serializable
+@SerialName("ui")
+data class UiAxis(
+    val config: UiAxisConfig,
+    val results: List<UiResult>,
+    val score: Double? = null,
+) : Axis
+
+/** The iteration count a UI axis was measured with. */
+@Serializable
+data class UiAxisConfig(
+    val iterations: Int,
+)
+
+/**
+ * One UI scenario's measurement.
+ *
+ * [frameP50Ms]/[frameP90Ms]/[frameP99Ms] are percentiles of the pooled frame CPU durations across
+ * iterations — the frame-time distribution a jank investigation reads. [jankPercent] is the share
+ * of frames that missed their deadline (a positive `frameOverrunMs`), `null` on devices that can't
+ * report frame overrun. [traceSections] carries the labelled trace sums the scenario was told to
+ * watch (`GridImage`, `CrossfadeImage`), so a regression in the work *behind* a frame is visible
+ * next to the frame-time percentiles.
+ */
+@Serializable
+data class UiResult(
+    val scenario: String,
+    val frames: Int,
+    @SerialName("frame_p50_ms") val frameP50Ms: Double,
+    @SerialName("frame_p90_ms") val frameP90Ms: Double,
+    @SerialName("frame_p99_ms") val frameP99Ms: Double,
+    @SerialName("jank_percent") val jankPercent: Double? = null,
+    @SerialName("trace_sections") val traceSections: List<TraceSectionSum> = emptyList(),
+)
+
+/** One labelled trace section's pooled work: total time in the section and its instance count. */
+@Serializable
+data class TraceSectionSum(
+    val name: String,
+    @SerialName("sum_ms") val sumMs: Double,
+    val count: Int,
+)
