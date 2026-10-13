@@ -86,6 +86,23 @@ dependencies {
     // The raw-emulator-core render path (EmulatorBank) and corpus walker reused unchanged.
     implementation(projects.apps.abrenderCore)
 
+    // `snapshot` runs the real host scanner over a corpus — the same scan stack the headless CLI
+    // (apps/cli) assembles by hand: RealScanner, the pure-Kotlin readers, and an okio file walker.
+    // The scan's raw output is captured by a write-only Repository in the command itself (no
+    // database), so no repository implementation module is needed.
+    implementation(projects.cbox.common.scanner.real)
+    implementation(projects.cbox.common.scanner.api)
+    implementation(projects.cbox.common.repository.api)
+    implementation(projects.cbox.common.contentsource.api)
+    implementation(projects.cbox.common.contentsource.file.real)
+    implementation(projects.cbox.common.readers.api)
+    implementation(projects.cbox.common.models.api)
+    implementation(projects.cbox.common.player.emulators.api)
+    implementation(projects.cbox.common.player.emulators.vgmstream.real)
+    implementation(libs.sage.common.logging)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.okio)
+
     testImplementation(kotlin("test"))
     testImplementation(libs.junit4)
 }

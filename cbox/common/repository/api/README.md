@@ -16,8 +16,8 @@ impl lives in `:cbox:common:repository:real`, wired via `:cbox:common:repository
 | --- | --- |
 | `Repository.kt` | The library interface: list/`Flow` reads (`getAllArtists/Games/Tracks`, paged via `limit`/`offset`), by-id and by-relation reads (`getTracksForGame/Artist/Platform`, `getGame`, `getArtist`, `getTracksByIds`), random picks (`getRandomTrack/Game/Artist`), search + search history, and the scan write path (`folderSnapshots`, `upsertGame`, `pruneGames`, `clearLibrary`). |
 | `Data.kt` | `sealed class Data<out DataType>` result wrapper: `Loading`, `Empty`, `Succeeded(data)`, `Failed(message)`. Reads are `Flow<Data<...>>`. |
-| `RawGame.kt` | Scanner-side write input for one game: title, `photoUrl`, `folderKey` (stable folder identity), `folderSignature` (files hash), its `RawTrack`s, plus release-level descriptive metadata. |
-| `RawTrack.kt` | Scanner-side write input for one track/subtune: path, source, title, artist, length, `trackNumber`, `chainFiles`, `Platform`, optional descriptive metadata, and the `scannerVersion`/`readerVersion` that produced it (stamped by the scanner at persist time). |
+| `RawGame.kt` | Scanner-side write input for one game: title, `photoUrl`, `folderKey` (stable folder identity), `folderSignature` (files hash), its `RawTrack`s, plus release-level descriptive metadata. `@Serializable` — it is the payload of a perfbench library snapshot. |
+| `RawTrack.kt` | Scanner-side write input for one track/subtune: path, source, title, artist, length, `trackNumber`, `chainFiles`, `Platform`, optional descriptive metadata, and the `scannerVersion`/`readerVersion` that produced it (stamped by the scanner at persist time). `@Serializable` — carried inside a perfbench library snapshot. |
 | `RawArtist.kt` | Minimal scanner-side artist input (`name`). |
 | `FolderSnapshot.kt` | Pre-scan view of a stored game (`signature`, `trackCount`, `scannerVersion`, per-extension `readerVersions`), keyed by `folderKey`; lets the scanner skip folders whose signature is unchanged *and* whose tracks came from the current scanner/reader logic. |
 | `GameWriteResult.kt` | `GameWriteOutcome(gameId, result)` and the `GameWriteResult` enum (`ADDED`/`UPDATED`/`UNCHANGED`) returned by `upsertGame`. |
@@ -55,8 +55,9 @@ suspend fun ingest(repository: Repository, scanned: RawGame) {
 
 ## Module facts
 
-- **Plugin:** `sage.kmp` + `sage.kmp.js`
+- **Plugin:** `sage.kmp` + `sage.kmp.js` + `kotlin.serialization`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
-- **SAGE/module dependencies:** `api`s `:cbox:common:models:api` and
-  `kotlinx-coroutines-core`
+- **SAGE/module dependencies:** `api`s `:cbox:common:models:api`,
+  `kotlinx-coroutines-core`, and `kotlinx-serialization-core` (generated
+  serializers for `RawGame`/`RawTrack`)

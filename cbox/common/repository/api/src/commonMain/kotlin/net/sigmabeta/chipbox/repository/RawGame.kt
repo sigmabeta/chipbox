@@ -1,5 +1,8 @@
 package net.sigmabeta.chipbox.repository
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class RawGame(
     val title: String,
     val photoUrl: String?,
