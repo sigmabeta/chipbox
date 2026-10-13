@@ -105,4 +105,8 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(libs.junit4)
+    // The round-trip test imports a generated snapshot into the production DatabaseRepository over
+    // the in-memory DAO fakes, then compares it to scanning the same corpus directly.
+    testImplementation(projects.cbox.common.repository.real)
+    testImplementation(projects.cbox.common.database.fake)
 }

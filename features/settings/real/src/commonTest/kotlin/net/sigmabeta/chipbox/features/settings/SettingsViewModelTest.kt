@@ -5,19 +5,31 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.encodeToString
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.contentsource.LibraryFolderInfo
 import net.sigmabeta.chipbox.contentsource.LibraryLocationInfo
+import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
 import net.sigmabeta.chipbox.debug.fake.FakeDebugSettingsManager
 import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.history.fake.FakePlaybackHistoryRepository
+import net.sigmabeta.chipbox.perfbench.LibrarySnapshot
+import net.sigmabeta.chipbox.perfbench.PerfbenchJson
+import net.sigmabeta.chipbox.repository.GameWriteOutcome
+import net.sigmabeta.chipbox.repository.GameWriteResult
+import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
@@ -26,6 +38,8 @@ import net.sigmabeta.chipbox.settings.ThemeMode
 import net.sigmabeta.chipbox.settings.fake.FakeChipboxSettingsManager
 import net.sigmabeta.chipbox.ui.fonts.ChipboxFont
 import net.sigmabeta.sage.appcomm.LCE
+import net.sigmabeta.sage.appcomm.SageAction
+import net.sigmabeta.sage.components.EditTextListModel
 import net.sigmabeta.sage.components.NameCaptionListModel
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.logging.BluntHatchet
@@ -333,6 +347,86 @@ class SettingsViewModelTest {
         assertFalse(vm.state.first().hasLibraryFolders)
     }
 
+    // ---- debug snapshot import ----
+
+    @Test
+    fun `ImportSnapshotClicked reveals the inline path field and toggles closed again`() = runTest {
+        val vm = newViewModel(debug = FakeDebugSettingsManager(initialShouldShowDebug = true))
+
+        vm.sendAction(SettingsAction.ImportSnapshotClicked)
+        assertTrue(vm.state.value.snapshotImportVisible)
+        assertTrue(
+            vm.state.value.toListItems(stubStringProvider()).filterIsInstance<EditTextListModel>()
+                .any { it.id == SettingsState.SNAPSHOT_IMPORT_EDIT_ID },
+        )
+
+        vm.sendAction(SettingsAction.ImportSnapshotClicked)
+        assertFalse(vm.state.value.snapshotImportVisible)
+    }
+
+    @Test
+    fun `the snapshot-import row is rendered only when the debug toggle is on`() {
+        val hidden = SettingsState(shouldShowDebug = false).toListItems(stubStringProvider())
+        assertFalse(
+            hidden.filterIsInstance<NameCaptionListModel>()
+                .any { it.clickAction == SettingsAction.ImportSnapshotClicked },
+        )
+        assertFalse(hidden.any { it is EditTextListModel })
+
+        val shown = SettingsState(shouldShowDebug = true).toListItems(stubStringProvider())
+        assertTrue(
+            shown.filterIsInstance<NameCaptionListModel>()
+                .any { it.clickAction == SettingsAction.ImportSnapshotClicked },
+        )
+    }
+
+    @Test
+    fun `EditTextCancelled with the import id closes the field`() = runTest {
+        val vm = newViewModel(debug = FakeDebugSettingsManager(initialShouldShowDebug = true))
+        vm.sendAction(SettingsAction.ImportSnapshotClicked)
+
+        vm.sendAction(SageAction.EditTextCancelled(SettingsState.SNAPSHOT_IMPORT_EDIT_ID))
+        assertFalse(vm.state.value.snapshotImportVisible)
+    }
+
+    @Test
+    fun `submitting a snapshot path imports its games and reports the count`() = runTest {
+        val snapshot = LibrarySnapshot(
+            scannerVersion = 1,
+            readerVersions = mapOf("psf" to 1),
+            root = "/corpus",
+            games = listOf(RawGame("PilotWings", null, "PilotWings", "sig", tracks = emptyList())),
+        )
+        val repository = RecordingRepository()
+        val source = BytesLibrarySource(
+            mapOf("/snapshot.json" to PerfbenchJson.encodeToString(snapshot).encodeToByteArray()),
+        )
+        val vm = newViewModel(repository = repository, librarySource = source)
+
+        val event = collectAndDispatch(
+            vm,
+            SageAction.EditTextSubmitted(SettingsState.SNAPSHOT_IMPORT_EDIT_ID, "/snapshot.json"),
+        )
+
+        assertTrue(event is ChipboxEvent.ShowSnackbar)
+        assertEquals("Imported 1 game(s) — 1 new, 0 updated.", event.message)
+        // The import rebased the snapshot's corpus-relative folder onto its root.
+        assertEquals(listOf("/corpus/PilotWings"), repository.importedGames.map { it.folderKey })
+    }
+
+    @Test
+    fun `submitting an unreadable path surfaces a not-found snackbar`() = runTest {
+        val vm = newViewModel() // FakeLibrarySource.openBytes returns null
+
+        val event = collectAndDispatch(
+            vm,
+            SageAction.EditTextSubmitted(SettingsState.SNAPSHOT_IMPORT_EDIT_ID, "/missing.json"),
+        )
+
+        assertTrue(event is ChipboxEvent.ShowSnackbar)
+        assertEquals("Snapshot not found: /missing.json", event.message)
+    }
+
     // ---- helpers ----
 
     private fun newViewModel(
@@ -341,7 +435,7 @@ class SettingsViewModelTest {
         repository: Repository = FakeRepository(emptyMap()),
         playbackHistoryRepository: FakePlaybackHistoryRepository = FakePlaybackHistoryRepository(),
         scanner: CountingScanner = CountingScanner(),
-        librarySource: FakeLibrarySource = FakeLibrarySource(),
+        librarySource: LibrarySource = FakeLibrarySource(),
         appInfo: AppInfo = appInfoOf(),
     ) = SettingsViewModel(
         settingsManager = settings,
@@ -365,7 +459,7 @@ class SettingsViewModelTest {
 
     private suspend fun CoroutineScope.collectAndDispatch(
         vm: SettingsViewModel,
-        action: SettingsAction,
+        action: SageAction,
     ): ChipboxEvent = async(start = CoroutineStart.UNDISPATCHED) { vm.events.first() }
         .also { vm.sendAction(action) }
         .await()
@@ -376,4 +470,26 @@ class SettingsViewModelTest {
         override fun getStringOneInt(string: SageStringId, arg: Int): String = string.toString()
         override fun getStringTwoArgs(string: SageStringId, first: String, second: String): String = string.toString()
     }
+}
+
+/**
+ * Repository stub for the snapshot-import tests: records every game the import upserts and reports
+ * each as newly added, so the VM's import path and its summed count are observable.
+ */
+private class RecordingRepository : Repository by FakeRepository(emptyMap()) {
+    val importedGames = mutableListOf<RawGame>()
+    override suspend fun upsertGame(rawGame: RawGame): GameWriteOutcome {
+        importedGames += rawGame
+        return GameWriteOutcome(importedGames.size.toLong(), GameWriteResult.ADDED)
+    }
+}
+
+/** LibrarySource whose [openBytes] serves a fixed identifier→bytes map; locations are unused. */
+private class BytesLibrarySource(private val bytesByIdentifier: Map<String, ByteArray>) : LibrarySource {
+    override val sourceId: String = "test"
+    override val locations: StateFlow<List<LibraryLocationInfo>> = MutableStateFlow(emptyList())
+    override suspend fun openBytes(identifier: String): ByteArray? = bytesByIdentifier[identifier]
+    override fun scanFolders(): Flow<LibraryFolderInfo> = emptyFlow()
+    override fun addLibraryLocation(identifier: String) = Unit
+    override fun removeLibraryLocation(identifier: String) = Unit
 }
