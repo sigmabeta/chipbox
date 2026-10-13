@@ -48,6 +48,9 @@ android {
 
         buildConfigField("long", "BUILD_TIME_MS", "${System.currentTimeMillis()}L")
         buildConfigField("String", "BUILD_BRANCH", "\"${gitBranch()}\"")
+        // True only for the benchmark build type; lets ChipboxApplication seed the library from a
+        // pushed snapshot at startup (see BenchmarkLibrarySeed) without a test-only code path.
+        buildConfigField("boolean", "BENCHMARK", "false")
     }
 
     // Per-ABI split APKs (arm64-v8a + x86_64) plus a universal one. The release publishes all three:
@@ -110,6 +113,8 @@ android {
             isProfileable = true
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
+            // The only build type that seeds its library from a pushed snapshot at startup.
+            buildConfigField("boolean", "BENCHMARK", "true")
         }
     }
 
@@ -132,6 +137,9 @@ kotlin {
 
 dependencies {
     implementation(projects.cbox.common.appui.api)
+    // Pure contract module — used only for the fixed device-benchmark layout
+    // (DeviceBenchmarkLayout) the `benchmark`-variant seed rebases onto.
+    implementation(projects.apps.perfbenchCore)
     implementation(projects.cbox.common.crash.real)
     implementation(projects.cbox.common.strings.real)
     implementation(projects.cbox.android.artworkprovider.api)

@@ -34,6 +34,10 @@ class ChipboxApplication :
         // still serialized. Touching appGraph here forces the lazy graph to build now, which is
         // fine — onCreate runs once and the graph is reused by every later Activity/Service.
         appGraph.crashReporter.install()
+
+        // Benchmark builds only: ingest the pushed library snapshot before the UI composes, so a
+        // device benchmark scrolls a deterministic library rather than racing a scan.
+        BenchmarkLibrarySeed.seedIfBenchmark(this, appGraph.repository, appGraph.hatchet)
     }
 
     /**

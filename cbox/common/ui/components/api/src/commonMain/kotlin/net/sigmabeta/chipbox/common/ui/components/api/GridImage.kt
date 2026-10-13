@@ -27,6 +27,7 @@ import net.sigmabeta.chipbox.common.ui.components.api.previews.SquareConstants
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.chipbox.common.ui.components.api.subs.ElevatedRoundRect
 import net.sigmabeta.chipbox.common.ui.components.api.subs.TintedText
+import net.sigmabeta.chipbox.common.ui.components.api.subs.TraceSection
 import net.sigmabeta.chipbox.common.ui.components.api.subs.gridCellOffscreenLayerEnabled
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.GridImageListModel
@@ -34,6 +35,20 @@ import net.sigmabeta.sage.images.SourceInfo
 
 @Composable
 fun GridImage(
+    model: GridImageListModel,
+    actionSink: ActionSink,
+    modifier: Modifier,
+    padding: PaddingValues,
+) {
+    // Perfetto section the device scroll macrobenchmark sums as "GridImage" — the composition cost
+    // of a grid cell, alongside the frame-time percentiles.
+    TraceSection("GridImage") {
+        GridImageContent(model, actionSink, modifier, padding)
+    }
+}
+
+@Composable
+private fun GridImageContent(
     model: GridImageListModel,
     actionSink: ActionSink,
     modifier: Modifier,

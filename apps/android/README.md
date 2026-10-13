@@ -18,6 +18,10 @@ produces the installable app.
   and a profiling `benchmark` variant are also configured). Release version
   code/name are derived from the latest git tag via the `git.version` plugin
   (release builds only; debug uses the `versionCode = 1` / `0.1.0` fallbacks).
+- The **`benchmark` variant** also seeds its library from a pushed snapshot at
+  startup — see [`BenchmarkLibrarySeed`](src/main/kotlin/net/sigmabeta/chipbox/BenchmarkLibrarySeed.kt)
+  and the `:benchmark` module. `buildConfigField("boolean", "BENCHMARK", …)` gates
+  it to that variant.
 - Don't boot an AVD to verify — build + lint, then hand device testing to the user.
 
 ## Entry points
@@ -49,7 +53,8 @@ binding comes from the contributed `:di` modules listed in `dependencies {}`.
 
 | File | What it is |
 | --- | --- |
-| `ChipboxApplication.kt` | `Application`; owns `appGraph`, installs crash handler, sets artwork authority. |
+| `ChipboxApplication.kt` | `Application`; owns `appGraph`, installs crash handler, sets artwork authority; seeds the benchmark library. |
+| `BenchmarkLibrarySeed.kt` | `benchmark`-variant only: ingests the pushed library snapshot (fixed external location) at startup. |
 | `MainActivity.kt` | Single `ComponentActivity`; mounts `ChipboxAppUi`, binds the media service. |
 | `di/ChipboxAppGraph.kt` | `@DependencyGraph(AppScope)` root extending `ViewModelGraph`. |
 | `di/AndroidAppModule.kt` | `@ContributesTo(AppScope)` `@BindingContainer` with Android-specific bindings. |
@@ -70,3 +75,5 @@ binding comes from the contributed `:di` modules listed in `dependencies {}`.
   crash, strings, services, artwork provider, debug), plus `sage.common.*` /
   `sage.android.*` (di, list, appcomm, analytics, logging, coroutines, ui themes,
   appinfo) and AndroidX Compose / Activity / Lifecycle / splash and `metrox.viewmodel`.
+  Also `:apps:perfbench-core`, for the fixed device-benchmark layout the benchmark-only
+  seed rebases onto.

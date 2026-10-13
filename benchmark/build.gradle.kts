@@ -2,6 +2,12 @@ plugins {
     alias(libs.plugins.android.test)
 }
 
+// The Chipbox + sage commits are stamped into the device results fingerprint at build time (the
+// benchmark process can't read git). Read them the same way :apps:android reads the build branch.
+fun gitShortCommit(dir: File): String = providers.exec {
+    commandLine("git", "-C", dir.absolutePath, "rev-parse", "--short", "HEAD")
+}.standardOutput.asText.get().trim().ifEmpty { "unknown" }
+
 android {
     namespace = "net.sigmabeta.chipbox.benchmark"
     compileSdk = 36
@@ -13,6 +19,8 @@ android {
         // Numbers are not representative on an emulator — flip this off when
         // benchmarking on physical hardware.
         testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR"
+        testInstrumentationRunnerArguments["chipboxCommit"] = gitShortCommit(rootDir)
+        testInstrumentationRunnerArguments["sageCommit"] = gitShortCommit(File(rootDir, "sage"))
     }
 
     targetProjectPath = ":apps:android"
@@ -45,4 +53,6 @@ dependencies {
     implementation(libs.androidx.test.runner)
     implementation(libs.androidx.test.uiautomator)
     implementation(libs.androidx.benchmark.macro.junit4)
+    // The perfbench contract the device results.json is written with (schema, fingerprint, math).
+    implementation(projects.apps.perfbenchCore)
 }
