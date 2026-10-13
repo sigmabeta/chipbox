@@ -2,12 +2,14 @@ package net.sigmabeta.chipbox.common.ui.freeform.api
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -46,9 +48,12 @@ abstract class ChipboxFreeformViewModel<S : FreeformState<Model>, Model>(
      * The rendered state — title plus the subclass's [Model] — derived from [state] by calling
      * [FreeformState.toActual] on every emission. Collected by [ChipboxFreeformEntry], which
      * wires the title bar and hands [FreeformStateActual.content] to the screen's `content` slot.
+     *
+     * Derivation runs on [Dispatchers.Default] so a screen's `toActual` can't stall the frame.
      */
     val uiStateActual: StateFlow<FreeformStateActual<Model>> = _state
         .map { it.toActual(stringProvider) }
+        .flowOn(Dispatchers.Default)
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
