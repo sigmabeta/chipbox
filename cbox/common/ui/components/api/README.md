@@ -59,7 +59,7 @@ This is a large module (~90 files). Grouped by role:
 
 ### `expect`/`actual` across targets
 
-Three declarations are platform-split so the gradient/inspection and debug-overlay
+Four declarations are platform-split so the gradient/inspection and debug-overlay
 behaviour resolves per target:
 
 - `subs/FakeImage` — `commonMain` `expect`; `androidMain` reuses the historical
@@ -68,6 +68,10 @@ behaviour resolves per target:
 - `subs/ImageAnimationsEnabled` (`crossfadeImagesEnabled`) — `expect` in `commonMain`,
   `actual` `true` on JVM/Android (`src/main/java`, `jvmShared`) and `false` on `jsMain`
   (Long-emulation cost during grid scroll).
+- `subs/GridCellOffscreenLayerEnabled` (`gridCellOffscreenLayerEnabled`) — `expect` in
+  `commonMain`, `actual` `true` on `jvmMain`/`jsMain` (the Skiko win: `GridImage`'s per-cell
+  `CompositingStrategy.Offscreen` layer) and `false` on `androidMain`, where the cached layer
+  costs an extra GPU surface per visible cell without a matching win.
 - `StackFrameSummary` (`Throwable.firstFrameSummary()`) — `commonMain` `expect`;
   JVM/Android read the `StackTraceElement`, JS falls back to the first stack line.
 
