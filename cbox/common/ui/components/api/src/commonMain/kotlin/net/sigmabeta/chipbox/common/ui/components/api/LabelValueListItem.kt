@@ -2,7 +2,6 @@ package net.sigmabeta.chipbox.common.ui.components.api
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,17 +15,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import net.sigmabeta.chipbox.strings.api.ChipboxStringId
-import net.sigmabeta.chipbox.strings.api.text
 import net.sigmabeta.chipbox.common.ui.components.api.subs.ElevatedPill
 import net.sigmabeta.chipbox.common.ui.components.api.subs.Flasher
 import net.sigmabeta.chipbox.common.ui.components.api.subs.LabeledThingy
+import net.sigmabeta.chipbox.common.ui.components.api.subs.TintedText
 import net.sigmabeta.chipbox.common.ui.components.api.utils.nextPercentageFloat
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.text
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.LabelValueListModel
 import kotlin.random.Random
-import androidx.compose.runtime.getValue
 
 @Composable
 fun LabelValueListItem(
@@ -50,7 +49,7 @@ fun LabelValueListItem(
         null
     }
 
-    val labelColor by animateColorAsState(
+    val labelColor = animateColorAsState(
         targetValue = if (model.active) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -58,11 +57,8 @@ fun LabelValueListItem(
         },
         label = "LabelValueListItem.labelColor",
     )
-    val fontWeightValue by animateIntAsState(
-        targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
-        label = "LabelValueListItem.fontWeight",
-    )
-    val fontWeight = FontWeight(fontWeightValue)
+    // Snapped, not animated: animating FontWeight re-measures the text every frame.
+    val fontWeight = if (model.active) FontWeight.Bold else FontWeight.Normal
 
     LabeledThingy(
         label = model.label,
@@ -90,7 +86,7 @@ fun LabelValueListItem(
 
 @Composable
 fun TextValue(value: String, active: Boolean = false) {
-    val valueColor by animateColorAsState(
+    val valueColor = animateColorAsState(
         targetValue = if (active) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -98,20 +94,18 @@ fun TextValue(value: String, active: Boolean = false) {
         },
         label = "TextValue.color",
     )
-    val fontWeightValue by animateIntAsState(
-        targetValue = if (active) FontWeight.Bold.weight else FontWeight.Normal.weight,
-        label = "TextValue.fontWeight",
-    )
+    // Snapped, not animated: animating FontWeight re-measures the text every frame.
+    val fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
 
-    CrossfadeText(
+    TintedText(
         text = value,
         textAlign = TextAlign.End,
         style = MaterialTheme.typography.labelLarge,
         color = valueColor,
-        fontWeight = FontWeight(fontWeightValue),
+        fontWeight = fontWeight,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        textModifier = Modifier
+        modifier = Modifier
             .padding(vertical = 16.dp)
     )
 }

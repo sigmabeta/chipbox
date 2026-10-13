@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,6 +16,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import net.sigmabeta.chipbox.common.ui.components.api.subs.TintedIcon
+import net.sigmabeta.chipbox.common.ui.components.api.subs.TintedText
 import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
 import net.sigmabeta.chipbox.common.ui.components.api.utils.ImageSize
 import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
@@ -27,7 +27,6 @@ import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.IconNameListModel
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.vector
-import androidx.compose.runtime.getValue
 
 @Composable
 fun IconNameListItem(
@@ -58,7 +57,7 @@ fun IconNameListItem(
     modifier: Modifier,
     padding: PaddingValues,
 ) {
-    val textColor by animateColorAsState(
+    val textColor = animateColorAsState(
         targetValue = if (active) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -66,11 +65,8 @@ fun IconNameListItem(
         },
         label = "IconNameListItem.textColor",
     )
-    val fontWeightValue by animateIntAsState(
-        targetValue = if (active) FontWeight.Bold.weight else FontWeight.Normal.weight,
-        label = "IconNameListItem.fontWeight",
-    )
-    val fontWeight = FontWeight(fontWeightValue)
+    // Snapped, not animated: animating FontWeight re-measures the text every frame.
+    val fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
 
     Row(
         modifier = modifier
@@ -81,7 +77,7 @@ fun IconNameListItem(
             .clickable { actionSink.sendAction(clickAction) }
             .padding(padding.innerFocusPadding())
     ) {
-        Icon(
+        TintedIcon(
             imageVector = icon.vector(),
             contentDescription = null,
             tint = textColor,
@@ -92,7 +88,7 @@ fun IconNameListItem(
                 .align(Alignment.CenterVertically)
         )
 
-        CrossfadeText(
+        TintedText(
             text = name,
             style = MaterialTheme.typography.titleMedium,
             color = textColor,

@@ -12,6 +12,7 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -59,7 +60,7 @@ fun NotifListItem(
                 .padding(horizontal = 24.dp)
         ) {
             Row {
-                CrossfadeText(
+                Text(
                     text = model.title,
                     color = contentColor,
                     style = MaterialTheme.typography.titleLarge,
@@ -86,7 +87,7 @@ fun NotifListItem(
                 modifier = Modifier.height(16.dp)
             )
 
-            CrossfadeText(
+            Text(
                 text = model.description,
                 color = contentColor,
                 style = MaterialTheme.typography.bodyMedium
@@ -102,7 +103,7 @@ fun NotifListItem(
                     onClick = { actionSink.sendAction(action) },
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    CrossfadeText(
+                    Text(
                         text = model.actionLabel,
                         color = buttonTextColor
                     )

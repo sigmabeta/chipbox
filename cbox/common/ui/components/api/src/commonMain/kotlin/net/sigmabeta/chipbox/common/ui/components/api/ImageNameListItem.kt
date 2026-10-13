@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -21,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.chipbox.common.ui.components.api.subs.ElevatedCircle
+import net.sigmabeta.chipbox.common.ui.components.api.subs.TintedText
 import net.sigmabeta.chipbox.common.ui.components.api.utils.FocusAreaShape
 import net.sigmabeta.chipbox.common.ui.components.api.utils.ImageSize
 import net.sigmabeta.chipbox.common.ui.components.api.utils.innerFocusPadding
@@ -30,7 +30,6 @@ import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.ImageNameListModel
 import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
-import androidx.compose.runtime.getValue
 
 @Composable
 fun ImageNameListItem(
@@ -63,7 +62,7 @@ fun ImageNameListItem(
     modifier: Modifier,
     padding: PaddingValues,
 ) {
-    val textColor by animateColorAsState(
+    val textColor = animateColorAsState(
         targetValue = if (active) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -71,11 +70,8 @@ fun ImageNameListItem(
         },
         label = "ImageNameListItem.textColor",
     )
-    val fontWeightValue by animateIntAsState(
-        targetValue = if (active) FontWeight.Bold.weight else FontWeight.Normal.weight,
-        label = "ImageNameListItem.fontWeight",
-    )
-    val fontWeight = FontWeight(fontWeightValue)
+    // Snapped, not animated: animating FontWeight re-measures the text every frame.
+    val fontWeight = if (active) FontWeight.Bold else FontWeight.Normal
 
     Row(
         modifier = modifier
@@ -104,7 +100,7 @@ fun ImageNameListItem(
             modifier = Modifier.width(8.dp)
         )
 
-        CrossfadeText(
+        TintedText(
             text = name,
             style = MaterialTheme.typography.titleMedium,
             color = textColor,

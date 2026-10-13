@@ -1,7 +1,6 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,10 +22,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
+import net.sigmabeta.chipbox.common.ui.components.api.subs.TintedText
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.WideItemListModel
 import net.sigmabeta.sage.images.SourceInfo
-import androidx.compose.runtime.getValue
 
 @Composable
 fun WideItem(
@@ -37,7 +36,7 @@ fun WideItem(
 ) {
     val sourceInfo = remember(model.sourceInfo) { SourceInfo(model.sourceInfo) }
 
-    val textColor by animateColorAsState(
+    val textColor = animateColorAsState(
         targetValue = if (model.active) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -45,11 +44,8 @@ fun WideItem(
         },
         label = "WideItem.textColor",
     )
-    val fontWeightValue by animateIntAsState(
-        targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
-        label = "WideItem.fontWeight",
-    )
-    val fontWeight = FontWeight(fontWeightValue)
+    // Snapped, not animated: animating FontWeight re-measures the text every frame.
+    val fontWeight = if (model.active) FontWeight.Bold else FontWeight.Normal
 
     Row(
         modifier = modifier
@@ -70,7 +66,7 @@ fun WideItem(
                 .aspectRatio(1.0f)
         )
 
-        CrossfadeText(
+        TintedText(
             text = model.name,
             textAlign = TextAlign.Start,
             maxLines = 2,

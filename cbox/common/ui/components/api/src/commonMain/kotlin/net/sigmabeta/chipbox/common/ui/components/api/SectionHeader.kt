@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
@@ -28,14 +29,14 @@ fun SectionHeader(
     ) {
         val color = MaterialTheme.colorScheme.onBackground
 
-        CrossfadeText(
+        Text(
             text = name,
             style = MaterialTheme.typography.titleLarge
                 .copy(fontSize = 26.sp),
             color = color,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            textModifier = Modifier
+            modifier = Modifier
                 .semantics {
                     heading()
                 }

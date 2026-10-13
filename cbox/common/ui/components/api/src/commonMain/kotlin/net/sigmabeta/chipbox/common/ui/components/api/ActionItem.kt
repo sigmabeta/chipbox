@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,13 +56,13 @@ fun ActionItem(
             modifier = Modifier.width(12.dp)
         )
 
-        CrossfadeText(
+        Text(
             text = model.name,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            textModifier = Modifier
+            modifier = Modifier
                 .padding(
                     top = 16.dp,
                     bottom = 16.dp

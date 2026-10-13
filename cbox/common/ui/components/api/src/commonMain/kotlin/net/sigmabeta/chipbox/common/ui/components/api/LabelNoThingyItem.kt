@@ -1,11 +1,9 @@
 package net.sigmabeta.chipbox.common.ui.components.api
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import net.sigmabeta.chipbox.common.ui.components.api.subs.LabeledThingy
@@ -29,7 +27,7 @@ fun LabelNoThingyItem(
         null
     }
 
-    val labelColor by animateColorAsState(
+    val labelColor = animateColorAsState(
         targetValue = if (model.active) {
             MaterialTheme.colorScheme.primary
         } else {
@@ -37,10 +35,8 @@ fun LabelNoThingyItem(
         },
         label = "LabelNoThingyItem.labelColor",
     )
-    val fontWeightValue by animateIntAsState(
-        targetValue = if (model.active) FontWeight.Bold.weight else FontWeight.Normal.weight,
-        label = "LabelNoThingyItem.fontWeight",
-    )
+    // Snapped, not animated: animating FontWeight re-measures the text every frame.
+    val fontWeight = if (model.active) FontWeight.Bold else FontWeight.Normal
 
     LabeledThingy(
         label = model.name,
@@ -50,6 +46,6 @@ fun LabelNoThingyItem(
         modifier = modifier,
         padding = padding,
         labelColor = labelColor,
-        labelFontWeight = FontWeight(fontWeightValue),
+        labelFontWeight = fontWeight,
     )
 }
