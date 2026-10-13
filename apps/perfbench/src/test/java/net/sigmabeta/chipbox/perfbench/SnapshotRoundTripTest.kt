@@ -13,8 +13,12 @@ import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProber
 import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamSubsong
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Data
+import net.sigmabeta.chipbox.repository.LibraryImportResult
+import net.sigmabeta.chipbox.repository.LibrarySnapshot
+import net.sigmabeta.chipbox.repository.LibrarySnapshotJson
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.database.DatabaseRepository
+import net.sigmabeta.chipbox.repository.importLibrarySnapshot
 import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.BluntHatchet
@@ -40,7 +44,7 @@ class SnapshotRoundTripTest {
         runSnapshot(SnapshotArgs(corpus, outFile), prober = NoVgmstreamProber)
         // Read the snapshot back off disk — the exact path the app's ingest takes — so a schema
         // change that breaks the written format fails here rather than at runtime.
-        val snapshot = PerfbenchJson.decodeFromString<LibrarySnapshot>(outFile.readText())
+        val snapshot = LibrarySnapshotJson.decodeFromString<LibrarySnapshot>(outFile.readText())
 
         val imported = newRepo()
         runBlocking { imported.importLibrarySnapshot(snapshot, corpus.invariantSeparatorsPath) }
@@ -53,7 +57,7 @@ class SnapshotRoundTripTest {
         val corpus = sampleCorpus()
         val outFile = File(Files.createTempDirectory("perfbench-out").toFile(), "library-snapshot.json")
         runSnapshot(SnapshotArgs(corpus, outFile), prober = NoVgmstreamProber)
-        val snapshot = PerfbenchJson.decodeFromString<LibrarySnapshot>(outFile.readText())
+        val snapshot = LibrarySnapshotJson.decodeFromString<LibrarySnapshot>(outFile.readText())
 
         val repo = newRepo()
         val first = runBlocking { repo.importLibrarySnapshot(snapshot, corpus.invariantSeparatorsPath) }

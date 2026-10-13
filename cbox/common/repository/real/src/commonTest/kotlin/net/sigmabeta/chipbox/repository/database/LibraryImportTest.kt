@@ -1,4 +1,4 @@
-package net.sigmabeta.chipbox.perfbench
+package net.sigmabeta.chipbox.repository.database
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -10,15 +10,18 @@ import kotlinx.coroutines.test.runTest
 import net.sigmabeta.chipbox.database.fake.FakeDatabase
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.Data
+import net.sigmabeta.chipbox.repository.LibraryImportResult
+import net.sigmabeta.chipbox.repository.LibrarySnapshot
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
-import net.sigmabeta.chipbox.repository.database.DatabaseRepository
+import net.sigmabeta.chipbox.repository.importLibrarySnapshot
+import net.sigmabeta.chipbox.repository.librarySnapshot
 import net.sigmabeta.sage.logging.BluntHatchet
 
 /**
  * The snapshot-ingest contract, exercised against the production [DatabaseRepository] over the
- * in-memory DAO fakes ([FakeDatabase]) — the same rig the repository's own DatabaseRepositoryTest
- * uses. These assert external behaviour only: given a snapshot, what ends up in the library.
+ * in-memory DAO fakes ([FakeDatabase]) — the same rig [DatabaseRepositoryTest] uses. These assert
+ * external behaviour only: given a snapshot, what ends up in the library.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class LibraryImportTest {

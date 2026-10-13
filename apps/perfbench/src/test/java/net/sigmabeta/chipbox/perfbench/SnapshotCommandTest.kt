@@ -8,6 +8,8 @@ import kotlin.test.assertTrue
 import kotlinx.serialization.decodeFromString
 import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProber
 import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamSubsong
+import net.sigmabeta.chipbox.repository.LibrarySnapshot
+import net.sigmabeta.chipbox.repository.LibrarySnapshotJson
 
 /**
  * End-to-end generation: the `snapshot` command drives the real host scanner over a small sample
@@ -28,7 +30,7 @@ class SnapshotCommandTest {
         val written = runSnapshot(SnapshotArgs(corpus, outFile), prober = NoVgmstreamProber)
 
         assertTrue(outFile.isFile, "the snapshot file should be written")
-        val snapshot = PerfbenchJson.decodeFromString<LibrarySnapshot>(outFile.readText())
+        val snapshot = LibrarySnapshotJson.decodeFromString<LibrarySnapshot>(outFile.readText())
         assertEquals(written, snapshot)
         assertEquals(corpus.invariantSeparatorsPath, snapshot.root)
 

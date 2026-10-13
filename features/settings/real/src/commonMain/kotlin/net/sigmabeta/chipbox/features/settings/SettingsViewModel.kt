@@ -19,10 +19,10 @@ import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
-import net.sigmabeta.chipbox.perfbench.LibrarySnapshot
-import net.sigmabeta.chipbox.perfbench.PerfbenchJson
-import net.sigmabeta.chipbox.perfbench.importLibrarySnapshot
+import net.sigmabeta.chipbox.repository.LibrarySnapshot
+import net.sigmabeta.chipbox.repository.LibrarySnapshotJson
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.repository.importLibrarySnapshot
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
@@ -335,7 +335,7 @@ class SettingsViewModel @Inject constructor(
                     emit(ChipboxEvent.ShowSnackbar("Snapshot not found: $path"))
                     return@launch
                 }
-                val snapshot = PerfbenchJson.decodeFromString<LibrarySnapshot>(bytes.decodeToString())
+                val snapshot = LibrarySnapshotJson.decodeFromString<LibrarySnapshot>(bytes.decodeToString())
                 // A by-hand import has no separate corpus location to rebase onto, so use the root
                 // the snapshot was generated from (correct when importing on the same host). The
                 // benchmark build's startup seed passes its own fixed device root instead.

@@ -1,7 +1,4 @@
-package net.sigmabeta.chipbox.perfbench
-
-import net.sigmabeta.chipbox.repository.GameWriteResult
-import net.sigmabeta.chipbox.repository.Repository
+package net.sigmabeta.chipbox.repository
 
 /**
  * Outcome of [importLibrarySnapshot], counted by what the repository reported per game:
@@ -21,9 +18,9 @@ data class LibraryImportResult(
  * (`perfbench snapshot` writes one, this ingests it).
  *
  * Each game is rebased from the snapshot's corpus-relative paths onto [root] and written through
- * the existing `upsertGame` path, so games reconcile by `folderKey` and a game already present is
- * updated in place rather than duplicated. Importing the same snapshot twice is therefore
- * idempotent.
+ * the existing [upsertGame][Repository.upsertGame] path, so games reconcile by `folderKey` and a
+ * game already present is updated in place rather than duplicated. Importing the same snapshot
+ * twice is therefore idempotent.
  *
  * [root] is **explicit**: the snapshot's own recorded root is informational, and the caller knows
  * where the corpus actually lives on this machine (a device seed passes its fixed external

@@ -1,9 +1,8 @@
-package net.sigmabeta.chipbox.perfbench
+package net.sigmabeta.chipbox.repository
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import net.sigmabeta.chipbox.repository.RawGame
-import net.sigmabeta.chipbox.repository.RawTrack
+import kotlinx.serialization.json.Json
 
 /**
  * A **library snapshot** — the serialized result of scanning a corpus once, written by
@@ -14,6 +13,9 @@ import net.sigmabeta.chipbox.repository.RawTrack
  *
  * Every stored path is **relative to [root]** (see [relativized]), so one snapshot is valid on any
  * host or device: import rebases the relative paths onto wherever the corpus lives ([rebased]).
+ *
+ * It lives in the repository `:api` because ingest is a repository capability — see
+ * [importLibrarySnapshot].
  */
 @Serializable
 data class LibrarySnapshot(
@@ -29,6 +31,17 @@ data class LibrarySnapshot(
         /** Bumped when the snapshot layout changes in a way older readers can't handle. */
         const val FORMAT_VERSION = 1
     }
+}
+
+/**
+ * The JSON dialect a [LibrarySnapshot] is written and read with. `ignoreUnknownKeys` keeps a
+ * snapshot forward-compatible with a newer writer; `encodeDefaults` writes the scan-metadata keys
+ * (`scanner_version`, `reader_versions`) even at their defaults so the file stays complete.
+ */
+val LibrarySnapshotJson: Json = Json {
+    prettyPrint = true
+    ignoreUnknownKeys = true
+    encodeDefaults = true
 }
 
 /**
