@@ -13,9 +13,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -32,8 +35,6 @@ import net.sigmabeta.sage.ui.SageMaterialVectors
 import net.sigmabeta.sage.ui.icons.CrossOutColor
 import net.sigmabeta.sage.ui.icons.IcCrossOut24dp
 import net.sigmabeta.sage.ui.vector
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 
 @Composable
 fun EmptyListIndicator(
@@ -134,12 +135,12 @@ private fun EmptyListIndicator(
             }
         }
 
-        CrossfadeText(
+        Text(
             text = explanation,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyLarge,
             color = color,
-            textModifier = Modifier
+            modifier = Modifier
                 .padding(horizontal = 32.dp)
                 .padding(bottom = 16.dp)
                 .widthIn(min = 200.dp, max = 400.dp)
@@ -170,12 +171,12 @@ private fun DebugText(debugText: String, color: Color) {
     val style = remember(baseStyle) {
         baseStyle.copy(fontSize = 10.sp, fontFamily = FontFamily.Monospace)
     }
-    CrossfadeText(
+    Text(
         text = debugText,
         textAlign = TextAlign.Center,
         style = style,
         color = color,
-        textModifier = Modifier
+        modifier = Modifier
             .padding(horizontal = 32.dp)
             .padding(bottom = 8.dp)
             .widthIn(min = 200.dp, max = 400.dp)
@@ -189,12 +190,12 @@ private fun DebugTextSmall(debugText: String, color: Color) {
     val style = remember(baseStyle) {
         baseStyle.copy(fontSize = 6.sp, fontFamily = FontFamily.Monospace)
     }
-    CrossfadeText(
+    Text(
         text = debugText,
         textAlign = TextAlign.Center,
         style = style,
         color = color,
-        textModifier = Modifier
+        modifier = Modifier
             .padding(horizontal = 32.dp)
             .padding(bottom = 16.dp)
             .widthIn(min = 200.dp, max = 400.dp)
