@@ -19,6 +19,7 @@ variant.
 | `AudioScenario.kt` | the canonical audio scenario ids (`audio.usf`, `audio.vgm`, `audio.psf`) and the extensions each selects |
 | `AudioReport.kt` | pure report math: `audioResult(AudioMeasurement)` and `median` |
 | `Diff.kt` | the baseline-diff contract: `compareAudioRuns`/`DiffOutcome`, the `DiffRefusal` comparability guards, the `FingerprintClass` of a `Fingerprint`, `ScenarioSpeedup`/`DiffReport`, and `geometricMean` |
+| `LibrarySnapshot.kt` | the `snapshot` subcommand's `LibrarySnapshot` DTO — the raw scan output (`List<RawGame>`) plus scan metadata (`scanner_version`, `reader_versions`, the corpus `root`), and the pure `relativized`/`rebased` path transforms that make one snapshot portable across hosts and devices |
 | `PerfbenchJson.kt` | the one JSON dialect (`class` discriminator, pretty-printed) |
 | `SystemHostEnvironment.kt` | `jvmMain` only: probes the running host for the facts a host fingerprint records (`/proc/cpuinfo`, `/etc/os-release`, `java.*`) |
 
@@ -48,11 +49,23 @@ when (val outcome = compareAudioRuns(baseline, current)) {
     is DiffOutcome.Compared -> println(outcome.report.geometricMean)
     is DiffOutcome.Refused -> println(outcome.reason.message)
 }
+
+// A library snapshot: raw scan output stored with corpus-relative paths, rebased on import.
+val snapshot = librarySnapshot(
+    root = "/host/corpus",
+    scannerVersion = scannerVersion,
+    readerVersions = mapOf("psf" to 1),
+    games = rawGames,
+)
+val forDevice = snapshot.games.map { it.rebased("/sdcard/corpus") }
 ```
 
 `libs.kotlinx.serialization.json` is an `api` dependency because the schema types
-carry generated serializers that any consumer needs resolvable.
+carry generated serializers that any consumer needs resolvable. The snapshot DTO
+reuses `:cbox:common:repository:api`'s `@Serializable` raw scan types (`RawGame`/
+`RawTrack`) as its payload, so that module is an `api` dependency too.
 
 Tested by `commonTest` (schema round-trips, fingerprint construction, report
-math, scenario ids, the diff comparability guards and geometric mean) and a
-`jvmTest` for the `/proc/cpuinfo` parser.
+math, scenario ids, the diff comparability guards and geometric mean, and the
+snapshot round-trip + path transforms) and a `jvmTest` for the `/proc/cpuinfo`
+parser.

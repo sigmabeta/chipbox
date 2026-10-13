@@ -2,7 +2,8 @@ package net.sigmabeta.chipbox.perfbench
 
 /**
  * `perfbench` — the host-side performance benchmarking CLI. One entry point, one subcommand per
- * axis; the device axes live in the Android `:benchmark` module instead. v1 ships `audio` and `diff`.
+ * axis; the device axes live in the Android `:benchmark` module instead. v1 ships `audio`,
+ * `snapshot`, and `diff`.
  */
 fun main(rawArgs: Array<String>) {
     val command = rawArgs.firstOrNull()
@@ -14,6 +15,8 @@ fun main(rawArgs: Array<String>) {
 
     when (command) {
         "audio" -> runAudio(parseAudioOptions(options))
+
+        "snapshot" -> runSnapshot(parseSnapshotOptions(options))
 
         "diff" -> runDiff(parseDiffOptions(options))
 
@@ -54,6 +57,7 @@ private fun printUsage() {
 
         Usage:
           perfbench audio --dir <corpus> [options]
+          perfbench snapshot --dir <corpus> [--out <snapshot>]
           perfbench diff --a <runA> --b <runB>
 
         audio — measure real-time factor (RTF) per emulator over a corpus. Renders each scenario's
@@ -66,6 +70,12 @@ private fun printUsage() {
           --repeat <n>         timed repeats per scenario (median of N)   (default: $DEFAULT_REPEAT)
           --seconds <n>        audio seconds rendered per repeat          (default: $DEFAULT_SAMPLE_SECONDS)
           --out <dir>          results root; results.json is written here  (default: $DEFAULT_OUT)
+
+        snapshot — run the real host scanner once over the corpus and write a portable library
+        snapshot (raw scan output with corpus-relative paths) for the app to ingest without rescanning.
+
+          --dir <folder>       corpus root to scan                        (required)
+          --out <snapshot>     snapshot file to write                     (default: $DEFAULT_SNAPSHOT_OUT)
 
         diff — compare the audio axis of two runs. Run A is the baseline, run B the current run.
         Prints the per-scenario speedup (baseline render time ÷ current render time) and its

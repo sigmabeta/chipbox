@@ -2,7 +2,8 @@
 
 The host-side home of the Chipbox performance harness: a JVM CLI that measures
 **how fast the emulator cores render audio** (real-time factor, RTF) over a
-corpus you supply, and diffs two runs against each other. It is a
+corpus you supply, generates a portable **library snapshot** from that corpus,
+and diffs two runs against each other. It is a
 **measurement, not a gate** — nothing in CI runs it.
 
 Device axes (UI scroll jank, startup) live in the Android `:benchmark` module;
@@ -37,6 +38,30 @@ A/B harness uses. Chain/library files (`*.psflib`, `*.usflib`, …) must sit **n
 to** the tracks that reference them, since the native loaders resolve them as
 siblings. `build/perfbench/` is git-ignored; WAV scratch output lands in
 `build/perfbench/wav/`.
+
+### `snapshot --dir <corpus> [--out <snapshot>]`
+
+Runs the **real host scanner** once over the corpus and writes a portable
+**library snapshot** — the scanner's raw game/track output (with chain files,
+folder signatures, and scanner/reader versions) stored with paths **relative to
+the corpus root**. The app ingests it (see the ingest capability) so a device
+benchmark starts from a warm, deterministic library without paying for a scan on
+every run.
+
+| option | meaning | default |
+|---|---|---|
+| `--dir <folder>` | corpus root to scan | **required** |
+| `--out <snapshot>` | snapshot file to write | `build/perfbench/library-snapshot.json` |
+
+```sh
+./gradlew :apps:perfbench:run --args="snapshot --dir /path/to/corpus --out build/perfbench/library-snapshot.json"
+```
+
+The scan uses the same readers, PSF chain resolution, and m3u overlays as the
+app's library scan. Paths (track, folder, chain file, cover art) are stored
+relative to `--dir` and the snapshot records a `root` reference, so the same
+snapshot is valid on host and device: import rebases the relative paths onto the
+device's corpus location.
 
 ### `diff --a <runA> --b <runB>`
 

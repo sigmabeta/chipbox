@@ -26,6 +26,9 @@ kotlin {
         named("commonMain") {
             dependencies {
                 api(libs.kotlinx.serialization.json)
+                // The snapshot DTO serializes the scanner's raw output types (RawGame/RawTrack),
+                // which are annotated @Serializable in this module.
+                api(projects.cbox.common.repository.api)
             }
         }
 
