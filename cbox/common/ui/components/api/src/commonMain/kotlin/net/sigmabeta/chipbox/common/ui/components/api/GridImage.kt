@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.previews.SquareConstants
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.chipbox.common.ui.components.api.subs.ElevatedRoundRect
+import net.sigmabeta.chipbox.common.ui.components.api.subs.gridCellOffscreenLayerEnabled
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.images.SourceInfo
@@ -87,11 +88,10 @@ fun GridImage(
         .aspectRatio(model.aspectRatio)
         // Cache the cell's rasterized contents into an offscreen Skia / GPU layer so scroll
         // translates the layer instead of re-rasterizing the image + scrim + text on every
-        // frame. The cell's content only redraws when state inside it changes (model.active
-        // flip, image load completion); during scroll the contents are static and the
-        // layer is just translated — cheap on every backend. Big win on Skiko (web + JVM),
-        // standard pattern on Android.
-        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        // frame. A Skiko (web + JVM) win — see [gridCellOffscreenLayerEnabled] — gated off on
+        // Android, where the cached layer costs an extra GPU surface per visible cell without
+        // a matching win.
+        .then(if (gridCellOffscreenLayerEnabled) OffscreenCellLayer else Modifier)
         .clickable { actionSink.sendAction(model.clickAction) }
 
     val maxWidthDp = model.maxWidthDp
@@ -126,3 +126,8 @@ private val NameScrim = Brush.verticalGradient(
 
 private val NameInnerPadding = 8.dp
 private val NameExtraTopPadding = 8.dp
+
+// Reused (not rebuilt per cell) so every grid cell shares one stable offscreen-layer modifier.
+private val OffscreenCellLayer = Modifier.graphicsLayer {
+    compositingStrategy = CompositingStrategy.Offscreen
+}
