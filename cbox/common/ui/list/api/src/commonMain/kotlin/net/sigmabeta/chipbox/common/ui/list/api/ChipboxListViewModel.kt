@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.common.ui.list.api
 
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -60,11 +62,14 @@ abstract class ChipboxListViewModel<S : ListState>(
      * [state] by calling [ListState.toActual] on every emission. This is what [ChipboxListEntry]
      * (and through it [ListScreen]/[GridScreen]) collects.
      *
-     * Started [SharingStarted.Eagerly] so the first composition has a value without a frame
-     * of empty content. The seed [initialValue] is the same `toActual` of `initialState`.
+     * Derivation runs on [Dispatchers.Default], off the UI thread: `toActual` remaps the whole
+     * loaded window to `ListModel`s + immutable list + dupe scan on every emission, which stalls
+     * the frame when pagination bursts land mid-scroll. The [SharingStarted.Eagerly] seed
+     * [initialValue] is still computed synchronously on the constructing thread.
      */
     val uiStateActual: StateFlow<ListStateActual> = _state
         .map { it.toActual(stringProvider) }
+        .flowOn(Dispatchers.Default)
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.Eagerly,
