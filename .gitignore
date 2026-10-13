@@ -83,5 +83,8 @@ apps/jvm/core.*
 # Local-only helper scripts (e.g. nas-tng CI-runner payloads) — not part of the repo
 scripts/local/
 
+# Local markdown issue tracker used by the engineering skills — specs/tickets kept local-only
+.scratch/
+
 # MkDocs build output (landing site)
 /site/
