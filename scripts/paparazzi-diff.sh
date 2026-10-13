@@ -75,8 +75,12 @@ ae_pct() {
   if [ "$total" -eq 0 ] || [ "$nw" != "$ow" ] || [ "$nh" != "$oh" ]; then
     echo "100.0000 ${total:-0} ${total:-0}"; return            # size mismatch ⇒ treat as fully divergent
   fi
+  # `compare -metric AE` prints "<count> (<normalized fraction>)" to stderr (e.g.
+  # "532.928 (0.000888214)"). Take the leading count token: a greedy `[0-9]+ | tail -1`
+  # instead grabs the digits of the normalized parenthetical ("000888214") and inflates AE%
+  # by orders of magnitude.
   local ae
-  ae="$( { compare -metric AE "$old" "$new" null: 2>&1 || true; } | grep -oE '[0-9]+' | tail -1)"
+  ae="$( { compare -metric AE "$old" "$new" null: 2>&1 || true; } | awk 'NR==1 { print $1 }' )"
   ae="${ae:-0}"
   awk -v a="$ae" -v t="$total" 'BEGIN{ printf "%.4f %d %d", (t ? 100*a/t : 0), a, t }'
 }
