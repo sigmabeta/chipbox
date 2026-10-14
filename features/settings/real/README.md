@@ -15,7 +15,10 @@ clear-library / clear-history operations (with `LCE` loading state), starts
 library scans, and translates navigation actions into `ChipboxEvent.NavigateTo`
 (manage library, rescan status, playback status, error log, crash log, component
 library). It also implements the hidden five-tap-the-build-date toggle that
-reveals the debug section.
+reveals the debug section, and the debug-only **snapshot import**: an inline path
+field that reads a `library-snapshot.json` (via the injected `LibrarySource`) and
+upsert-merges it through `Repository.importLibrarySnapshot`, reporting the count
+in a snackbar.
 
 ## Contents
 
@@ -45,4 +48,4 @@ Settings -> SettingsDeepScreen    // SettingsRoute(onEvent = LocalChipboxEventSi
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (VM + `expect` Route/build-date); `androidMain` / `jvmMain` / `jsMain` Route actuals; `src/main/java` (`jvmSharedMain`) + `jsMain` build-date actuals; `commonTest` for `SettingsViewModelTest`
-- **SAGE/module dependencies:** `:features:settings:api`; `:cbox:common:ui:list:api`, `:cbox:common:ui:fonts:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:settings:api`, `:cbox:common:debug:api`, `:cbox:common:repository:api`, `:cbox:common:history:api`, `:cbox:common:scanner:api`, `:cbox:common:contentsource:api`; the `:api` route keys of `:features:playback-status`, `:error-log`, `:crash-log`, `:component-library`, `:manage-library`, `:rescan-status`, and `:folder-picker` (android/jvm); `sage.common.appinfo`, `sage.common.ui.components`, `kotlinx.collections.immutable`
+- **SAGE/module dependencies:** `:features:settings:api`; `:cbox:common:ui:list:api`, `:cbox:common:ui:fonts:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:settings:api`, `:cbox:common:debug:api`, `:cbox:common:repository:api`, `:cbox:common:history:api`, `:cbox:common:scanner:api`, `:cbox:common:contentsource:api` (the `LibrarySnapshot` DTO, `LibrarySnapshotJson`, and the `importLibrarySnapshot` capability all come from `:cbox:common:repository:api`); the `:api` route keys of `:features:playback-status`, `:error-log`, `:crash-log`, `:component-library`, `:manage-library`, `:rescan-status`, and `:folder-picker` (android/jvm); `sage.common.appinfo`, `sage.common.ui.components`, `kotlinx.collections.immutable`
