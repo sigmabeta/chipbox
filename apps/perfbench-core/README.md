@@ -6,9 +6,11 @@ it for host axes; the Android `:benchmark` module writes it for device axes.
 Keeping the shape here means a result written by one home can be read by the
 other.
 
-It is **pure contract** — no renderer, no I/O, no platform code beyond the
-optional host probe below. KMP (`androidTarget` + `jvm`) so both homes resolve a
-variant.
+It is **contract-first** — no renderer, and no I/O beyond the two narrow platform
+helpers below (the optional host probe, and the shared corpus-file hash). KMP
+(`androidTarget` + `jvm`) so both homes resolve a variant. `commonMain` stays
+`java.*`-free; code needing it lives in `src/main/java` (the `jvmSharedMain`
+source set both targets depend on).
 
 The **library-snapshot** DTO, its JSON dialect, and the `importLibrarySnapshot`
 capability are a repository concern and live in
@@ -33,6 +35,7 @@ repository `:api`, not on this harness module.
 | `Diff.kt` | the baseline-diff contract: `compareAudioRuns`/`DiffOutcome`, the `DiffRefusal` comparability guards, the `FingerprintClass` of a `Fingerprint`, `ScenarioSpeedup`/`DiffReport`, and `geometricMean` |
 | `PerfbenchJson.kt` | the one JSON dialect for `results.json` (`class` discriminator, pretty-printed). The library snapshot has its own dialect (`LibrarySnapshotJson`) in `:cbox:common:repository:api`. |
 | `SystemHostEnvironment.kt` | `jvmMain` only: probes the running host for the facts a host fingerprint records (`/proc/cpuinfo`, `/etc/os-release`, `java.*`) |
+| `Sha256.kt` | `jvmSharedMain` (`src/main/java`): the one streamed SHA-256 → lowercase-hex file hash, shared by the host corpus-manifest builder and the app's benchmark library seed so a file hashes identically through either |
 
 ## Using it
 
@@ -101,7 +104,8 @@ carry generated serializers that any consumer needs resolvable.
 Tested by `commonTest` (schema round-trips, fingerprint construction, report
 math for the audio, UI, and startup axes, scenario ids, and the diff
 comparability guards and geometric mean) and a `jvmTest` for the `/proc/cpuinfo`
-parser. The snapshot's own round-trip + path transforms and the ingest capability
+parser and the streamed SHA-256 file hash (against a known-good literal). The
+snapshot's own round-trip + path transforms and the ingest capability
 are tested in `:cbox:common:repository:api`/`:real`; the scanner → snapshot →
 import round trip end to end is covered in `apps/perfbench`. The device axes'
 mapping (`BenchmarkData.TestResult` → `UiMeasurement`/`StartupMeasurement`) lives

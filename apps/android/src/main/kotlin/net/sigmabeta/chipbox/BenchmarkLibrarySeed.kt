@@ -3,10 +3,10 @@ package net.sigmabeta.chipbox
 import android.content.Context
 import android.os.Environment
 import java.io.File
-import java.security.MessageDigest
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.decodeFromString
 import net.sigmabeta.chipbox.perfbench.DeviceBenchmarkLayout
+import net.sigmabeta.chipbox.perfbench.sha256Hex
 import net.sigmabeta.chipbox.repository.LibrarySnapshot
 import net.sigmabeta.chipbox.repository.LibrarySnapshotJson
 import net.sigmabeta.chipbox.repository.Repository
@@ -57,7 +57,7 @@ internal object BenchmarkLibrarySeed {
         root: File,
         snapshotFile: File,
     ) {
-        val hash = snapshotFile.sha256()
+        val hash = sha256Hex(snapshotFile.path)
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         if (prefs.getString(KEY_SNAPSHOT_HASH, null) == hash) {
             hatchet.d("Benchmark seed: snapshot $hash already imported; skipping")
@@ -76,10 +76,5 @@ internal object BenchmarkLibrarySeed {
                     "(${result.added} added, ${result.updated} updated) — corpus root $corpusRoot",
             )
         }
-    }
-
-    private fun File.sha256(): String {
-        val digest = MessageDigest.getInstance("SHA-256").digest(readBytes())
-        return digest.joinToString(separator = "") { byte -> "%02x".format(byte) }
     }
 }
