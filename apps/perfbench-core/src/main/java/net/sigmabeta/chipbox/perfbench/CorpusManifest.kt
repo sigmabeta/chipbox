@@ -9,8 +9,11 @@ import java.io.File
  * portable between a host corpus and a device's rebased copy), its SHA-256, and its size. Entries
  * are sorted by path, so two runs over the same corpus produce byte-identical manifests and the
  * comparability guard can match them exactly.
+ *
+ * Lives in the shared `jvmSharedMain` source set so both homes build the same manifest: the host
+ * audio axis over its measured files, and the device axes over the whole pushed corpus ([corpusPin]).
  */
-internal fun corpusManifest(root: File, measured: Collection<File>): List<CorpusEntry> =
+fun corpusManifest(root: File, measured: Collection<File>): List<CorpusEntry> =
     measured.distinct().map { file ->
         CorpusEntry(
             path = file.relativeToOrSelf(root).invariantSeparatorsPath,
