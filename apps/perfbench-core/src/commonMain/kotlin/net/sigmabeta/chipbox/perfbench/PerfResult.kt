@@ -13,18 +13,20 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PerfResult(
     val generated: String,
-    @SerialName("chipbox_commit") val chipboxCommit: String,
-    @SerialName("sage_commit") val sageCommit: String,
     val config: PerfConfig,
     val machine: Fingerprint,
     val corpus: CorpusRef,
     val axes: Map<String, Axis>,
 )
 
-/** Run-wide inputs — the knobs shared by every axis in one [PerfResult]. */
+/**
+ * The scenarios a run set out to measure — the one fact shared by every axis in a [PerfResult].
+ *
+ * The per-axis repeat/iteration count lives on each axis's own config, not here: it is the axis that
+ * was measured with it, so restating it run-wide would be a second, disagreeable copy.
+ */
 @Serializable
 data class PerfConfig(
-    val repeat: Int,
     val scenarios: List<String>,
 )
 
@@ -58,7 +60,6 @@ sealed interface Axis
 data class AudioAxis(
     val config: AudioAxisConfig,
     val results: List<AudioResult>,
-    val score: Double? = null,
 ) : Axis
 
 /** The fixed sample wall and repeat count an audio axis was measured with. */
@@ -93,7 +94,6 @@ data class AudioResult(
 data class UiAxis(
     val config: UiAxisConfig,
     val results: List<UiResult>,
-    val score: Double? = null,
 ) : Axis
 
 /** The iteration count a UI axis was measured with. */
@@ -137,7 +137,6 @@ data class TraceSectionSum(
 data class StartupAxis(
     val config: StartupAxisConfig,
     val results: List<StartupResult>,
-    val score: Double? = null,
 ) : Axis
 
 /** The launch count a startup axis was measured with. */
