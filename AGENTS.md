@@ -85,6 +85,8 @@ scripts/build-benchmark.sh                 # time this machine's builds (--quick
 ```
 
 - Run **ktlint and detekt together**; both gate commit/push.
+- Gradle prints thousands of task lines: redirect a long run to a file and grep it
+  (`./gradlew … > /tmp/build.log 2>&1`) rather than pulling them into context.
 - **Always verify screenshots via `scripts/paparazzi-diff.sh`**, never by invoking
   the Gradle tasks directly: it re-renders, ranks the most-divergent snapshots,
   writes `golden | new | diff` montages under `build/paparazzi-review/`, and
@@ -124,3 +126,17 @@ UI over fakes. **Two rules for agents:**
 How to write one, the DSL verbs, and platform gotchas:
 `arch-docs/architecture/ui-tests-for-agents.md`. Design/internals:
 `arch-docs/architecture/ui-test-dsl.md`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles, default label strings (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
