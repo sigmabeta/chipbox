@@ -37,19 +37,27 @@ This is a large module (~90 files). Grouped by role:
 
 - **Image components** — `HeroImage` (width-driven 3:4 cover), `GridImage`,
   `HorizontalScroller` (a `LazyRow` that recursively renders nested `ListModel`s).
+  `GridImage` and `subs/CrossfadeImage` each wrap their composition in a named
+  Perfetto/systrace section (via `subs/TraceSection`) so the device macrobenchmark's
+  `TraceSectionMetric`s can time the labelled work. The first `GridImage` cell to
+  compose also invokes `subs/LocalFirstContentReporter`, when a host provides one,
+  so the startup macrobenchmark can measure time-to-first-content; the local is
+  null in production.
 
 - **Reorder / dismiss wrappers** — `DraggableListModel` / `DraggableListItem`,
   `DismissibleListModel` / `SwipeToRemoveBox` for reorderable and swipe-to-remove paths.
 
 - **Drawing / effect sub-components (`subs/`)** — `CrossfadeImage` (the Coil-backed
   loader with size-bucketing; it crossfades real fetches only — memory-cache hits hard-cut,
-  and on JS the crossfade is skipped entirely), `TintedText` (a `Text` that paints a
+  and on JS the crossfade is skipped entirely), `TraceSection` (a `@Composable` that opens a
+  Perfetto/systrace section around its content; no-op off Android), `TintedText` (a `Text` that paints a
   `State<Color>` in the draw phase, so animating a cell/row's text colour never recomposes or
   re-lays-out the text), `TintedIcon` (its icon counterpart — a leaf that reads the animated
   tint so only the icon recomposes), `FakeImage` (deterministic gradient stand-in), `ElevatedPill` /
   `ElevatedCircle` / `ElevatedRoundRect`, `Flasher` (loading shimmer), `Rating` (heart row),
   `LabeledThingy` / `LoadingThingy`, `MenuActionIcon`, plus the `LocalForceFakeImages` /
-  `LocalInspectionMode` plumbing.
+  `LocalInspectionMode` plumbing and `LocalFirstContentReporter` (the device startup
+  benchmark's first-content signal).
 
 - **Layout / measurement utils (`utils/`)** — `FocusArea.kt` (`FocusAreaShape`,
   `outer`/`innerFocusPadding` for rounded focus highlights), `ImageSize.kt`
@@ -125,6 +133,7 @@ val card = ScanStatusCardListModel(
 - **SAGE/module dependencies:** `libs.sage.common.ui.components` (`api`),
   `sage.common.appcomm`, `sage.common.images`, `sage.common.ui.perfCompose`,
   `sage.common.ui.iconsReal`, Coil (`coil.kt.core`/`coil.kt.compose`); project deps
-  `:cbox:common:strings:api` and `:cbox:common:ui:fonts:api`; `androidMain` adds
+  `:cbox:common:strings:api`, `:cbox:common:ui:fonts:api`, and `:cbox:common:perf:api`
+  (the trace shim `TraceSection` is built on); `androidMain` adds
   `:cbox:android:ui:theme:api`, `:cbox:common:strings:real`, `:cbox:android:images:api`,
   and Compose tooling.

@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The benchmark process hashes the pushed corpus + snapshot to pin each result
+         (DeviceBenchmark.corpusPin). Like the target app, it reads shared external storage; the
+         op defaults to denied, so each benchmark's setupBlock allows it via appops. -->
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+</manifest>
