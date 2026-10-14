@@ -20,10 +20,7 @@ data class AudioArgs(
  * invalid input up front (before any native library is loaded).
  */
 fun parseAudioOptions(options: Map<String, String>): AudioArgs {
-    val dirValue = options["dir"]
-    require(dirValue != null) { "audio requires --dir <corpus> (a folder of audio files)" }
-    val corpusDir = File(dirValue)
-    require(corpusDir.isDirectory) { "Corpus directory not found: ${corpusDir.absolutePath}" }
+    val corpusDir = parseCorpusDir(options)
 
     val repeat = intOption(options, "repeat") ?: DEFAULT_REPEAT
     require(repeat >= 1) { "--repeat must be >= 1 (was $repeat)" }

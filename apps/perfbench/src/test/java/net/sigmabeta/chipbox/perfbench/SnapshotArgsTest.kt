@@ -9,7 +9,7 @@ import kotlin.test.assertFailsWith
 class SnapshotArgsTest {
     @Test
     fun `requires a corpus directory`() {
-        assertFailsWith<IllegalStateException> { parseSnapshotOptions(emptyMap()) }
+        assertFailsWith<IllegalArgumentException> { parseSnapshotOptions(emptyMap()) }
     }
 
     @Test
