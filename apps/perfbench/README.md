@@ -69,11 +69,13 @@ device's corpus location.
 
 ### `diff --a <runA> --b <runB>`
 
-Compares the audio axis of two runs. Run A is the **baseline**, run B the
-**current** run; each argument is a `results.json` or the folder holding one.
-For every scenario measured by both runs it prints the speedup — baseline render
-time ÷ current render time, so **above 1 means B rendered the same audio
-faster** — and the **geometric mean** of those speedups.
+Compares every axis of two runs — audio, UI, and startup — not just audio. Run
+A is the **baseline**, run B the **current** run; each argument is a
+`results.json` or the folder holding one. For every scenario measured by both
+runs it prints the ratio — that axis's own primary cost metric (audio render
+median, UI frame p50, startup time to first content p50) as baseline ÷ current,
+so **above 1 means B is better** — and the **geometric mean**, per axis and
+overall.
 
 ```sh
 ./gradlew :apps:perfbench:run --args="diff --a build/perfbench-baseline --b build/perfbench"

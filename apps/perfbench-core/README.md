@@ -32,7 +32,7 @@ repository `:api`, not on this harness module.
 | `UiReport.kt` | pure report math for the UI axis: `uiResult(UiMeasurement)` plus `percentile` and `jankPercent` |
 | `StartupReport.kt` | pure report math for the startup axis: `startupResult(StartupMeasurement)` (time-to-first-content percentiles) |
 | `DeviceBenchmarkLayout.kt` | the fixed on-device layout (`Music/chipbox-test/` under shared external storage holding the pushed snapshot + corpus) shared by the app seed and the macrobenchmark |
-| `Diff.kt` | the baseline-diff contract: `compareAudioRuns`/`DiffOutcome`, the `DiffRefusal` comparability guards, the `FingerprintClass` of a `Fingerprint`, `ScenarioSpeedup`/`DiffReport`, and `geometricMean` |
+| `Diff.kt` | the baseline-diff contract: `compareRuns`/`DiffOutcome`, the `DiffRefusal` comparability guards, the `FingerprintClass` of a `Fingerprint`, the per-axis `ScenarioComparison`/`AxisComparison`/`DiffReport` (each ratio derived from its axis's primary metric), and `geometricMean` |
 | `PerfbenchJson.kt` | the one JSON dialect for `results.json` (`class` discriminator, pretty-printed). The library snapshot has its own dialect (`LibrarySnapshotJson`) in `:cbox:common:repository:api`. |
 | `SystemHostEnvironment.kt` | `jvmMain` only: probes the running host for the facts a host fingerprint records (`/proc/cpuinfo`, `/etc/os-release`, `java.*`) |
 | `Sha256.kt` | `jvmSharedMain` (`src/main/java`): the one streamed SHA-256 → lowercase-hex file hash, shared by the host corpus-manifest builder and the app's benchmark library seed so a file hashes identically through either |
@@ -78,9 +78,11 @@ val startup = startupResult(
 val json = PerfbenchJson.encodeToString(perfResult)
 val back = PerfbenchJson.decodeFromString<PerfResult>(json)
 
-// Compare two runs; a refusal means they aren't comparable (class / scenario set / corpus).
-when (val outcome = compareAudioRuns(baseline, current)) {
-    is DiffOutcome.Compared -> println(outcome.report.geometricMean)
+// Compare every axis both runs share; a refusal means they aren't comparable (class / scenario set /
+// corpus). Each axis's ratios come from its own primary metric (audio render median, UI frame p50,
+// startup time-to-first-content p50), summarised per axis and overall.
+when (val outcome = compareRuns(baseline, current)) {
+    is DiffOutcome.Compared -> outcome.report.axes.forEach { println("${it.axis}: ${it.geometricMean}") }
     is DiffOutcome.Refused -> println(outcome.reason.message)
 }
 
@@ -105,7 +107,7 @@ carry generated serializers that any consumer needs resolvable.
 
 Tested by `commonTest` (schema round-trips, fingerprint construction, report
 math for the audio, UI, and startup axes, scenario ids, and the diff
-comparability guards and geometric mean) and a `jvmTest` for the `/proc/cpuinfo`
+comparability guards, per-axis ratios, and geometric means) and a `jvmTest` for the `/proc/cpuinfo`
 parser and the streamed SHA-256 file hash (against a known-good literal), the
 corpus-manifest ordering / relative-path / hash+size construction, and the
 `corpusPin` assembly (including its refusal of a missing corpus root or
