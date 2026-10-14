@@ -95,6 +95,27 @@ ANDROID_SERIAL='<adb serial>' ./gradlew --no-daemon :benchmark:connectedBenchmar
   -Pandroid.testInstrumentationRunnerArguments.class=net.sigmabeta.chipbox.benchmark.GridImageScrollBenchmark
 ```
 
+Run a single axis — the audio axis is a plain instrumentation test (no macrobenchmark
+compilation reset), so it is the fast way to exercise the corpus pin and the render
+cores without running the whole suite:
+
+```sh
+ANDROID_SERIAL='<adb serial>' ./gradlew --no-daemon :benchmark:connectedBenchmarkAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=net.sigmabeta.chipbox.benchmark.DeviceAudioBenchmark
+```
+
+**A device can appear twice in `adb devices`** — once by mDNS
+(`<id>._adb-tls-connect._tcp`) and once by IP (`192.168.x.y:port`). Gradle then fans
+out to both serials and runs two instrumentation sessions on the one phone, which
+collides and reports a misleading `Process crashed` /
+`DELETE_FAILED_INTERNAL_ERROR` (with nothing incriminating in logcat). Pin
+`ANDROID_SERIAL` to one serial, or `adb disconnect` the duplicate, before running.
+
+**Known unrelated failure:** the `ui` and `startup` axes can abort at macrobenchmark's
+`dropShaderCache` with `The DROP_SHADER_CACHE broadcast was not received … androidx.profileinstaller
+… is old`. That is the `:apps:android` benchmark variant's profileinstaller version,
+not a regression in the axis under test — don't chase it as a code fault.
+
 When a run fails, **`adb logcat` is the ground truth** — a macrobenchmark failure
 looks opaque from Gradle, but logcat shows the cause: the compilation-mode reset
 (`Clearing ART profiles`, `deletePackageX`), a `ProfileInstallReceiver` broadcast
