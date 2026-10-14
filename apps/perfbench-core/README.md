@@ -6,11 +6,11 @@ it for host axes; the Android `:benchmark` module writes it for device axes.
 Keeping the shape here means a result written by one home can be read by the
 other.
 
-It is **contract-first** — no renderer, and no I/O beyond the two narrow platform
-helpers below (the optional host probe, and the shared corpus-file hash). KMP
-(`androidTarget` + `jvm`) so both homes resolve a variant. `commonMain` stays
-`java.*`-free; code needing it lives in `src/main/java` (the `jvmSharedMain`
-source set both targets depend on).
+It is **contract-first** — no renderer, and no I/O beyond the narrow platform
+helpers below (the optional host probe, the shared corpus-file hash, and the
+corpus-manifest / pin builders). KMP (`androidTarget` + `jvm`) so both homes
+resolve a variant. `commonMain` stays `java.*`-free; code needing it lives in
+`src/main/java` (the `jvmSharedMain` source set both targets depend on).
 
 The **library-snapshot** DTO, its JSON dialect, and the `importLibrarySnapshot`
 capability are a repository concern and live in
@@ -36,6 +36,8 @@ repository `:api`, not on this harness module.
 | `PerfbenchJson.kt` | the one JSON dialect for `results.json` (`class` discriminator, pretty-printed). The library snapshot has its own dialect (`LibrarySnapshotJson`) in `:cbox:common:repository:api`. |
 | `SystemHostEnvironment.kt` | `jvmMain` only: probes the running host for the facts a host fingerprint records (`/proc/cpuinfo`, `/etc/os-release`, `java.*`) |
 | `Sha256.kt` | `jvmSharedMain` (`src/main/java`): the one streamed SHA-256 → lowercase-hex file hash, shared by the host corpus-manifest builder and the app's benchmark library seed so a file hashes identically through either |
+| `CorpusManifest.kt` | `jvmSharedMain`: `corpusManifest(root, files)` — the ordered `{path, sha256, bytes}` manifest the host audio axis and the device corpus pin are both built from |
+| `CorpusPin.kt` | `jvmSharedMain`: `corpusPin(corpusRoot, snapshotFile)` — the corpus block a device run records: the manifest of the whole pushed corpus plus the SHA-256 of the snapshot it was seeded from |
 
 ## Using it
 
@@ -104,8 +106,11 @@ carry generated serializers that any consumer needs resolvable.
 Tested by `commonTest` (schema round-trips, fingerprint construction, report
 math for the audio, UI, and startup axes, scenario ids, and the diff
 comparability guards and geometric mean) and a `jvmTest` for the `/proc/cpuinfo`
-parser and the streamed SHA-256 file hash (against a known-good literal). The
-snapshot's own round-trip + path transforms and the ingest capability
+parser and the streamed SHA-256 file hash (against a known-good literal), the
+corpus-manifest ordering / relative-path / hash+size construction, and the
+`corpusPin` assembly (including its refusal of a missing corpus root or
+snapshot). The snapshot's own round-trip + path transforms and the ingest
+capability
 are tested in `:cbox:common:repository:api`/`:real`; the scanner → snapshot →
 import round trip end to end is covered in `apps/perfbench`. The device axes'
 mapping (`BenchmarkData.TestResult` → `UiMeasurement`/`StartupMeasurement`) lives
