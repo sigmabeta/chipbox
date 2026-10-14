@@ -28,7 +28,7 @@ import org.junit.runner.RunWith
 /**
  * Scrolls the BrowseByGame screen — chipbox's main `GridImage` surface — and records frame timing
  * plus the `GridImage` / `CrossfadeImage` trace-section sums behind the app's `TraceSection`s. The
- * frame metrics and the labelled trace sums are written to a perfbench `results.json` (device
+ * frame metrics and the labelled trace sums are written to a perfbench `results-ui.json` (device
  * fingerprint + `ui` axis) in the run's additional test output directory.
  *
  * The benchmark build must be seeded from a pushed snapshot first — see the module README. Run via:
@@ -99,7 +99,7 @@ class GridImageScrollBenchmark {
         DeviceBenchmark.write(perfResult(testResult, environment))
     }
 
-    /** Assembles the perfbench `results.json` for one measured scroll. */
+    /** Assembles the perfbench `results-ui.json` for one measured scroll. */
     private fun perfResult(
         testResult: BenchmarkData.TestResult,
         environment: DeviceEnvironment,

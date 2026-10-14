@@ -1,7 +1,7 @@
 # `:benchmark`
 
 > Macrobenchmark module — measures `apps/android`'s `GridImage` scroll performance
-> and app startup on a real device, and writes a perfbench `results.json`.
+> and app startup on a real device, and writes one perfbench result per axis.
 
 An Android Test (`com.android.test`) module that macrobenchmarks the installed
 `:apps:android` app. It instruments the real APK from outside (self-instrumenting,
@@ -53,11 +53,13 @@ startup, before the UI composes:
   device** — numbers aren't representative on an emulator
   (`androidx.benchmark.suppressErrors = EMULATOR` lets it run there anyway, but
   flip that off for real measurements).
-- **`results.json`:** each test method writes its own `results.json` to the run's
-  additional test output dir, pulled to
+- **Per-axis results:** each test method writes its own artifact to the run's
+  additional test output dir, named for the axis it measured —
+  `results-ui.json` and `results-startup.json` — so no axis overwrites another.
+  They're pulled to
   `benchmark/build/outputs/connected_android_test_additional_output/.../`
   alongside the per-iteration Perfetto traces (which open directly in
-  <https://ui.perfetto.dev>). The file carries the axis the test measured, plus
+  <https://ui.perfetto.dev>). Each file carries the axis the test measured, plus
   the device fingerprint (manufacturer/model, Android build, ABI, thermal status
   at start, and the Chipbox + sage commits stamped in at build time).
 
@@ -102,9 +104,9 @@ the grid has items to show.
 
 | File | What it is |
 | --- | --- |
-| `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, fixed corpus path, and the `results.json` sink. |
-| `GridImageScrollBenchmark.kt` | `browseByGameScroll` — WARM-startup benchmark that opens BrowseByGame, flings the grid up/down, then maps the macrobenchmark result to a perfbench `results.json` (`ui` axis + device fingerprint). |
-| `LibraryStartupBenchmark.kt` | `coldAndWarmStartup` — measures cold and warm launches up to first content and reports time-to-first-content percentiles (`startup` axis + device fingerprint). |
+| `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, fixed corpus path, and the per-axis result sink. |
+| `GridImageScrollBenchmark.kt` | `browseByGameScroll` — WARM-startup benchmark that opens BrowseByGame, flings the grid up/down, then maps the macrobenchmark result to a perfbench `results-ui.json` (`ui` axis + device fingerprint). |
+| `LibraryStartupBenchmark.kt` | `coldAndWarmStartup` — measures cold and warm launches up to first content and reports time-to-first-content percentiles (`startup` axis + device fingerprint), written to `results-startup.json`. |
 | `src/main/AndroidManifest.xml` | Test manifest. |
 
 ## Trace sections

@@ -21,6 +21,7 @@ repository `:api`, not on this harness module.
 | file | role |
 |---|---|
 | `PerfResult.kt` | the `results.json` schema: `PerfResult`, `PerfConfig`, `CorpusRef`/`CorpusEntry`, and the sealed `Axis` hierarchy (`AudioAxis` + `AudioResult`, `UiAxis` + `UiResult`, `StartupAxis` + `StartupResult`) |
+| `ResultArtifact.kt` | where a run's result is written: `RESULTS_FILE_NAME` (the whole-run `results.json`) and `axisResultFileName(axis)` (the distinct `results-<axis>.json` a device test writes, so no two axes in a run overwrite each other) |
 | `Fingerprint.kt` | sealed `Fingerprint` (`HostFingerprint`, `DeviceFingerprint`) and the pure `hostFingerprint` / `deviceFingerprint` builders (from `HostEnvironment` / `DeviceEnvironment`) |
 | `AudioScenario.kt` | the canonical audio scenario ids (`audio.usf`, `audio.vgm`, `audio.psf`) and the extensions each selects |
 | `UiScenario.kt` | the canonical UI scenario ids (v1: `ui.browse_by_game_scroll`) |

@@ -58,7 +58,7 @@ fun runAudio(args: AudioArgs): PerfResult {
             ),
         ),
     )
-    val outFile = File(args.outDir, "results.json")
+    val outFile = File(args.outDir, RESULTS_FILE_NAME)
     outFile.writeText(PerfbenchJson.encodeToString(result))
     println("Wrote $outFile")
     return result

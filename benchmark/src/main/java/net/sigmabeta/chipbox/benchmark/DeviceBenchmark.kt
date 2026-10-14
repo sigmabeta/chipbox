@@ -15,12 +15,13 @@ import net.sigmabeta.chipbox.perfbench.DeviceEnvironment
 import net.sigmabeta.chipbox.perfbench.PerfConfig
 import net.sigmabeta.chipbox.perfbench.PerfResult
 import net.sigmabeta.chipbox.perfbench.PerfbenchJson
+import net.sigmabeta.chipbox.perfbench.axisResultFileName
 import net.sigmabeta.chipbox.perfbench.deviceFingerprint
 
 /**
  * Device-side plumbing shared by the macrobenchmarks: the target package, the fix iteration count,
- * the device fingerprint facts, the build-stamped commits, the fixed corpus path, and the
- * `results.json` sink + shell.
+ * the device fingerprint facts, the build-stamped commits, the fixed corpus path, and the per-axis
+ * result sink + shell.
  *
  * The macrobenchmark process instruments the app from outside and can't read its external files
  * dir on modern Android, so [corpusRoot] constructs that path for the record rather than touching
@@ -32,7 +33,6 @@ internal object DeviceBenchmark {
     /** Measured iterations per scenario, shared so every device axis reports a comparable repeat. */
     const val ITERATIONS = 5
 
-    private const val RESULTS_FILE_NAME = "results.json"
     private const val CHIPBOX_COMMIT_ARG = "chipboxCommit"
     private const val SAGE_COMMIT_ARG = "sageCommit"
     private const val UNKNOWN = "unknown"
@@ -88,11 +88,20 @@ internal object DeviceBenchmark {
         )
     }
 
-    /** Writes [result] as `results.json` into the run's additional test output dir. */
+    /**
+     * Writes [result] into the run's additional test output dir, one artifact per axis it carries.
+     *
+     * Every `@Test` in a run writes into the *same* directory, so each axis goes to its own
+     * [axisResultFileName] rather than a shared `results.json` (see [axisResultFileName] for why).
+     * The run shell — device fingerprint + corpus — is carried on every artifact, so each stands
+     * on its own.
+     */
     fun write(result: PerfResult) {
-        val outFile = File(resultsOutputDir(), RESULTS_FILE_NAME)
-        outFile.parentFile?.mkdirs()
-        outFile.writeText(PerfbenchJson.encodeToString(result))
+        val outDir = resultsOutputDir().apply { mkdirs() }
+        result.axes.forEach { (axis, axisResult) ->
+            val perAxis = result.copy(axes = mapOf(axis to axisResult))
+            File(outDir, axisResultFileName(axis)).writeText(PerfbenchJson.encodeToString(perAxis))
+        }
     }
 
     /**

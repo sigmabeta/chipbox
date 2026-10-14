@@ -20,7 +20,7 @@ fun parseDiffOptions(options: Map<String, String>): DiffArgs {
 
 private fun resolveResultsFile(value: String, flag: String): File {
     val candidate = File(value)
-    val file = if (candidate.isDirectory) File(candidate, "results.json") else candidate
-    require(file.isFile) { "No results.json for --$flag at ${file.absolutePath}" }
+    val file = if (candidate.isDirectory) File(candidate, RESULTS_FILE_NAME) else candidate
+    require(file.isFile) { "No $RESULTS_FILE_NAME for --$flag at ${file.absolutePath}" }
     return file
 }
