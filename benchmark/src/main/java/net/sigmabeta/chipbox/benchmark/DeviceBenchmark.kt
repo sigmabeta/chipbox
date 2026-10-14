@@ -77,8 +77,6 @@ internal object DeviceBenchmark {
         val commits = commits()
         return PerfResult(
             generated = OffsetDateTime.now().toString(),
-            chipboxCommit = commits.first,
-            sageCommit = commits.second,
             config = config,
             machine = deviceFingerprint(environment, commits.first, commits.second),
             // A device run reads no audio, so the manifest is empty; the root records the fixed
