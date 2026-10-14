@@ -63,6 +63,34 @@ fun CrossfadeImage(
     // AsyncImagePainter fall back to SizeResolver.ORIGINAL.
     loadOriginalSize: Boolean = false,
 ) {
+    // Perfetto section the device scroll macrobenchmark sums as "CrossfadeImage" — the image
+    // composition/dispatch cost, nested inside the outer "GridImage" section.
+    TraceSection("CrossfadeImage") {
+        CrossfadeImageContent(
+            sourceInfo = sourceInfo,
+            imagePlaceholder = imagePlaceholder,
+            contentDescription = contentDescription,
+            modifier = modifier,
+            forceGenBitmap = forceGenBitmap,
+            simulateError = simulateError,
+            onImageLoadedChange = onImageLoadedChange,
+            loadOriginalSize = loadOriginalSize,
+        )
+    }
+}
+
+/** The dispatch body, split out so [CrossfadeImage] can wrap it in a Perfetto trace section. */
+@Composable
+private fun CrossfadeImageContent(
+    sourceInfo: SourceInfo,
+    imagePlaceholder: Icon,
+    contentDescription: String?,
+    modifier: Modifier,
+    forceGenBitmap: Boolean,
+    simulateError: Boolean,
+    onImageLoadedChange: ((Boolean) -> Unit)?,
+    loadOriginalSize: Boolean,
+) {
     // AnimatedContent gives each `sourceInfo` its own composition scope so the outgoing
     // branch can keep rendering the previous painter (and its loaded image) while the
     // incoming branch starts a fresh Coil load. Without this, a re-keyed request mutates the

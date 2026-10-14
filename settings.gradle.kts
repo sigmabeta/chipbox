@@ -115,6 +115,8 @@ include(
     ":apps:cli",
     ":apps:abrender",
     ":apps:abrender-core",
+    ":apps:perfbench",
+    ":apps:perfbench-core",
     ":apps:server",
     ":benchmark",
 

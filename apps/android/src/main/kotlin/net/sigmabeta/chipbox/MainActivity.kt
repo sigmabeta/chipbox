@@ -18,8 +18,10 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import dev.zacsweers.metrox.viewmodel.LocalMetroViewModelFactory
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.flow.MutableSharedFlow
 import net.sigmabeta.chipbox.common.appui.api.ChipboxAppUi
+import net.sigmabeta.chipbox.common.ui.components.api.subs.LocalFirstContentReporter
 import net.sigmabeta.chipbox.services.api.ChipboxPlaybackService
 import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.sage.ui.perf.LocalLogger
@@ -27,6 +29,18 @@ import net.sigmabeta.sage.ui.perf.LocalLogger
 class MainActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
+
+    // In benchmark builds, report the app fully drawn the first time a grid cell shows real content
+    // — the "first content" the device startup macrobenchmark measures (StartupTimingMetric's
+    // `timeToFullDisplayMs`). A fresh guard per Activity instance, so every warm relaunch reports
+    // again. Outside the benchmark build the reporter is null and costs nothing.
+    private val firstContentReporter: (() -> Unit)? = if (BuildConfig.BENCHMARK) {
+        val reported = AtomicBoolean(false)
+        val report: () -> Unit = { if (reported.compareAndSet(false, true)) reportFullyDrawn() }
+        report
+    } else {
+        null
+    }
 
     // Hardware-keyboard back keys (Escape/Backspace) for parity with desktop. onKeyDown is reached
     // only when the focused view didn't consume the key, so a focused text field keeps Backspace
@@ -45,6 +59,7 @@ class MainActivity : ComponentActivity() {
                 LocalMetroViewModelFactory provides appGraph.metroViewModelFactory,
                 LocalChipboxStringProvider provides appGraph.stringProvider,
                 LocalLogger provides appGraph.hatchet,
+                LocalFirstContentReporter provides firstContentReporter,
             ) {
                 ChipboxAppUi(
                     onOpenUrl = { url -> openUrl(url) },

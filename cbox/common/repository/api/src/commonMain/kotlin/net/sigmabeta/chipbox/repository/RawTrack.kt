@@ -1,8 +1,10 @@
 package net.sigmabeta.chipbox.repository
 
+import kotlinx.serialization.Serializable
 import net.sigmabeta.chipbox.models.ChainFile
 import net.sigmabeta.chipbox.models.Platform
 
+@Serializable
 data class RawTrack(
     val path: String,
     val source: String,
