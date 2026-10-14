@@ -44,6 +44,13 @@ startup, before the UI composes:
    gated on `BuildConfig.BENCHMARK`), caching its hash so a later launch skips
    the (idempotent) merge. Other build types never seed.
 
+Each benchmark also grants **itself** All Files Access (the same `appops` grant,
+on its own package) so it can hash the pushed corpus + snapshot and record them
+in every result's **corpus block** — the ordered `{path, sha256, bytes}` manifest
+and the snapshot hash. That makes a device run *corpus-pinned*: the `diff` guard
+refuses a baseline measured over a different corpus. The device-side read of
+shared storage is only verifiable on hardware.
+
 ## What this builds / how to run it
 
 - **Target:** a Macrobenchmark instrumentation test against `net.sigmabeta.chipbox`,
@@ -61,7 +68,9 @@ startup, before the UI composes:
   alongside the per-iteration Perfetto traces (which open directly in
   <https://ui.perfetto.dev>). Each file carries the axis the test measured, plus
   the device fingerprint (manufacturer/model, Android build, ABI, thermal status
-  at start, and the Chipbox + sage commits stamped in at build time).
+  at start, and the Chipbox + sage commits stamped in at build time), and the
+  **corpus block** — the manifest of the pushed corpus and the hash of the
+  snapshot the library was seeded from.
 
 ## Running & debugging on a device
 
@@ -104,7 +113,7 @@ the grid has items to show.
 
 | File | What it is |
 | --- | --- |
-| `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, fixed corpus path, and the per-axis result sink. |
+| `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, the corpus pin (manifest + snapshot hash) read from shared storage, and the per-axis result sink. |
 | `GridImageScrollBenchmark.kt` | `browseByGameScroll` — WARM-startup benchmark that opens BrowseByGame, flings the grid up/down, then maps the macrobenchmark result to a perfbench `results-ui.json` (`ui` axis + device fingerprint). |
 | `LibraryStartupBenchmark.kt` | `coldAndWarmStartup` — measures cold and warm launches up to first content and reports time-to-first-content percentiles (`startup` axis + device fingerprint), written to `results-startup.json`. |
 | `src/main/AndroidManifest.xml` | Test manifest. |
