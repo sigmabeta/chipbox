@@ -2,6 +2,9 @@
 
 Issues and specs for this repo live as markdown files in `.scratch/`.
 
+`.scratch/` is git-ignored, so `rg` and `grep -r` skip it by default — search it
+with `rg --no-ignore` (or `fd -I` / `find`) when hunting for a spec or ticket.
+
 ## Conventions
 
 - One feature per directory: `.scratch/<feature-slug>/`
