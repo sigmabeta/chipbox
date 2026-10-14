@@ -43,9 +43,7 @@ fun runAudio(args: AudioArgs): PerfResult {
     val (chipboxCommit, sageCommit) = if (repoRoot != null) projectCommits(repoRoot) else UNKNOWN to UNKNOWN
     val result = PerfResult(
         generated = OffsetDateTime.now().toString(),
-        chipboxCommit = chipboxCommit,
-        sageCommit = sageCommit,
-        config = PerfConfig(repeat = args.repeat, scenarios = scenarios.map { it.id }),
+        config = PerfConfig(scenarios = scenarios.map { it.id }),
         machine = hostFingerprint(SystemHostEnvironment.detect(), chipboxCommit, sageCommit),
         corpus = CorpusRef(
             root = args.corpusDir.absolutePath,

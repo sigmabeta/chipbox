@@ -103,9 +103,7 @@ class DiffTest {
         results: List<AudioResult> = listOf(audio("audio.usf", rtf = 10.0, medianSeconds = 3.0)),
     ): PerfResult = PerfResult(
         generated = "2026-10-13T12:00:00+00:00",
-        chipboxCommit = "abc1234",
-        sageCommit = "def5678",
-        config = PerfConfig(repeat = 3, scenarios = results.map { it.scenario }),
+        config = PerfConfig(scenarios = results.map { it.scenario }),
         machine = machine,
         corpus = CorpusRef(root = "/corpus", manifest = manifest),
         axes = mapOf("audio" to AudioAxis(AudioAxisConfig(sampleSeconds = 30, repeats = 3), results)),

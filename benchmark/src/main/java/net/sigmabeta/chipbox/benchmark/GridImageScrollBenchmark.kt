@@ -106,7 +106,6 @@ class GridImageScrollBenchmark {
     ): PerfResult = DeviceBenchmark.perfResult(
         environment = environment,
         config = PerfConfig(
-            repeat = DeviceBenchmark.ITERATIONS,
             scenarios = listOf(UiScenario.BROWSE_BY_GAME_SCROLL.id),
         ),
         axes = mapOf(

@@ -2,20 +2,20 @@ package net.sigmabeta.chipbox.perfbench
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.jsonObject
 
 class PerfResultSerializationTest {
     @Test
     fun `round-trips a fully populated result`() {
         val result = PerfResult(
             generated = "2026-10-13T12:00:00+00:00",
-            chipboxCommit = "abc1234",
-            sageCommit = "def5678",
-            config = PerfConfig(repeat = 3, scenarios = listOf("audio.usf", "audio.vgm", "audio.psf")),
+            config = PerfConfig(scenarios = listOf("audio.usf", "audio.vgm", "audio.psf")),
             machine = HostFingerprint(
                 cpuModel = "AMD Ryzen 9 5900X 12-Core Processor",
                 cpuCores = 24,
@@ -178,11 +178,39 @@ class PerfResultSerializationTest {
         assertEquals(result.machine, back.machine)
     }
 
+    @Test
+    fun `records the chipbox and sage commits once, inside the fingerprint`() {
+        val root = PerfbenchJson.parseToJsonElement(PerfbenchJson.encodeToString(minimalResult())).jsonObject
+
+        assertFalse(root.containsKey("chipbox_commit"), "chipbox commit is duplicated at top level")
+        assertFalse(root.containsKey("sage_commit"), "sage commit is duplicated at top level")
+        val machine = root.getValue("machine").jsonObject
+        assertTrue(machine.containsKey("chipbox_commit"), "fingerprint must carry the chipbox commit")
+        assertTrue(machine.containsKey("sage_commit"), "fingerprint must carry the sage commit")
+    }
+
+    @Test
+    fun `no axis carries a score`() {
+        val axes = PerfbenchJson.parseToJsonElement(PerfbenchJson.encodeToString(minimalResult()))
+            .jsonObject.getValue("axes").jsonObject
+
+        axes.forEach { (axis, element) ->
+            assertFalse(element.jsonObject.containsKey("score"), "axis $axis still carries a score field")
+        }
+    }
+
+    @Test
+    fun `declares the repeat once, on the axis that was measured`() {
+        val root = PerfbenchJson.parseToJsonElement(PerfbenchJson.encodeToString(minimalResult())).jsonObject
+
+        assertFalse(root.getValue("config").jsonObject.containsKey("repeat"), "run-wide repeat is duplicated")
+        val audioConfig = root.getValue("axes").jsonObject.getValue("audio").jsonObject.getValue("config").jsonObject
+        assertTrue(audioConfig.containsKey("repeats"), "the measured axis must still declare its repeat count")
+    }
+
     private fun minimalResult(): PerfResult = PerfResult(
         generated = "2026-10-13T12:00:00+00:00",
-        chipboxCommit = "abc1234",
-        sageCommit = "def5678",
-        config = PerfConfig(repeat = 1, scenarios = listOf("audio.usf")),
+        config = PerfConfig(scenarios = listOf("audio.usf")),
         machine = HostFingerprint("CPU", 8, "Linux", "6.8", "JVM", "abc1234", "def5678"),
         corpus = CorpusRef(root = "/corpus"),
         axes = mapOf(
