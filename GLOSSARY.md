@@ -22,6 +22,12 @@ One named, reproducible unit of measurement with a fixed input and a defined
 metric — e.g. raw-core rendering of a single emulator family.
 _Avoid_: test, case, workload.
 
+**Time to first content**:
+The wall-clock time from a launch intent until the library grid is showing its
+first items. The startup scenarios (cold and warm) measure it; it is the point at
+which the app reports itself fully drawn, not the first frame.
+_Avoid_: startup time, launch time, TTID.
+
 **Real-time factor (RTF)**:
 The ratio of a track's audio duration to the wall-clock time taken to render
 it; a value above one means faster than real time. The benchmark's

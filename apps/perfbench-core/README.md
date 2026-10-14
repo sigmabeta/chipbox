@@ -20,12 +20,14 @@ repository `:api`, not on this harness module.
 
 | file | role |
 |---|---|
-| `PerfResult.kt` | the `results.json` schema: `PerfResult`, `PerfConfig`, `CorpusRef`/`CorpusEntry`, and the sealed `Axis` hierarchy (`AudioAxis` + `AudioResult`, `UiAxis` + `UiResult`) |
+| `PerfResult.kt` | the `results.json` schema: `PerfResult`, `PerfConfig`, `CorpusRef`/`CorpusEntry`, and the sealed `Axis` hierarchy (`AudioAxis` + `AudioResult`, `UiAxis` + `UiResult`, `StartupAxis` + `StartupResult`) |
 | `Fingerprint.kt` | sealed `Fingerprint` (`HostFingerprint`, `DeviceFingerprint`) and the pure `hostFingerprint` / `deviceFingerprint` builders (from `HostEnvironment` / `DeviceEnvironment`) |
 | `AudioScenario.kt` | the canonical audio scenario ids (`audio.usf`, `audio.vgm`, `audio.psf`) and the extensions each selects |
 | `UiScenario.kt` | the canonical UI scenario ids (v1: `ui.browse_by_game_scroll`) |
+| `StartupScenario.kt` | the canonical startup scenario ids (`startup.cold`, `startup.warm`) |
 | `AudioReport.kt` | pure report math: `audioResult(AudioMeasurement)` and `median` |
 | `UiReport.kt` | pure report math for the UI axis: `uiResult(UiMeasurement)` plus `percentile` and `jankPercent` |
+| `StartupReport.kt` | pure report math for the startup axis: `startupResult(StartupMeasurement)` (time-to-first-content percentiles) |
 | `DeviceBenchmarkLayout.kt` | the fixed on-device layout (`perfbench/` external files dir holding the pushed snapshot + corpus) shared by the app seed and the macrobenchmark |
 | `Diff.kt` | the baseline-diff contract: `compareAudioRuns`/`DiffOutcome`, the `DiffRefusal` comparability guards, the `FingerprintClass` of a `Fingerprint`, `ScenarioSpeedup`/`DiffReport`, and `geometricMean` |
 | `PerfbenchJson.kt` | the one JSON dialect for `results.json` (`class` discriminator, pretty-printed). The library snapshot has its own dialect (`LibrarySnapshotJson`) in `:cbox:common:repository:api`. |
@@ -55,6 +57,14 @@ val ui = uiResult(
         frameCpuMillis = listOf(8.0, 9.5, 12.0, 7.0),
         frameOverrunMillis = listOf(-2.0, 1.0, -3.0, -1.0),
         traceSections = listOf(TraceSectionMeasurement("GridImage", sumMs = 120.0, count = 240)),
+    ),
+)
+
+// Reduce a device startup's per-launch times to one scenario result (time-to-first-content).
+val startup = startupResult(
+    StartupMeasurement(
+        scenario = StartupScenario.COLD.id,
+        timeToFirstContentMillis = listOf(320.0, 305.0, 412.0, 298.0, 331.0),
     ),
 )
 
@@ -88,10 +98,11 @@ println("${result.added} added, ${result.updated} updated, ${result.unchanged} u
 carry generated serializers that any consumer needs resolvable.
 
 Tested by `commonTest` (schema round-trips, fingerprint construction, report
-math for the audio and UI axes, scenario ids, and the diff comparability guards
-and geometric mean) and a `jvmTest` for the `/proc/cpuinfo` parser. The
-snapshot's own round-trip + path transforms and the ingest capability are tested
-in `:cbox:common:repository:api`/`:real`; the scanner → snapshot → import round
-trip end to end is covered in `apps/perfbench`. The device UI axis's mapping
-(`BenchmarkData.TestResult` → `UiMeasurement`) lives with the macrobenchmark in
-`:benchmark`; only the pure report math above is unit-tested here.
+math for the audio, UI, and startup axes, scenario ids, and the diff
+comparability guards and geometric mean) and a `jvmTest` for the `/proc/cpuinfo`
+parser. The snapshot's own round-trip + path transforms and the ingest capability
+are tested in `:cbox:common:repository:api`/`:real`; the scanner → snapshot →
+import round trip end to end is covered in `apps/perfbench`. The device axes'
+mapping (`BenchmarkData.TestResult` → `UiMeasurement`/`StartupMeasurement`) lives
+with the macrobenchmark in `:benchmark`; only the pure report math above is
+unit-tested here.
