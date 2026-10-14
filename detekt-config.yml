@@ -497,8 +497,21 @@ style:
       - value: 'TODO:'
     allowedPatterns: ''
   ForbiddenImport:
-    active: false
-    imports: [ ]
+    # Guards post-minSdk-26 APIs in KMP `jvmSharedMain`/`commonMain` (src/main/java, src/commonMain):
+    # they compile and pass on the host JVM and are invisible to Android lint (the KMP android library
+    # only lints its host-test component, and the app's lintRelease doesn't reach dependency main
+    # sources). Without this, a Java 17 / Android API 34+ symbol ships fine and crashes only on a
+    # device (e.g. java.util.HexFormat, which took down the benchmark seed on API 30/33). Extend the
+    # list when you reach for a newer platform API.
+    active: true
+    imports:
+      - 'java.util.HexFormat'
+      - 'java.util.SequencedCollection'
+      - 'java.util.SequencedSet'
+      - 'java.util.SequencedMap'
+      - 'java.util.RandomGenerator'
+      - 'java.util.random.RandomGenerator'
+      - 'java.util.random.RandomGeneratorFactory'
     forbiddenPatterns: ''
   ForbiddenMethodCall:
     active: false
