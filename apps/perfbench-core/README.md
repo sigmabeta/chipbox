@@ -79,8 +79,8 @@ val json = PerfbenchJson.encodeToString(perfResult)
 val back = PerfbenchJson.decodeFromString<PerfResult>(json)
 
 // Compare every axis both runs share; a refusal means they aren't comparable (class / scenario set /
-// corpus). Each axis's ratios come from its own primary metric (audio render median, UI frame p50,
-// startup time-to-first-content p50), summarised per axis and overall.
+// corpus). Each axis's ratios come from its own primary metric (audio render wall median, UI frame
+// p50, startup time-to-first-content p50), summarised per axis and overall.
 when (val outcome = compareRuns(baseline, current)) {
     is DiffOutcome.Compared -> outcome.report.axes.forEach { println("${it.axis}: ${it.geometricMean}") }
     is DiffOutcome.Refused -> println(outcome.reason.message)
@@ -107,14 +107,16 @@ carry generated serializers that any consumer needs resolvable.
 
 Tested by `commonTest` (schema round-trips, fingerprint construction, report
 math for the audio, UI, and startup axes, scenario ids, and the diff
-comparability guards, per-axis ratios, and geometric means) and a `jvmTest` for the `/proc/cpuinfo`
-parser and the streamed SHA-256 file hash (against a known-good literal), the
-corpus-manifest ordering / relative-path / hash+size construction, and the
-`corpusPin` assembly (including its refusal of a missing corpus root or
-snapshot). The snapshot's own round-trip + path transforms and the ingest
-capability
-are tested in `:cbox:common:repository:api`/`:real`; the scanner → snapshot →
-import round trip end to end is covered in `apps/perfbench`. The device axes'
-mapping (`BenchmarkData.TestResult` → `UiMeasurement`/`StartupMeasurement`) lives
-with the macrobenchmark in `:benchmark`; only the pure report math above is
+comparability guards, per-axis ratios, and geometric means) and a `jvmTest` for
+the `/proc/cpuinfo` parser, the streamed SHA-256 file hash (against a known-good
+literal), and the corpus pin — the `corpusManifest` construction it is built from
+and the `corpusPin` assembly, including its refusal of a missing corpus root or
+snapshot. The manifest's equality semantics (two corpora of the same files are
+equal; a difference in content, size, or ordering is not), the CLI arg parsers,
+and the scanner → snapshot → import round trip are covered by
+[`:apps:perfbench`](../perfbench/README.md)'s own tests. The snapshot's own
+round-trip + path transforms and the ingest capability are tested in
+`:cbox:common:repository:api`/`:real`; the device axes' mapping
+(`BenchmarkData.TestResult` → `UiMeasurement`/`StartupMeasurement`) lives with
+the macrobenchmark in `:benchmark`; only the pure report math above is
 unit-tested here.

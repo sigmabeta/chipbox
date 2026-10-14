@@ -4,7 +4,8 @@ import kotlin.math.exp
 import kotlin.math.ln
 
 /**
- * One scenario compared between a baseline run and a current run within a single [axis].
+ * One scenario compared between a baseline run and a current run, within its enclosing
+ * [AxisComparison].
  *
  * [baselineMetric]/[currentMetric] are that axis's own primary cost metric, and [ratio] is the
  * baseline value divided by the current one. Every primary metric is lower-is-better, so a ratio
@@ -12,7 +13,6 @@ import kotlin.math.ln
  * can show the metric the ratio was derived from.
  */
 data class ScenarioComparison(
-    val axis: String,
     val scenario: String,
     val baselineMetric: Double,
     val currentMetric: Double,
@@ -113,7 +113,6 @@ fun compareRuns(baseline: PerfResult, current: PerfResult): DiffOutcome {
             val baselineValue = baselineMetric.values.getValue(scenario)
             val currentValue = currentValues.getValue(scenario)
             ScenarioComparison(
-                axis = axisId,
                 scenario = scenario,
                 baselineMetric = baselineValue,
                 currentMetric = currentValue,
@@ -177,12 +176,17 @@ private data class PrimaryMetric(val label: String, val values: Map<String, Doub
 /**
  * The single per-axis metric lookup: the headline cost of each axis's scenarios, lower-is-better.
  *
+ * The audio axis is measured by its render wall median (seconds), not its `rtf`: the diff contract
+ * is `baseline ÷ current` over lower-is-better costs, and RTF is the inverse of that wall time, so
+ * deriving from RTF would flip the direction. The "wall" in the label keeps an audio row from being
+ * read as an RTF speedup.
+ *
  * [Axis] is sealed, so a new axis cannot be added without this `when` failing to compile — there is
  * one place, not a cascade, that decides what each axis is measured by.
  */
 private fun Axis.primaryMetric(): PrimaryMetric = when (this) {
     is AudioAxis -> PrimaryMetric(
-        label = "render median (s)",
+        label = "render wall median (s)",
         values = results.associate { it.scenario to it.median },
     )
 
