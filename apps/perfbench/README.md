@@ -73,9 +73,9 @@ Compares every axis of two runs — audio, UI, and startup — not just audio. R
 A is the **baseline**, run B the **current** run; each argument is a
 `results.json` or the folder holding one. For every scenario measured by both
 runs it prints the ratio — that axis's own primary cost metric (audio render
-median, UI frame p50, startup time to first content p50) as baseline ÷ current,
-so **above 1 means B is better** — and the **geometric mean**, per axis and
-overall.
+wall median, UI frame p50, startup time to first content p50) as baseline ÷
+current, so **above 1 means B is better** — and the **geometric mean**, per axis
+and overall.
 
 ```sh
 ./gradlew :apps:perfbench:run --args="diff --a build/perfbench-baseline --b build/perfbench"
@@ -116,3 +116,12 @@ samples, which is exactly what a repeatable benchmark wants. The native `.so`
 files are reused from `:apps:jvm`'s host CMake build via the same
 `hostNativeLibsElements` configuration `:apps:abrender` uses, so the CLI finds
 them on `java.library.path` with no extra setup.
+
+## Tests
+
+The `test` source set covers the CLI seams: the `audio`/`snapshot`/`diff` arg
+parsers (`AudioArgsTest`, `SnapshotArgsTest`, `DiffArgsTest`), the corpus-manifest
+construction and equality (`CorpusManifestTest`), and the scanner → snapshot →
+import round trip (`SnapshotCommandTest`, `SnapshotRoundTripTest`). The shared
+result schema, report math, and diff contract are tested in
+[`:apps:perfbench-core`](../perfbench-core/README.md).

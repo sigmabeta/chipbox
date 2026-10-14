@@ -66,13 +66,10 @@ internal object DeviceBenchmark {
      */
     @Suppress("DEPRECATION")
     fun grantStorageAccess(device: UiDevice) {
+        val benchmarkPackage = InstrumentationRegistry.getInstrumentation().context.packageName
         device.executeShellCommand("appops set $TARGET_PACKAGE MANAGE_EXTERNAL_STORAGE allow")
-        device.executeShellCommand("appops set ${benchmarkPackage()} MANAGE_EXTERNAL_STORAGE allow")
+        device.executeShellCommand("appops set $benchmarkPackage MANAGE_EXTERNAL_STORAGE allow")
     }
-
-    /** The benchmark APK's own package, so it can grant itself access to the shared corpus. */
-    private fun benchmarkPackage(): String =
-        InstrumentationRegistry.getInstrumentation().context.packageName
 
     /**
      * Assembles one run's `results.json` shell — the fingerprint, commits and corpus block every
