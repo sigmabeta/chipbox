@@ -9,13 +9,13 @@ import java.io.File
 import java.time.OffsetDateTime
 import kotlinx.serialization.encodeToString
 import net.sigmabeta.chipbox.perfbench.Axis
-import net.sigmabeta.chipbox.perfbench.CorpusRef
 import net.sigmabeta.chipbox.perfbench.DeviceBenchmarkLayout
 import net.sigmabeta.chipbox.perfbench.DeviceEnvironment
 import net.sigmabeta.chipbox.perfbench.PerfConfig
 import net.sigmabeta.chipbox.perfbench.PerfResult
 import net.sigmabeta.chipbox.perfbench.PerfbenchJson
 import net.sigmabeta.chipbox.perfbench.axisResultFileName
+import net.sigmabeta.chipbox.perfbench.corpusPin
 import net.sigmabeta.chipbox.perfbench.deviceFingerprint
 
 /**
@@ -23,9 +23,10 @@ import net.sigmabeta.chipbox.perfbench.deviceFingerprint
  * the device fingerprint facts, the build-stamped commits, the fixed corpus path, and the per-axis
  * result sink + shell.
  *
- * The macrobenchmark process instruments the app from outside and can't read its external files
- * dir on modern Android, so [corpusRoot] constructs that path for the record rather than touching
- * it — the app's `BenchmarkLibrarySeed` is what actually reads the pushed snapshot + corpus.
+ * The macrobenchmark process runs in its own APK and can't read the app's external files dir on
+ * modern Android; it reads the pushed corpus + snapshot from shared external storage instead, under
+ * All Files Access it grants itself in [grantStorageAccess]. That read is what pins each result
+ * ([corpusPin]) — the app's `BenchmarkLibrarySeed` separately seeds the library from the snapshot.
  */
 internal object DeviceBenchmark {
     const val TARGET_PACKAGE = "net.sigmabeta.chipbox"
@@ -53,7 +54,10 @@ internal object DeviceBenchmark {
     }
 
     /**
-     * Grants the target app All Files Access, so its benchmark seed can read the shared corpus.
+     * Grants All Files Access to both the target app — so its benchmark seed can read the pushed
+     * corpus + snapshot — and the benchmark process itself, so it can hash that same corpus +
+     * snapshot to pin every result ([corpusPin]). The benchmark APK declares
+     * `MANAGE_EXTERNAL_STORAGE`; the op defaults to denied, so it is allowed here.
      *
      * The macrobenchmark's compilation-mode reset uninstalls + reinstalls the app on API < 34 when
      * unrooted, which clears the app's appops — so this must run in each benchmark's `setupBlock`,
@@ -63,7 +67,12 @@ internal object DeviceBenchmark {
     @Suppress("DEPRECATION")
     fun grantStorageAccess(device: UiDevice) {
         device.executeShellCommand("appops set $TARGET_PACKAGE MANAGE_EXTERNAL_STORAGE allow")
+        device.executeShellCommand("appops set ${benchmarkPackage()} MANAGE_EXTERNAL_STORAGE allow")
     }
+
+    /** The benchmark APK's own package, so it can grant itself access to the shared corpus. */
+    private fun benchmarkPackage(): String =
+        InstrumentationRegistry.getInstrumentation().context.packageName
 
     /**
      * Assembles one run's `results.json` shell — the fingerprint, commits and corpus block every
@@ -79,9 +88,7 @@ internal object DeviceBenchmark {
             generated = OffsetDateTime.now().toString(),
             config = config,
             machine = deviceFingerprint(environment, commits.first, commits.second),
-            // A device run reads no audio, so the manifest is empty; the root records the fixed
-            // device corpus dir the pushed snapshot was rebased onto.
-            corpus = CorpusRef(root = corpusRoot().absolutePath),
+            corpus = corpusPin(corpusRoot(), snapshotFile()),
             axes = axes,
         )
     }
@@ -109,6 +116,12 @@ internal object DeviceBenchmark {
     private fun corpusRoot(): File = File(
         externalStorageDir(),
         "${DeviceBenchmarkLayout.ROOT_DIR}/${DeviceBenchmarkLayout.CORPUS_DIR_NAME}",
+    )
+
+    /** The pushed library snapshot the app seeds from, sibling to [corpusRoot] under the same root. */
+    private fun snapshotFile(): File = File(
+        externalStorageDir(),
+        "${DeviceBenchmarkLayout.ROOT_DIR}/${DeviceBenchmarkLayout.SNAPSHOT_FILE_NAME}",
     )
 
     @Suppress("DEPRECATION")
