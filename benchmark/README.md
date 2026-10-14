@@ -1,15 +1,20 @@
 # `:benchmark`
 
 > Macrobenchmark module — measures `apps/android`'s `GridImage` scroll performance
-> and app startup on a real device, and writes one perfbench result per axis.
+> and app startup, and the raw-core audio real-time factor, all on a real device,
+> writing one perfbench result per axis.
 
 An Android Test (`com.android.test`) module that macrobenchmarks the installed
 `:apps:android` app. It instruments the real APK from outside (self-instrumenting,
 `targetProjectPath = :apps:android`): one scenario scrolls the image grid and
 records frame timing + Compose trace sections (`ui` axis); another measures cold
-and warm startup up to first content (`startup` axis). Both assemble a perfbench
+and warm startup up to first content (`startup` axis); a third renders a
+representative track per emulator subset (USF, VGM, PSF) through the raw emulator
+core and reports real-time factor (`audio` axis). Each assembles a perfbench
 result (device fingerprint + axis) with
-[`:apps:perfbench-core`](../apps/perfbench-core/README.md). It's a leaf — nothing
+[`:apps:perfbench-core`](../apps/perfbench-core/README.md); the audio axis reuses
+the render engine from
+[`:apps:abrender-core`](../apps/abrender-core/README.md). It's a leaf — nothing
 depends on it.
 
 ## Deterministic library
@@ -62,7 +67,8 @@ shared storage is only verifiable on hardware.
   flip that off for real measurements).
 - **Per-axis results:** each test method writes its own artifact to the run's
   additional test output dir, named for the axis it measured —
-  `results-ui.json` and `results-startup.json` — so no axis overwrites another.
+  `results-ui.json`, `results-startup.json`, and `results-audio.json` — so no
+  axis overwrites another.
   They're pulled to
   `benchmark/build/outputs/connected_android_test_additional_output/.../`
   alongside the per-iteration Perfetto traces (which open directly in
@@ -109,11 +115,26 @@ library grid showing its first items: in the `benchmark` build type the app call
 `timeToFullDisplayMs`. The same snapshot seeding described below must have run, so
 the grid has items to show.
 
+## Audio axis
+
+`DeviceAudioBenchmark` measures the **audio** axis: real-time factor for the
+representative emulator subset (USF, VGM, PSF). For each scenario it picks one
+representative track from the pushed corpus, warms up once, then times N renders
+through the reused raw emulator core (`EmulatorBank.render` from
+`:apps:abrender-core`) and reduces them with the same
+[`:apps:perfbench-core`](../apps/perfbench-core/README.md) math the host audio axis
+uses. The only difference from the host axis is the backend: this APK carries the
+**arm64** emulator `.so`s, so the numbers are the phone's ground truth. The pushed
+corpus + snapshot must be in place (both are read and hashed into the result's
+corpus block, so a run is corpus-pinned). RTF is inherently machine-independent, so
+this is the one device axis directly comparable across machines.
+
 ## Contents
 
 | File | What it is |
 | --- | --- |
-| `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, the corpus pin (manifest + snapshot hash) read from shared storage, and the per-axis result sink. |
+| `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, the corpus pin (manifest + snapshot hash) read from shared storage, the corpus/snapshot paths, and the per-axis result sink. |
+| `DeviceAudioBenchmark.kt` | `audioRealTimeFactor` — picks one representative track per scenario (USF/VGM/PSF) from the pushed corpus and times raw-core renders, reporting real-time factor (`audio` axis + device fingerprint), written to `results-audio.json`. |
 | `GridImageScrollBenchmark.kt` | `browseByGameScroll` — WARM-startup benchmark that opens BrowseByGame, flings the grid up/down, then maps the macrobenchmark result to a perfbench `results-ui.json` (`ui` axis + device fingerprint). |
 | `LibraryStartupBenchmark.kt` | `coldAndWarmStartup` — measures cold and warm launches up to first content and reports time-to-first-content percentiles (`startup` axis + device fingerprint), written to `results-startup.json`. |
 | `src/main/AndroidManifest.xml` | Test manifest. |
@@ -131,8 +152,12 @@ explicit sections are what make the metric non-zero and stable.
 - **Plugin:** `android.test`.
 - **Targets:** Android only (instrumentation test, `minSdk 26` / `targetSdk 36`).
 - **Source set:** `src/main/java`.
+- **Packaging:** the audio axis's arm64/x86_64 emulator `.so`s are packaged into
+  the test APK (extracted at install). Stray core-less ABIs are excluded so the
+  install resolves an ABI that actually has the cores.
 - **SAGE/module dependencies:** [`apps:perfbench-core`](../apps/perfbench-core/README.md)
-  (the result schema / math). It instruments `:apps:android` via
-  `targetProjectPath` rather than depending on it; test libs only otherwise:
-  `androidx.test.ext.junit`, `androidx.test.runner`, `androidx.test.uiautomator`,
-  `androidx.benchmark.macro.junit4`.
+  (the result schema / math) and [`apps:abrender-core`](../apps/abrender-core/README.md)
+  (the reused raw-core render engine for the audio axis). It instruments
+  `:apps:android` via `targetProjectPath` rather than depending on it; test libs
+  only otherwise: `androidx.test.ext.junit`, `androidx.test.runner`,
+  `androidx.test.uiautomator`, `androidx.benchmark.macro.junit4`.
