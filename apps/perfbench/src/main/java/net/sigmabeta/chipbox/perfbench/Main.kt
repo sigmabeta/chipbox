@@ -77,10 +77,10 @@ private fun printUsage() {
           --dir <folder>       corpus root to scan                        (required)
           --out <snapshot>     snapshot file to write                     (default: $DEFAULT_SNAPSHOT_OUT)
 
-        diff — compare the audio axis of two runs. Run A is the baseline, run B the current run.
-        Prints the per-scenario speedup (baseline render time ÷ current render time) and its
-        geometric mean. Refuses to compare runs from a different fingerprint class, scenario set,
-        or corpus manifest rather than report a silently wrong speedup.
+        diff — compare every axis of two runs. Run A is the baseline, run B the current run. Prints
+        each scenario's ratio (its axis's baseline cost ÷ current cost) and the geometric mean, per
+        axis and overall. Refuses to compare runs from a different fingerprint class, scenario set,
+        or corpus manifest rather than report a silently wrong ratio.
 
           --a <run>            baseline results.json (or the folder holding it)   (required)
           --b <run>            current results.json (or the folder holding it)    (required)
