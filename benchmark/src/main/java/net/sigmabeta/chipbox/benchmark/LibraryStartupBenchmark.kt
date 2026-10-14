@@ -52,7 +52,6 @@ class LibraryStartupBenchmark {
             DeviceBenchmark.perfResult(
                 environment = environment,
                 config = PerfConfig(
-                    repeat = DeviceBenchmark.ITERATIONS,
                     scenarios = StartupScenario.all.map { it.id },
                 ),
                 axes = mapOf(
