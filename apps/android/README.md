@@ -21,7 +21,9 @@ produces the installable app.
 - The **`benchmark` variant** also seeds its library from a pushed snapshot at
   startup — see [`BenchmarkLibrarySeed`](src/main/kotlin/net/sigmabeta/chipbox/BenchmarkLibrarySeed.kt)
   and the `:benchmark` module. `buildConfigField("boolean", "BENCHMARK", …)` gates
-  it to that variant.
+  it to that variant. That variant also reports itself fully drawn the first time a
+  grid cell composes (via `LocalFirstContentReporter`), so the `:benchmark` startup
+  scenario can measure time-to-first-content.
 - Don't boot an AVD to verify — build + lint, then hand device testing to the user.
 
 ## Entry points

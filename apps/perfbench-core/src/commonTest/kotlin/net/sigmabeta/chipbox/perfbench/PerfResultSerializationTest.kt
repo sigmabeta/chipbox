@@ -122,6 +122,42 @@ class PerfResultSerializationTest {
     }
 
     @Test
+    fun `round-trips a startup axis`() {
+        val result = minimalResult().copy(
+            axes = mapOf(
+                "startup" to StartupAxis(
+                    config = StartupAxisConfig(iterations = 5),
+                    results = listOf(
+                        StartupResult(
+                            scenario = "startup.cold",
+                            timeToFirstContentP50Ms = 320.0,
+                            timeToFirstContentP90Ms = 410.0,
+                            timeToFirstContentP99Ms = 500.0,
+                            samplesMs = listOf(300.0, 320.0, 410.0),
+                        ),
+                        StartupResult(
+                            scenario = "startup.warm",
+                            timeToFirstContentP50Ms = 120.0,
+                            timeToFirstContentP90Ms = 140.0,
+                            timeToFirstContentP99Ms = 160.0,
+                            samplesMs = listOf(110.0, 120.0, 140.0),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val json = PerfbenchJson.encodeToString(result)
+        val back = PerfbenchJson.decodeFromString<PerfResult>(json)
+
+        assertEquals(result, back)
+        assertIs<StartupAxis>(back.axes["startup"])
+        assertTrue(json.contains("\"startup\""))
+        assertTrue(json.contains("\"time_to_first_content_p50_ms\""))
+        assertTrue(json.contains("\"samples_ms\""))
+    }
+
+    @Test
     fun `round-trips a device fingerprint`() {
         val result = minimalResult().copy(
             machine = DeviceFingerprint(

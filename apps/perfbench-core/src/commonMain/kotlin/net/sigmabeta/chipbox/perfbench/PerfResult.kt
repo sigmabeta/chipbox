@@ -130,3 +130,34 @@ data class TraceSectionSum(
     @SerialName("sum_ms") val sumMs: Double,
     val count: Int,
 )
+
+/** App startup — one [StartupResult] per scenario (cold and warm launch). */
+@Serializable
+@SerialName("startup")
+data class StartupAxis(
+    val config: StartupAxisConfig,
+    val results: List<StartupResult>,
+    val score: Double? = null,
+) : Axis
+
+/** The launch count a startup axis was measured with. */
+@Serializable
+data class StartupAxisConfig(
+    val iterations: Int,
+)
+
+/**
+ * One startup scenario's measurement.
+ *
+ * [timeToFirstContentP50Ms]/[timeToFirstContentP90Ms]/[timeToFirstContentP99Ms] are percentiles of
+ * time-to-first-content across the measured launches, where "first content" is the library grid
+ * showing its first items. [samplesMs] carries each launch's time in measurement order.
+ */
+@Serializable
+data class StartupResult(
+    val scenario: String,
+    @SerialName("time_to_first_content_p50_ms") val timeToFirstContentP50Ms: Double,
+    @SerialName("time_to_first_content_p90_ms") val timeToFirstContentP90Ms: Double,
+    @SerialName("time_to_first_content_p99_ms") val timeToFirstContentP99Ms: Double,
+    @SerialName("samples_ms") val samplesMs: List<Double>,
+)
