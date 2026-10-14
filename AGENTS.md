@@ -85,6 +85,8 @@ scripts/build-benchmark.sh                 # time this machine's builds (--quick
 ```
 
 - Run **ktlint and detekt together**; both gate commit/push.
+- Gradle prints thousands of task lines: redirect a long run to a file and grep it
+  (`./gradlew … > /tmp/build.log 2>&1`) rather than pulling them into context.
 - **Always verify screenshots via `scripts/paparazzi-diff.sh`**, never by invoking
   the Gradle tasks directly: it re-renders, ranks the most-divergent snapshots,
   writes `golden | new | diff` montages under `build/paparazzi-review/`, and
