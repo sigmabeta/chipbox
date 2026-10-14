@@ -109,7 +109,7 @@ class DiffTest {
         val compared = assertIs<DiffOutcome.Compared>(compareRuns(baseline, baseline))
 
         val labels = compared.report.axes.associate { it.axis to it.metricLabel }
-        assertEquals("render median (s)", labels.getValue("audio"))
+        assertEquals("render wall median (s)", labels.getValue("audio"))
         assertEquals("frame p50 (ms)", labels.getValue("ui"))
         assertEquals("time to first content p50 (ms)", labels.getValue("startup"))
     }
