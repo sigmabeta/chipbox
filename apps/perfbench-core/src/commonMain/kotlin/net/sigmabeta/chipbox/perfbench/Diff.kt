@@ -4,29 +4,42 @@ import kotlin.math.exp
 import kotlin.math.ln
 
 /**
- * One scenario compared between a baseline run and a current run.
+ * One scenario compared between a baseline run and a current run within a single [axis].
  *
- * [speedup] is the ratio of the baseline's render time to the current's, so a value above one means
- * the current run rendered the same audio faster. Because RTF is audio duration ÷ render time over
- * the same sample wall, this is also current RTF ÷ baseline RTF. The two RTFs are carried alongside
- * so a report can show the headline metric the speedup was derived from.
+ * [baselineMetric]/[currentMetric] are that axis's own primary cost metric, and [ratio] is the
+ * baseline value divided by the current one. Every primary metric is lower-is-better, so a ratio
+ * above one means the current run is better. The two raw values are carried alongside so a report
+ * can show the metric the ratio was derived from.
  */
-data class ScenarioSpeedup(
+data class ScenarioComparison(
+    val axis: String,
     val scenario: String,
-    val baselineRtf: Double,
-    val currentRtf: Double,
-    val speedup: Double,
+    val baselineMetric: Double,
+    val currentMetric: Double,
+    val ratio: Double,
 )
 
-/** Every compared scenario plus their summary: the geometric mean of the per-scenario speedups. */
+/**
+ * Every scenario compared in one axis, plus that axis's summary: the geometric mean of its
+ * per-scenario ratios. [metricLabel] names the primary metric the ratios were derived from, so a
+ * report can say what its numbers mean without knowing the axis's schema.
+ */
+data class AxisComparison(
+    val axis: String,
+    val metricLabel: String,
+    val scenarios: List<ScenarioComparison>,
+    val geometricMean: Double,
+)
+
+/** Every compared axis, plus the overall geometric mean across every compared scenario. */
 data class DiffReport(
-    val scenarios: List<ScenarioSpeedup>,
+    val axes: List<AxisComparison>,
     val geometricMean: Double,
 )
 
 /**
  * Why two runs may not be compared. Each variant names what differed so a report can explain the
- * refusal instead of printing a silently wrong speedup.
+ * refusal instead of printing a silently wrong ratio.
  */
 sealed interface DiffRefusal {
     val message: String
@@ -59,7 +72,7 @@ sealed interface DiffRefusal {
     }
 }
 
-/** The result of comparing two runs: either a refusal, or the per-scenario report. */
+/** The result of comparing two runs: either a refusal, or the per-axis report. */
 sealed interface DiffOutcome {
     data class Refused(val reason: DiffRefusal) : DiffOutcome
     data class Compared(val report: DiffReport) : DiffOutcome
@@ -79,38 +92,51 @@ val Fingerprint.fingerprintClass: FingerprintClass
     }
 
 /**
- * Compares the audio axis of two runs, refusing unless they are comparable.
+ * Compares every axis present in both runs, refusing unless they are comparable.
  *
  * The guards run before any ratio is computed: a different fingerprint class, a different scenario
  * set, or a different corpus manifest means no comparison is meaningful, so the caller is handed a
- * [DiffRefusal] rather than a number. When all three match, each scenario is paired by its id and
- * its speedup reported, plus the geometric mean of those speedups.
+ * [DiffRefusal] rather than a number. When all three match, each axis's scenarios are paired by id
+ * and their ratio computed from that axis's [primaryMetric], plus the geometric mean of each axis's
+ * ratios and of every scenario overall.
  */
-fun compareAudioRuns(baseline: PerfResult, current: PerfResult): DiffOutcome {
+fun compareRuns(baseline: PerfResult, current: PerfResult): DiffOutcome {
     val refusal = comparabilityRefusal(baseline, current)
     if (refusal != null) return DiffOutcome.Refused(refusal)
 
-    val baselineByScenario = baseline.audioResultsById()
-    val currentByScenario = current.audioResultsById()
-    val speedups = baselineByScenario.keys.sorted().map { scenario ->
-        val baselineResult = baselineByScenario.getValue(scenario)
-        val currentResult = currentByScenario.getValue(scenario)
-        ScenarioSpeedup(
-            scenario = scenario,
-            baselineRtf = baselineResult.rtf,
-            currentRtf = currentResult.rtf,
-            speedup = baselineResult.median / currentResult.median,
+    val axes = baseline.axes.keys.intersect(current.axes.keys).sorted().mapNotNull { axisId ->
+        val baselineMetric = baseline.axes.getValue(axisId).primaryMetric()
+        val currentValues = current.axes.getValue(axisId).primaryMetric().values
+        if (baselineMetric.values.isEmpty()) return@mapNotNull null
+
+        val scenarios = baselineMetric.values.keys.sorted().map { scenario ->
+            val baselineValue = baselineMetric.values.getValue(scenario)
+            val currentValue = currentValues.getValue(scenario)
+            ScenarioComparison(
+                axis = axisId,
+                scenario = scenario,
+                baselineMetric = baselineValue,
+                currentMetric = currentValue,
+                ratio = baselineValue / currentValue,
+            )
+        }
+        AxisComparison(
+            axis = axisId,
+            metricLabel = baselineMetric.label,
+            scenarios = scenarios,
+            geometricMean = geometricMean(scenarios.map { it.ratio }),
         )
     }
-    return DiffOutcome.Compared(DiffReport(speedups, geometricMean(speedups.map { it.speedup })))
+    val ratios = axes.flatMap { it.scenarios }.map { it.ratio }
+    return DiffOutcome.Compared(DiffReport(axes, geometricMean(ratios)))
 }
 
 /** The first reason the two runs are not comparable, or `null` when every guard passes. */
 private fun comparabilityRefusal(baseline: PerfResult, current: PerfResult): DiffRefusal? {
     val baselineClass = baseline.machine.fingerprintClass
     val currentClass = current.machine.fingerprintClass
-    val baselineScenarios = baseline.audioResultsById().keys
-    val currentScenarios = current.audioResultsById().keys
+    val baselineScenarios = baseline.scenarioKeys()
+    val currentScenarios = current.scenarioKeys()
     return when {
         baselineClass != currentClass -> DiffRefusal.FingerprintClassMismatch(baselineClass, currentClass)
 
@@ -139,13 +165,41 @@ private fun manifestDifference(baseline: List<CorpusEntry>, current: List<Corpus
     }
 }
 
-/** The run's audio results keyed by scenario id. */
-private fun PerfResult.audioResultsById(): Map<String, AudioResult> =
-    (axes["audio"] as? AudioAxis)?.results.orEmpty().associateBy { it.scenario }
+/** Every scenario the run measured, across every axis, as `axis:scenario` keys. */
+private fun PerfResult.scenarioKeys(): Set<String> =
+    axes.entries.flatMap { (axis, value) ->
+        value.primaryMetric().values.keys.map { scenario -> "$axis:$scenario" }
+    }.toSet()
+
+/** One axis's primary cost metric: what its ratios are computed from, and how to label it. */
+private data class PrimaryMetric(val label: String, val values: Map<String, Double>)
 
 /**
- * The geometric mean of [values] — the right summary for ratios, because a 2× speedup and a 2×
- * slowdown cancel. Computed through logs so a long list of large ratios cannot overflow.
+ * The single per-axis metric lookup: the headline cost of each axis's scenarios, lower-is-better.
+ *
+ * [Axis] is sealed, so a new axis cannot be added without this `when` failing to compile — there is
+ * one place, not a cascade, that decides what each axis is measured by.
+ */
+private fun Axis.primaryMetric(): PrimaryMetric = when (this) {
+    is AudioAxis -> PrimaryMetric(
+        label = "render median (s)",
+        values = results.associate { it.scenario to it.median },
+    )
+
+    is UiAxis -> PrimaryMetric(
+        label = "frame p50 (ms)",
+        values = results.associate { it.scenario to it.frameP50Ms },
+    )
+
+    is StartupAxis -> PrimaryMetric(
+        label = "time to first content p50 (ms)",
+        values = results.associate { it.scenario to it.timeToFirstContentP50Ms },
+    )
+}
+
+/**
+ * The geometric mean of [values] — the right summary for ratios, because a 2× improvement and a 2×
+ * regression cancel. Computed through logs so a long list of large ratios cannot overflow.
  */
 fun geometricMean(values: List<Double>): Double {
     require(values.isNotEmpty()) { "geometric mean of an empty list is undefined" }
