@@ -20,8 +20,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Measures app startup — cold and warm — for the library grid, and writes a perfbench `results.json`
- * (device fingerprint + `startup` axis) to the run's additional test output directory.
+ * Measures app startup — cold and warm — for the library grid, and writes a perfbench
+ * `results-startup.json` (device fingerprint + `startup` axis) to the run's additional test output
+ * directory.
  *
  * "First content" is the library grid showing its first items: the app's Home launch screen renders
  * game-cover grids, and in the `benchmark` build type the app calls `Activity.reportFullyDrawn()`
