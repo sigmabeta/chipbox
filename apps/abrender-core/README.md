@@ -5,6 +5,10 @@ both the host JVM and a real Android device**. The desktop CLI proves the x86_64
 instrumented test here proves the **arm64** ones. Output is byte-for-byte the same shape, so the
 desktop `abrender diff` compares a device run against a host run with no platform-specific code.
 
+It is also the raw-core render engine the perfbench **device audio axis** times (see
+[`:benchmark`](../../benchmark/README.md)): that module depends on this one as a KMP consumer, so the
+same arm64 `:native` cores land in its test APK and its RTF results are the phone's ground truth.
+
 ## Layout
 
 - `src/main/java/` (`jvmSharedMain`) — the engine: `EmulatorBank`/`Renderer` (drives each emulator's
