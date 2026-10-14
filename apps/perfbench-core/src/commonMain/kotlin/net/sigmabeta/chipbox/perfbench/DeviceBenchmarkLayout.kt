@@ -4,14 +4,17 @@ package net.sigmabeta.chipbox.perfbench
  * The fixed on-device layout a device benchmark seeds from, shared so the app and the macrobenchmark
  * agree without either reaching into the other.
  *
- * Everything lives under the app's external files dir (`Android/data/<package>/files/perfbench/`),
- * which `adb push` can write and the app can read with no runtime storage permission: the host
- * writes a library snapshot with `perfbench snapshot`, pushes it here, and pushes the corpus audio
- * to the sibling [CORPUS_DIR_NAME]; the snapshot's corpus-relative paths rebase onto that directory.
+ * Everything lives under **shared** external storage (e.g. `/sdcard/Music/chipbox-test/`), beside
+ * where a user's real library would sit — _not_ under the app's external files dir
+ * (`Android/data/<package>/`), which the macrobenchmark's compilation-mode reset deletes when it
+ * uninstalls + reinstalls the app on API < 34. The host writes a library snapshot with
+ * `perfbench snapshot`, pushes it here, and pushes the corpus audio to the sibling [CORPUS_DIR_NAME];
+ * the snapshot's corpus-relative paths rebase onto that directory. Reading it needs All Files Access
+ * (`MANAGE_EXTERNAL_STORAGE`), the same permission the app's folder picker already requires.
  */
 object DeviceBenchmarkLayout {
-    /** The directory, under the app's external files dir, holding the snapshot and corpus. */
-    const val ROOT_DIR = "perfbench"
+    /** Directory under shared external storage holding the snapshot and corpus, e.g. `Music/chipbox-test`. */
+    const val ROOT_DIR = "Music/chipbox-test"
 
     /** The library snapshot the app ingests at startup, relative to [ROOT_DIR]. */
     const val SNAPSHOT_FILE_NAME = "library-snapshot.json"

@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox
 
 import android.content.Context
+import android.os.Environment
 import java.io.File
 import java.security.MessageDigest
 import kotlinx.coroutines.runBlocking
@@ -13,30 +14,39 @@ import net.sigmabeta.chipbox.repository.importLibrarySnapshot
 import net.sigmabeta.sage.logging.Hatchet
 
 /**
- * Seeds the library for the `benchmark` build type from a snapshot pushed to a fixed external
+ * Seeds the library for the `benchmark` build type from a snapshot pushed to a fixed shared
  * location (see [DeviceBenchmarkLayout]), once at startup and outside the measured loop. Every
  * other build type is a no-op.
  *
  * This is the app-side half of the snapshot-ingest capability: the host generates the snapshot
- * with `perfbench snapshot`, the developer pushes it (and the corpus audio) under the app's
- * external files dir, and the app ingests it here before the UI composes — so a device benchmark
- * starts from a warm, deterministic library instead of a scan. Import is idempotent; a snapshot
- * hash is cached so a re-launch that finds the same snapshot already imported skips the (no-op)
- * merge entirely.
+ * with `perfbench snapshot`, the developer pushes it (and the corpus audio) under shared external
+ * storage (e.g. `/sdcard/Music/chipbox-test/`, beside where a real library would live), and the app
+ * ingests it here before the UI composes — so a device benchmark starts from a warm, deterministic
+ * library instead of a scan. Reading the shared location needs All Files Access
+ * (`MANAGE_EXTERNAL_STORAGE`); the benchmark grants it. Import is idempotent; a snapshot hash is
+ * cached so a re-launch that finds the same snapshot already imported skips the (no-op) merge.
  */
 internal object BenchmarkLibrarySeed {
     private const val PREFS = "benchmark_seed"
     private const val KEY_SNAPSHOT_HASH = "library_snapshot_sha256"
 
+    @Suppress("TooGenericExceptionCaught") // a bad fixture must never crash the app; degrade to empty
     fun seedIfBenchmark(context: Context, repository: Repository, hatchet: Hatchet) {
         if (!BuildConfig.BENCHMARK) return
 
-        val root = context.getExternalFilesDir(DeviceBenchmarkLayout.ROOT_DIR)
-        val snapshotFile = root?.let { File(it, DeviceBenchmarkLayout.SNAPSHOT_FILE_NAME) }
-        if (root == null || snapshotFile == null || !snapshotFile.exists()) {
-            hatchet.w("Benchmark seed: no pushed snapshot found; library not seeded")
-        } else {
+        val root = File(Environment.getExternalStorageDirectory(), DeviceBenchmarkLayout.ROOT_DIR)
+        val snapshotFile = File(root, DeviceBenchmarkLayout.SNAPSHOT_FILE_NAME)
+        if (!snapshotFile.exists()) {
+            hatchet.w("Benchmark seed: no pushed snapshot at ${snapshotFile.absolutePath}; library not seeded")
+            return
+        }
+        try {
             importSnapshot(context, repository, hatchet, root, snapshotFile)
+        } catch (e: Exception) {
+            // The shared location is outside the app sandbox: without All Files Access the read
+            // throws, as does a corrupt fixture. A benchmark run must not crash the app over a
+            // missing snapshot — it just starts from an empty library.
+            hatchet.w("Benchmark seed: could not import ${snapshotFile.absolutePath}: $e")
         }
     }
 

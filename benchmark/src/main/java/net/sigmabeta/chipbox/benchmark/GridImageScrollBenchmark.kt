@@ -68,8 +68,14 @@ class GridImageScrollBenchmark {
             experimentalConfig = null,
             startupMode = StartupMode.WARM,
             setupBlock = {
+                DeviceBenchmark.grantStorageAccess(device)
                 pressHome()
                 startActivityAndWait()
+
+                // The app opens on Home; "Browse by Game" is a row on the Library tab.
+                val libraryTab = device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
+                    ?: error("Could not find the 'Library' tab")
+                libraryTab.click()
 
                 val byGame = device.wait(
                     Until.findObject(By.text("Browse by Game")),
