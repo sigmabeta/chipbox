@@ -83,7 +83,10 @@ class LibraryStartupBenchmark {
             iterations = DeviceBenchmark.ITERATIONS,
             experimentalConfig = null,
             startupMode = mode,
-            setupBlock = { pressHome() },
+            setupBlock = {
+                DeviceBenchmark.grantStorageAccess(device)
+                pressHome()
+            },
         ) {
             startActivityAndWait()
         }
@@ -93,9 +96,10 @@ class LibraryStartupBenchmark {
 
     /** Pools the macrobenchmark's launch samples into a [StartupMeasurement]. */
     private fun startupMeasurement(scenario: String, testResult: BenchmarkData.TestResult): StartupMeasurement {
-        // One nested list per iteration (max + median per launch); flatten so percentiles come from
-        // every launch. timeToFullDisplayMs exists only if the app reported itself fully drawn.
-        val samples = testResult.sampledMetrics[FULL_DISPLAY_METRIC]?.runs?.flatten().orEmpty()
+        // StartupTimingMetric emits a *single* metric (one value per launch), so it lands in
+        // `metrics` — not `sampledMetrics`, which is for multi-sample metrics like frame timing.
+        // timeToFullDisplayMs exists only if the app reported itself fully drawn.
+        val samples = testResult.metrics[FULL_DISPLAY_METRIC]?.runs.orEmpty()
         check(samples.isNotEmpty()) {
             "No $FULL_DISPLAY_METRIC samples — the benchmark build must report the app fully drawn " +
                 "when the library grid shows its first item. Is BenchmarkLibrarySeed seeded and " +

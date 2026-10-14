@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.os.PowerManager
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.UiDevice
 import java.io.File
 import java.time.OffsetDateTime
 import kotlinx.serialization.encodeToString
@@ -52,6 +53,19 @@ internal object DeviceBenchmark {
     }
 
     /**
+     * Grants the target app All Files Access, so its benchmark seed can read the shared corpus.
+     *
+     * The macrobenchmark's compilation-mode reset uninstalls + reinstalls the app on API < 34 when
+     * unrooted, which clears the app's appops — so this must run in each benchmark's `setupBlock`,
+     * after that reset and before the measured launch. Idempotent, and harmless on devices where the
+     * op is already allowed.
+     */
+    @Suppress("DEPRECATION")
+    fun grantStorageAccess(device: UiDevice) {
+        device.executeShellCommand("appops set $TARGET_PACKAGE MANAGE_EXTERNAL_STORAGE allow")
+    }
+
+    /**
      * Assembles one run's `results.json` shell — the fingerprint, commits and corpus block every
      * device axis shares — around the axis-specific [config] and [axes].
      */
@@ -82,11 +96,11 @@ internal object DeviceBenchmark {
     }
 
     /**
-     * The fixed location the benchmark build seeds its library from (see [DeviceBenchmarkLayout]),
-     * as an absolute path under the target app's external files dir.
+     * The fixed shared location the benchmark build seeds its library from (see
+     * [DeviceBenchmarkLayout]), as an absolute path under shared external storage.
      */
     private fun corpusRoot(): File = File(
-        File(externalStorageDir(), "Android/data/$TARGET_PACKAGE/files"),
+        externalStorageDir(),
         "${DeviceBenchmarkLayout.ROOT_DIR}/${DeviceBenchmarkLayout.CORPUS_DIR_NAME}",
     )
 

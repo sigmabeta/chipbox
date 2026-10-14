@@ -16,7 +16,7 @@ depends on it.
 
 A scroll benchmark needs a library, and a scan inside the measured loop would
 swamp the frames. Instead the `:apps:android` **`benchmark` build type** seeds
-itself from a **library snapshot** pushed to a fixed external location, once at
+itself from a **library snapshot** pushed to a fixed shared external location, once at
 startup, before the UI composes:
 
 1. Generate the snapshot on the host from your corpus:
@@ -24,15 +24,22 @@ startup, before the UI composes:
    ./gradlew :apps:perfbench:run --args="snapshot --dir /path/to/corpus --out build/perfbench/library-snapshot.json"
    ```
 2. Push the snapshot and the corpus audio onto the device (the paths
-   `:apps:perfbench-core`'s `DeviceBenchmarkLayout` defines; the app's external
-   files dir needs no runtime storage permission):
+   `:apps:perfbench-core`'s `DeviceBenchmarkLayout` defines). These live under
+   **shared** external storage — `/sdcard/Music/chipbox-test/` — beside where a
+   real library folder sits, **not** under the app's `Android/data/` (which the
+   macrobenchmark's compilation-mode reset deletes when it uninstalls + reinstalls
+   the app on API < 34). The app reads it via All Files Access
+   (`MANAGE_EXTERNAL_STORAGE`), which each benchmark re-grants in its `setupBlock`
+   after that reset:
    ```sh
    adb push build/perfbench/library-snapshot.json \
-     /sdcard/Android/data/net.sigmabeta.chipbox/files/perfbench/
+     /sdcard/Music/chipbox-test/
    adb push /path/to/corpus/. \
-     /sdcard/Android/data/net.sigmabeta.chipbox/files/perfbench/corpus/
+     /sdcard/Music/chipbox-test/corpus/
    ```
    The snapshot's corpus-relative paths rebase onto that `corpus/` directory.
+   (A shared path also sidesteps `adb`'s inability to create nested dirs under
+   `Android/data` on Android 11+.)
 3. The app ingests the snapshot into the library at startup (`BenchmarkLibrarySeed`,
    gated on `BuildConfig.BENCHMARK`), caching its hash so a later launch skips
    the (idempotent) merge. Other build types never seed.
@@ -53,6 +60,32 @@ startup, before the UI composes:
   <https://ui.perfetto.dev>). The file carries the axis the test measured, plus
   the device fingerprint (manufacturer/model, Android build, ABI, thermal status
   at start, and the Chipbox + sage commits stamped in at build time).
+
+## Running & debugging on a device
+
+The suite fans out to **every** connected device. To run one device — and to keep
+a stale Gradle daemon from hiding the selection — set `ANDROID_SERIAL` and use
+`--no-daemon`; adb serials can contain spaces and a `(2)` suffix, so quote them:
+
+```sh
+ANDROID_SERIAL='<adb serial>' ./gradlew --no-daemon :benchmark:connectedBenchmarkAndroidTest
+```
+
+Run a single scenario with the instrumentation class filter:
+
+```sh
+ANDROID_SERIAL='<adb serial>' ./gradlew --no-daemon :benchmark:connectedBenchmarkAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=net.sigmabeta.chipbox.benchmark.GridImageScrollBenchmark
+```
+
+When a run fails, **`adb logcat` is the ground truth** — a macrobenchmark failure
+looks opaque from Gradle, but logcat shows the cause: the compilation-mode reset
+(`Clearing ART profiles`, `deletePackageX`), a `ProfileInstallReceiver` broadcast
+the app never answered, or an exception in the app's `Application.onCreate` (e.g.
+the seed failing to read the shared corpus). Each test's result, its
+`additionaltestoutput.benchmark.message.*.txt`, and the per-iteration Perfetto
+traces land under
+`benchmark/build/outputs/connected_android_test_additional_output/<device>/`.
 
 ## Startup scenarios
 

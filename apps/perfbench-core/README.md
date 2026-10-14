@@ -28,7 +28,7 @@ repository `:api`, not on this harness module.
 | `AudioReport.kt` | pure report math: `audioResult(AudioMeasurement)` and `median` |
 | `UiReport.kt` | pure report math for the UI axis: `uiResult(UiMeasurement)` plus `percentile` and `jankPercent` |
 | `StartupReport.kt` | pure report math for the startup axis: `startupResult(StartupMeasurement)` (time-to-first-content percentiles) |
-| `DeviceBenchmarkLayout.kt` | the fixed on-device layout (`perfbench/` external files dir holding the pushed snapshot + corpus) shared by the app seed and the macrobenchmark |
+| `DeviceBenchmarkLayout.kt` | the fixed on-device layout (`Music/chipbox-test/` under shared external storage holding the pushed snapshot + corpus) shared by the app seed and the macrobenchmark |
 | `Diff.kt` | the baseline-diff contract: `compareAudioRuns`/`DiffOutcome`, the `DiffRefusal` comparability guards, the `FingerprintClass` of a `Fingerprint`, `ScenarioSpeedup`/`DiffReport`, and `geometricMean` |
 | `PerfbenchJson.kt` | the one JSON dialect for `results.json` (`class` discriminator, pretty-printed). The library snapshot has its own dialect (`LibrarySnapshotJson`) in `:cbox:common:repository:api`. |
 | `SystemHostEnvironment.kt` | `jvmMain` only: probes the running host for the facts a host fingerprint records (`/proc/cpuinfo`, `/etc/os-release`, `java.*`) |

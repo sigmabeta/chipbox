@@ -39,6 +39,10 @@ to** the tracks that reference them, since the native loaders resolve them as
 siblings. `build/perfbench/` is git-ignored; WAV scratch output lands in
 `build/perfbench/wav/`.
 
+Output paths are relative to the module's working directory, so the default
+`build/perfbench/` resolves to `apps/perfbench/build/perfbench/`, not the repo
+root.
+
 ### `snapshot --dir <corpus> [--out <snapshot>]`
 
 Runs the **real host scanner** once over the corpus and writes a portable
