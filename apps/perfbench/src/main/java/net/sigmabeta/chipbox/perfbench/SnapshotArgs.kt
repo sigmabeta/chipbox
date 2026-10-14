@@ -15,10 +15,7 @@ data class SnapshotArgs(
  * `--out` names the snapshot file to write (defaults to `build/perfbench/library-snapshot.json`).
  */
 fun parseSnapshotOptions(options: Map<String, String>): SnapshotArgs {
-    val dirValue = options["dir"]
-        ?: error("snapshot requires --dir <corpus> (a folder of audio files)")
-    val corpusDir = File(dirValue)
-    require(corpusDir.isDirectory) { "Corpus directory not found: ${corpusDir.absolutePath}" }
+    val corpusDir = parseCorpusDir(options)
 
     return SnapshotArgs(
         corpusDir = corpusDir,

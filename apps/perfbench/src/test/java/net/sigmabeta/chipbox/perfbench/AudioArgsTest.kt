@@ -45,6 +45,28 @@ class AudioArgsTest {
     }
 
     @Test
+    fun `rejects a missing corpus directory with the same message as snapshot`() {
+        val audio = assertFailsWith<IllegalArgumentException> { parseAudioOptions(emptyMap()) }
+        val snapshot = assertFailsWith<IllegalArgumentException> { parseSnapshotOptions(emptyMap()) }
+
+        assertEquals(audio.message, snapshot.message)
+    }
+
+    @Test
+    fun `rejects a non-directory corpus with the same message as snapshot`() {
+        val file = Files.createTempFile("perfbench-corpus", ".txt").toFile()
+
+        val audio = assertFailsWith<IllegalArgumentException> {
+            parseAudioOptions(mapOf("dir" to file.absolutePath))
+        }
+        val snapshot = assertFailsWith<IllegalArgumentException> {
+            parseSnapshotOptions(mapOf("dir" to file.absolutePath))
+        }
+
+        assertEquals(audio.message, snapshot.message)
+    }
+
+    @Test
     fun `rejects unknown scenario ids`() {
         assertFailsWith<IllegalStateException> {
             parseAudioOptions(mapOf("dir" to corpus.absolutePath, "only" to "audio.spc"))
