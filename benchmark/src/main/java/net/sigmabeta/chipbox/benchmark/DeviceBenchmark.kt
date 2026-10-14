@@ -111,9 +111,10 @@ internal object DeviceBenchmark {
 
     /**
      * The fixed shared location the benchmark build seeds its library from (see
-     * [DeviceBenchmarkLayout]), as an absolute path under shared external storage.
+     * [DeviceBenchmarkLayout]), as an absolute path under shared external storage. The audio axis
+     * renders the same pushed corpus the UI/startup axes' results are pinned to.
      */
-    private fun corpusRoot(): File = File(
+    fun corpusRoot(): File = File(
         externalStorageDir(),
         "${DeviceBenchmarkLayout.ROOT_DIR}/${DeviceBenchmarkLayout.CORPUS_DIR_NAME}",
     )
