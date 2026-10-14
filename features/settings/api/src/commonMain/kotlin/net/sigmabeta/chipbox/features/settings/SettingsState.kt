@@ -18,6 +18,7 @@ import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.components.DropdownSettingListModel
+import net.sigmabeta.sage.components.EditTextListModel
 import net.sigmabeta.sage.components.LabelValueListModel
 import net.sigmabeta.sage.components.ListModel
 import net.sigmabeta.sage.components.LoadingItemListModel
@@ -55,6 +56,9 @@ data class SettingsState(
     val playlistsSource: PlaylistsSource = PlaylistsSource.DEFAULT,
     // settingId of the single currently-expanded dropdown, or null if all are collapsed.
     val expandedDropdownId: String? = null,
+    // Debug-only: while true, the "Import library snapshot" row is replaced in place by an inline
+    // path field. Submitting it imports; cancelling closes it.
+    val snapshotImportVisible: Boolean = false,
 ) : ListState() {
     override fun title(stringProvider: StringProvider) = TitleBarModel(
         title = stringProvider.getString(ChipboxStringId.SETTINGS_SCREEN_TITLE),
@@ -186,6 +190,7 @@ data class SettingsState(
         if (shouldShowDebug != true) return emptyList()
         return listOf(
             sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_DEBUG),
+            snapshotImportRowOrField(),
             repositorySourceDropdown(),
             generatorSourceDropdown(),
             speakerSourceDropdown(),
@@ -199,6 +204,29 @@ data class SettingsState(
             componentLibraryRow(stringProvider),
             appBranchRow(stringProvider),
             versionCodeRow(stringProvider),
+        )
+    }
+
+    // Debug-only snapshot ingest: a tappable row that flips to an inline path field in place.
+    // Submitting the field's path imports the snapshot through the repository (upsert-merge,
+    // idempotent); the action and status handling live in SettingsViewModel. Labels are literal —
+    // the whole debug section is unlocalized.
+    private fun snapshotImportRowOrField(): ListModel = if (snapshotImportVisible) {
+        EditTextListModel(
+            id = SNAPSHOT_IMPORT_EDIT_ID,
+            header = "Import library snapshot",
+            hint = "Path to library-snapshot.json",
+            submitLabel = "Import",
+            cancelLabel = "Cancel",
+            allowEmpty = false,
+            autoFocus = true,
+        )
+    } else {
+        NameCaptionListModel(
+            dataId = SNAPSHOT_IMPORT_SETTING_ID.hashCode().toLong(),
+            name = "Import library snapshot",
+            caption = "Upsert-merge games from a perfbench snapshot file.",
+            clickAction = SettingsAction.ImportSnapshotClicked,
         )
     }
 
@@ -447,4 +475,13 @@ data class SettingsState(
         value = appInfo?.versionCode?.toString(),
         clickAction = SageAction.Noop,
     )
+
+    companion object {
+        // dataId/settingId for the debug snapshot-import row and its inline path field.
+        const val SNAPSHOT_IMPORT_SETTING_ID = "debug.import_snapshot"
+
+        // The inline field's identifier, carried back in SageAction.EditTextSubmitted/Cancelled so
+        // the VM knows the submitted text is a snapshot path. A sentinel below any real dataId.
+        const val SNAPSHOT_IMPORT_EDIT_ID = Long.MIN_VALUE
+    }
 }

@@ -24,6 +24,7 @@ kotlin {
 
                 implementation(projects.cbox.common.strings.api)
                 implementation(projects.cbox.common.ui.fonts.api)
+                implementation(projects.cbox.common.perf.api)
 
                 implementation(libs.coil.kt.core)
                 implementation(libs.coil.kt.compose)

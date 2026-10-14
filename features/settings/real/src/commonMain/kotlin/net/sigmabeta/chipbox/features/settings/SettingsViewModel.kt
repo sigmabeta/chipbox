@@ -8,6 +8,7 @@ import dev.zacsweers.metro.binding
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.serialization.decodeFromString
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
@@ -18,7 +19,10 @@ import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
+import net.sigmabeta.chipbox.repository.LibrarySnapshot
+import net.sigmabeta.chipbox.repository.LibrarySnapshotJson
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.repository.importLibrarySnapshot
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
@@ -253,6 +257,18 @@ class SettingsViewModel @Inject constructor(
 
             SettingsAction.ComponentLibraryClicked -> emit(ChipboxEvent.NavigateTo(ComponentLibrary))
 
+            SettingsAction.ImportSnapshotClicked -> updateState {
+                it.copy(snapshotImportVisible = !it.snapshotImportVisible)
+            }
+
+            is SageAction.EditTextSubmitted -> if (action.id == SettingsState.SNAPSHOT_IMPORT_EDIT_ID) {
+                onSnapshotImportSubmitted(action.text)
+            }
+
+            is SageAction.EditTextCancelled -> if (action.id == SettingsState.SNAPSHOT_IMPORT_EDIT_ID) {
+                updateState { it.copy(snapshotImportVisible = false) }
+            }
+
             else -> Unit
         }
     }
@@ -301,6 +317,37 @@ class SettingsViewModel @Inject constructor(
                 hatchet.e("Clear playback history failed: ${ex.message}")
                 updateState { it.copy(clearPlaybackHistoryStatus = LCE.Error(LOAD_OP_CLEAR_HISTORY, ex)) }
                 emit(ChipboxEvent.ShowSnackbar("Failed to clear playback history."))
+            }
+        }
+    }
+
+    // Debug-only: read the snapshot file at [path] (raw filesystem path, same shape the scanner
+    // uses for library folders), decode it, and upsert-merge it into the library. Import does not
+    // require the corpus audio to be present — playback resolves paths lazily — so this surfaces
+    // the same capability the benchmark build seeds itself with.
+    @Suppress("TooGenericExceptionCaught")
+    private fun onSnapshotImportSubmitted(path: String) {
+        updateState { it.copy(snapshotImportVisible = false) }
+        viewModelScope.launch {
+            try {
+                val bytes = librarySource.openBytes(path)
+                if (bytes == null) {
+                    emit(ChipboxEvent.ShowSnackbar("Snapshot not found: $path"))
+                    return@launch
+                }
+                val snapshot = LibrarySnapshotJson.decodeFromString<LibrarySnapshot>(bytes.decodeToString())
+                // A by-hand import has no separate corpus location to rebase onto, so use the root
+                // the snapshot was generated from (correct when importing on the same host). The
+                // benchmark build's startup seed passes its own fixed device root instead.
+                val result = repository.importLibrarySnapshot(snapshot, root = snapshot.root)
+                emit(
+                    ChipboxEvent.ShowSnackbar(
+                        "Imported ${result.total} game(s) — ${result.added} new, ${result.updated} updated."
+                    )
+                )
+            } catch (ex: Throwable) {
+                hatchet.e("Snapshot import failed: ${ex.message}")
+                emit(ChipboxEvent.ShowSnackbar("Snapshot import failed: ${ex.message}"))
             }
         }
     }

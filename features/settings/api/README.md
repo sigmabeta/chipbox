@@ -14,8 +14,8 @@ UI builds the same screen from the same types the Android UI does. Only
 | File | What it is |
 | --- | --- |
 | `Settings.kt` | `@Serializable data object Settings` — the route key. |
-| `SettingsAction.kt` | `sealed class SettingsAction : ChipboxAction()` — every interaction: dropdown expand, theme/resampler/font/debug-source selections, the audio toggles, library actions (add folder, manage, rescan, clear), about-section taps (licenses, build-date, GitHub), and the debug navigation rows (playback status, error log, crash log, component library). |
-| `SettingsState.kt` | `SettingsState : ListState` — holds all persisted/derived settings values and renders them into sections (appearance, audio, library, about, and a `shouldShowDebug`-gated debug section) via `toListItems`. Encodes the row logic: single-open-dropdown, rescan inline-spinner vs. status-row, add-folder-vs-manage-library swap, `LCE` loading rows for clear operations. |
+| `SettingsAction.kt` | `sealed class SettingsAction : ChipboxAction()` — every interaction: dropdown expand, theme/resampler/font/debug-source selections, the audio toggles, library actions (add folder, manage, rescan, clear), about-section taps (licenses, build-date, GitHub), the debug navigation rows (playback status, error log, crash log, component library), and the debug snapshot-import toggle. |
+| `SettingsState.kt` | `SettingsState : ListState` — holds all persisted/derived settings values and renders them into sections (appearance, audio, library, about, and a `shouldShowDebug`-gated debug section) via `toListItems`. Encodes the row logic: single-open-dropdown, rescan inline-spinner vs. status-row, add-folder-vs-manage-library swap, `LCE` loading rows for clear operations, and the snapshot-import row that swaps to an inline path field (`EditTextListModel`) while `snapshotImportVisible` (identifiers in its companion). |
 
 ## Why depend on this module
 
