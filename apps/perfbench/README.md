@@ -126,7 +126,9 @@ them on `java.library.path` with no extra setup.
 ## Tests
 
 The `test` source set covers the CLI seams: the `audio`/`snapshot`/`diff` arg
-parsers (`AudioArgsTest`, `SnapshotArgsTest`, `DiffArgsTest`), the corpus-manifest
+parsers (`AudioArgsTest`, `SnapshotArgsTest`, `DiffArgsTest`), the `--filter`
+glob semantics (`CorpusFilterTest`), the `diff` read seam's refusal of a
+non-v1.1 result (`DiffCommandTest`), the corpus-manifest
 construction and equality (`CorpusManifestTest`), and the scanner → snapshot →
 import round trip (`SnapshotCommandTest`, `SnapshotRoundTripTest`). The shared
 result schema, report math, and diff contract are tested in

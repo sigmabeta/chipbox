@@ -112,7 +112,8 @@ Tested by `commonTest` (schema round-trips, fingerprint construction, report
 math for the audio, UI, and startup axes, scenario ids, and the diff
 comparability guards, per-axis ratios, and geometric means) and a `jvmTest` for
 the `/proc/cpuinfo` parser, the streamed SHA-256 file hash (against a known-good
-literal), and the corpus pin — the `corpusManifest` construction it is built from
+literal), the shared corpus path / scratch-name helpers, and the corpus pin —
+the `corpusManifest` construction it is built from
 and the `corpusPin` assembly, including its refusal of a missing corpus root or
 snapshot. The manifest's equality semantics (two corpora of the same files are
 equal; a difference in content, size, or ordering is not), the CLI arg parsers,
