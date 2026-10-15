@@ -17,6 +17,8 @@ import net.sigmabeta.chipbox.perfbench.PerfbenchJson
 import net.sigmabeta.chipbox.perfbench.axisResultFileName
 import net.sigmabeta.chipbox.perfbench.corpusPin
 import net.sigmabeta.chipbox.perfbench.deviceFingerprint
+import net.sigmabeta.sage.android.logging.AndroidHatchet
+import net.sigmabeta.sage.logging.Hatchet
 
 /**
  * Device-side plumbing shared by the macrobenchmarks: the target package, the fix iteration count,
@@ -37,6 +39,70 @@ internal object DeviceBenchmark {
     private const val CHIPBOX_COMMIT_ARG = "chipboxCommit"
     private const val SAGE_COMMIT_ARG = "sageCommit"
     private const val UNKNOWN = "unknown"
+    private const val NANOS_PER_MILLI = 1_000_000L
+
+    /**
+     * The label every axis's progress line carries, so a run's begin/end/section lines are greppable
+     * in logcat (`adb logcat | grep '\[bench\]'`) amid the app's own logging.
+     */
+    private const val BENCH_LABEL = "[bench]"
+
+    /**
+     * The one [Hatchet] the device axes log progress through. This test APK resolves
+     * `:android:logging` to its **release** variant, whose `AndroidHatchet` default (`BuildConfig.DEBUG`)
+     * would emit nothing, so output is forced on. A ~20-minute audio run is otherwise silent between
+     * `TestRunner: started` and `TestRunner: finished`.
+     */
+    private val hatchet: Hatchet = AndroidHatchet(enabled = true)
+
+    private var testStartNanos = 0L
+
+    /** Logs the start of a device test and the clock its matching [endTest] measures against. */
+    fun beginTest(name: String) {
+        testStartNanos = System.nanoTime()
+        hatchet.i("$BENCH_LABEL begin test=$name")
+    }
+
+    /**
+     * Logs the end of a device test with its wall duration. Call it from a `finally` so an exception
+     * mid-run still emits the end; only a hard process crash leaves a `begin` with no matching `end`.
+     */
+    fun endTest(name: String) {
+        hatchet.i("$BENCH_LABEL end test=$name ms=${elapsedMillis(testStartNanos)}")
+    }
+
+    /**
+     * Runs [block] as a labelled section: logs its begin, then its end with the wall duration, on
+     * both success and failure. Extra [attributes] (e.g. a corpus path or scenario id) are appended
+     * to each line as `key=value` pairs.
+     */
+    fun <T> section(name: String, vararg attributes: Pair<String, String>, block: () -> T): T {
+        val start = System.nanoTime()
+        hatchet.i(sectionLine("begin", name, attributes, ms = null))
+        return try {
+            block()
+        } finally {
+            hatchet.i(sectionLine("end", name, attributes, ms = elapsedMillis(start)))
+        }
+    }
+
+    private fun sectionLine(
+        phase: String,
+        name: String,
+        attributes: Array<out Pair<String, String>>,
+        ms: Long?,
+    ): String {
+        val parts = buildList {
+            add(BENCH_LABEL)
+            add(phase)
+            add("section=$name")
+            attributes.forEach { add("${it.first}=${it.second}") }
+            if (ms != null) add("ms=$ms")
+        }
+        return parts.joinToString(" ")
+    }
+
+    private fun elapsedMillis(startNanos: Long): Long = (System.nanoTime() - startNanos) / NANOS_PER_MILLI
 
     /** The device facts a [DeviceEnvironment] records, probed from the running benchmark process. */
     fun environment(): DeviceEnvironment = DeviceEnvironment(

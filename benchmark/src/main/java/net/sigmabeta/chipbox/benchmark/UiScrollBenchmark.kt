@@ -56,24 +56,33 @@ class UiScrollBenchmark {
     @OptIn(ExperimentalMetricApi::class, ExperimentalBenchmarkConfigApi::class)
     @Test
     fun scrollScenarios() {
-        // Probe the device facts (including the thermal status "at start") before the measured
-        // loop; the fingerprint must not record the post-run thermal state.
-        val environment = DeviceBenchmark.environment()
-        val scenarios = selectedScenarios()
-        val results = scenarios.map(::runScenario)
+        DeviceBenchmark.beginTest("scrollScenarios")
+        try {
+            // Probe the device facts (including the thermal status "at start") before the measured
+            // loop; the fingerprint must not record the post-run thermal state.
+            val environment = DeviceBenchmark.environment()
+            val scenarios = selectedScenarios()
+            val results = scenarios.map { scenario ->
+                DeviceBenchmark.section(scenario.scenario.id) {
+                    runScenario(scenario)
+                }
+            }
 
-        DeviceBenchmark.write(
-            DeviceBenchmark.perfResult(
-                environment = environment,
-                config = PerfConfig(scenarios = scenarios.map { it.scenario.id }),
-                axes = mapOf(
-                    "ui" to UiAxis(
-                        config = UiAxisConfig(iterations = DeviceBenchmark.ITERATIONS),
-                        results = results,
+            DeviceBenchmark.write(
+                DeviceBenchmark.perfResult(
+                    environment = environment,
+                    config = PerfConfig(scenarios = scenarios.map { it.scenario.id }),
+                    axes = mapOf(
+                        "ui" to UiAxis(
+                            config = UiAxisConfig(iterations = DeviceBenchmark.ITERATIONS),
+                            results = results,
+                        ),
                     ),
                 ),
-            ),
-        )
+            )
+        } finally {
+            DeviceBenchmark.endTest("scrollScenarios")
+        }
     }
 
     /**

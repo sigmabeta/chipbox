@@ -86,6 +86,18 @@ and overall.
 ./gradlew :apps:perfbench:run --args="diff --a build/perfbench-baseline --b build/perfbench"
 ```
 
+Pass `--json` to emit the same report as a machine-readable document (the shared
+perfbench JSON dialect) instead of the human table — so a caller can read the
+ratios rather than parse prose. The per-axis `scripts/benchmark-device-<axis>.sh`
+gates use it to turn each on-device axis (audio/ui/startup) into a regression
+check (see `benchmark/README.md`). When the diff refuses, it prints its prose
+refusal and no JSON document, so a consumer sees no report to read:
+
+```sh
+./gradlew :apps:perfbench:run --args="diff --a <baseline> --b <current> --json" \
+  | jq -r '.geometric_mean'
+```
+
 The diff **refuses** rather than report a number when the two runs are not
 comparable: a different **fingerprint class** (host vs device), a different
 **scenario set**, or a different **corpus manifest**. The refusal names what

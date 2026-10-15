@@ -98,7 +98,7 @@ data class SearchState(
                     GridImageListModel(
                         dataId = game.id + ID_OFFSET_GAME,
                         name = game.title,
-                        sourceInfo = game.photoUrl,
+                        sourceInfo = SourceInfo(game.photoUrl),
                         imagePlaceholder = Icon.Album,
                         clickAction = SearchAction.GameClicked(game.id),
                         aspectRatio = GAME_COVER_ASPECT_RATIO,
@@ -147,7 +147,7 @@ data class SearchState(
                     GridImageListModel(
                         dataId = artist.id + ID_OFFSET_ARTIST,
                         name = artist.name,
-                        sourceInfo = artist.photoUrl,
+                        sourceInfo = SourceInfo(artist.photoUrl),
                         imagePlaceholder = Icon.Person,
                         clickAction = SearchAction.ArtistClicked(artist.id),
                     )

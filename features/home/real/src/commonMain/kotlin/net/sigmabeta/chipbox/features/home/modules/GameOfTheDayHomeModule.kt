@@ -15,6 +15,7 @@ import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.GridImageListModel
+import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.StringProvider
 
@@ -61,7 +62,7 @@ class GameOfTheDayHomeModule @Inject constructor(
                 GridImageListModel(
                     dataId = pick.id + ID_OFFSET,
                     name = pick.title,
-                    sourceInfo = pick.photoUrl,
+                    sourceInfo = SourceInfo(pick.photoUrl),
                     imagePlaceholder = Icon.Album,
                     clickAction = HomeAction.GameClicked(pick.id),
                     aspectRatio = GAME_COVER_ASPECT_RATIO,

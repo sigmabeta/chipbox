@@ -277,7 +277,7 @@ private fun songCards(tracks: List<Track>): ImmutableList<ListModel> = tracks
         GridImageListModel(
             dataId = track.id + SONG_ID_OFFSET,
             name = track.title,
-            sourceInfo = track.game?.photoUrl,
+            sourceInfo = SourceInfo(track.game?.photoUrl),
             imagePlaceholder = Icon.MusicNote,
             clickAction = HomeAction.SongClicked(track.id),
             aspectRatio = GAME_COVER_ASPECT_RATIO,
@@ -292,7 +292,7 @@ private fun artistCards(artists: List<Artist>): ImmutableList<ListModel> = artis
         GridImageListModel(
             dataId = artist.id + ARTIST_ID_OFFSET,
             name = artist.name,
-            sourceInfo = artist.photoUrl,
+            sourceInfo = SourceInfo(artist.photoUrl),
             imagePlaceholder = Icon.Person,
             clickAction = HomeAction.ArtistClicked(artist.id),
         )
@@ -345,7 +345,7 @@ private fun soloItem(game: Game): ImmutableList<ListModel> = persistentListOf(
 private fun gameCard(dataId: Long, game: Game, maxWidthDp: Float? = null) = GridImageListModel(
     dataId = dataId,
     name = game.title,
-    sourceInfo = game.photoUrl,
+    sourceInfo = SourceInfo(game.photoUrl),
     imagePlaceholder = Icon.Album,
     clickAction = HomeAction.GameClicked(game.id),
     aspectRatio = GAME_COVER_ASPECT_RATIO,
@@ -361,7 +361,7 @@ private fun rngCards(): ImmutableList<ListModel> = persistentListOf(
 private fun rngCard(dataId: Long, name: String, icon: Icon, action: SageAction) = GridImageListModel(
     dataId = dataId,
     name = name,
-    sourceInfo = null,
+    sourceInfo = SourceInfo(null),
     imagePlaceholder = icon,
     clickAction = action,
 )

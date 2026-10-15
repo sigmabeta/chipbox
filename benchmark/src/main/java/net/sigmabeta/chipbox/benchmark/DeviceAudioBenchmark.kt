@@ -41,40 +41,55 @@ class DeviceAudioBenchmark {
 
     @Test
     fun audioRealTimeFactor() {
-        val instrumentation = InstrumentationRegistry.getInstrumentation()
-        // The corpus lives under shared external storage, like the other device axes; reading it
-        // needs the same All Files Access they grant themselves in their setup blocks.
-        DeviceBenchmark.grantStorageAccess(UiDevice.getInstance(instrumentation))
+        DeviceBenchmark.beginTest("audioRealTimeFactor")
+        try {
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            // The corpus lives under shared external storage, like the other device axes; reading it
+            // needs the same All Files Access they grant themselves in their setup blocks.
+            DeviceBenchmark.section("grant-storage") {
+                DeviceBenchmark.grantStorageAccess(UiDevice.getInstance(instrumentation))
+            }
 
-        val environment = DeviceBenchmark.environment()
-        val bank = EmulatorBank()
-        val corpusRoot = DeviceBenchmark.corpusRoot()
-        val wavDir = File(instrumentation.context.cacheDir, SCRATCH_DIR).apply { mkdirs() }
+            val environment = DeviceBenchmark.environment()
+            val bank = EmulatorBank()
+            val corpusRoot = DeviceBenchmark.corpusRoot()
+            val wavDir = File(instrumentation.context.cacheDir, SCRATCH_DIR).apply { mkdirs() }
 
-        val results = walkCorpus(
-            root = corpusRoot,
-            supported = bank.supportedExtensions,
-            extensionFilter = null,
-            gameFilter = null,
-            everySong = true,
-            subsong = 0,
-        ).map { track ->
-            val path = corpusRelativePath(corpusRoot, track.path)
-            measureTrack(bank, track, path, wavDir)
-        }
+            val tracks = DeviceBenchmark.section("walk-corpus") {
+                walkCorpus(
+                    root = corpusRoot,
+                    supported = bank.supportedExtensions,
+                    extensionFilter = null,
+                    gameFilter = null,
+                    everySong = true,
+                    subsong = 0,
+                )
+            }
 
-        DeviceBenchmark.write(
-            DeviceBenchmark.perfResult(
-                environment = environment,
-                config = PerfConfig(scenarios = results.map { it.path }),
-                axes = mapOf(
-                    "audio" to AudioAxis(
-                        config = AudioAxisConfig(sampleSeconds = SAMPLE_SECONDS, repeats = REPEATS),
-                        results = results,
+            val results = tracks.map { track ->
+                val path = corpusRelativePath(corpusRoot, track.path)
+                DeviceBenchmark.section("render", "path" to path) {
+                    measureTrack(bank, track, path, wavDir)
+                }
+            }
+
+            DeviceBenchmark.section("write-result") {
+                DeviceBenchmark.write(
+                    DeviceBenchmark.perfResult(
+                        environment = environment,
+                        config = PerfConfig(scenarios = results.map { it.path }),
+                        axes = mapOf(
+                            "audio" to AudioAxis(
+                                config = AudioAxisConfig(sampleSeconds = SAMPLE_SECONDS, repeats = REPEATS),
+                                results = results,
+                            ),
+                        ),
                     ),
-                ),
-            ),
-        )
+                )
+            }
+        } finally {
+            DeviceBenchmark.endTest("audioRealTimeFactor")
+        }
     }
 
     /**
