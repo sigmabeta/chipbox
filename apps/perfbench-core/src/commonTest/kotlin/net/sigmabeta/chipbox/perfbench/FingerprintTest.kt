@@ -24,11 +24,4 @@ class FingerprintTest {
         assertEquals("abc1234", fingerprint.chipboxCommit)
         assertEquals("def5678", fingerprint.sageCommit)
     }
-
-    @Test
-    fun `scenario ids are stable and resolvable`() {
-        assertEquals(listOf("audio.usf", "audio.vgm", "audio.psf"), AudioScenario.all.map { it.id })
-        assertEquals(AudioScenario.PSF, AudioScenario.fromId("audio.psf"))
-        assertEquals(null, AudioScenario.fromId("audio.spc"))
-    }
 }

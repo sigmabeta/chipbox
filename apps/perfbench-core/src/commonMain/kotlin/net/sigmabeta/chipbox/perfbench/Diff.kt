@@ -11,6 +11,9 @@ import kotlin.math.ln
  * baseline value divided by the current one. Every primary metric is lower-is-better, so a ratio
  * above one means the current run is better. The two raw values are carried alongside so a report
  * can show the metric the ratio was derived from.
+ *
+ * [scenario] is axis-specific: a corpus-relative path for the audio axis, a scenario id for the UI
+ * and startup axes. It is the key the axis's two runs are paired by, not a UI scenario specifically.
  */
 data class ScenarioComparison(
     val scenario: String,
@@ -96,9 +99,10 @@ val Fingerprint.fingerprintClass: FingerprintClass
  *
  * The guards run before any ratio is computed: a different fingerprint class, a different scenario
  * set, or a different corpus manifest means no comparison is meaningful, so the caller is handed a
- * [DiffRefusal] rather than a number. When all three match, each axis's scenarios are paired by id
- * and their ratio computed from that axis's [primaryMetric], plus the geometric mean of each axis's
- * ratios and of every scenario overall.
+ * [DiffRefusal] rather than a number. When all three match, each axis's scenarios are paired by its
+ * own key (a corpus-relative path for audio, a scenario id otherwise) and their ratio computed from
+ * that axis's [primaryMetric], plus the geometric mean of each axis's ratios and of every scenario
+ * overall.
  */
 fun compareRuns(baseline: PerfResult, current: PerfResult): DiffOutcome {
     val refusal = comparabilityRefusal(baseline, current)
@@ -107,13 +111,15 @@ fun compareRuns(baseline: PerfResult, current: PerfResult): DiffOutcome {
     val axes = baseline.axes.keys.intersect(current.axes.keys).sorted().mapNotNull { axisId ->
         val baselineMetric = baseline.axes.getValue(axisId).primaryMetric()
         val currentValues = current.axes.getValue(axisId).primaryMetric().values
-        if (baselineMetric.values.isEmpty()) return@mapNotNull null
+        // Intersect the measurable keys: an entry errored on one side is recorded but not compared.
+        val keys = baselineMetric.values.keys.intersect(currentValues.keys).sorted()
+        if (keys.isEmpty()) return@mapNotNull null
 
-        val scenarios = baselineMetric.values.keys.sorted().map { scenario ->
-            val baselineValue = baselineMetric.values.getValue(scenario)
-            val currentValue = currentValues.getValue(scenario)
+        val scenarios = keys.map { key ->
+            val baselineValue = baselineMetric.values.getValue(key)
+            val currentValue = currentValues.getValue(key)
             ScenarioComparison(
-                scenario = scenario,
+                scenario = key,
                 baselineMetric = baselineValue,
                 currentMetric = currentValue,
                 ratio = baselineValue / currentValue,
@@ -127,6 +133,7 @@ fun compareRuns(baseline: PerfResult, current: PerfResult): DiffOutcome {
         )
     }
     val ratios = axes.flatMap { it.scenarios }.map { it.ratio }
+    if (ratios.isEmpty()) return DiffOutcome.Refused(DiffRefusal.EmptyScenarioSet)
     return DiffOutcome.Compared(DiffReport(axes, geometricMean(ratios)))
 }
 
@@ -167,8 +174,15 @@ private fun manifestDifference(baseline: List<CorpusEntry>, current: List<Corpus
 /** Every scenario the run measured, across every axis, as `axis:scenario` keys. */
 private fun PerfResult.scenarioKeys(): Set<String> =
     axes.entries.flatMap { (axis, value) ->
-        value.primaryMetric().values.keys.map { scenario -> "$axis:$scenario" }
+        value.resultKeys().map { key -> "$axis:$key" }
     }.toSet()
+
+/** Every result identity an axis carries, errored included, so the file-set guard stays honest. */
+private fun Axis.resultKeys(): List<String> = when (this) {
+    is AudioAxis -> results.map { it.path }
+    is UiAxis -> results.map { it.scenario }
+    is StartupAxis -> results.map { it.scenario }
+}
 
 /** One axis's primary cost metric: what its ratios are computed from, and how to label it. */
 private data class PrimaryMetric(val label: String, val values: Map<String, Double>)
@@ -187,7 +201,7 @@ private data class PrimaryMetric(val label: String, val values: Map<String, Doub
 private fun Axis.primaryMetric(): PrimaryMetric = when (this) {
     is AudioAxis -> PrimaryMetric(
         label = "render wall median (s)",
-        values = results.associate { it.scenario to it.median },
+        values = results.filter { it.error == null }.associate { it.path to it.median!! },
     )
 
     is UiAxis -> PrimaryMetric(

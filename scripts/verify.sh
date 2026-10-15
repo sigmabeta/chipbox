@@ -44,6 +44,7 @@ GRADLE_FLAGS=(--build-cache --configuration-cache --console=plain)
 # since jpackage needs a full JDK a dev JBR may lack. Otherwise this matches CI.
 ALL_TASKS=(
   "static-analysis|ktlintCheck detekt --continue -Pchipbox.skipNative"
+  "benchmark|:benchmark:compileBenchmarkKotlin -Pchipbox.skipNative"
   "unit-test|jvmTest --continue"
   "screenshot|verifyPaparazziDebug --continue"
   "shared-build|:apps:jvm:classes"

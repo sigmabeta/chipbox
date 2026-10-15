@@ -2,6 +2,7 @@ package net.sigmabeta.chipbox.perfbench
 
 import java.io.File
 import java.util.Locale
+import kotlinx.serialization.SerializationException
 
 private const val SCENARIO_WIDTH = 12
 private const val COLUMN_WIDTH = 10
@@ -12,10 +13,13 @@ private const val DECIMALS = 2
  * per-axis, per-scenario ratio and the geometric mean (per axis and overall), or refuses (with the
  * reason) when the runs are not comparable. A refusal is not an error: the tool declines rather than
  * report a wrong number.
+ *
+ * A run whose `results.json` cannot be read as v1.1 (e.g. a v1 baseline, whose audio results have no
+ * `path`) is refused the same way — it is incomparable, not a crash.
  */
 fun runDiff(args: DiffArgs) {
-    val baseline = readResult(args.baseline)
-    val current = readResult(args.current)
+    val baseline = readOrRefuse(args.baseline) ?: return
+    val current = readOrRefuse(args.current) ?: return
 
     when (val outcome = compareRuns(baseline, current)) {
         is DiffOutcome.Refused -> println("Refusing to compare: ${outcome.reason.message}")
@@ -23,7 +27,34 @@ fun runDiff(args: DiffArgs) {
     }
 }
 
-private fun readResult(file: File): PerfResult = PerfbenchJson.decodeFromString(file.readText())
+/** The result of reading a run's file: the decoded document, or why it is not v1.1-compatible. */
+internal sealed interface ResultRead {
+    data class Decoded(val result: PerfResult) : ResultRead
+    data class Incompatible(val file: File, val reason: String) : ResultRead
+}
+
+/** Reads a run's file, turning an undecodable (e.g. v1) result into a refusal instead of an exception. */
+internal fun readResult(file: File): ResultRead =
+    try {
+        ResultRead.Decoded(PerfbenchJson.decodeFromString(file.readText()))
+    } catch (e: SerializationException) {
+        ResultRead.Incompatible(file, e.message ?: "unreadable perfbench result")
+    }
+
+/** The line `diff` prints when a run's file is not a v1.1-compatible result. */
+internal fun refusalLine(read: ResultRead.Incompatible): String =
+    "Refusing to compare: ${read.file.absolutePath} is not a v1.1-compatible perfbench result — " +
+        "re-record the baseline (${read.reason})"
+
+/** Reads a run, printing the refusal line and returning `null` when the file is not v1.1-compatible. */
+private fun readOrRefuse(file: File): PerfResult? = when (val read = readResult(file)) {
+    is ResultRead.Decoded -> read.result
+
+    is ResultRead.Incompatible -> {
+        println(refusalLine(read))
+        null
+    }
+}
 
 private fun printReport(args: DiffArgs, report: DiffReport) {
     println("Diff (A = baseline, B = current)")

@@ -23,21 +23,50 @@ class DiffTest {
     }
 
     @Test
-    fun `compares the audio axis by render median with a ratio above one for a faster current`() {
-        val baseline = result(axes = mapOf("audio" to audioAxis(audio("audio.usf", medianSeconds = 3.0))))
-        val current = result(axes = mapOf("audio" to audioAxis(audio("audio.usf", medianSeconds = 1.5))))
+    fun `compares the audio axis by render median keyed by path with a ratio above one for a faster current`() {
+        val baseline = result(axes = mapOf("audio" to audioAxis(audio("Chrono Trigger/track.spc", medianSeconds = 3.0))))
+        val current = result(axes = mapOf("audio" to audioAxis(audio("Chrono Trigger/track.spc", medianSeconds = 1.5))))
 
         val compared = assertIs<DiffOutcome.Compared>(compareRuns(baseline, current))
 
         val axis = compared.report.axes.single()
         assertEquals("audio", axis.axis)
         val scenario = axis.scenarios.single()
-        assertEquals("audio.usf", scenario.scenario)
+        assertEquals("Chrono Trigger/track.spc", scenario.scenario)
         assertEquals(3.0, scenario.baselineMetric, TOLERANCE)
         assertEquals(1.5, scenario.currentMetric, TOLERANCE)
         assertEquals(2.0, scenario.ratio, TOLERANCE)
         assertEquals(2.0, axis.geometricMean, TOLERANCE)
         assertEquals(2.0, compared.report.geometricMean, TOLERANCE)
+    }
+
+    @Test
+    fun `pairs audio results by path and skips an errored entry`() {
+        val baseline = result(
+            axes = mapOf(
+                "audio" to audioAxis(
+                    audio("Chrono Trigger/track.spc", medianSeconds = 2.0),
+                    erroredAudio("Chrono Trigger/broken.spc"),
+                ),
+            ),
+        )
+        val current = result(
+            axes = mapOf(
+                "audio" to audioAxis(
+                    audio("Chrono Trigger/track.spc", medianSeconds = 1.0),
+                    erroredAudio("Chrono Trigger/broken.spc"),
+                ),
+            ),
+        )
+
+        val compared = assertIs<DiffOutcome.Compared>(compareRuns(baseline, current))
+
+        val scenarios = compared.report.axes.single().scenarios
+        val scenario = scenarios.single()
+        assertEquals("Chrono Trigger/track.spc", scenario.scenario)
+        assertEquals(2.0, scenario.baselineMetric, TOLERANCE)
+        assertEquals(1.0, scenario.currentMetric, TOLERANCE)
+        assertEquals(2.0, scenario.ratio, TOLERANCE)
     }
 
     @Test
@@ -74,14 +103,14 @@ class DiffTest {
     fun `compares every axis present in both runs with per-axis and overall geometric means`() {
         val baseline = result(
             axes = mapOf(
-                "audio" to audioAxis(audio("audio.usf", medianSeconds = 2.0)),
+                "audio" to audioAxis(audio("game/track.spc", medianSeconds = 2.0)),
                 "ui" to uiAxis(ui("ui.browse_by_game_scroll", frameP50Ms = 4.0)),
                 "startup" to startupAxis(startup("startup.cold", p50Ms = 8.0)),
             ),
         )
         val current = result(
             axes = mapOf(
-                "audio" to audioAxis(audio("audio.usf", medianSeconds = 2.0)),
+                "audio" to audioAxis(audio("game/track.spc", medianSeconds = 2.0)),
                 "ui" to uiAxis(ui("ui.browse_by_game_scroll", frameP50Ms = 2.0)),
                 "startup" to startupAxis(startup("startup.cold", p50Ms = 2.0)),
             ),
@@ -100,7 +129,7 @@ class DiffTest {
     fun `carries each axis's primary metric label`() {
         val baseline = result(
             axes = mapOf(
-                "audio" to audioAxis(audio("audio.usf", medianSeconds = 2.0)),
+                "audio" to audioAxis(audio("game/track.spc", medianSeconds = 2.0)),
                 "ui" to uiAxis(ui("ui.browse_by_game_scroll", frameP50Ms = 4.0)),
                 "startup" to startupAxis(startup("startup.cold", p50Ms = 8.0)),
             ),
@@ -149,19 +178,19 @@ class DiffTest {
     }
 
     @Test
-    fun `refuses runs that measured a different scenario set`() {
+    fun `refuses an audio path-set difference`() {
         val baseline = result(
-            axes = mapOf("audio" to audioAxis(audio("audio.usf"), audio("audio.vgm"))),
+            axes = mapOf("audio" to audioAxis(audio("game/a.spc"))),
         )
         val current = result(
-            axes = mapOf("audio" to audioAxis(audio("audio.usf"))),
+            axes = mapOf("audio" to audioAxis(audio("game/b.spc"))),
         )
 
         val refused = assertIs<DiffOutcome.Refused>(compareRuns(baseline, current))
 
         val mismatch = assertIs<DiffRefusal.ScenarioSetMismatch>(refused.reason)
-        assertEquals(listOf("audio:audio.vgm"), mismatch.baselineOnly)
-        assertEquals(emptyList(), mismatch.currentOnly)
+        assertEquals(listOf("audio:game/a.spc"), mismatch.baselineOnly)
+        assertEquals(listOf("audio:game/b.spc"), mismatch.currentOnly)
     }
 
     @Test
@@ -213,6 +242,16 @@ class DiffTest {
     }
 
     @Test
+    fun `refuses when every audio file errored so there is nothing measurable`() {
+        val baseline = result(axes = mapOf("audio" to audioAxis(erroredAudio("game/a.spc"))))
+        val current = result(axes = mapOf("audio" to audioAxis(erroredAudio("game/a.spc"))))
+
+        val refused = assertIs<DiffOutcome.Refused>(compareRuns(baseline, current))
+
+        assertIs<DiffRefusal.EmptyScenarioSet>(refused.reason)
+    }
+
+    @Test
     fun `a matching run compares even when the machines within the class differ`() {
         val baseline = result(machine = hostFingerprint(cpuModel = "one", cpuCores = 8))
         val current = result(machine = hostFingerprint(cpuModel = "two", cpuCores = 16))
@@ -223,7 +262,7 @@ class DiffTest {
     private fun result(
         machine: Fingerprint = hostFingerprint(),
         manifest: List<CorpusEntry> = manifest("game/track.usf"),
-        axes: Map<String, Axis> = mapOf("audio" to audioAxis(audio("audio.usf", medianSeconds = 3.0))),
+        axes: Map<String, Axis> = mapOf("audio" to audioAxis(audio("game/track.spc", medianSeconds = 3.0))),
     ): PerfResult = PerfResult(
         generated = "2026-10-13T12:00:00+00:00",
         config = PerfConfig(scenarios = emptyList()),
@@ -241,8 +280,8 @@ class DiffTest {
     private fun startupAxis(vararg results: StartupResult): StartupAxis =
         StartupAxis(StartupAxisConfig(iterations = 5), results.toList())
 
-    private fun audio(scenario: String, medianSeconds: Double = 3.0): AudioResult = AudioResult(
-        scenario = scenario,
+    private fun audio(path: String, medianSeconds: Double = 3.0): AudioResult = AudioResult(
+        path = path,
         rtf = 10.0,
         cpuSeconds = null,
         median = medianSeconds,
@@ -250,6 +289,8 @@ class DiffTest {
         max = medianSeconds,
         samples = listOf(medianSeconds),
     )
+
+    private fun erroredAudio(path: String): AudioResult = AudioResult(path = path, error = "render failed")
 
     private fun ui(scenario: String, frameP50Ms: Double): UiResult = UiResult(
         scenario = scenario,
