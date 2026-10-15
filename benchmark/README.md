@@ -79,6 +79,39 @@ shared storage is only verifiable on hardware.
   **corpus block** — the manifest of the pushed corpus and the hash of the
   snapshot the library was seeded from.
 
+## Progress logging
+
+Each axis logs its progress through SAGE's `Hatchet` facade (to logcat), because a
+device run is otherwise a black box: the audio axis in particular can sit silent for
+~20 minutes between `TestRunner: started` and `TestRunner: finished`. Every line is
+prefixed `[bench]`, so a run is greppable:
+
+```sh
+adb logcat | grep '\[bench\]'
+```
+
+Each test emits a `begin test=<name>` / `end test=<name> ms=<millis>` pair (the end
+is emitted from a `finally`, so an exception mid-run still closes the test; only a
+hard process crash leaves a `begin` with no matching `end`). Inside a test, each
+unit of work and phase is a `section`: begin/end with its wall duration, plus any
+attribute pairs (`key=value`). The sections are:
+
+- **audio** — `grant-storage`, `walk-corpus`, one `render path=<corpus-relative>`
+  pair per corpus file, and `write-result`.
+- **ui** — one `scenario id=<UiScenario id>` pair per scenario.
+- **startup** — one `scenario id=<StartupScenario id>` pair per cold/warm scenario.
+
+```
+I: [bench] begin test=audioRealTimeFactor
+I: [bench] begin section=render path=Chrono Trigger/track.spc
+I: [bench] end section=render path=Chrono Trigger/track.spc ms=1234
+I: [bench] end test=audioRealTimeFactor ms=48000
+```
+
+This module resolves `:android:logging` to its **release** variant, whose
+`AndroidHatchet` default (`BuildConfig.DEBUG`) would emit nothing, so
+`DeviceBenchmark` constructs `AndroidHatchet(enabled = true)`.
+
 ## Running & debugging on a device
 
 The suite fans out to **every** connected device. To run one device — and to keep
@@ -223,7 +256,7 @@ across machines.
 
 | File | What it is |
 | --- | --- |
-| `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, the corpus pin (manifest + snapshot hash) read from shared storage, the corpus/snapshot paths, and the per-axis result sink. |
+| `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, the corpus pin (manifest + snapshot hash) read from shared storage, the corpus/snapshot paths, the per-axis result sink, and the `Hatchet`-backed `beginTest`/`endTest`/`section` progress logging. |
 | `DeviceAudioBenchmark.kt` | `audioRealTimeFactor` — walks the pushed corpus and times raw-core renders file by file, reporting real-time factor (`audio` axis + device fingerprint), written to `results-audio.json`. |
 | `UiScrollBenchmark.kt` | `scrollScenarios` — WARM-startup benchmark that opens each core surface (BrowseByGame, Home, BrowseAllTracks, artist detail via the snapshot's most-credited artist), scrolls its vertical list, then maps every scenario's macrobenchmark result into one perfbench `results-ui.json` (`ui` axis + device fingerprint). A `scenario` instrumentation argument narrows it to one scenario for tuning. |
 | `LibraryStartupBenchmark.kt` | `coldAndWarmStartup` — measures cold and warm launches up to first content and reports time-to-first-content percentiles (`startup` axis + device fingerprint), written to `results-startup.json`. |
@@ -251,8 +284,9 @@ records none, and its metrics list omits them rather than reporting a zero.
   the test APK (extracted at install). Stray core-less ABIs are excluded so the
   install resolves an ABI that actually has the cores.
 - **SAGE/module dependencies:** [`apps:perfbench-core`](../apps/perfbench-core/README.md)
-  (the result schema / math) and [`apps:abrender-core`](../apps/abrender-core/README.md)
-  (the reused raw-core render engine for the audio axis). It instruments
-  `:apps:android` via `targetProjectPath` rather than depending on it; test libs
-  only otherwise: `androidx.test.ext.junit`, `androidx.test.runner`,
+  (the result schema / math), [`apps:abrender-core`](../apps/abrender-core/README.md)
+  (the reused raw-core render engine for the audio axis), and
+  `sage:android:logging` (the `AndroidHatchet` the axes log progress through). It
+  instruments `:apps:android` via `targetProjectPath` rather than depending on it;
+  test libs only otherwise: `androidx.test.ext.junit`, `androidx.test.runner`,
   `androidx.test.uiautomator`, `androidx.benchmark.macro.junit4`.
