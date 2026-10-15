@@ -9,7 +9,7 @@ internal const val DEFAULT_SAMPLE_SECONDS = 30
 /** Parsed `perfbench audio` invocation. */
 data class AudioArgs(
     val corpusDir: File,
-    val only: List<AudioScenario>?,
+    val filter: String?,
     val repeat: Int,
     val outDir: File,
     val sampleSeconds: Int,
@@ -17,7 +17,8 @@ data class AudioArgs(
 
 /**
  * Turns parsed `--key value` options into an [AudioArgs], applying defaults and rejecting missing or
- * invalid input up front (before any native library is loaded).
+ * invalid input up front (before any native library is loaded). A `--filter` glob is validated here
+ * too, so a malformed pattern fails at parse time rather than mid-walk.
  */
 fun parseAudioOptions(options: Map<String, String>): AudioArgs {
     val corpusDir = parseCorpusDir(options)
@@ -28,16 +29,12 @@ fun parseAudioOptions(options: Map<String, String>): AudioArgs {
     val sampleSeconds = intOption(options, "seconds") ?: DEFAULT_SAMPLE_SECONDS
     require(sampleSeconds >= 1) { "--seconds must be >= 1 (was $sampleSeconds)" }
 
-    val only = options["only"]?.let { value ->
-        value.split(",").map { it.trim() }.filter { it.isNotEmpty() }.map { id ->
-            AudioScenario.fromId(id)
-                ?: error("Unknown scenario id '$id' (known: ${AudioScenario.all.joinToString(", ") { it.id }})")
-        }
-    }
+    val filter = options["filter"]
+    filter?.let(::requireValidGlob)
 
     return AudioArgs(
         corpusDir = corpusDir,
-        only = only,
+        filter = filter,
         repeat = repeat,
         outDir = File(options["out"] ?: DEFAULT_OUT),
         sampleSeconds = sampleSeconds,

@@ -15,7 +15,7 @@ class PerfResultSerializationTest {
     fun `round-trips a fully populated result`() {
         val result = PerfResult(
             generated = "2026-10-13T12:00:00+00:00",
-            config = PerfConfig(scenarios = listOf("audio.usf", "audio.vgm", "audio.psf")),
+            config = PerfConfig(scenarios = listOf("game/track.spc", "game/track.vgm")),
             machine = HostFingerprint(
                 cpuModel = "AMD Ryzen 9 5900X 12-Core Processor",
                 cpuCores = 24,
@@ -34,7 +34,7 @@ class PerfResultSerializationTest {
                     config = AudioAxisConfig(sampleSeconds = 30, repeats = 3),
                     results = listOf(
                         AudioResult(
-                            scenario = "audio.usf",
+                            path = "game/track.spc",
                             rtf = 12.5,
                             cpuSeconds = 2.01,
                             median = 2.4,
@@ -64,6 +64,30 @@ class PerfResultSerializationTest {
         assertTrue(json.contains("\"cpu_model\""))
         assertTrue(json.contains("\"sample_seconds\""))
         assertTrue(json.contains("\"cpu_s\""))
+        assertTrue(json.contains("\"path\""))
+        assertTrue(json.contains("\"error\""))
+    }
+
+    @Test
+    fun `round-trips an errored audio result without special float values`() {
+        val result = minimalResult().copy(
+            axes = mapOf(
+                "audio" to AudioAxis(
+                    config = AudioAxisConfig(sampleSeconds = 30, repeats = 1),
+                    results = listOf(erroredAudioResult("game/broken.spc", error = "no audio produced")),
+                ),
+            ),
+        )
+
+        val json = PerfbenchJson.encodeToString(result)
+        val back = PerfbenchJson.decodeFromString<PerfResult>(json)
+
+        assertEquals(result, back)
+        val audio = assertIs<AudioAxis>(back.axes["audio"])
+        val errored = audio.results.single()
+        assertEquals("no audio produced", errored.error)
+        assertNull(errored.rtf)
+        assertNull(errored.median)
     }
 
     @Test
@@ -210,14 +234,14 @@ class PerfResultSerializationTest {
 
     private fun minimalResult(): PerfResult = PerfResult(
         generated = "2026-10-13T12:00:00+00:00",
-        config = PerfConfig(scenarios = listOf("audio.usf")),
+        config = PerfConfig(scenarios = listOf("game/track.spc")),
         machine = HostFingerprint("CPU", 8, "Linux", "6.8", "JVM", "abc1234", "def5678"),
         corpus = CorpusRef(root = "/corpus"),
         axes = mapOf(
             "audio" to AudioAxis(
                 config = AudioAxisConfig(sampleSeconds = 30, repeats = 1),
                 results = listOf(
-                    AudioResult("audio.usf", rtf = 10.0, cpuSeconds = 1.5, median = 3.0, min = 3.0, max = 3.0, samples = listOf(3.0)),
+                    AudioResult("game/track.spc", rtf = 10.0, cpuSeconds = 1.5, median = 3.0, min = 3.0, max = 3.0, samples = listOf(3.0)),
                 ),
             ),
         ),

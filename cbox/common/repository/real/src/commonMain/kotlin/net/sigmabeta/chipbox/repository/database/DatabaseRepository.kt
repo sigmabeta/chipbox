@@ -33,6 +33,7 @@ import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.models.decodeChainFiles
 import net.sigmabeta.chipbox.models.encodeChainFiles
 import net.sigmabeta.chipbox.perf.traceAsync
+import net.sigmabeta.chipbox.repository.ARTIST_NAME_DELIMITERS
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteOutcome
@@ -501,7 +502,7 @@ class DatabaseRepository(
     }
 
     private fun RawTrack.artistNames(): List<String> = artist
-        .split(DELIMITERS_ARTISTS)
+        .split(ARTIST_NAME_DELIMITERS)
         .map { it.trim() }
 
     // A track's reconciliation identity: a single file can yield several tracks (NSF/GBS subtracks)
@@ -668,7 +669,6 @@ class DatabaseRepository(
 
     companion object {
         const val ERR_UNKNOWN = "Unknown Error"
-        val DELIMITERS_ARTISTS = Regex(", &|,| or | and |&")
 
         // LRU capacities. gameById / artistById are keyed by the entity's own id and are the hot
         // caches (one entry reused across every row that references it), so they hold a full

@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.repository.ARTIST_NAME_DELIMITERS
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteOutcome
@@ -443,7 +444,7 @@ open class MemoryRepository(
 
     private fun RawTrack.toMemoryTrack(): MemoryTrack {
         val trackArtists = artist
-            .split(DELIMITERS_ARTISTS)
+            .split(ARTIST_NAME_DELIMITERS)
             .map { it.trim() }
             .map { artistName -> getOrAddArtistByName(artistName) }
 
@@ -540,9 +541,5 @@ open class MemoryRepository(
     private fun getNextPrimaryKey(): Long {
         lastPrimaryKey++
         return lastPrimaryKey
-    }
-
-    companion object {
-        val DELIMITERS_ARTISTS = Regex(", &|,| or | and |&")
     }
 }
