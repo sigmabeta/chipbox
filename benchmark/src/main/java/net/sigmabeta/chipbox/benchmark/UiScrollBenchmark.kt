@@ -12,6 +12,7 @@ import androidx.benchmark.macro.StartupMode
 import androidx.benchmark.macro.TraceSectionMetric
 import androidx.benchmark.macro.macrobenchmarkWithStartupMode
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.StaleObjectException
@@ -58,12 +59,13 @@ class UiScrollBenchmark {
         // Probe the device facts (including the thermal status "at start") before the measured
         // loop; the fingerprint must not record the post-run thermal state.
         val environment = DeviceBenchmark.environment()
-        val results = SCENARIOS.map(::runScenario)
+        val scenarios = selectedScenarios()
+        val results = scenarios.map(::runScenario)
 
         DeviceBenchmark.write(
             DeviceBenchmark.perfResult(
                 environment = environment,
-                config = PerfConfig(scenarios = UiScenario.all.map { it.id }),
+                config = PerfConfig(scenarios = scenarios.map { it.scenario.id }),
                 axes = mapOf(
                     "ui" to UiAxis(
                         config = UiAxisConfig(iterations = DeviceBenchmark.ITERATIONS),
@@ -72,6 +74,17 @@ class UiScrollBenchmark {
                 ),
             ),
         )
+    }
+
+    /**
+     * The scenarios to run: all of them, or the one named by the `scenario` instrumentation argument
+     * (e.g. `...args=scenario:ui.artist_detail_scroll`). A single-scenario run is the fast way to tune
+     * one device recipe without paying for the whole suite.
+     */
+    private fun selectedScenarios(): List<UiScrollScenario> {
+        val id = InstrumentationRegistry.getArguments().getString(SCENARIO_ARG) ?: return SCENARIOS
+        val scenario = UiScenario.fromId(id) ?: error("Unknown scenario id '$id' (from --scenario)")
+        return SCENARIOS.filter { it.scenario == scenario }
     }
 
     /** Runs one measured scroll scenario and returns its frame + trace-section result. */
@@ -132,6 +145,7 @@ class UiScrollBenchmark {
 
     private companion object {
         const val NAV_TIMEOUT_MS = 10_000L
+        const val SCENARIO_ARG = "scenario"
         const val FLINGS_PER_DIRECTION = 3
         const val FLING_ATTEMPTS = 3
         const val GESTURE_MARGIN_DIVISOR = 5
@@ -141,6 +155,10 @@ class UiScrollBenchmark {
         const val ARTIST_SCROLL_TO = 0.28f
         const val ARTIST_SCROLL_STEPS = 10
         const val ARTIST_DETAIL_CTA = "Play All"
+        const val SCROLL_TOP_FRACTION = 0.25f
+        const val SCROLL_STEPS = 10
+        const val SCROLL_CYCLES = 3
+        const val ARTIST_DETAIL_SCROLL_FRACTION = 0.6f
         const val FRAME_DURATION_METRIC = "frameDurationCpuMs"
         const val FRAME_OVERRUN_METRIC = "frameOverrunMs"
 
@@ -203,8 +221,9 @@ class UiScrollBenchmark {
                 UiScenario.ARTIST_DETAIL_SCROLL -> UiScrollScenario(
                     scenario = scenario,
                     testName = "artistDetailScroll",
-                    // Artist detail renders a hero image and a horizontal game strip, each a
-                    // CrossfadeImage; unlike the grids it has no GridImage cells.
+                    // Artist detail's only images are the horizontal game strip's `WideItem`s — the
+                    // hero renders only when the artist has a photo, which nothing supplies yet — so it
+                    // records `CrossfadeImage` and, unlike the grids, no `GridImage`.
                     traceSections = listOf("CrossfadeImage"),
                     navigate = {
                         (device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
@@ -230,7 +249,7 @@ class UiScrollBenchmark {
                         }
                         device.waitForIdle()
                     },
-                    gesture = { flingVertically() },
+                    gesture = { scrollDownAndBack(ARTIST_DETAIL_SCROLL_FRACTION) },
                 )
             }
         }
@@ -239,6 +258,24 @@ class UiScrollBenchmark {
         fun MacrobenchmarkScope.flingVertically() {
             repeat(FLINGS_PER_DIRECTION) { flingOnce(Direction.UP) }
             repeat(FLINGS_PER_DIRECTION) { flingOnce(Direction.DOWN) }
+        }
+
+        /**
+         * Scrolls the outer vertical list toward its end by [fraction] of the screen and back,
+         * [SCROLL_CYCLES] times. Unlike [flingVertically] this is a bounded, symmetric drag: on a very
+         * long page (an artist with hundreds of songs) flinging to the end and back does not return to
+         * the top, so the game strip stays disposed and its `CrossfadeImage` trace reads zero. A
+         * bounded cycle leaves and re-enters the top region, recomposing the strip within the measured
+         * window.
+         */
+        fun MacrobenchmarkScope.scrollDownAndBack(fraction: Float) {
+            val centerX = device.displayWidth / 2
+            val top = (device.displayHeight * SCROLL_TOP_FRACTION).toInt()
+            val bottom = (top + device.displayHeight * fraction).toInt()
+            repeat(SCROLL_CYCLES) {
+                device.drag(centerX, bottom, centerX, top, SCROLL_STEPS)
+                device.drag(centerX, top, centerX, bottom, SCROLL_STEPS)
+            }
         }
 
         /**

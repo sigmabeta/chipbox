@@ -96,6 +96,16 @@ ANDROID_SERIAL='<adb serial>' ./gradlew --no-daemon :benchmark:connectedBenchmar
   -Pandroid.testInstrumentationRunnerArguments.class=net.sigmabeta.chipbox.benchmark.UiScrollBenchmark
 ```
 
+Run a single UI scenario — the fast way to tune one device recipe without paying for
+the whole suite (the `scenario` argument takes a `UiScenario` id, e.g.
+`ui.artist_detail_scroll`):
+
+```sh
+ANDROID_SERIAL='<adb serial>' ./gradlew --no-daemon :benchmark:connectedBenchmarkAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=net.sigmabeta.chipbox.benchmark.UiScrollBenchmark \
+  -Pandroid.testInstrumentationRunnerArguments.scenario=ui.artist_detail_scroll
+```
+
 Run a single axis — the audio axis is a plain instrumentation test (no macrobenchmark
 compilation reset), so it is the fast way to exercise the corpus pin and the render
 cores without running the whole suite:
@@ -140,18 +150,23 @@ trace-section set:
   Records `GridImage` + `CrossfadeImage`.
 - `ui.browse_all_tracks_scroll` — Library tab → **Browse All Tracks**; flings the
   track list up/down. Its rows are text-only, so it records **no** trace sections.
-- `ui.artist_detail_scroll` — Library tab → **Browse by Artist** → the first
-  artist tile; flings the artist-detail list (hero + song rows, with a nested
-  horizontal game strip) up/down. It records `CrossfadeImage` only — the hero and
-  game strip paint it, and artist detail has no `GridImage` cells.
+- `ui.artist_detail_scroll` — Library tab → **Browse by Artist** → the tile of the
+  artist credited on the most tracks; drags the artist-detail list (song rows, with
+  a nested horizontal game strip) down and back. It records `CrossfadeImage` only —
+  the game strip paints it, and artist detail has no `GridImage` cells. (The hero
+  renders only when the artist has a photo, and nothing supplies artist photos yet,
+  so there is no hero to record.)
 
-The first artist tile has no static visible label — the artist name comes from the
-seeded snapshot — so `ui.artist_detail_scroll` taps it **by coordinate** derived
-from the grid node's visible bounds (first-column/first-cell centre), after waiting
-for a clickable tile rather than a `LoadingType.SQUARE` placeholder. This is
-inherently brittle: it assumes a COMPACT-width phone (a tablet widens the layout to
-a different grid), and small changes to cell size, insets, or column count can move
-the tap off the tile — it is expected to be tuned on a device run.
+`ui.artist_detail_scroll` does not tap the grid's first tile: that artist — taken
+alphabetically — can have a single track, whose detail page fits on screen and
+exposes no scrollable node (nothing to measure). Instead the benchmark reads the
+pushed snapshot, picks the artist credited on the most tracks (ties broken by name),
+scrolls the name-ordered grid to that tile with a non-flinging drag, and taps it. It
+then confirms the tap opened artist detail by the `"Play All"` CTA. The page is very
+long, so the gesture drags a bounded distance toward the end and back — enough to
+dispose and recompose the game strip — rather than flinging to the end, which on a
+hundreds-of-songs page does not return to the top and would read a zero
+`CrossfadeImage`.
 
 Home nests horizontal `LazyRow`s inside its vertical `LazyColumn`, and artist detail
 nests one too, so `By.scrollable` matches several nodes on both; the benchmark
@@ -192,7 +207,7 @@ across machines.
 | --- | --- |
 | `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, the corpus pin (manifest + snapshot hash) read from shared storage, the corpus/snapshot paths, and the per-axis result sink. |
 | `DeviceAudioBenchmark.kt` | `audioRealTimeFactor` — walks the pushed corpus and times raw-core renders file by file, reporting real-time factor (`audio` axis + device fingerprint), written to `results-audio.json`. |
-| `UiScrollBenchmark.kt` | `scrollScenarios` — WARM-startup benchmark that opens each core surface (BrowseByGame, Home, BrowseAllTracks, artist detail), flings its vertical list up/down, then maps every scenario's macrobenchmark result into one perfbench `results-ui.json` (`ui` axis + device fingerprint). |
+| `UiScrollBenchmark.kt` | `scrollScenarios` — WARM-startup benchmark that opens each core surface (BrowseByGame, Home, BrowseAllTracks, artist detail via the snapshot's most-credited artist), scrolls its vertical list, then maps every scenario's macrobenchmark result into one perfbench `results-ui.json` (`ui` axis + device fingerprint). A `scenario` instrumentation argument narrows it to one scenario for tuning. |
 | `LibraryStartupBenchmark.kt` | `coldAndWarmStartup` — measures cold and warm launches up to first content and reports time-to-first-content percentiles (`startup` axis + device fingerprint), written to `results-startup.json`. |
 | `src/main/AndroidManifest.xml` | Test manifest. |
 
