@@ -14,7 +14,9 @@ import net.sigmabeta.chipbox.perfbench.AudioMeasurement
 import net.sigmabeta.chipbox.perfbench.AudioResult
 import net.sigmabeta.chipbox.perfbench.PerfConfig
 import net.sigmabeta.chipbox.perfbench.audioResult
+import net.sigmabeta.chipbox.perfbench.corpusRelativePath
 import net.sigmabeta.chipbox.perfbench.erroredAudioResult
+import net.sigmabeta.chipbox.perfbench.scratchWavName
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -57,7 +59,7 @@ class DeviceAudioBenchmark {
             everySong = true,
             subsong = 0,
         ).map { track ->
-            val path = File(track.path).relativeToOrSelf(corpusRoot).invariantSeparatorsPath
+            val path = corpusRelativePath(corpusRoot, track.path)
             measureTrack(bank, track, path, wavDir)
         }
 
@@ -86,7 +88,7 @@ class DeviceAudioBenchmark {
         path: String,
         wavDir: File,
     ): AudioResult {
-        val wav = File(wavDir, "${scratchWavName(path)}.wav")
+        val wav = File(wavDir, scratchWavName(path))
         val warmUp = bank.render(track, SAMPLE_SECONDS, wav, MAX_WALL_MILLIS)
         if (warmUp.error.isNotEmpty()) return erroredAudioResult(path, warmUp.error)
 
@@ -118,9 +120,6 @@ class DeviceAudioBenchmark {
         }
     }
 
-    /** A stable, filesystem-safe scratch WAV name derived from a corpus path. */
-    private fun scratchWavName(path: String): String = "${path.hashCode().toUInt().toString(SCRATCH_RADIX)}.wav"
-
     private companion object {
         const val SAMPLE_SECONDS = 30
         const val REPEATS = 3
@@ -128,6 +127,5 @@ class DeviceAudioBenchmark {
         const val MAX_WALL_MILLIS = 120L * MILLIS_PER_SECOND
         const val NANOS_PER_SECOND = 1_000_000_000.0
         const val SCRATCH_DIR = "perfbench-audio"
-        const val SCRATCH_RADIX = 16
     }
 }

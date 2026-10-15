@@ -68,7 +68,8 @@ private fun printUsage() {
 
           --dir <folder>       corpus root to walk for audio files        (required)
           --filter <glob>      glob over each file's corpus-relative path (default: whole corpus)
-                               e.g. *.spc, "Chrono Trigger/**"
+                               no '/' -> basename at any depth (*.spc); with '/' -> full path
+                               (Chrono Trigger/**), where ** crosses dirs and * does not
           --repeat <n>         timed repeats per file (median of N)       (default: $DEFAULT_REPEAT)
           --seconds <n>        audio seconds rendered per repeat          (default: $DEFAULT_SAMPLE_SECONDS)
           --out <dir>          results root; results.json is written here  (default: $DEFAULT_OUT)
