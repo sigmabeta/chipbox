@@ -14,6 +14,7 @@ import androidx.benchmark.macro.macrobenchmarkWithStartupMode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Direction
+import androidx.test.uiautomator.StaleObjectException
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
@@ -132,6 +133,7 @@ class UiScrollBenchmark {
     private companion object {
         const val NAV_TIMEOUT_MS = 10_000L
         const val FLINGS_PER_DIRECTION = 3
+        const val FLING_ATTEMPTS = 3
         const val GESTURE_MARGIN_DIVISOR = 5
         const val GRID_SETTLE_POLL_MS = 100L
         const val FRAME_DURATION_METRIC = "frameDurationCpuMs"
@@ -239,22 +241,45 @@ class UiScrollBenchmark {
 
         /** Flings the scenario screen's outer vertical list down then back up. */
         fun MacrobenchmarkScope.flingVertically() {
-            val scroller = verticalScroller(device)
-            scroller.setGestureMargin(device.displayWidth / GESTURE_MARGIN_DIVISOR)
-            repeat(FLINGS_PER_DIRECTION) { scroller.fling(Direction.DOWN) }
-            repeat(FLINGS_PER_DIRECTION) { scroller.fling(Direction.UP) }
+            repeat(FLINGS_PER_DIRECTION) { flingOnce(Direction.DOWN) }
+            repeat(FLINGS_PER_DIRECTION) { flingOnce(Direction.UP) }
+        }
+
+        /**
+         * One fling on a freshly resolved scroller, retrying if the node detached between lookup and
+         * gesture. A `LazyColumn` recomposes as it settles — artist detail in particular composes a
+         * hero and a game strip after navigating — so a node found a moment earlier can go stale
+         * (`StaleObjectException`) before `fling` reads its bounds. Re-resolving per fling survives
+         * that; a genuinely stale-but-refindable screen does not fail the run.
+         */
+        fun MacrobenchmarkScope.flingOnce(direction: Direction) {
+            var lastStale: StaleObjectException? = null
+            repeat(FLING_ATTEMPTS) {
+                try {
+                    val scroller = verticalScroller(device)
+                    scroller.setGestureMargin(device.displayWidth / GESTURE_MARGIN_DIVISOR)
+                    scroller.fling(direction)
+                    return
+                } catch (stale: StaleObjectException) {
+                    lastStale = stale
+                    device.waitForIdle()
+                }
+            }
+            throw lastStale ?: error("Fling $direction failed after $FLING_ATTEMPTS attempts")
         }
 
         /**
          * The screen's outer vertical scrollable. Home nests horizontal `LazyRow`s inside its
          * vertical `LazyColumn`, so `By.scrollable` matches several nodes; pick the largest upright
          * one rather than trusting accessibility-tree order (an implementation detail, not a
-         * contract).
+         * contract). A node that goes stale mid-lookup is skipped rather than failing the run.
          */
         fun verticalScroller(device: UiDevice): UiObject2 =
             device.findObjects(By.scrollable(true))
-                .filter { it.visibleBounds.height() > it.visibleBounds.width() }
-                .maxByOrNull { it.visibleBounds.height() * it.visibleBounds.width() }
+                .mapNotNull { node -> runCatching { node.visibleBounds }.getOrNull()?.let { node to it } }
+                .filter { (_, bounds) -> bounds.height() > bounds.width() }
+                .maxByOrNull { (_, bounds) -> bounds.height() * bounds.width() }
+                ?.first
                 ?: error("No vertical scrollable container")
 
         /**
