@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.benchmark
 
 import android.annotation.SuppressLint
+import android.os.SystemClock
 import androidx.benchmark.ExperimentalBenchmarkConfigApi
 import androidx.benchmark.json.BenchmarkData
 import androidx.benchmark.macro.CompilationMode
@@ -30,11 +31,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Scrolls each core chipbox surface — the BrowseByGame grid, Home, and the BrowseAllTracks list —
- * and records frame timing plus the trace-section sums behind the app's `TraceSection`s (none for
- * the text-only tracks list). Every scenario is written into one perfbench `results-ui.json` (device
- * fingerprint + `ui` axis) in the run's additional test output directory, so no scenario overwrites
- * another.
+ * Scrolls each core chipbox surface — the BrowseByGame grid, Home, the BrowseAllTracks list, and
+ * artist detail — and records frame timing plus the trace-section sums behind the app's
+ * `TraceSection`s (none for the text-only tracks list). Every scenario is written into one perfbench
+ * `results-ui.json` (device fingerprint + `ui` axis) in the run's additional test output directory,
+ * so no scenario overwrites another.
  *
  * The benchmark build must be seeded from a pushed snapshot first — see the module README. Run via:
  *
@@ -134,6 +135,7 @@ class UiScrollBenchmark {
         const val NAV_TIMEOUT_MS = 10_000L
         const val FLINGS_PER_DIRECTION = 3
         const val GESTURE_MARGIN_DIVISOR = 5
+        const val GRID_SETTLE_POLL_MS = 100L
         const val FRAME_DURATION_METRIC = "frameDurationCpuMs"
         const val FRAME_OVERRUN_METRIC = "frameOverrunMs"
 
@@ -185,6 +187,47 @@ class UiScrollBenchmark {
                 },
                 gesture = { flingVertically() },
             ),
+            UiScrollScenario(
+                scenario = UiScenario.ARTIST_DETAIL_SCROLL,
+                testName = "artistDetailScroll",
+                // Artist detail renders a hero image and a horizontal game strip, each a
+                // CrossfadeImage; unlike the grids it has no GridImage cells.
+                traceSections = listOf("CrossfadeImage"),
+                navigate = {
+                    (device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
+                        ?: error("Could not find the 'Library' tab")).click()
+                    (device.wait(Until.findObject(By.text("Browse by Artist")), NAV_TIMEOUT_MS)
+                        ?: error("Could not find 'Browse by Artist' on Library screen")).click()
+
+                    // The Library menu is itself a scrollable list, so wait until it is gone before
+                    // resolving "the grid" — otherwise By.scrollable could still match the menu and
+                    // the coordinate tap would land on a menu row.
+                    device.wait(Until.gone(By.text("Favorites")), NAV_TIMEOUT_MS)
+                    val grid = device.wait(Until.findObject(By.scrollable(true)), NAV_TIMEOUT_MS)
+                        ?: error("Browse by Artist did not show its grid")
+                    awaitPopulatedGrid(device, grid)
+
+                    // The first artist tile has no static visible label — the artist name is
+                    // data-dependent — so it cannot be selected with By.text. Tap it by coordinate
+                    // derived from the grid node's visible bounds instead. The grid is two fixed
+                    // columns, so width/4 lands inside the first cell (≈ first-column centre) and,
+                    // because the cell is square with a 16dp top inset, width/4 is also roughly its
+                    // vertical centre. This is inherently brittle: it assumes a COMPACT-width phone
+                    // (a tablet widens the layout to a different grid) and tolerates only small
+                    // changes to cell size, insets, or column count — tune it on a device run.
+                    val bounds = grid.visibleBounds
+                    device.click(bounds.left + bounds.width() / 4, bounds.top + bounds.width() / 4)
+
+                    // "Play All" is the artist-detail CTA and is stable regardless of the artist's
+                    // name, so it confirms the coordinate tap actually navigated (a no-op tap would
+                    // otherwise let the gesture fling the browse grid instead).
+                    check(device.wait(Until.hasObject(By.text("Play All")), NAV_TIMEOUT_MS)) {
+                        "The artist tile coordinate tap did not reach artist detail"
+                    }
+                    device.waitForIdle()
+                },
+                gesture = { flingVertically() },
+            ),
         )
 
         /** Flings the scenario screen's outer vertical list down then back up. */
@@ -206,5 +249,23 @@ class UiScrollBenchmark {
                 .filter { it.visibleBounds.height() > it.visibleBounds.width() }
                 .maxByOrNull { it.visibleBounds.height() * it.visibleBounds.width() }
                 ?: error("No vertical scrollable container")
+
+        /**
+         * Waits until [grid] shows real tiles rather than `LoadingType.SQUARE` placeholders. A
+         * populated `GridImage` tile is clickable, whereas a loading placeholder is not, so the
+         * first clickable node inside the grid's bounds is the signal — it needs no knowledge of
+         * the data-dependent artist name.
+         */
+        fun awaitPopulatedGrid(device: UiDevice, grid: UiObject2) {
+            val gridBounds = grid.visibleBounds
+            val deadline = SystemClock.uptimeMillis() + NAV_TIMEOUT_MS
+            while (SystemClock.uptimeMillis() < deadline) {
+                val tile = device.findObjects(By.clickable(true))
+                    .firstOrNull { gridBounds.contains(it.visibleBounds) }
+                if (tile != null) return
+                device.waitForIdle(GRID_SETTLE_POLL_MS)
+            }
+            error("Browse-by-Artist grid never showed a tappable artist tile")
+        }
     }
 }
