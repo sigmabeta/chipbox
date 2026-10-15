@@ -117,7 +117,7 @@ internal object DeviceBenchmark {
     )
 
     /** The pushed library snapshot the app seeds from, sibling to [corpusRoot] under the same root. */
-    private fun snapshotFile(): File = File(
+    internal fun snapshotFile(): File = File(
         externalStorageDir(),
         "${DeviceBenchmarkLayout.ROOT_DIR}/${DeviceBenchmarkLayout.SNAPSHOT_FILE_NAME}",
     )
