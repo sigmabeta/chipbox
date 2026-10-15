@@ -12,7 +12,6 @@ private const val MILLIS_PER_SECOND = 1000L
 private const val NANOS_PER_SECOND = 1_000_000_000.0
 private const val DEFAULT_MAX_WALL_SECONDS = 120L
 private const val DECIMAL_BASE = 10
-private const val SCRATCH_RADIX = 16
 private const val UNKNOWN = "unknown"
 
 /**
@@ -35,7 +34,7 @@ fun runAudio(args: AudioArgs): PerfResult {
         gameFilter = null,
         everySong = true,
         subsong = 0,
-    ).filter { matchesFilter(it.corpusRelativePath(root)) }
+    ).filter { matchesFilter(corpusRelativePath(root, it.path)) }
 
     if (tracks.isEmpty()) {
         println("No renderable tracks under $root${args.filter?.let { " matching '$it'" } ?: ""}")
@@ -44,8 +43,8 @@ fun runAudio(args: AudioArgs): PerfResult {
     val results = mutableListOf<AudioResult>()
     val measuredFiles = mutableListOf<File>()
     for (track in tracks) {
-        val path = track.corpusRelativePath(root)
-        val wav = File(wavDir, "${scratchWavName(path)}.wav")
+        val path = corpusRelativePath(root, track.path)
+        val wav = File(wavDir, scratchWavName(path))
         results += measureTrack(bank, track, path, args, wav)
         measuredFiles += File(track.path)
     }
@@ -72,14 +71,6 @@ fun runAudio(args: AudioArgs): PerfResult {
     println("Wrote $outFile")
     return result
 }
-
-/** The file's path relative to the corpus root, always `/`-separated (the manifest's own key). */
-private fun SelectedTrack.corpusRelativePath(root: File): String =
-    File(path).relativeToOrSelf(root).invariantSeparatorsPath
-
-/** A stable, filesystem-safe scratch WAV name derived from a corpus path. */
-private fun scratchWavName(path: String): String =
-    "${path.hashCode().toUInt().toString(SCRATCH_RADIX)}.wav"
 
 /**
  * Warms up once (untimed), then times [AudioArgs.repeat] renders, reducing them to one result. A

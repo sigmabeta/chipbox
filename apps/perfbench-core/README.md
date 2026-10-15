@@ -25,7 +25,7 @@ repository `:api`, not on this harness module.
 | `PerfResult.kt` | the `results.json` schema: `PerfResult`, `PerfConfig`, `CorpusRef`/`CorpusEntry`, and the sealed `Axis` hierarchy (`AudioAxis` + `AudioResult`, `UiAxis` + `UiResult`, `StartupAxis` + `StartupResult`) |
 | `ResultArtifact.kt` | where a run's result is written: `RESULTS_FILE_NAME` (the whole-run `results.json`) and `axisResultFileName(axis)` (the distinct `results-<axis>.json` a device test writes, so no two axes in a run overwrite each other) |
 | `Fingerprint.kt` | sealed `Fingerprint` (`HostFingerprint`, `DeviceFingerprint`) and the pure `hostFingerprint` / `deviceFingerprint` builders (from `HostEnvironment` / `DeviceEnvironment`) |
-| `UiScenario.kt` | the canonical UI scenario ids (v1: `ui.browse_by_game_scroll`) |
+| `UiScenario.kt` | the canonical UI scenario ids (`ui.browse_by_game_scroll`, `ui.home_scroll`, `ui.browse_all_tracks_scroll`, `ui.artist_detail_scroll`) |
 | `StartupScenario.kt` | the canonical startup scenario ids (`startup.cold`, `startup.warm`) |
 | `AudioReport.kt` | pure report math: `audioResult(AudioMeasurement)`, `erroredAudioResult(path, error)`, and `median` |
 | `UiReport.kt` | pure report math for the UI axis: `uiResult(UiMeasurement)` plus `percentile` and `jankPercent` |
@@ -36,6 +36,7 @@ repository `:api`, not on this harness module.
 | `SystemHostEnvironment.kt` | `jvmMain` only: probes the running host for the facts a host fingerprint records (`/proc/cpuinfo`, `/etc/os-release`, `java.*`) |
 | `Sha256.kt` | `jvmSharedMain` (`src/main/java`): the one streamed SHA-256 → lowercase-hex file hash, shared by the host corpus-manifest builder and the app's benchmark library seed so a file hashes identically through either |
 | `CorpusManifest.kt` | `jvmSharedMain`: `corpusManifest(root, files)` — the ordered `{path, sha256, bytes}` manifest the host audio axis and the device corpus pin are both built from |
+| `CorpusPaths.kt` | `jvmSharedMain`: `corpusRelativePath(root, path)` — a file's `/`-separated corpus-relative path (the shared result key) — and `scratchWavName(relativePath)`, the stable scratch-WAV name both audio axes reuse |
 | `CorpusPin.kt` | `jvmSharedMain`: `corpusPin(corpusRoot, snapshotFile)` — the corpus block a device run records: the manifest of the whole pushed corpus plus the SHA-256 of the snapshot it was seeded from |
 
 ## Using it

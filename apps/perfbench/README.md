@@ -22,7 +22,7 @@ dropped, so a run never silently shrinks. Writes `<out>/results.json`.
 | option | meaning | default |
 |---|---|---|
 | `--dir <folder>` | corpus root to walk for audio files | **required** |
-| `--filter <glob>` | glob over each file's corpus-relative path, e.g. `*.spc`, `Chrono Trigger/**` | whole corpus |
+| `--filter <glob>` | basename glob (`*.spc`) or corpus-relative path glob (`Chrono Trigger/**`) | whole corpus |
 | `--repeat <n>` | timed repeats per file; the headline is the median | `3` |
 | `--seconds <n>` | audio seconds rendered per repeat (the fixed sample wall) | `30` |
 | `--out <dir>` | results root; `results.json` is written here | `build/perfbench` |
@@ -38,8 +38,10 @@ dropped, so a run never silently shrinks. Writes `<out>/results.json`.
 The corpus is laid out as `.../<Game>/<track>.<ext>` — the same convention the
 A/B harness uses. Chain/library files (`*.psflib`, `*.usflib`, …) must sit **next
 to** the tracks that reference them, since the native loaders resolve them as
-siblings. `--filter` matches each file's path relative to `--dir`, with `**`
-crossing directories and `*` not. `build/perfbench/` is git-ignored; WAV scratch
+siblings. `--filter` is a glob over each file's corpus-relative path: a pattern
+with no `/` (`*.spc`) matches the **basename at any depth**, while one with `/`
+(`Chrono Trigger/**`) matches the **whole relative path**, where `**` crosses
+directories and `*` does not. `build/perfbench/` is git-ignored; WAV scratch
 output lands in `build/perfbench/wav/`.
 
 Output paths are relative to the module's working directory, so the default
