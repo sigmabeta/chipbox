@@ -1,15 +1,16 @@
 # `:benchmark`
 
-> Macrobenchmark module — measures `apps/android`'s `GridImage` scroll performance
+> Macrobenchmark module — measures `apps/android`'s core-screen scroll performance
 > and app startup, and the raw-core audio real-time factor, all on a real device,
 > writing one perfbench result per axis.
 
 An Android Test (`com.android.test`) module that macrobenchmarks the installed
 `:apps:android` app. It instruments the real APK from outside (self-instrumenting,
-`targetProjectPath = :apps:android`): one scenario scrolls the image grid and
-records frame timing + Compose trace sections (`ui` axis); another measures cold
-and warm startup up to first content (`startup` axis); a third renders a
-representative track per emulator subset (USF, VGM, PSF) through the raw emulator
+`targetProjectPath = :apps:android`): one test scrolls each core surface — the
+BrowseByGame grid, Home, the BrowseAllTracks list, and artist detail — and records
+frame timing + the Compose trace sections each screen emits (`ui` axis); another
+measures cold and warm startup up to first content (`startup` axis); a third
+renders **every supported file in the pushed corpus** through the raw emulator
 core and reports real-time factor (`audio` axis). Each assembles a perfbench
 result (device fingerprint + axis) with
 [`:apps:perfbench-core`](../apps/perfbench-core/README.md); the audio axis reuses
@@ -88,11 +89,21 @@ a stale Gradle daemon from hiding the selection — set `ANDROID_SERIAL` and use
 ANDROID_SERIAL='<adb serial>' ./gradlew --no-daemon :benchmark:connectedBenchmarkAndroidTest
 ```
 
-Run a single scenario with the instrumentation class filter:
+Run a single test class with the instrumentation class filter:
 
 ```sh
 ANDROID_SERIAL='<adb serial>' ./gradlew --no-daemon :benchmark:connectedBenchmarkAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=net.sigmabeta.chipbox.benchmark.GridImageScrollBenchmark
+  -Pandroid.testInstrumentationRunnerArguments.class=net.sigmabeta.chipbox.benchmark.UiScrollBenchmark
+```
+
+Run a single UI scenario — the fast way to tune one device recipe without paying for
+the whole suite (the `scenario` argument takes a `UiScenario` id, e.g.
+`ui.artist_detail_scroll`):
+
+```sh
+ANDROID_SERIAL='<adb serial>' ./gradlew --no-daemon :benchmark:connectedBenchmarkAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=net.sigmabeta.chipbox.benchmark.UiScrollBenchmark \
+  -Pandroid.testInstrumentationRunnerArguments.scenario=ui.artist_detail_scroll
 ```
 
 Run a single axis — the audio axis is a plain instrumentation test (no macrobenchmark
@@ -125,6 +136,62 @@ the seed failing to read the shared corpus). Each test's result, its
 traces land under
 `benchmark/build/outputs/connected_android_test_additional_output/<device>/`.
 
+## UI scenarios
+
+`UiScrollBenchmark` measures the **ui** axis: one WARM-startup scroll per core
+surface, all written into a **single** `results-ui.json` so no scenario
+overwrites another. Each scenario carries its own navigation, gesture, and
+trace-section set:
+
+- `ui.browse_by_game_scroll` — Library tab → **Browse by Game**; flings the
+  image grid up/down. Records `GridImage` + `CrossfadeImage`.
+- `ui.home_scroll` — the app opens on Home; waits for a stable section header,
+  then flings the outer vertical list (which nests horizontal image rows).
+  Records `GridImage` + `CrossfadeImage`.
+- `ui.browse_all_tracks_scroll` — Library tab → **Browse All Tracks**; flings the
+  track list up/down. Its rows are text-only, so it records **no** trace sections.
+- `ui.artist_detail_scroll` — Library tab → **Browse by Artist** → the tile of the
+  artist credited on the most tracks; drags the artist-detail list (song rows, with
+  a nested horizontal game strip) down and back. It records `CrossfadeImage` only —
+  the game strip paints it, and artist detail has no `GridImage` cells. (The hero
+  renders only when the artist has a photo, and nothing supplies artist photos yet,
+  so there is no hero to record.)
+
+`ui.artist_detail_scroll` does not tap the grid's first tile: that artist — taken
+alphabetically — can have a single track, whose detail page fits on screen and
+exposes no scrollable node (nothing to measure). Instead the benchmark reads the
+pushed snapshot, picks the artist credited on the most tracks (ties broken by name),
+scrolls the name-ordered grid to that tile with a non-flinging drag, and taps it. It
+then confirms the tap opened artist detail by the `"Play All"` CTA. The page is very
+long, so the gesture drags a bounded distance toward the end and back — enough to
+dispose and recompose the game strip — rather than flinging to the end, which on a
+hundreds-of-songs page does not return to the top and would read a zero
+`CrossfadeImage`.
+
+Home nests horizontal `LazyRow`s inside its vertical `LazyColumn`, and artist detail
+nests one too, so `By.scrollable` matches several nodes on both; the benchmark
+selects the outer vertical scrollable by geometry rather than by accessibility-tree
+order. The snapshot seeding below must have run, or these surfaces have no items to
+scroll.
+
+## Device-driver gotchas
+
+Each of these cost a device run to find; they are the traps in the `androidx.test.uiautomator`
+driver the scenarios use:
+
+- **`Direction.UP` advances a list toward its end**, `DOWN` toward its start — the gesture starts
+  at the edge it swipes *from*, so a backwards `fling`/`scroll` is a silent no-op at the top.
+- **`fling` carries momentum and can skip a target** between `findObject` checks; when scrolling
+  *to* something use `device.drag` (no momentum) or short symmetric drags that cannot jump over it.
+- A `UiObject2` found just before a recompose can go **stale** on the next call
+  (`StaleObjectException`) — re-resolve the node per gesture, and tap a tile only once its
+  `visibleBounds` are fully on screen (a `Lazy` container composes a little outside the viewport).
+- A trace section is recorded only when its composable **enters composition**. To measure a
+  screen's images on a long page, scroll a bounded distance toward the end and back so they leave
+  and re-enter; flinging to the end never returns to the top and reads a zero sum.
+- Tune **one scenario at a time** with `-P…scenario=<id>` (see above): the full four-scenario suite
+  is ~15–20 min, since macrobenchmark resets compilation per scenario.
+
 ## Startup scenarios
 
 `LibraryStartupBenchmark` measures app startup in both a **cold** launch (no
@@ -138,25 +205,27 @@ the grid has items to show.
 
 ## Audio axis
 
-`DeviceAudioBenchmark` measures the **audio** axis: real-time factor for the
-representative emulator subset (USF, VGM, PSF). For each scenario it picks one
-representative track from the pushed corpus, warms up once, then times N renders
+`DeviceAudioBenchmark` measures the **audio** axis: real-time factor for **every
+supported file in the pushed corpus**, one result per file keyed by its
+corpus-relative path. For each file it warms up once, then times N renders
 through the reused raw emulator core (`EmulatorBank.render` from
 `:apps:abrender-core`) and reduces them with the same
 [`:apps:perfbench-core`](../apps/perfbench-core/README.md) math the host audio axis
-uses. The only difference from the host axis is the backend: this APK carries the
-**arm64** emulator `.so`s, so the numbers are the phone's ground truth. The pushed
-corpus + snapshot must be in place (both are read and hashed into the result's
-corpus block, so a run is corpus-pinned). RTF is inherently machine-independent, so
-this is the one device axis directly comparable across machines.
+uses. A file that fails to render is recorded as an errored result rather than
+dropped, so a run never silently shrinks. The only difference from the host axis
+is the backend: this APK carries the **arm64** emulator `.so`s, so the numbers are
+the phone's ground truth. The pushed corpus + snapshot must be in place (both are
+read and hashed into the result's corpus block, so a run is corpus-pinned). RTF is
+inherently machine-independent, so this is the one device axis directly comparable
+across machines.
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
 | `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, the corpus pin (manifest + snapshot hash) read from shared storage, the corpus/snapshot paths, and the per-axis result sink. |
-| `DeviceAudioBenchmark.kt` | `audioRealTimeFactor` — picks one representative track per scenario (USF/VGM/PSF) from the pushed corpus and times raw-core renders, reporting real-time factor (`audio` axis + device fingerprint), written to `results-audio.json`. |
-| `GridImageScrollBenchmark.kt` | `browseByGameScroll` — WARM-startup benchmark that opens BrowseByGame, flings the grid up/down, then maps the macrobenchmark result to a perfbench `results-ui.json` (`ui` axis + device fingerprint). |
+| `DeviceAudioBenchmark.kt` | `audioRealTimeFactor` — walks the pushed corpus and times raw-core renders file by file, reporting real-time factor (`audio` axis + device fingerprint), written to `results-audio.json`. |
+| `UiScrollBenchmark.kt` | `scrollScenarios` — WARM-startup benchmark that opens each core surface (BrowseByGame, Home, BrowseAllTracks, artist detail via the snapshot's most-credited artist), scrolls its vertical list, then maps every scenario's macrobenchmark result into one perfbench `results-ui.json` (`ui` axis + device fingerprint). A `scenario` instrumentation argument narrows it to one scenario for tuning. |
 | `LibraryStartupBenchmark.kt` | `coldAndWarmStartup` — measures cold and warm launches up to first content and reports time-to-first-content percentiles (`startup` axis + device fingerprint), written to `results-startup.json`. |
 | `src/main/AndroidManifest.xml` | Test manifest. |
 
@@ -167,6 +236,11 @@ this is the one device axis directly comparable across machines.
 composition, so `TraceSectionMetric`s can sum the labelled work next to frame
 timing. The app also links `androidx.compose.runtime:runtime-tracing`, but the
 explicit sections are what make the metric non-zero and stable.
+
+A UI scenario records only the sections its screen actually emits: BrowseByGame
+and Home record both `GridImage` and `CrossfadeImage`; artist detail records
+`CrossfadeImage` only (its hero and game strip — no `GridImage`); BrowseAllTracks
+records none, and its metrics list omits them rather than reporting a zero.
 
 ## Module facts
 

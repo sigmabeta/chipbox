@@ -13,31 +13,36 @@ the result schema both homes share lives in [`:apps:perfbench-core`](../perfbenc
 
 ### `audio --dir <corpus> [options]`
 
-For each scenario (an emulator family), picks one representative track from the
-corpus, warms up once, then times N renders through the **reused raw-emulator
-core** and reports the median RTF. Writes `<out>/results.json`.
+Renders **every supported file** in the corpus through the **reused raw-emulator
+core**, one result per file keyed by its corpus-relative path. For each file it
+warms up once, then times N renders and reports the median RTF. A file that fails
+to render is recorded as an errored result (its error, no RTF) rather than
+dropped, so a run never silently shrinks. Writes `<out>/results.json`.
 
 | option | meaning | default |
 |---|---|---|
 | `--dir <folder>` | corpus root to walk for audio files | **required** |
-| `--only <a,b>` | only these scenario ids (`audio.usf`, `audio.vgm`, `audio.psf`) | all |
-| `--repeat <n>` | timed repeats per scenario; the headline is the median | `3` |
+| `--filter <glob>` | basename glob (`*.spc`) or corpus-relative path glob (`Chrono Trigger/**`) | whole corpus |
+| `--repeat <n>` | timed repeats per file; the headline is the median | `3` |
 | `--seconds <n>` | audio seconds rendered per repeat (the fixed sample wall) | `30` |
 | `--out <dir>` | results root; `results.json` is written here | `build/perfbench` |
 
 ```sh
-# every scenario, 30s per repeat, median of 3, into the default build/perfbench/
+# whole corpus, 30s per repeat, median of 3, into the default build/perfbench/
 ./gradlew :apps:perfbench:run --args="audio --dir /path/to/corpus"
 
-# quick smoke over USF only
-./gradlew :apps:perfbench:run --args="audio --dir /path/to/corpus --only audio.usf --seconds 5 --repeat 2"
+# quick smoke over one folder, 5s per repeat, median of 2
+./gradlew :apps:perfbench:run --args="audio --dir /path/to/corpus --filter 'Chrono Trigger/**' --seconds 5 --repeat 2"
 ```
 
 The corpus is laid out as `.../<Game>/<track>.<ext>` — the same convention the
 A/B harness uses. Chain/library files (`*.psflib`, `*.usflib`, …) must sit **next
 to** the tracks that reference them, since the native loaders resolve them as
-siblings. `build/perfbench/` is git-ignored; WAV scratch output lands in
-`build/perfbench/wav/`.
+siblings. `--filter` is a glob over each file's corpus-relative path: a pattern
+with no `/` (`*.spc`) matches the **basename at any depth**, while one with `/`
+(`Chrono Trigger/**`) matches the **whole relative path**, where `**` crosses
+directories and `*` does not. `build/perfbench/` is git-ignored; WAV scratch
+output lands in `build/perfbench/wav/`.
 
 Output paths are relative to the module's working directory, so the default
 `build/perfbench/` resolves to `apps/perfbench/build/perfbench/`, not the repo
@@ -94,18 +99,19 @@ time**. The reported `rtf` uses the median wall time across the timed repeats,
 so one noisy repeat can't dominate. Thread CPU seconds are recorded alongside as
 a secondary metric (how much of the wall time was actual compute; omitted when
 the JVM can't report it). Because the reused render path loads and tears down the
-track on every call, each timed repeat covers load **and** render. Example:
+track on every call, each timed repeat covers load **and** render. Each result is
+keyed by its corpus-relative path; a file that would not render records its
+`error` and a `null` RTF. Example:
 
 ```
-audio.usf: <game> — <title>  RTF 23.83  (0.42s median for 10s audio)
-audio.vgm: <game> — <title>  RTF 98.76  (0.10s median for 10s audio)
+Chrono Trigger/track.spc: <game> — <title>  RTF 23.83  (0.42s median for 10s audio)
 ```
 
 `results.json` carries the run config, the **host fingerprint** (CPU model and
 cores, OS/kernel, JVM, and the Chipbox + sage commits), the corpus reference
-with its **manifest** — the `{path, sha256, bytes}` of every track the run
-actually measured, ordered by path — and an `audio` axis. Compare two runs with
-[`diff`](#diff---a-runa---b-runb).
+with its **manifest** — the `{path, sha256, bytes}` of every file the run read
+(errored files included), ordered by path — and an `audio` axis. Compare two runs
+with [`diff`](#diff---a-runa---b-runb).
 
 ## Implementation note
 
@@ -120,7 +126,9 @@ them on `java.library.path` with no extra setup.
 ## Tests
 
 The `test` source set covers the CLI seams: the `audio`/`snapshot`/`diff` arg
-parsers (`AudioArgsTest`, `SnapshotArgsTest`, `DiffArgsTest`), the corpus-manifest
+parsers (`AudioArgsTest`, `SnapshotArgsTest`, `DiffArgsTest`), the `--filter`
+glob semantics (`CorpusFilterTest`), the `diff` read seam's refusal of a
+non-v1.1 result (`DiffCommandTest`), the corpus-manifest
 construction and equality (`CorpusManifestTest`), and the scanner → snapshot →
 import round trip (`SnapshotCommandTest`, `SnapshotRoundTripTest`). The shared
 result schema, report math, and diff contract are tested in

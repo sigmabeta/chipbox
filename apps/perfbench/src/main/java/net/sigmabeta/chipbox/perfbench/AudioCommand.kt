@@ -15,39 +15,49 @@ private const val DECIMAL_BASE = 10
 private const val UNKNOWN = "unknown"
 
 /**
- * The host audio axis. Thin orchestration over the reused A/B render engine: for each scenario it
- * picks one representative track from the corpus, warms up once, then times N renders and reduces
- * them to one RTF. The write-and-measure loop is exactly [EmulatorBank.render] — no new render seam.
+ * The host audio axis. Thin orchestration over the reused A/B render engine: it walks every
+ * supported file in the corpus (optionally narrowed by [AudioArgs.filter]), warms up once, then
+ * times N renders and reduces them to one RTF keyed by the file's corpus-relative path. A file that
+ * fails to render is recorded as an errored result rather than dropped, so a run never silently
+ * shrinks. The write-and-measure loop is exactly [EmulatorBank.render] — no new render seam.
  */
 fun runAudio(args: AudioArgs): PerfResult {
     args.outDir.mkdirs()
     val wavDir = File(args.outDir, "wav").apply { mkdirs() }
     val bank = EmulatorBank()
-    val scenarios = args.only ?: AudioScenario.all
+    val root = args.corpusDir.absoluteFile
+    val matchesFilter = corpusPathFilter(args.filter)
+    val tracks = walkCorpus(
+        root = root,
+        supported = bank.supportedExtensions,
+        extensionFilter = null,
+        gameFilter = null,
+        everySong = true,
+        subsong = 0,
+    ).filter { matchesFilter(corpusRelativePath(root, it.path)) }
+
+    if (tracks.isEmpty()) {
+        println("No renderable tracks under $root${args.filter?.let { " matching '$it'" } ?: ""}")
+    }
+
     val results = mutableListOf<AudioResult>()
     val measuredFiles = mutableListOf<File>()
-
-    for (scenario in scenarios) {
-        val track = representativeTrack(bank, args.corpusDir, scenario)
-        if (track == null) {
-            println("${scenario.id}: no ${scenario.extensions.joinToString("/")} tracks under ${args.corpusDir}")
-            continue
-        }
-        benchmarkScenario(bank, track, scenario, args, wavDir)?.let { result ->
-            results += result
-            measuredFiles += File(track.path)
-        }
+    for (track in tracks) {
+        val path = corpusRelativePath(root, track.path)
+        val wav = File(wavDir, scratchWavName(path))
+        results += measureTrack(bank, track, path, args, wav)
+        measuredFiles += File(track.path)
     }
 
     val repoRoot = resolveRepoRoot()
     val (chipboxCommit, sageCommit) = if (repoRoot != null) projectCommits(repoRoot) else UNKNOWN to UNKNOWN
     val result = PerfResult(
         generated = OffsetDateTime.now().toString(),
-        config = PerfConfig(scenarios = scenarios.map { it.id }),
+        config = PerfConfig(scenarios = results.map { it.path }),
         machine = hostFingerprint(SystemHostEnvironment.detect(), chipboxCommit, sageCommit),
         corpus = CorpusRef(
-            root = args.corpusDir.absolutePath,
-            manifest = corpusManifest(args.corpusDir, measuredFiles),
+            root = root.absolutePath,
+            manifest = corpusManifest(root, measuredFiles),
         ),
         axes = mapOf(
             "audio" to AudioAxis(
@@ -62,53 +72,27 @@ fun runAudio(args: AudioArgs): PerfResult {
     return result
 }
 
-/** Benchmarks one scenario's already-selected track, printing a one-line verdict; `null` on failure. */
-private fun benchmarkScenario(
+/**
+ * Warms up once (untimed), then times [AudioArgs.repeat] renders, reducing them to one result. A
+ * warm-up failure, or all repeats failing, becomes an errored result carrying the failure — never
+ * an omission.
+ */
+private fun measureTrack(
     bank: EmulatorBank,
     track: SelectedTrack,
-    scenario: AudioScenario,
-    args: AudioArgs,
-    wavDir: File,
-): AudioResult? {
-    val measurement = measureScenario(bank, track, scenario, args, File(wavDir, "${scenario.id}.wav"))
-    return measurement?.let { audioResult(it) }?.also { result ->
-        println(
-            "${scenario.id}: ${track.game} — ${track.title}  " +
-                "RTF ${result.rtf.round(2)}  (${result.median.round(2)}s median for ${args.sampleSeconds}s audio)",
-        )
-    }
-}
-
-/** One track per scenario, chosen by the same deterministic walker the A/B harness uses. */
-private fun representativeTrack(bank: EmulatorBank, corpusDir: File, scenario: AudioScenario): SelectedTrack? =
-    walkCorpus(
-        root = corpusDir,
-        supported = bank.supportedExtensions,
-        extensionFilter = scenario.extensions,
-        gameFilter = null,
-        everySong = false,
-        subsong = 0,
-    ).firstOrNull()
-
-/** Warm-up once (untimed), then [AudioArgs.repeat] timed renders; `null` if no repeat succeeded. */
-private fun measureScenario(
-    bank: EmulatorBank,
-    track: SelectedTrack,
-    scenario: AudioScenario,
+    path: String,
     args: AudioArgs,
     wav: File,
-): AudioMeasurement? {
+): AudioResult {
     val maxWallMillis = DEFAULT_MAX_WALL_SECONDS * MILLIS_PER_SECOND
     val warmUp = bank.render(track, args.sampleSeconds, wav, maxWallMillis)
-    if (warmUp.error.isNotEmpty()) {
-        println("${scenario.id}: ${track.game} — ${track.title}  ERROR: ${warmUp.error}")
-        return null
-    }
+    if (warmUp.error.isNotEmpty()) return errored(track, path, warmUp.error)
 
     val wallSeconds = mutableListOf<Double>()
     val cpuSeconds = mutableListOf<Double>()
     var frames = warmUp.frames
     var sampleRate = warmUp.sampleRate
+    var repeatError: String? = null
     repeat(args.repeat) {
         val wallStart = System.nanoTime()
         val cpuStart = threadCpuNanos()
@@ -116,7 +100,7 @@ private fun measureScenario(
         val wall = (System.nanoTime() - wallStart) / NANOS_PER_SECOND
         val cpuEnd = threadCpuNanos()
         if (metrics.error.isNotEmpty()) {
-            println("${scenario.id}: repeat failed: ${metrics.error}")
+            repeatError = metrics.error
             return@repeat
         }
         frames = metrics.frames
@@ -125,9 +109,22 @@ private fun measureScenario(
         if (cpuStart >= 0 && cpuEnd >= 0) cpuSeconds += (cpuEnd - cpuStart) / NANOS_PER_SECOND
     }
 
-    return wallSeconds.takeIf { it.isNotEmpty() }?.let {
-        AudioMeasurement(scenario.id, frames, sampleRate, it, cpuSeconds)
+    return if (wallSeconds.isEmpty()) {
+        errored(track, path, repeatError ?: "no timed repeat produced audio")
+    } else {
+        audioResult(AudioMeasurement(path, frames, sampleRate, wallSeconds, cpuSeconds)).also { result ->
+            println(
+                "$path: ${track.game} — ${track.title}  RTF ${result.rtf?.round(2)}  " +
+                    "(${result.median?.round(2)}s median for ${args.sampleSeconds}s audio)",
+            )
+        }
     }
+}
+
+/** Records a failed render as an errored result (and says why), instead of silently dropping it. */
+private fun errored(track: SelectedTrack, path: String, error: String): AudioResult {
+    println("$path: ${track.game} — ${track.title}  ERROR: $error")
+    return erroredAudioResult(path, error)
 }
 
 /** Thread CPU time, or -1 when the JVM can't report it (the caller then falls back to wall time). */

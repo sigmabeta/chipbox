@@ -73,7 +73,7 @@ it when a load-bearing fact stops being true.
   macOS desktop native builds (Linux runs natively; Windows is cross-compiled via
   MinGW-w64 with `-Pchipbox.jvm.nativeTarget=windows-x64` — see `Readme.md`).
 
-## Build / verify (no device, no emulator boot)
+## Build / verify
 
 ```sh
 ./gradlew :apps:android:assembleDebug      # Android build
@@ -98,8 +98,12 @@ scripts/build-benchmark.sh                 # time this machine's builds (--quick
 - Under the hood `verifyPaparazziDebug` *checks* goldens and `testDebugUnitTest`
   *records* (overwrites) them (git-LFS) — only re-record (`--keep`, or the record
   task) when a visual change is intentional.
-- Don't boot an AVD to verify — stop after build + lint and hand device testing
-  to the user. Don't `git commit`/`push` unless explicitly asked.
+- **Never create or boot an emulator/AVD.** A **physical device already on `adb`**
+  is fair game — run the device checks on it. The device recipes (corpus + snapshot
+  push, `ANDROID_SERIAL` pinning, the duplicate-device trap, the arm64-only benchmark
+  APK, per-scenario tuning) are in `benchmark/README.md`; background in
+  `arch-docs/scroll-performance-plan.md`. Hand off only what has no attached
+  hardware. Don't `git commit`/`push` unless explicitly asked.
 - Always run `scripts/verify.sh` (the full CI-mirroring suite — lint, unit tests,
   Paparazzi, shared build, android-lint, desktop natives, release APK) before any `git
   push`, and only push if it reports `OVERALL: PASS`. Heed its `WARNING:` lines too

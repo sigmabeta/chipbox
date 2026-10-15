@@ -57,7 +57,7 @@ inherent layout cost.
 
 **How.** Build the `:apps:android` `benchmark` variant (release-based,
 profileable) and run the existing `:benchmark` macrobenchmark
-(`GridImageScrollBenchmark`) against it; or install a release build and rerun
+(`UiScrollBenchmark`) against it; or install a release build and rerun
 the `dumpsys gfxinfo` harness. `:benchmark` currently targets `net.sigmabeta.chipbox`;
 point the harness at whichever package/install carries the library data.
 
@@ -159,7 +159,7 @@ pixels identical). On-device before/after on the harness (below) not yet run.
 
 ### 5. Fix the `:benchmark` trace-section names — OPEN
 
-**Why.** `benchmark/src/main/.../GridImageScrollBenchmark.kt` records
+**Why.** `benchmark/src/main/.../UiScrollBenchmark.kt` records
 `TraceSectionMetric("GridImage")` and `("CrossfadeImage")`, but no such
 `trace { }` sections exist in the code (`rg` finds none), so those metrics
 measure 0. The benchmark's real signal is currently only `FrameTimingMetric`.

@@ -25,10 +25,9 @@ repository `:api`, not on this harness module.
 | `PerfResult.kt` | the `results.json` schema: `PerfResult`, `PerfConfig`, `CorpusRef`/`CorpusEntry`, and the sealed `Axis` hierarchy (`AudioAxis` + `AudioResult`, `UiAxis` + `UiResult`, `StartupAxis` + `StartupResult`) |
 | `ResultArtifact.kt` | where a run's result is written: `RESULTS_FILE_NAME` (the whole-run `results.json`) and `axisResultFileName(axis)` (the distinct `results-<axis>.json` a device test writes, so no two axes in a run overwrite each other) |
 | `Fingerprint.kt` | sealed `Fingerprint` (`HostFingerprint`, `DeviceFingerprint`) and the pure `hostFingerprint` / `deviceFingerprint` builders (from `HostEnvironment` / `DeviceEnvironment`) |
-| `AudioScenario.kt` | the canonical audio scenario ids (`audio.usf`, `audio.vgm`, `audio.psf`) and the extensions each selects |
-| `UiScenario.kt` | the canonical UI scenario ids (v1: `ui.browse_by_game_scroll`) |
+| `UiScenario.kt` | the canonical UI scenario ids (`ui.browse_by_game_scroll`, `ui.home_scroll`, `ui.browse_all_tracks_scroll`, `ui.artist_detail_scroll`) |
 | `StartupScenario.kt` | the canonical startup scenario ids (`startup.cold`, `startup.warm`) |
-| `AudioReport.kt` | pure report math: `audioResult(AudioMeasurement)` and `median` |
+| `AudioReport.kt` | pure report math: `audioResult(AudioMeasurement)`, `erroredAudioResult(path, error)`, and `median` |
 | `UiReport.kt` | pure report math for the UI axis: `uiResult(UiMeasurement)` plus `percentile` and `jankPercent` |
 | `StartupReport.kt` | pure report math for the startup axis: `startupResult(StartupMeasurement)` (time-to-first-content percentiles) |
 | `DeviceBenchmarkLayout.kt` | the fixed on-device layout (`Music/chipbox-test/` under shared external storage holding the pushed snapshot + corpus) shared by the app seed and the macrobenchmark |
@@ -37,6 +36,7 @@ repository `:api`, not on this harness module.
 | `SystemHostEnvironment.kt` | `jvmMain` only: probes the running host for the facts a host fingerprint records (`/proc/cpuinfo`, `/etc/os-release`, `java.*`) |
 | `Sha256.kt` | `jvmSharedMain` (`src/main/java`): the one streamed SHA-256 → lowercase-hex file hash, shared by the host corpus-manifest builder and the app's benchmark library seed so a file hashes identically through either |
 | `CorpusManifest.kt` | `jvmSharedMain`: `corpusManifest(root, files)` — the ordered `{path, sha256, bytes}` manifest the host audio axis and the device corpus pin are both built from |
+| `CorpusPaths.kt` | `jvmSharedMain`: `corpusRelativePath(root, path)` — a file's `/`-separated corpus-relative path (the shared result key) — and `scratchWavName(relativePath)`, the stable scratch-WAV name both audio axes reuse |
 | `CorpusPin.kt` | `jvmSharedMain`: `corpusPin(corpusRoot, snapshotFile)` — the corpus block a device run records: the manifest of the whole pushed corpus plus the SHA-256 of the snapshot it was seeded from |
 
 ## Using it
@@ -45,16 +45,19 @@ repository `:api`, not on this harness module.
 // Build a host result's fingerprint.
 val machine = hostFingerprint(SystemHostEnvironment.detect(), chipboxCommit, sageCommit)
 
-// Reduce timed repeats to one scenario result.
+// Reduce a file's timed repeats to one result, keyed by its corpus-relative path.
 val result = audioResult(
     AudioMeasurement(
-        scenario = AudioScenario.USF.id,
+        path = "Chrono Trigger/track.spc",
         frames = 44_100L * 30,
         sampleRate = 44_100,
         wallSeconds = listOf(1.25, 1.21, 1.23),
         cpuSeconds = listOf(1.10, 1.09, 1.11),
     ),
 )
+
+// A file that failed to render becomes a result carrying the error and no real-time factor.
+val errored = erroredAudioResult("Chrono Trigger/broken.spc", error = "no audio produced")
 
 // Reduce a device scroll's pooled frames + trace sums to one UI scenario result.
 val ui = uiResult(
@@ -109,7 +112,8 @@ Tested by `commonTest` (schema round-trips, fingerprint construction, report
 math for the audio, UI, and startup axes, scenario ids, and the diff
 comparability guards, per-axis ratios, and geometric means) and a `jvmTest` for
 the `/proc/cpuinfo` parser, the streamed SHA-256 file hash (against a known-good
-literal), and the corpus pin — the `corpusManifest` construction it is built from
+literal), the shared corpus path / scratch-name helpers, and the corpus pin —
+the `corpusManifest` construction it is built from
 and the `corpusPin` assembly, including its refusal of a missing corpus root or
 snapshot. The manifest's equality semantics (two corpora of the same files are
 equal; a difference in content, size, or ordering is not), the CLI arg parsers,
