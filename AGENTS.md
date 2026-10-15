@@ -82,6 +82,7 @@ it when a load-bearing fact stops being true.
 ./gradlew ktlintFormat                     # auto-fix
 scripts/paparazzi-diff.sh                  # check screenshots (use this, NOT the Gradle task)
 scripts/build-benchmark.sh                 # time this machine's builds (--quick / --full / --help)
+scripts/verify.sh --device-audio <corpus>  # also run + gate ONE on-device axis (also -ui / -startup; needs a device; small corpus)
 ```
 
 - Run **ktlint and detekt together**; both gate commit/push.
@@ -115,6 +116,17 @@ scripts/build-benchmark.sh                 # time this machine's builds (--quick
   build cache off, prints a fingerprint of the box, and reduces it to one index. Compare
   two machines with `--baseline <results.json>` — never quote an index without its
   scenario set and `--repeat`. It is not part of CI; it is a measurement, not a gate.
+- The on-device perf gates are `scripts/benchmark-device-<axis>.sh` (the
+  `device-<axis>` tasks in `scripts/verify.sh --device-<axis> <corpus-dir>`), one per
+  axis (audio/ui/startup): the only tasks that aren't CI. Each runs just its axis's
+  test class over the corpus you pass (use a **small** one — the audio axis renders
+  every file) on **every attached device** (so no serial is pinned, which keeps the
+  Gradle daemon in play), diffs each device against its own **local** baseline
+  (`build/perfbench-baseline/device/<model>-<abi>/`), and fails on a regression or a
+  test failure — but a missing device (or one attached over two transports) is a
+  flagged `SKIP`, not a failure. One axis per process is deliberate: a later
+  macrobenchmark would otherwise wipe an earlier non-macrobenchmark axis's result.
+  See `benchmark/README.md`.
 
 ## UI tests
 

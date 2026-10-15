@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.perfbench
 import java.io.File
 import java.util.Locale
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.encodeToString
 
 private const val SCENARIO_WIDTH = 12
 private const val COLUMN_WIDTH = 10
@@ -23,8 +24,17 @@ fun runDiff(args: DiffArgs) {
 
     when (val outcome = compareRuns(baseline, current)) {
         is DiffOutcome.Refused -> println("Refusing to compare: ${outcome.reason.message}")
-        is DiffOutcome.Compared -> printReport(args, outcome.report)
+        is DiffOutcome.Compared -> if (args.json) printJson(outcome.report) else printReport(args, outcome.report)
     }
+}
+
+/**
+ * Emits the report as the one perfbench JSON dialect. A comparison the harness *refuses* still prints
+ * its prose refusal (to stdout) rather than JSON — there is no report to encode — so a consumer must
+ * treat the absence of a JSON document, or its own non-zero parse, as "not comparable".
+ */
+private fun printJson(report: DiffReport) {
+    println(PerfbenchJson.encodeToString(report))
 }
 
 /** The result of reading a run's file: the decoded document, or why it is not v1.1-compatible. */

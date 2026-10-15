@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -25,7 +24,6 @@ import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
 import net.sigmabeta.chipbox.common.ui.components.api.subs.TintedText
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.WideItemListModel
-import net.sigmabeta.sage.images.SourceInfo
 
 @Composable
 fun WideItem(
@@ -34,7 +32,7 @@ fun WideItem(
     modifier: Modifier,
     padding: PaddingValues,
 ) {
-    val sourceInfo = remember(model.sourceInfo) { SourceInfo(model.sourceInfo) }
+    val sourceInfo = model.sourceInfo
 
     val textColor = animateColorAsState(
         targetValue = if (model.active) {

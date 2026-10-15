@@ -149,7 +149,7 @@ data class ComponentLibraryModeState(
             WideItemListModel(
                 dataId = id(6),
                 name = content.name(3),
-                sourceInfo = "$IMAGE_SEED/wide/0",
+                sourceInfo = SourceInfo("$IMAGE_SEED/wide/0"),
                 imagePlaceholder = Icon.Person,
                 clickAction = SageAction.Noop,
             )
@@ -234,7 +234,7 @@ data class ComponentLibraryModeState(
                 WideItemListModel(
                     dataId = id(WIDE_ID_BASE + i),
                     name = content.name(i),
-                    sourceInfo = "$IMAGE_SEED/colwide/$i",
+                    sourceInfo = SourceInfo("$IMAGE_SEED/colwide/$i"),
                     imagePlaceholder = Icon.Person,
                     clickAction = SageAction.Noop,
                 )
@@ -248,7 +248,7 @@ data class ComponentLibraryModeState(
             GridImageListModel(
                 dataId = "$seed/$i".hashCode().toLong(),
                 name = content.title(i),
-                sourceInfo = "$seed/$i",
+                sourceInfo = SourceInfo("$seed/$i"),
                 imagePlaceholder = placeholder,
                 clickAction = SageAction.Noop,
             )

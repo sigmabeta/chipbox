@@ -168,7 +168,7 @@ data class ArtistDetailState(
                         WideItemListModel(
                             dataId = game.id + ID_PREFIX_GAMES,
                             name = game.title,
-                            sourceInfo = game.photoUrl,
+                            sourceInfo = SourceInfo(game.photoUrl),
                             imagePlaceholder = Icon.Album,
                             clickAction = ArtistDetailAction.GameClicked(game.id),
                         )
