@@ -6,6 +6,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import net.sigmabeta.chipbox.repository.ARTIST_NAME_DELIMITERS
 
 /**
  * Picks the artist the artist-detail scroll scenario should open, from the library snapshot the run
@@ -19,9 +20,6 @@ import kotlinx.serialization.json.jsonObject
  */
 internal object BenchmarkArtists {
 
-    /** The repository's artist-name delimiters (`DatabaseRepository`), so counts match the app. */
-    private val DELIMITERS_ARTISTS = Regex(", &|,| or | and |&")
-
     private val json = Json
 
     /**
@@ -29,18 +27,25 @@ internal object BenchmarkArtists {
      * choice is deterministic; `null` when [snapshot] is missing or carries no credited artist.
      */
     fun richestArtistName(snapshot: File): String? {
-        if (!snapshot.isFile) return null
-        val games = runCatching {
-            json.parseToJsonElement(snapshot.readText()).jsonObject["games"]?.jsonArray
-        }.getOrNull() ?: return null
+        val games = if (snapshot.isFile) {
+            runCatching {
+                json.parseToJsonElement(snapshot.readText()).jsonObject["games"]?.jsonArray
+            }.getOrNull()
+        } else {
+            null
+        }
 
         val tracksByArtist = LinkedHashMap<String, Int>()
-        for (game in games) {
+        for (game in games.orEmpty()) {
             val tracks = game.jsonObject["tracks"]?.jsonArray ?: continue
             for (track in tracks) {
                 val artist = (track.jsonObject["artist"] as? JsonPrimitive)?.contentOrNull ?: continue
+                val names = artist.split(ARTIST_NAME_DELIMITERS)
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+                    .toSet()
                 // A multi-artist track credits each name once, matching the repository's derivation.
-                for (name in artist.split(DELIMITERS_ARTISTS).map { it.trim() }.filter { it.isNotEmpty() }.toSet()) {
+                for (name in names) {
                     tracksByArtist[name] = (tracksByArtist[name] ?: 0) + 1
                 }
             }

@@ -58,6 +58,25 @@ jobs:
       - name: Compile shared JVM code
         run: ./gradlew :apps:jvm:classes --build-cache --no-daemon --max-workers=4
 
+  benchmark-build:
+    # The `:benchmark` device-test module is in no other job's task graph — ktlint/detekt lint it
+    # (via static-analysis) but nothing compiles it, so a compile break would only surface on a
+    # device run. Compile it here.
+    needs: static-analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile the device-benchmark module
+        run: ./gradlew :benchmark:compileBenchmarkKotlin --build-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
+
   unit-test:
     # Behind static-analysis so a syntax/style break fails fast in the cheap job rather than burning
     # compile time here (mirrors the former CircleCI unit-test-jvm ← static-analysis edge).

@@ -175,10 +175,14 @@ class UiScrollBenchmark {
                     traceSections = listOf("GridImage", "CrossfadeImage"),
                     navigate = {
                         // The app opens on Home; "Browse by Game" is a row on the Library tab.
-                        (device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
-                            ?: error("Could not find the 'Library' tab")).click()
-                        (device.wait(Until.findObject(By.text("Browse by Game")), NAV_TIMEOUT_MS)
-                            ?: error("Could not find 'Browse by Game' on Library screen")).click()
+                        (
+                            device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find the 'Library' tab")
+                        ).click()
+                        (
+                            device.wait(Until.findObject(By.text("Browse by Game")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find 'Browse by Game' on Library screen")
+                        ).click()
 
                         device.wait(Until.hasObject(By.scrollable(true)), NAV_TIMEOUT_MS)
                         device.waitForIdle()
@@ -207,10 +211,14 @@ class UiScrollBenchmark {
                     // Text-only rows: the tracks list emits no trace sections.
                     traceSections = emptyList(),
                     navigate = {
-                        (device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
-                            ?: error("Could not find the 'Library' tab")).click()
-                        (device.wait(Until.findObject(By.text("Browse All Tracks")), NAV_TIMEOUT_MS)
-                            ?: error("Could not find 'Browse All Tracks' on Library screen")).click()
+                        (
+                            device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find the 'Library' tab")
+                        ).click()
+                        (
+                            device.wait(Until.findObject(By.text("Browse All Tracks")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find 'Browse All Tracks' on Library screen")
+                        ).click()
 
                         device.wait(Until.hasObject(By.scrollable(true)), NAV_TIMEOUT_MS)
                         device.waitForIdle()
@@ -226,10 +234,14 @@ class UiScrollBenchmark {
                     // records `CrossfadeImage` and, unlike the grids, no `GridImage`.
                     traceSections = listOf("CrossfadeImage"),
                     navigate = {
-                        (device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
-                            ?: error("Could not find the 'Library' tab")).click()
-                        (device.wait(Until.findObject(By.text("Browse by Artist")), NAV_TIMEOUT_MS)
-                            ?: error("Could not find 'Browse by Artist' on Library screen")).click()
+                        (
+                            device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find the 'Library' tab")
+                        ).click()
+                        (
+                            device.wait(Until.findObject(By.text("Browse by Artist")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find 'Browse by Artist' on Library screen")
+                        ).click()
 
                         // The Library menu is itself a scrollable list, so wait until it is gone before
                         // resolving "the grid" — otherwise By.scrollable could still match the menu.
