@@ -25,6 +25,7 @@ import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
 import net.sigmabeta.chipbox.common.ui.components.api.previews.PreviewActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.WideItemListModel
+import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 
 @Preview
@@ -64,7 +65,7 @@ private fun Sample() {
                 WideItemListModel(
                     dataId = 1234L,
                     name = "Konami Kukeiha Club",
-                    sourceInfo = "https://randomfox.ca/images/12.jpg",
+                    sourceInfo = SourceInfo("https://randomfox.ca/images/12.jpg"),
                     imagePlaceholder = Icon.Person,
                     actionableId = null,
                     clickAction = SageAction.Noop,
@@ -79,7 +80,7 @@ private fun Sample() {
                 WideItemListModel(
                     dataId = 1235L,
                     name = "Masayoshi Soken",
-                    sourceInfo = "https://randomfox.ca/images/12.jpg",
+                    sourceInfo = SourceInfo("https://randomfox.ca/images/12.jpg"),
                     imagePlaceholder = Icon.Person,
                     actionableId = null,
                     clickAction = SageAction.Noop,

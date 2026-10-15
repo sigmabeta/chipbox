@@ -18,6 +18,7 @@ import net.sigmabeta.sage.components.GridImageListModel
 import net.sigmabeta.sage.components.SubsectionHeaderListModel
 import net.sigmabeta.sage.components.SubsectionListModel
 import net.sigmabeta.sage.components.WideItemListModel
+import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 
 @Preview
@@ -97,7 +98,7 @@ private fun SampleWide() {
                 WideItemListModel(
                     2345L,
                     "Manami Kiyota",
-                    null,
+                    SourceInfo(null),
                     Icon.Person,
                     actionableId = null,
                     clickAction = SageAction.Noop,
@@ -105,7 +106,7 @@ private fun SampleWide() {
                 WideItemListModel(
                     3456L,
                     "Yasunori Mitsuda",
-                    null,
+                    SourceInfo(null),
                     Icon.Person,
                     actionableId = null,
                     clickAction = SageAction.Noop,
@@ -113,7 +114,7 @@ private fun SampleWide() {
                 WideItemListModel(
                     4567L,
                     "ACE+",
-                    null,
+                    SourceInfo(null),
                     Icon.Person,
                     actionableId = null,
                     clickAction = SageAction.Noop,
@@ -139,7 +140,7 @@ private fun SampleSquare() {
                 GridImageListModel(
                     2345L,
                     "Manami Kiyota",
-                    null,
+                    SourceInfo(null),
                     Icon.Person,
                     actionableId = null,
                     clickAction = SageAction.Noop,
@@ -147,7 +148,7 @@ private fun SampleSquare() {
                 GridImageListModel(
                     3456L,
                     "Yasunori Mitsuda",
-                    null,
+                    SourceInfo(null),
                     Icon.Person,
                     actionableId = null,
                     clickAction = SageAction.Noop,
@@ -155,7 +156,7 @@ private fun SampleSquare() {
                 GridImageListModel(
                     4567L,
                     "ACE+",
-                    null,
+                    SourceInfo(null),
                     Icon.Person,
                     actionableId = null,
                     clickAction = SageAction.Noop,
