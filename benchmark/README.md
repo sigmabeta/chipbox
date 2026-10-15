@@ -174,6 +174,24 @@ selects the outer vertical scrollable by geometry rather than by accessibility-t
 order. The snapshot seeding below must have run, or these surfaces have no items to
 scroll.
 
+## Device-driver gotchas
+
+Each of these cost a device run to find; they are the traps in the `androidx.test.uiautomator`
+driver the scenarios use:
+
+- **`Direction.UP` advances a list toward its end**, `DOWN` toward its start — the gesture starts
+  at the edge it swipes *from*, so a backwards `fling`/`scroll` is a silent no-op at the top.
+- **`fling` carries momentum and can skip a target** between `findObject` checks; when scrolling
+  *to* something use `device.drag` (no momentum) or short symmetric drags that cannot jump over it.
+- A `UiObject2` found just before a recompose can go **stale** on the next call
+  (`StaleObjectException`) — re-resolve the node per gesture, and tap a tile only once its
+  `visibleBounds` are fully on screen (a `Lazy` container composes a little outside the viewport).
+- A trace section is recorded only when its composable **enters composition**. To measure a
+  screen's images on a long page, scroll a bounded distance toward the end and back so they leave
+  and re-enter; flinging to the end never returns to the top and reads a zero sum.
+- Tune **one scenario at a time** with `-P…scenario=<id>` (see above): the full four-scenario suite
+  is ~15–20 min, since macrobenchmark resets compilation per scenario.
+
 ## Startup scenarios
 
 `LibraryStartupBenchmark` measures app startup in both a **cold** launch (no

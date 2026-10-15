@@ -137,17 +137,20 @@ internal object DeviceBenchmark {
 
     /** The platform thermal-status label, or `"unknown"` on API levels that can't report it. */
     private fun thermalStatusName(context: Context): String {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return UNKNOWN
-        val powerManager = context.getSystemService(PowerManager::class.java) ?: return UNKNOWN
-        return when (powerManager.currentThermalStatus) {
-            PowerManager.THERMAL_STATUS_NONE -> "none"
-            PowerManager.THERMAL_STATUS_LIGHT -> "light"
-            PowerManager.THERMAL_STATUS_MODERATE -> "moderate"
-            PowerManager.THERMAL_STATUS_SEVERE -> "severe"
-            PowerManager.THERMAL_STATUS_CRITICAL -> "critical"
-            PowerManager.THERMAL_STATUS_EMERGENCY -> "emergency"
-            PowerManager.THERMAL_STATUS_SHUTDOWN -> "shutdown"
-            else -> UNKNOWN
+        val powerManager = context.getSystemService(PowerManager::class.java)
+        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || powerManager == null) {
+            UNKNOWN
+        } else {
+            when (powerManager.currentThermalStatus) {
+                PowerManager.THERMAL_STATUS_NONE -> "none"
+                PowerManager.THERMAL_STATUS_LIGHT -> "light"
+                PowerManager.THERMAL_STATUS_MODERATE -> "moderate"
+                PowerManager.THERMAL_STATUS_SEVERE -> "severe"
+                PowerManager.THERMAL_STATUS_CRITICAL -> "critical"
+                PowerManager.THERMAL_STATUS_EMERGENCY -> "emergency"
+                PowerManager.THERMAL_STATUS_SHUTDOWN -> "shutdown"
+                else -> UNKNOWN
+            }
         }
     }
 }
