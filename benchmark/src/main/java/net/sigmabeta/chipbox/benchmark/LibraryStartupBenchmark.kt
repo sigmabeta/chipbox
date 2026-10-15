@@ -43,25 +43,34 @@ class LibraryStartupBenchmark {
     @OptIn(ExperimentalMetricApi::class, ExperimentalBenchmarkConfigApi::class)
     @Test
     fun coldAndWarmStartup() {
-        // Probe the device facts (including the thermal status "at start") before the measured
-        // loop; the fingerprint must not record the post-run thermal state.
-        val environment = DeviceBenchmark.environment()
-        val results = StartupScenario.all.map { startup(scenario = it) }
+        DeviceBenchmark.beginTest("coldAndWarmStartup")
+        try {
+            // Probe the device facts (including the thermal status "at start") before the measured
+            // loop; the fingerprint must not record the post-run thermal state.
+            val environment = DeviceBenchmark.environment()
+            val results = StartupScenario.all.map { scenario ->
+                DeviceBenchmark.section("scenario", "id" to scenario.id) {
+                    startup(scenario = scenario)
+                }
+            }
 
-        DeviceBenchmark.write(
-            DeviceBenchmark.perfResult(
-                environment = environment,
-                config = PerfConfig(
-                    scenarios = StartupScenario.all.map { it.id },
-                ),
-                axes = mapOf(
-                    "startup" to StartupAxis(
-                        config = StartupAxisConfig(iterations = DeviceBenchmark.ITERATIONS),
-                        results = results,
+            DeviceBenchmark.write(
+                DeviceBenchmark.perfResult(
+                    environment = environment,
+                    config = PerfConfig(
+                        scenarios = StartupScenario.all.map { it.id },
+                    ),
+                    axes = mapOf(
+                        "startup" to StartupAxis(
+                            config = StartupAxisConfig(iterations = DeviceBenchmark.ITERATIONS),
+                            results = results,
+                        ),
                     ),
                 ),
-            ),
-        )
+            )
+        } finally {
+            DeviceBenchmark.endTest("coldAndWarmStartup")
+        }
     }
 
     /** Runs one measured startup scenario and returns its time-to-first-content result. */
