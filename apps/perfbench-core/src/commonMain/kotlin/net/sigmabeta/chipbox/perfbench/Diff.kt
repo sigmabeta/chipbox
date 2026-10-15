@@ -11,6 +11,9 @@ import kotlin.math.ln
  * baseline value divided by the current one. Every primary metric is lower-is-better, so a ratio
  * above one means the current run is better. The two raw values are carried alongside so a report
  * can show the metric the ratio was derived from.
+ *
+ * [scenario] is axis-specific: a corpus-relative path for the audio axis, a scenario id for the UI
+ * and startup axes. It is the key the axis's two runs are paired by, not a UI scenario specifically.
  */
 data class ScenarioComparison(
     val scenario: String,

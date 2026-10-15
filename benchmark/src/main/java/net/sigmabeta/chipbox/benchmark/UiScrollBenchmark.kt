@@ -57,9 +57,7 @@ class UiScrollBenchmark {
         // Probe the device facts (including the thermal status "at start") before the measured
         // loop; the fingerprint must not record the post-run thermal state.
         val environment = DeviceBenchmark.environment()
-        val results = UiScenario.all.map { scenario ->
-            runScenario(SCENARIOS.first { it.scenario == scenario })
-        }
+        val results = SCENARIOS.map(::runScenario)
 
         DeviceBenchmark.write(
             DeviceBenchmark.perfResult(
@@ -139,96 +137,105 @@ class UiScrollBenchmark {
         const val FRAME_DURATION_METRIC = "frameDurationCpuMs"
         const val FRAME_OVERRUN_METRIC = "frameOverrunMs"
 
-        /** The scenarios, keyed to [UiScenario] so [scrollScenarios] reports them in enum order. */
-        val SCENARIOS = listOf(
-            UiScrollScenario(
-                scenario = UiScenario.BROWSE_BY_GAME_SCROLL,
-                testName = "browseByGameScroll",
-                traceSections = listOf("GridImage", "CrossfadeImage"),
-                navigate = {
-                    // The app opens on Home; "Browse by Game" is a row on the Library tab.
-                    (device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
-                        ?: error("Could not find the 'Library' tab")).click()
-                    (device.wait(Until.findObject(By.text("Browse by Game")), NAV_TIMEOUT_MS)
-                        ?: error("Could not find 'Browse by Game' on Library screen")).click()
+        /**
+         * The scenarios, built by mapping [UiScenario.all] through an exhaustive `when`, so every
+         * enum value has a row and a new one is a compile error here rather than a runtime lookup
+         * failure. The mapping preserves enum order, so [scrollScenarios] reports them as declared.
+         */
+        val SCENARIOS: List<UiScrollScenario> = UiScenario.all.map { scenario ->
+            when (scenario) {
+                UiScenario.BROWSE_BY_GAME_SCROLL -> UiScrollScenario(
+                    scenario = scenario,
+                    testName = "browseByGameScroll",
+                    traceSections = listOf("GridImage", "CrossfadeImage"),
+                    navigate = {
+                        // The app opens on Home; "Browse by Game" is a row on the Library tab.
+                        (device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find the 'Library' tab")).click()
+                        (device.wait(Until.findObject(By.text("Browse by Game")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find 'Browse by Game' on Library screen")).click()
 
-                    device.wait(Until.hasObject(By.scrollable(true)), NAV_TIMEOUT_MS)
-                    device.waitForIdle()
-                },
-                gesture = { flingVertically() },
-            ),
-            UiScrollScenario(
-                scenario = UiScenario.HOME_SCROLL,
-                testName = "homeScroll",
-                traceSections = listOf("GridImage", "CrossfadeImage"),
-                navigate = {
-                    // The app opens on Home. Home's modules emit asynchronously, so wait for a
-                    // section the seeded benchmark snapshot always shows before flinging.
-                    check(device.wait(Until.hasObject(By.text("Game of the day")), NAV_TIMEOUT_MS)) {
-                        "Home did not show the 'Game of the day' section"
-                    }
-                    device.waitForIdle()
-                },
-                gesture = { flingVertically() },
-            ),
-            UiScrollScenario(
-                scenario = UiScenario.BROWSE_ALL_TRACKS_SCROLL,
-                testName = "browseAllTracksScroll",
-                // Text-only rows: the tracks list emits no trace sections.
-                traceSections = emptyList(),
-                navigate = {
-                    (device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
-                        ?: error("Could not find the 'Library' tab")).click()
-                    (device.wait(Until.findObject(By.text("Browse All Tracks")), NAV_TIMEOUT_MS)
-                        ?: error("Could not find 'Browse All Tracks' on Library screen")).click()
+                        device.wait(Until.hasObject(By.scrollable(true)), NAV_TIMEOUT_MS)
+                        device.waitForIdle()
+                    },
+                    gesture = { flingVertically() },
+                )
 
-                    device.wait(Until.hasObject(By.scrollable(true)), NAV_TIMEOUT_MS)
-                    device.waitForIdle()
-                },
-                gesture = { flingVertically() },
-            ),
-            UiScrollScenario(
-                scenario = UiScenario.ARTIST_DETAIL_SCROLL,
-                testName = "artistDetailScroll",
-                // Artist detail renders a hero image and a horizontal game strip, each a
-                // CrossfadeImage; unlike the grids it has no GridImage cells.
-                traceSections = listOf("CrossfadeImage"),
-                navigate = {
-                    (device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
-                        ?: error("Could not find the 'Library' tab")).click()
-                    (device.wait(Until.findObject(By.text("Browse by Artist")), NAV_TIMEOUT_MS)
-                        ?: error("Could not find 'Browse by Artist' on Library screen")).click()
+                UiScenario.HOME_SCROLL -> UiScrollScenario(
+                    scenario = scenario,
+                    testName = "homeScroll",
+                    traceSections = listOf("GridImage", "CrossfadeImage"),
+                    navigate = {
+                        // The app opens on Home. Home's modules emit asynchronously, so wait for a
+                        // section the seeded benchmark snapshot always shows before flinging.
+                        check(device.wait(Until.hasObject(By.text("Game of the day")), NAV_TIMEOUT_MS)) {
+                            "Home did not show the 'Game of the day' section"
+                        }
+                        device.waitForIdle()
+                    },
+                    gesture = { flingVertically() },
+                )
 
-                    // The Library menu is itself a scrollable list, so wait until it is gone before
-                    // resolving "the grid" — otherwise By.scrollable could still match the menu and
-                    // the coordinate tap would land on a menu row.
-                    device.wait(Until.gone(By.text("Favorites")), NAV_TIMEOUT_MS)
-                    val grid = device.wait(Until.findObject(By.scrollable(true)), NAV_TIMEOUT_MS)
-                        ?: error("Browse by Artist did not show its grid")
-                    awaitPopulatedGrid(device, grid)
+                UiScenario.BROWSE_ALL_TRACKS_SCROLL -> UiScrollScenario(
+                    scenario = scenario,
+                    testName = "browseAllTracksScroll",
+                    // Text-only rows: the tracks list emits no trace sections.
+                    traceSections = emptyList(),
+                    navigate = {
+                        (device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find the 'Library' tab")).click()
+                        (device.wait(Until.findObject(By.text("Browse All Tracks")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find 'Browse All Tracks' on Library screen")).click()
 
-                    // The first artist tile has no static visible label — the artist name is
-                    // data-dependent — so it cannot be selected with By.text. Tap it by coordinate
-                    // derived from the grid node's visible bounds instead. The grid is two fixed
-                    // columns, so width/4 lands inside the first cell (≈ first-column centre) and,
-                    // because the cell is square with a 16dp top inset, width/4 is also roughly its
-                    // vertical centre. This is inherently brittle: it assumes a COMPACT-width phone
-                    // (a tablet widens the layout to a different grid) and tolerates only small
-                    // changes to cell size, insets, or column count — tune it on a device run.
-                    val bounds = grid.visibleBounds
-                    device.click(bounds.left + bounds.width() / 4, bounds.top + bounds.width() / 4)
+                        device.wait(Until.hasObject(By.scrollable(true)), NAV_TIMEOUT_MS)
+                        device.waitForIdle()
+                    },
+                    gesture = { flingVertically() },
+                )
 
-                    // "Play All" is the artist-detail CTA and is stable regardless of the artist's
-                    // name, so it confirms the coordinate tap actually navigated (a no-op tap would
-                    // otherwise let the gesture fling the browse grid instead).
-                    check(device.wait(Until.hasObject(By.text("Play All")), NAV_TIMEOUT_MS)) {
-                        "The artist tile coordinate tap did not reach artist detail"
-                    }
-                    device.waitForIdle()
-                },
-                gesture = { flingVertically() },
-            ),
-        )
+                UiScenario.ARTIST_DETAIL_SCROLL -> UiScrollScenario(
+                    scenario = scenario,
+                    testName = "artistDetailScroll",
+                    // Artist detail renders a hero image and a horizontal game strip, each a
+                    // CrossfadeImage; unlike the grids it has no GridImage cells.
+                    traceSections = listOf("CrossfadeImage"),
+                    navigate = {
+                        (device.wait(Until.findObject(By.text("Library")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find the 'Library' tab")).click()
+                        (device.wait(Until.findObject(By.text("Browse by Artist")), NAV_TIMEOUT_MS)
+                            ?: error("Could not find 'Browse by Artist' on Library screen")).click()
+
+                        // The Library menu is itself a scrollable list, so wait until it is gone before
+                        // resolving "the grid" — otherwise By.scrollable could still match the menu and
+                        // the coordinate tap would land on a menu row.
+                        device.wait(Until.gone(By.text("Favorites")), NAV_TIMEOUT_MS)
+                        val grid = device.wait(Until.findObject(By.scrollable(true)), NAV_TIMEOUT_MS)
+                            ?: error("Browse by Artist did not show its grid")
+                        awaitPopulatedGrid(device, grid)
+
+                        // The first artist tile has no static visible label — the artist name is
+                        // data-dependent — so it cannot be selected with By.text. Tap it by coordinate
+                        // derived from the grid node's visible bounds instead. The grid is two fixed
+                        // columns, so width/4 lands inside the first cell (≈ first-column centre) and,
+                        // because the cell is square with a 16dp top inset, width/4 is also roughly its
+                        // vertical centre. This is inherently brittle: it assumes a COMPACT-width phone
+                        // (a tablet widens the layout to a different grid) and tolerates only small
+                        // changes to cell size, insets, or column count — tune it on a device run.
+                        val bounds = grid.visibleBounds
+                        device.click(bounds.left + bounds.width() / 4, bounds.top + bounds.width() / 4)
+
+                        // "Play All" is the artist-detail CTA and is stable regardless of the artist's
+                        // name, so it confirms the coordinate tap actually navigated (a no-op tap would
+                        // otherwise let the gesture fling the browse grid instead).
+                        check(device.wait(Until.hasObject(By.text("Play All")), NAV_TIMEOUT_MS)) {
+                            "The artist tile coordinate tap did not reach artist detail"
+                        }
+                        device.waitForIdle()
+                    },
+                    gesture = { flingVertically() },
+                )
+            }
+        }
 
         /** Flings the scenario screen's outer vertical list down then back up. */
         fun MacrobenchmarkScope.flingVertically() {
