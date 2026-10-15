@@ -60,14 +60,16 @@ private fun printUsage() {
           perfbench snapshot --dir <corpus> [--out <snapshot>]
           perfbench diff --a <runA> --b <runB>
 
-        audio — measure real-time factor (RTF) per emulator over a corpus. Renders each scenario's
-        representative track through the raw emulator core and reports the median RTF of N timed
-        repeats after one warm-up. Writes <out>/results.json with the host fingerprint.
+        audio — measure real-time factor (RTF) over a corpus. Renders every supported corpus file
+        through the raw emulator core, one result per file keyed by its corpus-relative path, and
+        reports the median RTF of N timed repeats after one warm-up. A file that fails to render is
+        recorded as an errored result rather than dropped. Writes <out>/results.json with the host
+        fingerprint.
 
           --dir <folder>       corpus root to walk for audio files        (required)
-          --only <a,b>         only these scenario ids                    (default: all)
-                               known ids: audio.usf, audio.vgm, audio.psf
-          --repeat <n>         timed repeats per scenario (median of N)   (default: $DEFAULT_REPEAT)
+          --filter <glob>      glob over each file's corpus-relative path (default: whole corpus)
+                               e.g. *.spc, "Chrono Trigger/**"
+          --repeat <n>         timed repeats per file (median of N)       (default: $DEFAULT_REPEAT)
           --seconds <n>        audio seconds rendered per repeat          (default: $DEFAULT_SAMPLE_SECONDS)
           --out <dir>          results root; results.json is written here  (default: $DEFAULT_OUT)
 

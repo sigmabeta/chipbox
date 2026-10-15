@@ -14,25 +14,25 @@ class AudioArgsTest {
     fun `applies defaults`() {
         val args = parseAudioOptions(mapOf("dir" to corpus.absolutePath))
 
-        assertNull(args.only)
+        assertNull(args.filter)
         assertEquals(3, args.repeat)
         assertEquals(30, args.sampleSeconds)
         assertEquals(File("build/perfbench"), args.outDir)
     }
 
     @Test
-    fun `parses only and numeric flags`() {
+    fun `parses filter and numeric flags`() {
         val args = parseAudioOptions(
             mapOf(
                 "dir" to corpus.absolutePath,
-                "only" to "audio.usf, audio.psf",
+                "filter" to "Chrono Trigger/**",
                 "repeat" to "5",
                 "seconds" to "10",
                 "out" to "/tmp/perfbench-out",
             ),
         )
 
-        assertEquals(listOf(AudioScenario.USF, AudioScenario.PSF), args.only)
+        assertEquals("Chrono Trigger/**", args.filter)
         assertEquals(5, args.repeat)
         assertEquals(10, args.sampleSeconds)
         assertEquals(File("/tmp/perfbench-out"), args.outDir)
@@ -67,9 +67,9 @@ class AudioArgsTest {
     }
 
     @Test
-    fun `rejects unknown scenario ids`() {
-        assertFailsWith<IllegalStateException> {
-            parseAudioOptions(mapOf("dir" to corpus.absolutePath, "only" to "audio.spc"))
+    fun `rejects a malformed filter glob`() {
+        assertFailsWith<IllegalArgumentException> {
+            parseAudioOptions(mapOf("dir" to corpus.absolutePath, "filter" to "["))
         }
     }
 

@@ -54,7 +54,7 @@ data class CorpusEntry(
 @Serializable
 sealed interface Axis
 
-/** Audio emulation throughput — one [AudioResult] per scenario (emulator family). */
+/** Audio emulation throughput — one [AudioResult] per corpus file. */
 @Serializable
 @SerialName("audio")
 data class AudioAxis(
@@ -70,22 +70,26 @@ data class AudioAxisConfig(
 )
 
 /**
- * One audio scenario's measurement.
+ * One corpus file's audio measurement, keyed by [path] (relative to the corpus root, `/`-separated).
  *
  * [rtf] is the machine-independent headline: the rendered audio duration divided by the median
  * wall-clock render time. [median]/[min]/[max] and [samples] describe the wall-clock seconds
  * across the timed repeats; [cpuSeconds] is the median thread CPU time, a secondary metric that
  * shows how much of the wall time was actual compute (`null` when the JVM can't report CPU time).
+ *
+ * A file that fails to render is recorded rather than dropped: [error] carries the failure and the
+ * numeric fields are `null` (a special float would not encode), so a run never silently shrinks.
  */
 @Serializable
 data class AudioResult(
-    val scenario: String,
-    val rtf: Double,
-    @SerialName("cpu_s") val cpuSeconds: Double?,
-    val median: Double,
-    val min: Double,
-    val max: Double,
-    val samples: List<Double>,
+    val path: String,
+    val rtf: Double? = null,
+    @SerialName("cpu_s") val cpuSeconds: Double? = null,
+    val median: Double? = null,
+    val min: Double? = null,
+    val max: Double? = null,
+    val samples: List<Double> = emptyList(),
+    val error: String? = null,
 )
 
 /** UI rendering/jank — one [UiResult] per scenario (e.g. the BrowseByGame scroll). */

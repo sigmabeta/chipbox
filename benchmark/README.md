@@ -8,9 +8,9 @@ An Android Test (`com.android.test`) module that macrobenchmarks the installed
 `:apps:android` app. It instruments the real APK from outside (self-instrumenting,
 `targetProjectPath = :apps:android`): one scenario scrolls the image grid and
 records frame timing + Compose trace sections (`ui` axis); another measures cold
-and warm startup up to first content (`startup` axis); a third renders a
-representative track per emulator subset (USF, VGM, PSF) through the raw emulator
-core and reports real-time factor (`audio` axis). Each assembles a perfbench
+and warm startup up to first content (`startup` axis); a third renders **every
+supported file in the pushed corpus** through the raw emulator core and reports
+real-time factor (`audio` axis). Each assembles a perfbench
 result (device fingerprint + axis) with
 [`:apps:perfbench-core`](../apps/perfbench-core/README.md); the audio axis reuses
 the render engine from
@@ -138,24 +138,26 @@ the grid has items to show.
 
 ## Audio axis
 
-`DeviceAudioBenchmark` measures the **audio** axis: real-time factor for the
-representative emulator subset (USF, VGM, PSF). For each scenario it picks one
-representative track from the pushed corpus, warms up once, then times N renders
+`DeviceAudioBenchmark` measures the **audio** axis: real-time factor for **every
+supported file in the pushed corpus**, one result per file keyed by its
+corpus-relative path. For each file it warms up once, then times N renders
 through the reused raw emulator core (`EmulatorBank.render` from
 `:apps:abrender-core`) and reduces them with the same
 [`:apps:perfbench-core`](../apps/perfbench-core/README.md) math the host audio axis
-uses. The only difference from the host axis is the backend: this APK carries the
-**arm64** emulator `.so`s, so the numbers are the phone's ground truth. The pushed
-corpus + snapshot must be in place (both are read and hashed into the result's
-corpus block, so a run is corpus-pinned). RTF is inherently machine-independent, so
-this is the one device axis directly comparable across machines.
+uses. A file that fails to render is recorded as an errored result rather than
+dropped, so a run never silently shrinks. The only difference from the host axis
+is the backend: this APK carries the **arm64** emulator `.so`s, so the numbers are
+the phone's ground truth. The pushed corpus + snapshot must be in place (both are
+read and hashed into the result's corpus block, so a run is corpus-pinned). RTF is
+inherently machine-independent, so this is the one device axis directly comparable
+across machines.
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
 | `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, the corpus pin (manifest + snapshot hash) read from shared storage, the corpus/snapshot paths, and the per-axis result sink. |
-| `DeviceAudioBenchmark.kt` | `audioRealTimeFactor` — picks one representative track per scenario (USF/VGM/PSF) from the pushed corpus and times raw-core renders, reporting real-time factor (`audio` axis + device fingerprint), written to `results-audio.json`. |
+| `DeviceAudioBenchmark.kt` | `audioRealTimeFactor` — walks the pushed corpus and times raw-core renders file by file, reporting real-time factor (`audio` axis + device fingerprint), written to `results-audio.json`. |
 | `GridImageScrollBenchmark.kt` | `browseByGameScroll` — WARM-startup benchmark that opens BrowseByGame, flings the grid up/down, then maps the macrobenchmark result to a perfbench `results-ui.json` (`ui` axis + device fingerprint). |
 | `LibraryStartupBenchmark.kt` | `coldAndWarmStartup` — measures cold and warm launches up to first content and reports time-to-first-content percentiles (`startup` axis + device fingerprint), written to `results-startup.json`. |
 | `src/main/AndroidManifest.xml` | Test manifest. |

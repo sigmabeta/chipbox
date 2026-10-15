@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.perfbench
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class AudioReportTest {
     @Test
@@ -14,7 +15,7 @@ class AudioReportTest {
     @Test
     fun `rtf is audio duration over the median wall time`() {
         val measurement = AudioMeasurement(
-            scenario = "audio.usf",
+            path = "Chrono Trigger/track.spc",
             frames = 44_100L * 30,
             sampleRate = 44_100,
             wallSeconds = listOf(3.0, 2.0, 4.0),
@@ -23,19 +24,20 @@ class AudioReportTest {
 
         val result = audioResult(measurement)
 
-        assertEquals("audio.usf", result.scenario)
+        assertEquals("Chrono Trigger/track.spc", result.path)
         assertEquals(30.0 / 3.0, result.rtf)
         assertEquals(3.0, result.median)
         assertEquals(2.0, result.min)
         assertEquals(4.0, result.max)
         assertEquals(listOf(3.0, 2.0, 4.0), result.samples)
         assertEquals(1.2, result.cpuSeconds)
+        assertNull(result.error)
     }
 
     @Test
     fun `cpu time is reported separately from the wall-time rtf`() {
         val measurement = AudioMeasurement(
-            scenario = "audio.vgm",
+            path = "game/track.vgm",
             frames = 48_000L,
             sampleRate = 48_000,
             wallSeconds = listOf(2.0),
@@ -51,7 +53,7 @@ class AudioReportTest {
     @Test
     fun `cpu seconds are null when the JVM reported none`() {
         val measurement = AudioMeasurement(
-            scenario = "audio.psf",
+            path = "game/track.psf",
             frames = 44_100L,
             sampleRate = 44_100,
             wallSeconds = listOf(1.0),
@@ -59,5 +61,19 @@ class AudioReportTest {
         )
 
         assertNull(audioResult(measurement).cpuSeconds)
+    }
+
+    @Test
+    fun `errored audio result carries its error and no real-time factor`() {
+        val result = erroredAudioResult("game/broken.spc", error = "no audio produced")
+
+        assertEquals("game/broken.spc", result.path)
+        assertEquals("no audio produced", result.error)
+        assertNull(result.rtf)
+        assertNull(result.median)
+        assertNull(result.min)
+        assertNull(result.max)
+        assertNull(result.cpuSeconds)
+        assertTrue(result.samples.isEmpty())
     }
 }
