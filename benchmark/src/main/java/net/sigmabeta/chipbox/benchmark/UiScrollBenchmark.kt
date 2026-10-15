@@ -137,7 +137,9 @@ class UiScrollBenchmark {
         const val GESTURE_MARGIN_DIVISOR = 5
         const val GRID_SETTLE_POLL_MS = 100L
         const val ARTIST_SCROLL_TIMEOUT_MS = 30_000L
-        const val ARTIST_SCROLL_FRACTION = 0.7f
+        const val ARTIST_SWIPE_FROM = 0.80f
+        const val ARTIST_SWIPE_TO = 0.28f
+        const val ARTIST_SWIPE_STEPS = 10
         const val FRAME_DURATION_METRIC = "frameDurationCpuMs"
         const val FRAME_OVERRUN_METRIC = "frameOverrunMs"
 
@@ -303,15 +305,21 @@ class UiScrollBenchmark {
 
         /**
          * Scrolls the artist grid toward its end until [name]'s tile is composed (and so tappable).
-         * `Direction.UP` moves the content up, revealing later (name-ordered) artists — the direction
-         * a finger-up swipe takes. Each step moves a fraction of the visible area so a step cannot
-         * jump over the target between checks, and the wait is capped by [ARTIST_SCROLL_TIMEOUT_MS].
+         * Uses a raw finger-up swipe over the screen — the same gesture that advances the name-ordered
+         * grid by hand — rather than a `UiObject2` scroll, so it needs no scrollable node and cannot
+         * suffer the node-lookup staleness that a `UiObject2` gesture can. The wait is capped by
+         * [ARTIST_SCROLL_TIMEOUT_MS].
          */
         fun scrollArtistIntoView(device: UiDevice, name: String) {
             val deadline = SystemClock.uptimeMillis() + ARTIST_SCROLL_TIMEOUT_MS
             while (SystemClock.uptimeMillis() < deadline && !device.hasObject(By.text(name))) {
-                val scroller = runCatching { verticalScroller(device) }.getOrNull() ?: return
-                runCatching { scroller.scroll(Direction.UP, ARTIST_SCROLL_FRACTION) }
+                device.swipe(
+                    device.displayWidth / 2,
+                    (device.displayHeight * ARTIST_SWIPE_FROM).toInt(),
+                    device.displayWidth / 2,
+                    (device.displayHeight * ARTIST_SWIPE_TO).toInt(),
+                    ARTIST_SWIPE_STEPS,
+                )
                 device.waitForIdle(GRID_SETTLE_POLL_MS)
             }
         }
