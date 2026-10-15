@@ -63,7 +63,7 @@ class UiScrollBenchmark {
             val environment = DeviceBenchmark.environment()
             val scenarios = selectedScenarios()
             val results = scenarios.map { scenario ->
-                DeviceBenchmark.section("scenario", "id" to scenario.scenario.id) {
+                DeviceBenchmark.section(scenario.scenario.id) {
                     runScenario(scenario)
                 }
             }

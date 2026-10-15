@@ -98,8 +98,10 @@ attribute pairs (`key=value`). The sections are:
 
 - **audio** — `grant-storage`, `walk-corpus`, one `render path=<corpus-relative>`
   pair per corpus file, and `write-result`.
-- **ui** — one `scenario id=<UiScenario id>` pair per scenario.
-- **startup** — one `scenario id=<StartupScenario id>` pair per cold/warm scenario.
+- **ui** — one `section=<UiScenario id>` pair per scenario, e.g.
+  `section=ui.browse_by_game_scroll`.
+- **startup** — one `section=<StartupScenario id>` pair per cold/warm scenario,
+  e.g. `section=startup.cold`.
 
 ```
 I: [bench] begin test=audioRealTimeFactor
