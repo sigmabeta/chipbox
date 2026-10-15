@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -33,7 +32,6 @@ import net.sigmabeta.chipbox.common.ui.components.api.subs.TraceSection
 import net.sigmabeta.chipbox.common.ui.components.api.subs.gridCellOffscreenLayerEnabled
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.components.GridImageListModel
-import net.sigmabeta.sage.images.SourceInfo
 
 @Composable
 fun GridImage(
@@ -64,7 +62,7 @@ private fun GridImageContent(
     modifier: Modifier,
     padding: PaddingValues,
 ) {
-    val sourceInfo = remember(model.sourceInfo) { SourceInfo(model.sourceInfo) }
+    val sourceInfo = model.sourceInfo
 
     val textColor = animateColorAsState(
         targetValue = if (model.active) {

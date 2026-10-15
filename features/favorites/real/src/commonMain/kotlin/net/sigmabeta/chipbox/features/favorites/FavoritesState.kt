@@ -12,6 +12,7 @@ import net.sigmabeta.sage.components.LoadingType
 import net.sigmabeta.sage.components.NameCaptionValueListModel
 import net.sigmabeta.sage.components.SectionHeaderListModel
 import net.sigmabeta.sage.components.TitleBarModel
+import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.list.ColumnType
 import net.sigmabeta.sage.list.ListState
 import net.sigmabeta.sage.ui.Icon
@@ -87,7 +88,7 @@ data class FavoritesState(
                 GridImageListModel(
                     dataId = game.id + ID_PREFIX_GAMES,
                     name = game.title,
-                    sourceInfo = game.photoUrl,
+                    sourceInfo = SourceInfo(game.photoUrl),
                     imagePlaceholder = Icon.Album,
                     clickAction = FavoritesAction.GameClicked(game.id),
                     aspectRatio = GAME_COVER_ASPECT_RATIO,
@@ -112,7 +113,7 @@ data class FavoritesState(
                 GridImageListModel(
                     dataId = artist.id + ID_PREFIX_ARTISTS,
                     name = artist.name,
-                    sourceInfo = artist.photoUrl,
+                    sourceInfo = SourceInfo(artist.photoUrl),
                     imagePlaceholder = Icon.Person,
                     clickAction = FavoritesAction.ArtistClicked(artist.id),
                 )

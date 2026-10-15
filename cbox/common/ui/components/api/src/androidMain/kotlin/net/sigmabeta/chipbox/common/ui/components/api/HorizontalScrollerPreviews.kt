@@ -83,7 +83,7 @@ private fun SquareItemSection(rng: Random, padding: PaddingValues) {
                 GridImageListModel(
                     dataId = index.toLong(),
                     name = "Square #$index",
-                    sourceInfo = rng.nextInt().toString(),
+                    sourceInfo = SourceInfo(rng.nextInt().toString()),
                     imagePlaceholder = Icon.Album,
                     null,
                     clickAction = SageAction.Noop,
@@ -141,7 +141,7 @@ private fun WideItemSection(rng: Random, padding: PaddingValues) {
                 WideItemListModel(
                     dataId = index.toLong(),
                     name = "Wide Item #$index",
-                    sourceInfo = rng.nextInt().toString(),
+                    sourceInfo = SourceInfo(rng.nextInt().toString()),
                     Icon.Person,
                     null,
                     clickAction = SageAction.Noop

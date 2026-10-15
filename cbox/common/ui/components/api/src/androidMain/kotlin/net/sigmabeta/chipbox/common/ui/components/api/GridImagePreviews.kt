@@ -24,6 +24,7 @@ import net.sigmabeta.chipbox.common.ui.components.api.previews.ChipboxPreview
 import net.sigmabeta.chipbox.common.ui.components.api.previews.PreviewActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.GridImageListModel
+import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 
 @Preview
@@ -71,7 +72,7 @@ private fun Sample() {
                 GridImageListModel(
                     dataId = 1234L,
                     name = "Xenoblade Chronicles 3",
-                    sourceInfo = "https://randomfox.ca/images/12.jpg",
+                    sourceInfo = SourceInfo("https://randomfox.ca/images/12.jpg"),
                     imagePlaceholder = Icon.Album,
                     actionableId = null,
                     clickAction = SageAction.Noop,
@@ -86,7 +87,7 @@ private fun Sample() {
                 GridImageListModel(
                     dataId = 1235L,
                     name = "Xenoblade Chronicles 3: Future Redeemed Some More",
-                    sourceInfo = "https://randomfox.ca/images/1235.jpg",
+                    sourceInfo = SourceInfo("https://randomfox.ca/images/1235.jpg"),
                     imagePlaceholder = Icon.Album,
                     actionableId = null,
                     clickAction = SageAction.Noop,
