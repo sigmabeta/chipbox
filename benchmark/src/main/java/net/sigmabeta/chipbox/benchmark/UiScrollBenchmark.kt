@@ -136,6 +136,7 @@ class UiScrollBenchmark {
         const val FLING_ATTEMPTS = 3
         const val GESTURE_MARGIN_DIVISOR = 5
         const val GRID_SETTLE_POLL_MS = 100L
+        const val ARTIST_SCROLL_TIMEOUT_MS = 20_000L
         const val FRAME_DURATION_METRIC = "frameDurationCpuMs"
         const val FRAME_OVERRUN_METRIC = "frameOverrunMs"
 
@@ -208,29 +209,28 @@ class UiScrollBenchmark {
                             ?: error("Could not find 'Browse by Artist' on Library screen")).click()
 
                         // The Library menu is itself a scrollable list, so wait until it is gone before
-                        // resolving "the grid" — otherwise By.scrollable could still match the menu and
-                        // the coordinate tap would land on a menu row.
+                        // resolving "the grid" — otherwise By.scrollable could still match the menu.
                         device.wait(Until.gone(By.text("Favorites")), NAV_TIMEOUT_MS)
                         val grid = device.wait(Until.findObject(By.scrollable(true)), NAV_TIMEOUT_MS)
                             ?: error("Browse by Artist did not show its grid")
                         awaitPopulatedGrid(device, grid)
 
-                        // The first artist tile has no static visible label — the artist name is
-                        // data-dependent — so it cannot be selected with By.text. Tap it by coordinate
-                        // derived from the grid node's visible bounds instead. The grid is two fixed
-                        // columns, so width/4 lands inside the first cell (≈ first-column centre) and,
-                        // because the cell is square with a 16dp top inset, width/4 is also roughly its
-                        // vertical centre. This is inherently brittle: it assumes a COMPACT-width phone
-                        // (a tablet widens the layout to a different grid) and tolerates only small
-                        // changes to cell size, insets, or column count — tune it on a device run.
-                        val bounds = grid.visibleBounds
-                        device.click(bounds.left + bounds.width() / 4, bounds.top + bounds.width() / 4)
+                        // Open an artist with many tracks: the alphabetically-first artist can have a
+                        // single track, whose detail page fits on screen and exposes no scrollable node
+                        // (so there would be nothing to scroll). The target is read from the snapshot
+                        // this run is pinned to, so it tracks the corpus rather than a hard-coded name.
+                        val artist = BenchmarkArtists.richestArtistName(DeviceBenchmark.snapshotFile())
+                            ?: error("Could not read an artist from the pushed library snapshot")
+                        scrollArtistIntoView(device, artist)
+
+                        val tile = device.wait(Until.findObject(By.text(artist)), NAV_TIMEOUT_MS)
+                            ?: error("Artist tile '$artist' not found after scrolling the grid")
+                        tile.click()
 
                         // "Play All" is the artist-detail CTA and is stable regardless of the artist's
-                        // name, so it confirms the coordinate tap actually navigated (a no-op tap would
-                        // otherwise let the gesture fling the browse grid instead).
+                        // name, so it confirms the tap navigated (a no-op would fling the browse grid).
                         check(device.wait(Until.hasObject(By.text("Play All")), NAV_TIMEOUT_MS)) {
-                            "The artist tile coordinate tap did not reach artist detail"
+                            "Opening artist '$artist' did not reach artist detail"
                         }
                         device.waitForIdle()
                     },
@@ -298,6 +298,24 @@ class UiScrollBenchmark {
                 device.waitForIdle(GRID_SETTLE_POLL_MS)
             }
             error("Browse-by-Artist grid never showed a tappable artist tile")
+        }
+
+        /**
+         * Scrolls the artist grid down until [name]'s tile is composed (and so tappable). The grid is
+         * name-ordered and paged; the richest artist sits well inside the first page, so a bounded
+         * number of flings reaches it without exhausting the page. Flings are best-effort — a stale
+         * grid node is skipped — and the wait is capped by [ARTIST_SCROLL_TIMEOUT_MS].
+         */
+        fun scrollArtistIntoView(device: UiDevice, name: String) {
+            val deadline = SystemClock.uptimeMillis() + ARTIST_SCROLL_TIMEOUT_MS
+            while (SystemClock.uptimeMillis() < deadline && !device.hasObject(By.text(name))) {
+                val scroller = runCatching { verticalScroller(device) }.getOrNull() ?: return
+                runCatching {
+                    scroller.setGestureMargin(device.displayWidth / GESTURE_MARGIN_DIVISOR)
+                    scroller.fling(Direction.DOWN)
+                }
+                device.waitForIdle(GRID_SETTLE_POLL_MS)
+            }
         }
     }
 }
