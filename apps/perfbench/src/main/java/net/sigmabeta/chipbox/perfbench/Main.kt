@@ -87,6 +87,7 @@ private fun printUsage() {
 
           --a <run>            baseline results.json (or the folder holding it)   (required)
           --b <run>            current results.json (or the folder holding it)    (required)
+          --json               emit the report as JSON instead of the human table (default: off)
         """.trimIndent(),
     )
 }

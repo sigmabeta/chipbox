@@ -14,10 +14,20 @@
 # daemon is left on (faster local reruns; CI uses --no-daemon in throwaway containers) and
 # --max-workers is left at the machine default.
 #
+# The `device-*` tasks are the ones CI does NOT mirror: each runs ONE on-device benchmark axis
+# (scripts/benchmark-device-<axis>.sh) and gates it on a performance regression against a
+# locally-recorded baseline. They are opt-in, each takes the host corpus to push
+# (`--device-<axis> <corpus-dir>`) — the audio axis renders every file, so use a small corpus. A
+# missing device is a flag, never a failure; a regressed axis or a failed test DOES fail. Run the axes
+# you care about; they are independent (one axis per process, so one can't disturb or delete another).
+#
 # Usage:
 #   scripts/verify.sh                 # run everything
 #   scripts/verify.sh static-analysis unit-test   # run only the named task(s)
 #   scripts/verify.sh --skip-apps     # everything except the heavy app builds (release APK + desktop natives)
+#   scripts/verify.sh --device-audio <corpus-dir>    # also run the on-device audio gate over that corpus
+#   scripts/verify.sh --device-ui <corpus-dir>       # also run the on-device UI-scroll gate
+#   scripts/verify.sh --device-startup <corpus-dir>  # also run the on-device startup gate
 #   scripts/verify.sh --rerun         # force every task to re-run (Gradle --rerun-tasks; ignores cache/up-to-date)
 #   scripts/verify.sh --list          # list task names
 #   VERIFY_OUT=/tmp/v scripts/verify.sh           # override the output folder
@@ -54,29 +64,51 @@ ALL_TASKS=(
 )
 APP_BUILD_TASKS="release-jvm apk"
 
+# The opt-in on-device tasks (run by scripts/benchmark-device-<axis>.sh, not Gradle). Each axis is
+# selected by its own flag, which also carries the host corpus to push; the axis script exits 3 to
+# mean "skipped — a flag, not a failure" (no device), which the runner maps to SKIP instead of FAIL.
+DEVICE_AXES=(audio ui startup)
+DEVICE_TASK_NAMES=()
+for _a in "${DEVICE_AXES[@]}"; do DEVICE_TASK_NAMES+=("device-$_a"); done
+declare -A device_corpus=()   # axis -> corpus dir, set by --device-<axis>
+
 # ---- arg parsing -----------------------------------------------------------
 filter=()
 skip_apps=0
 rerun=0
-for arg in "$@"; do
+while [ $# -gt 0 ]; do
+  arg="$1"
   case "$arg" in
     -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"; exit 0 ;;
-    --list) printf '%s\n' "${ALL_TASKS[@]%%|*}"; exit 0 ;;
+    --list) printf '%s\n' "${ALL_TASKS[@]%%|*}" "${DEVICE_TASK_NAMES[@]}"; exit 0 ;;
     --skip-apps) skip_apps=1 ;;
     --rerun|--rerun-tasks) rerun=1 ;;
+    --device-audio|--device-ui|--device-startup)
+      [ $# -ge 2 ] || { echo "$arg needs a corpus dir: $arg <corpus-dir>" >&2; exit 2; }
+      device_corpus["${arg#--device-}"]="$2"; shift ;;
+    --device-audio=*|--device-ui=*|--device-startup=*)
+      _axis="${arg#--device-}"; device_corpus["${_axis%%=*}"]="${arg#*=}" ;;
     -*) echo "unknown option: $arg" >&2; exit 2 ;;
     *) filter+=("$arg") ;;
   esac
+  shift
 done
 
 # --rerun forces every task to re-execute via Gradle's --rerun-tasks (ignores up-to-date AND
 # build-cache hits), so the run reflects a from-scratch build rather than cached/incremental results.
 [ "$rerun" = 1 ] && GRADLE_FLAGS+=(--rerun-tasks)
 
-valid_names=" ${ALL_TASKS[*]%%|*} "
+valid_names=" ${ALL_TASKS[*]%%|*} ${DEVICE_TASK_NAMES[*]} "
 for name in "${filter[@]}"; do
   if [[ "$valid_names" != *" $name "* ]]; then
     echo "unknown task: $name (see --list)" >&2; exit 2
+  fi
+done
+
+# Naming a device task as a filter can't supply its required corpus, so steer it to its flag.
+for axis in "${DEVICE_AXES[@]}"; do
+  if [[ " ${filter[*]} " == *" device-$axis "* ]] && [ -z "${device_corpus[$axis]:-}" ]; then
+    echo "the device-$axis task needs a corpus dir: scripts/verify.sh --device-$axis <corpus-dir>" >&2; exit 2
   fi
 done
 
@@ -87,10 +119,17 @@ for entry in "${ALL_TASKS[@]}"; do
   if [ "${#filter[@]}" -gt 0 ] && [[ " ${filter[*]} " != *" $name "* ]]; then continue; fi
   selected+=("$entry")
 done
+# Each device task is opt-in via its own `--device-<axis> <corpus>`; honor a name filter like any task.
+for axis in "${DEVICE_AXES[@]}"; do
+  [ -n "${device_corpus[$axis]:-}" ] || continue
+  if [ "${#filter[@]}" -eq 0 ] || [[ " ${filter[*]} " == *" device-$axis "* ]]; then
+    selected+=("device-$axis")
+  fi
+done
 if [ "${#selected[@]}" -eq 0 ]; then echo "no tasks selected" >&2; exit 2; fi
 
 # ---- colors (only on a tty) ------------------------------------------------
-if [ -t 1 ]; then R=$'\e[31m'; G=$'\e[32m'; B=$'\e[1m'; Z=$'\e[0m'; else R= G= B= Z=; fi
+if [ -t 1 ]; then R=$'\e[31m'; G=$'\e[32m'; Y=$'\e[33m'; B=$'\e[1m'; Z=$'\e[0m'; else R= G= Y= B= Z=; fi
 
 # ---- run -------------------------------------------------------------------
 # OUT is wiped below, so refuse anything that would take the repo (or worse) with it.
@@ -113,19 +152,32 @@ rm -rf "$OUT"
 mkdir -p "$LOGS"
 echo "${B}Running ${#selected[@]} verification task(s); logs -> $LOGS${Z}"
 
-results=()   # "name|PASS/FAIL|seconds"
+results=()   # "name|PASS/FAIL/SKIP|seconds"
 overall=0
 for entry in "${selected[@]}"; do
   name="${entry%%|*}"; args="${entry#*|}"
-  printf '%s──▶ %-16s%s ./gradlew %s\n' "$B" "$name" "$Z" "$args"
-  start=$SECONDS
-  # shellcheck disable=SC2086
-  "$GRADLE" $args "${GRADLE_FLAGS[@]}" >"$LOGS/$name.log" 2>&1
-  rc=$?
+  if [[ "$name" == device-* ]]; then
+    axis="${name#device-}"
+    printf '%s──▶ %-16s%s scripts/benchmark-device-%s.sh %s\n' "$B" "$name" "$Z" "$axis" "${device_corpus[$axis]}"
+    start=$SECONDS
+    "scripts/benchmark-device-$axis.sh" "${device_corpus[$axis]}" >"$LOGS/$name.log" 2>&1
+    rc=$?
+  else
+    printf '%s──▶ %-16s%s ./gradlew %s\n' "$B" "$name" "$Z" "$args"
+    start=$SECONDS
+    # shellcheck disable=SC2086
+    "$GRADLE" $args "${GRADLE_FLAGS[@]}" >"$LOGS/$name.log" 2>&1
+    rc=$?
+  fi
   dur=$((SECONDS - start))
   if [ "$rc" -eq 0 ]; then
     printf '    %sPASS%s in %ds\n' "$G" "$Z" "$dur"
     results+=("$name|PASS|$dur")
+  elif [ "$rc" -eq 3 ]; then
+    # A task-opted skip (e.g. no device): report it as a flag, never as a failure.
+    printf '    %sSKIP%s in %ds (see %s)\n' "$Y" "$Z" "$dur" "$LOGS/$name.log"
+    results+=("$name|SKIP|$dur")
+    warnings+=("$name was skipped — see $LOGS/$name.log")
   else
     printf '    %sFAIL%s in %ds (see %s)\n' "$R" "$Z" "$dur" "$LOGS/$name.log"
     results+=("$name|FAIL|$dur")
@@ -166,6 +218,12 @@ fi
 if [[ "$ran" == *" release-jvm "* ]] && [ -d apps/jvm/build/jvm-native/libs ]; then
   mkdir -p "$OUT/jvm-native"; cp -r apps/jvm/build/jvm-native/libs/. "$OUT/jvm-native/"
 fi
+for axis in "${DEVICE_AXES[@]}"; do
+  if [[ "$ran" == *" device-$axis "* ]] && [ -d "build/perfbench-device/$axis/current" ]; then
+    mkdir -p "$OUT/device-$axis"
+    cp -r "build/perfbench-device/$axis/current/." "$OUT/device-$axis/"
+  fi
+done
 
 # ---- summary ---------------------------------------------------------------
 summary="$OUT/summary.txt"
@@ -190,6 +248,9 @@ summary="$OUT/summary.txt"
   desc paparazzi    "screenshot diff/failure images (per module)"
   desc apk          "release APKs, debug-signed unless CHIPBOX_KEY_* is set (apps/android)"
   desc jvm-native   "desktop emulator native libs (apps/jvm)"
+  desc device-audio   "on-device audio-axis result (only when --device-audio ran)"
+  desc device-ui      "on-device ui-axis result (only when --device-ui ran)"
+  desc device-startup "on-device startup-axis result (only when --device-startup ran)"
 } >"$summary"
 
 echo

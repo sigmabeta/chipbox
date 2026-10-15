@@ -5,6 +5,8 @@ import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class DiffArgsTest {
     @Test
@@ -29,6 +31,15 @@ class DiffArgsTest {
 
         assertEquals(file, args.baseline)
         assertEquals(file, args.current)
+    }
+
+    @Test
+    fun `defaults json off and reads the json flag`() {
+        val file = Files.createTempFile("perfbench-results", ".json").toFile()
+        file.writeText("{}")
+
+        assertFalse(parseDiffOptions(mapOf("a" to file.absolutePath, "b" to file.absolutePath)).json)
+        assertTrue(parseDiffOptions(mapOf("a" to file.absolutePath, "b" to file.absolutePath, "json" to "true")).json)
     }
 
     @Test

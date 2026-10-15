@@ -2,6 +2,8 @@ package net.sigmabeta.chipbox.perfbench
 
 import kotlin.math.exp
 import kotlin.math.ln
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 /**
  * One scenario compared between a baseline run and a current run, within its enclosing
@@ -15,10 +17,11 @@ import kotlin.math.ln
  * [scenario] is axis-specific: a corpus-relative path for the audio axis, a scenario id for the UI
  * and startup axes. It is the key the axis's two runs are paired by, not a UI scenario specifically.
  */
+@Serializable
 data class ScenarioComparison(
     val scenario: String,
-    val baselineMetric: Double,
-    val currentMetric: Double,
+    @SerialName("baseline_metric") val baselineMetric: Double,
+    @SerialName("current_metric") val currentMetric: Double,
     val ratio: Double,
 )
 
@@ -27,17 +30,19 @@ data class ScenarioComparison(
  * per-scenario ratios. [metricLabel] names the primary metric the ratios were derived from, so a
  * report can say what its numbers mean without knowing the axis's schema.
  */
+@Serializable
 data class AxisComparison(
     val axis: String,
-    val metricLabel: String,
+    @SerialName("metric_label") val metricLabel: String,
     val scenarios: List<ScenarioComparison>,
-    val geometricMean: Double,
+    @SerialName("geometric_mean") val geometricMean: Double,
 )
 
 /** Every compared axis, plus the overall geometric mean across every compared scenario. */
+@Serializable
 data class DiffReport(
     val axes: List<AxisComparison>,
-    val geometricMean: Double,
+    @SerialName("geometric_mean") val geometricMean: Double,
 )
 
 /**

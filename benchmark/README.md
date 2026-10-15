@@ -114,11 +114,63 @@ This module resolves `:android:logging` to its **release** variant, whose
 `AndroidHatchet` default (`BuildConfig.DEBUG`) would emit nothing, so
 `DeviceBenchmark` constructs `AndroidHatchet(enabled = true)`.
 
+## Gating a regression (`scripts/benchmark-device-<axis>.sh`)
+
+The module itself is a measurement; the `scripts/benchmark-device-<axis>.sh`
+scripts are the local **gate** built on top of it — **one script per axis**
+(`audio`, `ui`, `startup`), each the matching `device-<axis>` task in
+`scripts/verify.sh` (selected with `--device-<axis> <corpus-dir>`). Run the axis
+you care about; a gate is per-axis, so a scrolling regression and an emulator
+regression are two separate runs.
+
+Each takes the host corpus as its (positional) argument — it is what the audio
+axis renders and what every result is pinned to, so use a **small corpus** for
+the audio gate. It runs on **every attached device**: it scans the corpus into a
+snapshot, pushes the corpus + snapshot to each device, runs **only that axis's
+test class** (AGP fanning out to all connected devices, in the reused Gradle
+daemon), then diffs each device's `results-<axis>.json` against that device's
+**locally-recorded** baseline with `perfbench diff --json` (ratio = baseline ÷
+current; below the threshold — default `0.95` — is a regression). It fails if any
+one device regresses. The baseline is never committed; the first run (or
+`--record`) writes it under
+`build/perfbench-baseline/device/<model>-<abi>/results-<axis>.json`, keyed by the
+device's hardware identity so a new device records a fresh baseline rather than
+gating one device's numbers against another's.
+
+A phone attached over two transports at once (mDNS *and* IP) would be run twice
+and collide, so the scripts group the online serials by `ro.serialno` and **skip**
+(enough to `adb disconnect` the duplicate) rather than produce the opaque crash.
+
+```sh
+scripts/benchmark-device-audio.sh   /path/to/small-corpus            # gate
+scripts/benchmark-device-ui.sh      /path/to/small-corpus --record   # (re)record the baseline
+scripts/benchmark-device-startup.sh /path/to/small-corpus --threshold 0.97
+scripts/verify.sh --device-ui /path/to/small-corpus                  # the same run inside verify.sh
+```
+
+Each exits `0` on pass (or when it records a baseline), `3` when it **skips** —
+no device attached, or a device attached over two transports, each a flag rather
+than a failure — and `1` when its test fails or any device's axis regresses.
+`verify.sh` maps `3` to a flagged `SKIP`, so a machine with no phone attached
+still passes verification. A refusal to compare (a changed corpus, say) is also
+flagged, not failed: re-record the baseline with `--record`.
+
+**Why one axis per process.** Besides being what the axes are for, it is what
+keeps the audio result. The benchmark library's `Outputs` singleton deletes
+every file in the additional-test-output directory the first time a macrobenchmark
+initialises it, so an axis written earlier in the same run by a
+non-macrobenchmark test (audio) would be gone before the run ends. Running the
+audio axis alone means no macrobenchmark ever initialises `Outputs` in that
+process, so its `results-audio.json` survives to be collected.
+
 ## Running & debugging on a device
 
-The suite fans out to **every** connected device. To run one device — and to keep
-a stale Gradle daemon from hiding the selection — set `ANDROID_SERIAL` and use
-`--no-daemon`; adb serials can contain spaces and a `(2)` suffix, so quote them:
+The suite fans out to **every** connected device. To run one device, set `ANDROID_SERIAL`
+and pass `--no-daemon`; adb serials can contain spaces and a `(2)` suffix, so quote them.
+(`--no-daemon` is required because a reused Gradle daemon keeps the environment it was
+started with, so a newly exported `ANDROID_SERIAL` would not reach it. Do **not** reach for
+the task's `--serial` option instead: on AGP 9.2.1 it throws `UnsupportedOperationException`
+— `getFilteredDevices` removes matched serials from the immutable list the option yields.)
 
 ```sh
 ANDROID_SERIAL='<adb serial>' ./gradlew --no-daemon :benchmark:connectedBenchmarkAndroidTest
