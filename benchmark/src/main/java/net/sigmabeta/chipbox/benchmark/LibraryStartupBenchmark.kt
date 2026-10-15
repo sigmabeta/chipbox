@@ -49,7 +49,7 @@ class LibraryStartupBenchmark {
             // loop; the fingerprint must not record the post-run thermal state.
             val environment = DeviceBenchmark.environment()
             val results = StartupScenario.all.map { scenario ->
-                DeviceBenchmark.section("scenario", "id" to scenario.id) {
+                DeviceBenchmark.section(scenario.id) {
                     startup(scenario = scenario)
                 }
             }
