@@ -224,11 +224,9 @@ class UiScrollBenchmark {
                         // this run is pinned to, so it tracks the corpus rather than a hard-coded name.
                         val artist = BenchmarkArtists.richestArtistName(DeviceBenchmark.snapshotFile())
                             ?: error("Could not read an artist from the pushed library snapshot")
-                        scrollArtistIntoView(device, artist)
-
-                        val tile = device.wait(Until.findObject(By.text(artist)), NAV_TIMEOUT_MS)
-                            ?: error("Artist tile '$artist' not found after scrolling the grid")
-                        tile.click()
+                        check(openArtist(device, artist)) {
+                            "Could not tap the '$artist' tile in the artist grid"
+                        }
 
                         // "Play All" is the artist-detail CTA and is stable regardless of the artist's
                         // name, so it confirms the tap navigated (a no-op would fling the browse grid).
@@ -304,15 +302,28 @@ class UiScrollBenchmark {
         }
 
         /**
-         * Scrolls the artist grid toward its end until [name]'s tile is composed (and so tappable).
-         * Uses a raw finger-up swipe over the screen — the same gesture that advances the name-ordered
-         * grid by hand — rather than a `UiObject2` scroll, so it needs no scrollable node and cannot
-         * suffer the node-lookup staleness that a `UiObject2` gesture can. The wait is capped by
-         * [ARTIST_SCROLL_TIMEOUT_MS].
+         * Scrolls the artist grid toward its end until [name]'s tile is on screen, then taps it.
+         * Uses a raw finger-up swipe — the same gesture that advances the name-ordered grid by hand —
+         * rather than a `UiObject2` scroll, so it needs no scrollable node. The tap only fires once the
+         * tile is fully within the display: a `LazyVerticalGrid` composes items a little outside the
+         * viewport, and tapping a composed-but-off-screen node misses. Capped by [ARTIST_SCROLL_TIMEOUT_MS].
          */
-        fun scrollArtistIntoView(device: UiDevice, name: String) {
+        fun openArtist(device: UiDevice, name: String): Boolean {
             val deadline = SystemClock.uptimeMillis() + ARTIST_SCROLL_TIMEOUT_MS
-            while (SystemClock.uptimeMillis() < deadline && !device.hasObject(By.text(name))) {
+            while (SystemClock.uptimeMillis() < deadline) {
+                val tile = device.findObject(By.text(name))
+                val bounds = tile?.let { runCatching { it.visibleBounds }.getOrNull() }
+                if (bounds != null && bounds.height() > 0 &&
+                    bounds.top >= 0 && bounds.bottom <= device.displayHeight
+                ) {
+                    // Tap the clickable cell around the label's centre (the label node itself is not
+                    // clickable); fall back to the label if no enclosing clickable is found.
+                    val cell = device.findObjects(By.clickable(true)).firstOrNull {
+                        runCatching { it.visibleBounds.contains(bounds.centerX(), bounds.centerY()) }
+                            .getOrDefault(false)
+                    }
+                    if (runCatching { (cell ?: tile).click() }.isSuccess) return true
+                }
                 device.swipe(
                     device.displayWidth / 2,
                     (device.displayHeight * ARTIST_SWIPE_FROM).toInt(),
@@ -322,6 +333,7 @@ class UiScrollBenchmark {
                 )
                 device.waitForIdle(GRID_SETTLE_POLL_MS)
             }
+            return false
         }
     }
 }
