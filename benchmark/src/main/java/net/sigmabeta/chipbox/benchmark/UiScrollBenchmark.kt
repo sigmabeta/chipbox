@@ -137,9 +137,10 @@ class UiScrollBenchmark {
         const val GESTURE_MARGIN_DIVISOR = 5
         const val GRID_SETTLE_POLL_MS = 100L
         const val ARTIST_SCROLL_TIMEOUT_MS = 30_000L
-        const val ARTIST_SWIPE_FROM = 0.80f
-        const val ARTIST_SWIPE_TO = 0.28f
-        const val ARTIST_SWIPE_STEPS = 10
+        const val ARTIST_SCROLL_FROM = 0.80f
+        const val ARTIST_SCROLL_TO = 0.28f
+        const val ARTIST_SCROLL_STEPS = 10
+        const val ARTIST_DETAIL_CTA = "Play All"
         const val FRAME_DURATION_METRIC = "frameDurationCpuMs"
         const val FRAME_OVERRUN_METRIC = "frameOverrunMs"
 
@@ -225,13 +226,7 @@ class UiScrollBenchmark {
                         val artist = BenchmarkArtists.richestArtistName(DeviceBenchmark.snapshotFile())
                             ?: error("Could not read an artist from the pushed library snapshot")
                         check(openArtist(device, artist)) {
-                            "Could not tap the '$artist' tile in the artist grid"
-                        }
-
-                        // "Play All" is the artist-detail CTA and is stable regardless of the artist's
-                        // name, so it confirms the tap navigated (a no-op would fling the browse grid).
-                        check(device.wait(Until.hasObject(By.text("Play All")), NAV_TIMEOUT_MS)) {
-                            "Opening artist '$artist' did not reach artist detail"
+                            "Could not open artist '$artist' from the artist grid"
                         }
                         device.waitForIdle()
                     },
@@ -302,35 +297,40 @@ class UiScrollBenchmark {
         }
 
         /**
-         * Scrolls the artist grid toward its end until [name]'s tile is on screen, then taps it.
-         * Uses a raw finger-up swipe — the same gesture that advances the name-ordered grid by hand —
-         * rather than a `UiObject2` scroll, so it needs no scrollable node. The tap only fires once the
-         * tile is fully within the display: a `LazyVerticalGrid` composes items a little outside the
-         * viewport, and tapping a composed-but-off-screen node misses. Capped by [ARTIST_SCROLL_TIMEOUT_MS].
+         * Scrolls the artist grid toward its end until [name]'s tile is on screen, taps it, and
+         * confirms artist detail opened (the `"Play All"` CTA). A raw finger-up `drag` advances the
+         * name-ordered grid without fling momentum, so a step cannot skip the tile between checks, and
+         * needs no scrollable node. A tile is only tapped once it is fully within the display and the
+         * grid has settled: a `LazyVerticalGrid` composes items a little outside the viewport, and a
+         * tap during an in-flight scroll is absorbed as a scroll-stop rather than a click. A
+         * visible-but-unopened tile is re-tapped rather than scrolled past. Capped by
+         * [ARTIST_SCROLL_TIMEOUT_MS].
          */
         fun openArtist(device: UiDevice, name: String): Boolean {
             val deadline = SystemClock.uptimeMillis() + ARTIST_SCROLL_TIMEOUT_MS
             while (SystemClock.uptimeMillis() < deadline) {
                 val tile = device.findObject(By.text(name))
                 val bounds = tile?.let { runCatching { it.visibleBounds }.getOrNull() }
-                if (bounds != null && bounds.height() > 0 &&
+                val onScreen = bounds != null && bounds.height() > 0 &&
                     bounds.top >= 0 && bounds.bottom <= device.displayHeight
-                ) {
-                    // Tap the clickable cell around the label's centre (the label node itself is not
-                    // clickable); fall back to the label if no enclosing clickable is found.
+                if (onScreen) {
+                    // Let any in-flight scroll settle so the tap is not swallowed as a scroll-stop.
+                    device.waitForIdle()
                     val cell = device.findObjects(By.clickable(true)).firstOrNull {
                         runCatching { it.visibleBounds.contains(bounds.centerX(), bounds.centerY()) }
                             .getOrDefault(false)
                     }
-                    if (runCatching { (cell ?: tile).click() }.isSuccess) return true
+                    runCatching { (cell ?: tile).click() }
+                    if (device.wait(Until.hasObject(By.text(ARTIST_DETAIL_CTA)), NAV_TIMEOUT_MS)) return true
+                } else {
+                    device.drag(
+                        device.displayWidth / 2,
+                        (device.displayHeight * ARTIST_SCROLL_FROM).toInt(),
+                        device.displayWidth / 2,
+                        (device.displayHeight * ARTIST_SCROLL_TO).toInt(),
+                        ARTIST_SCROLL_STEPS,
+                    )
                 }
-                device.swipe(
-                    device.displayWidth / 2,
-                    (device.displayHeight * ARTIST_SWIPE_FROM).toInt(),
-                    device.displayWidth / 2,
-                    (device.displayHeight * ARTIST_SWIPE_TO).toInt(),
-                    ARTIST_SWIPE_STEPS,
-                )
                 device.waitForIdle(GRID_SETTLE_POLL_MS)
             }
             return false
