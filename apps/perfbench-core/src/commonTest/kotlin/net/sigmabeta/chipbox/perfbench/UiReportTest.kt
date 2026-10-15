@@ -65,8 +65,19 @@ class UiReportTest {
 
     @Test
     fun `ui scenario ids are stable and resolvable`() {
-        assertEquals(listOf("ui.browse_by_game_scroll"), UiScenario.all.map { it.id })
+        assertEquals(
+            listOf(
+                "ui.browse_by_game_scroll",
+                "ui.home_scroll",
+                "ui.browse_all_tracks_scroll",
+                "ui.artist_detail_scroll",
+            ),
+            UiScenario.all.map { it.id },
+        )
         assertEquals(UiScenario.BROWSE_BY_GAME_SCROLL, UiScenario.fromId("ui.browse_by_game_scroll"))
+        assertEquals(UiScenario.HOME_SCROLL, UiScenario.fromId("ui.home_scroll"))
+        assertEquals(UiScenario.BROWSE_ALL_TRACKS_SCROLL, UiScenario.fromId("ui.browse_all_tracks_scroll"))
+        assertEquals(UiScenario.ARTIST_DETAIL_SCROLL, UiScenario.fromId("ui.artist_detail_scroll"))
         assertEquals(null, UiScenario.fromId("audio.usf"))
     }
 }

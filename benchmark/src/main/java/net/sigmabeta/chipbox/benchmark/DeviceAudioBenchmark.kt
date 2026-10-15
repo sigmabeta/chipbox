@@ -12,20 +12,23 @@ import net.sigmabeta.chipbox.perfbench.AudioAxis
 import net.sigmabeta.chipbox.perfbench.AudioAxisConfig
 import net.sigmabeta.chipbox.perfbench.AudioMeasurement
 import net.sigmabeta.chipbox.perfbench.AudioResult
-import net.sigmabeta.chipbox.perfbench.AudioScenario
 import net.sigmabeta.chipbox.perfbench.PerfConfig
 import net.sigmabeta.chipbox.perfbench.audioResult
+import net.sigmabeta.chipbox.perfbench.corpusRelativePath
+import net.sigmabeta.chipbox.perfbench.erroredAudioResult
+import net.sigmabeta.chipbox.perfbench.scratchWavName
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Measures the audio axis on a real device: real-time factor (RTF) for the representative emulator
- * subset ([AudioScenario.all] — USF, VGM, PSF), reusing the raw-core render path unchanged. For each
- * scenario it picks one representative track from the pushed corpus with the same [walkCorpus] the
- * host axis uses, warms up once, then times [REPEATS] renders and reduces them with [audioResult] —
- * identical math to the host axis, only the emulator cores differ (the arm64 `.so`s in this APK
- * rather than the host's x86_64 ones). It writes `results-audio.json` alongside the UI and startup
- * artifacts, carrying the same device fingerprint + corpus block via [DeviceBenchmark.perfResult].
+ * Measures the audio axis on a real device: real-time factor (RTF) for every supported file in the
+ * pushed corpus, one result per file keyed by its corpus-relative path, reusing the raw-core render
+ * path unchanged. For each file it warms up once, then times [REPEATS] renders and reduces them with
+ * [audioResult] — identical math to the host axis, only the emulator cores differ (the arm64 `.so`s
+ * in this APK rather than the host's x86_64 ones). A file that fails to render is recorded as an
+ * errored result rather than dropped, so a run never silently shrinks. It writes `results-audio.json`
+ * alongside the UI and startup artifacts, carrying the same device fingerprint + corpus block via
+ * [DeviceBenchmark.perfResult].
  *
  * RTF is the one device axis that is inherently machine-independent, so this is the device ground
  * truth for the host audio measurements. The pushed corpus + snapshot described in the module README
@@ -45,19 +48,25 @@ class DeviceAudioBenchmark {
 
         val environment = DeviceBenchmark.environment()
         val bank = EmulatorBank()
+        val corpusRoot = DeviceBenchmark.corpusRoot()
         val wavDir = File(instrumentation.context.cacheDir, SCRATCH_DIR).apply { mkdirs() }
-        val scenarios = AudioScenario.all
 
-        val results = mutableListOf<AudioResult>()
-        for (scenario in scenarios) {
-            val track = representativeTrack(bank, DeviceBenchmark.corpusRoot(), scenario) ?: continue
-            measureScenario(bank, track, scenario, wavDir)?.let { results += audioResult(it) }
+        val results = walkCorpus(
+            root = corpusRoot,
+            supported = bank.supportedExtensions,
+            extensionFilter = null,
+            gameFilter = null,
+            everySong = true,
+            subsong = 0,
+        ).map { track ->
+            val path = corpusRelativePath(corpusRoot, track.path)
+            measureTrack(bank, track, path, wavDir)
         }
 
         DeviceBenchmark.write(
             DeviceBenchmark.perfResult(
                 environment = environment,
-                config = PerfConfig(scenarios = scenarios.map { it.id }),
+                config = PerfConfig(scenarios = results.map { it.path }),
                 axes = mapOf(
                     "audio" to AudioAxis(
                         config = AudioAxisConfig(sampleSeconds = SAMPLE_SECONDS, repeats = REPEATS),
@@ -68,50 +77,46 @@ class DeviceAudioBenchmark {
         )
     }
 
-    /** One track per scenario, chosen by the same deterministic walker the host axis and A/B run use. */
-    private fun representativeTrack(
-        bank: EmulatorBank,
-        corpusDir: File,
-        scenario: AudioScenario,
-    ): SelectedTrack? = walkCorpus(
-        root = corpusDir,
-        supported = bank.supportedExtensions,
-        extensionFilter = scenario.extensions,
-        gameFilter = null,
-        everySong = false,
-        subsong = 0,
-    ).firstOrNull()
-
-    /** Warm-up once (untimed), then [REPEATS] timed renders; `null` if every repeat failed. */
-    private fun measureScenario(
+    /**
+     * Warms up once (untimed), then times [REPEATS] renders, reducing them to one result. A warm-up
+     * failure, or all repeats failing, becomes an errored result carrying the failure — never an
+     * omission.
+     */
+    private fun measureTrack(
         bank: EmulatorBank,
         track: SelectedTrack,
-        scenario: AudioScenario,
+        path: String,
         wavDir: File,
-    ): AudioMeasurement? {
-        val wav = File(wavDir, "${scenario.id}.wav")
+    ): AudioResult {
+        val wav = File(wavDir, scratchWavName(path))
         val warmUp = bank.render(track, SAMPLE_SECONDS, wav, MAX_WALL_MILLIS)
-        if (warmUp.error.isNotEmpty()) return null
+        if (warmUp.error.isNotEmpty()) return erroredAudioResult(path, warmUp.error)
 
         val wallSeconds = mutableListOf<Double>()
         val cpuSeconds = mutableListOf<Double>()
         var frames = warmUp.frames
         var sampleRate = warmUp.sampleRate
+        var repeatError: String? = null
         repeat(REPEATS) {
             val wallStart = System.nanoTime()
             val cpuStart = Debug.threadCpuTimeNanos()
             val metrics = bank.render(track, SAMPLE_SECONDS, wav, MAX_WALL_MILLIS)
             val wall = (System.nanoTime() - wallStart) / NANOS_PER_SECOND
             val cpuEnd = Debug.threadCpuTimeNanos()
-            if (metrics.error.isNotEmpty()) return@repeat
+            if (metrics.error.isNotEmpty()) {
+                repeatError = metrics.error
+                return@repeat
+            }
             frames = metrics.frames
             sampleRate = metrics.sampleRate
             wallSeconds += wall
             if (cpuStart >= 0 && cpuEnd >= 0) cpuSeconds += (cpuEnd - cpuStart) / NANOS_PER_SECOND
         }
 
-        return wallSeconds.takeIf { it.isNotEmpty() }?.let {
-            AudioMeasurement(scenario.id, frames, sampleRate, it, cpuSeconds)
+        return if (wallSeconds.isEmpty()) {
+            erroredAudioResult(path, repeatError ?: "no timed repeat produced audio")
+        } else {
+            audioResult(AudioMeasurement(path, frames, sampleRate, wallSeconds, cpuSeconds))
         }
     }
 

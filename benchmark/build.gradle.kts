@@ -1,5 +1,19 @@
 plugins {
     alias(libs.plugins.android.test)
+    // The SAGE base plugins (sage.android/jvm/kmp) apply ktlint + detekt per module, but
+    // `com.android.test` isn't one of them — so this module applies them itself, with the same
+    // root config, or its Kotlin would never be linted (in CI or locally).
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.detekt)
+}
+
+detekt {
+    config.setFrom("${rootDir.absolutePath}/detekt-config.yml")
+    baseline = file("detekt-baseline.xml")
+}
+
+ktlint {
+    version.set(libs.versions.ktlintTool.get())
 }
 
 // The Chipbox + sage commits are stamped into the device results fingerprint at build time (the
@@ -67,6 +81,9 @@ dependencies {
     implementation(libs.androidx.benchmark.macro.junit4)
     // The perfbench contract the device results.json is written with (schema, fingerprint, math).
     implementation(projects.apps.perfbenchCore)
+    // The app's artist-name delimiter rule (`ARTIST_NAME_DELIMITERS`), so the artist this benchmark
+    // opens is derived exactly as the app derives it.
+    implementation(projects.cbox.common.repository.api)
     // The reused raw-emulator-core render path (EmulatorBank/runRender) the device audio axis
     // times — the same KMP consumer that pulls each emulator's arm64 `.so` into this test APK.
     implementation(projects.apps.abrenderCore)
