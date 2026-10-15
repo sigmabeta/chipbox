@@ -13,6 +13,7 @@ import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.GridImageListModel
+import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.StringProvider
 
@@ -56,21 +57,21 @@ class RngTakeTheWheelHomeModule @Inject constructor(
             GridImageListModel(
                 dataId = SONG_DATA_ID,
                 name = stringProvider.getString(ChipboxStringId.HOME_RNG_RANDOM_SONG),
-                sourceInfo = null,
+                sourceInfo = SourceInfo(null),
                 imagePlaceholder = Icon.MusicNote,
                 clickAction = HomeAction.RandomSongClicked,
             ),
             GridImageListModel(
                 dataId = GAME_DATA_ID,
                 name = stringProvider.getString(ChipboxStringId.HOME_RNG_RANDOM_GAME),
-                sourceInfo = null,
+                sourceInfo = SourceInfo(null),
                 imagePlaceholder = Icon.Album,
                 clickAction = HomeAction.RandomGameClicked,
             ),
             GridImageListModel(
                 dataId = ARTIST_DATA_ID,
                 name = stringProvider.getString(ChipboxStringId.HOME_RNG_RANDOM_ARTIST),
-                sourceInfo = null,
+                sourceInfo = SourceInfo(null),
                 imagePlaceholder = Icon.Person,
                 clickAction = HomeAction.RandomArtistClicked,
             ),

@@ -4,6 +4,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 
 class DiffTest {
     @Test
@@ -123,6 +126,30 @@ class DiffTest {
         assertEquals(4.0, compared.report.axes.first { it.axis == "startup" }.geometricMean, TOLERANCE)
         assertEquals(2.0, compared.report.axes.first { it.axis == "ui" }.geometricMean, TOLERANCE)
         assertEquals(2.0, compared.report.geometricMean, TOLERANCE)
+    }
+
+    @Test
+    fun `serializes a diff report in the shared snake_case dialect`() {
+        val report = DiffReport(
+            axes = listOf(
+                AxisComparison(
+                    axis = "ui",
+                    metricLabel = "frame p50 (ms)",
+                    scenarios = listOf(ScenarioComparison("ui.home_scroll", baselineMetric = 12.0, currentMetric = 10.0, ratio = 1.2)),
+                    geometricMean = 1.2,
+                ),
+            ),
+            geometricMean = 1.2,
+        )
+
+        val json = PerfbenchJson.encodeToString(report)
+        val back = PerfbenchJson.decodeFromString<DiffReport>(json)
+
+        assertEquals(report, back)
+        assertTrue(json.contains("\"geometric_mean\""), "diff must use the shared snake_case dialect")
+        assertTrue(json.contains("\"metric_label\""))
+        assertTrue(json.contains("\"baseline_metric\""))
+        assertTrue(json.contains("\"current_metric\""))
     }
 
     @Test

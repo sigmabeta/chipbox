@@ -18,6 +18,7 @@ import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.GridImageListModel
+import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.StringProvider
 
@@ -74,7 +75,7 @@ class MostPlayedArtistsHomeModule @Inject constructor(
                     GridImageListModel(
                         dataId = artist.id + ID_OFFSET,
                         name = artist.name,
-                        sourceInfo = artist.photoUrl,
+                        sourceInfo = SourceInfo(artist.photoUrl),
                         imagePlaceholder = Icon.Person,
                         clickAction = HomeAction.ArtistClicked(artist.id),
                     )

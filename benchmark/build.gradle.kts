@@ -79,6 +79,10 @@ dependencies {
     implementation(libs.androidx.test.runner)
     implementation(libs.androidx.test.uiautomator)
     implementation(libs.androidx.benchmark.macro.junit4)
+    // The SAGE logging facade the device axes log begin/end progress through. This module resolves
+    // :android:logging to its release variant, so the axes construct AndroidHatchet(enabled = true)
+    // rather than relying on its BuildConfig.DEBUG default.
+    implementation(libs.sage.android.logging)
     // The perfbench contract the device results.json is written with (schema, fingerprint, math).
     implementation(projects.apps.perfbenchCore)
     // The app's artist-name delimiter rule (`ARTIST_NAME_DELIMITERS`), so the artist this benchmark

@@ -22,6 +22,7 @@ import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.components.GridImageListModel
+import net.sigmabeta.sage.images.SourceInfo
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.StringProvider
 
@@ -103,7 +104,7 @@ class RecentlyPlayedGamesHomeModule @Inject constructor(
                     GridImageListModel(
                         dataId = game.id + ID_OFFSET,
                         name = game.title,
-                        sourceInfo = game.photoUrl,
+                        sourceInfo = SourceInfo(game.photoUrl),
                         imagePlaceholder = Icon.Album,
                         clickAction = HomeAction.GameClicked(game.id),
                         aspectRatio = GAME_COVER_ASPECT_RATIO,
