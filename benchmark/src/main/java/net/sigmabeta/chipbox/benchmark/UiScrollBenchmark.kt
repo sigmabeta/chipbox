@@ -136,7 +136,8 @@ class UiScrollBenchmark {
         const val FLING_ATTEMPTS = 3
         const val GESTURE_MARGIN_DIVISOR = 5
         const val GRID_SETTLE_POLL_MS = 100L
-        const val ARTIST_SCROLL_TIMEOUT_MS = 20_000L
+        const val ARTIST_SCROLL_TIMEOUT_MS = 30_000L
+        const val ARTIST_SCROLL_FRACTION = 0.7f
         const val FRAME_DURATION_METRIC = "frameDurationCpuMs"
         const val FRAME_OVERRUN_METRIC = "frameOverrunMs"
 
@@ -239,10 +240,10 @@ class UiScrollBenchmark {
             }
         }
 
-        /** Flings the scenario screen's outer vertical list down then back up. */
+        /** Flings the scenario screen's outer vertical list toward its end, then back to its start. */
         fun MacrobenchmarkScope.flingVertically() {
-            repeat(FLINGS_PER_DIRECTION) { flingOnce(Direction.DOWN) }
             repeat(FLINGS_PER_DIRECTION) { flingOnce(Direction.UP) }
+            repeat(FLINGS_PER_DIRECTION) { flingOnce(Direction.DOWN) }
         }
 
         /**
@@ -301,19 +302,16 @@ class UiScrollBenchmark {
         }
 
         /**
-         * Scrolls the artist grid down until [name]'s tile is composed (and so tappable). The grid is
-         * name-ordered and paged; the richest artist sits well inside the first page, so a bounded
-         * number of flings reaches it without exhausting the page. Flings are best-effort — a stale
-         * grid node is skipped — and the wait is capped by [ARTIST_SCROLL_TIMEOUT_MS].
+         * Scrolls the artist grid toward its end until [name]'s tile is composed (and so tappable).
+         * `Direction.UP` moves the content up, revealing later (name-ordered) artists — the direction
+         * a finger-up swipe takes. Each step moves a fraction of the visible area so a step cannot
+         * jump over the target between checks, and the wait is capped by [ARTIST_SCROLL_TIMEOUT_MS].
          */
         fun scrollArtistIntoView(device: UiDevice, name: String) {
             val deadline = SystemClock.uptimeMillis() + ARTIST_SCROLL_TIMEOUT_MS
             while (SystemClock.uptimeMillis() < deadline && !device.hasObject(By.text(name))) {
                 val scroller = runCatching { verticalScroller(device) }.getOrNull() ?: return
-                runCatching {
-                    scroller.setGestureMargin(device.displayWidth / GESTURE_MARGIN_DIVISOR)
-                    scroller.fling(Direction.DOWN)
-                }
+                runCatching { scroller.scroll(Direction.UP, ARTIST_SCROLL_FRACTION) }
                 device.waitForIdle(GRID_SETTLE_POLL_MS)
             }
         }
