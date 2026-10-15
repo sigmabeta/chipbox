@@ -4,10 +4,13 @@ package net.sigmabeta.chipbox.perfbench
  * The canonical UI scenarios the device benchmark measures.
  *
  * The [id] is the scenario key stored in a [UiResult] and matched by a baseline diff; it is stable
- * across runs and devices. v1 proves the harness with the one BrowseByGame scroll scenario.
+ * across runs and devices. Each scenario scrolls one core surface: the BrowseByGame grid, Home's
+ * vertical list, and the BrowseAllTracks list.
  */
 enum class UiScenario(val id: String) {
     BROWSE_BY_GAME_SCROLL("ui.browse_by_game_scroll"),
+    HOME_SCROLL("ui.home_scroll"),
+    BROWSE_ALL_TRACKS_SCROLL("ui.browse_all_tracks_scroll"),
     ;
 
     companion object {
