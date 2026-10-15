@@ -19,7 +19,8 @@ _Avoid_: fixture, seed data, DB dump.
 
 **Scenario**:
 One named, reproducible unit of measurement with a fixed input and a defined
-metric — e.g. raw-core rendering of a single emulator family.
+metric — for the audio axis, a single corpus file rendered through the raw
+emulator core; for the UI axis, one screen interaction.
 _Avoid_: test, case, workload.
 
 **Time to first content**:

@@ -25,10 +25,9 @@ repository `:api`, not on this harness module.
 | `PerfResult.kt` | the `results.json` schema: `PerfResult`, `PerfConfig`, `CorpusRef`/`CorpusEntry`, and the sealed `Axis` hierarchy (`AudioAxis` + `AudioResult`, `UiAxis` + `UiResult`, `StartupAxis` + `StartupResult`) |
 | `ResultArtifact.kt` | where a run's result is written: `RESULTS_FILE_NAME` (the whole-run `results.json`) and `axisResultFileName(axis)` (the distinct `results-<axis>.json` a device test writes, so no two axes in a run overwrite each other) |
 | `Fingerprint.kt` | sealed `Fingerprint` (`HostFingerprint`, `DeviceFingerprint`) and the pure `hostFingerprint` / `deviceFingerprint` builders (from `HostEnvironment` / `DeviceEnvironment`) |
-| `AudioScenario.kt` | the canonical audio scenario ids (`audio.usf`, `audio.vgm`, `audio.psf`) and the extensions each selects |
 | `UiScenario.kt` | the canonical UI scenario ids (v1: `ui.browse_by_game_scroll`) |
 | `StartupScenario.kt` | the canonical startup scenario ids (`startup.cold`, `startup.warm`) |
-| `AudioReport.kt` | pure report math: `audioResult(AudioMeasurement)` and `median` |
+| `AudioReport.kt` | pure report math: `audioResult(AudioMeasurement)`, `erroredAudioResult(path, error)`, and `median` |
 | `UiReport.kt` | pure report math for the UI axis: `uiResult(UiMeasurement)` plus `percentile` and `jankPercent` |
 | `StartupReport.kt` | pure report math for the startup axis: `startupResult(StartupMeasurement)` (time-to-first-content percentiles) |
 | `DeviceBenchmarkLayout.kt` | the fixed on-device layout (`Music/chipbox-test/` under shared external storage holding the pushed snapshot + corpus) shared by the app seed and the macrobenchmark |
@@ -45,16 +44,19 @@ repository `:api`, not on this harness module.
 // Build a host result's fingerprint.
 val machine = hostFingerprint(SystemHostEnvironment.detect(), chipboxCommit, sageCommit)
 
-// Reduce timed repeats to one scenario result.
+// Reduce a file's timed repeats to one result, keyed by its corpus-relative path.
 val result = audioResult(
     AudioMeasurement(
-        scenario = AudioScenario.USF.id,
+        path = "Chrono Trigger/track.spc",
         frames = 44_100L * 30,
         sampleRate = 44_100,
         wallSeconds = listOf(1.25, 1.21, 1.23),
         cpuSeconds = listOf(1.10, 1.09, 1.11),
     ),
 )
+
+// A file that failed to render becomes a result carrying the error and no real-time factor.
+val errored = erroredAudioResult("Chrono Trigger/broken.spc", error = "no audio produced")
 
 // Reduce a device scroll's pooled frames + trace sums to one UI scenario result.
 val ui = uiResult(
