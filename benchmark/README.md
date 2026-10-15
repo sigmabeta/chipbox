@@ -7,11 +7,11 @@
 An Android Test (`com.android.test`) module that macrobenchmarks the installed
 `:apps:android` app. It instruments the real APK from outside (self-instrumenting,
 `targetProjectPath = :apps:android`): one test scrolls each core surface — the
-BrowseByGame grid, Home, and the BrowseAllTracks list — and records frame timing +
-the Compose trace sections each screen emits (`ui` axis); another measures cold
-and warm startup up to first content (`startup` axis); a third renders **every
-supported file in the pushed corpus** through the raw emulator core and reports
-real-time factor (`audio` axis). Each assembles a perfbench
+BrowseByGame grid, Home, the BrowseAllTracks list, and artist detail — and records
+frame timing + the Compose trace sections each screen emits (`ui` axis); another
+measures cold and warm startup up to first content (`startup` axis); a third
+renders **every supported file in the pushed corpus** through the raw emulator
+core and reports real-time factor (`audio` axis). Each assembles a perfbench
 result (device fingerprint + axis) with
 [`:apps:perfbench-core`](../apps/perfbench-core/README.md); the audio axis reuses
 the render engine from
@@ -140,11 +140,24 @@ trace-section set:
   Records `GridImage` + `CrossfadeImage`.
 - `ui.browse_all_tracks_scroll` — Library tab → **Browse All Tracks**; flings the
   track list up/down. Its rows are text-only, so it records **no** trace sections.
+- `ui.artist_detail_scroll` — Library tab → **Browse by Artist** → the first
+  artist tile; flings the artist-detail list (hero + song rows, with a nested
+  horizontal game strip) up/down. It records `CrossfadeImage` only — the hero and
+  game strip paint it, and artist detail has no `GridImage` cells.
 
-Home nests horizontal `LazyRow`s inside its vertical `LazyColumn`, so
-`By.scrollable` matches several nodes there; the benchmark selects the outer
-vertical scrollable by geometry rather than by accessibility-tree order. The
-snapshot seeding below must have run, or these surfaces have no items to scroll.
+The first artist tile has no static visible label — the artist name comes from the
+seeded snapshot — so `ui.artist_detail_scroll` taps it **by coordinate** derived
+from the grid node's visible bounds (first-column/first-cell centre), after waiting
+for a clickable tile rather than a `LoadingType.SQUARE` placeholder. This is
+inherently brittle: it assumes a COMPACT-width phone (a tablet widens the layout to
+a different grid), and small changes to cell size, insets, or column count can move
+the tap off the tile — it is expected to be tuned on a device run.
+
+Home nests horizontal `LazyRow`s inside its vertical `LazyColumn`, and artist detail
+nests one too, so `By.scrollable` matches several nodes on both; the benchmark
+selects the outer vertical scrollable by geometry rather than by accessibility-tree
+order. The snapshot seeding below must have run, or these surfaces have no items to
+scroll.
 
 ## Startup scenarios
 
@@ -179,7 +192,7 @@ across machines.
 | --- | --- |
 | `DeviceBenchmark.kt` | shared device-side plumbing: target package, device fingerprint facts, build-stamped commits, the corpus pin (manifest + snapshot hash) read from shared storage, the corpus/snapshot paths, and the per-axis result sink. |
 | `DeviceAudioBenchmark.kt` | `audioRealTimeFactor` — walks the pushed corpus and times raw-core renders file by file, reporting real-time factor (`audio` axis + device fingerprint), written to `results-audio.json`. |
-| `UiScrollBenchmark.kt` | `scrollScenarios` — WARM-startup benchmark that opens each core surface (BrowseByGame, Home, BrowseAllTracks), flings its vertical list up/down, then maps every scenario's macrobenchmark result into one perfbench `results-ui.json` (`ui` axis + device fingerprint). |
+| `UiScrollBenchmark.kt` | `scrollScenarios` — WARM-startup benchmark that opens each core surface (BrowseByGame, Home, BrowseAllTracks, artist detail), flings its vertical list up/down, then maps every scenario's macrobenchmark result into one perfbench `results-ui.json` (`ui` axis + device fingerprint). |
 | `LibraryStartupBenchmark.kt` | `coldAndWarmStartup` — measures cold and warm launches up to first content and reports time-to-first-content percentiles (`startup` axis + device fingerprint), written to `results-startup.json`. |
 | `src/main/AndroidManifest.xml` | Test manifest. |
 
@@ -192,8 +205,9 @@ timing. The app also links `androidx.compose.runtime:runtime-tracing`, but the
 explicit sections are what make the metric non-zero and stable.
 
 A UI scenario records only the sections its screen actually emits: BrowseByGame
-and Home record both `GridImage` and `CrossfadeImage`; BrowseAllTracks records
-none, and its metrics list omits them rather than reporting a zero.
+and Home record both `GridImage` and `CrossfadeImage`; artist detail records
+`CrossfadeImage` only (its hero and game strip — no `GridImage`); BrowseAllTracks
+records none, and its metrics list omits them rather than reporting a zero.
 
 ## Module facts
 
