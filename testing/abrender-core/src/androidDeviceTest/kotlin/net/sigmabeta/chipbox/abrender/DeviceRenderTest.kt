@@ -15,8 +15,8 @@ import org.junit.runner.RunWith
  * no Android-specific analysis code.
  *
  * It is self-instrumenting (no app under test): the corpus is adb-pushed into the test process's
- * external files dir and the run is written back there for adb to pull. Drive it with run-on-device.sh,
- * or by hand:
+ * external files dir and the run is written back there for adb to pull. Drive it with record.sh, or
+ * by hand:
  *
  * ```
  * adb shell am instrument -w \
@@ -80,6 +80,8 @@ class DeviceRenderTest {
             runA = null,
             runB = null,
             topN = 0,
+            tolerance = null,
+            check = false,
         )
 
         val summary = runRender(args)

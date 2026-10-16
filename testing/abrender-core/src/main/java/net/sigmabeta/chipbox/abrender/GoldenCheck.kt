@@ -1,43 +1,54 @@
 package net.sigmabeta.chipbox.abrender
 
-import java.io.File
-
 /**
- * Bit-identity golden checks for the native emulator cores: render a supplied corpus, and compare
- * the result, sample-for-sample, against a previously recorded reference run.
+ * The pass/fail semantics of a bit-identity comparison: render a corpus and compare it, sample for
+ * sample, against a previously recorded **reference** run. [diffRuns] does the comparison (the same
+ * code `abrender diff` uses); [GoldenTolerance] decides how close is close enough and [GoldenReport]
+ * reduces the rows to a verdict the CLI's `diff --check`, and the `record.sh`/`verify.sh` scripts
+ * built on it, act on.
  *
- * Unlike the screenshot goldens, these are **not** committed — the audio (and the corpus it is
- * rendered from) may not be redistributable. Both are supplied by whoever runs the check, so the
- * reference lives in a local, git-ignored directory. Because PCM must not depend on the CPU
- * architecture, one reference is compared against both the host JVM (x86_64) and a real device
- * (arm64); any difference — in either direction — is a failure.
- *
- * The comparison itself is [diffRuns], the same code `abrender diff` uses, so "bit-identical" means
- * exactly one thing everywhere.
+ * Reference PCM is **not** committed — the audio (and the corpus it is rendered from) may not be
+ * redistributable — so references live in a local, git-ignored run store (`ab-runs/`).
  */
-data class GoldenReport(val rows: List<DiffRow>) {
-    /** Tracks that were not bit-identical — the reason a verify fails. */
-    val failures: List<DiffRow> = rows.filter { it.verdict != Verdict.IDENTICAL }
+data class GoldenReport(
+    val rows: List<DiffRow>,
+    val tolerance: GoldenTolerance = GoldenTolerance.STRICT,
+) {
+    /** Tracks that differ but are within [tolerance] — reported, but not a failure. */
+    val tolerated: List<DiffRow> = rows.filter { tolerance.tolerates(it) }
+
+    /** Tracks that fail even under [tolerance] — the reason a verify fails. */
+    val failures: List<DiffRow> = rows.filter { it.verdict != Verdict.IDENTICAL && !tolerance.tolerates(it) }
 
     val passed: Boolean get() = failures.isEmpty()
 
     /** A human-readable failure summary, or a one-line pass note. */
     fun describe(): String = when {
-        rows.isEmpty() -> "golden check compared 0 tracks — the corpus/walk matched nothing."
+        rows.isEmpty() -> "compared 0 tracks — the corpus/walk matched nothing."
 
-        passed -> "all ${rows.size} track(s) bit-identical to the golden."
+        passed && tolerated.isEmpty() -> "all ${rows.size} track(s) bit-identical to the reference."
+
+        passed -> {
+            val detail = tolerated.joinToString("\n") { row ->
+                "  ~ ${row.game} — ${row.title}  [within tolerance (diffRMS=${dbText(row.diffRmsDbfs)}, ${row.note})]"
+            }
+            "all ${rows.size} track(s) within tolerance " +
+                "(${tolerated.size} tolerated at maxΔ≤${tolerance.maxDelta}):\n$detail"
+        }
 
         else -> {
             val detail = failures.joinToString("\n") { row ->
                 val why = when (row.verdict) {
                     Verdict.CHANGED -> "CHANGED (diffRMS=${dbText(row.diffRmsDbfs)}, ${row.note})"
-                    Verdict.ONLY_IN_A -> "MISSING from this run (golden has it)"
-                    Verdict.ONLY_IN_B -> "EXTRA track (not in golden)"
+                    Verdict.ONLY_IN_A -> "MISSING from this run (reference has it)"
+                    Verdict.ONLY_IN_B -> "EXTRA track (not in reference)"
                     else -> "${row.verdict}${if (row.note.isEmpty()) "" else " (${row.note})"}"
                 }
                 "  ! ${row.game} — ${row.title}  [$why]"
             }
-            "${failures.size} of ${rows.size} track(s) diverged from the golden:\n$detail"
+            val toleratedNote =
+                if (tolerated.isEmpty()) "" else " (${tolerated.size} other track(s) within tolerance)"
+            "${failures.size} of ${rows.size} track(s) diverged from the reference$toleratedNote:\n$detail"
         }
     }
 
@@ -48,89 +59,36 @@ data class GoldenReport(val rows: List<DiffRow>) {
     }
 }
 
-/** Filters shared by record and verify — everything that determines which tracks get rendered. */
-data class GoldenSelection(
-    val seconds: Int = GOLDEN_DEFAULT_SECONDS,
-    val extensions: Set<String>? = null,
-    val gameFilter: String? = null,
-    val everySong: Boolean = false,
-    val subsong: Int = 0,
-    val limit: Int? = null,
-    val maxWallMillis: Long = GOLDEN_DEFAULT_MAX_WALL_MILLIS,
-)
-
-const val GOLDEN_DEFAULT_SECONDS = 30
-const val GOLDEN_DEFAULT_MAX_WALL_MILLIS = 120_000L
-
-/** Conventional name of the golden run directory under a goldens root (`<root>/golden/`). */
-const val GOLDEN_LABEL = "golden"
-
 /**
- * Renders [corpusDir] into the reference run at [goldenDir], replacing any previous golden set. This
- * is the "record" half: the resulting dir is a normal abrender run (`metrics.tsv` + `wav/`), so it
- * can be listened to, diffed against a later run, or copied to a device to verify.
+ * How far a track may drift from the reference and still pass. Only [Verdict.CHANGED] tracks can be
+ * tolerated: a missing/extra track or an error is never a rounding artifact.
+ *
+ * - [STRICT] is bit-identity — the default, and what a host-to-host comparison uses.
+ * - [CROSS_ISA] allows a single LSB of difference, for comparing an arm64 render against an x86_64
+ *   reference. Some cores resample through a `double` stage (the GBA/mGBA sinc resampler is the one
+ *   in this tree), and `sin`/`cos` are not bit-identical between glibc and Bionic, so a few samples
+ *   can land one quantisation step apart. `maxDelta ≤ 1` is the binding criterion; the RMS floor is
+ *   a secondary sanity bound (any `maxΔ ≤ 1` diff is already ≤ −90 dBFS).
  */
-fun recordGoldenRun(
-    corpusDir: File,
-    goldenDir: File,
-    selection: GoldenSelection,
-): RenderSummary {
-    goldenDir.deleteRecursively() // a record replaces the set — no stale tracks from a wider corpus
-    return runRender(renderArgs(corpusDir, goldenDir, selection, overwrite = true))
+data class GoldenTolerance(
+    val maxDelta: Int,
+    val maxDiffRmsDbfs: Double,
+) {
+    /** True if [row] differs from the reference but sits inside this tolerance. */
+    fun tolerates(row: DiffRow): Boolean =
+        row.verdict == Verdict.CHANGED && withinDelta(row) && withinFloor(row)
+
+    private fun withinDelta(row: DiffRow): Boolean =
+        row.maxDelta != null && row.maxDelta <= maxDelta
+
+    private fun withinFloor(row: DiffRow): Boolean =
+        !row.diffRmsDbfs.isNaN() && row.diffRmsDbfs <= maxDiffRmsDbfs
+
+    companion object {
+        /** Bit-identical: no tolerance at all. */
+        val STRICT = GoldenTolerance(maxDelta = 0, maxDiffRmsDbfs = Double.NEGATIVE_INFINITY)
+
+        /** arm64-vs-x86_64: one LSB, well below audibility. */
+        val CROSS_ISA = GoldenTolerance(maxDelta = 1, maxDiffRmsDbfs = -80.0)
+    }
 }
-
-/**
- * Renders [corpusDir] fresh into [workDir] and compares every track against the reference run at
- * [goldenDir]. The caller decides what to do with [GoldenReport.passed] — the host/device tests fail
- * on it. [workDir] keeps the candidate WAVs for listening when something diverges.
- */
-fun verifyGoldenRun(
-    corpusDir: File,
-    goldenDir: File,
-    workDir: File,
-    selection: GoldenSelection,
-): GoldenReport {
-    workDir.deleteRecursively()
-    runRender(renderArgs(corpusDir, workDir, selection, overwrite = true))
-    return compareGolden(goldenDir, workDir)
-}
-
-/** Compares two run dirs; every track must be [Verdict.IDENTICAL] for [GoldenReport.passed]. */
-fun compareGolden(goldenDir: File, candidateDir: File): GoldenReport = GoldenReport(
-    diffRuns(
-        metricsA = readMetrics(File(goldenDir, "metrics.tsv")),
-        metricsB = readMetrics(File(candidateDir, "metrics.tsv")),
-        wavA = File(goldenDir, "wav"),
-        wavB = File(candidateDir, "wav"),
-    ),
-)
-
-/**
- * Builds the [Args] one `render` pass needs. [runDir] is the run directory itself; its parent is
- * `outDir` and its name the label, matching `runRender`'s `<out>/<label>` layout. Sharding is unused
- * here (single-process golden runs).
- */
-private fun renderArgs(
-    corpusDir: File,
-    runDir: File,
-    selection: GoldenSelection,
-    overwrite: Boolean,
-): Args = Args(
-    command = "render",
-    label = runDir.name,
-    seconds = selection.seconds,
-    outDir = checkNotNull(runDir.parentFile) { "golden run dir has no parent: $runDir" },
-    corpusDir = corpusDir,
-    extensions = selection.extensions,
-    gameFilter = selection.gameFilter,
-    everySong = selection.everySong,
-    subsong = selection.subsong,
-    limit = selection.limit,
-    overwrite = overwrite,
-    maxWallMillis = selection.maxWallMillis,
-    shards = 1,
-    shard = 0,
-    runA = null,
-    runB = null,
-    topN = 0,
-)

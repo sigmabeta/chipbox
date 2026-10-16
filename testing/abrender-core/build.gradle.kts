@@ -42,7 +42,7 @@ kotlin {
 
         // The on-device render harness. There is no app under test — the instrumentation self-renders
         // a corpus pushed to its external files dir and writes WAVs + metrics.tsv back there for adb
-        // to pull. See run-on-device.sh.
+        // to pull. See record.sh.
         withDeviceTest {
             instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
             applicationId = "net.sigmabeta.chipbox.abrender.test"
