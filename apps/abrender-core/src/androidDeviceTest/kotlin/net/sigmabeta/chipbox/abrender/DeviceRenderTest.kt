@@ -88,6 +88,14 @@ class DeviceRenderTest {
                 "skipped=${summary.skipped} failed=${summary.failed}",
         )
 
+        // The run is written into the app's own external files dir, whose FUSE mount gives the app
+        // 0700/0600 ownership. `adb` (the shell user) can't read that, so `adb pull` — and the whole
+        // on-device A/B workflow — silently can't retrieve the run. Open the tree to other readers.
+        outDir.walkTopDown().forEach { entry ->
+            entry.setReadable(true, false)
+            if (entry.isDirectory) entry.setExecutable(true, false)
+        }
+
         assertTrue(
             "metrics.tsv was not written under $outDir/${args.label}",
             File(File(outDir, args.label), "metrics.tsv").exists(),

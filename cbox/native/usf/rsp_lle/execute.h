@@ -35,12 +35,25 @@ NOINLINE void run_task(usf_state_t * state)
         for (i = 0; i < 32; i++)
             state->MFC0_count[i] = 0;
     }
-    PC = FIT_IMEM(state->g_sp.regs2[SP_PC_REG]);
-    while ((state->g_sp.regs[SP_STATUS_REG] & 0x00000001) == 0x00000000)
+
+    /*
+     * Loop-invariant state pointers, hoisted out of the per-instruction path.
+     * These addresses never change for the duration of a task: IMEM/DMEM are
+     * fixed at init, and the register/status arrays live inside the state.
+     * (The pointed-to contents change; the pointers do not.)
+     */
+    unsigned char *IMEM = state->IMEM;
+    unsigned char *DMEM = state->DMEM;
+    int32_t *SR = state->SR;
+    uint32_t *regs = state->g_sp.regs;
+    uint32_t *regs2 = state->g_sp.regs2;
+
+    PC = FIT_IMEM(regs2[SP_PC_REG]);
+    while ((regs[SP_STATUS_REG] & 0x00000001) == 0x00000000)
     {
         register uint32_t inst;
 
-        inst = *(uint32_t *)(state->IMEM + FIT_IMEM(PC));
+        inst = *(uint32_t *)(IMEM + FIT_IMEM(PC));
 #ifdef SP_EXECUTE_LOG
         last_PC = PC;
 #endif
@@ -64,7 +77,61 @@ EX:
             const int vt = (inst >> 16) & 31; /* inst.R.rt */
             const int e  = (inst >> 21) & 0xF; /* rs & 0xF */
 
-            COP2_C2[opcode](state, vd, vs, vt, e);
+            /*
+             * Direct dispatch instead of a function-pointer table lookup: the
+             * handlers are `static`, so a direct switch lets them inline and
+             * removes the per-step indirect call. Opcode order mirrors the old
+             * `COP2_C2` table; every opcode without a dedicated entry behaves
+             * like `res_V`.
+             */
+            switch (opcode)
+            {
+                case 000: VMULF(state, vd, vs, vt, e); break;
+                case 001: VMULU(state, vd, vs, vt, e); break;
+                case 002: res_M(state, vd, vs, vt, e); break;
+                case 003: res_M(state, vd, vs, vt, e); break;
+                case 004: VMUDL(state, vd, vs, vt, e); break;
+                case 005: VMUDM(state, vd, vs, vt, e); break;
+                case 006: VMUDN(state, vd, vs, vt, e); break;
+                case 007: VMUDH(state, vd, vs, vt, e); break;
+                case 010: VMACF(state, vd, vs, vt, e); break;
+                case 011: VMACU(state, vd, vs, vt, e); break;
+                case 012: res_M(state, vd, vs, vt, e); break;
+                case 013: VMACQ(state, vd, vs, vt, e); break;
+                case 014: VMADL(state, vd, vs, vt, e); break;
+                case 015: VMADM(state, vd, vs, vt, e); break;
+                case 016: VMADN(state, vd, vs, vt, e); break;
+                case 017: VMADH(state, vd, vs, vt, e); break;
+                case 020: VADD(state, vd, vs, vt, e); break;
+                case 021: VSUB(state, vd, vs, vt, e); break;
+                case 023: VABS(state, vd, vs, vt, e); break;
+                case 024: VADDC(state, vd, vs, vt, e); break;
+                case 025: VSUBC(state, vd, vs, vt, e); break;
+                case 035: VSAW(state, vd, vs, vt, e); break;
+                case 040: VLT(state, vd, vs, vt, e); break;
+                case 041: VEQ(state, vd, vs, vt, e); break;
+                case 042: VNE(state, vd, vs, vt, e); break;
+                case 043: VGE(state, vd, vs, vt, e); break;
+                case 044: VCL(state, vd, vs, vt, e); break;
+                case 045: VCH(state, vd, vs, vt, e); break;
+                case 046: VCR(state, vd, vs, vt, e); break;
+                case 047: VMRG(state, vd, vs, vt, e); break;
+                case 050: VAND(state, vd, vs, vt, e); break;
+                case 051: VNAND(state, vd, vs, vt, e); break;
+                case 052: VOR(state, vd, vs, vt, e); break;
+                case 053: VNOR(state, vd, vs, vt, e); break;
+                case 054: VXOR(state, vd, vs, vt, e); break;
+                case 055: VNXOR(state, vd, vs, vt, e); break;
+                case 060: VRCP(state, vd, vs, vt, e); break;
+                case 061: VRCPL(state, vd, vs, vt, e); break;
+                case 062: VRCPH(state, vd, vs, vt, e); break;
+                case 063: VMOV(state, vd, vs, vt, e); break;
+                case 064: VRSQ(state, vd, vs, vt, e); break;
+                case 065: VRSQL(state, vd, vs, vt, e); break;
+                case 066: VRSQH(state, vd, vs, vt, e); break;
+                case 067: VNOP(state, vd, vs, vt, e); break;
+                default:  res_V(state, vd, vs, vt, e); break;
+            }
         }
         else
         {
@@ -76,7 +143,7 @@ EX:
             const int base = (inst >> 21) & 31;
 
 #if (0)
-            state->SR[0] = 0x00000000; /* already handled on per-instruction basis */
+            SR[0] = 0x00000000; /* already handled on per-instruction basis */
 #endif
             switch (op)
             {
@@ -87,38 +154,38 @@ EX:
                     switch (inst % 64)
                     {
                         case 000: /* SLL */
-                            state->SR[rd] = state->SR[rt] << MASK_SA(inst >> 6);
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = SR[rt] << MASK_SA(inst >> 6);
+                            SR[0] = 0x00000000;
                             CONTINUE
                         case 002: /* SRL */
-                            state->SR[rd] = (unsigned)(state->SR[rt]) >> MASK_SA(inst >> 6);
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = (unsigned)(SR[rt]) >> MASK_SA(inst >> 6);
+                            SR[0] = 0x00000000;
                             CONTINUE
                         case 003: /* SRA */
-                            state->SR[rd] = (signed)(state->SR[rt]) >> MASK_SA(inst >> 6);
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = (signed)(SR[rt]) >> MASK_SA(inst >> 6);
+                            SR[0] = 0x00000000;
                             CONTINUE
                         case 004: /* SLLV */
-                            state->SR[rd] = state->SR[rt] << MASK_SA(state->SR[rs]);
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = SR[rt] << MASK_SA(SR[rs]);
+                            SR[0] = 0x00000000;
                             CONTINUE
                         case 006: /* SRLV */
-                            state->SR[rd] = (unsigned)(state->SR[rt]) >> MASK_SA(state->SR[rs]);
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = (unsigned)(SR[rt]) >> MASK_SA(SR[rs]);
+                            SR[0] = 0x00000000;
                             CONTINUE
                         case 007: /* SRAV */
-                            state->SR[rd] = (signed)(state->SR[rt]) >> MASK_SA(state->SR[rs]);
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = (signed)(SR[rt]) >> MASK_SA(SR[rs]);
+                            SR[0] = 0x00000000;
                             CONTINUE
                         case 011: /* JALR */
-                            state->SR[rd] = (PC + LINK_OFF) & 0x00000FFC;
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = (PC + LINK_OFF) & 0x00000FFC;
+                            SR[0] = 0x00000000;
                         case 010: /* JR */
-                            set_PC(state, state->SR[rs]);
+                            set_PC(state, SR[rs]);
                             JUMP
                         case 015: /* BREAK */
-                            state->g_sp.regs[SP_STATUS_REG] |= 0x00000003; /* BROKE | HALT */
-                            if (state->g_sp.regs[SP_STATUS_REG] & 0x00000040)
+                            regs[SP_STATUS_REG] |= 0x00000003; /* BROKE | HALT */
+                            if (regs[SP_STATUS_REG] & 0x00000040)
                             { /* SP_STATUS_INTR_BREAK */
                                 state->g_r4300.mi.regs[MI_INTR_REG] |= 0x00000001;
                                 check_interupt(state);
@@ -126,37 +193,37 @@ EX:
                             CONTINUE
                         case 040: /* ADD */
                         case 041: /* ADDU */
-                            state->SR[rd] = state->SR[rs] + state->SR[rt];
-                            state->SR[0] = 0x00000000; /* needed for Rareware ucodes */
+                            SR[rd] = SR[rs] + SR[rt];
+                            SR[0] = 0x00000000; /* needed for Rareware ucodes */
                             CONTINUE
                         case 042: /* SUB */
                         case 043: /* SUBU */
-                            state->SR[rd] = state->SR[rs] - state->SR[rt];
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = SR[rs] - SR[rt];
+                            SR[0] = 0x00000000;
                             CONTINUE
                         case 044: /* AND */
-                            state->SR[rd] = state->SR[rs] & state->SR[rt];
-                            state->SR[0] = 0x00000000; /* needed for Rareware ucodes */
+                            SR[rd] = SR[rs] & SR[rt];
+                            SR[0] = 0x00000000; /* needed for Rareware ucodes */
                             CONTINUE
                         case 045: /* OR */
-                            state->SR[rd] = state->SR[rs] | state->SR[rt];
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = SR[rs] | SR[rt];
+                            SR[0] = 0x00000000;
                             CONTINUE
                         case 046: /* XOR */
-                            state->SR[rd] = state->SR[rs] ^ state->SR[rt];
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = SR[rs] ^ SR[rt];
+                            SR[0] = 0x00000000;
                             CONTINUE
                         case 047: /* NOR */
-                            state->SR[rd] = ~(state->SR[rs] | state->SR[rt]);
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = ~(SR[rs] | SR[rt]);
+                            SR[0] = 0x00000000;
                             CONTINUE
                         case 052: /* SLT */
-                            state->SR[rd] = ((signed)(state->SR[rs]) < (signed)(state->SR[rt]));
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = ((signed)(SR[rs]) < (signed)(SR[rt]));
+                            SR[0] = 0x00000000;
                             CONTINUE
                         case 053: /* SLTU */
-                            state->SR[rd] = ((unsigned)(state->SR[rs]) < (unsigned)(state->SR[rt]));
-                            state->SR[0] = 0x00000000;
+                            SR[rd] = ((unsigned)(SR[rs]) < (unsigned)(SR[rt]));
+                            SR[0] = 0x00000000;
                             CONTINUE
                         default:
                             res_S(state);
@@ -167,16 +234,16 @@ EX:
                     switch (rt)
                     {
                         case 020: /* BLTZAL */
-                            state->SR[31] = (PC + LINK_OFF) & 0x00000FFC;
+                            SR[31] = (PC + LINK_OFF) & 0x00000FFC;
                         case 000: /* BLTZ */
-                            if (!(state->SR[base] < 0))
+                            if (!(SR[base] < 0))
                                 CONTINUE
                             set_PC(state, PC + 4*inst + SLOT_OFF);
                             JUMP
                         case 021: /* BGEZAL */
-                            state->SR[31] = (PC + LINK_OFF) & 0x00000FFC;
+                            SR[31] = (PC + LINK_OFF) & 0x00000FFC;
                         case 001: /* BGEZ */
-                            if (!(state->SR[base] >= 0))
+                            if (!(SR[base] >= 0))
                                 CONTINUE
                             set_PC(state, PC + 4*inst + SLOT_OFF);
                             JUMP
@@ -186,58 +253,58 @@ EX:
                     }
                     CONTINUE
                 case 003: /* JAL */
-                    state->SR[31] = (PC + LINK_OFF) & 0x00000FFC;
+                    SR[31] = (PC + LINK_OFF) & 0x00000FFC;
                 case 002: /* J */
                     set_PC(state, 4*inst);
                     JUMP
                 case 004: /* BEQ */
-                    if (!(state->SR[base] == state->SR[rt]))
+                    if (!(SR[base] == SR[rt]))
                         CONTINUE
                     set_PC(state, PC + 4*inst + SLOT_OFF);
                     JUMP
                 case 005: /* BNE */
-                    if (!(state->SR[base] != state->SR[rt]))
+                    if (!(SR[base] != SR[rt]))
                         CONTINUE
                     set_PC(state, PC + 4*inst + SLOT_OFF);
                     JUMP
                 case 006: /* BLEZ */
-                    if (!((signed)state->SR[base] <= 0x00000000))
+                    if (!((signed)SR[base] <= 0x00000000))
                         CONTINUE
                     set_PC(state, PC + 4*inst + SLOT_OFF);
                     JUMP
                 case 007: /* BGTZ */
-                    if (!((signed)state->SR[base] >  0x00000000))
+                    if (!((signed)SR[base] >  0x00000000))
                         CONTINUE
                     set_PC(state, PC + 4*inst + SLOT_OFF);
                     JUMP
                 case 010: /* ADDI */
                 case 011: /* ADDIU */
-                    state->SR[rt] = state->SR[base] + (signed short)(inst);
-                    state->SR[0] = 0x00000000;
+                    SR[rt] = SR[base] + (signed short)(inst);
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 012: /* SLTI */
-                    state->SR[rt] = ((signed)(state->SR[base]) < (signed short)(inst));
-                    state->SR[0] = 0x00000000;
+                    SR[rt] = ((signed)(SR[base]) < (signed short)(inst));
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 013: /* SLTIU */
-                    state->SR[rt] = ((unsigned)(state->SR[base]) < (unsigned short)(inst));
-                    state->SR[0] = 0x00000000;
+                    SR[rt] = ((unsigned)(SR[base]) < (unsigned short)(inst));
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 014: /* ANDI */
-                    state->SR[rt] = state->SR[base] & (unsigned short)(inst);
-                    state->SR[0] = 0x00000000;
+                    SR[rt] = SR[base] & (unsigned short)(inst);
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 015: /* ORI */
-                    state->SR[rt] = state->SR[base] | (unsigned short)(inst);
-                    state->SR[0] = 0x00000000;
+                    SR[rt] = SR[base] | (unsigned short)(inst);
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 016: /* XORI */
-                    state->SR[rt] = state->SR[base] ^ (unsigned short)(inst);
-                    state->SR[0] = 0x00000000;
+                    SR[rt] = SR[base] ^ (unsigned short)(inst);
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 017: /* LUI */
-                    state->SR[rt] = inst << 16;
-                    state->SR[0] = 0x00000000;
+                    SR[rt] = inst << 16;
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 020: /* COP0 */
                     switch (base)
@@ -275,86 +342,86 @@ EX:
                     CONTINUE
                 case 040: /* LB */
                     offset = (signed short)(inst);
-                    addr = (state->SR[base] + offset) & 0x00000FFF;
-                    state->SR[rt] = state->DMEM[BES(addr)];
-                    state->SR[rt] = (signed char)(state->SR[rt]);
-                    state->SR[0] = 0x00000000;
+                    addr = (SR[base] + offset) & 0x00000FFF;
+                    SR[rt] = DMEM[BES(addr)];
+                    SR[rt] = (signed char)(SR[rt]);
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 041: /* LH */
                     offset = (signed short)(inst);
-                    addr = (state->SR[base] + offset) & 0x00000FFF;
+                    addr = (SR[base] + offset) & 0x00000FFF;
                     if (addr%0x004 == 0x003)
                     {
-                        SR_B(rt, 2) = state->DMEM[addr - BES(0x000)];
+                        SR_B(rt, 2) = DMEM[addr - BES(0x000)];
                         addr = (addr + 0x00000001) & 0x00000FFF;
-                        SR_B(rt, 3) = state->DMEM[addr + BES(0x000)];
-                        state->SR[rt] = (signed short)(state->SR[rt]);
+                        SR_B(rt, 3) = DMEM[addr + BES(0x000)];
+                        SR[rt] = (signed short)(SR[rt]);
                     }
                     else
                     {
                         addr -= HES(0x000)*(addr%0x004 - 1);
-                        state->SR[rt] = *(signed short *)(state->DMEM + addr);
+                        SR[rt] = *(signed short *)(DMEM + addr);
                     }
-                    state->SR[0] = 0x00000000;
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 043: /* LW */
                     offset = (signed short)(inst);
-                    addr = (state->SR[base] + offset) & 0x00000FFF;
+                    addr = (SR[base] + offset) & 0x00000FFF;
                     if (addr%0x004 != 0x000)
                         ULW(state, rt, addr);
                     else
-                        state->SR[rt] = *(int32_t *)(state->DMEM + addr);
-                    state->SR[0] = 0x00000000;
+                        SR[rt] = *(int32_t *)(DMEM + addr);
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 044: /* LBU */
                     offset = (signed short)(inst);
-                    addr = (state->SR[base] + offset) & 0x00000FFF;
-                    state->SR[rt] = state->DMEM[BES(addr)];
-                    state->SR[rt] = (unsigned char)(state->SR[rt]);
-                    state->SR[0] = 0x00000000;
+                    addr = (SR[base] + offset) & 0x00000FFF;
+                    SR[rt] = DMEM[BES(addr)];
+                    SR[rt] = (unsigned char)(SR[rt]);
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 045: /* LHU */
                     offset = (signed short)(inst);
-                    addr = (state->SR[base] + offset) & 0x00000FFF;
+                    addr = (SR[base] + offset) & 0x00000FFF;
                     if (addr%0x004 == 0x003)
                     {
-                        SR_B(rt, 2) = state->DMEM[addr - BES(0x000)];
+                        SR_B(rt, 2) = DMEM[addr - BES(0x000)];
                         addr = (addr + 0x00000001) & 0x00000FFF;
-                        SR_B(rt, 3) = state->DMEM[addr + BES(0x000)];
-                        state->SR[rt] = (unsigned short)(state->SR[rt]);
+                        SR_B(rt, 3) = DMEM[addr + BES(0x000)];
+                        SR[rt] = (unsigned short)(SR[rt]);
                     }
                     else
                     {
                         addr -= HES(0x000)*(addr%0x004 - 1);
-                        state->SR[rt] = *(unsigned short *)(state->DMEM + addr);
+                        SR[rt] = *(unsigned short *)(DMEM + addr);
                     }
-                    state->SR[0] = 0x00000000;
+                    SR[0] = 0x00000000;
                     CONTINUE
                 case 050: /* SB */
                     offset = (signed short)(inst);
-                    addr = (state->SR[base] + offset) & 0x00000FFF;
-                    state->DMEM[BES(addr)] = (unsigned char)(state->SR[rt]);
+                    addr = (SR[base] + offset) & 0x00000FFF;
+                    DMEM[BES(addr)] = (unsigned char)(SR[rt]);
                     CONTINUE
                 case 051: /* SH */
                     offset = (signed short)(inst);
-                    addr = (state->SR[base] + offset) & 0x00000FFF;
+                    addr = (SR[base] + offset) & 0x00000FFF;
                     if (addr%0x004 == 0x003)
                     {
-                        state->DMEM[addr - BES(0x000)] = SR_B(rt, 2);
+                        DMEM[addr - BES(0x000)] = SR_B(rt, 2);
                         addr = (addr + 0x00000001) & 0x00000FFF;
-                        state->DMEM[addr + BES(0x000)] = SR_B(rt, 3);
+                        DMEM[addr + BES(0x000)] = SR_B(rt, 3);
                         CONTINUE
                     }
                     addr -= HES(0x000)*(addr%0x004 - 1);
-                    *(short *)(state->DMEM + addr) = (short)(state->SR[rt]);
+                    *(short *)(DMEM + addr) = (short)(SR[rt]);
                     CONTINUE
                 case 053: /* SW */
                     offset = (signed short)(inst);
-                    addr = (state->SR[base] + offset) & 0x00000FFF;
+                    addr = (SR[base] + offset) & 0x00000FFF;
                     if (addr%0x004 != 0x000)
                         USW(state, rt, addr);
                     else
-                        *(int32_t *)(state->DMEM + addr) = state->SR[rt];
+                        *(int32_t *)(DMEM + addr) = SR[rt];
                     CONTINUE
                 case 062: /* LWC2 */
                     offset = SE(inst, 6);
@@ -453,7 +520,7 @@ EX:
         {
             state->stage = 0*stage;
             PC = state->temp_PC & 0x00000FFC;
-            state->g_sp.regs2[SP_PC_REG] = state->temp_PC;
+            regs2[SP_PC_REG] = state->temp_PC;
         }
         else
         {
@@ -464,13 +531,13 @@ EX:
                 message( state, "RSP execution presumably caught in an infinite loop", 3 );
                 break;
             }
-            state->g_sp.regs2[SP_PC_REG] = PC;
+            regs2[SP_PC_REG] = PC;
         }
         continue;
 #else
         continue;
 BRANCH:
-        inst = *(uint32_t *)(state->IMEM + FIT_IMEM(PC));
+        inst = *(uint32_t *)(IMEM + FIT_IMEM(PC));
 #ifdef SP_EXECUTE_LOG
         last_PC = PC;
 #endif
@@ -478,20 +545,20 @@ BRANCH:
         goto EX;
 #endif
     }
-    state->g_sp.regs2[SP_PC_REG] = FIT_IMEM(PC);
-    if (state->g_sp.regs[SP_STATUS_REG] & 0x00000002) /* normal exit, from executing BREAK */
+    regs2[SP_PC_REG] = FIT_IMEM(PC);
+    if (regs[SP_STATUS_REG] & 0x00000002) /* normal exit, from executing BREAK */
         return;
     else if (state->g_r4300.mi.regs[MI_INTR_REG] & 0x00000001) /* interrupt set by MTC0 to break */
         check_interupt(state);
     else if (CFG_WAIT_FOR_CPU_HOST != 0) /* plugin system hack to re-sync */
         {}
-    else if (state->g_sp.regs[SP_SEMAPHORE_REG] != 0x00000000) /* semaphore lock fixes */
+    else if (regs[SP_SEMAPHORE_REG] != 0x00000000) /* semaphore lock fixes */
         {}
     else /* ??? unknown, possibly external intervention from CPU memory map */
     {
         message(state, "SP_SET_HALT", 3);
         return;
     }
-    state->g_sp.regs[SP_STATUS_REG] &= ~0x00000001; /* CPU restarts with the correct SIGs. */
+    regs[SP_STATUS_REG] &= ~0x00000001; /* CPU restarts with the correct SIGs. */
     return;
 }
