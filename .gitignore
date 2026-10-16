@@ -60,13 +60,10 @@ apps/jvm/.chipbox-jvm/
 apps/jvm/Chipbox Output Files/
 # CLI app: per-working-directory library DB + saved scan locations (created wherever it's run)
 .chipbox-cli/
-# A/B render harness: per-run WAV + metrics output (default --out dir, created wherever it's run)
+# A/B render harness: per-run WAV + metrics output (record.sh/verify.sh default --out root; created
+# wherever it's run). References are local-only and never committed — see the abrender README.
 ab-runs/
-# A/B render harness: runs pulled off a device by scripts/abrender/run-on-device.sh (default --out)
-ab-runs-device/
-# A/B render harness: device-vs-host comparison runs from scripts/abrender/ab-compare.sh (default --out)
-ab-compare/
-# A/B render harness: local bit-identity golden PCM (recorded, never committed — see abrender README)
+# Legacy golden-PCM store from before record.sh/verify.sh (still a valid run dir to --against).
 ab-goldens/
 *.so
 # Stray top-level yarn.lock (only locks `yarn` itself) that a bare `yarn` run in the repo root

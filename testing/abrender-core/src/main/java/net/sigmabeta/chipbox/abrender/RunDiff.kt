@@ -41,6 +41,13 @@ data class DiffRow(
     /** RMS of (A − B) sample-wise, in dBFS; [Double.NaN] if not computable. */
     val diffRmsDbfs: Double,
     val note: String,
+    /**
+     * Largest single-sample difference (out of 32768) for a [Verdict.CHANGED] track, `0` for an
+     * [Verdict.IDENTICAL] one, and `null` when no sample-wise diff was computed (a track present in
+     * only one run, an error, or an unreadable WAV). The golden check's cross-ISA tolerance keys off
+     * this: a ±1 LSB difference is floating-point rounding, not a behavioural change.
+     */
+    val maxDelta: Int? = null,
 )
 
 /**
@@ -69,8 +76,8 @@ private fun diffRow(key: String, a: TrackMetrics?, b: TrackMetrics?, wavA: File,
     if (b == null) return DiffRow(key, a.game, a.title, Verdict.ONLY_IN_A, Double.NaN, Double.NaN, "")
 
     val delta = b.rmsDbfs - a.rmsDbfs
-    fun row(verdict: Verdict, note: String, diff: Double = Double.NaN) =
-        DiffRow(key, a.game, a.title, verdict, delta, diff, note)
+    fun row(verdict: Verdict, note: String, diff: Double = Double.NaN, maxDelta: Int? = null) =
+        DiffRow(key, a.game, a.title, verdict, delta, diff, note, maxDelta)
 
     val aFailed = a.error.isNotEmpty()
     val bFailed = b.error.isNotEmpty()
@@ -80,25 +87,29 @@ private fun diffRow(key: String, a: TrackMetrics?, b: TrackMetrics?, wavA: File,
         !aFailed && bFailed -> return row(Verdict.NEW_ERROR, b.error)
     }
     if (a.pcmHash == b.pcmHash && a.frames == b.frames) {
-        return row(Verdict.IDENTICAL, "", Double.NEGATIVE_INFINITY)
+        return row(Verdict.IDENTICAL, "", Double.NEGATIVE_INFINITY, maxDelta = 0)
     }
     if (a.rmsDbfs > Double.NEGATIVE_INFINITY && b.rmsDbfs == Double.NEGATIVE_INFINITY) {
         return row(Verdict.REGRESSED_SILENT, "B is silent")
     }
 
-    val (diffRms, note) = sampleDiff(File(wavA, a.wav), File(wavB, b.wav))
-    return row(Verdict.CHANGED, note, diffRms)
+    val sample = sampleDiff(File(wavA, a.wav), File(wavB, b.wav))
+    return row(Verdict.CHANGED, sample.note, sample.diffRmsDbfs, sample.maxDelta)
 }
 
-/** RMS of A−B over the overlapping sample range, in dBFS, plus a coverage note. */
+/** The sample-wise diff of two WAVs: RMS of A−B in dBFS, the largest single-sample delta, a note. */
+private data class SampleDiff(val diffRmsDbfs: Double, val maxDelta: Int?, val note: String)
+
 @Suppress("ReturnCount") // guard returns for each unreadable-input case
-private fun sampleDiff(fileA: File, fileB: File): Pair<Double, String> {
-    val a = readWavPcm(fileA) ?: return Double.NaN to "missing wav A"
-    val b = readWavPcm(fileB) ?: return Double.NaN to "missing wav B"
-    if (a.sampleRate != b.sampleRate) return Double.NaN to "sample-rate ${a.sampleRate}->${b.sampleRate}"
+private fun sampleDiff(fileA: File, fileB: File): SampleDiff {
+    val a = readWavPcm(fileA) ?: return SampleDiff(Double.NaN, null, "missing wav A")
+    val b = readWavPcm(fileB) ?: return SampleDiff(Double.NaN, null, "missing wav B")
+    if (a.sampleRate != b.sampleRate) {
+        return SampleDiff(Double.NaN, null, "sample-rate ${a.sampleRate}->${b.sampleRate}")
+    }
 
     val n = minOf(a.samples.size, b.samples.size)
-    if (n == 0) return Double.NaN to "empty"
+    if (n == 0) return SampleDiff(Double.NaN, null, "empty")
     var sumSq = 0.0
     var maxAbs = 0
     var i = 0
@@ -116,5 +127,5 @@ private fun sampleDiff(fileA: File, fileB: File): Pair<Double, String> {
     } else {
         ""
     }
-    return db to "maxΔ=$maxAbs$lenNote"
+    return SampleDiff(db, maxAbs, "maxΔ=$maxAbs$lenNote")
 }
