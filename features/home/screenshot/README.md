@@ -33,7 +33,7 @@ item-building.
 ./gradlew testDebugUnitTest      # re-record / overwrite the LFS goldens
 ```
 
-Prefer `scripts/paparazzi-diff.sh` over invoking the tasks directly. To add a
+Prefer `scripts/dev/paparazzi-diff.sh` over invoking the tasks directly. To add a
 state, add a `@DevicePreviews` composable in `Home.kt` (wrapping a new `HomeState`
 fixture in `ListScreenPreview`) and a matching `@Test` in `HomeScreenshots.kt`.
 

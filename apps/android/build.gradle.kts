@@ -139,7 +139,7 @@ dependencies {
     implementation(projects.cbox.common.appui.api)
     // Pure contract module — used only for the fixed device-benchmark layout
     // (DeviceBenchmarkLayout) the `benchmark`-variant seed rebases onto.
-    implementation(projects.apps.perfbenchCore)
+    implementation(projects.testing.perfbenchCore)
     implementation(projects.cbox.common.crash.real)
     implementation(projects.cbox.common.strings.real)
     implementation(projects.cbox.android.artworkprovider.api)

@@ -36,7 +36,7 @@ it.
 ./gradlew :features:search:screenshot:testDebugUnitTest
 ```
 
-Prefer the repo's `scripts/paparazzi-diff.sh` over invoking the Gradle tasks
+Prefer the repo's `scripts/dev/paparazzi-diff.sh` over invoking the Gradle tasks
 directly, and report the diff results back.
 
 ## Module facts

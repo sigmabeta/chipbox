@@ -29,7 +29,7 @@ snapshots are deterministic and need no repository or DI wiring.
 ```
 
 Use `verifyPaparazziDebug` unless you intentionally mean to re-record. Prefer the
-`scripts/paparazzi-diff.sh` helper over invoking the Gradle tasks directly.
+`scripts/dev/paparazzi-diff.sh` helper over invoking the Gradle tasks directly.
 
 ## Module facts
 

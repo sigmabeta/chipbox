@@ -68,7 +68,7 @@ Two version strings, on purpose:
   names files by the numeric version, so a "Label installers…" step renames them.
 
 The **APKs** are versioned independently by the app-versioning plugin
-(`scripts/rename-release-apk.sh` → `chipbox-<tag>.<commits>-<abi>.apk`, e.g.
+(`scripts/ci/rename-release-apk.sh` → `chipbox-<tag>.<commits>-<abi>.apk`, e.g.
 `chipbox-3.0.0-beta06.0-universal.apk` — the `.0` is commits-since-tag).
 
 The APK **versionCode** packs the tag into place-value tiers (`Versions` in
@@ -111,7 +111,7 @@ the **Release** assets are the raw files.
 
 `publish` keeps the landing site's [download page](../docs/download.md) in sync:
 
-1. `scripts/gen-download-page.sh <tag> <assets-dir>` regenerates `docs/download.md`
+1. `scripts/ci/gen-download-page.sh <tag> <assets-dir>` regenerates `docs/download.md`
    from the **actual** published asset filenames (so the APK `.commits` suffix is
    picked up, and a platform with no asset — e.g. macOS — is simply omitted).
 2. The refreshed page is committed to `beta`.

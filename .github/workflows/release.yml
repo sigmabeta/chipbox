@@ -241,7 +241,7 @@ jobs:
       - name: Assemble release (split APKs)
         run: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --no-daemon --max-workers=4
       - name: Name APKs by version + ABI
-        run: ./scripts/rename-release-apk.sh
+        run: ./scripts/ci/rename-release-apk.sh
       - uses: actions/upload-artifact@v4
         with:
           name: release-apks
@@ -338,7 +338,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cd site-src
-          bash scripts/gen-download-page.sh "${{ github.ref_name }}" ../upload > docs/download.md
+          bash scripts/ci/gen-download-page.sh "${{ github.ref_name }}" ../upload > docs/download.md
           if git diff --quiet -- docs/download.md; then
             echo "Download page already current for ${{ github.ref_name }}."
           else
