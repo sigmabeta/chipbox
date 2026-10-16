@@ -116,14 +116,11 @@ static void res_M(usf_state_t * state, int vd, int vs, int vt, int e)
 #include "vsubc.h"
 #include "vxor.h"
 
-static void (*COP2_C2[64])(usf_state_t *, int, int, int, int) = {
-    VMULF  ,VMULU  ,res_M  ,res_M  ,VMUDL  ,VMUDM  ,VMUDN  ,VMUDH  , /* 000 */
-    VMACF  ,VMACU  ,res_M  ,VMACQ  ,VMADL  ,VMADM  ,VMADN  ,VMADH  , /* 001 */
-    VADD   ,VSUB   ,res_V  ,VABS   ,VADDC  ,VSUBC  ,res_V  ,res_V  , /* 010 */
-    res_V  ,res_V  ,res_V  ,res_V  ,res_V  ,VSAW   ,res_V  ,res_V  , /* 011 */
-    VLT    ,VEQ    ,VNE    ,VGE    ,VCL    ,VCH    ,VCR    ,VMRG   , /* 100 */
-    VAND   ,VNAND  ,VOR    ,VNOR   ,VXOR   ,VNXOR  ,res_V  ,res_V  , /* 101 */
-    VRCP   ,VRCPL  ,VRCPH  ,VMOV   ,VRSQ   ,VRSQL  ,VRSQH  ,VNOP   , /* 110 */
-    res_V  ,res_V  ,res_V  ,res_V  ,res_V  ,res_V  ,res_V  ,res_V  , /* 111 */
-}; /* 000     001     010     011     100     101     110     111 */
+/*
+ * The former `COP2_C2[64]` function-pointer table lived here. It is now a
+ * direct switch in `execute.h`'s interpreter loop (the handlers are `static`,
+ * so the switch lets them inline and drops the per-step indirect call).
+ * Opcodes with no dedicated handler in that switch behave like `res_V`,
+ * exactly as the `res_V` entries of the old table did.
+ */
 #endif
