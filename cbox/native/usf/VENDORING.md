@@ -66,6 +66,29 @@ equivalent); each was A/B-validated bit-identical on arm64 and x86_64:
   shuffle is then the identity), and on AArch64 does the NEON shuffle with one
   `vqtbl1q_s8` (full 16-byte table lookup) instead of two `vtbl2_s8` halves.
 
+**Verified on the device (arm64).** The four cuts are output-preserving on
+arm64, not just on the host: an on-device `abrender` render on a Pixel 6a
+(`arm64-v8a`, Android 13) is **10/10 bit-identical** to the pre-change arm64
+render over the fixed 10-track USF corpus (`*.miniusf`, 30 s each), and the
+x86-64 host render is **10/10 identical** to the x86-64 baseline. The perfbench
+audio axis (same corpus, 30 s × 3 repeats, Pixel 6a) attributes the gain
+cumulatively — one cut added per build, five runs per stage, ratio > 1 = faster
+than the pre-change baseline:
+
+| cumulative stage | geomean | marginal |
+| --- | --- | --- |
+| ticket-01 NEON only (control) | 1.145x | — |
+| + pointer hoisting | 1.155x | **+0.88%** |
+| + identity-shuffle skip | 1.152x | −0.31% |
+| + inlined dispatch | 1.147x | −0.37% |
+| + AArch64 `vqtbl1q_s8` | 1.152x | +0.42% |
+
+Pointer hoisting is the only cut with a clear net win; the other three are each
+≈±0.4% and, in this cumulative order, partly cancel — the full ticket-02 build
+is **1.152x**, only ~+0.6% over ticket-01's 1.145x. The per-cut differences are
+near the edge of what five device runs resolve (per-run spread ≈0.1–0.3%), so
+treat cuts 2–4 as small, not zero.
+
 ### Local additions to the build
 
 - **`rsp_hle/hvqm.c` + `rsp_hle/re2.c`** were vendored and added to `usf_SRCS`
@@ -160,6 +183,13 @@ Android `arm64-v8a` and native `aarch64`/`arm64` hosts, selected by arch in
 compiles the scalar fallbacks; `ARCH_MIN_SSE2` stays deliberately unset. The
 corpus numbers above are from a scalar (x86-64) render, which is what arm64
 produced before NEON was enabled.
+
+**Verified on arm64 (device).** Enabling NEON is output-preserving and faster on
+arm64: an on-device `abrender` render over the 10-track USF corpus (Pixel 6a,
+`arm64-v8a`, Android 13) is **10/10 bit-identical** to the pre-change arm64
+render, the x86-64 host render is unchanged (10/10), and the perfbench audio
+axis (same corpus) records a **1.15x** geometric mean over the pre-change scalar
+build. This is the base the ticket-02 cuts build on.
 
 `ac47dbe`'s VNE fix in `rsp_lle/vu/vne.h` lives inside `#ifdef ARCH_MIN_ARM_NEON`,
 so it was **inert** while the NEON path was never compiled (every target used the
