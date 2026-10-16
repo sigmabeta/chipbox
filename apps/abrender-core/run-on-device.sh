@@ -101,8 +101,14 @@ if [[ "${SKIP_BUILD}" -eq 0 ]]; then
 fi
 
 echo "==> Pushing corpus → ${REMOTE_IN}"
+# Clear first: pushing over files a prior chmod left world-readable makes adb's fchown fail on the FUSE
+# mount ("remote fchown failed"), so always stage into a fresh tree.
+"${ADB[@]}" shell rm -rf "${REMOTE_IN}"
 "${ADB[@]}" shell mkdir -p "${REMOTE_IN}"
 "${ADB[@]}" push "${CORPUS}/." "${REMOTE_IN}" >/dev/null
+# adb creates the staged dirs group/owner-only (0770); the self-instrumented test app is not in that
+# group and can't traverse them, so it sees an empty corpus. Make the staged tree world-readable.
+"${ADB[@]}" shell chmod -R a+rX "${REMOTE_IN}"
 
 echo "==> Rendering on device (am instrument)"
 # Build ONE command string with single-quoted -e values and hand it to adb shell whole, so the device
