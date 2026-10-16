@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.abrender
 
 import java.io.File
+import kotlin.system.exitProcess
 
 private const val VERDICT_COLUMN_WIDTH = 18
 
@@ -29,9 +30,25 @@ fun runDiff(args: Args) {
     val wavB = File(dirB, "wav")
     val rows = diffRuns(metricsA, metricsB, wavA, wavB)
 
-    val report = File(dirB, "diff-vs-${args.runA}.tsv")
+    val report = File(dirB, "diff-vs-${reportSlug(args.runA!!)}.tsv")
     writeReport(report, rows)
     printSummary(args, dirA, dirB, rows, wavA, wavB, metricsA, metricsB, report)
+
+    // --check turns the report into a gate: the scripts' verify step fails (non-zero) on any track
+    // that falls outside the tolerance, so it can be a shell `if`/CI step.
+    if (args.check) {
+        val verdict = GoldenReport(rows, toleranceOf(args.tolerance))
+        println()
+        println("${if (verdict.passed) "CHECK: PASS" else "CHECK: FAIL"} — ${verdict.describe()}")
+        if (!verdict.passed) exitProcess(1)
+    }
+}
+
+/** Maps `--tolerance` to a [GoldenTolerance]; validated at parse time, so this only sees known names. */
+private fun toleranceOf(name: String?): GoldenTolerance = when (name?.lowercase()) {
+    null, "strict" -> GoldenTolerance.STRICT
+    "cross-isa" -> GoldenTolerance.CROSS_ISA
+    else -> error("unknown --tolerance '$name'")
 }
 
 @Suppress("LongParameterList")
@@ -107,6 +124,10 @@ private fun resolveRunDir(outDir: File, runRef: String): File {
     val asPath = File(runRef)
     return if (asPath.isDirectory) asPath else File(outDir, runRef)
 }
+
+/** A filesystem-safe stem for the report name: `--a` may be a label or an absolute path. */
+private fun reportSlug(runRef: String): String =
+    File(runRef).name.ifBlank { "run" }.replace(Regex("[^A-Za-z0-9._-]"), "_")
 
 private fun db(v: Double): String = when {
     v.isNaN() -> "NaN"

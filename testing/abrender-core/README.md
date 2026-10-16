@@ -2,8 +2,8 @@
 
 The render engine behind `:testing:abrender`, factored into a KMP module so the **same code renders on
 both the host JVM and a real Android device**. The desktop CLI proves the x86_64 emulator cores; the
-instrumented test here proves the **arm64** ones. Output is byte-for-byte the same shape, so the
-desktop `abrender diff` compares a device run against a host run with no platform-specific code.
+instrumented test here proves the **arm64** ones. Output is byte-for-byte the same shape, so a device
+run and a host run are compared by the same code — the comparison always runs host-side.
 
 It is also the raw-core render engine the perfbench **device audio axis** times (see
 [`:benchmark`](../../benchmark/README.md)): that module depends on this one as a KMP consumer, so the
@@ -13,16 +13,16 @@ same arm64 `:native` cores land in its test APK and its RTF results are the phon
 
 - `src/main/java/` (`jvmSharedMain`) — the engine: `EmulatorBank`/`Renderer` (drives each emulator's
   `*Internal` JNI entry points straight to PCM, no Speaker), `Metrics` (RMS/peak/LUFS/FNV hash),
-  `WavFile`, `CorpusWalker`, `RenderCommand` (`runRender`), `RunDiff` (the bit-identity `diff` shared
-  with the golden check), and `GoldenCheck` (`recordGoldenRun`/`verifyGoldenRun`). Pure `java.*` — no
-  Android imports — so it compiles unchanged for both targets. `:testing:abrender` adds only the CLI shell
-  (`Main`, `DiffCommand`) and the host golden test (`PcmGoldenTest`).
+  `WavFile`, `CorpusWalker`, `RenderCommand` (`runRender`), `RunDiff` (the sample-wise `diff`),
+  `Args`, and `GoldenCheck` (`GoldenReport`/`GoldenTolerance` — the pass/fail semantics `diff --check`
+  and verify.sh act on). Pure `java.*` — no Android imports — so it compiles unchanged for both
+  targets. `:testing:abrender` adds only the CLI shell (`Main`, `DiffCommand`).
 - `src/androidDeviceTest/kotlin/` — `DeviceRenderTest`, an `androidx.test` instrumentation that runs
-  `runRender` on-device against a corpus pushed to its external files dir, and `PcmGoldenDeviceTest`,
-  the arm64 half of the bit-identity golden check.
-- Harness scripts live in **`scripts/abrender/`** (all harness drivers are under `scripts/`):
-  `run-on-device.sh` (adb render), `ab-compare.sh` (cross-ISA A/B), and `golden-on-device.sh`
-  (bit-identity on arm64).
+  `runRender` on-device against a corpus pushed to its external files dir and writes the run back there
+  for `adb pull`. There is no on-device comparison test: the host diffs the pulled run.
+- Harness scripts live in **`scripts/abrender/`**: `record.sh` (render a corpus on host or device) and
+  `verify.sh` (render again + `diff --check` against a recorded run). See
+  [`testing/abrender/README.md`](../abrender/README.md).
 
 ## Why KMP (not a plain JVM module)
 
@@ -33,11 +33,11 @@ device-test APK is self-contained (all nine arm64 cores), so there's no app unde
 
 ## Run it
 
-See **§10 of `testing/abrender/README.md`** for the full cross-ISA A/B workflow. The short version:
+The short version (a `--where device` render, pulled into the shared run store):
 
 ```sh
-scripts/abrender/run-on-device.sh --dir /path/to/corpus --label arm64 --ext usf,miniusf
-./gradlew :testing:abrender:run --args="diff --a <x86_64-run> --b ./ab-runs-device/arm64"
+scripts/abrender/record.sh --where device --corpus /path/to/corpus --ext usf,miniusf
+scripts/abrender/verify.sh --where device --corpus /path/to/corpus   # vs the recorded reference
 ```
 
 Direct gradle/adb equivalents, if you don't want the script:
@@ -46,28 +46,20 @@ Direct gradle/adb equivalents, if you don't want the script:
 ./gradlew :testing:abrender-core:installAndroidDeviceTest
 adb push <corpus>/. /sdcard/Android/data/net.sigmabeta.chipbox.abrender.test/files/abrender/in
 adb shell am instrument -w -r \
-  -e ext usf,miniusf -e seconds 30 -e label arm64 \
+  -e ext usf,miniusf -e seconds 30 -e label reference \
   net.sigmabeta.chipbox.abrender.test/androidx.test.runner.AndroidJUnitRunner
-adb pull /sdcard/Android/data/net.sigmabeta.chipbox.abrender.test/files/abrender/out/arm64 ./ab-runs-device/
+adb pull /sdcard/Android/data/net.sigmabeta.chipbox.abrender.test/files/abrender/out/reference ./ab-runs/
 ```
 
 Instrumentation args (`-e <key> <value>`) mirror the desktop `render` flags: `dir`, `out`, `label`,
 `seconds`, `ext`, `game`, `every-song`, `subsong`, `limit`, `overwrite`, `max-wall-seconds`, `shards`,
 `shard`. Paths default to `<externalFiles>/abrender/{in,out}`.
 
-## Golden check (arm64 vs the host reference)
+## The comparison and tolerance
 
-The same engine also backs the bit-identity **golden check** (§11 of `testing/abrender/README.md`):
-record a reference render, then fail unless a fresh render is bit-identical to it. `PcmGoldenDeviceTest`
-runs the verify (or record) half on-device so arm64 is compared against a golden recorded on the host
-(x86_64); a divergence is a failure, because PCM must not depend on the architecture.
-
-```sh
-scripts/abrender/golden-on-device.sh --corpus /path/to/corpus            # verify arm64 vs host golden
-scripts/abrender/golden-on-device.sh --corpus /path/to/corpus --record   # record on device, pull back
-```
-
-Instrumentation args: `dir` (corpus), `golden` (golden run dir), `work` (candidate output), `seconds`,
-`ext`, `game`, `every-song`, `subsong`, `limit`, `max-wall-seconds`. Paths default to
-`<externalFiles>/abrender/{in,golden,golden-work}`. Filter to one method with
-`-e class net.sigmabeta.chipbox.abrender.PcmGoldenDeviceTest#verifyGolden`.
+`RunDiff` compares two runs sample-for-sample and `GoldenCheck` reduces the rows to a verdict. `diff
+--check` fails on any track worse than the tolerance, and `verify.sh` picks the tolerance:
+`GoldenTolerance.STRICT` (bit-identity) by default, or `CROSS_ISA` (`maxΔ ≤ 1`, diff-RMS ≤ −80 dBFS)
+when the reference and the fresh render came from different places. The cross-ISA allowance exists
+because a core that resamples through a `double` stage (mGBA's GBA sinc resampler) drifts ±1 LSB across
+libms — `sin`/`cos` differ between glibc and Bionic; anything larger still fails.
