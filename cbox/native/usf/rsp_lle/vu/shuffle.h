@@ -47,11 +47,22 @@ static const unsigned char smask[16][16] = {
 INLINE static void SHUFFLE_VECTOR(short* VD, short* VT, const int e)
 { 
 	int8x16_t xmm;
-    int8x16_t key;
 
     xmm = vld1q_s8((const int8_t*)VT);
-    key = vld1q_s8(smask[e]);
-    xmm = vcombine_s8(vtbl2_s8(conv816_to_882(xmm), vget_low_s8(key)), vtbl2_s8(conv816_to_882(xmm), vget_high_s8(key)));
+    if (e <= 1)
+    { /* element 0 and 1 select the vector operands unchanged */
+        vst1q_s8((int8_t*)VD, xmm);
+        return;
+    }
+#if defined(__aarch64__)
+    /* AArch64 has a full 16-byte table lookup: one instruction, not two halves. */
+    xmm = vqtbl1q_s8(xmm, vld1q_u8(smask[e]));
+#else
+    {
+        int8x16_t key = vld1q_s8(smask[e]);
+        xmm = vcombine_s8(vtbl2_s8(conv816_to_882(xmm), vget_low_s8(key)), vtbl2_s8(conv816_to_882(xmm), vget_high_s8(key)));
+    }
+#endif
 	vst1q_s8((int8_t*)VD, xmm);
     	    
     return;
@@ -84,6 +95,11 @@ INLINE static void SHUFFLE_VECTOR(short* VD, short* VT, const int e)
     __m128i key;
 
     xmm = _mm_load_si128((__m128i *)VT);
+    if (e <= 1)
+    { /* element 0 and 1 select the vector operands unchanged */
+        _mm_store_si128((__m128i *)VD, xmm);
+        return;
+    }
     key = _mm_load_si128((__m128i *)(smask[e]));
     xmm = _mm_shuffle_epi8(xmm, key);
     _mm_store_si128((__m128i *)VD, xmm);
@@ -248,6 +264,11 @@ INLINE static void SHUFFLE_VECTOR(short* VD, short* VT, const int e)
     __m128i xmm;
 
     xmm = _mm_load_si128((__m128i *)VT);
+    if (e <= 1)
+    { /* element 0 and 1 select the vector operands unchanged */
+        _mm_store_si128((__m128i *)VD, xmm);
+        return;
+    }
     xmm = SSE2_SHUFFLE_16[e](xmm);
     _mm_store_si128((__m128i *)VD, xmm);
     return;
@@ -290,6 +311,13 @@ INLINE static void SHUFFLE_VECTOR(short* VD, short* VT, const int e)
 {
     ALIGNED short SV[8];
     register int i, j;
+
+    if (e <= 1)
+    { /* element 0 and 1 select the vector operands unchanged */
+        for (i = 0; i < N; i++)
+            VD[i] = VT[i];
+        return;
+    }
 #if (0 == 0)
     j = sub_mask[e];
     for (i = 0; i < N; i++)
