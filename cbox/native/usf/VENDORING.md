@@ -137,11 +137,20 @@ but only matters once `execute.h` *services* it — so we don't claim a clean
 one-file-per-game mapping, only that all of it is `421f00b`'s restored interrupt
 handling acting on the re-rips' accuracy flags.
 
-**Per-architecture note:** `ac47dbe`'s VNE fix in `rsp_lle/vu/vne.h` is inside
-`#ifdef ARCH_MIN_ARM_NEON`, so it only affects **Android/ARM** builds (it is
-inert on the x86-64 JVM host used for this A/B). The corpus numbers above are
-from the x86-64 render; ARM playback additionally gets the corrected VNE
-(vector not-equal) opcode.
+**Per-architecture note:** the vendored NEON vector path
+(`ARCH_MIN_ARM_NEON` in `rsp_lle/vu/*.h`) is compiled for **arm64** targets —
+Android `arm64-v8a` and native `aarch64`/`arm64` hosts, selected by arch in
+`CMakeLists.txt`. x86_64 (the JVM host and the `x86_64` Android ABI) still
+compiles the scalar fallbacks; `ARCH_MIN_SSE2` stays deliberately unset. The
+corpus numbers above are from a scalar (x86-64) render, which is what arm64
+produced before NEON was enabled.
+
+`ac47dbe`'s VNE fix in `rsp_lle/vu/vne.h` lives inside `#ifdef ARCH_MIN_ARM_NEON`,
+so it was **inert** while the NEON path was never compiled (every target used the
+scalar branch, which had the correct behaviour all along). Now that arm64
+compiles the NEON path, that fix becomes live there: the NEON not-equal opcode
+produces the same `0`/`1` comparison mask as the scalar loop, so output is
+unchanged.
 
 ## If you re-sync in the future
 

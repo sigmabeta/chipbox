@@ -74,6 +74,14 @@ set(usf_SRCS
 add_definitions(-DEMU_COMPILE -DEMU_LITTLE_ENDIAN -DHAVE_STDINT_H -DNO_DEBUG_LOGS)
 add_compile_options(-fno-strict-aliasing -Wno-pointer-sign)
 
+# arm64 (Android `arm64-v8a`, or a native `aarch64`/`arm64` host) selects the
+# vendored NEON vector path in rsp_lle/vu/*.h; every other target (x86_64 here)
+# compiles the scalar fallbacks, unchanged. The Android NDK toolchain names the
+# processor `aarch64`, so one match covers both Android and native arm64.
+if (ANDROID_ABI STREQUAL "arm64-v8a" OR CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)$")
+    add_definitions(-DARCH_MIN_ARM_NEON)
+endif ()
+
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
