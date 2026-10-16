@@ -110,11 +110,12 @@ scripts/ci/verify.sh --device-audio <corpus>  # also run + gate ONE on-device ax
   push`, and only push if it reports `OVERALL: PASS`. Heed its `WARNING:` lines too
   (uncommitted changes, unpushed `sage` commit) — they mean CI may not see what you tested.
 - A/B-testing a native emulator change (USF/PSF/SSF/…): `testing/abrender` renders a corpus to WAV + RMS
-  metrics and diffs two runs. For a regression *gate* rather than a two-pass A/B, its bit-identity
-  golden check records a local (uncommitted) reference and fails on any non-identical render — on the
-  host (`:testing:abrender:recordPcmGolden`/`verifyPcmGolden -Pchipbox.golden.corpus=<dir>`) or a device
-  (`scripts/abrender/golden-on-device.sh`), where arm64 must match the x86_64 golden. See
-  `testing/abrender/README.md` §11 and `testing/abrender-core/README.md`.
+  metrics and diffs two runs. Two scripts drive it, each taking `--where host|device` and `--corpus`:
+  `scripts/abrender/record.sh` renders a run (host JVM or arm64 on a device), and
+  `scripts/abrender/verify.sh` renders again and fails on any divergence beyond the tolerance (strict
+  by default; `cross-isa`, a ±1 LSB allowance, when the reference and render came from different
+  places). A recorded `reference` run is local + uncommitted. See `testing/abrender/README.md` and
+  `testing/abrender-core/README.md`.
 - Benchmarking a machine's build speed (new dev box, CI runner sizing):
   `scripts/dev/build-benchmark.sh` times a fixed set of real builds from scratch with the
   build cache off, prints a fingerprint of the box, and reduces it to one index. Compare

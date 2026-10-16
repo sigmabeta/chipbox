@@ -4,6 +4,7 @@ import java.io.File
 
 private const val DEFAULT_SECONDS = 30
 private const val DEFAULT_TOP_N = 20
+private val TOLERANCES = setOf("strict", "cross-isa")
 private const val MILLIS_PER_SECOND = 1000L
 private const val DEFAULT_MAX_WALL_SECONDS = 120L
 private const val DEFAULT_MAX_WALL_MILLIS = DEFAULT_MAX_WALL_SECONDS * MILLIS_PER_SECOND
@@ -55,12 +56,18 @@ private fun buildArgs(command: String, opts: Map<String, String>): Args {
         runA = opts["a"],
         runB = opts["b"],
         topN = opts["top"]?.toIntOrNull() ?: DEFAULT_TOP_N,
+        tolerance = opts["tolerance"],
+        check = opts.containsKey("check"),
     ).also { validate(it) }
 }
 
 private fun validate(args: Args) {
     if (args.command == "diff") {
         require(args.runA != null && args.runB != null) { "diff requires --a <run> and --b <run>" }
+        val tolerance = args.tolerance
+        require(tolerance == null || tolerance.lowercase() in TOLERANCES) {
+            "--tolerance must be one of $TOLERANCES (got '$tolerance')"
+        }
     }
     if (args.command == "render") {
         require(args.corpusDir.isDirectory) {
@@ -127,16 +134,21 @@ private fun printUsage() {
         Parallelism: one JVM can't render concurrently (singleton native state per backend), so run
         n processes — one per logical core — each over a disjoint --shard of the corpus. A track that
         wedges in an uninterruptible native call only halts its own shard; a watchdog records it as
-        WEDGED and exits so a relaunch resumes past it. See render-parallel.sh.
+        WEDGED and exits so a relaunch resumes past it. record.sh --parallel does this for you.
 
         diff --a <run> --b <run> [options]
           --a <run>            baseline run (label under <out>, or a path)
           --b <run>            candidate run (label under <out>, or a path)
           --top <n>            how many most-changed tracks to list            (default: $DEFAULT_TOP_N)
           --out <dir>          runs root                                       (default: ab-runs)
+          --check              exit non-zero if any track fails --tolerance (the verify gate)
+          --tolerance <t>      strict (bit-identity) | cross-isa (±1 LSB)      (default: strict)
 
         Metric: diff reports RMS of the sample-wise difference A−B (dBFS; -inf = bit-identical),
         plus aggregate ΔRMS. Per-track WAVs under <out>/<run>/wav/ are the listenable artifacts.
+
+        The `record.sh` / `verify.sh` scripts in scripts/abrender/ wrap this: record renders a
+        corpus (host or device), verify renders again and diffs with --check.
         """.trimIndent(),
     )
 }
