@@ -50,6 +50,22 @@ from upstream HEAD because of it:
   changes; upstream did not touch these in `311b9a3..f771b33`, so they were left
   exactly as the fork had them.
 
+### Local performance changes (preserve on sync; output-preserving)
+
+The RSP-perf work edits vendored `rsp_lle/` files to cut per-instruction overhead
+in the LLE audio interpreter. An upstream sync must keep these (or re-derive the
+equivalent); each was A/B-validated bit-identical on arm64 and x86_64:
+
+- **`rsp_lle/execute.h`** — `run_task` hoists the loop-invariant state pointers
+  (`IMEM`, `DMEM`, `SR`, `g_sp.regs`, `g_sp.regs2`) into locals, and dispatches
+  vector ops via a direct `switch (opcode)` instead of the `COP2_C2[opcode]`
+  function-pointer table.
+- **`rsp_lle/vu/vu.h`** — the `COP2_C2[64]` table was removed (the switch replaces
+  it); opcodes without a dedicated case still behave like `res_V`.
+- **`rsp_lle/vu/shuffle.h`** — `SHUFFLE_VECTOR` early-returns when `e <= 1` (the
+  shuffle is then the identity), and on AArch64 does the NEON shuffle with one
+  `vqtbl1q_s8` (full 16-byte table lookup) instead of two `vtbl2_s8` halves.
+
 ### Local additions to the build
 
 - **`rsp_hle/hvqm.c` + `rsp_hle/re2.c`** were vendored and added to `usf_SRCS`
