@@ -29,7 +29,7 @@ preview-sample weight. Editing the UI in `:real` means re-recording these golden
 Verify the goldens (does not record):
 
 ```sh
-scripts/paparazzi-diff.sh
+scripts/dev/paparazzi-diff.sh
 ```
 
 Each preview builds a `NowPlayingModel` directly, e.g.:

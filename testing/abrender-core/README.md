@@ -1,0 +1,73 @@
+# abrender-core — shared A/B render engine (+ on-device arm64 harness)
+
+The render engine behind `:testing:abrender`, factored into a KMP module so the **same code renders on
+both the host JVM and a real Android device**. The desktop CLI proves the x86_64 emulator cores; the
+instrumented test here proves the **arm64** ones. Output is byte-for-byte the same shape, so the
+desktop `abrender diff` compares a device run against a host run with no platform-specific code.
+
+It is also the raw-core render engine the perfbench **device audio axis** times (see
+[`:benchmark`](../../benchmark/README.md)): that module depends on this one as a KMP consumer, so the
+same arm64 `:native` cores land in its test APK and its RTF results are the phone's ground truth.
+
+## Layout
+
+- `src/main/java/` (`jvmSharedMain`) — the engine: `EmulatorBank`/`Renderer` (drives each emulator's
+  `*Internal` JNI entry points straight to PCM, no Speaker), `Metrics` (RMS/peak/LUFS/FNV hash),
+  `WavFile`, `CorpusWalker`, `RenderCommand` (`runRender`), `RunDiff` (the bit-identity `diff` shared
+  with the golden check), and `GoldenCheck` (`recordGoldenRun`/`verifyGoldenRun`). Pure `java.*` — no
+  Android imports — so it compiles unchanged for both targets. `:testing:abrender` adds only the CLI shell
+  (`Main`, `DiffCommand`) and the host golden test (`PcmGoldenTest`).
+- `src/androidDeviceTest/kotlin/` — `DeviceRenderTest`, an `androidx.test` instrumentation that runs
+  `runRender` on-device against a corpus pushed to its external files dir, and `PcmGoldenDeviceTest`,
+  the arm64 half of the bit-identity golden check.
+- Harness scripts live in **`scripts/abrender/`** (all harness drivers are under `scripts/`):
+  `run-on-device.sh` (adb render), `ab-compare.sh` (cross-ISA A/B), and `golden-on-device.sh`
+  (bit-identity on arm64).
+
+## Why KMP (not a plain JVM module)
+
+Only a KMP consumer resolves the **android** variant of each emulator `:real`, whose `androidMain`
+carries `runtimeOnly(:native)` — that's what packages the arm64 `.so` into the self-instrumenting
+device-test APK. A plain `sage.jvm` module would pull the JVM variants and ship no `.so`. The
+device-test APK is self-contained (all nine arm64 cores), so there's no app under test to install.
+
+## Run it
+
+See **§10 of `testing/abrender/README.md`** for the full cross-ISA A/B workflow. The short version:
+
+```sh
+scripts/abrender/run-on-device.sh --dir /path/to/corpus --label arm64 --ext usf,miniusf
+./gradlew :testing:abrender:run --args="diff --a <x86_64-run> --b ./ab-runs-device/arm64"
+```
+
+Direct gradle/adb equivalents, if you don't want the script:
+
+```sh
+./gradlew :testing:abrender-core:installAndroidDeviceTest
+adb push <corpus>/. /sdcard/Android/data/net.sigmabeta.chipbox.abrender.test/files/abrender/in
+adb shell am instrument -w -r \
+  -e ext usf,miniusf -e seconds 30 -e label arm64 \
+  net.sigmabeta.chipbox.abrender.test/androidx.test.runner.AndroidJUnitRunner
+adb pull /sdcard/Android/data/net.sigmabeta.chipbox.abrender.test/files/abrender/out/arm64 ./ab-runs-device/
+```
+
+Instrumentation args (`-e <key> <value>`) mirror the desktop `render` flags: `dir`, `out`, `label`,
+`seconds`, `ext`, `game`, `every-song`, `subsong`, `limit`, `overwrite`, `max-wall-seconds`, `shards`,
+`shard`. Paths default to `<externalFiles>/abrender/{in,out}`.
+
+## Golden check (arm64 vs the host reference)
+
+The same engine also backs the bit-identity **golden check** (§11 of `testing/abrender/README.md`):
+record a reference render, then fail unless a fresh render is bit-identical to it. `PcmGoldenDeviceTest`
+runs the verify (or record) half on-device so arm64 is compared against a golden recorded on the host
+(x86_64); a divergence is a failure, because PCM must not depend on the architecture.
+
+```sh
+scripts/abrender/golden-on-device.sh --corpus /path/to/corpus            # verify arm64 vs host golden
+scripts/abrender/golden-on-device.sh --corpus /path/to/corpus --record   # record on device, pull back
+```
+
+Instrumentation args: `dir` (corpus), `golden` (golden run dir), `work` (candidate output), `seconds`,
+`ext`, `game`, `every-song`, `subsong`, `limit`, `max-wall-seconds`. Paths default to
+`<externalFiles>/abrender/{in,golden,golden-work}`. Filter to one method with
+`-e class net.sigmabeta.chipbox.abrender.PcmGoldenDeviceTest#verifyGolden`.

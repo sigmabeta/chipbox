@@ -27,12 +27,13 @@ val splashReleaseFile: File = layout.projectDirectory.dir("src/main/splash").fil
 val nativeLibsDirFile: File = layout.buildDirectory.dir("jvm-native/libs").get().asFile
 val nativeLibsTask = tasks.named("chipboxHostNativeLibs")
 
-// Expose the host-built native directories to the sibling JVM apps (cli/abrender/server) as
-// consumable configurations. They used to read `project(":apps:jvm").layout` directly, which
-// Isolated Projects forbids (a project accessing another project's layout). Each configuration
-// carries one directory as an outgoing artifact with `builtBy` its producing task; consumers select
-// a specific one by name via `project(path = ":apps:jvm", configuration = "<name>")`, so no
-// attribute matching is needed and the task dependency is wired through `builtBy` automatically.
+// Expose the host-built native directories to sibling JVM consumers (apps/cli and the testing
+// harnesses under :testing:) as consumable configurations. They used to read
+// `project(":apps:jvm").layout` directly, which Isolated Projects forbids (a project accessing
+// another project's layout). Each configuration carries one directory as an outgoing artifact with
+// `builtBy` its producing task; consumers select a specific one by name via
+// `project(path = ":apps:jvm", configuration = "<name>")`, so no attribute matching is needed and
+// the task dependency is wired through `builtBy` automatically.
 artifacts.add(configurations.consumable("hostNativeLibsElements").name, nativeLibsDirFile) {
     builtBy(nativeLibsTask)
 }

@@ -18,7 +18,8 @@ cbox/
 features/    user-facing screens, all KMP (api/real/screenshot)
 build-logic/ chipbox-specific convention plugins (id "chipbox.*")
 sage/        vendored SAGE submodule: convention plugins + version catalog + libs
-scripts/     helpers (verify.sh CI suite, loc_report.py)
+scripts/     helpers, grouped by role: ci/ (CI entry points), dev/ (local dev tools),
+             and per-harness dirs (abrender/, benchmark/) — see the testing systems
 ```
 
 ## Module suffix convention

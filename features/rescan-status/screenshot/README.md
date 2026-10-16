@@ -19,7 +19,7 @@ matrix. It produces no production code — only golden images checked under
 
 Nothing depends on this module — it's a verification leaf. It depends on
 `:real` to render the actual screen state and guards it against unintended
-visual change. Per project convention, run goldens via `scripts/paparazzi-diff.sh`
+visual change. Per project convention, run goldens via `scripts/dev/paparazzi-diff.sh`
 (`verifyPaparazziDebug` *checks*; `testDebugUnitTest` *records*/overwrites the
 git-LFS goldens).
 

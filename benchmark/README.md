@@ -13,9 +13,9 @@ measures cold and warm startup up to first content (`startup` axis); a third
 renders **every supported file in the pushed corpus** through the raw emulator
 core and reports real-time factor (`audio` axis). Each assembles a perfbench
 result (device fingerprint + axis) with
-[`:apps:perfbench-core`](../apps/perfbench-core/README.md); the audio axis reuses
+[`:testing:perfbench-core`](../testing/perfbench-core/README.md); the audio axis reuses
 the render engine from
-[`:apps:abrender-core`](../apps/abrender-core/README.md). It's a leaf — nothing
+[`:testing:abrender-core`](../testing/abrender-core/README.md). It's a leaf — nothing
 depends on it.
 
 ## Deterministic library
@@ -27,10 +27,10 @@ startup, before the UI composes:
 
 1. Generate the snapshot on the host from your corpus:
    ```sh
-   ./gradlew :apps:perfbench:run --args="snapshot --dir /path/to/corpus --out build/perfbench/library-snapshot.json"
+   ./gradlew :testing:perfbench:run --args="snapshot --dir /path/to/corpus --out build/perfbench/library-snapshot.json"
    ```
 2. Push the snapshot and the corpus audio onto the device (the paths
-   `:apps:perfbench-core`'s `DeviceBenchmarkLayout` defines). These live under
+   `:testing:perfbench-core`'s `DeviceBenchmarkLayout` defines). These live under
    **shared** external storage — `/sdcard/Music/chipbox-test/` — beside where a
    real library folder sits, **not** under the app's `Android/data/` (which the
    macrobenchmark's compilation-mode reset deletes when it uninstalls + reinstalls
@@ -114,12 +114,12 @@ This module resolves `:android:logging` to its **release** variant, whose
 `AndroidHatchet` default (`BuildConfig.DEBUG`) would emit nothing, so
 `DeviceBenchmark` constructs `AndroidHatchet(enabled = true)`.
 
-## Gating a regression (`scripts/benchmark-device-<axis>.sh`)
+## Gating a regression (`scripts/benchmark/device-<axis>.sh`)
 
-The module itself is a measurement; the `scripts/benchmark-device-<axis>.sh`
+The module itself is a measurement; the `scripts/benchmark/device-<axis>.sh`
 scripts are the local **gate** built on top of it — **one script per axis**
 (`audio`, `ui`, `startup`), each the matching `device-<axis>` task in
-`scripts/verify.sh` (selected with `--device-<axis> <corpus-dir>`). Run the axis
+`scripts/ci/verify.sh` (selected with `--device-<axis> <corpus-dir>`). Run the axis
 you care about; a gate is per-axis, so a scrolling regression and an emulator
 regression are two separate runs.
 
@@ -142,10 +142,10 @@ and collide, so the scripts group the online serials by `ro.serialno` and **skip
 (enough to `adb disconnect` the duplicate) rather than produce the opaque crash.
 
 ```sh
-scripts/benchmark-device-audio.sh   /path/to/small-corpus            # gate
-scripts/benchmark-device-ui.sh      /path/to/small-corpus --record   # (re)record the baseline
-scripts/benchmark-device-startup.sh /path/to/small-corpus --threshold 0.97
-scripts/verify.sh --device-ui /path/to/small-corpus                  # the same run inside verify.sh
+scripts/benchmark/device-audio.sh   /path/to/small-corpus            # gate
+scripts/benchmark/device-ui.sh      /path/to/small-corpus --record   # (re)record the baseline
+scripts/benchmark/device-startup.sh /path/to/small-corpus --threshold 0.97
+scripts/ci/verify.sh --device-ui /path/to/small-corpus                  # the same run inside verify.sh
 ```
 
 Each exits `0` on pass (or when it records a baseline), `3` when it **skips** —
@@ -296,8 +296,8 @@ the grid has items to show.
 supported file in the pushed corpus**, one result per file keyed by its
 corpus-relative path. For each file it warms up once, then times N renders
 through the reused raw emulator core (`EmulatorBank.render` from
-`:apps:abrender-core`) and reduces them with the same
-[`:apps:perfbench-core`](../apps/perfbench-core/README.md) math the host audio axis
+`:testing:abrender-core`) and reduces them with the same
+[`:testing:perfbench-core`](../testing/perfbench-core/README.md) math the host audio axis
 uses. A file that fails to render is recorded as an errored result rather than
 dropped, so a run never silently shrinks. The only difference from the host axis
 is the backend: this APK carries the **arm64** emulator `.so`s, so the numbers are
@@ -337,8 +337,8 @@ records none, and its metrics list omits them rather than reporting a zero.
 - **Packaging:** the audio axis's arm64/x86_64 emulator `.so`s are packaged into
   the test APK (extracted at install). Stray core-less ABIs are excluded so the
   install resolves an ABI that actually has the cores.
-- **SAGE/module dependencies:** [`apps:perfbench-core`](../apps/perfbench-core/README.md)
-  (the result schema / math), [`apps:abrender-core`](../apps/abrender-core/README.md)
+- **SAGE/module dependencies:** [`testing:perfbench-core`](../testing/perfbench-core/README.md)
+  (the result schema / math), [`testing:abrender-core`](../testing/abrender-core/README.md)
   (the reused raw-core render engine for the audio axis), and
   `sage:android:logging` (the `AndroidHatchet` the axes log progress through). It
   instruments `:apps:android` via `targetProjectPath` rather than depending on it;

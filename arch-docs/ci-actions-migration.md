@@ -158,7 +158,7 @@ signing); `GRADLE_CACHE_USER`, `GRADLE_CACHE_PASSWORD` (build-cache push).
 4. **Cut over** — **(Done.)** Deleted `.circleci/config.yml`; broadened `ci.yml`
    to every branch; migrated the `CIRCLE_BRANCH` versionCode factor to
    `GITHUB_REF_NAME` (`apps/android/build.gradle.kts`); updated `Readme.md`,
-   `scripts/verify.sh`, `settings.gradle.kts` comments. Secrets already live as
+   `scripts/ci/verify.sh`, `settings.gradle.kts` comments. Secrets already live as
    GitHub Actions secrets (`CHIPBOX_*`, `GRADLE_CACHE_*`); releases use the
    built-in `GITHUB_TOKEN` (no PAT).
 5. **(future)** iOS.

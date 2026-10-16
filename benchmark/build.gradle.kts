@@ -56,7 +56,7 @@ android {
             // ABIs we build (arm64-v8a on device, x86_64 on emulator). A transitive lib ships stray
             // armeabi-v7a/armeabi/x86 ABIs; drop them so the install resolves an ABI that has our
             // cores rather than a core-less primary one. Extract the `.so`s at install time
-            // (extractNativeLibs=true) rather than mmap'ing from the APK, matching :apps:abrender-core.
+            // (extractNativeLibs=true) rather than mmap'ing from the APK, matching :testing:abrender-core.
             excludes += setOf("**/armeabi-v7a/**", "**/armeabi/**", "**/x86/**")
             useLegacyPackaging = true
         }
@@ -84,11 +84,11 @@ dependencies {
     // rather than relying on its BuildConfig.DEBUG default.
     implementation(libs.sage.android.logging)
     // The perfbench contract the device results.json is written with (schema, fingerprint, math).
-    implementation(projects.apps.perfbenchCore)
+    implementation(projects.testing.perfbenchCore)
     // The app's artist-name delimiter rule (`ARTIST_NAME_DELIMITERS`), so the artist this benchmark
     // opens is derived exactly as the app derives it.
     implementation(projects.cbox.common.repository.api)
     // The reused raw-emulator-core render path (EmulatorBank/runRender) the device audio axis
     // times — the same KMP consumer that pulls each emulator's arm64 `.so` into this test APK.
-    implementation(projects.apps.abrenderCore)
+    implementation(projects.testing.abrenderCore)
 }

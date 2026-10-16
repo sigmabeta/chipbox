@@ -78,5 +78,5 @@ binding comes from the contributed `:di` modules listed in `dependencies {}`.
   crash, strings, services, artwork provider, debug), plus `sage.common.*` /
   `sage.android.*` (di, list, appcomm, analytics, logging, coroutines, ui themes,
   appinfo) and AndroidX Compose / Activity / Lifecycle / splash and `metrox.viewmodel`.
-  Also `:apps:perfbench-core`, for the fixed device-benchmark layout the benchmark-only
+  Also `:testing:perfbench-core`, for the fixed device-benchmark layout the benchmark-only
   seed rebases onto.
