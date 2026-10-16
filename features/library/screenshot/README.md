@@ -29,7 +29,7 @@ in `settings.gradle.kts` so its goldens run in CI. It depends on
 ./gradlew :features:library:screenshot:testDebugUnitTest      # RE-RECORD goldens (overwrites LFS PNGs)
 ```
 
-Prefer `scripts/paparazzi-diff.sh` over invoking the Gradle tasks directly. Use
+Prefer `scripts/dev/paparazzi-diff.sh` over invoking the Gradle tasks directly. Use
 `verify` unless you intend to re-record.
 
 ## Module facts

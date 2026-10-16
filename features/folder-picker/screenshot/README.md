@@ -36,7 +36,7 @@ Re-record (overwrites the LFS goldens) only when the change is intentional:
 ./gradlew :features:folder-picker:screenshot:testDebugUnitTest
 ```
 
-Prefer `scripts/paparazzi-diff.sh` over invoking the Gradle tasks directly.
+Prefer `scripts/dev/paparazzi-diff.sh` over invoking the Gradle tasks directly.
 
 ## Module facts
 

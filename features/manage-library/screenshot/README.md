@@ -28,7 +28,7 @@ against committed goldens.
 ./gradlew :features:manage-library:screenshot:verifyPaparazziDebug
 
 # Or use the repo helper, which reports diffs:
-scripts/paparazzi-diff.sh
+scripts/dev/paparazzi-diff.sh
 ```
 
 Recording (overwriting) goldens is `testDebugUnitTest`; prefer verify unless you

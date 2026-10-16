@@ -112,12 +112,14 @@ include(
     ":apps:android",
     ":apps:jvm",
     ":apps:cli",
-    ":apps:abrender",
-    ":apps:abrender-core",
-    ":apps:perfbench",
-    ":apps:perfbench-core",
     ":apps:server",
     ":benchmark",
+
+    // Test systems — measurement/golden harnesses run on the host JVM and on a device, not shipped.
+    ":testing:abrender",
+    ":testing:abrender-core",
+    ":testing:perfbench",
+    ":testing:perfbench-core",
 
     ":cbox:common:appui:api",
     ":cbox:android:artworkprovider:api",

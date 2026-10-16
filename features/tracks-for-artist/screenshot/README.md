@@ -23,7 +23,7 @@ Add or update previews here when the screen's visual output changes.
 ## Using it
 
 ```sh
-scripts/paparazzi-diff.sh   # check goldens (preferred entry point)
+scripts/dev/paparazzi-diff.sh   # check goldens (preferred entry point)
 ```
 
 ## Module facts

@@ -111,7 +111,7 @@ treat cuts 2–4 as small, not zero.
 ## Corpus validation (A/B, 244-track USF corpus)
 
 Each phase was rendered over a 244-game USF corpus and diffed against the prior
-build with `apps/abrender` (12-way parallel; see its README). Cumulative result,
+build with `testing/abrender` (12-way parallel; see its README). Cumulative result,
 pre-sync vs fully-synced:
 
 - **215 bit-identical**, **23 changed**, **6 pre-existing failures unchanged**,

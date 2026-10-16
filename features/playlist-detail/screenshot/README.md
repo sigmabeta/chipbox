@@ -24,7 +24,7 @@ playlist-detail UI against unintended visual changes. It depends on
 ## Using it
 
 ```kotlin
-// Verify the goldens (does NOT re-record). Prefer scripts/paparazzi-diff.sh.
+// Verify the goldens (does NOT re-record). Prefer scripts/dev/paparazzi-diff.sh.
 ./gradlew verifyPaparazziDebug
 ```
 

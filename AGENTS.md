@@ -80,15 +80,15 @@ it when a load-bearing fact stops being true.
 ./gradlew :apps:jvm:run --args="gui"       # desktop window
 ./gradlew ktlintCheck detekt               # lint — run BOTH at the same scope
 ./gradlew ktlintFormat                     # auto-fix
-scripts/paparazzi-diff.sh                  # check screenshots (use this, NOT the Gradle task)
-scripts/build-benchmark.sh                 # time this machine's builds (--quick / --full / --help)
-scripts/verify.sh --device-audio <corpus>  # also run + gate ONE on-device axis (also -ui / -startup; needs a device; small corpus)
+scripts/dev/paparazzi-diff.sh                  # check screenshots (use this, NOT the Gradle task)
+scripts/dev/build-benchmark.sh                 # time this machine's builds (--quick / --full / --help)
+scripts/ci/verify.sh --device-audio <corpus>  # also run + gate ONE on-device axis (also -ui / -startup; needs a device; small corpus)
 ```
 
 - Run **ktlint and detekt together**; both gate commit/push.
 - Gradle prints thousands of task lines: redirect a long run to a file and grep it
   (`./gradlew … > /tmp/build.log 2>&1`) rather than pulling them into context.
-- **Always verify screenshots via `scripts/paparazzi-diff.sh`**, never by invoking
+- **Always verify screenshots via `scripts/dev/paparazzi-diff.sh`**, never by invoking
   the Gradle tasks directly: it re-renders, ranks the most-divergent snapshots,
   writes `golden | new | diff` montages under `build/paparazzi-review/`, and
   reverts the goldens afterward (non-destructive). After running it, **report a
@@ -105,19 +105,23 @@ scripts/verify.sh --device-audio <corpus>  # also run + gate ONE on-device axis 
   APK, per-scenario tuning) are in `benchmark/README.md`; background in
   `arch-docs/scroll-performance-plan.md`. Hand off only what has no attached
   hardware. Don't `git commit`/`push` unless explicitly asked.
-- Always run `scripts/verify.sh` (the full CI-mirroring suite — lint, unit tests,
+- Always run `scripts/ci/verify.sh` (the full CI-mirroring suite — lint, unit tests,
   Paparazzi, shared build, android-lint, desktop natives, release APK) before any `git
   push`, and only push if it reports `OVERALL: PASS`. Heed its `WARNING:` lines too
   (uncommitted changes, unpushed `sage` commit) — they mean CI may not see what you tested.
-- A/B-testing a native emulator change (USF/PSF/SSF/…): `apps/abrender` renders a
-  corpus to WAV + RMS metrics and diffs two runs. See `apps/abrender/README.md`.
+- A/B-testing a native emulator change (USF/PSF/SSF/…): `testing/abrender` renders a corpus to WAV + RMS
+  metrics and diffs two runs. For a regression *gate* rather than a two-pass A/B, its bit-identity
+  golden check records a local (uncommitted) reference and fails on any non-identical render — on the
+  host (`:testing:abrender:recordPcmGolden`/`verifyPcmGolden -Pchipbox.golden.corpus=<dir>`) or a device
+  (`scripts/abrender/golden-on-device.sh`), where arm64 must match the x86_64 golden. See
+  `testing/abrender/README.md` §11 and `testing/abrender-core/README.md`.
 - Benchmarking a machine's build speed (new dev box, CI runner sizing):
-  `scripts/build-benchmark.sh` times a fixed set of real builds from scratch with the
+  `scripts/dev/build-benchmark.sh` times a fixed set of real builds from scratch with the
   build cache off, prints a fingerprint of the box, and reduces it to one index. Compare
   two machines with `--baseline <results.json>` — never quote an index without its
   scenario set and `--repeat`. It is not part of CI; it is a measurement, not a gate.
-- The on-device perf gates are `scripts/benchmark-device-<axis>.sh` (the
-  `device-<axis>` tasks in `scripts/verify.sh --device-<axis> <corpus-dir>`), one per
+- The on-device perf gates are `scripts/benchmark/device-<axis>.sh` (the
+  `device-<axis>` tasks in `scripts/ci/verify.sh --device-<axis> <corpus-dir>`), one per
   axis (audio/ui/startup): the only tasks that aren't CI. Each runs just its axis's
   test class over the corpus you pass (use a **small** one — the audio axis renders
   every file) on **every attached device** (so no serial is pinned, which keeps the

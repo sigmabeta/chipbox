@@ -241,7 +241,7 @@ jobs:
       - name: Assemble release (split APKs)
         run: ./gradlew :apps:android:assembleRelease -PdisablePreDex --build-cache --no-daemon --max-workers=4
       - name: Name APKs by version + ABI
-        run: ./scripts/rename-release-apk.sh
+        run: ./scripts/ci/rename-release-apk.sh
       - uses: actions/upload-artifact@v4
         with:
           name: release-apks
