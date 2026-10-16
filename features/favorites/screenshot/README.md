@@ -18,7 +18,7 @@ test harness that snapshots the `:real` screen. It builds the UI from
 
 Nothing depends on `:screenshot` — it's a leaf test module that the app never
 ships. It exists so changes to `:features:favorites:real` are caught as visual
-diffs. Verify with `./gradlew verifyPaparazziDebug` (or `scripts/paparazzi-diff.sh`);
+diffs. Verify with `./gradlew verifyPaparazziDebug` (or `scripts/dev/paparazzi-diff.sh`);
 re-record goldens (overwrites the git-LFS images) with `testDebugUnitTest`.
 
 ## Using it

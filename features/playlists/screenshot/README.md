@@ -29,7 +29,7 @@ Verify the goldens (does not record):
 ./gradlew :features:playlists:screenshot:verifyPaparazziDebug
 ```
 
-Use `scripts/paparazzi-diff.sh` rather than invoking the Gradle task directly. Record
+Use `scripts/dev/paparazzi-diff.sh` rather than invoking the Gradle task directly. Record
 (overwrite) goldens only intentionally via `testDebugUnitTest`.
 
 ## Module facts
