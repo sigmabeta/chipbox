@@ -130,9 +130,14 @@ echo "==> [build] host native libs + device-test APK"
 # Stage the corpus once (clean any prior run first). It stays for every batch (each batch walks it
 # on-device); only the rendered WAVs are deleted between batches.
 echo "==> [device] staging corpus → ${REMOTE_IN}"
-"${ADB[@]}" shell rm -rf "${REMOTE_BASE}"
+# Clear the staged corpus only. The app owns `out` (0700) and shell can't delete it; leaving it lets the
+# renderer resume/overwrite into it, and a fresh stage avoids adb's fchown failing over chmod'd files.
+"${ADB[@]}" shell rm -rf "${REMOTE_IN}" 2>/dev/null || true
 "${ADB[@]}" shell mkdir -p "${REMOTE_IN}"
 "${ADB[@]}" push "${CORPUS}/." "${REMOTE_IN}" >/dev/null
+# adb creates the staged dirs group/owner-only (0770); the self-instrumented test app is not in that
+# group and can't traverse them, so it sees an empty corpus. Make the staged tree world-readable.
+"${ADB[@]}" shell chmod -R a+rX "${REMOTE_IN}"
 
 # Host render in the background, in a RESUME LOOP — produces the run we diff against AND announces the
 # track count we use to size the device batches. A track that wedges in an uninterruptible native call
