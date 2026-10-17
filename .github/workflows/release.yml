@@ -2,7 +2,8 @@ name: Release
 
 # Tag-triggered release: builds the desktop installers (Linux .deb/.rpm + Windows .msi) and the split
 # signed APKs, publishes them to a GitHub Release via the built-in GITHUB_TOKEN (no PAT), and refreshes
-# the download page. Full reference: arch-docs/release-process.md.
+# the download page. Tags are cut from a per-line release/<major>.<minor> branch and merged back to
+# beta after publishing. Full reference: arch-docs/release-process.md.
 #
 # Desktop packaging is jpackage via compose.desktop.application (apps/jvm). Linux/macOS build natively
 # on their runners; the Windows .dll are cross-compiled on a Linux job (jpackage assembles but doesn't
@@ -302,6 +303,14 @@ jobs:
       contents: write # create the Release + upload assets, and commit the refreshed download page
       actions: write # dispatch pages.yml to redeploy the download page
     steps:
+      # Tags are cut from a per-line release branch; the line is the tag's major.minor, so
+      # 3.0.0 / 3.0.0-beta14 / 3.0.1-rc1 all map to release/3.0. See arch-docs/release-process.md.
+      - name: Resolve release branch
+        id: rel
+        run: |
+          LINE="$(printf '%s' "${{ github.ref_name }}" | grep -oE '^[0-9]+\.[0-9]+' || true)"
+          [ -n "$LINE" ] || { echo "ERROR: tag ${{ github.ref_name }} has no major.minor prefix"; exit 1; }
+          echo "branch=release/$LINE" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -312,6 +321,23 @@ jobs:
             -exec cp {} upload/ \;
           echo "Assets to publish:"; ls -la upload
           [ -n "$(ls -A upload)" ] || { echo "ERROR: no staged artifacts"; exit 1; }
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.rel.outputs.branch }}
+          path: site-src
+          fetch-depth: 0 # need the tag's commit to prove it descends from this branch
+      # A tag cut from beta (or a detached HEAD) is not a release: it never lands on a line, so the
+      # branch can't be diffed/bisected against it and the page refresh has nowhere to go. 3.0.0 was
+      # cut that way and is still reachable only by its tag. Fail before creating a Release.
+      - name: Verify the tag is on the release branch
+        run: |
+          cd site-src
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" HEAD; then
+            echo "ERROR: ${{ github.ref_name }} ($GITHUB_SHA) is not an ancestor of ${{ steps.rel.outputs.branch }}."
+            echo "Cut the tag from the release branch — see arch-docs/release-process.md."
+            exit 1
+          fi
       # alpha/beta/rc tags ship as prereleases; notes are auto-generated from commits.
       - name: Publish GitHub Release
         env:
@@ -325,14 +351,9 @@ jobs:
             --generate-notes $PRERELEASE
           echo "Published: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
       # Keep the landing site's download links in sync with this release: regenerate download.md from
-      # the just-published assets, commit it to beta, then dispatch the Pages deploy. (A GITHUB_TOKEN
-      # commit doesn't trigger the push-based Pages build — hence the explicit workflow_dispatch, which
-      # is exempt from that recursion rule.)
-      - name: Checkout beta (to update the download page)
-        uses: actions/checkout@v4
-        with:
-          ref: beta
-          path: site-src
+      # the just-published assets, commit it to the release branch, then dispatch the Pages deploy from
+      # that same branch. (A GITHUB_TOKEN commit doesn't trigger the push-based Pages build — hence the
+      # explicit workflow_dispatch, which is exempt from that recursion rule.)
       - name: Refresh + deploy the download page
         env:
           GH_TOKEN: ${{ github.token }}
@@ -345,6 +366,6 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -am "docs(site): point downloads at ${{ github.ref_name }}"
-            git push origin beta
+            git push origin "HEAD:${{ steps.rel.outputs.branch }}"
           fi
-          gh workflow run pages.yml --ref beta
+          gh workflow run pages.yml --ref "${{ steps.rel.outputs.branch }}"
