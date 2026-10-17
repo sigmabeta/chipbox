@@ -1,11 +1,13 @@
 name: Deploy GitHub Pages
 
 # Builds the MkDocs Material landing site (docs/) and publishes it to GitHub Pages.
-# Requires repo Settings → Pages → Source = "GitHub Actions" (one-time).
+# Deploys from a release/<major>.<minor> branch (the line that was just released), not from
+# beta. Requires repo Settings → Pages → Source = "GitHub Actions" (one-time).
+# See arch-docs/release-process.md.
 
 on:
   push:
-    branches: [beta]
+    branches: ['release/**']
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
