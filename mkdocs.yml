@@ -11,6 +11,8 @@ copyright: 'Copyright &copy; 2026 sigmabeta'
 
 # Architecture documentation lives in arch-docs/; docs/ is the MkDocs site source
 # (the default docs_dir), so the landing page sits at a standardized location.
+# edit_uri targets beta — the authoring branch. The published site is built from a
+# release/<major>.<minor> branch; see arch-docs/release-process.md.
 
 theme:
   name: 'material'
