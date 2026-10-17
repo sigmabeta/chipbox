@@ -28,3 +28,23 @@
 .md-typeset .grid.cards .twemoji svg {
   fill: var(--md-accent-fg-color);
 }
+
+/* Landing-page demo video (portrait phone capture, 272×560). */
+.chipbox-demo {
+  margin: 1.75rem auto;
+  max-width: 19rem;
+  text-align: center;
+}
+.chipbox-demo video {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 0.6rem;
+  background: #000;
+  box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.35);
+}
+.chipbox-demo figcaption {
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--md-default-fg-color--light);
+}
