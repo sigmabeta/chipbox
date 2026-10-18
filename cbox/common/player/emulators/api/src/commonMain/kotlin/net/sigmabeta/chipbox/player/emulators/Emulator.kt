@@ -94,6 +94,16 @@ abstract class Emulator {
 
     open fun isFileExtensionSupported(extension: String) = supportedFileExtensions.contains(extension)
 
+    /**
+     * Suspend-aware counterpart to [isFileExtensionSupported], used by [EmulatorSelector].
+     *
+     * Defaults to the synchronous probe. A backend whose extension list only becomes readable
+     * after an async setup — the browser's vgmstream WASM module — overrides this to finish that
+     * setup first, so selection can stay ordered and lazy: vgmstream loads only when the lookup
+     * reaches it, never for a track an earlier emulator already claimed.
+     */
+    open suspend fun supportsExtension(extension: String) = isFileExtensionSupported(extension)
+
     /** Selects a sub-track for multi-track formats (NSF, GBS, etc). No-op for single-track
      *  formats, which is the default. */
     open fun setTrackNumber(number: Int) = Unit
