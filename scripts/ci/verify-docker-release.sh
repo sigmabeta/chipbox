@@ -238,6 +238,8 @@ check(multi_with['cache-to'].to_s.include?('type=gha'),
       'release build must export a gha layer cache')
 check(multi_with['build-args'].to_s.include?('EMSDK_VERSION='),
       'release build must pass the pinned EMSDK_VERSION')
+check(img_steps.any? { |s| s.dig('run').to_s.include?('mkdir -p build') },
+      'release job must create the OCI output directory before the build')
 
 check(img_steps.any? { |s| s.dig('run').to_s.include?('verify-oci-index.py') },
       'release job must verify the OCI archive contains both platforms')

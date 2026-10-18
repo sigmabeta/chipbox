@@ -320,6 +320,7 @@ jobs:
         id: pins
         run: |
           set -euo pipefail
+          mkdir -p build
           {
             echo "node=$(cat docker/node-version)"
             echo "yarn=$(cat docker/yarn-version)"
