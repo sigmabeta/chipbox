@@ -39,6 +39,9 @@ kotlin {
                 // Host capability policy (which surfaces this installation exposes), seeded by each
                 // app graph. The shell reads it to refuse blocked destinations.
                 implementation(projects.cbox.common.capabilities.api)
+                // The route<->URL codec's pure home — it owns the shared `allowsNavigation`
+                // policy so the shell and the browser decoder cannot drift.
+                implementation(projects.cbox.common.webroutes)
                 implementation(projects.cbox.common.strings.api)
                 // Shared `ChipboxTheme()` — multiplatform. The Android-side `AppTheme()`
                 // wrapper in `cbox/android/ui/theme/api` was thin syntactic sugar and is

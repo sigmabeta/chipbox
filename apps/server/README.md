@@ -55,7 +55,11 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   HTTP 404 with the JSON error body `{"error":"Not found"}` — for every method,
   including `POST`/`DELETE`. Unknown paths never fall through to the SPA
   `index.html`. App routes (`/`, `/artists/42`, …) still get the SPA shell from
-  the static fallback. The browser decodes the error body and surfaces its
+  the static fallback; the bundled `index.html` pins its relative
+  favicon/splash/bundle URLs with `<base href="/">`, so a refresh on `/game/42`
+  still loads `/chipbox.js` instead of `/game/chipbox.js`. Existing assets are
+  served as themselves, never swallowed by the fallback. The browser decodes the
+  error body and surfaces its
   message instead of reporting a JSON parse failure. The standard body is the
   shared `ErrorResponse` in `:cbox:common:models:api`.
 - **Library refresh is restart-only.** The server scans on every start in the
@@ -176,8 +180,12 @@ the pruning gate, and serving/path-leak via `/api/files/{id}` +
 duplicate sort keys for games, artists, and tracks, asserts the pages are the
 full catalog with no duplicates, and covers the `ids` bypass plus the
 limit/offset coercion rules. `UnknownApiRouteTest` covers the JSON 404 for
-unknown GET/POST/deep API paths, known routes not being shadowed, and app deep
-paths still returning `index.html` (a test-resource shell). Fixtures are
+unknown GET/POST/deep API paths, known routes not being shadowed, app deep
+paths still returning `index.html` (a test-resource shell), and existing static
+assets such as `/chipbox.js` being served as themselves rather than swallowed by
+the SPA fallback. `WebIndexHtmlTest` reads the shipped
+`apps/js/src/jsMain/resources/index.html` and asserts its `<base href="/">` (the
+deep-link asset contract). Fixtures are
 generated as stored-entry RAR4 archives in a test helper (no external `rar`
 tool), and the scan uses `DatabaseRepository` over `FakeDatabase` with a no-op
 vgmstream prober, so no native library is required.

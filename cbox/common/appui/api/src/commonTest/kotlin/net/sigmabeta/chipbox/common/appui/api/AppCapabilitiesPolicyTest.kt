@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.features.managelibrary.ManageLibrary
 import net.sigmabeta.chipbox.features.playbackstatus.PlaybackStatus
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.features.settings.Settings
+import net.sigmabeta.chipbox.webroutes.allowsNavigation
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

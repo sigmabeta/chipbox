@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Deep links (e.g. /game/42) are served this same index.html by the server's SPA fallback.
+         Without an absolute base, the browser resolves the relative favicon/splash/script URLs
+         under the current path (/game/favicon.png), so a refresh on a detail screen loads a blank
+         page. `base` keeps every asset at the site root for both / and nested app routes. -->
+    <base href="/">
     <title>Chipbox</title>
     <!-- The web client is a release-shaped build (AppInfo.isDebug = false, WebModules.kt): the
          favicon and launch splash use the release artwork, matching the in-app palette and the

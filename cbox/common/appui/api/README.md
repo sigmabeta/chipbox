@@ -27,12 +27,20 @@ Grouped by role (commonMain unless noted):
   Its `capabilities: AppCapabilities` parameter (default: the full desktop
   surface) sets the host's visible surface.
 
-- **Capability policy** — `AppCapabilitiesPolicy.kt`: `LocalAppCapabilities`, the
-  `allowsNavigation(destination)` guard the tab/outer sinks and the programmatic
-  navigation seam consult, and the snackbar copy shown when a `PickFolder` event
-  reaches a host that does not manage its own library. Library-administration
-  destinations require `canManageLibrary`; Playback Status / Crash Log / Component
-  Library require `showDebugSection`; Error Log requires `showErrorLog` only.
+- **Capability policy** — `AppCapabilitiesPolicy.kt`: `LocalAppCapabilities` and the
+  snackbar copy shown when a `PickFolder` event reaches a host that does not manage
+  its own library. The `allowsNavigation(destination)` guard itself now lives in
+  `:cbox:common:webroutes` (`NavigationPolicy.kt`) so the browser's URL decoder and the
+  in-app sinks share one policy: library-administration destinations require
+  `canManageLibrary`; Playback Status / Crash Log / Component Library require
+  `showDebugSection`; Error Log requires `showErrorLog` only.
+
+- **Browser-history seam** — `BrowserNavigation.kt`: `ShellTab`, `ShellTarget`
+  (`Tab` / `Deep`), `ShellNavigation` (host → shell: apply a decoded target), and
+  `BrowserNavigation` (shell → host: report a forward push or an in-place pop, ask
+  whether browser history owns an in-app Back, announce readiness). Provided by
+  `ChipboxAppUi(browserNavigation = …)`; null on desktop/Android and in UI tests that
+  don't assert URLs, so their behaviour is unchanged.
 
 - **Shell / chrome** — `ChipboxNavHost.kt`: `ChipboxTabsScreen` (root of the
   outer Navigator) renders the `TopAppBar`, `NavigationSuiteScaffold`
@@ -55,8 +63,11 @@ Grouped by role (commonMain unless noted):
 
 - **Composition locals / state holders** — `ActiveTabNavigator.kt`
   (`ActiveTabNavigator` + `TabRouter`, exposing the active tab's `Navigator` /
-  the `TabNavigator` to the shell back handler), `AppActionSink.kt`
+  the `TabNavigator` to the shell back handler; the former also records the route
+  key behind each pushed `Screen` so an in-app pop can name its new top),
+  `AppActionSink.kt`
   (`LocalAppActionSink`), `AppSnackbarHostState.kt` (`LocalAppSnackbarHostState`),
+  `BrowserNavigation.kt` (`LocalBrowserNavigation` + the browser seam above),
   `ActiveTabDestinations.kt` (`LocalActiveTabDestinations` + `LocalNavigationObserver`
   — programmatic-navigation / observation seams for UI tests + future deep-links),
   `PlatformBackKeys.kt` (`LocalPlatformBackKeys`).
@@ -103,6 +114,8 @@ setContent {
         backKeyEvents = null,
         activeTabDestinations = null,
         onNavigate = null,
+        // Web only: mirror routes into window.history and apply popstate/deep links.
+        browserNavigation = null,
         // Defaults to the full desktop surface; the browser passes the web graph's caps.
         capabilities = AppCapabilities.Default,
     )
@@ -135,7 +148,8 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
   `api(:cbox:common:player-status:api)`; `:cbox:common:ui:chrome:api`,
   `:cbox:common:ui:components:api`, `:cbox:common:ui:list:api`,
   `:cbox:common:ui:theme:api`, `:cbox:common:appcomm:api`,
-  `:cbox:common:capabilities:api`, `:cbox:common:strings:api`,
+  `:cbox:common:capabilities:api`, `:cbox:common:webroutes` (route<->URL
+  targets + the shared `allowsNavigation` policy), `:cbox:common:strings:api`,
   `:cbox:common:settings:api`, `:cbox:common:debug:api`, `:cbox:common:models:api`;
   `sage.common.di`, `sage.common.appinfo`, `sage.common.ui.listScreens`,
   `sage.common.ui.iconsReal`; Voyager (navigator / tab-navigator / transitions /

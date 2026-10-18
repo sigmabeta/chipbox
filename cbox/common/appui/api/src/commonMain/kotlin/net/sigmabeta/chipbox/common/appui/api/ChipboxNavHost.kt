@@ -51,12 +51,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.core.screen.ScreenKey
+import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.Tab
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.capabilities.AppCapabilities
+import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
+import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.ui.Icon as SageIcon
@@ -68,6 +71,7 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalTitleBarController
 import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
+import net.sigmabeta.chipbox.webroutes.allowsNavigation
 import net.sigmabeta.sage.ui.list.LocalListBottomInset
 
 private val NAV_RAIL_MIN_WIDTH = 552.dp
@@ -114,27 +118,88 @@ internal object ChipboxTabsScreen : Screen {
         // TabNavigator content block) can read/mutate the current tab — see [TabRouter].
         val tabRouter = remember { TabRouter() }
 
+        // The web host's browser-history bridge, if this host has one. Desktop/Android pass null,
+        // so every report below compiles away to a no-op and nothing changes for them.
+        val browserNavigation = LocalBrowserNavigation.current
+        val shellNavigation = remember(activeTabNavigator, tabRouter) {
+            ShellNavigationImpl(activeTabNavigator, tabRouter)
+        }
+
+        // Announce the shell once both navigators exist, so the host can apply a deep link or a
+        // refreshed URL. Guarded by `shellAnnounced`: switching tabs replaces the active-tab
+        // Navigator, and re-announcing would replay the initial target on every switch.
+        val activeNavigator = activeTabNavigator.navigator
+        val tabNavigator = tabRouter.tabNavigator
+        var shellAnnounced by remember { mutableStateOf(false) }
+        LaunchedEffect(browserNavigation, activeNavigator, tabNavigator) {
+            if (!shellAnnounced && browserNavigation != null && activeNavigator != null && tabNavigator != null) {
+                shellAnnounced = true
+                browserNavigation.onShellReady(shellNavigation)
+            }
+        }
+        DisposableEffect(browserNavigation) {
+            onDispose { browserNavigation?.onShellDisposed() }
+        }
+
+        // The shell's current location as a browser target: the active tab root, or the route key
+        // that produced the top deep screen (null when it was pushed without a route key).
+        val currentTarget: () -> ShellTarget? = remember(activeTabNavigator, tabRouter) {
+            {
+                val tabNav = tabRouter.tabNavigator
+                val nav = activeTabNavigator.navigator
+                if (tabNav == null || nav == null) {
+                    null
+                } else {
+                    val tab = tabNav.current.asShellTab()
+                    val top = nav.lastItem
+                    if (top.key == tabRootKey(tab)) {
+                        ShellTarget.Tab(tab)
+                    } else {
+                        activeTabNavigator.destinations[top.key]?.let(ShellTarget::Deep)
+                    }
+                }
+            }
+        }
+
         // The single back-routing handler for the whole shell. Both back affordances report
         // *what happened* — `AppBack` from the TopAppBar up arrow, `DeviceBack` from each tab
         // Navigator's `onBackPressed` (see `TabNavigatorContent`) — and this decides the
         // navigation: pop the active tab's deep stack, else (if on a non-Home tab root)
         // switch to the Home tab, else fall back to the outer Navigator.
-        val appActionSink = remember(activeTabNavigator, tabRouter, outerSink) {
+        val appActionSink = remember(
+            activeTabNavigator,
+            tabRouter,
+            outerSink,
+            browserNavigation,
+            currentTarget,
+        ) {
             ActionSink { action ->
                 when (action) {
                     SageAction.AppBack, SageAction.DeviceBack -> {
-                        val tabNav = activeTabNavigator.navigator
-                        val outerTabNav = tabRouter.tabNavigator
-                        when {
-                            tabNav != null && tabNav.canPop -> tabNav.pop()
+                        // Browser history is the source of truth on web: when it has an app entry
+                        // behind this one, let it drive the pop (the resulting popstate applies
+                        // the target). Escape/up-arrow/device-back all funnel here.
+                        if (browserNavigation?.onBackRequested() != true) {
+                            val tabNav = activeTabNavigator.navigator
+                            val outerTabNav = tabRouter.tabNavigator
+                            when {
+                                tabNav != null && tabNav.canPop -> {
+                                    tabNav.pop()
+                                    currentTarget()?.let { browserNavigation?.onTargetChanged(it, push = false) }
+                                }
 
-                            outerTabNav != null &&
-                                outerTabNav.current.key == SearchTab.key -> {
-                                tabNav?.popAll()
-                                outerTabNav.current = HomeTab
+                                outerTabNav != null &&
+                                    outerTabNav.current.key == SearchTab.key -> {
+                                    tabNav?.popAll()
+                                    outerTabNav.current = HomeTab
+                                    browserNavigation?.onTargetChanged(
+                                        ShellTarget.Tab(ShellTab.HOME),
+                                        push = false,
+                                    )
+                                }
+
+                                else -> outerSink(ChipboxEvent.NavigateBack)
                             }
-
-                            else -> outerSink(ChipboxEvent.NavigateBack)
                         }
                     }
 
@@ -164,11 +229,24 @@ internal object ChipboxTabsScreen : Screen {
         val navigationObserver = LocalNavigationObserver.current
         val capabilities = LocalAppCapabilities.current
         if (activeTabDestinations != null) {
-            LaunchedEffect(activeTabDestinations, activeTabNavigator, navigationObserver, capabilities) {
+            LaunchedEffect(
+                activeTabDestinations,
+                activeTabNavigator,
+                navigationObserver,
+                browserNavigation,
+                capabilities,
+            ) {
                 activeTabDestinations.collect { destination ->
                     if (capabilities.allowsNavigation(destination)) {
+                        val navigator = activeTabNavigator.navigator ?: return@collect
+                        val screen = screenFor(destination)
+                        activeTabNavigator.destinations[screen.key] = destination
                         navigationObserver?.invoke(destination)
-                        activeTabNavigator.navigator?.push(screenFor(destination))
+                        navigator.push(screen)
+                        browserNavigation?.onTargetChanged(
+                            ShellTarget.Deep(destination),
+                            push = true,
+                        )
                     }
                 }
             }
@@ -270,6 +348,13 @@ internal object ChipboxTabsScreen : Screen {
                         if (tabNavigator.current.key != target.key) {
                             tabNavigator.current = target
                         }
+                        // Tab roots are history entries too (Library/Search/Home), so Back returns
+                        // through them. Re-tapping the selected tab at its root encodes to the same
+                        // URL and the host skips a duplicate entry.
+                        browserNavigation?.onTargetChanged(
+                            ShellTarget.Tab(target.asShellTab()),
+                            push = true,
+                        )
                     }
 
                     NavigationSuiteScaffold(
@@ -300,8 +385,12 @@ internal object ChipboxTabsScreen : Screen {
                                             TopAppBarNavIcon(
                                                 shouldShowBack = titleBar.shouldShowBack,
                                                 onMenu = {
-                                                    activeTabNavigator.navigator
-                                                        ?.push(SettingsDeepScreen)
+                                                    activeTabNavigator.navigator?.push(SettingsDeepScreen)
+                                                    activeTabNavigator.destinations[SettingsDeepScreen.key] = Settings
+                                                    browserNavigation?.onTargetChanged(
+                                                        ShellTarget.Deep(Settings),
+                                                        push = true,
+                                                    )
                                                 },
                                             )
                                         },
@@ -344,6 +433,11 @@ internal object ChipboxTabsScreen : Screen {
                                             onClick = {
                                                 activeTabNavigator.navigator
                                                     ?.push(NowPlayingScreen)
+                                                activeTabNavigator.destinations[NowPlayingScreen.key] = NowPlaying
+                                                browserNavigation?.onTargetChanged(
+                                                    ShellTarget.Deep(NowPlaying),
+                                                    push = true,
+                                                )
                                             },
                                         )
                                     }
@@ -511,6 +605,45 @@ internal fun buildOuterSink(
                     duration = SnackbarDuration.Short,
                 )
             }
+        }
+    }
+}
+
+/**
+ * The shell side of [BrowserNavigation]. The web host calls [navigateTo] from `popstate` and from
+ * the initial canonicalisation; tab targets select a tab (clearing the outgoing stack, like tapping
+ * the nav bar), deep targets pop the active tab to an existing screen when possible and push
+ * otherwise (Forward to a screen the reset tab stack no longer holds).
+ */
+private class ShellNavigationImpl(
+    private val activeTabNavigator: ActiveTabNavigator,
+    private val tabRouter: TabRouter,
+) : ShellNavigation {
+
+    override fun navigateTo(target: ShellTarget) {
+        when (target) {
+            is ShellTarget.Tab -> selectTab(target.tab)
+            is ShellTarget.Deep -> show(target.destination)
+        }
+    }
+
+    private fun selectTab(tab: ShellTab) {
+        val tabNavigator = tabRouter.tabNavigator ?: return
+        activeTabNavigator.navigator?.popAll()
+        val target = tab.toTab()
+        if (tabNavigator.current.key != target.key) {
+            tabNavigator.current = target
+        }
+    }
+
+    private fun show(destination: Any) {
+        val navigator = activeTabNavigator.navigator ?: return
+        val screen = screenFor(destination)
+        if (navigator.items.any { it.key == screen.key }) {
+            navigator.popUntil { it.key == screen.key }
+        } else {
+            activeTabNavigator.destinations[screen.key] = destination
+            navigator.push(screen)
         }
     }
 }

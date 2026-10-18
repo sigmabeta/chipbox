@@ -83,6 +83,22 @@ class UnknownApiRouteTest {
         assertEquals("<html>chipbox test shell</html>", response.bodyAsText().trim())
     }
 
+    @Test
+    fun `a deep app path serves the shell while existing assets are served as themselves`() = withServer {
+        // A deep link (refresh / copied URL) gets the SPA index...
+        val shell = client.get("/game/42")
+        assertEquals(HttpStatusCode.OK, shell.status)
+        assertEquals(ContentType.Text.Html, shell.contentType()?.withoutParameters())
+        assertTrue(shell.bodyAsText().contains("chipbox test shell"))
+
+        // ...but the relative asset URL that index.html points at must resolve to the real file,
+        // not to another copy of index.html (the old `default("index.html")` tail swallowed these).
+        val asset = client.get("/chipbox.js")
+        assertEquals(HttpStatusCode.OK, asset.status)
+        assertTrue(asset.bodyAsText().contains("chipbox test bundle"), "expected the JS asset body")
+        assertTrue(!asset.bodyAsText().contains("chipbox test shell"), "the asset was swallowed by index.html")
+    }
+
     private fun errorMessage(body: String): String =
         Json.parseToJsonElement(body).jsonObject.getValue("error").jsonPrimitive.content
 }
