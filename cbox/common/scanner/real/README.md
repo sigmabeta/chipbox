@@ -26,7 +26,10 @@ elsewhere depend on `:cbox:common:scanner:api` for the `Scanner` type. `RealScan
 is constructed with the library `Repository`, a `LibrarySource`, the format
 `Readers`, and a `VgmstreamProber` (the native subsong probe, injected so this
 module stays platform-neutral). The server additionally passes an optional
-`RsnExtractor`; every other target omits it and keeps archive staging.
+`RsnExtractor`; every other target omits it and keeps archive staging. The
+scanner passes a folder+filename `source` to `extract()`; a
+`DuplicateRsnContentException` becomes a per-file failure (the archive's tracks
+are dropped, the scan still completes).
 
 ## Using it
 

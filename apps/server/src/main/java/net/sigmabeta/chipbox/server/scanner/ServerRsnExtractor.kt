@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.server.scanner
 import java.io.File
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import net.sigmabeta.chipbox.scanner.DuplicateRsnContentException
 import net.sigmabeta.chipbox.scanner.ExtractedRsnMember
 import net.sigmabeta.chipbox.scanner.RsnExtractor
 import net.sigmabeta.chipbox.utils.RSN_MEMBER_EXTENSION
@@ -27,6 +28,13 @@ import okio.Path.Companion.toOkioPath
  * [prune] is deliberately conservative: it keeps a hash directory whenever any surviving track
  * path is under it, and tolerates delete failures (a member may be streaming). The scanner only
  * calls it after a fully successful scan, so a partial scan never deletes usable output.
+ *
+ * One archive content hash belongs to one archive, recorded by a `.source` marker file inside the
+ * hash directory. A second archive with byte-identical content is refused with
+ * [DuplicateRsnContentException] instead of writing the same member paths: extracted tracks are
+ * identified by `(path, trackNumber)`, so admitting both would violate the unique index. The admin
+ * is expected to remove the duplicate from the library. If the owning archive is renamed or
+ * removed, the marker's path no longer exists and the survivor takes ownership on the next scan.
  */
 class ServerRsnExtractor(
     workDir: File,
@@ -43,7 +51,10 @@ class ServerRsnExtractor(
     // a file a first writer just produced (and prune can't race an extraction).
     private val ioMutex = Mutex()
 
-    override suspend fun extract(archiveBytes: ByteArray): List<ExtractedRsnMember>? {
+    override suspend fun extract(
+        archiveBytes: ByteArray,
+        source: String,
+    ): List<ExtractedRsnMember>? {
         val members = rsnSpcMembers(archiveBytes)?.takeIf { it.isNotEmpty() } ?: return null
 
         val hash = archiveBytes.toByteString().sha256().hex()
@@ -51,13 +62,34 @@ class ServerRsnExtractor(
         val names = memberFileNames(members.map { it.name })
 
         return ioMutex.withLock {
+            val owner = readOwner(directory)
+            if (owner != null && owner != source && File(owner).isFile) {
+                throw DuplicateRsnContentException(source, owner)
+            }
             fileSystem.createDirectories(directory)
+            // First extraction, or the previous owner was renamed/removed: claim the hash.
+            if (owner != source) writeOwner(directory, source)
             members.mapIndexed { index, member ->
                 val target = directory / names[index]
                 writeIfNeeded(target, member.bytes)
                 ExtractedRsnMember(name = member.name, path = target.toString())
             }
         }
+    }
+
+    /**
+     * The archive that owns [directory], or null when the hash was never claimed (or a legacy
+     * extraction predates the marker). A corrupt/unreadable marker is treated as absent; the next
+     * extraction rewrites it.
+     */
+    private fun readOwner(directory: Path): String? = runCatching {
+        val marker = directory / OWNER_MARKER
+        if (fileSystem.metadataOrNull(marker)?.isRegularFile != true) return@runCatching null
+        fileSystem.read(marker) { readUtf8() }.trim().ifEmpty { null }
+    }.getOrNull()
+
+    private fun writeOwner(directory: Path, source: String) {
+        fileSystem.write(directory / OWNER_MARKER) { writeUtf8(source) }
     }
 
     override suspend fun prune(keptPaths: Set<String>) {
@@ -102,6 +134,10 @@ class ServerRsnExtractor(
 
     companion object {
         const val RSN_DIR = "rsn"
+
+        // Owner marker inside each hash directory. Starts with a dot so it is hidden on Unix and
+        // cannot collide with an extracted member (those always end in `.spc`).
+        internal const val OWNER_MARKER = ".source"
 
         /**
          * Deterministic, path-traversal-free output names, one per member in member order.

@@ -27,7 +27,10 @@ single-user server the user hosts themselves. We choose the last.
   only after a successful scan, and become ordinary `spc` tracks. Extraction is
   a server-only scanner collaborator; desktop, Android, and CLI keep archive
   staging. The extracted path becomes the track's `path` and the track number is
-  reset to zero, so RSN track IDs re-key once on the first extraction.
+  reset to zero, so RSN track IDs re-key once on the first extraction. Because
+  the output is content-addressed, only one archive may own a given content hash
+  per scan; a byte-identical duplicate in another folder is refused as a per-file
+  scan failure and the admin removes one copy.
 - **Navigation:** Voyager routes are mirrored into browser URLs with
   `pushState`, so Back, Forward, refresh, and deep links work.
 - **Web-only UI:** Manage Library, Folder Picker, Rescan Status, and Clear

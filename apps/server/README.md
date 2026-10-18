@@ -152,6 +152,18 @@ each archive's SPC members to:
   `extension` is `spc`, and `trackNumber` is `0`.
 - A member is written only when it is missing or its bytes mismatch; matching
   content-addressed output is reused.
+- One archive owns a content hash, recorded in a `.source` marker inside the
+  hash directory. A second archive with byte-identical bytes is **refused**:
+  its tracks are dropped, `tracksFailed` increments, and the server log names
+  both archives. The scan still completes and the rest of the library is usable,
+  but RSN pruning stays gated (`tracksFailed > 0`) until the duplicate is gone.
+  The error repeats on each scan while both copies exist; remove one of the
+  duplicate archives (duplicate rips, backup copies, `Album (1)` folders) and
+  rescan. If the owning archive is renamed/removed, the
+  marker's path no longer exists and the survivor takes ownership. If the
+  surviving archive was the refused side, the new game adopts the existing
+  extracted track rows and keeps their ids, so favorites/queues survive; the old
+  game is pruned at the end of the scan.
 - Orphaned hash directories are pruned only after a fully successful scan
   (`tracksFailed == 0`) and after removed folders are pruned. A directory is kept
   whenever any surviving track path is under it — including folders the scan
