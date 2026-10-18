@@ -32,4 +32,4 @@ external interface ChipboxGbaModule {
 private external val chipboxGba: () -> Promise<ChipboxGbaModule>
 
 suspend fun loadChipboxGba(): ChipboxGbaModule =
-    loadWasmModule("gba", "/wasm/chipbox_gba.js") { chipboxGba() }
+    loadWasmModule("gba", "/wasm/chipbox_gba.js", "chipboxGba") { chipboxGba() }

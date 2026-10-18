@@ -50,7 +50,14 @@ class WasmVgmstreamEmulator(private val fileSystem: FileSystem) : Emulator() {
     override suspend fun ensureNativeLibReady() {
         if (loadedModule != null) return
         val pending = loadInProgress ?: loadScope.async { loadChipboxVgmstream() }.also { loadInProgress = it }
-        loadedModule = pending.await()
+        try {
+            loadedModule = pending.await()
+        } catch (t: Throwable) {
+            // A failed module load must not stay cached in `loadInProgress`: the next play (after
+            // the user fixes the bundle / reconnects) gets a fresh attempt without a page reload.
+            loadInProgress = null
+            throw t
+        }
     }
 
     override fun loadNativeLib() {
