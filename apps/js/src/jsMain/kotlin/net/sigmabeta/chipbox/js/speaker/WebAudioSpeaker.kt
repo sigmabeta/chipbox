@@ -123,7 +123,9 @@ class WebAudioSpeaker(
 
         val settled = when {
             initState.value.isReady -> initState.value
+
             initState.value.isTerminalFailure -> initState.value
+
             else -> withTimeoutOrNull(READY_WAIT_TIMEOUT_MS) {
                 initState.first { it.isReady || it.isTerminalFailure }
             }

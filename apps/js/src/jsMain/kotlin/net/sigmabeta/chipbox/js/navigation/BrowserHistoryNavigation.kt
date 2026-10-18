@@ -119,7 +119,9 @@ class BrowserHistoryNavigation(
         val decoded = RouteUrl.decode(path, capabilities)
         return when (decoded) {
             is ChipboxTarget.Tab -> ShellTarget.Tab(decoded.tab.toShellTab())
+
             is ChipboxTarget.Deep -> ShellTarget.Deep(decoded.destination)
+
             // Unknown app path: fall back to the root screen (and canonicalise to "/").
             null -> ShellTarget.Tab(ShellTab.HOME)
         }

@@ -103,9 +103,8 @@ jobs:
         run: >-
           ./gradlew jsNodeTest
           -Psage.js=true -Pchipbox.skipNative
-          -Pkotlin.daemon.jvmargs=-Xmx12g
           -Dorg.gradle.isolated-projects=false -Dorg.gradle.configureondemand=false
-          --no-parallel --build-cache --no-daemon --max-workers=2
+          --no-parallel --build-cache --no-daemon --max-workers=4
       - name: Read the pinned toolchain (single source - docker/*-version)
         id: pins
         run: |
