@@ -206,6 +206,10 @@ class WebAudioSpeaker(
         // `consumed` message that will never come.
         if (ctx != null && ctx.state == "suspended") resumeContext(ctx)
 
+        // Deliberately terminal, with no in-place retry: the queue has been full and the worklet
+        // has reported no progress for the whole window, and a browser-suspended context can only
+        // be resumed from a user gesture anyway. The director's ERROR + Play recovery restarts the
+        // track with a fresh budget and a real gesture behind it (see Director.restartCurrentTrack).
         val caughtUp = withTimeoutOrNull(CAPACITY_WAIT_TIMEOUT_MS) {
             consumedOutputFrames.first { consumed -> postedOutputFrames - consumed <= MAX_QUEUE_DEPTH_FRAMES }
         }

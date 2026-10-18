@@ -596,6 +596,13 @@ class RealDirector(
                 // the top, matching the user's expectation that play restarts the track on screen.
                 PlayerState.STOPPED -> restartCurrentTrack()
 
+                // A fatal error tears the loop down exactly like STOPPED: the generator loop and
+                // speaker sink are both stopped, so the generic generator.play() would leave the
+                // loop spinning on an empty channel while the mini-player and Now Playing look
+                // alive. Re-issue the current track from the top (and clear the stale error), which
+                // is what the Home/Now Playing play gestures already mean for ERROR.
+                PlayerState.ERROR -> restartCurrentTrack()
+
                 else -> generator.play()
             }
         }
@@ -603,18 +610,29 @@ class RealDirector(
 
     /**
      * Reload and restart the track at the current setlist position from the beginning. Unlike a
-     * paused resume there's nothing to un-pause — after a setlist completes the generator and
-     * speaker have been torn down — so the track has to be queued afresh, which re-spins both the
-     * generation and consume loops (and walks the state back through BUFFERING -> PLAYING via the
-     * usual Loading/Emitting reducers). No-op if there's no session to restart.
+     * paused resume there's nothing to un-pause — after a setlist completes or a fatal error the
+     * generator and speaker have been torn down — so the track has to be queued afresh, which
+     * re-spins both the generation and consume loops (and walks the state back through
+     * BUFFERING -> PLAYING via the usual Loading/Emitting reducers). The state stays STOPPED/ERROR
+     * until the restarted track's first Loading lands. No-op if there's no session to restart.
      */
     private suspend fun restartCurrentTrack() {
         val trackId = model.session?.currentPosition?.let { model.setlist?.getOrNull(it) }
         if (trackId == null) {
-            hatchet.w("play() while STOPPED but no current track to restart.")
+            hatchet.w("play() after STOPPED/ERROR but no current track to restart.")
             return
         }
-        commit(model.copy(consecutiveFailures = 0))
+        commit(
+            model.copy(
+                consecutiveFailures = 0,
+                // A restart supersedes the error that ended the previous attempt: clear it up front
+                // so the mini-player warning goes away as soon as the user taps play.
+                playback = model.playback.copy(errorMessage = null),
+                // Restarting from the top invalidates a restore offset aimed at the failed load;
+                // leaving it set would make the restarted track load straight back into PAUSED.
+                pendingResumeMs = null,
+            )
+        )
         generator.startTrack(trackId)
     }
 
