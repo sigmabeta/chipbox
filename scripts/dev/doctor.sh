@@ -162,6 +162,15 @@ if [ -n "$sdk" ] && [ -d "$sdk" ]; then
 else
   warn "Android SDK not found (ANDROID_HOME / ANDROID_SDK_ROOT / sdk.dir); Android axes unavailable"
 fi
+# settings.gradle.kts copies the root local.properties into sage/ when it is missing, but a stale
+# sage/local.properties is easy to leave behind and the composite build honours it.
+if [ -f sage/local.properties ]; then
+  sage_sdk="$(sed -n 's/^sdk\.dir=//p' sage/local.properties | head -1)"
+  if [ -n "$sage_sdk" ] && [ ! -d "$sage_sdk" ]; then
+    warn "sage/local.properties sdk.dir points at a missing SDK: $sage_sdk"
+    warn "remove sage/local.properties (settings.gradle.kts will re-sync it) or fix sdk.dir"
+  fi
+fi
 if command -v adb >/dev/null 2>&1; then
   devices="$(adb devices 2>/dev/null | awk 'NR > 1 && $2 == "device" {print $1}' | tr '\n' ' ')"
   [ -n "$devices" ] && ok "attached devices: $devices" || warn "no attached device (device axes will SKIP)"
