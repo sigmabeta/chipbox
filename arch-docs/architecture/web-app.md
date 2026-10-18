@@ -153,10 +153,29 @@ saved snapshot, and reloading a tab restores that snapshot.
   bytes from `/api/files/{id}`.
 - `WebAudioSpeaker` resamples to the `AudioContext` rate and feeds the
   `AudioWorklet` FIFO. The `AudioContext` must be created/resumed from the
-  user's play gesture, not from the first audio buffer.
+  user's play gesture, not from the first audio buffer: `RealDirector.request`
+  calls `Speaker.prepareForPlayback()` synchronously for Start/Play/PlayPosition,
+  before any coroutine work, and the web sink creates + resumes the context
+  there (required by Safari).
+- Worklet initialization is the shared pure `AudioInitState` reducer
+  (`Idle → Preparing → Ready`/`Failed`, 4 s per attempt, at most one retry).
+  `BaseSpeaker.awaitSinkReady()` gates the consume loop before it dequeues a
+  buffer: frames produced while the module loads are held by producer
+  backpressure (not dropped), and a terminal init failure exits the loop after
+  emitting `SpeakerEvent.Error`. `teardown()` flushes the FIFO but keeps the
+  node and context alive, so a play after end-of-setlist/stop is not mute; a
+  failed init is reset on stop so the next gesture can rebuild it.
+- A worklet/node/context failure and a stalled or suspended context are visible:
+  the speaker emits `SpeakerEvent.Error`; the director moves to `ERROR` (also
+  for a failed last track, instead of looking like a normal stop); and the web
+  host routes `Director.errorEvents()` into the app snackbar while NowPlaying
+  keeps its error log.
 - The cache and staging file system is in-memory (`FakeFileSystem`); a reload
   re-renders tracks. There is no persistent PCM cache on web.
 - The Web Media Session exposes play/pause/next/previous/seek and metadata.
+  Handler registration, metadata writes, and position writes are wrapped in
+  `runCatching`: an unsupported action (Safari `NotSupportedError`) must not
+  abort app startup or kill the playback collector.
 - Emulation runs on the Kotlin/JS event loop; there is no Worker offload.
 
 ## Navigation and UI surface
@@ -192,6 +211,11 @@ saved snapshot, and reloading a tab restores that snapshot.
   `index.html`. Paged list endpoints (`games`, `artists`, `tracks`) clamp
   `limit` into `1..500`, default `offset` to 0, and order by their display key
   plus `id`, so pages partition the catalog under ties.
+- The fallback serves `index.html` only for app-shaped routes. A missing asset
+  (anything under `/wasm/` or with a filename extension) is a real 404, so the
+  injected WASM `<script>` fires its `error` listener instead of parsing HTML as
+  JavaScript. Unknown `/api/*` paths are the API routes' JSON 404 and must stay
+  ahead of this fallback.
 - The bundled `index.html` declares `<base href="/">`; without it a refresh on
   `/game/42` resolves `chipbox.js` as `/game/chipbox.js` and loads a blank page.
   Existing static assets are served as themselves, not through the SPA default.
@@ -305,8 +329,9 @@ saved snapshot, and reloading a tab restores that snapshot.
   running server.
 - Ktor server tests cover scan + RSN extraction, file serving, paging,
   unknown-route handling (JSON `/api` 404s, deep app paths serving the SPA shell,
-  and static assets not being swallowed by the fallback), and the shipped
-  `index.html`'s `<base href="/">`. `apps/server`'s JVM tests cover the
+  and the static-asset 404 policy: a missing `/wasm/*` is never SPA HTML while
+  app routes still fall back), and the shipped `index.html`'s `<base href="/">`.
+  `apps/server`'s JVM tests cover the
   `ScannerState` → `HealthStatus` mapping (including the no-path-leak rule) and
   the loopback-bind predicate.
 - No Playwright or other browser automation. UI and audio are verified manually.

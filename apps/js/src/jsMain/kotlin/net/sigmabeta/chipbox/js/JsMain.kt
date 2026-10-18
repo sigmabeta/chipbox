@@ -52,6 +52,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLTextAreaElement
@@ -185,8 +187,18 @@ fun main() {
                         onCopyToClipboard = { _, text -> window.navigator.clipboard.writeText(text) },
                         backKeyEvents = backKeyEvents,
                         // Corrupt/older data and localStorage quota failures are non-fatal: the
-                        // stores fall back to empty and surface a one-line snackbar here.
-                        messages = graph.browserStateEvents.userMessages,
+                        // stores fall back to empty and surface a one-line snackbar here. Player
+                        // errors share the same host — a failed track (missing WASM, worklet
+                        // failure) must be visible app-wide, not only in the NowPlaying log that
+                        // may not be on screen.
+                        messages = merge(
+                            graph.browserStateEvents.userMessages,
+                            graph.director.errorEvents().map { event ->
+                                event.track?.title?.takeIf { it.isNotBlank() }?.let { title ->
+                                    "$title: ${event.message}"
+                                } ?: event.message
+                            },
+                        ),
                         // URL mirroring + browser Back/Forward/deep links (ADR-0003).
                         browserNavigation = browserNavigation,
                         // The server owns the library and debug surfaces are hidden; Error Log
