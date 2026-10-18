@@ -4,19 +4,17 @@ hide:
   - toc
 ---
 
-# Chipbox
+<h1 class="chipbox-sr-only">Chipbox</h1>
 
-<p style="font-size: 1.25rem; color: var(--md-default-fg-color--light); max-width: 40rem;">
-A music player that plays raw program dumps of old console sound chips, emulating them in real time. Authentic playback from files a few dozen KiB in size.
-</p>
-
-<figure class="chipbox-demo">
-  <video controls playsinline preload="metadata" poster="assets/chipbox-demo-poster.jpg">
-    <source src="assets/chipbox-demo.mp4" type="video/mp4">
-    Your browser doesn’t support HTML video.
-  </video>
-  <figcaption>Wild Arms, emulated in real time on Android.</figcaption>
-</figure>
+<div class="chipbox-hero">
+  <p class="chipbox-hero__text">A music player that plays raw program dumps of old console sound chips, emulating them in real time. Authentic playback from files a few dozen KiB in size.</p>
+  <figure class="chipbox-demo">
+    <video autoplay muted loop playsinline poster="assets/chipbox-demo-poster.jpg">
+      <source src="assets/chipbox-demo.mp4" type="video/mp4">
+      Your browser doesn’t support HTML video.
+    </video>
+  </figure>
+</div>
 
 ---
 
