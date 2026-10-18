@@ -26,7 +26,7 @@ favorites, playlists, the bounded play history, and the playback-session store t
 | `PlayHistoryState.kt` | Payload: chronological `PlayHistoryEntry(trackId, gameId, artistIds, timeMs)` plays. `MAX_ENTRIES = 500`; `withPlay()` appends and `bounded()` keeps the newest plays by timestamp. |
 | `StoragePlaybackHistoryRepository.kt` | `PlaybackHistoryRepository` over the store: records plays, folds recently-played / most-played songs, games, and artists, and exposes played game ids. Field names match the old unversioned `WebPlay` array (v0). |
 | `PlaybackSessionState.kt` | Payload: at most one `SessionSnapshot` (queue, current track, position, shuffle, repeat). |
-| `StoragePlaybackSessionStore.kt` | Shared `PlaybackSessionStore` contract over the store. `save`/`clear` are synchronous and non-throwing (safe from a `pagehide` handler); `clear` leaves no resumable snapshot. |
+| `StoragePlaybackSessionStore.kt` | Shared `PlaybackSessionStore` contract over the store. `save`/`clear` are synchronous, non-throwing explicit writes (safe from a `pagehide` handler); `clear` leaves no resumable snapshot. Being explicit writes, they also replace a newer-schema blob — see the storage-contract bullet. |
 | `SessionSnapshotFiltering.kt` | `withKnownTracks(knownIds)` / `referencedTrackIds()`: pure pre-restore filtering that drops unknown track ids, remaps the current track by queue position, and returns null when nothing survives. |
 
 ## Storage contract
@@ -94,7 +94,14 @@ Behaviour rules:
 - A corrupt blob is replaced by the next `update`, even when the transform produces the same empty
   value the corrupt blob decoded to. That is what makes an explicit clear (favorites, playlists,
   history, search) actually erase an unreadable string; the session store's `clear()` writes
-  unconditionally for the same reason. A newer-schema blob is never rewritten.
+  unconditionally for the same reason.
+- A newer-schema blob (`schemaVersion > current`) is **never rewritten by `update`**: this build
+  cannot decode it, so it is left for the build that wrote it. Two explicit writes are the
+  exception and always overwrite: `StoragePlaybackSessionStore.save()`/`clear()`. They are
+  synchronous (`PlaybackSessionStore` has no failure return) and `Storage` has no synchronous
+  read, so a guard is not possible without changing that contract; the blob is unreadable here
+  anyway, and an explicit save/clear is user intent that must land. Every `update`-based clear
+  keeps the never-rewrite guarantee.
 
 ## Why depend on this module
 
@@ -137,7 +144,8 @@ session.load()?.let { it.withKnownTracks(knownIds) } // null -> clear the snapsh
 
 Covers envelope round-trip, corrupt/missing/older/newer versions, the legacy v0 hooks, favorites
 ordering/re-favorite, playlist ids/order/reorder/append de-dup, history recording/folds/cap/trim/
-migration, session save/load/clear/migration/failure paths, snapshot unknown-id filtering and
+migration, session save/load/clear/migration/failure paths, an explicit session clear replacing a
+newer-schema blob, snapshot unknown-id filtering and
 remap, cross-tab flow updates, quota/read failures, search-history persistence, same-tab concurrent
 updates (both land), corrupt-blob repair on clear for every store, and cancellation propagation
 (no spurious `READ_FAILED`).

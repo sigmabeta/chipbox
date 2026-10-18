@@ -15,6 +15,16 @@ import net.sigmabeta.sage.storage.common.Storage
  * [save] and [clear] are synchronous and never throw — the persister's `snapshotNow()` runs from a
  * `pagehide`/`visibilitychange` handler, where an uncaught quota `DOMException` would be lost or
  * could interrupt teardown. Failures surface as a non-fatal [BrowserStateEvent].
+ *
+ * Both are **explicit writes**, and unlike [VersionedStorageStore.update] they do not compare
+ * against the previous blob: a new snapshot or an explicit stop must be persisted even when the
+ * stored value is unreadable. That includes a blob written by a *newer* build
+ * ([DecodeFailure.UNSUPPORTED_VERSION]): an explicit `save`/`clear` from this build replaces it.
+ * The exception is deliberate rather than an oversight — this build cannot decode that blob (it
+ * reads as "no session"), the [PlaybackSessionStore] contract has no way to report a refused
+ * write, and a guard would need a *synchronous* read, which [Storage] does not offer (its reads
+ * are suspending `Flow`s). A newer schema is therefore protected from implicit rewrites
+ * (`update {}`) but not from an explicit save/clear.
  */
 class StoragePlaybackSessionStore(
     private val store: VersionedStorageStore<PlaybackSessionState>,

@@ -58,6 +58,11 @@ class VersionedStorageStore<T>(
     /**
      * Encode and persist [value]; returns false when storage refused the write. Never throws a
      * storage failure (cancellation still propagates).
+     *
+     * Unlike [update], this is an unconditional write: it does not decode what is stored, so it
+     * replaces a corrupt **or** newer-schema blob. [update] is the read-modify-write path and is
+     * where a newer schema is protected from being rewritten; call this only for explicit user
+     * intent (the session store's save/clear), where the caller has decided the write must land.
      */
     fun write(value: T): Boolean = try {
         storage.saveString(key, codec.encode(value))
@@ -119,8 +124,9 @@ class VersionedStorageStore<T>(
 
         is DecodeOutcome.Failed -> {
             events.report(BrowserStateEvent(key, outcome.reason.toReason(), outcome.detail))
-            // A corrupt blob can be replaced by the next write; a newer schema is never rewritten,
-            // or this build would destroy data a newer one still understands.
+            // A corrupt blob can be replaced by the next write; a newer schema is never rewritten
+            // by [update], or this build would destroy data a newer one still understands. An
+            // explicit [write] (the session store's save/clear) is the documented exception.
             Decoded(emptyValue, corrupt = outcome.reason == DecodeFailure.CORRUPT)
         }
     }

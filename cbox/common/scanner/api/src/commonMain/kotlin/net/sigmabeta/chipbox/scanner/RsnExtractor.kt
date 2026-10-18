@@ -9,12 +9,16 @@ data class ExtractedRsnMember(val name: String, val path: String)
 
 /**
  * Thrown by an [RsnExtractor] when the archive at [source] has exactly the same bytes as another
- * archive ([owner]) already extracted during this scan.
+ * archive ([owner]) that already owns those bytes.
  *
  * Content-addressed extraction gives one set of member paths to one archive content, so a second
  * archive with identical bytes would collide with the owner's persisted tracks. The extractor
  * refuses it instead; the scanner drops that archive's tracks and reports a per-file failure. The
  * admin removes the duplicate and restarts to get a clean scan.
+ *
+ * Ownership is not limited to the current scan: an extractor may persist it. The server records
+ * [source] in a marker beside the extracted members, so a byte-identical copy is still refused
+ * when the owning folder was skipped as unchanged on a later scan.
  */
 class DuplicateRsnContentException(
     val source: String,
@@ -38,11 +42,16 @@ interface RsnExtractor {
      * when the archive cannot be decoded or contains no SPC members. Members already present on
      * disk with matching bytes must be reused rather than rewritten.
      *
-     * [source] identifies the archive within this scan (library folder + filename) and is used for
-     * duplicate detection and error messages only. It is not persisted.
+     * [source] is the archive's stable identity across scans (library folder + filename). It is
+     * used for duplicate detection and error messages, and implementations **may persist it**:
+     * the server writes it into a marker beside the content-addressed members so a later scan can
+     * still tell which archive owns a hash — even when that archive's folder was skipped as
+     * unchanged — and refuse a byte-identical copy. Callers must therefore pass the same value for
+     * the same logical archive on every scan.
      *
-     * @throws DuplicateRsnContentException when another archive with the same bytes was already
-     *   extracted in this scan. The caller reports the duplicate and drops its tracks.
+     * @throws DuplicateRsnContentException when another archive with the same bytes already owns
+     *   this content (this scan or a previous one, per the persisted marker). The caller reports
+     *   the duplicate and drops its tracks.
      */
     suspend fun extract(archiveBytes: ByteArray, source: String): List<ExtractedRsnMember>?
 
