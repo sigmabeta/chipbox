@@ -207,7 +207,16 @@ check(!steps(web).any? { |s| s['uses'].to_s.include?('docker/login-action') },
       'CI web job must not log in to a registry')
 
 # --- release web-image job: both arches, OCI tar, no registry. ---
+# Psych parses the unquoted `on:` key as boolean true, so accept either spelling.
+triggers = release['on'] || release[true] || {}
+check(triggers.key?('workflow_dispatch'),
+      'release workflow must allow manual dispatch (the image job runs on it)')
+check(triggers['push'].to_s.include?('tags'),
+      'release workflow must build the image on tag pushes')
+
 img = job!(release, 'web-image')
+check(img['if'].nil?,
+      'release web-image job must run on both tag pushes and manual dispatch (no job-level if)')
 check((img['permissions'] || {})['contents'] == 'read',
       'release web-image job must declare permissions: contents: read')
 check(!img.to_s.include?('secrets.'),
