@@ -144,7 +144,13 @@ not a top-level `dependencies {}` block (the common KMP gotcha). For
   + JVM impls (`JvmStorage`, `JvmStringProvider`, etc.).
 - `apps/cli` — Mordant TUI scanner/organizer; reuses the jvm app's vgmstream
   native task.
-- `apps/js`, `apps/server` — minimal/experimental targets.
+- `apps/js` — browser client: Compose UI + client-side WASM emulation, talking to
+  `apps/server` over HTTP. Gated behind `-Psage.js=true`. See
+  [web-app.md](web-app.md) and ADR-0003.
+- `apps/server` — headless Ktor library server: scans a configured library root,
+  serves the JSON API, file bytes, covers, and the bundled browser app. It stores
+  no user state and has no authentication; it is for loopback/trusted-LAN use
+  until an auth story exists.
 
 ## Native code
 

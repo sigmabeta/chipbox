@@ -8,10 +8,17 @@ executable that mounts the shared `ChipboxAppUi` in a `ComposeViewport`, talks t
 Emscripten-compiled WASM. It assembles the `WebChipboxGraph` Metro graph. It's a
 leaf — nothing depends on it.
 
+v1 is a single-user, self-hosted client: the server owns the library, the browser
+owns playback and all durable user state (`localStorage`). There is no auth yet,
+so use is limited to loopback/trusted LAN. See
+[ADR-0003](../../docs/adr/0003-web-app-self-hosted-browser-client.md) and
+[web-app.md](../../arch-docs/architecture/web-app.md), which also holds the v1
+acceptance checklist.
+
 ## What this builds / how to run it
 
 - **App target:** a Kotlin/JS (IR) browser executable, webpack-bundled to
-  `sage.js`. **Requires `-Psage.js=true`** — the shared modules only expose
+  `chipbox.js`. **Requires `-Psage.js=true`** — the shared modules only expose
   a Kotlin/JS variant when that flag is set (see the `sage.kmp.js` plugin), and
   the gate keeps non-web Android/JVM builds from configuring Kotlin/JS at all
   (incompatible with configure-on-demand).
@@ -33,8 +40,11 @@ leaf — nothing depends on it.
   `EMSCRIPTEN` branch; per-emulator `build<Name>Wasm` tasks (needing `$EMSDK` or
   `-Psage.js.emsdk=...`) emit a `.js` loader + `.wasm` blob, and `copyEmulatorWasm`
   fans them into `src/jsMain/resources/wasm/` so webpack serves them at
-  `/wasm/<name>.{js,wasm}`. Emulators covered: gme, vgm, ssf, usf, psf, ncsf,
-  2sf, vgmstream, gba.
+  `/wasm/<name>.{js,wasm}`. **Known gap:** that copy is not yet wired into the
+  bundle tasks, so `jsBrowserDistribution` on its own produces an emulator-less
+  bundle; run `copyEmulatorWasm` first (the ADR/acceptance checklist requires
+  this to become automatic). Emulators covered: gme, vgm, ssf, usf, psf, ncsf,
+  2sf, vgmstream, gba. WASM outputs are gitignored and never committed.
 
 ## Entry point
 
