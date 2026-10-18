@@ -25,7 +25,11 @@ if (EMSCRIPTEN)
             ${CMAKE_CURRENT_SOURCE_DIR}/psflib
             ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
-    # zlib is provided per-executable via `-sUSE_ZLIB=1` link option; nothing to wire here.
+    # psflib/psf2fs include <zlib.h>. Emscripten only puts its zlib port's headers on the include
+    # path for translation units compiled with `-sUSE_ZLIB=1`, and this static library's sources
+    # are compiled separately from the executable that links the port — so the flag must be on the
+    # library's compile options too (PUBLIC so consumers that include psflib.h see it as well).
+    target_compile_options(chipbox_native_common PUBLIC "-sUSE_ZLIB=1")
 else ()
     # Header-only shared JNI bridge. Every emulator links this (the 5 PSF-based ones get it
     # transitively via chipbox_native_common below).

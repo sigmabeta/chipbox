@@ -486,7 +486,11 @@ class RealScanner(
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (unavailable: Throwable) {
-            if (unavailable is VirtualMachineError) throw unavailable
+            // A missing libvgmstream raises a JVM LinkageError; anything else (a decode failure, a
+            // bad native call) is also non-fatal for the scan. This catch deliberately covers all
+            // Throwables because the JVM-only VM-fatal types (VirtualMachineError,
+            // OutOfMemoryError) are not available from commonMain, which now also compiles for
+            // Kotlin/JS.
             if (vgmstreamUnavailable.compareAndSet(false, true)) {
                 hatchet.e(
                     "vgmstream native lib unavailable (${unavailable.message}); " +
