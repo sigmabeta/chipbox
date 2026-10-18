@@ -152,6 +152,14 @@ each archive's SPC members to:
   `extension` is `spc`, and `trackNumber` is `0`.
 - A member is written only when it is missing or its bytes mismatch; matching
   content-addressed output is reused.
+- Writes are atomic from a streaming client's point of view: new bytes go to
+  `<member>.spc.tmp`, are flushed and closed, then moved over the final name
+  (`ATOMIC_MOVE` where supported, a plain replace otherwise), so an open reader
+  keeps its handle. A killed process can leave only a temp file, never a short
+  member under a final name; the next extraction or prune pass removes stale
+  temps. A failed move (a locked target on Windows) keeps the previous member
+  and fails that archive for the scan; a later scan that re-reads the folder
+  retries.
 - One archive owns a content hash, recorded in a `.source` marker inside the
   hash directory. A second archive with byte-identical bytes is **refused**:
   its tracks are dropped, `tracksFailed` increments, and the server log names
@@ -188,10 +196,12 @@ each archive's SPC members to:
 
 `./gradlew :apps:server:test` runs the server tests. The RSN suite covers
 extraction to ordinary SPC tracks, determinism/reuse, m3u overlay matching,
-the pruning gate, and serving/path-leak via `/api/files/{id}` +
-`/api/tracks/{id}`. `LibraryPagingTest` walks `limit`/`offset` pages over
-duplicate sort keys for games, artists, and tracks, asserts the pages are the
-full catalog with no duplicates, and covers the `ids` bypass plus the
+atomic member writes (a repair does not break an open reader's handle, a failed
+move keeps the previous member, stale temps are swept), the pruning gate, and
+serving/path-leak via `/api/files/{id}` + `/api/tracks/{id}`.
+`LibraryPagingTest` walks `limit`/`offset` pages over duplicate sort keys for
+games, artists, and tracks, asserts the pages are the full catalog with no
+duplicates, and covers the `ids` bypass plus the
 limit/offset coercion rules. `UnknownApiRouteTest` covers the JSON 404 for
 unknown GET/POST/deep API paths, known routes not being shadowed, app deep
 paths still returning `index.html` (a test-resource shell), and existing static
