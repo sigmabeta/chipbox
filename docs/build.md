@@ -133,7 +133,77 @@ release job verifies the archive's index on the runner, and `publish` needs the
 image job so an image failure blocks the release. Run
 `scripts/ci/verify-docker-release.sh` to statically check the platform stages,
 both-arch release wiring, no-push/no-artifact rule, native-lib architecture
-assertion, deterministic build-identity args, and pinned toolchain.
+assertion, deterministic build-identity args, pinned toolchain, and
+digest-pinned base images.
+
+### Pinned base images
+
+Reproducibility means **digest-pinned base images + the pinned toolchain +
+caches**, not bit-for-bit image output (apt, Node, emsdk, and Gradle still fetch
+from the network). Every `FROM` in the `Dockerfile` keeps its human-readable tag
+and adds the **manifest-list (OCI image index)** digest:
+
+```dockerfile
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-jammy@sha256:742daacb… AS web
+```
+
+One index digest covers both `linux/amd64` and `linux/arm64`; the tag stays so
+the pin is reviewable and so a human can tell which line to bump. Both JDK
+stages (`web`, `native`) share one pin — `verify-docker-release.sh` fails a
+half-applied bump that leaves the same tag on two different digests.
+
+Recorded **2026-10-18** (index digest = `Dockerfile` pin; per-platform manifests
+come from the index):
+
+- `eclipse-temurin:21-jdk-jammy`
+  - index `sha256:742daacb9316be4b6fc60258f6e4ac2a11882f6c597373c92290a57bfad0d2e0`
+  - `linux/amd64` manifest `sha256:074d6f95f1e69965dbd23750a37ec3b234025d0864e9821e0b1fba0763a3e853`
+  - `linux/arm64` manifest `sha256:e33a8f4ed06638221c62b6211ee90b86dca83d71a3a6d6488bf62895fbc81f10`
+- `eclipse-temurin:21-jre-jammy`
+  - index `sha256:affcab5356e1270ac35d2361ee83135af2f03e8d580eca78a6d5d6fdbf048db0`
+  - `linux/amd64` manifest `sha256:8ecbec1f32912979c15b86aaf98f7082a77d318a7f92af3d9fe2c0fd2723df10`
+  - `linux/arm64` manifest `sha256:900b7ac325b25c3a7b67351d6595403eba379e7d35babed3cebbb0a9fdc54112`
+
+The per-platform digests are recorded for audit/comparison, not used in the
+`Dockerfile`: the index digest is what buildx resolves per target platform.
+
+#### Bumping a base image
+
+Manual, in one commit (there is no automated digest bot):
+
+1. Resolve the tag's **index** digest and per-platform manifest digests from the
+   registry. No Docker daemon is required (Docker Hub anonymous token flow):
+
+   ```sh
+   tag=21-jdk-jammy   # or 21-jre-jammy
+   token=$(curl -fsSL \
+     "https://auth.docker.io/token?service=registry.docker.io&scope=repository:library/eclipse-temurin:pull" \
+     | jq -r .token)
+   dir=$(mktemp -d)
+   curl -fsSL -D "$dir/headers" -o "$dir/index.json" \
+     -H "Authorization: Bearer $token" \
+     -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json" \
+     "https://registry-1.docker.io/v2/library/eclipse-temurin/manifests/$tag"
+   grep -i '^docker-content-digest:' "$dir/headers"   # index digest -> the Dockerfile pin
+   jq -r '.manifests[]
+     | select(.platform.os == "linux"
+              and (.platform.architecture == "amd64" or .platform.architecture == "arm64"))
+     | "linux/\(.platform.architecture) \(.digest)"' "$dir/index.json"
+   rm -rf "$dir"
+   ```
+
+   With a Docker CLI, `docker manifest inspect eclipse-temurin:$tag` prints the
+   same index (`--verbose` includes the platform manifests).
+
+2. Update the `FROM` line(s) in `Dockerfile` **and** the table above in the same
+   commit. Both JDK stages must move together. Keep the tag.
+3. Run `scripts/ci/verify-docker-release.sh` (it fails a tag-only or malformed
+   `FROM`, a dropped tag, and a half-bumped image).
+4. On a Docker host, rebuild and smoke the release path: the amd64 image with
+   `docker buildx build --platform linux/amd64 --load` plus
+   `scripts/ci/web-image-smoke.sh`, then the multi-arch OCI build +
+   `verify-oci-index.py` above. CI covers step 4 on the PR/release runners; this
+   is the manual local gate.
 
 ### Build identity
 

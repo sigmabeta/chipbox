@@ -294,9 +294,13 @@ saved snapshot, and reloading a tab restores that snapshot.
 - Toolchain is pinned in `docker/`: Node `22.14.0` (`node-version`), Yarn
   `1.22.22` (`yarn-version`), emsdk `4.0.7` (`emsdk-version`); CI and the image
   read the same files. A system Node/Yarn is mandatory (Kotlin's downloads are
-  disabled). `gradle/wrapper` is the Gradle version. Base images are floating tags
-  (digest pinning is a follow-up) — reproducibility means the pinned toolchain +
-  caches, not bit-identical images.
+  disabled). `gradle/wrapper` is the Gradle version. Base images are pinned by
+  **manifest-list digest** in the `Dockerfile` (`image:tag@sha256:…`, one index
+  digest covering `linux/amd64` + `linux/arm64`), so reproducibility means
+  digest-pinned bases + the pinned toolchain + caches, not bit-identical images.
+  The recorded index/per-platform digests and the bump procedure live in
+  `docs/build.md` ("Pinned base images"); `scripts/ci/verify-docker-release.sh`
+  rejects a tag-only `FROM`.
 - The bundle build includes all nine WASM emulator outputs; they are not
   committed. `jsProcessResources` depends on `copyEmulatorWasm`, so every bundle
   path (production bundle, dev server, `installDist`) ships them. `checkEmsdk`
@@ -357,8 +361,8 @@ saved snapshot, and reloading a tab restores that snapshot.
   back to git locally; the image therefore reports the real version, commit,
   branch, and build time.
   `scripts/ci/verify-docker-release.sh` statically pins the platform stages,
-  both-arch release wiring, no-push/no-artifact rule, build-identity args, and
-  native-lib architecture check.
+  both-arch release wiring, no-push/no-artifact rule, build-identity args,
+  digest-pinned base images, and native-lib architecture check.
 - CI: the `web` job (after `static-analysis`) sets up JDK 21, Node 22 + the pinned
   Yarn, a cached pinned emsdk, and the Gradle cache; it builds WASM + the bundle +
   the server, runs `scripts/ci/verify-web-bundle.sh` and `jsNodeTest`, builds the
@@ -366,7 +370,8 @@ saved snapshot, and reloading a tab restores that snapshot.
   all nine `/wasm` loader/WASM pairs, and the bundled native library via
   `scripts/ci/web-image-smoke.sh`. `static-analysis` also runs
   `scripts/ci/verify-docker-release.sh` (platform stages, release wiring, no push,
-  native-lib arch, pinned toolchain). Locally, `scripts/ci/verify.sh web` mirrors
+  native-lib arch, pinned toolchain, digest-pinned base images). Locally,
+  `scripts/ci/verify.sh web` mirrors
   the bundle/tests and `--web-image` adds the image build + smoke; both SKIP (not
   fail) when the toolchain/daemon is missing.
 

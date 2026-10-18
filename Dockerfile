@@ -15,8 +15,12 @@
 # Build prerequisites: the sage submodule must be checked out — this is a Gradle build input:
 #   git submodule update --init --recursive
 #
-# Toolchain pins live in docker/{node,yarn,emsdk}-version (shared with the CI web job). The build is
-# reproducible in the "same pinned toolchain + caches" sense, not bit-for-bit.
+# Toolchain pins live in docker/{node,yarn,emsdk}-version (shared with the CI web job). Every base
+# image is pinned by a manifest-list digest (`image:tag@sha256:...`), so one pin resolves both
+# linux/amd64 and linux/arm64. Reproducibility now means digest-pinned bases + the pinned toolchain
+# + caches, not bit-for-bit image output. The recorded index/platform digests and the bump
+# procedure live in docs/build.md ("Pinned base images"); scripts/ci/verify-docker-release.sh
+# rejects a tag-only FROM.
 #
 # Multi-arch: the expensive, architecture-independent half (Kotlin/JS + all nine Emscripten builds)
 # runs once on $BUILDPLATFORM, so Gradle and emsdk never run under QEMU. Only the small CMake library
@@ -28,7 +32,7 @@
 # Runs on the build platform (BUILDPLATFORM): Kotlin/JS and emsdk are architecture-independent, so
 # a multi-arch build must not run this expensive stage under QEMU.
 # ---------------------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-jammy AS web
+FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-jammy@sha256:742daacb9316be4b6fc60258f6e4ac2a11882f6c597373c92290a57bfad0d2e0 AS web
 
 ARG NODE_VERSION=22.14.0
 ARG YARN_VERSION=1.22.22
@@ -104,7 +108,7 @@ RUN scripts/ci/verify-web-bundle.sh
 # writes build/jvm-native/out/linux/vgmstream/host/. The library inside it is built by this
 # container's compiler, i.e. the target architecture. The ELF check below proves that.
 # ---------------------------------------------------------------------------------------------
-FROM --platform=$TARGETPLATFORM eclipse-temurin:21-jdk-jammy AS native
+FROM --platform=$TARGETPLATFORM eclipse-temurin:21-jdk-jammy@sha256:742daacb9316be4b6fc60258f6e4ac2a11882f6c597373c92290a57bfad0d2e0 AS native
 
 # Automatic platform args are not in scope for RUN unless declared.
 ARG TARGETPLATFORM
@@ -147,7 +151,7 @@ RUN set -eux; \
 # runtime: JRE 21 (Ubuntu/glibc — the vgmstream .so is glibc-linked, so no alpine). Explicit
 # $TARGETPLATFORM so the JRE matches the native library in every single- and multi-arch build.
 # ---------------------------------------------------------------------------------------------
-FROM --platform=$TARGETPLATFORM eclipse-temurin:21-jre-jammy AS runtime
+FROM --platform=$TARGETPLATFORM eclipse-temurin:21-jre-jammy@sha256:affcab5356e1270ac35d2361ee83135af2f03e8d580eca78a6d5d6fdbf048db0 AS runtime
 
 LABEL org.opencontainers.image.title="chipbox-server" \
       org.opencontainers.image.description="Chipbox self-hosted web client. NO AUTHENTICATION: loopback or trusted LAN only." \
