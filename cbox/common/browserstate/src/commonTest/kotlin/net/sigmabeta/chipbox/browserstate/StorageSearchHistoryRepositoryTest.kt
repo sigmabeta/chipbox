@@ -63,6 +63,24 @@ class StorageSearchHistoryRepositoryTest {
     }
 
     @Test
+    fun `clearing corrupt search history rewrites the key so a reload is empty and usable`() = runTest {
+        val storage = FakeStorage(mapOf(BrowserStateKeys.SEARCH_HISTORY to "{corrupt"))
+        val events = BrowserStateEvents()
+        val repo = StorageSearchHistoryRepository(storage, events)
+
+        repo.clear()
+
+        assertTrue(
+            BrowserStateCodecs.searchHistory.decode(storage.raw(BrowserStateKeys.SEARCH_HISTORY)) is DecodeOutcome.Success,
+            "the corrupt string is replaced, not left in storage: ${storage.raw(BrowserStateKeys.SEARCH_HISTORY)}",
+        )
+        val reloaded = StorageSearchHistoryRepository(storage, events)
+        assertEquals(emptyList(), reloaded.recent().first(), "a reload stays empty")
+        reloaded.add("after repair")
+        assertEquals(listOf("after repair"), reloaded.recent().first().map { it.query }, "the store is usable again")
+    }
+
+    @Test
     fun `a quota failure on add is caught and leaves the list unchanged`() = runTest {
         val storage = FakeStorage()
         val events = BrowserStateEvents()

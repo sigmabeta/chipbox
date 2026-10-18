@@ -3,6 +3,8 @@ package net.sigmabeta.chipbox.browserstate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.yield
 import net.sigmabeta.sage.storage.common.Storage
 
 /**
@@ -17,6 +19,19 @@ internal class FakeStorage(initial: Map<String, String> = emptyMap()) : Storage 
     var failWrites = false
     var failReads = false
 
+    /**
+     * When set, every string read fails on collection with this throwable. Used to model a read
+     * cancelled mid-flight (a `CancellationException`) rather than a storage failure.
+     */
+    var readFailure: Throwable? = null
+
+    /**
+     * When true, [savedStringFlow] snapshots the raw value at collection start and yields once
+     * before emitting it, so a second read-modify-write can interleave between another caller's
+     * read and write — the same-tab lost-update race.
+     */
+    var interleaveReads = false
+
     override fun saveString(key: String, value: String) {
         if (failWrites) throw IllegalStateException("quota exceeded")
         values[key] = value
@@ -24,8 +39,15 @@ internal class FakeStorage(initial: Map<String, String> = emptyMap()) : Storage 
     }
 
     override fun savedStringFlow(key: String): Flow<String?> {
+        readFailure?.let { failure -> return flow { throw failure } }
         if (failReads) throw IllegalStateException("storage unavailable")
-        return stringFlow(key).asStateFlow()
+        val live = stringFlow(key).asStateFlow()
+        if (!interleaveReads) return live
+        return flow {
+            val snapshot = values[key]
+            yield()
+            emit(snapshot)
+        }
     }
 
     override fun saveInt(key: String, value: Int) {

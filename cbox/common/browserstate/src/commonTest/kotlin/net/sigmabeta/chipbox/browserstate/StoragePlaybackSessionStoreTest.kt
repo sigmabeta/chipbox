@@ -90,6 +90,24 @@ class StoragePlaybackSessionStoreTest {
     }
 
     @Test
+    fun `clearing corrupt session data rewrites the key and stays cleared`() = runTest {
+        val storage = FakeStorage(mapOf(BrowserStateKeys.PLAYBACK_SESSION to "{not json"))
+        val events = BrowserStateEvents()
+        val store = StoragePlaybackSessionStore(storage, events)
+        assertNull(store.load(), "corrupt data reads as no session")
+
+        store.clear()
+
+        assertTrue(
+            BrowserStateCodecs.playbackSession.decode(storage.raw(BrowserStateKeys.PLAYBACK_SESSION)) is DecodeOutcome.Success,
+            "the corrupt string is replaced, not left in storage: ${storage.raw(BrowserStateKeys.PLAYBACK_SESSION)}",
+        )
+        assertNull(StoragePlaybackSessionStore(storage, events).load(), "a reload stays without a session")
+        StoragePlaybackSessionStore(storage, events).save(snapshot)
+        assertEquals(snapshot, StoragePlaybackSessionStore(storage, events).load(), "the store is usable again")
+    }
+
+    @Test
     fun `a quota failure on save is caught and surfaced without throwing`() = runTest {
         val storage = FakeStorage()
         val events = BrowserStateEvents()

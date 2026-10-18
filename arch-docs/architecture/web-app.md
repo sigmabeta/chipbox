@@ -141,8 +141,11 @@ The implementation lives in `:cbox:common:browserstate` — a pure `commonMain`
 codec plus `Storage`-backed stores, with Node tests under `jsNodeTest`. Reads
 derive from `Storage.savedStringFlow`, so write-through goes through
 `LocalStorageStorage` and other tabs receive `storage` events. Writes are
-last-writer-wins across tabs; there is no merge. Unknown track ids are dropped by
-the UI at hydration time rather than stored as errors.
+last-writer-wins across tabs; there is no merge. Within one tab, each store
+serializes its read-modify-write with a `Mutex`, so concurrent screens cannot
+lose an update, and a corrupt blob is rewritten by the next clear. Cancellation
+propagates instead of surfacing as a read failure. Unknown track ids are dropped
+by the UI at hydration time rather than stored as errors.
 
 **Play history.** The log records only qualifying plays (10 seconds listened, or
 played to the end) and is capped at 500 entries. Recording and loading both trim

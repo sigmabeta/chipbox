@@ -149,6 +149,25 @@ class StorageFavoritesRepositoryTest {
     }
 
     @Test
+    fun `clearing corrupt favorites rewrites the key so a reload is empty and usable`() = runTest {
+        val storage = FakeStorage(mapOf(BrowserStateKeys.FAVORITES to "{corrupt"))
+        val events = BrowserStateEvents()
+        val repo = StorageFavoritesRepository(storage, events, FakeClock()::now)
+        assertEquals(emptyList(), repo.favoriteTrackIds().first(), "corrupt data reads as empty")
+
+        repo.clearFavorites()
+
+        assertTrue(
+            BrowserStateCodecs.favorites.decode(storage.raw(BrowserStateKeys.FAVORITES)) is DecodeOutcome.Success,
+            "the corrupt string is replaced, not left in storage: ${storage.raw(BrowserStateKeys.FAVORITES)}",
+        )
+        val reloaded = StorageFavoritesRepository(storage, events, FakeClock()::now)
+        assertEquals(emptyList(), reloaded.favoriteTrackIds().first(), "a reload stays empty")
+        reloaded.setTrackFavorite(5L, true)
+        assertEquals(listOf(5L), reloaded.favoriteTrackIds().first(), "the store is usable again")
+    }
+
+    @Test
     fun `unknown ids are stored verbatim for the caller to resolve`() = runTest {
         val repo = StorageFavoritesRepository(FakeStorage(), BrowserStateEvents(), FakeClock()::now)
         repo.setTrackFavorite(404L, true)
