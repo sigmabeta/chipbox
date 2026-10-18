@@ -6,6 +6,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.js.Promise
 import kotlinx.browser.window
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -304,18 +305,27 @@ class WebAudioSpeaker(
 
     private fun launchInitAttempt(ctx: AudioContext) {
         initJob = initScope.launch {
-            val completed = withTimeoutOrNull(INIT_TIMEOUT_MS) {
-                if (workletPort == null) {
-                    ctx.audioWorklet.addModule(WORKLET_URL).await("AudioWorklet.addModule")
-                    val node = AudioWorkletNode(ctx, "chipbox-audio")
-                    node.connect(ctx.destination)
-                    node.port.onmessage = ::onWorkletMessage
-                    workletNode = node
-                    workletPort = node.port
+            val completed = try {
+                withTimeoutOrNull(INIT_TIMEOUT_MS) {
+                    if (workletPort == null) {
+                        ctx.audioWorklet.addModule(WORKLET_URL).await("AudioWorklet.addModule")
+                        val node = AudioWorkletNode(ctx, "chipbox-audio")
+                        node.connect(ctx.destination)
+                        node.port.onmessage = ::onWorkletMessage
+                        workletNode = node
+                        workletPort = node.port
+                    }
+                    // Modern browsers start the context suspended until a user gesture has run.
+                    if (ctx.state == "suspended") ctx.resume().await("AudioContext.resume")
+                    Unit
                 }
-                // Modern browsers start the context suspended until a user gesture has run.
-                if (ctx.state == "suspended") ctx.resume().await("AudioContext.resume")
-                Unit
+            } catch (t: CancellationException) {
+                throw t
+            } catch (t: Throwable) {
+                // addModule/node/resume rejections land here. Without this catch they escaped as an
+                // unhandled SupervisorJob exception and left the state stuck in Preparing.
+                onInitAttemptFailed(ctx, t.message ?: t::class.simpleName ?: t.toString())
+                return@launch
             }
             if (completed == null) {
                 onInitAttemptFailed(
