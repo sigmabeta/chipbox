@@ -37,6 +37,19 @@ interface Speaker {
     /** Start the consume loop if it isn't already running. */
     fun play()
 
+    /**
+     * Open/unlock the audio sink from inside the user's play gesture, before any asynchronous
+     * pipeline work starts.
+     *
+     * Only the browser needs this: its `AudioContext` must be created and `resume()`d while the
+     * click handler is still on the stack (Safari otherwise keeps the context suspended and the
+     * first playback is silent). Device sinks are ready synchronously and leave the default no-op.
+     *
+     * Called synchronously from [net.sigmabeta.chipbox.player.director.Director.request] for
+     * play-starting requests — never from the consume loop, where the gesture is already gone.
+     */
+    fun prepareForPlayback() = Unit
+
     /** Cancel the consume loop without releasing the sink — the speaker can be resumed with
      *  [play]. */
     suspend fun pause()

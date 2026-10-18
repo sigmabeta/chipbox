@@ -345,23 +345,56 @@ class RealDirector(
 
     override fun request(request: SessionRequest) {
         when (request) {
-            is SessionRequest.Start -> start(request.session)
-            is SessionRequest.StartSetlist -> with(request) { start(setlist, startingPosition, sourceName, shuffled) }
+            // Play-starting requests unlock the sink synchronously, inside the user's gesture
+            // handler. Everything below hops onto directorScope and runs after this call returns;
+            // Safari needs the AudioContext created/resumed before that (see
+            // [Speaker.prepareForPlayback]). No-op for device sinks.
+            is SessionRequest.Start -> {
+                speaker.prepareForPlayback()
+                start(request.session)
+            }
+
+            is SessionRequest.StartSetlist -> {
+                speaker.prepareForPlayback()
+                with(request) { start(setlist, startingPosition, sourceName, shuffled) }
+            }
+
+            SessionRequest.Play -> {
+                speaker.prepareForPlayback()
+                play()
+            }
+
+            is SessionRequest.PlayPosition -> {
+                speaker.prepareForPlayback()
+                playPosition(request.position)
+            }
+
             is SessionRequest.Restore -> restore(request.session, request.positionMs)
-            SessionRequest.Play -> play()
+
             SessionRequest.Pause -> pause()
+
             SessionRequest.Stop -> stop()
+
             is SessionRequest.Seek -> seek(request.positionMs)
+
             SessionRequest.SkipForward -> skipForward()
+
             SessionRequest.SkipBack -> skipBack()
-            is SessionRequest.PlayPosition -> playPosition(request.position)
+
             is SessionRequest.Reorder -> reorder(request.fromIndex, request.toIndex)
+
             is SessionRequest.RemoveTrack -> removeTrack(request.index)
+
             is SessionRequest.SetShuffled -> setShuffled(request.shuffled)
+
             is SessionRequest.SetRepeatMode -> setRepeatMode(request.mode)
+
             SessionRequest.PauseTemporarily -> pauseTemporarily()
+
             SessionRequest.Duck -> duck()
+
             SessionRequest.ResumeFocus -> resumeFocus()
+
             is SessionRequest.SetVolume -> setVolume(request.scale)
         }
     }
@@ -1181,10 +1214,11 @@ class RealDirector(
      * A generator error is treated as a bad track, not a fatal session error: log it and skip to
      * the next track in the setlist (dropping the failed track's queued audio and switching the
      * speaker over promptly). The generator is stopped before the relaunch so its self-terminating
-     * loop can't race startTrack into an "Already looping" no-op. The session is only stopped when
+     * loop can't race startTrack into an "Already looping" no-op. The session ends in ERROR when
      * there's nothing left to try: no setlist to recover within, the failed track was the last one,
      * or [MAX_CONSECUTIVE_FAILURES] tracks failed in a row with no audio in between (the streak
-     * resets in [reduceGeneratorEmitting]).
+     * resets in [reduceGeneratorEmitting]). ERROR rather than STOPPED is deliberate — a failure
+     * must not look like an ordinary end-of-setlist.
      */
     private fun reduceGeneratorError(
         m: Model,
@@ -1224,8 +1258,17 @@ class RealDirector(
             }
 
             isLast(session, setlist) -> {
-                hatchet.e("Generator error on last track: ${event.message}. Ending session.")
-                withFailure.copy(playback = m.playback.copy(state = PlayerState.STOPPED)).with(
+                // No track remains to skip to. This is a failed load, not an end-of-setlist:
+                // STOPPED would render as a normal finish (play icon, no warning) and hide a
+                // missing/broken emulator behind a silent stop. ERROR carries the message to the
+                // mini-player warning icon and the app-level error surface.
+                hatchet.e("Generator error on last track: ${event.message}. Ending session in ERROR.")
+                withFailure.copy(
+                    playback = m.playback.copy(
+                        state = PlayerState.ERROR,
+                        errorMessage = event.message,
+                    ),
+                ).with(
                     Effect.CancelWatchdog,
                     Effect.PublishError(event.message, failedTrackId),
                     Effect.StopSpeaker,

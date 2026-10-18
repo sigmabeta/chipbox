@@ -323,16 +323,18 @@ class RealDirectorTest {
     }
 
     @Test
-    fun `Generator Error on the last track stops the session`() = runTest {
-        // Documented terminal case: no next track to skip to, so the session ends in STOPPED
-        // (not ERROR — ERROR is reserved for the consecutive-failure cutoff).
+    fun `Generator Error on the last track ends the session in ERROR`() = runTest {
+        // A last-track failure has nowhere to skip to. It must surface as ERROR (with the message)
+        // rather than STOPPED: a normal stop would make a failed WASM/emulator load look like the
+        // end of a setlist.
         val (director, gen, _, _) = newDirector(listOf(track1))
         director.request(SessionRequest.Start(setlistSession(listOf(1L), startingPosition = 0)))
 
         gen.emit(GeneratorEvent.Error("emulator crashed on last track"))
 
-        val state = director.playbackState().first { it.state == PlayerState.STOPPED }
-        assertEquals(PlayerState.STOPPED, state.state)
+        val state = director.playbackState().first { it.state == PlayerState.ERROR }
+        assertEquals(PlayerState.ERROR, state.state)
+        assertEquals("emulator crashed on last track", state.errorMessage)
         director.release()
     }
 
@@ -398,15 +400,16 @@ class RealDirectorTest {
     }
 
     @Test
-    fun `a stall on the last track stops the session`() = runTest {
+    fun `a stall on the last track ends the session in ERROR`() = runTest {
         val (director, gen, _, _) = newDirector(listOf(track1))
         director.request(SessionRequest.Start(setlistSession(listOf(1L), startingPosition = 0)))
         gen.emit(GeneratorEvent.Loading(1L)) // arms the watchdog
 
         advanceUntilIdle()
 
-        val state = director.playbackState().first { it.state == PlayerState.STOPPED }
-        assertEquals(PlayerState.STOPPED, state.state, "no track to skip to -> stop")
+        val state = director.playbackState().first { it.state == PlayerState.ERROR }
+        assertEquals(PlayerState.ERROR, state.state, "no track to skip to -> failed session")
+        assertTrue(state.errorMessage?.contains("stalled") == true, "the stall reason is surfaced")
         assertEquals(listOf(1L), gen.startTrackCalls, "nothing new queued")
         director.release()
     }
