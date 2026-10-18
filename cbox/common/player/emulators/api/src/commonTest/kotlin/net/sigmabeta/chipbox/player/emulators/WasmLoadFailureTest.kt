@@ -73,15 +73,11 @@ class WasmLoadFailureTest {
     fun `classify picks the kind from the loader observation`() {
         assertEquals(
             WasmLoadFailureKind.FACTORY_MISSING,
-            WasmLoadFailure.failureKind(factoryIsFunction = false, scriptError = false),
-        )
-        assertEquals(
-            WasmLoadFailureKind.SCRIPT_ERROR,
-            WasmLoadFailure.failureKind(factoryIsFunction = false, scriptError = true),
+            WasmLoadFailure.failureKind(factoryIsFunction = false),
         )
         assertEquals(
             null,
-            WasmLoadFailure.failureKind(factoryIsFunction = true, scriptError = false),
+            WasmLoadFailure.failureKind(factoryIsFunction = true),
             "a loaded script with a callable factory is not a failure",
         )
     }

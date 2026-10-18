@@ -22,7 +22,7 @@ DB rows the DAOs operate on; models are the domain types; the repository
 | `SearchHistory.kt` | `@Serializable` recent-search entry (`id`, `query`). |
 | `ChainFile.kt` | `@Serializable` `(filename, uri)` pair **plus** the `encodeChainFiles`/`decodeChainFiles` codec (tab-delimited, newline-separated) used to flatten a track's chain files into `TrackEntity.chainFiles`. |
 | `HealthStatus.kt` | `/api/health` wire contract (`HealthStatus`, `ScanState`, `ScanStatus`) plus the bounded `ScanRetryPolicy` the browser uses while the server's startup scan is running. |
-| `ScanReadiness.kt` | `readListAwaitingScan`: the suspend retry loop shared by the browser and its tests — an empty first read polls health and retries only while the scan is running. |
+| `ScanReadiness.kt` | `readListAwaitingScan`: the read flow shared by the browser and its tests — partial data is emitted immediately, then re-read once the scan ends; empty reads wait for the scan; `unknown` health also retries. |
 | `ErrorResponse.kt` | The standard error envelope `{"error": …}` shared by the server and the browser client, plus `apiErrorMessage(status, contentType, body)`, the pure classifier that turns a non-2xx or non-JSON response into the message the UI shows. |
 
 Tests (`commonTest`, also run under `jsNodeTest`): `ModelSerializationTest`

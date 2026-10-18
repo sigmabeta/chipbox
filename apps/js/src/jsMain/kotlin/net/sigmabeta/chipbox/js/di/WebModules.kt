@@ -20,6 +20,7 @@ import net.sigmabeta.chipbox.browserstate.StorageFavoritesRepository
 import net.sigmabeta.chipbox.browserstate.StoragePlaybackHistoryRepository
 import net.sigmabeta.chipbox.browserstate.StoragePlaybackSessionStore
 import net.sigmabeta.chipbox.browserstate.StoragePlaylistsRepository
+import net.sigmabeta.chipbox.browserstate.StorageSearchHistoryRepository
 import net.sigmabeta.chipbox.browserstate.referencedTrackIds
 import net.sigmabeta.chipbox.browserstate.withKnownTracks
 import net.sigmabeta.chipbox.capabilities.AppCapabilities
@@ -100,11 +101,12 @@ import okio.fakefilesystem.FakeFileSystem
  *   the real library (one directory, scanned at startup); the browser can list no roots and adds
  *   none. Track bytes come from `/api/files/{id}`. Library administration is disabled by
  *   [AppCapabilities], and the inert source exists only to close the graph for shared view models.
- * - **Generator / Speaker / Director** — *real*. `RealGenerator` drives WASM emulators
- *   ([WasmGmeEmulator] for libgme today; more coming) through the standard
- *   `RealPcmTrackSourceFactory` chain. Bytes round-trip through `FakeFileSystem` for staging —
- *   the emulator subclass reads the staged path back out into the WASM heap. `WebAudioSpeaker`
- *   pumps PCM to an AudioWorkletNode. `RealDirector` orchestrates the lot.
+ * - **Generator / Speaker / Director** — *real*. `RealGenerator` drives the nine WASM emulators
+ *   ([WasmGmeEmulator], [WasmPsfEmulator], [WasmSsfEmulator], [WasmUsfEmulator], [WasmNcsfEmulator],
+ *   [WasmTwosfEmulator], [WasmVgmEmulator], [WasmGbaEmulator], [WasmVgmstreamEmulator]) through the
+ *   standard `RealPcmTrackSourceFactory` chain. Bytes round-trip through `FakeFileSystem` for
+ *   staging — the emulator subclass reads the staged path back out into the WASM heap.
+ *   `WebAudioSpeaker` pumps PCM to an AudioWorkletNode. `RealDirector` orchestrates the lot.
  * - **Scanner** — [NoopScanner] (inert; scans run on the server, not in the browser).
  * - **Settings / DebugSettings / DebugInfo** — real localStorage-backed managers + the real
  *   debug-info aggregator.
@@ -126,7 +128,18 @@ object WebRepositoryModule {
     }
 
     @Provides @SingleIn(AppScope::class)
-    fun provideRepository(client: HttpClient): Repository = RemoteRepository(client)
+    fun provideRepository(
+        client: HttpClient,
+        searchHistory: StorageSearchHistoryRepository,
+    ): Repository = RemoteRepository(client, searchHistory)
+
+    // Recent searches are browser state, not server state; the same versioned localStorage store
+    // family as favorites/playlists keeps them durable and cross-tab-live.
+    @Provides @SingleIn(AppScope::class)
+    fun provideSearchHistory(
+        storage: Storage,
+        events: BrowserStateEvents,
+    ): StorageSearchHistoryRepository = StorageSearchHistoryRepository(storage, events)
 }
 
 @BindingContainer
@@ -597,7 +610,7 @@ object WebCoroutinesModule {
 @ContributesTo(AppScope::class)
 object WebAppInfoModule {
     // There is no BuildConfig on JS. The real version/branch/build time come from the generated
-    // WebBuildInfo object (git describe/branch/commit time, written by
+    // WebBuildInfo object (deterministic CI/Docker inputs, falling back to git locally, written by
     // :apps:js:generateWebBuildInfo). isDebug is false: the browser is a release-shaped client, so
     // the Settings debug section and the debug palette swap stay off.
     @Provides @SingleIn(AppScope::class)

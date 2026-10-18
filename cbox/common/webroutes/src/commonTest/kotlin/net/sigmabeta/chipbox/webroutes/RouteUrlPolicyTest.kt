@@ -148,6 +148,20 @@ class RouteUrlPolicyTest {
     }
 
     @Test
+    fun `a host canonicalises only paths it cannot decode`() {
+        listOf("/", "/library", "/search", "/game/42", "/library/playlists/7").forEach {
+            assertEquals(false, RouteUrl.needsCanonicalization(it, webCapabilities), "$it is a real route")
+        }
+        listOf("/nope", "/game/42/extra", "/manage-library").forEach {
+            assertEquals(true, RouteUrl.needsCanonicalization(it, webCapabilities), "$it must be replaced after fallback")
+        }
+        assertEquals(
+            false,
+            RouteUrl.needsCanonicalization("/settings/errors", AppCapabilities(showErrorLog = true)),
+        )
+    }
+
+    @Test
     fun `unknown and malformed paths do not decode`() {
         listOf(
             "/nope",

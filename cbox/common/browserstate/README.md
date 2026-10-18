@@ -20,13 +20,14 @@ favorites, playlists, the bounded play history, and the playback-session store t
 | `FavoritesState.kt` | Payload: per-kind `FavoriteEntry(id, favoritedAtMs)` lists; `normalized()` dedupes by id and sorts newest-first. |
 | `StorageFavoritesRepository.kt` | `FavoritesRepository` over the store. Re-favoriting refreshes the timestamp; clear writes an empty payload. |
 | `PlaylistsState.kt` | Payload: persisted `nextId` + `PlaylistEntry(id, name, createdAtMs, trackIds)`. `normalized()` enforces unique ids/members and `nextId > max(id)`; `newestFirst()` orders the list. |
-| `StoragePlaylistsRepository.kt` | `PlaylistsRepository` over the store: stable monotonic ids, newest-created-first list, ordered membership, append de-dup, rename/delete/add/remove/reorder. |
+| `StoragePlaylistsRepository.kt` | `PlaylistsRepository` over the store: stable monotonic ids, newest-created-first list, ordered membership, append de-dup, rename/delete/add/remove/reorder. `createPlaylist` returns null when the write is refused, so callers never navigate to a phantom playlist. |
+| `SearchHistoryState.kt` | Payload: monotonic `nextId` + newest-first `SearchHistory` entries. `normalized()` de-dupes by query, caps at `MAX_ENTRIES` (10), and keeps ids monotonic. |
+| `StorageSearchHistoryRepository.kt` | Recent searches over the store: add (moves an existing query to the top, otherwise prepends), remove by id, clear. Browser-only — the server stores none of it. |
 | `PlayHistoryState.kt` | Payload: chronological `PlayHistoryEntry(trackId, gameId, artistIds, timeMs)` plays. `MAX_ENTRIES = 500`; `withPlay()` appends and `bounded()` keeps the newest plays by timestamp. |
 | `StoragePlaybackHistoryRepository.kt` | `PlaybackHistoryRepository` over the store: records plays, folds recently-played / most-played songs, games, and artists, and exposes played game ids. Field names match the old unversioned `WebPlay` array (v0). |
 | `PlaybackSessionState.kt` | Payload: at most one `SessionSnapshot` (queue, current track, position, shuffle, repeat). |
 | `StoragePlaybackSessionStore.kt` | Shared `PlaybackSessionStore` contract over the store. `save`/`clear` are synchronous and non-throwing (safe from a `pagehide` handler); `clear` leaves no resumable snapshot. |
 | `SessionSnapshotFiltering.kt` | `withKnownTracks(knownIds)` / `referencedTrackIds()`: pure pre-restore filtering that drops unknown track ids, remaps the current track by queue position, and returns null when nothing survives. |
-| `Hydration.kt` | `hydrateIds(ids, resolve)` — maps ids to models and drops unknown/missing ids (RSN re-keying, rebuilt libraries). |
 
 ## Storage contract
 
@@ -67,6 +68,12 @@ Every value is one JSON object at a stable key:
   At most one snapshot; `clear()` persists `{"snapshot":null}` so no reload can resurrect a
   stopped session. The key matches the shared `RealPlaybackSessionStore`, and a raw snapshot object
   (no envelope) is read as schema version 0.
+- **Search history** — `chipbox.search_history`:
+  ```json
+  { "nextId": 3, "entries": [{"id":2,"query":"mega man"},{"id":1,"query":"chrono"}] }
+  ```
+  Newest-first, de-duplicated by query, capped at 10. This is browser-only user state; the web
+  client never sends it to the server.
 
 Behaviour rules:
 
@@ -97,7 +104,7 @@ val history = StoragePlaybackHistoryRepository(storage, events)
 val session = StoragePlaybackSessionStore(storage, events)
 
 // A screen observes the storage-backed flow directly:
-favorites.favoriteTrackIds().collect { ids -> /* hydrateIds(ids, repository::getTrack) */ }
+favorites.favoriteTrackIds().collect { ids -> /* resolve against the library; drop unknown ids */ }
 history.recentlyPlayed(limit = 20).collect { recent -> /* repository.getTracksByIds(...) */ }
 
 // The web host restores one saved session (paused) and flushes it on page teardown:
@@ -123,4 +130,4 @@ session.load()?.let { it.withKnownTracks(knownIds) } // null -> clear the snapsh
 Covers envelope round-trip, corrupt/missing/older/newer versions, the legacy v0 hooks, favorites
 ordering/re-favorite, playlist ids/order/reorder/append de-dup, history recording/folds/cap/trim/
 migration, session save/load/clear/migration/failure paths, snapshot unknown-id filtering and
-remap, cross-tab flow updates, quota/read failures, and unknown-id hydration.
+remap, cross-tab flow updates, quota/read failures, and search-history persistence.

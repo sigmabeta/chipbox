@@ -243,10 +243,22 @@ val repoRootPath: String = isolated.rootProject.projectDirectory.asFile.absolute
 val webBuildInfoDir = layout.buildDirectory.dir("generated/webBuildInfo").get().asFile.absolutePath
 
 val generateWebBuildInfo = tasks.register("generateWebBuildInfo") {
-    description = "Generates WebBuildInfo.kt from git describe/branch/commit time for AppInfo."
+    description = "Generates WebBuildInfo.kt from deterministic inputs or git describe/branch/commit time for AppInfo."
     group = "build"
     val outputDir = webBuildInfoDir
     val repoRoot = repoRootPath
+    // Deterministic build-info inputs, resolved at execution. Local values (not script fields) so
+    // the task action stays configuration-cache compatible.
+    val buildVersionEnv = providers.environmentVariable("CHIPBOX_BUILD_VERSION")
+    val buildVersionProp = providers.gradleProperty("chipbox.build.version")
+    val buildVersionCodeEnv = providers.environmentVariable("CHIPBOX_BUILD_VERSION_CODE")
+    val buildVersionCodeProp = providers.gradleProperty("chipbox.build.versionCode")
+    val buildBranchEnv = providers.environmentVariable("CHIPBOX_BUILD_BRANCH")
+    val buildBranchProp = providers.gradleProperty("chipbox.build.branch")
+    val buildCommitEnv = providers.environmentVariable("CHIPBOX_BUILD_COMMIT")
+    val buildCommitProp = providers.gradleProperty("chipbox.build.commit")
+    val buildTimeEnv = providers.environmentVariable("CHIPBOX_BUILD_TIME_MS")
+    val buildTimeProp = providers.gradleProperty("chipbox.build.timeMs")
     outputs.dir(outputDir)
     // Cheap (a few git invocations) and always re-evaluated so a new commit is reflected; if the
     // content is byte-identical the downstream Kotlin compile stays up to date.
@@ -263,10 +275,26 @@ val generateWebBuildInfo = tasks.register("generateWebBuildInfo") {
             null
         }
 
-        val versionName = git("describe", "--tags", "--always", "--dirty") ?: "0.0.0-web"
-        val versionCode = git("rev-list", "--count", "HEAD")?.toIntOrNull() ?: 0
-        val branch = git("rev-parse", "--abbrev-ref", "HEAD") ?: "unknown"
-        val buildTimeMs = git("log", "-1", "--format=%ct")?.toLongOrNull()?.times(1000L)
+        // Deterministic inputs first: container/source-tarball builds have no `.git` (the Docker
+        // build context excludes it), so CI and the Dockerfile pass the checkout identity in.
+        // Local builds fall back to git, then to a neutral dev version.
+        fun input(primary: org.gradle.api.provider.Provider<String>, secondary: org.gradle.api.provider.Provider<String>): String? =
+            primary.orNull?.takeIf { it.isNotBlank() } ?: secondary.orNull?.takeIf { it.isNotBlank() }
+
+        val versionName = input(buildVersionEnv, buildVersionProp)
+            ?: git("describe", "--tags", "--always", "--dirty")
+            ?: "0.0.0-web"
+        val versionCode = input(buildVersionCodeEnv, buildVersionCodeProp)?.toIntOrNull()
+            ?: git("rev-list", "--count", "HEAD")?.toIntOrNull()
+            ?: 0
+        val branch = input(buildBranchEnv, buildBranchProp)
+            ?: git("rev-parse", "--abbrev-ref", "HEAD")
+            ?: "unknown"
+        val commit = input(buildCommitEnv, buildCommitProp)
+            ?: git("rev-parse", "--short", "HEAD")
+            ?: "unknown"
+        val buildTimeMs = input(buildTimeEnv, buildTimeProp)?.toLongOrNull()
+            ?: git("log", "-1", "--format=%ct")?.toLongOrNull()?.times(1000L)
 
         fun kotlinString(value: String): String = value
             .replace("\\", "\\\\")
@@ -282,6 +310,7 @@ val generateWebBuildInfo = tasks.register("generateWebBuildInfo") {
             appendLine("    const val VERSION_CODE: Int = $versionCode")
             appendLine("    val BUILD_TIME_MS: Long? = ${buildTimeMs?.let { "${it}L" } ?: "null"}")
             appendLine("    const val BUILD_BRANCH: String = \"${kotlinString(branch)}\"")
+            appendLine("    const val BUILD_COMMIT: String = \"${kotlinString(commit)}\"")
             appendLine("}")
         }
         val target = File(outputDir, "net/sigmabeta/chipbox/js/WebBuildInfo.kt")

@@ -47,14 +47,13 @@ data class WasmLoadFailure(
 
     companion object {
         /**
-         * Classification for the two observations the inject/settle phase can make before a
-         * promise exists. A loaded script whose factory is callable is not a failure (`null`).
+         * Classification for the observation the inject/settle phase can make before a promise
+         * exists: the script loaded but its factory global is not callable. A script `error` event
+         * is classified directly by the loader's listener, so there is no second flag here. A
+         * loaded script whose factory is callable is not a failure (`null`).
          */
-        fun failureKind(factoryIsFunction: Boolean, scriptError: Boolean): WasmLoadFailureKind? = when {
-            scriptError -> WasmLoadFailureKind.SCRIPT_ERROR
-            !factoryIsFunction -> WasmLoadFailureKind.FACTORY_MISSING
-            else -> null
-        }
+        fun failureKind(factoryIsFunction: Boolean): WasmLoadFailureKind? =
+            if (factoryIsFunction) null else WasmLoadFailureKind.FACTORY_MISSING
     }
 }
 

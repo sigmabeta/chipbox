@@ -42,7 +42,11 @@ class FakePlaylistsRepository : PlaylistsRepository {
     override fun trackIds(playlistId: Long): Flow<List<Long>> =
         entries.map { list -> list.firstOrNull { it.id == playlistId }?.trackIds ?: emptyList() }
 
-    override suspend fun createPlaylist(name: String): Long = seed(name)
+    /** When true, [createPlaylist] reports a failed write (storage full) instead of seeding. */
+    var failCreates: Boolean = false
+
+    override suspend fun createPlaylist(name: String): Long? =
+        if (failCreates) null else seed(name)
 
     override suspend fun renamePlaylist(id: Long, name: String) =
         entries.update { list -> list.map { if (it.id == id) it.copy(name = name) else it } }

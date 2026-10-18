@@ -103,3 +103,20 @@ class VersionedStorageStore<T>(
         DecodeFailure.UNSUPPORTED_VERSION -> BrowserStateReason.UNSUPPORTED_VERSION
     }
 }
+
+/**
+ * One call site for the store's constructor repeated by every `Storage*Repository`: bind a stable
+ * key, its codec, the empty fallback, and the shared event sink to [Storage].
+ */
+internal fun <T> Storage.versionedStore(
+    key: String,
+    codec: VersionedJsonCodec<T>,
+    emptyValue: T,
+    events: BrowserStateEvents,
+): VersionedStorageStore<T> = VersionedStorageStore(
+    storage = this,
+    key = key,
+    codec = codec,
+    emptyValue = emptyValue,
+    events = events,
+)

@@ -98,17 +98,25 @@ class BrowserHistoryNavigation(
     private fun onPopState() {
         val shell = shell ?: return
         depth = readDepth(window.history.state)
+        val path = currentPath()
+        val target = targetForPath(path)
         applying = true
         try {
-            shell.navigateTo(targetForCurrentLocation())
+            shell.navigateTo(target)
         } finally {
             applying = false
         }
+        // A Back/Forward onto an unknown path falls back to the root above; replace the dead URL so
+        // the address bar matches what is on screen and a refresh doesn't repeat the fallback.
+        if (RouteUrl.needsCanonicalization(path, capabilities)) replaceCurrent(target)
     }
 
-    private fun targetForCurrentLocation(): ShellTarget {
-        val location = window.location
-        val decoded = RouteUrl.decode(location.pathname + location.search, capabilities)
+    private fun currentPath(): String = window.location.pathname + window.location.search
+
+    private fun targetForCurrentLocation(): ShellTarget = targetForPath(currentPath())
+
+    private fun targetForPath(path: String): ShellTarget {
+        val decoded = RouteUrl.decode(path, capabilities)
         return when (decoded) {
             is ChipboxTarget.Tab -> ShellTarget.Tab(decoded.tab.toShellTab())
             is ChipboxTarget.Deep -> ShellTarget.Deep(decoded.destination)

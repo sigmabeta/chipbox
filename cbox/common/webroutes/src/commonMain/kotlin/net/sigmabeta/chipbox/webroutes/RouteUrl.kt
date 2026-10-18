@@ -84,6 +84,14 @@ object RouteUrl {
         return ChipboxTarget.Deep(destination)
     }
 
+    /**
+     * True when [path] has no route (or the host withholds it), so a host that fell back to the
+     * root must canonicalise the current history entry rather than leave the dead path in the URL
+     * bar. A well-formed path decodes to a target and needs no rewrite.
+     */
+    fun needsCanonicalization(path: String, capabilities: AppCapabilities = AppCapabilities.Default): Boolean =
+        decode(path, capabilities) == null
+
     // region encode ---------------------------------------------------------------------------
 
     private fun encodeDestination(destination: Any): String? = when (destination) {

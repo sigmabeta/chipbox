@@ -101,6 +101,7 @@ All durable browser state is in `localStorage`; the server stores none of it.
 | Playlists | `chipbox.playlists` | versioned JSON; persisted next-id, ordered track ids |
 | Play history | `chipbox.playback_history` | versioned JSON; newest 500 plays; legacy raw array read as v0 |
 | Playback session | `playback.session.snapshot` | versioned JSON; queue, current track, position, shuffle, repeat; legacy raw snapshot read as v0 |
+| Search history | `chipbox.search_history` | versioned JSON; newest 10 queries, de-duped; never sent to the server |
 
 Every versioned store is one JSON object: `{ "schemaVersion": 1, "payload": … }`.
 Favorites payloads hold `tracks` / `games` / `artists` lists of
@@ -135,11 +136,11 @@ nothing survives. A failed lookup leaves the snapshot untouched (a transient
 server error must not erase a resumable session). Saving happens on the
 `PLAYING → PAUSED` edge, and `snapshotNow()` also runs on `pagehide`,
 `beforeunload`, and `visibilitychange=hidden`, so reopening a tab after playing
-without pausing keeps the position. The visibility flush is a non-teardown save
-(the page stays alive), so a later real stop still clears; `pagehide`/`beforeunload`
-use the teardown form so a released player cannot wipe the snapshot they just
-wrote. A real stop clears the snapshot, and a late teardown flush cannot
-resurrect it.
+without pausing keeps the position. Every browser flush is the non-teardown form
+(the page stays alive), so a later real stop still clears; `pageshow` explicitly
+cancels any teardown guard (`resumeAfterTeardown()`) when the page is restored
+from the back-forward cache. A real stop clears the snapshot, and a late flush
+cannot resurrect it.
 
 **Multi-tab.** History (and favorites/playlists) are cross-tab-live because their
 reads derive from `savedStringFlow`. The playback session is not merged: writes
@@ -299,11 +300,17 @@ saved snapshot, and reloading a tab restores that snapshot.
     --cache-to type=local,dest=.docker-cache,mode=max .
   scripts/ci/verify-oci-index.py build/chipbox-server-multiarch.tar linux/amd64 linux/arm64
   ```
-  The release job mirrors this with `type=gha` caching, uploads the OCI archive
-  as a workflow artifact (no registry, no credentials), smokes the loaded amd64
-  image, and inspects the cross-loaded arm64 image's contents without QEMU.
+  The release job mirrors this with `type=gha` caching, verifies the OCI archive
+  on the runner (no registry, no credentials, no uploaded artifact), smokes the
+  loaded amd64 image, and inspects the cross-loaded arm64 image's contents
+  without QEMU. `publish` needs `web-image`, so a failed image blocks a release.
+  `.dockerignore` excludes `.git`, so `generateWebBuildInfo` takes deterministic
+  `CHIPBOX_BUILD_*` build args (resolved from the checkout by CI) before falling
+  back to git locally; the image therefore reports the real version, commit,
+  branch, and build time.
   `scripts/ci/verify-docker-release.sh` statically pins the platform stages,
-  both-arch release wiring, no-push rule, and native-lib architecture check.
+  both-arch release wiring, no-push/no-artifact rule, build-identity args, and
+  native-lib architecture check.
 - CI: the `web` job (after `static-analysis`) sets up JDK 21, Node 22 + the pinned
   Yarn, a cached pinned emsdk, and the Gradle cache; it builds WASM + the bundle +
   the server, runs `scripts/ci/verify-web-bundle.sh` and `jsNodeTest`, builds the
@@ -326,7 +333,8 @@ saved snapshot, and reloading a tab restores that snapshot.
 - The `/api/health` contract (`HealthStatus`, `ScanRetryPolicy`,
   `readListAwaitingScan`) lives in `cbox/common/models/api` with `commonTest`
   coverage, so the browser's retry behaviour is tested without a browser or a
-  running server.
+  running server. Partial list data is emitted immediately and re-read once the
+  scan ends; an initial `unknown` also retries.
 - Ktor server tests cover scan + RSN extraction, file serving, paging,
   unknown-route handling (JSON `/api` 404s, deep app paths serving the SPA shell,
   and the static-asset 404 policy: a missing `/wasm/*` is never SPA HTML while

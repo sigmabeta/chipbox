@@ -24,8 +24,7 @@ class StoragePlaybackSessionStore(
         storage: Storage,
         events: BrowserStateEvents,
     ) : this(
-        VersionedStorageStore(
-            storage = storage,
+        storage.versionedStore(
             key = BrowserStateKeys.PLAYBACK_SESSION,
             codec = BrowserStateCodecs.playbackSession,
             emptyValue = PlaybackSessionState(),

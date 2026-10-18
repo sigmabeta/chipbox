@@ -43,14 +43,13 @@ internal fun ScannerState.toHealthStatus(): HealthStatus = when (this) {
         tracksFailed = tracksFailed,
     )
 
-    is ScannerState.Failed -> {
-        val failedFile = path.basename()
-        HealthStatus(
-            ok = false,
-            state = ScanState(ScanStatus.FAILED, failedFile = failedFile),
-            error = failedFile,
-        )
-    }
+    is ScannerState.Failed -> HealthStatus(
+        ok = false,
+        // Basename only, and only in the one place the wire contract exposes it: a public endpoint
+        // must not echo `/music/…` or a user directory, and duplicating it in a second field adds
+        // nothing for the client.
+        state = ScanState(ScanStatus.FAILED, failedFile = path.basename()),
+    )
 }
 
 /** Basename only: the health body is public, so never echo `/music/…` or a user directory. */

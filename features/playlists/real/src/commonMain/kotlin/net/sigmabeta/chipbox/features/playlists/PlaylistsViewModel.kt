@@ -72,7 +72,7 @@ class PlaylistsViewModel(
             val base = suggestedName?.takeIf { it.isNotBlank() }
                 ?: stringProvider.getString(ChipboxStringId.PLAYLISTS_DEFAULT_NAME)
             val existingNames = playlists.playlists().first().mapTo(mutableSetOf()) { it.name }
-            val id = playlists.createPlaylist(uniqueDefaultName(base, existingNames))
+            val id = playlists.createPlaylist(uniqueDefaultName(base, existingNames)) ?: return@launch
             if (pendingTrackIds.isNotEmpty()) {
                 // Picker (bulk add): drop the tracks in and back out, like adding to an existing playlist.
                 playlists.addTracks(id, pendingTrackIds)

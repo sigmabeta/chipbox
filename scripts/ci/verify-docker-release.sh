@@ -16,8 +16,11 @@
 #   .github/workflows/release.yml
 #     - a web-image job: both linux platforms, push:false, no login/push/credentials, OCI tar
 #       output, gha layer cache, QEMU for the arm64 native stage, and the amd64/arm64 checks
+#     - the image is not uploaded as an artifact, and publish.needs includes web-image
 #   .github/workflows/ci.yml
 #     - the PR web job still builds amd64 and smokes it through the shared script
+#   Dockerfile
+#     - CHIPBOX_BUILD_* args carry deterministic build identity (the context has no .git)
 #
 # Usage: scripts/ci/verify-docker-release.sh
 # Exit codes: 0 = pass, 1 = invariant broken, 2 = missing tool.
@@ -75,6 +78,13 @@ grep -q 'wasm-emulators.txt' "$DOCKERFILE" \
   || fail "runtime stage must use apps/js/wasm-emulators.txt (single source of the nine pairs)"
 grep -q 'verify-web-bundle.sh' "$DOCKERFILE" \
   || fail "web stage must assert the built bundle (scripts/ci/verify-web-bundle.sh)"
+
+# Build identity: .git is not in the build context, so the identity must come in as build args.
+for name in CHIPBOX_BUILD_VERSION CHIPBOX_BUILD_VERSION_CODE CHIPBOX_BUILD_COMMIT \
+            CHIPBOX_BUILD_BRANCH CHIPBOX_BUILD_TIME_MS; do
+  grep -q "^ARG $name=" "$DOCKERFILE" \
+    || fail "Dockerfile must declare ARG $name (deterministic build identity without .git)"
+done
 
 grep -Eqi '^FROM .*alpine' "$DOCKERFILE" && fail "runtime must be glibc (found an alpine base image)"
 grep -q '^USER 10001:10001' "$DOCKERFILE" || fail "runtime must run non-root (USER 10001:10001)"
@@ -201,6 +211,8 @@ check(pr_with['push'] == false, 'CI web job must not push')
 check(pr_with['load'] == true, 'CI web job must load the amd64 image for the smoke')
 check(pr_with['build-args'].to_s.include?('EMSDK_VERSION='),
       'CI web image build must pass the pinned EMSDK_VERSION')
+check(pr_with['build-args'].to_s.include?('CHIPBOX_BUILD_VERSION='),
+      'CI web image build must pass the checkout build identity (CHIPBOX_BUILD_VERSION)')
 check(steps(web).any? { |s| s.dig('run').to_s.include?('scripts/ci/web-image-smoke.sh') },
       'CI web job must smoke through scripts/ci/web-image-smoke.sh')
 check(!steps(web).any? { |s| s['uses'].to_s.include?('docker/login-action') },
@@ -249,6 +261,8 @@ check(multi_with['cache-to'].to_s.include?('type=gha'),
       'release build must export a gha layer cache')
 check(multi_with['build-args'].to_s.include?('EMSDK_VERSION='),
       'release build must pass the pinned EMSDK_VERSION')
+check(multi_with['build-args'].to_s.include?('CHIPBOX_BUILD_VERSION='),
+      'release build must pass the checkout build identity (CHIPBOX_BUILD_VERSION)')
 check(img_steps.any? { |s| s.dig('run').to_s.include?('mkdir -p build') },
       'release job must create the OCI output directory before the build')
 
@@ -266,8 +280,14 @@ end, 'release job must run the amd64 image smoke')
 # No push anywhere in the release workflow's container job.
 check(!img.to_s.include?('docker push') && !img.to_s.include?('--push'),
       'release image job must not push')
+# The image is built and verified, not published: no registry push and no artifact upload.
+check(!img_steps.any? { |s| s['uses'].to_s.include?('upload-artifact') },
+      'release web image job must not upload/publish the OCI archive')
+publish = job!(release, 'publish')
+check(Array(publish['needs']).include?('web-image'),
+      'release publish must need web-image, so a failed image build blocks the release')
 
-puts 'Workflow wiring OK: PR amd64 smoke + release amd64/arm64 OCI build, no registry'
+puts 'Workflow wiring OK: PR amd64 smoke + release amd64/arm64 OCI build, no registry/public artifact'
 RUBY
 [ $? -eq 0 ] || failures=$((failures + 1))
 

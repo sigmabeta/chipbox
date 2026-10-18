@@ -156,6 +156,12 @@ class RealPlaybackSessionPersister(
         store.save(snapshotOf(session, current.track, current.positionMs, current.setlist))
     }
 
+    override fun resumeAfterTeardown() {
+        // The host didn't actually end (a BFCache `pageshow`, or any resume after a flush): a real
+        // stop from here on must clear the snapshot again.
+        tearingDown = false
+    }
+
     /** The slice of the observed streams a snapshot is built from, combined into one value. */
     private data class Snapshotable(
         val session: Session?,

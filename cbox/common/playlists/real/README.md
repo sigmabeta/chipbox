@@ -28,7 +28,7 @@ Elsewhere depend on `:cbox:common:playlists:api` for the interface.
 val repository: PlaylistsRepository = RealPlaylistsRepository(
     db.playlistDao(), db.playlistTrackDao(), hatchet,
 )
-val id = repository.createPlaylist("Favorites")
+val id = repository.createPlaylist("Favorites") ?: return // null = the write failed
 repository.addTracks(id, listOf(10, 11, 12))
 ```
 

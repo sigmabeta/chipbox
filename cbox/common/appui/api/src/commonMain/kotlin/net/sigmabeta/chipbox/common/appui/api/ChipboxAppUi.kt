@@ -26,6 +26,8 @@ import net.sigmabeta.chipbox.common.ui.chrome.api.TitleBarController
 import net.sigmabeta.chipbox.common.ui.components.api.subs.LocalForceFakeImages
 import net.sigmabeta.chipbox.common.ui.list.api.LocalScreenLifecycleOwner
 import net.sigmabeta.chipbox.settings.ThemeMode
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.LocalChipboxStringProvider
 import net.sigmabeta.chipbox.ui.theme.api.AppTheme
 
 /**
@@ -127,6 +129,8 @@ fun ChipboxAppUi(
                 // now invoked by a collector on the VM's [effects] flow rather than directly
                 // by the LocalChipboxEventSink. Policy decisions (what to honour, what to
                 // drop) live in the VM; this layer just executes whatever the VM forwards.
+                val serverManagedLibraryMessage = LocalChipboxStringProvider.current
+                    .getString(ChipboxStringId.APPUI_SERVER_MANAGED_LIBRARY)
                 val applyEffect = remember(
                     navigator,
                     snackbarHostState,
@@ -135,11 +139,13 @@ fun ChipboxAppUi(
                     onCopyToClipboard,
                     chromeController,
                     capabilities,
+                    serverManagedLibraryMessage,
                 ) {
                     buildOuterSink(
                         snackbarHostState = snackbarHostState,
                         snackbarScope = snackbarScope,
                         capabilities = capabilities,
+                        serverManagedLibraryMessage = serverManagedLibraryMessage,
                         onNavigateTo = { destination ->
                             navigator.push(screenFor(destination))
                         },

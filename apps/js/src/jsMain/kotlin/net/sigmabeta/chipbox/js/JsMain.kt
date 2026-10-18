@@ -111,6 +111,11 @@ fun main() {
             hatchet = hatchet,
             stringProvider = stringProvider,
         )
+        // Make the shipped build identity visible in the console alongside errors. This is the
+        // version Settings > About shows; the commit distinguishes locally rebuilt bundles.
+        hatchet.i(
+            "Chipbox web ${WebBuildInfo.VERSION_NAME} (${WebBuildInfo.BUILD_COMMIT}) on ${WebBuildInfo.BUILD_BRANCH}",
+        )
 
         // Mirror Voyager navigation into path-based URLs (pushState/replaceState) and drive the
         // shell from the browser's Back/Forward (popstate). Created before Compose mounts so the
@@ -218,12 +223,16 @@ fun main() {
  * emits a pause, so without these hooks the saved position would be stale (or the session would be
  * missing entirely). `pagehide` covers reload/navigation and the back-forward cache;
  * `visibilitychange` covers backgrounding (the only reliable signal on mobile); `beforeunload` is a
- * belt-and-braces fallback for older browsers. `snapshotNow()` is synchronous and no-ops for
- * STOPPED/IDLE, so a late event after a real stop cannot resurrect the session.
+ * belt-and-braces fallback for older browsers. Every flush is the **non-teardown** form: on the web
+ * the page may come back from BFCache, and a real Stop after that must still clear the snapshot.
+ * `pageshow` resets the guard explicitly (for a persisted page restored without a new PLAYING tick).
+ * `snapshotNow()` is synchronous and no-ops for STOPPED/IDLE, so a late event after a real stop
+ * cannot resurrect the session.
  */
 private fun installSessionFlush(persister: PlaybackSessionPersister) {
-    window.addEventListener("pagehide", { _ -> persister.snapshotNow() })
-    window.addEventListener("beforeunload", { _ -> persister.snapshotNow() })
+    window.addEventListener("pagehide", { _ -> persister.snapshotNow(teardown = false) })
+    window.addEventListener("beforeunload", { _ -> persister.snapshotNow(teardown = false) })
+    window.addEventListener("pageshow", { _ -> persister.resumeAfterTeardown() })
     document.addEventListener("visibilitychange", { _ ->
         // `document.hidden` is the Page Visibility API flag. Kotlin's DOM binding for it is not
         // exposed consistently across stdlib versions, so read the property dynamically.

@@ -23,8 +23,8 @@ interface PlaylistsRepository {
     /** The playlist's member track ids, in user order. */
     fun trackIds(playlistId: Long): Flow<List<Long>>
 
-    /** Create an empty playlist named [name]; returns its new id. */
-    suspend fun createPlaylist(name: String): Long
+    /** Create an empty playlist named [name]; returns its new id, or null when the write failed. */
+    suspend fun createPlaylist(name: String): Long?
 
     suspend fun renamePlaylist(id: Long, name: String)
 
