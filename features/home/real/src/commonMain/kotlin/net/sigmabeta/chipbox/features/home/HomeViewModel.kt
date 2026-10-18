@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.features.artistdetail.ArtistDetail
@@ -38,6 +39,7 @@ import net.sigmabeta.sage.ui.StringProvider
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @ViewModelKey
 class HomeViewModel @Inject constructor(
+    private val capabilities: AppCapabilities,
     modules: Set<HomeModule>,
     private val repository: Repository,
     private val director: Director,
@@ -52,6 +54,7 @@ class HomeViewModel @Inject constructor(
             .sortedBy { it.priority }
             .map { HomeSectionState(it.id, it.priority, LCE.Uninitialized, it.showHeader) }
             .toImmutableList(),
+        canManageLibrary = capabilities.canManageLibrary,
     ),
     stringProvider,
     hatchet,
@@ -117,9 +120,10 @@ class HomeViewModel @Inject constructor(
 
             HomeAction.RandomArtistClicked -> navigateToRandomArtist()
 
-            HomeAction.AddFolderClicked -> emit(NavigateTo(FolderPicker))
+            HomeAction.AddFolderClicked ->
+                if (capabilities.canManageLibrary) emit(NavigateTo(FolderPicker))
 
-            HomeAction.RescanLibraryClicked -> {
+            HomeAction.RescanLibraryClicked -> if (capabilities.canManageLibrary) {
                 scanner.startScan()
                 emit(NavigateTo(RescanStatus))
             }

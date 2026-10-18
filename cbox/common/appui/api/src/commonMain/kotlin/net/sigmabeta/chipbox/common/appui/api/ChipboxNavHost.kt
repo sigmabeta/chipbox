@@ -56,6 +56,7 @@ import cafe.adriel.voyager.navigator.tab.TabNavigator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.ui.Icon as SageIcon
@@ -161,11 +162,14 @@ internal object ChipboxTabsScreen : Screen {
         // See [LocalActiveTabDestinations].
         val activeTabDestinations = LocalActiveTabDestinations.current
         val navigationObserver = LocalNavigationObserver.current
+        val capabilities = LocalAppCapabilities.current
         if (activeTabDestinations != null) {
-            LaunchedEffect(activeTabDestinations, activeTabNavigator, navigationObserver) {
+            LaunchedEffect(activeTabDestinations, activeTabNavigator, navigationObserver, capabilities) {
                 activeTabDestinations.collect { destination ->
-                    navigationObserver?.invoke(destination)
-                    activeTabNavigator.navigator?.push(screenFor(destination))
+                    if (capabilities.allowsNavigation(destination)) {
+                        navigationObserver?.invoke(destination)
+                        activeTabNavigator.navigator?.push(screenFor(destination))
+                    }
                 }
             }
         }
@@ -453,6 +457,7 @@ private fun navItems(
 internal fun buildOuterSink(
     snackbarHostState: SnackbarHostState,
     snackbarScope: CoroutineScope,
+    capabilities: AppCapabilities,
     onNavigateTo: (Any) -> Unit,
     onNavigateBack: () -> Unit,
     onOpenUrl: (String) -> Unit,
@@ -461,7 +466,9 @@ internal fun buildOuterSink(
     onRequestTopBarVisibility: (Boolean) -> Unit,
 ): (ChipboxEvent) -> Unit = { event ->
     when (event) {
-        is ChipboxEvent.NavigateTo -> onNavigateTo(event.destination)
+        is ChipboxEvent.NavigateTo -> {
+            if (capabilities.allowsNavigation(event.destination)) onNavigateTo(event.destination)
+        }
 
         ChipboxEvent.NavigateBack -> onNavigateBack()
 
@@ -494,9 +501,16 @@ internal fun buildOuterSink(
 
         is ChipboxEvent.RequestTopBarVisibility -> onRequestTopBarVisibility(event.visible)
 
-        // Screen-local effects intercepted by their owning route (see SettingsRoute on
-        // Android — SAF folder picker); anything reaching here is a routing bug, but
-        // no-op rather than crash.
-        ChipboxEvent.PickFolder -> Unit
+        // Screen-local effects intercepted by their owning route (see SettingsRoute on Android —
+        // SAF folder picker). On a host that does not manage its library there is nowhere for this
+        // to go, so explain the server-side flow instead of silently dead-ending.
+        ChipboxEvent.PickFolder -> if (!capabilities.canManageLibrary) {
+            snackbarScope.launch {
+                snackbarHostState.showSnackbar(
+                    message = SERVER_MANAGED_LIBRARY_MESSAGE,
+                    duration = SnackbarDuration.Short,
+                )
+            }
+        }
     }
 }

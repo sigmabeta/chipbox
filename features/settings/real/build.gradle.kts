@@ -18,6 +18,9 @@ kotlin {
                 implementation(projects.cbox.common.ui.list.api)
                 implementation(projects.cbox.common.ui.fonts.api)
                 implementation(projects.cbox.common.appcomm.api)
+                // Host-policy flags (library administration, debug surfaces) shared with Home and
+                // the shell; the browser binds them off.
+                implementation(projects.cbox.common.capabilities.api)
                 implementation(projects.cbox.common.strings.api)
                 implementation(projects.cbox.common.settings.api)
                 implementation(projects.cbox.common.debug.api)

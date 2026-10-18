@@ -6,6 +6,7 @@
     <string name="settings_section_library">Library</string>
     <string name="settings_section_about">About</string>
     <string name="settings_section_debug">Debug</string>
+    <string name="settings_section_diagnostics">Diagnostics</string>
 
     <string name="settings_label_theme">Theme</string>
     <string name="settings_theme_light">Light</string>
@@ -47,7 +48,7 @@
     <string name="settings_caption_playback_status">Inspect current player state (debug only).</string>
 
     <string name="settings_label_error_log">Error log</string>
-    <string name="settings_caption_error_log">Recent errors logged this session (debug only).</string>
+    <string name="settings_caption_error_log">Recent errors logged this session.</string>
 
     <string name="settings_label_crash_log">Crash log</string>
     <string name="settings_caption_crash_log">Fatal exceptions from past sessions (debug only).</string>

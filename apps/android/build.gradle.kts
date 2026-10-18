@@ -137,6 +137,8 @@ kotlin {
 
 dependencies {
     implementation(projects.cbox.common.appui.api)
+    // Host capability policy bound to the Android surface (full library + debug).
+    implementation(projects.cbox.common.capabilities.api)
     // Pure contract module — used only for the fixed device-benchmark layout
     // (DeviceBenchmarkLayout) the `benchmark`-variant seed rebases onto.
     implementation(projects.testing.perfbenchCore)

@@ -36,6 +36,9 @@ kotlin {
                 // owner the screen entries observe for foreground/background).
                 implementation(libs.androidx.lifecycle.runtimeCompose)
                 implementation(projects.cbox.common.appcomm.api)
+                // Host capability policy (which surfaces this installation exposes), seeded by each
+                // app graph. The shell reads it to refuse blocked destinations.
+                implementation(projects.cbox.common.capabilities.api)
                 implementation(projects.cbox.common.strings.api)
                 // Shared `ChipboxTheme()` — multiplatform. The Android-side `AppTheme()`
                 // wrapper in `cbox/android/ui/theme/api` was thin syntactic sugar and is

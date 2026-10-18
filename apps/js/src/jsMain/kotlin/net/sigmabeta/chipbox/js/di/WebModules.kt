@@ -22,10 +22,10 @@ import net.sigmabeta.chipbox.browserstate.StoragePlaybackSessionStore
 import net.sigmabeta.chipbox.browserstate.StoragePlaylistsRepository
 import net.sigmabeta.chipbox.browserstate.referencedTrackIds
 import net.sigmabeta.chipbox.browserstate.withKnownTracks
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
-import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
 import net.sigmabeta.chipbox.crash.CrashReport
 import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
@@ -38,6 +38,7 @@ import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
 import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
 import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
 import net.sigmabeta.chipbox.history.real.RealPlaybackHistoryRecorder
+import net.sigmabeta.chipbox.js.WebBuildInfo
 import net.sigmabeta.chipbox.js.contentsource.HttpContentSource
 import net.sigmabeta.chipbox.js.emulators.WasmGbaEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmGmeEmulator
@@ -48,7 +49,8 @@ import net.sigmabeta.chipbox.js.emulators.WasmTwosfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmUsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmstreamEmulator
-import net.sigmabeta.chipbox.js.repository.LocalStoragePlaybackHistoryRepository
+import net.sigmabeta.chipbox.js.inert.EmptyLibrarySource
+import net.sigmabeta.chipbox.js.inert.NoopScanner
 import net.sigmabeta.chipbox.notif.NotifManager
 import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
 import net.sigmabeta.chipbox.notif.real.RealNotifManager
@@ -77,7 +79,6 @@ import net.sigmabeta.chipbox.playlists.PlaylistsRepository
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
-import net.sigmabeta.chipbox.scanner.fake.CountingScanner
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.chipbox.settings.ResamplerMode
 import net.sigmabeta.chipbox.settings.real.RealChipboxSettingsManager
@@ -95,15 +96,20 @@ import okio.fakefilesystem.FakeFileSystem
  *
  * - **Repository** — [RemoteRepository] over an [HttpClient] (Ktor JS + JSON). Base URL derives
  *   from `window.location.origin`.
- * - **LibrarySource / ContentSource** — `FakeLibrarySource`. The server owns the real one; the
- *   UI's "manage library" screen can't add/remove server-side folders from the browser.
+ * - **LibrarySource / ContentSource** — [EmptyLibrarySource] + [HttpContentSource]. The server owns
+ *   the real library (one directory, scanned at startup); the browser can list no roots and adds
+ *   none. Track bytes come from `/api/files/{id}`. Library administration is disabled by
+ *   [AppCapabilities], and the inert source exists only to close the graph for shared view models.
  * - **Generator / Speaker / Director** — *real*. `RealGenerator` drives WASM emulators
  *   ([WasmGmeEmulator] for libgme today; more coming) through the standard
  *   `RealPcmTrackSourceFactory` chain. Bytes round-trip through `FakeFileSystem` for staging —
  *   the emulator subclass reads the staged path back out into the WASM heap. `WebAudioSpeaker`
  *   pumps PCM to an AudioWorkletNode. `RealDirector` orchestrates the lot.
- * - **Scanner** — `CountingScanner` (no-op; scans run on the server, not in the browser).
- * - **Settings / DebugSettings / DebugInfo** — fakes; no client-side persistence in v1.
+ * - **Scanner** — [NoopScanner] (inert; scans run on the server, not in the browser).
+ * - **Settings / DebugSettings / DebugInfo** — real localStorage-backed managers + the real
+ *   debug-info aggregator.
+ * - **AppCapabilities** — the browser's policy: no library administration, no debug section, but
+ *   the browser-local Error Log stays reachable. See [WebCapabilitiesModule].
  *
  * `Hatchet` and `StringProvider` enter the graph via `WebChipboxGraph.Factory` (supplied at
  * startup from `JsMain.kt`) — no `@Provides` for them here.
@@ -134,26 +140,25 @@ object WebHomeConfigModule {
 @BindingContainer
 @ContributesTo(AppScope::class)
 object WebContentSourceModule {
-    // FakeLibrarySource is the `LibrarySource` binding (used by ManageLibrary's UI to list +
-    // add/remove folder roots) — the browser has no way to surface real server-side roots, so
-    // the UI shows an empty list. The interesting ContentSource is [HttpContentSource], wired
-    // into the registry with sourceId="file" so `BaseGenerator.loadNextTrack` resolves
-    // server-scanned tracks (whose `track.source` is "file") and round-trips their bytes
-    // through `/api/files/by-path`.
+    // The browser exposes no library roots: the server owns the single configured directory and
+    // scans it at startup. EmptyLibrarySource is an inert LibrarySource that keeps the shared view
+    // models constructible; the UI never reaches it because AppCapabilities disables library
+    // administration on web. The interesting ContentSource is [HttpContentSource], wired into the
+    // registry with sourceId="file" so `BaseGenerator.loadNextTrack` resolves server-scanned tracks
+    // (whose `track.source` is "file") and round-trips their bytes through `/api/files/{id}`.
     @Provides @SingleIn(AppScope::class)
-    fun provideFakeLibrarySource(): FakeLibrarySource = FakeLibrarySource()
+    fun provideEmptyLibrarySource(): EmptyLibrarySource = EmptyLibrarySource()
 
     @Provides @SingleIn(AppScope::class)
-    fun provideLibrarySource(impl: FakeLibrarySource): LibrarySource = impl
+    fun provideLibrarySource(impl: EmptyLibrarySource): LibrarySource = impl
 
     @Provides @SingleIn(AppScope::class)
     fun provideHttpContentSource(client: HttpClient): HttpContentSource = HttpContentSource(client)
 
     @Provides @SingleIn(AppScope::class)
     fun provideContentSourceRegistry(
-        fake: FakeLibrarySource,
         http: HttpContentSource,
-    ): ContentSourceRegistry = ContentSourceRegistry(setOf<ContentSource>(fake, http))
+    ): ContentSourceRegistry = ContentSourceRegistry(setOf<ContentSource>(http))
 }
 
 @BindingContainer
@@ -359,8 +364,24 @@ object WebFolderPickerModule {
 @BindingContainer
 @ContributesTo(AppScope::class)
 object WebScannerModule {
+    // Scans happen on the server, so the graph gets an inert scanner rather than a test fake.
     @Provides @SingleIn(AppScope::class)
-    fun provideScanner(): Scanner = CountingScanner()
+    fun provideScanner(): Scanner = NoopScanner()
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object WebCapabilitiesModule {
+    // The browser is a client of a self-hosted server: the library lifecycle (CHIPBOX_LIBRARY_DIR +
+    // restart) is an admin concern, so no screen may add folders, rescan, or clear the library.
+    // The debug section stays hidden even if a persisted five-tap flag is on; the Error Log remains
+    // reachable from Settings > Diagnostics because it is browser/session-local.
+    @Provides @SingleIn(AppScope::class)
+    fun provideAppCapabilities(): AppCapabilities = AppCapabilities(
+        canManageLibrary = false,
+        showDebugSection = false,
+        showErrorLog = true,
+    )
 }
 
 @BindingContainer
@@ -575,14 +596,16 @@ object WebCoroutinesModule {
 @BindingContainer
 @ContributesTo(AppScope::class)
 object WebAppInfoModule {
-    // No BuildConfig on JS, so the values are intentionally fake — good enough for the
-    // Settings screen's "About" entries.
+    // There is no BuildConfig on JS. The real version/branch/build time come from the generated
+    // WebBuildInfo object (git describe/branch/commit time, written by
+    // :apps:js:generateWebBuildInfo). isDebug is false: the browser is a release-shaped client, so
+    // the Settings debug section and the debug palette swap stay off.
     @Provides @SingleIn(AppScope::class)
     fun provideAppInfo(): AppInfo = AppInfo(
-        isDebug = true,
-        versionName = "0.1.0-js",
-        versionCode = 1,
-        buildTimeMs = 0L,
-        buildBranch = "web",
+        isDebug = false,
+        versionName = WebBuildInfo.VERSION_NAME,
+        versionCode = WebBuildInfo.VERSION_CODE,
+        buildTimeMs = WebBuildInfo.BUILD_TIME_MS,
+        buildBranch = WebBuildInfo.BUILD_BRANCH,
     )
 }

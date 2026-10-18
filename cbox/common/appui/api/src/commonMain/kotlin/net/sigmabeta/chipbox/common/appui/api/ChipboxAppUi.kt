@@ -17,6 +17,7 @@ import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.common.ui.chrome.api.ChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChromeController
@@ -70,6 +71,9 @@ fun ChipboxAppUi(
     // snackbar host. Null for desktop/Android, which have no such producer yet; web passes the
     // browser-state event flow so a quota failure is visible without crashing the UI.
     messages: Flow<String>? = null,
+    // Which surfaces this host exposes. Defaults to the full desktop/Android surface; the browser
+    // passes the graph's web capabilities (no library administration, no debug section).
+    capabilities: AppCapabilities = AppCapabilities.Default,
 ) {
     // Materialized before the theme so its persisted theme choice picks the color scheme — and
     // so Metro multibinding misses surface at launch rather than at the first screen entry.
@@ -102,6 +106,7 @@ fun ChipboxAppUi(
             LocalPlatformBackKeys provides backKeyEvents,
             LocalActiveTabDestinations provides activeTabDestinations,
             LocalNavigationObserver provides onNavigate,
+            LocalAppCapabilities provides capabilities,
             // The owner the screen entries observe for foreground/background. Sourced from the
             // platform LocalLifecycleOwner (the Activity / desktop Window provides it) so the
             // centralized ScreenLifecycleEffect has a real lifecycle to follow.
@@ -125,10 +130,12 @@ fun ChipboxAppUi(
                     onOpenUrl,
                     onCopyToClipboard,
                     chromeController,
+                    capabilities,
                 ) {
                     buildOuterSink(
                         snackbarHostState = snackbarHostState,
                         snackbarScope = snackbarScope,
+                        capabilities = capabilities,
                         onNavigateTo = { destination ->
                             navigator.push(screenFor(destination))
                         },

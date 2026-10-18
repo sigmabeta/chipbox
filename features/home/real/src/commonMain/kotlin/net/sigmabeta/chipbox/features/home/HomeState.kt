@@ -28,6 +28,9 @@ data class HomeState(
     // first-run empty state never flashes before we know. `false` → show the empty state outright
     // (independent of what the content modules are doing); `true`/`null` → render the modules.
     val hasTracks: Boolean? = null,
+    // Host policy: the browser does not manage its library (the server does), so the empty state
+    // explains the server-side flow and renders no CTAs. Defaults to the local-library behavior.
+    val canManageLibrary: Boolean = true,
 ) : ListState() {
     override val columnType: ColumnType = ColumnType.One
 
@@ -72,12 +75,13 @@ data class HomeState(
             )
         }
         val hasFolders = libraryFolderCount > 0
-        val explanation = if (hasFolders) {
-            ChipboxStringId.HOME_EMPTY_FOLDERS_EMPTY
-        } else {
-            ChipboxStringId.HOME_EMPTY_NO_FOLDERS
+        val explanation = when {
+            !canManageLibrary -> ChipboxStringId.HOME_EMPTY_SERVER_MANAGED
+            hasFolders -> ChipboxStringId.HOME_EMPTY_FOLDERS_EMPTY
+            else -> ChipboxStringId.HOME_EMPTY_NO_FOLDERS
         }
         val ctas = buildList {
+            if (!canManageLibrary) return@buildList
             // When folders exist but turned up nothing, a rescan is the likeliest fix (files added
             // after the last scan), so offer it first; adding another folder is the fallback.
             if (hasFolders) {

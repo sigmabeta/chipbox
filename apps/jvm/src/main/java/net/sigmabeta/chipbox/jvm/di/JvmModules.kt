@@ -18,6 +18,7 @@ import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.crash.CrashReporter
 import net.sigmabeta.chipbox.crash.CrashReportStore
 import net.sigmabeta.chipbox.crash.real.RealCrashReporter
@@ -502,6 +503,14 @@ object JvmSettingsManagersModule {
     @Provides @SingleIn(AppScope::class)
     fun provideDebugSettingsManager(storage: Storage): DebugSettingsManager =
         RealDebugSettingsManager(storage)
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object JvmCapabilitiesModule {
+    // Desktop manages its own library and keeps the full debug surface.
+    @Provides @SingleIn(AppScope::class)
+    fun provideAppCapabilities(): AppCapabilities = AppCapabilities.Default
 }
 
 @BindingContainer
