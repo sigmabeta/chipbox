@@ -35,4 +35,4 @@ external interface ChipboxUsfModule {
 private external val chipboxUsf: () -> Promise<ChipboxUsfModule>
 
 suspend fun loadChipboxUsf(): ChipboxUsfModule =
-    loadWasmModule("usf", "/wasm/chipbox_usf.js") { chipboxUsf() }
+    loadWasmModule("usf", "/wasm/chipbox_usf.js", "chipboxUsf") { chipboxUsf() }
