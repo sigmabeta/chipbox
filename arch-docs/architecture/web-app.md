@@ -367,7 +367,9 @@ and Safari. A failure blocks "usable".
 - [ ] Home, games, artists, platforms, all tracks, and search return results.
 - [ ] Game/artist paging returns distinct pages, with no duplicates or skipped
       entries.
-- [ ] Covers and artist photos load.
+- [ ] Game covers load. Artist photos are a **known v1 gap**: no photo source
+      exists on any platform (`Artist.photoUrl` is always null), so this line is
+      accepted as a follow-up rather than a pass.
 - [ ] Unknown `/api/*` paths return a JSON 404, not the SPA HTML.
 
 **Playback**
