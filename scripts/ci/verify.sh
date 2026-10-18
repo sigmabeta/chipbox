@@ -132,7 +132,8 @@ done
 [ "$rerun" = 1 ] && GRADLE_FLAGS+=(--rerun-tasks)
 
 valid_names=" ${ALL_TASKS[*]%%|*} ${DEVICE_TASK_NAMES[*]} ${WEB_OPT_IN_TASKS[*]} "
-for name in "${filter[@]}"; do
+# bash 3.2 (macOS) treats "${empty[@]}" as unbound under `set -u`; expand guardedly.
+for name in ${filter[@]+"${filter[@]}"}; do
   if [[ "$valid_names" != *" $name "* ]]; then
     echo "unknown task: $name (see --list)" >&2; exit 2
   fi
@@ -182,7 +183,7 @@ sage_head=$(git -C sage rev-parse HEAD 2>/dev/null)
 if [ -n "$sage_head" ] && [ -z "$(git -C sage branch -r --contains "$sage_head" 2>/dev/null)" ]; then
   warnings+=("sage submodule is at ${sage_head:0:8}, which no remote branch contains — push sage first or CI checkout fails")
 fi
-for w in "${warnings[@]}"; do echo "${R}warning:${Z} $w" >&2; done
+for w in ${warnings[@]+"${warnings[@]}"}; do echo "${R}warning:${Z} $w" >&2; done
 
 rm -rf "$OUT"
 mkdir -p "$LOGS"
@@ -274,13 +275,13 @@ summary="$OUT/summary.txt"
   echo
   printf '  %-16s %-6s %8s\n' "TASK" "RESULT" "TIME"
   printf '  %-16s %-6s %8s\n' "----" "------" "----"
-  for r in "${results[@]}"; do
+  for r in ${results[@]+"${results[@]}"}; do
     IFS='|' read -r n s d <<<"$r"
     printf '  %-16s %-6s %7ds\n' "$n" "$s" "$d"
   done
   echo
   if [ "$overall" -eq 0 ]; then echo "OVERALL: PASS"; else echo "OVERALL: FAIL"; fi
-  for w in "${warnings[@]}"; do echo "WARNING: $w"; done
+  for w in ${warnings[@]+"${warnings[@]}"}; do echo "WARNING: $w"; done
   echo
   echo "Artifacts under $OUT/:"
   printf '  %-14s %s\n' "logs/" "full gradle output per task (start here for any FAIL)"
