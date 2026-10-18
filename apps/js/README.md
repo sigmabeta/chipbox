@@ -86,7 +86,10 @@ arrow-key→focus handling, removes the `index.html` splash, and mounts
   `analytics/WebAnalytics.kt`, `logging/WebHatchet.kt`.
 - **WASM emulators:** `emulators/Wasm*Emulator.kt` (one `Emulator` subclass per
   format) over `wasm/*Wasm.kt` + `*WasmCore.kt` module loaders, plus
-  `wasm/WasmModuleLoader.kt` and `wasm/MemfsMirror.kt`.
+  `wasm/WasmModuleLoader.kt` and `wasm/MemfsMirror.kt`. Modules load on first use.
+  `WasmVgmstreamEmulator` is the exception whose extension list only exists after
+  its module loads: it overrides `Emulator.supportsExtension` to load first, and
+  is registered last so shared extensions never pay that load.
 - **Resources:** `resources/index.html` (splash + mount point),
   `resources/wasm/chipbox-audio-worklet.js`; `wasm-emulators.txt` (the nine WASM
   modules shared by the build and the bundle check); `webpack.config.d/okio-node-polyfills.js`.

@@ -1,8 +1,10 @@
 package net.sigmabeta.chipbox.abrender
 
 import java.io.File
+import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.player.common.EbuR128
 import net.sigmabeta.chipbox.player.emulators.Emulator
+import net.sigmabeta.chipbox.player.emulators.EmulatorSelector
 import net.sigmabeta.chipbox.player.emulators.gba.GbaEmulator
 import net.sigmabeta.chipbox.player.emulators.gme.GmeEmulator
 import net.sigmabeta.chipbox.player.emulators.ncsf.NcsfEmulator
@@ -47,8 +49,12 @@ class EmulatorBank {
     val supportedExtensions: Set<String> =
         emulators.flatMap { it.supportedFileExtensions }.map { it.lowercase() }.toSet()
 
+    /**
+     * Same ordered lookup as playback ([EmulatorSelector]); every JVM backend's probe is
+     * synchronous, so the suspend seam completes immediately.
+     */
     fun emulatorFor(extension: String): Emulator? =
-        emulators.firstOrNull { it.isFileExtensionSupported(extension.lowercase()) }
+        runBlocking { EmulatorSelector.select(emulators, extension.lowercase()) }
 
     /**
      * Renders [seconds] of [track] to [wavFile] and returns its measurement. Never throws for a

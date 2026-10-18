@@ -69,8 +69,12 @@ Each iteration emits a `GeneratorEvent`:
 `generateBufferInternal(buffer, frames): Int`, `teardownInternal`,
 `getSampleRateInternal`, `getLastError`, plus a `supportedFileExtensions` list.
 The base class tracks remaining frames (track length + fade) and flips
-`trackOver`. `EmulatorProvider` holds the list; the cache factory picks the first
-emulator whose extension matches.
+`trackOver`. `EmulatorProvider` holds the ordered list; `EmulatorSelector` picks
+the first backend whose extension matches. Selection probes through
+`Emulator.supportsExtension` (a suspend seam defaulting to the synchronous
+extension list), so the browser's vgmstream backend can load its WASM module
+before answering — a lazy load that happens only when the ordered lookup reaches
+it, never for a shared extension an earlier backend already claimed.
 
 Nine cores, each an `object` JNI wrapper (`external` funs + `System.loadLibrary`):
 GME (spc/nsf/nsfe/gbs), VGM (vgm/vgz), PSF (psf/minipsf/psf2…), USF (usf/miniusf),
