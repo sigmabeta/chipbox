@@ -205,6 +205,25 @@ class StoragePlaybackHistoryRepositoryTest {
         assertEquals(emptyList(), repo.mostPlayedSongs(10).first())
     }
 
+    @Test
+    fun `clearing corrupt history rewrites the key so a reload is empty and usable`() = runTest {
+        val storage = FakeStorage(mapOf(BrowserStateKeys.PLAYBACK_HISTORY to "{not json"))
+        val events = BrowserStateEvents()
+        val clock = FakeClock()
+        val repo = StoragePlaybackHistoryRepository(storage, events, clock::now)
+
+        repo.clearHistory()
+
+        assertTrue(
+            BrowserStateCodecs.playHistory.decode(storage.raw(BrowserStateKeys.PLAYBACK_HISTORY)) is DecodeOutcome.Success,
+            "the corrupt string is replaced, not left in storage: ${storage.raw(BrowserStateKeys.PLAYBACK_HISTORY)}",
+        )
+        val reloaded = StoragePlaybackHistoryRepository(storage, events, clock::now)
+        assertEquals(emptyList(), reloaded.recentlyPlayed(10).first(), "a reload stays empty")
+        reloaded.recordPlay(trackOf(9L))
+        assertEquals(listOf(9L), reloaded.recentlyPlayed(10).first().map { it.trackId }, "the store is usable again")
+    }
+
     private fun TestScope.collectEvents(events: BrowserStateEvents): MutableList<BrowserStateEvent> {
         val seen = mutableListOf<BrowserStateEvent>()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {

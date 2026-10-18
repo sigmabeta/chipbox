@@ -167,6 +167,23 @@ class StoragePlaylistsRepositoryTest {
     }
 
     @Test
+    fun `clearing corrupt playlists rewrites the key so a reload is empty and usable`() = runTest {
+        val storage = FakeStorage(mapOf(BrowserStateKeys.PLAYLISTS to "{corrupt"))
+        val events = BrowserStateEvents()
+        val repo = StoragePlaylistsRepository(storage, events, FakeClock()::now)
+
+        repo.clearAll()
+
+        assertTrue(
+            BrowserStateCodecs.playlists.decode(storage.raw(BrowserStateKeys.PLAYLISTS)) is DecodeOutcome.Success,
+            "the corrupt string is replaced, not left in storage: ${storage.raw(BrowserStateKeys.PLAYLISTS)}",
+        )
+        val reloaded = StoragePlaylistsRepository(storage, events, FakeClock()::now)
+        assertEquals(emptyList(), reloaded.playlists().first(), "a reload stays empty")
+        assertEquals(1L, reloaded.createPlaylist("After repair"), "the store is usable again")
+    }
+
+    @Test
     fun `a quota failure on create is caught, does not throw, and returns no id`() = runTest {
         val storage = FakeStorage()
         val events = BrowserStateEvents()

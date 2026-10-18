@@ -13,7 +13,7 @@ favorites, playlists, the bounded play history, and the playback-session store t
 | File | What it is |
 | --- | --- |
 | `VersionedJsonCodec.kt` | `VersionedEnvelope<T>(schemaVersion, payload)` + `VersionedJsonCodec<T>`. Decode returns `Missing`, `Success(value, migratedFrom?)`, or `Failed(CORRUPT / UNSUPPORTED_VERSION)` — never throws. Reads the header before the payload so a newer payload shape is recognised and ignored safely. An optional `legacyDecoder` reads pre-envelope (schema-version-0) blobs; it is only consulted when no `schemaVersion` key exists. |
-| `VersionedStorageStore.kt` | One `Storage` key + codec + empty value. `values()` derives from `storage.savedStringFlow(key)` (so cross-tab `storage` events propagate), `update {}` does a read-modify-write, and reads/writes catch throwables (quota `DOMException`, unavailable storage) and report a `BrowserStateEvent`. |
+| `VersionedStorageStore.kt` | One `Storage` key + codec + empty value. `values()` derives from `storage.savedStringFlow(key)` (so cross-tab `storage` events propagate), `update {}` does a mutex-serialized read-modify-write (no same-tab lost update), and storage failures (quota `DOMException`, unavailable storage) report a `BrowserStateEvent`. `CancellationException` always propagates — it is never reported as a read failure. A corrupt blob always gets rewritten by the next `update`, so an explicit clear repairs the key. |
 | `BrowserStateEvents.kt` | Non-fatal event sink (`SharedFlow<BrowserStateEvent>` + `userMessages`). Missing data is log-only; corrupt/older/newer/quota/read failures are user-visible messages. Read-side events are deduped so several screens collecting the same store don't spam. |
 | `BrowserStateKeys.kt` | The stable `localStorage` keys: `chipbox.favorites`, `chipbox.playlists`, `chipbox.playback_history`, `playback.session.snapshot`. |
 | `BrowserStateCodecs.kt` | The current codec instances (`schemaVersion = 1`), including the legacy (v0) readers for play history and the playback session. |
@@ -86,7 +86,15 @@ Behaviour rules:
 - `schemaVersion > current` → empty value + non-fatal message (never crash, never reinterpret a
   future payload).
 - Quota/read failure → caught, empty/previous value retained, non-fatal message. Writes are
-  last-writer-wins across tabs; no merge is promised.
+  last-writer-wins across tabs; no merge is promised. Within one tab, `update {}` is serialized by
+  a per-store `Mutex`, so two coroutines cannot lose one mutation (two tabs still have two stores,
+  hence two locks).
+- Cancellation is not a storage failure: a `CancellationException` from `values()` or `current()`
+  propagates to the caller and never reports `READ_FAILED`.
+- A corrupt blob is replaced by the next `update`, even when the transform produces the same empty
+  value the corrupt blob decoded to. That is what makes an explicit clear (favorites, playlists,
+  history, search) actually erase an unreadable string; the session store's `clear()` writes
+  unconditionally for the same reason. A newer-schema blob is never rewritten.
 
 ## Why depend on this module
 
@@ -130,4 +138,6 @@ session.load()?.let { it.withKnownTracks(knownIds) } // null -> clear the snapsh
 Covers envelope round-trip, corrupt/missing/older/newer versions, the legacy v0 hooks, favorites
 ordering/re-favorite, playlist ids/order/reorder/append de-dup, history recording/folds/cap/trim/
 migration, session save/load/clear/migration/failure paths, snapshot unknown-id filtering and
-remap, cross-tab flow updates, quota/read failures, and search-history persistence.
+remap, cross-tab flow updates, quota/read failures, search-history persistence, same-tab concurrent
+updates (both land), corrupt-blob repair on clear for every store, and cancellation propagation
+(no spurious `READ_FAILED`).
