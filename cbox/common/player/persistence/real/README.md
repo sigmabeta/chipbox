@@ -11,7 +11,7 @@ The production implementations of the persistence `:api` interfaces. This is the
 | File | What it is |
 | --- | --- |
 | `RealPlaybackSessionStore.kt` | `PlaybackSessionStore` over SAGE's shared `Storage` (DataStore). JSON-encodes the snapshot into one string key (`playback.session.snapshot`). `Storage` has no remove, so `clear()` writes `""` and `load()` reads empty/old-schema/corrupt back as "nothing saved" (decode failures swallowed). |
-| `RealPlaybackSessionPersister.kt` | `PlaybackSessionPersister`. `restore()` reads the snapshot and submits `SessionRequest.Restore`; any failure is swallowed and the snapshot cleared so a bad save can't wedge launch. `observe()` `combine`s the director's session/playback/metadata/setlist flows and saves on the `PLAYING→PAUSED` edge, clears on `STOPPED`. `snapshotNow()` is the synchronous teardown net; a `tearingDown` flag stops the release-time `STOPPED` from clearing what it just wrote. |
+| `RealPlaybackSessionPersister.kt` | `PlaybackSessionPersister`. `restore()` reads the snapshot, runs the optional `SessionSnapshotFilter` (web resolves track ids against the library), and submits `SessionRequest.Restore`; any failure is swallowed and the snapshot cleared so a bad save can't wedge launch. `observe()` `combine`s the director's session/playback/metadata/setlist flows and saves on the `PLAYING→PAUSED` edge, clears on `STOPPED`. `snapshotNow(teardown)` is the synchronous teardown net; a `tearingDown` flag (set only for a teardown flush) stops the release-time `STOPPED` from clearing what it just wrote, while a visibility flush lets a later real stop clear. |
 | `SessionSnapshotMapping.kt` | Internal mappers: `SessionSnapshot.toSession()` (saved track id → `startingTrackId`, `resolvedSetlist`/`explicitSetlist` → explicit setlist) and `snapshotOf(session, track, positionMs, setlist)`. |
 
 Tests (`commonTest`): `RealPlaybackSessionPersisterTest` drives the persister over
@@ -28,6 +28,8 @@ runtime collaborators are SAGE `Storage`, a `Hatchet` logger, and the `Director`
 ```kotlin
 val store = RealPlaybackSessionStore(storage)
 val persister = RealPlaybackSessionPersister(director, store, hatchet)
+// Web: `filter` resolves stored track ids against the library before restore.
+val webPersister = RealPlaybackSessionPersister(director, webStore, hatchet, filter = webFilter)
 ```
 
 ## Module facts

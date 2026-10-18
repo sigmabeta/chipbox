@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.player.director.ChipboxPlaybackState
 import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.player.persistence.SessionSnapshot
+import net.sigmabeta.chipbox.player.persistence.SessionSnapshotFilter
 import net.sigmabeta.chipbox.player.persistence.fake.FakePlaybackSessionStore
 import net.sigmabeta.sage.logging.BluntHatchet
 import kotlin.test.Test
@@ -187,16 +188,103 @@ class RealPlaybackSessionPersisterTest {
         persister.release()
     }
 
+    @Test
+    fun `a pre-restore filter rewrites the snapshot before it reaches the director`() = runTest {
+        val director = FakeDirector()
+        val store = FakePlaybackSessionStore(
+            SessionSnapshot(
+                type = SessionType.SETLIST,
+                contentId = 0L,
+                resolvedSetlist = listOf(404L, 7L),
+                currentTrackId = 404L,
+                positionMs = 3_000L,
+            ),
+        )
+        val persister = newPersister(
+            director,
+            store,
+            filter = SessionSnapshotFilter { snapshot ->
+                snapshot.copy(resolvedSetlist = listOf(7L), explicitSetlist = listOf(7L), currentTrackId = 7L)
+            },
+        )
+
+        persister.restore()
+
+        val (session, positionMs) = director.restoreCalls.single()
+        assertEquals(listOf(7L), session.explicitSetlist)
+        assertEquals(7L, session.startingTrackId)
+        assertEquals(3_000L, positionMs)
+        persister.release()
+    }
+
+    @Test
+    fun `a pre-restore filter that drops the snapshot clears it and restores nothing`() = runTest {
+        val director = FakeDirector()
+        val store = FakePlaybackSessionStore(
+            SessionSnapshot(type = SessionType.GAME, contentId = 1L, currentTrackId = 404L),
+        )
+        val persister = newPersister(director, store, filter = SessionSnapshotFilter { null })
+
+        persister.restore()
+
+        assertTrue(director.restoreCalls.isEmpty(), "nothing survives -> nothing restored")
+        assertTrue(store.clearCalls >= 1, "the stale snapshot is cleared so every reload does not retry it")
+        assertNull(store.stored)
+        persister.release()
+    }
+
+    @Test
+    fun `a failing pre-restore filter falls back to the saved snapshot`() = runTest {
+        val director = FakeDirector()
+        val store = FakePlaybackSessionStore(
+            SessionSnapshot(type = SessionType.GAME, contentId = 1L, currentTrackId = 42L),
+        )
+        val persister = newPersister(
+            director,
+            store,
+            filter = SessionSnapshotFilter { error("repository unavailable") },
+        )
+
+        persister.restore()
+
+        assertEquals(42L, director.restoreCalls.single().first.startingTrackId)
+        persister.release()
+    }
+
+    @Test
+    fun `a visibility flush does not suppress a later real stop`() = runTest {
+        val director = FakeDirector()
+        val store = FakePlaybackSessionStore()
+        val persister = newPersister(director, store)
+        persister.observe()
+        director.emitSession(Session(type = SessionType.GAME, contentId = 3L))
+        director.emitMetadata(trackOf(9L))
+        director.emitPlayback(playback(PlayerState.PLAYING, positionMs = 12_000L))
+
+        // Backgrounding the tab saves the position but is not teardown: the page stays alive.
+        persister.snapshotNow(teardown = false)
+        assertEquals(3L, store.stored?.contentId)
+
+        // The user returns (no PLAYING tick yet) and stops: the stop must still clear.
+        director.emitPlayback(playback(PlayerState.STOPPED, positionMs = 0L))
+
+        assertTrue(store.clearCalls >= 1, "a non-teardown flush must not disarm the stop clear")
+        assertNull(store.stored)
+        persister.release()
+    }
+
     // ---- helpers ----
 
     private fun TestScope.newPersister(
         director: FakeDirector,
         store: FakePlaybackSessionStore,
+        filter: SessionSnapshotFilter? = null,
     ): RealPlaybackSessionPersister = RealPlaybackSessionPersister(
         director = director,
         store = store,
         hatchet = BluntHatchet(),
         dispatcher = UnconfinedTestDispatcher(testScheduler),
+        filter = filter,
     )
 
     private fun playback(state: PlayerState, positionMs: Long): ChipboxPlaybackState = ChipboxPlaybackState(

@@ -6,6 +6,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.fail
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
 /**
  * The versioned envelope contract ticket 07 reuses: a `schemaVersion` header plus a typed payload.
@@ -80,6 +81,35 @@ class VersionedJsonCodecTest {
         val failure = codec.decode(raw).failureOrFail()
 
         assertEquals(DecodeFailure.UNSUPPORTED_VERSION, failure.reason)
+    }
+
+    @Test
+    fun `an unversioned legacy blob is decoded through the legacy hook as version zero`() {
+        val legacyCodec = VersionedJsonCodec(
+            Payload.serializer(),
+            currentVersion = 2,
+            legacyDecoder = { raw -> runCatching { Json.decodeFromString(Payload.serializer(), raw) }.getOrNull() },
+        )
+
+        val success = legacyCodec.decode("""{"ids":[7],"name":"legacy"}""").successOrFail()
+
+        assertEquals(Payload(listOf(7L), "legacy"), success.value)
+        assertEquals(0, success.migratedFrom, "legacy data is reported as migrated from version 0")
+    }
+
+    @Test
+    fun `legacy decoding does not reinterpret a malformed schemaVersion`() {
+        val legacyCodec = VersionedJsonCodec(
+            Payload.serializer(),
+            currentVersion = 2,
+            legacyDecoder = { raw -> runCatching { Json.decodeFromString(Payload.serializer(), raw) }.getOrNull() },
+        )
+
+        val malformedHeader = legacyCodec.decode("""{"schemaVersion":"two","payload":{}}""").failureOrFail()
+        val unrecognisedLegacy = legacyCodec.decode("[1,2,3]").failureOrFail()
+
+        assertEquals(DecodeFailure.CORRUPT, malformedHeader.reason)
+        assertEquals(DecodeFailure.CORRUPT, unrecognisedLegacy.reason)
     }
 
     private fun DecodeOutcome<Payload>.successOrFail(): DecodeOutcome.Success<Payload> =

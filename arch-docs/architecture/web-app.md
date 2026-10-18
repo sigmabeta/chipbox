@@ -99,8 +99,8 @@ All durable browser state is in `localStorage`; the server stores none of it.
 | Settings / debug settings | existing `LocalStorageStorage` | cross-tab via `storage` events |
 | Favorites | `chipbox.favorites` | versioned JSON; ids + timestamps, newest first |
 | Playlists | `chipbox.playlists` | versioned JSON; persisted next-id, ordered track ids |
-| Play history | versioned JSON | bounded; safe fallback on corruption |
-| Playback session | versioned JSON | queue, position, shuffle, repeat |
+| Play history | `chipbox.playback_history` | versioned JSON; newest 500 plays; legacy raw array read as v0 |
+| Playback session | `playback.session.snapshot` | versioned JSON; queue, current track, position, shuffle, repeat; legacy raw snapshot read as v0 |
 
 Every versioned store is one JSON object: `{ "schemaVersion": 1, "payload": … }`.
 Favorites payloads hold `tracks` / `games` / `artists` lists of
@@ -110,11 +110,42 @@ older, or newer-schema data and quota/read failures fall back safely and surface
 a non-fatal message (web shows it as a snackbar; the failure is also logged).
 
 The implementation lives in `:cbox:common:browserstate` — a pure `commonMain`
-codec plus `Storage`-backed repositories, with Node tests under `jsNodeTest`.
-Reads derive from `Storage.savedStringFlow`, so write-through goes through
+codec plus `Storage`-backed stores, with Node tests under `jsNodeTest`. Reads
+derive from `Storage.savedStringFlow`, so write-through goes through
 `LocalStorageStorage` and other tabs receive `storage` events. Writes are
 last-writer-wins across tabs; there is no merge. Unknown track ids are dropped by
 the UI at hydration time rather than stored as errors.
+
+**Play history.** The log records only qualifying plays (10 seconds listened, or
+played to the end) and is capped at 500 entries. Recording and loading both trim
+the oldest entries by timestamp, so an oversized or out-of-order blob from an
+older build is repaired on the next read/write. The pre-versioning web app stored
+a bare JSON array at the same key; that array is read as schema version 0 and
+rewritten inside the envelope on the next play. The Home recently-/most-played
+rows are folds over this log (distinct tracks newest-first; counts above one,
+ordered by count then recency), so they survive a reload unchanged.
+
+**Playback session.** On launch the web host starts the shared
+`RealPlaybackSessionPersister` over the versioned store: queue, current track,
+position, shuffle, and repeat come back **paused** at the saved offset. Before
+`SessionRequest.Restore`, the snapshot's track ids are resolved through
+`Repository.getTracksByIds`; unknown ids are dropped, the current track is
+remapped to the nearest surviving queue position, and the snapshot is cleared if
+nothing survives. A failed lookup leaves the snapshot untouched (a transient
+server error must not erase a resumable session). Saving happens on the
+`PLAYING → PAUSED` edge, and `snapshotNow()` also runs on `pagehide`,
+`beforeunload`, and `visibilitychange=hidden`, so reopening a tab after playing
+without pausing keeps the position. The visibility flush is a non-teardown save
+(the page stays alive), so a later real stop still clears; `pagehide`/`beforeunload`
+use the teardown form so a released player cannot wipe the snapshot they just
+wrote. A real stop clears the snapshot, and a late teardown flush cannot
+resurrect it.
+
+**Multi-tab.** History (and favorites/playlists) are cross-tab-live because their
+reads derive from `savedStringFlow`. The playback session is not merged: writes
+are last-writer-wins, and restore is launch-only. A second tab does not adopt a
+session started after it loaded; whichever tab pauses or hides last owns the
+saved snapshot, and reloading a tab restores that snapshot.
 
 ## Playback
 

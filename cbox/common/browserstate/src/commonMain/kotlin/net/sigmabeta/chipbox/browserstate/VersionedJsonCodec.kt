@@ -53,6 +53,14 @@ class VersionedJsonCodec<T>(
     private val payloadSerializer: KSerializer<T>,
     val currentVersion: Int,
     private val json: Json = DEFAULT_JSON,
+    /**
+     * Reads a pre-envelope blob written by an older build (schema version 0). It receives the raw
+     * string because legacy formats are not necessarily JSON objects — playback history used to be
+     * a bare JSON array. Returning null means "this blob is not the legacy shape"; the decode then
+     * fails as [DecodeFailure.CORRUPT]. Only called when the blob has no `schemaVersion` key, so a
+     * present-but-malformed header is never silently reinterpreted as legacy data.
+     */
+    private val legacyDecoder: ((String) -> T?)? = null,
 ) {
     fun encode(value: T): String =
         json.encodeToString(VersionedEnvelope.serializer(payloadSerializer), VersionedEnvelope(currentVersion, value))
@@ -60,8 +68,21 @@ class VersionedJsonCodec<T>(
     fun decode(raw: String?): DecodeOutcome<T> {
         if (raw.isNullOrBlank()) return DecodeOutcome.Missing
 
-        val root = runCatching { json.parseToJsonElement(raw) as? JsonObject }.getOrNull()
-            ?: return DecodeOutcome.Failed(DecodeFailure.CORRUPT, "stored value is not a JSON object")
+        val element = runCatching { json.parseToJsonElement(raw) }.getOrNull()
+            ?: return DecodeOutcome.Failed(DecodeFailure.CORRUPT, "stored value is not JSON")
+
+        if (element !is JsonObject || element["schemaVersion"] == null) {
+            // No header at all: offer the blob to the legacy reader (v0) before declaring it
+            // corrupt. A header that is present but malformed is handled below, never migrated.
+            val legacy = legacyDecoder?.let { decode -> runCatching { decode(raw) }.getOrNull() }
+                ?: return DecodeOutcome.Failed(
+                    DecodeFailure.CORRUPT,
+                    "stored value is not a versioned envelope and no legacy format matched",
+                )
+            return DecodeOutcome.Success(legacy, migratedFrom = 0)
+        }
+
+        val root = element
 
         val version = (root["schemaVersion"] as? JsonPrimitive)?.intOrNull
             ?: return DecodeOutcome.Failed(DecodeFailure.CORRUPT, "missing or non-numeric schemaVersion")

@@ -26,7 +26,11 @@ kotlin {
             dependencies {
                 api(projects.cbox.common.favorites.api)
                 api(projects.cbox.common.playlists.api)
+                api(projects.cbox.common.history.api)
                 api(projects.cbox.common.models.api)
+                // The web playback-session store persists SessionSnapshot (player.persistence.api);
+                // history/session state share the envelope in this module.
+                api(projects.cbox.common.player.persistence.api)
                 api(libs.kotlinx.coroutines.core)
                 api(libs.kotlinx.serialization.json)
                 api(libs.sage.common.storage.common)

@@ -40,10 +40,10 @@ data class BrowserStateEvent(
             return when (reason) {
                 BrowserStateReason.MISSING -> "No saved $noun yet."
 
-                BrowserStateReason.CORRUPT -> "Saved $noun were unreadable; starting with an empty list."
+                BrowserStateReason.CORRUPT -> "Saved $noun were unreadable; $fallback."
 
                 BrowserStateReason.UNSUPPORTED_VERSION ->
-                    "Saved $noun use a newer version of Chipbox; starting with an empty list."
+                    "Saved $noun use a newer version of Chipbox; $fallback."
 
                 BrowserStateReason.MIGRATED -> "Upgraded saved $noun from an older format."
 
@@ -70,7 +70,17 @@ data class BrowserStateEvent(
         get() = when (key) {
             BrowserStateKeys.FAVORITES -> "favorites"
             BrowserStateKeys.PLAYLISTS -> "playlists"
+            BrowserStateKeys.PLAYBACK_HISTORY -> "play history"
+            BrowserStateKeys.PLAYBACK_SESSION -> "playback session"
             else -> key
+        }
+
+    /** What the store falls back to after ignoring an unreadable value. */
+    private val fallback: String
+        get() = when (key) {
+            BrowserStateKeys.PLAYBACK_HISTORY -> "starting with an empty history"
+            BrowserStateKeys.PLAYBACK_SESSION -> "starting without a saved session"
+            else -> "starting with an empty list"
         }
 }
 

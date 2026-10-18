@@ -65,25 +65,33 @@ acceptance checklist.
 
 `JsMain.kt`'s `main()` builds a `WebHatchet` + Coil image loader, then in a
 `MainScope().launch` preloads i18n strings (suspend), builds the
-`WebChipboxGraph`, installs the browser `WebMediaSession`, wires Escape→back and
-arrow-key→focus handling, removes the `index.html` splash, and mounts
-`ChipboxAppUi` in a `ComposeViewport`.
+`WebChipboxGraph`, installs the browser `WebMediaSession`, starts playback-history
+recording, restores the saved playback session (paused) and registers the
+page-teardown flush, wires Escape→back and arrow-key→focus handling, removes the
+`index.html` splash, and mounts `ChipboxAppUi` in a `ComposeViewport`.
 
 ## Contents (grouped by role)
 
 - **Entry / DI:** `JsMain.kt` (browser `main()`); `di/WebChipboxGraph.kt`
   (`@DependencyGraph(AppScope)`, factory takes caller-built `Hatchet` +
   `StringProvider`), `di/WebModules.kt` (binds real localStorage settings/
-  favorites/playlists and fakes for everything needing native code or platform
-  persistence), `di/WebMetroViewModelFactory.kt`.
+  favorites/playlists/history/session and fakes for everything needing native
+  code or platform persistence), `di/WebMetroViewModelFactory.kt`.
 - **Data / platform services:** `repository/RemoteRepository.kt` (Ktor JS client
   → chipbox-server JSON API; list reads retry while the startup scan is running,
   bounded by the shared `ScanRetryPolicy`), `contentsource/HttpContentSource.kt`,
   `storage/LocalStorageStorage.kt` (sage `Storage` over `window.localStorage`),
-  `cbox/common/browserstate` (versioned favorites/playlists stores; keys
-  `chipbox.favorites` / `chipbox.playlists`), `mediasession/WebMediaSession.kt`,
+  `cbox/common/browserstate` (versioned favorites/playlists, bounded play
+  history, and the playback-session store; keys `chipbox.favorites` /
+  `chipbox.playlists` / `chipbox.playback_history` /
+  `playback.session.snapshot`), `mediasession/WebMediaSession.kt`,
   `image/WebImageLoader.kt`, `speaker/WebAudioSpeaker.kt`,
   `analytics/WebAnalytics.kt`, `logging/WebHatchet.kt`.
+- **Playback persistence:** the shared `RealPlaybackHistoryRecorder` writes
+  qualifying plays to `StoragePlaybackHistoryRepository` (newest 500); the
+  shared `RealPlaybackSessionPersister` restores the queue/track/position
+  paused on launch, saves on pause, clears on stop, and `JsMain` flushes it on
+  `pagehide` / `visibilitychange=hidden` / `beforeunload`.
 - **WASM emulators:** `emulators/Wasm*Emulator.kt` (one `Emulator` subclass per
   format) over `wasm/*Wasm.kt` + `*WasmCore.kt` module loaders, plus
   `wasm/WasmModuleLoader.kt` and `wasm/MemfsMirror.kt`. Modules load on first use.
@@ -104,7 +112,9 @@ arrow-key→focus handling, removes the `index.html` splash, and mounts
 - **Targets:** JS (browser), only when built with `-Psage.js`.
 - **Source set:** `src/jsMain/kotlin` (+ `src/jsMain/resources`).
 - **SAGE/module dependencies:** `cbox/common` `appui`, `strings`, `repository`,
-  `contentsource`, `browserstate` (localStorage favorites/playlists), the full
+  `contentsource`, `browserstate` (localStorage favorites/playlists/history/
+  session), `history` (shared recorder + bounded log), `player.persistence`
+  (`RealPlaybackSessionPersister`; store implemented in `browserstate`), the full
   `player` chain (director/generator/buffer/cache/resampler/speaker — `.real` +
   `.fake` mix), `scanner` (fake), `settings`/`debug`/`debugInfo`, `models`,
   `ui.*`; every `features/*` `:real` with a non-assisted VM; `sage.common.*`

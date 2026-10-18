@@ -51,6 +51,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
+import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import org.w3c.dom.HTMLInputElement
 import org.w3c.dom.HTMLTextAreaElement
 import org.w3c.dom.events.KeyboardEvent
@@ -122,6 +123,14 @@ fun main() {
         graph.playbackHistoryRecorder.observe()
         graph.scanFailureNotifRecorder.observe()
 
+        // Bring the last queue/track/position back paused at the saved offset, then keep the
+        // snapshot in step with playback. Restore is launch-only (multi-tab session writes are
+        // last-writer-wins); history above is cross-tab-live because its reads derive from storage.
+        val sessionPersister = graph.playbackSessionPersister
+        sessionPersister.observe()
+        graph.appScope.launch { sessionPersister.restore() }
+        installSessionFlush(sessionPersister)
+
         // Back-key stream — fed by window-level Escape keypresses (Backspace is browser-back
         // navigation, leave it alone). Skip events whose target is a text input so the field
         // can still clear / lose focus naturally.
@@ -178,4 +187,24 @@ fun main() {
             }
         }
     }
+}
+
+/**
+ * Flush the playback session to localStorage when the page goes away.
+ *
+ * The shared persister writes on `PLAYING -> PAUSED`; a reload, tab close, or navigation never
+ * emits a pause, so without these hooks the saved position would be stale (or the session would be
+ * missing entirely). `pagehide` covers reload/navigation and the back-forward cache;
+ * `visibilitychange` covers backgrounding (the only reliable signal on mobile); `beforeunload` is a
+ * belt-and-braces fallback for older browsers. `snapshotNow()` is synchronous and no-ops for
+ * STOPPED/IDLE, so a late event after a real stop cannot resurrect the session.
+ */
+private fun installSessionFlush(persister: PlaybackSessionPersister) {
+    window.addEventListener("pagehide", { _ -> persister.snapshotNow() })
+    window.addEventListener("beforeunload", { _ -> persister.snapshotNow() })
+    document.addEventListener("visibilitychange", { _ ->
+        // `document.hidden` is the Page Visibility API flag. Kotlin's DOM binding for it is not
+        // exposed consistently across stdlib versions, so read the property dynamically.
+        if (document.asDynamic().hidden == true) persister.snapshotNow(teardown = false)
+    })
 }
