@@ -18,9 +18,13 @@ ktlint {
 
 // The Chipbox + sage commits are stamped into the device results fingerprint at build time (the
 // benchmark process can't read git). Read them the same way :apps:android reads the build branch.
-fun gitShortCommit(dir: File): String = providers.exec {
-    commandLine("git", "-C", dir.absolutePath, "rev-parse", "--short", "HEAD")
-}.standardOutput.asText.get().trim().ifEmpty { "unknown" }
+// A source tarball or the Docker build context has no `.git`, and a configuration-time failure
+// would break every build that merely configures this module — stamp "unknown" instead.
+fun gitShortCommit(dir: File): String = runCatching {
+    providers.exec {
+        commandLine("git", "-C", dir.absolutePath, "rev-parse", "--short", "HEAD")
+    }.standardOutput.asText.get().trim()
+}.getOrDefault("").ifEmpty { "unknown" }
 
 android {
     namespace = "net.sigmabeta.chipbox.benchmark"
