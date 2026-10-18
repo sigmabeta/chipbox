@@ -22,12 +22,14 @@ interface ArtistDao {
     @Query("SELECT * FROM artist WHERE id = :artistId")
     suspend fun getArtistByIdSync(artistId: Long): ArtistEntity
 
-    @Query("SELECT * FROM artist ORDER BY name COLLATE NOCASE")
+    // `id` is a tiebreaker: names unique under BINARY still tie under COLLATE NOCASE ("abc"/"ABC"),
+    // and an unstable order among peers can duplicate or skip rows across page requests.
+    @Query("SELECT * FROM artist ORDER BY name COLLATE NOCASE, id")
     fun getAll(): Flow<List<ArtistEntity>>
 
     // Paged variant of [getAll]. SQLite treats a negative LIMIT as "no limit", so passing -1 yields
     // every row from [offset] onward — letting the repository express "skip N, take the rest".
-    @Query("SELECT * FROM artist ORDER BY name COLLATE NOCASE LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM artist ORDER BY name COLLATE NOCASE, id LIMIT :limit OFFSET :offset")
     fun getAllPaged(limit: Int, offset: Int): Flow<List<ArtistEntity>>
 
     @Query("SELECT * FROM artist WHERE name LIKE :name ORDER BY name COLLATE NOCASE")

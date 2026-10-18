@@ -164,6 +164,12 @@ saved snapshot, and reloading a tab restores that snapshot.
 - Voyager routes are mirrored to path-based URLs with `pushState`; the server's
   SPA fallback serves `index.html` for app routes. Back/Forward/refresh/deep
   links work.
+- The SPA fallback never answers an API request. Any unmatched `/api/...` path
+  returns HTTP 404 with the standard `{"error": …}` JSON body (every method), so
+  the client can show the server's message instead of failing to decode
+  `index.html`. Paged list endpoints (`games`, `artists`, `tracks`) clamp
+  `limit` into `1..500`, default `offset` to 0, and order by their display key
+  plus `id`, so pages partition the catalog under ties.
 - Browser Back/Forward are the source of truth for history; Escape maps to app
   back.
 - The web UI hides Manage Library, Folder Picker, Rescan Status, and Clear

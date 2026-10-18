@@ -93,7 +93,10 @@ page-teardown flush, wires Escape→back and arrow-key→focus handling, removes
   used (no "Debug" title or splash).
 - **Data / platform services:** `repository/RemoteRepository.kt` (Ktor JS client
   → chipbox-server JSON API; list reads retry while the startup scan is running,
-  bounded by the shared `ScanRetryPolicy`), `contentsource/HttpContentSource.kt`,
+  bounded by the shared `ScanRetryPolicy`; non-2xx and non-JSON responses are
+  classified by the shared `apiErrorMessage`, so a JSON 404 or an HTML page
+  becomes a real error message instead of a deserialization failure),
+  `contentsource/HttpContentSource.kt`,
   `storage/LocalStorageStorage.kt` (sage `Storage` over `window.localStorage`),
   `cbox/common/browserstate` (versioned favorites/playlists, bounded play
   history, and the playback-session store; keys `chipbox.favorites` /

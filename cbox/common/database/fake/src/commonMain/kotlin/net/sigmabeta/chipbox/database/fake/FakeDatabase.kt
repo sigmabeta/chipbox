@@ -70,12 +70,14 @@ class FakeDatabase(private val random: Random = Random(0)) {
             ids.mapNotNull { artists[it] }
         }
         override fun getAll(): Flow<List<ArtistEntity>> = observe {
-            artists.values.sortedBy { it.name.lowercase() }
+            artists.values.sortedWith(compareBy({ it.name.lowercase() }, { it.id }))
         }
         override fun getAllPaged(limit: Int, offset: Int): Flow<List<ArtistEntity>> = observe {
-            // Mirror SQLite: ORDER BY name, skip [offset], then take [limit] — a negative limit
+            // Mirror SQLite: ORDER BY name, id, skip [offset], then take [limit] — a negative limit
             // means "no limit" (every row from [offset] onward).
-            val fromOffset = artists.values.sortedBy { it.name.lowercase() }.drop(offset)
+            val fromOffset = artists.values
+                .sortedWith(compareBy({ it.name.lowercase() }, { it.id }))
+                .drop(offset)
             if (limit < 0) fromOffset else fromOffset.take(limit)
         }
         override fun searchArtistsByName(name: String): Flow<List<ArtistEntity>> = observe {
@@ -157,12 +159,14 @@ class FakeDatabase(private val random: Random = Random(0)) {
         }
         override suspend fun getGameSync(gameId: Long): GameEntity = games.getValue(gameId)
         override fun getAll(): Flow<List<GameEntity>> = observe {
-            games.values.sortedBy { it.title.lowercase() }
+            games.values.sortedWith(compareBy({ it.title.lowercase() }, { it.id }))
         }
         override fun getAllPaged(limit: Int, offset: Int): Flow<List<GameEntity>> = observe {
-            // Mirror SQLite: ORDER BY title, skip [offset], then take [limit] — a negative limit
+            // Mirror SQLite: ORDER BY title, id, skip [offset], then take [limit] — a negative limit
             // means "no limit" (every row from [offset] onward).
-            val fromOffset = games.values.sortedBy { it.title.lowercase() }.drop(offset)
+            val fromOffset = games.values
+                .sortedWith(compareBy({ it.title.lowercase() }, { it.id }))
+                .drop(offset)
             if (limit < 0) fromOffset else fromOffset.take(limit)
         }
         override fun getGamesForPlatform(platformName: String): Flow<List<GameEntity>> = observe {
@@ -195,12 +199,14 @@ class FakeDatabase(private val random: Random = Random(0)) {
 
     val trackDao: TrackDao = object : TrackDao {
         override fun getAll(): Flow<List<TrackEntity>> = observe {
-            tracks.values.sortedBy { it.title }
+            tracks.values.sortedWith(compareBy({ it.title }, { it.id }))
         }
         override fun getAllPaged(limit: Int, offset: Int): Flow<List<TrackEntity>> = observe {
-            // Mirror SQLite: ORDER BY title, skip [offset], then take [limit] — a negative limit
+            // Mirror SQLite: ORDER BY title, id, skip [offset], then take [limit] — a negative limit
             // means "no limit" (every row from [offset] onward).
-            val fromOffset = tracks.values.sortedBy { it.title }.drop(offset)
+            val fromOffset = tracks.values
+                .sortedWith(compareBy({ it.title }, { it.id }))
+                .drop(offset)
             if (limit < 0) fromOffset else fromOffset.take(limit)
         }
         override fun getTracksForGame(gameId: Long): Flow<List<TrackEntity>> = observe {

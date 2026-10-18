@@ -49,12 +49,15 @@ interface GameDao {
     @Query("SELECT * FROM game WHERE id = :gameId")
     suspend fun getGameSync(gameId: Long): GameEntity
 
-    @Query("SELECT * FROM game ORDER BY title COLLATE NOCASE")
+    // `id` is a tiebreaker, not a display order: titles tie under COLLATE NOCASE (same title on two
+    // platforms, "abc" vs "ABC"), and SQLite doesn't define an order among peers. Without it a page
+    // boundary through a tie group can repeat or skip rows between requests.
+    @Query("SELECT * FROM game ORDER BY title COLLATE NOCASE, id")
     fun getAll(): Flow<List<GameEntity>>
 
     // Paged variant of [getAll]. SQLite treats a negative LIMIT as "no limit", so passing -1 yields
     // every row from [offset] onward — letting the repository express "skip N, take the rest".
-    @Query("SELECT * FROM game ORDER BY title COLLATE NOCASE LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM game ORDER BY title COLLATE NOCASE, id LIMIT :limit OFFSET :offset")
     fun getAllPaged(limit: Int, offset: Int): Flow<List<GameEntity>>
 
     @Query(
