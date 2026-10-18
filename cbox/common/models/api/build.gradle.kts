@@ -20,6 +20,9 @@ kotlin {
                 // — any module that imports a model (Track, Game, Platform, …) needs that type
                 // resolvable on its classpath. `api` makes the transitive dep automatic.
                 api(libs.kotlinx.serialization.core)
+                // Startup-scan readiness (readListAwaitingScan) is a suspend loop shared with the
+                // browser repository.
+                implementation(libs.kotlinx.coroutines.core)
             }
         }
 
@@ -27,6 +30,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
     }
