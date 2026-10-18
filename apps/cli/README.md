@@ -19,9 +19,10 @@ the graph: nothing depends on it.
 - **Native lib:** the scanner probes streamed-audio files through `vgmstream`
   (`VgmstreamProbe → System.loadLibrary("vgmstream")`) — the only native lib the
   scan path touches. The build reuses `:apps:jvm:buildHostNativeVgmstream`'s
-  `libvgmstream.so` and points `java.library.path` at it (bundled into
-  `lib/native/` in the distribution). Every chiptune format is parsed by
-  pure-Kotlin readers.
+  host library (`libvgmstream.{so,dylib,dll}`, CMake-produced — not committed) via
+  apps/jvm's `hostVgmstreamElements` configuration and points `java.library.path`
+  at it (bundled into `lib/native/` in the distribution). Every chiptune format is
+  parsed by pure-Kotlin readers.
 - The CLI never renders Compose; the build excludes the transitively-pulled
   Compose/skiko groups from the runtime classpath to keep the distribution slim.
 

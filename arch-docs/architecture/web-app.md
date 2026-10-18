@@ -34,6 +34,13 @@ in `apps/js` (browser services, WASM bindings, localStorage) and `apps/server`
   `CHIPBOX_DB_PATH` (default `<work dir>/library.sqlite`).
 - The server scans on every start, in the background. It serves immediately;
   endpoints return the current DB contents while the scan runs.
+- `GET /api/health` reports the live scan state
+  (`unknown|idle|scanning|complete|failed`), elapsed time, found/failed counters,
+  and a failed file's basename. `ok` is false only for a failed scan. The body
+  never contains the host library path. The browser retries an empty first
+  library read while the scan is running under a bounded policy, so a client
+  opened during the scan shows the library when it finishes instead of staying
+  empty; the wait always ends at the attempt cap.
 - Unchanged folders are skipped by folder signature plus scanner/reader
   versions. New and changed files are picked up on restart. Removed tracks are
   reconciled and removed folders are pruned at the end of a successful scan.
@@ -110,24 +117,82 @@ surface quota errors as a non-fatal message. Write-through goes through
 
 ## Build and release
 
-- `apps/js` is gated behind `-Psage.js=true`. Webpack tasks need
-  `--no-parallel --no-configuration-cache`.
+- `apps/js` is gated behind `-Psage.js=true`. Every web invocation also needs
+  `-Dorg.gradle.isolated-projects=false -Dorg.gradle.configureondemand=false
+  --no-parallel` (Isolated Projects cannot be combined with the Kotlin/JS npm
+  model, and `--no-configuration-cache` is impossible with Isolated Projects
+  off). The configuration cache stays enabled.
+- Toolchain is pinned in `docker/`: Node `22.14.0` (`node-version`), Yarn
+  `1.22.22` (`yarn-version`), emsdk `4.0.7` (`emsdk-version`); CI and the image
+  read the same files. A system Node/Yarn is mandatory (Kotlin's downloads are
+  disabled). `gradle/wrapper` is the Gradle version. Base images are floating tags
+  (digest pinning is a follow-up) — reproducibility means the pinned toolchain +
+  caches, not bit-identical images.
 - The bundle build includes all nine WASM emulator outputs; they are not
-  committed. Local builds need `$EMSDK` or `-Psage.js.emsdk=...`, plus CMake.
-- `apps/server` bundles the production JS for `installDist`/`distZip`/`distTar`.
-- The Docker image is multi-stage: a build stage with JDK 21, Node 22/Yarn,
-  emsdk, and CMake produces the bundle, WASM, and native vgmstream library; a
-  JRE 21 runtime stage runs the server.
-- CI builds the image for `linux/amd64` on every PR and both architectures on
-  release. Images are **not pushed** to a registry yet.
+  committed. `jsProcessResources` depends on `copyEmulatorWasm`, so every bundle
+  path (production bundle, dev server, `installDist`) ships them. `checkEmsdk`
+  fails at execution when `$EMSDK`/`-Psage.js.emsdk` is missing or not activated,
+  instead of silently producing an emulator-less bundle. The list lives in
+  `apps/js/wasm-emulators.txt`.
+- Build and verify locally:
+  ```sh
+  export EMSDK="$HOME/emsdk"   # or -Psage.js.emsdk=/path
+  ./gradlew :apps:js:verifyWebBundle :apps:server:installDist \
+    -Psage.js=true -Dorg.gradle.isolated-projects=false \
+    -Dorg.gradle.configureondemand=false --no-parallel
+  scripts/ci/verify-web-bundle.sh   # standalone: 9 pairs + index.html + chipbox.js
+  ```
+- `apps/server` bundles the production JS for `installDist`/`distZip`/`distTar`
+  (requires `-Psage.js=true`). The native `libvgmstream` used by the scanner is
+  built by CMake (`:apps:jvm:buildHostNativeVgmstream`) and consumed via
+  apps/jvm's `hostVgmstreamElements`; the distributions copy it into
+  `lib/native/` and point `java.library.path` there. No committed binaries.
+- The Docker image (`/Dockerfile`, `/.dockerignore`) is multi-stage:
+  - `web` (BUILDPLATFORM): JDK 21, Node 22 + Yarn, pinned emsdk, CMake → WASM,
+    bundle, bundle assertion, and the server distribution (`-Pchipbox.skipNative`,
+    so no Android SDK is needed).
+  - `native` (TARGETPLATFORM): JDK 21 + CMake → `libvgmstream.so` for the target
+    architecture, configured with `--configure-on-demand` so the Android native
+    modules are not configured.
+  - `runtime`: JRE 21 on Ubuntu/glibc (the `.so` is glibc-linked, not alpine),
+    non-root uid 10001, `/music` (read-only library) and `/data` (DB + work dir,
+    persistent), `curl` healthcheck.
+  ```sh
+  git submodule update --init --recursive   # sage is a build input
+  docker build -t chipbox-server:dev .
+  docker run --rm -p 127.0.0.1:8080:8080 \
+    -v /path/to/music:/music:ro -v chipbox-data:/data chipbox-server:dev
+  ```
+  A bind-mounted `/data` must be writable by uid 10001. Builds for
+  `linux/amd64` on every PR and both architectures on release; images are **not
+  pushed** to a registry yet.
+- CI: the `web` job (after `static-analysis`) sets up JDK 21, Node 22 + the pinned
+  Yarn, a cached pinned emsdk, and the Gradle cache; it builds WASM + the bundle +
+  the server, runs `scripts/ci/verify-web-bundle.sh` and `jsNodeTest`, builds the
+  amd64 image **without pushing**, and smokes `/api/health`, `/`, `/chipbox.js`,
+  `/wasm/chipbox_gme.{js,wasm}` and the bundled native library. Locally,
+  `scripts/ci/verify.sh web` mirrors it and `--web-image` adds the image smoke;
+  both SKIP (not fail) when the toolchain/daemon is missing.
 
 ## Testing
 
 - Shared pure logic (localStorage JSON codec/envelopes, URL ↔ route mapping) is
-  Node-testable and runs in `jsNodeTest`.
+  Node-testable and runs in `jsNodeTest`. Modules that apply `sage.compose.kmp`
+  disable their Node tests centrally in `settings.gradle.kts`: Compose's JS
+  distribution ships Skiko only for browsers/WASM, so a Node import fails before
+  a test can run. Pure modules (models, feature route keys, browser state) keep
+  their `jsNodeTest`.
+- The `/api/health` contract (`HealthStatus`, `ScanRetryPolicy`,
+  `readListAwaitingScan`) lives in `cbox/common/models/api` with `commonTest`
+  coverage, so the browser's retry behaviour is tested without a browser or a
+  running server.
 - Ktor server tests cover scan + RSN extraction, file serving, paging, and
-  unknown-route handling.
+  unknown-route handling. `apps/server`'s JVM tests cover the
+  `ScannerState` → `HealthStatus` mapping (including the no-path-leak rule) and
+  the loopback-bind predicate.
 - No Playwright or other browser automation. UI and audio are verified manually.
+- `scripts/ci/verify.sh web` mirrors the CI web job and SKIPs cleanly when
+  emsdk/node/yarn are unavailable; `--web-image` adds the Docker build + smoke.
 - `scripts/ci/verify.sh` and the PR `web` job must pass before a push.
 
 ## v1 acceptance checklist

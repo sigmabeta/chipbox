@@ -20,31 +20,46 @@ acceptance checklist.
 - **App target:** a Kotlin/JS (IR) browser executable, webpack-bundled to
   `chipbox.js`. **Requires `-Psage.js=true`** — the shared modules only expose
   a Kotlin/JS variant when that flag is set (see the `sage.kmp.js` plugin), and
-  the gate keeps non-web Android/JVM builds from configuring Kotlin/JS at all
-  (incompatible with configure-on-demand).
-- **Run/build:** `./gradlew :apps:js:jsBrowserDevelopmentRun -Psage.js=true`
-  (dev server), or `:apps:js:jsBrowserDistribution -Psage.js=true` for the
-  production bundle. `apps/server` copies the bundle into its static resources.
-  - **Add `--no-parallel --no-configuration-cache`** to any task that drives the
-    npm/webpack toolchain (`jsBrowserDistribution`, `jsBrowserDevelopmentRun`,
-    `jsTest`). Kotlin/JS's `rootPackageJson` resolves cross-project npm
-    configurations, which collides with this repo's default `org.gradle.parallel`
-    + `org.gradle.configuration-cache` (you'll otherwise see "Resolution of the
-    configuration … was attempted without an exclusive lock"). The pure-Kotlin
-    `compileKotlinJs` / `compileProductionExecutableKotlinJs` tasks are unaffected
-    and run fine under the defaults.
+  the gate keeps non-web Android/JVM builds from configuring Kotlin/JS at all.
+- **Toolchain:** system **Node 22** and **Yarn 1.x** (Kotlin's own Node/Yarn
+  download is disabled). Pinned versions live in `docker/node-version` and
+  `docker/yarn-version`; CI and the Docker image install exactly those. The
+  **Emscripten SDK** is pinned in `docker/emsdk-version` (4.0.7) and must be
+  activated (`upstream/emscripten/emcc` present).
+- **Run/build:** every web invocation needs Isolated Projects off and
+  configure-on-demand off (Kotlin/JS + webpack resolve cross-project npm
+  configurations), and `--no-parallel` (the npm lock is not parallel-safe):
+  ```sh
+  ./gradlew :apps:js:jsBrowserDevelopmentRun -Psage.js=true \
+    -Dorg.gradle.isolated-projects=false -Dorg.gradle.configureondemand=false --no-parallel
+  ./gradlew :apps:js:jsBrowserDistribution -Psage.js=true \
+    -Dorg.gradle.isolated-projects=false -Dorg.gradle.configureondemand=false --no-parallel
+  ```
+  Do **not** pass `--no-configuration-cache`: Isolated Projects cannot be
+  disabled while the configuration cache is off. `apps/server` copies the
+  production bundle into its static resources.
   - If a build fails with "Lock file was changed", run
-    `./gradlew kotlinUpgradeYarnLock -Psage.js=true --no-parallel --no-configuration-cache`
+    `./gradlew kotlinUpgradeYarnLock -Psage.js=true -Dorg.gradle.isolated-projects=false -Dorg.gradle.configureondemand=false --no-parallel`
     and commit the refreshed `kotlin-js-store/yarn.lock`.
-- **WASM emulators:** each `cbox/native/<name>` dir has a CMakeLists with an
-  `EMSCRIPTEN` branch; per-emulator `build<Name>Wasm` tasks (needing `$EMSDK` or
-  `-Psage.js.emsdk=...`) emit a `.js` loader + `.wasm` blob, and `copyEmulatorWasm`
-  fans them into `src/jsMain/resources/wasm/` so webpack serves them at
-  `/wasm/<name>.{js,wasm}`. **Known gap:** that copy is not yet wired into the
-  bundle tasks, so `jsBrowserDistribution` on its own produces an emulator-less
-  bundle; run `copyEmulatorWasm` first (the ADR/acceptance checklist requires
-  this to become automatic). Emulators covered: gme, vgm, ssf, usf, psf, ncsf,
-  2sf, vgmstream, gba. WASM outputs are gitignored and never committed.
+- **WASM emulators (automatic):** each `cbox/native/<name>` dir has a CMakeLists
+  with an `EMSCRIPTEN` branch; per-emulator `build<Name>Wasm` tasks emit a `.js`
+  loader + `.wasm` blob, and `copyEmulatorWasm` fans them into
+  `src/jsMain/resources/wasm/`. **`jsProcessResources` depends on that copy**, so
+  every bundle path (`jsBrowserDistribution`, the dev server, and the server's
+  `installDist` bundle) ships them at `/wasm/<name>.{js,wasm}`. The emulator list
+  is `apps/js/wasm-emulators.txt` (one `dir|output|display` line each), shared
+  with the bundle check so the build and the assertion cannot drift.
+  - emsdk discovery: `-Psage.js.emsdk=/path/to/emsdk`, then `$EMSDK`.
+    `:apps:js:checkEmsdk` runs at execution and **fails the bundle build** when
+    emsdk is missing or not activated — it can no longer silently produce an
+    emulator-less bundle. Unrelated tasks (`compileKotlinJs`, tests) still work
+    without emsdk.
+  - Verify the artifact: `./gradlew :apps:js:verifyWebBundle -Psage.js=true ...`
+    (builds the production distribution, then asserts `index.html`, `chipbox.js`,
+    and all nine `.js` + `.wasm` pairs), or run the standalone script CI/Docker
+    use: `scripts/ci/verify-web-bundle.sh [bundle-dir]`.
+  - Emulators covered: gme, vgm, ssf, usf, psf, ncsf, 2sf, vgmstream, gba. WASM
+    outputs are gitignored and never committed.
 
 ## Entry point
 
@@ -61,7 +76,8 @@ arrow-key→focus handling, removes the `index.html` splash, and mounts
   `StringProvider`), `di/WebModules.kt` (binds fakes for everything needing
   native code or platform persistence), `di/WebMetroViewModelFactory.kt`.
 - **Data / platform services:** `repository/RemoteRepository.kt` (Ktor JS client
-  → chipbox-server JSON API), `contentsource/HttpContentSource.kt`,
+  → chipbox-server JSON API; list reads retry while the startup scan is running,
+  bounded by the shared `ScanRetryPolicy`), `contentsource/HttpContentSource.kt`,
   `storage/LocalStorageStorage.kt` (sage `Storage` over `window.localStorage`),
   `mediasession/WebMediaSession.kt`, `image/WebImageLoader.kt`,
   `speaker/WebAudioSpeaker.kt`, `analytics/WebAnalytics.kt`, `logging/WebHatchet.kt`.
@@ -69,7 +85,8 @@ arrow-key→focus handling, removes the `index.html` splash, and mounts
   format) over `wasm/*Wasm.kt` + `*WasmCore.kt` module loaders, plus
   `wasm/WasmModuleLoader.kt` and `wasm/MemfsMirror.kt`.
 - **Resources:** `resources/index.html` (splash + mount point),
-  `resources/wasm/chipbox-audio-worklet.js`; `webpack.config.d/okio-node-polyfills.js`.
+  `resources/wasm/chipbox-audio-worklet.js`; `wasm-emulators.txt` (the nine WASM
+  modules shared by the build and the bundle check); `webpack.config.d/okio-node-polyfills.js`.
 
 ## Module facts
 
