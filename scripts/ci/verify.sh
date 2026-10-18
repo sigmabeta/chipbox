@@ -26,6 +26,9 @@
 # machines without the web toolchain stay green. `--web-image` also builds and smokes the Docker
 # image (skipped without a running daemon).
 #
+# The `docker-release` task is the cheap static check (scripts/ci/verify-docker-release.sh) for the
+# multi-arch Dockerfile + release workflow: platform stages, both arches, no push, pinned toolchain.
+#
 # Usage:
 #   scripts/ci/verify.sh                 # run everything
 #   scripts/ci/verify.sh static-analysis unit-test   # run only the named task(s)
@@ -60,6 +63,7 @@ GRADLE_FLAGS=(--build-cache --configuration-cache --console=plain)
 # since jpackage needs a full JDK a dev JBR may lack. Otherwise this matches CI.
 ALL_TASKS=(
   "static-analysis|ktlintCheck detekt --continue -Pchipbox.skipNative"
+  "docker-release|"
   "benchmark|:benchmark:compileBenchmarkKotlin -Pchipbox.skipNative"
   "unit-test|jvmTest --continue"
   "screenshot|verifyPaparazziDebug --continue"
@@ -204,6 +208,12 @@ for entry in "${selected[@]}"; do
     printf '%s──▶ %-16s%s scripts/ci/web.sh %s\n' "$B" "$name" "$Z" "$mode"
     start=$SECONDS
     "scripts/ci/web.sh" "$mode" >"$LOGS/$name.log" 2>&1
+    rc=$?
+  elif [ "$name" = "docker-release" ]; then
+    # Static invariants of the multi-arch image/release wiring (no Docker daemon or toolchain).
+    printf '%s──▶ %-16s%s scripts/ci/verify-docker-release.sh\n' "$B" "$name" "$Z"
+    start=$SECONDS
+    scripts/ci/verify-docker-release.sh >"$LOGS/$name.log" 2>&1
     rc=$?
   else
     printf '%s──▶ %-16s%s ./gradlew %s\n' "$B" "$name" "$Z" "$args"

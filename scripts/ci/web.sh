@@ -78,65 +78,21 @@ fi
 
 # ---- Docker image + smoke (opt-in) ----------------------------------------
 IMAGE="chipbox-server:verify"
+PLATFORM=""
 if docker buildx version >/dev/null 2>&1; then
-  echo "──▶ docker buildx build --platform linux/amd64 --load -t $IMAGE ."
-  docker buildx build --platform linux/amd64 --load -t "$IMAGE" . || exit 1
+  PLATFORM="linux/amd64"
+  echo "──▶ docker buildx build --platform $PLATFORM --load -t $IMAGE ."
+  docker buildx build --platform "$PLATFORM" --load -t "$IMAGE" . || exit 1
 else
   echo "──▶ docker build -t $IMAGE . (buildx unavailable; host architecture)"
   docker build -t "$IMAGE" . || exit 1
 fi
 
-TMP="$(mktemp -d)"
-MUSIC="$TMP/music"
-DATA="$TMP/data"
-mkdir -p "$MUSIC" "$DATA"
-chmod 777 "$DATA" # container runs as uid 10001
-
-cleanup() {
-  docker logs chipbox-web-verify 2>/dev/null || true
-  docker rm -f chipbox-web-verify >/dev/null 2>&1 || true
-  rm -rf "$TMP"
-}
-trap cleanup EXIT
-
-echo "──▶ docker run $IMAGE (port $PORT, /music ro, /data persistent)"
-docker run -d --name chipbox-web-verify \
-  -p "127.0.0.1:$PORT:8080" \
-  -v "$MUSIC:/music:ro" \
-  -v "$DATA:/data" \
-  "$IMAGE" || exit 1
-
-health=""
-for _ in $(seq 1 60); do
-  if health="$(curl -fsS "http://127.0.0.1:$PORT/api/health" 2>/dev/null)"; then break; fi
-  health=""
-  sleep 1
-done
-if [ -z "$health" ]; then
-  echo "FAILED: /api/health never became ready" >&2
-  exit 1
+echo "──▶ scripts/ci/web-image-smoke.sh $IMAGE ${PLATFORM:+(platform $PLATFORM)}"
+if [ -n "$PLATFORM" ]; then
+  CHIPBOX_WEB_PORT="$PORT" scripts/ci/web-image-smoke.sh "$IMAGE" --platform "$PLATFORM" || exit 1
+else
+  CHIPBOX_WEB_PORT="$PORT" scripts/ci/web-image-smoke.sh "$IMAGE" || exit 1
 fi
-echo "$health"
-case "$health" in
-  *'"ok":true'*) ;;
-  *) echo "FAILED: /api/health did not report ok:true" >&2; exit 1 ;;
-esac
-case "$health" in
-  *libraryDir*) echo "FAILED: /api/health leaks libraryDir" >&2; exit 1 ;;
-esac
-
-curl -fsS "http://127.0.0.1:$PORT/" | grep -qi '<html' \
-  || { echo "FAILED: / did not serve index.html" >&2; exit 1; }
-curl -fsS "http://127.0.0.1:$PORT/chipbox.js" | head -c 32 >/dev/null \
-  || { echo "FAILED: /chipbox.js missing" >&2; exit 1; }
-curl -fsS "http://127.0.0.1:$PORT/wasm/chipbox_gme.js" | head -c 32 >/dev/null \
-  || { echo "FAILED: /wasm/chipbox_gme.js missing" >&2; exit 1; }
-curl -fsS "http://127.0.0.1:$PORT/wasm/chipbox_gme.wasm" | head -c 32 >/dev/null \
-  || { echo "FAILED: /wasm/chipbox_gme.wasm missing" >&2; exit 1; }
-
-docker exec chipbox-web-verify test -s /opt/chipbox/lib/native/libvgmstream.so \
-  || { echo "FAILED: image has no native vgmstream library" >&2; exit 1; }
-docker exec chipbox-web-verify sh -c '! ldd /opt/chipbox/lib/native/libvgmstream.so | grep -q "not found"' \
-  || { echo "FAILED: vgmstream library has unresolved links" >&2; exit 1; }
 
 echo "web image verification passed ($IMAGE)"
