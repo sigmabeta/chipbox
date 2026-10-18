@@ -197,7 +197,22 @@ saved snapshot, and reloading a tab restores that snapshot.
   the speaker emits `SpeakerEvent.Error`; the director moves to `ERROR` (also
   for a failed last track, instead of looking like a normal stop); and the web
   host routes `Director.errorEvents()` into the app snackbar while NowPlaying
-  keeps its error log.
+  keeps its error log. Tapping play in `ERROR` recovers: the director restarts
+  the current track from the top, so the mini-player and Now Playing transport
+  are not dead ends (the message clears immediately; the warning icon clears
+  when the restarted track reaches `BUFFERING`).
+- The 10 s capacity wait (`CAPACITY_WAIT_TIMEOUT_MS`) stays a **terminal**
+  speaker error; there is deliberately no in-place retry. By the time it fires
+  the queue is full and `consumed` has stopped advancing for 10 s, so the sink
+  has already had the whole window to make progress — repeating the same wait
+  would only keep the consume loop (and the track) hostage while the UI looks
+  alive, and a browser-suspended context cannot be resumed without a gesture,
+  which is the most common cause. Recovery is the user's play gesture instead:
+  `ERROR` → Play re-issues the track, re-enters `awaitSinkCapacity` with a fresh
+  budget, and the context is resumed synchronously from that click
+  (`prepareForPlayback`). Worklet *initialization* keeps its own bounded retry
+  (`AudioInitState`); the capacity wait is a playback-progress guard, not an
+  init step.
 - The cache and staging file system is in-memory (`FakeFileSystem`); a reload
   re-renders tracks. There is no persistent PCM cache on web.
 - The Web Media Session exposes play/pause/next/previous/seek and metadata.

@@ -42,6 +42,15 @@ director scope. It owns track sequencing/shuffle, the IDLE→BUFFERING→PLAYING
 ENDING→STOPPED/ERROR transitions, and a stall watchdog (≈5 s) that synthesizes
 an error if the generator goes silent.
 
+**Play recovery**: `play()` branches on the current state. `PAUSED` resumes;
+`STOPPED` and `ERROR` both re-issue the current track from the top (clearing
+`errorMessage`) because both states have torn the generator loop and speaker
+sink down — a bare `generator.play()` would spin on an empty channel while the
+UI looked alive. The re-issued track walks the state back through
+BUFFERING→PLAYING via the normal Loading/Emitting reducers, which re-spins both
+loops. With no current track (no session/setlist), `play()` logs a warning and
+stays put.
+
 **Start-ordering constraint**: the speaker consume loop must start *before* the
 generator emits its first `Emitting`. Start the speaker first, then the generator,
 so the `Buffering` state can clear cleanly and the consumer doesn't spin on a
