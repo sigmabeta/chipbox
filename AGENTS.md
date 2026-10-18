@@ -16,7 +16,12 @@ targets too.
 
 Pull the latest `sage/` submodule first: `git -C sage pull` (or
 `git submodule update --remote sage`). Chipbox builds against sage source, so a
-stale checkout means you're working against outdated APIs and build logic.
+stale checkout means you're working against outdated APIs and build logic. If the
+latest tip breaks the build, flag that before doing other work.
+
+Run `scripts/dev/doctor.sh` on a new machine: it reports which toolchains exist
+(JDK, node/yarn, emsdk, cmake, Docker, Android SDK) with the fix for each, and
+which `scripts/ci/verify.sh` axes are runnable here.
 
 ## The four things I keep re-deriving (read these first)
 
