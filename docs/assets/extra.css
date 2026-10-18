@@ -29,11 +29,55 @@
   fill: var(--md-accent-fg-color);
 }
 
-/* Landing-page demo video (portrait phone capture, 272×560). */
-.chipbox-demo {
-  margin: 1.75rem auto;
-  max-width: 19rem;
-  text-align: center;
+/* Keep the home page's H1 for screen readers/SEO without a visible heading above
+   the hero (Material otherwise injects the nav title as an H1). */
+.md-typeset .chipbox-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Landing-page hero: intro copy beside the looping demo video (portrait phone
+   capture, 272×560, no audio). */
+/* .md-typeset raises Material's `.md-typeset figure` (max-width: 100%; width:
+   fit-content) over a bare class, so scope these the same way. */
+.md-typeset .chipbox-hero {
+  /* Query the hero's own width so the video centers exactly when it wraps. */
+  container-type: inline-size;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2rem;
+}
+.md-typeset .chipbox-hero__text {
+  flex: 1 1 20rem;
+  max-width: 40rem;
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--md-default-fg-color--light);
+}
+.md-typeset .chipbox-demo {
+  flex: 0 0 auto;
+  /* Native 272×560. Pin the width/ratio so the 2× poster doesn't briefly claim
+     544px before the video's metadata loads; auto left margin right-aligns it. */
+  width: 272px;
+  max-width: 100%;
+  aspect-ratio: 272 / 560;
+  margin: 0 0 0 auto;
+}
+
+/* 400px text basis + 2rem gap + 272px video = 712px. Below that the hero wraps,
+   so center the video under the text rather than pinning it right. */
+@container (max-width: 712px) {
+  .md-typeset .chipbox-demo {
+    margin-inline: auto;
+  }
 }
 .chipbox-demo video {
   display: block;
@@ -42,9 +86,4 @@
   border-radius: 0.6rem;
   background: #000;
   box-shadow: 0 0.4rem 1.2rem rgba(0, 0, 0, 0.35);
-}
-.chipbox-demo figcaption {
-  margin-top: 0.6rem;
-  font-size: 0.8rem;
-  color: var(--md-default-fg-color--light);
 }
