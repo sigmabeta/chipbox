@@ -80,11 +80,16 @@ fun Project.androidSdkDir(): File {
 }
 
 /**
- * Highest CMake version directory under `$SDK/cmake` with an executable `bin/cmake`, or null. Names
- * sort lexicographically, which is correct for the SDK's `3.22.1` / `4.1.x` scheme.
+ * Highest CMake version directory under `$SDK/cmake` with an executable `bin/cmake`, or null.
+ * Names sort lexicographically, which is correct for the SDK's `3.22.1` / `4.1.x` scheme.
+ *
+ * Tolerates a missing SDK: the host (desktop/server) build shares this resolver but must configure
+ * and build without an Android SDK installed (`resolveCmake` then falls through to `$PATH`). The
+ * Android native plugin calls `resolveSdkCmake`, whose fallback still requires the SDK explicitly.
  */
 private fun Project.highestSdkCmakeDir(): File? =
-    File(androidSdkDir(), "cmake").listFiles()
+    runCatching { androidSdkDir() }.getOrNull()
+        ?.let { File(it, "cmake").listFiles() }
         ?.filter { it.isDirectory && File(it, "bin/cmake").canExecute() }
         ?.maxByOrNull { it.name }
 
