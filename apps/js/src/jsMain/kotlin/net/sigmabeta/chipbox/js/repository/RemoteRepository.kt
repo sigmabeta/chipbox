@@ -12,14 +12,18 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.browser.window
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
+import net.sigmabeta.chipbox.models.HealthStatus
 import net.sigmabeta.chipbox.models.Platform
+import net.sigmabeta.chipbox.models.ScanRetryPolicy
 import net.sigmabeta.chipbox.models.SearchHistory
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.models.readListAwaitingScan
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteOutcome
@@ -33,8 +37,11 @@ import net.sigmabeta.chipbox.repository.Repository
  * the configured `CHIPBOX_API_BASE` instead — see [resolveBaseUrl]).
  *
  * Each `Flow<Data<T>>` returning method launches a single HTTP request and emits
- * `Data.Loading` then `Data.Succeeded(...)` (or `Data.Empty` / `Data.Failed`). No polling — one
- * shot per subscription, matching the server's single-snapshot semantics.
+ * `Data.Loading` then `Data.Succeeded(...)` (or `Data.Empty` / `Data.Failed`). List reads await the
+ * server's startup scan — while `/api/health` says a scan is running and the read is empty, the
+ * read is retried under a bounded [ScanRetryPolicy] so a browser opened during the first scan still
+ * lands on the library once the scan completes. Search reads do not wait (an empty result is a
+ * legitimate answer, not a sign the scan has not finished).
  *
  * Write paths (`upsertGame`, `pruneGames`, `clearLibrary`, `folderSnapshots`) are scanner-side
  * concerns the UI doesn't drive; they error if called.
@@ -42,6 +49,7 @@ import net.sigmabeta.chipbox.repository.Repository
 class RemoteRepository(
     private val client: HttpClient,
     private val baseUrl: String = resolveBaseUrl(),
+    private val scanRetryPolicy: ScanRetryPolicy = ScanRetryPolicy(),
 ) : Repository {
 
     // ---------- lists ----------
@@ -219,19 +227,19 @@ class RemoteRepository(
 
     // ---------- search ----------
 
-    override fun searchGames(query: String): Flow<Data<List<Game>>> = listFlow {
+    override fun searchGames(query: String): Flow<Data<List<Game>>> = listFlow(awaitStartupScan = false) {
         client.get("$baseUrl/api/search/games") { parameter("q", query) }.body()
     }
 
-    override fun searchSongs(query: String): Flow<Data<List<Track>>> = listFlow {
+    override fun searchSongs(query: String): Flow<Data<List<Track>>> = listFlow(awaitStartupScan = false) {
         client.get("$baseUrl/api/search/tracks") { parameter("q", query) }.body()
     }
 
-    override fun searchArtists(query: String): Flow<Data<List<Artist>>> = listFlow {
+    override fun searchArtists(query: String): Flow<Data<List<Artist>>> = listFlow(awaitStartupScan = false) {
         client.get("$baseUrl/api/search/artists") { parameter("q", query) }.body()
     }
 
-    override fun getSearchHistory(): Flow<Data<List<SearchHistory>>> = listFlow {
+    override fun getSearchHistory(): Flow<Data<List<SearchHistory>>> = listFlow(awaitStartupScan = false) {
         client.get("$baseUrl/api/search/history").body()
     }
 
@@ -262,14 +270,36 @@ class RemoteRepository(
 
     // ---------- helpers ----------
 
-    private fun <T> listFlow(call: suspend () -> List<T>): Flow<Data<List<T>>> = flow {
+    private fun <T> listFlow(
+        awaitStartupScan: Boolean = true,
+        call: suspend () -> List<T>,
+    ): Flow<Data<List<T>>> = flow {
         emit(Data.Loading)
         try {
-            val list = call()
+            val list = if (awaitStartupScan) {
+                readListAwaitingScan(scanRetryPolicy, read = call, readHealth = ::readHealth)
+            } else {
+                call()
+            }
             emit(if (list.isEmpty()) Data.Empty else Data.Succeeded(list))
+        } catch (cancellation: CancellationException) {
+            throw cancellation
         } catch (ex: Throwable) {
             emit(Data.Failed(ex.message ?: ex::class.simpleName ?: "Request failed"))
         }
+    }
+
+    /**
+     * `/api/health` is advisory: a network error or a malformed body just means "stop waiting" —
+     * the list read still decides between Empty and Failed, and a forever-retry here would keep a
+     * screen loading against a server that is gone.
+     */
+    private suspend fun readHealth(): HealthStatus? = try {
+        client.get("$baseUrl/api/health").body<HealthStatus>()
+    } catch (cancellation: CancellationException) {
+        throw cancellation
+    } catch (_: Throwable) {
+        null
     }
 
     private fun <T : Any> singleFlow(call: suspend () -> T?): Flow<Data<T?>> = flow {
