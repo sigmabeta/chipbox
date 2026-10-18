@@ -1,0 +1,28 @@
+# Keep the build context to things the Gradle/Docker build actually reads.
+# NEVER exclude `sage/`: it is a submodule and a build input. Never exclude
+# `kotlin-js-store/yarn.lock` either — it pins the whole Kotlin/JS toolchain.
+
+.git
+.gitmodules
+.github
+.gradle
+.kotlin
+**/build
+**/node_modules
+node_modules
+**/.cxx
+apps/android/.externalNativeBuild
+apps/android/.cxx
+apps/jvm/libs
+ab-runs
+ab-goldens
+.scratch
+site
+local.properties
+*.apk
+*.aab
+*.log
+*.hprof
+.DS_Store
+build/verification
+build/paparazzi-review

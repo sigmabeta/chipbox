@@ -40,6 +40,111 @@ jobs:
           name: static-analysis-reports
           path: '**/build/reports/**'
 
+  web:
+    # The browser app has its own toolchain: Kotlin/JS + webpack need Node/Yarn, the nine emulator
+    # modules need a pinned Emscripten SDK, and the deployable artifact is the Docker image. Nothing
+    # in the other jobs builds any of it, so a WASM/bundle/image break would otherwise only surface
+    # in a release. The image is built for linux/amd64 and NOT pushed (no registry in v1).
+    needs: static-analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      # node-version-file: docker/node-version is the same pin the Dockerfile installs.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: docker/node-version
+          cache: yarn
+          cache-dependency-path: kotlin-js-store/yarn.lock
+      - name: Install pinned Yarn
+        run: npm install -g "yarn@$(cat docker/yarn-version)"
+      # emsdk is a ~1GB checkout; cache it keyed by the pin. Activate on every run so the
+      # restored tree's .emscripten config matches the current $HOME/emsdk path.
+      - name: Cache Emscripten SDK
+        id: cache-emsdk
+        uses: actions/cache@v4
+        with:
+          path: ~/emsdk
+          key: emsdk-${{ runner.os }}-${{ hashFiles('docker/emsdk-version') }}
+      - name: Install Emscripten SDK
+        run: |
+          set -euo pipefail
+          if [ ! -x "$HOME/emsdk/upstream/emscripten/emcc" ]; then
+            git clone --depth 1 --branch "$(cat docker/emsdk-version)" \
+              https://github.com/emscripten-core/emsdk.git "$HOME/emsdk"
+            "$HOME/emsdk/emsdk" install "$(cat docker/emsdk-version)"
+          fi
+          "$HOME/emsdk/emsdk" activate "$(cat docker/emsdk-version)"
+          echo "EMSDK=$HOME/emsdk" >> "$GITHUB_ENV"
+      - uses: gradle/actions/setup-gradle@v4
+      # Isolated Projects is incompatible with the Kotlin/JS + webpack toolchain, and JS requires
+      # configure-on-demand OFF; --no-parallel avoids the cross-project npm configuration lock.
+      - name: Build WASM + web bundle + server distribution
+        run: >-
+          ./gradlew :apps:js:verifyWebBundle :apps:server:installDist
+          -Psage.js=true -Pchipbox.skipNative
+          -Dorg.gradle.isolated-projects=false -Dorg.gradle.configureondemand=false
+          --no-parallel --build-cache --no-daemon --max-workers=4
+      - name: Assert the bundle contains all nine emulator pairs
+        run: scripts/ci/verify-web-bundle.sh
+      - name: Server health/scan-state tests
+        run: >-
+          ./gradlew :apps:server:test -Pchipbox.skipNative
+          --build-cache --no-daemon --max-workers=2
+      - name: Shared JS-side tests (jsNodeTest)
+        run: >-
+          ./gradlew jsNodeTest
+          -Psage.js=true -Pchipbox.skipNative
+          -Dorg.gradle.isolated-projects=false -Dorg.gradle.configureondemand=false
+          --no-parallel --build-cache --no-daemon --max-workers=4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build amd64 image (not pushed)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: chipbox-server:ci
+          cache-from: type=gha,scope=web-amd64
+          cache-to: type=gha,mode=max,scope=web-amd64
+      - name: Smoke the container (health, SPA, bundle, WASM, native lib)
+        run: |
+          set -euo pipefail
+          mkdir -p build/ci-music build/ci-data
+          chmod 777 build/ci-data   # container runs as uid 10001
+          docker run -d --name chipbox-ci \
+            -p 127.0.0.1:8080:8080 \
+            -v "$PWD/build/ci-music:/music:ro" \
+            -v "$PWD/build/ci-data:/data" \
+            chipbox-server:ci
+          cleanup() { docker logs chipbox-ci || true; docker rm -f chipbox-ci || true; }
+          trap cleanup EXIT
+
+          for _ in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:8080/api/health -o /tmp/health.json && break
+            sleep 1
+          done
+          cat /tmp/health.json
+          grep -q '"ok":true' /tmp/health.json
+          grep -q '"state"' /tmp/health.json
+          ! grep -q 'libraryDir' /tmp/health.json
+
+          curl -fsS http://127.0.0.1:8080/ | grep -qi '<html'
+          curl -fsS http://127.0.0.1:8080/chipbox.js | head -c 32 >/dev/null
+          curl -fsS http://127.0.0.1:8080/wasm/chipbox_gme.js | head -c 32 >/dev/null
+          curl -fsS http://127.0.0.1:8080/wasm/chipbox_gme.wasm | head -c 32 >/dev/null
+
+          # The image must carry its native vgmstream library with no unresolved links.
+          docker exec chipbox-ci test -s /opt/chipbox/lib/native/libvgmstream.so
+          docker exec chipbox-ci sh -c '! ldd /opt/chipbox/lib/native/libvgmstream.so | grep -q "not found"'
+
   shared-build:
     # Gate the heavy whole-graph compile behind ktlint + detekt: fail fast on a lint/style break
     # before spending a compile on it (mirrors the former CircleCI shared-build ← static-analysis edge).
