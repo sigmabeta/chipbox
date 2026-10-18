@@ -27,9 +27,10 @@ Grouped by role (commonMain unless noted):
   Its `capabilities: AppCapabilities` parameter (default: the full desktop
   surface) sets the host's visible surface.
 
-- **Capability policy** — `AppCapabilitiesPolicy.kt`: `LocalAppCapabilities` and the
+- **Capability policy** — `AppCapabilitiesPolicy.kt`: `LocalAppCapabilities`. The
   snackbar copy shown when a `PickFolder` event reaches a host that does not manage
-  its own library. The `allowsNavigation(destination)` guard itself now lives in
+  its own library is the localized `ChipboxStringId.APPUI_SERVER_MANAGED_LIBRARY`
+  (same string-resource path as Home's copy). The `allowsNavigation(destination)` guard itself lives in
   `:cbox:common:webroutes` (`NavigationPolicy.kt`) so the browser's URL decoder and the
   in-app sinks share one policy: library-administration destinations require
   `canManageLibrary`; Playback Status / Crash Log / Component Library require

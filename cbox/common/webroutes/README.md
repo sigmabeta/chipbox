@@ -44,7 +44,8 @@ Rules:
 - **`?api=` and unknown query parameters are ignored.** `?api=` remains the dev server's base-URL
   override (`RemoteRepository.resolveBaseUrl`); the history host re-appends it to every URL it
   writes so a refresh keeps the override.
-- **Unknown paths have no target** (`decode` returns null); the host falls back to `/`.
+- **Unknown paths have no target** (`decode` returns null); the host falls back to `/` and
+  canonicalises the entry with `replaceState` (`RouteUrl.needsCanonicalization` reports when).
 - **Admin and debug-only destinations have no URL.** Manage Library, Folder Picker, Rescan Status,
   Playback Status, Crash Log, and Component Library are hidden on web (ticket 05); `encode` returns
   null and no path decodes to them. The Error Log is the deliberate exception (browser-local,
@@ -66,6 +67,13 @@ val fallback = RouteUrl.decode("/nope", capabilities) ?: ChipboxTarget.Tab(Chipb
 
 `apps/js`'s `BrowserHistoryNavigation` is the only production caller. It translates between these
 targets and the shell's `BrowserNavigation` seam (`pushState` / `replaceState` / `popstate`).
+
+**Two mapping layers, deliberately separate.** This module's `ChipboxTab`/`ChipboxTarget` is the
+browser-facing vocabulary (pure, Compose-free, Node-testable). The shell's
+`ShellTab`/`ShellTarget` in `:cbox:common:appui:api` is the navigation vocabulary it drives
+(Voyager tabs). `BrowserHistoryNavigation` converts between them with two small exhaustive `when`s.
+Keeping them separate means the URL table can be tested without the Compose/Voyager graph; merging
+them would pull Compose into this pure module, so only do it if the layers genuinely need to merge.
 
 ## Contents
 

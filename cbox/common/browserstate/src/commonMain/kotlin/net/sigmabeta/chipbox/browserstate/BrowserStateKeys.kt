@@ -16,4 +16,7 @@ object BrowserStateKeys {
      * (unversioned) snapshot written by another build is read as schema version 0.
      */
     const val PLAYBACK_SESSION = "playback.session.snapshot"
+
+    /** Recent searches, kept entirely in the browser (the server stores no user state). */
+    const val SEARCH_HISTORY = "chipbox.search_history"
 }

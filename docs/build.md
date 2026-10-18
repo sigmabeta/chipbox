@@ -127,8 +127,30 @@ scripts/ci/web-image-smoke.sh chipbox-server:arm64 --platform linux/arm64 --cont
 ```
 
 The image is built for amd64 on PRs and both architectures on release, but it is
-**not published** to any registry and there is **no public distribution** in v1.
-The release job uploads the OCI archive as a workflow artifact only. Run
+**not published** to any registry, and the multi-arch OCI archive is not uploaded
+as a workflow artifact either; there is **no public distribution** in v1. The
+release job verifies the archive's index on the runner, and `publish` needs the
+image job so an image failure blocks the release. Run
 `scripts/ci/verify-docker-release.sh` to statically check the platform stages,
-both-arch release wiring, no-push rule, native-lib architecture assertion, and
-pinned toolchain.
+both-arch release wiring, no-push/no-artifact rule, native-lib architecture
+assertion, deterministic build-identity args, and pinned toolchain.
+
+### Build identity
+
+`.dockerignore` excludes `.git`, so the image cannot run `git describe`. Pass the
+checkout's identity as build args (CI does this automatically); without them the
+image reports the neutral `0.0.0-web` dev version:
+
+```sh
+docker build -t chipbox-server:dev \
+  --build-arg CHIPBOX_BUILD_VERSION="$(git describe --tags --always --dirty)" \
+  --build-arg CHIPBOX_BUILD_VERSION_CODE="$(git rev-list --count HEAD)" \
+  --build-arg CHIPBOX_BUILD_COMMIT="$(git rev-parse --short HEAD)" \
+  --build-arg CHIPBOX_BUILD_BRANCH="$(git rev-parse --abbrev-ref HEAD)" \
+  --build-arg CHIPBOX_BUILD_TIME_MS="$(( $(git log -1 --format=%ct) * 1000 ))" .
+```
+
+The same values appear in Settings → About (and the browser console at startup).
+The env vars take precedence over git, so a source tarball/Docker build reports
+the real version with no `.git`; each also has a `chipbox.build.*` Gradle-property
+counterpart for local overrides.

@@ -114,6 +114,19 @@ jobs:
             echo "yarn=$(cat docker/yarn-version)"
             echo "emsdk=$(cat docker/emsdk-version)"
           } >> "$GITHUB_OUTPUT"
+      # `.dockerignore` excludes `.git`, so the image can't run `git describe`; resolve the same
+      # identity here and pass it as build args (the Dockerfile's deterministic inputs).
+      - name: Resolve web build identity
+        id: buildinfo
+        run: |
+          set -euo pipefail
+          {
+            echo "version=$(git describe --tags --always --dirty)"
+            echo "version_code=$(git rev-list --count HEAD)"
+            echo "commit=$(git rev-parse --short HEAD)"
+            echo "branch=$(git rev-parse --abbrev-ref HEAD)"
+            echo "time_ms=$(( $(git log -1 --format=%ct) * 1000 ))"
+          } >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
       - name: Build amd64 image (not pushed)
         uses: docker/build-push-action@v6
@@ -127,6 +140,11 @@ jobs:
             NODE_VERSION=${{ steps.pins.outputs.node }}
             YARN_VERSION=${{ steps.pins.outputs.yarn }}
             EMSDK_VERSION=${{ steps.pins.outputs.emsdk }}
+            CHIPBOX_BUILD_VERSION=${{ steps.buildinfo.outputs.version }}
+            CHIPBOX_BUILD_VERSION_CODE=${{ steps.buildinfo.outputs.version_code }}
+            CHIPBOX_BUILD_COMMIT=${{ steps.buildinfo.outputs.commit }}
+            CHIPBOX_BUILD_BRANCH=${{ steps.buildinfo.outputs.branch }}
+            CHIPBOX_BUILD_TIME_MS=${{ steps.buildinfo.outputs.time_ms }}
           cache-from: type=gha,scope=web-amd64
           cache-to: type=gha,mode=max,scope=web-amd64
       - name: Smoke the container (health, SPA, all nine WASM pairs, native lib arch)

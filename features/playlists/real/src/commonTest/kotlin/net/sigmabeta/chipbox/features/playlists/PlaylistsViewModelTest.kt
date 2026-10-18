@@ -10,10 +10,12 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withTimeoutOrNull
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.features.playlistdetail.PlaylistDetail
 import net.sigmabeta.chipbox.playlists.fake.FakePlaylistsRepository
 import net.sigmabeta.sage.appcomm.LCE
+import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
@@ -21,6 +23,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -127,6 +130,17 @@ class PlaylistsViewModelTest {
         assertEquals(listOf("From game Chrono Trigger"), repo.playlists().first().map { it.name })
     }
 
+    @Test
+    fun `a failed create opens nothing and adds no tracks`() = runTest {
+        val repo = FakePlaylistsRepository().apply { failCreates = true }
+        val vm = pickerVm(repo, pendingTrackIds = listOf(10L, 11L))
+
+        val event = collectOrNull(vm, PlaylistsAction.NewPlaylistClicked)
+
+        assertNull(event, "a refused write must not navigate (picker mode would pop anyway)")
+        assertTrue(repo.playlists().first().isEmpty())
+    }
+
     // ---- helpers ----
 
     private fun browseVm(repo: FakePlaylistsRepository) =
@@ -140,10 +154,19 @@ class PlaylistsViewModelTest {
 
     private suspend fun CoroutineScope.collectAndDispatch(
         vm: PlaylistsViewModel,
-        action: PlaylistsAction,
+        action: SageAction,
     ): ChipboxEvent = async(start = CoroutineStart.UNDISPATCHED) { vm.events.first() }
         .also { vm.sendAction(action) }
         .await()
+
+    private suspend fun CoroutineScope.collectOrNull(
+        vm: PlaylistsViewModel,
+        action: SageAction,
+    ): ChipboxEvent? = withTimeoutOrNull(50) {
+        async(start = CoroutineStart.UNDISPATCHED) { vm.events.first() }
+            .also { vm.sendAction(action) }
+            .await()
+    }
 
     private fun stubStringProvider() = object : StringProvider {
         override fun getString(string: SageStringId): String = string.toString()

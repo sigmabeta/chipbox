@@ -21,7 +21,7 @@ upsert-merges it through `Repository.importLibrarySnapshot`, reporting the count
 in a snackbar.
 
 Host policy comes from `AppCapabilities` (injected). It seeds
-`showLibraryAdmin` / `showDebugSection` / `showErrorLog` in the state and is also
+`canManageLibrary` / `showDebugSection` / `showErrorLog` in the state and is also
 enforced at the action seam: on a host that does not manage its library, every
 admin action (add/manage/rescan/rescan-status/clear-library/folder-picked) is a
 no-op, and when the debug section is hidden the five-tap toggle and the debug-only

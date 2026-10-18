@@ -34,6 +34,15 @@ ARG NODE_VERSION=22.14.0
 ARG YARN_VERSION=1.22.22
 ARG EMSDK_VERSION=4.0.7
 
+# Build identity for Settings > About. `.dockerignore` excludes `.git`, so the Gradle task can't
+# `git describe` inside the image: CI passes the checkout's identity as build args (empty locally,
+# where the task falls back to a neutral `0.0.0-web`).
+ARG CHIPBOX_BUILD_VERSION=""
+ARG CHIPBOX_BUILD_VERSION_CODE=""
+ARG CHIPBOX_BUILD_COMMIT=""
+ARG CHIPBOX_BUILD_BRANCH=""
+ARG CHIPBOX_BUILD_TIME_MS=""
+
 SHELL ["/bin/bash", "-c"]
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

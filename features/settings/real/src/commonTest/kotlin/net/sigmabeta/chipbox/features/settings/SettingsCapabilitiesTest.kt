@@ -54,7 +54,7 @@ class SettingsCapabilitiesTest {
     @Test
     fun `server-managed library hides admin rows and keeps clear playback history`() {
         val actions = clickActions(
-            SettingsState(showLibraryAdmin = false, hasLibraryFolders = true),
+            SettingsState(canManageLibrary = false, hasLibraryFolders = true),
         )
 
         assertFalse(SettingsAction.AddFolderClicked in actions)
@@ -68,7 +68,7 @@ class SettingsCapabilitiesTest {
     @Test
     fun `server-managed library hides the rescan status row even while a scan reports loading`() {
         val actions = clickActions(
-            SettingsState(showLibraryAdmin = false, rescanStatus = net.sigmabeta.sage.appcomm.LCE.Loading("rescan")),
+            SettingsState(canManageLibrary = false, rescanStatus = net.sigmabeta.sage.appcomm.LCE.Loading("rescan")),
         )
 
         assertFalse(SettingsAction.RescanStatusClicked in actions)
@@ -99,6 +99,16 @@ class SettingsCapabilitiesTest {
     }
 
     @Test
+    fun `the debug section honours showErrorLog independently`() {
+        val actions = clickActions(
+            SettingsState(showDebugSection = true, showErrorLog = false, shouldShowDebug = true),
+        )
+
+        assertFalse(SettingsAction.ErrorLogClicked in actions, "showErrorLog=false must drop the row from the debug section")
+        assertTrue(SettingsAction.PlaybackStatusClicked in actions, "the rest of the debug section still renders")
+    }
+
+    @Test
     fun `debug section is still absent without the persisted toggle`() {
         val actions = clickActions(SettingsState(showDebugSection = true, shouldShowDebug = false))
 
@@ -117,7 +127,7 @@ class SettingsCapabilitiesTest {
         )
 
         val state = vm.state.first()
-        assertFalse(state.showLibraryAdmin)
+        assertFalse(state.canManageLibrary)
         assertFalse(state.showDebugSection)
         assertTrue(state.showErrorLog)
     }

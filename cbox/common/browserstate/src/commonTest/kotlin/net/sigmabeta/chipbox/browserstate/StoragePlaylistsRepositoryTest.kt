@@ -21,16 +21,16 @@ class StoragePlaylistsRepositoryTest {
         val clock = FakeClock()
         val repo = StoragePlaylistsRepository(storage, events, clock::now)
 
-        val first = repo.createPlaylist("First")
-        val second = repo.createPlaylist("Second")
+        val first = repo.createPlaylist("First")!!
+        val second = repo.createPlaylist("Second")!!
         assertEquals(listOf(1L, 2L), listOf(first, second))
 
         val reloaded = StoragePlaylistsRepository(storage, events, clock::now)
-        assertEquals(3L, reloaded.createPlaylist("Third"), "next-id is persisted, not recomputed from a counter")
+        assertEquals(3L, reloaded.createPlaylist("Third")!!, "next-id is persisted, not recomputed from a counter")
 
         reloaded.clearAll()
         val afterClear = StoragePlaylistsRepository(storage, events, clock::now)
-        assertEquals(4L, afterClear.createPlaylist("After clear"), "clear never reuses an id")
+        assertEquals(4L, afterClear.createPlaylist("After clear")!!, "clear never reuses an id")
     }
 
     @Test
@@ -50,7 +50,7 @@ class StoragePlaylistsRepositoryTest {
     @Test
     fun `membership keeps insertion order and append de-dupes`() = runTest {
         val repo = StoragePlaylistsRepository(FakeStorage(), BrowserStateEvents(), FakeClock()::now)
-        val id = repo.createPlaylist("Ordered")
+        val id = repo.createPlaylist("Ordered")!!
 
         repo.addTracks(id, listOf(10L, 11L, 10L, 12L))
         assertEquals(listOf(10L, 11L, 12L), repo.trackIds(id).first(), "dupes in one append collapse")
@@ -66,7 +66,7 @@ class StoragePlaylistsRepositoryTest {
         val events = BrowserStateEvents()
         val clock = FakeClock()
         val repo = StoragePlaylistsRepository(storage, events, clock::now)
-        val id = repo.createPlaylist("Original")
+        val id = repo.createPlaylist("Original")!!
         repo.addTracks(id, listOf(1L, 2L, 3L))
 
         repo.renamePlaylist(id, "Renamed")
@@ -111,13 +111,12 @@ class StoragePlaylistsRepositoryTest {
     }
 
     @Test
-    fun `unknown track ids are kept in the store and dropped during hydration`() = runTest {
+    fun `unknown track ids are kept in the store`() = runTest {
         val repo = StoragePlaylistsRepository(FakeStorage(), BrowserStateEvents(), FakeClock()::now)
-        val id = repo.createPlaylist("Missing ids")
+        val id = repo.createPlaylist("Missing ids")!!
         repo.addTracks(id, listOf(7L, 404L))
 
-        val known = mapOf(7L to "Known track")
-        assertEquals(listOf("Known track"), hydrateIds(repo.trackIds(id).first(), known::get))
+        assertEquals(listOf(7L, 404L), repo.trackIds(id).first(), "the store persists ids, not models")
         assertEquals(2, repo.playlist(id).first()?.trackCount, "the count tracks persisted membership")
     }
 
@@ -168,15 +167,16 @@ class StoragePlaylistsRepositoryTest {
     }
 
     @Test
-    fun `a quota failure on create is caught and does not throw`() = runTest {
+    fun `a quota failure on create is caught, does not throw, and returns no id`() = runTest {
         val storage = FakeStorage()
         val events = BrowserStateEvents()
         val seen = collectEvents(events)
         val repo = StoragePlaylistsRepository(storage, events, FakeClock()::now)
         storage.failWrites = true
 
-        repo.createPlaylist("No room")
+        val id = repo.createPlaylist("No room")
 
+        assertNull(id, "a failed write must not hand back an id for a playlist that does not exist")
         assertTrue(seen.any { it.reason == BrowserStateReason.WRITE_FAILED })
         assertEquals(emptyList(), repo.playlists().first())
     }

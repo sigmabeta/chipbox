@@ -88,21 +88,26 @@ removes the `index.html` splash, and mounts `ChipboxAppUi` in a
   navigation) out of the UI, so the bindings are graph closure only — not test
   fakes.
 - **Build identity:** `generateWebBuildInfo` (in `build.gradle.kts`) writes
-  `WebBuildInfo.kt` from git at build time — `git describe --tags --always
-  --dirty`, commit count as `versionCode`, branch, and commit time — with a
-  `0.0.0-web` / `unknown` fallback when git is unavailable. `WebModules` feeds it
-  to `AppInfo` with `isDebug = false`; the release `index.html` title/splash are
-  used (no "Debug" title or splash).
+  `WebBuildInfo.kt` at build time. Deterministic inputs (`CHIPBOX_BUILD_VERSION`,
+  `CHIPBOX_BUILD_VERSION_CODE`, `CHIPBOX_BUILD_COMMIT`, `CHIPBOX_BUILD_BRANCH`,
+  `CHIPBOX_BUILD_TIME_MS` env vars, or the `chipbox.build.*` Gradle properties)
+  win when present, so CI and the Docker build — whose context excludes `.git` —
+  report the real checkout identity. Locally it falls back to `git describe
+  --tags --always --dirty`, the commit count, branch, short commit, and commit
+  time. `0.0.0-web` / `unknown` is the last resort. `WebModules` feeds it to
+  `AppInfo` with `isDebug = false`; `JsMain` logs the version/commit at startup.
+  The release `index.html` title/splash are used (no "Debug" title or splash).
 - **Data / platform services:** `repository/RemoteRepository.kt` (Ktor JS client
-  → chipbox-server JSON API; list reads retry while the startup scan is running,
-  bounded by the shared `ScanRetryPolicy`; non-2xx and non-JSON responses are
+  → chipbox-server JSON API; list reads paint partial data immediately and
+  re-read once the startup scan finishes, bounded by the shared `ScanRetryPolicy`;
+  non-2xx and non-JSON responses are
   classified by the shared `apiErrorMessage`, so a JSON 404 or an HTML page
   becomes a real error message instead of a deserialization failure),
   `contentsource/HttpContentSource.kt`,
   `storage/LocalStorageStorage.kt` (sage `Storage` over `window.localStorage`),
   `cbox/common/browserstate` (versioned favorites/playlists, bounded play
-  history, and the playback-session store; keys `chipbox.favorites` /
-  `chipbox.playlists` / `chipbox.playback_history` /
+  history, recent searches, and the playback-session store; keys `chipbox.favorites` /
+  `chipbox.playlists` / `chipbox.playback_history` / `chipbox.search_history` /
   `playback.session.snapshot`), `mediasession/WebMediaSession.kt`,
   `image/WebImageLoader.kt`, `speaker/WebAudioSpeaker.kt`,
   `analytics/WebAnalytics.kt`, `logging/WebHatchet.kt`.
@@ -132,7 +137,9 @@ removes the `index.html` splash, and mounts `ChipboxAppUi` in a
   qualifying plays to `StoragePlaybackHistoryRepository` (newest 500); the
   shared `RealPlaybackSessionPersister` restores the queue/track/position
   paused on launch, saves on pause, clears on stop, and `JsMain` flushes it on
-  `pagehide` / `visibilitychange=hidden` / `beforeunload`.
+  `pagehide` / `visibilitychange=hidden` / `beforeunload` as a **non-teardown**
+  save. `pageshow` calls `resumeAfterTeardown()` so a page restored from the
+  back-forward cache still clears on a real Stop.
 - **WASM emulators:** `emulators/Wasm*Emulator.kt` (one `Emulator` subclass per
   format) over `wasm/*Wasm.kt` + `*WasmCore.kt` module loaders, plus
   `wasm/WasmModuleLoader.kt` and `wasm/MemfsMirror.kt`. Modules load on first use.

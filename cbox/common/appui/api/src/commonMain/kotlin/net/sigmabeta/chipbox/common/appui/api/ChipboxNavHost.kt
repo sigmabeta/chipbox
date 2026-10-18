@@ -552,6 +552,7 @@ internal fun buildOuterSink(
     snackbarHostState: SnackbarHostState,
     snackbarScope: CoroutineScope,
     capabilities: AppCapabilities,
+    serverManagedLibraryMessage: String,
     onNavigateTo: (Any) -> Unit,
     onNavigateBack: () -> Unit,
     onOpenUrl: (String) -> Unit,
@@ -601,7 +602,7 @@ internal fun buildOuterSink(
         ChipboxEvent.PickFolder -> if (!capabilities.canManageLibrary) {
             snackbarScope.launch {
                 snackbarHostState.showSnackbar(
-                    message = SERVER_MANAGED_LIBRARY_MESSAGE,
+                    message = serverManagedLibraryMessage,
                     duration = SnackbarDuration.Short,
                 )
             }

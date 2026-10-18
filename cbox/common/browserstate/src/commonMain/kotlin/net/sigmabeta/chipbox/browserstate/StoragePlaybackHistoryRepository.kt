@@ -34,8 +34,7 @@ class StoragePlaybackHistoryRepository(
         events: BrowserStateEvents,
         now: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     ) : this(
-        VersionedStorageStore(
-            storage = storage,
+        storage.versionedStore(
             key = BrowserStateKeys.PLAYBACK_HISTORY,
             codec = BrowserStateCodecs.playHistory,
             emptyValue = PlayHistoryState(),

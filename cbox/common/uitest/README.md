@@ -73,7 +73,7 @@ instrumentation arg on-device). On desktop, failure artifacts land in
 - **Source set:** `jvmTest` (canonical specs + harness, mirrored to
   `androidDeviceTest`), `jvmTestPlatform` (desktop platform seam, JVM only),
   `androidDeviceTest` (device platform seam)
-- **SAGE/module dependencies:** `appui.api`; feature `:real`/`:api`
+- **SAGE/module dependencies:** `appui.api`; `capabilities.api`; feature `:real`/`:api`
   (`gameDetail`, `artistDetail`, `favorites`, `playlists`, `playlistDetail`);
   the `:api` + `:fake` pairs for repository, history, favorites, playlists,
   director, settings, contentsource, scanner, debug, debugInfo; `strings:api` +

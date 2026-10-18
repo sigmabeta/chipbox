@@ -25,8 +25,7 @@ class StorageFavoritesRepository(
         events: BrowserStateEvents,
         now: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     ) : this(
-        VersionedStorageStore(
-            storage = storage,
+        storage.versionedStore(
             key = BrowserStateKeys.FAVORITES,
             codec = BrowserStateCodecs.favorites,
             emptyValue = FavoritesState(),

@@ -117,7 +117,6 @@ private fun <T : Any> injectAndInstantiate(
                     val globalFactory = js("window[factoryName]")
                     val failureKind = WasmLoadFailure.failureKind(
                         factoryIsFunction = jsTypeOf(globalFactory) == "function",
-                        scriptError = false,
                     )
                     if (failureKind != null) {
                         script.remove()
@@ -203,7 +202,6 @@ private fun <T : Any> callFactory(
     val globalFactory = js("window[factoryName]")
     val failureKind = WasmLoadFailure.failureKind(
         factoryIsFunction = jsTypeOf(globalFactory) == "function",
-        scriptError = false,
     )
     if (failureKind != null) {
         script.remove()

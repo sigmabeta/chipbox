@@ -109,7 +109,8 @@ if (providers.gradleProperty("sage.js").orNull.toBoolean()) {
 
 include(
     // SAGE-aware modules
-    ":apps:android",    ":apps:jvm",
+    ":apps:android",
+    ":apps:jvm",
     ":apps:cli",
     ":apps:server",
     ":benchmark",
@@ -331,13 +332,16 @@ project(":cbox:common:player:emulators:twosf:real").projectDir = file("cbox/comm
 // the module graph, not of the test: a feature-real test that only exercises a VM still imports its
 // module's Compose UI references.
 //
-// Disable the Node test tasks for every module that applies `sage.compose.kmp`. Pure modules —
+// Disable the Node test task for every module that applies `sage.compose.kmp`. Pure modules —
 // models, feature route keys, browser-state codecs — keep their jsNodeTest, and those are the
 // shared JS-side suites CI runs. `cbox/common/appui/api` used to do this locally; centralising it
 // keeps a new Compose module from silently re-breaking the web job.
+//
+// Only `jsNodeTest` is disabled, not the `jsTest` aggregate: these modules declare a Node test
+// host only, so the aggregate still succeeds (with no tests) if a browser test tree is added later.
 gradle.beforeProject {
     plugins.withId("sage.compose.kmp") {
-        tasks.matching { it.name == "jsTest" || it.name == "jsNodeTest" }.configureEach {
+        tasks.matching { it.name == "jsNodeTest" }.configureEach {
             enabled = false
         }
     }

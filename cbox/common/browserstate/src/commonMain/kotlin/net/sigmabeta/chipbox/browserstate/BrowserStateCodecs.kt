@@ -13,6 +13,10 @@ object BrowserStateCodecs {
     val playlists: VersionedJsonCodec<PlaylistsState> =
         VersionedJsonCodec(PlaylistsState.serializer(), CURRENT_VERSION)
 
+    /** Browser-local recent searches; the server never sees them. */
+    val searchHistory: VersionedJsonCodec<SearchHistoryState> =
+        VersionedJsonCodec(SearchHistoryState.serializer(), CURRENT_VERSION)
+
     /**
      * Play history. The pre-versioning web app stored a bare JSON array of plays at
      * `chipbox.playback_history`; that array is the schema-0 shape and is read through

@@ -273,6 +273,27 @@ class RealPlaybackSessionPersisterTest {
         persister.release()
     }
 
+    @Test
+    fun `a restored page after a teardown flush clears on the next real stop`() = runTest {
+        val director = FakeDirector()
+        val store = FakePlaybackSessionStore()
+        val persister = newPersister(director, store)
+        persister.observe()
+        director.emitSession(Session(type = SessionType.GAME, contentId = 3L))
+        director.emitMetadata(trackOf(9L))
+        director.emitPlayback(playback(PlayerState.PLAYING, positionMs = 12_000L))
+
+        // `pagehide` flushes as teardown, then the browser serves the page from BFCache and fires
+        // `pageshow`; the page is alive again, so the guard must not outlive the restore.
+        persister.snapshotNow()
+        persister.resumeAfterTeardown()
+        director.emitPlayback(playback(PlayerState.STOPPED, positionMs = 0L))
+
+        assertTrue(store.clearCalls >= 1, "a real stop after a BFCache restore must clear the snapshot")
+        assertNull(store.stored)
+        persister.release()
+    }
+
     // ---- helpers ----
 
     private fun TestScope.newPersister(

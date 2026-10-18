@@ -2,21 +2,17 @@ package net.sigmabeta.chipbox.js.repository
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.browser.window
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.Serializable
+import net.sigmabeta.chipbox.browserstate.StorageSearchHistoryRepository
 import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.HealthStatus
@@ -40,16 +36,18 @@ import net.sigmabeta.chipbox.repository.Repository
  *
  * Each `Flow<Data<T>>` returning method launches a single HTTP request and emits
  * `Data.Loading` then `Data.Succeeded(...)` (or `Data.Empty` / `Data.Failed`). List reads await the
- * server's startup scan — while `/api/health` says a scan is running and the read is empty, the
- * read is retried under a bounded [ScanRetryPolicy] so a browser opened during the first scan still
- * lands on the library once the scan completes. Search reads do not wait (an empty result is a
- * legitimate answer, not a sign the scan has not finished).
+ * server's startup scan: partial data paints immediately, then the list is re-read once
+ * `/api/health` reports the scan is no longer running (bounded by [ScanRetryPolicy]) so a browser
+ * opened during the first scan converges on the full library. An empty first read is held back
+ * until the scan finishes, and an initial `unknown` health state also retries. Search reads do not
+ * wait (an empty result is a legitimate answer, not a sign the scan has not finished).
  *
  * Write paths (`upsertGame`, `pruneGames`, `clearLibrary`, `folderSnapshots`) are scanner-side
  * concerns the UI doesn't drive; they error if called.
  */
 class RemoteRepository(
     private val client: HttpClient,
+    private val searchHistory: StorageSearchHistoryRepository,
     private val baseUrl: String = resolveBaseUrl(),
     private val scanRetryPolicy: ScanRetryPolicy = ScanRetryPolicy(),
 ) : Repository {
@@ -241,20 +239,17 @@ class RemoteRepository(
         client.get("$baseUrl/api/search/artists") { parameter("q", query) }.bodyOrThrow()
     }
 
-    override fun getSearchHistory(): Flow<Data<List<SearchHistory>>> = listFlow(awaitStartupScan = false) {
-        client.get("$baseUrl/api/search/history").bodyOrThrow()
-    }
-
-    override suspend fun addSearchHistory(query: String) {
-        client.post("$baseUrl/api/search/history") {
-            contentType(ContentType.Application.Json)
-            setBody(SearchHistoryAddBody(query))
+    override fun getSearchHistory(): Flow<Data<List<SearchHistory>>> = flow {
+        emit(Data.Loading)
+        // Browser-local only: the server stores no user state (no /api/search/history calls).
+        searchHistory.recent().collect { entries ->
+            emit(if (entries.isEmpty()) Data.Empty else Data.Succeeded(entries))
         }
     }
 
-    override suspend fun removeSearchHistory(id: Long) {
-        client.delete("$baseUrl/api/search/history/$id")
-    }
+    override suspend fun addSearchHistory(query: String) = searchHistory.add(query)
+
+    override suspend fun removeSearchHistory(id: Long) = searchHistory.remove(id)
 
     // ---------- scanner-side; the UI doesn't drive these ----------
 
@@ -275,15 +270,20 @@ class RemoteRepository(
     private fun <T> listFlow(
         awaitStartupScan: Boolean = true,
         call: suspend () -> List<T>,
-    ): Flow<Data<List<T>>> = flow {
+    ): Flow<Data<List<T>>> = flow listFlow@{
         emit(Data.Loading)
         try {
-            val list = if (awaitStartupScan) {
+            if (awaitStartupScan) {
+                // May emit more than once: partial data paints immediately, then the post-scan
+                // contents replace it when the startup scan finishes.
                 readListAwaitingScan(scanRetryPolicy, read = call, readHealth = ::readHealth)
+                    .collect { list ->
+                        this@listFlow.emit(if (list.isEmpty()) Data.Empty else Data.Succeeded(list))
+                    }
             } else {
-                call()
+                val list = call()
+                this@listFlow.emit(if (list.isEmpty()) Data.Empty else Data.Succeeded(list))
             }
-            emit(if (list.isEmpty()) Data.Empty else Data.Succeeded(list))
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (ex: Throwable) {
@@ -345,9 +345,6 @@ class RemoteRepository(
     /** A missing single resource is `Data.Empty` (404); every other failure keeps its message. */
     private suspend inline fun <reified T> HttpResponse.bodyOrNull(): T? =
         if (status == HttpStatusCode.NotFound) null else bodyOrThrow()
-
-    @Serializable
-    private data class SearchHistoryAddBody(val query: String)
 
     companion object {
         /**

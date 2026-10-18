@@ -56,7 +56,7 @@ class SettingsViewModel @Inject constructor(
     init {
         updateState {
             it.copy(
-                showLibraryAdmin = capabilities.canManageLibrary,
+                canManageLibrary = capabilities.canManageLibrary,
                 showDebugSection = capabilities.showDebugSection,
                 showErrorLog = capabilities.showErrorLog,
                 appInfo = appInfo,

@@ -27,8 +27,7 @@ class StoragePlaylistsRepository(
         events: BrowserStateEvents,
         now: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     ) : this(
-        VersionedStorageStore(
-            storage = storage,
+        storage.versionedStore(
             key = BrowserStateKeys.PLAYLISTS,
             codec = BrowserStateCodecs.playlists,
             emptyValue = PlaylistsState(),
@@ -49,9 +48,9 @@ class StoragePlaylistsRepository(
         state.normalized().playlists.firstOrNull { it.id == playlistId }?.trackIds ?: emptyList()
     }
 
-    override suspend fun createPlaylist(name: String): Long {
+    override suspend fun createPlaylist(name: String): Long? {
         var createdId = 0L
-        store.update { state ->
+        val written = store.update { state ->
             val normalized = state.normalized()
             createdId = normalized.nextId
             normalized.copy(
@@ -59,7 +58,9 @@ class StoragePlaylistsRepository(
                 playlists = normalized.playlists + PlaylistEntry(createdId, name, now()),
             )
         }
-        return createdId
+        // `update` returns null when the write was refused (quota/full storage). Never report an id
+        // for a playlist that is not in storage: the caller would navigate to a phantom playlist.
+        return createdId.takeIf { written != null }
     }
 
     override suspend fun renamePlaylist(id: Long, name: String) {

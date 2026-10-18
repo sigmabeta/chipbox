@@ -149,15 +149,12 @@ class StorageFavoritesRepositoryTest {
     }
 
     @Test
-    fun `unknown ids are stored and drop during hydration`() = runTest {
+    fun `unknown ids are stored verbatim for the caller to resolve`() = runTest {
         val repo = StorageFavoritesRepository(FakeStorage(), BrowserStateEvents(), FakeClock()::now)
         repo.setTrackFavorite(404L, true)
         repo.setTrackFavorite(7L, true)
 
-        val known = mapOf(7L to "Known track")
-        val hydrated = hydrateIds(repo.favoriteTrackIds().first(), known::get)
-
-        assertEquals(listOf("Known track"), hydrated)
+        assertEquals(setOf(7L, 404L), repo.favoriteTrackIds().first().toSet())
     }
 
     private fun TestScope.collectEvents(events: BrowserStateEvents): MutableList<BrowserStateEvent> {

@@ -12,7 +12,7 @@ two Room `@Dao` interfaces (playlist metadata and track membership), and the
 
 | File | What it is |
 | --- | --- |
-| `PlaylistsRepository.kt` | Facade: `playlists`/`playlist` metadata streams, `trackIds` membership stream, `createPlaylist`/`renamePlaylist`/`deletePlaylist`, `addTracks`/`removeTrack`/`setTrackOrder`, `clearAll`. Track reads return bare ids the caller hydrates via the library `Repository`. |
+| `PlaylistsRepository.kt` | Facade: `playlists`/`playlist` metadata streams, `trackIds` membership stream, `createPlaylist` (returns the new id, or null when the write was refused)/`renamePlaylist`/`deletePlaylist`, `addTracks`/`removeTrack`/`setTrackOrder`, `clearAll`. Track reads return bare ids the caller hydrates via the library `Repository`. |
 | `dao/PlaylistDao.kt` | Metadata: insert, rename, delete (memberships cascade), and `getAllWithCounts`/`getByIdWithCount` (LEFT JOIN + GROUP BY → `PlaylistWithCount`, newest first), nuke. |
 | `dao/PlaylistTrackDao.kt` | Membership: `insertAll` (IGNORE on the `(playlistId, trackId)` PK), ordered `trackIds`, `maxPosition` (for appends), single-row `remove`, `clear`, nuke. |
 | `dao/PlaylistWithCount.kt` | `@Embedded PlaylistEntity` + `trackCount` projection so lists show size without hydrating tracks. |

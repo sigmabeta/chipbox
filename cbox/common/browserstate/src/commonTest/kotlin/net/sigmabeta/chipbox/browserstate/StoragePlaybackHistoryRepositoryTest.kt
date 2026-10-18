@@ -181,16 +181,16 @@ class StoragePlaybackHistoryRepositoryTest {
     }
 
     @Test
-    fun `unknown ids stay in the log and drop during hydration`() = runTest {
+    fun `unknown ids stay in the log for the caller to resolve`() = runTest {
         val repo = StoragePlaybackHistoryRepository(FakeStorage(), BrowserStateEvents(), FakeClock()::now)
         repo.recordPlay(trackOf(404L))
         repo.recordPlay(trackOf(7L))
 
-        val known = mapOf(7L to "Known track")
-        val hydrated = hydrateIds(repo.recentlyPlayed(10).first().map { it.trackId }, known::get)
-
-        assertEquals(listOf("Known track"), hydrated)
-        assertEquals(2, repo.recentlyPlayed(10).first().size, "the raw log retains both ids")
+        assertEquals(
+            listOf(7L, 404L),
+            repo.recentlyPlayed(10).first().map { it.trackId },
+            "the raw log retains both ids; library hydration drops unknown ones",
+        )
     }
 
     @Test

@@ -4,11 +4,8 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
-import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
-import io.ktor.server.routing.post
 import io.ktor.server.routing.route
-import kotlinx.serialization.Serializable
 import net.sigmabeta.chipbox.models.ErrorResponse
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.repository.Repository
@@ -212,24 +209,10 @@ private fun Route.searchRoutes(repository: Repository) {
             val q = call.queryParam("q") ?: return@get call.badRequest("`q` required")
             call.respond(repository.searchArtists(q).firstSettled().map { it.withPublicUrls() })
         }
-        route("/history") {
-            get { call.respond(repository.getSearchHistory().firstSettled()) }
-            post {
-                val body = call.receive<SearchHistoryAdd>()
-                repository.addSearchHistory(body.query)
-                call.respond(HttpStatusCode.NoContent)
-            }
-            delete("/{id}") {
-                val id = call.longPathParam("id") ?: return@delete call.notFound()
-                repository.removeSearchHistory(id)
-                call.respond(HttpStatusCode.NoContent)
-            }
-        }
+        // No `/search/history` routes: recent searches are browser-local user state, so the server
+        // stores none of it. An old client's request falls through to the JSON API 404.
     }
 }
-
-@Serializable
-private data class SearchHistoryAdd(val query: String)
 
 // --- small request-handling helpers ---
 

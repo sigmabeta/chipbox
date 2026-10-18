@@ -16,7 +16,7 @@ per-format `:real` modules; this module only defines what they must implement.
 | `vgmstream/VgmstreamProber.kt` | Scan-time bridge for vgmstream: the `VgmstreamProber` interface (`isSupported`, `probe`) plus the `VgmstreamSubsong` data class. Kept in `commonMain` so the scanner stays platform-agnostic; the native impl lives in `vgmstream/real`. |
 | `EmulatorLoadGuardTest.kt` (test) | Regression guard for the native use-after-free: asserts `generateBuffer` runs native only after a successful load, and skips it after teardown or a failed load. |
 | `WasmLoadFailure.kt` | Pure classification (and actionable message) for browser emulator-module load failures: timeout, script `error`, missing factory global, factory rejection, module rejection. Every message names the module URL and says the bundle may lack WASM. The web loader in `apps/js` throws it; the selector lets the load failure propagate. |
-| `WasmLoadFailureTest.kt` (test) | Asserts each failure kind names the module + URL + bundle remedy and keeps its detail, and that the observation helper maps script-error/missing-factory correctly. |
+| `WasmLoadFailureTest.kt` (test) | Asserts each failure kind names the module + URL + bundle remedy and keeps its detail, and that the observation helper maps a non-callable global to `FACTORY_MISSING` (a script `error` event is classified directly by the loader). |
 | `EmulatorSelectionTest.kt` (test) | Selection-order regression: a shared extension picks its dedicated backend without loading the lazy one, a lazy-only extension loads once and then matches, repeated selection does not reload, and a load failure propagates. Runs under `jvmTest` and `jsNodeTest`. |
 
 ## Why depend on this module

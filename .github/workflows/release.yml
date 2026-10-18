@@ -297,10 +297,10 @@ jobs:
 
   # Multi-arch server image for the release. The web/WASM stage is built once on the runner
   # ($BUILDPLATFORM); only the small CMake vgmstream stage runs under QEMU for arm64. The result is
-  # an OCI archive artifact, not a registry push: v1 has no registry, no credentials, and no public
-  # distribution until an auth story exists (ADR-0003). `docker buildx --load` only accepts one
-  # platform, so the two single-arch loads below exist solely to smoke/verify the contents; the
-  # multi-arch OCI tar is the actual release artifact.
+  # verified as an OCI archive on the runner only — not pushed and not uploaded: v1 has no registry,
+  # no credentials, and no public distribution until an auth story exists (ADR-0003), and a failed
+  # image build blocks publish via this job's entry in `needs`. `docker buildx --load` only accepts
+  # one platform, so the two single-arch loads below exist solely to smoke/verify the contents.
   web-image:
     runs-on: ubuntu-latest
     timeout-minutes: 150
@@ -326,6 +326,19 @@ jobs:
             echo "yarn=$(cat docker/yarn-version)"
             echo "emsdk=$(cat docker/emsdk-version)"
           } >> "$GITHUB_OUTPUT"
+      # `.dockerignore` excludes `.git`, so the image can't run `git describe`; resolve the same
+      # identity here and pass it as build args (the Dockerfile's deterministic inputs).
+      - name: Resolve web build identity
+        id: buildinfo
+        run: |
+          set -euo pipefail
+          {
+            echo "version=$(git describe --tags --always --dirty)"
+            echo "version_code=$(git rev-list --count HEAD)"
+            echo "commit=$(git rev-parse --short HEAD)"
+            echo "branch=$(git rev-parse --abbrev-ref HEAD)"
+            echo "time_ms=$(( $(git log -1 --format=%ct) * 1000 ))"
+          } >> "$GITHUB_OUTPUT"
       - name: Build linux/amd64 + linux/arm64 OCI image (not pushed)
         uses: docker/build-push-action@v6
         with:
@@ -337,6 +350,11 @@ jobs:
             NODE_VERSION=${{ steps.pins.outputs.node }}
             YARN_VERSION=${{ steps.pins.outputs.yarn }}
             EMSDK_VERSION=${{ steps.pins.outputs.emsdk }}
+            CHIPBOX_BUILD_VERSION=${{ steps.buildinfo.outputs.version }}
+            CHIPBOX_BUILD_VERSION_CODE=${{ steps.buildinfo.outputs.version_code }}
+            CHIPBOX_BUILD_COMMIT=${{ steps.buildinfo.outputs.commit }}
+            CHIPBOX_BUILD_BRANCH=${{ steps.buildinfo.outputs.branch }}
+            CHIPBOX_BUILD_TIME_MS=${{ steps.buildinfo.outputs.time_ms }}
           # One cache scope for the shared multi-platform build, plus the PR amd64 scope so a tag
           # run reuses the bundle/native layers the CI web job already produced.
           cache-from: |
@@ -347,12 +365,8 @@ jobs:
         run: >-
           python3 scripts/ci/verify-oci-index.py
           build/chipbox-server-multiarch.tar linux/amd64 linux/arm64
-      - uses: actions/upload-artifact@v4
-        with:
-          name: chipbox-server-multiarch-oci
-          compression-level: 0 # OCI layers are already gzipped
-          retention-days: 14
-          path: build/chipbox-server-multiarch.tar
+      # Deliberately not uploaded: v1 builds the multi-arch archive on the runner and verifies its
+      # index, but the image is not published or distributed (no registry, no public artifact).
       - name: Load the amd64 image for the runtime smoke (cache hits the multi-arch build)
         uses: docker/build-push-action@v6
         with:
@@ -365,6 +379,11 @@ jobs:
             NODE_VERSION=${{ steps.pins.outputs.node }}
             YARN_VERSION=${{ steps.pins.outputs.yarn }}
             EMSDK_VERSION=${{ steps.pins.outputs.emsdk }}
+            CHIPBOX_BUILD_VERSION=${{ steps.buildinfo.outputs.version }}
+            CHIPBOX_BUILD_VERSION_CODE=${{ steps.buildinfo.outputs.version_code }}
+            CHIPBOX_BUILD_COMMIT=${{ steps.buildinfo.outputs.commit }}
+            CHIPBOX_BUILD_BRANCH=${{ steps.buildinfo.outputs.branch }}
+            CHIPBOX_BUILD_TIME_MS=${{ steps.buildinfo.outputs.time_ms }}
           cache-from: type=gha,scope=web-multiarch
       - name: Smoke the amd64 image (health, SPA, nine WASM pairs, native lib)
         run: scripts/ci/web-image-smoke.sh chipbox-server:release-amd64 --platform linux/amd64
@@ -380,6 +399,11 @@ jobs:
             NODE_VERSION=${{ steps.pins.outputs.node }}
             YARN_VERSION=${{ steps.pins.outputs.yarn }}
             EMSDK_VERSION=${{ steps.pins.outputs.emsdk }}
+            CHIPBOX_BUILD_VERSION=${{ steps.buildinfo.outputs.version }}
+            CHIPBOX_BUILD_VERSION_CODE=${{ steps.buildinfo.outputs.version_code }}
+            CHIPBOX_BUILD_COMMIT=${{ steps.buildinfo.outputs.commit }}
+            CHIPBOX_BUILD_BRANCH=${{ steps.buildinfo.outputs.branch }}
+            CHIPBOX_BUILD_TIME_MS=${{ steps.buildinfo.outputs.time_ms }}
           cache-from: type=gha,scope=web-multiarch
       # `docker create` + `docker cp` needs no QEMU: inspect the arm64 filesystem directly and
       # assert the ELF machine is AArch64 plus the jar carries all nine emulator pairs.
@@ -389,7 +413,7 @@ jobs:
           --platform linux/arm64 --contents-only
 
   publish:
-    needs: [desktop-linux, desktop-windows, desktop-macos, android-apk]
+    needs: [desktop-linux, desktop-windows, desktop-macos, android-apk, web-image]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') # publish only for tag pushes, not manual branch runs
     permissions:

@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.server.http
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 import net.sigmabeta.chipbox.models.ScanStatus
@@ -44,7 +43,6 @@ class HealthStatusMappingTest {
         assertEquals(2, health.games)
         assertEquals(10, health.tracks)
         assertEquals(1, health.tracksFailed)
-        assertNull(health.error)
     }
 
     @Test
@@ -73,7 +71,6 @@ class HealthStatusMappingTest {
         assertFalse(health.scanning)
         assertEquals(ScanStatus.FAILED, health.state.status)
         assertEquals("broken.spc", health.state.failedFile)
-        assertEquals("broken.spc", health.error)
     }
 
     @Test

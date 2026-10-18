@@ -40,7 +40,7 @@ data class SettingsState(
     val clearPlaybackHistoryStatus: LCE<Unit> = LCE.Uninitialized,
     // Host-policy switches, seeded from AppCapabilities. Defaults are the full desktop/Android
     // surface; the browser binds them off because the server owns the library.
-    val showLibraryAdmin: Boolean = true,
+    val canManageLibrary: Boolean = true,
     val showDebugSection: Boolean = true,
     val showErrorLog: Boolean = true,
     val appInfo: AppInfo? = null,
@@ -155,10 +155,10 @@ data class SettingsState(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_LIBRARY),
         // The browser is a client of a self-hosted server: its library is managed by adding files
         // and restarting the server, so folder/rescan/clear-library controls are not rendered.
-        libraryFolderRow(stringProvider).takeIf { showLibraryAdmin },
-        rescanRowOrNull(stringProvider)?.takeIf { showLibraryAdmin },
-        rescanStatusRowOrNull(stringProvider)?.takeIf { showLibraryAdmin },
-        clearLibraryRow(stringProvider).takeIf { showLibraryAdmin },
+        libraryFolderRow(stringProvider).takeIf { canManageLibrary },
+        rescanRowOrNull(stringProvider)?.takeIf { canManageLibrary },
+        rescanStatusRowOrNull(stringProvider)?.takeIf { canManageLibrary },
+        clearLibraryRow(stringProvider).takeIf { canManageLibrary },
         // Playback history is browser-local state, so clearing it is always legitimate.
         clearPlaybackHistoryRow(stringProvider),
     )
@@ -208,7 +208,7 @@ data class SettingsState(
 
     private fun debugSection(stringProvider: StringProvider): List<ListModel> {
         if (!showDebugSection || shouldShowDebug != true) return emptyList()
-        return listOf(
+        return listOfNotNull(
             sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_DEBUG),
             snapshotImportRowOrField(),
             repositorySourceDropdown(),
@@ -219,7 +219,7 @@ data class SettingsState(
             playlistsSourceDropdown(),
             imageLoaderSourceDropdown(),
             playbackStatusRow(stringProvider),
-            errorLogRow(stringProvider),
+            errorLogRow(stringProvider).takeIf { showErrorLog },
             crashLogRow(stringProvider),
             componentLibraryRow(stringProvider),
             appBranchRow(stringProvider),

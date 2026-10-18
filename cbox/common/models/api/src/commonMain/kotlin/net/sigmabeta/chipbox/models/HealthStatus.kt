@@ -7,11 +7,12 @@ import kotlinx.serialization.Serializable
  * `/api/health` wire contract, shared by the server (producer) and the browser (consumer).
  *
  * The server owns the library and scans it in the background on startup. The browser polls this
- * endpoint while its first library read comes back empty so a client opened during the initial
- * scan re-reads the library once the scan finishes instead of staying empty forever.
+ * endpoint while its first library read is still filling so a client opened during the initial
+ * scan paints the partial library immediately and re-reads once the scan finishes instead of
+ * staying empty forever.
  *
- * No filesystem path from the host is ever included: [ScanState.failedFile] is a basename and
- * [error] is a sanitized message, so the unauthenticated endpoint can't leak the library layout.
+ * No filesystem path from the host is ever included: [ScanState.failedFile] is a basename, so the
+ * unauthenticated endpoint can't leak the library layout.
  */
 @Serializable
 data class HealthStatus(
@@ -21,9 +22,16 @@ data class HealthStatus(
     val games: Int = 0,
     val tracks: Int = 0,
     val tracksFailed: Int = 0,
-    val error: String? = null,
 ) {
     val scanning: Boolean get() = state.scanning
+
+    /**
+     * The server may still fill the library: a scan is running, or it has not reported a state yet
+     * (`unknown` at startup). Used by the browser's first-read retry so an early `unknown` does not
+     * stop the wait before the scan even starts.
+     */
+    val scanInProgress: Boolean
+        get() = state.status == ScanStatus.SCANNING || state.status == ScanStatus.UNKNOWN
 }
 
 @Serializable
@@ -56,9 +64,10 @@ enum class ScanStatus {
 /**
  * Bounded polling policy for the browser's initial library read.
  *
- * Retry only while the server reports a scan **and** the read came back empty. [maxAttempts] at
- * [delayMillis] apart bounds the wait, so a slow or wedged scan ends as an empty library instead of
- * a screen that spins forever. After the cap the normal empty/failed state is emitted.
+ * Retry while the server may still fill the library (a scan is running, or the state is still
+ * `unknown` at startup) **and** the read is not yet final. [maxAttempts] at [delayMillis] apart
+ * bounds the wait, so a slow or wedged scan ends with the last read instead of a screen that spins
+ * forever. A finished/failed scan or an unreachable health endpoint stops immediately.
  */
 data class ScanRetryPolicy(
     val maxAttempts: Int = DEFAULT_MAX_ATTEMPTS,
@@ -70,7 +79,7 @@ data class ScanRetryPolicy(
     }
 
     fun shouldRetry(health: HealthStatus?, attempt: Int): Boolean =
-        health != null && health.scanning && attempt < maxAttempts
+        health != null && health.scanInProgress && attempt < maxAttempts
 
     companion object {
         /** ~60s of polling at the default delay — enough for a modest library's first scan. */

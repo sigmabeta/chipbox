@@ -3,7 +3,6 @@ package net.sigmabeta.chipbox.models
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 
@@ -37,7 +36,6 @@ class HealthStatusTest {
         assertEquals(2, health.games)
         assertEquals(10, health.tracks)
         assertEquals(1, health.tracksFailed)
-        assertNull(health.error)
     }
 
     @Test
@@ -45,8 +43,7 @@ class HealthStatusTest {
         val payload = """
             {
               "ok": false,
-              "state": { "status": "failed", "failedFile": "broken.spc" },
-              "error": "broken.spc"
+              "state": { "status": "failed", "failedFile": "broken.spc" }
             }
         """.trimIndent()
 
@@ -55,7 +52,6 @@ class HealthStatusTest {
         assertFalse(health.ok)
         assertEquals(ScanStatus.FAILED, health.state.status)
         assertEquals("broken.spc", health.state.failedFile)
-        assertEquals("broken.spc", health.error)
         assertFalse(health.scanning)
     }
 
@@ -77,12 +73,19 @@ class HealthStatusTest {
     }
 
     @Test
+    fun `an unreported startup state still counts as in progress`() {
+        val policy = ScanRetryPolicy(maxAttempts = 3, delayMillis = 0)
+
+        assertTrue(policy.shouldRetry(healthFor(ScanStatus.UNKNOWN), attempt = 0), "unknown may still become a scan")
+        assertFalse(policy.shouldRetry(healthFor(ScanStatus.UNKNOWN), attempt = 3))
+    }
+
+    @Test
     fun `does not retry once the scan has finished or when health is unavailable`() {
         val policy = ScanRetryPolicy(maxAttempts = 3, delayMillis = 0)
 
         assertFalse(policy.shouldRetry(healthFor(ScanStatus.COMPLETE), attempt = 0))
         assertFalse(policy.shouldRetry(healthFor(ScanStatus.IDLE), attempt = 0))
-        assertFalse(policy.shouldRetry(healthFor(ScanStatus.UNKNOWN), attempt = 0))
         assertFalse(policy.shouldRetry(healthFor(ScanStatus.FAILED), attempt = 0))
         assertFalse(policy.shouldRetry(health = null, attempt = 0))
     }

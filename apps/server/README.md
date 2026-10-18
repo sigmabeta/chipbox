@@ -30,11 +30,12 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   flags (`-Dorg.gradle.isolated-projects=false
   -Dorg.gradle.configureondemand=false --no-parallel`) or they fail loudly.
 - **Health / readiness:** `GET /api/health` returns
-  `{ok, state:{status,timeInSeconds,failedFile?}, games, tracks, tracksFailed, error?}`.
+  `{ok, state:{status,timeInSeconds,failedFile?}, games, tracks, tracksFailed}`.
   `ok` is false only for a failed scan; `status` is `unknown|idle|scanning|complete|failed`.
-  No host path is exposed (only a failed file's basename). The browser retries
-  its empty first library read while `status` is `scanning` (bounded retry), so
-  opening the client during the startup scan shows the library once it finishes.
+  No host path is exposed (only a failed file's basename). The browser paints a partial
+  first library read immediately, then re-reads when `status` leaves `scanning` (bounded
+  retry); an empty first read waits for the scan, and an initial `unknown` also retries,
+  so opening the client during the startup scan converges on the full library.
 - **Browsing / paging:** `GET /api/games`, `GET /api/artists`, and
   `GET /api/tracks` all accept `limit` and `offset`.
   - `offset` defaults to `0`; a negative value clamps to `0`; an offset too large
