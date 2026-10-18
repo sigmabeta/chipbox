@@ -29,9 +29,13 @@ metro {
     }
 }
 
-fun gitBranch(): String = providers.exec {
-    commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
-}.standardOutput.asText.get().trim().ifEmpty { "unknown" }
+// A source tarball or the Docker build context has no `.git`; a configuration-time failure would
+// break every build that merely configures this module, so stamp "unknown" instead.
+fun gitBranch(): String = runCatching {
+    providers.exec {
+        commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
+    }.standardOutput.asText.get().trim()
+}.getOrDefault("").ifEmpty { "unknown" }
 
 android {
     namespace = "net.sigmabeta.chipbox"
