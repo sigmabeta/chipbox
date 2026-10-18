@@ -65,6 +65,57 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   (and both amd64/arm64 on release) but **is not published to any registry**.
   There is **no authentication**: run it on loopback or a trusted LAN only.
 
+## RSN extraction
+
+RSN is a solid RAR archive of SPC rips, and browsers have no RAR decoder. The
+server graph is the only place a scanner gets a `ServerRsnExtractor`; it writes
+each archive's SPC members to:
+
+```text
+<CHIPBOX_WORK_DIR>/rsn/<sha256(archive bytes)>/<sanitized-member>.spc
+```
+
+- Content-addressed and deterministic: the same archive bytes map to the same
+  paths regardless of archive filename or library folder. Member names have
+  directory components stripped and unsafe characters replaced; duplicate
+  basenames get a zero-padded member-index prefix (`00-01 Theme.spc`,
+  `01-01 Theme.spc`).
+- Extraction runs after the m3u overlay and filename-title fallback, so an m3u
+  entry naming `archive.rsn` + a 1-based member index still matches the right
+  member. The persisted track is then ordinary: `path` is the extracted `.spc`,
+  `extension` is `spc`, and `trackNumber` is `0`.
+- A member is written only when it is missing or its bytes mismatch; matching
+  content-addressed output is reused.
+- Orphaned hash directories are pruned only after a fully successful scan
+  (`tracksFailed == 0`) and after removed folders are pruned. A directory is kept
+  whenever any surviving track path is under it — including folders the scan
+  skipped — and delete failures are logged and retried on the next successful
+  scan. A failed or partial scan never deletes usable output.
+- Desktop, Android, and CLI pass no extractor and keep staging RSN members out
+  of the archive at playback time.
+- `CHIPBOX_WORK_DIR` is an installation-stable part of the track identity.
+  Moving it or deleting its contents invalidates extracted track paths:
+  browser-local favorites, playlists, history, and queues that reference those
+  track IDs become unknown and must be dropped during hydration rather than
+  failing. A scan that re-reads the folder re-extracts the members, but with an
+  intact DB the folder-skip signature does not notice a cleared work dir, so
+  previously indexed RSN tracks 404 until that folder is re-read. Keep the work
+  dir across restarts.
+- Scanner version 2 forces RSN rows written before extraction to be re-read once
+  on upgrade. Later extraction/naming changes need another scanner bump (or a
+  dedicated stored extraction version). Track IDs re-key once on the first
+  extraction (archive path + member index → extracted path + `0`).
+
+## Tests
+
+`./gradlew :apps:server:test` runs the server tests. The RSN suite covers
+extraction to ordinary SPC tracks, determinism/reuse, m3u overlay matching,
+the pruning gate, and serving/path-leak via `/api/files/{id}` +
+`/api/tracks/{id}`. Fixtures are generated as stored-entry RAR4 archives in a
+test helper (no external `rar` tool), and the scan uses
+`DatabaseRepository` over `FakeDatabase` with a no-op vgmstream prober, so no
+native library is required.
+
 ## Entry point
 
 `Main.kt`'s `main()` reads `ServerConfig.fromEnv`, builds the `ServerChipboxGraph`,
@@ -85,15 +136,16 @@ status pages, partial content (Range), CORS, call logging, and the `/api/health`
 | `http/LibraryRoutes.kt`, `http/FileRoutes.kt`, `http/StaticRoutes.kt` | The `/api` JSON endpoints, file streaming (`/api/files/{trackId}`, chain files, covers/photos), and SPA-fallback static serving. |
 | `http/Health.kt` | `/api/health`: maps the live `ScannerState` to the shared `HealthStatus` wire model (no host paths). |
 | `http/ImageResizer.kt`, `http/PublicUrls.kt`, `http/DataFlowDrain.kt` | Thumbnail resizing, public URL rewriting, repository `Data`-flow draining helper. |
+| `scanner/ServerRsnExtractor.kt` | Content-addressed RSN→SPC extraction + post-scan orphan pruning. |
 | `logging/ServerHatchet.kt` | `Hatchet` impl routing through the server's logger. |
 
 ## Module facts
 
 - **Plugin:** `sage.jvm` + `kotlin.serialization` + `metro` + `application`.
 - **Targets:** JVM only.
-- **Source set:** `src/main/java` (`jvmSharedMain`).
+- **Source set:** `src/main/java` (`jvmSharedMain`); tests in `src/test/kotlin`.
 - **SAGE/module dependencies:** `cbox/common` `scanner`, `repository`,
-  `database`, `contentsource(.file)`, `readers`, `models`, `strings`,
+  `database`, `contentsource(.file)`, `readers`, `models`, `utils`, `strings`,
   `player.emulators.vgmstream.real` (api + real); `sage.common.di` / `logging` /
   `ui.strings`; Ktor server (netty, content-negotiation, status-pages, cors,
   partial-content, auto-head, call-logging), kotlinx serialization/coroutines,
@@ -101,4 +153,5 @@ status pages, partial content (Range), CORS, call logging, and the `/api/health`
   `hostVgmstreamElements` from `:apps:jvm` (CMake-produced; see the native-lib
   section) and (for shipping) `:apps:js:jsBrowserDistribution` + the WASM
   bundle. Tests: `:apps:server:test` covers the health mapping and loopback-bind
-  detection (plain JVM, no server startup).
+  detection (plain JVM, no server startup), plus scan/RSN extraction over
+  `DatabaseRepository`/`FakeDatabase` and route tests through Ktor's test host.
