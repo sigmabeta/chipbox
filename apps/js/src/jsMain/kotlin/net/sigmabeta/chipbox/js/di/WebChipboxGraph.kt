@@ -5,6 +5,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import kotlinx.coroutines.CoroutineScope
+import net.sigmabeta.chipbox.browserstate.BrowserStateEvents
 import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
 import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
 import net.sigmabeta.chipbox.player.director.Director
@@ -47,6 +48,10 @@ interface WebChipboxGraph : ViewModelGraph {
 
     /** Turns scanner failures into persisted Home notifications; `JsMain` calls observe() once. */
     val scanFailureNotifRecorder: ScanFailureNotifRecorder
+
+    // Non-fatal favorites/playlists storage events (corrupt data, quota/read failures). `JsMain`
+    // forwards `userMessages` to `ChipboxAppUi` so the browser shows a snackbar instead of failing.
+    val browserStateEvents: BrowserStateEvents
 
     @DependencyGraph.Factory
     fun interface Factory {

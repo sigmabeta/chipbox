@@ -83,14 +83,24 @@ All durable browser state is in `localStorage`; the server stores none of it.
 | State | Storage | Notes |
 | --- | --- | --- |
 | Settings / debug settings | existing `LocalStorageStorage` | cross-tab via `storage` events |
-| Favorites | versioned JSON | ids + timestamps, newest first |
-| Playlists | versioned JSON | persisted next-id, ordered track ids |
+| Favorites | `chipbox.favorites` | versioned JSON; ids + timestamps, newest first |
+| Playlists | `chipbox.playlists` | versioned JSON; persisted next-id, ordered track ids |
 | Play history | versioned JSON | bounded; safe fallback on corruption |
 | Playback session | versioned JSON | queue, position, shuffle, repeat |
 
-All stores use a versioned envelope, tolerate unknown/missing track IDs, and
-surface quota errors as a non-fatal message. Write-through goes through
-`LocalStorageStorage` so other tabs receive `storage` events.
+Every versioned store is one JSON object: `{ "schemaVersion": 1, "payload": … }`.
+Favorites payloads hold `tracks` / `games` / `artists` lists of
+`{id, favoritedAtMs}`; playlists hold `{nextId, playlists:[{id, name,
+createdAtMs, trackIds}]}`. Missing data falls back to empty silently; corrupt,
+older, or newer-schema data and quota/read failures fall back safely and surface
+a non-fatal message (web shows it as a snackbar; the failure is also logged).
+
+The implementation lives in `:cbox:common:browserstate` — a pure `commonMain`
+codec plus `Storage`-backed repositories, with Node tests under `jsNodeTest`.
+Reads derive from `Storage.savedStringFlow`, so write-through goes through
+`LocalStorageStorage` and other tabs receive `storage` events. Writes are
+last-writer-wins across tabs; there is no merge. Unknown track ids are dropped by
+the UI at hydration time rather than stored as errors.
 
 ## Playback
 

@@ -256,12 +256,12 @@ kotlin {
                 implementation(projects.cbox.common.player.director.api)
                 implementation(projects.cbox.common.player.director.fake)
                 implementation(projects.cbox.common.player.director.real)
-                // Web has no Room-backed playlists/favorites stores; the empty fakes satisfy the
-                // Director's repository deps (PLAYLIST/FAVORITES sessions resolve to nothing on web).
+                // Favorites + playlists persist in window.localStorage. The browserstate module
+                // provides versioned, cross-tab-live Storage-backed repositories (the Room stores
+                // are JVM/Android-only), wired in WebModules.
                 implementation(projects.cbox.common.playlists.api)
-                implementation(projects.cbox.common.playlists.fake)
                 implementation(projects.cbox.common.favorites.api)
-                implementation(projects.cbox.common.favorites.fake)
+                implementation(projects.cbox.common.browserstate)
                 // Playback history is stored browser-locally: LocalStoragePlaybackHistoryRepository
                 // persists the play log in window.localStorage, fed by the shared (Room-free)
                 // RealPlaybackHistoryRecorder from history.real. The Home recently-/most-played

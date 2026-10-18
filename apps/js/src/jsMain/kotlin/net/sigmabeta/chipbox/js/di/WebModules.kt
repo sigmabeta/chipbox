@@ -13,6 +13,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
+import net.sigmabeta.chipbox.browserstate.BrowserStateEvents
+import net.sigmabeta.chipbox.browserstate.BrowserStateReason
+import net.sigmabeta.chipbox.browserstate.StorageFavoritesRepository
+import net.sigmabeta.chipbox.browserstate.StoragePlaylistsRepository
 import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
@@ -23,8 +27,12 @@ import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
 import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
 import net.sigmabeta.chipbox.debuginfo.real.RealDebugInfoManager
-import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
+import net.sigmabeta.chipbox.favorites.FavoritesRepository
 import net.sigmabeta.chipbox.features.folderpicker.StorageVolumeProvider
+import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
+import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
+import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
+import net.sigmabeta.chipbox.history.real.RealPlaybackHistoryRecorder
 import net.sigmabeta.chipbox.js.contentsource.HttpContentSource
 import net.sigmabeta.chipbox.js.emulators.WasmGbaEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmGmeEmulator
@@ -35,44 +43,38 @@ import net.sigmabeta.chipbox.js.emulators.WasmTwosfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmUsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmstreamEmulator
+import net.sigmabeta.chipbox.js.repository.LocalStoragePlaybackHistoryRepository
 import net.sigmabeta.chipbox.notif.NotifManager
 import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
 import net.sigmabeta.chipbox.notif.real.RealNotifManager
 import net.sigmabeta.chipbox.notif.real.RealScanFailureNotifRecorder
-import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.js.repository.RemoteRepository
 import net.sigmabeta.chipbox.js.speaker.WebAudioSpeaker
+import net.sigmabeta.chipbox.js.storage.LocalStorageStorage
 import net.sigmabeta.chipbox.player.buffer.BufferDebugSource
 import net.sigmabeta.chipbox.player.buffer.ConsumerBufferManager
 import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.director.real.RealDirector
-import net.sigmabeta.chipbox.favorites.FavoritesRepository
-import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
-import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
-import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
-import net.sigmabeta.chipbox.history.real.RealPlaybackHistoryRecorder
-import net.sigmabeta.chipbox.js.repository.LocalStoragePlaybackHistoryRepository
-import net.sigmabeta.chipbox.playlists.PlaylistsRepository
-import net.sigmabeta.chipbox.playlists.fake.FakePlaylistsRepository
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.generator.Generator
+import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.player.resampler.CubicResampler
 import net.sigmabeta.chipbox.player.resampler.LinearResampler
 import net.sigmabeta.chipbox.player.resampler.Resampler
 import net.sigmabeta.chipbox.player.speaker.Speaker
+import net.sigmabeta.chipbox.playlists.PlaylistsRepository
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
-import net.sigmabeta.chipbox.js.storage.LocalStorageStorage
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
 import net.sigmabeta.chipbox.settings.ResamplerMode
 import net.sigmabeta.chipbox.settings.real.RealChipboxSettingsManager
-import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
+import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.ui.StringProvider
 import okio.FileSystem
 import okio.Path.Companion.toPath
@@ -305,15 +307,43 @@ object WebDirectorModule {
         settingsManager,
         hatchet,
     )
+}
 
-    // Web doesn't ship the Room-backed playlists/favorites stores; the Director only needs *some*
-    // repository of each to construct. Empty fakes mean PLAYLIST/FAVORITES sessions resolve to
-    // nothing (web has no playlists/favorites UI), without breaking the rest of playback.
+@BindingContainer
+@ContributesTo(AppScope::class)
+object WebBrowserStateModule {
+    // Favorites + playlists live in window.localStorage (there is no Room on web and no server-side
+    // user state). `StorageFavoritesRepository` / `StoragePlaylistsRepository` are versioned,
+    // cross-tab-live, and non-throwing; failures land in this event sink instead of the UI.
     @Provides @SingleIn(AppScope::class)
-    fun providePlaylistsRepository(): PlaylistsRepository = FakePlaylistsRepository()
+    fun provideBrowserStateEvents(hatchet: Hatchet): BrowserStateEvents = BrowserStateEvents { event ->
+        when (event.reason) {
+            BrowserStateReason.MISSING -> hatchet.d(event.logMessage)
+            else -> hatchet.w(event.logMessage)
+        }
+    }
 
     @Provides @SingleIn(AppScope::class)
-    fun provideFavoritesRepository(): FavoritesRepository = FakeFavoritesRepository()
+    fun provideFavoritesRepository(
+        storage: Storage,
+        events: BrowserStateEvents,
+    ): FavoritesRepository = StorageFavoritesRepository(storage, events)
+
+    @Provides @SingleIn(AppScope::class)
+    fun providePlaylistsRepository(
+        storage: Storage,
+        events: BrowserStateEvents,
+    ): PlaylistsRepository = StoragePlaylistsRepository(storage, events)
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object WebFolderPickerModule {
+    // FolderPicker's JS Route is a no-op stub, but its assisted ViewModel factory (contributed via
+    // appui's dependency on features/folder-picker/real) still needs this graph edge. The browser
+    // has no mounted storage volumes to enumerate; desktop's JvmStorageVolumeProvider is JVM-only.
+    @Provides @SingleIn(AppScope::class)
+    fun provideStorageVolumeProvider(): StorageVolumeProvider = StorageVolumeProvider { emptyList() }
 }
 
 @BindingContainer

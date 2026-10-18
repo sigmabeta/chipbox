@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.common.appui.api
 
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -14,6 +15,7 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.common.ui.chrome.api.ChromeController
 import net.sigmabeta.chipbox.common.ui.chrome.api.LocalChipboxEventSink
@@ -64,6 +66,10 @@ fun ChipboxAppUi(
     // UI test assert that an interaction triggered the expected navigation. See
     // [LocalNavigationObserver]. Null for hosts that aren't observing (the apps today).
     onNavigate: ((Any) -> Unit)? = null,
+    // Non-fatal, app-level messages (e.g. a failed localStorage write on web) shown in the shared
+    // snackbar host. Null for desktop/Android, which have no such producer yet; web passes the
+    // browser-state event flow so a quota failure is visible without crashing the UI.
+    messages: Flow<String>? = null,
 ) {
     // Materialized before the theme so its persisted theme choice picks the color scheme — and
     // so Metro multibinding misses surface at launch rather than at the first screen entry.
@@ -147,6 +153,19 @@ fun ChipboxAppUi(
                 // ChromeController / SnackbarHostState all expect.
                 LaunchedEffect(appUiViewModel, applyEffect) {
                     appUiViewModel.effects.collect(applyEffect)
+                }
+
+                // Platform-level non-fatal messages (web localStorage quota/corruption) share the
+                // same snackbar host as screen events. A null flow means "no producer" (desktop,
+                // Android, previews) and costs one no-op effect.
+                LaunchedEffect(messages) {
+                    messages?.collect { message ->
+                        snackbarHostState.showSnackbar(
+                            message = message,
+                            withDismissAction = true,
+                            duration = SnackbarDuration.Short,
+                        )
+                    }
                 }
 
                 // Screens emit events into this sink — which is just a method call on the
