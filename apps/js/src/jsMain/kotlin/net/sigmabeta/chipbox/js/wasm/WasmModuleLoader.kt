@@ -7,6 +7,7 @@ import kotlin.coroutines.resumeWithException
 import kotlin.js.Promise
 import kotlin.js.jsTypeOf
 import kotlinx.browser.document
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
@@ -54,6 +55,10 @@ suspend fun <T : Any> loadWasmModule(
     val module = try {
         withTimeout(LOAD_TIMEOUT_MS) { pending.awaitModule(name, loaderUrl) }
     } catch (t: Throwable) {
+        // Caller cancellation (e.g. the user skipped the track) is not a load failure: leave the
+        // shared in-flight load and its script alone for the next caller, and keep structured
+        // cancellation intact. Only the loader's own timeout is a failure.
+        if (t is CancellationException && t !is TimeoutCancellationException) throw t
         // A failed attempt must not be cached: that was the "retry needs a page reload" bug.
         pendingLoads.remove(name)
         removeScript(name)
