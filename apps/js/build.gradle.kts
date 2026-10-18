@@ -305,6 +305,9 @@ kotlin {
             kotlin.srcDir(generateWebBuildInfo)
             dependencies {
                 implementation(projects.cbox.common.appui.api)
+                // Pure route<->URL codec (and the shared allowsNavigation policy): maps Voyager
+                // route keys to the paths the browser mirrors into history.
+                implementation(projects.cbox.common.webroutes)
                 implementation(projects.cbox.common.strings.real)
                 implementation(projects.cbox.common.strings.api)
 

@@ -143,6 +143,7 @@ include(
     ":cbox:common:playlists:fake",
     ":cbox:common:playlists:di",
     ":cbox:common:browserstate",
+    ":cbox:common:webroutes",
     ":cbox:android:playlists:di",
     ":cbox:android:images:api",
     ":cbox:common:player-status:api",

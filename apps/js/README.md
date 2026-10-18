@@ -67,8 +67,10 @@ acceptance checklist.
 `MainScope().launch` preloads i18n strings (suspend), builds the
 `WebChipboxGraph`, installs the browser `WebMediaSession`, starts playback-history
 recording, restores the saved playback session (paused) and registers the
-page-teardown flush, wires Escape→back and arrow-key→focus handling, removes the
-`index.html` splash, and mounts `ChipboxAppUi` in a `ComposeViewport`.
+page-teardown flush, wires Escape→back and arrow-key→focus handling, creates the
+`BrowserHistoryNavigation` bridge (`pushState`/`popstate` ↔ Voyager routes),
+removes the `index.html` splash, and mounts `ChipboxAppUi` in a
+`ComposeViewport`.
 
 ## Contents (grouped by role)
 
@@ -104,6 +106,14 @@ page-teardown flush, wires Escape→back and arrow-key→focus handling, removes
   `playback.session.snapshot`), `mediasession/WebMediaSession.kt`,
   `image/WebImageLoader.kt`, `speaker/WebAudioSpeaker.kt`,
   `analytics/WebAnalytics.kt`, `logging/WebHatchet.kt`.
+- **Browser navigation:** `navigation/BrowserHistoryNavigation.kt` implements the
+  shared `BrowserNavigation` seam. Every in-app push/tab switch pushes a history
+  entry, an in-app pop replaces the current one, `popstate` decodes the URL with
+  `:cbox:common:webroutes` and drives the shell (tab switch or typed pop/push),
+  and the initial load canonicalises its URL with `replaceState` (unknown paths
+  become `/`). `?api=` is preserved on every write. Back/Forward are the source of
+  truth; Escape/up-arrow/device back run through `history.back()` whenever the
+  entry has an app entry behind it.
 - **Playback persistence:** the shared `RealPlaybackHistoryRecorder` writes
   qualifying plays to `StoragePlaybackHistoryRepository` (newest 500); the
   shared `RealPlaybackSessionPersister` restores the queue/track/position
@@ -115,7 +125,8 @@ page-teardown flush, wires Escape→back and arrow-key→focus handling, removes
   `WasmVgmstreamEmulator` is the exception whose extension list only exists after
   its module loads: it overrides `Emulator.supportsExtension` to load first, and
   is registered last so shared extensions never pay that load.
-- **Resources:** `resources/index.html` (splash + mount point),
+- **Resources:** `resources/index.html` (splash + mount point, `<base href="/">`
+  so deep links resolve assets at the site root),
   `resources/wasm/chipbox-audio-worklet.js`; `wasm-emulators.txt` (the nine WASM
   modules shared by the build and the bundle check); `webpack.config.d/okio-node-polyfills.js`.
 
@@ -128,7 +139,8 @@ page-teardown flush, wires Escape→back and arrow-key→focus handling, removes
   doesn't want).
 - **Targets:** JS (browser), only when built with `-Psage.js`.
 - **Source set:** `src/jsMain/kotlin` (+ `src/jsMain/resources`).
-- **SAGE/module dependencies:** `cbox/common` `appui`, `strings`, `repository`,
+- **SAGE/module dependencies:** `cbox/common` `appui`, `webroutes` (route↔URL
+  codec), `strings`, `repository`,
   `contentsource`, `capabilities` (web policy), `browserstate` (localStorage favorites/playlists/history/
   session), `history` (shared recorder + bounded log), `player.persistence`
   (`RealPlaybackSessionPersister`; store implemented in `browserstate`), the full

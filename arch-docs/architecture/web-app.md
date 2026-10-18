@@ -164,14 +164,37 @@ saved snapshot, and reloading a tab restores that snapshot.
 - Voyager routes are mirrored to path-based URLs with `pushState`; the server's
   SPA fallback serves `index.html` for app routes. Back/Forward/refresh/deep
   links work.
+- The mapping is pure and lives in `:cbox:common:webroutes` (`RouteUrl.encode` /
+  `RouteUrl.decode`, `ChipboxTarget.Tab` vs `.Deep`). It has no Compose/Voyager
+  imports, so it is Node-tested. Its URL table is documented in that module's
+  README. Only web-visible routes exist: admin destinations (Manage Library,
+  Folder Picker, Rescan Status) and debug-only destinations (Playback Status,
+  Crash Log, Component Library) do not encode, and their paths decode as unknown.
+  Picker-mode `Playlists` is never encoded; it maps to `/library/playlists`.
+  `/settings/errors` is the Error Log and is gated by `showErrorLog`.
+- `apps/js`'s `BrowserHistoryNavigation` owns the `window.history` side. Every
+  in-app deep push and tab switch pushes an entry; an in-app pop that the browser
+  did not drive (no app entry behind the current one — a fresh deep link or
+  refresh) replaces the current entry. `popstate` decodes the new URL and either
+  selects the tab or pops/pushes the active tab's Navigator. Initial load applies
+  the URL once the navigators exist and canonicalises it with `replaceState`
+  (unknown path → `/`).
+- Browser Back/Forward are the source of truth for history. Escape, the up arrow,
+  and device back run through the same back handler: when the entry has an app
+  entry behind it, the host calls `history.back()` and `popstate` applies the pop;
+  at the first app entry the shell pops natively and replaces the URL.
+- Refresh/deep links reconstruct detail screens from their typed arguments
+  (assisted VMs refetch by id), so the copied URL lands on the same screen.
+  Now Playing depends on the restored playback session (ticket 07).
 - The SPA fallback never answers an API request. Any unmatched `/api/...` path
   returns HTTP 404 with the standard `{"error": …}` JSON body (every method), so
   the client can show the server's message instead of failing to decode
   `index.html`. Paged list endpoints (`games`, `artists`, `tracks`) clamp
   `limit` into `1..500`, default `offset` to 0, and order by their display key
   plus `id`, so pages partition the catalog under ties.
-- Browser Back/Forward are the source of truth for history; Escape maps to app
-  back.
+- The bundled `index.html` declares `<base href="/">`; without it a refresh on
+  `/game/42` resolves `chipbox.js` as `/game/chipbox.js` and loads a blank page.
+  Existing static assets are served as themselves, not through the SPA default.
 - The web UI hides Manage Library, Folder Picker, Rescan Status, and Clear
   Library. Settings and Home do not emit `PickFolder` on web.
 - Host policy is an explicit DI value, not `expect`/`actual`: every app graph
@@ -274,14 +297,16 @@ saved snapshot, and reloading a tab restores that snapshot.
   Node-testable and runs in `jsNodeTest`. Modules that apply `sage.compose.kmp`
   disable their Node tests centrally in `settings.gradle.kts`: Compose's JS
   distribution ships Skiko only for browsers/WASM, so a Node import fails before
-  a test can run. Pure modules (models, feature route keys, browser state) keep
-  their `jsNodeTest`.
+  a test can run. Pure modules (models, feature route keys, browser state, the
+  `:cbox:common:webroutes` codec) keep their `jsNodeTest`.
 - The `/api/health` contract (`HealthStatus`, `ScanRetryPolicy`,
   `readListAwaitingScan`) lives in `cbox/common/models/api` with `commonTest`
   coverage, so the browser's retry behaviour is tested without a browser or a
   running server.
-- Ktor server tests cover scan + RSN extraction, file serving, paging, and
-  unknown-route handling. `apps/server`'s JVM tests cover the
+- Ktor server tests cover scan + RSN extraction, file serving, paging,
+  unknown-route handling (JSON `/api` 404s, deep app paths serving the SPA shell,
+  and static assets not being swallowed by the fallback), and the shipped
+  `index.html`'s `<base href="/">`. `apps/server`'s JVM tests cover the
   `ScannerState` → `HealthStatus` mapping (including the no-path-leak rule) and
   the loopback-bind predicate.
 - No Playwright or other browser automation. UI and audio are verified manually.

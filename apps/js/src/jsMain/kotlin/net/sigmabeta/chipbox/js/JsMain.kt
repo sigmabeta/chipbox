@@ -38,6 +38,7 @@ import net.sigmabeta.chipbox.js.emulators.WasmUsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmstreamEmulator
 import net.sigmabeta.chipbox.js.logging.WebHatchet
+import net.sigmabeta.chipbox.js.navigation.BrowserHistoryNavigation
 import net.sigmabeta.chipbox.js.wasm.loadChipboxGba
 import net.sigmabeta.chipbox.js.wasm.loadChipboxGme
 import net.sigmabeta.chipbox.js.wasm.loadChipboxNcsf
@@ -76,8 +77,9 @@ import net.sigmabeta.sage.ui.perf.LocalLogger
  *  - `backKeyEvents` -> Escape keypresses on `window`. Mirrors desktop's
  *    `Key.Escape`-only back affordance (no Backspace — the browser already uses Backspace for
  *    URL back-navigation when no text input is focused, and we don't want to intercept that).
- *    The actual browser back/forward buttons stay native — intercepting them via `popstate` /
- *    `pushState` would conflict with the URL bar and break the user's expected behavior.
+ *    Escape drives the same in-app back handler as the up arrow; when browser history holds an app
+ *    entry behind the current one, that handler runs `history.back()` so the browser stays the
+ *    source of truth (see [BrowserHistoryNavigation]).
  */
 fun main() {
     val hatchet = WebHatchet()
@@ -107,6 +109,11 @@ fun main() {
             hatchet = hatchet,
             stringProvider = stringProvider,
         )
+
+        // Mirror Voyager navigation into path-based URLs (pushState/replaceState) and drive the
+        // shell from the browser's Back/Forward (popstate). Created before Compose mounts so the
+        // initial deep link is applied as soon as the navigators exist; desktop/Android pass null.
+        val browserNavigation = BrowserHistoryNavigation(graph.appCapabilities)
 
         // The browser app is a release-shaped client (AppInfo.isDebug = false): the static
         // index.html title/splash are the release assets, so there is no debug title to set here.
@@ -180,6 +187,8 @@ fun main() {
                         // Corrupt/older data and localStorage quota failures are non-fatal: the
                         // stores fall back to empty and surface a one-line snackbar here.
                         messages = graph.browserStateEvents.userMessages,
+                        // URL mirroring + browser Back/Forward/deep links (ADR-0003).
+                        browserNavigation = browserNavigation,
                         // The server owns the library and debug surfaces are hidden; Error Log
                         // stays reachable under Settings > Diagnostics.
                         capabilities = graph.appCapabilities,

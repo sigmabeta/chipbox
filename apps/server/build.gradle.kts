@@ -258,3 +258,12 @@ dependencies {
     testImplementation("io.ktor:ktor-server-test-host:${libs.versions.ktor.get()}")
     testImplementation(projects.cbox.common.database.fake)
 }
+
+// The SPA shell's asset-loading contract (deep links need `<base href="/">`) is asserted against
+// the real apps/js index.html, not a fixture that could drift from what ships.
+tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    systemProperty(
+        "chipbox.jsIndexHtml",
+        layout.projectDirectory.file("../js/src/jsMain/resources/index.html").asFile.absolutePath,
+    )
+}

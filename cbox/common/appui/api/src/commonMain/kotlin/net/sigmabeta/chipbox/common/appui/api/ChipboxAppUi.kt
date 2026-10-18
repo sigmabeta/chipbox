@@ -71,6 +71,9 @@ fun ChipboxAppUi(
     // snackbar host. Null for desktop/Android, which have no such producer yet; web passes the
     // browser-state event flow so a quota failure is visible without crashing the UI.
     messages: Flow<String>? = null,
+    // Web-only bridge that mirrors shell navigation into browser history and drives the shell from
+    // popstate/deep links. Null on desktop/Android (and in UI tests that don't assert URLs).
+    browserNavigation: BrowserNavigation? = null,
     // Which surfaces this host exposes. Defaults to the full desktop/Android surface; the browser
     // passes the graph's web capabilities (no library administration, no debug section).
     capabilities: AppCapabilities = AppCapabilities.Default,
@@ -106,6 +109,7 @@ fun ChipboxAppUi(
             LocalPlatformBackKeys provides backKeyEvents,
             LocalActiveTabDestinations provides activeTabDestinations,
             LocalNavigationObserver provides onNavigate,
+            LocalBrowserNavigation provides browserNavigation,
             LocalAppCapabilities provides capabilities,
             // The owner the screen entries observe for foreground/background. Sourced from the
             // platform LocalLifecycleOwner (the Activity / desktop Window provides it) so the

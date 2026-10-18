@@ -64,6 +64,7 @@ import net.sigmabeta.chipbox.features.search.real.SearchRoute
 import net.sigmabeta.chipbox.features.settings.Settings
 import net.sigmabeta.chipbox.features.settings.SettingsRoute
 import net.sigmabeta.chipbox.models.Platform
+import net.sigmabeta.chipbox.webroutes.allowsNavigation
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.ui.Icon as SageIcon
 import net.sigmabeta.sage.ui.vector
@@ -155,7 +156,7 @@ internal object HomeTab : Tab {
 
     @Composable
     override fun Content() {
-        TabNavigatorContent(HomeTabRoot)
+        TabNavigatorContent(HomeTabRoot, ShellTab.HOME)
     }
 }
 
@@ -172,7 +173,7 @@ internal object LibraryTab : Tab {
 
     @Composable
     override fun Content() {
-        TabNavigatorContent(LibraryTabRoot)
+        TabNavigatorContent(LibraryTabRoot, ShellTab.LIBRARY)
     }
 }
 
@@ -189,7 +190,7 @@ internal object SearchTab : Tab {
 
     @Composable
     override fun Content() {
-        TabNavigatorContent(SearchTabRoot)
+        TabNavigatorContent(SearchTabRoot, ShellTab.SEARCH)
     }
 }
 
@@ -214,7 +215,7 @@ private fun rememberTabIcon(imageVector: ImageVector) = rememberVectorPainter(im
  * (or its parent) `canPop`, so at a tab root the system back still falls through to exit.
  */
 @Composable
-private fun TabNavigatorContent(root: Screen) {
+private fun TabNavigatorContent(root: Screen, shellTab: ShellTab) {
     val appActionSink = LocalAppActionSink.current
     Navigator(
         root,
@@ -226,6 +227,7 @@ private fun TabNavigatorContent(root: Screen) {
         val outerSink = LocalChipboxEventSink.current
         val activeTabNavigator = LocalActiveTabNavigator.current
         val navigationObserver = LocalNavigationObserver.current
+        val browserNavigation = LocalBrowserNavigation.current
         val capabilities = LocalAppCapabilities.current
 
         // Expose this tab's Navigator to the chrome ([ChipboxTabsScreen]) so the shell's
@@ -241,6 +243,28 @@ private fun TabNavigatorContent(root: Screen) {
             }
         }
 
+        // Report an in-app pop that the shell performed itself (the browser had no entry to go
+        // back to). The host replaces the current history entry instead of adding one.
+        val notifyPopped: () -> Unit = remember(
+            browserNavigation,
+            navigator,
+            shellTab,
+            activeTabNavigator,
+            root,
+        ) {
+            {
+                if (browserNavigation != null) {
+                    val top = navigator.lastItem
+                    val target = if (top.key == root.key) {
+                        ShellTarget.Tab(shellTab)
+                    } else {
+                        activeTabNavigator.destinations[top.key]?.let(ShellTarget::Deep)
+                    }
+                    if (target != null) browserNavigation.onTargetChanged(target, push = false)
+                }
+            }
+        }
+
         // Explicit `Unit` return — `navigator.pop()` returns Boolean (true if popped) and
         // `navigator.push()` returns Unit, which Kotlin would otherwise infer as `Any`.
         val sink: (ChipboxEvent) -> Unit = remember(
@@ -248,23 +272,40 @@ private fun TabNavigatorContent(root: Screen) {
             outerSink,
             appActionSink,
             navigationObserver,
+            browserNavigation,
+            notifyPopped,
             capabilities,
         ) {
             { event ->
                 when (event) {
                     is ChipboxEvent.NavigateTo -> {
                         if (capabilities.allowsNavigation(event.destination)) {
+                            val screen = screenFor(event.destination)
+                            activeTabNavigator.destinations[screen.key] = event.destination
                             navigationObserver?.invoke(event.destination)
-                            navigator.push(screenFor(event.destination))
+                            navigator.push(screen)
+                            // Mirror the push into the browser URL. The host skips the report when
+                            // it is itself applying a popstate (see BrowserNavigation).
+                            browserNavigation?.onTargetChanged(
+                                ShellTarget.Deep(event.destination),
+                                push = true,
+                            )
                         }
                     }
 
                     // VM-driven back: pop the deep stack if we can; otherwise escalate to
                     // the shell back handler so we share its logic with system back / the
                     // TopAppBar up arrow (Search tab root → Home, every other tab root → outer).
+                    // On web, browser history is the source of truth: if it has an app entry
+                    // behind us, the host runs history.back() and the popstate applies the pop.
                     ChipboxEvent.NavigateBack -> {
-                        if (!navigator.pop()) {
-                            appActionSink.sendAction(SageAction.AppBack)
+                        val browserHandled = browserNavigation?.onBackRequested() == true
+                        if (!browserHandled) {
+                            if (navigator.pop()) {
+                                notifyPopped()
+                            } else {
+                                appActionSink.sendAction(SageAction.AppBack)
+                            }
                         }
                     }
 
@@ -307,6 +348,31 @@ private object SearchTabRoot : Screen {
     override fun Content() = ScreenScaffold {
         SearchRoute(onEvent = LocalChipboxEventSink.current)
     }
+}
+
+// endregion
+
+// region Shell tab mapping ----------------------------------------------------------------------
+
+/** The Voyager [Tab] for a host-facing [ShellTab]. */
+internal fun ShellTab.toTab(): Tab = when (this) {
+    ShellTab.HOME -> HomeTab
+    ShellTab.LIBRARY -> LibraryTab
+    ShellTab.SEARCH -> SearchTab
+}
+
+/** The host-facing tab for a Voyager [Tab] (only the three shell tabs exist). */
+internal fun Tab.asShellTab(): ShellTab = when (key) {
+    LibraryTab.key -> ShellTab.LIBRARY
+    SearchTab.key -> ShellTab.SEARCH
+    else -> ShellTab.HOME
+}
+
+/** The [ScreenKey] of a tab's root screen, used to tell "at tab root" from "on a deep screen". */
+internal fun tabRootKey(tab: ShellTab): ScreenKey = when (tab) {
+    ShellTab.HOME -> HomeTabRoot.key
+    ShellTab.LIBRARY -> LibraryTabRoot.key
+    ShellTab.SEARCH -> SearchTabRoot.key
 }
 
 // endregion

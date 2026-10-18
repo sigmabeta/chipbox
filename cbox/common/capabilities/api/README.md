@@ -44,4 +44,7 @@ fun provideAppCapabilities(): AppCapabilities = AppCapabilities(canManageLibrary
 ```
 
 Screens copy the flags they need into their list state; the shell reads them from
-`LocalAppCapabilities` to keep blocked destinations from being pushed.
+`LocalAppCapabilities` to keep blocked destinations from being pushed. The
+`allowsNavigation(destination)` guard itself lives in `:cbox:common:webroutes`,
+next to the browser URL table, so the in-app sinks and the deep-link decoder apply
+one policy (a hidden surface cannot be reached by URL either).
