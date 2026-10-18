@@ -295,6 +295,98 @@ jobs:
           compression-level: 0 # .dmg is already compressed
           path: apps/jvm/build/compose/binaries/main/dmg/*.dmg
 
+  # Multi-arch server image for the release. The web/WASM stage is built once on the runner
+  # ($BUILDPLATFORM); only the small CMake vgmstream stage runs under QEMU for arm64. The result is
+  # an OCI archive artifact, not a registry push: v1 has no registry, no credentials, and no public
+  # distribution until an auth story exists (ADR-0003). `docker buildx --load` only accepts one
+  # platform, so the two single-arch loads below exist solely to smoke/verify the contents; the
+  # multi-arch OCI tar is the actual release artifact.
+  web-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      # arm64 binfmt so the TARGETPLATFORM native stage (gcc/CMake/apt) can run on the amd64 runner.
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@v3
+      - name: Read the pinned toolchain (single source - docker/*-version)
+        id: pins
+        run: |
+          set -euo pipefail
+          {
+            echo "node=$(cat docker/node-version)"
+            echo "yarn=$(cat docker/yarn-version)"
+            echo "emsdk=$(cat docker/emsdk-version)"
+          } >> "$GITHUB_OUTPUT"
+      - name: Build linux/amd64 + linux/arm64 OCI image (not pushed)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          outputs: type=oci,dest=build/chipbox-server-multiarch.tar
+          build-args: |
+            NODE_VERSION=${{ steps.pins.outputs.node }}
+            YARN_VERSION=${{ steps.pins.outputs.yarn }}
+            EMSDK_VERSION=${{ steps.pins.outputs.emsdk }}
+          # One cache scope for the shared multi-platform build, plus the PR amd64 scope so a tag
+          # run reuses the bundle/native layers the CI web job already produced.
+          cache-from: |
+            type=gha,scope=web-multiarch
+            type=gha,scope=web-amd64
+          cache-to: type=gha,mode=max,scope=web-multiarch
+      - name: Verify the OCI archive contains both architectures
+        run: >-
+          python3 scripts/ci/verify-oci-index.py
+          build/chipbox-server-multiarch.tar linux/amd64 linux/arm64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chipbox-server-multiarch-oci
+          compression-level: 0 # OCI layers are already gzipped
+          retention-days: 14
+          path: build/chipbox-server-multiarch.tar
+      - name: Load the amd64 image for the runtime smoke (cache hits the multi-arch build)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: chipbox-server:release-amd64
+          build-args: |
+            NODE_VERSION=${{ steps.pins.outputs.node }}
+            YARN_VERSION=${{ steps.pins.outputs.yarn }}
+            EMSDK_VERSION=${{ steps.pins.outputs.emsdk }}
+          cache-from: type=gha,scope=web-multiarch
+      - name: Smoke the amd64 image (health, SPA, nine WASM pairs, native lib)
+        run: scripts/ci/web-image-smoke.sh chipbox-server:release-amd64 --platform linux/amd64
+      - name: Load the arm64 image for a contents check
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          load: true
+          tags: chipbox-server:release-arm64
+          build-args: |
+            NODE_VERSION=${{ steps.pins.outputs.node }}
+            YARN_VERSION=${{ steps.pins.outputs.yarn }}
+            EMSDK_VERSION=${{ steps.pins.outputs.emsdk }}
+          cache-from: type=gha,scope=web-multiarch
+      # `docker create` + `docker cp` needs no QEMU: inspect the arm64 filesystem directly and
+      # assert the ELF machine is AArch64 plus the jar carries all nine emulator pairs.
+      - name: Verify the arm64 image contents (arm64 lib + nine WASM pairs)
+        run: >-
+          scripts/ci/web-image-smoke.sh chipbox-server:release-arm64
+          --platform linux/arm64 --contents-only
+
   publish:
     needs: [desktop-linux, desktop-windows, desktop-macos, android-apk]
     runs-on: ubuntu-latest

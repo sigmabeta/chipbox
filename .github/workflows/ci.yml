@@ -31,6 +31,8 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Validate the multi-arch Dockerfile + release wiring
+        run: scripts/ci/verify-docker-release.sh
       - uses: gradle/actions/setup-gradle@v4
       - name: ktlint + detekt
         run: ./gradlew ktlintCheck detekt --continue --build-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
@@ -103,6 +105,15 @@ jobs:
           -Psage.js=true -Pchipbox.skipNative
           -Dorg.gradle.isolated-projects=false -Dorg.gradle.configureondemand=false
           --no-parallel --build-cache --no-daemon --max-workers=4
+      - name: Read the pinned toolchain (single source - docker/*-version)
+        id: pins
+        run: |
+          set -euo pipefail
+          {
+            echo "node=$(cat docker/node-version)"
+            echo "yarn=$(cat docker/yarn-version)"
+            echo "emsdk=$(cat docker/emsdk-version)"
+          } >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
       - name: Build amd64 image (not pushed)
         uses: docker/build-push-action@v6
@@ -112,38 +123,14 @@ jobs:
           push: false
           load: true
           tags: chipbox-server:ci
+          build-args: |
+            NODE_VERSION=${{ steps.pins.outputs.node }}
+            YARN_VERSION=${{ steps.pins.outputs.yarn }}
+            EMSDK_VERSION=${{ steps.pins.outputs.emsdk }}
           cache-from: type=gha,scope=web-amd64
           cache-to: type=gha,mode=max,scope=web-amd64
-      - name: Smoke the container (health, SPA, bundle, WASM, native lib)
-        run: |
-          set -euo pipefail
-          mkdir -p build/ci-music build/ci-data
-          chmod 777 build/ci-data   # container runs as uid 10001
-          docker run -d --name chipbox-ci \
-            -p 127.0.0.1:8080:8080 \
-            -v "$PWD/build/ci-music:/music:ro" \
-            -v "$PWD/build/ci-data:/data" \
-            chipbox-server:ci
-          cleanup() { docker logs chipbox-ci || true; docker rm -f chipbox-ci || true; }
-          trap cleanup EXIT
-
-          for _ in $(seq 1 60); do
-            curl -fsS http://127.0.0.1:8080/api/health -o /tmp/health.json && break
-            sleep 1
-          done
-          cat /tmp/health.json
-          grep -q '"ok":true' /tmp/health.json
-          grep -q '"state"' /tmp/health.json
-          ! grep -q 'libraryDir' /tmp/health.json
-
-          curl -fsS http://127.0.0.1:8080/ | grep -qi '<html'
-          curl -fsS http://127.0.0.1:8080/chipbox.js | head -c 32 >/dev/null
-          curl -fsS http://127.0.0.1:8080/wasm/chipbox_gme.js | head -c 32 >/dev/null
-          curl -fsS http://127.0.0.1:8080/wasm/chipbox_gme.wasm | head -c 32 >/dev/null
-
-          # The image must carry its native vgmstream library with no unresolved links.
-          docker exec chipbox-ci test -s /opt/chipbox/lib/native/libvgmstream.so
-          docker exec chipbox-ci sh -c '! ldd /opt/chipbox/lib/native/libvgmstream.so | grep -q "not found"'
+      - name: Smoke the container (health, SPA, all nine WASM pairs, native lib arch)
+        run: scripts/ci/web-image-smoke.sh chipbox-server:ci --platform linux/amd64
 
   shared-build:
     # Gate the heavy whole-graph compile behind ktlint + detekt: fail fast on a lint/style break
