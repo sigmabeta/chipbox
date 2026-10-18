@@ -12,6 +12,8 @@
 #     - runtime stage on $TARGETPLATFORM, glibc (no alpine), non-root, /data volume, /music
 #       convention, curl healthcheck, no-auth labels, and a build-time check that the server jar
 #       carries static/index.html + all nine WASM pairs
+#     - every FROM is pinned by a manifest-list digest and keeps its tag
+#       (image:tag@sha256:...), so one pin resolves linux/amd64 and linux/arm64
 #     - Dockerfile ARG defaults match docker/{node,yarn,emsdk}-version (the CI pins)
 #   .github/workflows/release.yml
 #     - a web-image job: both linux platforms, push:false, no login/push/credentials, OCI tar
@@ -61,6 +63,56 @@ stage() {
 stage BUILDPLATFORM web || fail "web stage must be FROM --platform=\$BUILDPLATFORM"
 stage TARGETPLATFORM native || fail "native stage must be FROM --platform=\$TARGETPLATFORM"
 stage TARGETPLATFORM runtime || fail "runtime stage must be FROM --platform=\$TARGETPLATFORM"
+
+# Base images must be digest-pinned. A floating tag makes a release depend on whatever the
+# registry served that day; a manifest-list digest pins the same bits for linux/amd64 and
+# linux/arm64. Keep the tag in front of the digest (`image:tag@sha256:...`) so a bump is
+# reviewable. The digest table + bump procedure live in docs/build.md ("Pinned base images").
+pins=""
+while IFS= read -r line; do
+  case "$line" in
+    FROM\ *) ;;
+    *) continue ;;
+  esac
+  # `read -a` splits on whitespace without pathname expansion (an image ref can never contain a
+  # glob, but the array keeps the flag-skipping below readable).
+  read -r -a parts <<< "${line#FROM }"
+  ref=""
+  for part in "${parts[@]}"; do
+    case "$part" in
+      --*) continue ;;
+      *) ref="$part"; break ;;
+    esac
+  done
+  if [ -z "$ref" ]; then
+    fail "FROM without an image reference: $line"
+    continue
+  fi
+  case "$ref" in
+    *@sha256:*) ;;
+    *)
+      fail "FROM $ref must be digest-pinned as image:tag@sha256:... (floating tags are not reproducible)"
+      continue
+      ;;
+  esac
+  digest="${ref##*@}"
+  printf '%s' "$digest" | grep -Eq '^sha256:[0-9a-f]{64}$' \
+    || fail "FROM $ref has a malformed sha256 digest: $digest"
+  image="${ref%@*}"
+  case "${image##*/}" in
+    *:*) ;;
+    *) fail "FROM $ref must keep its human-readable tag (image:tag@sha256:...)" ;;
+  esac
+  pins="$pins$image $digest
+"
+done < "$DOCKERFILE"
+
+# A bump must move every stage of an image at once: the same image:tag may not appear with two
+# different digests (a half-applied bump would build the web stage from different bits than the
+# runtime stage).
+conflicting="$(printf '%s' "$pins" | awk 'NF == 2 { if ($1 in seen && seen[$1] != $2) print $1; seen[$1] = $2 }' | sort -u)"
+[ -z "$conflicting" ] \
+  || fail "the same base image is pinned to different digests: $conflicting"
 
 grep -q '^ARG TARGETARCH' "$DOCKERFILE" \
   || fail "Dockerfile must declare ARG TARGETARCH to assert the native lib architecture"
@@ -296,4 +348,4 @@ if [ "$failures" -ne 0 ]; then
   exit 1
 fi
 
-echo "Docker/release invariants OK: platform stages, both arches, no push, native lib arch, pins"
+echo "Docker/release invariants OK: platform stages, both arches, no push, native lib arch, pins, digest-pinned bases"

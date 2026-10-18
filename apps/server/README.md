@@ -95,6 +95,10 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   `/music` is read-only; `/data` persists the DB + work dir (a bind-mounted
   `/data` must be writable by uid `10001`).
 
+  Base images are pinned by manifest-list digest (`image:tag@sha256:…`, one pin
+  for amd64 + arm64); the recorded digests and the bump procedure are in
+  `docs/build.md` → "Pinned base images".
+
   **Multi-arch (both architectures, no registry).** The release job builds
   `linux/amd64` + `linux/arm64` in one buildx invocation and writes an OCI
   archive; `--load` only accepts a single platform, so the two-arch result cannot
@@ -132,7 +136,7 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   local/release artifact only. There is **no authentication**: run it on
   loopback or a trusted LAN only. `scripts/ci/verify-docker-release.sh` statically
   checks the platform stages, both-arch release wiring, no-push rule, native-lib
-  architecture assertion, and pinned toolchain.
+  architecture assertion, pinned toolchain, and digest-pinned base images.
 
 ## RSN extraction
 

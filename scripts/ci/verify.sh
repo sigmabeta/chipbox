@@ -27,7 +27,8 @@
 # image (skipped without a running daemon).
 #
 # The `docker-release` task is the cheap static check (scripts/ci/verify-docker-release.sh) for the
-# multi-arch Dockerfile + release workflow: platform stages, both arches, no push, pinned toolchain.
+# multi-arch Dockerfile + release workflow: platform stages, both arches, no push, pinned toolchain,
+# digest-pinned base images.
 #
 # Usage:
 #   scripts/ci/verify.sh                 # run everything
