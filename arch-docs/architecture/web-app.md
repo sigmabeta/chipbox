@@ -70,6 +70,17 @@ Rules:
   components stripped, unsafe characters replaced), and duplicate basenames
   within one archive get a zero-padded member-index prefix. A member whose
   existing bytes match is reused rather than rewritten.
+- Rewrites are crash-safe without disturbing playback. A member that needs
+  writing goes to `<member>.spc.tmp` in the same hash directory, is flushed and
+  closed, and is then moved over the final name (atomically where the platform
+  supports it, with a plain replace as the fallback). A client streaming the
+  previous file keeps its open handle and its bytes, and a killed process can
+  leave only a temporary file, never a short member under a final name. Temp
+  names are never returned to the scanner or persisted; stale temporaries are
+  removed by the next extraction or prune pass. If the move fails (for example a
+  locked target on Windows) the previous member stays usable and the archive
+  fails that scan (closing the prune gate); a later scan that re-reads the
+  folder retries the write.
 - Extraction happens at scan time, after the RSN m3u overlay and filename-title
   fallback, and before persistence. This ordering is load-bearing: the overlay
   matches on the original archive basename + 1-based member index. An extracted

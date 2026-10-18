@@ -1,6 +1,8 @@
 package net.sigmabeta.chipbox.server.scanner
 
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import net.sigmabeta.chipbox.scanner.DuplicateRsnContentException
@@ -16,6 +18,47 @@ import okio.Path
 import okio.Path.Companion.toOkioPath
 
 /**
+ * Moves a freshly written member over its final path, replacing it.
+ *
+ * A seam so tests can force the "the target is locked" failure path. Production uses
+ * [AtomicMemberMover], which asks the filesystem for an atomic replace first.
+ */
+fun interface MemberMover {
+    /** Replace [target] with [source]; throws [IOException] when the move cannot be completed. */
+    fun move(source: Path, target: Path)
+}
+
+/**
+ * [MemberMover] that prefers an atomic replace and falls back to a plain move.
+ *
+ * On the JVM `FileSystem.atomicMove` maps to `Files.move(..., ATOMIC_MOVE, REPLACE_EXISTING)`.
+ * Windows refuses that while another process holds the target without delete sharing, and some
+ * filesystems do not support `ATOMIC_MOVE` at all; a non-atomic replace is then the only option.
+ * If that fails too the exception propagates and the caller keeps the previous member.
+ */
+internal class AtomicMemberMover(
+    private val fileSystem: FileSystem,
+) : MemberMover {
+
+    override fun move(source: Path, target: Path) {
+        try {
+            fileSystem.atomicMove(source, target)
+        } catch (atomicFailure: IOException) {
+            try {
+                Files.move(
+                    source.toNioPath(),
+                    target.toNioPath(),
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            } catch (fallbackFailure: IOException) {
+                fallbackFailure.addSuppressed(atomicFailure)
+                throw fallbackFailure
+            }
+        }
+    }
+}
+
+/**
  * Server-only [RsnExtractor]: writes each RSN's SPC members under
  * `<workDir>/rsn/<sha256(archive bytes)>/<member>.spc`.
  *
@@ -24,6 +67,14 @@ import okio.Path.Companion.toOkioPath
  * only written when the file is missing or its bytes differ. Member order comes from
  * [rsnSpcMembers], which is the same order `RsnReader` gives tracks, so a track's `trackNumber`
  * indexes straight into the returned list.
+ *
+ * Writes are crash-safe without disturbing streaming: new bytes go to a `<member>.spc.tmp` file in
+ * the same hash directory, are flushed and closed, and are then renamed over the final member
+ * (atomically where the platform supports it). A reader serving the previous file keeps its open
+ * handle and its bytes; a killed process can leave only a temporary file, never a short member
+ * under the final name. Temporary names are never returned or persisted — every
+ * [ExtractedRsnMember.path] is the final member path — and stale temporaries are removed on the
+ * next extraction or prune pass.
  *
  * [prune] is deliberately conservative: it keeps a hash directory whenever any surviving track
  * path is under it, and tolerates delete failures (a member may be streaming). The scanner only
@@ -40,6 +91,7 @@ class ServerRsnExtractor(
     workDir: File,
     private val hatchet: Hatchet,
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
+    private val mover: MemberMover = AtomicMemberMover(fileSystem),
 ) : RsnExtractor {
 
     // Absolute so persisted track paths stay absolute even when CHIPBOX_WORK_DIR is configured as
@@ -69,9 +121,12 @@ class ServerRsnExtractor(
             fileSystem.createDirectories(directory)
             // First extraction, or the previous owner was renamed/removed: claim the hash.
             if (owner != source) writeOwner(directory, source)
+            // Extraction is serialised, so any temporary file already here belongs to a killed
+            // process and is safe to remove before this pass writes its own.
+            deleteStaleTemps(directory)
             members.mapIndexed { index, member ->
                 val target = directory / names[index]
-                writeIfNeeded(target, member.bytes)
+                writeIfNeeded(directory, target, member.bytes)
                 ExtractedRsnMember(name = member.name, path = target.toString())
             }
         }
@@ -97,12 +152,31 @@ class ServerRsnExtractor(
             val normalizedKept = keptPaths.map { it.normalizedPath() }
             fileSystem.listOrNull(extractionRoot).orEmpty()
                 .filter { fileSystem.metadataOrNull(it)?.isDirectory == true }
-                .filterNot { directory ->
+                .forEach { directory ->
                     val prefix = directory.toString().normalizedPath().trimEnd('/') + "/"
-                    normalizedKept.any { it.startsWith(prefix) }
+                    if (normalizedKept.any { it.startsWith(prefix) }) {
+                        // A kept directory may still hold a temporary file from an extraction that
+                        // was killed before its move; prune doubles as the cleanup pass.
+                        deleteStaleTemps(directory)
+                    } else {
+                        deleteOrphanedDirectory(directory)
+                    }
                 }
-                .forEach(::deleteOrphanedDirectory)
         }
+    }
+
+    private fun deleteStaleTemps(directory: Path) {
+        fileSystem.listOrNull(directory).orEmpty()
+            .filter { it.name.endsWith(TEMP_SUFFIX) }
+            .forEach { stale ->
+                try {
+                    fileSystem.delete(stale)
+                    hatchet.d("Removed stale RSN extraction temp $stale.")
+                } catch (e: IOException) {
+                    // A temp is never served, so leaving it is harmless; the next pass retries.
+                    hatchet.w("Could not remove stale RSN extraction temp $stale: ${e.message}")
+                }
+            }
     }
 
     private fun deleteOrphanedDirectory(directory: Path) {
@@ -116,12 +190,29 @@ class ServerRsnExtractor(
         }
     }
 
-    private fun writeIfNeeded(target: Path, bytes: ByteArray) {
+    /**
+     * Writes [bytes] to a temporary file next to [target] and renames it over the final name.
+     * Nothing is written in place, so a failure at any point leaves the previous member (and any
+     * reader's handle) untouched; the move itself is what makes the new bytes visible.
+     */
+    private fun writeIfNeeded(directory: Path, target: Path, bytes: ByteArray) {
         if (matchesExisting(target, bytes)) return
-        // Write in place: the content hash keys the directory, so a torn write can only be a
-        // wrong-sized/partial file that the next scan detects and rewrites. Keeping the filename
-        // stable (no temp rename) also means a concurrently-streaming file is never unlinked.
-        fileSystem.write(target) { write(bytes) }
+        val temp = directory / (target.name + TEMP_SUFFIX)
+        try {
+            // write() closes the sink on return; flush explicitly so the complete member is on disk
+            // before the rename makes it visible under the final name.
+            fileSystem.write(temp) {
+                write(bytes)
+                flush()
+            }
+            mover.move(temp, target)
+        } catch (e: IOException) {
+            // Keep the previous member usable and leave the temp (complete or partial) for
+            // deleteStaleTemps on the next extraction/prune pass, then fail this archive so the
+            // scanner does not persist tracks pointing at output it could not produce.
+            hatchet.w("Could not replace RSN member $target: ${e.message}")
+            throw e
+        }
     }
 
     private fun matchesExisting(target: Path, bytes: ByteArray): Boolean {
@@ -138,6 +229,10 @@ class ServerRsnExtractor(
         // Owner marker inside each hash directory. Starts with a dot so it is hidden on Unix and
         // cannot collide with an extracted member (those always end in `.spc`).
         internal const val OWNER_MARKER = ".source"
+
+        // Suffix of an in-flight member write. Members always end in `.spc`, so `<member>.spc.tmp`
+        // cannot collide with one, and it is never returned to the scanner or persisted.
+        internal const val TEMP_SUFFIX = ".tmp"
 
         /**
          * Deterministic, path-traversal-free output names, one per member in member order.
