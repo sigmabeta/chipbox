@@ -337,11 +337,16 @@ project(":cbox:common:player:emulators:twosf:real").projectDir = file("cbox/comm
 // shared JS-side suites CI runs. `cbox/common/appui/api` used to do this locally; centralising it
 // keeps a new Compose module from silently re-breaking the web job.
 //
-// Only `jsNodeTest` is disabled, not the `jsTest` aggregate: these modules declare a Node test
-// host only, so the aggregate still succeeds (with no tests) if a browser test tree is added later.
+// Only `jsNodeTest` is disabled, and its test executables are not compiled either: the task graph
+// still compiles dependencies of a skipped task, and compiling ~95 unreachable Compose test
+// executables is most of the aggregate web job's memory cost. These modules declare a Node test
+// host only; if a browser test tree is added, give it a host and remove both disables.
 gradle.beforeProject {
     plugins.withId("sage.compose.kmp") {
-        tasks.matching { it.name == "jsNodeTest" }.configureEach {
+        tasks.matching {
+            it.name == "jsNodeTest" ||
+                (it.name.startsWith("compileTest") && it.name.endsWith("KotlinJs"))
+        }.configureEach {
             enabled = false
         }
     }

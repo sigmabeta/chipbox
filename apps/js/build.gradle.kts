@@ -10,6 +10,19 @@ plugins {
     // The models themselves are already @Serializable (cbox/common/models/api); this plugin just
     // pulls the codegen into apps/js so the Ktor JS client can call `body<List<Game>>()`.
     alias(libs.plugins.kotlin.serialization)
+    // apps/js applies the raw KMP plugin (not sage.kmp), so the SAGE base plugins' per-module
+    // ktlint/detekt wiring is absent. Apply both here with the same root configs.
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.detekt)
+}
+
+detekt {
+    config.setFrom("${rootDir.absolutePath}/detekt-config.yml")
+    source.setFrom(files("src/jsMain/kotlin"))
+}
+
+ktlint {
+    version.set(libs.versions.ktlintTool.get())
 }
 
 // Sister to apps/jvm + apps/android, but browser-only. sage.kmp / sage.compose.kmp aren't applied

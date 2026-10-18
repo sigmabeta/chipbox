@@ -41,6 +41,13 @@ acceptance checklist.
   - If a build fails with "Lock file was changed", run
     `./gradlew kotlinUpgradeYarnLock -Psage.js=true -Dorg.gradle.isolated-projects=false -Dorg.gradle.configureondemand=false --no-parallel`
     and commit the refreshed `kotlin-js-store/yarn.lock`.
+- **Lint:** this module applies ktlint + detekt directly (it uses the raw KMP
+  plugin, so the SAGE base plugins' per-module wiring is absent):
+  ```sh
+  ./gradlew :apps:js:ktlintCheck :apps:js:detekt -Psage.js=true \
+    -Dorg.gradle.isolated-projects=false -Dorg.gradle.configureondemand=false --no-parallel
+  ```
+  `detekt-baseline.xml` records the pre-existing findings; new code is checked.
 - **WASM emulators (automatic):** each `cbox/native/<name>` dir has a CMakeLists
   with an `EMSCRIPTEN` branch; per-emulator `build<Name>Wasm` tasks emit a `.js`
   loader + `.wasm` blob, and `copyEmulatorWasm` fans them into
