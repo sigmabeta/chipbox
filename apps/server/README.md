@@ -217,7 +217,7 @@ function, so the tested stack is the shipped stack.
 | `ServerConfig.kt` | Env-var-sourced runtime config; fails fast (exit 64) on a missing library dir. |
 | `di/ServerChipboxGraph.kt` | `@DependencyGraph(AppScope)` root; accessors for repository, scanner, content sources, app scope. Factory takes `dbPath` + `workDir`. |
 | `di/ServerModules.kt` | Binding containers composing the DB/scanner/repository/coroutines wiring. |
-| `http/LibraryRoutes.kt`, `http/FileRoutes.kt`, `http/StaticRoutes.kt` | The `/api` JSON endpoints (paging + validation), file streaming (`/api/files/{trackId}`, chain files, covers/photos), and SPA-fallback static serving. |
+| `http/LibraryRoutes.kt`, `http/FileRoutes.kt`, `http/StaticRoutes.kt` | The `/api` JSON endpoints (paging + validation), file streaming (`/api/files/{trackId}`, chain files, covers/photos), and SPA-fallback static serving. The fallback serves `index.html` only for app-shaped routes; a missing asset (anything under `/wasm/` or with a filename extension) is a real 404, so a missing WASM module fires the loader's `<script>` error instead of parsing HTML as JavaScript. |
 | `http/ApiNotFoundRoutes.kt` | Catch-all JSON 404 for unmatched `/api` paths, installed before the SPA fallback. |
 | `http/Health.kt` | `/api/health`: maps the live `ScannerState` to the shared `HealthStatus` wire model (no host paths). |
 | `http/ImageResizer.kt`, `http/PublicUrls.kt`, `http/DataFlowDrain.kt` | Thumbnail resizing, public URL rewriting, repository `Data`-flow draining helper. |
