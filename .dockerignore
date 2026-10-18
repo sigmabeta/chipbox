@@ -3,6 +3,7 @@
 # `kotlin-js-store/yarn.lock` either — it pins the whole Kotlin/JS toolchain.
 
 .git
+**/.git
 .gitmodules
 .github
 .gradle
@@ -26,3 +27,7 @@ local.properties
 .DS_Store
 build/verification
 build/paparazzi-review
+# The release job writes the multi-arch OCI archive here before the single-arch smoke builds; keep
+# it out of the build context so the second/third image builds don't copy a multi-hundred-MB tar.
+build/chipbox-server-multiarch.tar
+.docker-cache
