@@ -3,6 +3,7 @@ package net.sigmabeta.chipbox.server.scanner
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import net.sigmabeta.chipbox.scanner.state.ScannerState
@@ -56,6 +57,29 @@ class RsnExtractionTest {
         assertEquals("02 Second.spc", secondTrack.path.substringAfterLast('/'))
         assertTrue(File(firstTrack.path).readBytes().contentEquals(first))
         assertTrue(File(secondTrack.path).readBytes().contentEquals(second))
+    }
+
+    @Test
+    fun `scanning without an extractor keeps archive staging tracks`() {
+        // Desktop, Android, and CLI construct RealScanner without an extractor: RSN must keep
+        // pointing at the archive with its member index so playback can stage the member itself.
+        val corpus = tempDir("rsn-corpus")
+        val workDir = tempDir("rsn-work")
+        val archive = File(corpus, "tiny.rsn")
+        archive.writeBytes(
+            rar4(
+                RarEntry("02 Second.spc", spcFile(title = "Second")),
+                RarEntry("01 First.spc", spcFile(title = "First")),
+            ),
+        )
+
+        val result = scanCorpus(corpus, workDir, extractor = null)
+        assertIs<ScannerState.Complete>(result.state)
+        val tracks = result.repository.allTracks().sortedBy { it.trackNumber }
+        assertEquals(listOf(0, 1), tracks.map { it.trackNumber })
+        assertTrue(tracks.all { it.extension == "rsn" })
+        assertTrue(tracks.all { it.path == archive.absolutePath })
+        assertFalse(File(workDir, "rsn").exists(), "nothing should be extracted")
     }
 
     @Test

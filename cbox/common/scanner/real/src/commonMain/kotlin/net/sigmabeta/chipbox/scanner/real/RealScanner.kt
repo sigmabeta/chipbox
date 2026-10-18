@@ -320,7 +320,9 @@ class RealScanner(
                 val bytes = traceAsync(TRACE_OPEN_BYTES, nextCookie()) {
                     librarySource.openBytes(file.identifier)
                 } ?: return@readWithErrorHandling null
-                if (ext == RSN_EXTENSION) rsnArchiveBytes[file.name] = bytes
+                if (rsnExtractor != null && ext == RSN_EXTENSION) {
+                    rsnArchiveBytes[file.name] = bytes
+                }
                 trace("$TRACE_READ_PREFIX$ext") { reader.readTracksFromFile(bytes, file.identifier) }
                     ?.map { it.copy(source = librarySource.sourceId, extension = ext) }
             }
