@@ -26,8 +26,10 @@ import net.sigmabeta.sage.logging.BluntHatchet
  *
  * A browser client decodes every `/api/...` response as JSON. Before this contract, an unknown API
  * path fell through to the static tailcard and returned a 200 HTML page, so the client reported a
- * deserialization error instead of "Not found". Now any unmatched API request — any method —
- * gets the standard `{"error": …}` JSON 404, while real app routes still get the SPA shell.
+ * deserialization error instead of "Not found". Now any unmatched API request — any method,
+ * including bare `/api` (zero trailing segments) — gets the standard `{"error": …}` JSON 404,
+ * while real app routes still get the SPA shell. The boundary is the exact `/api` path segment,
+ * not a string prefix: `/apiary` is an app route.
  */
 class UnknownApiRouteTest {
 
@@ -47,6 +49,34 @@ class UnknownApiRouteTest {
         assertEquals(HttpStatusCode.NotFound, response.status)
         assertEquals(ContentType.Application.Json, response.contentType()?.withoutParameters())
         assertTrue(errorMessage(response.bodyAsText()).isNotBlank())
+    }
+
+    @Test
+    fun `bare api GET returns the standard JSON 404`() = withServer {
+        val response = client.get("/api")
+
+        assertEquals(HttpStatusCode.NotFound, response.status)
+        assertEquals(ContentType.Application.Json, response.contentType()?.withoutParameters())
+        assertEquals(NOT_FOUND_BODY, response.bodyAsText())
+    }
+
+    @Test
+    fun `bare api POST returns the standard JSON 404`() = withServer {
+        val response = client.post("/api")
+
+        assertEquals(HttpStatusCode.NotFound, response.status)
+        assertEquals(ContentType.Application.Json, response.contentType()?.withoutParameters())
+        assertEquals(NOT_FOUND_BODY, response.bodyAsText())
+    }
+
+    @Test
+    fun `paths that only start with api are not API requests`() = withServer {
+        // The rule keys on the `/api` path segment, not on a string prefix: `/apiary` is an
+        // app-shaped route and still gets the SPA shell.
+        val response = client.get("/apiary")
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(ContentType.Text.Html, response.contentType()?.withoutParameters())
     }
 
     @Test
@@ -101,6 +131,10 @@ class UnknownApiRouteTest {
 
     private fun errorMessage(body: String): String =
         Json.parseToJsonElement(body).jsonObject.getValue("error").jsonPrimitive.content
+
+    private companion object {
+        const val NOT_FOUND_BODY = """{"error":"Not found"}"""
+    }
 }
 
 /** Boots the production routing stack over one seeded game and an empty content-source registry. */
