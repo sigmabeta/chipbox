@@ -30,6 +30,7 @@ import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.scanner.DuplicateRsnContentException
 import net.sigmabeta.chipbox.scanner.RsnExtractor
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
@@ -395,7 +396,7 @@ class RealScanner(
         // RSN extraction must run here: the m3u overlay above matches on the original archive
         // basename + member index, and the filename fallback derives titles from archive names.
         // Rewriting tracks to extracted paths before either would break those matches.
-        failed += extractRsnMembers(tracksByFilename, rsnArchiveBytes)
+        failed += extractRsnMembers(tracksByFilename, rsnArchiveBytes, folderKey)
 
         val rawTracks = tracksByFilename.values.flatten().map {
             // Stamp the versions that produced this track so the next scan can skip the folder when
@@ -572,20 +573,37 @@ class RealScanner(
      * directly onto the extractor's returned member list. Returns the number of archive-level
      * failures; a failed archive contributes no tracks, which keeps the scan from persisting
      * unplayable archive rows and forces the prune gate closed.
+     *
+     * A duplicate archive (same bytes as one already extracted this scan) is refused by the
+     * extractor and reported as a clear per-file failure; [folderKey] identifies the archive in
+     * that message.
      */
     @Suppress("TooGenericExceptionCaught")
     private suspend fun extractRsnMembers(
         tracksByFilename: MutableMap<String, MutableList<RawTrack>>,
         archiveBytesByFilename: Map<String, ByteArray>,
+        folderKey: String,
     ): Int {
         val extractor = rsnExtractor ?: return 0
         var failures = 0
         for ((filename, tracks) in tracksByFilename) {
             val archiveBytes = archiveBytesByFilename[filename] ?: continue
+            var refusedAsDuplicate = false
             val members = try {
-                extractor.extract(archiveBytes)
+                extractor.extract(archiveBytes, source = "$folderKey/$filename")
             } catch (cancellation: CancellationException) {
                 throw cancellation
+            } catch (duplicate: DuplicateRsnContentException) {
+                // Two library folders carry the same archive bytes. Content-addressed extraction
+                // can only give those paths to one archive, so the second is refused instead of
+                // colliding with the owner's track rows. This is admin-fixable library
+                // maintenance: remove one copy and rescan.
+                hatchet.e(
+                    "Refusing RSN archive ${duplicate.source}: byte-identical to " +
+                        "${duplicate.owner}. Remove one of the two archives and rescan."
+                )
+                refusedAsDuplicate = true
+                null
             } catch (error: Exception) {
                 // Disk full, permissions, a foreign extractor bug: this archive fails (closing the
                 // prune gate) while the rest of the scan can still complete.
@@ -593,7 +611,9 @@ class RealScanner(
                 null
             }
             if (members == null) {
-                hatchet.w("RSN extraction failed for $filename — dropping its tracks.")
+                if (!refusedAsDuplicate) {
+                    hatchet.w("RSN extraction failed for $filename — dropping its tracks.")
+                }
                 failures++
                 tracks.clear()
                 continue

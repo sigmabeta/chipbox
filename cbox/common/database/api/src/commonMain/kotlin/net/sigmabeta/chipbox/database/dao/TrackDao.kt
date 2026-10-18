@@ -40,6 +40,12 @@ interface TrackDao {
     @Query("SELECT * FROM track WHERE id = :trackId")
     suspend fun getTrackSync(trackId: Long): TrackEntity?
 
+    // Cross-game reconciliation: a content-addressed extracted path can move between games when its
+    // source folder is renamed or replaced. Used only when inserting a new game, to adopt a stale
+    // row (keeping its id) instead of colliding with the unique (path, trackNumber) index.
+    @Query("SELECT * FROM track WHERE path IN (:paths)")
+    suspend fun getTracksForPaths(paths: List<String>): List<TrackEntity>
+
     @Query("SELECT * FROM track WHERE title LIKE :title ORDER BY title COLLATE NOCASE")
     fun searchTracksByTitle(title: String): Flow<List<TrackEntity>>
 

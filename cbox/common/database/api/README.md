@@ -17,7 +17,7 @@ what lets it build for the JS purity gate alongside Android + JVM. The productio
 | --- | --- |
 | `ArtistDao.kt` | Artist reads/writes: by-id (`Flow` + sync), by-name, paged `getAll`, `LIKE` search, random, insert, `deleteOrphans` (drop artists no track references), `nukeTable`. |
 | `GameDao.kt` | Game reads/writes: by-id, by-`folder_key`, signature snapshot (`getSignatureRows` → `GameSignatureRow`, incl. each game's max track scanner version), per-extension reader-version snapshot (`getReaderVersionRows` → `GameReaderVersionRow`), paged `getAll`, per-platform, `LIKE` search, random, `getRecentlyAdded` (date_added window + random + limit, for the Home row), update, `deleteByIds`, `nukeTable`. Also declares the two projection types. |
-| `TrackDao.kt` | Track reads/writes: paged `getAll`, per-game, per-platform, by-id(s), distinct platforms, `LIKE` search, random, insert/insertAll, `updateAll`, `deleteByIds`, `nukeTable`. |
+| `TrackDao.kt` | Track reads/writes: paged `getAll`, per-game, per-platform, by-id(s), by-path set (`getTracksForPaths`, for adopting a content-addressed path that moved between games), distinct platforms, `LIKE` search, random, insert/insertAll, `updateAll`, `deleteByIds`, `nukeTable`. |
 | `GameArtistDao.kt` | The `game_artist_join` table: insert/delete links, id lists and full-row joins resolving games↔artists in display order, `nukeTable`. |
 | `TrackArtistDao.kt` | The `track_artist_join` table: insert/delete links, a track's artists, and an artist's tracks ordered by game title then track number, `nukeTable`. |
 | `SearchHistoryDao.kt` | Recent searches (most-recent-first, `LIMIT 10`), by-query lookup, insert, `deleteById`. |

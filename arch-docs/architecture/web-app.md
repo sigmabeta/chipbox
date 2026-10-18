@@ -5,9 +5,11 @@ hosted service and it is not a serverless player. The architecture decisions and
 their rationale live in [ADR-0003](../../docs/adr/0003-web-app-self-hosted-browser-client.md);
 this document is the working map and the v1 acceptance gate.
 
-> **Status:** the decisions are accepted; the code does not implement them all
-> yet. Where the current tree falls short, the checklist at the bottom is the
-> gap list. Do not treat an unchecked item as already shipped.
+> **Status:** v1 implementation is complete. What remains is external
+> verification — the Docker-host image gates and the three-browser manual matrix
+> in the checklist below — plus one deferred feature (artist photos). An
+> unchecked checklist item is still unverified, not shipped. Post-v1 follow-ups
+> are tracked in `.scratch/web-app/issues/` (12–18).
 
 ## Topology
 
@@ -73,6 +75,20 @@ Rules:
   matches on the original archive basename + 1-based member index. An extracted
   member then becomes an ordinary track: `path` is the extracted `.spc` path,
   `extension` is `spc`, and `trackNumber` is `0`.
+- One archive owns a content hash, recorded in a `.source` marker file in the
+  hash directory. A second archive with byte-identical bytes is refused
+  (`DuplicateRsnContentException`): its tracks are dropped, it counts as one
+  `tracksFailed`, and the log names both archive paths. The scan still completes
+  and the rest of the library is indexed. Extracted tracks are identified by
+  `(path, trackNumber)` under a unique index, so admitting the duplicate would
+  fail the whole scan instead. Removing one copy is admin maintenance; while
+  both exist the error repeats. If the owning archive is renamed/removed, the
+  marker's path no longer exists and the survivor takes the hash over. If the
+  surviving archive was the refused side, or the owning folder was renamed, the
+  newly inserted game adopts the existing extracted track rows (keeping their
+  ids, so favorites/queue references survive) before `pruneGames` removes the
+  old game. This adoption is generic to `DatabaseRepository.insertNewGame`, so
+  any content-addressed path can move between games without colliding.
 - Orphaned extraction directories are removed only after a scan completes with
   `tracksFailed == 0`, and only after removed folders are pruned. A directory is
   kept when any surviving track path is under it (this includes unchanged
@@ -367,9 +383,10 @@ and Safari. A failure blocks "usable".
 - [ ] Home, games, artists, platforms, all tracks, and search return results.
 - [ ] Game/artist paging returns distinct pages, with no duplicates or skipped
       entries.
-- [ ] Game covers load. Artist photos are a **known v1 gap**: no photo source
-      exists on any platform (`Artist.photoUrl` is always null), so this line is
-      accepted as a follow-up rather than a pass.
+- [ ] Game covers load. Artist photos are **deferred to a later version**: no
+      photo source exists on any platform (`Artist.photoUrl` is always null), so
+      v1 is expected to pass this line on covers alone. The existing
+      `/api/artists/{id}/photo` route serves a photo once a source exists.
 - [ ] Unknown `/api/*` paths return a JSON 404, not the SPA HTML.
 
 **Playback**

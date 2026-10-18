@@ -225,6 +225,10 @@ class FakeDatabase(private val random: Random = Random(0)) {
             tracks.values.filter { it.id in idSet }
         }
         override suspend fun getTrackSync(trackId: Long): TrackEntity? = tracks[trackId]
+        override suspend fun getTracksForPaths(paths: List<String>): List<TrackEntity> {
+            val pathSet = paths.toSet()
+            return tracks.values.filter { it.path in pathSet }
+        }
         override suspend fun getRandom(): TrackEntity? = tracks.values.randomOrNull(random)
         override fun searchTracksByTitle(title: String): Flow<List<TrackEntity>> = observe {
             tracks.values.filter { sqlLike(title, it.title) }.sortedBy { it.title.lowercase() }
