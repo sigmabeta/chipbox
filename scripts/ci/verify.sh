@@ -137,16 +137,21 @@ done
 [ "$rerun" = 1 ] && GRADLE_FLAGS+=(--rerun-tasks)
 
 valid_names=" ${ALL_TASKS[*]%%|*} ${DEVICE_TASK_NAMES[*]} ${WEB_OPT_IN_TASKS[*]} "
-# bash 3.2 (macOS) treats "${empty[@]}" as unbound under `set -u`; expand guardedly.
-for name in ${filter[@]+"${filter[@]}"}; do
-  if [[ "$valid_names" != *" $name "* ]]; then
-    echo "unknown task: $name (see --list)" >&2; exit 2
-  fi
-done
+# bash 3.2 (macOS) treats "${empty[@]}" and "${empty[*]}" as unbound under `set -u`, so build one
+# guarded text form and only expand the array inside a length check.
+filter_text=""
+if [ "${#filter[@]}" -gt 0 ]; then
+  filter_text=" ${filter[*]} "
+  for name in "${filter[@]}"; do
+    if [[ "$valid_names" != *" $name "* ]]; then
+      echo "unknown task: $name (see --list)" >&2; exit 2
+    fi
+  done
+fi
 
 # Naming a device task as a filter can't supply its required corpus, so steer it to its flag.
 for axis in "${DEVICE_AXES[@]}"; do
-  if [[ " ${filter[*]} " == *" device-$axis "* ]] && [ -z "$(device_corpus_get "$axis")" ]; then
+  if [[ "$filter_text" == *" device-$axis "* ]] && [ -z "$(device_corpus_get "$axis")" ]; then
     echo "the device-$axis task needs a corpus dir: scripts/ci/verify.sh --device-$axis <corpus-dir>" >&2; exit 2
   fi
 done
@@ -157,14 +162,14 @@ for entry in "${ALL_TASKS[@]}"; do
   if [ "$skip_apps" = 1 ] && [[ " $APP_BUILD_TASKS " == *" $name "* ]]; then continue; fi
   # web-image is opt-in via --web-image; naming it in the filter also selects it.
   if [ "$name" = "web-image" ] && [ "$web_image" != 1 ] \
-     && [[ " ${filter[*]} " != *" web-image "* ]]; then continue; fi
-  if [ "${#filter[@]}" -gt 0 ] && [[ " ${filter[*]} " != *" $name "* ]]; then continue; fi
+     && [[ "$filter_text" != *" web-image "* ]]; then continue; fi
+  if [ "${#filter[@]}" -gt 0 ] && [[ "$filter_text" != *" $name "* ]]; then continue; fi
   selected+=("$entry")
 done
 # Each device task is opt-in via its own `--device-<axis> <corpus>`; honor a name filter like any task.
 for axis in "${DEVICE_AXES[@]}"; do
   [ -n "$(device_corpus_get "$axis")" ] || continue
-  if [ "${#filter[@]}" -eq 0 ] || [[ " ${filter[*]} " == *" device-$axis "* ]]; then
+  if [ "${#filter[@]}" -eq 0 ] || [[ "$filter_text" == *" device-$axis "* ]]; then
     selected+=("device-$axis")
   fi
 done
