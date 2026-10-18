@@ -35,6 +35,29 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   No host path is exposed (only a failed file's basename). The browser retries
   its empty first library read while `status` is `scanning` (bounded retry), so
   opening the client during the startup scan shows the library once it finishes.
+- **Browsing / paging:** `GET /api/games`, `GET /api/artists`, and
+  `GET /api/tracks` all accept `limit` and `offset`.
+  - `offset` defaults to `0`; a negative value clamps to `0`; an offset too large
+    to fit in an `Int` clamps to `Int.MAX_VALUE` (an empty page, not page one).
+  - An absent `limit` returns every row from `offset` onward. A present `limit`
+    is clamped to `1..500`; a non-numeric value becomes `500`. This keeps a
+    typo'd or absurd request from streaming the whole catalog. Invalid values are
+    coerced, not rejected — no 400 for paging parameters.
+  - `?ids=1,2,3` bypasses paging on all three endpoints and returns exactly the
+    requested rows; `limit`/`offset` are ignored on that path.
+  - Ordering is `title`/`name` (`COLLATE NOCASE`) followed by `id`. The `id`
+    tiebreaker is a total order, so page boundaries through a tie group (many
+    games called "Unknown Title", artists differing only by case) do not repeat
+    or skip rows. The browser walks plain `OFFSET` pages; a scan still running
+    between two requests can shift a boundary, which is why the client waits for
+    the startup scan on its first read.
+- **Unknown API paths:** any `/api/...` request that matches no route returns
+  HTTP 404 with the JSON error body `{"error":"Not found"}` — for every method,
+  including `POST`/`DELETE`. Unknown paths never fall through to the SPA
+  `index.html`. App routes (`/`, `/artists/42`, …) still get the SPA shell from
+  the static fallback. The browser decodes the error body and surfaces its
+  message instead of reporting a JSON parse failure. The standard body is the
+  shared `ErrorResponse` in `:cbox:common:models:api`.
 - **Library refresh is restart-only.** The server scans on every start in the
   background and serves the current DB immediately. Unchanged folders are skipped
   by signature + scanner/reader version; new/changed files are picked up on
@@ -111,29 +134,45 @@ each archive's SPC members to:
 `./gradlew :apps:server:test` runs the server tests. The RSN suite covers
 extraction to ordinary SPC tracks, determinism/reuse, m3u overlay matching,
 the pruning gate, and serving/path-leak via `/api/files/{id}` +
-`/api/tracks/{id}`. Fixtures are generated as stored-entry RAR4 archives in a
-test helper (no external `rar` tool), and the scan uses
-`DatabaseRepository` over `FakeDatabase` with a no-op vgmstream prober, so no
-native library is required.
+`/api/tracks/{id}`. `LibraryPagingTest` walks `limit`/`offset` pages over
+duplicate sort keys for games, artists, and tracks, asserts the pages are the
+full catalog with no duplicates, and covers the `ids` bypass plus the
+limit/offset coercion rules. `UnknownApiRouteTest` covers the JSON 404 for
+unknown GET/POST/deep API paths, known routes not being shadowed, and app deep
+paths still returning `index.html` (a test-resource shell). Fixtures are
+generated as stored-entry RAR4 archives in a test helper (no external `rar`
+tool), and the scan uses `DatabaseRepository` over `FakeDatabase` with a no-op
+vgmstream prober, so no native library is required.
+
+DAO-level paging stability is covered by
+`:cbox:common:database:real:jvmTest` (`DaoPagingStabilityTest`): Room over
+bundled SQLite in-memory, with large tie groups, asserts the concatenated pages
+are the unpaged list exactly once. `FakeDatabase` sorts stably and cannot
+reproduce SQLite's unspecified order among peers, hence the real-SQLite layer.
 
 ## Entry point
 
 `Main.kt`'s `main()` reads `ServerConfig.fromEnv`, builds the `ServerChipboxGraph`,
 seeds the configured library dir into the persisted locations, launches a
 background scan (the server serves immediately — endpoints return whatever is in
-the DB now), then starts `embeddedServer(Netty, ...)` with content negotiation,
-status pages, partial content (Range), CORS, call logging, and the `/api/health`
-+ `libraryRoutes` + `fileRoutes` + `staticRoutes` routing.
+the DB now), then starts `embeddedServer(Netty, ...)` calling
+[`configureChipboxServer`](src/main/java/net/sigmabeta/chipbox/server/ServerApplication.kt)
+— content negotiation, status pages, partial content (Range), CORS, call
+logging, and the `/api/health` + `libraryRoutes` + `fileRoutes` +
+`apiNotFoundRoutes` + `staticRoutes` wiring. Route tests mount that same
+function, so the tested stack is the shipped stack.
 
 ## Contents
 
 | File | What it is |
 | --- | --- |
-| `Main.kt` | Entry point: config → graph → background scan → Ktor/Netty server + routing. |
+| `Main.kt` | Entry point: config → graph → background scan → Ktor/Netty server. |
+| `ServerApplication.kt` | `configureChipboxServer`: the plugin + routing stack shared by `main()` and the route tests (order: API routes, JSON API 404, SPA fallback). |
 | `ServerConfig.kt` | Env-var-sourced runtime config; fails fast (exit 64) on a missing library dir. |
 | `di/ServerChipboxGraph.kt` | `@DependencyGraph(AppScope)` root; accessors for repository, scanner, content sources, app scope. Factory takes `dbPath` + `workDir`. |
 | `di/ServerModules.kt` | Binding containers composing the DB/scanner/repository/coroutines wiring. |
-| `http/LibraryRoutes.kt`, `http/FileRoutes.kt`, `http/StaticRoutes.kt` | The `/api` JSON endpoints, file streaming (`/api/files/{trackId}`, chain files, covers/photos), and SPA-fallback static serving. |
+| `http/LibraryRoutes.kt`, `http/FileRoutes.kt`, `http/StaticRoutes.kt` | The `/api` JSON endpoints (paging + validation), file streaming (`/api/files/{trackId}`, chain files, covers/photos), and SPA-fallback static serving. |
+| `http/ApiNotFoundRoutes.kt` | Catch-all JSON 404 for unmatched `/api` paths, installed before the SPA fallback. |
 | `http/Health.kt` | `/api/health`: maps the live `ScannerState` to the shared `HealthStatus` wire model (no host paths). |
 | `http/ImageResizer.kt`, `http/PublicUrls.kt`, `http/DataFlowDrain.kt` | Thumbnail resizing, public URL rewriting, repository `Data`-flow draining helper. |
 | `scanner/ServerRsnExtractor.kt` | Content-addressed RSN→SPC extraction + post-scan orphan pruning. |

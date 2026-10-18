@@ -9,12 +9,14 @@ import net.sigmabeta.chipbox.entities.TrackEntity
 
 @Dao
 interface TrackDao {
-    @Query("SELECT * FROM track ORDER BY title")
+    // `id` is a tiebreaker: many tracks share a title ("Unknown Title", one song on several rips),
+    // and an unstable order among peers can duplicate or skip rows across page requests.
+    @Query("SELECT * FROM track ORDER BY title, id")
     fun getAll(): Flow<List<TrackEntity>>
 
     // Paged variant of [getAll]. SQLite treats a negative LIMIT as "no limit", so passing -1 yields
     // every row from [offset] onward — letting the repository express "skip N, take the rest".
-    @Query("SELECT * FROM track ORDER BY title LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM track ORDER BY title, id LIMIT :limit OFFSET :offset")
     fun getAllPaged(limit: Int, offset: Int): Flow<List<TrackEntity>>
 
     @Query("SELECT * FROM track WHERE game_id = :gameId")
