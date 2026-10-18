@@ -236,7 +236,10 @@ saved snapshot, and reloading a tab restores that snapshot.
 - The SPA fallback never answers an API request. Any unmatched `/api/...` path
   returns HTTP 404 with the standard `{"error": …}` JSON body (every method), so
   the client can show the server's message instead of failing to decode
-  `index.html`. Paged list endpoints (`games`, `artists`, `tracks`) clamp
+  `index.html`. The rule matches the `/api` path segment exactly, not a string
+  prefix: bare `/api` (no trailing segment) is the same JSON 404, while `/apiary`
+  is an app-shaped route and still gets the SPA shell. Paged list endpoints
+  (`games`, `artists`, `tracks`) clamp
   `limit` into `1..500`, default `offset` to 0, and order by their display key
   plus `id`, so pages partition the catalog under ties.
 - The fallback serves `index.html` only for app-shaped routes. A missing asset

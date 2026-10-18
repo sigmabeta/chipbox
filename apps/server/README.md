@@ -54,7 +54,10 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
     the startup scan on its first read.
 - **Unknown API paths:** any `/api/...` request that matches no route returns
   HTTP 404 with the JSON error body `{"error":"Not found"}` — for every method,
-  including `POST`/`DELETE`. Unknown paths never fall through to the SPA
+  including `POST`/`DELETE`. The bare `/api` path (zero trailing segments) is the
+  same JSON 404; the rule matches the `/api` segment exactly, not a string
+  prefix, so `/apiary` is an app-shaped route and still gets the SPA shell.
+  Unknown paths never fall through to the SPA
   `index.html`. App routes (`/`, `/artists/42`, …) still get the SPA shell from
   the static fallback; the bundled `index.html` pins its relative
   favicon/splash/bundle URLs with `<base href="/">`, so a refresh on `/game/42`
@@ -201,12 +204,14 @@ move keeps the previous member, stale temps are swept), the pruning gate, and
 serving/path-leak via `/api/files/{id}` + `/api/tracks/{id}`.
 `LibraryPagingTest` walks `limit`/`offset` pages over duplicate sort keys for
 games, artists, and tracks, asserts the pages are the full catalog with no
-duplicates, and covers the `ids` bypass plus the
-limit/offset coercion rules. `UnknownApiRouteTest` covers the JSON 404 for
-unknown GET/POST/deep API paths, known routes not being shadowed, app deep
-paths still returning `index.html` (a test-resource shell), and existing static
-assets such as `/chipbox.js` being served as themselves rather than swallowed by
-the SPA fallback. `WebIndexHtmlTest` reads the shipped
+duplicates, and covers the `ids` bypass plus the limit/offset coercion rules.
+`UnknownApiRouteTest` covers the JSON 404 for bare `/api` and unknown
+GET/POST/deep API paths, the exact-segment rule (`/apiary` is not an API path),
+known routes not being shadowed, app deep paths still returning `index.html` (a
+test-resource shell), and existing static assets such as `/chipbox.js` being
+served as themselves rather than swallowed by the SPA fallback. `StaticRoutesTest`
+covers the asset policy (a missing `/wasm/*` or extension-bearing path is a real
+404, while app routes still fall back), and `WebIndexHtmlTest` reads the shipped
 `apps/js/src/jsMain/resources/index.html` and asserts its `<base href="/">` (the
 deep-link asset contract). Fixtures are
 generated as stored-entry RAR4 archives in a test helper (no external `rar`
