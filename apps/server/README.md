@@ -74,9 +74,10 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   -Dorg.gradle.isolated-projects=false --configure-on-demand
   -Pchipbox.cmake=$(command -v cmake)`. No emulator playback on the server.
 - **Docker image:** the deployment artifact is the root `Dockerfile` (multi-stage:
-  JDK 21 + Node 22/Yarn + pinned emsdk builds the bundle/WASM, the native stage
-  builds the target-arch `libvgmstream.so`, a JRE 21 runtime runs non-root). Build
-  with the `sage` submodule checked out:
+  JDK 21 + Node 22/Yarn + pinned emsdk builds the bundle/WASM on `$BUILDPLATFORM`;
+  the native stage builds the target-arch `libvgmstream.so` on `$TARGETPLATFORM`;
+  a JRE 21 runtime runs non-root on glibc). Build with the `sage` submodule
+  checked out:
   ```sh
   git submodule update --init --recursive
   docker build -t chipbox-server:dev .
@@ -84,9 +85,45 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
     -v /path/to/music:/music:ro -v chipbox-data:/data chipbox-server:dev
   ```
   `/music` is read-only; `/data` persists the DB + work dir (a bind-mounted
-  `/data` must be writable by uid `10001`). The image is built for amd64 on PRs
-  (and both amd64/arm64 on release) but **is not published to any registry**.
-  There is **no authentication**: run it on loopback or a trusted LAN only.
+  `/data` must be writable by uid `10001`).
+
+  **Multi-arch (both architectures, no registry).** The release job builds
+  `linux/amd64` + `linux/arm64` in one buildx invocation and writes an OCI
+  archive; `--load` only accepts a single platform, so the two-arch result cannot
+  be loaded into the local daemon directly. Do the same locally:
+  ```sh
+  # One-time on an amd64 host: register arm64 binfmt so the arm64 native stage can
+  # run under QEMU. Docker Desktop already provides this on macOS/Windows.
+  docker run --privileged --rm tonistiigi/binfmt --install arm64
+  docker buildx create --name chipbox --driver docker-container --use
+
+  docker buildx build --platform linux/amd64,linux/arm64 \
+    --output type=oci,dest=build/chipbox-server-multiarch.tar \
+    --cache-from type=local,src=.docker-cache \
+    --cache-to type=local,dest=.docker-cache,mode=max .
+  python3 scripts/ci/verify-oci-index.py \
+    build/chipbox-server-multiarch.tar linux/amd64 linux/arm64
+  ```
+  The web/WASM stage runs once on the build host (`$BUILDPLATFORM`); only the
+  small CMake vgmstream stage is per-arch, so the arm64 half does not run Gradle
+  or emsdk under QEMU. For a runnable local image, build one platform with
+  `--load` and smoke it (the script checks `/api/health`, the SPA, all nine
+  WASM loader/WASM pairs, and the bundled native library):
+  ```sh
+  docker buildx build --platform linux/amd64 --load -t chipbox-server:dev .
+  scripts/ci/web-image-smoke.sh chipbox-server:dev --platform linux/amd64
+  # Inspect a cross-loaded arm64 image without QEMU (file contents only):
+  docker buildx build --platform linux/arm64 --load -t chipbox-server:arm64 .
+  scripts/ci/web-image-smoke.sh chipbox-server:arm64 --platform linux/arm64 --contents-only
+  ```
+
+  The image is built for amd64 on PRs and both amd64/arm64 on release. It is
+  **not published to any registry**, has **no registry credentials or push
+  step**, and there is **no public distribution** in v1 — the OCI tar is a
+  local/release artifact only. There is **no authentication**: run it on
+  loopback or a trusted LAN only. `scripts/ci/verify-docker-release.sh` statically
+  checks the platform stages, both-arch release wiring, no-push rule, native-lib
+  architecture assertion, and pinned toolchain.
 
 ## RSN extraction
 

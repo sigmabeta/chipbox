@@ -226,10 +226,13 @@ saved snapshot, and reloading a tab restores that snapshot.
     so no Android SDK is needed).
   - `native` (TARGETPLATFORM): JDK 21 + CMake → `libvgmstream.so` for the target
     architecture, configured with `--configure-on-demand` so the Android native
-    modules are not configured.
-  - `runtime`: JRE 21 on Ubuntu/glibc (the `.so` is glibc-linked, not alpine),
-    non-root uid 10001, `/music` (read-only library) and `/data` (DB + work dir,
-    persistent), `curl` healthcheck.
+    modules are not configured. The stage asserts the produced ELF
+    `e_machine` matches `$TARGETARCH` (amd64 `3e 00`, arm64 `b7 00`).
+  - `runtime` (TARGETPLATFORM): JRE 21 on Ubuntu/glibc (the `.so` is glibc-linked,
+    not alpine), non-root uid 10001, `/music` (read-only library) and `/data` (DB
+    + work dir, persistent), `curl` healthcheck. It also asserts at build time
+    that the packaged server jar carries `index.html` and all nine WASM
+    loader/WASM pairs (the list is `apps/js/wasm-emulators.txt`).
   ```sh
   git submodule update --init --recursive   # sage is a build input
   docker build -t chipbox-server:dev .
@@ -238,14 +241,31 @@ saved snapshot, and reloading a tab restores that snapshot.
   ```
   A bind-mounted `/data` must be writable by uid 10001. Builds for
   `linux/amd64` on every PR and both architectures on release; images are **not
-  pushed** to a registry yet.
+  pushed** to a registry yet. A two-arch build needs QEMU/binfmt on an amd64
+  host and an OCI archive output (`--load` is single-platform):
+  ```sh
+  docker run --privileged --rm tonistiigi/binfmt --install arm64
+  docker buildx build --platform linux/amd64,linux/arm64 \
+    --output type=oci,dest=build/chipbox-server-multiarch.tar \
+    --cache-from type=local,src=.docker-cache \
+    --cache-to type=local,dest=.docker-cache,mode=max .
+  scripts/ci/verify-oci-index.py build/chipbox-server-multiarch.tar linux/amd64 linux/arm64
+  ```
+  The release job mirrors this with `type=gha` caching, uploads the OCI archive
+  as a workflow artifact (no registry, no credentials), smokes the loaded amd64
+  image, and inspects the cross-loaded arm64 image's contents without QEMU.
+  `scripts/ci/verify-docker-release.sh` statically pins the platform stages,
+  both-arch release wiring, no-push rule, and native-lib architecture check.
 - CI: the `web` job (after `static-analysis`) sets up JDK 21, Node 22 + the pinned
   Yarn, a cached pinned emsdk, and the Gradle cache; it builds WASM + the bundle +
   the server, runs `scripts/ci/verify-web-bundle.sh` and `jsNodeTest`, builds the
   amd64 image **without pushing**, and smokes `/api/health`, `/`, `/chipbox.js`,
-  `/wasm/chipbox_gme.{js,wasm}` and the bundled native library. Locally,
-  `scripts/ci/verify.sh web` mirrors it and `--web-image` adds the image smoke;
-  both SKIP (not fail) when the toolchain/daemon is missing.
+  all nine `/wasm` loader/WASM pairs, and the bundled native library via
+  `scripts/ci/web-image-smoke.sh`. `static-analysis` also runs
+  `scripts/ci/verify-docker-release.sh` (platform stages, release wiring, no push,
+  native-lib arch, pinned toolchain). Locally, `scripts/ci/verify.sh web` mirrors
+  the bundle/tests and `--web-image` adds the image build + smoke; both SKIP (not
+  fail) when the toolchain/daemon is missing.
 
 ## Testing
 
