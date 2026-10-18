@@ -142,6 +142,7 @@ include(
     ":cbox:common:playlists:real",
     ":cbox:common:playlists:fake",
     ":cbox:common:playlists:di",
+    ":cbox:common:browserstate",
     ":cbox:android:playlists:di",
     ":cbox:android:images:api",
     ":cbox:common:player-status:api",

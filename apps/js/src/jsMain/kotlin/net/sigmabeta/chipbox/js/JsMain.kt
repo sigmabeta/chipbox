@@ -170,6 +170,9 @@ fun main() {
                         onOpenUrl = { url -> window.open(url, "_blank") },
                         onCopyToClipboard = { _, text -> window.navigator.clipboard.writeText(text) },
                         backKeyEvents = backKeyEvents,
+                        // Corrupt/older data and localStorage quota failures are non-fatal: the
+                        // stores fall back to empty and surface a one-line snackbar here.
+                        messages = graph.browserStateEvents.userMessages,
                     )
                 }
             }
