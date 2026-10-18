@@ -52,7 +52,7 @@ in `apps/js` (browser services, WASM bindings, localStorage) and `apps/server`
 ## RSN extraction
 
 The scanner already decodes RSN archives once to read per-member SPC tags. In
-the server graph, an extractor writes those members to:
+the server graph, an injected `RsnExtractor` writes those members to:
 
 ```text
 <CHIPBOX_WORK_DIR>/rsn/<content-hash>/<member>.spc
@@ -60,21 +60,35 @@ the server graph, an extractor writes those members to:
 
 Rules:
 
-- Extraction is injected only on the server. Desktop, Android, and CLI keep the
-  existing archive-path staging and are unaffected.
+- Extraction is injected only on the server (`ServerRsnExtractor`). Desktop,
+  Android, and CLI keep the existing archive-path staging and are unaffected;
+  the collaborator defaults to null at every other construction site.
 - The output directory is content-addressed and deterministic; the same archive
-  content maps to the same paths.
-- Orphaned extraction directories are removed only after a scan completes
-  successfully. A failed or partial scan never deletes usable output.
-- An extracted member becomes an ordinary track: `path` is the extracted `.spc`
-  path, `extension` is `spc`, and `trackNumber` is `0`. The original archive
-  basename and member index are used only while applying RSN m3u overlays.
+  content maps to the same paths. Member names are sanitized (directory
+  components stripped, unsafe characters replaced), and duplicate basenames
+  within one archive get a zero-padded member-index prefix. A member whose
+  existing bytes match is reused rather than rewritten.
+- Extraction happens at scan time, after the RSN m3u overlay and filename-title
+  fallback, and before persistence. This ordering is load-bearing: the overlay
+  matches on the original archive basename + 1-based member index. An extracted
+  member then becomes an ordinary track: `path` is the extracted `.spc` path,
+  `extension` is `spc`, and `trackNumber` is `0`.
+- Orphaned extraction directories are removed only after a scan completes with
+  `tracksFailed == 0`, and only after removed folders are pruned. A directory is
+  kept when any surviving track path is under it (this includes unchanged
+  folders the scan skipped). A failed or partial scan never deletes usable
+  output; individual delete failures are tolerated and retried next time.
 - The extracted absolute path stays server-internal: `PublicUrls` rewrites
   `Track.path` to `/api/files/{id}` before the model reaches the browser.
+  Serving needs no new endpoint — `LocalFileContentSource` reads the extracted
+  path through the same `/api/files/{id}` route.
 - Track IDs re-key once on the first extraction. `CHIPBOX_WORK_DIR` is treated
-  as installation-stable: moving it or deleting it invalidates browser-local
-  track references. Client hydration drops unknown IDs instead of failing.
-- A scanner version bump is required so existing RSN rows are rescanned.
+  as installation-stable: moving it or deleting its contents invalidates
+  browser-local track references (the DB's folder signature does not notice),
+  and client hydration drops unknown IDs instead of failing.
+- Scanner version 2 forces existing RSN rows to be re-read once on upgrade.
+  Rows persisted after extraction are `spc` tracks, so future RSN fixes need
+  another scanner bump (or a dedicated stored extraction version).
 
 ## Browser state
 

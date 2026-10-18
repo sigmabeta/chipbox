@@ -217,6 +217,7 @@ dependencies {
     implementation(projects.cbox.common.contentsource.file.real)
     implementation(projects.cbox.common.readers.api)
     implementation(projects.cbox.common.models.api)
+    implementation(projects.cbox.common.utils.api)
     implementation(projects.cbox.common.strings.real)
     implementation(libs.sage.common.ui.strings)
     implementation(libs.sqlite.bundled)
@@ -248,7 +249,12 @@ dependencies {
     implementation(libs.okio)
 
     // Health/scan-state mapping + loopback-bind tests are plain JVM unit tests (no Ktor server
-    // startup), same test stack as apps/jvm.
+    // startup), same test stack as apps/jvm. Scan + RSN extraction tests run over
+    // DatabaseRepository/FakeDatabase, and route tests go through Ktor's test host. kotlin-test
+    // resolves to its JUnit 4 variant via the junit4 dep; there is no catalog alias for
+    // ktor-server-test-host, so use the catalog's Ktor version with an explicit coordinate.
     testImplementation(kotlin("test"))
     testImplementation(libs.junit4)
+    testImplementation("io.ktor:ktor-server-test-host:${libs.versions.ktor.get()}")
+    testImplementation(projects.cbox.common.database.fake)
 }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import net.sigmabeta.chipbox.contentsource.LibraryFileInfo
@@ -23,14 +24,18 @@ import net.sigmabeta.chipbox.readers.PsfTagInfo
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.readers.isPsfFamily
 import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProber
+import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteResult
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.RawTrack
 import net.sigmabeta.chipbox.repository.Repository
+import net.sigmabeta.chipbox.scanner.RsnExtractor
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
+import net.sigmabeta.chipbox.utils.RSN_EXTENSION
+import net.sigmabeta.chipbox.utils.RSN_MEMBER_EXTENSION
 import net.sigmabeta.chipbox.utils.ioDispatcher
 import net.sigmabeta.sage.logging.Hatchet
 import okio.ByteString.Companion.toByteString
@@ -55,6 +60,9 @@ class RealScanner(
     private val vgmstreamProbe: VgmstreamProber,
     private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = ioDispatcher,
+    // Server-only: rewrites RSN archive tracks to standalone extracted .spc files. Null on
+    // desktop/Android/CLI, where playback stages the member out of the archive itself.
+    private val rsnExtractor: RsnExtractor? = null,
 ) : Scanner(dispatcher) {
 
     // Scan work spans coroutine suspension points, so a trace section's begin and end can land on
@@ -151,6 +159,16 @@ class RealScanner(
         val removed = traceAsync(TRACE_PRUNE, nextCookie()) { repository.pruneGames(seenFolderKeys.load()) }
         removed.forEach { emitEvent(ScannerEvent.GameRemoved(it)) }
 
+        // Extraction output is pruned only after the folder sweep has completed and nothing failed.
+        // `pruneGames` runs first so removed folders' extracted members are already unreferenced; a
+        // failed/partial scan (tracksFailed > 0) or a thrown scan never reaches this point, so it can
+        // never delete output a retry might still use.
+        if (total.tracksFailed == 0) {
+            traceAsync(TRACE_PRUNE_RSN, nextCookie()) { pruneOrphanedRsnOutput() }
+        } else {
+            hatchet.w("Scan had ${total.tracksFailed} failure(s) — keeping all RSN extraction output.")
+        }
+
         val duration = scanStart.elapsedNow()
         hatchet.i(
             "Scan complete in ${duration.inWholeSeconds}s — " +
@@ -208,6 +226,9 @@ class RealScanner(
     ): Progress {
         var imagePath: String? = null
         val tracksByFilename = LinkedHashMap<String, MutableList<RawTrack>>()
+        // Archive bytes already read by the RSN reader, handed to the server extractor so the file
+        // is opened once and extraction uses the same bytes / `rsnSpcMembers` member order.
+        val rsnArchiveBytes = LinkedHashMap<String, ByteArray>()
         val m3uFiles = mutableListOf<LibraryFileInfo>()
         var failed = 0
 
@@ -299,6 +320,7 @@ class RealScanner(
                 val bytes = traceAsync(TRACE_OPEN_BYTES, nextCookie()) {
                     librarySource.openBytes(file.identifier)
                 } ?: return@readWithErrorHandling null
+                if (ext == RSN_EXTENSION) rsnArchiveBytes[file.name] = bytes
                 trace("$TRACE_READ_PREFIX$ext") { reader.readTracksFromFile(bytes, file.identifier) }
                     ?.map { it.copy(source = librarySource.sourceId, extension = ext) }
             }
@@ -367,6 +389,11 @@ class RealScanner(
                 )
             }
         }
+
+        // RSN extraction must run here: the m3u overlay above matches on the original archive
+        // basename + member index, and the filename fallback derives titles from archive names.
+        // Rewriting tracks to extracted paths before either would break those matches.
+        failed += extractRsnMembers(tracksByFilename, rsnArchiveBytes)
 
         val rawTracks = tracksByFilename.values.flatten().map {
             // Stamp the versions that produced this track so the next scan can skip the folder when
@@ -537,6 +564,84 @@ class RealScanner(
         }
     }
 
+    /**
+     * Rewrites every RSN archive's tracks into standalone extracted `.spc` tracks. [trackNumber]
+     * is the member index produced by `RsnReader` (same order as `rsnSpcMembers`), so it maps
+     * directly onto the extractor's returned member list. Returns the number of archive-level
+     * failures; a failed archive contributes no tracks, which keeps the scan from persisting
+     * unplayable archive rows and forces the prune gate closed.
+     */
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun extractRsnMembers(
+        tracksByFilename: MutableMap<String, MutableList<RawTrack>>,
+        archiveBytesByFilename: Map<String, ByteArray>,
+    ): Int {
+        val extractor = rsnExtractor ?: return 0
+        var failures = 0
+        for ((filename, tracks) in tracksByFilename) {
+            val archiveBytes = archiveBytesByFilename[filename] ?: continue
+            val members = try {
+                extractor.extract(archiveBytes)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (error: Exception) {
+                // Disk full, permissions, a foreign extractor bug: this archive fails (closing the
+                // prune gate) while the rest of the scan can still complete.
+                hatchet.e("RSN extraction failed for $filename: ${error.stackTraceToString()}")
+                null
+            }
+            if (members == null) {
+                hatchet.w("RSN extraction failed for $filename — dropping its tracks.")
+                failures++
+                tracks.clear()
+                continue
+            }
+            var dropped = 0
+            val rewritten = tracks.mapNotNull { track ->
+                val member = members.getOrNull(track.trackNumber)
+                if (member == null) {
+                    hatchet.w("RSN member ${track.trackNumber} missing from $filename.")
+                    dropped++
+                    null
+                } else {
+                    track.copy(
+                        path = member.path,
+                        extension = RSN_MEMBER_EXTENSION,
+                        trackNumber = 0,
+                    )
+                }
+            }
+            if (dropped > 0) failures++
+            tracks.clear()
+            tracks.addAll(rewritten)
+        }
+        return failures
+    }
+
+    /**
+     * Delete extracted-member directories no surviving track references. Called only after a fully
+     * successful scan, and after [Repository.pruneGames], so the kept set reflects the post-prune
+     * library. Skipped/unchanged folders never run the extractor, so this must consult the library
+     * rather than "what this scan extracted" — otherwise their output would be wrongly deleted.
+     */
+    private suspend fun pruneOrphanedRsnOutput() {
+        val extractor = rsnExtractor ?: return
+        val tracks = when (val data = repository.getAllTracks().first { it !is Data.Loading }) {
+            is Data.Succeeded -> data.data
+
+            is Data.Empty -> emptyList()
+
+            is Data.Failed -> {
+                // Unsure what survives → deleting could destroy usable output. Keep everything.
+                hatchet.w("Skipping RSN extraction prune — could not list tracks: ${data.message}")
+                return
+            }
+
+            Data.Loading -> return
+        }
+        extractor.prune(tracks.mapTo(mutableSetOf()) { it.path })
+    }
+
     private suspend fun resolvePsfChain(
         tagInfo: PsfTagInfo,
         byFilename: Map<String, LibraryFileInfo>,
@@ -639,5 +744,6 @@ class RealScanner(
         private const val TRACE_PARSE_M3U = "Scanner:parseM3u"
         private const val TRACE_UPSERT_GAME = "Scanner:upsertGame"
         private const val TRACE_PRUNE = "Scanner:pruneGames"
+        private const val TRACE_PRUNE_RSN = "Scanner:pruneRsnExtraction"
     }
 }
