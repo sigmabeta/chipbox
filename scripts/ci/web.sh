@@ -69,7 +69,11 @@ scripts/ci/verify-web-bundle.sh || exit 1
 run_gradle :apps:server:test -Pchipbox.skipNative --build-cache --console=plain || exit 1
 
 # The shared pure-logic suites (localStorage codecs, URL<->route mapping, model serialization).
-run_gradle jsNodeTest "${GRADLE_FLAGS[@]}" || exit 1
+# The aggregate compiles ~25 JS test executables in one long-lived Kotlin daemon; the default 4g
+# daemon OOMs in the IR inliner after ~100 compiles, so give this invocation headroom and fewer
+# workers. (CI's web job passes the same override.)
+run_gradle jsNodeTest "${GRADLE_FLAGS[@]}" \
+  -Pkotlin.daemon.jvmargs=-Xmx12g --max-workers=2 || exit 1
 
 if [ "$MODE" != "image" ] && [ "$MODE" != "web-image" ]; then
   echo "web verification passed (bundle + WASM pairs + jsNodeTest + installDist)"
