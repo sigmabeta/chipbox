@@ -12,11 +12,16 @@ import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import net.sigmabeta.chipbox.browserstate.BrowserStateEvents
 import net.sigmabeta.chipbox.browserstate.BrowserStateReason
 import net.sigmabeta.chipbox.browserstate.StorageFavoritesRepository
+import net.sigmabeta.chipbox.browserstate.StoragePlaybackHistoryRepository
+import net.sigmabeta.chipbox.browserstate.StoragePlaybackSessionStore
 import net.sigmabeta.chipbox.browserstate.StoragePlaylistsRepository
+import net.sigmabeta.chipbox.browserstate.referencedTrackIds
+import net.sigmabeta.chipbox.browserstate.withKnownTracks
 import net.sigmabeta.chipbox.contentsource.ContentSource
 import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.contentsource.LibrarySource
@@ -60,11 +65,16 @@ import net.sigmabeta.chipbox.player.director.real.RealDirector
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.generator.Generator
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
+import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
+import net.sigmabeta.chipbox.player.persistence.PlaybackSessionStore
+import net.sigmabeta.chipbox.player.persistence.SessionSnapshotFilter
+import net.sigmabeta.chipbox.player.persistence.real.RealPlaybackSessionPersister
 import net.sigmabeta.chipbox.player.resampler.CubicResampler
 import net.sigmabeta.chipbox.player.resampler.LinearResampler
 import net.sigmabeta.chipbox.player.resampler.Resampler
 import net.sigmabeta.chipbox.player.speaker.Speaker
 import net.sigmabeta.chipbox.playlists.PlaylistsRepository
+import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
@@ -357,14 +367,17 @@ object WebScannerModule {
 @ContributesTo(AppScope::class)
 object WebHistoryModule {
     // Browser-local playback history. The browser has no Room store and the server exposes no
-    // history endpoint, so plays are persisted in window.localStorage via
-    // [LocalStoragePlaybackHistoryRepository]. It's fed by the shared, tested
+    // history endpoint, so plays live in window.localStorage through ticket 06's versioned,
+    // bounded (500-play) store at `chipbox.playback_history`. It's fed by the shared, tested
     // [RealPlaybackHistoryRecorder] (the same recorder apps/jvm + apps/android use) — JsMain calls
     // observe() at startup, so once a track plays past the 10s / play-to-end threshold the Home
-    // recently-/most-played cards fill and survive reloads.
+    // recently-/most-played cards fill and survive reloads. Reads derive from `savedStringFlow`,
+    // so a play recorded in another tab appears without a reload.
     @Provides @SingleIn(AppScope::class)
-    fun providePlaybackHistoryRepository(hatchet: Hatchet): PlaybackHistoryRepository =
-        LocalStoragePlaybackHistoryRepository(hatchet)
+    fun providePlaybackHistoryRepository(
+        storage: Storage,
+        events: BrowserStateEvents,
+    ): PlaybackHistoryRepository = StoragePlaybackHistoryRepository(storage, events)
 
     @Provides @SingleIn(AppScope::class)
     fun providePlaybackHistoryRecorder(
@@ -372,6 +385,68 @@ object WebHistoryModule {
         repository: PlaybackHistoryRepository,
         hatchet: Hatchet,
     ): PlaybackHistoryRecorder = RealPlaybackHistoryRecorder(director, repository, hatchet)
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object WebPlaybackSessionModule {
+    // The saved session (queue, current track, position, shuffle, repeat) lives in the same
+    // versioned browser store. `StoragePlaybackSessionStore` implements the shared
+    // PlaybackSessionStore contract over localStorage; the raw snapshot the shared
+    // RealPlaybackSessionStore wrote is readable as schema version 0.
+    @Provides @SingleIn(AppScope::class)
+    fun providePlaybackSessionStore(
+        storage: Storage,
+        events: BrowserStateEvents,
+    ): PlaybackSessionStore = StoragePlaybackSessionStore(storage, events)
+
+    // The shared persister owns the save/restore semantics (save on PLAYING -> PAUSED, clear on
+    // STOPPED, snapshotNow for teardown); the filter is the browser-only pre-restore step that
+    // drops track ids a rebuilt library/RSN re-key no longer has. If the lookup itself fails we
+    // keep the snapshot untouched — a transient server error must not erase a resumable session.
+    @Provides @SingleIn(AppScope::class)
+    fun providePlaybackSessionPersister(
+        director: Director,
+        store: PlaybackSessionStore,
+        repository: Repository,
+        hatchet: Hatchet,
+    ): PlaybackSessionPersister = RealPlaybackSessionPersister(
+        director = director,
+        store = store,
+        hatchet = hatchet,
+        filter = SessionSnapshotFilter { snapshot ->
+            val known = repository.knownTrackIds(snapshot.referencedTrackIds())
+                ?: return@SessionSnapshotFilter snapshot
+            snapshot.withKnownTracks(known)
+        },
+    )
+
+    /**
+     * Resolve [ids] to the tracks the library still has. Null means the lookup failed (API
+     * unreachable, scan not ready) and the caller should leave the snapshot alone. Ids are looked
+     * up in small chunks so a long queue (an all-tracks or playlist session) cannot overflow the
+     * server's request line.
+     */
+    private suspend fun Repository.knownTrackIds(ids: List<Long>): Set<Long>? {
+        if (ids.isEmpty()) return emptySet()
+        val known = mutableSetOf<Long>()
+        for (chunk in ids.distinct().chunked(TRACK_LOOKUP_CHUNK)) {
+            val data = try {
+                getTracksByIds(chunk).first { it !is Data.Loading }
+            } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+                return null
+            }
+            when (data) {
+                is Data.Succeeded -> known += data.data.map { it.id }
+                Data.Empty -> Unit
+                is Data.Failed -> return null
+                Data.Loading -> return null
+            }
+        }
+        return known
+    }
+
+    private const val TRACK_LOOKUP_CHUNK = 100
 }
 
 @BindingContainer

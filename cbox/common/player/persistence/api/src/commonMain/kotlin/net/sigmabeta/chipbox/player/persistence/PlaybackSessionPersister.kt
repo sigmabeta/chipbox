@@ -21,6 +21,10 @@ interface PlaybackSessionPersister {
     /** Write the latest observed playback position immediately, regardless of state — the teardown
      *  net for "closed while playing" (no pause ever happened). Synchronous so it can run from a
      *  service `onDestroy`/`onTaskRemoved` with no coroutine; relies on [observe] already running.
-     *  No-op when nothing is playing. */
-    fun snapshotNow()
+     *  No-op when nothing is playing.
+     *
+     *  [teardown] guards the session against the `STOPPED` a released player emits during teardown
+     *  (which would otherwise clear what this just wrote). Pass false for a non-teardown flush —
+     *  e.g. the web host's `visibilitychange=hidden` — so a subsequent real stop still clears. */
+    fun snapshotNow(teardown: Boolean = true)
 }

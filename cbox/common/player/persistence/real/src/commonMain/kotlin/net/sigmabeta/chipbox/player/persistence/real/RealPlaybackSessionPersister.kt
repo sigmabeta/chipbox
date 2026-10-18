@@ -15,6 +15,7 @@ import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.player.director.SessionRequest
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionStore
+import net.sigmabeta.chipbox.player.persistence.SessionSnapshotFilter
 import net.sigmabeta.sage.logging.Hatchet
 
 /**
@@ -42,6 +43,7 @@ class RealPlaybackSessionPersister(
     private val store: PlaybackSessionStore,
     private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val filter: SessionSnapshotFilter? = null,
 ) : PlaybackSessionPersister {
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
@@ -77,9 +79,29 @@ class RealPlaybackSessionPersister(
             .getOrNull()
             ?: return
 
+        // Resolve persisted track ids through the caller's filter before restoring. A filter that
+        // throws (e.g. the library API is unreachable at launch) must not sink the restore: keep the
+        // saved snapshot and let the director handle a stale id as before.
+        val filter = this.filter
+        val restorable = if (filter == null) {
+            snapshot
+        } else {
+            try {
+                filter.filter(snapshot)
+            } catch (t: Throwable) {
+                hatchet.w("Failed to filter saved session, restoring it as saved: $t")
+                snapshot
+            }
+        }
+        if (restorable == null) {
+            hatchet.i("Saved session references no known tracks; clearing it.")
+            runCatching { store.clear() }.onFailure { hatchet.w("Failed to clear saved session: $it") }
+            return
+        }
+
         try {
-            hatchet.i("Restoring saved session (track=${snapshot.currentTrackId}, pos=${snapshot.positionMs}ms).")
-            director.request(SessionRequest.Restore(snapshot.toSession(), snapshot.positionMs))
+            hatchet.i("Restoring saved session (track=${restorable.currentTrackId}, pos=${restorable.positionMs}ms).")
+            director.request(SessionRequest.Restore(restorable.toSession(), restorable.positionMs))
         } catch (t: Throwable) {
             hatchet.w("Failed to restore saved session, clearing it: $t")
             store.clear()
@@ -123,13 +145,14 @@ class RealPlaybackSessionPersister(
         }
     }
 
-    override fun snapshotNow() {
+    override fun snapshotNow(teardown: Boolean) {
         val current = latest ?: return
         val session = current.session ?: return
         if (current.state == PlayerState.STOPPED || current.state == PlayerState.IDLE) return
         // Mark teardown BEFORE the save so the STOPPED the collector sees when the player is
-        // released next can't race ahead and clear what we're about to write.
-        tearingDown = true
+        // released next can't race ahead and clear what we're about to write. A non-teardown flush
+        // (web visibility change, page still alive) leaves the guard alone so a real stop clears.
+        if (teardown) tearingDown = true
         store.save(snapshotOf(session, current.track, current.positionMs, current.setlist))
     }
 

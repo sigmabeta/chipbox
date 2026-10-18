@@ -256,18 +256,24 @@ kotlin {
                 implementation(projects.cbox.common.player.director.api)
                 implementation(projects.cbox.common.player.director.fake)
                 implementation(projects.cbox.common.player.director.real)
-                // Favorites + playlists persist in window.localStorage. The browserstate module
-                // provides versioned, cross-tab-live Storage-backed repositories (the Room stores
-                // are JVM/Android-only), wired in WebModules.
+                // Favorites, playlists, playback history, and the playback session persist in
+                // window.localStorage. The browserstate module provides versioned, cross-tab-live
+                // Storage-backed stores (the Room/DataStore implementations are JVM/Android-only),
+                // wired in WebModules.
                 implementation(projects.cbox.common.playlists.api)
                 implementation(projects.cbox.common.favorites.api)
                 implementation(projects.cbox.common.browserstate)
-                // Playback history is stored browser-locally: LocalStoragePlaybackHistoryRepository
-                // persists the play log in window.localStorage, fed by the shared (Room-free)
-                // RealPlaybackHistoryRecorder from history.real. The Home recently-/most-played
-                // cards read straight off that log.
+                // Playback history is stored browser-locally: StoragePlaybackHistoryRepository
+                // persists the bounded play log in window.localStorage, fed by the shared
+                // (Room-free) RealPlaybackHistoryRecorder from history.real. The Home
+                // recently-/most-played cards read straight off that log.
                 implementation(projects.cbox.common.history.api)
                 implementation(projects.cbox.common.history.real)
+                // Session restore/re-save uses the shared RealPlaybackSessionPersister over the
+                // browserstate versioned store (localStorage). observe() saves on pause, STOPPED
+                // clears, and JsMain flushes snapshotNow() on pagehide/visibilitychange.
+                implementation(projects.cbox.common.player.persistence.api)
+                implementation(projects.cbox.common.player.persistence.real)
                 implementation(projects.cbox.common.player.emulators.api)
                 implementation(projects.cbox.common.player.buffer.api)
                 implementation(projects.cbox.common.player.buffer.real)

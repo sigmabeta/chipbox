@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.browserstate.BrowserStateEvents
 import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
 import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
 import net.sigmabeta.chipbox.player.director.Director
+import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
@@ -48,6 +49,10 @@ interface WebChipboxGraph : ViewModelGraph {
 
     /** Turns scanner failures into persisted Home notifications; `JsMain` calls observe() once. */
     val scanFailureNotifRecorder: ScanFailureNotifRecorder
+
+    // Restores the last queue/track/position on launch (paused) and keeps the saved snapshot in
+    // step with playback. `JsMain` calls observe() + restore() and flushes it on page teardown.
+    val playbackSessionPersister: PlaybackSessionPersister
 
     // Non-fatal favorites/playlists storage events (corrupt data, quota/read failures). `JsMain`
     // forwards `userMessages` to `ChipboxAppUi` so the browser shows a snackbar instead of failing.
