@@ -114,7 +114,12 @@ fun Project.resolveCmake(): File {
         .splitToSequence(File.pathSeparatorChar)
         .filter { it.isNotEmpty() }
         .map { File(it, "cmake") }
-        .firstOrNull { it.canExecute() }
+        // `isFile` matters: an activated emsdk prepends `$EMSDK/upstream/emscripten` to PATH, and
+        // that directory contains a `cmake/` module *directory*. `canExecute()` is true for any
+        // searchable directory, so without the file check the host native build tried to exec a
+        // directory (`A problem occurred starting process .../emscripten/cmake`) even though a real
+        // cmake was earlier/later on PATH.
+        .firstOrNull { it.isFile && it.canExecute() }
         ?.let { return it }
     return File("cmake")
 }
