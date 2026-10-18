@@ -90,6 +90,28 @@ class StoragePlaybackSessionStoreTest {
     }
 
     @Test
+    fun `an explicit clear replaces a newer-schema blob`() = runTest {
+        // `update` never rewrites a newer schema, but the session store's clear is an explicit
+        // write: this build cannot decode the blob (it reads as "no session"), and
+        // PlaybackSessionStore.clear() cannot report a refusal, so the explicit stop wins.
+        val newer = """{"schemaVersion":99,"payload":{"snapshot":null}}"""
+        val storage = FakeStorage(mapOf(BrowserStateKeys.PLAYBACK_SESSION to newer))
+        val events = BrowserStateEvents()
+        val store = StoragePlaybackSessionStore(storage, events)
+        assertNull(store.load(), "a newer schema reads as no session")
+
+        store.clear()
+
+        val written = BrowserStateCodecs.playbackSession.decode(storage.raw(BrowserStateKeys.PLAYBACK_SESSION))
+        assertEquals(
+            DecodeOutcome.Success(PlaybackSessionState()),
+            written,
+            "the explicit clear persists this build's empty envelope instead of leaving the newer blob",
+        )
+        assertNull(StoragePlaybackSessionStore(storage, events).load())
+    }
+
+    @Test
     fun `clearing corrupt session data rewrites the key and stays cleared`() = runTest {
         val storage = FakeStorage(mapOf(BrowserStateKeys.PLAYBACK_SESSION to "{not json"))
         val events = BrowserStateEvents()

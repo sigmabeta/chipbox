@@ -205,7 +205,12 @@ each archive's SPC members to:
 extraction to ordinary SPC tracks, determinism/reuse, m3u overlay matching,
 atomic member writes (a repair does not break an open reader's handle, a failed
 move keeps the previous member, stale temps are swept), the pruning gate, and
-serving/path-leak via `/api/files/{id}` + `/api/tracks/{id}`.
+serving/path-leak via `/api/files/{id}` + `/api/tracks/{id}`. The duplicate-archive
+suite (`RsnDuplicateTest`) runs on real Room/SQLite instead of `FakeDatabase`
+(which cannot enforce the unique `(path, track_number)` index): it covers the
+refusal, the health count/log line with no host path in JSON, a clean rescan
+after removing the copy, owner-rename/owner-delete adoption with ids intact,
+and duplicate detection through an injected filesystem.
 `LibraryPagingTest` walks `limit`/`offset` pages over duplicate sort keys for
 games, artists, and tracks, asserts the pages are the full catalog with no
 duplicates, and covers the `ids` bypass plus the limit/offset coercion rules.

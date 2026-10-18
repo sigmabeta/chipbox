@@ -8,6 +8,13 @@ import java.util.zip.CRC32
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
+import net.sigmabeta.chipbox.database.ChipboxDatabase
+import net.sigmabeta.chipbox.database.dao.ArtistDao
+import net.sigmabeta.chipbox.database.dao.GameArtistDao
+import net.sigmabeta.chipbox.database.dao.GameDao
+import net.sigmabeta.chipbox.database.dao.SearchHistoryDao
+import net.sigmabeta.chipbox.database.dao.TrackArtistDao
+import net.sigmabeta.chipbox.database.dao.TrackDao
 import net.sigmabeta.chipbox.database.fake.FakeDatabase
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Track
@@ -21,6 +28,7 @@ import net.sigmabeta.chipbox.scanner.RsnExtractor
 import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.BluntHatchet
+import net.sigmabeta.sage.logging.Hatchet
 import okio.FileSystem
 import okio.Path.Companion.toOkioPath
 
@@ -119,15 +127,16 @@ internal fun scanCorpus(
     workDir: File,
     extractor: RsnExtractor? = null,
     repository: DatabaseRepository = newRepository(),
+    hatchet: Hatchet = BluntHatchet(),
 ): ScanResult {
     val source = LocalFileContentSource(FileSystem.SYSTEM, File(workDir, "locations.txt").toOkioPath())
     source.addLocation(corpus.toOkioPath())
     val scanner = RealScanner(
         repository,
         source,
-        Readers(BluntHatchet()),
+        Readers(hatchet),
         NoVgmstreamProber,
-        BluntHatchet(),
+        hatchet,
         rsnExtractor = extractor,
     )
     val state = runBlocking {
@@ -144,17 +153,43 @@ internal fun ByteArray.sha256Hex(): String =
     MessageDigest.getInstance("SHA-256").digest(this).joinToString("") { "%02x".format(it) }
 
 internal fun newRepository(): DatabaseRepository {
-    val db = FakeDatabase()
-    return DatabaseRepository(
-        artistDao = db.artistDao,
-        gameDao = db.gameDao,
-        trackDao = db.trackDao,
-        gameArtistDao = db.gameArtistDao,
-        trackArtistDao = db.trackArtistDao,
-        searchHistoryDao = db.searchHistoryDao,
-        hatchet = BluntHatchet(),
+    val database = FakeDatabase()
+    return newRepository(
+        artistDao = database.artistDao,
+        gameDao = database.gameDao,
+        trackDao = database.trackDao,
+        gameArtistDao = database.gameArtistDao,
+        trackArtistDao = database.trackArtistDao,
+        searchHistoryDao = database.searchHistoryDao,
     )
 }
+
+/** A repository over a real (Room/SQLite) database — the only backing that enforces indexes. */
+internal fun newRepository(database: ChipboxDatabase): DatabaseRepository = newRepository(
+    artistDao = database.artistDao(),
+    gameDao = database.gameDao(),
+    trackDao = database.trackDao(),
+    gameArtistDao = database.gameArtistDao(),
+    trackArtistDao = database.trackArtistDao(),
+    searchHistoryDao = database.searchHistoryDao(),
+)
+
+internal fun newRepository(
+    artistDao: ArtistDao,
+    gameDao: GameDao,
+    trackDao: TrackDao,
+    gameArtistDao: GameArtistDao,
+    trackArtistDao: TrackArtistDao,
+    searchHistoryDao: SearchHistoryDao,
+): DatabaseRepository = DatabaseRepository(
+    artistDao = artistDao,
+    gameDao = gameDao,
+    trackDao = trackDao,
+    gameArtistDao = gameArtistDao,
+    trackArtistDao = trackArtistDao,
+    searchHistoryDao = searchHistoryDao,
+    hatchet = BluntHatchet(),
+)
 
 internal fun Repository.allTracks(): List<Track> = runBlocking {
     when (val data = getAllTracks(withGame = true).first { it !is Data.Loading }) {
@@ -179,6 +214,46 @@ internal object NoVgmstreamProber : VgmstreamProber {
     override fun isSupported(extension: String): Boolean = false
 
     override fun probe(bytes: ByteArray, extension: String): List<VgmstreamSubsong> = emptyList()
+}
+
+/**
+ * Records every message (and the error subset) so a test can assert what the scanner told the
+ * admin — e.g. that a duplicate-archive refusal names both archives.
+ */
+internal class RecordingHatchet : Hatchet {
+    val messages: MutableList<String> = mutableListOf()
+    val errors: MutableList<String> = mutableListOf()
+
+    override fun v(message: String) {
+        messages += message
+    }
+
+    override fun d(message: String) {
+        messages += message
+    }
+
+    override fun i(message: String) {
+        messages += message
+    }
+
+    override fun w(message: String) {
+        messages += message
+    }
+
+    override fun e(message: String) {
+        messages += message
+        errors += message
+    }
+
+    override fun log(severity: Int, message: String) {
+        messages += message
+        if (severity >= ERROR_SEVERITY) errors += message
+    }
+
+    private companion object {
+        // Same threshold BluntHatchet/BasicHatchet use for `recentErrors`.
+        const val ERROR_SEVERITY = 6
+    }
 }
 
 private fun ByteArrayOutputStream.writeLe16(value: Int) {

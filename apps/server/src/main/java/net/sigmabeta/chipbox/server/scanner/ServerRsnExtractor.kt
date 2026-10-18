@@ -15,6 +15,7 @@ import okio.ByteString.Companion.toByteString
 import okio.FileSystem
 import okio.IOException
 import okio.Path
+import okio.Path.Companion.toPath
 import okio.Path.Companion.toOkioPath
 
 /**
@@ -23,7 +24,7 @@ import okio.Path.Companion.toOkioPath
  * A seam so tests can force the "the target is locked" failure path. Production uses
  * [AtomicMemberMover], which asks the filesystem for an atomic replace first.
  */
-fun interface MemberMover {
+internal fun interface MemberMover {
     /** Replace [target] with [source]; throws [IOException] when the move cannot be completed. */
     fun move(source: Path, target: Path)
 }
@@ -86,8 +87,13 @@ internal class AtomicMemberMover(
  * identified by `(path, trackNumber)`, so admitting both would violate the unique index. The admin
  * is expected to remove the duplicate from the library. If the owning archive is renamed or
  * removed, the marker's path no longer exists and the survivor takes ownership on the next scan.
+ *
+ * Both the marker and the owner-existence check go through the injected [FileSystem], so a
+ * non-system filesystem (a wrapper, an in-memory store) sees the same duplicate decisions
+ * production does. The constructor is internal because [MemberMover] is a test seam, not API:
+ * the server graph is this class's only production caller.
  */
-class ServerRsnExtractor(
+class ServerRsnExtractor internal constructor(
     workDir: File,
     private val hatchet: Hatchet,
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
@@ -115,7 +121,7 @@ class ServerRsnExtractor(
 
         return ioMutex.withLock {
             val owner = readOwner(directory)
-            if (owner != null && owner != source && File(owner).isFile) {
+            if (owner != null && owner != source && ownerStillExists(owner)) {
                 throw DuplicateRsnContentException(source, owner)
             }
             fileSystem.createDirectories(directory)
@@ -146,6 +152,16 @@ class ServerRsnExtractor(
     private fun writeOwner(directory: Path, source: String) {
         fileSystem.write(directory / OWNER_MARKER) { writeUtf8(source) }
     }
+
+    /**
+     * Whether the recorded owner archive is still on disk. Goes through the injected
+     * [FileSystem] (never `java.io.File`) so a wrapped/non-system filesystem sees the same
+     * decisions: an unreadable or invalid path counts as gone, exactly like [readOwner] treats a
+     * bad marker, which lets the survivor take the hash over.
+     */
+    private fun ownerStillExists(owner: String): Boolean = runCatching {
+        fileSystem.metadataOrNull(owner.toPath())?.isRegularFile == true
+    }.getOrDefault(false)
 
     override suspend fun prune(keptPaths: Set<String>) {
         ioMutex.withLock {
