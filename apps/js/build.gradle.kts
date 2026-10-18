@@ -189,13 +189,22 @@ val copyEmulatorWasm = tasks.register<Copy>("copyEmulatorWasm") {
     }
 }
 
-// The bundle's resource pipeline is the one edge that was missing: without it webpack happily
-// produced an emulator-less bundle. jsProcessResources feeds the webpack distribution (including
-// jsBrowserDistribution and the server's installDist bundle), so every bundle path now builds and
-// copies the emulators first. Matching (not named) because the Kotlin/JS plugin registers the task
-// after this script is evaluated.
-tasks.matching { it.name == "jsProcessResources" }.configureEach {
+// Matching (not named) because the Kotlin/JS plugin registers these tasks after this script is
+// evaluated. Order: jsProcessResources → copyEmulatorWasm → the executable sync / webpack tasks.
+// The webpack tasks own the bundle, so they depend on the copy. The executable sync tasks consume
+// the same processed-resource tree but are ALSO in the plain compile graph
+// (`compileProductionExecutableKotlinJs` depends on the sync), so they only `mustRunAfter` the
+// copy: that orders them when a bundle is being built without pulling the WASM/emsdk toolchain
+// into a plain compile.
+tasks.matching {
+    it.name == "jsBrowserProductionWebpack" || it.name == "jsBrowserDevelopmentWebpack"
+}.configureEach {
     dependsOn(copyEmulatorWasm)
+}
+tasks.matching {
+    it.name == "jsProductionExecutableCompileSync" || it.name == "jsDevelopmentExecutableCompileSync"
+}.configureEach {
+    mustRunAfter(copyEmulatorWasm)
 }
 
 // Assert the *distribution* (not just the source resources) contains all nine loader/WASM pairs
