@@ -21,6 +21,11 @@
 # missing device is a flag, never a failure; a regressed axis or a failed test DOES fail. Run the axes
 # you care about; they are independent (one axis per process, so one can't disturb or delete another).
 #
+# The `web` task mirrors CI's web job (scripts/ci/web.sh): WASM + bundle + bundle assertion +
+# jsNodeTest + server installDist. It SKIPs (exit 3) when emsdk/node/yarn are unavailable, so
+# machines without the web toolchain stay green. `--web-image` also builds and smokes the Docker
+# image (skipped without a running daemon).
+#
 # Usage:
 #   scripts/ci/verify.sh                 # run everything
 #   scripts/ci/verify.sh static-analysis unit-test   # run only the named task(s)
@@ -28,6 +33,7 @@
 #   scripts/ci/verify.sh --device-audio <corpus-dir>    # also run the on-device audio gate over that corpus
 #   scripts/ci/verify.sh --device-ui <corpus-dir>       # also run the on-device UI-scroll gate
 #   scripts/ci/verify.sh --device-startup <corpus-dir>  # also run the on-device startup gate
+#   scripts/ci/verify.sh --web-image     # also build + smoke the Docker image (needs a daemon)
 #   scripts/ci/verify.sh --rerun         # force every task to re-run (Gradle --rerun-tasks; ignores cache/up-to-date)
 #   scripts/ci/verify.sh --list          # list task names
 #   VERIFY_OUT=/tmp/v scripts/ci/verify.sh           # override the output folder
@@ -58,11 +64,17 @@ ALL_TASKS=(
   "unit-test|jvmTest --continue"
   "screenshot|verifyPaparazziDebug --continue"
   "shared-build|:apps:jvm:classes"
+  "web|"
+  "web-image|"
   "android-lint|:apps:android:lintRelease -Pchipbox.skipNative"
   "release-jvm|:apps:jvm:chipboxHostNativeLibs"
   "apk|:apps:android:assembleRelease"
 )
-APP_BUILD_TASKS="release-jvm apk"
+# `web-image` is opt-in (--web-image): it builds and smokes the Docker image, which needs a running
+# daemon and is much slower than the bundle/tests above. `web` itself SKIPs (exit 3) when the
+# emsdk/node/yarn toolchain is unavailable, so a machine without the web toolchain stays green.
+WEB_OPT_IN_TASKS=(web-image)
+APP_BUILD_TASKS="release-jvm apk web web-image"
 
 # The opt-in on-device tasks (run by scripts/benchmark/device-<axis>.sh, not Gradle). Each axis is
 # selected by its own flag, which also carries the host corpus to push; the axis script exits 3 to
@@ -70,24 +82,45 @@ APP_BUILD_TASKS="release-jvm apk"
 DEVICE_AXES=(audio ui startup)
 DEVICE_TASK_NAMES=()
 for _a in "${DEVICE_AXES[@]}"; do DEVICE_TASK_NAMES+=("device-$_a"); done
-declare -A device_corpus=()   # axis -> corpus dir, set by --device-<axis>
+# axis -> corpus dir, set by --device-<axis>. One variable per axis rather than `declare -A`:
+# macOS still ships bash 3.2, which has no associative arrays (the script otherwise dies at the
+# selection step before running anything).
+device_corpus_audio=""
+device_corpus_ui=""
+device_corpus_startup=""
+device_corpus_set() {
+  case "$1" in
+    audio) device_corpus_audio="$2" ;;
+    ui) device_corpus_ui="$2" ;;
+    startup) device_corpus_startup="$2" ;;
+  esac
+}
+device_corpus_get() {
+  case "$1" in
+    audio) printf '%s' "$device_corpus_audio" ;;
+    ui) printf '%s' "$device_corpus_ui" ;;
+    startup) printf '%s' "$device_corpus_startup" ;;
+  esac
+}
 
 # ---- arg parsing -----------------------------------------------------------
 filter=()
 skip_apps=0
 rerun=0
+web_image=0
 while [ $# -gt 0 ]; do
   arg="$1"
   case "$arg" in
     -h|--help) awk 'NR>1 && /^#/ {sub(/^# ?/, ""); print; next} NR>1 {exit}' "${BASH_SOURCE[0]}"; exit 0 ;;
     --list) printf '%s\n' "${ALL_TASKS[@]%%|*}" "${DEVICE_TASK_NAMES[@]}"; exit 0 ;;
     --skip-apps) skip_apps=1 ;;
+    --web-image) web_image=1 ;;
     --rerun|--rerun-tasks) rerun=1 ;;
     --device-audio|--device-ui|--device-startup)
       [ $# -ge 2 ] || { echo "$arg needs a corpus dir: $arg <corpus-dir>" >&2; exit 2; }
-      device_corpus["${arg#--device-}"]="$2"; shift ;;
+      device_corpus_set "${arg#--device-}" "$2"; shift ;;
     --device-audio=*|--device-ui=*|--device-startup=*)
-      _axis="${arg#--device-}"; device_corpus["${_axis%%=*}"]="${arg#*=}" ;;
+      _axis="${arg#--device-}"; device_corpus_set "${_axis%%=*}" "${arg#*=}" ;;
     -*) echo "unknown option: $arg" >&2; exit 2 ;;
     *) filter+=("$arg") ;;
   esac
@@ -98,7 +131,7 @@ done
 # build-cache hits), so the run reflects a from-scratch build rather than cached/incremental results.
 [ "$rerun" = 1 ] && GRADLE_FLAGS+=(--rerun-tasks)
 
-valid_names=" ${ALL_TASKS[*]%%|*} ${DEVICE_TASK_NAMES[*]} "
+valid_names=" ${ALL_TASKS[*]%%|*} ${DEVICE_TASK_NAMES[*]} ${WEB_OPT_IN_TASKS[*]} "
 for name in "${filter[@]}"; do
   if [[ "$valid_names" != *" $name "* ]]; then
     echo "unknown task: $name (see --list)" >&2; exit 2
@@ -107,7 +140,7 @@ done
 
 # Naming a device task as a filter can't supply its required corpus, so steer it to its flag.
 for axis in "${DEVICE_AXES[@]}"; do
-  if [[ " ${filter[*]} " == *" device-$axis "* ]] && [ -z "${device_corpus[$axis]:-}" ]; then
+  if [[ " ${filter[*]} " == *" device-$axis "* ]] && [ -z "$(device_corpus_get "$axis")" ]; then
     echo "the device-$axis task needs a corpus dir: scripts/ci/verify.sh --device-$axis <corpus-dir>" >&2; exit 2
   fi
 done
@@ -116,12 +149,15 @@ selected=()
 for entry in "${ALL_TASKS[@]}"; do
   name="${entry%%|*}"
   if [ "$skip_apps" = 1 ] && [[ " $APP_BUILD_TASKS " == *" $name "* ]]; then continue; fi
+  # web-image is opt-in via --web-image; naming it in the filter also selects it.
+  if [ "$name" = "web-image" ] && [ "$web_image" != 1 ] \
+     && [[ " ${filter[*]} " != *" web-image "* ]]; then continue; fi
   if [ "${#filter[@]}" -gt 0 ] && [[ " ${filter[*]} " != *" $name "* ]]; then continue; fi
   selected+=("$entry")
 done
 # Each device task is opt-in via its own `--device-<axis> <corpus>`; honor a name filter like any task.
 for axis in "${DEVICE_AXES[@]}"; do
-  [ -n "${device_corpus[$axis]:-}" ] || continue
+  [ -n "$(device_corpus_get "$axis")" ] || continue
   if [ "${#filter[@]}" -eq 0 ] || [[ " ${filter[*]} " == *" device-$axis "* ]]; then
     selected+=("device-$axis")
   fi
@@ -158,9 +194,15 @@ for entry in "${selected[@]}"; do
   name="${entry%%|*}"; args="${entry#*|}"
   if [[ "$name" == device-* ]]; then
     axis="${name#device-}"
-    printf '%s──▶ %-16s%s scripts/benchmark/device-%s.sh %s\n' "$B" "$name" "$Z" "$axis" "${device_corpus[$axis]}"
+    printf '%s──▶ %-16s%s scripts/benchmark/device-%s.sh %s\n' "$B" "$name" "$Z" "$axis" "$(device_corpus_get "$axis")"
     start=$SECONDS
-    "scripts/benchmark/device-$axis.sh" "${device_corpus[$axis]}" >"$LOGS/$name.log" 2>&1
+    "scripts/benchmark/device-$axis.sh" "$(device_corpus_get "$axis")" >"$LOGS/$name.log" 2>&1
+    rc=$?
+  elif [[ "$name" == web* ]]; then
+    mode="${name#web-}"; [ "$name" = "web" ] && mode=""
+    printf '%s──▶ %-16s%s scripts/ci/web.sh %s\n' "$B" "$name" "$Z" "$mode"
+    start=$SECONDS
+    "scripts/ci/web.sh" "$mode" >"$LOGS/$name.log" 2>&1
     rc=$?
   else
     printf '%s──▶ %-16s%s ./gradlew %s\n' "$B" "$name" "$Z" "$args"
