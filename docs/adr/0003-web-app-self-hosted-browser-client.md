@@ -37,6 +37,10 @@ single-user server the user hosts themselves. We choose the last.
   all WASM emulators, and the native vgmstream library. Images build for
   `linux/amd64` and `linux/arm64` but are not published yet. `distZip` remains a
   secondary artifact.
+- **"Published"** means distributed outside the repository: pushed to a registry,
+  attached to a public release, or otherwise made downloadable. CI-internal logs,
+  caches, and ephemeral workflow artifacts are not publication. v1 publishes
+  nothing; `push` stays false and no release asset carries the image.
 - **Authentication:** there is no authentication in this version. The server is
   for loopback or trusted-LAN use only. **No public image, registry push, or
   internet-facing deployment may happen until an authentication story exists**
