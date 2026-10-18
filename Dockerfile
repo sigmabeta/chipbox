@@ -174,19 +174,21 @@ RUN set -eux; \
         if unzip -l "$candidate" 2>/dev/null | grep -q 'static/index.html'; then jar="$candidate"; break; fi; \
     done; \
     test -n "$jar"; \
-    unzip -l "$jar" | grep -q 'static/chipbox.js'; \
+    unzip -l "$jar" > /tmp/jar-contents.txt; \
+    grep -q 'static/index.html' /tmp/jar-contents.txt; \
+    grep -q 'static/chipbox.js' /tmp/jar-contents.txt; \
     count=0; \
     while IFS='|' read -r dir output display; do \
         dir="$(echo "$dir" | xargs)"; \
         output="$(echo "$output" | xargs)"; \
         [ -z "$dir" ] && continue; \
         case "$dir" in \#*) continue ;; esac; \
-        unzip -l "$jar" | grep -q "static/wasm/$output.js"; \
-        unzip -l "$jar" | grep -q "static/wasm/$output.wasm"; \
+        grep -q "static/wasm/$output.js" /tmp/jar-contents.txt; \
+        grep -q "static/wasm/$output.wasm" /tmp/jar-contents.txt; \
         count=$((count + 1)); \
     done < /tmp/wasm-emulators.txt; \
     test "$count" -eq 9; \
-    rm -f /tmp/wasm-emulators.txt /tmp/ldd.txt; \
+    rm -f /tmp/wasm-emulators.txt /tmp/jar-contents.txt /tmp/ldd.txt; \
     apt-get purge -y unzip; \
     apt-get autoremove -y; \
     rm -rf /var/lib/apt/lists/*
