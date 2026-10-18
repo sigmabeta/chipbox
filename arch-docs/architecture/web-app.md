@@ -245,6 +245,7 @@ saved snapshot, and reloading a tab restores that snapshot.
   host and an OCI archive output (`--load` is single-platform):
   ```sh
   docker run --privileged --rm tonistiigi/binfmt --install arm64
+  mkdir -p build
   docker buildx build --platform linux/amd64,linux/arm64 \
     --output type=oci,dest=build/chipbox-server-multiarch.tar \
     --cache-from type=local,src=.docker-cache \

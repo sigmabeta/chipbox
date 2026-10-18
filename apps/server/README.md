@@ -97,6 +97,7 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   docker run --privileged --rm tonistiigi/binfmt --install arm64
   docker buildx create --name chipbox --driver docker-container --use
 
+  mkdir -p build
   docker buildx build --platform linux/amd64,linux/arm64 \
     --output type=oci,dest=build/chipbox-server-multiarch.tar \
     --cache-from type=local,src=.docker-cache \
