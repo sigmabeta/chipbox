@@ -39,8 +39,14 @@ class StaticRoutesTest {
     fun `a missing asset at the bundle root is a real 404`() = testApplication {
         application { routing { staticRoutes() } }
 
-        assertEquals(HttpStatusCode.NotFound, client.get("/chipbox.js").status)
-        assertEquals(HttpStatusCode.NotFound, client.get("/favicon.png").status)
+        // Use names that are absent even when a real bundle is on the test classpath: the CI web job
+        // (scripts/ci/web.sh) runs `installDist` before `:apps:server:test`, and `installProductionJsBundle`
+        // writes the production bundle into build/generated/static, which is a main resources root. A
+        // fixture like `/chipbox.js` is therefore present in that ordering, so it no longer exercises
+        // the missing-asset fallback. The policy under test is "asset-shaped path -> 404", not the
+        // existence of a specific bundle file.
+        assertEquals(HttpStatusCode.NotFound, client.get("/definitely-missing-asset.js").status)
+        assertEquals(HttpStatusCode.NotFound, client.get("/definitely-missing-favicon.png").status)
     }
 
     @Test
