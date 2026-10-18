@@ -16,6 +16,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.contentsource.LibraryLocationInfo
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
@@ -308,6 +309,7 @@ class HomeViewModelTest {
         scanner: Scanner = CountingScanner(),
         notifManager: NotifManager = FakeNotifManager(),
     ) = HomeViewModel(
+        capabilities = AppCapabilities(),
         modules = modules,
         repository = repository,
         director = director,

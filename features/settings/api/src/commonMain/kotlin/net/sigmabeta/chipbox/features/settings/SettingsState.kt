@@ -38,6 +38,11 @@ data class SettingsState(
     val rescanStatus: LCE<Unit> = LCE.Uninitialized,
     val clearLibraryStatus: LCE<Unit> = LCE.Uninitialized,
     val clearPlaybackHistoryStatus: LCE<Unit> = LCE.Uninitialized,
+    // Host-policy switches, seeded from AppCapabilities. Defaults are the full desktop/Android
+    // surface; the browser binds them off because the server owns the library.
+    val showLibraryAdmin: Boolean = true,
+    val showDebugSection: Boolean = true,
+    val showErrorLog: Boolean = true,
     val appInfo: AppInfo? = null,
     val formattedBuildDate: String? = null,
     val debugClickCount: Int = 0,
@@ -69,6 +74,7 @@ data class SettingsState(
             audioSection(stringProvider) +
             librarySection(stringProvider) +
             aboutSection(stringProvider) +
+            diagnosticsSection(stringProvider) +
             debugSection(stringProvider)
 
     private fun audioSection(stringProvider: StringProvider): List<ListModel> = listOf(
@@ -147,10 +153,13 @@ data class SettingsState(
 
     private fun librarySection(stringProvider: StringProvider): List<ListModel> = listOfNotNull(
         sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_LIBRARY),
-        libraryFolderRow(stringProvider),
-        rescanRowOrNull(stringProvider),
-        rescanStatusRowOrNull(stringProvider),
-        clearLibraryRow(stringProvider),
+        // The browser is a client of a self-hosted server: its library is managed by adding files
+        // and restarting the server, so folder/rescan/clear-library controls are not rendered.
+        libraryFolderRow(stringProvider).takeIf { showLibraryAdmin },
+        rescanRowOrNull(stringProvider)?.takeIf { showLibraryAdmin },
+        rescanStatusRowOrNull(stringProvider)?.takeIf { showLibraryAdmin },
+        clearLibraryRow(stringProvider).takeIf { showLibraryAdmin },
+        // Playback history is browser-local state, so clearing it is always legitimate.
         clearPlaybackHistoryRow(stringProvider),
     )
 
@@ -186,8 +195,19 @@ data class SettingsState(
         licensesRow(stringProvider),
     )
 
+    // The error log is browser-/session-local, so hosts that hide the debug section still expose it
+    // as a Diagnostics row. When the debug section is available the row lives there instead (and is
+    // still gated behind the five-tap toggle), so desktop/Android output is unchanged.
+    private fun diagnosticsSection(stringProvider: StringProvider): List<ListModel> {
+        if (showDebugSection || !showErrorLog) return emptyList()
+        return listOf(
+            sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_DIAGNOSTICS),
+            errorLogRow(stringProvider),
+        )
+    }
+
     private fun debugSection(stringProvider: StringProvider): List<ListModel> {
-        if (shouldShowDebug != true) return emptyList()
+        if (!showDebugSection || shouldShowDebug != true) return emptyList()
         return listOf(
             sectionHeader(stringProvider, ChipboxStringId.SETTINGS_SECTION_DEBUG),
             snapshotImportRowOrField(),

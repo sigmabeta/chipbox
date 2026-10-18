@@ -183,6 +183,7 @@ include(
     ":cbox:android:ui:theme:api",
 
     ":cbox:common:appcomm:api",
+    ":cbox:common:capabilities:api",
     ":cbox:common:contentsource:api",
     ":cbox:common:contentsource:fake",
     ":cbox:common:coverart:api",

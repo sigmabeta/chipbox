@@ -6,6 +6,7 @@ import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import kotlinx.coroutines.CoroutineScope
 import net.sigmabeta.chipbox.browserstate.BrowserStateEvents
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
 import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
 import net.sigmabeta.chipbox.player.director.Director
@@ -34,8 +35,11 @@ interface WebChipboxGraph : ViewModelGraph {
     val hatchet: Hatchet
     val stringProvider: StringProvider
 
-    /** Build metadata; `isDebug` sets the browser document title in `JsMain`. */
+    /** Build metadata; `isDebug` is false and the version comes from git at build time. */
     val appInfo: AppInfo
+
+    /** Host policy for the browser: no library administration, no debug section. */
+    val appCapabilities: AppCapabilities
 
     // Exposed so `JsMain` can wire the browser-only `WebMediaSession` to the player without
     // creating a parallel composition root. The app-scope CoroutineScope is the same one

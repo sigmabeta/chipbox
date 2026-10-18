@@ -22,8 +22,11 @@ This is a large module; files are grouped by role.
   routes clicks/random picks/playback toggles in `handleAction`), `HomeState.kt`
   (`HomeState : ListState` + `HomeSectionState`; builds section rows via
   `withStandardErrorAndLoading`, wraps multi-item sections in a
-  `HorizontalScrollerListModel`, and renders the empty-state CTAs), `HomeAction.kt`
-  (`sealed class HomeAction : ChipboxAction()` — game/artist/song clicks, the
+  `HorizontalScrollerListModel`, and renders the empty-state CTAs). Host policy:
+  `AppCapabilities.canManageLibrary = false` (web) swaps the empty-state copy to
+  "managed on the server" and renders no folder/rescan CTAs; the ViewModel also
+  ignores those two actions so a stale event cannot start a browser scan.
+  `HomeAction.kt` (`sealed class HomeAction : ChipboxAction()` — game/artist/song clicks, the
   random "RNG" actions, folder/rescan CTAs, and now-playing card events),
   `HomeRoute.kt` (`HomeRoute(onEvent, modifier)` → `metroViewModel()` →
   `ChipboxListEntry`). `HomeViewModel` also handles SAGE's
@@ -48,7 +51,8 @@ This is a large module; files are grouped by role.
 - **DI bindings** — `di/HomeModuleBindings.kt`:
   `@ContributesTo(AppScope)` interface that `@Multibinds` the `Set<HomeModule>`
   and `@Binds @IntoSet` each concrete module into it.
-- **Tests** (`commonTest`) — `HomeViewModelTest.kt`,
+- **Tests** (`commonTest`) — `HomeViewModelTest.kt`, `HomeCapabilitiesTest.kt`
+  (server-managed empty state + ignored CTAs),
   `modules/NotifHomeModuleTest.kt`, `modules/RngTakeTheWheelHomeModuleTest.kt`,
   `modules/ScanStatusHomeModuleTest.kt`,
   `modules/RecentlyAddedGamesHomeModuleTest.kt`,
@@ -109,7 +113,8 @@ fun HomeRoute(onEvent: (ChipboxEvent) -> Unit, modifier: Modifier = Modifier) {
 - **Source set:** `commonMain` (impl) + `commonTest` (tests).
 - **SAGE/module dependencies:** `api`-exposes `:features:home:api`; implements
   against `cbox/common` `ui.components.api`, `ui.list.api`, `appcomm.api`,
-  `notif.api`, `strings.api`, `repository.api`, `history.api`, `models.api`, `scanner.api`,
+  `capabilities.api`, `notif.api`, `strings.api`, `repository.api`, `history.api`, `models.api`,
+  `scanner.api`,
   `contentsource.api`, `player.common.api`, `player.director.api`; and the
   `:api`s of the `artist-detail`, `folder-picker`, `game-detail`, `now-playing`,
   and `rescan-status` features (navigation targets). Tests use the

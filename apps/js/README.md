@@ -74,9 +74,23 @@ page-teardown flush, wires Escape→back and arrow-key→focus handling, removes
 
 - **Entry / DI:** `JsMain.kt` (browser `main()`); `di/WebChipboxGraph.kt`
   (`@DependencyGraph(AppScope)`, factory takes caller-built `Hatchet` +
-  `StringProvider`), `di/WebModules.kt` (binds real localStorage settings/
-  favorites/playlists/history/session and fakes for everything needing native
-  code or platform persistence), `di/WebMetroViewModelFactory.kt`.
+  `StringProvider`; exposes `appInfo` + `appCapabilities` to the entry point),
+  `di/WebModules.kt` (binds real localStorage settings/favorites/playlists/
+  history/session, the real playback chain, a web `AppInfo` generated from git,
+  and the web `AppCapabilities`), `di/WebMetroViewModelFactory.kt`.
+- **Inert admin bindings:** `inert/NoopScanner.kt` + `inert/EmptyLibrarySource.kt`.
+  The shared view models still take a `Scanner`/`LibrarySource`, but on web the
+  server owns the library: these report idle/empty and never scan or persist a
+  folder. `AppCapabilities(canManageLibrary = false)` keeps every admin entry
+  point (Settings library section, Home empty-state CTAs, folder-picker/scan
+  navigation) out of the UI, so the bindings are graph closure only — not test
+  fakes.
+- **Build identity:** `generateWebBuildInfo` (in `build.gradle.kts`) writes
+  `WebBuildInfo.kt` from git at build time — `git describe --tags --always
+  --dirty`, commit count as `versionCode`, branch, and commit time — with a
+  `0.0.0-web` / `unknown` fallback when git is unavailable. `WebModules` feeds it
+  to `AppInfo` with `isDebug = false`; the release `index.html` title/splash are
+  used (no "Debug" title or splash).
 - **Data / platform services:** `repository/RemoteRepository.kt` (Ktor JS client
   → chipbox-server JSON API; list reads retry while the startup scan is running,
   bounded by the shared `ScanRetryPolicy`), `contentsource/HttpContentSource.kt`,
@@ -112,11 +126,12 @@ page-teardown flush, wires Escape→back and arrow-key→focus handling, removes
 - **Targets:** JS (browser), only when built with `-Psage.js`.
 - **Source set:** `src/jsMain/kotlin` (+ `src/jsMain/resources`).
 - **SAGE/module dependencies:** `cbox/common` `appui`, `strings`, `repository`,
-  `contentsource`, `browserstate` (localStorage favorites/playlists/history/
+  `contentsource`, `capabilities` (web policy), `browserstate` (localStorage favorites/playlists/history/
   session), `history` (shared recorder + bounded log), `player.persistence`
   (`RealPlaybackSessionPersister`; store implemented in `browserstate`), the full
   `player` chain (director/generator/buffer/cache/resampler/speaker — `.real` +
-  `.fake` mix), `scanner` (fake), `settings`/`debug`/`debugInfo`, `models`,
+  `.fake` mix), `scanner` (API only; bound to the inert `NoopScanner`),
+  `settings`/`debug`/`debugInfo`, `models`,
   `ui.*`; every `features/*` `:real` with a non-assisted VM; `sage.common.*`
   (di, logging, appinfo, freeform, list, storage, ui); Ktor JS client, Coil
   (ktor3), kotlinx serialization/coroutines, okio (+ FakeFileSystem),

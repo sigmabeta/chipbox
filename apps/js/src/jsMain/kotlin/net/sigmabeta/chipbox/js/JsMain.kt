@@ -108,11 +108,9 @@ fun main() {
             stringProvider = stringProvider,
         )
 
-        // The web target is always a debug build; mark the browser tab title to match the
-        // primary/secondary palette swap ChipboxAppUi applies on the same AppInfo.isDebug flag.
-        if (graph.appInfo.isDebug) {
-            document.title = "Chipbox Debug"
-        }
+        // The browser app is a release-shaped client (AppInfo.isDebug = false): the static
+        // index.html title/splash are the release assets, so there is no debug title to set here.
+        // Build identity is surfaced in Settings > About (WebBuildInfo).
 
         // Hook the browser's media-session API into the player so OS-level transport (media keys,
         // lock-screen controls, Bluetooth headset buttons) drives the same Director.
@@ -182,6 +180,9 @@ fun main() {
                         // Corrupt/older data and localStorage quota failures are non-fatal: the
                         // stores fall back to empty and surface a one-line snackbar here.
                         messages = graph.browserStateEvents.userMessages,
+                        // The server owns the library and debug surfaces are hidden; Error Log
+                        // stays reachable under Settings > Diagnostics.
+                        capabilities = graph.appCapabilities,
                     )
                 }
             }

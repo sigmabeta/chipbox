@@ -20,11 +20,19 @@ field that reads a `library-snapshot.json` (via the injected `LibrarySource`) an
 upsert-merges it through `Repository.importLibrarySnapshot`, reporting the count
 in a snackbar.
 
+Host policy comes from `AppCapabilities` (injected). It seeds
+`showLibraryAdmin` / `showDebugSection` / `showErrorLog` in the state and is also
+enforced at the action seam: on a host that does not manage its library, every
+admin action (add/manage/rescan/rescan-status/clear-library/folder-picked) is a
+no-op, and when the debug section is hidden the five-tap toggle and the debug-only
+actions are inert. The Error Log is not a debug action — it stays reachable from
+the Diagnostics row.
+
 ## Contents
 
-- **ViewModel** — `SettingsViewModel` (`@ContributesIntoMap`+`@ViewModelKey`+`@Inject`): collects `ChipboxSettingsManager` / `DebugSettingsManager` / `LibrarySource` / `Scanner` flows into state, persists selections, handles clear/rescan/navigation actions and the debug-unlock tap counter.
-- **Route** (`expect`/`actual`) — `SettingsRoute` is `expect` in `commonMain`; each `actual` resolves the VM with `metroViewModel()` and intercepts `ChipboxEvent.PickFolder` locally (forwarding every other event to the host sink). `androidMain` and `jvmMain` both push the in-app `:features:folder-picker` screen (Android dropped SAF `OpenDocumentTree` for raw-path libraries + All Files Access); `jsMain` is an enforcement-only stub that forwards events unchanged.
-- **Build date** (`expect`/`actual`) — `formatLongDate(epochMs)` for the about-section build timestamp: JVM/Android (`src/main/java`) use `java.time` `FormatStyle.LONG`; the JS `actual` returns the raw epoch string.
+- **ViewModel** — `SettingsViewModel` (`@ContributesIntoMap`+`@ViewModelKey`+`@Inject`): collects `ChipboxSettingsManager` / `DebugSettingsManager` / `LibrarySource` / `Scanner` flows into state, persists selections, handles clear/rescan/navigation actions and the debug-unlock tap counter. Injects `AppCapabilities` to seed policy flags and to reject admin/debug actions the host does not expose.
+- **Route** (`expect`/`actual`) — `SettingsRoute` is `expect` in `commonMain`; each `actual` resolves the VM with `metroViewModel()` and intercepts `ChipboxEvent.PickFolder` locally (forwarding every other event to the host sink). `androidMain` and `jvmMain` both push the in-app `:features:folder-picker` screen (Android dropped SAF `OpenDocumentTree` for raw-path libraries + All Files Access); `jsMain` forwards events to the shared sink, whose capability guard shows a "library is managed on the server" snackbar rather than dead-ending.
+- **Build date** (`expect`/`actual`) — `formatLongDate(epochMs)` for the about-section build timestamp: JVM/Android (`src/main/java`) use `java.time` `FormatStyle.LONG`; the JS `actual` uses the browser's `Date.toLocaleDateString()` (web now shows a real git build time).
 
 ## Why depend on this module
 
@@ -48,4 +56,4 @@ Settings -> SettingsDeepScreen    // SettingsRoute(onEvent = LocalChipboxEventSi
 - **Plugin:** `chipbox.feature.real` + `chipbox.kmp.test`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain` (VM + `expect` Route/build-date); `androidMain` / `jvmMain` / `jsMain` Route actuals; `src/main/java` (`jvmSharedMain`) + `jsMain` build-date actuals; `commonTest` for `SettingsViewModelTest`
-- **SAGE/module dependencies:** `:features:settings:api`; `:cbox:common:ui:list:api`, `:cbox:common:ui:fonts:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`, `:cbox:common:settings:api`, `:cbox:common:debug:api`, `:cbox:common:repository:api`, `:cbox:common:history:api`, `:cbox:common:scanner:api`, `:cbox:common:contentsource:api` (the `LibrarySnapshot` DTO, `LibrarySnapshotJson`, and the `importLibrarySnapshot` capability all come from `:cbox:common:repository:api`); the `:api` route keys of `:features:playback-status`, `:error-log`, `:crash-log`, `:component-library`, `:manage-library`, `:rescan-status`, and `:folder-picker` (android/jvm); `sage.common.appinfo`, `sage.common.ui.components`, `kotlinx.collections.immutable`
+- **SAGE/module dependencies:** `:features:settings:api`; `:cbox:common:ui:list:api`, `:cbox:common:ui:fonts:api`, `:cbox:common:appcomm:api`, `:cbox:common:capabilities:api`, `:cbox:common:strings:api`, `:cbox:common:settings:api`, `:cbox:common:debug:api`, `:cbox:common:repository:api`, `:cbox:common:history:api`, `:cbox:common:scanner:api`, `:cbox:common:contentsource:api` (the `LibrarySnapshot` DTO, `LibrarySnapshotJson`, and the `importLibrarySnapshot` capability all come from `:cbox:common:repository:api`); the `:api` route keys of `:features:playback-status`, `:error-log`, `:crash-log`, `:component-library`, `:manage-library`, `:rescan-status`, and `:folder-picker` (android/jvm); `sage.common.appinfo`, `sage.common.ui.components`, `kotlinx.collections.immutable`

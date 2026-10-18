@@ -212,6 +212,8 @@ dependencies {
     // `cbox/android/appui/api` (now sage.kmp). `appui:api` already pulls in every feature
     // module via `api(...)`, so we don't list them individually here.
     implementation(projects.cbox.common.appui.api)
+    // Host capability policy bound to the desktop surface (full library + debug).
+    implementation(projects.cbox.common.capabilities.api)
 
     // Direct deps for things the JVM-side Metro graph (JvmChipboxGraph) needs that aren't
     // covered transitively by appui.

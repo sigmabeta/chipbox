@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.debug.DebugSettingsManager
 import net.sigmabeta.chipbox.features.componentlibrary.ComponentLibrary
@@ -37,6 +38,7 @@ import net.sigmabeta.sage.ui.StringProvider
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @ViewModelKey
 class SettingsViewModel @Inject constructor(
+    private val capabilities: AppCapabilities,
     private val settingsManager: ChipboxSettingsManager,
     private val debugSettingsManager: DebugSettingsManager,
     private val repository: Repository,
@@ -54,6 +56,9 @@ class SettingsViewModel @Inject constructor(
     init {
         updateState {
             it.copy(
+                showLibraryAdmin = capabilities.canManageLibrary,
+                showDebugSection = capabilities.showDebugSection,
+                showErrorLog = capabilities.showErrorLog,
                 appInfo = appInfo,
                 formattedBuildDate = formatBuildDate(appInfo.buildTimeMs),
             )
@@ -155,6 +160,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     override fun handleAction(action: SageAction) {
+        // Host policy, enforced at the action seam as well as in the rendered list: a stale row or
+        // a synthetic event must not reach server-owned library state or hidden debug surfaces.
+        if (!capabilities.canManageLibrary && action.requiresLibraryAdmin()) return
+        if (!capabilities.showDebugSection && action.requiresDebugSection()) return
+
         when (action) {
             is SettingsAction.DropdownExpandClicked -> updateState {
                 // At most one dropdown open at a time: re-tapping the open one closes it; tapping
@@ -362,6 +372,45 @@ class SettingsViewModel @Inject constructor(
         } else {
             updateState { it.copy(debugClickCount = next) }
         }
+    }
+
+    /** Actions that mutate or navigate through server-owned library administration. */
+    private fun SageAction.requiresLibraryAdmin(): Boolean = when (this) {
+        SettingsAction.AddFolderClicked,
+        SettingsAction.ManageLibraryClicked,
+        SettingsAction.RescanLibraryClicked,
+        SettingsAction.RescanStatusClicked,
+        SettingsAction.ClearLibraryClicked,
+        is SettingsAction.FolderPicked,
+        -> true
+
+        else -> false
+    }
+
+    /**
+     * Actions reachable only through the debug section. Error Log is deliberately absent: on a
+     * host that hides debug it stays reachable from the Diagnostics row.
+     */
+    private fun SageAction.requiresDebugSection(): Boolean = when (this) {
+        SettingsAction.BuildDateClicked,
+        SettingsAction.PlaybackStatusClicked,
+        SettingsAction.CrashLogClicked,
+        SettingsAction.ComponentLibraryClicked,
+        SettingsAction.ImportSnapshotClicked,
+        is SettingsAction.RepositorySourceSelected,
+        is SettingsAction.GeneratorSourceSelected,
+        is SettingsAction.SpeakerSourceSelected,
+        is SettingsAction.ImageLoaderSourceSelected,
+        is SettingsAction.FavoritesSourceSelected,
+        is SettingsAction.HistorySourceSelected,
+        is SettingsAction.PlaylistsSourceSelected,
+        -> true
+
+        is SageAction.EditTextSubmitted -> id == SettingsState.SNAPSHOT_IMPORT_EDIT_ID
+
+        is SageAction.EditTextCancelled -> id == SettingsState.SNAPSHOT_IMPORT_EDIT_ID
+
+        else -> false
     }
 
     private fun formatBuildDate(epochMs: Long?): String? =

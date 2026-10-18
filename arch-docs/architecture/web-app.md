@@ -168,7 +168,19 @@ saved snapshot, and reloading a tab restores that snapshot.
   back.
 - The web UI hides Manage Library, Folder Picker, Rescan Status, and Clear
   Library. Settings and Home do not emit `PickFolder` on web.
-- `AppInfo` uses the real build version and reports `isDebug = false`.
+- Host policy is an explicit DI value, not `expect`/`actual`: every app graph
+  binds `AppCapabilities(canManageLibrary, showDebugSection, showErrorLog)`
+  (defaults `true`). The web graph binds the first two false and keeps
+  `showErrorLog` true. Screens seed those flags into their list state, and the
+  shell's event sinks refuse blocked destinations as a final guard (a stale row,
+  synthetic event, or deep link cannot open the blank picker; a stray
+  `PickFolder` shows a "managed on the server" snackbar). The persisted five-tap
+  debug toggle cannot reveal the debug section when `showDebugSection` is false.
+- The Error Log stays reachable on web as a **Diagnostics** row in Settings
+  (outside the debug section) because it is browser/session-local. Playback
+  Status, Crash Log, and Component Library are debug-only and therefore hidden.
+- `AppInfo` uses the real build version (generated from git at build time) and
+  reports `isDebug = false`; the browser title and splash use release assets.
 
 ## Build and release
 

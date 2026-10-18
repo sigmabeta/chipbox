@@ -16,6 +16,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.encodeToString
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.contentsource.LibraryFolderInfo
 import net.sigmabeta.chipbox.contentsource.LibraryLocationInfo
 import net.sigmabeta.chipbox.contentsource.LibrarySource
@@ -438,6 +439,7 @@ class SettingsViewModelTest {
         librarySource: LibrarySource = FakeLibrarySource(),
         appInfo: AppInfo = appInfoOf(),
     ) = SettingsViewModel(
+        capabilities = AppCapabilities(),
         settingsManager = settings,
         debugSettingsManager = debug,
         repository = repository,

@@ -24,6 +24,15 @@ Grouped by role (commonMain unless noted):
   the VM's `effects` flow into `buildOuterSink(...)` (snackbars, open-URL,
   clipboard, chrome toggles). Platform side effects (open URL, copy to clipboard)
   arrive as host-supplied callbacks so the composable stays in `commonMain`.
+  Its `capabilities: AppCapabilities` parameter (default: the full desktop
+  surface) sets the host's visible surface.
+
+- **Capability policy** — `AppCapabilitiesPolicy.kt`: `LocalAppCapabilities`, the
+  `allowsNavigation(destination)` guard the tab/outer sinks and the programmatic
+  navigation seam consult, and the snackbar copy shown when a `PickFolder` event
+  reaches a host that does not manage its own library. Library-administration
+  destinations require `canManageLibrary`; Playback Status / Crash Log / Component
+  Library require `showDebugSection`; Error Log requires `showErrorLog` only.
 
 - **Shell / chrome** — `ChipboxNavHost.kt`: `ChipboxTabsScreen` (root of the
   outer Navigator) renders the `TopAppBar`, `NavigationSuiteScaffold`
@@ -61,9 +70,12 @@ Grouped by role (commonMain unless noted):
   `jsMain`.
 
 - **Tests** — `commonTest/ChipboxAppUiViewModelTest.kt` covers the VM's flows
-  and `handleEvent`. `jsTest` is **disabled** (see the long note in
-  `build.gradle.kts`): the top-level `staticCompositionLocalOf` declarations drag
-  in Skiko, whose JS distribution has no Node loader; the VM is covered on JVM.
+  and `handleEvent`; `commonTest/AppCapabilitiesPolicyTest.kt` covers the
+  capability → destination policy (defaults allow everything; the web policy
+  blocks library/debug destinations but keeps Error Log). `jsTest` is
+  **disabled** (see the long note in `build.gradle.kts`): the top-level
+  `staticCompositionLocalOf` declarations drag in Skiko, whose JS distribution
+  has no Node loader; the VM is covered on JVM.
 
 ## Why depend on this module
 
@@ -91,6 +103,8 @@ setContent {
         backKeyEvents = null,
         activeTabDestinations = null,
         onNavigate = null,
+        // Defaults to the full desktop surface; the browser passes the web graph's caps.
+        capabilities = AppCapabilities.Default,
     )
 }
 ```
@@ -120,7 +134,8 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
   debug-gated playback-status / error-log / crash-log / component-library);
   `api(:cbox:common:player-status:api)`; `:cbox:common:ui:chrome:api`,
   `:cbox:common:ui:components:api`, `:cbox:common:ui:list:api`,
-  `:cbox:common:ui:theme:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`,
+  `:cbox:common:ui:theme:api`, `:cbox:common:appcomm:api`,
+  `:cbox:common:capabilities:api`, `:cbox:common:strings:api`,
   `:cbox:common:settings:api`, `:cbox:common:debug:api`, `:cbox:common:models:api`;
   `sage.common.di`, `sage.common.appinfo`, `sage.common.ui.listScreens`,
   `sage.common.ui.iconsReal`; Voyager (navigator / tab-navigator / transitions /
