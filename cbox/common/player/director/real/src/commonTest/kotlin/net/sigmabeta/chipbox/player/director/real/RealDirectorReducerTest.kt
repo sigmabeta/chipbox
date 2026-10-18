@@ -125,13 +125,14 @@ class RealDirectorReducerTest {
     }
 
     @Test
-    fun `a generator error on the last track stops the session`() = runTest {
+    fun `a generator error on the last track ends the session in ERROR`() = runTest {
         val director = newDirector(tracks = 1)
         val model = playingModel(setlist = listOf(1L), position = 0)
 
         val (next, effects) = director.reduce(model, GeneratorEvent.Error("boom"))
 
-        assertEquals(PlayerState.STOPPED, next.playback.state)
+        assertEquals(PlayerState.ERROR, next.playback.state)
+        assertEquals("boom", next.playback.errorMessage)
         assertEquals(
             listOf(
                 RealDirector.Effect.CancelWatchdog,

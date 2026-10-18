@@ -31,6 +31,7 @@ class FakeSpeaker : Speaker {
     var currentPositionMsValue: Long = 0L
 
     var playCalls: Int = 0
+    var prepareCalls: Int = 0
     var pauseCalls: Int = 0
     var stopCalls: Int = 0
     var seekCalls: Int = 0
@@ -52,6 +53,9 @@ class FakeSpeaker : Speaker {
     }
     override fun play() {
         playCalls++
+    }
+    override fun prepareForPlayback() {
+        prepareCalls++
     }
     override suspend fun pause() {
         pauseCalls++

@@ -13,8 +13,9 @@ a platform sink. Being an `:api`, depend on it to drive the speaker or to subcla
 
 | File | What it is |
 | --- | --- |
-| `Speaker.kt` | The consumer interface the `Director` drives: `events()`/`debugInfo()`/`currentPositionMs()` plus transport (`play`/`pause`/`stop`/`seek`/`switchTo`/`release`) and audio controls (`setDucked`, `setVolume`, `setNormalizationEnabled`, `setFadeInEnabled`, `setVolumeModification`/`clearVolumeModification`). |
-| `BaseSpeaker.kt` | Production base class implementing `Speaker`. Owns the single-coroutine consume loop, the `VolumeProcessor` (fade + normalization gain re-derived from each buffer's live BS.1770 figures), `switchTo` filtering of stale-track buffers, drain-and-restart for seek, position publishing, and buffer recycling. Subclasses implement only `onAudioReceived`/`teardown` (plus optional `flushSink`/`readSinkPositionMs`/`awaitSinkCapacity`/`onPaused`/`onResumed`). |
+| `Speaker.kt` | The consumer interface the `Director` drives: `events()`/`debugInfo()`/`currentPositionMs()` plus transport (`prepareForPlayback`/`play`/`pause`/`stop`/`seek`/`switchTo`/`release`) and audio controls (`setDucked`, `setVolume`, `setNormalizationEnabled`, `setFadeInEnabled`, `setVolumeModification`/`clearVolumeModification`). `prepareForPlayback()` is the synchronous gesture-unlock seam (default no-op; the browser uses it to create/resume its `AudioContext`). |
+| `BaseSpeaker.kt` | Production base class implementing `Speaker`. Owns the single-coroutine consume loop, the `VolumeProcessor` (fade + normalization gain re-derived from each buffer's live BS.1770 figures), `switchTo` filtering of stale-track buffers, drain-and-restart for seek, position publishing, and buffer recycling. Subclasses implement only `onAudioReceived`/`teardown` (plus optional `flushSink`/`readSinkPositionMs`/`awaitSinkReady`/`awaitSinkCapacity`/`onPaused`/`onResumed`). `awaitSinkReady()` gates the loop before a buffer is dequeued, so an asynchronously-initialized sink keeps the opening frames and a terminal init failure exits the loop instead of draining it. |
+| `AudioInitState.kt` | Pure lifecycle reducer for asynchronous sink initialization (`Idle → Preparing → Ready` or `Failed`), with one retry (`AudioInitState.MAX_ATTEMPTS`) and an explicit `Reset`. Used by the web `AudioWorklet` sink; tested under `commonTest` on JVM and Node. |
 | `SpeakerEvent.kt` | Sealed event type observed by the `Director`: `Buffering(positionMs)`, `Playing(positionMs)`, `TrackChange(trackId)`, `Error`. |
 | `SpeakerDebugInfo.kt` | Observational snapshot (playing track, position, loop state, underrun count, volume + resampler diagnostics) for the debug PlaybackStatus screen. |
 
@@ -56,7 +57,7 @@ class MySpeaker(/* deps */) : BaseSpeaker(/* bufferManager, hatchet */) {
 
 ## Module facts
 
-- **Plugin:** `sage.kmp` + `sage.kmp.js`
+- **Plugin:** `sage.kmp` + `sage.kmp.js` + `chipbox.kmp.test` (the init reducer's `commonTest` runs on JVM and under `jsNodeTest`)
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
-- **Source set:** `commonMain`
+- **Source set:** `commonMain` (+ `commonTest`)
 - **SAGE/module dependencies:** `:cbox:common:player:common:api`, `:cbox:common:player:resampler:api`, `:cbox:common:player:buffer:api`, `kotlinx.coroutines.core`, `sage.common.logging` (all `api`)
