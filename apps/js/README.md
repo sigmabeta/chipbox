@@ -106,6 +106,20 @@ removes the `index.html` splash, and mounts `ChipboxAppUi` in a
   `playback.session.snapshot`), `mediasession/WebMediaSession.kt`,
   `image/WebImageLoader.kt`, `speaker/WebAudioSpeaker.kt`,
   `analytics/WebAnalytics.kt`, `logging/WebHatchet.kt`.
+  - `WebAudioSpeaker` implements `Speaker.prepareForPlayback()`, called
+    synchronously from `RealDirector.request` for Start/Play/PlayPosition, to
+    create and resume the `AudioContext` inside the user gesture (Safari). Its
+    worklet lifecycle is the shared pure `AudioInitState` reducer
+    (`Idle → Preparing → Ready`/`Failed`, one retry, 4 s per attempt); the
+    consume loop waits for it via `BaseSpeaker.awaitSinkReady()` before
+    dequeuing, so opening frames are held rather than dropped. `teardown()`
+    flushes the FIFO but keeps the node/context, so play after an
+    end-of-setlist is not mute. A terminal init failure emits
+    `SpeakerEvent.Error`, which the director surfaces as `ERROR` and `JsMain`
+    routes to the app snackbar (alongside the NowPlaying error log).
+  - `WebMediaSession` wraps handler installation, metadata writes, and position
+    writes in `runCatching`: unsupported actions (Safari `NotSupportedError`)
+    must not abort `JsMain` mounting or kill the playback collector.
 - **Browser navigation:** `navigation/BrowserHistoryNavigation.kt` implements the
   shared `BrowserNavigation` seam. Every in-app push/tab switch pushes a history
   entry, an in-app pop replaces the current one, `popstate` decodes the URL with
@@ -122,6 +136,11 @@ removes the `index.html` splash, and mounts `ChipboxAppUi` in a
 - **WASM emulators:** `emulators/Wasm*Emulator.kt` (one `Emulator` subclass per
   format) over `wasm/*Wasm.kt` + `*WasmCore.kt` module loaders, plus
   `wasm/WasmModuleLoader.kt` and `wasm/MemfsMirror.kt`. Modules load on first use.
+  The loader checks the injected factory global is a function, wraps the call,
+  bounds the script + module settle with a 10 s timeout, removes the `<script>`,
+  evicts failed `pendingLoads` entries (so a retry works without a reload), and
+  throws the shared `WasmLoadFailure` message (URL + "bundle may lack WASM").
+  Each emulator also clears its failed `loadInProgress` deferred.
   `WasmVgmstreamEmulator` is the exception whose extension list only exists after
   its module loads: it overrides `Emulator.supportsExtension` to load first, and
   is registered last so shared extensions never pay that load.

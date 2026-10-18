@@ -115,10 +115,15 @@ interleaved L/R `ShortArray`, fade params, and loudness/peak.
 
 ## Speaker — `cbox/common/player/speaker`
 
-`Speaker`/`BaseSpeaker` run a single consume loop: poll (non-blocking) → on empty
-emit `SpeakerEvent.Buffering` then block; detect track boundaries (emit
+`Speaker`/`BaseSpeaker` run a single consume loop: wait for a ready sink
+(`awaitSinkReady`, default true), poll (non-blocking) → on empty emit
+`SpeakerEvent.Buffering` then block; detect track boundaries (emit
 `TrackChange`, discard buffers for stale tracks); apply fade + normalization;
 write to the sink; recycle the array; emit `SpeakerEvent.Playing(positionMs)`.
+`Speaker.prepareForPlayback()` is the synchronous gesture seam: the Director
+calls it from `request` for play-starting requests before launching coroutine
+work; browser sinks create/resume their `AudioContext` there, device sinks
+no-op.
 
 Sinks (platform seam):
 - `RealSpeaker` (androidMain) — `AudioTrack`; re-inits on sample-rate change;

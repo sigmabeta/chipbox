@@ -220,6 +220,17 @@ abstract class BaseSpeaker(
      *  [stop] after the consume loop is cancelled. */
     abstract fun teardown()
 
+    /**
+     * Suspend until the sink can accept audio. Called at the top of every consume-loop iteration,
+     * before a buffer is dequeued, so a sink that is still initializing (the browser's
+     * `AudioWorklet`) neither drops the first real music frames nor drains the whole track at CPU
+     * speed. Return `false` when the sink can never become ready (terminal initialization failure);
+     * the loop then exits and the director handles the error event the sink already emitted.
+     *
+     * Default `true` for device sinks, which are ready as soon as they open.
+     */
+    protected open suspend fun awaitSinkReady(): Boolean = true
+
     /** Discard any audio buffered inside the sink itself (e.g. AudioTrack's hardware buffer)
      *  so a seek isn't preceded by stale frames already on the way to the speaker. Subclasses
      *  that don't buffer downstream audio (test/debug sinks) should leave this as a no-op. */
@@ -283,6 +294,10 @@ abstract class BaseSpeaker(
 
             while (true) {
                 yield()
+                // Wait for an asynchronously-initialized sink before dequeuing anything: the
+                // producer's backpressure then holds the opening frames instead of dropping them,
+                // and a failed sink stops the loop rather than racing through the track.
+                if (!awaitSinkReady()) return
                 val audioBuffer = nextBufferOrAwait()
 
                 val target = pendingTargetTrackId
