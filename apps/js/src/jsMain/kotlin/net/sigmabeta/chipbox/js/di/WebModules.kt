@@ -24,6 +24,7 @@ import net.sigmabeta.chipbox.debug.real.RealDebugSettingsManager
 import net.sigmabeta.chipbox.debuginfo.DebugInfoManager
 import net.sigmabeta.chipbox.debuginfo.real.RealDebugInfoManager
 import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
+import net.sigmabeta.chipbox.features.folderpicker.StorageVolumeProvider
 import net.sigmabeta.chipbox.js.contentsource.HttpContentSource
 import net.sigmabeta.chipbox.js.emulators.WasmGbaEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmGmeEmulator
@@ -416,6 +417,17 @@ object WebNotifModule {
         stringProvider = stringProvider,
         hatchet = hatchet,
     )
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object WebFolderPickerModule {
+    // The web UI never opens the folder picker — the server owns the library. Metro still validates
+    // the shared FolderPickerViewModel (it is in the ViewModel map), so provide the platform
+    // volume list as empty: a single/no-volume picker opens on the default folder, which on web is
+    // unreachable anyway.
+    @Provides @SingleIn(AppScope::class)
+    fun provideStorageVolumeProvider(): StorageVolumeProvider = StorageVolumeProvider { emptyList() }
 }
 
 @BindingContainer

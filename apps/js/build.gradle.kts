@@ -30,9 +30,18 @@ plugins {
 //
 // emsdk discovery: explicit `-Psage.js.emsdk=/path/to/emsdk` first, then `$EMSDK` env var.
 // Tasks fail at execution (not configuration) if neither is present, so running unrelated tasks
-// (`compileKotlinJs` etc.) on a dev box without emsdk still works.
+// (`compileKotlinJs` etc.) on a dev box without emsdk still works. Every WASM-dependent task also
+// depends on `checkEmsdk`, so a bundle build fails up front instead of quietly copying nothing.
+//
+// The validation is inlined into each `doFirst` (rather than calling a script-level helper) because
+// a helper reference captures the Kotlin build script object, which the configuration cache refuses
+// to serialize.
 val emsdkDir: Provider<String> = providers.gradleProperty("sage.js.emsdk")
     .orElse(providers.environmentVariable("EMSDK"))
+val emsdkMissingMessage =
+    "Emscripten SDK not found. The web bundle needs the WASM emulators: install emsdk and set " +
+        "\$EMSDK, or pass -Psage.js.emsdk=/path/to/emsdk. (Unrelated Kotlin/JS compile tasks still " +
+        "work without it.)"
 
 val wasmResourcesDirPath: String =
     layout.projectDirectory.dir("src/jsMain/resources/wasm").asFile.absolutePath
@@ -40,23 +49,44 @@ val wasmResourcesDirPath: String =
 val nativeRootDir: String = isolated.rootProject.projectDirectory.dir("cbox/native").asFile.absolutePath
 val wasmBuildRootDir: String = layout.buildDirectory.dir("wasm").get().asFile.absolutePath
 
-// Each emulator that ships a WASM build is one line here. The CMakeLists in
-// `cbox/native/<dir>/` must have an `if(EMSCRIPTEN)` branch that produces a target named
-// `chipbox_<output>` (Emscripten emits `.js` + `.wasm` for executable targets). The Kotlin
-// side loads each via a `<Capitalized>Wasm.kt` module-loader file. New emulator → one entry
-// here, one CMake branch, one `<Name>_Web.cpp` wrapper, one `Wasm<Name>Emulator.kt` subclass.
+// Each emulator that ships a WASM build is one line in `wasm-emulators.txt` (shared with the
+// bundle-verification script so the two cannot drift). The CMakeLists in `cbox/native/<dir>/` must
+// have an `if(EMSCRIPTEN)` branch that produces a target named `chipbox_<output>` (Emscripten
+// emits `.js` + `.wasm` for executable targets). The Kotlin side loads each via a
+// `<Capitalized>Wasm.kt` module-loader file. New emulator → one entry there, one CMake branch, one
+// `<Name>_Web.cpp` wrapper, one `Wasm<Name>Emulator.kt` subclass.
 data class WasmEmulator(val dir: String, val output: String, val displayName: String)
-val wasmEmulators = listOf(
-    WasmEmulator(dir = "gme", output = "chipbox_gme", displayName = "libgme"),
-    WasmEmulator(dir = "vgm", output = "chipbox_vgm", displayName = "libvgm"),
-    WasmEmulator(dir = "ssf", output = "chipbox_ssf", displayName = "ssf core"),
-    WasmEmulator(dir = "usf", output = "chipbox_usf", displayName = "lazyusf2"),
-    WasmEmulator(dir = "psf", output = "chipbox_psf", displayName = "slopsf"),
-    WasmEmulator(dir = "ncsf", output = "chipbox_ncsf", displayName = "ncsf"),
-    WasmEmulator(dir = "2sf", output = "chipbox_twosf", displayName = "vio2sf"),
-    WasmEmulator(dir = "vgmstream", output = "chipbox_vgmstream", displayName = "vgmstream"),
-    WasmEmulator(dir = "gba", output = "chipbox_gba", displayName = "mgba"),
-)
+val wasmEmulators: List<WasmEmulator> = providers
+    .fileContents(layout.projectDirectory.file("wasm-emulators.txt"))
+    .asText.get()
+    .lineSequence()
+    .map(String::trim)
+    .filter { it.isNotEmpty() && !it.startsWith("#") }
+    .map { line ->
+        val fields = line.split('|').map(String::trim)
+        check(fields.size == 3) { "wasm-emulators.txt: expected dir|output|display, got '$line'" }
+        WasmEmulator(fields[0], fields[1], fields[2])
+    }
+    .toList()
+check(wasmEmulators.isNotEmpty()) { "wasm-emulators.txt listed no emulators." }
+
+val checkEmsdk = tasks.register("checkEmsdk") {
+    description = "Fails fast (at execution) when the Emscripten SDK needed for the WASM emulators " +
+        "is missing. The web bundle cannot be assembled without it."
+    group = "wasm"
+    val capturedEmsdk = emsdkDir
+    val missingMessage = emsdkMissingMessage
+    doFirst {
+        val emsdk = capturedEmsdk.orNull ?: error(missingMessage)
+        require(File(emsdk, "emsdk_env.sh").isFile) {
+            "EMSDK=$emsdk does not look like an emsdk checkout (no emsdk_env.sh)."
+        }
+        require(File(emsdk, "upstream/emscripten/emcc").isFile) {
+            "emsdk at $emsdk has no activated compiler (upstream/emscripten/emcc); run " +
+                "`./emsdk install <version> && ./emsdk activate <version>`."
+        }
+    }
+}
 
 val buildTaskNames = wasmEmulators.map { emu ->
     val cap = emu.dir.replaceFirstChar { it.uppercaseChar() }
@@ -67,20 +97,24 @@ val buildTaskNames = wasmEmulators.map { emu ->
         description = "Configures the Emscripten WASM build for ${emu.displayName}. Needs " +
             "\$EMSDK or -Psage.js.emsdk."
         group = "wasm"
+        dependsOn(checkEmsdk)
         inputs.file(File(srcDir, "CMakeLists.txt"))
+        // Shared psflib/psf-io sources + their CMakeLists are part of this emulator's build.
+        inputs.file(File("$nativeRootDir/native-common", "CMakeLists.txt"))
         outputs.file(File(buildDir, "CMakeCache.txt"))
 
         val capturedEmsdk = emsdkDir
+        val missingMessage = emsdkMissingMessage
         val buildDirLocal = buildDir
         val srcDirLocal = srcDir
         doFirst {
-            val emsdk = capturedEmsdk.orNull
-                ?: error(
-                    "Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
-                    "-Psage.js.emsdk=/path/to/emsdk."
-                )
+            val emsdk = capturedEmsdk.orNull ?: error(missingMessage)
             require(File(emsdk, "emsdk_env.sh").isFile) {
                 "EMSDK=$emsdk does not look like an emsdk checkout (no emsdk_env.sh)."
+            }
+            require(File(emsdk, "upstream/emscripten/emcc").isFile) {
+                "emsdk at $emsdk has no activated compiler (upstream/emscripten/emcc); run " +
+                    "`./emsdk install <version> && ./emsdk activate <version>`."
             }
             File(buildDirLocal).mkdirs()
             val envScript = File(emsdk, "emsdk_env.sh").absolutePath
@@ -101,17 +135,22 @@ val buildTaskNames = wasmEmulators.map { emu ->
         // build dir would be most robust, but per-emulator we only need to retrigger when the
         // C/C++ sources or the Web wrapper change — Gradle's `inputs.dir` recurses anyway.
         inputs.dir(srcDir).withPathSensitivity(PathSensitivity.RELATIVE)
+        inputs.dir("$nativeRootDir/native-common").withPathSensitivity(PathSensitivity.RELATIVE)
         outputs.file(File(buildDir, "${emu.output}.wasm"))
         outputs.file(File(buildDir, "${emu.output}.js"))
 
         val capturedEmsdk = emsdkDir
+        val missingMessage = emsdkMissingMessage
         val buildDirLocal = buildDir
         doFirst {
-            val emsdk = capturedEmsdk.orNull
-                ?: error(
-                    "Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
-                    "-Psage.js.emsdk=/path/to/emsdk."
-                )
+            val emsdk = capturedEmsdk.orNull ?: error(missingMessage)
+            require(File(emsdk, "emsdk_env.sh").isFile) {
+                "EMSDK=$emsdk does not look like an emsdk checkout (no emsdk_env.sh)."
+            }
+            require(File(emsdk, "upstream/emscripten/emcc").isFile) {
+                "emsdk at $emsdk has no activated compiler (upstream/emscripten/emcc); run " +
+                    "`./emsdk install <version> && ./emsdk activate <version>`."
+            }
             val envScript = File(emsdk, "emsdk_env.sh").absolutePath
             commandLine(
                 "bash",
@@ -128,6 +167,7 @@ val copyEmulatorWasm = tasks.register<Copy>("copyEmulatorWasm") {
     description = "Copies every built emulator WASM blob into apps/js resources so webpack " +
         "bundles them with the JS app (served at /wasm/<name>.{js,wasm} runtime)."
     group = "wasm"
+    dependsOn(checkEmsdk)
     dependsOn(buildTaskNames)
     wasmEmulators.forEach { emu ->
         from("$wasmBuildRootDir/${emu.dir}") {
@@ -135,6 +175,53 @@ val copyEmulatorWasm = tasks.register<Copy>("copyEmulatorWasm") {
         }
     }
     into(wasmResourcesDirPath)
+    // A Copy that copied nothing would otherwise succeed silently. This is the last line of
+    // defence behind `checkEmsdk`: the bundle must receive all nine loader/WASM pairs.
+    val expectedFiles = wasmEmulators.flatMap { emu ->
+        listOf("${emu.output}.js", "${emu.output}.wasm")
+    }
+    val targetDir = wasmResourcesDirPath
+    doLast {
+        val missing = expectedFiles.filterNot { File(targetDir, it).isFile }
+        check(missing.isEmpty()) {
+            "Emulator WASM copy incomplete in $targetDir; missing: ${missing.joinToString()}"
+        }
+    }
+}
+
+// The bundle's resource pipeline is the one edge that was missing: without it webpack happily
+// produced an emulator-less bundle. jsProcessResources feeds the webpack distribution (including
+// jsBrowserDistribution and the server's installDist bundle), so every bundle path now builds and
+// copies the emulators first. Matching (not named) because the Kotlin/JS plugin registers the task
+// after this script is evaluated.
+tasks.matching { it.name == "jsProcessResources" }.configureEach {
+    dependsOn(copyEmulatorWasm)
+}
+
+// Assert the *distribution* (not just the source resources) contains all nine loader/WASM pairs
+// plus the app entry points. Runs as a normal Gradle task and mirrors
+// scripts/ci/verify-web-bundle.sh, which CI/Docker invoke directly.
+tasks.register("verifyWebBundle") {
+    description = "Asserts the production web bundle contains index.html, chipbox.js, and all " +
+        "nine emulator loader/WASM pairs."
+    group = "verification"
+    dependsOn("jsBrowserDistribution")
+    val distDir = layout.buildDirectory.dir("dist/js/productionExecutable")
+    val emulatorCount = wasmEmulators.size
+    val requiredFiles = buildList {
+        add("index.html")
+        add("chipbox.js")
+        wasmEmulators.forEach {
+            add("wasm/${it.output}.js")
+            add("wasm/${it.output}.wasm")
+        }
+    }
+    doLast {
+        val dir = distDir.get().asFile
+        val missing = requiredFiles.filterNot { File(dir, it).isFile }
+        check(missing.isEmpty()) { "Web bundle at $dir is missing: ${missing.joinToString()}" }
+        logger.lifecycle("Web bundle OK: index.html + chipbox.js + $emulatorCount loader/WASM pairs.")
+    }
 }
 
 kotlin {

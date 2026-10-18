@@ -109,8 +109,7 @@ if (providers.gradleProperty("sage.js").orNull.toBoolean()) {
 
 include(
     // SAGE-aware modules
-    ":apps:android",
-    ":apps:jvm",
+    ":apps:android",    ":apps:jvm",
     ":apps:cli",
     ":apps:server",
     ":benchmark",
@@ -322,3 +321,21 @@ project(":cbox:android:player:emulators:twosf").projectDir = file("cbox/android/
 project(":cbox:android:player:emulators:twosf:native").projectDir = file("cbox/android/player/emulators/2sf/native")
 project(":cbox:common:player:emulators:twosf").projectDir = file("cbox/common/player/emulators/2sf")
 project(":cbox:common:player:emulators:twosf:real").projectDir = file("cbox/common/player/emulators/2sf/real")
+
+// Kotlin/JS tests run under Node. Compose Multiplatform's JS distribution ships Skiko only as a
+// browser/WASM loader (no Node loader), so any module whose JS module graph links Compose fails at
+// import time before a single test runs (`Cannot find module './skiko.mjs'`). That is a property of
+// the module graph, not of the test: a feature-real test that only exercises a VM still imports its
+// module's Compose UI references.
+//
+// Disable the Node test tasks for every module that applies `sage.compose.kmp`. Pure modules —
+// models, feature route keys, browser-state codecs — keep their jsNodeTest, and those are the
+// shared JS-side suites CI runs. `cbox/common/appui/api` used to do this locally; centralising it
+// keeps a new Compose module from silently re-breaking the web job.
+gradle.beforeProject {
+    plugins.withId("sage.compose.kmp") {
+        tasks.matching { it.name == "jsTest" || it.name == "jsNodeTest" }.configureEach {
+            enabled = false
+        }
+    }
+}
