@@ -38,6 +38,8 @@ fun NotifListItem(
                 min = NotifConstants.MIN_WIDTH,
                 max = NotifConstants.MAX_WIDTH,
             )
+            // Breathing room between this card and whatever row follows it on Home.
+            .padding(bottom = 16.dp)
     ) {
         val (cardColor, contentColor, buttonTextColor) = if (model.isError) {
             Triple(

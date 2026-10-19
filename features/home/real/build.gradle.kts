@@ -12,6 +12,7 @@ kotlin {
                 implementation(projects.cbox.common.ui.components.api)
                 implementation(projects.cbox.common.ui.list.api)
                 implementation(projects.cbox.common.appcomm.api)
+                implementation(projects.cbox.common.notif.api)
                 implementation(projects.cbox.common.strings.api)
                 implementation(projects.cbox.common.repository.api)
                 implementation(projects.cbox.common.history.api)
@@ -31,6 +32,7 @@ kotlin {
 
         named("commonTest") {
             dependencies {
+                implementation(projects.cbox.common.notif.fake)
                 implementation(projects.cbox.common.repository.fake)
                 implementation(projects.cbox.common.history.fake)
                 implementation(projects.cbox.common.contentsource.fake)

@@ -1,7 +1,9 @@
 package net.sigmabeta.chipbox.strings.api
 
+import kotlinx.serialization.Serializable
 import net.sigmabeta.sage.ui.SageStringId
 
+@Serializable
 enum class ChipboxStringId : SageStringId {
     ACCY_OCL_CHECKBOX,
     ACCY_OCL_DROPDOWN,
@@ -15,6 +17,8 @@ enum class ChipboxStringId : SageStringId {
     ACCY_CDESC_SEARCH_CLEAR,
     APP_NAME,
     APPUI_TAB_HOME,
+    HOME_SECTION_NOTIFICATIONS,
+    NOTIF_SCAN_FAILED_TITLE,
     HOME_SECTION_NOW_PLAYING,
     HOME_SECTION_GAME_OF_THE_DAY,
     HOME_SECTION_RECENTLY_ADDED,

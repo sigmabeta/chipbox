@@ -35,6 +35,9 @@ class ChipboxApplication :
         // fine — onCreate runs once and the graph is reused by every later Activity/Service.
         appGraph.crashReporter.install()
 
+        // Watch for scan failures for the process's life so they show up as Home notifications.
+        appGraph.scanFailureNotifRecorder.observe()
+
         // Benchmark builds only: ingest the pushed library snapshot before the UI composes, so a
         // device benchmark scrolls a deterministic library rather than racing a scan.
         BenchmarkLibrarySeed.seedIfBenchmark(this, appGraph.repository, appGraph.hatchet)

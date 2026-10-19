@@ -26,12 +26,15 @@ This is a large module; files are grouped by role.
   (`sealed class HomeAction : ChipboxAction()` — game/artist/song clicks, the
   random "RNG" actions, folder/rescan CTAs, and now-playing card events),
   `HomeRoute.kt` (`HomeRoute(onEvent, modifier)` → `metroViewModel()` →
-  `ChipboxListEntry`).
+  `ChipboxListEntry`). `HomeViewModel` also handles SAGE's
+  `SageAction.NotifClearClicked` by removing the notification from `NotifManager`.
 - **Module abstraction** — `module/HomeModule.kt`: the `HomeModule` interface
   (`id`, `priority`, `showHeader`, `state(): Flow<LCE<HomeModuleSection>>`) and
   the `HomeModuleSection` row type (title + pre-built `ListModel`s).
 - **Card modules** — `modules/*HomeModule.kt`, one `HomeModule` per Home row,
-  ordered by `priority`: `NowPlayingHomeModule` (0, headerless hero card),
+  ordered by `priority`: `NotifHomeModule` (-100, the in-app notification /
+  error-message row backed by `NotifManager`; hidden when empty),
+  `NowPlayingHomeModule` (0, headerless hero card),
   `ScanStatusHomeModule` (50, live scan-progress card off the `Scanner` flows,
   throttled to the injected `module/ScanRefreshInterval` — app graphs pass the
   production cadence, the UI-test graph passes `0` to disable the `sample` throttle
@@ -46,9 +49,10 @@ This is a large module; files are grouped by role.
   `@ContributesTo(AppScope)` interface that `@Multibinds` the `Set<HomeModule>`
   and `@Binds @IntoSet` each concrete module into it.
 - **Tests** (`commonTest`) — `HomeViewModelTest.kt`,
-  `modules/RngTakeTheWheelHomeModuleTest.kt`, `modules/ScanStatusHomeModuleTest.kt`,
+  `modules/NotifHomeModuleTest.kt`, `modules/RngTakeTheWheelHomeModuleTest.kt`,
+  `modules/ScanStatusHomeModuleTest.kt`,
   `modules/RecentlyAddedGamesHomeModuleTest.kt`,
-  driven over the repository/history/scanner/director fakes.
+  driven over the repository/history/scanner/director/notif fakes.
 
 ## Why depend on this module
 
@@ -105,7 +109,7 @@ fun HomeRoute(onEvent: (ChipboxEvent) -> Unit, modifier: Modifier = Modifier) {
 - **Source set:** `commonMain` (impl) + `commonTest` (tests).
 - **SAGE/module dependencies:** `api`-exposes `:features:home:api`; implements
   against `cbox/common` `ui.components.api`, `ui.list.api`, `appcomm.api`,
-  `strings.api`, `repository.api`, `history.api`, `models.api`, `scanner.api`,
+  `notif.api`, `strings.api`, `repository.api`, `history.api`, `models.api`, `scanner.api`,
   `contentsource.api`, `player.common.api`, `player.director.api`; and the
   `:api`s of the `artist-detail`, `folder-picker`, `game-detail`, `now-playing`,
   and `rescan-status` features (navigation targets). Tests use the

@@ -6,6 +6,7 @@ import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import kotlinx.coroutines.CoroutineScope
 import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
+import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
@@ -43,6 +44,9 @@ interface WebChipboxGraph : ViewModelGraph {
     // Observes the Director and records qualifying plays to the localStorage-backed history
     // repository. `JsMain` calls observe() once at startup, mirroring apps/jvm's `Main`.
     val playbackHistoryRecorder: PlaybackHistoryRecorder
+
+    /** Turns scanner failures into persisted Home notifications; `JsMain` calls observe() once. */
+    val scanFailureNotifRecorder: ScanFailureNotifRecorder
 
     @DependencyGraph.Factory
     fun interface Factory {

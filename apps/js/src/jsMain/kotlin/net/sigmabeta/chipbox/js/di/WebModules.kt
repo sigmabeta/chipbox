@@ -34,6 +34,10 @@ import net.sigmabeta.chipbox.js.emulators.WasmTwosfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmUsfEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmEmulator
 import net.sigmabeta.chipbox.js.emulators.WasmVgmstreamEmulator
+import net.sigmabeta.chipbox.notif.NotifManager
+import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
+import net.sigmabeta.chipbox.notif.real.RealNotifManager
+import net.sigmabeta.chipbox.notif.real.RealScanFailureNotifRecorder
 import net.sigmabeta.chipbox.player.generator.real.RealGenerator
 import net.sigmabeta.chipbox.js.repository.RemoteRepository
 import net.sigmabeta.chipbox.js.speaker.WebAudioSpeaker
@@ -68,6 +72,7 @@ import net.sigmabeta.sage.storage.common.Storage
 import net.sigmabeta.sage.appinfo.AppInfo
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
+import net.sigmabeta.sage.ui.StringProvider
 import okio.FileSystem
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
@@ -384,6 +389,33 @@ object WebSettingsModule {
         override fun list(): List<CrashReport> = emptyList()
         override fun clear() = Unit
     }
+}
+
+@BindingContainer
+@ContributesTo(AppScope::class)
+object WebNotifModule {
+    // Home's notification row reads the shared RealNotifManager over localStorage; the scanner
+    // failure recorder is inert here because the browser uses CountingScanner (server-side scans),
+    // but wiring it keeps the graph shape identical across targets.
+    @Provides @SingleIn(AppScope::class)
+    fun provideNotifManager(
+        storage: Storage,
+        scope: CoroutineScope,
+        hatchet: Hatchet,
+    ): NotifManager = RealNotifManager(storage, scope, hatchet)
+
+    @Provides @SingleIn(AppScope::class)
+    fun provideScanFailureNotifRecorder(
+        scanner: Scanner,
+        notifManager: NotifManager,
+        stringProvider: StringProvider,
+        hatchet: Hatchet,
+    ): ScanFailureNotifRecorder = RealScanFailureNotifRecorder(
+        scanner = scanner,
+        notifManager = notifManager,
+        stringProvider = stringProvider,
+        hatchet = hatchet,
+    )
 }
 
 @BindingContainer
