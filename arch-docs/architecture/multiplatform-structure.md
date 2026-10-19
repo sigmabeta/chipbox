@@ -150,7 +150,8 @@ not a top-level `dependencies {}` block (the common KMP gotcha). For
 - `apps/server` — headless Ktor library server: scans a configured library root,
   serves the JSON API, file bytes, covers, and the bundled browser app. It stores
   no user state and has no authentication; it is for loopback/trusted-LAN use
-  until an auth story exists.
+  until an auth story exists. Browser audio additionally requires a secure
+  origin (HTTPS or localhost) — see [web-app.md](web-app.md).
 
 ## Native code
 

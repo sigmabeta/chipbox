@@ -16,6 +16,7 @@ kotlin {
                 // Host-policy flag: the browser's library is server-owned, so the empty state must
                 // not offer folder/rescan CTAs.
                 implementation(projects.cbox.common.capabilities.api)
+                implementation(projects.cbox.common.notif.api)
                 implementation(projects.cbox.common.strings.api)
                 implementation(projects.cbox.common.repository.api)
                 implementation(projects.cbox.common.history.api)

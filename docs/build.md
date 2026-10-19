@@ -93,6 +93,27 @@ docker run --rm -p 127.0.0.1:8080:8080 \
 must be writable by uid `10001` (a bind mount needs an explicit `chown`).
 **There is no authentication**: loopback or a trusted LAN only.
 
+### Browser playback requires a secure context
+
+The browser speaker is an `AudioWorklet`, and browsers expose `AudioWorklet` only
+on **secure origins**. `http://localhost` and `http://127.0.0.1` qualify; a plain
+`http://` URL to a LAN host does **not**. In that case the server still scans and
+render-ahead caches tracks, and the UI still browses the library, but
+`AudioContext.audioWorklet` is `undefined`, so playback can never start. The web
+client detects this at startup and shows an **"Audio playback needs a secure
+connection"** notification on Home.
+
+For LAN access, terminate TLS in front of the container (Caddy/nginx with a
+certificate for the host, either trusted or self-signed accepted once), or use an
+SSH tunnel and browse through `localhost`:
+
+```sh
+ssh -L 8080:127.0.0.1:8080 your-nas
+# then open http://localhost:8080
+```
+
+Do not expose the plain-HTTP port beyond the trusted LAN.
+
 ### Both architectures (no registry)
 
 `--load` accepts one platform at a time, so a two-arch build is written as an OCI

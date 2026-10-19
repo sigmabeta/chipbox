@@ -9,6 +9,7 @@ import net.sigmabeta.chipbox.browserstate.BrowserStateEvents
 import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
 import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
+import net.sigmabeta.chipbox.notif.real.InsecureOriginNotifRecorder
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.sage.appinfo.AppInfo
@@ -61,6 +62,9 @@ interface WebChipboxGraph : ViewModelGraph {
     // Non-fatal favorites/playlists storage events (corrupt data, quota/read failures). `JsMain`
     // forwards `userMessages` to `ChipboxAppUi` so the browser shows a snackbar instead of failing.
     val browserStateEvents: BrowserStateEvents
+
+    /** Posts the "audio needs HTTPS/localhost" notice on an insecure origin; `JsMain` observes it. */
+    val insecureOriginNotifRecorder: InsecureOriginNotifRecorder
 
     @DependencyGraph.Factory
     fun interface Factory {
