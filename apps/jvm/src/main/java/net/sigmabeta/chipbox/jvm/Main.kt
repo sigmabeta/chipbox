@@ -20,6 +20,7 @@ fun main() {
     installMediaControls(graph)
     installSessionPersistence(graph)
     graph.playbackHistoryRecorder.observe()
+    graph.scanFailureNotifRecorder.observe()
     runDesktop(graph)
 }
 

@@ -205,6 +205,7 @@ dependencies {
     implementation(projects.cbox.common.strings.real)
     implementation(projects.cbox.common.debug.api)
     implementation(projects.cbox.common.debug.real)
+    implementation(projects.cbox.common.notif.di)
     implementation(projects.cbox.common.settings.api)
     implementation(projects.cbox.common.settings.real)
     // The JVM target now reuses the same `ChipboxAppUi` composable as Android — see

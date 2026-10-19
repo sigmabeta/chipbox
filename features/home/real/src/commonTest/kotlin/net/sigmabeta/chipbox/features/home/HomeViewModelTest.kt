@@ -30,6 +30,10 @@ import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
+import net.sigmabeta.chipbox.notif.Notif
+import net.sigmabeta.chipbox.notif.NotifCategory
+import net.sigmabeta.chipbox.notif.NotifManager
+import net.sigmabeta.chipbox.notif.fake.FakeNotifManager
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.PlayerState
@@ -43,6 +47,7 @@ import net.sigmabeta.chipbox.scanner.fake.CountingScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.LCE
+import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.CtaListModel
 import net.sigmabeta.sage.components.EmptyStateListModel
 import net.sigmabeta.sage.components.SectionListModel
@@ -77,6 +82,25 @@ class HomeViewModelTest {
         val state = vm.state.first { it.sections.first().lce is LCE.Content }
         assertEquals(LCE.Content(emptySection), state.sections.first { it.id == "a" }.lce)
         assertEquals(LCE.Loading("b.load"), state.sections.first { it.id == "b" }.lce)
+    }
+
+    @Test
+    fun `clearing a notification removes it from the manager`() = runTest {
+        val notifs = FakeNotifManager(
+            initialNotifs = listOf(
+                Notif(
+                    id = 42L,
+                    title = ChipboxStringId.HOME_SECTION_NOTIFICATIONS,
+                    description = "boom",
+                    category = NotifCategory.ERROR,
+                ),
+            ),
+        )
+        val vm = newVm(notifManager = notifs)
+
+        vm.sendAction(SageAction.NotifClearClicked(42L))
+
+        assertTrue(notifs.notifState.value.notifs.isEmpty())
     }
 
     @Test
@@ -282,12 +306,14 @@ class HomeViewModelTest {
         director: FakeDirector = FakeDirector(),
         librarySource: LibrarySource = FakeLibrarySource(),
         scanner: Scanner = CountingScanner(),
+        notifManager: NotifManager = FakeNotifManager(),
     ) = HomeViewModel(
         modules = modules,
         repository = repository,
         director = director,
         librarySource = librarySource,
         scanner = scanner,
+        notifManager = notifManager,
         stringProvider = stubStringProvider(),
         hatchet = BluntHatchet(),
     )

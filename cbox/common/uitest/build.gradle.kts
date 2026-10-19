@@ -42,6 +42,8 @@ val harnessDependencies: KotlinDependencyHandler.() -> Unit = {
     implementation(projects.cbox.common.player.director.fake)
     implementation(projects.cbox.common.settings.api)
     implementation(projects.cbox.common.settings.fake)
+    implementation(projects.cbox.common.notif.api)
+    implementation(projects.cbox.common.notif.fake)
     implementation(projects.cbox.common.contentsource.api)
     implementation(projects.cbox.common.contentsource.fake)
     implementation(projects.cbox.common.scanner.api)

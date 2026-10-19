@@ -20,6 +20,7 @@ import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
+import net.sigmabeta.chipbox.notif.NotifManager
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.Director
@@ -42,6 +43,7 @@ class HomeViewModel @Inject constructor(
     private val director: Director,
     private val librarySource: LibrarySource,
     private val scanner: Scanner,
+    private val notifManager: NotifManager,
     stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<HomeState>(
@@ -101,6 +103,8 @@ class HomeViewModel @Inject constructor(
 
     override fun handleAction(action: SageAction) {
         when (action) {
+            is SageAction.NotifClearClicked -> notifManager.removeNotif(action.id)
+
             is HomeAction.GameClicked -> emit(NavigateTo(GameDetail(action.id)))
 
             is HomeAction.ArtistClicked -> emit(NavigateTo(ArtistDetail(action.id)))

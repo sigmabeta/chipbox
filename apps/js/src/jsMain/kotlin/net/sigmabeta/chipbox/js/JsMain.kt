@@ -120,6 +120,7 @@ fun main() {
         // Start recording playback history (browser-local, via localStorage) the same way apps/jvm's
         // Main does — observe() watches the Director and logs a play once it clears the threshold.
         graph.playbackHistoryRecorder.observe()
+        graph.scanFailureNotifRecorder.observe()
 
         // Back-key stream — fed by window-level Escape keypresses (Backspace is browser-back
         // navigation, leave it alone). Skip events whose target is a text input so the field
