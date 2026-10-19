@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_section_notifications">Notifications</string>
+    <string name="notif_scan_failed_title">Library scan failed</string>
+</resources>

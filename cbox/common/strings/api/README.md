@@ -13,7 +13,7 @@ turn an id into displayable text — over SAGE's `ui.strings` (`SageStringId` /
 
 | File | What it is |
 | --- | --- |
-| `ChipboxStringId.kt` | `enum class ChipboxStringId : SageStringId` — one entry per UI string, grouped by feature (accessibility, home, search, library, playlists, settings, now-playing, platform names, playback-status, rescan-status, …). The enum *name* (lowercased) is the resource key in `:real`'s XML. |
+| `ChipboxStringId.kt` | `@Serializable enum class ChipboxStringId : SageStringId` — one entry per UI string, grouped by feature (accessibility, home, search, library, playlists, settings, now-playing, platform names, playback-status, rescan-status, …). The enum *name* (lowercased) is the resource key in `:real`'s XML. Serialization lets it travel inside persisted `Notif` state. |
 | `LocalChipboxStringProvider.kt` | `val LocalChipboxStringProvider = staticCompositionLocalOf<StringProvider>` plus the `@Composable`/`@ReadOnlyComposable` extension accessors `ChipboxStringId.text()`, `text(arg)`, `textInt(arg)`, and `text(first, second)`. |
 
 ## Why depend on this module
@@ -54,8 +54,9 @@ Non-composable code (e.g. view models) resolves through the injected
 
 ## Module facts
 
-- **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp`
+- **Plugin:** `sage.kmp` + `sage.kmp.js` + `sage.compose.kmp` + `kotlin.serialization`
 - **Targets:** Android + JVM; JS (Node) when built with `-Psage.js`
 - **Source set:** `commonMain`
 - **SAGE/module dependencies:** `api(libs.sage.common.ui.strings)` (provides
-  `SageStringId` / `StringProvider`)
+  `SageStringId` / `StringProvider`), `kotlinx-serialization-core` (for
+  `ChipboxStringId`'s generated serializer)

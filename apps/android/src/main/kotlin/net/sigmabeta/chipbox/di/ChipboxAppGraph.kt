@@ -9,6 +9,7 @@ import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.crash.CrashReporter
 import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
+import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.chipbox.repository.Repository
@@ -43,6 +44,9 @@ interface ChipboxAppGraph : ViewModelGraph {
     val director: Director
     val playbackSessionPersister: PlaybackSessionPersister
     val playbackHistoryRecorder: PlaybackHistoryRecorder
+
+    // Turns scanner failures into persisted Home notifications. Pulled in ChipboxApplication.onCreate().
+    val scanFailureNotifRecorder: ScanFailureNotifRecorder
 
     // ArtworkProvider dependencies — pulled lazily in `ArtworkProvider.openFile()` since
     // ContentProvider construction is process-init and can't synchronously resolve
