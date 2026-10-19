@@ -134,6 +134,7 @@ fun main() {
         // Main does — observe() watches the Director and logs a play once it clears the threshold.
         graph.playbackHistoryRecorder.observe()
         graph.scanFailureNotifRecorder.observe()
+        graph.insecureOriginNotifRecorder.observe()
 
         // Bring the last queue/track/position back paused at the saved offset, then keep the
         // snapshot in step with playback. Restore is launch-only (multi-tab session writes are

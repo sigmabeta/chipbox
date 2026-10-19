@@ -16,6 +16,8 @@ import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
+import net.sigmabeta.chipbox.notif.NotifManager
+import net.sigmabeta.chipbox.notif.fake.FakeNotifManager
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
@@ -91,6 +93,7 @@ class HomeCapabilitiesTest {
         director: FakeDirector = FakeDirector(),
         librarySource: LibrarySource = FakeLibrarySource(),
         scanner: Scanner = CountingScanner(),
+        notifManager: NotifManager = FakeNotifManager(),
     ) = HomeViewModel(
         capabilities = capabilities,
         modules = emptySet(),
@@ -98,6 +101,7 @@ class HomeCapabilitiesTest {
         director = director,
         librarySource = librarySource,
         scanner = scanner,
+        notifManager = notifManager,
         stringProvider = stubStringProvider(),
         hatchet = BluntHatchet(),
     )

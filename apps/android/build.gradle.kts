@@ -31,11 +31,17 @@ metro {
 
 // A source tarball or the Docker build context has no `.git`; a configuration-time failure would
 // break every build that merely configures this module, so stamp "unknown" instead.
-fun gitBranch(): String = runCatching {
-    providers.exec {
-        commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
-    }.standardOutput.asText.get().trim()
-}.getOrDefault("").ifEmpty { "unknown" }
+// The configuration cache records a failing `providers.exec` as a problem even when the throw is
+// caught, so do not create the provider at all when the build context has no `.git`.
+fun gitBranch(): String = if (!rootDir.resolve(".git").exists()) {
+    "unknown"
+} else {
+    runCatching {
+        providers.exec {
+            commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
+        }.standardOutput.asText.get().trim()
+    }.getOrDefault("").ifEmpty { "unknown" }
+}
 
 android {
     namespace = "net.sigmabeta.chipbox"

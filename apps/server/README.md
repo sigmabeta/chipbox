@@ -95,6 +95,13 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   `/music` is read-only; `/data` persists the DB + work dir (a bind-mounted
   `/data` must be writable by uid `10001`).
 
+  **Browser playback requires a secure context.** The web speaker is an
+  `AudioWorklet`, which browsers expose only on HTTPS or `localhost`. Plain
+  `http://<lan-host>:8080` still browses the library and caches tracks, but audio
+  cannot start; the client shows an "Audio playback needs a secure connection"
+  notification on Home. Terminate TLS in front of the container for LAN use, or
+  tunnel to `http://localhost:8080` (`ssh -L 8080:127.0.0.1:8080`).
+
   Base images are pinned by manifest-list digest (`image:tag@sha256:…`, one pin
   for amd64 + arm64); the recorded digests and the bump procedure are in
   `docs/build.md` → "Pinned base images".

@@ -49,6 +49,13 @@ single-user server the user hosts themselves. We choose the last.
   internet-facing deployment may happen until an authentication story exists**
   (shared token or reverse-proxy auth). The server warns when it binds a
   non-loopback address.
+- **Transport / playback:** browser audio uses an `AudioWorklet`, which browsers
+  expose only in a secure context (`https://`, `localhost`, `127.0.0.1`). A plain
+  `http://<lan-host>` deployment can browse the library and render-ahead cache
+  tracks but cannot start playback. The web client posts a one-time Home
+  notification when it detects an insecure origin. TLS termination is a
+  deployment concern (reverse proxy or SSH tunnel) and is not built into the
+  image.
 - **Testing:** a web CI job builds WASM with a pinned emsdk, builds the bundle
   and server, runs Node-testable shared logic and Ktor server tests, and builds
   an amd64 Docker image. There is no Playwright/browser automation; UI and audio

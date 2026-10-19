@@ -129,6 +129,12 @@ removes the `index.html` splash, and mounts `ChipboxAppUi` in a
     end-of-setlist is not mute. A terminal init failure emits
     `SpeakerEvent.Error`, which the director surfaces as `ERROR` and `JsMain`
     routes to the app snackbar (alongside the NowPlaying error log).
+  - Audio needs a **secure context**: on a plain `http://<lan-host>` origin
+    `AudioContext.audioWorklet` is `undefined`, so the sink can never initialize
+    (browsing and render-ahead caching still work). `JsMain` runs
+    `InsecureOriginNotifRecorder`, which posts a one-time error notification on
+    Home when `window.isSecureContext` is false. Use HTTPS or `localhost` for
+    playback — see `docs/build.md`.
   - `WebMediaSession` wraps handler installation, metadata writes, and position
     writes in `runCatching`: unsupported actions (Safari `NotSupportedError`)
     must not abort `JsMain` mounting or kill the playback collector.

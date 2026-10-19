@@ -216,6 +216,13 @@ saved snapshot, and reloading a tab restores that snapshot.
   (`prepareForPlayback`). Worklet *initialization* keeps its own bounded retry
   (`AudioInitState`); the capacity wait is a playback-progress guard, not an
   init step.
+- **Secure context only:** browsers expose `AudioWorklet` only on secure origins
+  (`https://`, `localhost`, `127.0.0.1`). On a plain-HTTP LAN origin,
+  `AudioContext.audioWorklet` is `undefined`, so no sink can initialize even
+  though browsing and render-ahead caching work. `InsecureOriginNotifRecorder`
+  checks `window.isSecureContext` at startup and posts a one-time `ERROR`
+  notification on Home; LAN deployments must terminate TLS or use an SSH tunnel
+  to localhost (see `docs/build.md`).
 - The cache and staging file system is in-memory (`FakeFileSystem`); a reload
   re-renders tracks. There is no persistent PCM cache on web.
 - The Web Media Session exposes play/pause/next/previous/seek and metadata.
@@ -339,7 +346,9 @@ saved snapshot, and reloading a tab restores that snapshot.
   docker run --rm -p 127.0.0.1:8080:8080 \
     -v /path/to/music:/music:ro -v chipbox-data:/data chipbox-server:dev
   ```
-  A bind-mounted `/data` must be writable by uid 10001. Builds for
+  A bind-mounted `/data` must be writable by uid 10001. Browser playback needs a
+  secure context: bind/publish the port on loopback and use an SSH tunnel, or
+  put a TLS reverse proxy in front of the container for LAN access. Builds for
   `linux/amd64` on every PR and both architectures on release; images are **not
   pushed** to a registry yet. A two-arch build needs QEMU/binfmt on an amd64
   host and an OCI archive output (`--load` is single-platform):
@@ -457,7 +466,10 @@ and Safari. A failure blocks "usable".
 - [ ] Manage Library, Folder Picker, Rescan Status, and Clear Library are not
       reachable.
 - [ ] App info shows the real version and is not marked debug.
-- [ ] The app works without any auth environment configured on a trusted LAN.
+- [ ] Browsing works without any auth environment configured on a trusted LAN.
+- [ ] Playback works on a secure origin (HTTPS or localhost); a plain-HTTP LAN
+      page shows the "Audio playback needs a secure connection" notification
+      instead of stalling.
 
 ## Out of scope for v1
 

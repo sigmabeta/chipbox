@@ -54,6 +54,7 @@ import net.sigmabeta.chipbox.js.inert.EmptyLibrarySource
 import net.sigmabeta.chipbox.js.inert.NoopScanner
 import net.sigmabeta.chipbox.notif.NotifManager
 import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
+import net.sigmabeta.chipbox.notif.real.InsecureOriginNotifRecorder
 import net.sigmabeta.chipbox.notif.real.RealNotifManager
 import net.sigmabeta.chipbox.notif.real.RealScanFailureNotifRecorder
 import net.sigmabeta.chipbox.js.repository.RemoteRepository
@@ -556,17 +557,19 @@ object WebNotifModule {
         stringProvider = stringProvider,
         hatchet = hatchet,
     )
-}
 
-@BindingContainer
-@ContributesTo(AppScope::class)
-object WebFolderPickerModule {
-    // The web UI never opens the folder picker — the server owns the library. Metro still validates
-    // the shared FolderPickerViewModel (it is in the ViewModel map), so provide the platform
-    // volume list as empty: a single/no-volume picker opens on the default folder, which on web is
-    // unreachable anyway.
     @Provides @SingleIn(AppScope::class)
-    fun provideStorageVolumeProvider(): StorageVolumeProvider = StorageVolumeProvider { emptyList() }
+    fun provideInsecureOriginNotifRecorder(
+        notifManager: NotifManager,
+        stringProvider: StringProvider,
+        hatchet: Hatchet,
+    ): InsecureOriginNotifRecorder = InsecureOriginNotifRecorder(
+        notifManager = notifManager,
+        stringProvider = stringProvider,
+        hatchet = hatchet,
+        // AudioWorklet is secure-context-only; a plain-HTTP LAN page reports false here.
+        isSecureContext = { window.asDynamic().isSecureContext as? Boolean ?: true },
+    )
 }
 
 @BindingContainer

@@ -20,11 +20,17 @@ ktlint {
 // benchmark process can't read git). Read them the same way :apps:android reads the build branch.
 // A source tarball or the Docker build context has no `.git`, and a configuration-time failure
 // would break every build that merely configures this module — stamp "unknown" instead.
-fun gitShortCommit(dir: File): String = runCatching {
-    providers.exec {
-        commandLine("git", "-C", dir.absolutePath, "rev-parse", "--short", "HEAD")
-    }.standardOutput.asText.get().trim()
-}.getOrDefault("").ifEmpty { "unknown" }
+// The configuration cache records a failing `providers.exec` as a problem even when the throw is
+// caught, so do not create the provider at all when there is no `.git` to read.
+fun gitShortCommit(dir: File): String = if (!dir.resolve(".git").exists()) {
+    "unknown"
+} else {
+    runCatching {
+        providers.exec {
+            commandLine("git", "-C", dir.absolutePath, "rev-parse", "--short", "HEAD")
+        }.standardOutput.asText.get().trim()
+    }.getOrDefault("").ifEmpty { "unknown" }
+}
 
 android {
     namespace = "net.sigmabeta.chipbox.benchmark"
