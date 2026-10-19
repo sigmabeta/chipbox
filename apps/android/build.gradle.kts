@@ -170,6 +170,7 @@ dependencies {
     implementation(projects.cbox.common.debug.di)
     implementation(projects.cbox.common.debugInfo.di)
     implementation(libs.sage.common.di)
+    implementation(projects.cbox.common.notif.di)
     implementation(projects.cbox.common.settings.di)
     implementation(projects.features.settings.api)
     implementation(projects.features.settings.real)

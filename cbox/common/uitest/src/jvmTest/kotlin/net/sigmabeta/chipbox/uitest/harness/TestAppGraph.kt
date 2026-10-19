@@ -21,6 +21,8 @@ import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
 import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
 import net.sigmabeta.chipbox.history.PlaybackHistoryRepository
 import net.sigmabeta.chipbox.history.fake.FakePlaybackHistoryRepository
+import net.sigmabeta.chipbox.notif.NotifManager
+import net.sigmabeta.chipbox.notif.fake.FakeNotifManager
 import net.sigmabeta.chipbox.playlists.PlaylistsRepository
 import net.sigmabeta.chipbox.playlists.fake.FakePlaylistsRepository
 import net.sigmabeta.chipbox.player.director.Director
@@ -80,6 +82,9 @@ interface TestAppGraph : ViewModelGraph {
      *  playlists before navigating to a screen that reads them. */
     val fakePlaylistsRepository: FakePlaylistsRepository
 
+    /** The bound [NotifManager] as a [FakeNotifManager], so specs can seed in-app notifications. */
+    val fakeNotifManager: FakeNotifManager
+
     /** The shared logger — screens log through it, and the harness reuses it to announce where it
      *  wrote failure artifacts. A real [BasicHatchet] (prints to stdout), not a no-op stub. */
     val hatchet: Hatchet
@@ -126,6 +131,15 @@ interface TestAppGraph : ViewModelGraph {
     @Provides
     @SingleIn(AppScope::class)
     fun provideDirector(fakeDirector: FakeDirector): Director = fakeDirector
+
+    // Home's notification row reads this; specs seed it through the fakeNotifManager accessor.
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideFakeNotifManager(): FakeNotifManager = FakeNotifManager()
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideNotifManager(fake: FakeNotifManager): NotifManager = fake
 
     // Preload all strings once (suspend → runBlocking), exactly like the production apps. The lookup
     // is then synchronous and happens outside composition, so runComposeUiTest never has to resolve a

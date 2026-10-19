@@ -192,6 +192,8 @@ kotlin {
                 implementation(projects.cbox.common.player.resampler.real)
                 implementation(projects.cbox.common.settings.api)
                 implementation(projects.cbox.common.settings.real)
+                implementation(projects.cbox.common.notif.api)
+                implementation(projects.cbox.common.notif.real)
                 implementation(projects.cbox.common.crash.api)
                 implementation(projects.cbox.common.debug.api)
                 implementation(projects.cbox.common.debug.real)

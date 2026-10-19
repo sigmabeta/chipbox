@@ -11,6 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.crash.CrashReporter
 import net.sigmabeta.chipbox.history.PlaybackHistoryRecorder
+import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
 import net.sigmabeta.chipbox.player.director.Director
 import net.sigmabeta.chipbox.player.persistence.PlaybackSessionPersister
 import net.sigmabeta.chipbox.player.speaker.real.SourceDataLineSpeaker
@@ -60,6 +61,9 @@ interface JvmChipboxGraph : ViewModelGraph {
 
     /** Records plays to the history database; observed for the process's life (see `Main.kt`). */
     val playbackHistoryRecorder: PlaybackHistoryRecorder
+
+    /** Turns scanner failures into persisted Home notifications; observed for the process's life. */
+    val scanFailureNotifRecorder: ScanFailureNotifRecorder
 
     /** App-lifetime scope (Default dispatcher, SupervisorJob) from `JvmCoroutinesModule`; the
      *  media-control bridge collects the Director's flows on it. */
