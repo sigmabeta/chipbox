@@ -298,23 +298,30 @@ trace-section set:
   Records `GridImage` + `CrossfadeImage`.
 - `ui.browse_all_tracks_scroll` — Library tab → **Browse All Tracks**; flings the
   track list up/down. Its rows are text-only, so it records **no** trace sections.
-- `ui.artist_detail_scroll` — Library tab → **Browse by Artist** → the tile of the
-  artist credited on the most tracks; drags the artist-detail list (song rows, with
-  a nested horizontal game strip) down and back. It records `CrossfadeImage` only —
-  the game strip paints it, and artist detail has no `GridImage` cells. (The hero
-  renders only when the artist has a photo, and nothing supplies artist photos yet,
-  so there is no hero to record.)
+- `ui.artist_detail_scroll` — Search tab → the artist credited on the most tracks;
+  drags the artist-detail list (song rows, with a nested horizontal game strip) down
+  and back. It records `CrossfadeImage` only — the game strip paints it, and artist
+  detail has no `GridImage` cells. (The hero renders only when the artist has a
+  photo, and nothing supplies artist photos yet, so there is no hero to record.)
 
-`ui.artist_detail_scroll` does not tap the grid's first tile: that artist — taken
-alphabetically — can have a single track, whose detail page fits on screen and
-exposes no scrollable node (nothing to measure). Instead the benchmark reads the
-pushed snapshot, picks the artist credited on the most tracks (ties broken by name),
-scrolls the name-ordered grid to that tile with a non-flinging drag, and taps it. It
-then confirms the tap opened artist detail by the `"Play All"` CTA. The page is very
-long, so the gesture drags a bounded distance toward the end and back — enough to
-dispose and recompose the game strip — rather than flinging to the end, which on a
-hundreds-of-songs page does not return to the top and would read a zero
-`CrossfadeImage`.
+`ui.artist_detail_scroll` does not tap the Browse-by-Artist grid's first tile: that
+artist — taken alphabetically — can have a single track, whose detail page fits on
+screen and exposes no scrollable node (nothing to measure). Instead the benchmark
+reads the pushed snapshot, picks the artist credited on the most tracks (ties broken
+by name), and opens that artist by typing the name into Search. Search is the setup
+precisely because the artist grid is dozens of screens long: its tiles exist only
+while composed, so crawling it raced the grid settling and could burn a 30 s budget
+without ever finding the tile, whereas a name query matches the Artists section
+wherever it sorts. The query goes into the Compose `BasicTextField` (an
+`EditText` in the accessibility tree) via `setText`, with `adb shell input text`
+as the fallback, and is read back before searching. Recent searches are a trap:
+history rows are shown while the query is unsubmitted and can read the same text
+as the artist, so the benchmark waits for a results section header (which history
+never renders) before tapping the tile. It confirms the tap opened artist detail
+by the `"Play All"` CTA. The page is very long, so the gesture drags a bounded
+distance toward the end and back — enough to dispose and recompose the game strip
+— rather than flinging to the end, which on a hundreds-of-songs page does not
+return to the top and would read a zero `CrossfadeImage`.
 
 Home nests horizontal `LazyRow`s inside its vertical `LazyColumn`, and artist detail
 nests one too, so `By.scrollable` matches several nodes on both; the benchmark
