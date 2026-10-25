@@ -47,6 +47,12 @@ val LibrarySnapshotJson: Json = Json {
 /**
  * Builds a snapshot from a scan's raw output, storing every path relative to [root]. [scannerVersion]
  * and [readerVersions] are the producing logic's versions, so an import can reason about staleness.
+ *
+ * The result is canonical: games are ordered by their stored [RawGame.folderKey] and reader versions
+ * by extension. The scanner upserts from several folders concurrently, so its capture order differs
+ * between runs of the same corpus; without a total order the same content would serialize to
+ * different bytes, and a snapshot's hash would not identify the corpus it came from. Perfbench pins
+ * every measurement to that hash, so it must depend on the content alone.
  */
 fun librarySnapshot(
     root: String,
@@ -55,9 +61,9 @@ fun librarySnapshot(
     games: List<RawGame>,
 ): LibrarySnapshot = LibrarySnapshot(
     scannerVersion = scannerVersion,
-    readerVersions = readerVersions,
+    readerVersions = readerVersions.toList().sortedBy { it.first }.toMap(),
     root = root,
-    games = games.map { it.relativized(root) },
+    games = games.map { it.relativized(root) }.sortedBy { it.folderKey },
 )
 
 /** Returns a copy of this game with every stored path made relative to [root], for snapshot storage. */

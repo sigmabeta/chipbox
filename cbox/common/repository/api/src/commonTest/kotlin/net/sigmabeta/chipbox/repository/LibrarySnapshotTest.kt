@@ -100,6 +100,22 @@ class LibrarySnapshotTest {
         assertEquals("/elsewhere/cover.png", relatived.rebased("/sdcard/corpus").photoUrl)
     }
 
+    @Test
+    fun `writes a scan in a canonical order whatever order it was captured in`() {
+        // The scanner captures from concurrent folders, so its order varies run to run. Two captures
+        // of the same content must serialize identically: perfbench pins measurements to that hash.
+        val captured = listOf(game("Zelda"), game("Actraiser"), game("Mario"))
+
+        val forwards = librarySnapshot("/corpus", 7, mapOf("psf" to 3, "nsf" to 2), captured)
+        val backwards = librarySnapshot("/corpus", 7, mapOf("nsf" to 2, "psf" to 3), captured.reversed())
+
+        assertEquals(forwards, backwards)
+        assertEquals(listOf("Actraiser", "Mario", "Zelda"), forwards.games.map { it.folderKey })
+        assertEquals(listOf("nsf", "psf"), forwards.readerVersions.keys.toList())
+    }
+
+    private fun game(folder: String) = rawGame().copy(title = folder, folderKey = "/corpus/$folder")
+
     private fun snapshot(games: List<RawGame>) = LibrarySnapshot(
         scannerVersion = 7,
         readerVersions = mapOf("psf" to 3),
