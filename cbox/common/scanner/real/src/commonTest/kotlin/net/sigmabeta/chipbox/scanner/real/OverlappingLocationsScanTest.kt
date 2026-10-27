@@ -1,7 +1,7 @@
 package net.sigmabeta.chipbox.scanner.real
 
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import net.sigmabeta.chipbox.contentsource.LibraryLocationInfo
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
 import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProber
@@ -30,7 +30,7 @@ import kotlin.test.assertTrue
 class OverlappingLocationsScanTest {
 
     @Test
-    fun `a nested root fails the scan before any write or prune`() = runBlocking {
+    fun `a nested root fails the scan before any write or prune`() = runTest {
         val source = FakeLibrarySource(
             initial = listOf(
                 LibraryLocationInfo("/library", "library"),
@@ -59,7 +59,7 @@ class OverlappingLocationsScanTest {
     }
 
     @Test
-    fun `the same root configured twice fails the scan`() = runBlocking {
+    fun `the same root configured twice fails the scan`() = runTest {
         val source = FakeLibrarySource(
             initial = listOf(
                 LibraryLocationInfo("/library", "library"),
@@ -74,7 +74,7 @@ class OverlappingLocationsScanTest {
     }
 
     @Test
-    fun `disjoint roots are not refused`() = runBlocking {
+    fun `disjoint roots are not refused`() = runTest {
         val source = FakeLibrarySource(
             initial = listOf(
                 LibraryLocationInfo("/library/SNES", "SNES"),
@@ -89,7 +89,7 @@ class OverlappingLocationsScanTest {
     }
 
     @Test
-    fun `a single root is not refused`() = runBlocking {
+    fun `a single root is not refused`() = runTest {
         val source = FakeLibrarySource(
             initial = listOf(LibraryLocationInfo("/library", "library")),
         )

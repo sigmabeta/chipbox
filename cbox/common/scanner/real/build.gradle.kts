@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.sage.kmp)
     alias(libs.plugins.sage.kmp.js)
+    alias(chipbox.plugins.kmp.test)
 }
 
 // Production scanner — pure Kotlin now that it talks to the library via the platform-neutral
@@ -31,7 +32,6 @@ kotlin {
 
         named("commonTest") {
             dependencies {
-                implementation(kotlin("test"))
                 implementation(projects.cbox.common.contentsource.fake)
                 implementation(projects.cbox.common.repository.fake)
             }
