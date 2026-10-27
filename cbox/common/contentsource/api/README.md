@@ -16,8 +16,9 @@ shared folders twice in one pass, and its parallel readers would race on the sam
 folder's game row. `LibrarySource` exposes the check
 (`findOverlappingLocations()` / `findOverlappingLocation(identifier)`) for the add
 flow and the scanner; the filesystem impl's `addLibraryLocation` fails fast with
-an `IllegalArgumentException` rather than silently dropping an overlapping root.
-See `LibraryLocations.kt` for the segment-wise rule.
+an `IllegalArgumentException` for a nested/containing root rather than silently
+dropping it, while re-adding an already-configured root is a no-op. See
+`LibraryLocations.kt` for the segment-wise rule.
 
 ## Contents
 
