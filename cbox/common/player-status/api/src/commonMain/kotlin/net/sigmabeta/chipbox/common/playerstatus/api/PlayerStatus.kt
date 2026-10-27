@@ -40,10 +40,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.text
 import net.sigmabeta.sage.ui.Icon as SageIcon
 import net.sigmabeta.sage.ui.vector
 
@@ -69,6 +74,12 @@ val PlayerStatusReservedHeight: Dp = CONTAINER_HEIGHT + VERTICAL_MARGIN * 2
 
 /** Animation duration used by the bar's slide-in/out — exposed for syncing parent insets. */
 const val PLAYER_STATUS_ANIM_DURATION_MS: Int = ANIM_DURATION_MS
+
+/**
+ * Test tag for the mini-player's play/pause control, so UI tests can target it via the semantics
+ * click action — unlike matching by the track title/artist it shares with other surfaces.
+ */
+const val PLAYER_STATUS_PLAY_PAUSE_TAG: String = "PlayerStatusPlayPause"
 
 @Composable
 fun PlayerStatus(
@@ -148,6 +159,13 @@ private fun PlayerStatusCard(
         offset = Offset(0f, with(density) { TEXT_SHADOW_OFFSET_Y.toPx() }),
         blurRadius = with(density) { TEXT_SHADOW_BLUR.toPx() },
     )
+    // The control's action, not the icon: in ERROR the icon is a warning but the tap recovers
+    // (plays), and while buffering a spinner replaces the icon entirely.
+    val playPauseDescription = if (state.isPlaying) {
+        ChipboxStringId.ACCY_CDESC_PAUSE.text()
+    } else {
+        ChipboxStringId.ACCY_CDESC_PLAY.text()
+    }
 
     Surface(
         shape = RoundedCornerShape(CARD_SHAPE_RADIUS),
@@ -212,7 +230,9 @@ private fun PlayerStatusCard(
                     onClick = onPlayPauseClicked,
                     modifier = Modifier
                         .fillMaxHeight()
-                        .aspectRatio(1f),
+                        .aspectRatio(1f)
+                        .testTag(PLAYER_STATUS_PLAY_PAUSE_TAG)
+                        .semantics { contentDescription = playPauseDescription },
                 ) {
                     if (state.isBuffering) {
                         // Speaker is silent while buffers fill; show a spinner instead of

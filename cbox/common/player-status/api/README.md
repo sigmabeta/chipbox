@@ -16,7 +16,10 @@ multibinding. It depends on `:cbox:common:player:director:api` and observes the
   (resolves its VM via `metroViewModel()`, animates slide-in/out and artwork
   crossfade, renders the private `PlayerStatusCard`) plus the exported layout
   constants `PlayerStatusReservedHeight` and `PLAYER_STATUS_ANIM_DURATION_MS` for
-  insetting host content. `PlayerStatusInfo.kt`: the internal title/caption block.
+  insetting host content. The play/pause `IconButton` carries the exported
+  `PLAYER_STATUS_PLAY_PAUSE_TAG` test tag and a "Play"/"Pause" content description
+  that names the action (so it stays "Play" on the error/warning and "Pause"
+  while buffering). `PlayerStatusInfo.kt`: the internal title/caption block.
 - **ViewModel** — `PlayerStatusViewModel.kt`: `@ContributesIntoMap(AppScope::class,
   binding = binding<ViewModel>())` + `@ViewModelKey` + `@Inject`. `combine`s
   `director.metadataState()` + `playbackState()` into a

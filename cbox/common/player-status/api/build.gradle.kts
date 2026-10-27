@@ -26,6 +26,7 @@ kotlin {
                 implementation(projects.cbox.common.models.api)
                 implementation(projects.cbox.common.player.director.api)
                 implementation(projects.cbox.common.appcomm.api)
+                implementation(projects.cbox.common.strings.api)
 
                 implementation(libs.sage.common.appcomm)
                 implementation(libs.sage.common.di)
