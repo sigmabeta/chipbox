@@ -6,6 +6,8 @@ plugins {
     // Derives versionCode/versionName from the latest git tag for release builds (see the
     // appVersioning {} block below). Same plugin VGLS uses; coords live in sage's catalog.
     alias(libs.plugins.git.version)
+    // Build identity (BUILD_BRANCH) from `.git` files instead of a configuration-time git process.
+    id("chipbox.build.identity")
 }
 
 // The app module configures AGP directly rather than via a sage convention, so detekt isn't
@@ -29,19 +31,9 @@ metro {
     }
 }
 
-// A source tarball or the Docker build context has no `.git`; a configuration-time failure would
-// break every build that merely configures this module, so stamp "unknown" instead.
-// The configuration cache records a failing `providers.exec` as a problem even when the throw is
-// caught, so do not create the provider at all when the build context has no `.git`.
-fun gitBranch(): String = if (!rootDir.resolve(".git").exists()) {
-    "unknown"
-} else {
-    runCatching {
-        providers.exec {
-            commandLine("git", "rev-parse", "--abbrev-ref", "HEAD")
-        }.standardOutput.asText.get().trim()
-    }.getOrDefault("").ifEmpty { "unknown" }
-}
+// A source tarball or the Docker build context has no `.git`; the build identity readers return
+// "unknown" there instead of failing configuration. `-Pchipbox.build.branch` (or
+// `CHIPBOX_BUILD_BRANCH`) overrides the checkout when one is available.
 
 android {
     namespace = "net.sigmabeta.chipbox"
@@ -57,7 +49,9 @@ android {
         versionName = "0.1.0"
 
         buildConfigField("long", "BUILD_TIME_MS", "${System.currentTimeMillis()}L")
-        buildConfigField("String", "BUILD_BRANCH", "\"${gitBranch()}\"")
+        // Branch from the working copy's `.git` (short commit when HEAD is detached); "unknown"
+        // without `.git`.
+        buildConfigField("String", "BUILD_BRANCH", "\"${buildIdentity.branch()}\"")
         // True only for the benchmark build type; lets ChipboxApplication seed the library from a
         // pushed snapshot at startup (see BenchmarkLibrarySeed) without a test-only code path.
         buildConfigField("boolean", "BENCHMARK", "false")
