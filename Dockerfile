@@ -180,7 +180,8 @@ COPY --from=web /src/apps/js/wasm-emulators.txt /tmp/wasm-emulators.txt
 RUN set -eux; \
     lib=/opt/chipbox/lib/native/libvgmstream.so; \
     test -s "$lib"; \
-    ldd "$lib" > /tmp/ldd.txt; \
+    ldd "$lib" > /tmp/ldd.txt 2>&1 || { cat /tmp/ldd.txt >&2; exit 1; }; \
+    cat /tmp/ldd.txt; \
     ! grep -q 'not found' /tmp/ldd.txt; \
     jar=""; \
     for candidate in /opt/chipbox/lib/*.jar; do \
