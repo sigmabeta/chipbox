@@ -188,10 +188,19 @@ while IFS='|' read -r dir output display; do
     || fail "/wasm/$output.wasm missing"
 done <"$MANIFEST"
 
-docker exec "$RUN_NAME" test -s /opt/chipbox/lib/native/libvgmstream.so \
+native_lib=/opt/chipbox/lib/native/libvgmstream.so
+docker exec "$RUN_NAME" test -s "$native_lib" \
   || fail "image has no native vgmstream library"
-docker exec "$RUN_NAME" sh -c '! ldd /opt/chipbox/lib/native/libvgmstream.so | grep -q "not found"' \
-  || fail "vgmstream library has unresolved links"
+# Capture ldd instead of piping it into `grep -q`: that pipeline turned both an unresolved dependency
+# and a dead/unreachable container into the same nameless exit status, so a CI failure said only
+# "unresolved links" with no library named. Print the whole ldd output and the offending lines.
+ldd_out="$(docker exec "$RUN_NAME" ldd "$native_lib" 2>&1)" \
+  || fail "ldd failed in the running container: $ldd_out"
+missing="$(printf '%s\n' "$ldd_out" | grep 'not found' || true)"
+if [ -n "$missing" ]; then
+  printf '%s\n' "$ldd_out" >&2
+  fail "vgmstream library has unresolved links: $(printf '%s' "$missing" | tr '\n' ' ')"
+fi
 
 echo "Web image smoke passed: $IMAGE ($image_arch, port $PORT)"
 SMOKE_OK=1
