@@ -32,3 +32,17 @@ reports `unknown`. `-Pchipbox.build.branch` / `-Pchipbox.build.commit` (or
 Files are read with `providers.fileContents`, so they are configuration-cache
 inputs: switching branches invalidates the entry without a process to compare
 against.
+
+## Tests
+
+The `.git` resolution is split into a pure resolver (`GitMetadata.branch(repoDir,
+readFile)` / `shortCommit(repoDir, readFile)`) and the thin Gradle-provider
+wrapper the plugin calls. `src/test/kotlin/GitMetadataTest.kt` drives the resolver
+over real temp directories: loose refs, `packed-refs`, detached HEAD, the
+`gitdir:`/`commondir` linked-worktree shape, a malformed `.git`, and a missing
+`.git`. It needs no Gradle test fixture, only kotlin-test/JUnit 4, so it stays out
+of the build path:
+
+```sh
+./gradlew -p build-logic :git:test
+```
