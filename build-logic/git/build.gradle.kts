@@ -30,3 +30,9 @@ gradlePlugin {
         }
     }
 }
+
+dependencies {
+    // The `.git` resolver is pure (a File + a read function), so its regression tests need no
+    // Gradle test fixture — just kotlin-test/JUnit 4.
+    testImplementation(kotlin("test-junit"))
+}
