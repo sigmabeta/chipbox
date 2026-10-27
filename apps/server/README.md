@@ -222,7 +222,10 @@ suite (`RsnDuplicateTest`) runs on real Room/SQLite instead of `FakeDatabase`
 (which cannot enforce the unique `(path, track_number)` index): it covers the
 refusal, the health count/log line with no host path in JSON, a clean rescan
 after removing the copy, owner-rename/owner-delete adoption with ids intact,
-and duplicate detection through an injected filesystem.
+and duplicate detection through an injected filesystem. `OverlappingRootsTest`
+runs on it too: use `RealRepository` from `testing/RsnTestSupport.kt` for any test
+that scans several folders concurrently — `FakeDatabase` is single-coroutine only,
+and the scanner's parallel folder readers corrupt its maps.
 `LibraryPagingTest` walks `limit`/`offset` pages over duplicate sort keys for
 games, artists, and tracks, asserts the pages are the full catalog with no
 duplicates, and covers the `ids` bypass plus the limit/offset coercion rules.
