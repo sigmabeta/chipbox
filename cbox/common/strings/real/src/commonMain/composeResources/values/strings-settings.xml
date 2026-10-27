@@ -55,4 +55,16 @@
 
     <string name="settings_label_component_library">Component library</string>
     <string name="settings_caption_component_library">Browse the app's UI components (debug only).</string>
+
+    <!-- Snackbars -->
+    <string name="settings_snackbar_licenses_coming_soon">Licenses screen coming soon.</string>
+    <string name="settings_snackbar_library_cleared">Library cleared.</string>
+    <string name="settings_snackbar_library_clear_failed">Failed to clear library.</string>
+    <string name="settings_snackbar_history_cleared">Playback history cleared.</string>
+    <string name="settings_snackbar_history_clear_failed">Failed to clear playback history.</string>
+    <string name="settings_snackbar_snapshot_not_found">Snapshot not found: %1$s</string>
+    <!-- Two templates: no three-argument StringProvider exists, so the counts trail the total. -->
+    <string name="settings_snackbar_snapshot_imported">Imported %1$s game(s)</string>
+    <string name="settings_snackbar_snapshot_import_counts"> — %1$s new, %2$s updated.</string>
+    <string name="settings_snackbar_snapshot_import_failed">Snapshot import failed: %1$s</string>
 </resources>
