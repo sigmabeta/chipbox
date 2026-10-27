@@ -32,6 +32,8 @@ kotlin {
         named("commonTest") {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(projects.cbox.common.contentsource.fake)
+                implementation(projects.cbox.common.repository.fake)
             }
         }
     }
