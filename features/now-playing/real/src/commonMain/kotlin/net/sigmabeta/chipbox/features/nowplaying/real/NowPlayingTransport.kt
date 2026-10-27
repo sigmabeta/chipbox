@@ -40,8 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
-import net.sigmabeta.chipbox.strings.api.ChipboxStringId
-import net.sigmabeta.chipbox.strings.api.text
+import net.sigmabeta.chipbox.strings.api.playPauseContentDescription
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.vector
@@ -238,13 +237,7 @@ internal fun ColumnScope.TransportRow(
         Spacer(modifier = Modifier.size(16.dp))
 
         val isError = model.errorMessage != null
-        // The control's action, not its icon: a warning icon in the error state still plays
-        // (recovers), and a spinner while buffering still pauses.
-        val playPauseDescription = if (model.isPlaying) {
-            ChipboxStringId.ACCY_CDESC_PAUSE.text()
-        } else {
-            ChipboxStringId.ACCY_CDESC_PLAY.text()
-        }
+        val playPauseDescription = playPauseContentDescription(model.isPlaying)
         Box(modifier = Modifier.size(TransportPlayPauseSize)) {
             IconButton(
                 onClick = { actionSink.sendAction(NowPlayingAction.PlayPauseClicked) },

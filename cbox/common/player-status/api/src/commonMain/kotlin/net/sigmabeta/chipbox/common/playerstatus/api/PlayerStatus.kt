@@ -47,8 +47,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import net.sigmabeta.chipbox.common.ui.components.api.subs.CrossfadeImage
-import net.sigmabeta.chipbox.strings.api.ChipboxStringId
-import net.sigmabeta.chipbox.strings.api.text
+import net.sigmabeta.chipbox.strings.api.playPauseContentDescription
 import net.sigmabeta.sage.ui.Icon as SageIcon
 import net.sigmabeta.sage.ui.vector
 
@@ -159,13 +158,7 @@ private fun PlayerStatusCard(
         offset = Offset(0f, with(density) { TEXT_SHADOW_OFFSET_Y.toPx() }),
         blurRadius = with(density) { TEXT_SHADOW_BLUR.toPx() },
     )
-    // The control's action, not the icon: in ERROR the icon is a warning but the tap recovers
-    // (plays), and while buffering a spinner replaces the icon entirely.
-    val playPauseDescription = if (state.isPlaying) {
-        ChipboxStringId.ACCY_CDESC_PAUSE.text()
-    } else {
-        ChipboxStringId.ACCY_CDESC_PLAY.text()
-    }
+    val playPauseDescription = playPauseContentDescription(state.isPlaying)
 
     Surface(
         shape = RoundedCornerShape(CARD_SHAPE_RADIUS),
