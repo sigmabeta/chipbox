@@ -36,6 +36,13 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: ktlint + detekt
         run: ./gradlew ktlintCheck detekt --continue --build-cache --no-daemon --max-workers=2 -Pchipbox.skipNative
+      # The build identity reads `.git` files instead of launching a git process at configuration
+      # time (build-logic/git, ticket 21). That fix only had a manual proof; this step is the gate:
+      # a fake `git` first on PATH records any invocation while Gradle configures :apps:android and
+      # :benchmark, cold then configuration-cache-reused. Two config-only `help` runs — no SDK/NDK
+      # (-Pchipbox.skipNative, like the lint step above), no device, no browser.
+      - name: No git processes at configuration time
+        run: scripts/ci/verify-no-config-git.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
