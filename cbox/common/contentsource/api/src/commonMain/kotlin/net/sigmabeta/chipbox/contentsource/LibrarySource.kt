@@ -17,6 +17,28 @@ interface LibrarySource : ContentSource {
     val locations: StateFlow<List<LibraryLocationInfo>>
 
     /**
+     * The first pair of configured roots that overlap — the same folder, or one containing the
+     * other — or null when the list is disjoint. Library locations must be disjoint: an overlap
+     * makes [scanFolders] emit the shared folders more than once in a single scan, and the
+     * scanner's parallel readers then race on the same folder's game row.
+     *
+     * The default compares the configured identifiers as-is (adequate for in-memory/fake
+     * sources). A filesystem-backed source overrides this to canonicalize first, so `.`, `..`,
+     * trailing separators and symlinks are resolved before comparing.
+     */
+    fun findOverlappingLocations(): LibraryLocationOverlap? =
+        LibraryLocations.firstOverlap(locations.value.map { it.identifier })
+
+    /**
+     * The already-configured root that [identifier] equals, sits inside, or contains — or null
+     * when adding it keeps the roots disjoint. Callers that add a location (the folder picker)
+     * ask this first so an overlap is refused at the point of the mistake instead of failing the
+     * next scan; the local-file source's [addLibraryLocation] refuses it as well.
+     */
+    fun findOverlappingLocation(identifier: String): LibraryLocationInfo? =
+        locations.value.firstOrNull { LibraryLocations.overlaps(it.identifier, identifier) }
+
+    /**
      * Walk the configured [locations] and stream the music folders found, each as a complete
      * [LibraryFolderInfo] (a folder and all of its direct files). Emitting a folder the moment it's
      * fully discovered — rather than draining the whole walk first — lets the scanner read each
