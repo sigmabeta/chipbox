@@ -45,9 +45,14 @@ class LocalFileContentSource(
         val path = identifier.toPath()
         require(fileSystem.metadataOrNull(path)?.isDirectory == true) { "Not a directory: $identifier" }
         // Refuse a root that is already configured, sits inside one, or contains one: two readers
-        // would emit the shared folders in the same scan and race on their game rows. Callers that
-        // need to tell the user (the folder picker) ask findOverlappingLocation first.
-        if (findOverlappingLocation(identifier) != null) return
+        // would emit the shared folders in the same scan and race on their game rows. Fail fast —
+        // the folder picker asks findOverlappingLocation first so it can explain the refusal, but
+        // a programmatic caller must not silently lose the location.
+        val overlap = findOverlappingLocation(identifier)
+        require(overlap == null) {
+            "Library location $identifier overlaps the already-configured ${overlap?.identifier}. " +
+                "Library locations must be disjoint."
+        }
         val info = LibraryLocationInfo(path.toString(), path.name)
         _locations.update { current ->
             if (current.any { it.identifier == info.identifier }) current else current + info
