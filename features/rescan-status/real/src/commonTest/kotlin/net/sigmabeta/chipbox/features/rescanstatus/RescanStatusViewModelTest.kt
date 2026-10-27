@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.setMain
 import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
+import net.sigmabeta.chipbox.scanner.state.ScanFailureKind
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
@@ -105,6 +106,22 @@ class RescanStatusViewModelTest {
 
         val state = vm.state.first { it.phase == ScanPhase.FAILED }
         assertEquals("/sdcard/Music/bad-folder", state.failedPath)
+        assertEquals(ScanFailureKind.FILE, state.failureKind)
+    }
+
+    @Test
+    fun `a configuration failure carries its kind and no failed path`() = rescanTest { vm, scanner ->
+        scanner.pushState(
+            ScannerState.Failed(
+                path = "Overlapping library locations",
+                kind = ScanFailureKind.CONFIGURATION,
+            ),
+        )
+        advanceTimeBy(BATCH_FLUSH_MS)
+
+        val state = vm.state.first { it.phase == ScanPhase.FAILED }
+        assertEquals(ScanFailureKind.CONFIGURATION, state.failureKind)
+        assertNull(state.failedPath, "a configuration failure is not a failing path")
     }
 
     @Test
@@ -252,6 +269,30 @@ class RescanStatusViewModelTest {
         val scanningRow = items.filterIsInstance<LabelValueListModel>()
             .single { it.value == "chrono.spc" }
         assertEquals(ChipboxStringId.RESCAN_STATUS_LABEL_SCANNING.toString(), scanningRow.label)
+    }
+
+    @Test
+    fun `a file failure still renders the failed path row`() {
+        val state = RescanStatusState(phase = ScanPhase.FAILED, failedPath = "bad-folder/track.spc")
+        val failedRow = state.toListItems(stubStringProvider())
+            .filterIsInstance<LabelValueListModel>()
+            .single { it.label == ChipboxStringId.RESCAN_STATUS_LABEL_FAILED_PATH.toString() }
+        assertEquals("bad-folder/track.spc", failedRow.value)
+    }
+
+    @Test
+    fun `a configuration failure renders a localized configuration error instead of a path`() {
+        val state = RescanStatusState(
+            phase = ScanPhase.FAILED,
+            failureKind = ScanFailureKind.CONFIGURATION,
+        )
+        val rows = state.toListItems(stubStringProvider()).filterIsInstance<LabelValueListModel>()
+
+        assertTrue(rows.none { it.label == ChipboxStringId.RESCAN_STATUS_LABEL_FAILED_PATH.toString() })
+        val configRow = rows.single {
+            it.label == ChipboxStringId.RESCAN_STATUS_LABEL_CONFIGURATION.toString()
+        }
+        assertEquals(ChipboxStringId.RESCAN_STATUS_CONFIGURATION_ERROR.toString(), configRow.value)
     }
 
     @Test

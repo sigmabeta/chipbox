@@ -12,7 +12,7 @@ the `:api` route key.
 
 | File | What it is |
 | --- | --- |
-| `RescanStatusState.kt` | `RescanStatusState : ListState` plus `ScanPhase`, `ScanEventKind`, and `ScanEventItem`. Renders a Progress section (elapsed/games/tracks/failed, a live per-folder "Folder" row above a per-file "Scanning…" heartbeat row, and a failed-path row) followed by a reversed Changes feed of game-change rows. |
+| `RescanStatusState.kt` | `RescanStatusState : ListState` plus `ScanPhase`, `ScanEventKind`, and `ScanEventItem`. Renders a Progress section (elapsed/games/tracks/failed, a live per-folder "Folder" row above a per-file "Scanning…" heartbeat row, and — when the scan failed — either a "Failed at <path>" row or, for a `CONFIGURATION` failure, the localized configuration-error row) followed by a reversed Changes feed of game-change rows. |
 | `RescanStatusAction.kt` | `RescanStatusAction.GameClicked(gameId)` — tapping an added/updated game row. |
 | `RescanStatusViewModel.kt` | `@ContributesIntoMap` / `@ViewModelKey` / `@Inject` ViewModel. Collects `Scanner.state()` + `Scanner.scanEvents()`, buffers them, and flushes to state on timers; handles `GameClicked` by emitting `NavigateTo(GameDetail(id))`. |
 | `RescanStatusRoute.kt` | `@Composable RescanStatusRoute(onEvent, modifier)` — resolves the VM via `metroViewModel()` and renders it through `ChipboxListEntry`. |
@@ -22,8 +22,10 @@ the `:api` route key.
 The screen observes the scanner directly, not a snapshot:
 
 - **`Scanner.state()`** drives `phase` and the Progress counters
-  (`timeInSeconds`, `gamesFound`, `tracksFound`, `tracksFailed`, `failedPath`),
-  mapping `ScannerState.Scanning/Complete/Failed/Idle/Unknown` onto `ScanPhase`.
+  (`timeInSeconds`, `gamesFound`, `tracksFound`, `tracksFailed`, `failedPath`,
+  `failureKind`), mapping `ScannerState.Scanning/Complete/Failed/Idle/Unknown`
+  onto `ScanPhase`. A `ScanFailureKind.CONFIGURATION` failure carries no
+  `failedPath`; it renders the configuration-error string instead.
 - **`Scanner.scanEvents()`** carries two distinct kinds of event, handled on
   separate cadences:
   - `ScannerEvent.FolderScanned` is a **per-folder heartbeat**. It updates only

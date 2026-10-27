@@ -24,4 +24,5 @@
     <string name="home_scan_status_failed">Failed</string>
     <string name="home_scan_status_error">The scan failed while reading %1$s.</string>
     <string name="home_scan_status_error_generic">The scan failed.</string>
+    <string name="home_scan_status_configuration_error">The scan could not run because the library folder configuration is invalid. Check for overlapping or nested library folders and rescan.</string>
 </resources>

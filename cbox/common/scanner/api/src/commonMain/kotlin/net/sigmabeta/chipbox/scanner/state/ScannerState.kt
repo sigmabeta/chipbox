@@ -1,5 +1,20 @@
 package net.sigmabeta.chipbox.scanner.state
 
+/**
+ * Why a scan ended in [ScannerState.Failed].
+ *
+ * [FILE] is a read failure for one file: [ScannerState.Failed.path] is the file name that failed
+ * and the UI renders it as "Failed at <file>".
+ *
+ * [CONFIGURATION] is a bad library configuration (e.g. overlapping roots). There is no failing
+ * file, so [ScannerState.Failed.path] names the problem instead — never a host path — and surfaces
+ * that need a file (`/api/health`'s `failedFile`, the "Failed at" rows) treat it as absent.
+ */
+enum class ScanFailureKind {
+    FILE,
+    CONFIGURATION,
+}
+
 sealed class ScannerState {
     object Unknown : ScannerState()
 
@@ -22,6 +37,7 @@ sealed class ScannerState {
     ) : ScannerState()
 
     data class Failed(
-        val path: String
+        val path: String,
+        val kind: ScanFailureKind = ScanFailureKind.FILE,
     ) : ScannerState()
 }
