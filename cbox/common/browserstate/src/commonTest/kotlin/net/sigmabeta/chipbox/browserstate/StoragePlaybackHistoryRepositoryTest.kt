@@ -61,12 +61,23 @@ class StoragePlaybackHistoryRepositoryTest {
 
     @Test
     fun `history is bounded to 500 plays and trims the oldest`() = runTest {
-        val storage = FakeStorage()
+        // Seed a full log instead of recording 501 plays: every record rewrites the whole blob, so
+        // growing it one play at a time is O(n²) of JSON — fast on a dev machine, but past the ~2s
+        // per-test limit of the Node runner on a loaded CI box. One record past a seeded full log
+        // exercises the same trim-on-write path.
+        val seeded = PlayHistoryState(
+            plays = (0L until PlayHistoryState.MAX_ENTRIES.toLong()).map { index ->
+                PlayHistoryEntry(trackId = index, gameId = 0L, timeMs = index + 1)
+            },
+        )
+        val storage = FakeStorage(
+            mapOf(BrowserStateKeys.PLAYBACK_HISTORY to BrowserStateCodecs.playHistory.encode(seeded)),
+        )
         val events = BrowserStateEvents()
-        val clock = FakeClock()
+        val clock = FakeClock(next = 1_000L)
         val repo = StoragePlaybackHistoryRepository(storage, events, clock::now)
 
-        repeat(PlayHistoryState.MAX_ENTRIES + 1) { index -> repo.recordPlay(trackOf(index.toLong())) }
+        repo.recordPlay(trackOf(PlayHistoryState.MAX_ENTRIES.toLong()))
 
         val recent = StoragePlaybackHistoryRepository(storage, events, clock::now)
             .recentlyPlayed(limit = PlayHistoryState.MAX_ENTRIES + 10)
