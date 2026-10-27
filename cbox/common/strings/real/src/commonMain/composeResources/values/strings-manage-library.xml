@@ -3,4 +3,5 @@
     <string name="manage_library_title">Manage Library</string>
     <string name="manage_library_caption">Add or remove the folders Chipbox scans for music.</string>
     <string name="manage_library_empty">No folders in your library. Add one to get started.</string>
+    <string name="manage_library_snackbar_folder_removed">Folder removed from library.</string>
 </resources>

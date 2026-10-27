@@ -57,6 +57,8 @@ GRADLE_FLAGS=(--build-cache --configuration-cache --console=plain)
 # `setup`'s `:dependencies` step is dependency resolution, not verification, so it's omitted.
 # static-analysis and android-lint pass -Pchipbox.skipNative — neither needs the emulator .so libs
 # (AGP's externalNativeBuild isn't cacheable, so building native in lint is pure duplicated cost).
+# static-analysis also runs scripts/ci/check-user-facing-strings.sh first (the same guardrail CI
+# runs as its own step), so both are reported under one task name.
 # The apk/release-jvm tasks build native on purpose. apk builds the RELEASE variant, as CI and
 # release.yml do, so release-only config (the appVersioning versionCode logic) is exercised; without
 # the CHIPBOX_KEY_* signing env it falls back to debug signing, so it builds on any machine. release-jvm builds the desktop emulator natives
@@ -221,6 +223,17 @@ for entry in "${selected[@]}"; do
     start=$SECONDS
     scripts/ci/verify-docker-release.sh >"$LOGS/$name.log" 2>&1
     rc=$?
+  elif [ "$name" = "static-analysis" ]; then
+    # The hardcoded-string guardrail runs alongside Gradle lint; keep either failure even when the
+    # other passes, so the task is FAIL whenever CI's static-analysis job would be.
+    printf '%s──▶ %-16s%s scripts/ci/check-user-facing-strings.sh + ./gradlew %s\n' "$B" "$name" "$Z" "$args"
+    start=$SECONDS
+    scripts/ci/check-user-facing-strings.sh >"$LOGS/$name.log" 2>&1
+    strings_rc=$?
+    # shellcheck disable=SC2086
+    "$GRADLE" $args "${GRADLE_FLAGS[@]}" >>"$LOGS/$name.log" 2>&1
+    rc=$?
+    [ "$strings_rc" -ne 0 ] && rc=$strings_rc
   else
     printf '%s──▶ %-16s%s ./gradlew %s\n' "$B" "$name" "$Z" "$args"
     start=$SECONDS

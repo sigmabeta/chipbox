@@ -29,4 +29,5 @@
     <string name="now_playing_ctx_add_to_playlist">Add to Playlist</string>
     <string name="now_playing_setlist_add_to_playlist">Add to Playlist</string>
     <string name="now_playing_setlist_coming_soon">Setlists coming soon.</string>
+    <string name="now_playing_snackbar_player_settings_coming_soon">Player settings coming soon.</string>
 </resources>

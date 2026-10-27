@@ -182,7 +182,11 @@ class NowPlayingViewModel @Inject constructor(
 
             NowPlayingAction.PlayerSettingsClicked -> emit(
                 // Placeholder until a real Player Settings destination screen exists.
-                ChipboxEvent.ShowSnackbar("Player settings coming soon.")
+                ChipboxEvent.ShowSnackbar(
+                    stringProvider.getString(
+                        ChipboxStringId.NOW_PLAYING_SNACKBAR_PLAYER_SETTINGS_COMING_SOON
+                    )
+                )
             )
 
             is NowPlayingAction.SeekRequested -> director.request(SessionRequest.Seek(action.positionMs))
