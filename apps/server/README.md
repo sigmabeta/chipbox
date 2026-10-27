@@ -129,6 +129,11 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   python3 scripts/ci/verify-oci-index.py \
     build/chipbox-server-multiarch.tar linux/amd64 linux/arm64
   ```
+  For the v1 **two-tag** deployment artifact, build each platform separately
+  with `--load` (`chipbox-server:amd64`, `chipbox-server:arm64`); an arm64 host
+  builds the arm64 image natively, avoiding QEMU. Both forms contain the same
+  per-arch images.
+
   The web/WASM stage runs once on the build host (`$BUILDPLATFORM`); only the
   small CMake vgmstream stage is per-arch, so the arm64 half does not run Gradle
   or emsdk under QEMU. For a runnable local image, build one platform with

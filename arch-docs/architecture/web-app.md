@@ -369,6 +369,10 @@ saved snapshot, and reloading a tab restores that snapshot.
     --cache-to type=local,dest=.docker-cache,mode=max .
   scripts/ci/verify-oci-index.py build/chipbox-server-multiarch.tar linux/amd64 linux/arm64
   ```
+  For the v1 deployment artifact, two explicit tags built separately
+  (`chipbox-server:amd64`, `chipbox-server:arm64`) are equivalent; an arm64 host
+  builds its image natively, avoiding QEMU. The OCI index remains the CI form.
+
   The release job mirrors this with `type=gha` caching, verifies the OCI archive
   on the runner (no registry, no credentials, no uploaded artifact), smokes the
   loaded amd64 image, and inspects the cross-loaded arm64 image's contents

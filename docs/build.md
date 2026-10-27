@@ -147,6 +147,18 @@ docker buildx build --platform linux/arm64 --load -t chipbox-server:arm64 .
 scripts/ci/web-image-smoke.sh chipbox-server:arm64 --platform linux/arm64 --contents-only
 ```
 
+For the v1 **two-tag** deployment artifact, build each platform separately and
+load it — an arm64 host can build the arm64 half natively, avoiding QEMU and the
+combined build's memory spike:
+
+```sh
+docker buildx build --platform linux/amd64 --load -t chipbox-server:amd64 .
+docker buildx build --platform linux/arm64 --load -t chipbox-server:arm64 .
+```
+
+The OCI-index build above remains the CI/release equivalent; both packaging forms
+contain the same per-arch images.
+
 The image is built for amd64 on PRs and both architectures on release, but it is
 **not published** to any registry, and the multi-arch OCI archive is not uploaded
 as a workflow artifact either; there is **no public distribution** in v1. The
