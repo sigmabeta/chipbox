@@ -18,6 +18,7 @@ import net.sigmabeta.chipbox.features.home.module.HomeModule
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
 import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
 import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.chipbox.scanner.state.ScanFailureKind
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
@@ -120,9 +121,15 @@ class ScanStatusHomeModule @Inject constructor(
         labelValue(ChipboxStringId.RESCAN_STATUS_LABEL_FAILED, acc.tracksFailed),
     )
 
-    private fun errorMessage(acc: Accumulator): String = acc.failedPath
-        ?.let { stringProvider.getStringOneArg(ChipboxStringId.HOME_SCAN_STATUS_ERROR, it) }
-        ?: stringProvider.getString(ChipboxStringId.HOME_SCAN_STATUS_ERROR_GENERIC)
+    private fun errorMessage(acc: Accumulator): String =
+        // A bad library configuration is admin-fixable and has no failing file to name.
+        if (acc.failureKind == ScanFailureKind.CONFIGURATION) {
+            stringProvider.getString(ChipboxStringId.HOME_SCAN_STATUS_CONFIGURATION_ERROR)
+        } else {
+            acc.failedPath
+                ?.let { stringProvider.getStringOneArg(ChipboxStringId.HOME_SCAN_STATUS_ERROR, it) }
+                ?: stringProvider.getString(ChipboxStringId.HOME_SCAN_STATUS_ERROR_GENERIC)
+        }
 
     private fun labelValue(labelId: ChipboxStringId, value: Int) = LabelValueListModel(
         label = stringProvider.getString(labelId),
@@ -188,6 +195,7 @@ private class Accumulator {
     var tracksFound = 0
     var tracksFailed = 0
     var failedPath: String? = null
+    var failureKind = ScanFailureKind.FILE
     var currentFolder: String? = null
     var currentFile: String? = null
     val changes = mutableListOf<Change>()
@@ -214,6 +222,7 @@ private class Accumulator {
                 tracksFound = state.tracksFound
                 tracksFailed = state.tracksFailed
                 failedPath = null
+                failureKind = ScanFailureKind.FILE
             }
 
             is ScannerState.Complete -> {
@@ -223,11 +232,13 @@ private class Accumulator {
                 tracksFound = state.tracksFound
                 tracksFailed = state.tracksFailed
                 failedPath = null
+                failureKind = ScanFailureKind.FILE
             }
 
             is ScannerState.Failed -> {
                 phase = ScanPhase.FAILED
-                failedPath = state.path
+                failureKind = state.kind
+                failedPath = state.path.takeIf { state.kind == ScanFailureKind.FILE }
             }
 
             ScannerState.Idle, ScannerState.Unknown -> phase = ScanPhase.IDLE
