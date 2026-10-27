@@ -16,7 +16,8 @@ cbox/
   android/   Android-only system glue + the :native CMake companions
   native/    C/C++ emulator source trees (built by both Android NDK and host CMake)
 features/    user-facing screens, all KMP (api/real/screenshot)
-build-logic/ chipbox-specific convention plugins (id "chipbox.*")
+build-logic/ chipbox-specific convention plugins (id "chipbox.*"); `git/` is the
+             dependency-free build-identity leaf (see its README)
 sage/        vendored SAGE submodule: convention plugins + version catalog + libs
 scripts/     helpers, grouped by role: ci/ (CI entry points), dev/ (local dev tools),
              and per-harness dirs (abrender/, benchmark/) — see the testing systems
@@ -91,6 +92,10 @@ Chipbox plugins (in `build-logic/convention/src/main/kotlin/`, applied as
   directory name.
 - `chipbox.screenshot` — `sage.android` + `sage.compose.android` + Paparazzi.
 - `chipbox.kmp.test` — adds `kotlin("test")` + coroutines-test to `commonTest`.
+- `chipbox.build.identity` (in `build-logic/git/`, no dependencies) — exposes
+  `buildIdentity.branch()` / `buildIdentity.shortCommit(dir)` read from `.git`
+  files. Use it instead of `providers.exec { git … }`: configuration-time
+  processes re-run even on a configuration-cache hit and fail without `.git`.
 
 Namespaces are set per-module in `kotlin { androidLibrary { namespace = "…" } }`
 (derived from the Gradle path, e.g. `:cbox:common:player:director:real` →

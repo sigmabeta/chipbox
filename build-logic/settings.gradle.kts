@@ -20,3 +20,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "chipbox-build-logic"
 include(":convention")
+// Dependency-free build-identity plugin (git metadata from `.git` files, no process).
+include(":git")
