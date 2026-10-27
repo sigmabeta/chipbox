@@ -9,4 +9,7 @@
     <string name="accy_st_desc_loading">Loading</string>
     <string name="accy_st_desc_checked">Enabled</string>
     <string name="accy_st_desc_unchecked">Disabled</string>
+
+    <string name="accy_cdesc_play">Play</string>
+    <string name="accy_cdesc_pause">Pause</string>
 </resources>

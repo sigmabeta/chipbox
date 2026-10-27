@@ -28,7 +28,9 @@ capturing the current setlist. Navigates away when playback goes `IDLE`/`STOPPED
 in `ChipboxScreens.kt`; hides the host top bar + mini-player); `NowPlayingContent.kt`
 (the responsive root — narrow/wide/compact layouts with shared-element
 transitions between the info and setlist panes); `NowPlayingInfoPane.kt`,
-`NowPlayingTransport.kt` (artwork/title, seek `ProgressSection`, transport row),
+`NowPlayingTransport.kt` (artwork/title, seek `ProgressSection`, transport row;
+the play/pause control carries `NOW_PLAYING_PLAY_PAUSE_BUTTON_TAG` and a
+"Play"/"Pause" content description naming its action),
 `NowPlayingContextMenu.kt` (the in-place LINKS/ARTISTS/CONTROLS/TAG menus),
 `NowPlayingSetlistPane.kt` (the reorderable, swipe-to-remove inline queue),
 `ErrorSection.kt` (the rolling error log), `NowPlayingDimens.kt` (shared
