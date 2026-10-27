@@ -12,7 +12,7 @@ internal val NowPlayingPanelCornerRadius = 16.dp
 internal val NowPlayingRowPadding = PaddingValues(horizontal = 8.dp)
 
 /**
- * Test tags for the track-info block, the two text-less transport buttons, and the context-menu
+ * Test tags for the track-info block, the text-less transport buttons, and the context-menu
  * rows, so UI tests can target them via the semantics click action — which (unlike an injected
  * gesture) isn't defeated by the bottom mini-player overlapping a control, and (unlike matching by
  * text) doesn't collide with the same track title/artist the mini-player shows. Kept in sync with
@@ -20,6 +20,7 @@ internal val NowPlayingRowPadding = PaddingValues(horizontal = 8.dp)
  */
 const val NOW_PLAYING_TRACK_INFO_TAG = "NowPlayingTrackInfo"
 const val NOW_PLAYING_MENU_BUTTON_TAG = "NowPlayingMenuButton"
+const val NOW_PLAYING_PLAY_PAUSE_BUTTON_TAG = "NowPlayingPlayPauseButton"
 const val NOW_PLAYING_SETLIST_BUTTON_TAG = "NowPlayingSetlistButton"
 const val NOW_PLAYING_FAVORITES_BUTTON_TAG = "NowPlayingFavoritesButton"
 const val NOW_PLAYING_CTX_BACK_TAG = "NowPlayingCtxBack"

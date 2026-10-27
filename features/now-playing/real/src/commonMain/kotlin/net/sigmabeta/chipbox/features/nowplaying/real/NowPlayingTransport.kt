@@ -33,11 +33,15 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import net.sigmabeta.chipbox.common.ui.components.api.CrossfadeText
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
+import net.sigmabeta.chipbox.strings.api.text
 import net.sigmabeta.sage.appcomm.ActionSink
 import net.sigmabeta.sage.ui.Icon
 import net.sigmabeta.sage.ui.vector
@@ -234,10 +238,20 @@ internal fun ColumnScope.TransportRow(
         Spacer(modifier = Modifier.size(16.dp))
 
         val isError = model.errorMessage != null
+        // The control's action, not its icon: a warning icon in the error state still plays
+        // (recovers), and a spinner while buffering still pauses.
+        val playPauseDescription = if (model.isPlaying) {
+            ChipboxStringId.ACCY_CDESC_PAUSE.text()
+        } else {
+            ChipboxStringId.ACCY_CDESC_PLAY.text()
+        }
         Box(modifier = Modifier.size(TransportPlayPauseSize)) {
             IconButton(
                 onClick = { actionSink.sendAction(NowPlayingAction.PlayPauseClicked) },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .testTag(NOW_PLAYING_PLAY_PAUSE_BUTTON_TAG)
+                    .semantics { contentDescription = playPauseDescription },
             ) {
                 if (model.isBuffering) {
                     // Speaker is silent while the generator fills buffers. Swap the play/pause
