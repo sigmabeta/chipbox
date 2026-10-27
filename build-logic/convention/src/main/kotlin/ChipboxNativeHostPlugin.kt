@@ -94,6 +94,10 @@ class ChipboxNativeHostPlugin : Plugin<Project> {
                     outputDir.set(layout.buildDirectory.dir("jvm-native/out/${target.name.lowercase()}/$emulator"))
                     cacheKey.put("toolchain", "host")
                     cacheKey.put("target", target.name)
+                    // The host toolchain's OS alone is not enough: the remote Gradle build cache is
+                    // shared across machines, and an amd64 .so must never satisfy an arm64 build
+                    // (the Dockerfile's ELF assertion caught exactly that in the multi-arch image).
+                    cacheKey.put("arch", System.getProperty("os.arch") ?: "unknown")
                     cacheKey.put("buildType", "Release")
                     cacheKey.put("emulator", emulator)
                     variantConfigureArgs.put(
