@@ -5,6 +5,9 @@ plugins {
     // root config, or its Kotlin would never be linted (in CI or locally).
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
+    // Build identity (chipbox + sage commits) from `.git` files instead of a configuration-time git
+    // process; both stamp "unknown" when the build context has no `.git` (a source tarball).
+    id("chipbox.build.identity")
 }
 
 detekt {
@@ -17,20 +20,8 @@ ktlint {
 }
 
 // The Chipbox + sage commits are stamped into the device results fingerprint at build time (the
-// benchmark process can't read git). Read them the same way :apps:android reads the build branch.
-// A source tarball or the Docker build context has no `.git`, and a configuration-time failure
-// would break every build that merely configures this module — stamp "unknown" instead.
-// The configuration cache records a failing `providers.exec` as a problem even when the throw is
-// caught, so do not create the provider at all when there is no `.git` to read.
-fun gitShortCommit(dir: File): String = if (!dir.resolve(".git").exists()) {
-    "unknown"
-} else {
-    runCatching {
-        providers.exec {
-            commandLine("git", "-C", dir.absolutePath, "rev-parse", "--short", "HEAD")
-        }.standardOutput.asText.get().trim()
-    }.getOrDefault("").ifEmpty { "unknown" }
-}
+// benchmark process can't read git). Read from `.git` files by the build identity plugin — no
+// configuration-time `git` process, and "unknown" when there is no `.git` to read.
 
 android {
     namespace = "net.sigmabeta.chipbox.benchmark"
@@ -43,8 +34,8 @@ android {
         // Numbers are not representative on an emulator — flip this off when
         // benchmarking on physical hardware.
         testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR"
-        testInstrumentationRunnerArguments["chipboxCommit"] = gitShortCommit(rootDir)
-        testInstrumentationRunnerArguments["sageCommit"] = gitShortCommit(File(rootDir, "sage"))
+        testInstrumentationRunnerArguments["chipboxCommit"] = buildIdentity.shortCommit(rootDir)
+        testInstrumentationRunnerArguments["sageCommit"] = buildIdentity.shortCommit(File(rootDir, "sage"))
     }
 
     targetProjectPath = ":apps:android"
