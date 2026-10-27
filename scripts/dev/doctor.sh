@@ -178,6 +178,35 @@ else
   warn "adb is not on PATH (device axes unavailable)"
 fi
 
+# ---- dev scripts ------------------------------------------------------------
+# rg/fd serve .scratch navigation (docs/agents/issue-tracker.md); ImageMagick is
+# required by scripts/dev/paparazzi-diff.sh (magick/compare/montage).
+head_ "Dev scripts"
+dev_scripts_ok=yes
+if command -v rg >/dev/null 2>&1; then
+  ok "rg: $(rg --version 2>/dev/null | awk 'NR == 1 { print $2 }') (.scratch navigation)"
+else
+  warn "rg is not on PATH (.scratch navigation falls back to grep/find; brew install ripgrep)"
+  dev_scripts_ok=no
+fi
+if command -v fd >/dev/null 2>&1; then
+  ok "fd: $(fd --version 2>/dev/null | awk '{ print $2 }') (.scratch navigation)"
+else
+  warn "fd is not on PATH (.scratch navigation falls back to find; brew install fd)"
+  dev_scripts_ok=no
+fi
+for c in magick compare montage; do
+  if command -v "$c" >/dev/null 2>&1; then
+    ok "$c: $(command -v "$c")"
+  else
+    fail "$c is not on PATH (paparazzi-diff.sh needs ImageMagick; brew install imagemagick)"
+    dev_scripts_ok=no
+  fi
+done
+if [ "$dev_scripts_ok" = no ]; then
+  printf '        install all: brew install ripgrep fd imagemagick\n'
+fi
+
 # ---- verify matrix ----------------------------------------------------------
 head_ "Verify axes"
 web_ready=yes
@@ -204,6 +233,6 @@ fi
 head_ "Summary"
 printf '  %d missing, %d warning(s)\n' "$missing" "$warnings"
 if [ "$missing" -gt 0 ]; then
-  printf '  Fix the failed lines above before running the matching verify axes.\n'
+  printf '  Fix the failed lines above before running the matching verify axes or dev scripts.\n'
 fi
 exit 0
