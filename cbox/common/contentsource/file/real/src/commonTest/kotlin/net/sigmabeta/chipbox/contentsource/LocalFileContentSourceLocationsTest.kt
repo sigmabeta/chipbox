@@ -57,15 +57,17 @@ class LocalFileContentSourceLocationsTest {
     }
 
     @Test
-    fun `adding the same folder again throws instead of duplicating it`() {
+    fun `re-adding the same folder is an idempotent no-op`() {
         dir("/music/SNES")
         val source = source()
         source.addLocation("/music/SNES".toPath())
 
-        assertFailsWith<IllegalArgumentException> { source.addLocation("/music/SNES".toPath()) }
-        assertFailsWith<IllegalArgumentException> { source.addLibraryLocation("/music/SNES/") }
+        // Startup/rescan re-add their configured root; identical spellings must not fail the boot.
+        source.addLocation("/music/SNES".toPath())
+        source.addLibraryLocation("/music/SNES/")
 
         assertEquals(listOf("/music/SNES"), source.locations.value.map { it.identifier })
+        assertEquals("/music/SNES", persisted())
     }
 
     @Test

@@ -34,7 +34,8 @@ interface LibrarySource : ContentSource {
      * when adding it keeps the roots disjoint. Callers that add a location (the folder picker)
      * ask this first so an overlap is refused at the point of the mistake instead of failing the
      * next scan; the local-file source's [addLibraryLocation] fails fast with an
-     * [IllegalArgumentException] as well, so a caller cannot silently lose the location.
+     * [IllegalArgumentException] for a nested/containing root (re-adding an already-configured
+     * root is an idempotent no-op), so a caller cannot silently lose the location.
      */
     fun findOverlappingLocation(identifier: String): LibraryLocationInfo? =
         locations.value.firstOrNull { LibraryLocations.overlaps(it.identifier, identifier) }
