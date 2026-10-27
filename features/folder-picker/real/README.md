@@ -44,11 +44,13 @@ directory and kicks off a library scan.
   assisted arg (via `ManualViewModelAssistedFactory`, `@ContributesIntoMap(AppScope)`) and an
   injected `StorageVolumeProvider`. Seeds the volume list into state at construction; when there's
   more than one volume it opens on the chooser, otherwise it lists `defaultPath`. Handles
-  descend/ascend/toggle-hidden by re-listing in place, and on "Add" calls
-  `LibrarySource.addLibraryLocation(path)` + `Scanner.startScan()` then navigates to the
-  `RescanStatus` screen. At a volume root it suppresses the (unreadable) filesystem parent and,
-  when more than one volume exists, routes "up" to the chooser; `ReturnToDefaultClicked` jumps
-  straight back to `defaultPath`.
+  descend/ascend/toggle-hidden by re-listing in place, and on "Add" asks
+  `LibrarySource.findOverlappingLocation(path)` first — a folder that duplicates or nests inside
+  (or contains) a configured root is refused immediately with a snackbar, without committing or
+  scanning — otherwise it calls `LibrarySource.addLibraryLocation(path)` + `Scanner.startScan()`
+  then navigates to the `RescanStatus` screen. At a volume root it suppresses the (unreadable)
+  filesystem parent and, when more than one volume exists, routes "up" to the chooser;
+  `ReturnToDefaultClicked` jumps straight back to `defaultPath`.
 
 **FolderLister** (`commonMain`)
 - `FolderLister.kt` — the `FolderLister` interface (`list(path, showHidden) → FolderListing`)
@@ -76,7 +78,8 @@ directory and kicks off a library scan.
   satisfied; no DI graph or filesystem on JS.
 
 **Tests** (`commonTest`) — `FolderPickerViewModelTest.kt` and `OkioFolderListerTest.kt`
-(the latter exercises the Okio code paths against a `FakeFileSystem`).
+(the latter exercises the Okio code paths against a `FakeFileSystem`), plus
+`FolderPickerOverlapTest.kt` for the overlapping-location refusal.
 
 > Note: the `FolderLister` KDoc still references an older `JvmFolderLister`/`jvmSharedMain`
 > binding; the production binding is `OkioFolderLister` in `commonMain`.

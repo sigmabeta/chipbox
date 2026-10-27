@@ -96,6 +96,17 @@ class FolderPickerViewModel(
 
     private fun onAddClicked() {
         val path = state.value.currentPath ?: return
+        // Refuse an overlapping root at the point of the mistake. The scanner refuses the whole
+        // scan too, but this is the normal user path, so it should fail fast and explain why.
+        librarySource.findOverlappingLocation(path)?.let { existing ->
+            emit(
+                ChipboxEvent.ShowSnackbar(
+                    "Can't add this folder: it overlaps \"${existing.displayName ?: existing.identifier}\" " +
+                        "already in your library."
+                )
+            )
+            return
+        }
         librarySource.addLibraryLocation(path)
         // Mirrors ManageLibraryViewModel.onFolderPicked: adding a folder kicks off a scan and
         // hands the user off to the live scan-status screen.
