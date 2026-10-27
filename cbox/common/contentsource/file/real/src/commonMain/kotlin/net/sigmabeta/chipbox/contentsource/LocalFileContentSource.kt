@@ -44,12 +44,33 @@ class LocalFileContentSource(
     override fun addLibraryLocation(identifier: String) {
         val path = identifier.toPath()
         require(fileSystem.metadataOrNull(path)?.isDirectory == true) { "Not a directory: $identifier" }
+        // Refuse a root that is already configured, sits inside one, or contains one: two readers
+        // would emit the shared folders in the same scan and race on their game rows. Callers that
+        // need to tell the user (the folder picker) ask findOverlappingLocation first.
+        if (findOverlappingLocation(identifier) != null) return
         val info = LibraryLocationInfo(path.toString(), path.name)
         _locations.update { current ->
             if (current.any { it.identifier == info.identifier }) current else current + info
         }
         persistLocations()
     }
+
+    // Canonicalized for comparison only — stored identifiers keep the form the user picked, so
+    // existing folder keys (and the track paths derived from them) never change under a rescan.
+    override fun findOverlappingLocations(): LibraryLocationOverlap? =
+        LibraryLocations.firstOverlap(_locations.value.map { it.identifier }, ::canonicalize)
+
+    override fun findOverlappingLocation(identifier: String): LibraryLocationInfo? {
+        val candidate = canonicalize(identifier)
+        return _locations.value.firstOrNull {
+            LibraryLocations.overlaps(canonicalize(it.identifier), candidate)
+        }
+    }
+
+    // Resolution can fail (a root removed since it was persisted, a path the OS won't stat): fall
+    // back to the identifier as given, which still catches a textual duplicate or nesting.
+    private fun canonicalize(identifier: String): String =
+        runCatching { fileSystem.canonicalize(identifier.toPath()) }.getOrNull()?.toString() ?: identifier
 
     /** Drops the saved location with this absolute-path [identifier], persisting the change. */
     override fun removeLibraryLocation(identifier: String) {
