@@ -27,6 +27,7 @@ import net.sigmabeta.chipbox.repository.importLibrarySnapshot
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.settings.ChipboxSettingsManager
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.sage.appcomm.LCE
 import net.sigmabeta.sage.appcomm.SageAction
@@ -46,7 +47,7 @@ class SettingsViewModel @Inject constructor(
     private val scanner: Scanner,
     private val librarySource: LibrarySource,
     private val appInfo: AppInfo,
-    stringProvider: StringProvider,
+    private val stringProvider: StringProvider,
     private val hatchet: Hatchet,
 ) : ChipboxListViewModel<SettingsState>(
     SettingsState(),
@@ -252,7 +253,9 @@ class SettingsViewModel @Inject constructor(
             SettingsAction.ClearPlaybackHistoryClicked -> onClearPlaybackHistoryClicked()
 
             SettingsAction.LicensesClicked -> emit(
-                ChipboxEvent.ShowSnackbar("Licenses screen coming soon.")
+                ChipboxEvent.ShowSnackbar(
+                    stringProvider.getString(ChipboxStringId.SETTINGS_SNACKBAR_LICENSES_COMING_SOON)
+                )
             )
 
             SettingsAction.GithubClicked -> emit(ChipboxEvent.OpenUrl(GITHUB_URL))
@@ -306,11 +309,19 @@ class SettingsViewModel @Inject constructor(
             try {
                 repository.clearLibrary()
                 updateState { it.copy(clearLibraryStatus = LCE.Content(Unit)) }
-                emit(ChipboxEvent.ShowSnackbar("Library cleared."))
+                emit(
+                    ChipboxEvent.ShowSnackbar(
+                        stringProvider.getString(ChipboxStringId.SETTINGS_SNACKBAR_LIBRARY_CLEARED)
+                    )
+                )
             } catch (ex: Throwable) {
                 hatchet.e("Clear library failed: ${ex.message}")
                 updateState { it.copy(clearLibraryStatus = LCE.Error(LOAD_OP_CLEAR, ex)) }
-                emit(ChipboxEvent.ShowSnackbar("Failed to clear library."))
+                emit(
+                    ChipboxEvent.ShowSnackbar(
+                        stringProvider.getString(ChipboxStringId.SETTINGS_SNACKBAR_LIBRARY_CLEAR_FAILED)
+                    )
+                )
             }
         }
     }
@@ -322,11 +333,19 @@ class SettingsViewModel @Inject constructor(
             try {
                 playbackHistoryRepository.clearHistory()
                 updateState { it.copy(clearPlaybackHistoryStatus = LCE.Content(Unit)) }
-                emit(ChipboxEvent.ShowSnackbar("Playback history cleared."))
+                emit(
+                    ChipboxEvent.ShowSnackbar(
+                        stringProvider.getString(ChipboxStringId.SETTINGS_SNACKBAR_HISTORY_CLEARED)
+                    )
+                )
             } catch (ex: Throwable) {
                 hatchet.e("Clear playback history failed: ${ex.message}")
                 updateState { it.copy(clearPlaybackHistoryStatus = LCE.Error(LOAD_OP_CLEAR_HISTORY, ex)) }
-                emit(ChipboxEvent.ShowSnackbar("Failed to clear playback history."))
+                emit(
+                    ChipboxEvent.ShowSnackbar(
+                        stringProvider.getString(ChipboxStringId.SETTINGS_SNACKBAR_HISTORY_CLEAR_FAILED)
+                    )
+                )
             }
         }
     }
@@ -342,7 +361,14 @@ class SettingsViewModel @Inject constructor(
             try {
                 val bytes = librarySource.openBytes(path)
                 if (bytes == null) {
-                    emit(ChipboxEvent.ShowSnackbar("Snapshot not found: $path"))
+                    emit(
+                        ChipboxEvent.ShowSnackbar(
+                            stringProvider.getStringOneArg(
+                                ChipboxStringId.SETTINGS_SNACKBAR_SNAPSHOT_NOT_FOUND,
+                                path,
+                            )
+                        )
+                    )
                     return@launch
                 }
                 val snapshot = LibrarySnapshotJson.decodeFromString<LibrarySnapshot>(bytes.decodeToString())
@@ -350,14 +376,27 @@ class SettingsViewModel @Inject constructor(
                 // the snapshot was generated from (correct when importing on the same host). The
                 // benchmark build's startup seed passes its own fixed device root instead.
                 val result = repository.importLibrarySnapshot(snapshot, root = snapshot.root)
-                emit(
-                    ChipboxEvent.ShowSnackbar(
-                        "Imported ${result.total} game(s) — ${result.added} new, ${result.updated} updated."
-                    )
+                // Two templates because StringProvider has at most two arguments: total first,
+                // then the added/updated breakdown.
+                val summary = stringProvider.getStringOneArg(
+                    ChipboxStringId.SETTINGS_SNACKBAR_SNAPSHOT_IMPORTED,
+                    result.total.toString(),
+                ) + stringProvider.getStringTwoArgs(
+                    ChipboxStringId.SETTINGS_SNACKBAR_SNAPSHOT_IMPORT_COUNTS,
+                    result.added.toString(),
+                    result.updated.toString(),
                 )
+                emit(ChipboxEvent.ShowSnackbar(summary))
             } catch (ex: Throwable) {
                 hatchet.e("Snapshot import failed: ${ex.message}")
-                emit(ChipboxEvent.ShowSnackbar("Snapshot import failed: ${ex.message}"))
+                emit(
+                    ChipboxEvent.ShowSnackbar(
+                        stringProvider.getStringOneArg(
+                            ChipboxStringId.SETTINGS_SNACKBAR_SNAPSHOT_IMPORT_FAILED,
+                            ex.message.toString(),
+                        )
+                    )
+                )
             }
         }
     }

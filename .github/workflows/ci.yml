@@ -33,6 +33,8 @@ jobs:
           java-version: '21'
       - name: Validate the multi-arch Dockerfile + release wiring
         run: scripts/ci/verify-docker-release.sh
+      - name: User-facing strings (no hardcoded ShowSnackbar literals)
+        run: scripts/ci/check-user-facing-strings.sh
       - uses: gradle/actions/setup-gradle@v4
       - name: ktlint + detekt
         run: ./gradlew ktlintCheck detekt --continue --build-cache --no-daemon --max-workers=2 -Pchipbox.skipNative

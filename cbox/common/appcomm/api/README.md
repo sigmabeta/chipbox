@@ -26,8 +26,8 @@ host-level events (navigate, snackbar, toggle chrome) or that subclasses
 ## Using it
 
 ```kotlin
-// ViewModel emits an outbound event:
-events.emit(ChipboxEvent.ShowSnackbar("Added to playlist"))
+// ViewModel emits an outbound event; user-facing text resolves through the string resources:
+events.emit(ChipboxEvent.ShowSnackbar(stringProvider.getString(ChipboxStringId.PLAYLIST_DETAIL_DELETED)))
 events.emit(ChipboxEvent.RequestTopBarVisibility(visible = false))
 
 // the host shell collects and reacts:

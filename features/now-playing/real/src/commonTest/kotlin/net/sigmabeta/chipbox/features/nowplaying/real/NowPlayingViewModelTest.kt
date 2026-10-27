@@ -27,6 +27,7 @@ import net.sigmabeta.chipbox.player.director.PlayerState
 import net.sigmabeta.chipbox.favorites.fake.FakeFavoritesRepository
 import net.sigmabeta.chipbox.player.director.fake.FakeDirector
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
@@ -252,12 +253,12 @@ class NowPlayingViewModelTest {
 
     @Test
     fun `PlayerSettingsClicked surfaces the coming-soon snackbar`() = runTest(dispatcher) {
-        // Placeholder until the player settings screen lands. Guarding the literal so the test
-        // fails loud when the route is wired and the author updates the assertion.
+        // Placeholder until the player settings screen lands. Asserting the resource id (not its
+        // text) so the test fails loud when the route is wired and the author updates the assertion.
         val vm = newViewModel(FakeDirector())
         val event = collectAndDispatch(vm, NowPlayingAction.PlayerSettingsClicked)
         assertTrue(event is ChipboxEvent.ShowSnackbar)
-        assertEquals("Player settings coming soon.", event.message)
+        assertEquals("${ChipboxStringId.NOW_PLAYING_SNACKBAR_PLAYER_SETTINGS_COMING_SOON}", event.message)
     }
 
     // ---- metadata tag context menu ----
