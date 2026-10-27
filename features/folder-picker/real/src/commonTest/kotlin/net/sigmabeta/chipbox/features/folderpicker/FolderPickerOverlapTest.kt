@@ -14,6 +14,7 @@ import net.sigmabeta.chipbox.appcomm.ChipboxEvent
 import net.sigmabeta.chipbox.contentsource.LibraryLocationInfo
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.logging.BluntHatchet
 import net.sigmabeta.sage.ui.SageStringId
 import net.sigmabeta.sage.ui.StringProvider
@@ -55,8 +56,8 @@ class FolderPickerOverlapTest {
         val event = collectAndDispatch(vm, FolderPickerAction.AddThisFolderClicked)
 
         assertTrue(event is ChipboxEvent.ShowSnackbar, "the refusal must be visible: $event")
-        assertTrue(event.message.contains("Music"), event.message)
-        assertTrue(event.message.contains("overlap", ignoreCase = true), event.message)
+        // The message is a resource, not prose: the id plus the existing root's display name.
+        assertEquals("${ChipboxStringId.FOLDER_PICKER_SNACKBAR_OVERLAP}:Music", event.message)
         assertTrue(source.addedLocations.isEmpty(), "a refused location is never committed")
         assertEquals(0, scanner.startCount, "a refused location does not start a scan")
     }
@@ -118,7 +119,7 @@ class FolderPickerOverlapTest {
 
     private fun stubStringProvider() = object : StringProvider {
         override fun getString(string: SageStringId): String = string.toString()
-        override fun getStringOneArg(string: SageStringId, arg: String): String = string.toString()
+        override fun getStringOneArg(string: SageStringId, arg: String): String = "$string:$arg"
         override fun getStringOneInt(string: SageStringId, arg: Int): String = string.toString()
         override fun getStringTwoArgs(string: SageStringId, first: String, second: String): String =
             string.toString()

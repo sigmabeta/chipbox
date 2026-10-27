@@ -35,3 +35,13 @@ fun ChipboxStringId.textInt(arg: Int): String = LocalChipboxStringProvider.curre
 @ReadOnlyComposable
 fun ChipboxStringId.text(first: String, second: String): String =
     LocalChipboxStringProvider.current.getStringTwoArgs(this, first, second)
+
+/**
+ * The content description for a play/pause control, shared by the mini-player and Now Playing.
+ * It names the control's action, not its icon: in the error state the icon is a warning but the
+ * tap plays (recovers), and while buffering a spinner replaces the icon but the tap pauses.
+ */
+@Composable
+@ReadOnlyComposable
+fun playPauseContentDescription(isPlaying: Boolean): String =
+    (if (isPlaying) ChipboxStringId.ACCY_CDESC_PAUSE else ChipboxStringId.ACCY_CDESC_PLAY).text()

@@ -13,6 +13,7 @@ import net.sigmabeta.chipbox.appcomm.ChipboxEvent.NavigateTo
 import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.chipbox.features.gamedetail.GameDetail
 import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.chipbox.scanner.state.ScanFailureKind
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.appcomm.SageAction
@@ -41,6 +42,7 @@ class RescanStatusViewModel @Inject constructor(
     private var tracksFound = 0
     private var tracksFailed = 0
     private var failedPath: String? = null
+    private var failureKind = ScanFailureKind.FILE
 
     private val rendered = mutableListOf<ScanEventItem>()
     private val pending = mutableListOf<ScanEventItem>()
@@ -104,6 +106,7 @@ class RescanStatusViewModel @Inject constructor(
                 tracksFound = state.tracksFound
                 tracksFailed = state.tracksFailed
                 failedPath = null
+                failureKind = ScanFailureKind.FILE
             }
 
             is ScannerState.Complete -> {
@@ -113,11 +116,15 @@ class RescanStatusViewModel @Inject constructor(
                 tracksFound = state.tracksFound
                 tracksFailed = state.tracksFailed
                 failedPath = null
+                failureKind = ScanFailureKind.FILE
             }
 
             is ScannerState.Failed -> {
                 phase = ScanPhase.FAILED
-                failedPath = state.path
+                failureKind = state.kind
+                // A configuration failure's message is not a failing path; it renders as a
+                // dedicated localized row instead of "Failed at …".
+                failedPath = state.path.takeIf { state.kind == ScanFailureKind.FILE }
             }
 
             ScannerState.Idle, ScannerState.Unknown -> phase = ScanPhase.IDLE
@@ -147,6 +154,7 @@ class RescanStatusViewModel @Inject constructor(
                 tracksFound = tracksFound,
                 tracksFailed = tracksFailed,
                 failedPath = failedPath,
+                failureKind = failureKind,
                 currentFile = currentFile,
                 events = eventsSnapshot,
             )

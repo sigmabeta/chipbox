@@ -16,4 +16,5 @@
     <string name="folder_picker_value_files">%d files</string>
     <string name="folder_picker_value_folders_and_files">%1$s, %2$s</string>
     <string name="folder_picker_error_unreadable">This folder can't be opened — Android doesn't permit apps to read its contents.</string>
+    <string name="folder_picker_snackbar_overlap">Can't add this folder: it overlaps "%1$s" already in your library.</string>
 </resources>

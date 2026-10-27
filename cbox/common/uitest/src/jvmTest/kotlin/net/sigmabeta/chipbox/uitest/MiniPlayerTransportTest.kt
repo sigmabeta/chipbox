@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.uitest
 
+import net.sigmabeta.chipbox.common.playerstatus.api.PLAYER_STATUS_PLAY_PAUSE_TAG
 import net.sigmabeta.chipbox.features.library.Library
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
@@ -29,9 +30,9 @@ class MiniPlayerTransportTest {
 
         // In ERROR the control shows a warning icon, but its action is still "play" (recover) —
         // which is the intent assistive tech should announce.
-        assertContentDescription(MINI_PLAYER_PLAY_PAUSE_TAG, PLAY_DESCRIPTION)
+        assertContentDescription(PLAYER_STATUS_PLAY_PAUSE_TAG, PLAY_DESCRIPTION)
 
-        clickTag(MINI_PLAYER_PLAY_PAUSE_TAG)
+        clickTag(PLAYER_STATUS_PLAY_PAUSE_TAG)
 
         assertDirectorReceived(SessionRequest.Play)
     }
@@ -49,7 +50,7 @@ class MiniPlayerTransportTest {
 
         // Playing, so the control's action is "pause" — the description tracks the action, not
         // the track title showing in the bar.
-        assertContentDescription(MINI_PLAYER_PLAY_PAUSE_TAG, PAUSE_DESCRIPTION)
+        assertContentDescription(PLAYER_STATUS_PLAY_PAUSE_TAG, PAUSE_DESCRIPTION)
     }
 
     private companion object {
@@ -58,8 +59,5 @@ class MiniPlayerTransportTest {
         // The real mini-player transport descriptions (strings-accessibility.xml).
         const val PLAY_DESCRIPTION = "Play"
         const val PAUSE_DESCRIPTION = "Pause"
-
-        // Kept in sync with PLAYER_STATUS_PLAY_PAUSE_TAG in the player-status module.
-        const val MINI_PLAYER_PLAY_PAUSE_TAG = "PlayerStatusPlayPause"
     }
 }
