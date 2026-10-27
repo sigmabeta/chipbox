@@ -13,6 +13,7 @@ import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
@@ -25,7 +26,7 @@ class FolderPickerViewModel(
     storageVolumeProvider: StorageVolumeProvider,
     private val librarySource: LibrarySource,
     private val scanner: Scanner,
-    stringProvider: StringProvider,
+    private val stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<FolderPickerState>(
     // Seed the volume list once — it's constant for the screen's lifetime, and copy() carries it
@@ -101,8 +102,10 @@ class FolderPickerViewModel(
         librarySource.findOverlappingLocation(path)?.let { existing ->
             emit(
                 ChipboxEvent.ShowSnackbar(
-                    "Can't add this folder: it overlaps \"${existing.displayName ?: existing.identifier}\" " +
-                        "already in your library."
+                    stringProvider.getStringOneArg(
+                        ChipboxStringId.FOLDER_PICKER_SNACKBAR_OVERLAP,
+                        existing.displayName ?: existing.identifier,
+                    )
                 )
             )
             return
