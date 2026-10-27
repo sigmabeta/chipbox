@@ -164,6 +164,8 @@ emulators="$(awk 'NF && $0 !~ /^#/ { n++ } END { print n + 0 }' "$MANIFEST")"
 bash -n "$ROOT/scripts/ci/web-image-smoke.sh" || fail "scripts/ci/web-image-smoke.sh has a syntax error"
 bash -n "$ROOT/scripts/ci/web.sh" || fail "scripts/ci/web.sh has a syntax error"
 bash -n "$ROOT/scripts/ci/verify.sh" || fail "scripts/ci/verify.sh has a syntax error"
+bash -n "$ROOT/scripts/ci/verify-no-config-git.sh" \
+  || fail "scripts/ci/verify-no-config-git.sh has a syntax error"
 bash -n "$ROOT/scripts/ci/verify-docker-release.sh" || fail "this script has a syntax error"
 python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' \
   "$ROOT/scripts/ci/verify-oci-index.py" \
