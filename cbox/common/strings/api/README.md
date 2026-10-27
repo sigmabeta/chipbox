@@ -14,7 +14,7 @@ turn an id into displayable text — over SAGE's `ui.strings` (`SageStringId` /
 | File | What it is |
 | --- | --- |
 | `ChipboxStringId.kt` | `@Serializable enum class ChipboxStringId : SageStringId` — one entry per UI string, grouped by feature (accessibility, home, search, library, playlists, settings, now-playing, platform names, playback-status, rescan-status, …). The enum *name* (lowercased) is the resource key in `:real`'s XML. Serialization lets it travel inside persisted `Notif` state. |
-| `LocalChipboxStringProvider.kt` | `val LocalChipboxStringProvider = staticCompositionLocalOf<StringProvider>` plus the `@Composable`/`@ReadOnlyComposable` extension accessors `ChipboxStringId.text()`, `text(arg)`, `textInt(arg)`, and `text(first, second)`. |
+| `LocalChipboxStringProvider.kt` | `val LocalChipboxStringProvider = staticCompositionLocalOf<StringProvider>` plus the `@Composable`/`@ReadOnlyComposable` extension accessors `ChipboxStringId.text()`, `text(arg)`, `textInt(arg)`, and `text(first, second)`, plus `playPauseContentDescription(isPlaying)` — the one play/pause description both transport surfaces use (it names the action, not the icon). |
 
 ## Why depend on this module
 
