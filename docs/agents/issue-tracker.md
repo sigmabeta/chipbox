@@ -2,8 +2,29 @@
 
 Issues and specs for this repo live as markdown files in `.scratch/`.
 
-`.scratch/` is git-ignored, so `rg` and `grep -r` skip it by default — search it
-with `rg --no-ignore` (or `fd -I` / `find`) when hunting for a spec or ticket.
+`.scratch/` is git-ignored, so `rg` skips it by default — and because it is also
+a hidden directory, `--no-ignore` alone is not enough: search it with
+`rg --hidden --no-ignore` (or `rg -uu`). `grep -r` does **not** honour
+`.gitignore`; it does search `.scratch/`, but from the repo root it also walks
+`build/` and `.worktrees/`. When ripgrep is absent, scope the search to the
+tracker instead:
+
+```sh
+grep -rn "needle" .scratch/<feature-slug>/   # only the tracker
+find .scratch -name '*.md'                   # list specs and tickets
+```
+
+`fd` has the same hidden-directory caveat: `-I` is not enough, use `fd -HI …`
+(or pass `.scratch/` explicitly). Never run a bare `grep -r .` from the repo
+root.
+
+## Worktrees
+
+`.scratch/` exists only in the primary checkout: it is git-ignored, so
+`git worktree add` does not copy it, and a worktree has no tracker files. Read
+specs and tickets by absolute path into the primary checkout's `.scratch/`
+(`git worktree list` shows which checkout that is). Never copy `.scratch/` into
+a worktree — the two copies would diverge.
 
 ## Conventions
 
