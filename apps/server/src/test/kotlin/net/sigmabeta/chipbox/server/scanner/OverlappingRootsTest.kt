@@ -5,6 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -103,8 +104,7 @@ class OverlappingRootsTest {
 
         val health = assertIs<ScannerState.Failed>(state).toHealthStatus()
         assertFalse(health.ok)
-        val failedFile = health.state.failedFile
-        assertTrue(failedFile != null && !failedFile.contains('/'), "the failure is not a path: $failedFile")
+        assertNull(health.state.failedFile, "a configuration failure has no failing file")
         val json = Json.encodeToString(HealthStatus.serializer(), health)
         assertFalse(json.contains(corpus.absolutePath), "health JSON leaked a host path: $json")
         assertFalse(json.contains("Game A"), "health JSON leaked a folder name: $json")

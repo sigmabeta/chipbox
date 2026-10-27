@@ -13,6 +13,7 @@ import net.sigmabeta.chipbox.notif.NotifCategory
 import net.sigmabeta.chipbox.notif.NotifManager
 import net.sigmabeta.chipbox.notif.ScanFailureNotifRecorder
 import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.chipbox.scanner.state.ScanFailureKind
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.logging.Hatchet
@@ -48,10 +49,17 @@ class RealScanFailureNotifRecorder(
                         Notif(
                             id = NOTIF_ID,
                             title = ChipboxStringId.NOTIF_SCAN_FAILED_TITLE,
-                            description = stringProvider.getStringOneArg(
-                                ChipboxStringId.HOME_SCAN_STATUS_ERROR,
-                                failed.path,
-                            ),
+                            description = if (failed.kind == ScanFailureKind.CONFIGURATION) {
+                                // No failing file to name; describe the admin-fixable config problem.
+                                stringProvider.getString(
+                                    ChipboxStringId.NOTIF_SCAN_FAILED_CONFIGURATION_DESCRIPTION,
+                                )
+                            } else {
+                                stringProvider.getStringOneArg(
+                                    ChipboxStringId.HOME_SCAN_STATUS_ERROR,
+                                    failed.path,
+                                )
+                            },
                             category = NotifCategory.ERROR,
                             isOneTime = true,
                         ),

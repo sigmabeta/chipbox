@@ -33,9 +33,21 @@ object GitMetadata {
      * The current branch name, or the abbreviated commit when HEAD is detached (the old
      * `rev-parse --abbrev-ref HEAD` reported the literal `HEAD` there, which is less useful).
      */
-    fun branch(providers: ProviderFactory, layout: ProjectLayout, repoDir: File): String {
-        val gitDir = GitDir.of(repoDir) ?: return UNKNOWN
-        val head = gitDir.read(providers, layout, gitDir.head) ?: return UNKNOWN
+    fun branch(providers: ProviderFactory, layout: ProjectLayout, repoDir: File): String =
+        branch(repoDir) { readFile(providers, layout, it) }
+
+    /** The abbreviated commit of the working copy at [repoDir]. */
+    fun shortCommit(providers: ProviderFactory, layout: ProjectLayout, repoDir: File): String =
+        shortCommit(repoDir) { readFile(providers, layout, it) }
+
+    /**
+     * The pure resolver behind [branch], over a [repoDir] and a "read this file's text, or null
+     * when absent/unreadable" function. Kept separate from Gradle's providers so the gitdir/ref
+     * rules are testable without a build.
+     */
+    internal fun branch(repoDir: File, readFile: (File) -> String?): String {
+        val gitDir = GitDir.of(repoDir, readFile) ?: return UNKNOWN
+        val head = gitDir.read(readFile, gitDir.head) ?: return UNKNOWN
         val ref = head.removePrefix("ref: ")
         if (ref != head) {
             // `refs/heads/<name>` — the working copy is on a branch.
@@ -44,12 +56,15 @@ object GitMetadata {
         return head.takeIf(commitSha::matches)?.take(SHORT_COMMIT_LENGTH) ?: UNKNOWN
     }
 
-    /** The abbreviated commit of the working copy at [repoDir]. */
-    fun shortCommit(providers: ProviderFactory, layout: ProjectLayout, repoDir: File): String {
-        val gitDir = GitDir.of(repoDir) ?: return UNKNOWN
-        val head = gitDir.read(providers, layout, gitDir.head) ?: return UNKNOWN
+    /**
+     * The pure resolver behind [shortCommit] — follows HEAD to its loose ref or `packed-refs`,
+     * through the shared `commondir` when the checkout is a linked worktree or submodule.
+     */
+    internal fun shortCommit(repoDir: File, readFile: (File) -> String?): String {
+        val gitDir = GitDir.of(repoDir, readFile) ?: return UNKNOWN
+        val head = gitDir.read(readFile, gitDir.head) ?: return UNKNOWN
         val commit = if (head.startsWith("ref: ")) {
-            gitDir.readRef(providers, layout, head.removePrefix("ref: ").trim())
+            gitDir.readRef(readFile, head.removePrefix("ref: ").trim())
         } else {
             head
         }
@@ -74,14 +89,14 @@ object GitMetadata {
     private class GitDir(private val gitDir: File, private val commonDir: File) {
         val head: File get() = File(gitDir, "HEAD")
 
-        fun read(providers: ProviderFactory, layout: ProjectLayout, file: File): String? =
-            readFile(providers, layout, file)?.trim()?.takeIf(String::isNotEmpty)
+        fun read(readFile: (File) -> String?, file: File): String? =
+            readFile(file)?.trim()?.takeIf(String::isNotEmpty)
 
-        fun readRef(providers: ProviderFactory, layout: ProjectLayout, ref: String): String? {
+        fun readRef(readFile: (File) -> String?, ref: String): String? {
             if (!ref.startsWith("refs/")) return null
             // Worktrees share every ref through the common dir; only HEAD is per-worktree.
-            readFile(providers, layout, File(commonDir, ref))?.trim()?.takeIf(commitSha::matches)?.let { return it }
-            val packedRefs = readFile(providers, layout, File(commonDir, "packed-refs")) ?: return null
+            readFile(File(commonDir, ref))?.trim()?.takeIf(commitSha::matches)?.let { return it }
+            val packedRefs = readFile(File(commonDir, "packed-refs")) ?: return null
             return packedRefs.lineSequence()
                 .map(String::trim)
                 .firstOrNull { it.endsWith(" $ref") && !it.startsWith("#") && !it.startsWith("^") }
@@ -89,19 +104,20 @@ object GitMetadata {
         }
 
         companion object {
-            fun of(repoDir: File): GitDir? {
+            fun of(repoDir: File, readFile: (File) -> String?): GitDir? {
                 val dotGit = File(repoDir, ".git")
                 val gitDir = when {
                     dotGit.isDirectory -> dotGit
-                    dotGit.isFile -> gitDirFromFile(dotGit) ?: return null
+                    dotGit.isFile -> gitDirFromFile(dotGit, readFile) ?: return null
                     else -> return null
                 }
-                return GitDir(gitDir, commonDirOf(gitDir))
+                return GitDir(gitDir, commonDirOf(gitDir, readFile))
             }
 
-            private fun gitDirFromFile(dotGit: File): File? {
+            private fun gitDirFromFile(dotGit: File, readFile: (File) -> String?): File? {
                 // Same degrade-to-unknown rule as readFile: a malformed `.git` is not fatal.
-                val line = runCatching { dotGit.readLines() }.getOrNull()
+                val line = readFile(dotGit)
+                    ?.lineSequence()
                     ?.firstOrNull { it.startsWith(GITDIR_PREFIX) }
                     ?: return null
                 // A relative `gitdir:` is relative to the `.git` file's own directory.
@@ -109,8 +125,8 @@ object GitMetadata {
                 return if (path.isAbsolute) path else File(dotGit.parentFile, path.toString())
             }
 
-            private fun commonDirOf(gitDir: File): File {
-                val path = runCatching { File(gitDir, "commondir").readText().trim() }.getOrNull()
+            private fun commonDirOf(gitDir: File, readFile: (File) -> String?): File {
+                val path = readFile(File(gitDir, "commondir"))?.trim()
                 return if (path.isNullOrEmpty()) gitDir else File(gitDir, path)
             }
         }

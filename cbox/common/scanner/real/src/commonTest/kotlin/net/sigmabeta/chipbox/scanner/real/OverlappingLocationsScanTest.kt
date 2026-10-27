@@ -12,6 +12,7 @@ import net.sigmabeta.chipbox.repository.GameWriteOutcome
 import net.sigmabeta.chipbox.repository.RawGame
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.fake.FakeRepository
+import net.sigmabeta.chipbox.scanner.state.ScanFailureKind
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.sage.logging.Hatchet
 import kotlin.test.Test
@@ -41,7 +42,8 @@ class OverlappingLocationsScanTest {
 
         val state = scan(source, repository, hatchet)
 
-        assertIs<ScannerState.Failed>(state)
+        val failure = assertIs<ScannerState.Failed>(state)
+        assertEquals(ScanFailureKind.CONFIGURATION, failure.kind)
         assertEquals(0, repository.upserts, "nothing may be written for a refused configuration")
         assertEquals(0, repository.prunes, "the stored library must not be reconciled away")
         assertEquals(0, repository.snapshotReads, "refuse before touching the library")

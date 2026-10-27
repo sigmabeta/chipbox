@@ -6,7 +6,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 import net.sigmabeta.chipbox.models.ScanStatus
+import net.sigmabeta.chipbox.scanner.state.ScanFailureKind
 import net.sigmabeta.chipbox.scanner.state.ScannerState
+import kotlin.test.assertNull
 
 /**
  * `/api/health` must expose the real scanner state instead of a hard-coded `ok`, and must never
@@ -71,6 +73,22 @@ class HealthStatusMappingTest {
         assertFalse(health.scanning)
         assertEquals(ScanStatus.FAILED, health.state.status)
         assertEquals("broken.spc", health.state.failedFile)
+    }
+
+    @Test
+    fun `configuration failure is not ok and has no failed file`() {
+        val health = ScannerState.Failed(
+            path = "Overlapping library locations",
+            kind = ScanFailureKind.CONFIGURATION,
+        ).toHealthStatus()
+
+        assertFalse(health.ok)
+        assertFalse(health.scanning)
+        assertEquals(ScanStatus.FAILED, health.state.status)
+        assertNull(health.state.failedFile, "a configuration failure has no failing file")
+
+        val json = Json.encodeToString(health)
+        assertFalse("Overlapping" in json, "the health body must not carry the configuration message")
     }
 
     @Test

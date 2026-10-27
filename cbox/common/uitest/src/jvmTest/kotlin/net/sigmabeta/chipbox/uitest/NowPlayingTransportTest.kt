@@ -1,6 +1,7 @@
 package net.sigmabeta.chipbox.uitest
 
 import net.sigmabeta.chipbox.features.nowplaying.NowPlaying
+import net.sigmabeta.chipbox.features.nowplaying.real.NOW_PLAYING_PLAY_PAUSE_BUTTON_TAG
 import net.sigmabeta.chipbox.player.common.Session
 import net.sigmabeta.chipbox.player.common.SessionType
 import net.sigmabeta.chipbox.player.director.PlayerState
@@ -24,9 +25,9 @@ class NowPlayingTransportTest {
         startAtScreen(NowPlaying)
         waitForContent(track.title)
 
-        assertContentDescription(PLAY_PAUSE_TAG, PAUSE_DESCRIPTION)
+        assertContentDescription(NOW_PLAYING_PLAY_PAUSE_BUTTON_TAG, PAUSE_DESCRIPTION)
 
-        clickTag(PLAY_PAUSE_TAG)
+        clickTag(NOW_PLAYING_PLAY_PAUSE_BUTTON_TAG)
 
         assertDirectorReceived(SessionRequest.Pause)
     }
@@ -36,8 +37,5 @@ class NowPlayingTransportTest {
 
         // The real transport description while playing (strings-accessibility.xml).
         const val PAUSE_DESCRIPTION = "Pause"
-
-        // Kept in sync with NOW_PLAYING_PLAY_PAUSE_BUTTON_TAG in NowPlayingDimens.kt.
-        const val PLAY_PAUSE_TAG = "NowPlayingPlayPauseButton"
     }
 }

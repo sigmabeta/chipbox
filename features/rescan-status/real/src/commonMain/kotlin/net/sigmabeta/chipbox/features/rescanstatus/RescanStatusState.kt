@@ -1,5 +1,6 @@
 package net.sigmabeta.chipbox.features.rescanstatus
 
+import net.sigmabeta.chipbox.scanner.state.ScanFailureKind
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.components.EmptyStateListModel
@@ -38,7 +39,10 @@ data class RescanStatusState(
     val gamesFound: Int = 0,
     val tracksFound: Int = 0,
     val tracksFailed: Int = 0,
+    // Set only for a FILE failure; a CONFIGURATION failure has no failing path and renders the
+    // localized configuration message instead.
     val failedPath: String? = null,
+    val failureKind: ScanFailureKind = ScanFailureKind.FILE,
     // The file the scanner is reading right now, surfaced under Progress as a live heartbeat so the
     // screen shows motion between (rare) meaningful changes. Updated on a much faster cadence than
     // [events] — which stays batched for perf — and is never mixed into that Changes list. Null
@@ -82,12 +86,22 @@ data class RescanStatusState(
                 clickAction = SageAction.Noop,
             )
         }
-        if (phase == ScanPhase.FAILED && failedPath != null) {
-            rows += LabelValueListModel(
-                label = stringProvider.getString(ChipboxStringId.RESCAN_STATUS_LABEL_FAILED_PATH),
-                value = failedPath,
-                clickAction = SageAction.Noop,
-            )
+        if (phase == ScanPhase.FAILED) {
+            when (failureKind) {
+                ScanFailureKind.FILE -> failedPath?.let { path ->
+                    rows += LabelValueListModel(
+                        label = stringProvider.getString(ChipboxStringId.RESCAN_STATUS_LABEL_FAILED_PATH),
+                        value = path,
+                        clickAction = SageAction.Noop,
+                    )
+                }
+
+                ScanFailureKind.CONFIGURATION -> rows += LabelValueListModel(
+                    label = stringProvider.getString(ChipboxStringId.RESCAN_STATUS_LABEL_CONFIGURATION),
+                    value = stringProvider.getString(ChipboxStringId.RESCAN_STATUS_CONFIGURATION_ERROR),
+                    clickAction = SageAction.Noop,
+                )
+            }
         }
         return rows
     }

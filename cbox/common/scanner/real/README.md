@@ -38,10 +38,11 @@ overlapping pair of roots (`findOverlappingLocations()`). The same folder twice
 or one root inside another is a configuration error: both roots would emit the
 shared folders in one pass and the concurrent readers would race on the unique
 `game.folder_key` index, aborting the scan and leaving the stored library stale.
-The refusal ends the scan `Failed` with a message that names the problem but no
-host path (the public `/api/health` body exposes only that message), logs both
-configured roots in full, and writes/prunes nothing. Remove one of the roots and
-rescan.
+The refusal ends the scan `Failed(CONFIGURATION)` with a message that names the
+problem but no host path: the public `/api/health` body reports `ok = false` and
+leaves `failedFile` absent, because there is no failing file. The log names both
+configured roots in full, and the scan writes/prunes nothing. Remove one of the
+roots and rescan.
 
 ## Using it
 

@@ -33,6 +33,7 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.DuplicateRsnContentException
 import net.sigmabeta.chipbox.scanner.RsnExtractor
 import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.chipbox.scanner.state.ScanFailureKind
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.utils.RSN_EXTENSION
@@ -124,7 +125,8 @@ class RealScanner(
                     "contain another. Remove one of the overlapping folders and rescan."
             )
             // The health body is public: state names the configuration problem, never a host path.
-            emitState(ScannerState.Failed(OVERLAP_FAILURE))
+            // The kind tells consumers this is not a failing file (health clears failedFile).
+            emitState(ScannerState.Failed(OVERLAP_FAILURE, ScanFailureKind.CONFIGURATION))
             emitEvent(ScannerEvent.Unknown)
             return@traceAsync
         }

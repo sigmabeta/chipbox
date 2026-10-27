@@ -5,7 +5,9 @@ import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * [LocalFileContentSource] refuses a root that overlaps one it already holds. Overlapping roots
@@ -28,38 +30,44 @@ class LocalFileContentSourceLocationsTest {
     private fun persisted(): String = fileSystem.read(locationsFile) { readUtf8() }
 
     @Test
-    fun `adding a folder nested inside an existing root is refused`() {
+    fun `adding a folder nested inside an existing root throws and commits nothing`() {
         dir("/music/SNES/Album")
         val source = source()
         source.addLocation("/music".toPath())
 
-        source.addLocation("/music/SNES/Album".toPath())
+        val refusal = assertFailsWith<IllegalArgumentException> {
+            source.addLocation("/music/SNES/Album".toPath())
+        }
 
+        assertTrue("/music/SNES/Album" in refusal.message.orEmpty(), refusal.message)
+        assertTrue("/music" in refusal.message.orEmpty(), refusal.message)
         assertEquals(listOf("/music"), source.locations.value.map { it.identifier })
         assertEquals("/music", persisted(), "a refused location is never persisted")
     }
 
     @Test
-    fun `adding a root that contains an existing one is refused`() {
+    fun `adding a root that contains an existing one throws`() {
         dir("/music/SNES")
         val source = source()
         source.addLocation("/music/SNES".toPath())
 
-        source.addLocation("/music".toPath())
+        assertFailsWith<IllegalArgumentException> { source.addLocation("/music".toPath()) }
 
         assertEquals(listOf("/music/SNES"), source.locations.value.map { it.identifier })
     }
 
     @Test
-    fun `adding the same folder again is refused, not duplicated`() {
+    fun `re-adding the same folder is an idempotent no-op`() {
         dir("/music/SNES")
         val source = source()
         source.addLocation("/music/SNES".toPath())
 
+        // Startup/rescan re-add their configured root; identical spellings must not fail the boot.
         source.addLocation("/music/SNES".toPath())
         source.addLibraryLocation("/music/SNES/")
 
         assertEquals(listOf("/music/SNES"), source.locations.value.map { it.identifier })
+        assertEquals("/music/SNES", persisted())
     }
 
     @Test

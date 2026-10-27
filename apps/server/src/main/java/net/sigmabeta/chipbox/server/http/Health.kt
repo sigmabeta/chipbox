@@ -6,6 +6,7 @@ import io.ktor.server.routing.get
 import net.sigmabeta.chipbox.models.HealthStatus
 import net.sigmabeta.chipbox.models.ScanState
 import net.sigmabeta.chipbox.models.ScanStatus
+import net.sigmabeta.chipbox.scanner.state.ScanFailureKind
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 
 /**
@@ -45,10 +46,13 @@ internal fun ScannerState.toHealthStatus(): HealthStatus = when (this) {
 
     is ScannerState.Failed -> HealthStatus(
         ok = false,
-        // Basename only, and only in the one place the wire contract exposes it: a public endpoint
-        // must not echo `/music/…` or a user directory, and duplicating it in a second field adds
-        // nothing for the client.
-        state = ScanState(ScanStatus.FAILED, failedFile = path.basename()),
+        // `failedFile` means a file, so a configuration failure has none. For a file failure it is
+        // the basename only, and only in the one place the wire contract exposes it: a public
+        // endpoint must not echo `/music/…` or a user directory.
+        state = ScanState(
+            ScanStatus.FAILED,
+            failedFile = path.basename().takeIf { kind == ScanFailureKind.FILE },
+        ),
     )
 }
 
