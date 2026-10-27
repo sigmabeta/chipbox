@@ -34,6 +34,14 @@ in `apps/js` (browser services, WASM bindings, localStorage) and `apps/server`
 - The library root is `CHIPBOX_LIBRARY_DIR`; the work dir is
   `CHIPBOX_WORK_DIR` (default `./.chipbox-server`); the DB is
   `CHIPBOX_DB_PATH` (default `<work dir>/library.sqlite`).
+- Library locations must be disjoint. The server configures a single root, but the
+  shared scanner also serves desktop/Android, where the user can add several; the
+  same folder twice, or one root inside another, is refused before the walk with a
+  `failed` scan state (the log names both roots, the health body carries only a
+  path-free explanation) and nothing is written or pruned. Two roots that only
+  alias each other through a symlink are caught by canonicalizing the locations at
+  scan start; bind mounts and case-folded aliases canonicalization cannot resolve
+  may still yield duplicate entries (benign, not row corruption).
 - The server scans on every start, in the background. It serves immediately;
   endpoints return the current DB contents while the scan runs.
 - `GET /api/health` reports the live scan state
@@ -403,7 +411,9 @@ saved snapshot, and reloading a tab restores that snapshot.
   app routes still fall back), and the shipped `index.html`'s `<base href="/">`.
   `apps/server`'s JVM tests cover the
   `ScannerState` → `HealthStatus` mapping (including the no-path-leak rule) and
-  the loopback-bind predicate.
+  the loopback-bind predicate. Overlapping-library-root scenarios (nested,
+  duplicate, disjoint, single) run end-to-end through the real okio source and a
+  write-counting repository in `OverlappingRootsTest`.
 - No Playwright or other browser automation. UI and audio are verified manually.
 - `scripts/ci/verify.sh web` mirrors the CI web job and SKIPs cleanly when
   emsdk/node/yarn are unavailable; `--web-image` adds the Docker build + smoke.

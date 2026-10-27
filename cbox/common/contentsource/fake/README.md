@@ -11,7 +11,7 @@ and push location changes without touching the filesystem.
 
 | File | What it is |
 | --- | --- |
-| `FakeLibrarySource.kt` | `LibrarySource` over a `MutableStateFlow` of locations. `setLocations` pushes values; `addLibraryLocation`/`removeLibraryLocation` mutate the list and record into `addedLocations`/`removedLocations`. `openBytes` returns null and `scanFolders` an empty flow (unused by VM tests). |
+| `FakeLibrarySource.kt` | `LibrarySource` over a `MutableStateFlow` of locations. `setLocations` pushes values; `addLibraryLocation`/`removeLibraryLocation` mutate the list and record into `addedLocations`/`removedLocations`. `openBytes` returns null and `scanFolders` an empty flow (unused by VM tests). Overlap checks use the interface defaults (raw identifier comparison), so two nested fake locations are refused without a filesystem. |
 
 ## Why depend on this module
 

@@ -71,6 +71,11 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   by signature + scanner/reader version; new/changed files are picked up on
   restart. There is no rescan endpoint, file watcher, or periodic scan; folder
   management and scan progress are admin concerns, not web UI.
+- **Library locations must be disjoint.** `CHIPBOX_LIBRARY_DIR` is one root, but
+  the shared scanner refuses an overlapping locations list (the same folder twice,
+  or one root inside another) before walking, writing, or pruning: the scan ends
+  `failed` with a path-free reason, the log names both roots, and
+  `/api/health` stays path-free.
 - **Native lib:** the scanner needs `libvgmstream` for its subsong probe. It is
   host-built by `:apps:jvm:buildHostNativeVgmstream` (CMake, no committed binary)
   into `apps/jvm/build/jvm-native/out/<target>/vgmstream/host/` and exposed as

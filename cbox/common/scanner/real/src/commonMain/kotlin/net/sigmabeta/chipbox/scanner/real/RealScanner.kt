@@ -113,6 +113,22 @@ class RealScanner(
                 locations.joinToString { it.identifier }
         )
 
+        // Refuse an overlapping configuration before the walk, any write, or the prune: nested or
+        // duplicate roots emit their shared folders twice in one scan, and the concurrent readers
+        // race on the unique `game.folder_key` index (one insert loses and the whole scan aborts).
+        // The stored library is left exactly as it was — this is admin-fixable configuration.
+        librarySource.findOverlappingLocations()?.let { overlap ->
+            hatchet.e(
+                "Refusing library scan: library locations overlap — ${overlap.first} and " +
+                    "${overlap.second}. Each folder may be added only once, and no location may " +
+                    "contain another. Remove one of the overlapping folders and rescan."
+            )
+            // The health body is public: state names the configuration problem, never a host path.
+            emitState(ScannerState.Failed(OVERLAP_FAILURE))
+            emitEvent(ScannerEvent.Unknown)
+            return@traceAsync
+        }
+
         // Pre-scan snapshot of stored folder signatures, so a folder whose files are unchanged
         // (same paths, sizes, mtimes) is skipped without any reads or parsing.
         val snapshot = repository.folderSnapshots()
@@ -742,6 +758,10 @@ class RealScanner(
     companion object {
         val EXTENSIONS_IMAGES = setOf("jpg", "png")
         private const val TAG_UNKNOWN = "Unknown"
+
+        // The refusal has to survive into the public /api/health body, which exposes the failed
+        // state as a basename — so this message deliberately names the problem and carries no path.
+        private const val OVERLAP_FAILURE = "Overlapping library locations"
         private const val MAX_LIB_DEPTH = 8
         private const val DEFAULT_LENGTH_MS = 2L * 60 * 1000 + 30 * 1000
         private const val ZERO_FADE_PADDING_MS = 2L * 1000
