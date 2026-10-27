@@ -5,7 +5,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -22,10 +21,10 @@ import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.server.http.toHealthStatus
 import net.sigmabeta.chipbox.server.testing.NoVgmstreamProber
+import net.sigmabeta.chipbox.server.testing.RealRepository
 import net.sigmabeta.chipbox.server.testing.RecordingHatchet
 import net.sigmabeta.chipbox.server.testing.allGames
 import net.sigmabeta.chipbox.server.testing.allTracks
-import net.sigmabeta.chipbox.server.testing.newRepository
 import net.sigmabeta.chipbox.server.testing.spcFile
 import net.sigmabeta.chipbox.server.testing.tempDir
 import net.sigmabeta.sage.logging.Hatchet
@@ -39,7 +38,9 @@ import okio.Path.Companion.toOkioPath
  * the configuration before it walks, writes, or prunes, so the stored library survives intact.
  *
  * These drive the real okio-backed source over a temp corpus, so canonicalization (the hand-edited
- * locations-file case) is part of what is covered.
+ * locations-file case) is part of what is covered. The repository is real Room/SQLite:
+ * `FakeDatabase` is not safe for the scanner's parallel folder readers, and the accepted-scan
+ * cases exercise exactly that concurrency.
  */
 class OverlappingRootsTest {
 
@@ -49,29 +50,30 @@ class OverlappingRootsTest {
         val workDir = tempDir("overlap-nested-work")
         libraryFolder(File(corpus, "Game A"), title = "First")
 
-        val fixture = seededLibrary()
-        val repository = CountingRepository(fixture)
-        val hatchet = RecordingHatchet()
-        // The admin added the corpus root and then a folder inside it (or hand-edited the list).
-        val state = scan(
-            locationsFile(workDir, corpus, File(corpus, "Game A")),
-            repository,
-            hatchet,
-        )
+        RealRepository().use { real ->
+            val repository = CountingRepository(seededLibrary(real.repository))
+            val hatchet = RecordingHatchet()
+            // The admin added the corpus root and then a folder inside it (or hand-edited the list).
+            val state = scan(
+                locationsFile(workDir, corpus, File(corpus, "Game A")),
+                repository,
+                hatchet,
+            )
 
-        assertIs<ScannerState.Failed>(state)
-        assertEquals(0, repository.upserts, "a refused configuration writes nothing")
-        assertEquals(0, repository.prunes, "the prune must not run, so stored games survive")
-        assertEquals(0, repository.snapshotReads, "the library is not even read")
+            assertIs<ScannerState.Failed>(state)
+            assertEquals(0, repository.upserts, "a refused configuration writes nothing")
+            assertEquals(0, repository.prunes, "the prune must not run, so stored games survive")
+            assertEquals(0, repository.snapshotReads, "the library is not even read")
 
-        val games = fixture.allGames()
-        assertEquals(listOf("Existing Game"), games.map { it.title })
-        assertEquals(listOf("Existing Track"), fixture.allTracks().map { it.title })
+            val games = real.repository.allGames()
+            assertEquals(listOf("Existing Game"), games.map { it.title })
+            assertEquals(listOf("Existing Track"), real.repository.allTracks().map { it.title })
 
-        // Both roots are named in full so the admin knows which pair to fix.
-        val refusal = hatchet.errors.single { it.contains("Refusing library scan") }
-        assertTrue(refusal.contains(corpus.absolutePath), refusal)
-        assertTrue(refusal.contains(File(corpus, "Game A").absolutePath), refusal)
+            // Both roots are named in full so the admin knows which pair to fix.
+            val refusal = hatchet.errors.single { it.contains("Refusing library scan") }
+            assertTrue(refusal.contains(corpus.absolutePath), refusal)
+            assertTrue(refusal.contains(File(corpus, "Game A").absolutePath), refusal)
+        }
     }
 
     @Test
@@ -80,14 +82,15 @@ class OverlappingRootsTest {
         val workDir = tempDir("overlap-duplicate-work")
         libraryFolder(File(corpus, "Game A"), title = "First")
 
-        val fixture = seededLibrary()
-        val repository = CountingRepository(fixture)
-        val state = scan(locationsFile(workDir, corpus, corpus), repository, RecordingHatchet())
+        RealRepository().use { real ->
+            val repository = CountingRepository(seededLibrary(real.repository))
+            val state = scan(locationsFile(workDir, corpus, corpus), repository, RecordingHatchet())
 
-        assertIs<ScannerState.Failed>(state)
-        assertEquals(0, repository.upserts)
-        assertEquals(0, repository.prunes)
-        assertEquals(listOf("Existing Game"), fixture.allGames().map { it.title })
+            assertIs<ScannerState.Failed>(state)
+            assertEquals(0, repository.upserts)
+            assertEquals(0, repository.prunes)
+            assertEquals(listOf("Existing Game"), real.repository.allGames().map { it.title })
+        }
     }
 
     @Test
@@ -96,18 +99,20 @@ class OverlappingRootsTest {
         val workDir = tempDir("overlap-health-work")
         libraryFolder(File(corpus, "Game A"), title = "First")
 
-        val state = scan(
-            locationsFile(workDir, corpus, File(corpus, "Game A")),
-            CountingRepository(seededLibrary()),
-            RecordingHatchet(),
-        )
+        RealRepository().use { real ->
+            val state = scan(
+                locationsFile(workDir, corpus, File(corpus, "Game A")),
+                CountingRepository(seededLibrary(real.repository)),
+                RecordingHatchet(),
+            )
 
-        val health = assertIs<ScannerState.Failed>(state).toHealthStatus()
-        assertFalse(health.ok)
-        assertNull(health.state.failedFile, "a configuration failure has no failing file")
-        val json = Json.encodeToString(HealthStatus.serializer(), health)
-        assertFalse(json.contains(corpus.absolutePath), "health JSON leaked a host path: $json")
-        assertFalse(json.contains("Game A"), "health JSON leaked a folder name: $json")
+            val health = assertIs<ScannerState.Failed>(state).toHealthStatus()
+            assertFalse(health.ok)
+            assertEquals(null, health.state.failedFile, "a configuration failure has no failing file")
+            val json = Json.encodeToString(HealthStatus.serializer(), health)
+            assertFalse(json.contains(corpus.absolutePath), "health JSON leaked a host path: $json")
+            assertFalse(json.contains("Game A"), "health JSON leaked a folder name: $json")
+        }
     }
 
     @Test
@@ -117,19 +122,20 @@ class OverlappingRootsTest {
         libraryFolder(File(corpus, "SNES/Game A"), title = "First")
         libraryFolder(File(corpus, "Genesis/Game B"), title = "Second")
 
-        val fixture = seededLibrary()
-        val state = scan(
-            locationsFile(workDir, File(corpus, "SNES"), File(corpus, "Genesis")),
-            CountingRepository(fixture),
-            RecordingHatchet(),
-        )
+        RealRepository().use { real ->
+            val state = scan(
+                locationsFile(workDir, File(corpus, "SNES"), File(corpus, "Genesis")),
+                CountingRepository(seededLibrary(real.repository)),
+                RecordingHatchet(),
+            )
 
-        val complete = assertIs<ScannerState.Complete>(state)
-        assertEquals(2, complete.gamesFound)
-        assertEquals(2, complete.tracksFound)
-        assertEquals(0, complete.tracksFailed)
-        // The seeded game was pruned: it is not under either configured root any more.
-        assertEquals(listOf("First", "Second"), fixture.allTracks().map { it.title }.sorted())
+            val complete = assertIs<ScannerState.Complete>(state)
+            assertEquals(2, complete.gamesFound)
+            assertEquals(2, complete.tracksFound)
+            assertEquals(0, complete.tracksFailed)
+            // The seeded game was pruned: it is not under either configured root any more.
+            assertEquals(listOf("First", "Second"), real.repository.allTracks().map { it.title }.sorted())
+        }
     }
 
     @Test
@@ -139,21 +145,25 @@ class OverlappingRootsTest {
         libraryFolder(File(corpus, "Game A"), title = "First")
         libraryFolder(File(corpus, "Game B"), title = "Second")
 
-        val fixture = seededLibrary()
-        val state = scan(locationsFile(workDir, corpus), CountingRepository(fixture), RecordingHatchet())
+        RealRepository().use { real ->
+            val state = scan(
+                locationsFile(workDir, corpus),
+                CountingRepository(seededLibrary(real.repository)),
+                RecordingHatchet(),
+            )
 
-        val complete = assertIs<ScannerState.Complete>(state)
-        assertEquals(2, complete.gamesFound)
-        assertEquals(2, complete.tracksFound)
-        assertEquals(0, complete.tracksFailed)
-        assertEquals(listOf("First", "Second"), fixture.allTracks().map { it.title }.sorted())
+            val complete = assertIs<ScannerState.Complete>(state)
+            assertEquals(2, complete.gamesFound)
+            assertEquals(2, complete.tracksFound)
+            assertEquals(0, complete.tracksFailed)
+            assertEquals(listOf("First", "Second"), real.repository.allTracks().map { it.title }.sorted())
+        }
     }
 
     // ---- fixtures ----
 
-    /** A stored library with one game/track, used to prove a refused scan neither writes nor prunes. */
-    private fun seededLibrary(): Repository {
-        val repository = newRepository()
+    /** Seeds a stored game/track, used to prove a refused scan neither writes nor prunes. */
+    private fun seededLibrary(repository: Repository): Repository {
         runBlocking {
             repository.upsertGame(
                 RawGame(

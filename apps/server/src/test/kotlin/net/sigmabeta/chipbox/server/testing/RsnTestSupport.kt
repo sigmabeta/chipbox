@@ -1,5 +1,7 @@
 package net.sigmabeta.chipbox.server.testing
 
+import androidx.room.Room
+import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.file.Files
@@ -173,6 +175,21 @@ internal fun newRepository(database: ChipboxDatabase): DatabaseRepository = newR
     trackArtistDao = database.trackArtistDao(),
     searchHistoryDao = database.searchHistoryDao(),
 )
+
+/**
+ * A real Room/SQLite repository, unlike the in-memory `FakeDatabase` which ignores indexes and is
+ * not safe for the scanner's parallel folder readers. Use it for any test that scans more than one
+ * folder concurrently or depends on a unique index.
+ */
+internal class RealRepository : AutoCloseable {
+    private val database = Room.inMemoryDatabaseBuilder<ChipboxDatabase>()
+        .setDriver(BundledSQLiteDriver())
+        .build()
+
+    val repository = newRepository(database)
+
+    override fun close() = database.close()
+}
 
 internal fun newRepository(
     artistDao: ArtistDao,

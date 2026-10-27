@@ -1,7 +1,5 @@
 package net.sigmabeta.chipbox.server.scanner
 
-import androidx.room.Room
-import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -13,16 +11,15 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.models.HealthStatus
 import net.sigmabeta.chipbox.scanner.DuplicateRsnContentException
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.server.http.toHealthStatus
 import net.sigmabeta.chipbox.server.testing.RarEntry
+import net.sigmabeta.chipbox.server.testing.RealRepository
 import net.sigmabeta.chipbox.server.testing.RecordingHatchet
 import net.sigmabeta.chipbox.server.testing.allGames
 import net.sigmabeta.chipbox.server.testing.allTracks
-import net.sigmabeta.chipbox.server.testing.newRepository
 import net.sigmabeta.chipbox.server.testing.rar4
 import net.sigmabeta.chipbox.server.testing.scanCorpus
 import net.sigmabeta.chipbox.server.testing.spcFile
@@ -301,18 +298,4 @@ class RsnDuplicateTest {
         val directory = File(corpus, folder).apply { mkdirs() }
         return File(directory, "album.rsn").apply { writeBytes(bytes) }
     }
-}
-
-/**
- * A real Room/SQLite repository, unlike the in-memory `FakeDatabase` which ignores indexes. The
- * DAO wiring is shared with every other server test through [newRepository].
- */
-private class RealRepository : AutoCloseable {
-    private val database = Room.inMemoryDatabaseBuilder<ChipboxDatabase>()
-        .setDriver(BundledSQLiteDriver())
-        .build()
-
-    val repository = newRepository(database)
-
-    override fun close() = database.close()
 }
