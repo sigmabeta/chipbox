@@ -220,6 +220,22 @@ tasks.matching {
     mustRunAfter(copyEmulatorWasm)
 }
 
+// `jsProcessResources` reads `src/jsMain/resources`, which `copyEmulatorWasm` has just written.
+// Gradle's implicit-dependency validation rejects a task that reads another task's output unless
+// the dependency is declared; a warm local/CI cache can hide this, but a clean image build fails.
+// Declare it only when a bundle/verify task is in the graph, so a plain `compileKotlinJs` still
+// does not pull the emsdk toolchain in.
+val bundleRequested = gradle.startParameter.taskNames.any { requested ->
+    requested.contains("verifyWebBundle") ||
+        requested.contains("Webpack") ||
+        requested.contains("Distribution")
+}
+if (bundleRequested) {
+    tasks.matching { it.name == "jsProcessResources" }.configureEach {
+        dependsOn(copyEmulatorWasm)
+    }
+}
+
 // Assert the *distribution* (not just the source resources) contains all nine loader/WASM pairs
 // plus the app entry points. Runs as a normal Gradle task and mirrors
 // scripts/ci/verify-web-bundle.sh, which CI/Docker invoke directly.
