@@ -23,7 +23,20 @@ what a human still has to run.
 Every user-facing string is a `ChipboxStringId` backed by a `strings-*.xml`
 resource — screens, snackbars, errors, empty states. Don't hardcode English in a
 composable, event, or ViewModel; add the resource and resolve it through
-`StringProvider`. Log messages and diagnostic text are exempt.
+`StringProvider`. A message that embeds a path or an exception keeps the English
+in the resource with a `%1$s` placeholder. Log messages and diagnostic text are
+exempt.
+
+Judgement decides what is user-facing: anything a person reads on screen (or
+hears through a screen reader) is user-facing, even in a debug-only tool.
+
+The mechanical part is `scripts/ci/check-user-facing-strings.sh`, run by CI's
+`static-analysis` job and by `scripts/ci/verify.sh static-analysis`. It fails on a
+literal first argument to `ChipboxEvent.ShowSnackbar(...)` in a main source set
+and reports `file:line`; the script header lists its exclusions (tests,
+screenshots/previews, logs). Other user-facing shapes (`Notif(description = …)`,
+error strings, empty states) are not checked mechanically yet — the rule still
+applies to them.
 
 ## A regression test must be red on the bug
 

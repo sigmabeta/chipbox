@@ -57,8 +57,10 @@ GRADLE_FLAGS=(--build-cache --configuration-cache --console=plain)
 # `setup`'s `:dependencies` step is dependency resolution, not verification, so it's omitted.
 # static-analysis and android-lint pass -Pchipbox.skipNative — neither needs the emulator .so libs
 # (AGP's externalNativeBuild isn't cacheable, so building native in lint is pure duplicated cost).
-# static-analysis also runs scripts/ci/verify-no-config-git.sh (the no-configuration-time-git
-# gate) after Gradle, mirroring the extra step in CI's static-analysis job.
+# static-analysis also runs the two non-Gradle checks CI's static-analysis job adds around Gradle:
+# scripts/ci/check-user-facing-strings.sh first (the same guardrail CI runs as its own step) and
+# scripts/ci/verify-no-config-git.sh (the no-configuration-time-git gate) after Gradle. They are
+# reported under the one task name, and any of the three failing fails it.
 # The apk/release-jvm tasks build native on purpose. apk builds the RELEASE variant, as CI and
 # release.yml do, so release-only config (the appVersioning versionCode logic) is exercised; without
 # the CHIPBOX_KEY_* signing env it falls back to debug signing, so it builds on any machine. release-jvm builds the desktop emulator natives
@@ -223,21 +225,28 @@ for entry in "${selected[@]}"; do
     start=$SECONDS
     scripts/ci/verify-docker-release.sh >"$LOGS/$name.log" 2>&1
     rc=$?
+  elif [ "$name" = "static-analysis" ]; then
+    # CI's static-analysis job runs two extra script checks around Gradle lint; run all three under
+    # this one task name and keep the first non-zero status, so the task is FAIL whenever CI's job
+    # would be, whichever step fails.
+    printf '%s──▶ %-16s%s scripts/ci/check-user-facing-strings.sh + ./gradlew %s\n' "$B" "$name" "$Z" "$args"
+    start=$SECONDS
+    scripts/ci/check-user-facing-strings.sh >"$LOGS/$name.log" 2>&1
+    strings_rc=$?
+    # shellcheck disable=SC2086
+    "$GRADLE" $args "${GRADLE_FLAGS[@]}" >>"$LOGS/$name.log" 2>&1
+    rc=$?
+    printf '%s──▶ %-16s%s scripts/ci/verify-no-config-git.sh\n' "$B" "" "$Z"
+    scripts/ci/verify-no-config-git.sh >>"$LOGS/$name.log" 2>&1
+    git_rc=$?
+    [ "$strings_rc" -ne 0 ] && rc=$strings_rc
+    if [ "$git_rc" -ne 0 ] && [ "$rc" -eq 0 ]; then rc="$git_rc"; fi
   else
     printf '%s──▶ %-16s%s ./gradlew %s\n' "$B" "$name" "$Z" "$args"
     start=$SECONDS
     # shellcheck disable=SC2086
     "$GRADLE" $args "${GRADLE_FLAGS[@]}" >"$LOGS/$name.log" 2>&1
     rc=$?
-    # static-analysis also owns the cheap non-Gradle invariant checks, mirroring the extra steps in
-    # CI's static-analysis job (currently the no-configuration-time-git gate). Append to the same
-    # log so a failure has one place to look; keep the first non-zero status.
-    if [ "$name" = "static-analysis" ]; then
-      printf '%s──▶ %-16s%s scripts/ci/verify-no-config-git.sh\n' "$B" "" "$Z"
-      scripts/ci/verify-no-config-git.sh >>"$LOGS/$name.log" 2>&1
-      extra_rc=$?
-      if [ "$extra_rc" -ne 0 ] && [ "$rc" -eq 0 ]; then rc="$extra_rc"; fi
-    fi
   fi
   dur=$((SECONDS - start))
   if [ "$rc" -eq 0 ]; then
