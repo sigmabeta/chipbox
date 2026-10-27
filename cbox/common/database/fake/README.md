@@ -23,6 +23,15 @@ SQL constraints, but it *does* mimic FK delete cascades
 `Random(0)` (overridable via the constructor) for determinism; and a tiny
 `sqlLike` helper approximates the production `%…%` `LIKE` searches.
 
+**Not for a parallel scan.** `FakeDatabase` is for single-coroutine `runTest` code
+only. `RealScanner` reads folders concurrently, and concurrent DAO calls corrupt
+the fake's maps — the scan intermittently dies with `Index … out of bounds` in
+`ScannerState.Failed`. Any test that scans more than one folder at once must use
+the real Room/SQLite fixture instead: `RealRepository` in `:apps:server`'s test
+support (`src/test/.../testing/RsnTestSupport.kt`). Watch for this in the server
+tests in particular, where the shared `newRepository()` helper returns the fake
+by default.
+
 ## Why depend on this module
 
 Depend on `:cbox:common:database:fake` from test source sets that need DAO
