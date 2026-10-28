@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.9
 #
-# Chipbox web app image — server + browser bundle + all nine WASM emulators + native vgmstream.
+# Chipbox web app image — server + browser bundle + all nine WASM emulators.
 #
 #   docker build -t chipbox-server:dev .
 #   docker run --rm -p 127.0.0.1:8080:8080 \
@@ -23,9 +23,9 @@
 # rejects a tag-only FROM.
 #
 # Multi-arch: the expensive, architecture-independent half (Kotlin/JS + all nine Emscripten builds)
-# runs once on $BUILDPLATFORM, so Gradle and emsdk never run under QEMU. Only the small CMake library
-# runs on $TARGETPLATFORM. The runtime stage then copies that target's libvgmstream.so and asserts
-# its ELF architecture, so an arm64 image can never silently ship an amd64 library.
+# plus the server distribution runs once on $BUILDPLATFORM, so Gradle and emsdk never run under
+# QEMU. Only the runtime stage is per-arch (JRE + distribution copy). The server ships no native
+# library — scanning is pure Kotlin — so there is no per-arch native build.
 
 # ---------------------------------------------------------------------------------------------
 # web: Kotlin/JS bundle + Emscripten emulators + server distribution.
@@ -85,7 +85,7 @@ RUN test -f sage/settings.gradle.kts \
 
 # The Gradle build reads these pins too: the CI job builds the same emsdk, and the bundle assertion
 # below is the same script CI runs. -Pchipbox.skipNative keeps the web stage free of an Android SDK
-# (the native vgmstream library is built in the architecture-specific `native` stage).
+# (the server distribution ships no host native library).
 # The Gradle WASM tasks source $EMSDK/emsdk_env.sh in their own subshells, so the image's PATH
 # keeps the pinned Node 22 (emsdk's bundled Node must not shadow it).
 RUN ./gradlew \
@@ -100,56 +100,8 @@ RUN ./gradlew \
 RUN scripts/ci/verify-web-bundle.sh
 
 # ---------------------------------------------------------------------------------------------
-# native: libvgmstream for the *target* architecture (Linux .so). Runs under QEMU for a
-# cross-arch build; it is one small CMake library, so that is tolerable. Configure-on-demand keeps
-# the Android native modules (and their SDK/NDK requirement) out of this stage.
-#
-# The Gradle host-native output path is keyed by target *OS*, not architecture: every Linux target
-# writes build/jvm-native/out/linux/vgmstream/host/. The library inside it is built by this
-# container's compiler, i.e. the target architecture. The ELF check below proves that.
-# ---------------------------------------------------------------------------------------------
-FROM --platform=$TARGETPLATFORM eclipse-temurin:21-jdk-jammy@sha256:742daacb9316be4b6fc60258f6e4ac2a11882f6c597373c92290a57bfad0d2e0 AS native
-
-# Automatic platform args are not in scope for RUN unless declared.
-ARG TARGETPLATFORM
-ARG TARGETARCH
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        cmake gcc g++ make \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /src
-COPY . .
-
-RUN test -f sage/settings.gradle.kts \
-    || { echo "sage submodule missing in build context; run: git submodule update --init --recursive" >&2; exit 1; }
-
-RUN ./gradlew :apps:jvm:buildHostNativeVgmstream \
-        -Dorg.gradle.isolated-projects=false \
-        --configure-on-demand \
-        -Pchipbox.cmake="$(command -v cmake)" \
-        --no-daemon --max-workers=4
-
-# Fail the build if the produced library is not for $TARGETPLATFORM. ELF e_machine lives at byte 18
-# (two little-endian bytes): 0x3e = EM_X86_64, 0xb7 = EM_AARCH64. This is the guard that makes the
-# arm64 image's native library claim real rather than "some .so was copied".
-RUN set -eux; \
-    case "$TARGETARCH" in \
-        amd64) want="3e 00" ;; \
-        arm64) want="b7 00" ;; \
-        *) echo "unsupported TARGETARCH=$TARGETARCH (expected amd64 or arm64)" >&2; exit 1 ;; \
-    esac; \
-    lib="apps/jvm/build/jvm-native/out/linux/vgmstream/host/libvgmstream.so"; \
-    test -s "$lib"; \
-    got="$(od -An -tx1 -j18 -N2 "$lib" | tr -s '[:space:]' ' ' | sed 's/^ *//; s/ *$//')"; \
-    test "$got" = "$want" \
-        || { echo "libvgmstream.so is not $TARGETPLATFORM: ELF e_machine '$got' (want '$want')" >&2; exit 1; }; \
-    mkdir -p /out; \
-    cp "$lib" /out/libvgmstream.so
-
-# ---------------------------------------------------------------------------------------------
-# runtime: JRE 21 (Ubuntu/glibc — the vgmstream .so is glibc-linked, so no alpine). Explicit
-# $TARGETPLATFORM so the JRE matches the native library in every single- and multi-arch build.
+# runtime: JRE 21 (Ubuntu/glibc). Explicit $TARGETPLATFORM so the JRE matches every single- and
+# multi-arch build.
 # ---------------------------------------------------------------------------------------------
 FROM --platform=$TARGETPLATFORM eclipse-temurin:21-jre-jammy@sha256:affcab5356e1270ac35d2361ee83135af2f03e8d580eca78a6d5d6fdbf048db0 AS runtime
 
@@ -170,19 +122,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl unzip \
     && chown chipbox:chipbox /data
 
 COPY --from=web /src/apps/server/build/install/chipbox-server /opt/chipbox
-COPY --from=native /out/libvgmstream.so /opt/chipbox/lib/native/libvgmstream.so
 # The canonical nine-emulator list (also consumed by the bundle assertion and the smoke script).
 COPY --from=web /src/apps/js/wasm-emulators.txt /tmp/wasm-emulators.txt
 
-# Build-time proof that this architecture's image is deployable: the native library has no
-# unresolved links, and the server jar actually carries index.html + every WASM loader/WASM pair
-# (the web stage asserted the bundle on disk; this asserts what installDist packaged).
+# Build-time proof that this architecture's image is deployable: the server jar actually carries
+# index.html + every WASM loader/WASM pair (the web stage asserted the bundle on disk; this asserts
+# what installDist packaged).
 RUN set -eux; \
-    lib=/opt/chipbox/lib/native/libvgmstream.so; \
-    test -s "$lib"; \
-    ldd "$lib" > /tmp/ldd.txt 2>&1 || { cat /tmp/ldd.txt >&2; exit 1; }; \
-    cat /tmp/ldd.txt; \
-    ! grep -q 'not found' /tmp/ldd.txt; \
     jar=""; \
     for candidate in /opt/chipbox/lib/*.jar; do \
         if unzip -l "$candidate" 2>/dev/null | grep -q 'static/index.html'; then jar="$candidate"; break; fi; \
@@ -202,7 +148,7 @@ RUN set -eux; \
         count=$((count + 1)); \
     done < /tmp/wasm-emulators.txt; \
     test "$count" -eq 9; \
-    rm -f /tmp/wasm-emulators.txt /tmp/jar-contents.txt /tmp/ldd.txt; \
+    rm -f /tmp/wasm-emulators.txt /tmp/jar-contents.txt; \
     apt-get purge -y unzip; \
     apt-get autoremove -y; \
     rm -rf /var/lib/apt/lists/*

@@ -20,7 +20,6 @@ import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.server.http.toHealthStatus
-import net.sigmabeta.chipbox.server.testing.NoVgmstreamProber
 import net.sigmabeta.chipbox.server.testing.RealRepository
 import net.sigmabeta.chipbox.server.testing.RecordingHatchet
 import net.sigmabeta.chipbox.server.testing.allGames
@@ -211,7 +210,6 @@ class OverlappingRootsTest {
             repository = repository,
             librarySource = source,
             readers = Readers(hatchet),
-            vgmstreamProbe = NoVgmstreamProber,
             hatchet = hatchet,
         )
         return runBlocking {

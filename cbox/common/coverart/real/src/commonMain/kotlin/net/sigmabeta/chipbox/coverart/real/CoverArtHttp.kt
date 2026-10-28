@@ -5,7 +5,8 @@ import okio.IOException
 /**
  * The cover-art subsystem's only platform boundary: the handful of HTTP calls it makes (Twitch
  * token, IGDB query, image download). Kept as an interface so the cover-art logic stays in
- * commonMain — the same reason the scanner takes a `VgmstreamProber` rather than a native lib. The
+ * commonMain — the same reason the scanner reads bytes through a platform-neutral `LibrarySource`
+ * rather than touching a native library. The
  * OkHttp-backed implementation lives in this module's jvmSharedMain and is injected by the app.
  *
  * All methods are blocking and throw [okio.IOException] on a non-success response or transport

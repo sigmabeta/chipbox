@@ -31,7 +31,8 @@ class LibraryScan(
     private fun printResult(state: ScannerState) = when (state) {
         is ScannerState.Complete -> terminal.println(
             "Scan complete: ${state.gamesFound} games, ${state.tracksFound} tracks " +
-                "(${state.tracksFailed} failed) in ${state.timeInSeconds}s.",
+                "(${state.tracksFailed} failed, ${state.filesSkipped} skipped) " +
+                "in ${state.timeInSeconds}s.",
         )
 
         is ScannerState.Failed -> terminal.println("Scan failed at ${state.path}.")

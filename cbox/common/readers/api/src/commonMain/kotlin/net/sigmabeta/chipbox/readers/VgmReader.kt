@@ -227,7 +227,6 @@ class VgmReader(private val hatchet: Hatchet) : Reader() {
         private const val MILLIS_PER_SECOND = 1000L
 
         // Mask treating a signed 32-bit field as an unsigned value widened to Long.
-        private const val UINT32_MASK = 0xFFFFFFFFL
     }
 }
 

@@ -4,11 +4,10 @@
 #
 # Two modes:
 #   full      start the container, wait for /api/health, fetch the SPA + every WASM loader/WASM
-#             pair, and inspect the bundled native library + server jar.
+#             pair, and inspect the server jar.
 #   contents  do not run the container (no QEMU needed): `docker create` + `docker cp` the server
-#             distribution out of the image and check the native library architecture and that the
-#             server jar carries all nine emulator pairs. This is how the release job proves the
-#             arm64 image's contents on an amd64 runner.
+#             distribution out of the image and check that the server jar carries all nine emulator
+#             pairs. This is how the release job proves the arm64 image's contents on an amd64 runner.
 #
 # The manifest (apps/js/wasm-emulators.txt) is the single source of truth for the nine pairs, so a
 # new emulator cannot be added to the bundle without this check following it.
@@ -69,11 +68,6 @@ fi
 # Image architecture as recorded by the daemon (works for a cross-loaded image too).
 image_arch="$(docker image inspect --format '{{.Architecture}}' "$IMAGE" 2>/dev/null)" \
   || fail "image not found: $IMAGE"
-case "$image_arch" in
-  amd64) expected_elf="3e 00" ;; # ELF e_machine EM_X86_64
-  arm64) expected_elf="b7 00" ;; # ELF e_machine EM_AARCH64
-  *) fail "unsupported image architecture: $image_arch" ;;
-esac
 
 TMP="$(mktemp -d)"
 SMOKE_OK=0
@@ -96,12 +90,6 @@ docker cp "$CID:/opt/chipbox" "$TMP/chipbox" >/dev/null \
   || fail "image has no /opt/chipbox distribution"
 docker rm "$CID" >/dev/null 2>&1 || true
 CID=""
-
-LIB="$TMP/chipbox/lib/native/libvgmstream.so"
-[ -s "$LIB" ] || fail "image has no native vgmstream library at /opt/chipbox/lib/native/"
-got_elf="$(od -An -tx1 -j18 -N2 "$LIB" | tr -s '[:space:]' ' ' | sed 's/^ *//; s/ *$//')"
-[ "$got_elf" = "$expected_elf" ] \
-  || fail "$LIB has ELF e_machine '$got_elf', expected '$expected_elf' for $image_arch"
 
 jar=""
 jar_listing="$TMP/jar-contents.txt"
@@ -136,7 +124,7 @@ while IFS='|' read -r dir output display; do
 done <"$MANIFEST"
 [ "$emulator_count" -eq 9 ] || fail "expected 9 emulators in $MANIFEST, found $emulator_count"
 
-echo "Image contents OK: $IMAGE ($image_arch libvgmstream + 9 WASM loader/WASM pairs)"
+echo "Image contents OK: $IMAGE ($image_arch, 9 WASM loader/WASM pairs)"
 if [ "$MODE" = "contents" ]; then
   SMOKE_OK=1
   exit 0
@@ -187,20 +175,6 @@ while IFS='|' read -r dir output display; do
   curl -fsS -o /dev/null "http://127.0.0.1:$PORT/wasm/$output.wasm" \
     || fail "/wasm/$output.wasm missing"
 done <"$MANIFEST"
-
-native_lib=/opt/chipbox/lib/native/libvgmstream.so
-docker exec "$RUN_NAME" test -s "$native_lib" \
-  || fail "image has no native vgmstream library"
-# Capture ldd instead of piping it into `grep -q`: that pipeline turned both an unresolved dependency
-# and a dead/unreachable container into the same nameless exit status, so a CI failure said only
-# "unresolved links" with no library named. Print the whole ldd output and the offending lines.
-ldd_out="$(docker exec "$RUN_NAME" ldd "$native_lib" 2>&1)" \
-  || fail "ldd failed in the running container: $ldd_out"
-missing="$(printf '%s\n' "$ldd_out" | grep 'not found' || true)"
-if [ -n "$missing" ]; then
-  printf '%s\n' "$ldd_out" >&2
-  fail "vgmstream library has unresolved links: $(printf '%s' "$missing" | tr '\n' ' ')"
-fi
 
 echo "Web image smoke passed: $IMAGE ($image_arch, port $PORT)"
 SMOKE_OK=1

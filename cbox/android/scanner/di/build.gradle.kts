@@ -14,7 +14,4 @@ dependencies {
     // the Android Hilt module here picks the concrete AndroidFileContentSource impl,
     // so it depends on contentsource:file:real directly (no longer pulled transitively).
     implementation(projects.cbox.common.contentsource.file.real)
-    // VgmstreamProbe (native subsong probe) — scanner.real now takes the VgmstreamProber interface;
-    // its native impl is wired in here at the DI seam.
-    implementation(projects.cbox.common.player.emulators.vgmstream.real)
 }

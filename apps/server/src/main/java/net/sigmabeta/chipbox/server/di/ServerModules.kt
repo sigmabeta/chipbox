@@ -18,7 +18,6 @@ import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.database.ChipboxDatabase
 import net.sigmabeta.chipbox.database.MIGRATION_11_12
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.database.DatabaseRepository
@@ -152,7 +151,6 @@ object ServerScannerModule {
         repository,
         librarySource,
         readers,
-        VgmstreamProbe,
         hatchet,
         rsnExtractor = rsnExtractor,
     )

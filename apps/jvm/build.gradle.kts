@@ -27,30 +27,16 @@ val splashReleaseFile: File = layout.projectDirectory.dir("src/main/splash").fil
 val nativeLibsDirFile: File = layout.buildDirectory.dir("jvm-native/libs").get().asFile
 val nativeLibsTask = tasks.named("chipboxHostNativeLibs")
 
-// Expose the host-built native directories to sibling JVM consumers (apps/cli, apps/server and the
-// testing harnesses under :testing:) as consumable configurations. They used to read
+// Expose the host-built native directory to sibling JVM consumers (the testing harnesses under
+// :testing: — abrender and perfbench) as a consumable configuration. They used to read
 // `project(":apps:jvm").layout` directly, which Isolated Projects forbids (a project accessing
-// another project's layout). Each configuration carries one directory as an outgoing artifact with
-// `builtBy` its producing task; consumers select a specific one by name via
-// `project(path = ":apps:jvm", configuration = "<name>")`, so no attribute matching is needed and
-// the task dependency is wired through `builtBy` automatically.
-//
-// The host build writes `build/jvm-native/out/<target>/<emulator>/host/` (see
-// ChipboxNativeHostPlugin / BuildEmulatorNativeLib), so the vgmstream directory must include the
-// target segment. Getting this wrong makes consumers resolve a directory that is never produced and
-// silently ship no library.
-val nativeHostTargetName = resolveNativeHostTarget().name.lowercase()
+// another project's layout). The configuration carries the directory as an outgoing artifact with
+// `builtBy` its producing task; consumers select it by name via
+// `project(path = ":apps:jvm", configuration = "hostNativeLibsElements")`, so no attribute matching
+// is needed and the task dependency is wired through `builtBy` automatically.
+// Desktop only: the apps/cli and apps/server distributions do not ship or load any native library.
 artifacts.add(configurations.consumable("hostNativeLibsElements").name, nativeLibsDirFile) {
     builtBy(nativeLibsTask)
-}
-artifacts.add(
-    configurations.consumable("hostVgmstreamElements").name,
-    layout.buildDirectory.dir("jvm-native/out/$nativeHostTargetName/vgmstream/host"),
-) {
-    // tasks.matching (not tasks.named) so this tolerates -Pchipbox.skipNative, under which the
-    // per-emulator host tasks aren't registered (lint/static-analysis configure this module but
-    // build nothing native). Empty under skipNative → no producer wired, which is correct there.
-    builtBy(tasks.matching { it.name == "buildHostNativeVgmstream" })
 }
 
 // --- Packaging: compose.desktop.application (jpackage) --------------------------------------------

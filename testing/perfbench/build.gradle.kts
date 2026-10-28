@@ -66,8 +66,6 @@ dependencies {
     implementation(projects.cbox.common.contentsource.file.real)
     implementation(projects.cbox.common.readers.api)
     implementation(projects.cbox.common.models.api)
-    implementation(projects.cbox.common.player.emulators.api)
-    implementation(projects.cbox.common.player.emulators.vgmstream.real)
     implementation(libs.sage.common.logging)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.okio)

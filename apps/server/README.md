@@ -76,21 +76,16 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   or one root inside another) before walking, writing, or pruning: the scan ends
   `failed` with a path-free reason, the log names both roots, and
   `/api/health` stays path-free.
-- **Native lib:** the scanner needs `libvgmstream` for its subsong probe. It is
-  host-built by `:apps:jvm:buildHostNativeVgmstream` (CMake, no committed binary)
-  into `apps/jvm/build/jvm-native/out/<target>/vgmstream/host/` and exposed as
-  apps/jvm's `hostVgmstreamElements` configuration. `run` and the distributions
-  consume that configuration, so a fresh checkout builds it. Packaged dists copy
-  `libvgmstream.{so,dylib,dll}` into `lib/native/` and the launch scripts point
-  `java.library.path` there. Check it directly with
-  `./gradlew :apps:server:verifyVgmstreamNativeLib
-  -Dorg.gradle.isolated-projects=false --configure-on-demand
-  -Pchipbox.cmake=$(command -v cmake)`. No emulator playback on the server.
+- **Native lib:** none. Every in-scope chiptune *and* streamed format is parsed
+  from its file header by the pure-Kotlin `:cbox:common:readers:api` module, and
+  the server does no playback, so neither the distribution nor the Docker image
+  ships `libvgmstream` (or any `lib/native/` directory) and the launch scripts
+  do not set `java.library.path`. Scanning only opens bytes and parses headers;
+  it never reaches a decoder.
 - **Docker image:** the deployment artifact is the root `Dockerfile` (multi-stage:
   JDK 21 + Node 22/Yarn + pinned emsdk builds the bundle/WASM on `$BUILDPLATFORM`;
-  the native stage builds the target-arch `libvgmstream.so` on `$TARGETPLATFORM`;
-  a JRE 21 runtime runs non-root on glibc). Build with the `sage` submodule
-  checked out:
+  a JRE 21 runtime runs non-root on glibc). The image ships no native library —
+  scanning is pure Kotlin. Build with the `sage` submodule checked out:
   ```sh
   git submodule update --init --recursive
   docker build -t chipbox-server:dev .
@@ -116,7 +111,7 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   archive; `--load` only accepts a single platform, so the two-arch result cannot
   be loaded into the local daemon directly. Do the same locally:
   ```sh
-  # One-time on an amd64 host: register arm64 binfmt so the arm64 native stage can
+  # One-time on an amd64 host: register arm64 binfmt so the arm64 runtime stage can
   # run under QEMU. Docker Desktop already provides this on macOS/Windows.
   docker run --privileged --rm tonistiigi/binfmt --install arm64
   docker buildx create --name chipbox --driver docker-container --use
@@ -134,11 +129,11 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   builds the arm64 image natively, avoiding QEMU. Both forms contain the same
   per-arch images.
 
-  The web/WASM stage runs once on the build host (`$BUILDPLATFORM`); only the
-  small CMake vgmstream stage is per-arch, so the arm64 half does not run Gradle
-  or emsdk under QEMU. For a runnable local image, build one platform with
-  `--load` and smoke it (the script checks `/api/health`, the SPA, all nine
-  WASM loader/WASM pairs, and the bundled native library):
+  The web/WASM stage runs once on the build host (`$BUILDPLATFORM`); the
+  per-arch runtime stage is only a JRE + distribution copy, so the arm64 half
+  does not run Gradle or emsdk under QEMU. For a runnable local image, build one
+  platform with `--load` and smoke it (the script checks `/api/health`, the SPA,
+  and all nine WASM loader/WASM pairs):
   ```sh
   docker buildx build --platform linux/amd64 --load -t chipbox-server:dev .
   scripts/ci/web-image-smoke.sh chipbox-server:dev --platform linux/amd64
@@ -152,8 +147,8 @@ the `ServerChipboxGraph` Metro graph and is a leaf — nothing depends on it.
   step**, and there is **no public distribution** in v1 — the OCI tar is a
   local/release artifact only. There is **no authentication**: run it on
   loopback or a trusted LAN only. `scripts/ci/verify-docker-release.sh` statically
-  checks the platform stages, both-arch release wiring, no-push rule, native-lib
-  architecture assertion, pinned toolchain, and digest-pinned base images.
+  checks the platform stages, both-arch release wiring, no-push rule, absence of a
+  packaged native library, pinned toolchain, and digest-pinned base images.
 
 ## RSN extraction
 
@@ -244,8 +239,8 @@ covers the asset policy (a missing `/wasm/*` or extension-bearing path is a real
 `apps/js/src/jsMain/resources/index.html` and asserts its `<base href="/">` (the
 deep-link asset contract). Fixtures are
 generated as stored-entry RAR4 archives in a test helper (no external `rar`
-tool), and the scan uses `DatabaseRepository` over `FakeDatabase` with a no-op
-vgmstream prober, so no native library is required.
+tool), and the scan uses `DatabaseRepository` over `FakeDatabase`; the fixture is
+pure Kotlin, so no native library is required.
 
 DAO-level paging stability is covered by
 `:cbox:common:database:real:jvmTest` (`DaoPagingStabilityTest`): Room over
@@ -287,13 +282,13 @@ function, so the tested stack is the shipped stack.
 - **Targets:** JVM only.
 - **Source set:** `src/main/java` (`jvmSharedMain`); tests in `src/test/kotlin`.
 - **SAGE/module dependencies:** `cbox/common` `scanner`, `repository`,
-  `database`, `contentsource(.file)`, `readers`, `models`, `utils`, `strings`,
-  `player.emulators.vgmstream.real` (api + real); `sage.common.di` / `logging` /
-  `ui.strings`; Ktor server (netty, content-negotiation, status-pages, cors,
-  partial-content, auto-head, call-logging), kotlinx serialization/coroutines,
-  bundled SQLite, logback, okio. Build-time:
-  `hostVgmstreamElements` from `:apps:jvm` (CMake-produced; see the native-lib
-  section) and (for shipping) `:apps:js:jsBrowserDistribution` + the WASM
-  bundle. Tests: `:apps:server:test` covers the health mapping and loopback-bind
-  detection (plain JVM, no server startup), plus scan/RSN extraction over
-  `DatabaseRepository`/`FakeDatabase` and route tests through Ktor's test host.
+  `database`, `contentsource(.file)`, `readers`, `models`, `utils`, `strings`.
+  `sage.common.di` / `logging` / `ui.strings`; Ktor server (netty,
+  content-negotiation, status-pages, cors, partial-content, auto-head,
+  call-logging), kotlinx serialization/coroutines, bundled SQLite, logback,
+  okio. No emulator or native library dependency: scanning is pure Kotlin and
+  the server does not play audio. For shipping, the distribution also depends on
+  `:apps:js:jsBrowserDistribution` + the WASM bundle. Tests: `:apps:server:test`
+  covers the health mapping and loopback-bind detection (plain JVM, no server
+  startup), plus scan/RSN extraction over `DatabaseRepository`/`FakeDatabase`
+  and route tests through Ktor's test host.

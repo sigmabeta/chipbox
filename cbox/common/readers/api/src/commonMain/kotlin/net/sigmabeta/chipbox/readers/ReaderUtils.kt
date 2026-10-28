@@ -99,7 +99,7 @@ internal fun String?.orNullIfBlank(): String? {
     return trimmed
 }
 
-internal fun bytesAsReader(bytes: ByteArray): ByteReader = ByteReader.wrap(bytes)
+internal fun bytesAsReader(bytes: ByteArray, offset: Int = 0): ByteReader = ByteReader.wrap(bytes, offset)
 
 internal fun String.toLengthMillis(): Long {
     val splitText = split(":")

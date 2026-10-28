@@ -87,3 +87,5 @@ nav:
   - 'Home': index.md
   - 'Download': download.md
   - 'Build': build.md
+  # Arch docs are not under docs_dir, so link the authoritative repo file.
+  - 'Architecture: streamed audio readers': https://github.com/sigmabeta/chipbox/blob/beta/arch-docs/architecture/streamed-audio-readers.md
