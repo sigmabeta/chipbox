@@ -13,6 +13,7 @@ import net.sigmabeta.chipbox.common.ui.list.api.ChipboxListViewModel
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.features.rescanstatus.RescanStatus
 import net.sigmabeta.chipbox.scanner.Scanner
+import net.sigmabeta.chipbox.strings.api.ChipboxStringId
 import net.sigmabeta.sage.appcomm.SageAction
 import net.sigmabeta.sage.di.AppScope
 import net.sigmabeta.sage.logging.Hatchet
@@ -25,7 +26,7 @@ class FolderPickerViewModel(
     storageVolumeProvider: StorageVolumeProvider,
     private val librarySource: LibrarySource,
     private val scanner: Scanner,
-    stringProvider: StringProvider,
+    private val stringProvider: StringProvider,
     hatchet: Hatchet,
 ) : ChipboxListViewModel<FolderPickerState>(
     // Seed the volume list once — it's constant for the screen's lifetime, and copy() carries it
@@ -96,6 +97,19 @@ class FolderPickerViewModel(
 
     private fun onAddClicked() {
         val path = state.value.currentPath ?: return
+        // Refuse an overlapping root at the point of the mistake. The scanner refuses the whole
+        // scan too, but this is the normal user path, so it should fail fast and explain why.
+        librarySource.findOverlappingLocation(path)?.let { existing ->
+            emit(
+                ChipboxEvent.ShowSnackbar(
+                    stringProvider.getStringOneArg(
+                        ChipboxStringId.FOLDER_PICKER_SNACKBAR_OVERLAP,
+                        existing.displayName ?: existing.identifier,
+                    )
+                )
+            )
+            return
+        }
         librarySource.addLibraryLocation(path)
         // Mirrors ManageLibraryViewModel.onFolderPicked: adding a folder kicks off a scan and
         // hands the user off to the live scan-status screen.

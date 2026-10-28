@@ -35,7 +35,7 @@ private fun installSessionPersistence(graph: JvmChipboxGraph) {
     val persister = graph.playbackSessionPersister
     persister.observe()
     graph.appScope.launch { persister.restore() }
-    Runtime.getRuntime().addShutdownHook(Thread(persister::snapshotNow))
+    Runtime.getRuntime().addShutdownHook(Thread { persister.snapshotNow() })
 }
 
 /**

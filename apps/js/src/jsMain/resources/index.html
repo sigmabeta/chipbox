@@ -2,12 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Deep links (e.g. /game/42) are served this same index.html by the server's SPA fallback.
+         Without an absolute base, the browser resolves the relative favicon/splash/script URLs
+         under the current path (/game/favicon.png), so a refresh on a detail screen loads a blank
+         page. `base` keeps every asset at the site root for both / and nested app routes. -->
+    <base href="/">
     <title>Chipbox</title>
-    <!-- The web target is always a debug build (AppInfo.isDebug == true, WebModules.kt), so the
-         favicon + launch splash use the purple-recolored debug art — the same treatment the desktop
-         splash/icon and the in-app palette swap get on the same flag. Static HTML can't read the
-         runtime flag (JsMain sets the "Chipbox Debug" document title once wasm loads); the original
-         yellow `splash.png` stays as the release asset, like desktop's `splash.png`. -->
+    <!-- The web client is a release-shaped build (AppInfo.isDebug = false, WebModules.kt): the
+         favicon and launch splash use the release artwork, matching the in-app palette and the
+         desktop release assets. There is no debug splash on web. -->
     <link rel="icon" type="image/png" href="favicon.png">
     <style>
         /* Launch splash shown until the wasm/Skia bundle loads and JsMain removes #splash. Mirrors
@@ -27,7 +30,7 @@
     </style>
 </head>
 <body>
-<div id="splash"><img src="splash_debug.png" alt="Chipbox"></div>
+<div id="splash"><img src="splash.png" alt="Chipbox"></div>
 <script src="chipbox.js"></script>
 </body>
 </html>

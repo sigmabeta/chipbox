@@ -17,6 +17,7 @@ import net.sigmabeta.chipbox.features.home.HomeAction
 import net.sigmabeta.chipbox.features.home.module.HomeModuleSection
 import net.sigmabeta.chipbox.features.home.module.ScanRefreshInterval
 import net.sigmabeta.chipbox.scanner.fake.CountingScanner
+import net.sigmabeta.chipbox.scanner.state.ScanFailureKind
 import net.sigmabeta.chipbox.scanner.state.ScannerEvent
 import net.sigmabeta.chipbox.scanner.state.ScannerState
 import net.sigmabeta.chipbox.strings.api.ChipboxStringId
@@ -91,6 +92,23 @@ class ScanStatusHomeModuleTest {
         val error = card.detail as ScanStatusDetail.Error
         // The failing path is woven into the error template.
         assertEquals("${ChipboxStringId.HOME_SCAN_STATUS_ERROR}:/sdcard/Music/bad.spc", error.message)
+    }
+
+    @Test
+    fun `a configuration failure renders the configuration error, not a failing file`() = moduleTest { scanner, lces ->
+        scanner.pushState(
+            ScannerState.Failed(
+                path = "Overlapping library locations",
+                kind = ScanFailureKind.CONFIGURATION,
+            ),
+        )
+        advanceTimeBy(SAMPLE_MS * 2)
+        runCurrent()
+
+        val card = lces.lastCard()
+        assertEquals(ScanCardStatus.FAILED, card.status)
+        val error = card.detail as ScanStatusDetail.Error
+        assertEquals(ChipboxStringId.HOME_SCAN_STATUS_CONFIGURATION_ERROR.toString(), error.message)
     }
 
     @Test

@@ -22,9 +22,11 @@ import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.repository.database.DatabaseRepository
+import net.sigmabeta.chipbox.scanner.RsnExtractor
 import net.sigmabeta.chipbox.scanner.Scanner
 import net.sigmabeta.chipbox.scanner.real.RealScanner
 import net.sigmabeta.chipbox.server.logging.ServerHatchet
+import net.sigmabeta.chipbox.server.scanner.ServerRsnExtractor
 import net.sigmabeta.chipbox.strings.real.ChipboxStringProvider
 import net.sigmabeta.chipbox.strings.real.loadChipboxStrings
 import net.sigmabeta.sage.di.AppScope
@@ -134,12 +136,26 @@ object ServerReadersModule {
 @ContributesTo(AppScope::class)
 object ServerScannerModule {
     @Provides @SingleIn(AppScope::class)
+    fun provideRsnExtractor(
+        @Named("workDir") workDir: File,
+        hatchet: Hatchet,
+    ): RsnExtractor = ServerRsnExtractor(workDir, hatchet)
+
+    @Provides @SingleIn(AppScope::class)
     fun provideRealScanner(
         repository: Repository,
         librarySource: LibrarySource,
         readers: Readers,
         hatchet: Hatchet,
-    ): RealScanner = RealScanner(repository, librarySource, readers, VgmstreamProbe, hatchet)
+        rsnExtractor: RsnExtractor,
+    ): RealScanner = RealScanner(
+        repository,
+        librarySource,
+        readers,
+        VgmstreamProbe,
+        hatchet,
+        rsnExtractor = rsnExtractor,
+    )
 
     @Provides @SingleIn(AppScope::class)
     fun provideScanner(impl: RealScanner): Scanner = impl

@@ -6,6 +6,7 @@ import net.sigmabeta.chipbox.contentsource.ContentSourceRegistry
 import net.sigmabeta.chipbox.models.Track
 import net.sigmabeta.chipbox.player.cache.PcmTrackSource
 import net.sigmabeta.chipbox.player.emulators.Emulator
+import net.sigmabeta.chipbox.player.emulators.EmulatorSelector
 import net.sigmabeta.sage.logging.Hatchet
 import okio.FileSystem
 import okio.Path
@@ -34,12 +35,13 @@ class UncachedPcmTrackSourceFactory(
         val ext = track.extension
         // RSN archives are unpacked to an SPC during staging, so they play through the SPC emulator.
         val emuExt = playbackExtension(ext)
-        val emulator = emulators.firstOrNull { it.isFileExtensionSupported(emuExt) }
+        val emulator = EmulatorSelector.select(emulators, emuExt)
             ?: throw IllegalArgumentException("No emulator found for extension '$emuExt'.")
 
         // JS emulators fetch + instantiate their WASM module here on first use; deferring lets
         // the page load skip ~4 MB of upfront WASM transfer. No-op on JVM/Android (the
-        // synchronous System.loadLibrary runs in [loadNativeLib] below).
+        // synchronous System.loadLibrary runs in [loadNativeLib] below). Selection may already
+        // have done this for a backend whose extension list needs the module (vgmstream).
         emulator.ensureNativeLibReady()
 
         val stagingTrackDir = stagingDir / "track-${track.id}"

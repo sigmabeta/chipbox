@@ -345,23 +345,56 @@ class RealDirector(
 
     override fun request(request: SessionRequest) {
         when (request) {
-            is SessionRequest.Start -> start(request.session)
-            is SessionRequest.StartSetlist -> with(request) { start(setlist, startingPosition, sourceName, shuffled) }
+            // Play-starting requests unlock the sink synchronously, inside the user's gesture
+            // handler. Everything below hops onto directorScope and runs after this call returns;
+            // Safari needs the AudioContext created/resumed before that (see
+            // [Speaker.prepareForPlayback]). No-op for device sinks.
+            is SessionRequest.Start -> {
+                speaker.prepareForPlayback()
+                start(request.session)
+            }
+
+            is SessionRequest.StartSetlist -> {
+                speaker.prepareForPlayback()
+                with(request) { start(setlist, startingPosition, sourceName, shuffled) }
+            }
+
+            SessionRequest.Play -> {
+                speaker.prepareForPlayback()
+                play()
+            }
+
+            is SessionRequest.PlayPosition -> {
+                speaker.prepareForPlayback()
+                playPosition(request.position)
+            }
+
             is SessionRequest.Restore -> restore(request.session, request.positionMs)
-            SessionRequest.Play -> play()
+
             SessionRequest.Pause -> pause()
+
             SessionRequest.Stop -> stop()
+
             is SessionRequest.Seek -> seek(request.positionMs)
+
             SessionRequest.SkipForward -> skipForward()
+
             SessionRequest.SkipBack -> skipBack()
-            is SessionRequest.PlayPosition -> playPosition(request.position)
+
             is SessionRequest.Reorder -> reorder(request.fromIndex, request.toIndex)
+
             is SessionRequest.RemoveTrack -> removeTrack(request.index)
+
             is SessionRequest.SetShuffled -> setShuffled(request.shuffled)
+
             is SessionRequest.SetRepeatMode -> setRepeatMode(request.mode)
+
             SessionRequest.PauseTemporarily -> pauseTemporarily()
+
             SessionRequest.Duck -> duck()
+
             SessionRequest.ResumeFocus -> resumeFocus()
+
             is SessionRequest.SetVolume -> setVolume(request.scale)
         }
     }
@@ -563,6 +596,13 @@ class RealDirector(
                 // the top, matching the user's expectation that play restarts the track on screen.
                 PlayerState.STOPPED -> restartCurrentTrack()
 
+                // A fatal error tears the loop down exactly like STOPPED: the generator loop and
+                // speaker sink are both stopped, so the generic generator.play() would leave the
+                // loop spinning on an empty channel while the mini-player and Now Playing look
+                // alive. Re-issue the current track from the top (and clear the stale error), which
+                // is what the Home/Now Playing play gestures already mean for ERROR.
+                PlayerState.ERROR -> restartCurrentTrack()
+
                 else -> generator.play()
             }
         }
@@ -570,18 +610,29 @@ class RealDirector(
 
     /**
      * Reload and restart the track at the current setlist position from the beginning. Unlike a
-     * paused resume there's nothing to un-pause — after a setlist completes the generator and
-     * speaker have been torn down — so the track has to be queued afresh, which re-spins both the
-     * generation and consume loops (and walks the state back through BUFFERING -> PLAYING via the
-     * usual Loading/Emitting reducers). No-op if there's no session to restart.
+     * paused resume there's nothing to un-pause — after a setlist completes or a fatal error the
+     * generator and speaker have been torn down — so the track has to be queued afresh, which
+     * re-spins both the generation and consume loops (and walks the state back through
+     * BUFFERING -> PLAYING via the usual Loading/Emitting reducers). The state stays STOPPED/ERROR
+     * until the restarted track's first Loading lands. No-op if there's no session to restart.
      */
     private suspend fun restartCurrentTrack() {
         val trackId = model.session?.currentPosition?.let { model.setlist?.getOrNull(it) }
         if (trackId == null) {
-            hatchet.w("play() while STOPPED but no current track to restart.")
+            hatchet.w("play() after STOPPED/ERROR but no current track to restart.")
             return
         }
-        commit(model.copy(consecutiveFailures = 0))
+        commit(
+            model.copy(
+                consecutiveFailures = 0,
+                // A restart supersedes the error that ended the previous attempt: clear it up front
+                // so the mini-player warning goes away as soon as the user taps play.
+                playback = model.playback.copy(errorMessage = null),
+                // Restarting from the top invalidates a restore offset aimed at the failed load;
+                // leaving it set would make the restarted track load straight back into PAUSED.
+                pendingResumeMs = null,
+            )
+        )
         generator.startTrack(trackId)
     }
 
@@ -1181,10 +1232,11 @@ class RealDirector(
      * A generator error is treated as a bad track, not a fatal session error: log it and skip to
      * the next track in the setlist (dropping the failed track's queued audio and switching the
      * speaker over promptly). The generator is stopped before the relaunch so its self-terminating
-     * loop can't race startTrack into an "Already looping" no-op. The session is only stopped when
+     * loop can't race startTrack into an "Already looping" no-op. The session ends in ERROR when
      * there's nothing left to try: no setlist to recover within, the failed track was the last one,
      * or [MAX_CONSECUTIVE_FAILURES] tracks failed in a row with no audio in between (the streak
-     * resets in [reduceGeneratorEmitting]).
+     * resets in [reduceGeneratorEmitting]). ERROR rather than STOPPED is deliberate — a failure
+     * must not look like an ordinary end-of-setlist.
      */
     private fun reduceGeneratorError(
         m: Model,
@@ -1224,8 +1276,17 @@ class RealDirector(
             }
 
             isLast(session, setlist) -> {
-                hatchet.e("Generator error on last track: ${event.message}. Ending session.")
-                withFailure.copy(playback = m.playback.copy(state = PlayerState.STOPPED)).with(
+                // No track remains to skip to. This is a failed load, not an end-of-setlist:
+                // STOPPED would render as a normal finish (play icon, no warning) and hide a
+                // missing/broken emulator behind a silent stop. ERROR carries the message to the
+                // mini-player warning icon and the app-level error surface.
+                hatchet.e("Generator error on last track: ${event.message}. Ending session in ERROR.")
+                withFailure.copy(
+                    playback = m.playback.copy(
+                        state = PlayerState.ERROR,
+                        errorMessage = event.message,
+                    ),
+                ).with(
                     Effect.CancelWatchdog,
                     Effect.PublishError(event.message, failedTrackId),
                     Effect.StopSpeaker,

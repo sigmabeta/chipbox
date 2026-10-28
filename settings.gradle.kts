@@ -143,6 +143,8 @@ include(
     ":cbox:common:playlists:real",
     ":cbox:common:playlists:fake",
     ":cbox:common:playlists:di",
+    ":cbox:common:browserstate",
+    ":cbox:common:webroutes",
     ":cbox:android:playlists:di",
     ":cbox:android:images:api",
     ":cbox:common:player-status:api",
@@ -183,6 +185,7 @@ include(
     ":cbox:android:ui:theme:api",
 
     ":cbox:common:appcomm:api",
+    ":cbox:common:capabilities:api",
     ":cbox:common:contentsource:api",
     ":cbox:common:contentsource:fake",
     ":cbox:common:coverart:api",
@@ -322,3 +325,29 @@ project(":cbox:android:player:emulators:twosf").projectDir = file("cbox/android/
 project(":cbox:android:player:emulators:twosf:native").projectDir = file("cbox/android/player/emulators/2sf/native")
 project(":cbox:common:player:emulators:twosf").projectDir = file("cbox/common/player/emulators/2sf")
 project(":cbox:common:player:emulators:twosf:real").projectDir = file("cbox/common/player/emulators/2sf/real")
+
+// Kotlin/JS tests run under Node. Compose Multiplatform's JS distribution ships Skiko only as a
+// browser/WASM loader (no Node loader), so any module whose JS module graph links Compose fails at
+// import time before a single test runs (`Cannot find module './skiko.mjs'`). That is a property of
+// the module graph, not of the test: a feature-real test that only exercises a VM still imports its
+// module's Compose UI references.
+//
+// Disable the Node test task for every module that applies `sage.compose.kmp`. Pure modules —
+// models, feature route keys, browser-state codecs — keep their jsNodeTest, and those are the
+// shared JS-side suites CI runs. `cbox/common/appui/api` used to do this locally; centralising it
+// keeps a new Compose module from silently re-breaking the web job.
+//
+// Only `jsNodeTest` is disabled, and its test executables are not compiled either: the task graph
+// still compiles dependencies of a skipped task, and compiling ~95 unreachable Compose test
+// executables is most of the aggregate web job's memory cost. These modules declare a Node test
+// host only; if a browser test tree is added, give it a host and remove both disables.
+gradle.beforeProject {
+    plugins.withId("sage.compose.kmp") {
+        tasks.matching {
+            it.name == "jsNodeTest" ||
+                (it.name.startsWith("compileTest") && it.name.endsWith("KotlinJs"))
+        }.configureEach {
+            enabled = false
+        }
+    }
+}

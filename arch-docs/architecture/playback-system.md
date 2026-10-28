@@ -42,6 +42,15 @@ director scope. It owns track sequencing/shuffle, the IDLE→BUFFERING→PLAYING
 ENDING→STOPPED/ERROR transitions, and a stall watchdog (≈5 s) that synthesizes
 an error if the generator goes silent.
 
+**Play recovery**: `play()` branches on the current state. `PAUSED` resumes;
+`STOPPED` and `ERROR` both re-issue the current track from the top (clearing
+`errorMessage`) because both states have torn the generator loop and speaker
+sink down — a bare `generator.play()` would spin on an empty channel while the
+UI looked alive. The re-issued track walks the state back through
+BUFFERING→PLAYING via the normal Loading/Emitting reducers, which re-spins both
+loops. With no current track (no session/setlist), `play()` logs a warning and
+stays put.
+
 **Start-ordering constraint**: the speaker consume loop must start *before* the
 generator emits its first `Emitting`. Start the speaker first, then the generator,
 so the `Buffering` state can clear cleanly and the consumer doesn't spin on a
@@ -69,8 +78,12 @@ Each iteration emits a `GeneratorEvent`:
 `generateBufferInternal(buffer, frames): Int`, `teardownInternal`,
 `getSampleRateInternal`, `getLastError`, plus a `supportedFileExtensions` list.
 The base class tracks remaining frames (track length + fade) and flips
-`trackOver`. `EmulatorProvider` holds the list; the cache factory picks the first
-emulator whose extension matches.
+`trackOver`. `EmulatorProvider` holds the ordered list; `EmulatorSelector` picks
+the first backend whose extension matches. Selection probes through
+`Emulator.supportsExtension` (a suspend seam defaulting to the synchronous
+extension list), so the browser's vgmstream backend can load its WASM module
+before answering — a lazy load that happens only when the ordered lookup reaches
+it, never for a shared extension an earlier backend already claimed.
 
 Nine cores, each an `object` JNI wrapper (`external` funs + `System.loadLibrary`):
 GME (spc/nsf/nsfe/gbs), VGM (vgm/vgz), PSF (psf/minipsf/psf2…), USF (usf/miniusf),
@@ -111,10 +124,15 @@ interleaved L/R `ShortArray`, fade params, and loudness/peak.
 
 ## Speaker — `cbox/common/player/speaker`
 
-`Speaker`/`BaseSpeaker` run a single consume loop: poll (non-blocking) → on empty
-emit `SpeakerEvent.Buffering` then block; detect track boundaries (emit
+`Speaker`/`BaseSpeaker` run a single consume loop: wait for a ready sink
+(`awaitSinkReady`, default true), poll (non-blocking) → on empty emit
+`SpeakerEvent.Buffering` then block; detect track boundaries (emit
 `TrackChange`, discard buffers for stale tracks); apply fade + normalization;
 write to the sink; recycle the array; emit `SpeakerEvent.Playing(positionMs)`.
+`Speaker.prepareForPlayback()` is the synchronous gesture seam: the Director
+calls it from `request` for play-starting requests before launching coroutine
+work; browser sinks create/resume their `AudioContext` there, device sinks
+no-op.
 
 Sinks (platform seam):
 - `RealSpeaker` (androidMain) — `AudioTrack`; re-inits on sample-rate change;

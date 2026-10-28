@@ -50,30 +50,36 @@ class WebMediaSession(
         // Action handlers — fire-and-forget; the director is responsible for ignoring no-op
         // requests (e.g. play() while already playing). null clears a handler, which removes
         // its affordance from the OS surface entirely.
-        session.setActionHandler("play") { director.request(SessionRequest.Play) }
-        session.setActionHandler("pause") { director.request(SessionRequest.Pause) }
-        session.setActionHandler("stop") { director.request(SessionRequest.Stop) }
-        session.setActionHandler("nexttrack") { director.request(SessionRequest.SkipForward) }
-        session.setActionHandler("previoustrack") { director.request(SessionRequest.SkipBack) }
-        session.setActionHandler("seekto") { details ->
+        //
+        // Each registration is wrapped: browsers reject unsupported actions (Safari throws
+        // NotSupportedError for several seek variants), and an unguarded throw here used to abort
+        // the rest of JsMain's launch — leaving the app stuck on the splash. A missing handler is
+        // an acceptable degradation; a blank app is not.
+        setHandler(session, "play") { director.request(SessionRequest.Play) }
+        setHandler(session, "pause") { director.request(SessionRequest.Pause) }
+        setHandler(session, "stop") { director.request(SessionRequest.Stop) }
+        setHandler(session, "nexttrack") { director.request(SessionRequest.SkipForward) }
+        setHandler(session, "previoustrack") { director.request(SessionRequest.SkipBack) }
+        setHandler(session, "seekto") { details ->
             val seconds = details?.seekTime
             if (seconds != null) director.request(SessionRequest.Seek((seconds * MILLIS_PER_SECOND).toLong()))
         }
         // `seekbackward` / `seekforward` (the +/- N seconds buttons) — bracket the requested
         // offset around the current position. Browser passes `details.seekOffset` in seconds,
         // defaulting to ~10s when absent.
-        session.setActionHandler("seekbackward") { details ->
+        setHandler(session, "seekbackward") { details ->
             val offsetSec = details?.seekOffset ?: DEFAULT_SEEK_STEP_SECONDS
             director.request(SessionRequest.Seek((currentPositionMs() - (offsetSec * MILLIS_PER_SECOND).toLong()).coerceAtLeast(0L)))
         }
-        session.setActionHandler("seekforward") { details ->
+        setHandler(session, "seekforward") { details ->
             val offsetSec = details?.seekOffset ?: DEFAULT_SEEK_STEP_SECONDS
             director.request(SessionRequest.Seek(currentPositionMs() + (offsetSec * MILLIS_PER_SECOND).toLong()))
         }
 
         // Independent subscriptions. metadataState wakes the metadata update only on track id
         // changes; playbackState drives both the play/pause icon and the position scrubber
-        // separately.
+        // separately. Each update is guarded inside so one unsupported write can't kill the
+        // collector and take the whole media-session integration down with it.
         director.metadataState()
             .distinctUntilChanged { a, b -> a?.id == b?.id }
             .onEach { track ->
@@ -87,58 +93,75 @@ class WebMediaSession(
             .launchIn(scope)
     }
 
+    private fun setHandler(
+        session: MediaSession,
+        action: String,
+        handler: (MediaSessionActionDetails?) -> Unit,
+    ) {
+        runCatching { session.setActionHandler(action, handler) }
+    }
+
     private var lastPlaybackState: ChipboxPlaybackState? = null
 
     private fun currentPositionMs(): Long = lastPlaybackState?.position ?: 0L
 
     private fun updateMetadata(session: MediaSession, track: Track?) {
-        if (track == null) {
-            session.metadata = null
-            return
+        // MediaMetadata construction and the assignment can both throw on partial/legacy
+        // implementations; metadata is cosmetic and must never break playback.
+        runCatching {
+            if (track == null) {
+                session.metadata = null
+                return
+            }
+            val artwork = track.game?.photoUrl?.let { url ->
+                val full = if (url.startsWith("http://") || url.startsWith("https://")) url else "$baseUrl$url"
+                val art = js("{}")
+                art.src = full
+                // "any" tells the OS to use whatever size the server returns rather than filtering
+                // against a hardcoded WxH that wouldn't match the actual cover (covers in the wild
+                // are arbitrary). MIME type is intentionally omitted — server sets Content-Type
+                // accurately based on the file extension, so a hint here would just disagree.
+                art.sizes = "any"
+                arrayOf(art)
+            }
+            val init = js("{}")
+            init.title = track.title
+            init.album = track.game?.title.orEmpty()
+            init.artist = track.artists?.joinToString(", ") { it.name }.orEmpty()
+            if (artwork != null) init.artwork = artwork
+            session.metadata = MediaMetadata(init)
         }
-        val artwork = track.game?.photoUrl?.let { url ->
-            val full = if (url.startsWith("http://") || url.startsWith("https://")) url else "$baseUrl$url"
-            val art = js("{}")
-            art.src = full
-            // "any" tells the OS to use whatever size the server returns rather than filtering
-            // against a hardcoded WxH that wouldn't match the actual cover (covers in the wild
-            // are arbitrary). MIME type is intentionally omitted — server sets Content-Type
-            // accurately based on the file extension, so a hint here would just disagree.
-            art.sizes = "any"
-            arrayOf(art)
-        }
-        val init = js("{}")
-        init.title = track.title
-        init.album = track.game?.title.orEmpty()
-        init.artist = track.artists?.joinToString(", ") { it.name }.orEmpty()
-        if (artwork != null) init.artwork = artwork
-        session.metadata = MediaMetadata(init)
     }
 
     private fun updatePlayback(session: MediaSession, playback: ChipboxPlaybackState, track: Track?) {
-        lastPlaybackState = playback
-        val isPaused = playback.state == PlayerState.PAUSED
-        session.playbackState = when (playback.state) {
-            PlayerState.PLAYING, PlayerState.BUFFERING, PlayerState.ENDING -> "playing"
-            PlayerState.PAUSED -> "paused"
-            PlayerState.IDLE, PlayerState.STOPPED, PlayerState.ERROR -> "none"
-        }
-
-        val durationMs = track?.trackLengthMs ?: 0L
-        // Skip setPositionState when paused — spec only allows positive playbackRate, so we
-        // can't signal pause through it. The OS holds the last-reported position across a pause.
-        if (!isPaused && durationMs > 0 && playback.position >= 0) {
-            val positionState = js("{}")
-            positionState.duration = durationMs / MILLIS_PER_SECOND.toDouble()
-            positionState.position = playback.position / MILLIS_PER_SECOND.toDouble()
-            positionState.playbackRate = playback.playbackSpeed.toDouble().coerceAtLeast(0.01)
-            // setPositionState throws if position > duration. Coerce here to avoid noisy
-            // exceptions during the brief window right after a track change where Director's
-            // playback flow can lag the metadata flow by a frame.
-            if (positionState.position.unsafeCast<Double>() > positionState.duration.unsafeCast<Double>()) {
-                positionState.position = positionState.duration
+        // Same rationale as updateMetadata: playbackState/setPositionState throw for unsupported
+        // values (e.g. a position past the declared duration), and that must not cancel the
+        // playbackState collector.
+        runCatching {
+            lastPlaybackState = playback
+            val isPaused = playback.state == PlayerState.PAUSED
+            session.playbackState = when (playback.state) {
+                PlayerState.PLAYING, PlayerState.BUFFERING, PlayerState.ENDING -> "playing"
+                PlayerState.PAUSED -> "paused"
+                PlayerState.IDLE, PlayerState.STOPPED, PlayerState.ERROR -> "none"
             }
-            session.setPositionState(positionState)
+
+            val durationMs = track?.trackLengthMs ?: 0L
+            // Skip setPositionState when paused — spec only allows positive playbackRate, so we
+            // can't signal pause through it. The OS holds the last-reported position across a pause.
+            if (!isPaused && durationMs > 0 && playback.position >= 0) {
+                val positionState = js("{}")
+                positionState.duration = durationMs / MILLIS_PER_SECOND.toDouble()
+                positionState.position = playback.position / MILLIS_PER_SECOND.toDouble()
+                positionState.playbackRate = playback.playbackSpeed.toDouble().coerceAtLeast(0.01)
+                // setPositionState throws if position > duration. Coerce here to avoid noisy
+                // exceptions during the brief window right after a track change where Director's
+                // playback flow can lag the metadata flow by a frame.
+                if (positionState.position.unsafeCast<Double>() > positionState.duration.unsafeCast<Double>()) {
+                    positionState.position = positionState.duration
+                }
+                session.setPositionState(positionState)
+            }
         }
     }
 

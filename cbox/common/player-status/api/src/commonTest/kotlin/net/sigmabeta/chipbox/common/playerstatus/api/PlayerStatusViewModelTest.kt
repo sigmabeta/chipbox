@@ -176,6 +176,24 @@ class PlayerStatusViewModelTest {
     }
 
     @Test
+    fun `PlayPauseClicked action after a fatal error dispatches play`() = runTest {
+        // Ticket 16: the mini-player's play/pause control (and Now Playing's) sends Play from
+        // ERROR, which is how a fatal generator/speaker failure is retried. "Playing" states are
+        // PLAYING/BUFFERING/ENDING; ERROR must not be treated as one.
+        val director = FakeDirector()
+        val viewModel = PlayerStatusViewModel(director, BluntHatchet())
+
+        director.emitMetadata(trackOf("Schala"))
+        director.emitPlayback(PlayerState.ERROR)
+        viewModel.state.first { it.isError }
+
+        viewModel.sendAction(PlayerStatusAction.PlayPauseClicked)
+
+        assertEquals(1, director.playCalls)
+        assertEquals(0, director.pauseCalls)
+    }
+
+    @Test
     fun `CardClicked action toggles no playback but is accepted`() = runTest {
         // Navigation is the host's job; the VM only logs the action. Verify it doesn't touch
         // the director (no play/pause leaking out of a card tap).

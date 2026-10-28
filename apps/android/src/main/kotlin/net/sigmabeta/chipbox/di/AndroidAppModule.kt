@@ -8,6 +8,7 @@ import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.runBlocking
 import net.sigmabeta.chipbox.BuildConfig
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.crash.CrashReporter
@@ -61,6 +62,11 @@ object AndroidAppModule {
         buildTimeMs = BuildConfig.BUILD_TIME_MS,
         buildBranch = BuildConfig.BUILD_BRANCH,
     )
+
+    // Android manages its own library and keeps the full debug surface.
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideAppCapabilities(): AppCapabilities = AppCapabilities.Default
 
     // Crash reports go under the app's private files dir (survives backgrounding, wiped on
     // uninstall/clear-data). Shared by the writer (CrashReporter) and the reader (CrashReportStore).

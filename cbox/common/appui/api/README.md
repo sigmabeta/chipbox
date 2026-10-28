@@ -24,6 +24,24 @@ Grouped by role (commonMain unless noted):
   the VM's `effects` flow into `buildOuterSink(...)` (snackbars, open-URL,
   clipboard, chrome toggles). Platform side effects (open URL, copy to clipboard)
   arrive as host-supplied callbacks so the composable stays in `commonMain`.
+  Its `capabilities: AppCapabilities` parameter (default: the full desktop
+  surface) sets the host's visible surface.
+
+- **Capability policy** — `AppCapabilitiesPolicy.kt`: `LocalAppCapabilities`. The
+  snackbar copy shown when a `PickFolder` event reaches a host that does not manage
+  its own library is the localized `ChipboxStringId.APPUI_SERVER_MANAGED_LIBRARY`
+  (same string-resource path as Home's copy). The `allowsNavigation(destination)` guard itself lives in
+  `:cbox:common:webroutes` (`NavigationPolicy.kt`) so the browser's URL decoder and the
+  in-app sinks share one policy: library-administration destinations require
+  `canManageLibrary`; Playback Status / Crash Log / Component Library require
+  `showDebugSection`; Error Log requires `showErrorLog` only.
+
+- **Browser-history seam** — `BrowserNavigation.kt`: `ShellTab`, `ShellTarget`
+  (`Tab` / `Deep`), `ShellNavigation` (host → shell: apply a decoded target), and
+  `BrowserNavigation` (shell → host: report a forward push or an in-place pop, ask
+  whether browser history owns an in-app Back, announce readiness). Provided by
+  `ChipboxAppUi(browserNavigation = …)`; null on desktop/Android and in UI tests that
+  don't assert URLs, so their behaviour is unchanged.
 
 - **Shell / chrome** — `ChipboxNavHost.kt`: `ChipboxTabsScreen` (root of the
   outer Navigator) renders the `TopAppBar`, `NavigationSuiteScaffold`
@@ -46,8 +64,11 @@ Grouped by role (commonMain unless noted):
 
 - **Composition locals / state holders** — `ActiveTabNavigator.kt`
   (`ActiveTabNavigator` + `TabRouter`, exposing the active tab's `Navigator` /
-  the `TabNavigator` to the shell back handler), `AppActionSink.kt`
+  the `TabNavigator` to the shell back handler; the former also records the route
+  key behind each pushed `Screen` so an in-app pop can name its new top),
+  `AppActionSink.kt`
   (`LocalAppActionSink`), `AppSnackbarHostState.kt` (`LocalAppSnackbarHostState`),
+  `BrowserNavigation.kt` (`LocalBrowserNavigation` + the browser seam above),
   `ActiveTabDestinations.kt` (`LocalActiveTabDestinations` + `LocalNavigationObserver`
   — programmatic-navigation / observation seams for UI tests + future deep-links),
   `PlatformBackKeys.kt` (`LocalPlatformBackKeys`).
@@ -61,9 +82,12 @@ Grouped by role (commonMain unless noted):
   `jsMain`.
 
 - **Tests** — `commonTest/ChipboxAppUiViewModelTest.kt` covers the VM's flows
-  and `handleEvent`. `jsTest` is **disabled** (see the long note in
-  `build.gradle.kts`): the top-level `staticCompositionLocalOf` declarations drag
-  in Skiko, whose JS distribution has no Node loader; the VM is covered on JVM.
+  and `handleEvent`; `commonTest/AppCapabilitiesPolicyTest.kt` covers the
+  capability → destination policy (defaults allow everything; the web policy
+  blocks library/debug destinations but keeps Error Log). `jsTest` is
+  **disabled** (see the long note in `build.gradle.kts`): the top-level
+  `staticCompositionLocalOf` declarations drag in Skiko, whose JS distribution
+  has no Node loader; the VM is covered on JVM.
 
 ## Why depend on this module
 
@@ -91,6 +115,10 @@ setContent {
         backKeyEvents = null,
         activeTabDestinations = null,
         onNavigate = null,
+        // Web only: mirror routes into window.history and apply popstate/deep links.
+        browserNavigation = null,
+        // Defaults to the full desktop surface; the browser passes the web graph's caps.
+        capabilities = AppCapabilities.Default,
     )
 }
 ```
@@ -120,7 +148,9 @@ internal fun screenFor(destination: Any): Screen = when (destination) {
   debug-gated playback-status / error-log / crash-log / component-library);
   `api(:cbox:common:player-status:api)`; `:cbox:common:ui:chrome:api`,
   `:cbox:common:ui:components:api`, `:cbox:common:ui:list:api`,
-  `:cbox:common:ui:theme:api`, `:cbox:common:appcomm:api`, `:cbox:common:strings:api`,
+  `:cbox:common:ui:theme:api`, `:cbox:common:appcomm:api`,
+  `:cbox:common:capabilities:api`, `:cbox:common:webroutes` (route<->URL
+  targets + the shared `allowsNavigation` policy), `:cbox:common:strings:api`,
   `:cbox:common:settings:api`, `:cbox:common:debug:api`, `:cbox:common:models:api`;
   `sage.common.di`, `sage.common.appinfo`, `sage.common.ui.listScreens`,
   `sage.common.ui.iconsReal`; Voyager (navigator / tab-navigator / transitions /

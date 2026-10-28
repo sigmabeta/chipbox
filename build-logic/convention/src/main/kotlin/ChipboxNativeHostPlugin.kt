@@ -94,8 +94,22 @@ class ChipboxNativeHostPlugin : Plugin<Project> {
                     outputDir.set(layout.buildDirectory.dir("jvm-native/out/${target.name.lowercase()}/$emulator"))
                     cacheKey.put("toolchain", "host")
                     cacheKey.put("target", target.name)
+                    // The host toolchain's OS alone is not enough: the remote Gradle build cache is
+                    // shared across machines, and an amd64 .so must never satisfy an arm64 build
+                    // (the Dockerfile's ELF assertion caught exactly that in the multi-arch image).
+                    cacheKey.put("arch", System.getProperty("os.arch") ?: "unknown")
                     cacheKey.put("buildType", "Release")
                     cacheKey.put("emulator", emulator)
+                    // Never take this output from the Gradle build cache. A native binary is only
+                    // valid for the C library and toolchain that produced it, and Gradle's cache key
+                    // cannot see either — the compiler, sysroot and libc are not file inputs. The
+                    // remote cache restored a glibc-2.43 `libvgmstream.so` (built on an Ubuntu 26
+                    // runner) into the jammy Docker image, where it could not load. `cacheKey`'s
+                    // target/arch pins catch relocation and ABI clashes; they do not catch this.
+                    // Up-to-date checks are unaffected, so an unchanged local build still skips.
+                    outputs.cacheIf(
+                        "host native output depends on the C library, which the cache key cannot see",
+                    ) { false }
                     variantConfigureArgs.put(
                         "host",
                         buildList {

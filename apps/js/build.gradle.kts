@@ -10,6 +10,19 @@ plugins {
     // The models themselves are already @Serializable (cbox/common/models/api); this plugin just
     // pulls the codegen into apps/js so the Ktor JS client can call `body<List<Game>>()`.
     alias(libs.plugins.kotlin.serialization)
+    // apps/js applies the raw KMP plugin (not sage.kmp), so the SAGE base plugins' per-module
+    // ktlint/detekt wiring is absent. Apply both here with the same root configs.
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.detekt)
+}
+
+detekt {
+    config.setFrom("${rootDir.absolutePath}/detekt-config.yml")
+    source.setFrom(files("src/jsMain/kotlin"))
+}
+
+ktlint {
+    version.set(libs.versions.ktlintTool.get())
 }
 
 // Sister to apps/jvm + apps/android, but browser-only. sage.kmp / sage.compose.kmp aren't applied
@@ -30,9 +43,18 @@ plugins {
 //
 // emsdk discovery: explicit `-Psage.js.emsdk=/path/to/emsdk` first, then `$EMSDK` env var.
 // Tasks fail at execution (not configuration) if neither is present, so running unrelated tasks
-// (`compileKotlinJs` etc.) on a dev box without emsdk still works.
+// (`compileKotlinJs` etc.) on a dev box without emsdk still works. Every WASM-dependent task also
+// depends on `checkEmsdk`, so a bundle build fails up front instead of quietly copying nothing.
+//
+// The validation is inlined into each `doFirst` (rather than calling a script-level helper) because
+// a helper reference captures the Kotlin build script object, which the configuration cache refuses
+// to serialize.
 val emsdkDir: Provider<String> = providers.gradleProperty("sage.js.emsdk")
     .orElse(providers.environmentVariable("EMSDK"))
+val emsdkMissingMessage =
+    "Emscripten SDK not found. The web bundle needs the WASM emulators: install emsdk and set " +
+        "\$EMSDK, or pass -Psage.js.emsdk=/path/to/emsdk. (Unrelated Kotlin/JS compile tasks still " +
+        "work without it.)"
 
 val wasmResourcesDirPath: String =
     layout.projectDirectory.dir("src/jsMain/resources/wasm").asFile.absolutePath
@@ -40,23 +62,44 @@ val wasmResourcesDirPath: String =
 val nativeRootDir: String = isolated.rootProject.projectDirectory.dir("cbox/native").asFile.absolutePath
 val wasmBuildRootDir: String = layout.buildDirectory.dir("wasm").get().asFile.absolutePath
 
-// Each emulator that ships a WASM build is one line here. The CMakeLists in
-// `cbox/native/<dir>/` must have an `if(EMSCRIPTEN)` branch that produces a target named
-// `chipbox_<output>` (Emscripten emits `.js` + `.wasm` for executable targets). The Kotlin
-// side loads each via a `<Capitalized>Wasm.kt` module-loader file. New emulator → one entry
-// here, one CMake branch, one `<Name>_Web.cpp` wrapper, one `Wasm<Name>Emulator.kt` subclass.
+// Each emulator that ships a WASM build is one line in `wasm-emulators.txt` (shared with the
+// bundle-verification script so the two cannot drift). The CMakeLists in `cbox/native/<dir>/` must
+// have an `if(EMSCRIPTEN)` branch that produces a target named `chipbox_<output>` (Emscripten
+// emits `.js` + `.wasm` for executable targets). The Kotlin side loads each via a
+// `<Capitalized>Wasm.kt` module-loader file. New emulator → one entry there, one CMake branch, one
+// `<Name>_Web.cpp` wrapper, one `Wasm<Name>Emulator.kt` subclass.
 data class WasmEmulator(val dir: String, val output: String, val displayName: String)
-val wasmEmulators = listOf(
-    WasmEmulator(dir = "gme", output = "chipbox_gme", displayName = "libgme"),
-    WasmEmulator(dir = "vgm", output = "chipbox_vgm", displayName = "libvgm"),
-    WasmEmulator(dir = "ssf", output = "chipbox_ssf", displayName = "ssf core"),
-    WasmEmulator(dir = "usf", output = "chipbox_usf", displayName = "lazyusf2"),
-    WasmEmulator(dir = "psf", output = "chipbox_psf", displayName = "slopsf"),
-    WasmEmulator(dir = "ncsf", output = "chipbox_ncsf", displayName = "ncsf"),
-    WasmEmulator(dir = "2sf", output = "chipbox_twosf", displayName = "vio2sf"),
-    WasmEmulator(dir = "vgmstream", output = "chipbox_vgmstream", displayName = "vgmstream"),
-    WasmEmulator(dir = "gba", output = "chipbox_gba", displayName = "mgba"),
-)
+val wasmEmulators: List<WasmEmulator> = providers
+    .fileContents(layout.projectDirectory.file("wasm-emulators.txt"))
+    .asText.get()
+    .lineSequence()
+    .map(String::trim)
+    .filter { it.isNotEmpty() && !it.startsWith("#") }
+    .map { line ->
+        val fields = line.split('|').map(String::trim)
+        check(fields.size == 3) { "wasm-emulators.txt: expected dir|output|display, got '$line'" }
+        WasmEmulator(fields[0], fields[1], fields[2])
+    }
+    .toList()
+check(wasmEmulators.isNotEmpty()) { "wasm-emulators.txt listed no emulators." }
+
+val checkEmsdk = tasks.register("checkEmsdk") {
+    description = "Fails fast (at execution) when the Emscripten SDK needed for the WASM emulators " +
+        "is missing. The web bundle cannot be assembled without it."
+    group = "wasm"
+    val capturedEmsdk = emsdkDir
+    val missingMessage = emsdkMissingMessage
+    doFirst {
+        val emsdk = capturedEmsdk.orNull ?: error(missingMessage)
+        require(File(emsdk, "emsdk_env.sh").isFile) {
+            "EMSDK=$emsdk does not look like an emsdk checkout (no emsdk_env.sh)."
+        }
+        require(File(emsdk, "upstream/emscripten/emcc").isFile) {
+            "emsdk at $emsdk has no activated compiler (upstream/emscripten/emcc); run " +
+                "`./emsdk install <version> && ./emsdk activate <version>`."
+        }
+    }
+}
 
 val buildTaskNames = wasmEmulators.map { emu ->
     val cap = emu.dir.replaceFirstChar { it.uppercaseChar() }
@@ -67,20 +110,24 @@ val buildTaskNames = wasmEmulators.map { emu ->
         description = "Configures the Emscripten WASM build for ${emu.displayName}. Needs " +
             "\$EMSDK or -Psage.js.emsdk."
         group = "wasm"
+        dependsOn(checkEmsdk)
         inputs.file(File(srcDir, "CMakeLists.txt"))
+        // Shared psflib/psf-io sources + their CMakeLists are part of this emulator's build.
+        inputs.file(File("$nativeRootDir/native-common", "CMakeLists.txt"))
         outputs.file(File(buildDir, "CMakeCache.txt"))
 
         val capturedEmsdk = emsdkDir
+        val missingMessage = emsdkMissingMessage
         val buildDirLocal = buildDir
         val srcDirLocal = srcDir
         doFirst {
-            val emsdk = capturedEmsdk.orNull
-                ?: error(
-                    "Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
-                    "-Psage.js.emsdk=/path/to/emsdk."
-                )
+            val emsdk = capturedEmsdk.orNull ?: error(missingMessage)
             require(File(emsdk, "emsdk_env.sh").isFile) {
                 "EMSDK=$emsdk does not look like an emsdk checkout (no emsdk_env.sh)."
+            }
+            require(File(emsdk, "upstream/emscripten/emcc").isFile) {
+                "emsdk at $emsdk has no activated compiler (upstream/emscripten/emcc); run " +
+                    "`./emsdk install <version> && ./emsdk activate <version>`."
             }
             File(buildDirLocal).mkdirs()
             val envScript = File(emsdk, "emsdk_env.sh").absolutePath
@@ -101,17 +148,22 @@ val buildTaskNames = wasmEmulators.map { emu ->
         // build dir would be most robust, but per-emulator we only need to retrigger when the
         // C/C++ sources or the Web wrapper change — Gradle's `inputs.dir` recurses anyway.
         inputs.dir(srcDir).withPathSensitivity(PathSensitivity.RELATIVE)
+        inputs.dir("$nativeRootDir/native-common").withPathSensitivity(PathSensitivity.RELATIVE)
         outputs.file(File(buildDir, "${emu.output}.wasm"))
         outputs.file(File(buildDir, "${emu.output}.js"))
 
         val capturedEmsdk = emsdkDir
+        val missingMessage = emsdkMissingMessage
         val buildDirLocal = buildDir
         doFirst {
-            val emsdk = capturedEmsdk.orNull
-                ?: error(
-                    "Emscripten SDK not found. Install emsdk and set \$EMSDK, or pass " +
-                    "-Psage.js.emsdk=/path/to/emsdk."
-                )
+            val emsdk = capturedEmsdk.orNull ?: error(missingMessage)
+            require(File(emsdk, "emsdk_env.sh").isFile) {
+                "EMSDK=$emsdk does not look like an emsdk checkout (no emsdk_env.sh)."
+            }
+            require(File(emsdk, "upstream/emscripten/emcc").isFile) {
+                "emsdk at $emsdk has no activated compiler (upstream/emscripten/emcc); run " +
+                    "`./emsdk install <version> && ./emsdk activate <version>`."
+            }
             val envScript = File(emsdk, "emsdk_env.sh").absolutePath
             commandLine(
                 "bash",
@@ -128,6 +180,7 @@ val copyEmulatorWasm = tasks.register<Copy>("copyEmulatorWasm") {
     description = "Copies every built emulator WASM blob into apps/js resources so webpack " +
         "bundles them with the JS app (served at /wasm/<name>.{js,wasm} runtime)."
     group = "wasm"
+    dependsOn(checkEmsdk)
     dependsOn(buildTaskNames)
     wasmEmulators.forEach { emu ->
         from("$wasmBuildRootDir/${emu.dir}") {
@@ -135,6 +188,164 @@ val copyEmulatorWasm = tasks.register<Copy>("copyEmulatorWasm") {
         }
     }
     into(wasmResourcesDirPath)
+    // A Copy that copied nothing would otherwise succeed silently. This is the last line of
+    // defence behind `checkEmsdk`: the bundle must receive all nine loader/WASM pairs.
+    val expectedFiles = wasmEmulators.flatMap { emu ->
+        listOf("${emu.output}.js", "${emu.output}.wasm")
+    }
+    val targetDir = wasmResourcesDirPath
+    doLast {
+        val missing = expectedFiles.filterNot { File(targetDir, it).isFile }
+        check(missing.isEmpty()) {
+            "Emulator WASM copy incomplete in $targetDir; missing: ${missing.joinToString()}"
+        }
+    }
+}
+
+// Matching (not named) because the Kotlin/JS plugin registers these tasks after this script is
+// evaluated. Order: jsProcessResources → copyEmulatorWasm → the executable sync / webpack tasks.
+// The webpack tasks own the bundle, so they depend on the copy. The executable sync tasks consume
+// the same processed-resource tree but are ALSO in the plain compile graph
+// (`compileProductionExecutableKotlinJs` depends on the sync), so they only `mustRunAfter` the
+// copy: that orders them when a bundle is being built without pulling the WASM/emsdk toolchain
+// into a plain compile.
+tasks.matching {
+    it.name == "jsBrowserProductionWebpack" || it.name == "jsBrowserDevelopmentWebpack"
+}.configureEach {
+    dependsOn(copyEmulatorWasm)
+}
+tasks.matching {
+    it.name == "jsProductionExecutableCompileSync" || it.name == "jsDevelopmentExecutableCompileSync"
+}.configureEach {
+    mustRunAfter(copyEmulatorWasm)
+}
+
+// `jsProcessResources` reads `src/jsMain/resources`, which `copyEmulatorWasm` has just written.
+// Gradle's implicit-dependency validation rejects a task that reads another task's output unless
+// the dependency is declared; a warm local/CI cache can hide this, but a clean image build fails.
+// Declare it only when a bundle/verify task is in the graph, so a plain `compileKotlinJs` still
+// does not pull the emsdk toolchain in.
+val bundleRequested = gradle.startParameter.taskNames.any { requested ->
+    requested.contains("verifyWebBundle") ||
+        requested.contains("Webpack") ||
+        requested.contains("Distribution")
+}
+if (bundleRequested) {
+    tasks.matching { it.name == "jsProcessResources" }.configureEach {
+        dependsOn(copyEmulatorWasm)
+    }
+}
+
+// Assert the *distribution* (not just the source resources) contains all nine loader/WASM pairs
+// plus the app entry points. Runs as a normal Gradle task and mirrors
+// scripts/ci/verify-web-bundle.sh, which CI/Docker invoke directly.
+tasks.register("verifyWebBundle") {
+    description = "Asserts the production web bundle contains index.html, chipbox.js, and all " +
+        "nine emulator loader/WASM pairs."
+    group = "verification"
+    dependsOn("jsBrowserDistribution")
+    val distDir = layout.buildDirectory.dir("dist/js/productionExecutable")
+    val emulatorCount = wasmEmulators.size
+    val requiredFiles = buildList {
+        add("index.html")
+        add("chipbox.js")
+        wasmEmulators.forEach {
+            add("wasm/${it.output}.js")
+            add("wasm/${it.output}.wasm")
+        }
+    }
+    doLast {
+        val dir = distDir.get().asFile
+        val missing = requiredFiles.filterNot { File(dir, it).isFile }
+        check(missing.isEmpty()) { "Web bundle at $dir is missing: ${missing.joinToString()}" }
+        logger.lifecycle("Web bundle OK: index.html + chipbox.js + $emulatorCount loader/WASM pairs.")
+    }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Build identity for the browser app. The Settings/About rows read `AppInfo`, which on JS comes
+// from the generated `WebBuildInfo` object — the twin of Android's BuildConfig fields. `git
+// describe` is evaluated when this task runs, so a rebuild after a commit reports the new version
+// without a stale configuration-cache entry; a checkout without git (a source tarball, a stripped
+// image) falls back to a neutral dev version instead of failing.
+val repoRootPath: String = isolated.rootProject.projectDirectory.asFile.absolutePath
+val webBuildInfoDir = layout.buildDirectory.dir("generated/webBuildInfo").get().asFile.absolutePath
+
+val generateWebBuildInfo = tasks.register("generateWebBuildInfo") {
+    description = "Generates WebBuildInfo.kt from deterministic inputs or git describe/branch/commit time for AppInfo."
+    group = "build"
+    val outputDir = webBuildInfoDir
+    val repoRoot = repoRootPath
+    // Deterministic build-info inputs, resolved at execution. Local values (not script fields) so
+    // the task action stays configuration-cache compatible.
+    val buildVersionEnv = providers.environmentVariable("CHIPBOX_BUILD_VERSION")
+    val buildVersionProp = providers.gradleProperty("chipbox.build.version")
+    val buildVersionCodeEnv = providers.environmentVariable("CHIPBOX_BUILD_VERSION_CODE")
+    val buildVersionCodeProp = providers.gradleProperty("chipbox.build.versionCode")
+    val buildBranchEnv = providers.environmentVariable("CHIPBOX_BUILD_BRANCH")
+    val buildBranchProp = providers.gradleProperty("chipbox.build.branch")
+    val buildCommitEnv = providers.environmentVariable("CHIPBOX_BUILD_COMMIT")
+    val buildCommitProp = providers.gradleProperty("chipbox.build.commit")
+    val buildTimeEnv = providers.environmentVariable("CHIPBOX_BUILD_TIME_MS")
+    val buildTimeProp = providers.gradleProperty("chipbox.build.timeMs")
+    outputs.dir(outputDir)
+    // Cheap (a few git invocations) and always re-evaluated so a new commit is reflected; if the
+    // content is byte-identical the downstream Kotlin compile stays up to date.
+    outputs.upToDateWhen { false }
+    doLast {
+        fun git(vararg args: String): String? = try {
+            val process = ProcessBuilder(listOf("git") + args)
+                .directory(File(repoRoot))
+                .redirectErrorStream(true)
+                .start()
+            val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
+            if (process.waitFor() == 0) output.ifBlank { null } else null
+        } catch (error: Exception) {
+            null
+        }
+
+        // Deterministic inputs first: container/source-tarball builds have no `.git` (the Docker
+        // build context excludes it), so CI and the Dockerfile pass the checkout identity in.
+        // Local builds fall back to git, then to a neutral dev version.
+        fun input(primary: org.gradle.api.provider.Provider<String>, secondary: org.gradle.api.provider.Provider<String>): String? =
+            primary.orNull?.takeIf { it.isNotBlank() } ?: secondary.orNull?.takeIf { it.isNotBlank() }
+
+        val versionName = input(buildVersionEnv, buildVersionProp)
+            ?: git("describe", "--tags", "--always", "--dirty")
+            ?: "0.0.0-web"
+        val versionCode = input(buildVersionCodeEnv, buildVersionCodeProp)?.toIntOrNull()
+            ?: git("rev-list", "--count", "HEAD")?.toIntOrNull()
+            ?: 0
+        val branch = input(buildBranchEnv, buildBranchProp)
+            ?: git("rev-parse", "--abbrev-ref", "HEAD")
+            ?: "unknown"
+        val commit = input(buildCommitEnv, buildCommitProp)
+            ?: git("rev-parse", "--short", "HEAD")
+            ?: "unknown"
+        val buildTimeMs = input(buildTimeEnv, buildTimeProp)?.toLongOrNull()
+            ?: git("log", "-1", "--format=%ct")?.toLongOrNull()?.times(1000L)
+
+        fun kotlinString(value: String): String = value
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("$", "\\$")
+
+        val source = buildString {
+            appendLine("package net.sigmabeta.chipbox.js")
+            appendLine()
+            appendLine("/** Generated by :apps:js:generateWebBuildInfo — do not edit. */")
+            appendLine("internal object WebBuildInfo {")
+            appendLine("    const val VERSION_NAME: String = \"${kotlinString(versionName)}\"")
+            appendLine("    const val VERSION_CODE: Int = $versionCode")
+            appendLine("    val BUILD_TIME_MS: Long? = ${buildTimeMs?.let { "${it}L" } ?: "null"}")
+            appendLine("    const val BUILD_BRANCH: String = \"${kotlinString(branch)}\"")
+            appendLine("    const val BUILD_COMMIT: String = \"${kotlinString(commit)}\"")
+            appendLine("}")
+        }
+        val target = File(outputDir, "net/sigmabeta/chipbox/js/WebBuildInfo.kt")
+        target.parentFile.mkdirs()
+        target.writeText(source)
+    }
 }
 
 kotlin {
@@ -149,8 +360,12 @@ kotlin {
 
     sourceSets {
         named("jsMain") {
+            kotlin.srcDir(generateWebBuildInfo)
             dependencies {
                 implementation(projects.cbox.common.appui.api)
+                // Pure route<->URL codec (and the shared allowsNavigation policy): maps Voyager
+                // route keys to the paths the browser mirrors into history.
+                implementation(projects.cbox.common.webroutes)
                 implementation(projects.cbox.common.strings.real)
                 implementation(projects.cbox.common.strings.api)
 
@@ -161,7 +376,6 @@ kotlin {
                 // of user settings in v1).
                 implementation(projects.cbox.common.repository.api)
                 implementation(projects.cbox.common.contentsource.api)
-                implementation(projects.cbox.common.contentsource.fake)
                 implementation(projects.cbox.common.player.speaker.api)
                 implementation(projects.cbox.common.player.speaker.fake)
                 implementation(projects.cbox.common.player.generator.api)
@@ -169,18 +383,24 @@ kotlin {
                 implementation(projects.cbox.common.player.director.api)
                 implementation(projects.cbox.common.player.director.fake)
                 implementation(projects.cbox.common.player.director.real)
-                // Web has no Room-backed playlists/favorites stores; the empty fakes satisfy the
-                // Director's repository deps (PLAYLIST/FAVORITES sessions resolve to nothing on web).
+                // Favorites, playlists, playback history, and the playback session persist in
+                // window.localStorage. The browserstate module provides versioned, cross-tab-live
+                // Storage-backed stores (the Room/DataStore implementations are JVM/Android-only),
+                // wired in WebModules.
                 implementation(projects.cbox.common.playlists.api)
-                implementation(projects.cbox.common.playlists.fake)
                 implementation(projects.cbox.common.favorites.api)
-                implementation(projects.cbox.common.favorites.fake)
-                // Playback history is stored browser-locally: LocalStoragePlaybackHistoryRepository
-                // persists the play log in window.localStorage, fed by the shared (Room-free)
-                // RealPlaybackHistoryRecorder from history.real. The Home recently-/most-played
-                // cards read straight off that log.
+                implementation(projects.cbox.common.browserstate)
+                // Playback history is stored browser-locally: StoragePlaybackHistoryRepository
+                // persists the bounded play log in window.localStorage, fed by the shared
+                // (Room-free) RealPlaybackHistoryRecorder from history.real. The Home
+                // recently-/most-played cards read straight off that log.
                 implementation(projects.cbox.common.history.api)
                 implementation(projects.cbox.common.history.real)
+                // Session restore/re-save uses the shared RealPlaybackSessionPersister over the
+                // browserstate versioned store (localStorage). observe() saves on pause, STOPPED
+                // clears, and JsMain flushes snapshotNow() on pagehide/visibilitychange.
+                implementation(projects.cbox.common.player.persistence.api)
+                implementation(projects.cbox.common.player.persistence.real)
                 implementation(projects.cbox.common.player.emulators.api)
                 implementation(projects.cbox.common.player.buffer.api)
                 implementation(projects.cbox.common.player.buffer.real)
@@ -204,7 +424,6 @@ kotlin {
                 implementation(projects.cbox.common.debugInfo.api)
                 implementation(projects.cbox.common.debugInfo.real)
                 implementation(projects.cbox.common.scanner.api)
-                implementation(projects.cbox.common.scanner.fake)
                 implementation(projects.cbox.common.models.api)
 
                 // VM supertypes — kept explicit so Kotlin/JS doesn't warn "Cannot access ...
@@ -215,6 +434,7 @@ kotlin {
                 implementation(projects.cbox.common.ui.list.api)
                 implementation(projects.cbox.common.ui.freeform.api)
                 implementation(projects.cbox.common.appcomm.api)
+                implementation(projects.cbox.common.capabilities.api)
                 implementation(libs.sage.common.freeform)
                 implementation(libs.sage.common.list)
 

@@ -7,6 +7,7 @@ import dev.zacsweers.metro.createGraphFactory
 import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import net.sigmabeta.chipbox.capabilities.AppCapabilities
 import net.sigmabeta.chipbox.contentsource.LibrarySource
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
 import net.sigmabeta.chipbox.crash.CrashReport
@@ -165,6 +166,12 @@ interface TestAppGraph : ViewModelGraph {
         buildTimeMs = null,
         buildBranch = "uitest",
     )
+
+    // The harness exercises the full desktop/Android surface; capability-specific specs construct
+    // a view model/state with explicit flags instead of rerouting the whole graph.
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideAppCapabilities(): AppCapabilities = AppCapabilities.Default
 
     @Provides
     @SingleIn(AppScope::class)

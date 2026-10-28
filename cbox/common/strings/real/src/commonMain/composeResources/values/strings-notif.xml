@@ -2,4 +2,7 @@
 <resources>
     <string name="home_section_notifications">Notifications</string>
     <string name="notif_scan_failed_title">Library scan failed</string>
+    <string name="notif_scan_failed_configuration_description">The library scan could not run because the library folder configuration is invalid. Check for overlapping or nested library folders and rescan.</string>
+    <string name="notif_insecure_origin_title">Audio playback needs a secure connection</string>
+    <string name="notif_insecure_origin_description">This page is served over plain HTTP. Browsers only allow the audio engine on HTTPS or localhost, so you can browse the library but tracks will not play. Open Chipbox at an https:// address (or localhost) to listen.</string>
 </resources>

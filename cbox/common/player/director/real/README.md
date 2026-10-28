@@ -12,7 +12,7 @@ instead.
 
 | File | What it is |
 | --- | --- |
-| `RealDirector.kt` | The orchestrator. Holds all playback state in one immutable `Model`, merges `Generator.events()` + `Speaker.events()` into a single stream, and runs pure `reduce(model, event) → (nextModel, effects)` reducers whose `Effect`s (start/stop track, switch speaker, arm watchdog, emit metadata, publish error…) are then applied. Owns track sequencing/shuffle, the `IDLE→BUFFERING→PLAYING→ENDING→STOPPED/ERROR` transitions, repeat/shuffle modes, setlist resolution per `Session.type`, a ~5 s stall watchdog, and a consecutive-failure cap. Transport methods are imperative entry points; `request()` dispatches each `SessionRequest` onto the director scope. |
+| `RealDirector.kt` | The orchestrator. Holds all playback state in one immutable `Model`, merges `Generator.events()` + `Speaker.events()` into a single stream, and runs pure `reduce(model, event) → (nextModel, effects)` reducers whose `Effect`s (start/stop track, switch speaker, arm watchdog, emit metadata, publish error…) are then applied. Owns track sequencing/shuffle, the `IDLE→BUFFERING→PLAYING→ENDING→STOPPED/ERROR` transitions, repeat/shuffle modes, setlist resolution per `Session.type`, a ~5 s stall watchdog, and a consecutive-failure cap. Transport methods are imperative entry points; `request()` dispatches each `SessionRequest` onto the director scope. `play()` resumes a `PAUSED` session; in `STOPPED` or `ERROR` it re-issues the current track from the top (clearing `errorMessage`), so a fatal failure is recoverable from the mini-player / Now Playing play gesture. |
 
 Tests (`commonTest`): `RealDirectorReducerTest` exercises the pure reducers by
 asserting returned effect lists; `RealDirectorTest` drives the whole pipeline over

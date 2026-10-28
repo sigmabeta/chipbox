@@ -21,7 +21,7 @@ application {
 // machinery (cmake/JDK probing, hostshim, per-emulator tasks), reuse the .so that module already
 // builds: depend on its single-emulator `buildHostNativeVgmstream` task (from the shared
 // chipbox.native.host plugin) and point java.library.path at that task's output dir.
-// Consume libvgmstream.so from apps/jvm's host build via a named consumable configuration rather
+// Consume libvgmstream from apps/jvm's host build via a named consumable configuration rather
 // than reading project(":apps:jvm").layout directly (forbidden under Isolated Projects). Resolving
 // this configuration both yields the output directory and pulls its `builtBy` task as a dependency.
 val jvmVgmstreamLibDeps: Configuration by configurations.dependencyScope("jvmVgmstreamLibDeps")
@@ -52,15 +52,16 @@ tasks.named<JavaExec>("run") {
     jvmArgumentProviders.add(NativeLibraryPathArgument(jvmVgmstreamLib))
 }
 
-// Bundle libvgmstream.so into `lib/native/` inside the distribution and inject
+// Bundle libvgmstream into `lib/native/` inside the distribution and inject
 // `-Djava.library.path=$APP_HOME/lib/native` into the generated start scripts so the installed
-// `chipbox-cli` finds the lib at launch — same approach as apps/jvm. Only libvgmstream.so is
-// included; the other emulator .so files in apps/jvm/libs are playback-only and unused here.
+// `chipbox-cli` finds the lib at launch — same approach as apps/jvm. Only libvgmstream is
+// included; the other host emulator libs (built into build/jvm-native/libs) are playback-only and
+// unused here.
 distributions {
     named("main") {
         contents {
             from(jvmVgmstreamLib) {
-                include("libvgmstream.so")
+                include("libvgmstream.so", "libvgmstream.dylib", "libvgmstream.dll", "vgmstream.dll")
                 into("lib/native")
             }
         }

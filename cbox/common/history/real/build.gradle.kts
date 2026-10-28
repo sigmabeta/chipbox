@@ -13,7 +13,8 @@ plugins {
 // JS variant: RealPlaybackHistoryRecorder + RealPlaybackHistoryRepository are pure common code
 // (the recorder needs only the Director; the repository talks to Room DAO *interfaces*), so they
 // live in commonMain and now compile for the browser too. apps/js reuses the tested recorder over
-// a localStorage-backed repository — see apps/js LocalStoragePlaybackHistoryRepository. Only the
+// a localStorage-backed repository — see StoragePlaybackHistoryRepository in
+// :cbox:common:browserstate. Only the
 // Room runtime stays platform-bound: the @Database (src/main/java = jvmShared) and the bundled
 // SQLite driver (jvmMain) are JVM/Android-only and never reach the JS klib.
 kotlin {

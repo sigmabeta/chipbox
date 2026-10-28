@@ -276,16 +276,56 @@ class DatabaseRepository(
         }
         val artistsByName = resolveGameArtists(rawGame)
 
-        // One batched insert for all the game's tracks (a single transaction / commit) instead of a
-        // row-at-a-time insert; the returned ids line up with rawGame.tracks by index.
-        val trackIds = traceAsync(TRACE_INSERT_TRACKS, nextCookie()) {
-            trackDao.insertAll(rawGame.tracks.map { it.toTrackEntity(gameId, now) })
+        // A content-addressed extracted path can outlive the game that first owned it (the admin
+        // renames the folder, or deletes the owner and keeps the duplicate). Those rows still
+        // satisfy the unique (path, trackNumber) index, so adopt them into this game — preserving
+        // their ids, and therefore playlists/queue/favorites — instead of inserting and failing.
+        val staleByKey = tracksForPaths(rawGame.tracks).associateBy { it.path to it.trackNumber }
+        val idByTrackKey = HashMap<Pair<String, Int>, Long>(rawGame.tracks.size)
+        val toInsert = mutableListOf<RawTrack>()
+        val toAdopt = mutableListOf<TrackEntity>()
+        for (raw in rawGame.tracks) {
+            val key = raw.trackKey()
+            val existing = staleByKey[key]
+            if (existing == null) {
+                toInsert += raw
+            } else {
+                toAdopt += raw.toTrackEntity(gameId, now).copy(
+                    id = existing.id,
+                    dateAdded = existing.dateAdded,
+                    dateLastUpdated = now,
+                )
+                idByTrackKey[key] = existing.id
+            }
         }
-        val idByTrackKey = rawGame.tracks.zip(trackIds).associate { (track, id) -> track.trackKey() to id }
+        if (toAdopt.isNotEmpty()) {
+            // The rows now belong to this game; rebuild their artist links from this scan so a
+            // changed m3u credit does not leave the old joins behind.
+            trackArtistDao.deleteForTracks(toAdopt.map { it.id })
+            traceAsync(TRACE_INSERT_TRACKS, nextCookie()) { trackDao.updateAll(toAdopt) }
+        }
+        // One batched insert for the remaining tracks (a single transaction / commit); the returned
+        // ids line up with toInsert by index.
+        if (toInsert.isNotEmpty()) {
+            val trackIds = traceAsync(TRACE_INSERT_TRACKS, nextCookie()) {
+                trackDao.insertAll(toInsert.map { it.toTrackEntity(gameId, now) })
+            }
+            toInsert.forEachIndexed { index, raw -> idByTrackKey[raw.trackKey()] = trackIds[index] }
+        }
         linkArtists(gameId, rawGame, idByTrackKey, artistsByName)
         invalidateCaches()
         return gameId
     }
+
+    /**
+     * Existing rows, from any game, whose path matches one of [tracks]. A content-addressed
+     * extracted path can move between games on a folder rename; the row is adopted by the new game.
+     * Chunked because SQLite caps a statement's bind parameters.
+     */
+    private suspend fun tracksForPaths(tracks: List<RawTrack>): List<TrackEntity> =
+        tracks.map { it.path }.distinct()
+            .chunked(MAX_SQL_BIND_PARAMS)
+            .flatMap { paths -> trackDao.getTracksForPaths(paths) }
 
     private suspend fun updateExistingGame(existing: GameEntity, rawGame: RawGame): GameWriteResult {
         val gameId = existing.id
@@ -677,6 +717,9 @@ class DatabaseRepository(
         private const val DEFAULT_GAME_CACHE_SIZE = 128
         private const val DEFAULT_ARTIST_CACHE_SIZE = 128
         private const val DEFAULT_TRACK_LIST_CACHE_SIZE = 128
+
+        // SQLite's default bind-parameter limit is 999 (older builds) — stay comfortably below.
+        private const val MAX_SQL_BIND_PARAMS = 500
 
         // Perfetto trace labels for the scan-time insert path. All `traceAsync` because the DAO
         // calls suspend; the per-track spans (resolve/insert/link) fire once per track, so a slow
