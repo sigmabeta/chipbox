@@ -5,7 +5,6 @@ import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Repository
 import net.sigmabeta.chipbox.scanner.Scanner
@@ -26,5 +25,5 @@ object RealScannerModule {
         contentSource: LocalFileContentSource,
         readers: Readers,
         hatchet: Hatchet,
-    ): Scanner = RealScanner(repository, contentSource, readers, VgmstreamProbe, hatchet)
+    ): Scanner = RealScanner(repository, contentSource, readers, hatchet)
 }

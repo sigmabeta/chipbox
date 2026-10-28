@@ -4,8 +4,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import net.sigmabeta.chipbox.contentsource.LibraryLocationInfo
 import net.sigmabeta.chipbox.contentsource.fake.FakeLibrarySource
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProber
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamSubsong
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteOutcome
@@ -107,7 +105,6 @@ class OverlappingLocationsScanTest {
             repository = repository,
             librarySource = source,
             readers = Readers(hatchet),
-            vgmstreamProbe = NoVgmstreamProber,
             hatchet = hatchet,
         )
         scanner.startScan()
@@ -141,12 +138,6 @@ private class RecordingRepository : Repository by FakeRepository(emptyMap()) {
         prunes++
         return emptyList()
     }
-}
-
-private object NoVgmstreamProber : VgmstreamProber {
-    override fun isSupported(extension: String): Boolean = false
-
-    override fun probe(bytes: ByteArray, extension: String): List<VgmstreamSubsong> = emptyList()
 }
 
 /** Records error-level log lines so the test can assert the refusal names both roots. */

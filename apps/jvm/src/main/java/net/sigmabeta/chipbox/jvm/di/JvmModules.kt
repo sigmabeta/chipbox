@@ -49,7 +49,6 @@ import net.sigmabeta.chipbox.player.buffer.ProducerBufferManager
 import net.sigmabeta.chipbox.player.buffer.real.RealBufferManager
 import net.sigmabeta.chipbox.player.emulators.Emulator
 import net.sigmabeta.chipbox.player.emulators.EmulatorProvider
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
 import net.sigmabeta.chipbox.player.emulators.gba.GbaEmulator
 import net.sigmabeta.chipbox.player.emulators.gme.GmeEmulator
 import net.sigmabeta.chipbox.player.emulators.ncsf.NcsfEmulator
@@ -306,7 +305,7 @@ object JvmScannerModule {
         librarySource: LibrarySource,
         readers: Readers,
         hatchet: Hatchet,
-    ): RealScanner = RealScanner(repository, librarySource, readers, VgmstreamProbe, hatchet)
+    ): RealScanner = RealScanner(repository, librarySource, readers, hatchet)
 
     @Provides @SingleIn(AppScope::class)
     fun provideScanner(impl: RealScanner): Scanner = impl

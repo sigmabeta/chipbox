@@ -68,10 +68,66 @@ every run.
 ```
 
 The scan uses the same readers, PSF chain resolution, and m3u overlays as the
-app's library scan. Paths (track, folder, chain file, cover art) are stored
+app's library scan, and is pure Kotlin — no native library is loaded. Paths (track, folder, chain file, cover art) are stored
 relative to `--dir` and the snapshot records a `root` reference, so the same
 snapshot is valid on host and device: import rebases the relative paths onto the
 device's corpus location.
+
+### `reader-parity --dir <corpus> [--reference <tsv>] [--reader <ext>] [--no-padding]`
+
+Dev-only parity check for the pure-Kotlin streamed-audio header readers
+(see `.scratch/vgmstream-reader/`). It runs the **registered** reader for each
+reference row or corpus file, then compares `readerLengthMs + padding` against
+the reference's stored length. Padding defaults to `2000 ms` — the scanner's
+`ZERO_FADE_PADDING_MS`, which it adds to every zero-fade track, so streamed
+lengths in the database are probe length + 2 s. `--no-padding` compares raw
+probe lengths instead. It prints `exact / mismatch / unparsed` totals overall and
+per extension plus the offending paths (first 20, then a remaining count). It is
+**not** part of CI and needs no native library: the readers are pure Kotlin.
+
+| option | meaning | default |
+|---|---|---|
+| `--dir <folder>` | corpus root; with a reference, only rows under it run | none |
+| `--reference <tsv>` | headerless DB export (see capture command below) | none |
+| `--reader <ext>` | only files/rows with this extension | every registered reader |
+| `--no-padding` | compare raw lengths (no `+2000 ms`) | off |
+
+At least one of `--dir` / `--reference` is required. Without a reference the run
+reports `parsed` / `unparsed` only (there is no expected length to match). With
+`--reader`, files of that extension are included even if no reader is registered
+for them, so a Tier-0 smoke run reports them unparsed.
+
+Capture the reference from the pre-cutover library database (columns:
+`id, path, trackNumber, trackLengthMs, extension, title`; tab-separated,
+no header; the command below writes it to `/tmp/all618.tsv`):
+
+```sh
+DB=~/.local/share/chipbox/library.sqlite
+for e in strm xa adx genh gms sad; do
+  sqlite3 -readonly -separator $'\t' "$DB" \
+    "select id,path,trackNumber,trackLengthMs,extension,title
+       from track where extension='$e' order by id;"
+done > /tmp/all618.tsv
+```
+
+Run it (all six Tier-0 readers are registered, so every reference row should be
+exact):
+
+```sh
+./gradlew :testing:perfbench:run --args="reader-parity --reference /tmp/all618.tsv"
+# reader-parity: reference=/tmp/all618.tsv, padding=2000ms
+# rows=618 exact=618 mismatch=0 unparsed=0
+#   adx: exact=4 mismatch=0 unparsed=0
+#   genh: exact=112 mismatch=0 unparsed=0
+#   gms: exact=239 mismatch=0 unparsed=0
+#   sad: exact=1 mismatch=0 unparsed=0
+#   strm: exact=62 mismatch=0 unparsed=0
+#   xa: exact=200 mismatch=0 unparsed=0
+```
+
+After a later ticket registers a reader, the same command reports its exact
+count; iterate on one format with `--reader xa`, and use a raw probe export with
+`--no-padding` when the reference was captured before the scanner padded it.
 
 ### `diff --a <runA> --b <runB>`
 
@@ -138,11 +194,13 @@ them on `java.library.path` with no extra setup.
 
 ## Tests
 
-The `test` source set covers the CLI seams: the `audio`/`snapshot`/`diff` arg
-parsers (`AudioArgsTest`, `SnapshotArgsTest`, `DiffArgsTest`), the `--filter`
-glob semantics (`CorpusFilterTest`), the `diff` read seam's refusal of a
-non-v1.1 result (`DiffCommandTest`), the corpus-manifest
-construction and equality (`CorpusManifestTest`), and the scanner → snapshot →
-import round trip (`SnapshotCommandTest`, `SnapshotRoundTripTest`). The shared
-result schema, report math, and diff contract are tested in
+The `test` source set covers the CLI seams: the `audio`/`snapshot`/`diff`/
+`reader-parity` arg parsers (`AudioArgsTest`, `SnapshotArgsTest`, `DiffArgsTest`,
+`ReaderParityArgsTest`), the `--filter` glob semantics (`CorpusFilterTest`), the
+`diff` read seam's refusal of a non-v1.1 result (`DiffCommandTest`), the
+corpus-manifest construction and equality (`CorpusManifestTest`), the parity
+harness's TSV parsing/counting and directory run (`ReaderParityCommandTest`), and
+the scanner → snapshot → import round trip (`SnapshotCommandTest`,
+`SnapshotRoundTripTest`). The shared result schema, report math, and diff
+contract are tested in
 [`:testing:perfbench-core`](../perfbench-core/README.md).

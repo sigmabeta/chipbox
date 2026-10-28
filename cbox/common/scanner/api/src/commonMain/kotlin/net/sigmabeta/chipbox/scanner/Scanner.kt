@@ -23,7 +23,7 @@ abstract class Scanner(
     /**
      * Version of the scanner's reading/aggregation logic. Bump it whenever a change alters the
      * tracks a scan persists (tag merging, m3u overlays, length/fade defaults, chain resolution,
-     * vgmstream fallback, …) so tracks written by an older scan are re-read. Stored on each
+     * format dispatch, …) so tracks written by an older scan are re-read. Stored on each
      * persisted track and compared against the current code in the folder-skip check.
      */
     open val version: Int = INITIAL_VERSION
@@ -39,9 +39,9 @@ abstract class Scanner(
             } catch (error: Throwable) {
                 // A scan must always end in a terminal state: consumers block on
                 // state().first { it is Complete || Failed }, so a failure that escapes scan()
-                // without one hangs every consumer forever. Catch Throwable (not just Exception) —
-                // an Error such as a native-lib LinkageError would otherwise slip past — and surface
-                // it as Failed so the UI/CLI unblock instead of spinning.
+                // without one hangs every consumer forever. Catch Throwable (not just Exception) so
+                // an Error from a reader or the dispatcher surfaces as Failed instead of wedging
+                // the UI/CLI.
                 hatchet.e("Scan error. ${error.stackTraceToString()}")
                 emitState(ScannerState.Failed(error.message ?: error::class.simpleName ?: "unknown error"))
             }

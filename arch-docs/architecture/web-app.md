@@ -331,23 +331,17 @@ saved snapshot, and reloading a tab restores that snapshot.
   scripts/ci/verify-web-bundle.sh   # standalone: 9 pairs + index.html + chipbox.js
   ```
 - `apps/server` bundles the production JS for `installDist`/`distZip`/`distTar`
-  (requires `-Psage.js=true`). The native `libvgmstream` used by the scanner is
-  built by CMake (`:apps:jvm:buildHostNativeVgmstream`) and consumed via
-  apps/jvm's `hostVgmstreamElements`; the distributions copy it into
-  `lib/native/` and point `java.library.path` there. No committed binaries.
+  (requires `-Psage.js=true`). It ships no native library: scanning parses
+  file headers in pure Kotlin, and the server does not play audio.
 - The Docker image (`/Dockerfile`, `/.dockerignore`) is multi-stage:
   - `web` (BUILDPLATFORM): JDK 21, Node 22 + Yarn, pinned emsdk, CMake → WASM,
     bundle, bundle assertion, and the server distribution (`-Pchipbox.skipNative`,
     so no Android SDK is needed).
-  - `native` (TARGETPLATFORM): JDK 21 + CMake → `libvgmstream.so` for the target
-    architecture, configured with `--configure-on-demand` so the Android native
-    modules are not configured. The stage asserts the produced ELF
-    `e_machine` matches `$TARGETARCH` (amd64 `3e 00`, arm64 `b7 00`).
-  - `runtime` (TARGETPLATFORM): JRE 21 on Ubuntu/glibc (the `.so` is glibc-linked,
-    not alpine), non-root uid 10001, `/music` (read-only library) and `/data` (DB
-    + work dir, persistent), `curl` healthcheck. It also asserts at build time
-    that the packaged server jar carries `index.html` and all nine WASM
-    loader/WASM pairs (the list is `apps/js/wasm-emulators.txt`).
+  - `runtime` (TARGETPLATFORM): JRE 21 on Ubuntu/glibc, non-root uid 10001,
+    `/music` (read-only library) and `/data` (DB + work dir, persistent), `curl`
+    healthcheck. It also asserts at build time that the packaged server jar
+    carries `index.html` and all nine WASM loader/WASM pairs (the list is
+    `apps/js/wasm-emulators.txt`).
   ```sh
   git submodule update --init --recursive   # sage is a build input
   docker build -t chipbox-server:dev .

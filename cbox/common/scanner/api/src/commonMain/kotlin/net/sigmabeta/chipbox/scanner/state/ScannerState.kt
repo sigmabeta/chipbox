@@ -26,14 +26,19 @@ sealed class ScannerState {
         val timeInSeconds: Int = 0,
         val gamesFound: Int = 0,
         val tracksFound: Int = 0,
-        val tracksFailed: Int = 0
+        val tracksFailed: Int = 0,
+        // Streamed-audio files the scan could not read: no Kotlin reader for the extension, or the
+        // registered reader found no supported stream in the file. Trailing and defaulted so older
+        // call sites/tests keep compiling.
+        val filesSkipped: Int = 0
     ) : ScannerState()
 
     data class Complete(
         val timeInSeconds: Int,
         val gamesFound: Int,
         val tracksFound: Int,
-        val tracksFailed: Int
+        val tracksFailed: Int,
+        val filesSkipped: Int = 0
     ) : ScannerState()
 
     data class Failed(

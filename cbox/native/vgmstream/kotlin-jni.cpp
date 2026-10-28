@@ -29,8 +29,10 @@ Java_net_sigmabeta_chipbox_player_emulators_vgmstream_VgmstreamEmulator_loadTrac
 }
 
 // Returns vgmstream's supported extensions minus the "common" ones (wav/ogg/mp3/...), so the
-// emulator/scanner gate is sourced from vgmstream itself. Used to pick this emulator (kept last
-// in the provider list, so existing chiptune emulators win shared extensions) and to gate scans.
+// emulator's provider gate is sourced from vgmstream itself. Used to pick this emulator (kept last
+// in the provider list, so existing chiptune emulators win shared extensions). Scanning does not
+// use this: the scanner is pure Kotlin and ships its own vendored-list mirror in
+// `readers/StreamedExtensions.kt`.
 JNIEXPORT jobjectArray JNICALL
 Java_net_sigmabeta_chipbox_player_emulators_vgmstream_VgmstreamEmulator_getSupportedExtensionsInternal(
         JNIEnv *env,
@@ -64,68 +66,6 @@ Java_net_sigmabeta_chipbox_player_emulators_vgmstream_VgmstreamEmulator_getSuppo
         env->SetObjectArrayElement(result, out++, s);
         env->DeleteLocalRef(s);
     }
-    return result;
-}
-
-// Scan-time metadata probe. Returns one "sampleRate\tlengthMs\tstreamName" line per subsong
-// (array length = subsong count), or an empty array if the file isn't recognised. Uses the SAME
-// loop/fade config as playback so the reported length matches what VgmstreamEmulator produces.
-JNIEXPORT jobjectArray JNICALL
-Java_net_sigmabeta_chipbox_player_emulators_vgmstream_VgmstreamProbe_probeInternal(
-        JNIEnv *env,
-        jobject thiz,
-        jstring java_filename
-) {
-    const int MAX_SUBSONGS = 4096; // guard against pathological banks (FSB/AWB with 1000s)
-
-    jclass string_class = env->FindClass("java/lang/String");
-    jobjectArray empty = env->NewObjectArray(0, string_class, nullptr);
-
-    const char *path = env->GetStringUTFChars(java_filename, nullptr);
-    libvgmstream_set_log(LIBVGMSTREAM_LOG_LEVEL_NONE, nullptr);
-
-    libstreamfile_t *sf = libstreamfile_open_from_stdio(path);
-    if (!sf) {
-        env->ReleaseStringUTFChars(java_filename, path);
-        return empty;
-    }
-
-    libvgmstream_t *lib = libvgmstream_init();
-    libvgmstream_config_t cfg = {};
-    cfg.loop_count = 2.0;
-    cfg.fade_time = 10.0;
-    cfg.auto_downmix_channels = 2;
-    cfg.force_sfmt = LIBVGMSTREAM_SFMT_PCM16;
-    libvgmstream_setup(lib, &cfg);
-
-    if (!lib || libvgmstream_open_stream(lib, sf, 0) < 0) {
-        if (lib) libvgmstream_free(lib);
-        libstreamfile_close(sf);
-        env->ReleaseStringUTFChars(java_filename, path);
-        return empty;
-    }
-
-    int count = lib->format->subsong_count;
-    if (count < 1) count = 1;
-    if (count > MAX_SUBSONGS) count = MAX_SUBSONGS;
-
-    jobjectArray result = env->NewObjectArray(count, string_class, nullptr);
-    for (int n = 1; n <= count; ++n) {
-        if (libvgmstream_open_stream(lib, sf, n) < 0) continue;
-        const libvgmstream_format_t *f = lib->format;
-        long long length_ms = f->sample_rate > 0
-                ? (long long) (f->play_samples * 1000 / f->sample_rate)
-                : 0;
-        char buf[512];
-        snprintf(buf, sizeof(buf), "%d\t%lld\t%s", f->sample_rate, length_ms, f->stream_name);
-        jstring s = env->NewStringUTF(buf);
-        env->SetObjectArrayElement(result, n - 1, s);
-        env->DeleteLocalRef(s);
-    }
-
-    libvgmstream_free(lib);
-    libstreamfile_close(sf);
-    env->ReleaseStringUTFChars(java_filename, path);
     return result;
 }
 

@@ -1,9 +1,3 @@
-import org.gradle.api.file.FileCollection
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
-import org.gradle.process.CommandLineArgumentProvider
-
 plugins {
     alias(libs.plugins.sage.jvm)
     alias(libs.plugins.kotlin.serialization)
@@ -19,34 +13,8 @@ application {
 // Headless HTTP server that serves the apps/js bundle + JSON library API. Reuses the entire
 // scan + DB stack apps/cli already runs (DatabaseRepository + RealScanner + LocalFileContentSource)
 // — see ChipboxLibrary.kt for the hand-wired construction pattern this mirrors. No emulator
-// playback on the server (that's a future WASM project for the browser); the only native lib it
-// needs is vgmstream for the scanner's subsong probe.
-
-// libvgmstream: scanner.real → VgmstreamProbe.probe → System.loadLibrary("vgmstream"). Same pattern
-// apps/cli uses (apps/cli/build.gradle.kts comments explain in detail). One native lib, no
-// per-format emulator builds — pure Kotlin readers handle everything else during a scan.
-//
-// Consume the host-built libvgmstream from apps/jvm's `hostVgmstreamElements` configuration rather
-// than reading project(":apps:jvm").layout directly (forbidden under Isolated Projects). The
-// configuration carries the CMake-produced output directory
-// (`apps/jvm/build/jvm-native/out/<target>/vgmstream/host/`) with its `builtBy` producer, so a
-// fresh checkout builds the library instead of expecting a committed binary.
-val jvmNativeLibsDeps: Configuration by configurations.dependencyScope("jvmNativeLibsDeps")
-val jvmNativeLibs: Configuration by configurations.resolvable("jvmNativeLibs") {
-    extendsFrom(jvmNativeLibsDeps)
-}
-dependencies {
-    add(jvmNativeLibsDeps.name, project(path = ":apps:jvm", configuration = "hostVgmstreamElements"))
-}
-// Argument provider that resolves the native-lib directory lazily at execution and emits it as
-// `-Djava.library.path`. Modelling it as a CommandLineArgumentProvider with an @InputFiles
-// FileCollection (rather than a lambda capturing a configuration-backed Provider) keeps it
-// configuration-cache safe and establishes the task dependency on the config's builtBy producer.
-class NativeLibraryPathArgument(
-    @get:InputFiles @get:PathSensitive(PathSensitivity.ABSOLUTE) val nativeDir: FileCollection,
-) : CommandLineArgumentProvider {
-    override fun asArguments() = listOf("-Djava.library.path=${nativeDir.singleFile.absolutePath}")
-}
+// playback on the server (that's a future WASM project for the browser), and scanning needs no
+// native lib: pure Kotlin readers parse every in-scope format.
 
 // Bundle copy is opt-in. By default `:apps:server:run` skips webpack entirely — Ktor's
 // `staticResources("/", "static")` just 404s on `/`, which is fine when you're running the
@@ -108,28 +76,6 @@ tasks.named("processResources") {
     mustRunAfter(installProdBundle)
 }
 
-tasks.named<JavaExec>("run") {
-    // Build (or reuse) the host vgmstream library before launching so
-    // System.loadLibrary("vgmstream") resolves on a fresh checkout. Under -Pchipbox.skipNative the
-    // configuration has no producer and the directory may be absent; that's a deliberate opt-out.
-    dependsOn(jvmNativeLibs)
-    jvmArgumentProviders.add(NativeLibraryPathArgument(jvmNativeLibs))
-}
-
-// Bundle the host-built vgmstream library into `lib/native/` in the installed distribution +
-// splice `-Djava.library.path=$APP_HOME/lib/native` into the launch scripts. Same shape as
-// apps/cli. Include the host's real file name: Linux `.so`, macOS `.dylib`, Windows `.dll` — the
-// old `.so`-only filter produced a silently lib-less mac `installDist`.
-distributions {
-    named("main") {
-        contents {
-            from(jvmNativeLibs) {
-                include("libvgmstream.so", "libvgmstream.dylib", "libvgmstream.dll", "vgmstream.dll")
-                into("lib/native")
-            }
-        }
-    }
-}
 // Always-on production bundle copy used by installDist/distZip/distTar (separate from the
 // opt-in `copyJsBundle` above so default `:apps:server:run` stays webpack-free).
 val installProdBundle = tasks.register<Copy>("installProductionJsBundle") {
@@ -156,51 +102,9 @@ val installProdBundle = tasks.register<Copy>("installProductionJsBundle") {
 
 listOf("installDist", "distZip", "distTar").forEach { taskName ->
     tasks.named(taskName) {
-        dependsOn(jvmNativeLibs)
         // Shippable artifacts must include the production JS bundle regardless of -P flags;
         // wiring an explicit Copy that doesn't respect `onlyIf` keeps that contract.
         dependsOn(installProdBundle)
-    }
-}
-
-// Packaging check: the server runtime is useless for vgmstream formats without this library, and
-// the old wiring silently resolved an unproduced directory. This task resolves the exact
-// configuration the distribution/run use and fails if no host vgmstream library is produced.
-// `inputs.files` both makes the config an input (configuration-cache safe) and pulls its builtBy
-// producer. Run: ./gradlew :apps:server:verifyVgmstreamNativeLib
-//   -Dorg.gradle.isolated-projects=false --configure-on-demand -Pchipbox.cmake=<cmake>
-tasks.register("verifyVgmstreamNativeLib") {
-    description = "Asserts apps/jvm produces a host libvgmstream for this server build."
-    group = "verification"
-    val nativeLibs = jvmNativeLibs
-    inputs.files(nativeLibs)
-    doLast {
-        val dir = inputs.files.singleFile
-        val lib = dir.listFiles().orEmpty().firstOrNull {
-            it.isFile && (it.name.startsWith("libvgmstream.") || it.name == "vgmstream.dll")
-        }
-        check(lib != null && lib.length() > 0) {
-            "No host vgmstream library produced in $dir. Expected libvgmstream.{so,dylib,dll} " +
-                "(or vgmstream.dll). Check apps/jvm hostVgmstreamElements and " +
-                "buildHostNativeVgmstream."
-        }
-        logger.lifecycle("vgmstream native library OK: ${lib.absolutePath} (${lib.length()} bytes)")
-    }
-}
-tasks.named<CreateStartScripts>("startScripts") {
-    doLast {
-        unixScript.writeText(
-            unixScript.readText().replace(
-                "exec \"\$JAVACMD\" \"\$@\"",
-                "exec \"\$JAVACMD\" \"-Djava.library.path=\$APP_HOME/lib/native\" \"\$@\"",
-            ),
-        )
-        windowsScript.writeText(
-            windowsScript.readText().replace(
-                "-classpath \"%CLASSPATH%\"",
-                "-D\"java.library.path=%APP_HOME%\\lib\\native\" -classpath \"%CLASSPATH%\"",
-            ),
-        )
     }
 }
 
@@ -209,7 +113,6 @@ dependencies {
     // organizer / Mordant CLI bits this server doesn't need).
     implementation(projects.cbox.common.scanner.real)
     implementation(projects.cbox.common.scanner.api)
-    implementation(projects.cbox.common.player.emulators.vgmstream.real)
     implementation(projects.cbox.common.repository.real)
     implementation(projects.cbox.common.repository.api)
     implementation(projects.cbox.common.database.real)
