@@ -22,8 +22,8 @@ import net.sigmabeta.chipbox.readers.LENGTH_UNKNOWN_MS
 import net.sigmabeta.chipbox.readers.deriveMetaFromFilename
 import net.sigmabeta.chipbox.readers.PsfTagInfo
 import net.sigmabeta.chipbox.readers.Readers
+import net.sigmabeta.chipbox.readers.isKnownStreamedExtension
 import net.sigmabeta.chipbox.readers.isPsfFamily
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProber
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteResult
@@ -59,13 +59,21 @@ class RealScanner(
     private val repository: Repository,
     private val librarySource: LibrarySource,
     private val readers: Readers,
-    private val vgmstreamProbe: VgmstreamProber,
     private val hatchet: Hatchet,
     dispatcher: CoroutineDispatcher = ioDispatcher,
     // Server-only: rewrites RSN archive tracks to standalone extracted .spc files. Null on
     // desktop/Android/CLI, where playback stages the member out of the archive itself.
     private val rsnExtractor: RsnExtractor? = null,
 ) : Scanner(dispatcher) {
+
+    /**
+     * Version 2: the native vgmstream probe was deleted and every streamed format the Kotlin readers
+     * cover now stamps a real `reader_version` instead of the no-reader sentinel (0). Bumping the
+     * scanner version forces one re-read of every existing library, including folders whose streamed
+     * files still have no reader — otherwise those folders would keep `0 == 0`, be skipped, and never
+     * report the newly surfaced skipped-file count.
+     */
+    override val version: Int = 2
 
     // Scan work spans coroutine suspension points, so a trace section's begin and end can land on
     // different IO threads — that rules out the thread-bound synchronous `trace` for those spans.
@@ -140,6 +148,7 @@ class RealScanner(
         val gamesFound = AtomicInt(0)
         val tracksFound = AtomicInt(0)
         val tracksFailed = AtomicInt(0)
+        val filesSkipped = AtomicInt(0)
         val foldersFound = AtomicInt(0)
         // Folders are independent (each scanGroup has its own metadata + tag caches), and most of a
         // scan is spent blocked on file-read IO. Discovery (the directory walk, one stat per file)
@@ -164,6 +173,7 @@ class RealScanner(
                                     gamesFound.addAndFetch(progress.gamesFound),
                                     tracksFound.addAndFetch(progress.tracksFound),
                                     tracksFailed.addAndFetch(progress.tracksFailed),
+                                    filesSkipped.addAndFetch(progress.filesSkipped),
                                 )
                             )
                         }
@@ -191,14 +201,22 @@ class RealScanner(
         val duration = scanStart.elapsedNow()
         hatchet.i(
             "Scan complete in ${duration.inWholeSeconds}s — " +
-                "${total.gamesFound} game(s), ${total.tracksFound} track(s), ${total.tracksFailed} failure(s)."
+                "${total.gamesFound} game(s), ${total.tracksFound} track(s), " +
+                "${total.tracksFailed} failure(s), ${total.filesSkipped} skipped file(s)."
         )
+        if (total.filesSkipped > 0) {
+            hatchet.w(
+                "${total.filesSkipped} file(s) skipped: streamed-audio formats this build cannot " +
+                    "read (no Kotlin reader, or no supported stream). See the per-file warnings above.",
+            )
+        }
         emitState(
             ScannerState.Complete(
                 duration.inWholeSeconds.toInt(),
                 total.gamesFound,
                 total.tracksFound,
                 total.tracksFailed,
+                total.filesSkipped,
             )
         )
         emitEvent(ScannerEvent.Unknown)
@@ -250,6 +268,7 @@ class RealScanner(
         val rsnArchiveBytes = LinkedHashMap<String, ByteArray>()
         val m3uFiles = mutableListOf<LibraryFileInfo>()
         var failed = 0
+        var skipped = 0
 
         val byFilename: Map<String, LibraryFileInfo> = files.associateBy { it.name.lowercase() }
         // plain HashMap: scanGroup is sequential suspend, no concurrent access
@@ -314,22 +333,17 @@ class RealScanner(
 
             val reader = readers.forExtension(ext)
             if (reader == null) {
-                // No dedicated chiptune reader — fall back to vgmstream for streamed-audio formats
-                // (ADX, HCA, DSP/BRSTM, STRM, ...). Checked last so the readers above win.
-                if (!vgmstreamSupports(ext)) {
+                // No reader for this extension. A *known streamed* format (the vendored vgmstream
+                // build can open it) is a real coverage gap: count it and warn, so the user sees a
+                // format disappear instead of finding silence. Anything else (.txt, .gif, …) is
+                // just noise in the folder and stays a debug-level skip.
+                if (isKnownStreamedExtension(ext)) {
+                    hatchet.w(
+                        "No Kotlin reader for streamed extension '$ext' — skipping ${file.name}.",
+                    )
+                    skipped++
+                } else {
                     hatchet.v("No reader for extension '$ext' — skipping ${file.name}.")
-                    continue
-                }
-                val tracks = readWithErrorHandling(file) { scanVgmstream(file, ext) }
-                when {
-                    tracks == null -> {
-                        hatchet.w("Failed to read ${file.name}.")
-                        failed++
-                    }
-
-                    tracks.isEmpty() -> hatchet.d("${file.name} yielded no tracks.")
-
-                    else -> tracksByFilename[file.name] = tracks.toMutableList()
                 }
                 continue
             }
@@ -352,7 +366,20 @@ class RealScanner(
                     failed++
                 }
 
-                tracks.isEmpty() -> hatchet.d("${file.name} yielded no tracks.")
+                tracks.isEmpty() -> {
+                    // A registered reader that returns emptyList() recognised the file but has no
+                    // supported stream in it (e.g. an FSB5 bank using Vorbis). That is the same
+                    // coverage gap as a known streamed extension with no Kotlin reader: count and
+                    // warn. `null` stays a failure and never reaches this branch.
+                    if (isKnownStreamedExtension(ext)) {
+                        hatchet.w(
+                            "Streamed reader found no supported stream in ${file.name} — skipping.",
+                        )
+                        skipped++
+                    } else {
+                        hatchet.d("${file.name} yielded no tracks.")
+                    }
+                }
 
                 else -> {
 //                    hatchet.d("${file.name} yielded ${tracks.size} track(s).")
@@ -426,7 +453,11 @@ class RealScanner(
         }
 
         if (rawTracks.isEmpty()) {
-            return if (failed > 0) Progress(0, 0, failed) else Progress.EMPTY
+            return if (failed > 0 || skipped > 0) {
+                Progress(0, 0, failed, skipped)
+            } else {
+                Progress.EMPTY
+            }
         }
 
         val folderName = folderDisplayName(folderKey)
@@ -499,7 +530,7 @@ class RealScanner(
             // Re-scanned but byte-identical (e.g. a touched mtime): no user-visible change.
             GameWriteResult.UNCHANGED -> Unit
         }
-        return Progress(1, rawTracks.size, failed)
+        return Progress(1, rawTracks.size, failed, skipped)
     }
 
     // A content-free fingerprint of a folder: every file's identifier, size and mtime, sorted and
@@ -516,73 +547,6 @@ class RealScanner(
             .sortedBy { it.identifier }
             .joinToString("\n") { "${it.identifier}|${it.sizeBytes}|${it.lastModifiedMs}" }
         return joined.encodeToByteArray().toByteString().sha256().hex()
-    }
-
-    // vgmstream's supported-extension probe lazily loads its native lib on first call. When that lib
-    // can't be loaded (not bundled for this platform/target, or missing from java.library.path), the
-    // failure is a LinkageError — an Error, not an Exception — so neither [readWithErrorHandling] nor
-    // the top-level scan catch stops it from tearing down the whole scan and leaving consumers hung
-    // with no terminal state. Treat any such failure as "vgmstream unavailable": skip streamed-audio
-    // formats for the rest of this scan so the chiptune formats still scan to completion. Latched to
-    // one probe + one log line rather than re-failing (and re-loading) on every unreadable file.
-    private val vgmstreamUnavailable = AtomicReference(false)
-
-    private fun vgmstreamSupports(ext: String): Boolean {
-        if (vgmstreamUnavailable.load()) return false
-        return try {
-            vgmstreamProbe.isSupported(ext)
-        } catch (cancellation: CancellationException) {
-            throw cancellation
-        } catch (unavailable: Throwable) {
-            // A missing libvgmstream raises a JVM LinkageError; anything else (a decode failure, a
-            // bad native call) is also non-fatal for the scan. This catch deliberately covers all
-            // Throwables because the JVM-only VM-fatal types (VirtualMachineError,
-            // OutOfMemoryError) are not available from commonMain, which now also compiles for
-            // Kotlin/JS.
-            if (vgmstreamUnavailable.compareAndSet(false, true)) {
-                hatchet.e(
-                    "vgmstream native lib unavailable (${unavailable.message}); " +
-                        "skipping streamed-audio formats for this scan.",
-                )
-            }
-            false
-        }
-    }
-
-    // Streamed-audio path: vgmstream decodes by filesystem path and keys on the extension, so we
-    // stage the bytes to a temp file, then probe it for subsongs + exact length/rate/name. One
-    // RawTrack per subsong (subsong index → trackNumber, so playback reopens the right one).
-    private suspend fun scanVgmstream(file: LibraryFileInfo, ext: String): List<RawTrack>? {
-        val bytes = traceAsync(TRACE_OPEN_BYTES, nextCookie()) {
-            librarySource.openBytes(file.identifier)
-        }
-        if (bytes == null) {
-            hatchet.w("Failed to read ${file.name}: could not open ${file.identifier}.")
-            return null
-        }
-
-        val subsongs = trace("$TRACE_READ_PREFIX$ext") { vgmstreamProbe.probe(bytes, ext) }
-        return if (subsongs.isEmpty()) {
-            hatchet.v("vgmstream did not recognise ${file.name}.")
-            emptyList()
-        } else {
-            subsongs.map { sub ->
-                RawTrack(
-                    file.identifier,
-                    "",
-                    sub.streamName.ifBlank { TAG_UNKNOWN },
-                    TAG_UNKNOWN,
-                    TAG_UNKNOWN,
-                    sub.lengthMs,
-                    sub.subsong,
-                    0L,
-                ).copy(
-                    source = librarySource.sourceId,
-                    extension = ext,
-                    platform = platformForVgmstreamExtension(ext),
-                )
-            }
-        }
     }
 
     /**
@@ -745,15 +709,21 @@ class RealScanner(
         val gamesFound: Int,
         val tracksFound: Int,
         val tracksFailed: Int,
+        // Files in a known streamed-audio format that produced no tracks: either no Kotlin reader
+        // for the extension, or a registered reader that recognised the file but found no supported
+        // stream (e.g. an external-codec FSB5 bank). Counted separately from failures: nothing was
+        // broken, the format is just not readable by this build.
+        val filesSkipped: Int = 0,
     ) {
         operator fun plus(other: Progress) = Progress(
             gamesFound + other.gamesFound,
             tracksFound + other.tracksFound,
             tracksFailed + other.tracksFailed,
+            filesSkipped + other.filesSkipped,
         )
 
         companion object {
-            val EMPTY = Progress(0, 0, 0)
+            val EMPTY = Progress(0, 0, 0, 0)
         }
     }
 

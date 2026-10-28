@@ -16,13 +16,11 @@ the graph: nothing depends on it.
   is the installed distribution:
   `./gradlew :apps:cli:installDist` →
   `apps/cli/build/install/chipbox-cli/bin/chipbox-cli`.
-- **Native lib:** the scanner probes streamed-audio files through `vgmstream`
-  (`VgmstreamProbe → System.loadLibrary("vgmstream")`) — the only native lib the
-  scan path touches. The build reuses `:apps:jvm:buildHostNativeVgmstream`'s
-  host library (`libvgmstream.{so,dylib,dll}`, CMake-produced — not committed) via
-  apps/jvm's `hostVgmstreamElements` configuration and points `java.library.path`
-  at it (bundled into `lib/native/` in the distribution). Every chiptune format is
-  parsed by pure-Kotlin readers.
+- **Native library:** none. Every in-scope chiptune *and* streamed format is
+  parsed from its file header by the pure-Kotlin `:cbox:common:readers:api`
+  module, and the CLI never plays audio, so the distribution neither ships nor
+  loads `libvgmstream` (or any other native emulator library). A scan reads
+  bytes and parses headers; it never reaches a decoder.
 - The CLI never renders Compose; the build excludes the transitively-pulled
   Compose/skiko groups from the runtime classpath to keep the distribution slim.
 
@@ -67,6 +65,6 @@ library.close()
 - **Source set:** `src/main/java` (`jvmSharedMain`).
 - **SAGE/module dependencies:** `cbox/common` `scanner`, `repository`,
   `database`, `contentsource(.file)`, `readers`, `models`, `utils`, `strings`,
-  `coverart`, `organizer`, `player.emulators.vgmstream.real` (api + real splits);
-  `sage.common.logging` / `ui.strings`; Mordant, bundled SQLite, kotlinx
-  coroutines, OkHttp, okio. Build-time: `:apps:jvm:buildHostNativeVgmstream`.
+  `coverart`, `organizer`; `sage.common.logging` / `ui.strings`; Mordant,
+  bundled SQLite, kotlinx coroutines, OkHttp, okio. No emulator or native
+  library dependency: scanning is pure Kotlin and the CLI does not play audio.

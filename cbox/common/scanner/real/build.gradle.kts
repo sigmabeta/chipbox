@@ -21,9 +21,6 @@ kotlin {
                 api(projects.cbox.common.readers.api)
                 implementation(projects.cbox.common.perf.api)
                 implementation(projects.cbox.common.utils.api)
-                // VgmstreamProber interface (the native subsong probe). The native impl lives in
-                // vgmstream/real and is injected via DI, keeping this module platform-neutral / JS-able.
-                implementation(projects.cbox.common.player.emulators.api)
                 // okio for the SHA-256 folder signature (multiplatform, replaces java MessageDigest).
                 implementation(libs.okio)
                 implementation(libs.sage.common.logging)
@@ -34,6 +31,15 @@ kotlin {
             dependencies {
                 implementation(projects.cbox.common.contentsource.fake)
                 implementation(projects.cbox.common.repository.fake)
+            }
+        }
+
+        named("jvmTest") {
+            dependencies {
+                // The scanner-behaviour test drives the public Scanner over a stub LibrarySource;
+                // FakeRepository is enough because the assertions only inspect emitted state.
+                implementation(projects.cbox.common.repository.fake)
+                implementation(libs.sage.common.logging)
             }
         }
     }

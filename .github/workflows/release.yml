@@ -296,8 +296,9 @@ jobs:
           path: apps/jvm/build/compose/binaries/main/dmg/*.dmg
 
   # Multi-arch server image for the release. The web/WASM stage is built once on the runner
-  # ($BUILDPLATFORM); only the small CMake vgmstream stage runs under QEMU for arm64. The result is
-  # verified as an OCI archive on the runner only — not pushed and not uploaded: v1 has no registry,
+  # ($BUILDPLATFORM); only the per-arch runtime stage (JRE + distribution copy) runs under QEMU for
+  # arm64. The result is verified as an OCI archive on the runner only — not pushed and not
+  # uploaded: v1 has no registry,
   # no credentials, and no public distribution until an auth story exists (ADR-0003), and a failed
   # image build blocks publish via this job's entry in `needs`. `docker buildx --load` only accepts
   # one platform, so the two single-arch loads below exist solely to smoke/verify the contents.
@@ -311,7 +312,7 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      # arm64 binfmt so the TARGETPLATFORM native stage (gcc/CMake/apt) can run on the amd64 runner.
+      # arm64 binfmt so the TARGETPLATFORM runtime stage (JRE/apt) can run on the amd64 runner.
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
@@ -356,7 +357,7 @@ jobs:
             CHIPBOX_BUILD_BRANCH=${{ steps.buildinfo.outputs.branch }}
             CHIPBOX_BUILD_TIME_MS=${{ steps.buildinfo.outputs.time_ms }}
           # One cache scope for the shared multi-platform build, plus the PR amd64 scope so a tag
-          # run reuses the bundle/native layers the CI web job already produced.
+          # run reuses the bundle/dist layers the CI web job already produced.
           cache-from: |
             type=gha,scope=web-multiarch
             type=gha,scope=web-amd64
@@ -385,7 +386,7 @@ jobs:
             CHIPBOX_BUILD_BRANCH=${{ steps.buildinfo.outputs.branch }}
             CHIPBOX_BUILD_TIME_MS=${{ steps.buildinfo.outputs.time_ms }}
           cache-from: type=gha,scope=web-multiarch
-      - name: Smoke the amd64 image (health, SPA, nine WASM pairs, native lib)
+      - name: Smoke the amd64 image (health, SPA, nine WASM pairs)
         run: scripts/ci/web-image-smoke.sh chipbox-server:release-amd64 --platform linux/amd64
       - name: Load the arm64 image for a contents check
         uses: docker/build-push-action@v6
@@ -406,8 +407,8 @@ jobs:
             CHIPBOX_BUILD_TIME_MS=${{ steps.buildinfo.outputs.time_ms }}
           cache-from: type=gha,scope=web-multiarch
       # `docker create` + `docker cp` needs no QEMU: inspect the arm64 filesystem directly and
-      # assert the ELF machine is AArch64 plus the jar carries all nine emulator pairs.
-      - name: Verify the arm64 image contents (arm64 lib + nine WASM pairs)
+      # assert the jar carries all nine emulator pairs.
+      - name: Verify the arm64 image contents (nine WASM pairs)
         run: >-
           scripts/ci/web-image-smoke.sh chipbox-server:release-arm64
           --platform linux/arm64 --contents-only
