@@ -156,7 +156,7 @@ jobs:
             CHIPBOX_BUILD_TIME_MS=${{ steps.buildinfo.outputs.time_ms }}
           cache-from: type=gha,scope=web-amd64
           cache-to: type=gha,mode=max,scope=web-amd64
-      - name: Smoke the container (health, SPA, all nine WASM pairs, native lib arch)
+      - name: Smoke the container (health, SPA, all nine WASM pairs)
         run: scripts/ci/web-image-smoke.sh chipbox-server:ci --platform linux/amd64
 
   shared-build:

@@ -30,6 +30,25 @@ class Readers(hatchet: Hatchet) {
     val spc = SpcReader(hatchet)
     val rsn = RsnReader(hatchet, spc)
     val vgm = VgmReader(hatchet)
+    val strm = StrmReader(hatchet)
+    val genh = GenhReader(hatchet)
+    val seb = SebReader(hatchet)
+    val sadl = SadlReader(hatchet)
+    val xa = XaReader(hatchet)
+    val brstm = BrstmReader(hatchet)
+    val brstmSpm = BrstmReader(hatchet, superPaperMario = true)
+    val bfstm = BfstmReader(hatchet)
+    val bcstm = BcstmReader(hatchet)
+    val dsp = DspReader(hatchet)
+    val fsb5 = Fsb5Reader(hatchet)
+    val adx = AdxReader(hatchet)
+    val hca = HcaReader(hatchet)
+    val awb = AwbReader(hatchet)
+    val acb = AcbReader(hatchet)
+    val aix = AixReader(hatchet)
+    val eaSchl = EaSchlReader(hatchet)
+    val vag = VagReader(hatchet)
+    val vab = VabReader(hatchet)
     val m3u = M3uReader(hatchet)
 
     fun forExtension(extension: String): Reader? = when (extension) {
@@ -54,17 +73,54 @@ class Readers(hatchet: Hatchet) {
 
         EXT_VGM, EXT_VGZ -> vgm
 
+        EXT_STRM -> strm
+
+        EXT_GENH -> genh
+
+        EXT_SEB, EXT_GMS -> seb
+
+        EXT_SAD -> sadl
+
+        EXT_XA -> xa
+
+        EXT_BRSTM -> brstm
+
+        EXT_BRSTMSPM -> brstmSpm
+
+        EXT_BFSTM -> bfstm
+
+        EXT_BCSTM -> bcstm
+
+        EXT_DSP -> dsp
+
+        EXT_FSB, EXT_FSB5 -> fsb5
+
+        EXT_ADX -> adx
+
+        EXT_HCA -> hca
+
+        EXT_AWB, EXT_AFS2 -> awb
+
+        EXT_ACB -> acb
+
+        EXT_AIX -> aix
+
+        in EA_SCHL_EXTENSIONS -> eaSchl
+
+        EXT_VAG -> vag
+
+        EXT_VAB -> vab
+
         else -> null
     }
 
     /**
      * Version of the reader that handles [extension], for the scanner's folder-skip check.
-     * Formats with no dedicated chiptune reader ([forExtension] returns null, e.g. vgmstream
-     * streamed audio) report [NO_READER_VERSION] — their output is parser-agnostic and covered by
-     * the scanner version instead.
+     * Formats with no dedicated reader ([forExtension] returns null) report [NO_READER_VERSION];
+     * a newly registered streamed format automatically reports its reader's real version, which
+     * makes folders that stored the old sentinel stale and re-reads them.
      */
-    fun readerVersionFor(extension: String): Int =
-        forExtension(extension)?.version ?: NO_READER_VERSION
+    fun readerVersionFor(extension: String): Int = forExtension(extension)?.version ?: NO_READER_VERSION
 
     companion object {
         const val NO_READER_VERSION = 0
@@ -94,6 +150,19 @@ private const val EXT_SPC = "spc"
 private const val EXT_RSN = "rsn"
 private const val EXT_VGM = "vgm"
 private const val EXT_VGZ = "vgz"
+private const val EXT_STRM = "strm"
+private const val EXT_GENH = "genh"
+private const val EXT_SEB = "seb"
+private const val EXT_GMS = "gms"
+private const val EXT_SAD = "sad"
+private const val EXT_BRSTM = "brstm"
+private const val EXT_BRSTMSPM = "brstmspm"
+private const val EXT_BFSTM = "bfstm"
+private const val EXT_BCSTM = "bcstm"
+private const val EXT_DSP = "dsp"
+private const val EXT_XA = "xa"
+private const val EXT_FSB = "fsb"
+private const val EXT_FSB5 = "fsb5"
 
 private val PSF_FAMILY_EXTENSIONS = setOf(
     EXT_PSF, EXT_MINIPSF, EXT_GSF, EXT_MINIGSF,

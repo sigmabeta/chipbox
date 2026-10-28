@@ -73,9 +73,10 @@ Gatekeeper will warn on first launch (right-click → Open, or
 ## Web app (Docker)
 
 The self-hosted browser app ships as a multi-stage image: the Kotlin/JS bundle and
-all nine Emscripten emulators are built on `$BUILDPLATFORM`, the native
-`libvgmstream.so` is built for `$TARGETPLATFORM`, and a non-root glibc JRE 21
-runtime serves both. The `sage` submodule is a build input:
+all nine Emscripten emulators are built on `$BUILDPLATFORM`, and a non-root glibc
+JRE 21 runtime serves both on `$TARGETPLATFORM`. The server ships no host native
+library — scanning parses headers in pure Kotlin and the server does not play
+audio. The `sage` submodule is a build input:
 
 ```sh
 git submodule update --init --recursive
@@ -118,8 +119,9 @@ Do not expose the plain-HTTP port beyond the trusted LAN.
 
 `--load` accepts one platform at a time, so a two-arch build is written as an OCI
 archive. On an amd64 host, register arm64 binfmt once (Docker Desktop already
-does this); the arm64 stage then runs the small native build under QEMU, while
-the expensive Gradle/emsdk stage still runs once on the build host:
+does this); the arm64 runtime stage then runs the small JRE + distribution layer
+under QEMU, while the expensive Gradle/emsdk stage still runs once on the build
+host:
 
 ```sh
 docker run --privileged --rm tonistiigi/binfmt --install arm64
@@ -135,14 +137,14 @@ python3 scripts/ci/verify-oci-index.py \
   build/chipbox-server-multiarch.tar linux/amd64 linux/arm64
 ```
 
-For a runnable local image and the health/UI/WASM/native-lib checks, build one
-platform and smoke it:
+For a runnable local image and the health/UI/WASM checks, build one platform and
+smoke it:
 
 ```sh
 docker buildx build --platform linux/amd64 --load -t chipbox-server:dev .
 scripts/ci/web-image-smoke.sh chipbox-server:dev --platform linux/amd64
 
-# Or inspect the arm64 filesystem without QEMU (ELF arch + all nine WASM pairs):
+# Or inspect the arm64 filesystem without QEMU (all nine WASM pairs):
 docker buildx build --platform linux/arm64 --load -t chipbox-server:arm64 .
 scripts/ci/web-image-smoke.sh chipbox-server:arm64 --platform linux/arm64 --contents-only
 ```
@@ -165,8 +167,8 @@ as a workflow artifact either; there is **no public distribution** in v1. The
 release job verifies the archive's index on the runner, and `publish` needs the
 image job so an image failure blocks the release. Run
 `scripts/ci/verify-docker-release.sh` to statically check the platform stages,
-both-arch release wiring, no-push/no-artifact rule, native-lib architecture
-assertion, deterministic build-identity args, pinned toolchain, and
+both-arch release wiring, no-push/no-artifact rule, absence of a packaged native
+library, deterministic build-identity args, pinned toolchain, and
 digest-pinned base images.
 
 ### Pinned base images
@@ -181,9 +183,9 @@ FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jdk-jammy@sha256:742daacb… A
 ```
 
 One index digest covers both `linux/amd64` and `linux/arm64`; the tag stays so
-the pin is reviewable and so a human can tell which line to bump. Both JDK
-stages (`web`, `native`) share one pin — `verify-docker-release.sh` fails a
-half-applied bump that leaves the same tag on two different digests.
+the pin is reviewable and so a human can tell which line to bump. Each base
+image is pinned once, and `verify-docker-release.sh` fails a half-applied bump
+that leaves the same tag on two different digests.
 
 Recorded **2026-10-18** (index digest = `Dockerfile` pin; per-platform manifests
 come from the index):

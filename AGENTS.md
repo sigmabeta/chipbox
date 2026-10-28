@@ -70,6 +70,11 @@ it when a load-bearing fact stops being true.
 - **Module suffixes**: `:api` (interfaces/types/route keys, KMP), `:real`
   (impl), `:di` (Metro bindings), `:fake` (test doubles), `:native`
   (Android-only CMake companion for a JNI core), `:screenshot` (Paparazzi).
+- **Scanning is pure Kotlin; playback is native.** A library scan parses
+  chiptune and in-scope streamed headers in `:cbox:common:readers:api` and never
+  loads `libvgmstream`; playback (GUI/Android/JS) still does. Unknown streamed
+  extensions are skipped, counted and warned about, not silently dropped. To add
+  a streamed format see `arch-docs/architecture/streamed-audio-readers.md`.
 - The app is fully KMP: every `features/*` and shared `cbox/common/*` module
   builds for both targets. The only modules that stay non-KMP are legitimate
   end-state glue — `:di` wiring, `:native` (CMake) + `:screenshot` (Paparazzi)

@@ -147,13 +147,15 @@ not a top-level `dependencies {}` block (the common KMP gotcha). For
   headless CLI render modes (`scan`/`play`/single-file). `sage.jvm + application`.
   Host-builds native libs via CMake into `apps/jvm/libs`. Has its own Metro graph
   + JVM impls (`JvmStorage`, `JvmStringProvider`, etc.).
-- `apps/cli` — Mordant TUI scanner/organizer; reuses the jvm app's vgmstream
-  native task.
+- `apps/cli` — Mordant TUI scanner/organizer; scanning is pure Kotlin and the
+  distribution neither ships nor loads `libvgmstream` (ticket 13 removed the
+  last native-lib staging). See `apps/cli/README.md`.
 - `apps/js` — browser client: Compose UI + client-side WASM emulation, talking to
   `apps/server` over HTTP. Gated behind `-Psage.js=true`. See
   [web-app.md](web-app.md) and ADR-0003.
-- `apps/server` — headless Ktor library server: scans a configured library root,
-  serves the JSON API, file bytes, covers, and the bundled browser app. It stores
+- `apps/server` — headless Ktor library server: scans a configured library root
+  (pure Kotlin, no native library on the scan path), serves the JSON API, file
+  bytes, covers, and the bundled browser app. It stores
   no user state and has no authentication; it is for loopback/trusted-LAN use
   until an auth story exists. Browser audio additionally requires a secure
   origin (HTTPS or localhost) — see [web-app.md](web-app.md).

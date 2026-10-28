@@ -20,8 +20,6 @@ import net.sigmabeta.chipbox.database.dao.TrackDao
 import net.sigmabeta.chipbox.database.fake.FakeDatabase
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Track
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProber
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamSubsong
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
@@ -121,8 +119,8 @@ internal fun spcFile(
 internal data class ScanResult(val repository: DatabaseRepository, val state: ScannerState)
 
 /**
- * Scans [corpus] into a fresh [DatabaseRepository] over [FakeDatabase] with a no-op vgmstream
- * prober (the fixture is pure Kotlin, and no native vgmstream library exists on this test host).
+ * Scans [corpus] into a fresh [DatabaseRepository] over [FakeDatabase]; the fixture is pure Kotlin,
+ * so the scan needs no native library.
  */
 internal fun scanCorpus(
     corpus: File,
@@ -137,7 +135,6 @@ internal fun scanCorpus(
         repository,
         source,
         Readers(hatchet),
-        NoVgmstreamProber,
         hatchet,
         rsnExtractor = extractor,
     )
@@ -224,13 +221,6 @@ internal fun Repository.allGames(): List<Game> = runBlocking {
         is Data.Failed -> error("repository failed: ${data.message}")
         Data.Loading -> error("unreachable")
     }
-}
-
-/** No-op prober: these fixtures never need the native vgmstream library. */
-internal object NoVgmstreamProber : VgmstreamProber {
-    override fun isSupported(extension: String): Boolean = false
-
-    override fun probe(bytes: ByteArray, extension: String): List<VgmstreamSubsong> = emptyList()
 }
 
 /**

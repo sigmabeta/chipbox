@@ -20,6 +20,8 @@ fun main(rawArgs: Array<String>) {
 
         "diff" -> runDiff(parseDiffOptions(options))
 
+        "reader-parity" -> runReaderParity(parseReaderParityOptions(options))
+
         else -> {
             println("Unknown command: $command\n")
             printUsage()
@@ -59,6 +61,7 @@ private fun printUsage() {
           perfbench audio --dir <corpus> [options]
           perfbench snapshot --dir <corpus> [--out <snapshot>]
           perfbench diff --a <runA> --b <runB>
+          perfbench reader-parity --dir <corpus> [--reference <tsv>] [--reader <ext>] [--no-padding]
 
         audio — measure real-time factor (RTF) over a corpus. Renders every supported corpus file
         through the raw emulator core, one result per file keyed by its corpus-relative path, and
@@ -88,6 +91,15 @@ private fun printUsage() {
           --a <run>            baseline results.json (or the folder holding it)   (required)
           --b <run>            current results.json (or the folder holding it)    (required)
           --json               emit the report as JSON instead of the human table (default: off)
+
+        reader-parity — dev-only header-reader parity check (not a CI gate). Runs the registered
+        reader for each reference row or corpus file and compares its length + padding against the
+        stored length. With no reference it just reports parsed / unparsed files.
+
+          --reference <tsv>    headerless DB export: id, path, trackNumber, length, extension, title
+          --dir <folder>       corpus root; with --reference, only rows under it are run
+          --reader <ext>       only files/rows with this extension (default: every reader)
+          --no-padding         compare raw probe lengths instead of stored (padded) lengths
         """.trimIndent(),
     )
 }

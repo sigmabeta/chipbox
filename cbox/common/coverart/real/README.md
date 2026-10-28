@@ -57,9 +57,9 @@ Depend on `:cbox:common:coverart:real` when you actually run cover-art fetching 
 the desktop JVM app and the CLI wire it. Depend on
 [`:cbox:common:coverart:api`](../api) instead if you only need the lookup/result
 types. `CoverArtHttp` is the platform seam: the commonMain logic takes the
-interface, and a target supplies `OkHttpCoverArtHttp` (the same pattern the
-scanner uses for its native prober). Note that `api`'s `CoverLookup` is an outcome
-type, not a service interface — it's *produced* here by `IgdbClient.lookupCover`,
+interface, and a target supplies `OkHttpCoverArtHttp` (the same platform-seam
+pattern the scanner uses for `LibrarySource`). Note that `api`'s `CoverLookup`
+is an outcome type, not a service interface — it's *produced* here by `IgdbClient.lookupCover`,
 `CoverArtCache.get`, and `IgdbLinkFile.read`, not implemented by a single class.
 
 ## Using it

@@ -6,8 +6,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.models.Platform
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProber
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.FolderSnapshot
 import net.sigmabeta.chipbox.repository.GameWriteOutcome
@@ -30,7 +28,7 @@ import okio.Path.Companion.toOkioPath
  * resolution, m3u overlays), but the result is captured as the scanner's raw output rather than
  * persisted to a database, then stored with corpus-relative paths.
  */
-fun runSnapshot(args: SnapshotArgs, prober: VgmstreamProber = VgmstreamProbe): LibrarySnapshot {
+fun runSnapshot(args: SnapshotArgs): LibrarySnapshot {
     val repository = SnapshotRepository()
     // The scanner reads its locations from a persisted file; a throwaway one keeps the run
     // self-contained and lets us point it at exactly the corpus under test.
@@ -38,15 +36,15 @@ fun runSnapshot(args: SnapshotArgs, prober: VgmstreamProber = VgmstreamProbe): L
     val source = LocalFileContentSource(FileSystem.SYSTEM, locationsFile.toOkioPath())
     source.addLocation(args.corpusDir.toOkioPath())
     val readers = Readers(BluntHatchet())
-    val scanner = RealScanner(repository, source, readers, prober, BluntHatchet())
+    val scanner = RealScanner(repository, source, readers, BluntHatchet())
 
     val terminal = runBlocking {
         scanner.startScan()
         scanner.state().first { it is ScannerState.Complete || it is ScannerState.Failed }
     }
     locationsFile.delete()
-    when (terminal) {
-        is ScannerState.Complete -> Unit
+    val complete = when (terminal) {
+        is ScannerState.Complete -> terminal
         is ScannerState.Failed -> error("Snapshot scan failed at ${terminal.path}")
         else -> error("Snapshot scan ended in an unexpected state: $terminal")
     }
@@ -61,8 +59,8 @@ fun runSnapshot(args: SnapshotArgs, prober: VgmstreamProber = VgmstreamProbe): L
     args.outFile.parentFile?.mkdirs()
     args.outFile.writeText(LibrarySnapshotJson.encodeToString(snapshot))
     println(
-        "Scanned ${games.size} game(s), ${games.sumOf { it.tracks.size }} track(s) — " +
-            "wrote ${args.outFile.absolutePath}",
+        "Scanned ${games.size} game(s), ${games.sumOf { it.tracks.size }} track(s), " +
+            "${complete.filesSkipped} skipped — wrote ${args.outFile.absolutePath}",
     )
     return snapshot
 }

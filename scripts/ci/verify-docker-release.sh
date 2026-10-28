@@ -7,17 +7,16 @@
 #
 #   Dockerfile
 #     - web/WASM stage on $BUILDPLATFORM (built once, no QEMU for Gradle/emsdk)
-#     - native vgmstream stage on $TARGETPLATFORM (per-arch compiler) and an ELF e_machine assert
-#       that fails the build when the library does not match $TARGETARCH
 #     - runtime stage on $TARGETPLATFORM, glibc (no alpine), non-root, /data volume, /music
 #       convention, curl healthcheck, no-auth labels, and a build-time check that the server jar
 #       carries static/index.html + all nine WASM pairs
+#     - no native library is packaged (scanning is pure Kotlin; the server does not play audio)
 #     - every FROM is pinned by a manifest-list digest and keeps its tag
 #       (image:tag@sha256:...), so one pin resolves linux/amd64 and linux/arm64
 #     - Dockerfile ARG defaults match docker/{node,yarn,emsdk}-version (the CI pins)
 #   .github/workflows/release.yml
 #     - a web-image job: both linux platforms, push:false, no login/push/credentials, OCI tar
-#       output, gha layer cache, QEMU for the arm64 native stage, and the amd64/arm64 checks
+#       output, gha layer cache, QEMU for the arm64 runtime stage, and the amd64/arm64 checks
 #     - the image is not uploaded as an artifact, and publish.needs includes web-image
 #   .github/workflows/ci.yml
 #     - the PR web job still builds amd64 and smokes it through the shared script
@@ -61,7 +60,6 @@ stage() {
 }
 
 stage BUILDPLATFORM web || fail "web stage must be FROM --platform=\$BUILDPLATFORM"
-stage TARGETPLATFORM native || fail "native stage must be FROM --platform=\$TARGETPLATFORM"
 stage TARGETPLATFORM runtime || fail "runtime stage must be FROM --platform=\$TARGETPLATFORM"
 
 # Base images must be digest-pinned. A floating tag makes a release depend on whatever the
@@ -114,16 +112,11 @@ conflicting="$(printf '%s' "$pins" | awk 'NF == 2 { if ($1 in seen && seen[$1] !
 [ -z "$conflicting" ] \
   || fail "the same base image is pinned to different digests: $conflicting"
 
-grep -q '^ARG TARGETARCH' "$DOCKERFILE" \
-  || fail "Dockerfile must declare ARG TARGETARCH to assert the native lib architecture"
-grep -q 'jvm-native/out/linux/vgmstream/host' "$DOCKERFILE" \
-  || fail "Dockerfile must read the host vgmstream output path (out/<target>/vgmstream/host)"
-grep -q ':apps:jvm:buildHostNativeVgmstream' "$DOCKERFILE" \
-  || fail "native stage must build :apps:jvm:buildHostNativeVgmstream"
-grep -q -- '-Pchipbox.cmake=' "$DOCKERFILE" \
-  || fail "native stage must pass -Pchipbox.cmake (the stage's per-arch CMake)"
-grep -q '3e 00' "$DOCKERFILE" && grep -q 'b7 00' "$DOCKERFILE" \
-  || fail "Dockerfile must assert ELF e_machine for both amd64 (3e 00) and arm64 (b7 00)"
+# The server distribution ships no host native library: scanning parses file headers in pure Kotlin
+# and the server does not play audio. Guard against reintroducing a per-arch native stage or copy.
+grep -q 'lib/native' "$DOCKERFILE" && fail "Dockerfile must not package a native library (lib/native)"
+grep -q 'buildHostNativeVgmstream' "$DOCKERFILE" \
+  && fail "Dockerfile must not build a host native library for the server image"
 grep -q 'static/wasm' "$DOCKERFILE" \
   || fail "runtime stage must assert the server jar carries the WASM assets"
 grep -q 'wasm-emulators.txt' "$DOCKERFILE" \
@@ -292,7 +285,7 @@ check(!steps(img).any? { |s| s['uses'].to_s.include?('docker/login-action') },
 
 img_steps = steps(img)
 check(img_steps.any? { |s| s['uses'].to_s.start_with?('docker/setup-qemu-action@') },
-      'release web-image job must register QEMU for the arm64 native stage (setup-qemu-action)')
+      'release web-image job must register QEMU for the arm64 runtime stage (setup-qemu-action)')
 check(img_steps.any? { |s| s['uses'].to_s.start_with?('docker/setup-buildx-action@') },
       'release web-image job must set up buildx')
 
@@ -350,4 +343,4 @@ if [ "$failures" -ne 0 ]; then
   exit 1
 fi
 
-echo "Docker/release invariants OK: platform stages, both arches, no push, native lib arch, pins, digest-pinned bases"
+echo "Docker/release invariants OK: platform stages, both arches, no push, no native lib, pins, digest-pinned bases"

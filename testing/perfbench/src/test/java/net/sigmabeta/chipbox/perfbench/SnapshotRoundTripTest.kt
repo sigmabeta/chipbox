@@ -9,8 +9,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.decodeFromString
 import net.sigmabeta.chipbox.contentsource.LocalFileContentSource
 import net.sigmabeta.chipbox.database.fake.FakeDatabase
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProber
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamSubsong
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.LibraryImportResult
@@ -31,7 +29,7 @@ import okio.Path.Companion.toOkioPath
  * scanning the same corpus directly (and importing twice does not duplicate).
  *
  * The sample corpus is minimal pure-Kotlin PSF (incl. a `_lib` chain), so the scan needs no native
- * libraries; the injected prober is a no-op that keeps vgmstream out of the test.
+ * libraries.
  */
 class SnapshotRoundTripTest {
 
@@ -41,7 +39,7 @@ class SnapshotRoundTripTest {
         val outFile = File(Files.createTempDirectory("perfbench-out").toFile(), "library-snapshot.json")
 
         val direct = scanDirectly(corpus)
-        runSnapshot(SnapshotArgs(corpus, outFile), prober = NoVgmstreamProber)
+        runSnapshot(SnapshotArgs(corpus, outFile))
         // Read the snapshot back off disk — the exact path the app's ingest takes — so a schema
         // change that breaks the written format fails here rather than at runtime.
         val snapshot = LibrarySnapshotJson.decodeFromString<LibrarySnapshot>(outFile.readText())
@@ -56,7 +54,7 @@ class SnapshotRoundTripTest {
     fun `importing the generated snapshot twice is idempotent`() {
         val corpus = sampleCorpus()
         val outFile = File(Files.createTempDirectory("perfbench-out").toFile(), "library-snapshot.json")
-        runSnapshot(SnapshotArgs(corpus, outFile), prober = NoVgmstreamProber)
+        runSnapshot(SnapshotArgs(corpus, outFile))
         val snapshot = LibrarySnapshotJson.decodeFromString<LibrarySnapshot>(outFile.readText())
 
         val repo = newRepo()
@@ -84,7 +82,7 @@ class SnapshotRoundTripTest {
         val locationsFile = File.createTempFile("perfbench-locations", ".txt")
         val source = LocalFileContentSource(FileSystem.SYSTEM, locationsFile.toOkioPath())
         source.addLocation(corpus.toOkioPath())
-        val scanner = RealScanner(repo, source, Readers(BluntHatchet()), NoVgmstreamProber, BluntHatchet())
+        val scanner = RealScanner(repo, source, Readers(BluntHatchet()), BluntHatchet())
         runBlocking {
             scanner.startScan()
             scanner.state().first { it is ScannerState.Complete || it is ScannerState.Failed }
@@ -157,12 +155,5 @@ class SnapshotRoundTripTest {
         out[3] = 0x01 // PSX
         tagBytes.copyInto(out, 16)
         return out
-    }
-
-    /** No-op prober: the sample corpus is pure-Kotlin PSF, so vgmstream must never need to load. */
-    private object NoVgmstreamProber : VgmstreamProber {
-        override fun isSupported(extension: String): Boolean = false
-
-        override fun probe(bytes: ByteArray, extension: String): List<VgmstreamSubsong> = emptyList()
     }
 }

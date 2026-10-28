@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 
 class FolderVersionCheckTest {
 
-    private val currentReaderVersions = mapOf("psf" to 1, "vgm" to 2)
+    private val currentReaderVersions = mapOf("psf" to 1, "vgm" to 2, "adx" to 1)
 
     private fun readerVersionFor(extension: String): Int = currentReaderVersions[extension] ?: 0
 
@@ -40,13 +40,27 @@ class FolderVersionCheckTest {
     }
 
     @Test
-    fun `a format with no dedicated reader compares against zero`() {
-        // vgmstream streamed audio persists readerVersion 0; it should still be skippable.
+    fun `a streamed format that gained a reader is re-read`() {
+        // Cutover: every streamed row was stored at the no-reader sentinel (0) by the native probe.
+        // ADX now has a Kotlin reader at version >= 1, so an old snapshot must be re-read.
         val snapshot = FolderSnapshot(
             "sig",
             1,
             scannerVersion = 1,
             readerVersions = mapOf("adx" to 0),
+        )
+        assertFalse(snapshot.isUpToDate(1, ::readerVersionFor))
+    }
+
+    @Test
+    fun `a streamed format still without a reader compares against zero`() {
+        // No Kotlin reader registered for AT3, so an existing folder holding only such files keeps
+        // 0 == 0 and stays skippable — until a reader for it lands (or the scanner version bumps).
+        val snapshot = FolderSnapshot(
+            "sig",
+            1,
+            scannerVersion = 1,
+            readerVersions = mapOf("at3" to 0),
         )
         assertTrue(snapshot.isUpToDate(1, ::readerVersionFor))
     }

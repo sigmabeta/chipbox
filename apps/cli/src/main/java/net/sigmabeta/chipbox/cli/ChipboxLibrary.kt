@@ -14,7 +14,6 @@ import net.sigmabeta.chipbox.models.Artist
 import net.sigmabeta.chipbox.models.Game
 import net.sigmabeta.chipbox.models.Platform
 import net.sigmabeta.chipbox.models.Track
-import net.sigmabeta.chipbox.player.emulators.vgmstream.VgmstreamProbe
 import net.sigmabeta.chipbox.readers.Readers
 import net.sigmabeta.chipbox.repository.Data
 import net.sigmabeta.chipbox.repository.Repository
@@ -82,7 +81,7 @@ class ChipboxLibrary(
     private val contentSource =
         LocalFileContentSource(FileSystem.SYSTEM, File(workDir, LOCATIONS_NAME).toOkioPath())
 
-    private val scanner = RealScanner(repository, contentSource, Readers(hatchet), VgmstreamProbe, hatchet)
+    private val scanner = RealScanner(repository, contentSource, Readers(hatchet), hatchet)
 
     /** Adds [folder] to the saved library locations (persisted across runs; deduplicated). */
     fun addLibraryFolder(folder: File) = contentSource.addLocation(folder.toOkioPath())
